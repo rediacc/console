@@ -4,7 +4,7 @@ description: "rdc ne zaman, renet ne zaman kullanılır."
 category: "Concepts"
 order: 1
 language: tr
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Tüm yaygın görevler iş istasyonunuzdaki `rdc` üzerinden gerçekleştirilir:
 
 ```bash
 # Yeni bir sunucu kur
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # Depo oluştur ve başlat
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # Depoyu durdur
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # Makine sağlığını kontrol et
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Tam bir yol haritası için [Hızlı Başlangıç](/tr/docs/quick-start) sayfasına bakın.

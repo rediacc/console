@@ -4,7 +4,7 @@ description: 通过反向代理、Docker 标签、TLS 证书、DNS 和 TCP/UDP �
 category: Guides
 order: 6
 language: zh
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -130,16 +130,16 @@ labels:
 
    ```bash
    # 共享凭据（每个配置一次，适用于所有机器）
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # 机器特定设置
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. DNS 记录将您的域名指向服务器的公网 IP（参见下方的 [DNS 配置](#dns-配置)）。
@@ -183,14 +183,14 @@ services:
 TLS 证书通过 Let's Encrypt 使用 Cloudflare DNS-01 挑战自动获取。凭据每个配置设置一次（在所有机器间共享）：
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 自动路由使用仓库子域名级别的**通配符证书**（`*.marketing.server-1.example.com`）代替每个服务单独的证书。证书在第一次 `repo up` 时由 Traefik 自动签发，无需任何手动步骤。派生版本重用父仓库现有的通配符，因此永远不会触发新的证书请求。自定义域名路由使用机器级通配符（`*.server-1.example.com`）。
 
-> **需要 Cloudflare 凭据。**通配符证书使用 DNS-01 挑战。没有 `--cf-dns-token`（以及可选的 `--cert-email`），Traefik 无法完成挑战，HTTPS 将无法使用。HTTP 仍然可用。在首次部署前，使用 `rdc config infra set` 配置凭据。
+> **需要 Cloudflare 凭据。**通配符证书使用 DNS-01 挑战。没有 `--cf-dns-token`（以及可选的 `--cert-email`），Traefik 无法完成挑战，HTTPS 将无法使用。HTTP 仍然可用。在首次部署前，使用 `rdc machine infra set` 配置凭据。
 
 对于使用 `traefik.http.routers.{name}.tls.certresolver=letsencrypt` 的第二层路由，通配符域名 SAN 会根据路由的主机名自动注入。
 
@@ -210,17 +210,17 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 
 - 在 `rdc repo up` 之后自动触发，但仅当机器 `baseDomain` 的本地缓存超过 6 小时时。新鲜的缓存保持不变，以防止连续部署对 SSH 造成压力。
 - 按需触发：`rdc machine infra cert pull <machine>`（强制拉取）或 `rdc machine status <machine> --sync-certs`（作为状态查询副作用的拉取）。
-- 在 `rdc config infra push` 时，缓存被推送到机器（到期时间更长的本地证书优先于远程证书）。
+- 在 `rdc machine infra push` 时，缓存被推送到机器（到期时间更长的本地证书优先于远程证书）。
 
 **缓存维护：**
 
 - 旧的自动路由条目（带旧网络 ID 标签的域名，如 `service-3200.rediacc.io`）在每次拉取时被清除。
 - `notAfter` 超过 7 天的证书将被彻底删除。它们已失效，只会使缓存膨胀。
-- `rdc config cert-cache clear` 清除所有内容；`rdc config cert-cache status` 显示清单。
+- `rdc config prune --certs-only` 清除所有内容；`rdc config prune --certs-only` 显示清单。
 
 **故障排查：** 如果 `traefik-certs-dumper` 以 `/traefik/acme.json: no such file or directory` 崩溃，说明每个仓库的守护进程看不到宿主机的 letsencrypt 存储。请验证 (a) 宿主机上存在 `/opt/rediacc/proxy/letsencrypt/acme.json`（这是宿主机级 `rediacc-proxy` 的职责），以及 (b) 每个仓库的守护进程是以足够新版本的 renet 启动的（该版本将 `/opt/rediacc/proxy` 加入允许列表）。升级 renet 后使用 `rdc repo up` 重新部署仓库以应用更改。
 
-> **实验性：** 自动同步节奏和基于过期的清理在 renet 0.9+ 中推出。旧版 CLI/renet 仅使用通过 `rdc config cert-cache pull` 的纯手动同步。
+> **实验性：** 自动同步节奏和基于过期的清理在 renet 0.9+ 中推出。旧版 CLI/renet 仅使用通过 `rdc config prune --certs-only` 的纯手动同步。
 
 ## TCP/UDP 端口转发
 
@@ -231,16 +231,16 @@ Let's Encrypt 证书从签发到到达每个仓库容器的完整路径：
 在基础设施配置时添加所需的端口：
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 此操作创建名为 `tcp-{port}` 和 `udp-{port}` 的 Traefik 入口点。
 
-> 添加或移除端口后，务必重新运行 `rdc config infra push` 以更新代理配置。
+> 添加或移除端口后，务必重新运行 `rdc machine infra push` 以更新代理配置。
 
 ### 步骤 2：添加 TCP/UDP 标签
 
@@ -313,7 +313,7 @@ services:
 
 ### 自动 DNS（Cloudflare）
 
-当配置了 `--cf-dns-token` 时，`rdc config infra push` 会自动在 Cloudflare 中创建必要的 DNS 记录：
+当配置了 `--cf-dns-token` 时，`rdc machine infra push` 会自动在 Cloudflare 中创建必要的 DNS 记录：
 
 | 记录 | 类型 | 内容 | 创建者 |
 |------|------|------|--------|
@@ -480,7 +480,7 @@ app.example.com   A   203.0.113.50
 ### 部署
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 几秒钟内，路由服务器发现容器，Traefik 获取路由，请求 TLS 证书，`https://app.example.com` 即可上线访问。

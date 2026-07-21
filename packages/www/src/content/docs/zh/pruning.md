@@ -4,7 +4,7 @@ description: "删除孤立备份、过期快照、仓库镜像和本地配置遗
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 ```bash
 # 仅预览 — 显示将被删除的内容
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # 实际删除孤立备份（默认行为）
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # 覆盖宽限期（默认 7 天）
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # 覆盖挂载安全检查（请谨慎使用）
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` 是必需的，因为 rclone 调用在执行机器上运行，而不是在您的笔记本电脑上。客户端不必在本地安装 rclone。存储凭据仍来自您的本地配置；机器只是 rclone 的运行者。
@@ -82,10 +82,10 @@ authorized_keys 扫描会检查 `/home/*/.ssh/authorized_keys` 和 `/root/.ssh/a
 
 ```bash
 # Dry-run，显示将被移除的内容（不应用任何更改）
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # 执行清理
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **级联清理。** 某些类别依赖于更早的类别。例如，删除空挂载目录可能会暴露更多沙箱孤立项，因为它们所依赖的挂载刚刚消失。再次运行 `rdc machine prune` 可以捕获这种级联效应并完成清理。当没有任何内容需要处理时，最后一次 dry-run 会以 `No orphaned resources found. Datastore is clean.` 结尾。
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 使用 `--orphaned-repos` 时，CLI 还会删除机器上未出现在 **任何** 本地配置文件中的仓库镜像。
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 这是 **粗放的**。它会删除所有不在您本地配置中的内容，包括其他工具或其他操作员 CLI 检出管理的合法复刻。如果 renet `.interim/state` 镜像正确地将仓库标识为复刻，但本地配置从未见过它，此阶段仍会将其移除。如希望保守，请优先使用阶段 3（`--prune-unknown`）。
@@ -106,8 +106,8 @@ rdc machine prune --name server-1 --orphaned-repos
 使用 `--prune-unknown` 时，CLI 仅删除两种信号都无法分类的仓库：既不在任何本地配置中，**也** 没有在机器的 `.interim/state` 镜像中存在 fork 标记条目（参见 [仓库. `Type` 列](/zh/docs/repositories#type-column-and-the-state-mirror)）。
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 实践中，`--prune-unknown` 是您进行例行清理时所需要的；`--orphaned-repos` 仅在您确信本地配置是机器上每个仓库的完整且权威清单时才正确。镜像之前的遗留孤立项以及配置条目被误删的仓库都会落入 "unknown" 类别。它们的状态确实不确定，精准标志要求操作员明确确认这一点。
@@ -116,7 +116,7 @@ rdc machine prune --name server-1 --prune-unknown
 
 ```bash
 # 组合：使用精准的复刻感知路径进行完整机器清理
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - 活跃资源（机器、存储、仓库、备份策略、云提供商）。
 - 凭据、account 块、加密块、defaults。
 - 存储 `vaultContent`（包括过期的 OneDrive `access_token`。Refresh_token 仍可铸造新 token；清理会强制重新认证）。
-- `knownHosts` 条目（自动刷新路径为 `rdc config machine scan-keys`）。
+- `knownHosts` 条目（自动刷新路径为 `rdc machine scan-keys`）。
 - 压缩证书 blob 数组（`infra.acmeCertCache.<base>.data[]`）会从清理后的证书列表自动重建；您不会丢失任何仍覆盖保留名称的证书链。
 
 ### 实例
@@ -180,7 +180,7 @@ Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 为 `--prune-unknown` 和 `rdc repo list -m` 中的 `Type` 列提供支持的 `.interim/state/<guid>/.rediacc.json` 镜像在以下时机写入：
 
 - **复刻时**（`rdc repo fork`）。立即写入，甚至在复刻被挂载之前。
-- **每次状态保存时**（`rdc repo mount` 以及任何更新仓库状态的操作）。适用于在镜像代码发布之前创建的仓库。
+- **每次状态保存时**（`rdc repo up` 以及任何更新仓库状态的操作）。适用于在镜像代码发布之前创建的仓库。
 
 在 **镜像存在之前创建且自升级以来未重新挂载** 的仓库没有镜像文件。它们在 `rdc repo list -m` 中显示为 `unknown`，即使其中一些是合法的复刻。要为遗留孤立项修复此问题，请在机器上运行一次性回填：
 
@@ -238,6 +238,6 @@ CLI 标志 `--grace-days` 在提供时会覆盖此值。
 - **优先使用 `--prune-unknown` 而非 `--orphaned-repos`。** 精准标志尊重 renet 镜像；粗放标志会愉快地删除其他工具创建的复刻。
 - **为生产环境使用较长的宽限期。** 默认的 7 天宽限期适合大多数工作流程。对于维护窗口不频繁的生产环境，建议使用 14 天或 30 天。
 - **在备份运行后安排 storage prune。** 将 `storage prune` 与您的备份计划配对，以在无需手动干预的情况下控制存储成本。
-- **将 machine prune 与备份计划结合使用。** 在部署备份计划（`rdc machine backup schedule`）后，添加定期的机器清理以清除过期快照和孤立的数据存储工件。
+- **将 machine prune 与备份计划结合使用。** 在部署备份计划（`rdc backup schedule`）后，添加定期的机器清理以清除过期快照和孤立的数据存储工件。
 - **定期运行 `config prune`。** 本地配置膨胀（尤其是证书缓存）会悄无声息地累积；每季度一次的 `config prune --dry-run` 足以发现它。
 - **在使用 `--force` 或 `--force-delete-mounted` 之前进行审核。** 这两个标志都会绕过安全检查。仅在您确信没有其他配置引用相关仓库时使用 `--force`；仅在您确信机器上的存活状态有误时使用 `--force-delete-mounted`。

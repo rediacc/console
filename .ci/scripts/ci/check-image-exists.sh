@@ -2,8 +2,8 @@
 # Check if Docker image exists in GHCR without pulling
 #
 # Usage:
-#   check-image-exists.sh --image api --tag fb33b0f
-#   check-image-exists.sh --image bridge --tag 77596e0 --github-output
+#   check-image-exists.sh --image renet --tag fb33b0f
+#   check-image-exists.sh --image cli --tag 77596e0 --github-output
 #
 # Requires:
 #   - GITHUB_TOKEN for authentication (optional but recommended)
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 --image NAME --tag TAG [OPTIONS]"
             echo ""
             echo "Required:"
-            echo "  --image NAME         Image name (e.g., api, bridge, plugin-terminal)"
+            echo "  --image NAME         Image name (e.g., renet, web, cli)"
             echo "  --tag TAG            Image tag to check (e.g., fb33b0f, latest)"
             echo ""
             echo "Options:"
@@ -58,8 +58,8 @@ while [[ $# -gt 0 ]]; do
             echo "  -h, --help           Show this help message"
             echo ""
             echo "Examples:"
-            echo "  $0 --image api --tag fb33b0f"
-            echo "  $0 --image bridge --tag 77596e0 --github-output --output-var bridge_exists"
+            echo "  $0 --image renet --tag fb33b0f"
+            echo "  $0 --image cli --tag 77596e0 --github-output --output-var cli_exists"
             exit 0
             ;;
         *)

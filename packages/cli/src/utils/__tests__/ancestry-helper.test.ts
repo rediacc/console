@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mockSpawnSync = vi.hoisted(() => vi.fn());
 const mockAccessSync = vi.hoisted(() => vi.fn());
 const mockIsSEA = vi.hoisted(() => vi.fn(() => false));
-const mockExtractSync = vi.hoisted(() => vi.fn(() => '/tmp/.rdc-local/renet'));
+const mockExtractSync = vi.hoisted(() => vi.fn(() => '/home/testuser/.cache/rediacc/bin/renet'));
 
 vi.mock('node:child_process', async (importOriginal) => ({
   ...(await importOriginal<typeof import('node:child_process')>()),
@@ -45,14 +45,14 @@ const VALID_OUTPUT = JSON.stringify({
 beforeEach(() => {
   vi.clearAllMocks();
   mockIsSEA.mockReturnValue(false);
-  mockExtractSync.mockReturnValue('/tmp/.rdc-local/renet');
+  mockExtractSync.mockReturnValue('/home/testuser/.cache/rediacc/bin/renet');
   mockAccessSync.mockReturnValue(undefined);
 });
 
 describe('resolveRenetSyncPath', () => {
   it('uses the SEA extraction when running as SEA', () => {
     mockIsSEA.mockReturnValue(true);
-    expect(resolveRenetSyncPath()).toBe('/tmp/.rdc-local/renet');
+    expect(resolveRenetSyncPath()).toBe('/home/testuser/.cache/rediacc/bin/renet');
     expect(mockSpawnSync).not.toHaveBeenCalled();
   });
 
@@ -100,7 +100,7 @@ describe('runAncestryHelper', () => {
     const result = runAncestryHelper(['CLAUDECODE', 'REDIACC_ALLOW_GRAND_REPO']);
 
     expect(mockSpawnSync).toHaveBeenCalledWith(
-      '/tmp/.rdc-local/renet',
+      '/home/testuser/.cache/rediacc/bin/renet',
       [
         'process-ancestry',
         '--pid',

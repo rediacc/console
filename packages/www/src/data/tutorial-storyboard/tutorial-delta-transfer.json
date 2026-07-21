@@ -23,7 +23,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo push --name my-app --machine <machine-name> --to <target-machine>"
+        "commandFull": "rdc repo push my-app --to <target-machine>"
       }
     },
     {
@@ -33,7 +33,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'"
       }
     },
     {
@@ -43,7 +43,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo push --name my-app --machine <machine-name> --to <target-machine>"
+        "commandFull": "rdc repo push my-app --to <target-machine>"
       }
     },
     {

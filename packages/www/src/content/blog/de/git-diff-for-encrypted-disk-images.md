@@ -17,7 +17,7 @@ tags:
   - cli
 featured: false
 language: de
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -67,7 +67,7 @@ Das macht Identität zu einem Mengenvergleich. Ein Inode auf beiden Seiten mit e
 Hier ist das Standard-Name-Status-Format, dieselbe A/M/D/R-Grammatik, die man bereits von `git status --short` kennt:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -84,7 +84,7 @@ Der Grund, warum dieser Befehl überhaupt existiert, ist der Agent-Workflow. Ich
 Der Agent liest nicht den Name-Status, er liest `--json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 Die strukturierte Ausgabe gibt dem Agenten ein präzises Change-Set. Welche Pfade er geändert, erstellt oder gelöscht hat. Mit `--stat` die Änderungsgröße pro Datei in Bytes und Blöcken. Ein Agent, der seinen Diff sieht, bevor er befördert, ist einer, dem man die Nähe zur Produktion erlauben kann. Der Strahlungsradius ist inspizierbar, nicht behauptet. Andere Modi dienen demselben Review-Loop. `--name-only` für eine reine Pfadliste. `--content <path>` für ein Unified-Text-Diff einer Datei (nur Text; eine Binärdatei meldet `Binary files differ`). `--stat`, wenn der Agent wissen muss, was sich wie viel geändert hat.

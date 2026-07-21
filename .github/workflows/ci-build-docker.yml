@@ -12,22 +12,16 @@ on:
       renet_exists:
         type: string
         required: false
-      plugins_tag:
-        type: string
-        required: false
-      plugins_exists:
-        type: string
-        required: false
       web_tag:
         type: string
         required: false
       web_exists:
         type: string
         required: false
-      cli_tag:
+      rdc_tag:
         type: string
         required: false
-      cli_exists:
+      rdc_exists:
         type: string
         required: false
       test_images_only:
@@ -146,59 +140,20 @@ jobs:
           path: packages/json/dist/
           retention-days: 3
 
-  build-plugins:
-    name: Plugins & Docker
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    if: "!inputs.test_images_only"
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-
-      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
-
-      # Build validation (dry-run)
-      - name: Validate plugin images
-        run: .ci/scripts/build/build-plugins.sh --dry-run
-
-      - uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Determine version
-        id: version
-        run: |
-          echo "version=${{ inputs.next_version }}" >> $GITHUB_OUTPUT
-
-      - name: Build & Push Plugin Docker images
-        if: inputs.plugins_exists != 'true'
-        run: |
-          .ci/scripts/docker/build-image.sh --image plugin-terminal --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
-          .ci/scripts/docker/build-image.sh --image plugin-browser --ci-tag ${{ inputs.plugins_tag }} --version ${{ steps.version.outputs.version }} --push
-
-      - name: Skip Docker build (cached)
-        if: inputs.plugins_exists == 'true'
-        run: echo "::notice::Skipping Docker build - plugins:${{ inputs.plugins_tag }} already exists in registry"
-
-  # Server Docker: builds the consolidated Dockerfile in two variants from
-  # one source. The cloud variant publishes to the existing internal
-  # ghcr.io/rediacc/elite/web path; the onprem variant publishes to the
-  # customer-facing ghcr.io/rediacc/server path.
+  # Server Docker: builds the consolidated Dockerfile as the onprem variant
+  # from one source. It publishes to the customer-facing
+  # ghcr.io/rediacc/server path.
   #
-  # Both consume the same pre-built artifacts: build-www (marketing site),
+  # It consumes pre-built artifacts: build-www (marketing site),
   # cli-npm (CLI tarball), and the renet-binaries
   # artifact from ci-build-renet.yml (which embeds CRIU/rsync/rclone and
   # bakes ACCOUNT_ED25519_PUBLIC_KEY into the binary). The account server
   # bundle is built inside the Dockerfile via esbuild --bundle, with the
-  # entry point parameterized by ACCOUNT_ENTRY (node | on-premise).
+  # entry point parameterized by ACCOUNT_ENTRY (on-premise).
   #
   # Builds are split per-arch onto NATIVE runners (ubuntu-latest for amd64,
   # ubuntu-24.04-arm for arm64). Earlier revisions ran both archs in a single
-  # job with QEMU emulation for arm64; the cloud arm64 build (npm install +
+  # job with QEMU emulation for arm64; the arm64 build (npm install +
   # esbuild bundling under qemu) consistently exceeded the 30 minute timeout
   # and got watchdog-cancelled. Native runners eliminate the emulation tax.
   # Per-arch tags are pushed by these jobs; build-server-docker-manifest
@@ -218,7 +173,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
@@ -277,10 +232,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              echo "account_entry=node" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
@@ -311,7 +262,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/app-token
@@ -370,10 +321,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              echo "account_entry=node" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               echo "account_entry=on-premise" >> "$GITHUB_OUTPUT"
@@ -407,7 +354,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [cloud, onprem]
+        variant: [onprem]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -423,9 +370,6 @@ jobs:
         id: resolve
         run: |
           case "${{ matrix.variant }}" in
-            cloud)
-              echo "image_path=ghcr.io/rediacc/elite/web" >> "$GITHUB_OUTPUT"
-              ;;
             onprem)
               echo "image_path=ghcr.io/rediacc/server" >> "$GITHUB_OUTPUT"
               ;;
@@ -450,15 +394,23 @@ jobs:
     name: CLI Docker
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [build-cli]
-    if: "!inputs.test_images_only && inputs.cli_exists != 'true'"
+    # No job-level needs: the musl SEA binaries come from ci-build-cli.yml, which
+    # ci.yml orders BEFORE this workflow (build-docker needs build-cli), so the
+    # artifacts are already uploaded by the time this job downloads them.
+    if: "!inputs.test_images_only && inputs.rdc_exists != 'true'"
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # The rdc image is the SEA single binary (embeds renet), not a node+JS
+      # bundle. Pull the musl SEA for each arch (rdc-linux-musl-<arch>).
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
-          name: cli-bundle${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}
-          path: bundle/
+          name: build-cli-linux-musl-x64-${{ github.sha }}
+          path: bin-x64/
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: build-cli-linux-musl-arm64-${{ github.sha }}
+          path: bin-arm64/
 
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd  # v4
 
@@ -468,36 +420,38 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build & push CLI image (amd64)
+      - name: Build & push rdc image (amd64)
         run: |
+          mkdir -p bin && cp bin-x64/rdc-linux-musl-x64 bin/rdc
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/amd64 \
-            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-amd64 \
+            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-amd64 \
             --push \
             .
 
-      - name: Build & push CLI image (arm64)
+      - name: Build & push rdc image (arm64)
         run: |
+          mkdir -p bin && cp bin-arm64/rdc-linux-musl-arm64 bin/rdc
           docker buildx build \
             --file packages/cli/Dockerfile.native \
             --platform linux/arm64 \
-            --tag ghcr.io/rediacc/elite/cli:${{ inputs.cli_tag }}-arm64 \
+            --tag ghcr.io/rediacc/rdc:${{ inputs.rdc_tag }}-arm64 \
             --push \
             .
 
       - name: Create multi-arch manifest
         run: |
           .ci/scripts/docker/create-manifest.sh \
-            --image cli \
-            --tag "${{ inputs.cli_tag }}"
+            --image rdc \
+            --tag "${{ inputs.rdc_tag }}"
 
   build-cli-docker-skip:
     name: CLI Docker (cached)
     runs-on: ubuntu-latest
-    if: "!inputs.test_images_only && inputs.cli_exists == 'true'"
+    if: "!inputs.test_images_only && inputs.rdc_exists == 'true'"
     steps:
-      - run: echo "::notice::Skipping Docker build - cli:${{ inputs.cli_tag }} already exists in registry"
+      - run: echo "::notice::Skipping Docker build - rdc:${{ inputs.rdc_tag }} already exists in registry"
 
   # ============================================================
   # RENET: Docker Images
@@ -524,24 +478,15 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      # Download full renet binaries (with embedded CRIU/rsync) from unified build
+      # Download the renet artifact from the unified build. It carries both the
+      # renet binaries AND the raw native binaries (criu/rsync/rclone), which the
+      # build-renet job exported from the same Docker builder image. Dockerfile.native
+      # COPYs the native binaries into /opt for remote-machine distribution — so
+      # there is one source (the builder image), no separate native-* build.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: binaries/
-
-      # Download native CRIU/rsync binaries (also from unified build)
-      # These are copied to /opt/ in Docker image for remote machine distribution
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: native-amd64-${{ github.sha }}
-          path: binaries/
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
-        with:
-          name: native-arm64-${{ github.sha }}
-          path: binaries/
-          merge-multiple: true
 
       - name: List binaries
         run: ls -la binaries/
@@ -560,7 +505,7 @@ jobs:
             --file private/renet/Dockerfile.native \
             --platform linux/amd64 \
             --build-arg TARGETARCH=amd64 \
-            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-amd64 \
+            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-amd64 \
             --push \
             .
 
@@ -571,7 +516,7 @@ jobs:
             --file private/renet/Dockerfile.native \
             --platform linux/arm64 \
             --build-arg TARGETARCH=arm64 \
-            --tag ghcr.io/rediacc/elite/renet:${{ inputs.renet_tag }}-arm64 \
+            --tag ghcr.io/rediacc/renet:${{ inputs.renet_tag }}-arm64 \
             --push \
             .
 

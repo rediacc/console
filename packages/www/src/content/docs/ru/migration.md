@@ -4,7 +4,7 @@ description: "Миграция существующих проектов в за
 category: "Guides"
 order: 11
 language: ru
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 - Установленный CLI `rdc` ([Установка](/ru/docs/installation))
 - Добавленная и подготовленная машина ([Настройка](/ru/docs/setup))
-- Достаточно дискового пространства на сервере для вашего проекта (проверьте с помощью `rdc machine query`)
+- Достаточно дискового пространства на сервере для вашего проекта (проверьте с помощью `rdc machine status`)
 
 ## Шаг 1: Создание репозитория
 
 Создайте зашифрованный репозиторий достаточного размера для вашего проекта. Выделите дополнительное пространство для Docker-образов и данных контейнеров.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **Совет:** Вы можете изменить размер позже с помощью `rdc repo resize`, но репозиторий сначала необходимо отмонтировать. Проще начать с достаточного объёма.
@@ -34,22 +34,22 @@ rdc repo create --name my-project -m server-1 --size 20G
 
 ```bash
 # Предварительный просмотр того, что будет передано (без изменений)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # Загрузка файлов
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 Перед загрузкой репозиторий должен быть смонтирован. Если он ещё не смонтирован:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 Для последующих синхронизаций, когда удалённая копия должна точно соответствовать локальному каталогу:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > Флаг `--mirror` удаляет файлы на удалённом сервере, которые не существуют локально. Сначала используйте `--dry-run` для проверки.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Загруженные файлы приходят с UID вашего локального пользователя (например, 1000). Rediacc использует универсального пользователя (UID 7111), чтобы VS Code, терминальные сессии и инструменты имели единообразный доступ. Выполните команду изменения владельца:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Исключения с учётом Docker
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Чтобы пропустить обнаружение Docker-томов и изменить владельца всего, включая каталоги данных контейнеров:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **Предупреждение:** Это может повредить работающие контейнеры. Сначала остановите их с помощью `rdc repo down`, если необходимо.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 Чтобы установить UID, отличный от стандартного 7111:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **Внимание:** `7111` является универсальным UID Rediacc, используемым повсюду (он соответствует пользователю `rediacc`, встроенному в образ devcontainer). Переопределяйте его с помощью `--uid` только для обратной совместимости с файлами, принадлежащими конкретному внешнему UID. Это **не** целевое значение для миграции. Новые репозитории должны сохранять значение по умолчанию.
@@ -200,7 +200,7 @@ services:
 Смонтируйте репозиторий (если ещё не смонтирован) и запустите все сервисы:
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 Это выполнит:
@@ -212,7 +212,7 @@ rdc repo up --name my-project -m server-1
 Убедитесь, что ваши контейнеры запущены:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Шаг 7: Включение автозапуска (необязательно)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 По умолчанию репозитории необходимо монтировать и запускать вручную после перезагрузки сервера. Включите автозапуск, чтобы ваши сервисы запускались автоматически:
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 Вам будет предложено ввести парольную фразу репозитория.
@@ -275,7 +275,7 @@ my-api/
 Файлы всё ещё имеют ваш локальный UID. Выполните команду изменения владельца:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Контейнер не запускается
@@ -284,10 +284,10 @@ rdc repo ownership --name my-project -m server-1
 
 ```bash
 # Проверить назначенные IP
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # Проверить логи контейнера
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### Конфликт портов между репозиториями
@@ -296,10 +296,10 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Исправление владения повредило контейнеры
 
-Если вы выполнили `rdc repo ownership` и контейнер перестал работать, файлы данных контейнера были изменены через chown. Остановите контейнер, удалите его каталог данных и перезапустите. Контейнер пересоздаст его:
+Если вы выполнили `rdc repo admin ownership` и контейнер перестал работать, файлы данных контейнера были изменены через chown. Остановите контейнер, удалите его каталог данных и перезапустите. Контейнер пересоздаст его:
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # Удалить каталог данных контейнера (например, database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

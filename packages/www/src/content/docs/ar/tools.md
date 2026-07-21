@@ -4,7 +4,7 @@ description: مزامنة الملفات والوصول عبر SSH وتكامل 
 category: Guides
 order: 9
 language: ar
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 
 ```bash
 # Directory (contents merged into remote)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Single file dropped into a remote directory (basename preserved)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Single file, explicit destination path
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Multiple sources in one call
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` و `--remote-file` متنافيتان. يتطلب `--remote-file` مسار `--local` واحد بالضبط يشير إلى ملف.
@@ -44,16 +44,16 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ```bash
 # Directory
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Single file: --local must be an existing directory
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### التحقق من حالة المزامنة
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### الخيارات
@@ -61,7 +61,7 @@ rdc repo sync status -m server-1 -r my-app
 | Option | الوصف |
 |--------|-------------|
 | `-m, --machine <name>` | الجهاز المستهدف |
-| `-r, --repository <name>` | المستودع المستهدف |
+| `<ref>` (موضعي) | مرجع المستودع الهدف: `name` أو `name:tag`، مع `@machine` اختيارياً |
 | `--local <paths...>` | مسار واحد أو أكثر لملف أو مجلد محلي (رفع) أو مجلد الوجهة المحلي (تنزيل) |
 | `--remote <path>` | مجلد بعيد (نسبي إلى نقطة تحميل المستودع) |
 | `--remote-file <path>` | مسار ملف بعيد لعمليات الرفع أو التنزيل الفردية (بديل لـ `--remote`) |
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 أسرع طريقة للاتصال:
 
 ```bash
-rdc term connect -m server-1                    # الاتصال بجهاز
-rdc term connect -m server-1 -r my-app             # الاتصال بمستودع
+rdc term connect server-1                    # الاتصال بجهاز
+rdc term connect my-app             # الاتصال بمستودع
 ```
 
 ### تنفيذ أمر
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # الاتصال بمستود
 تنفيذ أمر دون فتح جلسة تفاعلية:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 عند الاتصال بمستودع، يتم تعيين `DOCKER_HOST` تلقائيًا إلى مقبس Docker المعزول الخاص بالمستودع، لذا فإن `docker ps` يعرض حاويات ذلك المستودع فقط.
@@ -101,8 +101,8 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 أو استخدم الأمر الفرعي `connect` للحصول على نفس النتيجة، مع رايات صريحة:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### إجراءات الحاويات
@@ -111,28 +111,29 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # Open a shell inside a container
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # View container logs
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Follow logs in real-time
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # View container stats
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Execute a command in a container
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Option | الوصف |
-|--------|-------------|
-| `--container <id>` | معرّف حاوية Docker المستهدفة |
-| `--container-action <action>` | الإجراء: `terminal` (افتراضي)، `logs`، `stats`، `exec` |
-| `--log-lines <n>` | عدد أسطر السجل المعروضة (الافتراضي: 50) |
-| `--follow` | متابعة السجلات بشكل مستمر |
-| `--external` | استخدام طرفية خارجية بدلاً من SSH المضمّن |
+| الخيار | الأمر | الوصف |
+|--------|-------|-------------|
+| `-c, --container <name>` | كلاهما | الحاوية المستهدفة داخل المستودع |
+| `--lines <n>` | `repo logs` | عدد أسطر السجل المراد عرضها |
+| `-f, --follow` | `repo logs` | متابعة السجلات باستمرار |
+| `--timestamps` | `repo logs` | إضافة طابع زمني لبداية كل سطر |
+| `-i, --interactive` | `repo exec` | إبقاء stdin مفتوحًا (لازم لفتح غلاف) |
+| `-u, --user <user>` | `repo exec` | التشغيل كمستخدم محدد |
 
 ## تكامل VS Code (vscode)
 
@@ -141,7 +142,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### الاتصال بمستودع
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 يقوم هذا الأمر بما يلي:
@@ -179,7 +180,7 @@ rdc vscode check
 لا تريد تثبيت VS Code محليًا؟ شغّل المحرر من داخل صندوق رمل المستودع وافتحه في أي متصفح:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 يقوم هذا الأمر بما يلي:
@@ -190,8 +191,8 @@ rdc vscode connect -r my-app -m server-1 --browser
 يستمر الخادم في العمل بعد إغلاق النفق؛ إعادة الاتصال تُعيد استخدامه. أدِره بالأوامر:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | الخيار | الوصف |

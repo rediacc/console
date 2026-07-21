@@ -12,7 +12,7 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "f6a1604ae2a3a794"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ Ise majutamine nihutab tarnijate nimekirja, ei kustuta seda. Kolm asja, mida aud
 
 **2. Rediaccil ei ole veel ISO 27001, SOC 2 ega BSI C5.** Need on teekaardil, mitte käes. Hanketiimi jaoks, mis kasutab sertifikaate väravamehhanismina, on see reaalne hõõrdekoht. Kaitsetav vastuargument on see, mida see postitus on esitanud: andmetee argument tähendab, et enamik sellest, mida need sertifikaadid tõendavad (hankija pilve turvakontrollid, hankija töötajate juurdepääsu haldamine, hankija alluttöötlejate haldamine), ei ole reguleerimisalas, sest Rediacc OÜ ei ole andmetees. Seda argumenti tuleb esitada hoolikalt ja kaitstavalt, mitte sertifikaatide asendajana siis, kui ostja vajab just sertifikaate.
 
-**3. GRC kiht on ikkagi teie oma.** Rediacc annab operaatorile üle 70-sündmuselise räsiketiga auditilogi (`rdc audit verify` valideerib ahela algusest lõpuni). See ei anna teile tarnijate registrit, kontrollraamistikku ega tõendite kogumise töövoogu. Need tulevad ikka Drata, Vanta, OneTrust või mõne Euroopa tulijate käest. Kaasleva [tegeliku arve postituse](/et/blog/nis2-the-real-bill) kaudu saate täpsemat teavet selle täiendavuse kulustruktuuri kohta.
+**3. GRC kiht on ikkagi teie oma.** Rediacc annab operaatorile üle 70-sündmuselise räsiketiga auditilogi (`rdc config audit verify` valideerib ahela algusest lõpuni). See ei anna teile tarnijate registrit, kontrollraamistikku ega tõendite kogumise töövoogu. Need tulevad ikka Drata, Vanta, OneTrust või mõne Euroopa tulijate käest. Kaasleva [tegeliku arve postituse](/et/blog/nis2-the-real-bill) kaudu saate täpsemat teavet selle täiendavuse kulustruktuuri kohta.
 
 ## DPA, mida te enam läbi rääkima ei pea
 
@@ -129,7 +129,7 @@ Pärast Rediaccile üleminekut Hetzneris:
 | Alluttöötlejad | (1) Ise majutavatele puuduvad; (2) Ainult Hetzner-sisesed, loetletud nende DPA-s |
 | Lepingu staatus | (1) Tarkvaralitsents, DPA pole vajalik; (2) Hetzner DPA + SCC-d juba paigas |
 | Võtmehaldus | Klient (LUKS2 mandaat operaatori konfiguratsioonis, mitte serveris) |
-| Väljumisplaan | "rdc repo backup pull mis tahes rclone-ühilduvast sihtmärgist. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
+| Väljumisplaan | "rdc repo pull mis tahes rclone-ühilduvast sihtmärgist. Mahud on LUKS2-krüptitud; operaator hoiab mandaati." |
 | Viimane hindamine | (2) kaetud olemasoleva IaaS-i ülevaatusega |
 
 Kaks registrikirjet ühe asemel. Kriitilise taseme kanne on IaaS-i pakkuja jaoks, kellel oli ostjal juba DPA paigas ja testitud väljumisplaan, sest IaaS on suhe, mida enamik tiime oskab hallata. Rediacc'i kanne on mittekriitiline, sest see on tarkvaralitsents, mitte andmetöötleja.

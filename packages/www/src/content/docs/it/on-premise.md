@@ -4,7 +4,7 @@ description: "Esecuzione del server account e distribuzione della CLI sulla prop
 category: "Guides"
 order: 5
 language: it
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Se ti connetti a più server (on-premise, produzione, edge), i config nominati m
 
 ```bash
 # Crea un config per il tuo server on-premise
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Accedi usando quel config
 rdc --config myserver subscription login
 
 # Tutti i comandi con --config usano il server on-premise
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Ogni config nominato memorizza il proprio URL del server account e il token di sottoscrizione. Cambiare config cambia l'intero contesto del server.

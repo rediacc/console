@@ -61,7 +61,7 @@ My agent for the test was Claude Code, running Claude Opus. Same family of model
 The first thing the agent (me, in this case) would try: open a shell into the production repo and look around.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 The CLI refused. Verbatim:
@@ -95,7 +95,7 @@ I also tried connecting to a different production repo, `nextcloud`, while the o
 This is the workflow Rediacc actually wants you on.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Output, copied from my terminal:
@@ -127,7 +127,7 @@ Now I am operating on the fork. It has its own GUID (`22c57178-...`). Its own ne
 When I `term connect` into the fork, this is what I see:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -192,7 +192,7 @@ The honest residual gap. Secrets that you wrote into the repo image before adopt
 
 For the agent threat model specifically, two side effects of this design are worth calling out. First, `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names and digests, never values), so an agent helping you set up an app can discover what is configured without seeing what it is. Second, when a write fails the precondition, the JSON error envelope includes a structured `next.options[].run` field with concrete commands the agent should relay verbatim to the human. Including the rotation escape hatch for "I forgot the prior value." See [AI Agent Safety](/en/docs/ai-agents-safety) for the full model.
 
-The full how-to lives in [Repositories § Secrets](/en/docs/repositories#secrets). Three steps. First, seed the value: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Then reference `${REDIACC_SECRET_<KEY>}` in your compose file. Finally, run `rdc repo fork` and confirm the fork starts with an empty secret list.
+The full how-to lives in [Repositories § Secrets](/en/docs/repositories#secrets). Three steps. First, seed the value: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Then reference `${REDIACC_SECRET_<KEY>}` in your compose file. Finally, run `rdc repo fork` and confirm the fork starts with an empty secret list.
 
 ## What this changes for someone doing this kind of work
 

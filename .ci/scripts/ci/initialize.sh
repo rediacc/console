@@ -17,11 +17,9 @@
 # Outputs (written to --output file or stdout):
 #   is_bot=true|false
 #   renet_tag=<hash>
-#   plugins_tag=<hash>
 #   web_tag=<hash>
 #   image_tag=<hash>
 #   renet_exists=true|false
-#   plugins_exists=true|false
 #   web_exists=true|false
 
 set -euo pipefail
@@ -126,21 +124,18 @@ fi
 log_step "Generating CI tags..."
 
 RENET_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
-PLUGINS_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
 
-CLI_TAG="$WEB_TAG" # Same console commit hash
+RDC_TAG="$WEB_TAG" # Same console commit hash
 
 write_output "renet_tag" "$RENET_TAG"
-write_output "plugins_tag" "$PLUGINS_TAG"
 write_output "web_tag" "$WEB_TAG"
-write_output "cli_tag" "$CLI_TAG"
+write_output "rdc_tag" "$RDC_TAG"
 write_output "image_tag" "$RENET_TAG"
 
 log_info "Renet tag: $RENET_TAG (renet commit)"
-log_info "Plugins tag: $PLUGINS_TAG (console commit)"
 log_info "Web tag: $WEB_TAG (console commit)"
-log_info "CLI tag: $CLI_TAG (console commit)"
+log_info "RDC tag: $RDC_TAG (console commit)"
 
 # =============================================================================
 # Step 5: Detect bump type and calculate next version
@@ -165,7 +160,7 @@ log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-v
 # (push event) do — different tags ensure cache miss and rebuild with correct
 # version.
 if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
-    local_tags=("RENET" "PLUGINS" "WEB" "CLI")
+    local_tags=("RENET" "WEB" "RDC")
     log_parts=()
     for prefix in "${local_tags[@]}"; do
         var_name="${prefix}_TAG"
@@ -186,11 +181,11 @@ fi
 # =============================================================================
 log_step "Checking image cache in registry..."
 
-check_image() {
-    local name="$1"
+check_image_path() {
+    local path="$1"
     local tag="$2"
     if command -v docker &>/dev/null; then
-        if docker manifest inspect "ghcr.io/rediacc/elite/${name}:${tag}" &>/dev/null 2>&1; then
+        if docker manifest inspect "${path}:${tag}" &>/dev/null 2>&1; then
             echo "true"
         else
             echo "false"
@@ -201,19 +196,21 @@ check_image() {
     fi
 }
 
+# All images publish flat under ghcr.io/rediacc/<name> (renet, rdc, server).
+check_image() {
+    check_image_path "ghcr.io/rediacc/$1" "$2"
+}
+
 RENET_EXISTS=$(check_image "renet" "$RENET_TAG")
-PLUGINS_EXISTS=$(check_image "plugin-terminal" "$PLUGINS_TAG")
-WEB_EXISTS=$(check_image "web" "$WEB_TAG")
-CLI_EXISTS=$(check_image "cli" "$CLI_TAG")
+WEB_EXISTS=$(check_image "server" "$WEB_TAG")
+RDC_EXISTS=$(check_image "rdc" "$RDC_TAG")
 
 write_output "renet_exists" "$RENET_EXISTS"
-write_output "plugins_exists" "$PLUGINS_EXISTS"
 write_output "web_exists" "$WEB_EXISTS"
-write_output "cli_exists" "$CLI_EXISTS"
+write_output "rdc_exists" "$RDC_EXISTS"
 
 log_info "renet:$RENET_TAG exists=$RENET_EXISTS"
-log_info "plugins:$PLUGINS_TAG exists=$PLUGINS_EXISTS"
 log_info "web:$WEB_TAG exists=$WEB_EXISTS"
-log_info "cli:$CLI_TAG exists=$CLI_EXISTS"
+log_info "rdc:$RDC_TAG exists=$RDC_EXISTS"
 
 log_info "Initialization complete"

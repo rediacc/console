@@ -4,7 +4,7 @@ description: "구성 생성, 머신 추가, 서버 프로비저닝, 인프라 �
 category: "Guides"
 order: 3
 language: ko
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 **설정**은 SSH 자격 증명, 머신 정의, 저장소 매핑을 저장하는 이름이 있는 구성 파일입니다. 프로젝트 워크스페이스로 생각하면 됩니다.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | 옵션 | 필수 | 설명 |
@@ -34,7 +34,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 원격 서버를 설정에 머신으로 등록합니다.
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | 옵션 | 필수 | 기본값 | 설명 |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 머신을 추가한 후 rdc는 서버의 호스트 키를 가져오기 위해 자동으로 `ssh-keyscan`을 실행합니다. 수동으로 실행할 수도 있습니다.
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 등록된 모든 머신을 보려면:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## 3단계: 머신 설정
@@ -61,7 +61,7 @@ rdc config machine list
 필요한 모든 의존성으로 원격 서버를 프로비저닝합니다.
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 이 명령은:
@@ -87,7 +87,7 @@ rdc config machine setup --name server-1
 `--datastore-size`는 백분율(`95%`) 또는 절대 크기(`50G`, `1T`)를 허용합니다. 데이터스토어는 나중에 온라인으로 확장할 수 있습니다.
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 데이터스토어 내부의 저장소는 `repo create` 시점에 독립적으로 크기가 정해지며 실행 중에도 확장할 수 있으므로, 데이터스토어를 미리 과도하게 프로비저닝할 필요가 없습니다.
@@ -98,10 +98,9 @@ rdc datastore resize -m server-1 --size 200G
 
 ```bash
 # 1. 머신의 Ceph 참조를 기록합니다 (pool + RBD 이미지, 비밀 정보 아님)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. Ceph 백엔드에서 데이터스토어를 초기화합니다
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Ceph 키링은 머신에만 보관되며, 설정 파일에는 비밀이 아닌 pool과 이미지 참조만 저장됩니다. Ceph는 Kubernetes 클러스터가 ceph-csi를 통해 사용하는 스토리지 계층이기도 합니다. 클러스터와 퍼시스턴트 볼륨에 대해서는 [Kubernetes](/ko/docs/kubernetes) 가이드를, 두 백엔드의 비교는 [아키텍처](/ko/docs/architecture)를 참조하십시오.
@@ -111,7 +110,7 @@ Ceph 키링은 머신에만 보관되며, 설정 파일에는 비밀이 아닌 p
 서버의 SSH 호스트 키가 변경된 경우(예: 재설치 후) 저장된 키를 새로 고침하십시오.
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 이렇게 하면 해당 머신의 설정에서 `knownHosts` 필드가 업데이트됩니다.
@@ -121,7 +120,7 @@ rdc config machine scan-keys -m server-1
 머신을 추가한 후 접근 가능한지 확인합니다.
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 이렇게 하면 SSH 연결을 열고 명령을 실행합니다. 성공하면 SSH 구성이 올바른 것입니다.
@@ -141,7 +140,7 @@ rdc doctor
 ### 인프라 설정
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ rdc config infra set -m server-1 \
 ### 인프라 보기
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### 서버에 푸시
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 Traefik 리버스 프록시 구성을 생성하여 서버에 배포합니다.
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 이 명령은:
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 클라우드 공급자 추가
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### 머신 프로비저닝
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 이 단일 명령은:
@@ -244,7 +243,7 @@ rdc machine provision --name prod-2 --provider my-linode
 ### 머신 프로비저닝 해제
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 OpenTofu를 통해 VM을 삭제하고 설정에서 제거합니다. `--force`를 사용하지 않으면 확인이 필요합니다. `machine provision`으로 생성된 머신에만 작동합니다.
@@ -252,7 +251,7 @@ OpenTofu를 통해 VM을 삭제하고 설정에서 제거합니다. `--force`를
 ### 공급자 목록
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## 기본값 설정
@@ -261,13 +260,13 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # 기본 머신
-rdc config set --key team --value my-team                   # 설정 저장소의 기본 팀
+rdc config set team my-team                   # 설정 저장소의 기본 팀
 ```
 
 기본 머신을 설정한 후 명령에서 `-m server-1`을 생략할 수 있습니다.
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## 다중 설정
@@ -276,8 +275,8 @@ rdc repo create --name my-app -m my-server --size 10G
 
 ```bash
 # 별도의 설정 생성
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # 특정 설정 사용
 rdc repo list -m server-1 --config production

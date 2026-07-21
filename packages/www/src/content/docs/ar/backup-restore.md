@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "d800519615085ee9"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -23,7 +23,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 إذا كان لديك بالفعل جهاز rclone بعيد مُكوَّن:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 يستورد هذا تكوينات التخزين من ملف إعدادات rclone إلى التكوين الحالي. الأنواع المدعومة: S3 وB2 وGoogle Drive وOneDrive وMega وDropbox وBox وAzure Blob وSwift.
@@ -31,7 +31,7 @@ rdc config storage import --file rclone.conf
 ### عرض وحدات التخزين
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## إرسال نسخة احتياطية
@@ -39,10 +39,10 @@ rdc config storage list
 إرسال نسخة احتياطية من مستودع إلى تخزين خارجي:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-تُحفظ النسخة الاحتياطية في مجلد `hot/` داخل التخزين إذا كان المستودع مُحمَّلًا وقت الإرسال، وفي `cold/` إذا كان غير مُحمَّل. هذا التخطيط نفسه تستخدمه النسخ الاحتياطية المجدولة، لذا يعرض `rdc repo backup list` كل نسخة في جدول واحد.
+تُحفظ النسخة الاحتياطية في مجلد `hot/` داخل التخزين إذا كان المستودع مُحمَّلًا وقت الإرسال، وفي `cold/` إذا كان غير مُحمَّل. هذا التخطيط نفسه تستخدمه النسخ الاحتياطية المجدولة، لذا يعرض `rdc backup list` كل نسخة في جدول واحد.
 
 | الخيار | الوصف |
 |--------|-------|
@@ -62,7 +62,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 سحب نسخة احتياطية لمستودع من تخزين خارجي:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 يتحقق السحب دائماً من تثبيت المستودع الهدف قبل الكتابة. إذا لم يكن مثبتاً، تُلغى العملية.
@@ -82,7 +82,7 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 عرض النسخ الاحتياطية المتاحة في موقع تخزين:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي [النسخ الاحتياطية المجدولة](#scheduled-backups) (`hot/` و `cold/`) لرؤية كل نسخة احتياطية في عرض واحد:
@@ -98,8 +98,8 @@ rdc repo backup list --from my-storage -m server-1
 للتنقيب في وضع واحد، مرّر `--path`:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### تخطيط التخزين
@@ -186,7 +186,7 @@ rdc repo pull shop@server-1 --from my-storage
 
 - `rdc machine status <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
-- السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc machine backup schedule` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
+- السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc backup schedule` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
 
 ### تقدير وقت التوقف للنسخ الاحتياطي البارد
 
@@ -250,8 +250,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 الإعداد الافتراضي القياسي هو تقسيم باستراتيجيتين: تدفق ساخن سريع كل ساعة يلتقط كل مستودع، وتدفق بارد أسبوعي أبطأ يأخذ لقطات متسقة على مستوى التطبيق. تكتب الاستراتيجيتان إلى مجلدات فرعية مختلفة في التخزين (`hot/` و `cold/`) بحيث لا تختلط النسخ الاحتياطية أبداً.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -260,8 +259,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -273,7 +271,7 @@ rdc config backup-strategy set \
 
 | الخيار | الوصف |
 |--------|-------|
-| `--name <name>` | اسم الاستراتيجية (يُستخدم لربط الجهاز) |
+| `<strategy>` (موضعي) | اسم الاستراتيجية (يُستخدم لربطها بجهاز) |
 | `--destination <storage>` | مزود التخزين للرفع إليه |
 | `--cron <expression>` | تعبير cron (مثال: `"0 2 * * *"` يومياً الساعة 2 صباحاً) |
 | `--mode <hot\|cold>` | وضع النسخ الاحتياطي |
@@ -285,14 +283,14 @@ rdc config backup-strategy set \
 ### عرض الاستراتيجيات
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### إزالة استراتيجية
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### ربط الاستراتيجيات بجهاز
@@ -332,8 +330,7 @@ rdc config backup-strategy remove --name weekly-cold
 
 ```bash
 # الاستراتيجية الساخنة: نسخ احتياطي لكل شيء كل ساعة
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -341,8 +338,7 @@ rdc config backup-strategy set \
   --enable
 
 # الاستراتيجية الباردة: نسخ احتياطي لكل شيء أسبوعياً، باستثناء مجموعة البيانات المشتقة الكبيرة
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -361,7 +357,7 @@ rdc config backup-strategy set \
 
 > **إذا كانت البيانات قابلة للإعادة الكاملة**، فكّر فيما إذا كنت بحاجة إلى نسخها احتياطياً على الإطلاق. البديل هو نسخ بيانات المصدر الخام فقط احتياطياً (تفريغات CSV في هذا المثال) وتخطي النسخة المشتقة كلياً. نسخة احتياطية باردة أسبوعية لبيانات المصدر أصغر بكثير وكافية تماماً للاسترداد.
 
-المستودعات غير المستبعدة من أي من الاستراتيجيتين تظهر في كلا المجلدين الفرعيين `hot/` و `cold/`. يُظهر إخراج `rdc repo backup list` المدموج كلا الصفين بحيث يمكنك التحقق من التدفقات التي تغطي أي مستودعات.
+المستودعات غير المستبعدة من أي من الاستراتيجيتين تظهر في كلا المجلدين الفرعيين `hot/` و `cold/`. يُظهر إخراج `rdc backup list` المدموج كلا الصفين بحيث يمكنك التحقق من التدفقات التي تغطي أي مستودعات.
 
 ## عمليات النسخ الاحتياطي
 
@@ -370,8 +366,8 @@ rdc config backup-strategy set \
 ادفع الاستراتيجيات المرتبطة إلى جهاز كمؤقتات systemd:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 النشر هو مُوفِّق حالة. يقرأ ملفات الوحدة الحالية وحالة systemd على الجهاز، ويقارنها بما ستنتجه التهيئة (SHA-256 لكل ملف)، ولا يَمَسّ إلا الوحدات التي تغيّر محتواها فعليًا. إعادة التشغيل دون تغييرات في التهيئة عملية لا تأثير لها: لا كتابات ولا `daemon-reload` ولا اضطراب في المؤقتات.
@@ -387,8 +383,8 @@ rdc machine backup schedule -m server-1 --dry-run
 تشغيل نسخة احتياطية فوراً دون انتظار المؤقت. يعمل حتى لو لم يُنشر أي مؤقت، باستخدام `systemd-run` للتنفيذ الآني:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### عرض حالة النسخ الاحتياطي
@@ -396,15 +392,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 عرض الحالة الحالية لمؤقتات النسخ الاحتياطي ونتائج المهام الأخيرة:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### إلغاء نسخة احتياطية جارية
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## ترحيل المستودعات
@@ -412,14 +408,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 نقل مستودع من جهاز إلى آخر:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | الخيار | الوصف |
 |--------|-------|
-| `--name <repo>` | المستودع المراد ترحيله |
-| `--from <machine>` | الجهاز المصدر |
-| `--to <machine>` | الجهاز الهدف |
+| `<ref>` (موضعي) | مرجع المستودع المراد ترحيله؛ الجزء `@machine` منه يحدد المصدر |
+| `--to <place>` | الجهاز أو العنقود الهدف |
 | `--provision` | توفير المستودع في الوجهة قبل النقل |
 | `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الترحيل |
 | `--skip-dns` | تخطي تحديث سجلات DNS بعد الترحيل |
@@ -432,7 +427,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 تصفح محتويات موقع تخزين:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## أفضل الممارسات

@@ -3909,7 +3909,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 60초 이내에 첫 침투 테스트를 실행하세요.",
           "title": "공격자보다 먼저 취약점을 발견하세요"
@@ -4318,7 +4318,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "Community로 무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 감사 보고서를 생성하세요.",
           "title": "모든 것을 보세요. 아무것도 놓치지 마세요."
@@ -4788,7 +4788,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "무료 Community 에디션으로 시작하세요. 1분 이내에 첫 백업을 검증하세요.",
           "primaryCta": "Community로 무료 시작",
           "tierBadge": "신용카드 불필요",
@@ -5200,7 +5200,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5300,7 +5300,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "무료 Community 에디션으로 시작하세요. 무료로 여러 위치에 복제하세요. 신용카드 불필요.",
           "primaryCta": "Community로 무료 시작",
           "tierBadge": "최대 10개 워크로드 영구 무료",
@@ -5818,7 +5818,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 30초 안에 첫 지속적 침투 테스트를 예약하세요.",
           "title": "공격자들이 노리는 기간을 없애세요"
@@ -6694,7 +6694,7 @@
           "title": "제공되는 기능"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "커뮤니티 플랜으로 무료 시작",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 1분 이내에 첫 번째 키를 생성할 수 있습니다.",
           "title": "암호화 키를 직접 소유하세요"
@@ -7126,7 +7126,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7202,7 +7202,7 @@
           "title": "제공되는 기능"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 최대 10개 워크로드를 무료로 복제할 수 있습니다. 신용카드 불필요.",
           "primaryCta": "커뮤니티 플랜으로 무료 시작",
           "tierBadge": "최대 10개 워크로드 영구 무료",
@@ -7710,7 +7710,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "무료 Community 에디션으로 시작하세요. 5분 이내에 첫 DR 테스트를 실행하세요.",
           "primaryCta": "Community로 무료 시작",
           "tierBadge": "신용카드 불필요",
@@ -8212,7 +8212,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "무료 Community 에디션으로 시작하세요. 최대 10개의 워크로드를 무료로 보호합니다. 신용카드 불필요.",
           "primaryCta": "Community로 무료 시작",
           "tierBadge": "최대 10개 워크로드 무료 영구 제공",
@@ -8743,7 +8743,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "무료 Community 에디션으로 시작하세요. 온디맨드 클로닝 포함.",
           "primaryCta": "무료로 시작",
           "tierBadge": "최대 5개 저장소 무료 · 신용카드 불필요",
@@ -9212,7 +9212,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "무료 Community 에디션으로 시작하세요. 첫 번째 환경을 5분 이내에 복원하세요.",
           "primaryCta": "Community로 무료 시작",
           "tierBadge": "신용카드 불필요",
@@ -9728,7 +9728,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "무료 Community 에디션으로 시작하세요. Git 통합이 포함됩니다.",
           "primaryCta": "무료 시작",
           "tierBadge": "저장소 5개까지 무료 · 신용카드 불필요",
@@ -10618,7 +10618,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "무료 Community 에디션으로 시작하세요. 암호화된 마이그레이션이 포함됩니다.",
           "primaryCta": "무료 시작",
           "tierBadge": "저장소 5개까지 무료 · 신용카드 불필요",
@@ -11133,7 +11133,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "무료 Community 에디션으로 시작하세요. 프로덕션 패리티가 포함됩니다.",
           "primaryCta": "무료 시작",
           "tierBadge": "저장소 5개까지 무료 · 신용카드 불필요",
@@ -11511,7 +11511,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11614,7 +11614,7 @@
           "title": "제공되는 혜택"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Community로 무료 시작",
           "description": "무료 Community 에디션으로 시작하세요. 최대 10개 워크로드를 무료로 보호하세요. 신용카드 불필요.",
           "title": "복구가 공격보다 느려지게 두지 마세요"
@@ -11821,7 +11821,7 @@
           "overline": "작동 방식",
           "steps": [
             {
-              "description": "rdc repo backup list --verified를 실행하여 마지막 깨끗한 스냅샷을 찾으세요.",
+              "description": "rdc backup list를 실행하여 마지막 깨끗한 스냅샷을 찾으세요.",
               "icon": "eye",
               "title": "탐지"
             },
@@ -12647,7 +12647,7 @@
           "title": "제공되는 기능"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 비용 없이 복제, 테스트, 검증하세요. 신용카드 불필요.",
           "primaryCta": "커뮤니티 에디션으로 무료 시작",
           "tierBadge": "워크로드 10개까지 영구 무료",
@@ -13161,7 +13161,7 @@
           "title": "제공되는 기능"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "커뮤니티 에디션으로 무료 시작",
           "description": "무료 커뮤니티 에디션으로 시작하세요. 어디에나 배포하세요. 언제든지 마이그레이션하세요. 신용카드 불필요.",
           "title": "인프라의 주도권을 되찾으세요"
@@ -13378,7 +13378,7 @@
               "title": "표준 형식"
             },
             {
-              "description": "rdc repo push production --to-machine new-provider -m primary --checkpoint를 실행하세요. 증분 전송. 다운타임 없음.",
+              "description": "rdc repo push production --to new-provider --checkpoint를 실행하세요. 증분 전송. 다운타임 없음.",
               "icon": "arrow-right-circle",
               "title": "단일 명령어 마이그레이션"
             },

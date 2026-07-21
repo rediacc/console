@@ -4,7 +4,7 @@ description: "Работайте с Kubernetes в духе репозитори�
 category: "Guides"
 order: 6
 language: ru
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -39,34 +39,32 @@ Rediacc переворачивает привычную картину «кла�
 
 ```bash
 # Объявить кластер с пулами (пока ничего не провизионируется)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # Провизионировать участников пулов, инициализировать renet на каждом, установить компоненты (сначала Ceph)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 Роли пулов: `ceph`, `k8s-server`, `k8s-agent` и `hyperconverged` (явное согласие, поскольку целевые показатели памяти Ceph и пороги вытеснения kubelet конкурируют за одну и ту же RAM). Каждый пул несёт аппаратную асимметрию в виде размера пула и параметров диска: узлы Ceph с упором на диск, узлы Kubernetes с упором на CPU/RAM.
 
-Участники пулов материализуются в `resources.machines` как `<cluster>-<pool>-<n>` с обратной ссылкой, поэтому **работают все существующие команды `-m`**: `rdc machine query`, `rdc term connect`, команды репозиториев и стратегии резервного копирования видят узлы кластера как обычные машины.
+Участники пулов материализуются в `resources.machines` как `<cluster>-<pool>-<n>` с обратной ссылкой, поэтому **работают все существующие команды `-m`**: `rdc machine status`, `rdc term connect`, команды репозиториев и стратегии резервного копирования видят узлы кластера как обычные машины.
 
 Облачные провайдеры провизионируют через [OpenTofu](https://opentofu.org/), следуя тому же реестру `ProviderMapping`, который использует `rdc machine provision`, расширенному блоком приватной сети (VLAN или VPC, MTU для установки, именование приватного сетевого интерфейса). Локальный KVM представляет собой всегда доступный путь для тестирования через `rdc ops`.
 
 ```bash
 # Просмотр кластеров
 rdc cluster status                 # список всех кластеров
-rdc cluster status --name prod     # полная конфигурация одного кластера
+rdc cluster status prod     # полная конфигурация одного кластера
 
 # Увеличение или уменьшение пула (добавляет/удаляет машины, присоединяет/выводит узлы)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# Установка компонентов на уже провизионированных участниках
-rdc cluster install --name prod
 
 # Демонтаж провизионированных участников и удаление кластера из конфигурации
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### Получение kubeconfig
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 Kubeconfig никогда не сохраняется в вашем файле конфигурации (он большой и ротируется). Он получается по запросу через SSH и кешируется локально с правами `0600`, следуя тому же паттерну бокового состояния, что и рабочие каталоги OpenTofu и кеш сертификатов.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # Выводит: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ rdc cluster kubeconfig --name prod
 
 ```bash
 # Docker-репозиторий (без изменений): изолированный Docker-демон на машине
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetes-репозиторий: пространство имён "shop" плюс его хранилище, внутри кластера
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 Глаголы репозитория являются единой поверхностью для работы в рамках репозитория. Благодаря воронке разрешения цели практически весь набор команд репозитория принимает `--cluster` и становится совместимым с кластерами: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status` и `log`. Цель-кластер разрешается в его управляющий узел плюс контекст KUBECONFIG, закреплённый на пространство имён репозитория, что аналогично разрешению машины в `DOCKER_HOST` плюс рабочий каталог.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # экспортировать KUBECONFIG, затем использовать kubectl напрямую
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # экспортировать KUBECONFIG, затем использовать kubectl напрямую
 ```
 
 Узлы кластера также материализуются в `resources.machines`, поэтому вы можете подключиться по SSH к конкретному узлу обычной командой `rdc term connect <cluster>-<pool>-<n>`.
@@ -120,7 +118,7 @@ up() {
 `rdc repo fork` для Kubernetes-репозитория всегда копирует данные, всегда мгновенно. Нет флага `--full` и вариантов.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 Это создаёт пространство имён `shop-joseph` в том же кластере, клонирует каждый том по схеме copy-on-write (клон RBD на Ceph, reflink файлов-образов PV на локальном бэкенде) и разворачивает там рабочие нагрузки. URL форка активен мгновенно под wildcard-сертификатом родителя, поэтому новый сертификат или DNS-запись не выпускаются.
@@ -138,10 +136,10 @@ rdc repo fork --parent shop --tag joseph --cluster prod
 
 ```bash
 # Клонировать целый кластер, включая данные его репозиториев, в новый кластер
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # Перенести целый кластер, включая данные его репозиториев, на другую машину или в другой дата-центр
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 Обе операции координируют copy-on-write образов кластера плюс каждого образа PV репозитория, а затем переписывают идентичность узлов, чтобы клон или перенесённый кластер поднялся исправно на своих новых адресах. Поскольку k3s хранит состояние control plane в своём встроенном хранилище данных, сам образ кластера и есть снапшот. Порядок консистентности таков: сначала control plane, затем PV, затем агенты.

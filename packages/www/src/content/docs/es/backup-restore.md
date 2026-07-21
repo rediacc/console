@@ -4,8 +4,8 @@ description: "Respalde repositorios cifrados en almacenamiento compatible con rc
 category: Guides
 order: 7
 language: es
-sourceHash: "d800519615085ee9"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
 ---
 
 # Respaldo y Restauración
@@ -21,7 +21,7 @@ Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc admi
 Si ya tiene un remote de rclone configurado:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 Esto importa configuraciones de almacenamiento desde un archivo de configuración rclone a la configuración actual. Tipos compatibles: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
@@ -29,7 +29,7 @@ Esto importa configuraciones de almacenamiento desde un archivo de configuració
 ### Ver Almacenamientos
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Enviar un Respaldo
@@ -37,10 +37,10 @@ rdc config storage list
 Envíe un respaldo del repositorio al almacenamiento externo:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio está montado al momento del push, y en `cold/` cuando está desmontado. Es el mismo esquema que usan los respaldos programados, por lo que `rdc repo backup list` muestra todos los respaldos en una sola tabla.
+El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio está montado al momento del push, y en `cold/` cuando está desmontado. Es el mismo esquema que usan los respaldos programados, por lo que `rdc backup list` muestra todos los respaldos en una sola tabla.
 
 | Opción | Descripción |
 |--------|-------------|
@@ -60,7 +60,7 @@ El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio 
 Descargue un respaldo del repositorio desde almacenamiento externo:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Pull siempre verifica que el repositorio de destino esté montado antes de escribir. Si no está montado, la operación se cancela.
@@ -80,7 +80,7 @@ Pull siempre verifica que el repositorio de destino esté montado antes de escri
 Ver los respaldos disponibles en una ubicación de almacenamiento:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 La salida es una tabla unificada que combina ambas [carpetas de respaldos programados](#respaldos-programados) (`hot/` y `cold/`) para que vea cada respaldo en una sola vista:
@@ -96,8 +96,8 @@ La salida es una tabla unificada que combina ambas [carpetas de respaldos progra
 Para profundizar en un solo modo, pase `--path`:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Disposición de almacenamiento
@@ -184,7 +184,7 @@ Un respaldo frío ejecuta tres fases por repositorio incluido: **detener - snaps
 
 - `rdc machine status <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
-- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocación directa `rdc machine backup schedule`) emiten una línea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacío es el objetivo de grep.
+- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocación directa `rdc backup schedule`) emiten una línea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacío es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
 
@@ -248,8 +248,7 @@ Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) ha
 El valor predeterminado canónico es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que toma snapshots consistentes a nivel de aplicación. Las dos estrategias escriben en subcarpetas distintas del almacenamiento (`hot/` y `cold/`) por lo que los flujos nunca se mezclan.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -271,7 +269,7 @@ El filtro `--exclude` en la estrategia cold es la vía de escape recomendada par
 
 | Opción | Descripción |
 |--------|-------------|
-| `--name <name>` | Nombre de la estrategia (usado para la vinculación de la máquina) |
+| `<strategy>` (posicional) | Nombre de la estrategia (usado para la vinculación a la máquina) |
 | `--destination <storage>` | Proveedor de almacenamiento al que cargar |
 | `--cron <expression>` | Expresión cron (p. ej. `"0 2 * * *"` para diario a las 2 AM) |
 | `--mode <hot\|cold>` | Modo de respaldo |
@@ -283,14 +281,14 @@ El filtro `--exclude` en la estrategia cold es la vía de escape recomendada par
 ### Ver Estrategias
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Eliminar una Estrategia
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Vincular Estrategias a una Máquina
@@ -330,8 +328,7 @@ Cada estrategia puede llevar filtros `--include` y `--exclude`. Los nombres de r
 
 ```bash
 # Estrategia hot: respaldar todo cada hora
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # Estrategia cold: respaldar todo semanalmente, excluyendo el gran conjunto de datos derivado
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ Excluya un repositorio de la ejecución de alta frecuencia cuando:
 
 > **Si los datos son puramente regenerables**, considere si necesita respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
 
-Los repositorios que no se excluyen de ninguna estrategia aparecen en las subcarpetas `hot/` y `cold/` del almacenamiento. La salida combinada de `rdc repo backup list` muestra ambas filas para verificar qué flujos cubren qué repositorios.
+Los repositorios que no se excluyen de ninguna estrategia aparecen en las subcarpetas `hot/` y `cold/` del almacenamiento. La salida combinada de `rdc backup list` muestra ambas filas para verificar qué flujos cubren qué repositorios.
 
 ## Operaciones de Respaldo
 
@@ -368,8 +364,8 @@ Los repositorios que no se excluyen de ninguna estrategia aparecen en las subcar
 Envíe las estrategias vinculadas a una máquina como temporizadores systemd:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 El despliegue es un reconciliador de estado. Lee los archivos de unidad actuales y el estado de systemd en la máquina, los compara con lo que produciría la configuración (SHA-256 por archivo) y solo toca las unidades cuyo contenido realmente cambió. Volver a ejecutarlo sin cambios de configuración es un no-op: sin escrituras, sin `daemon-reload`, sin rotación de temporizadores.
@@ -385,8 +381,8 @@ Si actualmente se está ejecutando una copia de seguridad para una estrategia qu
 Ejecute un respaldo inmediatamente sin esperar el temporizador. Funciona incluso si no se han desplegado temporizadores, usando `systemd-run` para ejecución ad-hoc:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### Ver Estado del Respaldo
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Muestre el estado actual de los temporizadores de respaldo y resultados de trabajos recientes:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Cancelar un Respaldo en Ejecución
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Migración de Repositorios
@@ -410,14 +406,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Mueva un repositorio de una máquina a otra:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--name <repo>` | Repositorio a migrar |
-| `--from <machine>` | Máquina de origen |
-| `--to <machine>` | Máquina de destino |
+| `<ref>` (posicional) | Ref del repositorio a migrar; su `@machine` indica el origen |
+| `--to <place>` | Máquina o clúster de destino |
 | `--provision` | Provisionar el repositorio en el destino antes de transferir |
 | `--checkpoint` | Crear un checkpoint CRIU antes de migrar |
 | `--skip-dns` | Omitir la actualización de registros DNS después de la migración |
@@ -430,7 +425,7 @@ La migración transfiere los datos del repositorio cifrado vía rsync. El reposi
 Explore el contenido de una ubicación de almacenamiento:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## Mejores Prácticas

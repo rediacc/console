@@ -20,16 +20,16 @@ Transfer files between your workstation and a remote repository using rsync over
 
 ```bash
 # Directory (contents merged into remote)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Single file dropped into a remote directory (basename preserved)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Single file, explicit destination path
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Multiple sources in one call
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` and `--remote-file` are mutually exclusive. `--remote-file` requires exactly one `--local` path that points at a file.
@@ -42,16 +42,16 @@ Use `--remote` for a directory (the default) or `--remote-file` for a single fil
 
 ```bash
 # Directory
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Single file: --local must be an existing directory
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Check Sync Status
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Options
@@ -59,7 +59,7 @@ rdc repo sync status -m server-1 -r my-app
 | Option | Description |
 |--------|-------------|
 | `-m, --machine <name>` | Target machine |
-| `-r, --repository <name>` | Target repository |
+| `<ref>` (positional) | Target repository ref: `name`, `name:tag`, optionally `@machine` |
 | `--local <paths...>` | One or more local file or directory paths (upload) or local destination directory (download) |
 | `--remote <path>` | Remote directory (relative to repository mount) |
 | `--remote-file <path>` | Remote file path for single-file uploads or downloads (alternative to `--remote`) |
@@ -79,8 +79,8 @@ Open an interactive SSH session to a machine or into a repository's environment.
 The fastest way to connect:
 
 ```bash
-rdc term connect -m server-1                    # Connect to a machine
-rdc term connect -m server-1 -r my-app             # Connect to a repository
+rdc term connect server-1           # Connect to a machine
+rdc term connect my-app             # Connect to a repository
 ```
 
 ### Run a Command
@@ -88,8 +88,8 @@ rdc term connect -m server-1 -r my-app             # Connect to a repository
 Execute a command without opening an interactive session:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 When connecting to a repository, `DOCKER_HOST` is automatically set to the repository's isolated Docker socket, so `docker ps` shows only that repository's containers.
@@ -99,38 +99,42 @@ When connecting to a repository, `DOCKER_HOST` is automatically set to the repos
 Or use the `connect` subcommand for the same result, with explicit flags:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Container Actions
 
-Interact directly with a running container:
+Container work has its own commands: `repo logs` for logs and `repo exec` for a command or a shell. Both take the repository ref and name the container with `-c`.
 
 ```bash
 # Open a shell inside a container
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # View container logs
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Follow logs in real-time
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
-
-# View container stats
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo logs my-app -c <container> --follow
 
 # Execute a command in a container
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Option | Description |
-|--------|-------------|
-| `--container <id>` | Target Docker container ID |
-| `--container-action <action>` | Action: `terminal` (default), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Number of log lines to show (default: 50) |
-| `--follow` | Follow logs continuously |
-| `--external` | Use external terminal instead of inline SSH |
+| Option | Command | Description |
+|--------|---------|-------------|
+| `-c, --container <name>` | both | Target container within the repository |
+| `--lines <n>` | `repo logs` | Number of log lines to show |
+| `-f, --follow` | `repo logs` | Follow logs continuously |
+| `--timestamps` | `repo logs` | Prefix each line with a timestamp |
+| `-i, --interactive` | `repo exec` | Keep stdin open (needed for a shell) |
+| `-u, --user <user>` | `repo exec` | Run as a specific user |
+
+There is no dedicated stats command. For container state across a machine, use `machine status`:
+
+```bash
+rdc machine status server-1 --containers
+```
 
 ## VS Code Integration (vscode)
 
@@ -139,7 +143,7 @@ Open a remote SSH session in VS Code, pre-configured with the correct SSH settin
 ### Connect to a Repository
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 This command:
@@ -177,7 +181,7 @@ Verifies VS Code installation, Remote SSH extension, and active connections.
 No local VS Code? Serve the editor from inside the repository sandbox and open it in any browser:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 This command:
@@ -188,8 +192,8 @@ This command:
 The server keeps running after you close the tunnel; reconnecting reuses it. Manage it with:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Option | Description |

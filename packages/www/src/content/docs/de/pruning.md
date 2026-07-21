@@ -4,7 +4,7 @@ description: "Verwaiste Backups, überholte Snapshots, Repo-Images und lokale Ko
 category: "Guides"
 order: 12
 language: de
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ Durchsucht einen Speicheranbieter und löscht Backups, deren GUIDs in keiner lok
 
 ```bash
 # Nur Vorschau — zeigt, was gelöscht würde
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Verwaiste Backups tatsächlich löschen (Standardverhalten)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Schonfrist überschreiben (Standard 7 Tage)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Mount-Safety-Prüfung übergehen (vorsichtig verwenden)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` ist erforderlich, weil die rclone-Aufrufe auf der Executor-Maschine laufen, nicht auf Ihrem Laptop. Von Clients wird nicht erwartet, dass sie rclone lokal installiert haben. Die Speicher-Zugangsdaten kommen weiterhin aus Ihrer lokalen Konfiguration; die Maschine ist lediglich der rclone-Runner.
@@ -82,10 +82,10 @@ Der authorized_keys-Scan betrachtet `/home/*/.ssh/authorized_keys` und `/root/.s
 
 ```bash
 # Dry-run, zeigt, was entfernt würde (keine Änderungen)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Bereinigung ausführen
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Kaskadierende Bereinigung.** Einige Kategorien hängen von früheren ab. Beispielsweise kann das Löschen leerer Mount-Verzeichnisse zusätzliche verwaiste Sandbox-Einträge freilegen, deren zugehöriger Mount gerade verschwunden ist. Ein zweiter Aufruf von `rdc machine prune` erfasst die Kaskade und schließt die Bereinigung ab. Der abschließende Dry-Run endet mit `No orphaned resources found. Datastore is clean.`, wenn nichts mehr zu tun ist.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 Mit `--orphaned-repos` löscht die CLI zusätzlich Repository-Images auf der Maschine, die in **keiner** lokalen Konfigurationsdatei erscheinen.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 Dies ist **grob**. Es löscht alles, was nicht in Ihrer lokalen Konfiguration steht, einschließlich legitimer Forks, die von anderen Tools oder dem CLI-Checkout eines anderen Operators verwaltet werden. Wenn der renet-`.interim/state`-Mirror ein Repo korrekt als Fork erkennt, die lokale Konfiguration es aber noch nie gesehen hat, entfernt diese Phase es trotzdem. Bevorzugen Sie Phase 3 (`--prune-unknown`), wenn Sie konservativ vorgehen möchten.
@@ -106,8 +106,8 @@ Dies ist **grob**. Es löscht alles, was nicht in Ihrer lokalen Konfiguration st
 Mit `--prune-unknown` löscht die CLI nur Repos, die **beide** Signale nicht klassifizieren können: nicht in irgendeiner lokalen Konfiguration **und** kein als Fork markierter Eintrag im `.interim/state`-Mirror der Maschine (siehe [Repositories. `Type`-Spalte](/de/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 In der Praxis ist `--prune-unknown` das, was Sie für die routinemäßige Bereinigung wollen; `--orphaned-repos` ist nur dann korrekt, wenn Sie sicher sind, dass Ihre lokale Konfiguration die vollständige und autoritative Liste jedes Repos auf der Maschine ist. Sowohl Pre-Mirror-Legacy-Waisen als auch Repos, deren Konfigurationseintrag versehentlich gelöscht wurde, fallen in den "unknown"-Bereich. Sie sind tatsächlich unklar, und das chirurgische Flag verlangt vom Operator, dies ausdrücklich zu bestätigen.
@@ -116,7 +116,7 @@ Der Mount-Safety-Preflight läuft auch in dieser Phase: ein Repo, das derzeit au
 
 ```bash
 # Kombiniert: vollständige Maschinenbereinigung mit dem chirurgischen Fork-bewussten Pfad
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - Aktive Ressourcen (Maschinen, Speicher, Repositories, Backup-Strategien, Cloud-Anbieter).
 - Zugangsdaten, der Account-Block, der Encryption-Block, defaults.
 - Storage-`vaultContent` (einschließlich abgelaufener OneDrive-`access_token`. Der refresh_token erzeugt weiterhin neue; eine Bereinigung würde eine erneute Authentifizierung erzwingen).
-- `knownHosts`-Einträge (der Auto-Refresh-Pfad ist `rdc config machine scan-keys`).
+- `knownHosts`-Einträge (der Auto-Refresh-Pfad ist `rdc machine scan-keys`).
 - Das komprimierte Cert-Blob-Array (`infra.acmeCertCache.<base>.data[]`) wird automatisch aus der bereinigten Cert-Liste neu aufgebaut; Sie verlieren keine Kette, die noch einen behaltenen Namen abdeckt.
 
 ### Beispiel aus der Praxis
@@ -180,7 +180,7 @@ Cert-Namen, deren Anker eine aktive Maschine, ein aktives Repo oder eine aktive 
 Der Mirror unter `.interim/state/<guid>/.rediacc.json`, der `--prune-unknown` und die `Type`-Spalte in `rdc repo list -m` antreibt, wird geschrieben:
 
 - **Beim Forken** (`rdc repo fork`). Sofort, noch bevor der Fork überhaupt eingebunden wird.
-- **Bei jedem State-Save** (`rdc repo mount` und jede Operation, die den Repo-Zustand aktualisiert). Für Repos, die vor Auslieferung des Mirror-Codes erstellt wurden.
+- **Bei jedem State-Save** (`rdc repo up` und jede Operation, die den Repo-Zustand aktualisiert). Für Repos, die vor Auslieferung des Mirror-Codes erstellt wurden.
 
 Repositories, die **vor Existenz des Mirrors erstellt und seit dem Upgrade nicht erneut eingebunden** wurden, haben keine Mirror-Datei. Sie erscheinen als `unknown` in `rdc repo list -m`, obwohl einige davon legitime Forks sind. Um dies für Legacy-Waisen zu beheben, führen Sie den einmaligen Backfill auf der Maschine aus:
 
@@ -238,6 +238,6 @@ Das CLI-Flag `--grace-days` überschreibt diesen Wert, wenn es angegeben wird.
 - **`--prune-unknown` gegenüber `--orphaned-repos` bevorzugen.** Das chirurgische Flag respektiert den renet-Mirror; das grobe Flag löscht bereitwillig Forks, die andere Tools erstellt haben.
 - **Großzügige Schonfristen für Produktion verwenden.** Die standardmäßige 7-Tage-Schonfrist eignet sich für die meisten Workflows. Für Produktionsumgebungen mit seltenen Wartungsfenstern sollten Sie 14 oder 30 Tage in Betracht ziehen.
 - **Storage Prune nach Backup-Läufen planen.** Kombinieren Sie `storage prune` mit Ihrem Backup-Zeitplan, um die Speicherkosten ohne manuellen Eingriff unter Kontrolle zu halten.
-- **Machine Prune mit dem Backup-Zeitplan kombinieren.** Nach dem Bereitstellen von Backup-Zeitplänen (`rdc machine backup schedule`) fügen Sie eine periodische Maschinenbereinigung hinzu, um veraltete Snapshots und verwaiste Datastore-Artefakte zu bereinigen.
+- **Machine Prune mit dem Backup-Zeitplan kombinieren.** Nach dem Bereitstellen von Backup-Zeitplänen (`rdc backup schedule`) fügen Sie eine periodische Maschinenbereinigung hinzu, um veraltete Snapshots und verwaiste Datastore-Artefakte zu bereinigen.
 - **`config prune` regelmäßig ausführen.** Das Anwachsen der lokalen Konfiguration (insbesondere des Cert-Cache) geschieht stillschweigend; ein vierteljährliches `config prune --dry-run` reicht, um es zu erfassen.
 - **Vor Verwendung von `--force` oder `--force-delete-mounted` prüfen.** Beide Flags umgehen Sicherheitsprüfungen. Verwenden Sie `--force` nur, wenn Sie sicher sind, dass keine andere Konfiguration die betreffenden Repos referenziert; verwenden Sie `--force-delete-mounted` nur, wenn Sie sicher sind, dass der Live-Zustand auf der Maschine falsch ist.

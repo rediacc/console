@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "d800519615085ee9"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "e4a4e0de5"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -24,7 +24,7 @@ Yedekleri göndermeden önce bir depolama sağlayıcısı kaydedin. Rediacc, rcl
 Zaten yapılandırılmış bir rclone uzak bağlantınız varsa:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevcut yapılandırmaya aktarır. Desteklenen türler: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ve Swift.
@@ -32,7 +32,7 @@ Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevc
 ### Depolamaları Görüntüleme
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Yedek Gönderme
@@ -40,10 +40,10 @@ rdc config storage list
 Bir depo yedeğini harici depolamaya gönderin:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değilse `cold/` klasörüne yerleşir. Bu, zamanlanmış yedeklemelerin kullandığı düzenle aynıdır; dolayısıyla `rdc repo backup list` her yedeği tek bir tabloda gösterir.
+Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değilse `cold/` klasörüne yerleşir. Bu, zamanlanmış yedeklemelerin kullandığı düzenle aynıdır; dolayısıyla `rdc backup list` her yedeği tek bir tabloda gösterir.
 
 | Seçenek | Açıklama |
 |---------|----------|
@@ -63,7 +63,7 @@ Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değils
 Harici depolamadan bir depo yedeğini çekin:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Pull, yazmadan önce her zaman hedef deponun bağlı olup olmadığını kontrol eder. Bağlı değilse işlem iptal edilir.
@@ -83,7 +83,7 @@ Pull, yazmadan önce her zaman hedef deponun bağlı olup olmadığını kontrol
 Bir depolama konumundaki mevcut yedekleri görüntüleyin:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 Çıktı, hem [zamanlanmış yedekleme klasörlerini](#zamanlanmis-yedeklemeler) (`hot/` ve `cold/`) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz:
@@ -99,8 +99,8 @@ rdc repo backup list --from my-storage -m server-1
 Tek bir moda inmek için `--path` geçirin:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Depolama düzeni
@@ -187,7 +187,7 @@ Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdu
 
 - `rdc machine status <machine> --containers` çalışma durumunu gösterir. Beklenen kümeyle karşılaştırın.
 - Makinedeki `/var/run/rediacc/cold-backup-<guid>.status.json` dosyasını kontrol edin. `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` ile inceleyebilirsiniz. Eski bir `startedAt` ile birlikte `success: false`, son yedeklemenin temiz tamamlanmadığı anlamına gelir.
-- renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc machine backup schedule` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
+- renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc backup schedule` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
 
 ### Soğuk Yedekleme Kesinti Süresini Tahmin Etme
 
@@ -251,8 +251,7 @@ Kesintiler güvenlidir. Servisi durdurmak (veya makineyi yeniden başlatmak) yed
 Standart varsayılan, iki stratejili bir bölüştürmedir: her depoyu yakalayan hızlı bir saatlik sıcak akış ve uygulama tutarlı anlık görüntüler alan daha yavaş bir haftalık soğuk akış. İki strateji farklı depolama alt klasörlerine (`hot/` ve `cold/`) yazar, böylece yedeklemeler asla karışmaz.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -261,8 +260,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -274,7 +272,7 @@ Soğuk strateji üzerindeki `--exclude` filtresi, haftalık bakım pencerenize s
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--name <name>` | Strateji adı (makine bağlama için kullanılır) |
+| `<strategy>` (konumsal) | Strateji adı (makineye bağlamak için kullanılır) |
 | `--destination <storage>` | Yüklenecek depolama sağlayıcısı |
 | `--cron <expression>` | Cron ifadesi (örn. `"0 2 * * *"` günlük saat 02:00 için) |
 | `--mode <hot\|cold>` | Yedekleme modu |
@@ -286,14 +284,14 @@ Soğuk strateji üzerindeki `--exclude` filtresi, haftalık bakım pencerenize s
 ### Stratejileri Görüntüleme
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Strateji Kaldırma
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Stratejileri Makineye Bağlama
@@ -333,8 +331,7 @@ Her strateji `--include` ve `--exclude` filtreleri taşıyabilir. Bir `--exclude
 
 ```bash
 # Sıcak strateji: her şeyi saatlik olarak yedekle
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -342,8 +339,7 @@ rdc config backup-strategy set \
   --enable
 
 # Soğuk strateji: büyük türetilmiş veri kümesi hariç her şeyi haftalık yedekle
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -362,7 +358,7 @@ Yüksek frekanslı çalıştırmadan bir depoyu hariç tutun:
 
 > **Veriler tamamen yeniden üretilebiliyorsa**, hiç yedeklemeniz gerekip gerekmediğini düşünün. Bir alternatif, yalnızca ham kaynak girdileri (bu örnekte CSV dökümleri) yedeklemek ve türetilmiş kopyayı tamamen atlamaktır. Kaynak girdilerin haftalık soğuk yedeklemesi çok daha küçük ve kurtarma için tamamen yeterlidir.
 
-Her iki stratejiden de hariç tutulmayan depolar hem `hot/` hem de `cold/` depolama alt klasörlerinde görünür. Birleşik `rdc repo backup list` çıktısı her iki satırı da gösterir; böylece hangi akışların hangi depoları kapsadığını doğrulayabilirsiniz.
+Her iki stratejiden de hariç tutulmayan depolar hem `hot/` hem de `cold/` depolama alt klasörlerinde görünür. Birleşik `rdc backup list` çıktısı her iki satırı da gösterir; böylece hangi akışların hangi depoları kapsadığını doğrulayabilirsiniz.
 
 ## Yedekleme İşlemleri
 
@@ -371,8 +367,8 @@ Her iki stratejiden de hariç tutulmayan depolar hem `hot/` hem de `cold/` depol
 Bağlı stratejileri bir makineye systemd zamanlayıcıları olarak gönderin:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 Dağıtım bir durum uzlaştırıcıdır. Makinedeki mevcut birim dosyalarını ve systemd durumunu okur, yapılandırmanın üreteceği içerikle karşılaştırır (dosya başına SHA-256) ve yalnızca içeriği gerçekten değişen birimlere dokunur. Yapılandırma değişikliği olmadan yeniden çalıştırmak bir no-op'tur: yazma yok, `daemon-reload` yok, zamanlayıcı gürültüsü yok.
@@ -388,8 +384,8 @@ Güncellemek veya kaldırmak üzere olduğunuz bir strateji için şu anda bir y
 Zamanlayıcıyı beklemeden hemen yedekleme başlatın. `systemd-run` kullanarak geçici yürütme ile zamanlayıcı dağıtılmamış olsa bile çalışır:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### Yedekleme Durumunu Görüntüleme
@@ -397,15 +393,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Yedekleme zamanlayıcılarının mevcut durumunu ve son iş sonuçlarını gösterir:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Çalışan Yedeklemeyi İptal Etme
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Depo Migrasyonu
@@ -413,14 +409,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Bir depoyu bir makineden diğerine taşıyın:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--name <repo>` | Migrasyon yapılacak depo |
-| `--from <machine>` | Kaynak makine |
-| `--to <machine>` | Hedef makine |
+| `<ref>` (konumsal) | Taşınacak depo referansı; içindeki `@machine` kaynağı belirtir |
+| `--to <place>` | Hedef makine veya küme |
 | `--provision` | Aktarımdan önce hedefte depoyu hazırla |
 | `--checkpoint` | Migrasyondan önce CRIU checkpoint oluştur |
 | `--skip-dns` | Migrasyondan sonra DNS kaydı güncellemeyi atla |
@@ -433,7 +428,7 @@ Migrasyon, şifrelenmiş depo verilerini rsync aracılığıyla aktarır. Kaynak
 Bir depolama konumunun içeriğini tarayın:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## En İyi Uygulamalar

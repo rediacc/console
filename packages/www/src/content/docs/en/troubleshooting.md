@@ -70,7 +70,7 @@ CRIU is the known case that hits AppArmor. renet auto-sets `security_opt: apparm
 
 ### btrfs module missing (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-If `rdc config machine setup` or `renet system check-btrfs` fails with:
+If `rdc machine setup` or `renet system check-btrfs` fails with:
 
 ```
 Module btrfs not found
@@ -92,13 +92,13 @@ Module btrfs not found
 - Check container logs using the repository's Docker socket:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Or view all containers:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Permission Denied Errors
@@ -113,7 +113,7 @@ Each repository has its own Docker daemon. When running Docker commands manually
 
 ```bash
 # Using rdc term (auto-configured):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Or manually with the socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -130,7 +130,7 @@ This is intentional. Rediacc's networking model is **host networking for every s
 **To get network access in an ad-hoc container, use host networking:**
 
 ```bash
-# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+# Inside a repository shell (rdc term connect <repo>@<machine>)
 docker run --rm --network host -it ubuntu bash
 # Now apt update, curl, pip install all work.
 ```
@@ -179,7 +179,7 @@ If `rdc term` fails to open a terminal window:
 
 - Use inline mode with `-c` to run commands directly:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Force external terminal with `--external` if inline mode has issues
 - On Linux, ensure you have `gnome-terminal`, `xterm`, or another terminal emulator installed

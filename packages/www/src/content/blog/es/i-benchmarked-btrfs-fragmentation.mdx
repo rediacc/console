@@ -14,11 +14,11 @@ tags:
   - benchmarks
 featured: false
 language: es
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **Resumen.** `rdc machine query --storage-health` de Rediacc reporta una cifra de fragmentación por repositorio. En una máquina de producción, marca a GitLab con aproximadamente 19.650 extents por gigabyte. El instinto es defragmentar. Yo lo medí en su lugar.
+> **Resumen.** `rdc machine status --storage-health` de Rediacc reporta una cifra de fragmentación por repositorio. En una máquina de producción, marca a GitLab con aproximadamente 19.650 extents por gigabyte. El instinto es defragmentar. Yo lo medí en su lugar.
 >
 > - Un repositorio fragmentado **16 veces más** que su vecino leyó a **149 MB/s** frente a 143 MB/s en lecturas secuenciales, y fue **más rápido** en lecturas aleatorias de 4K (719 vs 957 microsegundos).
 > - El dispositivo es flash. La fragmentación daña los discos giratorios mediante el tiempo de búsqueda. En un SSD casi no queda ningún mecanismo para que cause daño.

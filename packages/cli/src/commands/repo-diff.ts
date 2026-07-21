@@ -196,8 +196,8 @@ function renderContent(c: ContentDiffResult): void {
   }
 }
 
-/** Resolve the (base, target) GUID pair. --name is the target (new side);
- * --base is the old side, defaulting to the parent of --name. */
+/** Resolve the (base, target) GUID pair. The positional ref is the target
+ * (new side); --base is the old side, defaulting to the ref's parent. */
 async function resolveBaseTarget(
   name: string,
   baseOpt: string | undefined

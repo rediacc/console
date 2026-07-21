@@ -4,7 +4,7 @@ description: 在 Rediacc 平台上构建应用程序的基本规则和约定。�
 category: Guides
 order: 5
 language: zh
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -111,7 +111,7 @@ Renet 会自动将以下变量注入每个容器：
 - **依赖感知恢复**：使用 compose 的 `depends_on` 先启动数据库（等待 healthy），然后再通过 CRIU 恢复应用容器。
 - **TCP 连接在恢复后变为过期**，应用程序必须处理 `ECONNRESET` 并重新连接。在任何受支持的流程中，CRIU 都不会跨恢复保留活动的 TCP 连接状态。
 - **Docker 实验模式**在每个仓库的守护进程上自动启用。
-- **CRIU** 在 `rdc config machine setup` 期间安装。
+- **CRIU** 在 `rdc machine setup` 期间安装。
 - **`/etc/criu/runc.conf`** 默认配置了 `tcp-established`。
 - **容器安全设置为已标记容器自动注入**，`renet compose` 会为带有 `rediacc.checkpoint=true` 的容器添加以下内容：
   - `cap_add`：`CHECKPOINT_RESTORE`、`SYS_PTRACE`、`NET_ADMIN`（内核 5.9+ 上 CRIU 的最小集合）
@@ -132,7 +132,7 @@ Renet 会自动将以下变量注入每个容器：
 
 ### 按操作系统划分的主机安全策略
 
-在五个官方支持的服务器操作系统（参见[系统要求](/en/docs/requirements)）上，每个仓库的 Docker 守护进程及其运行的容器均使用**默认容器标签**。`rdc config machine setup` 不会安装自定义 SELinux 策略或 AppArmor 配置文件。这是有意的设计：权衡在于容器进程在主机操作系统的默认标签策略下运行，而不是 Rediacc 特定的限制配置文件。如果您的威胁模型要求在容器层实施强制访问控制，请在部署前在主机级别配置它们。
+在五个官方支持的服务器操作系统（参见[系统要求](/en/docs/requirements)）上，每个仓库的 Docker 守护进程及其运行的容器均使用**默认容器标签**。`rdc machine setup` 不会安装自定义 SELinux 策略或 AppArmor 配置文件。这是有意的设计：权衡在于容器进程在主机操作系统的默认标签策略下运行，而不是 Rediacc 特定的限制配置文件。如果您的威胁模型要求在容器层实施强制访问控制，请在部署前在主机级别配置它们。
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**：AppArmor 默认启用。容器在默认的 docker-container 配置文件下运行。唯一的例外是 CRIU（对带有 `rediacc.checkpoint=true` 的容器添加 `apparmor=unconfined`，详见上方说明）。
 - **Fedora 43 / Oracle Linux 10**：SELinux 默认以 enforcing 模式运行。容器获得标准的 `container_t` 上下文。无需安装额外的策略。如果某个设置步骤因 AVC 拒绝而失败，请参阅[故障排除：SELinux 拒绝](/en/docs/troubleshooting)。

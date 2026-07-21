@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Passo um. Vamos importar uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muitos outros. Se já o utiliza, a mesma configuração pode ser importada diretamente.",
       "afterText": "Armazenamento importado. A sua CLI já pode enviar cópias de segurança para ele.",
       "cardLabel": "Importar Armazenamento",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Vamos listar os armazenamentos que a ferramenta conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança.",
       "afterText": "Aqui está. Pronto a receber cópias de segurança.",
       "cardLabel": "Listar Armazenamentos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "Passo dois. Vamos enviar uma cópia de segurança completa. O repositório inteiro -- aplicação, base de dados, ficheiros, configuração -- é carregado. Como o repositório está encriptado em repouso, a cópia de segurança também fica encriptada. Sem gestão adicional de chaves.",
       "afterText": "Cópia de segurança enviada. Tudo neste repositório está agora no armazenamento remoto, encriptado.",
       "cardLabel": "Enviar Backup",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: o comando de restauração do repositório.",
       "afterText": "Todos os seus snapshots num só sítio. Recupere qualquer um com um único comando.",
       "cardLabel": "Listar Backups",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Agora a prova de restauração. Primeiro coloque o repository offline: pare os serviços e desmonte o volume criptografado. O app sumiu desta máquina.",
       "afterText": "Offline e desmontado, exatamente o estado de um servidor novo.",
       "cardLabel": "Colocar Offline",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "E faça o pull do backup direto do storage. O comando repo pull busca a imagem, verifica a integridade e a coloca exatamente onde estava.",
       "afterText": "Transferência completa, integridade verificada. O repository está de volta.",
       "cardLabel": "Baixar Backup",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Monte novamente e o repository está restaurado. Push, list, pull, essa é toda a história do backup.",
       "afterText": "Restaurado. O mesmo fluxo funciona em uma máquina nova também.",
       "cardLabel": "Montar Restaurado",

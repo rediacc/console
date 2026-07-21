@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: ja
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 概要
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # フォークと親の差分を表示
-rdc repo diff --name <fork> --base <repo> -m <machine>   # 任意の関連リポジトリとの差分を表示
+rdc repo diff <fork>            # フォークと親の差分を表示
+rdc repo diff <fork> --base <repo>   # 任意の関連リポジトリとの差分を表示
 ```
 
 ### オプション
 
 | オプション | 説明 | デフォルト |
 |--------|-------------|---------|
-| `--name <name>` | 検査対象のリポジトリ（ターゲット、新しい側）。必須。 | 必須 |
-| `--base <name>` | 比較対象のリポジトリ（ベース、古い側）。`--name` の親にデフォルト設定されており、ローカル設定から解決されます。 | `--name` の親 |
+| `<ref>`（位置引数） | 検査対象のリポジトリ参照（ターゲット、新側）。必須。 | required |
+| `--base <ref>` | 比較対象のリポジトリ（ベース、旧側）。デフォルトはローカル設定から解決される対象参照の親。 | 対象参照の親 |
 | （フォーマットフラグなし） | 名前ステータス出力：変更されたファイルごとにカラー付きの `A`/`M`/`D`/`R` 文字と 1 行のサマリー。 | オン |
 | `--name-only` | 変更されたパスを 1 行に 1 つ、ステータス文字なし。パイプフレンドリー。 | オフ |
 | `--stat` | ファイルごとの変更量（バイトとブロック差分）合計行付き。 | オフ |
 | `--content <path>` | 単一ファイルの統一 diff テキスト。テキストのみ。バイナリは `Binary files differ` と報告します。 | オフ |
-| `--json` | エージェントとスクリプト向けの構造化出力。 | オフ |
+| `-o json` | エージェントやスクリプト向けの構造化出力。 | `table` |
 | `--fast` | コンテンツハッシュ確認ステップをスキップし、ブロックフィルタを信頼します。高速ですが、ファイルを Modified として過剰に報告する可能性があります。 | オフ |
-| `-m, --machine <name>` | ターゲットマシン。必須。 | 必須 |
 | `--debug` | stderr への詳細な診断情報。 | オフ |
 | `--skip-router-restart` | ルータ再起動ステップをスキップします。 | オフ |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # 任意の関連リポ
 `--name` のみを指定すると、フォークはローカル設定に記録された親と比較されます。ここではフォーク `test-1gb:fork1` に変更されたファイルが 1 つあります：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 `--base` を指定して、任意の関連リポジトリと比較します。`--base` がベース（古い）側、`--name` がターゲット（新しい）側です：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` はファイルごとのバイト差分とブロック差分、および合計行を追加します：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` は 1 行に 1 パスを、ステータス文字なしで出力し、別のコマンドにフィードする準備ができています：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` は単一のテキストファイルの統一 diff を生成します：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### jq による JSON フィルタリング
 
-`--json` は stdout の構造化エンベロープを出力するため、`jq` にクリーンにパイプできます：
+`-o json` は stdout の構造化エンベロープを出力するため、`jq` にクリーンにパイプできます：
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ $ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] 
 
 標準統一 diff（`---`/`+++` ヘッダ、`@@` ハンク）で 1 つのテキストファイル。バイナリファイルは `Binary files differ` と報告し、ハンクを生成しません。
 
-### `--json`
+### `-o json`
 
 完全な構造化結果。データは stdout に、進捗と診断は stderr に送信されるため、進捗が出力されている最中でも JSON は `jq` または別のパーサにクリーンにパイプできます。
 

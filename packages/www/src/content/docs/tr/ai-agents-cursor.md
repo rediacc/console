@@ -4,7 +4,7 @@ description: Cursor IDE'yi .cursorrules ve terminal entegrasyonu kullanarak Redi
 category: Guides
 order: 32
 language: tr
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Cursor'a sorun: *"Üretim sunucumun durumunu kontrol et"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Değişiklikleri Dağıtma
@@ -48,7 +48,7 @@ Cursor'a sorun: *"Güncellenmiş nextcloud yapılandırmasını dağıt"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Günlükleri Görüntüleme
@@ -57,7 +57,7 @@ Cursor'a sorun: *"Bana son mail konteyner günlüklerini göster"*
 
 Cursor terminalde çalıştırır:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Çalışma Alanı Ayarları

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.408078,
+      "at": 2.420634,
       "text": "ステップ1: 利用可能なテンプレートを一覧表示します。Rediaccはよく使うアプリ向けのセットアップをあらかじめ用意しているので、docker-composeをゼロから書く必要はありません。",
       "afterText": "テンプレートの全カタログです。それぞれがテスト済みの compose と Rediaccfile のセットになっています。",
       "cardLabel": "テンプレート一覧",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.077084,
+      "at": 6.399014,
       "text": "ステップ2: app-postgresテンプレートをリポジトリに追加します。テスト済みのファイル一式が、そのままコピーされます。",
       "afterText": "テンプレートが適用されました。リポジトリに compose ファイルと Rediaccfile が用意されています。",
       "cardLabel": "テンプレートを適用",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 14.72542,
+      "at": 12.523372,
       "text": "リポジトリの中を覗いて、何が追加されたか見てみましょう。起動と停止のフックを持つRediaccfileと、コンテナを定義するdocker-composeファイルです。",
       "afterText": "コンテナが動作中、ボリュームがマウントされ、分離された Docker デーモンが起動しています。",
       "cardLabel": "ファイルを確認",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 21.699752,
+      "at": 17.108804,
       "text": "ステップ3: リポジトリを起動します。コマンド1つで、CLIが暗号化ボリュームをマウントし、独立したDocker daemonを起動して、コンテナを立ち上げます。",
       "afterText": "このリポジトリのコンテナだけが表示されています。設定上の分離ではなく、実態としての分離です。",
       "cardLabel": "Repoを起動",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 28.8781,
+      "at": 22.317819,
       "text": "何が動いているか確認しましょう。ここでdocker psを実行すると、このリポジトリのコンテナだけが表示されます。このサーバー上の他のリポジトリはそれぞれ独自のdaemonを持っていて、この画面からは完全に見えません。",
       "afterText": "このrepoのコンテナだけが表示されます。分離は設定ではなく、本物です。",
       "cardLabel": "分離を確認",

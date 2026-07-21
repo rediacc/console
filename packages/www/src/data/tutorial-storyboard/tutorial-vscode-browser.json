@@ -2,11 +2,11 @@
   "version": 1,
   "tutorial": "tutorial-vscode-browser",
   "nextTutorialKey": "tutorial-forking",
-  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --command 'rm -rf notes'",
-  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository my-app",
+  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect my-app@${TUTORIAL_MACHINE_NAME} --command 'rm -rf notes'",
+  "teardownCommand": "rdc vscode serve stop my-app@${TUTORIAL_MACHINE_NAME}",
   "sessions": {
     "workbench": {
-      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --browser --url-only",
+      "urlFromCommand": "rdc vscode connect my-app@${TUTORIAL_MACHINE_NAME} --browser --url-only",
       "prepActions": [
         {
           "waitForSelector": ".explorer-folders-view .monaco-list-row"
@@ -192,7 +192,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'pwd && ls'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'pwd && ls'"
       }
     },
     {
@@ -202,7 +202,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'cat notes/todo.md'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'cat notes/todo.md'"
       }
     },
     {
@@ -212,7 +212,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'ls /'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'ls /'"
       }
     },
     {
@@ -222,7 +222,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'ls /home'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'ls /home'"
       }
     },
     {

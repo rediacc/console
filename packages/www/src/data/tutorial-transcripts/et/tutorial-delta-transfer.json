@@ -6,7 +6,7 @@
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "at": 2.413668,
+      "at": 2.414842,
       "text": "Esimene push teisele masinale kannab kogu image'i üle ja väljund ütleb seda selgelt: kaks gigabaiti edastatud, märgitud täis. See on lähtepunkt.",
       "afterText": "Kaks gigabaiti neljakümne nelja sekundiga, märgitud täis. CLI säilitas mõlemal poolel ka identse aluse, see on võlu eeldus.",
       "cardLabel": "Täispush",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "at": 10.922135,
+      "at": 8.165229,
       "text": "Muuda veidi andmeid: viiskümmend megabaiti kahest gigabaidist.",
       "afterText": "Väike muutus suures image'is.",
       "cardLabel": "Muuda Andmeid",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "at": 21.404869,
+      "at": 16.388163,
       "text": "Tee uuesti push. Sama käsk, aga loe seekord väljundit: umbes viiskümmend megabaiti edastatud, märgitud delta, kahe gigabaidise image'i suhtes. Ainult muutunud blokid liikusid.",
       "afterText": "Viiskümmend megabaiti alla kuue sekundi, kahe gigabaidisest image'ist. Numbrid on tõend.",
       "cardLabel": "Deltapush",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "at": 29.764702,
+      "at": 22.149817,
       "text": "Mõlemad masinad hoiavad sama repository't, sekunditega uuendatuna. Käivita seda iga tund, kui soovid, kulu on muutus, mitte suurus.",
       "afterText": "Sagedased varukoopiad ei ole enam kallid.",
       "cardLabel": "Sünkroonis",

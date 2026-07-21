@@ -4,7 +4,7 @@ description: rdc CLI JSON 출력 형식, 엔벨로프 스키마, 오류 처리 �
 category: Reference
 order: 51
 language: ko
-sourceHash: "4da1be4753fa62bf"
+sourceHash: "cc88f8f06960df3a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -15,8 +15,8 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ### 명시적 플래그
 
 ```bash
-rdc machine query --name prod-1 --output json
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 --output json
+rdc machine status prod-1 -o json
 ```
 
 ### 자동 감지
@@ -25,7 +25,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # 자동으로 JSON을 생성합니다
-result=$(rdc machine query --name prod-1)
+result=$(rdc machine status prod-1)
 ```
 
 ## JSON 엔벨로프
@@ -72,7 +72,7 @@ result=$(rdc machine query --name prod-1)
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+      "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
     }
   ],
   "warnings": [],
@@ -106,11 +106,11 @@ result=$(rdc machine query --name prod-1)
       "options": [
         {
           "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+          "run": "rdc repo secret get mail --key STRIPE_KEY"
         },
         {
           "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
         }
       ]
     }
@@ -142,7 +142,7 @@ result=$(rdc machine query --name prod-1)
 `--fields`를 사용해 출력을 특정 키로 제한하고 토큰 사용량을 줄이세요:
 
 ```bash
-rdc machine containers --name prod-1 -o json --fields name,status,repository
+rdc machine status prod-1 --containers -o json --fields name,status,repository
 ```
 
 ## 드라이런 출력
@@ -150,7 +150,7 @@ rdc machine containers --name prod-1 -o json --fields name,status,repository
 파괴적 명령은 `--dry-run`으로 실행될 내용을 미리 확인할 수 있습니다:
 
 ```bash
-rdc repo delete --name mail -m prod-1 --dry-run -o json
+rdc repo delete mail@prod-1 --dry-run -o json
 ```
 
 ```json
@@ -178,7 +178,7 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine status prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

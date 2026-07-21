@@ -6,7 +6,7 @@
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "at": 2.412666,
+      "at": 2.43605,
       "text": "こちらがアプリです。demo-pgadmin、pgAdmin インターフェースを備えた PostgreSQL で、マウントされて稼働しています。",
       "afterText": "ライブの repo が1つあります。クローンしましょう。",
       "cardLabel": "ライブアプリ",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "at": 8.155445,
+      "at": 7.868777,
       "text": "fork します。コピーオンライトのクローンはサイズに関係なく数秒で完了します。detach はコンテナが起動するとすぐに戻り、ヘルスチェックはバックグラウンドで続きます。",
       "afterText": "fork 完了、起動中。データはコピーされたのではなく、どちらかが変更するまで共有されます。",
       "cardLabel": "Fork + 起動",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "at": 19.24953,
+      "at": 16.847684,
       "text": "これで repository が2つになりました。オリジナルと実験用、それぞれが独自のコンテナ、ネットワーク、ディスクビューを持っています。",
       "afterText": "同じマシン、2つの隔離された世界。",
       "cardLabel": "並べて表示",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "at": 24.926391,
+      "at": 22.322161,
       "text": "実験は終わりましたか？fork を削除しましょう。作るのも数秒、捨てるのも数秒。オリジナルはその存在すら気づきませんでした。",
       "afterText": "削除されました。オリジナルはその間ずっとサービスを提供し続けていました。",
       "cardLabel": "Fork を削除",

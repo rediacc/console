@@ -37,7 +37,7 @@ Ask Cursor: *"Check the status of my production server"*
 
 Cursor runs in terminal:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Deploying Changes
@@ -46,7 +46,7 @@ Ask Cursor: *"Deploy the updated nextcloud config"*
 
 Cursor runs in terminal:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Viewing Logs
@@ -55,7 +55,7 @@ Ask Cursor: *"Show me the recent mail container logs"*
 
 Cursor runs in terminal:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Workspace Settings

@@ -1,4 +1,6 @@
 ---
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 title: "설치"
 description: "Linux, macOS, 또는 Windows에 Rediacc CLI를 설치합니다."
 category: "Guides"
@@ -102,15 +104,15 @@ npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
 CLI를 컨테이너로 가져와 실행합니다.
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 편의를 위해 별칭을 만드십시오.
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 사용 가능한 Docker 태그:
@@ -184,7 +186,7 @@ REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### 채널 작동 방식
@@ -193,7 +195,7 @@ docker pull ghcr.io/rediacc/elite/cli:edge
 
 - **설치 스크립트**: `REDIACC_CHANNEL` 환경 변수로 채널 선택
 - **패키지 리포지토리**: `releases.rediacc.com/{format}/{channel}/`
-- **Docker 태그**: `ghcr.io/rediacc/elite/cli:{channel}`
+- **Docker 태그**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI 업데이트**: `rdc update`는 설치 시 구성된 채널을 확인합니다.
 
 ### PR 프리뷰 자동 설정

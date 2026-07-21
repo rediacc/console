@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -24,16 +24,16 @@ Transfiera archivos entre su estación de trabajo y un repositorio remoto usando
 
 ```bash
 # Directorio (contenido fusionado en remoto)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Archivo único colocado en un directorio remoto (nombre base preservado)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Archivo único, ruta de destino explícita
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Múltiples fuentes en una sola llamada
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` y `--remote-file` se excluyen mutuamente. `--remote-file` requiere exactamente una ruta `--local` que apunte a un archivo.
@@ -46,16 +46,16 @@ Use `--remote` para un directorio (el predeterminado) o `--remote-file` para un 
 
 ```bash
 # Directorio
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Archivo único: --local debe ser un directorio existente
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Verificar Estado de Sincronización
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Opciones
@@ -63,7 +63,7 @@ rdc repo sync status -m server-1 -r my-app
 | Opción | Descripción |
 |--------|-------------|
 | `-m, --machine <name>` | Máquina destino |
-| `-r, --repository <name>` | Repositorio destino |
+| `<ref>` (posicional) | Ref del repositorio destino: `name`, `name:tag`, opcionalmente `@machine` |
 | `--local <paths...>` | Una o más rutas locales de archivo o directorio (subida) o directorio local de destino (descarga) |
 | `--remote <path>` | Directorio remoto (relativo al montaje del repositorio) |
 | `--remote-file <path>` | Ruta de archivo remoto para descargas o subidas de archivo único (alternativa a `--remote`) |
@@ -83,8 +83,8 @@ Abra una sesión SSH interactiva a una máquina o al entorno de un repositorio.
 La forma más rápida de conectarse:
 
 ```bash
-rdc term connect -m server-1                    # Conectarse a una máquina
-rdc term connect -m server-1 -r my-app             # Conectarse a un repositorio
+rdc term connect server-1                    # Conectarse a una máquina
+rdc term connect my-app             # Conectarse a un repositorio
 ```
 
 ### Ejecutar un Comando
@@ -92,8 +92,8 @@ rdc term connect -m server-1 -r my-app             # Conectarse a un repositorio
 Ejecute un comando sin abrir una sesión interactiva:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al socket Docker aislado del repositorio, por lo que `docker ps` muestra solo los contenedores de ese repositorio.
@@ -103,8 +103,8 @@ Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al s
 O use el subcomando `connect` para el mismo resultado, con flags explícitos:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Acciones de Contenedor
@@ -113,28 +113,29 @@ Interactúe directamente con un contenedor en ejecución:
 
 ```bash
 # Abrir una shell dentro de un contenedor
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # Ver logs del contenedor
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Seguir logs en tiempo real
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # Ver estadísticas del contenedor
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Ejecutar un comando en un contenedor
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Opción | Descripción |
-|--------|-------------|
-| `--container <id>` | ID del contenedor Docker destino |
-| `--container-action <action>` | Acción: `terminal` (predeterminado), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Número de líneas de log a mostrar (predeterminado: 50) |
-| `--follow` | Seguir logs continuamente |
-| `--external` | Usar terminal externo en lugar de SSH en línea |
+| Opción | Comando | Descripción |
+|--------|---------|-------------|
+| `-c, --container <name>` | ambos | Contenedor de destino dentro del repositorio |
+| `--lines <n>` | `repo logs` | Número de líneas de log a mostrar |
+| `-f, --follow` | `repo logs` | Sigue los logs de forma continua |
+| `--timestamps` | `repo logs` | Antepone una marca de tiempo a cada línea |
+| `-i, --interactive` | `repo exec` | Mantiene stdin abierto (necesario para una shell) |
+| `-u, --user <user>` | `repo exec` | Ejecuta como un usuario específico |
 
 ## Integración con VS Code (vscode)
 
@@ -143,7 +144,7 @@ Abra una sesión SSH remota en VS Code, preconfigurada con los ajustes SSH corre
 ### Conectarse a un Repositorio
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 Este comando:
@@ -181,7 +182,7 @@ Verifica la instalación de VS Code, la extensión Remote SSH y las conexiones a
 ¿No tiene VS Code instalado? Sirva el editor desde dentro del sandbox del repositorio y ábralo en cualquier navegador:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 Este comando:
@@ -192,8 +193,8 @@ Este comando:
 El servidor sigue ejecutándose después de cerrar el túnel; al reconectar lo reutiliza. Gestiónelo con:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Opción | Descripción |

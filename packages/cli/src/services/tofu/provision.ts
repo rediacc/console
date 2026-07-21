@@ -7,9 +7,9 @@
  */
 
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { t } from '../../i18n/index.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
@@ -19,7 +19,7 @@ import { TofuExecutor } from './executor.js';
 import { resolveProviderMapping } from './provider-resolver.js';
 import { generateTfJson } from './tf-generator.js';
 
-const TOFU_BASE_DIR = join(homedir(), '.config', 'rediacc', 'tofu');
+const TOFU_BASE_DIR = join(getConfigDir(), 'tofu');
 
 interface CreateOptions {
   region?: string;

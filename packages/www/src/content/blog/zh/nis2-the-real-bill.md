@@ -12,7 +12,7 @@ tags:
   - mid-market
 featured: false
 language: zh
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "d5f6a7108f614b9b"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -98,9 +98,9 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 
 **测试数据与全栈克隆**基于 BTRFS reflink，无论仓库大小均为常数时间，涵盖全栈内容：数据、配置、容器和服务。我们在 [PocketOS 测试](/zh/blog/i-tested-rediacc-against-the-pocketos-incident)中对一个 128 GB 的仓库进行 fork，仅需 7.2 秒。fork 出的环境是当前生产环境，而非精简版预发布环境。请参阅 [Risk-Free Upgrades](/zh/docs/risk-free-upgrades)。
 
-**即时恢复**：从任意 rclone 目标执行 `rdc repo backup pull`，在新的 fork 中启动，并在父存储库通配符证书覆盖的 fork 专属子域名下运行。无需 DNS 改动，无需证书操作。
+**即时恢复**：从任意 rclone 目标执行 `rdc repo pull`，在新的 fork 中启动，并在父存储库通配符证书覆盖的 fork 专属子域名下运行。无需 DNS 改动，无需证书操作。
 
-**统一审计日志**涵盖控制平面的 70 多种事件类型：登录、API 令牌、配置写入、仓库生命周期、备份、同步、终端会话以及机器操作。哈希链记录在操作员工作站上，`rdc audit verify` 端到端验证完整性。
+**统一审计日志**涵盖控制平面的 70 多种事件类型：登录、API 令牌、配置写入、仓库生命周期、备份、同步、终端会话以及机器操作。哈希链记录在操作员工作站上，`rdc config audit verify` 端到端验证完整性。
 
 对于一家拥有 250 名员工的中型市场重要实体而言，整合结果是：从四个具名供应商（备份、DR、测试数据、即时恢复）缩减为一个。一份授权、一份审计日志、一组升级决策、一个注册表条目。
 
@@ -149,7 +149,7 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 - Drata 保留（EUR 18,000）
 - 自建测试数据方案退役，原本每两周半天的 SRE 时间改用于运行每周有效性例程
 
-数据平面整合：5 个行项目缩减为 1 个（Rediacc）加上现有 IaaS 行项目。供应商注册表数据平面部分从 5 个条目降至 2 个。持续有效性现在有每周演练和哈希链式审计日志证据作为支撑，恢复测试现在由 `rdc machine backup status` 输出和每周恢复演练提供背书。
+数据平面整合：5 个行项目缩减为 1 个（Rediacc）加上现有 IaaS 行项目。供应商注册表数据平面部分从 5 个条目降至 2 个。持续有效性现在有每周演练和哈希链式审计日志证据作为支撑，恢复测试现在由 `rdc backup status` 输出和每周恢复演练提供背书。
 
 这些数字是示意性的，不是承诺。你的技术栈会有所不同。四到五个行项目整合为一个加上现有 IaaS 的结构，是真实采购方对话的样子。
 

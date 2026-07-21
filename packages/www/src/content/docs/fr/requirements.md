@@ -4,7 +4,7 @@ description: Configuration requise et plateformes prises en charge pour exécute
 category: Guides
 order: 0
 language: fr
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ Le CLI `rdc` s'installe également proprement sur Alpine 3.19+ (APK avec la couc
 
 ### Politiques de sécurité par OS
 
-Le démon Docker par dépôt et les conteneurs du dépôt s'exécutent avec des **étiquettes de conteneur par défaut** sur chaque OS pris en charge. `rdc config machine setup` n'installe pas de politiques SELinux personnalisées ni de profils AppArmor. Comportement par OS :
+Le démon Docker par dépôt et les conteneurs du dépôt s'exécutent avec des **étiquettes de conteneur par défaut** sur chaque OS pris en charge. `rdc machine setup` n'installe pas de politiques SELinux personnalisées ni de profils AppArmor. Comportement par OS :
 
 - **Ubuntu 24.04, openSUSE Leap 16.0** : AppArmor est activé par défaut. Le profil docker-container par défaut s'applique ; aucune configuration supplémentaire n'est requise.
 - **Fedora 43, Oracle Linux 10** : SELinux fonctionne en mode enforcing. Le démon par dépôt étiquette les conteneurs avec le contexte standard `container_t`. Aucune politique SELinux personnalisée n'est nécessaire.
@@ -75,7 +75,7 @@ Si une étape de configuration échoue avec des refus AVC SELinux ou des rejets 
 
 ### Installé automatiquement
 
-La commande `rdc config machine setup` installe les éléments suivants sur le serveur distant :
+La commande `rdc machine setup` installe les éléments suivants sur le serveur distant :
 
 - **Docker** et **containerd** (moteur d'exécution de conteneurs)
 - **cryptsetup** (chiffrement de disque LUKS)

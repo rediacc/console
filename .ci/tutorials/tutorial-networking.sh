@@ -31,9 +31,9 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete infra 2>/dev/null || true
+rdc repo delete infra --yes 2>/dev/null || true
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
 exec >&3 2>&4
@@ -77,4 +77,4 @@ end_recording
 # Cleanup
 rdc repo down infra 2>/dev/null || true
 rdc repo down infra --unmount 2>/dev/null || true
-rdc repo delete infra 2>/dev/null || true
+rdc repo delete infra --yes 2>/dev/null || true

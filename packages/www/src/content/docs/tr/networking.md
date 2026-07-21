@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -132,16 +132,16 @@ Bunlar standart [Traefik v3 etiket sözdizimini](https://doc.traefik.io/traefik/
 
    ```bash
    # Paylaşılan kimlik bilgileri (yapılandırma başına bir kez, tüm makinelere uygulanır)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Makineye özel ayarlar
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. Alan adınızı sunucunun genel IP'sine yönlendiren DNS kayıtları (aşağıdaki [DNS Yapılandırması](#dns-yapılandırması) bölümüne bakın).
@@ -185,14 +185,14 @@ Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır. Sadece ilgili router/ser
 TLS sertifikaları, Cloudflare DNS-01 doğrulaması kullanılarak Let's Encrypt aracılığıyla otomatik olarak alınır. Kimlik bilgileri yapılandırma başına bir kez ayarlanır (tüm makineler arasında paylaşılır):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 Otomatik yönlendirmeler, servis başına sertifika yerine depo alt alan adı seviyesinde **joker sertifikalar** (`*.marketing.server-1.example.com`) kullanır. Sertifika, ilk `repo up` sırasında Traefik tarafından otomatik olarak sağlanır; manuel adım gerekmez. Çatallanmalar üst deponun mevcut jokerini yeniden kullanır, bu nedenle asla yeni bir sertifika isteği tetiklemez. Özel alan adlı yönlendirmeler makine seviyesi joker sertifikalar (`*.server-1.example.com`) kullanır.
 
-> **Cloudflare kimlik bilgileri gereklidir.** Joker sertifikalar DNS-01 doğrulaması kullanır. `--cf-dns-token` (ve isteğe bağlı `--cert-email`) olmadan, Traefik doğrulamayı tamamlayamaz ve HTTPS çalışmaz. HTTP işlevsel kalır. İlk dağıtımdan önce `rdc config infra set` ile kimlik bilgilerini yapılandırın.
+> **Cloudflare kimlik bilgileri gereklidir.** Joker sertifikalar DNS-01 doğrulaması kullanır. `--cf-dns-token` (ve isteğe bağlı `--cert-email`) olmadan, Traefik doğrulamayı tamamlayamaz ve HTTPS çalışmaz. HTTP işlevsel kalır. İlk dağıtımdan önce `rdc machine infra set` ile kimlik bilgilerini yapılandırın.
 
 `traefik.http.routers.{name}.tls.certresolver=letsencrypt` içeren Seviye 2 yönlendirmeler için, joker alan adı SAN'ları yönlendirmenin ana bilgisayar adına göre otomatik olarak enjekte edilir.
 
@@ -212,17 +212,17 @@ Let's Encrypt sertifikasının verilmesinden her deponun konteynerlerine ulaşma
 
 - `rdc repo up` sonrasında otomatik olarak, ancak yalnızca makinenin `baseDomain`'i için yerel önbellek 6 saatten eskiyse. Taze önbellekler, arka arkaya dağıtımların SSH'yi zorlamamaması için olduğu gibi bırakılır.
 - İsteğe bağlı: `rdc machine infra cert pull <machine>` (zorla çekme) veya `rdc machine status <machine> --sync-certs` (durum sorgusunun yan etkisi olarak çekme).
-- `rdc config infra push` sırasında önbellek makineye itilir (daha uzun son kullanma tarihine sahip yerel sertifikalar uzak olanları geçer).
+- `rdc machine infra push` sırasında önbellek makineye itilir (daha uzun son kullanma tarihine sahip yerel sertifikalar uzak olanları geçer).
 
 **Önbellek bakımı:**
 
 - Eski otomatik yönlendirme girdileri (`service-3200.rediacc.io` gibi eski ağ ID'li etiketli alanlar) her çekmede temizlenir.
 - `notAfter`'ı 7 günden fazla geçmişte olan sertifikalar tamamen kaldırılır. Bunlar etkisizdir ve yalnızca önbelleği şişirir.
-- `rdc config cert-cache clear` her şeyi siler; `rdc config cert-cache status` envanteri gösterir.
+- `rdc config prune --certs-only` her şeyi siler; `rdc config prune --certs-only` envanteri gösterir.
 
 **Sorun giderme:** `traefik-certs-dumper` `/traefik/acme.json: no such file or directory` ile çöküyor ise, depo başına daemon konağın letsencrypt deposunu göremiyordur. (a) `/opt/rediacc/proxy/letsencrypt/acme.json`'ın konakta mevcut olduğunu doğrulayın (bu, konak seviyesindeki `rediacc-proxy`'nin sorumluluğudur), ve (b) depo başına daemon'ın `/opt/rediacc/proxy`'yi izin listesine alan yeterince yeni bir renet ile başlatıldığını doğrulayın. renet'i yükselttikten sonra uygulamak için `rdc repo up` ile depoyu yeniden dağıtın.
 
-> **Deneysel:** Otomatik eşitleme sıklığı ve son kullanma tarihine dayalı temizlik renet 0.9+'da gelmiştir. Eski CLI/renet sürümleri yalnızca `rdc config cert-cache pull` aracılığıyla manuel eşitleme kullanır.
+> **Deneysel:** Otomatik eşitleme sıklığı ve son kullanma tarihine dayalı temizlik renet 0.9+'da gelmiştir. Eski CLI/renet sürümleri yalnızca `rdc config prune --certs-only` aracılığıyla manuel eşitleme kullanır.
 
 ## TCP/UDP Port Yönlendirme
 
@@ -233,16 +233,16 @@ HTTP dışı protokoller (posta sunucuları, DNS, dışarıya açılan veritaban
 Altyapı yapılandırması sırasında gerekli portları ekleyin:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 Bu, `tcp-{port}` ve `udp-{port}` adlı Traefik giriş noktaları oluşturur.
 
-> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc config infra push` komutunu yeniden çalıştırın.
+> Port ekledikten veya kaldırdıktan sonra, proxy yapılandırmasını güncellemek için her zaman `rdc machine infra push` komutunu yeniden çalıştırın.
 
 ### Adım 2: TCP/UDP Etiketleri Ekleme
 
@@ -315,7 +315,7 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 
 ### Otomatik DNS (Cloudflare)
 
-`--cf-dns-token` yapılandırıldığında, `rdc config infra push` gerekli DNS kayıtlarını Cloudflare'de otomatik olarak oluşturur:
+`--cf-dns-token` yapılandırıldığında, `rdc machine infra push` gerekli DNS kayıtlarını Cloudflare'de otomatik olarak oluşturur:
 
 | Kayıt | Tür | İçerik | Oluşturan |
 |-------|-----|--------|-----------|
@@ -482,7 +482,7 @@ app.example.com   A   203.0.113.50
 ### Dağıtım
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 Birkaç saniye içinde route server konteyneri keşfeder, Traefik yönlendirmeyi alır, TLS sertifikası talep eder ve `https://app.example.com` yayında olur.

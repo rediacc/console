@@ -4,7 +4,7 @@ description: "rdc와 renet을 언제 사용할지 알아봅니다."
 category: "Concepts"
 order: 1
 language: ko
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Rediacc는 두 개의 바이너리를 제공합니다. 각각은 다른 역할�
 
 ```bash
 # 새 서버 설정
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # 리포지터리 생성 및 시작
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # 리포지터리 중지
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # 머신 상태 확인
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 전체 안내는 [빠른 시작](/ko/docs/quick-start)을 참조하세요.

@@ -23,8 +23,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc config storage import --file rclone.conf",
-        "commandFull": "rdc config storage import --file rclone.conf"
+        "command": "rdc storage import rclone.conf",
+        "commandFull": "rdc storage import rclone.conf"
       }
     },
     {
@@ -34,8 +34,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc config storage list",
-        "commandFull": "rdc config storage list"
+        "command": "rdc storage list",
+        "commandFull": "rdc storage list"
       }
     },
     {
@@ -45,8 +45,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc repo push --name my-app -m my-server --to my-storage",
-        "commandFull": "rdc repo push --name my-app -m <machine-name> --to my-storage"
+        "command": "rdc repo push my-app --to my-storage",
+        "commandFull": "rdc repo push my-app --to my-storage"
       }
     },
     {
@@ -56,8 +56,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo backup list --from my-storage -m my-server",
-        "commandFull": "rdc repo backup list --from my-storage -m <machine-name>"
+        "command": "rdc backup list --storage my-storage",
+        "commandFull": "rdc backup list --storage my-storage"
       }
     },
     {
@@ -67,7 +67,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo down --name my-app --machine <machine-name> --unmount"
+        "commandFull": "rdc repo down my-app --unmount"
       }
     },
     {
@@ -77,7 +77,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo pull --name my-app --machine <machine-name> --from my-storage --force --yes"
+        "commandFull": "rdc repo pull my-app --from my-storage --force --yes"
       }
     },
     {
@@ -87,7 +87,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo mount --name my-app --machine <machine-name>"
+        "commandFull": "rdc repo up my-app --no-start"
       }
     },
     {

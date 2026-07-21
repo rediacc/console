@@ -28,9 +28,9 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 
 # Restore stdout/stderr so asciinema captures only the demo from here on.
@@ -49,7 +49,7 @@ run_cmd "rdc repo admin template apply my-app --template app-postgres"
 pause 2
 
 section "See what the template added"
-run_cmd "rdc term connect my-app -c 'ls -la'"
+run_cmd "rdc term connect my-app --command 'ls -la'"
 
 pause 2
 
@@ -59,7 +59,7 @@ run_cmd "rdc repo up my-app"
 pause 2
 
 section "Verify what's running"
-run_cmd "rdc term connect my-app -c 'docker ps'"
+run_cmd "rdc term connect my-app --command 'docker ps'"
 
 pause 2
 
@@ -68,4 +68,4 @@ end_recording
 # Clean up
 rdc repo down my-app 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

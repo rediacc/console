@@ -4,7 +4,7 @@ description: "Esponi i servizi con il reverse proxy, le etichette Docker, i cert
 category: "Guides"
 order: 6
 language: it
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -130,16 +130,16 @@ Questi usano la [sintassi delle etichette Traefik v3](https://doc.traefik.io/tra
 
    ```bash
    # Shared credentials (once per config, applies to all machines)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Machine-specific settings
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. Record DNS che puntano il tuo dominio all'IP pubblico del server (vedi [Configurazione DNS](#configurazione-dns) di seguito).
@@ -183,14 +183,14 @@ services:
 I certificati TLS vengono ottenuti automaticamente tramite Let's Encrypt usando la sfida DNS-01 di Cloudflare. Le credenziali vengono configurate una volta per configurazione (condivise tra tutte le macchine):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 Le auto-route usano **certificati wildcard** a livello di sottodominio del repository (`*.marketing.server-1.example.com`) invece di certificati per servizio. Il certificato viene provisioning automaticamente da Traefik al primo `repo up`; nessun passaggio manuale richiesto. I fork riutilizzano il wildcard esistente del repository genitore, quindi non attivano mai una nuova richiesta di certificato. Le route con dominio personalizzato usano wildcard a livello di macchina (`*.server-1.example.com`).
 
-> **Richiede le credenziali Cloudflare.** I certificati wildcard usano la sfida DNS-01. Senza `--cf-dns-token` (e opzionalmente `--cert-email`), Traefik non può completare la sfida e HTTPS non funzionerà. HTTP rimane funzionale. Configura le credenziali con `rdc config infra set` prima del primo deploy.
+> **Richiede le credenziali Cloudflare.** I certificati wildcard usano la sfida DNS-01. Senza `--cf-dns-token` (e opzionalmente `--cert-email`), Traefik non può completare la sfida e HTTPS non funzionerà. HTTP rimane funzionale. Configura le credenziali con `rdc machine infra set` prima del primo deploy.
 
 Per le route di Livello 2 con `traefik.http.routers.{name}.tls.certresolver=letsencrypt`, i SAN del dominio wildcard vengono iniettati automaticamente in base all'hostname della route.
 
@@ -210,17 +210,17 @@ Il percorso completo che un certificato Let's Encrypt percorre dall'emissione ai
 
 - Automaticamente dopo `rdc repo up`, ma solo se la cache locale per il `baseDomain` della macchina ha più di 6 ore. Le cache fresche vengono lasciate intatte in modo che i deploy consecutivi non sovraccarichino SSH.
 - Su richiesta: `rdc machine infra cert pull <machine>` (pull forzato) o `rdc machine status <machine> --sync-certs` (pull come effetto collaterale di una query di stato).
-- Su `rdc config infra push`, la cache viene inviata alla macchina (i certificati locali con scadenza più lunga vincono su quelli remoti).
+- Su `rdc machine infra push`, la cache viene inviata alla macchina (i certificati locali con scadenza più lunga vincono su quelli remoti).
 
 **Manutenzione della cache:**
 
 - Le voci auto-route obsolete (vecchi domini con tag network-ID come `service-3200.rediacc.io`) vengono eliminate durante ogni pull.
 - I certificati il cui `notAfter` è a più di 7 giorni nel passato vengono rimossi definitivamente. Sono inerti e gonfiano solo la cache.
-- `rdc config cert-cache clear` cancella tutto; `rdc config cert-cache status` mostra l'inventario.
+- `rdc config prune --certs-only` cancella tutto; `rdc config prune --certs-only` mostra l'inventario.
 
 **Risoluzione dei problemi:** se `traefik-certs-dumper` va in crashloop con `/traefik/acme.json: no such file or directory`, il daemon per repository non riesce a vedere il letsencrypt store dell'host. Verifica (a) che `/opt/rediacc/proxy/letsencrypt/acme.json` esista sull'host (questa è responsabilità del `rediacc-proxy` a livello host), e (b) che il daemon per repository sia stato avviato con un renet abbastanza recente da autorizzare `/opt/rediacc/proxy`. Ridistribuisci il repository con `rdc repo up` dopo aver aggiornato renet per applicare.
 
-> **Sperimentale:** La cadenza di auto-sincronizzazione e la potatura basata sulla scadenza sono state rilasciate in renet 0.9+. Le versioni precedenti di CLI/renet usano la sincronizzazione puramente manuale tramite `rdc config cert-cache pull`.
+> **Sperimentale:** La cadenza di auto-sincronizzazione e la potatura basata sulla scadenza sono state rilasciate in renet 0.9+. Le versioni precedenti di CLI/renet usano la sincronizzazione puramente manuale tramite `rdc config prune --certs-only`.
 
 ## Forwarding TCP/UDP
 
@@ -231,16 +231,16 @@ Per i protocolli non HTTP (server di posta, DNS, database esposti esternamente),
 Aggiungi le porte richieste durante la configurazione dell'infrastruttura:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 Questo crea entrypoint Traefik denominati `tcp-{port}` e `udp-{port}`.
 
-> Dopo aver aggiunto o rimosso porte, esegui sempre di nuovo `rdc config infra push` per aggiornare la configurazione del proxy.
+> Dopo aver aggiunto o rimosso porte, esegui sempre di nuovo `rdc machine infra push` per aggiornare la configurazione del proxy.
 
 ### Passo 2: Aggiungi le Etichette TCP/UDP
 
@@ -313,7 +313,7 @@ Le seguenti porte TCP/UDP hanno entrypoint per impostazione predefinita (non è 
 
 ### DNS Automatico (Cloudflare)
 
-Quando `--cf-dns-token` è configurato, `rdc config infra push` crea automaticamente record DNS per il sottodominio della macchina in Cloudflare:
+Quando `--cf-dns-token` è configurato, `rdc machine infra push` crea automaticamente record DNS per il sottodominio della macchina in Cloudflare:
 
 | Record | Tipo | Contenuto | Creato da |
 |--------|------|---------|------------|
@@ -480,7 +480,7 @@ app.example.com   A   203.0.113.50
 ### Deploy
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 Nel giro di pochi secondi, il route server scopre il container, Traefik raccoglie la route, richiede un certificato TLS e `https://app.example.com` è attivo.

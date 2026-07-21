@@ -16,7 +16,7 @@ tags:
   - mid-market
 featured: false
 language: es
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "d5f6a7108f614b9b"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -95,9 +95,9 @@ Rediacc es un plano de control con un registro de auditoría unificado, que reem
 
 **Datos de prueba y clonación de stack completo** funciona con reflink de BTRFS. El fork es de tiempo constante, sin importar el tamaño del repositorio. Stack completo significa datos, configuraciones, contenedores y servicios. Hicimos fork de un repositorio de 128 GB en 7,2 segundos en nuestra [prueba PocketOS](/es/blog/i-tested-rediacc-against-the-pocketos-incident). El fork es la producción actual, no una copia de staging reducida. Consulta [Actualizaciones Sin Riesgo](/es/docs/risk-free-upgrades).
 
-**Restauración instantánea**: `rdc repo backup pull` desde cualquier destino rclone a un fork nuevo, puesto en marcha bajo un subdominio específico del fork cubierto por el certificado wildcard del repositorio padre. Sin confusión de DNS, sin baile de certificados.
+**Restauración instantánea**: `rdc repo pull` desde cualquier destino rclone a un fork nuevo, puesto en marcha bajo un subdominio específico del fork cubierto por el certificado wildcard del repositorio padre. Sin confusión de DNS, sin baile de certificados.
 
-**Registro de auditoría unificado.** Más de 70 tipos de eventos en todo el plano de control. Cubren inicios de sesión, tokens de API, escrituras de configuración, ciclo de vida del repositorio, backup, sincronización, sesiones de terminal y operaciones de máquina. La cadena está enlazada por hash en la estación de trabajo del operador. `rdc audit verify` la comprueba de extremo a extremo.
+**Registro de auditoría unificado.** Más de 70 tipos de eventos en todo el plano de control. Cubren inicios de sesión, tokens de API, escrituras de configuración, ciclo de vida del repositorio, backup, sincronización, sesiones de terminal y operaciones de máquina. La cadena está enlazada por hash en la estación de trabajo del operador. `rdc config audit verify` la comprueba de extremo a extremo.
 
 Para una entidad esencial mid-market de 250 empleados, la consolidación pasa de cuatro proveedores nombrados (backup, DR, datos de prueba, restauración instantánea) a uno. Una licencia, un registro de auditoría, un conjunto de decisiones de actualización, una entrada de registro.
 
@@ -146,7 +146,7 @@ Cinco contratos. Dos de ellos (Veeam, Veeam Cloud Connect) son con el mismo prov
 - Drata se mantiene (18.000 EUR)
 - El esquema propio de datos de prueba se retira; el medio día del SRE cada dos semanas pasa a ejecutar la rutina de efectividad semanal
 
-Consolidación del plano de datos: 5 partidas a 1 (Rediacc) más la línea de IaaS existente. La sección del plano de datos del registro de proveedores pasa de 5 entradas a 2. La historia de efectividad continua son ahora simulacros semanales con evidencia de registro de auditoría encadenado por hash; la historia de la prueba de recuperación está ahora respaldada por la salida de `rdc machine backup status` y un simulacro de restauración por semana.
+Consolidación del plano de datos: 5 partidas a 1 (Rediacc) más la línea de IaaS existente. La sección del plano de datos del registro de proveedores pasa de 5 entradas a 2. La historia de efectividad continua son ahora simulacros semanales con evidencia de registro de auditoría encadenado por hash; la historia de la prueba de recuperación está ahora respaldada por la salida de `rdc backup status` y un simulacro de restauración por semana.
 
 Los números son ilustrativos, no promesas. Tu stack es diferente. La forma, de cuatro a cinco partidas colapsando en una más la IaaS existente, es como se ve una conversación real con un comprador.
 

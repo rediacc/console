@@ -35,32 +35,32 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query --name <machine> -o json
+rdc machine status <machine> -o json
 
 # List containers on a machine
-rdc machine containers --name <machine> -o json
+rdc machine status <machine> --containers -o json
 
 # Machine health check
-rdc machine health --name <machine> -o json
+rdc machine health <machine> -o json
 
 # Deploy a repository
-rdc repo up --name <repo> -m <machine> --yes
+rdc repo up <repo>@<machine> --yes
 
 # Stop a repository
-rdc repo down --name <repo> -m <machine> --yes
+rdc repo down <repo>@<machine> --yes
 
 # SSH terminal to machine
-rdc term connect -m <machine>
+rdc term connect <machine>
 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term connect -m <machine> -r <repo>
+rdc term connect <repo>@<machine>
 
 # Run command on machine
-rdc term connect -m <machine> -c "command"
+rdc term connect <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> --local ./local-path
-rdc repo sync download -m <machine> -r <repo> --local ./local-path
+rdc repo sync upload <repo>@<machine> --local ./local-path
+rdc repo sync download <repo>@<machine> --local ./local-path
 
 # List all available commands
 rdc --help-all
@@ -81,16 +81,16 @@ rdc --help-all
 
 ## Customization
 
-Replace `<machine>` and `<repo>` with your actual machine and repository names. Run `rdc config repository list` to list available repositories with their name-to-GUID mapping.
+Replace `<machine>` and `<repo>` with your actual machine and repository names. Run `rdc repo list` to list available repositories with their name-to-GUID mapping.
 
 ### Discovering Your Setup
 
 ```bash
 # List configured machines
-rdc machine query --name <machine-name>
+rdc machine status <machine-name>
 
 # List repositories with GUIDs
-rdc config repository list
+rdc repo list
 
 # Check what commands are available
 rdc --help-all

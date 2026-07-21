@@ -4,7 +4,7 @@ description: "Решения распространённых проблем с 
 category: "Guides"
 order: 10
 language: ru
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU является известным случаем, который стал
 
 ### Отсутствующий модуль btrfs (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Если `rdc config machine setup` или `renet system check-btrfs` завершается с ошибкой:
+Если `rdc machine setup` или `renet system check-btrfs` завершается с ошибкой:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Просмотрите логи контейнеров через Docker-сокет репозитория:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Или просмотрите все контейнеры:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Ошибки отказа в доступе
@@ -115,7 +115,7 @@ rdc machine containers --name server-1
 
 ```bash
 # С помощью rdc term (настроено автоматически):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Или вручную с указанием сокета:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **Чтобы получить доступ к сети в разовом контейнере, используйте host-сеть:**
 
 ```bash
-# Внутри оболочки репозитория (rdc term connect -m <machine> -r <repo>)
+# Внутри оболочки репозитория (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Теперь apt update, curl, pip install все работают.
 ```
@@ -181,7 +181,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 - Используйте встроенный режим с `-c` для прямого выполнения команд:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Принудительно используйте внешний терминал с `--external`, если встроенный режим вызывает проблемы
 - На Linux убедитесь, что установлен `gnome-terminal`, `xterm` или другой эмулятор терминала

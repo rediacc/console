@@ -23,7 +23,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.422355,
+      "at": 2.424604,
       "text": "Now the fork. One command will clone the entire repo, the app, the database, the config files, regardless of size. One gigabyte, one hundred gigabytes, one terabyte: the size simply does not matter.",
       "afterText": "Fork done. The clone is up and running, regardless of size.",
       "cardLabel": "Fork Repo",
@@ -32,7 +32,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 12.478171,
+      "at": 9.790706,
       "text": "Both repos exist side by side now. Same machine, same disk, two completely independent environments.",
       "afterText": "Two repos, one disk. Same data, separate everything else.",
       "cardLabel": "List Repos",
@@ -41,7 +41,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.050071,
+      "at": 15.362139,
       "text": "Let us prove the isolation. In the original, our marker file is right where we left it. The fork existence did not change anything in the parent.",
       "afterText": "Original file still there. The fork didn't touch it.",
       "cardLabel": "Original File",
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 25.352583,
+      "at": 20.531281,
       "text": "Now let us delete that file, but only inside the fork. We are making a destructive change here.",
       "afterText": "Gone in the fork. The original stays untouched.",
       "cardLabel": "Delete In Fork",
@@ -59,7 +59,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 33.706234,
+      "at": 26.727498,
       "text": "Back to the original. The marker file is still here, untouched. Same image, separate Docker daemons, separate filesystems.",
       "afterText": "Still here. Forks are properly isolated.",
       "cardLabel": "Original Intact",
@@ -68,7 +68,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.0794,
+      "at": 31.831236,
       "text": "When you are done, just delete the fork. The original stays exactly as it was. Fork, experiment, break things, delete. No risk.",
       "afterText": "Fork removed. The original is exactly as we left it.",
       "cardLabel": "Clean Up",

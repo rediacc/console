@@ -52,13 +52,13 @@ If you connect to multiple servers (on-premise, production, edge), named configs
 
 ```bash
 # Create a config for your on-premise server
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Log in using that config
 rdc --config myserver subscription login
 
 # All commands with --config use the on-premise server
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Each named config stores its own account server URL and subscription token. Switching configs switches the entire server context.

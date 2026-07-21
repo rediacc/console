@@ -15,7 +15,7 @@ tags:
   - cli
 featured: false
 language: ru
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -65,7 +65,7 @@ LUKS шифрует с помощью aes-xts. Это шифрование с с
 Вот форма по умолчанию: имя-статус, та же грамматика A/M/D/R, которую вы уже читаете из `git status --short`:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -82,7 +82,7 @@ M  hello.txt
 Агент читает не имя-статус, а `--json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 Структурированный вывод даёт агенту точный набор изменений: какие пути он изменил, создал, удалил. С `--stat` доступен размер изменений на файл в байтах и блоках. Агент, видящий свой diff перед продвижением, является агентом, которому можно доверить работу рядом с продакшеном. Радиус поражения поддаётся инспекции, а не просто утверждается. Другие режимы обслуживают тот же цикл проверки. `--name-only` для простого списка путей. `--content <path>` для единого текстового diff одного файла (только текст; бинарный файл выдаёт `Binary files differ`). `--stat`, когда агенту нужно знать, что изменилось и насколько.

@@ -35,17 +35,17 @@ All common tasks go through `rdc` on your workstation:
 
 ```bash
 # Set up a new server
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # Create and start a repository
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # Stop a repository
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # Check machine health
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 See the [Quick Start](/en/docs/quick-start) for a full walkthrough.

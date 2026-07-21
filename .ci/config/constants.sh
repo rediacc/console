@@ -26,17 +26,11 @@ readonly CI_CONFIG_DIR="$CI_DIR/config"
 # DOCKER REGISTRY CONFIGURATION
 # =============================================================================
 # DOCKER_REGISTRY can be overridden by .env for local development
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"
 DOCKER_TAG="${DOCKER_TAG:-latest}"
 
 # Supported architectures for multi-arch builds
 readonly SUPPORTED_ARCHS=("amd64" "arm64")
-
-# Docker Images
-readonly ELITE_IMAGE_WEB="${DOCKER_REGISTRY}/web:${DOCKER_TAG}"
-readonly ELITE_IMAGE_RENET="${DOCKER_REGISTRY}/renet:${DOCKER_TAG}"
-readonly ELITE_IMAGE_SQL="mcr.microsoft.com/mssql/server:2022-CU21-ubuntu-22.04"
-readonly ELITE_IMAGE_SQL_ARM64="mcr.microsoft.com/azure-sql-edge:1.0.7"
 
 # Docker Networks
 readonly DOCKER_NETWORK_INTERNET="rediacc_internet"
@@ -47,10 +41,6 @@ readonly DOCKER_NETWORK_INTRANET="rediacc_intranet"
 # =============================================================================
 readonly CI_DOCKER_DIR="${CONSOLE_ROOT_DIR}/.ci/docker/ci"
 readonly CI_COMPOSE_FILE="${CI_DOCKER_DIR}/docker-compose.yml"
-
-# Container Names
-readonly CI_CONTAINER_WEB="rediacc-web"
-readonly CI_CONTAINER_SQL="rediacc-sql"
 
 # Backend state file
 readonly BACKEND_STATE_FILE="$CONSOLE_ROOT_DIR/.backend-state"
@@ -99,7 +89,6 @@ readonly BACKEND_PRESET_SANDBOX="https://sandbox.rediacc.com"
 # =============================================================================
 readonly PORT_WEB=80
 readonly PORT_WEB_HTTPS=443
-readonly PORT_SQL=1433
 readonly PORT_CONSOLE_DEV=3000
 
 # =============================================================================
@@ -123,14 +112,14 @@ readonly DOCKER_BUILD_ARG_NODE_VERSION="NODE_VERSION=$NODE_VERSION_REQUIRED"
 # =============================================================================
 # PUBLISHING CONFIGURATION
 # =============================================================================
-PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+PUBLISH_DOCKER_REGISTRY="${PUBLISH_DOCKER_REGISTRY:-ghcr.io/rediacc}"
 
 # Bot identity for CI commits: set GIT_BOT_NAME / GIT_BOT_EMAIL org variables.
 # Used by: update-homebrew-tap.sh, cd-v2.yml (git tag creation).
 # NOT declared here to avoid breaking local scripts that source constants.sh.
 
 # Docker images to publish
-readonly PUBLISH_IMAGES=("renet" "plugin-terminal" "plugin-browser" "web" "cli")
+readonly PUBLISH_IMAGES=("renet" "rdc")
 
 # Dockerfiles (relative to CONSOLE_ROOT_DIR)
 # Associative arrays require bash 4+; skip on older bash (e.g. macOS system bash 3.2).
@@ -138,19 +127,13 @@ readonly PUBLISH_IMAGES=("renet" "plugin-terminal" "plugin-browser" "web" "cli")
 if ((BASH_VERSINFO[0] >= 4)); then
     declare -A DOCKERFILES=(
         ["renet"]="private/renet/Dockerfile"
-        ["plugin-terminal"]="packages/plugins/terminal/Dockerfile"
-        ["plugin-browser"]="packages/plugins/browser/Dockerfile"
-        ["web"]="Dockerfile"
-        ["cli"]="packages/cli/Dockerfile"
+        ["rdc"]="packages/cli/Dockerfile.native"
     )
 
     # Build contexts (relative to CONSOLE_ROOT_DIR)
     declare -A BUILD_CONTEXTS=(
         ["renet"]="private/renet"
-        ["plugin-terminal"]="packages/plugins/terminal"
-        ["plugin-browser"]="packages/plugins/browser"
-        ["web"]="."
-        ["cli"]="."
+        ["rdc"]="."
     )
 fi
 

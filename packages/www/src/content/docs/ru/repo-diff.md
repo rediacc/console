@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: ru
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### Synopsis
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--name <name>` | Репозиторий для инспекции (целевая, новая сторона). Обязателен. | required |
-| `--base <name>` | Репозиторий для сравнения (базовая, старая сторона). По умолчанию родитель `--name`, разрешается из локальной конфигурации. | parent of `--name` |
+| `<ref>` (позиционный) | Ссылка на проверяемый репозиторий (цель, новая сторона). Обязательно. | обязательно |
+| `--base <ref>` | Репозиторий для сравнения (базовая, старая сторона). По умолчанию используется родитель позиционной ссылки, определяемый из локальной конфигурации. | родитель ссылки |
 | (no format flag) | Вывод статуса имен: цветная буква `A`/`M`/`D`/`R` для каждого измененного файла плюс однострочное резюме. | on |
 | `--name-only` | По одному измененному пути на строку, без буквы статуса. Удобно для pipe. | off |
 | `--stat` | Величина изменения на файл (дельты байтов и блоков) с итоговым подвалом. | off |
 | `--content <path>` | Унифицированный текстовый diff одного файла. Только текст; двоичные файлы выводятся как `Binary files differ`. | off |
-| `--json` | Структурированный вывод для агентов и скриптов. | off |
+| `-o json` | Структурированный вывод для агентов и скриптов. | `table` |
 | `--fast` | Пропустить шаг подтверждения хеша содержимого и доверять фильтру блоков. Быстрее, но может перечислить файлы как Modified. | off |
-| `-m, --machine <name>` | Целевая машина. Обязательна. | required |
 | `--debug` | Подробная диагностика на stderr. | off |
 | `--skip-router-restart` | Пропустить шаг перезагрузки маршрутизатора. | off |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 С одним только `--name` форк сравнивается с родителем, записанным в локальной конфигурации. Здесь форк `test-1gb:fork1` имеет один измененный файл:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 Передайте `--base` для сравнения с произвольным связанным репозиторием. `--base` это базовая (старая) сторона, `--name` целевая (новая) сторона:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` добавляет дельту байтов и блоков для каждого файла и итоговый подвал:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` выводит один путь на строку без буквы статуса, готов к передаче другой команде:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` выдает унифицированный diff одного текстового файла:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### Filtering JSON with jq
 
-`--json` выводит структурированный конверт на stdout, так что хорошо передается в `jq`:
+`-o json` выводит структурированный конверт на stdout, так что хорошо передается в `jq`:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ $ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] 
 
 Стандартный унифицированный diff (`---`/`+++` заголовки, `@@` куски) для одного текстового файла. Двоичные файлы выводятся как `Binary files differ` и не содержат кусков.
 
-### `--json`
+### `-o json`
 
 Полный структурированный результат. Данные выводятся на stdout; прогресс и диагностика выводятся на stderr, так что JSON хорошо передается в `jq` или другой парсер даже во время вывода прогресса.
 

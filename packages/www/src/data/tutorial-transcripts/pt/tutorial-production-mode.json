@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.555418,
+      "at": 2.431606,
       "text": "Vamos iniciar a aplicação em modo de produção a partir do portátil. O comando de deploy chama a mesma função up que usámos durante o desenvolvimento, mas corre em segundo plano. Pode fechar o portátil e a aplicação continua a funcionar.",
       "afterText": "Aplicação a correr em produção. Mesmo comando, mesmo resultado, no servidor real.",
       "cardLabel": "Iniciar Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 11.051619,
+      "at": 7.724616,
       "text": "Agora vamos ativar o arranque automático para que a aplicação sobreviva a um reinício do servidor. A partir daqui, se o servidor reiniciar, este repositório volta a arrancar automaticamente.",
       "afterText": "Arranque automático ativo. A aplicação sobrevive a reinícios.",
       "cardLabel": "Ativar Autostart",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 18.718543,
+      "at": 13.316649,
       "text": "Vamos listar os repositórios com arranque automático ativado. Confirma que a nossa aplicação está na lista de arranque.",
       "afterText": "Aqui está, na lista de arranque.",
       "cardLabel": "Listar Autostart",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 25.169818,
+      "at": 19.488192,
       "text": "E para parar a aplicação, um único comando a partir do portátil. Um comando para iniciar, um comando para parar. Tudo a partir do terminal.",
       "afterText": "Parada. Um comando para arrancar, um comando para parar.",
       "cardLabel": "Parar Repo",

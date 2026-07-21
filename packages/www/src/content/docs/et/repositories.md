@@ -4,7 +4,7 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## Repositooriumi loomine
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | Valik | Kohustuslik | Kirjeldus |
@@ -40,8 +40,8 @@ Väljund näitab kolme automaatselt genereeritud väärtust:
 Ühendamine dekrüpteerib ja teeb repositooriumi failisüsteemi kättesaadavaks. Lahtiühendamine sulgeb krüpteeritud mahu.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Dekrüpteeri ja ühenda
-rdc repo unmount --name my-app -m server-1  # Lahtiühenda ja krüpteeri uuesti
+rdc repo up my-app  # Dekrüpteeri ja ühenda
+rdc repo down my-app --unmount  # Lahtiühenda ja krüpteeri uuesti
 ```
 
 | Valik | Kirjeldus |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # Lahtiühenda ja krüpteeri uuesti
 ## Oleku kontroll
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## Repositooriumide loend
@@ -78,8 +78,8 @@ Tundmatute kirjete tavapäraseks puhastamiseks vaata [`rdc machine prune --prune
 Seadke repositooriumile täpne suurus või laiendage antud koguse võrra:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Seadista täpsele suurusele
-rdc repo expand --name my-app -m server-1 --size 5G  # Lisa 5G praegusele suurusele
+rdc repo resize my-app --size 20G  # Seadista täpsele suurusele
+rdc repo expand my-app --size 5G  # Lisa 5G praegusele suurusele
 ```
 
 > Repositoorium peab olema lahtiühendatud enne suuruse muutmist. `repo expand` töötab veebis. Suuruse muutmine muudab repositooriumi maksimaalset suurust; et tagastada vabastatud plokid basseinile maksimumit muutmata, kasuta selle asemel [`repo trim`](#ruumi-tagasinõudmine-trim).
@@ -90,8 +90,8 @@ Failide kustutamine repositooriumis vabastab ruumi selles repositooriumis, ning 
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ Käsitsi suuruse muutmise asemel lase masinal hallata repositooriumide suurusi. 
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 Poliitika väljad:
@@ -138,7 +138,7 @@ Repositooriumipõhised sätted alistavad masina üldise vaikimisi. Korduvad `pol
 Loo koopia olemasolevast repositooriumist selle praegusel olekul:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 Kahvlid kasutavad nimi:silt mudelit: saadud kahvel on nimega `my-app:staging`. See loob uue krüpteeritud koopia oma GUID ja võrgu ID-ga, jagades samal ajal vanema nime. Kahvel jagab sama LUKS-mandaati kui vanem.
@@ -149,14 +149,14 @@ Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#tüübi-vee
 
 ### Kahveldamine ja käivitamine ühe sammuga
 
-`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--detach`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
+`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--no-wait`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--detach`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine status <machine> --containers`.
+Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--no-wait`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine status <machine> --containers`.
 
 ### Kuhu aeg läheb
 
@@ -173,9 +173,9 @@ Teenuse käivitusaeg näitab teie konteinerite käivitumist (pildid, init, tervi
 Forkid saavad toimida git-commitidena. `rdc repo commit` külmutab töötava forki muutumatuks, baidistabiiilseks commitiks; `rdc repo branch` nimetab ajalooliini; `rdc repo checkout` reflink-kloonib commiti tagasi kirjutatavaks forkiks; `rdc repo log` käib läbi vanemahela; ja `rdc repo merge` ühendab kaks liini ilma otserepositoorium muutmata. `rdc repo fork --immutable` loob commit-ekvivalentse aluse ühe sammuga.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 Täieliku käskude komplekti, valikute ja töötatud näidete jaoks vaata [Git-laadse hargnemise viidet](/en/docs/repo-branching).
@@ -195,11 +195,11 @@ Kaks edastusviisi:
 
 ```bash
 # Seadista, loetle, hangi (ainult räsi), tühista
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get  my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **Sümmeetriline mutatsioonilüüs.** Nii inimesed kui agendid vajavad `--current <eelmine-väärtus>`, et saladust üle kirjutada või tühistada (passwd-stiilis eeltingimus). Uue võtme esmakirjutamiseks anna `--current ""` (tühi). Eelneva väärtuse kontrollimata roteerimiseks anna selle asemel `--rotate-secret`. See auditeeritakse valjult roteerimisena. `--current` ja `--rotate-secret` on vastastikku välistavad.
@@ -235,7 +235,7 @@ Väiketäheline teenusepoolne viide (`stripe_live_key`) on konteineri-sisene `/r
 Kontrolli repositooriumi failisüsteemi terviklust:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## Omandiõigus
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 Seadista repositooriumi failide omandiõigus universaalsele kasutajale (UID 7111). Seda on tavaliselt vaja pärast failide üleslaadimist oma tööjaamast, mis saabuvad kohaliku UID-ga.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 Käsk tuvastab automaatselt Dockeri konteineri andmekataloogid (kirjutatavad bind-ühendused) ja jätab need vahele. See takistab riknemast konteinerid, mis haldavad faile oma UID-dega (nt MariaDB=999, www-data=33).
@@ -256,7 +256,7 @@ Käsk tuvastab automaatselt Dockeri konteineri andmekataloogid (kirjutatavad bin
 Kõigi failide, sh konteineri andmete omandiõiguse sundimiseks:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -267,7 +267,7 @@ Vaata [Migreerimisjuhendit](/en/docs/migration) täieliku läbimise jaoks, milla
 Rakenda mall repositooriumi failidega initsialiseerimiseks:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## Kustutamine
@@ -275,7 +275,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 Hävita repositoorium ja kõik andmed selles jäädavalt:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > See hävitab krüpteeritud kettakujutise jäädavalt. Seda toimingut ei saa tagasi võtta.
@@ -285,7 +285,7 @@ rdc repo delete --name my-app -m server-1
 Migreerige repositoorium ühelt masinalt teisele. Ainus seisakuaeg on lõplik deltasünkroonimise faas: tavaliselt sekundeid kuni mõni minut, sõltuvalt kirjutamise kiirusest ülelõikamise ajal.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Valik | Kirjeldus |
@@ -319,10 +319,10 @@ Pärast repositooriumide kustutamist või ebaõnnestunud operatsioonidest taastu
 
 ```bash
 # Eelvaade, mida eemaldataks
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Eemalda orbunud ressursid
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 Mõjutatakse ainult ressursse, millel puudub vastav repositooriumi kujutis. Mittetühje ühendamise katalooge ei eemaldata kunagi.

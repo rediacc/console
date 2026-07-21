@@ -68,8 +68,8 @@ And mount it again, fully restored:
 The same pull works on a brand new server: set it up, add it to `rdc`, and run the pull there instead.
 
 ```bash
-rdc repo pull --name my-app -m new-server --from my-storage
-rdc repo up --name my-app -m new-server
+rdc repo pull my-app@new-server --from my-storage
+rdc repo up my-app@new-server
 ```
 
 Same data, same containers, different machine.
@@ -79,7 +79,7 @@ Same data, same containers, different machine.
 You can also push directly between machines, no cloud storage in between:
 
 ```bash
-rdc repo push --name my-app -m my-server --to-machine backup-server
+rdc repo push my-app --to backup-server
 ```
 
 > **Pro tip.** Machine-to-machine pushes send only the changed blocks after the first one. The [Delta Transfer tutorial](/en/docs/tutorial-delta-transfer) shows it live.

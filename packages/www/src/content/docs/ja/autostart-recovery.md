@@ -4,7 +4,7 @@ description: "自動起動の仕組み、ブート後に停止したリポジト
 category: "Guides"
 order: 5
 language: ja
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ journalctl -u rediacc-autostart-reconcile.service --since "1 hour ago"
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-各ファイル名はリポジトリのGUIDです。`rdc config repository list`と照合してGUIDをリポジトリ名にマッピングしてください。
+各ファイル名はリポジトリのGUIDです。`rdc repo list`と照合してGUIDをリポジトリ名にマッピングしてください。
 
 根本的な問題を解決した後にマーカーをクリアするには、ファイルを削除します：
 

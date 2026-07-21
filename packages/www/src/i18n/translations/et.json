@@ -3914,7 +3914,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "Alusta tasuta",
           "description": "Alustage tasuta Community väljaandega. Käivitage esimene pentest alla 60 sekundiga.",
           "title": "Leidke haavatavused enne ründajaid"
@@ -4323,7 +4323,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "Alusta tasuta Community väljaandega",
           "description": "Alustage tasuta Community väljaandega. Genereerige esimene auditiaruanne alla minutiga.",
           "title": "Näe kõike. Jäta midagi märkamata."
@@ -4793,7 +4793,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "Alustage tasuta Community väljaandega. Kontrollige esimene varukoopia alla minutiga.",
           "primaryCta": "Alusta tasuta Community väljaandega",
           "tierBadge": "Krediitkaart ei ole vajalik",
@@ -5205,7 +5205,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5305,7 +5305,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "Alustage tasuta Community väljaandega. Replitseerige asukohtade vahel tasuta. Krediitkaart pole vajalik.",
           "primaryCta": "Alusta tasuta Community väljaandega",
           "tierBadge": "Kuni 10 töökoormuse jaoks tasuta igaveseks",
@@ -5823,7 +5823,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Alusta tasuta",
           "description": "Alustage tasuta Community väljaandega. Planeerige esimene pidev pentest 30 sekundiga.",
           "title": "Sulgege aken, millele ründajad loodavad"
@@ -6703,7 +6703,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "Alusta tasuta Community versiooniga",
           "description": "Alustage tasuta Community versiooniga. Genereerige oma esimene võti alla minuti jooksul.",
           "title": "Omage oma krüpteerimisvõtmeid"
@@ -7135,7 +7135,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7211,7 +7211,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "Alustage tasuta Community versiooniga. Kloonige kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
           "primaryCta": "Alusta tasuta Community versiooniga",
           "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
@@ -7719,7 +7719,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Alustage tasuta Community versiooniga. Käivitage oma esimene KT-test alla 5 minutiga.",
           "primaryCta": "Alusta tasuta Community versiooniga",
           "tierBadge": "Krediitkaart pole vajalik",
@@ -8221,7 +8221,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "Alustage tasuta Community versiooniga. Kaitske kuni 10 töökoormust tasuta. Ilma krediitkaardita.",
           "primaryCta": "Alusta tasuta Community versiooniga",
           "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
@@ -8752,7 +8752,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Alustage tasuta Community versiooniga. Nõudmisel kloonimine on kaasas.",
           "primaryCta": "Alusta tasuta",
           "tierBadge": "Tasuta kuni 5 hoidla jaoks · Krediitkaart pole vajalik",
@@ -9221,7 +9221,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Alusta tasuta Community versiooniga. Taasta oma esimene keskkond alla 5 minutiga.",
           "primaryCta": "Alusta tasuta Community-ga",
           "tierBadge": "Krediitkaarti ei nõuta",
@@ -9737,7 +9737,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "Alusta tasuta Community versiooniga. Git-integratsioon on kaasas.",
           "primaryCta": "Alusta tasuta",
           "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
@@ -10627,7 +10627,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "Alusta tasuta Community versiooniga. Krüpteeritud migreerimine on kaasas.",
           "primaryCta": "Alusta tasuta",
           "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
@@ -11142,7 +11142,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Alusta tasuta Community versiooniga. Tootmispariteetsus on kaasas.",
           "primaryCta": "Alusta tasuta",
           "tierBadge": "Tasuta kuni 5 repositooriumile · Krediitkaarti ei nõuta",
@@ -11520,7 +11520,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11623,7 +11623,7 @@
           "title": "Mida saate"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Alusta tasuta Community-ga",
           "description": "Alusta tasuta Community versiooniga. Kaitse kuni 10 töökoormust tasuta. Krediitkaarti ei nõuta.",
           "title": "Ära lase taastamisel olla aeglasem kui rünnak"
@@ -11830,7 +11830,7 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Käivita rdc repo backup list --verified, et leida viimane puhas hetktõmmis.",
+              "description": "Käivita rdc backup list, et leida viimane puhas hetktõmmis.",
               "icon": "eye",
               "title": "Tuvasta"
             },
@@ -12656,7 +12656,7 @@
           "title": "Mida te saate"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "Alustage tasuta Community väljaandega. Kloonige, testige ja kontrollige tasuta. Krediitkaarti ei nõuta.",
           "primaryCta": "Alusta tasuta Community-ga",
           "tierBadge": "Tasuta igavesti kuni 10 töökoormuse jaoks",
@@ -13170,7 +13170,7 @@
           "title": "Mida te saate"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Alusta tasuta Community-ga",
           "description": "Alustage tasuta Community väljaandega. Paigaldage kuhu tahes. Migreerige millal tahes. Krediitkaarti ei nõuta.",
           "title": "Võtke oma taristu juhtimine tagasi"
@@ -13387,7 +13387,7 @@
               "title": "Standardvormingud"
             },
             {
-              "description": "Käivitage rdc repo push production --to-machine new-provider -m primary --checkpoint. Inkrementaalne ülekanne. Null seisakut.",
+              "description": "Käivitage rdc repo push production --to new-provider --checkpoint. Inkrementaalne ülekanne. Null seisakut.",
               "icon": "arrow-right-circle",
               "title": "Ühe käsu migratsioon"
             },

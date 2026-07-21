@@ -30,10 +30,10 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete demo-pgadmin:experiment 2>/dev/null || true
-rdc repo delete demo-pgadmin 2>/dev/null || true
+rdc repo delete demo-pgadmin:experiment --yes 2>/dev/null || true
+rdc repo delete demo-pgadmin --yes 2>/dev/null || true
 rdc repo create demo-pgadmin --machine "$M" --size 2G
 rdc repo sync upload demo-pgadmin --local "$APP_DIR/"
 rdc repo up demo-pgadmin
@@ -61,7 +61,7 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "Done experimenting? Throw the fork away"
-run_cmd "rdc repo delete demo-pgadmin:experiment"
+run_cmd "rdc repo delete demo-pgadmin:experiment --yes"
 
 pause 2
 
@@ -71,4 +71,4 @@ end_recording
 # for the browser scenes. The on-camera `repo delete` above removed the fork
 # from the machine but RETAINED its config row; `--archive-config` is what
 # drops the row, and delete is idempotent for an already-absent image.
-rdc repo delete demo-pgadmin:experiment --archive-config -y 2>/dev/null || true
+rdc repo delete demo-pgadmin:experiment --yes --archive-config -y 2>/dev/null || true

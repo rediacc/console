@@ -4,7 +4,7 @@ description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruk
 category: "Guides"
 order: 5
 language: de
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Für Umgebungen, in denen sich mehrere Server verbunden werden (On-Premise, Prod
 
 ```bash
 # Konfiguration für den On-Premise-Server erstellen
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Mit dieser Konfiguration anmelden
 rdc --config myserver subscription login
 
 # Alle Befehle mit --config verwenden den On-Premise-Server
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Jede benannte Konfiguration speichert ihre eigene Account-Server-URL und ihr eigenes Abonnement-Token. Das Wechseln der Konfiguration wechselt den gesamten Serverkontext.

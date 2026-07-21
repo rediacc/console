@@ -4,7 +4,7 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -17,7 +17,7 @@ Esimese masina käivitamiseks on neli sammu: loo konfiguratsioon, registreeri se
 **Konfiguratsioon** on nimega konfiguratsioonifail, mis salvestab sinu SSH-mandaadid, masinate definitsioonid ja repositooriumi seosed. Mõtle sellest kui projekti tööruumist.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Valik | Nõutud | Kirjeldus |
@@ -34,7 +34,7 @@ See loob konfiguratsioonifaili nimega `my-infra` ja salvestab selle asukohta `~/
 Registreeri kaugserver masinana konfiguratsioonis:
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Valik | Nõutud | Vaikeväärtus | Kirjeldus |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 Pärast masina lisamist käivitab rdc automaatselt `ssh-keyscan`, et hankida serveri hostimisvõtmed. Seda saad käivitada ka käsitsi:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Kõigi registreeritud masinate vaatamiseks:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## 3. samm: seadista masin
@@ -61,7 +61,7 @@ rdc config machine list
 Valmista kaugserver ette kõigi vajalike sõltuvustega:
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 See käsk:
@@ -87,7 +87,7 @@ Andmesalv on masinapõhine salvestuspesa, mis hoiab krüptitud repositooriumi pi
 `--datastore-size` võtab vastu protsendi (`95%`) või absoluutse suuruse (`50G`, `1T`). Andmesalve saab hiljem veebis suurendada:
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 Andmesalve sees olevate repositooriumide suurus määratakse sõltumatult `repo create` ajal ja neid saab töö ajal laiendada, nii et sul pole vaja andmesalve ette liigselt ette valmistada.
@@ -98,10 +98,9 @@ Jagatud, horisontaalselt skaleeruva või Kubernetese-toega salvestuse jaoks init
 
 ```bash
 # 1. Salvesta masina Ceph-viide (pesa + RBD-pilt, mitte salajane)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. Initsialiseeri andmesalv Ceph-taustasüsteemil
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Ceph-võtmerõngad jäävad masinatesse; konfiguratsioonifail sisaldab ainult mittesalajasi pesa- ja pildiviiteid. Ceph on ka salvestuskiht, mida Kubernetese klastrid tarbivad ceph-csi kaudu. Vaata juhendit [Kubernetes](/et/docs/kubernetes) klastrite ja püsivate köidete jaoks ning [Arhitektuur](/et/docs/architecture) kahe taustasüsteemi võrdluseks.
@@ -111,7 +110,7 @@ Ceph-võtmerõngad jäävad masinatesse; konfiguratsioonifail sisaldab ainult mi
 Kui serveri SSH hostimisvõti muutub (nt pärast uuesti paigaldamist), uuenda salvestatud võtmeid:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 See uuendab sinu konfiguratsioonis selle masina `knownHosts` välja.
@@ -121,7 +120,7 @@ See uuendab sinu konfiguratsioonis selle masina `knownHosts` välja.
 Pärast masina lisamist veendu, et sellega on võimalik ühenduda:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 See avab masinaga SSH-ühenduse ja käivitab käsu. Kui see õnnestub, on sinu SSH-konfiguratsioon korrektne.
@@ -141,7 +140,7 @@ Masinate jaoks, mis peavad liiklust avalikult teenindama, konfigureeri infrastru
 ### Infrastruktuuri seadistamine
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ Masina ulatusega valikud salvestatakse iga masina kohta eraldi. Konfiguratsiooni
 ### Infrastruktuuri vaatamine
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### Serverisse lükkamine
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 Genereeri ja rakenda Traefiki pöördpuhverserveri konfiguratsioon serverisse:
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 See käsk:
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### Pilvepakkuja lisamine
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### Masina ettevalmistamine
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 See üks käsk:
@@ -244,7 +243,7 @@ See üks käsk:
 ### Masina ettevalmistuse tühistamine
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 Hävitab VM-i OpenTofu kaudu ja eemaldab selle sinu konfiguratsioonist. Nõuab kinnitust, välja arvatud juhul kui kasutatakse `--force`. Töötab ainult masinatega, mis on loodud käsuga `machine provision`.
@@ -252,7 +251,7 @@ Hävitab VM-i OpenTofu kaudu ja eemaldab selle sinu konfiguratsioonist. Nõuab k
 ### Pakkujate loetlemine
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## Vaikeväärtuste seadistamine
@@ -261,13 +260,13 @@ Seadista vaikeväärtused, et neid poleks vaja igal käsul täpsustada:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Vaikemasin
-rdc config set --key team --value my-team                   # Vaikimisi tiim konfiguratsioonihoidla jaoks
+rdc config set team my-team                   # Vaikimisi tiim konfiguratsioonihoidla jaoks
 ```
 
 Pärast vaikemaskina seadistamist saad käskudest `-m server-1` ära jätta:
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## Mitu konfiguratsiooni
@@ -276,8 +275,8 @@ Halda mitut keskkonda nimega konfiguratsioonifailidega:
 
 ```bash
 # Loo eraldi konfiguratsioonid
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # Kasuta konkreetset konfiguratsiooni
 rdc repo list -m server-1 --config production

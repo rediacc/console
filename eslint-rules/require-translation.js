@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { resolveRequiredDirOption } from './i18n/shared/require-path-option.js';
 import {
   ROOT_DIR,
   getResources,
@@ -7,8 +7,6 @@ import {
   isNotTranslationKey,
   splitKey,
 } from './translation-helpers.js';
-
-const DEFAULT_LOCALE_DIR = path.join(ROOT_DIR, 'packages/web/src/i18n/locales/en');
 
 const extractNamespaces = (node) => {
   if (!node) return null;
@@ -71,9 +69,12 @@ export const requireTranslation = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localeDir = options.localeDir
-      ? path.resolve(ROOT_DIR, options.localeDir)
-      : DEFAULT_LOCALE_DIR;
+    const localeDir = resolveRequiredDirOption(
+      'custom/require-translation',
+      'localeDir',
+      options.localeDir,
+      ROOT_DIR,
+    );
     const ignoreDefaultValue = options.ignoreDefaultValue === true;
     const resources = getResources(localeDir);
 

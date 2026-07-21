@@ -4,7 +4,7 @@ description: "Remover backups órfãos, snapshots obsoletos, imagens de reposit�
 category: "Guides"
 order: 12
 language: pt
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ Analisa um fornecedor de armazenamento e elimina backups cujos GUIDs já não ap
 
 ```bash
 # Apenas pré-visualização - mostrar o que seria eliminado
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Eliminar efetivamente os backups órfãos (comportamento predefinido)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Substituir o período de carência (predefinição 7 dias)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Substituir a verificação de segurança de montagem (usar com cuidado)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` é obrigatório porque as chamadas rclone são executadas na máquina executora, não no seu portátil. Não se espera que os clientes tenham rclone instalado localmente. As credenciais de armazenamento ainda provêm da sua config local; a máquina é apenas o executor do rclone.
@@ -82,10 +82,10 @@ A análise de authorized_keys verifica `/home/*/.ssh/authorized_keys` e `/root/.
 
 ```bash
 # Dry-run, mostra o que seria removido (sem alterações aplicadas)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Executar a limpeza
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Limpeza em cascata.** Algumas categorias dependem de categorias anteriores. Por exemplo, eliminar diretórios de montagem vazios pode expor órfãos de sandbox adicionais cujo suporte de montagem acabou de desaparecer. Executar `rdc machine prune` uma segunda vez captura a cascata e termina a limpeza. O dry-run final termina com `No orphaned resources found. Datastore is clean.` quando não há nada mais a fazer.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 Com `--orphaned-repos`, o CLI também elimina imagens de repositório na máquina que não aparecem em **nenhum** ficheiro de config local.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 Isto é **grosseiro**. Elimina tudo o que não está na sua config local, incluindo forks legítimos geridos por outras ferramentas ou o checkout do CLI de outro operador. Se o espelho `.interim/state` do renet identificar corretamente um repositório como um fork mas a config local nunca o tiver visto, esta fase remove-o na mesma. Prefira a fase 3 (`--prune-unknown`) quando quiser ser conservador.
@@ -106,8 +106,8 @@ Isto é **grosseiro**. Elimina tudo o que não está na sua config local, inclui
 Com `--prune-unknown`, o CLI elimina apenas repositórios que **ambos** os sinais não conseguem classificar: não estão em nenhuma config local **e** não têm entrada marcada como fork no espelho `.interim/state` da máquina (consulte [Repositórios. Coluna `Type`](/pt/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 Na prática, `--prune-unknown` é o que se quer para limpeza de rotina; `--orphaned-repos` só é correto quando tem a certeza de que a sua config local é o inventário completo e autoritativo de todos os repositórios na máquina. Órfãos legados pré-espelho e repositórios cuja entrada de config foi eliminada por engano caem ambos no balde "desconhecido". São genuinamente incertos, e a flag cirúrgica pede ao operador que reconheça isso explicitamente.
@@ -116,7 +116,7 @@ O preflight de segurança de montagem também é executado nesta fase: um reposi
 
 ```bash
 # Combinado: limpeza completa da máquina com o caminho cirúrgico consciente de forks
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - Recursos ativos (máquinas, armazenamentos, repositórios, estratégias de backup, fornecedores de nuvem).
 - Credenciais, o bloco de conta, o bloco de encriptação, as predefinições.
 - `vaultContent` de armazenamento (incluindo `access_token` expirado do OneDrive. O refresh_token ainda cria novos; o pruning forçaria a reautenticação).
-- Entradas `knownHosts` (o caminho de atualização automática é `rdc config machine scan-keys`).
+- Entradas `knownHosts` (o caminho de atualização automática é `rdc machine scan-keys`).
 - O array comprimido de blobs de certificado (`infra.acmeCertCache.<base>.data[]`) é reconstruído automaticamente a partir da lista de certificados limpa; não perde nenhuma cadeia que ainda cubra um nome mantido.
 
 ### Exemplo prático
@@ -180,7 +180,7 @@ Os nomes de certificados cujo âncora é uma máquina, repositório ou GUID ativ
 O espelho `.interim/state/<guid>/.rediacc.json` que alimenta `--prune-unknown` e a coluna `Type` em `rdc repo list -m` é escrito:
 
 - **No momento do fork** (`rdc repo fork`). Imediatamente, mesmo antes de o fork ser montado pela primeira vez.
-- **Em cada salvaguarda de estado** (`rdc repo mount` e qualquer operação que atualize o estado do repositório). Para repositórios criados antes de o código do espelho ter sido lançado.
+- **Em cada salvaguarda de estado** (`rdc repo up` e qualquer operação que atualize o estado do repositório). Para repositórios criados antes de o código do espelho ter sido lançado.
 
 Repositórios criados **antes de o espelho existir e que não foram remontados desde a atualização** não têm ficheiro de espelho. Aparecem como `unknown` em `rdc repo list -m` mesmo que alguns sejam legalmente forks. Para corrigir isto para órfãos legados, execute o preenchimento retroativo único na máquina:
 
@@ -238,6 +238,6 @@ A flag `--grace-days` do CLI substitui este valor quando fornecida.
 - **Prefira `--prune-unknown` a `--orphaned-repos`.** A flag cirúrgica respeita o espelho renet; a flag grosseira elimina com prazer forks criados por outras ferramentas.
 - **Use períodos de carência generosos para produção.** O período de carência predefinido de 7 dias é adequado para a maioria dos fluxos de trabalho. Para ambientes de produção com janelas de manutenção pouco frequentes, considere 14 ou 30 dias.
 - **Agende o storage prune após as execuções de backup.** Combine `storage prune` com o seu agendamento de backup para manter os custos de armazenamento sob controlo sem intervenção manual.
-- **Combine o machine prune com o agendamento de backup.** Após implementar agendamentos de backup (`rdc machine backup schedule`), adicione um pruning periódico de máquina para limpar snapshots obsoletos e artefactos de datastore órfãos.
+- **Combine o machine prune com o agendamento de backup.** Após implementar agendamentos de backup (`rdc backup schedule`), adicione um pruning periódico de máquina para limpar snapshots obsoletos e artefactos de datastore órfãos.
 - **Execute `config prune` periodicamente.** O inchaço da config local (especialmente a cache de certificados) acumula-se silenciosamente; um `config prune --dry-run` trimestral é suficiente para o detetar.
 - **Audite antes de usar `--force` ou `--force-delete-mounted`.** Ambas as flags contornam verificações de segurança. Use `--force` apenas quando tiver a certeza de que nenhuma outra config referencia os repositórios em questão; use `--force-delete-mounted` apenas quando tiver a certeza de que o estado ativo na máquina está errado.

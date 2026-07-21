@@ -15,7 +15,7 @@ Rediacc ships monitoring commands for machine health, running containers, servic
 Get a full health report for a machine:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 This reports:
@@ -31,7 +31,7 @@ Use `--output json` for machine-readable output.
 View all running containers across all repositories on a machine:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | Column | Description |
@@ -55,7 +55,7 @@ JSON output includes full container details (`labels`, `port_mappings`, `image`,
 View systemd services related to Rediacc on a machine:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | Column | Description |
@@ -78,7 +78,7 @@ JSON output includes full service details with `repository` (resolved name) and 
 View repositories on a machine with detailed stats:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | Column | Description |
@@ -102,7 +102,7 @@ JSON output includes `name` (resolved) and `guid` (original GUID), and nests eac
 Inspect BTRFS fragmentation and reflink sharing across all repositories on a machine:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | Column | Description |
@@ -180,7 +180,7 @@ If `uncorrectable` is greater than zero, the affected blocks cannot be repaired 
 To run a scrub immediately (e.g. after a power failure or disk migration):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 The result is saved to the same JSON file and immediately visible in the next `rdc machine status --system`.
@@ -190,7 +190,7 @@ The result is saved to the same JSON file and immediately visible in the next `r
 Get a complete overview of a machine including deployment information:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 This provides:
@@ -206,7 +206,7 @@ Use `--output json` for machine-readable output.
 Verify SSH connectivity to a machine:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 The command prints the remote hostname on success and a connection error

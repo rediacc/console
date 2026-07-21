@@ -4,7 +4,7 @@ description: "以 Rediacc 的仓库理念运行 Kubernetes：将一个正在运�
 category: "Guides"
 order: 6
 language: zh
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -39,34 +39,32 @@ Rediacc 反转了通常"集群包裹一切"的图景，使仓库理念依然适�
 
 ```bash
 # 声明一个带有节点池的集群（尚未实际配置任何资源）
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # 配置节点池成员，在每个成员上引导 renet，安装组件（先安装 Ceph）
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 节点池角色包括 `ceph`、`k8s-server`、`k8s-agent` 和 `hyperconverged`（需显式启用，因为 Ceph 的内存目标和 kubelet 的驱逐阈值会争抢同一份内存）。每个节点池以按池的规格和磁盘参数承载硬件的不对称性：磁盘密集型的 Ceph 节点，CPU/内存密集型的 Kubernetes 节点。
 
-节点池成员会以 `<cluster>-<pool>-<n>` 的形式在 `resources.machines` 中具体化，并带有反向引用，因此**所有现有的 `-m` 命令都能在它们上面运行**：`rdc machine query`、`rdc term connect`、仓库命令和备份策略都将集群节点视为普通机器。
+节点池成员会以 `<cluster>-<pool>-<n>` 的形式在 `resources.machines` 中具体化，并带有反向引用，因此**所有现有的 `-m` 命令都能在它们上面运行**：`rdc machine status`、`rdc term connect`、仓库命令和备份策略都将集群节点视为普通机器。
 
 云服务提供商通过 [OpenTofu](https://opentofu.org/) 进行配置，遵循与 `rdc machine provision` 相同的 `ProviderMapping` 注册表，并扩展了私有网络块（VLAN 或 VPC、要设置的 MTU、私有网卡命名）。本地 KVM 是通过 `rdc ops` 始终可用的测试路径。
 
 ```bash
 # 查看集群
 rdc cluster status                 # 列出所有集群
-rdc cluster status --name prod     # 查看单个集群的完整配置
+rdc cluster status prod     # 查看单个集群的完整配置
 
 # 扩容或缩容节点池（添加/移除机器，加入/清空节点）
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# 在已配置的成员上安装组件
-rdc cluster install --name prod
 
 # 拆除已配置的成员并从配置中移除集群
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### 获取 kubeconfig
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 kubeconfig 从不存储在您的配置文件中（它体积较大且会轮换）。它按需通过 SSH 获取，并以 `0600` 权限缓存在本地，遵循与 OpenTofu 工作目录和证书缓存相同的旁路状态模式。
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # 输出：export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ rdc cluster kubeconfig --name prod
 
 ```bash
 # Docker 仓库（不变）：机器上一个隔离的 Docker 守护进程
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetes 仓库：集群内 "shop" 命名空间加其存储
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 仓库动词是仓库范围工作的统一接口。通过目标解析漏斗，几乎整个仓库命令集都变得支持集群：`fork`、`migrate`、`push`、`pull`、`up`、`down`、`resize`、`diff`、`commit`、`branch`、`checkout`、`merge`、`trim`、`cat`、`mount`、`sync`、`list`、`status` 和 `log` 都接受 `--cluster`。集群目标会解析为其控制节点，加上固定到该仓库命名空间的 KUBECONFIG 上下文，这与将机器解析为 `DOCKER_HOST` 加一个工作目录是类似的。
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # 导出 KUBECONFIG，然后直接使用 kubectl
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # 导出 KUBECONFIG，然后直接使用 kubectl
 ```
 
 集群节点同样会在 `resources.machines` 中具体化，因此您可以用普通的 `rdc term connect <cluster>-<pool>-<n>` 通过 SSH 连接到特定节点。
@@ -120,7 +118,7 @@ up() {
 在 Kubernetes 仓库上执行 `rdc repo fork` 总是复制数据，且总是瞬间完成。没有 `--full` 标志，也没有其他变体。
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 这会在同一集群中创建命名空间 `shop-joseph`，以写时复制的方式克隆每个卷（Ceph 上是 RBD 克隆，本地后端上是 PV 镜像文件的 reflink），并在那里部署工作负载。fork 的 URL 在父级的通配符证书下立即生效，因此不会签发新的证书或 DNS 记录。
@@ -138,10 +136,10 @@ rdc repo fork --parent shop --tag joseph --cluster prod
 
 ```bash
 # 将整个集群（包括其仓库的数据）克隆到一个新集群
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # 将整个集群（包括其仓库的数据）迁移到另一台机器或数据中心
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 两者都会协调集群镜像加上每个仓库 PV 镜像的写时复制，然后重写节点身份，使克隆出的或迁移后的集群在其新地址上健康启动。由于 k3s 将控制平面状态保存在其内嵌数据存储中，集群镜像本身即是快照：一致性顺序是先控制平面，再 PV，最后是代理节点。

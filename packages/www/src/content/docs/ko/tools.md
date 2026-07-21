@@ -4,7 +4,7 @@ description: "파일 동기화, 터미널 접속, VS Code 통합, CLI 업데이�
 category: "Guides"
 order: 9
 language: ko
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ rsync over SSH를 사용하여 워크스테이션과 원격 저장소 간에 파
 
 ```bash
 # 디렉터리 (내용이 원격에 병합됨)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # 단일 파일을 원격 디렉터리에 저장 (기본 이름 유지)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # 단일 파일, 명시적 목적지 경로
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # 한 번의 호출로 여러 소스 지정
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote`와 `--remote-file`은 함께 사용할 수 없습니다. `--remote-file`은 파일을 가리키는 `--local` 경로가 정확히 하나여야 합니다.
@@ -44,16 +44,16 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ```bash
 # 디렉터리
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # 단일 파일 -- --local은 기존 디렉터리여야 함
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### 동기화 상태 확인
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### 옵션
@@ -61,7 +61,7 @@ rdc repo sync status -m server-1 -r my-app
 | 옵션 | 설명 |
 |--------|-------------|
 | `-m, --machine <name>` | 대상 머신 |
-| `-r, --repository <name>` | 대상 저장소 |
+| `<ref>`(위치 인수) | 대상 저장소 참조: `name`, `name:tag`, 필요 시 `@machine` |
 | `--local <paths...>` | 하나 이상의 로컬 파일 또는 디렉터리 경로 (업로드) 또는 로컬 목적지 디렉터리 (다운로드) |
 | `--remote <path>` | 원격 디렉터리 (저장소 마운트 기준 상대 경로) |
 | `--remote-file <path>` | 단일 파일 업로드 또는 다운로드를 위한 원격 파일 경로 (`--remote` 대안) |
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 가장 빠른 연결 방법:
 
 ```bash
-rdc term connect -m server-1                    # 머신에 연결
-rdc term connect -m server-1 -r my-app             # 저장소에 연결
+rdc term connect server-1                    # 머신에 연결
+rdc term connect my-app             # 저장소에 연결
 ```
 
 ### 명령 실행
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # 저장소에 연결
 대화형 세션 없이 명령을 실행합니다:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 저장소에 연결할 때 `DOCKER_HOST`가 자동으로 저장소의 격리된 Docker 소켓으로 설정되므로, `docker ps`는 해당 저장소의 컨테이너만 표시합니다.
@@ -101,8 +101,8 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 `connect` 하위 명령은 명시적 플래그로 동일한 작업을 수행합니다:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### 컨테이너 작업
@@ -111,28 +111,29 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # 컨테이너 내부에서 셸 열기
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # 컨테이너 로그 보기
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # 실시간 로그 팔로우
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # 컨테이너 통계 보기
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # 컨테이너에서 명령 실행
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| 옵션 | 설명 |
-|--------|-------------|
-| `--container <id>` | 대상 Docker 컨테이너 ID |
-| `--container-action <action>` | 작업: `terminal` (기본값), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | 표시할 로그 줄 수 (기본값: 50) |
-| `--follow` | 로그 지속 팔로우 |
-| `--external` | 인라인 SSH 대신 외부 터미널 사용 |
+| 옵션 | 명령 | 설명 |
+|--------|------|-------------|
+| `-c, --container <name>` | 둘 다 | 저장소 내 대상 컨테이너 |
+| `--lines <n>` | `repo logs` | 표시할 로그 줄 수 |
+| `-f, --follow` | `repo logs` | 로그를 실시간으로 팔로우 |
+| `--timestamps` | `repo logs` | 각 줄에 타임스탬프 표시 |
+| `-i, --interactive` | `repo exec` | stdin을 열어 둠(셸에 필요) |
+| `-u, --user <user>` | `repo exec` | 특정 사용자로 실행 |
 
 ## VS Code 통합 (vscode)
 
@@ -141,7 +142,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### 저장소에 연결
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 이 명령은:
@@ -179,7 +180,7 @@ VS Code 설치, Remote SSH 확장, 활성 연결을 확인합니다.
 로컬 VS Code가 없어도 됩니다. 저장소 샌드박스 내부에서 에디터 서버를 실행하고 어느 브라우저에서든 열 수 있습니다:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 이 명령은:
@@ -190,8 +191,8 @@ rdc vscode connect -r my-app -m server-1 --browser
 터널을 닫은 후에도 서버는 계속 실행됩니다. 재연결 시 기존 서버를 재사용합니다. 관리 명령:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | 옵션 | 설명 |

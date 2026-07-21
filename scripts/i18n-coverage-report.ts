@@ -3,7 +3,7 @@
  * i18n Coverage Report
  *
  * Non-blocking informational tool that generates a summary of translation key usage.
- * Shows which keys are used in web source, documentation, and which are orphaned.
+ * Shows which keys are used in CLI source, documentation, and which are orphaned.
  *
  * Usage:
  *   npx tsx scripts/i18n-coverage-report.ts
@@ -20,8 +20,8 @@ import { globSync } from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const LOCALES_DIR = path.join(__dirname, '../packages/web/src/i18n/locales/en');
-const WEB_SRC_DIR = path.join(__dirname, '../packages/web/src');
+const LOCALES_DIR = path.join(__dirname, '../packages/cli/src/i18n/locales/en');
+const WEB_SRC_DIR = path.join(__dirname, '../packages/cli/src');
 const SHARED_SRC_DIR = path.join(__dirname, '../packages/shared/src');
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 
@@ -99,7 +99,7 @@ function getLocaleKeysByNamespace(): Map<string, string[]> {
 }
 
 /**
- * Extract translation keys used in web source files
+ * Extract translation keys used in CLI source files
  */
 function extractWebKeys(): Set<string> {
   const keys = new Set<string>();
@@ -148,9 +148,12 @@ function extractWebKeys(): Set<string> {
         }
 
         if (namespaces.size === 0) {
-          for (const ns of ['common', 'auth', 'resources', 'functions', 'queue', 'system', 'machines', 'organization', 'settings', 'storageProviders', 'ceph']) {
-            keys.add(`${ns}.${key}`);
-          }
+          // The CLI has no useTranslation() namespace declaration: it calls
+          // t('commands.foo.bar') directly against the single cli.json
+          // namespace. The old fallback list named the deleted web console's
+          // namespaces, so every CLI call resolved to nothing and the report
+          // showed 0% source usage.
+          keys.add(`cli.${key}`);
         }
       }
     }
@@ -264,7 +267,7 @@ function printReport(report: CoverageReport): void {
 
   for (const ns of report.namespaces) {
     console.log(`Namespace: ${ns.namespace} (${ns.totalKeys} keys)`);
-    console.log(`  Web usage:  ${ns.webUsed}/${ns.totalKeys} (${ns.webPercent}%)`);
+    console.log(`  CLI usage:  ${ns.webUsed}/${ns.totalKeys} (${ns.webPercent}%)`);
     console.log(`  Docs usage: ${ns.docsUsed}/${ns.totalKeys} (${ns.docsPercent}%)`);
     console.log(`  Unused:     ${ns.unused}/${ns.totalKeys} (${ns.unusedPercent}%)`);
     console.log();
@@ -273,7 +276,7 @@ function printReport(report: CoverageReport): void {
   console.log('SUMMARY');
   console.log('------------------------------------------------------------');
   console.log(`  Total keys:   ${report.summary.totalKeys.toLocaleString()}`);
-  console.log(`  Used in web:  ${report.summary.webUsed.toLocaleString()} (${report.summary.webPercent}%)`);
+  console.log(`  Used in CLI:  ${report.summary.webUsed.toLocaleString()} (${report.summary.webPercent}%)`);
   console.log(`  Used in docs: ${report.summary.docsUsed.toLocaleString()} (${report.summary.docsPercent}%)`);
   console.log(`  Orphaned:     ${report.summary.orphaned.toLocaleString()} (${report.summary.orphanedPercent}%)`);
   console.log();

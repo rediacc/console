@@ -4,7 +4,7 @@ description: "Ejecuta Kubernetes con la mentalidad de repo de Rediacc: bifurca o
 category: "Guides"
 order: 6
 language: es
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,34 +39,32 @@ Un clúster es un conjunto con nombre de pools de nodos en una red privada. Decl
 
 ```bash
 # Declarar un clúster con pools (nada se aprovisiona todavía)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # Aprovisionar los miembros del pool, arrancar renet en cada uno, instalar componentes (Ceph primero)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 Los roles de pool son `ceph`, `k8s-server`, `k8s-agent` e `hyperconverged` (opt-in explícito, ya que los objetivos de memoria de Ceph y los umbrales de desalojo del kubelet compiten por RAM). Cada pool lleva la asimetría de hardware como parámetros de tamaño y disco por pool: nodos Ceph intensivos en disco, nodos Kubernetes intensivos en CPU/RAM.
 
-Los miembros del pool se materializan en `resources.machines` como `<cluster>-<pool>-<n>` con una referencia inversa, de modo que **cada comando `-m` existente funciona con ellos**: `rdc machine query`, `rdc term connect`, los comandos de repo y las estrategias de copia de seguridad ven los nodos del clúster como máquinas ordinarias.
+Los miembros del pool se materializan en `resources.machines` como `<cluster>-<pool>-<n>` con una referencia inversa, de modo que **cada comando `-m` existente funciona con ellos**: `rdc machine status`, `rdc term connect`, los comandos de repo y las estrategias de copia de seguridad ven los nodos del clúster como máquinas ordinarias.
 
 Los proveedores de nube aprovisionan mediante [OpenTofu](https://opentofu.org/), siguiendo el mismo registro `ProviderMapping` que usa `rdc machine provision`, extendido con un bloque de red privada (VLAN o VPC, la MTU a establecer, la nomenclatura de la NIC privada). El KVM local es la vía de prueba siempre disponible mediante `rdc ops`.
 
 ```bash
 # Inspeccionar clústeres
 rdc cluster status                 # listar todos los clústeres
-rdc cluster status --name prod     # configuración completa de un clúster
+rdc cluster status prod     # configuración completa de un clúster
 
 # Aumentar o reducir un pool (agrega/elimina máquinas, une/drena nodos)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# Instalar componentes en miembros ya aprovisionados
-rdc cluster install --name prod
 
 # Desmontar los miembros aprovisionados y eliminar el clúster de la configuración
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### Obtener un kubeconfig
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 El kubeconfig nunca se almacena en tu archivo de configuración (es grande y rota). Se obtiene bajo demanda por SSH y se cachea localmente con permisos `0600`, siguiendo el mismo patrón de estado lateral que los directorios de trabajo de OpenTofu y la caché de certificados.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # Imprime: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ La bandera de destino decide el tiempo de ejecución. No hay bandera de tipo.
 
 ```bash
 # Repo Docker (sin cambios): un daemon Docker aislado en una máquina
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Repo Kubernetes: namespace "shop" más su almacenamiento, dentro de un clúster
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 Los verbos de repo son la única superficie para el trabajo a nivel de repo. A través del embudo de resolución de destino, prácticamente todo el conjunto de comandos de repo se vuelve compatible con clústeres: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status` y `log` aceptan todos `--cluster`. Un destino de clúster se resuelve a su nodo de control más el contexto KUBECONFIG fijado al namespace del repo, el análogo de resolver una máquina a `DOCKER_HOST` más un directorio de trabajo.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # exportar KUBECONFIG, luego usar kubectl directamente
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # exportar KUBECONFIG, luego usar kubectl directamente
 ```
 
 Los nodos del clúster también se materializan en `resources.machines`, por lo que puedes conectarte por SSH a un nodo específico con el `rdc term connect <cluster>-<pool>-<n>` habitual.
@@ -120,7 +118,7 @@ Un repo al que le falta el tiempo de ejecución de destino recibe un rechazo cla
 `rdc repo fork` en un repo de Kubernetes siempre copia datos, siempre al instante. No hay bandera `--full` ni variantes.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 Esto crea el namespace `shop-joseph` en el mismo clúster, clona cada volumen de forma copy-on-write (un clon RBD en Ceph, un reflink de los archivos de imagen de PV en el backend local) y despliega las cargas de trabajo allí. La URL de la bifurcación está activa al instante bajo el certificado comodín del padre, por lo que no se emite ningún certificado o registro DNS nuevo.
@@ -138,10 +136,10 @@ Las operaciones de clúster completo residen en el grupo `rdc cluster`, porque a
 
 ```bash
 # Clonar un clúster completo, incluidos los datos de sus repos, en un clúster nuevo
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # Mover un clúster completo, incluidos los datos de sus repos, a otra máquina o centro de datos
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 Ambos coordinan un copy-on-write de las imágenes del clúster más cada imagen de PV de repo, y luego reescriben la identidad del nodo para que el clon o el clúster reubicado arranque saludable en sus nuevas direcciones. Dado que k3s almacena el estado del plano de control en su datastore embebido, la imagen del clúster en sí misma es la instantánea: el orden de consistencia es primero el plano de control, luego los PV, luego los agentes.

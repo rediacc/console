@@ -248,7 +248,7 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
   'backup list': [
     { command: 'rdc backup list -m prod-1', descriptionKey: 'commands.backup.list.examples.basic' },
     {
-      command: 'rdc backup list -m prod-1 --storage backups-s3',
+      command: 'rdc backup list --storage backups-s3',
       descriptionKey: 'commands.backup.list.examples.byStorage',
     },
   ],

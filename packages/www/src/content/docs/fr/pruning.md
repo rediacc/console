@@ -4,7 +4,7 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, le
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ Analyse un fournisseur de stockage et supprime les sauvegardes dont les GUIDs n'
 
 ```bash
 # Aperçu uniquement — affiche ce qui serait supprimé
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Supprime réellement les sauvegardes orphelines (comportement par défaut)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Outrepasser la période de grâce (par défaut 7 jours)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Outrepasser la vérification de sécurité de montage (à utiliser avec précaution)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` est requis car les appels rclone s'exécutent sur la machine d'exécution, pas sur votre poste. Les clients ne sont pas censés avoir rclone installé localement. Les identifiants de stockage proviennent toujours de votre configuration locale ; la machine n'est qu'un exécuteur rclone.
@@ -82,10 +82,10 @@ L'analyse de `authorized_keys` parcourt `/home/*/.ssh/authorized_keys` et `/root
 
 ```bash
 # Dry-run, affiche ce qui serait supprimé (aucune modification appliquée)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Exécuter le nettoyage
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Nettoyage en cascade.** Certaines catégories dépendent des précédentes. Par exemple, la suppression de répertoires de montage vides peut faire apparaître des sandboxes orphelines supplémentaires dont le montage associé vient de disparaître. Réexécuter `rdc machine prune` une seconde fois rattrape la cascade et termine le nettoyage. Le dry-run final se conclut par `No orphaned resources found. Datastore is clean.` lorsqu'il ne reste plus rien à faire.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 Avec `--orphaned-repos`, la CLI supprime également les images de dépôt sur la machine qui n'apparaissent dans **aucun** fichier de configuration locale.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 C'est un nettoyage **large**. Il supprime tout ce qui n'est pas dans votre configuration locale, y compris les forks légitimes gérés par d'autres outils ou par le checkout CLI d'un autre opérateur. Si le miroir renet `.interim/state` identifie correctement un dépôt comme un fork mais que la configuration locale ne l'a jamais vu, cette phase le supprime quand même. Préférez la phase 3 (`--prune-unknown`) si vous voulez être conservateur.
@@ -106,8 +106,8 @@ C'est un nettoyage **large**. Il supprime tout ce qui n'est pas dans votre confi
 Avec `--prune-unknown`, la CLI ne supprime que les dépôts que **les deux** signaux échouent à classer : absents de toute configuration locale **et** sans entrée fork-marquée dans le miroir `.interim/state` de la machine (voir [Dépôts. Colonne `Type`](/fr/docs/repositories#colonne-type-et-le-miroir-detat)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 En pratique, `--prune-unknown` est ce que vous voulez pour le nettoyage de routine ; `--orphaned-repos` n'est correct que lorsque vous êtes certain que votre configuration locale est l'inventaire complet et faisant autorité de chaque dépôt sur la machine. Les orphelins hérités pré-miroir et les dépôts dont l'entrée de configuration a été supprimée par erreur tombent tous deux dans le seau « unknown ». Ils sont véritablement incertains, et le flag chirurgical demande à l'opérateur de l'acquitter explicitement.
@@ -116,7 +116,7 @@ Le préflight de sécurité de montage s'exécute également sur cette phase : u
 
 ```bash
 # Combiné : nettoyage complet de la machine avec le chemin chirurgical conscient des forks
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - Les ressources actives (machines, stockages, dépôts, stratégies de sauvegarde, fournisseurs cloud).
 - Les identifiants, le bloc account, le bloc encryption, les defaults.
 - Le `vaultContent` du stockage (y compris les `access_token` OneDrive expirés. Le refresh_token continue à en émettre de nouveaux ; nettoyer forcerait une ré-authentification).
-- Les entrées `knownHosts` (le chemin de rafraîchissement automatique est `rdc config machine scan-keys`).
+- Les entrées `knownHosts` (le chemin de rafraîchissement automatique est `rdc machine scan-keys`).
 - Le tableau de blob de certificat compressé (`infra.acmeCertCache.<base>.data[]`) est reconstruit automatiquement à partir de la liste de certificats nettoyée ; vous ne perdez aucune chaîne qui couvre encore un nom conservé.
 
 ### Exemple concret
@@ -180,7 +180,7 @@ Les noms de certificats dont l'ancrage est une machine, un dépôt ou un GUID vi
 Le miroir `.interim/state/<guid>/.rediacc.json` qui alimente `--prune-unknown` et la colonne `Type` dans `rdc repo list -m` est écrit :
 
 - **Au moment du fork** (`rdc repo fork`). Immédiatement, avant même que le fork ne soit jamais monté.
-- **À chaque enregistrement d'état** (`rdc repo mount` et toute opération qui met à jour l'état du dépôt). Pour les dépôts créés avant le déploiement du code de miroir.
+- **À chaque enregistrement d'état** (`rdc repo up` et toute opération qui met à jour l'état du dépôt). Pour les dépôts créés avant le déploiement du code de miroir.
 
 Les dépôts qui ont été créés **avant l'existence du miroir et qui n'ont pas été remontés depuis la mise à niveau** n'ont pas de fichier miroir. Ils apparaissent comme `unknown` dans `rdc repo list -m` même si certains sont légitimement des forks. Pour corriger cela pour les orphelins hérités, exécutez le backfill ponctuel sur la machine :
 
@@ -238,6 +238,6 @@ Le flag CLI `--grace-days` remplace cette valeur lorsqu'il est fourni.
 - **Préférez `--prune-unknown` à `--orphaned-repos`.** Le flag chirurgical respecte le miroir renet ; le flag large supprimera volontiers les forks que d'autres outils ont créés.
 - **Utilisez des périodes de grâce généreuses pour la production.** La période de grâce par défaut de 7 jours convient à la plupart des workflows. Pour les environnements de production avec des fenêtres de maintenance peu fréquentes, envisagez 14 ou 30 jours.
 - **Planifiez le storage prune après les exécutions de sauvegarde.** Associez `storage prune` à votre planification de sauvegarde pour maîtriser les coûts de stockage sans intervention manuelle.
-- **Combinez machine prune avec backup schedule.** Après avoir déployé les planifications de sauvegarde (`rdc machine backup schedule`), ajoutez un nettoyage périodique de la machine pour supprimer les snapshots obsolètes et les artefacts de datastore orphelins.
+- **Combinez machine prune avec backup schedule.** Après avoir déployé les planifications de sauvegarde (`rdc backup schedule`), ajoutez un nettoyage périodique de la machine pour supprimer les snapshots obsolètes et les artefacts de datastore orphelins.
 - **Exécutez `config prune` périodiquement.** Le ballonnement de la configuration locale (en particulier le cache de certificats) s'accumule silencieusement ; un `config prune --dry-run` trimestriel suffit à le détecter.
 - **Vérifiez avant d'utiliser `--force` ou `--force-delete-mounted`.** Les deux flags contournent les vérifications de sécurité. N'utilisez `--force` que lorsque vous êtes certain qu'aucune autre configuration ne référence les dépôts concernés ; n'utilisez `--force-delete-mounted` que lorsque vous êtes certain que l'état vivant sur la machine est faux.

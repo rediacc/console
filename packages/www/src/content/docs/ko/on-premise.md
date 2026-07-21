@@ -4,7 +4,7 @@ description: "자체 인프라에서 계정 서버 및 CLI 배포를 실행하�
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ curl -fsSL https://account.example.com/install.sh | \
 
 ```bash
 # 온프레미스 서버에 대한 config 생성
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # 해당 config로 로그인
 rdc --config myserver subscription login
 
 # --config를 사용하는 모든 명령은 온프레미스 서버를 사용합니다
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 각 명명된 config는 자체 계정 서버 URL 및 구독 토큰을 저장합니다. config를 전환하면 전체 서버 컨텍스트가 전환됩니다.

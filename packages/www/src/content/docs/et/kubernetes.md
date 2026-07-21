@@ -4,7 +4,7 @@ description: "Käita Kubernetest Rediacci repo mentaliteediga: forkida või liig
 category: "Guides"
 order: 6
 language: et
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,34 +39,32 @@ Klaster on nimega sõlmepesade kogum privaatvõrgus. Deklareeri see esmalt konfi
 
 ```bash
 # Deklareeri klaster pesadega (midagi pole veel ette valmistatud)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # Valmista ette pesa liikmed, käivita renet igaühel, paigalda komponendid (Ceph esimesena)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 Pesa rollid on `ceph`, `k8s-server`, `k8s-agent` ja `hyperconverged` (selgesõnaline sisselülitamine, kuna Ceph mälueesmärgid ja kubeleti väljatõstmise lävendid konkureerivad mälu pärast). Iga pesa kannab riistvara asümmeetriat pesapõhiste suurus- ja kettaparameetritena: kettamahukad Ceph-sõlmed, protsessori/mälumahukad Kubernetese sõlmed.
 
-Pesa liikmed materialiseeruvad `resources.machines`-i kujul `<cluster>-<pool>-<n>` koos tagasiviitega, nii et **iga olemasolev `-m`-käsk töötab nendega**: `rdc machine query`, `rdc term connect`, repo-käsud ja varundusstrateegiad näevad kõik klastri sõlmi tavaliste masinatena.
+Pesa liikmed materialiseeruvad `resources.machines`-i kujul `<cluster>-<pool>-<n>` koos tagasiviitega, nii et **iga olemasolev `-m`-käsk töötab nendega**: `rdc machine status`, `rdc term connect`, repo-käsud ja varundusstrateegiad näevad kõik klastri sõlmi tavaliste masinatena.
 
 Pilvepakkujad valmistavad ette [OpenTofu](https://opentofu.org/) kaudu, järgides sama `ProviderMapping` registrit, mida kasutab `rdc machine provision`, laiendatuna privaatvõrgu plokiga (VLAN või VPC, määratav MTU, privaatse NIC-i nimetamine). Kohalik KVM on alati saadaolev testitee `rdc ops` kaudu.
 
 ```bash
 # Klastrite kontrollimine
 rdc cluster status                 # loetle kõik klastrid
-rdc cluster status --name prod     # ühe klastri täielik konfiguratsioon
+rdc cluster status prod     # ühe klastri täielik konfiguratsioon
 
 # Pesa kasvatamine või kahandamine (lisab/eemaldab masinaid, ühendab/tühjendab sõlmi)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# Komponentide paigaldamine juba ette valmistatud liikmetele
-rdc cluster install --name prod
 
 # Ette valmistatud liikmete lammutamine ja klastri eemaldamine konfiguratsioonist
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### Kubeconfig hankimine
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 Kubeconfig'i ei salvestata kunagi sinu konfiguratsioonifailis (see on suur ja roteerub). See tuuakse nõudmisel SSH kaudu ja puhverdatakse kohalikult õigustega `0600`, järgides sama külgoleku mustrit nagu OpenTofu tööalad ja sertifikaadipuhver.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # Väljastab: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ Sihtlipp otsustab käitusaja. Tüübi lippu pole.
 
 ```bash
 # Docker-repo (muutumatult): isoleeritud Dockeri deemon masinal
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetese repo: nimeruum "shop" pluss selle salvestus, klastri sees
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 Repo-verbid on ainus pind repo-põhise töö jaoks. Sihtkoha lahendamise lehtri kaudu muutub peaaegu kogu repo-käskude komplekt klastriteadlikuks: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status` ja `log` võtavad kõik vastu `--cluster`. Klastri sihtkoht lahendub selle juhtsõlmeks pluss repo nimeruumile kinnitatud KUBECONFIG-kontekstiks, analoogselt masina lahendamisega `DOCKER_HOST`-iks pluss töökataloogiks.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # ekspordi KUBECONFIG, seejärel kasuta otse kubectl-i
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # ekspordi KUBECONFIG, seejärel kasuta otse kubectl-i
 ```
 
 Klastri sõlmed materialiseeruvad samuti `resources.machines`-is, nii et saad SSH-ga ühenduda konkreetse sõlmega tavalise `rdc term connect <cluster>-<pool>-<n>` abil.
@@ -120,7 +118,7 @@ Repo, millel puudub sihtkäitusaeg, saab selge keeldumise **pärast** andmeülek
 `rdc repo fork` Kubernetese repol kopeerib alati andmed, alati koheselt. Lippu `--full` ega variante pole.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 See loob nimeruumi `shop-joseph` samas klastris, kloonib iga köite copy-on-write viisil (RBD-kloon Cephis, reflink PV-pildifailidest kohalikul taustasüsteemil) ja juurutab töökoormused sinna. Fork'i URL on koheselt elus vanema metamärgi sertifikaadi all, nii et uut sertifikaati ega DNS-kirjet ei väljastata.
@@ -138,10 +136,10 @@ Terve klastri toimingud elavad `rdc cluster` grupis, kuna need toimivad erineval
 
 ```bash
 # Kloonida terve klaster, sealhulgas selle repode andmed, uude klastrisse
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # Liigutada terve klaster, sealhulgas selle repode andmed, teise masinasse või andmekeskusesse
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 Mõlemad koordineerivad klastripiltide pluss iga repo PV-pildi copy-on-write kopeerimist, seejärel kirjutavad ümber sõlme identiteedi, nii et kloon või ümberpaigutatud klaster tõuseb tervelt oma uutel aadressidel. Kuna k3s salvestab juhttasandi oleku oma põimitud andmesalves, on klastripilt ise hetktõmmis: järjepidevuse järjekord on esmalt juhttasand, seejärel PV-d, seejärel agendid.

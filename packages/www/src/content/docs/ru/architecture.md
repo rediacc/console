@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 0
 language: ru
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -48,7 +48,7 @@ Rediacc использует два бинарных файла, работаю�
 
 ## Пользователь rediacc
 
-При выполнении `rdc config machine setup` renet создает системного пользователя `rediacc` на удаленном сервере:
+При выполнении `rdc machine setup` renet создает системного пользователя `rediacc` на удаленном сервере:
 
 - **UID**: 7111
 - **Оболочка**: `/sbin/nologin` (не может входить через SSH)

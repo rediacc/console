@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 41
 language: tr
-sourceHash: "fe334c1c94a0f417"
+sourceHash: "b8bd3176ecabfa4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,15 +34,14 @@ Bir depo, btrfs havuzundaki tek bir LUKS görüntü dosyasıdır. Bir fork bu g�
 Bağlı bir çalışma fork'unu yeni bir değişmez commit'e dondurun.
 
 ```bash
-rdc repo commit --name <fork> --message "<message>" -m <machine>
+rdc repo commit <fork> --message "<message>"
 ```
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Commit edilecek çalışma fork'u. Bağlı olmalıdır. Zorunlu. | zorunlu |
+| `<ref>` (konumsal) | Commit edilecek çalışma fork'u. Bağlı olmalıdır. Zorunlu. | zorunlu |
 | `--message <msg>` | Commit mesajı. Zorunlu. | zorunlu |
 | `--author <author>` | Commit meta verisine kaydedilen commit yazarı. | ayarlanmamış |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
 Yeni commit, `immutable: true` ile yerel yapılandırmaya kaydedilir ve çalışma fork'unun `headCommit`'i onu işaret edecek şekilde ilerler. Değişmez bir depoyu commit etmek reddedilir: önce yazılabilir bir fork'a aktarın.
@@ -52,13 +51,13 @@ Yeni commit, `immutable: true` ile yerel yapılandırmaya kaydedilir ve çalış
 Bir çalışma fork'unun geçerli commit'ini işaret eden adlandırılmış bir dal ref'i oluşturun.
 
 ```bash
-rdc repo branch --branch <name> --name <fork>
+rdc repo branch <fork> --branch <name>
 ```
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
 | `--branch <branch>` | Yeni dalın adı. Zorunlu. | zorunlu |
-| `--name <name>` | Dalın işaret ettiği geçerli commit'e sahip çalışma fork'u. Zorunlu. | zorunlu |
+| `<ref>` (konumsal) | Dalın işaret ettiği geçerli commit'e sahip çalışma fork'u. Zorunlu. | zorunlu |
 
 Bu yalnızca yapılandırma işlemidir. Makinede hiçbir iş olmaz. Dal ref'i bir adı çalışma fork'unun `headCommit`'ine eşler; bu nedenle fork'un önce en az bir commit'i olmalıdır.
 
@@ -67,15 +66,14 @@ Bu yalnızca yapılandırma işlemidir. Makinede hiçbir iş olmaz. Dal ref'i bi
 Değişmez bir commit'i (veya dal ucunu) yeni bir yazılabilir çalışma fork'una reflink olarak klonlayın.
 
 ```bash
-rdc repo checkout --ref <commit> --tag <newFork> -m <machine>
-rdc repo checkout --ref <branchName> --from <fork> --tag <newFork> -m <machine>
+rdc repo checkout <commit> --tag <newFork>
+rdc repo checkout <branchName> --from <fork> --tag <newFork>
 ```
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--ref <commit\|branch>` | Aktarılacak commit GUID'si veya `--from` verildiğinde dal adı. Zorunlu. | zorunlu |
+| `<commit-or-branch-ref>` (konumsal) | Checkout edilecek commit GUID'i veya `--from` verildiğinde bir dal adı. Zorunlu. | zorunlu |
 | `--tag <name>` | Yeni yazılabilir çalışma fork'unun adı. Zorunlu. | zorunlu |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--from <workingFork>` | Bu çalışma fork'unun dal kümesinde `--ref`'i dal adı olarak çözümler. | doğrudan commit |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 | `--skip-router-restart` | Router yeniden başlatma adımını atlar. | kapalı |
@@ -87,14 +85,13 @@ Checkout, fork reflink yolunu yeniden kullanır; bu nedenle depo boyutundan bağ
 Bir çalışma fork'undan veya commit'ten erişilebilen commit geçmişini dolaşın.
 
 ```bash
-rdc repo log --name <fork> -m <machine>
+rdc repo log <fork>
 ```
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Geçmiş yürüyüşüne başlanacak çalışma fork'u veya commit. Zorunlu. | zorunlu |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
-| `--json` | Commit geçmişini JSON olarak çıktılar. | kapalı |
+| `<ref>` (konumsal) | Geçmiş yürüyüşünün başlayacağı çalışma fork'u veya commit. Zorunlu. | zorunlu |
+| `-o json` | Commit geçmişini JSON olarak çıktıla. | `table` |
 | `--debug` | Stderr'de ayrıntılı tanılamalar. | kapalı |
 
 `log`, `rdc repo commit` tarafından kaydedilen üst zinciri dolaşır; hiçbir commit kilitlenmeden veya bağlanmadan birim dışı durum yansımasını okur. Salt okunur.
@@ -104,15 +101,14 @@ rdc repo log --name <fork> -m <machine>
 Canlı hedefi yerinde değiştirmeden bir kaynak commit veya fork'u hedef çalışma fork'una birleştirin.
 
 ```bash
-rdc repo merge --name <target> --from <source> -m <machine>
-rdc repo merge --name <target> --from <source> --resolve theirs -m <machine>
+rdc repo merge <target> --from <source>
+rdc repo merge <target> --from <source> --resolve theirs
 ```
 
 | Seçenek | Açıklama | Varsayılan |
 |---------|----------|------------|
-| `--name <name>` | Birleştirilecek hedef çalışma fork'u. Zorunlu. | zorunlu |
+| `<ref>` (konumsal) | İçine birleştirilecek hedef çalışma fork'u. Zorunlu. | zorunlu |
 | `--from <source>` | Birleştirilecek kaynak commit veya fork. Zorunlu. | zorunlu |
-| `-m, --machine <name>` | Hedef makine. Zorunlu. | zorunlu |
 | `--force` | Önce bağlı veya çalışan bir hedefi susturun, sonra birleştirin. Canlı bağlamayı hiçbir zaman değiştirmez. | kapalı |
 | `--resolve <ours\|theirs>` | Dosya başına üç yollu birleştirme: kaynağın dosya başına değişikliklerini hedefe katlayın; her iki tarafta değişen dosyalar için kaynağın sürümünü tutun (`ours`) veya alın (`theirs`). Tüm görüntü alma-onların için atlayın. | kapalı |
 | `--base <guid>` | Üç yollu birleştirme için ortak ata commit'i (`--resolve` ile kullanılır). Kaynak commit'in üst öğesini veya hedefin geçerli commit'ini varsayılan olarak kullanır. | otomatik |
@@ -139,12 +135,12 @@ rdc repo gc --apply -m <machine>    # erişilemeyen commit'leri sil
 
 Erişilebilirlik yerel yapılandırmadan hesaplanır (ref deposu): her dal ucunu ve HEAD'i üst zincirden takip ederek erişilebilen commit'ler kümesi. Bu kümenin dışındaki makinedeki değişmez commit'ler erişilemez. Bağlı nesne veya çalışma fork'u hiçbir zaman toplanmaz.
 
-### rdc repo fsck
+### rdc repo admin fsck
 
 Yapılandırma ref'lerini bir makinede bulunan nesnelere karşı doğrulayın.
 
 ```bash
-rdc repo fsck -m <machine>
+rdc repo admin fsck -m <machine>
 ```
 
 | Seçenek | Açıklama | Varsayılan |
@@ -158,7 +154,7 @@ Sarkan ref'leri (makinede nesnesi olmayan bir GUID'i işaret eden dal ucu veya H
 `rdc repo fork --immutable`, yeni fork'u oluşturmada salt okunur olarak işaretler; ayrı bir `commit` adımı olmadan commit eşdeğeri bir taban üretir.
 
 ```bash
-rdc repo fork --parent <name> --tag <tag> --immutable -m <machine>
+rdc repo fork <name> --tag <tag> --immutable
 ```
 
 Değişmez fork bağlanmayı reddeder; bu da görüntüsünü sonsuza kadar bayt kararlı tutar. Bu, tabanın her iki uçta özdeş olması gereken makineler arası delta push için dondurulmuş taban olarak kullanışlıdır. Değişiklik yapmak için yazılabilir bir kopyaya aktarın (veya yeniden fork'layın).
@@ -168,28 +164,28 @@ Değişmez fork bağlanmayı reddeder; bu da görüntüsünü sonsuza kadar bayt
 ### Çalışma fork'unu commit et
 
 ```bash
-$ rdc repo commit --name myapp:work --message "schema migration applied" -m server-1
+$ rdc repo commit myapp:work --message "schema migration applied"
 Committed 4f3c2a1b9d8e: schema migration applied
 ```
 
 ### Açık yazar ile commit et
 
 ```bash
-$ rdc repo commit --name myapp:work --message "nightly snapshot" --author ci-bot -m server-1
+$ rdc repo commit myapp:work --message "nightly snapshot" --author ci-bot
 Committed 7a1b2c3d4e5f: nightly snapshot
 ```
 
 ### Geçerli commit'te dal adlandır
 
 ```bash
-$ rdc repo branch --branch staging --name myapp:work
+$ rdc repo branch myapp:work --branch staging
 Branch "staging" -> 4f3c2a1b9d8e
 ```
 
 ### Commit'i yeni yazılabilir fork'a aktar
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag rollback-test
 ```
 
 ### Dal ucunu adıyla aktar
@@ -197,13 +193,13 @@ $ rdc repo checkout --ref 4f3c2a1b9d8e --tag rollback-test -m server-1
 `--from` ile `--ref` değeri verilen çalışma fork'undaki dal adı olarak çözümlenir:
 
 ```bash
-$ rdc repo checkout --ref staging --from myapp:work --tag staging-copy -m server-1
+$ rdc repo checkout staging --from myapp:work --tag staging-copy
 ```
 
 ### Geçmişi dolaş
 
 ```bash
-$ rdc repo log --name myapp:work -m server-1
+$ rdc repo log myapp:work
 commit 4f3c2a1b9d8e
   Author: ci-bot  Date: 2026-05-29T10:14:02Z
   schema migration applied
@@ -214,10 +210,10 @@ commit 9d8e7a1b2c3d
 
 ### JSON olarak geçmiş
 
-`--json`, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar:
+`-o json`, yapılandırılmış yürüyüşü en yeniden başlayarak çıktılar:
 
 ```bash
-$ rdc repo log --name myapp:work --json -m server-1
+$ rdc repo log myapp:work -o json
 {
   "success": true,
   "start": "4f3c2a1b9d8e",
@@ -239,8 +235,8 @@ $ rdc repo log --name myapp:work --json -m server-1
 `rdc repo diff`, ortak bir kopyala-yaz atası paylaştıkları için herhangi iki commit arasında çalışır. Bir commit'i aktar, sonra diğerine göre farklılaştır:
 
 ```bash
-$ rdc repo checkout --ref 4f3c2a1b9d8e --tag review -m server-1
-$ rdc repo diff --name review --base myapp:work -m server-1
+$ rdc repo checkout 4f3c2a1b9d8e --tag review
+$ rdc repo diff review --base myapp:work
 M  db/schema.sql
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -251,7 +247,7 @@ Tam diff referansı için [rdc repo diff](/tr/docs/repo-diff) sayfasına bakın.
 ### Gözden geçirilmiş çizgiyi geri birleştir
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work -m server-1
+$ rdc repo merge myapp:main --from myapp:work
 Merged myapp:work into myapp:main
 ```
 
@@ -260,7 +256,7 @@ Merged myapp:work into myapp:main
 Bağlı veya çalışan hedef, önce onu susturan `--force` olmadıkça reddedilir:
 
 ```bash
-$ rdc repo merge --name myapp:main --from myapp:work --force -m server-1
+$ rdc repo merge myapp:main --from myapp:work --force
 Merged myapp:work into myapp:main
 ```
 
@@ -269,7 +265,7 @@ Merged myapp:work into myapp:main
 Aynı commit'ten aktarılan iki fork (`feature` ve `hotfix`) bazı dosyaları değiştirdi. `--resolve theirs`, kaynağı (`hotfix`) hedefe (`feature`) katar: yalnızca bir tarafın değiştirdiği dosyalar o taraftan alınır ve her iki tarafın değiştirdiği dosyalar kaynağa çözülür. Taban paylaşılan atadan otomatik algılanır (veya `--base` ile sabitleyin):
 
 ```bash
-$ rdc repo merge --name myapp:feature --from myapp:hotfix --resolve theirs -m server-1
+$ rdc repo merge myapp:feature --from myapp:hotfix --resolve theirs
 Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --theirs: [config/app.yaml]
 ```
 
@@ -278,7 +274,7 @@ Merged myapp:hotfix into myapp:feature (three-way); 1 conflict(s) resolved --the
 ### Doğrudan değişmez taban oluştur
 
 ```bash
-$ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
+$ rdc repo fork myapp --tag baseline-v1 --immutable
 ```
 
 ## Delta push ve pull
@@ -289,19 +285,19 @@ Normalde elle taban vermezsiniz. Tam push'tan sonra CLI, push edilmiş görünt�
 
 ```bash
 # İlk push tam aktarımdır; ayrıca her iki uçta yeniden kullanılabilir taban tutar.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Yerel değişikliklerden sonra sonraki push yalnızca değişen blokları gönderir, bayrak gerekmez.
-$ rdc repo push --name myapp:work --to-machine backup-1 -m server-1
+$ rdc repo push myapp:work --to backup-1
 
 # Açık taban belirt (her iki makinede mevcut değişmez commit).
-$ rdc repo push --name myapp:work --to-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo push myapp:work --to backup-1 --delta-base 4f3c2a1b9d8e
 
 # Delta ayrıca ters yönde çalışır; bir makine kaynağından yalnızca değişen blokları çeker.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --delta-base 4f3c2a1b9d8e -m server-1
+$ rdc repo pull myapp:work --from backup-1 --delta-base 4f3c2a1b9d8e
 
 # Mevcut yerel depoyu (üzerine yaz) --force ile yeniden çek.
-$ rdc repo pull --name myapp:work --from-machine backup-1 --force -m server-1
+$ rdc repo pull myapp:work --from backup-1 --force
 ```
 
 Delta aktarımı yalnızca makineler arasında geçerlidir (FIEMAP tabanı olan uzak). Bulut nesne depolamasına push her zaman tam görüntüyü aktarır. Tabanın her iki uçta bayt bayta özdeş olması gerekir; bu da tam olarak değişmez bir commit'in veya `--immutable` fork'un garanti ettiği şeydir.

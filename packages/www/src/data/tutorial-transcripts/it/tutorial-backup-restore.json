@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Passo uno. Importiamo una configurazione rclone esistente. rclone supporta S3, Backblaze, Google Drive, Dropbox e molti altri -- se lo usi gia', puoi importare la stessa configurazione direttamente.",
       "afterText": "Storage importato. La CLI puo' ora inviarci i backup.",
       "cardLabel": "Importa Storage",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage è una destinazione verso cui possiamo inviare i backup.",
       "afterText": "Eccolo. Pronto a ricevere backup.",
       "cardLabel": "Elenca Storage",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository è cifrato a riposo, anche il backup è cifrato. Nessuna gestione aggiuntiva delle chiavi.",
       "afterText": "Backup caricato. Tutto cio' che c'e' in questo repo si trova ora sullo storage remoto, cifrato.",
       "cardLabel": "Invia Backup",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- il comando pull del repository. Stessi dati, stessi container, macchina diversa.",
       "afterText": "Tutti i tuoi snapshot in un unico posto. Recuperane uno qualsiasi con un singolo comando.",
       "cardLabel": "Elenca Backup",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Ora la prova del ripristino. Prima si porta il repository offline: si fermano i servizi e si smonta il volume cifrato. L'app è sparita da questa macchina.",
       "afterText": "Offline e smontato, esattamente come un server appena installato.",
       "cardLabel": "Porta Offline",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "E si riporta il backup direttamente dallo storage. Il comando repo pull recupera l'immagine, ne verifica l'integrità e la rimette esattamente dove si trovava.",
       "afterText": "Trasferimento completato, integrità verificata. Il repository è tornato.",
       "cardLabel": "Recupera Backup",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Si rimonta, e il repository è ripristinato. Push, list, pull: questa è tutta la storia del backup.",
       "afterText": "Ripristinato. Lo stesso flusso funziona anche su una macchina nuova di zecca.",
       "cardLabel": "Monta Ripristinato",

@@ -4,8 +4,8 @@ description: "Установите CLI Rediacc на Linux, macOS или Windows.
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "5bdc0ff205ae9c73"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 ---
 
 # Установка
@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 Загрузите и запустите CLI как контейнер:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 Создайте псевдоним для удобства:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 Доступные теги Docker:
@@ -174,7 +174,7 @@ REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### Как работают каналы
@@ -183,7 +183,7 @@ docker pull ghcr.io/rediacc/elite/cli:edge
 
 - **Скрипты установки**: Переменная окружения `REDIACC_CHANNEL` выбирает канал
 - **Репозитории пакетов**: `releases.rediacc.com/{формат}/{канал}/`
-- **Теги Docker**: `ghcr.io/rediacc/elite/cli:{канал}`
+- **Теги Docker**: `ghcr.io/rediacc/rdc:{канал}`
 - **Обновления CLI**: `rdc update` проверяет канал, настроенный при установке
 
 ### Автоматическая настройка превью PR

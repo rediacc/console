@@ -3894,7 +3894,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "Начать бесплатно",
           "description": "Начните с бесплатной редакции Community. Проведите первый пентест менее чем за 60 секунд.",
           "title": "Находите уязвимости раньше атакующих"
@@ -4303,7 +4303,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "Начать бесплатно с Community",
           "description": "Начните с бесплатной редакции Community. Сгенерируйте первый аудиторский отчёт менее чем за минуту.",
           "title": "Видеть всё. Не упускать ничего."
@@ -4773,7 +4773,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "Начните с бесплатной редакции Community. Верифицируйте первый бэкап за 60 секунд.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Кредитная карта не требуется",
@@ -5185,7 +5185,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5285,7 +5285,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "Начните с бесплатной редакции Community. Кросс-облачный фейловер включён.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Кредитная карта не требуется",
@@ -5803,7 +5803,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Начать бесплатно",
           "description": "Начните с бесплатной редакции Community. Настройте первый непрерывный пентест за 30 секунд.",
           "title": "Закройте окно, на которое рассчитывают атакующие"
@@ -6683,7 +6683,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "Начать бесплатно с Community",
           "description": "Начните с бесплатной редакции Community. Сгенерируйте первый ключ менее чем за минуту.",
           "title": "Возьмите контроль над своим шифрованием"
@@ -7115,7 +7115,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7191,7 +7191,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "Начните с бесплатной редакции Community. Клонируйте до 10 рабочих нагрузок бесплатно. Без кредитной карты.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Бесплатно навсегда для до 10 рабочих нагрузок",
@@ -7699,7 +7699,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Начните с бесплатной редакции Community. Проведите первое DR-учение за 5 минут.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Кредитная карта не требуется",
@@ -8201,7 +8201,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "Начните с бесплатной редакции Community. Защитите до 10 рабочих нагрузок бесплатно. Без кредитной карты.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Бесплатно навсегда для до 10 рабочих нагрузок",
@@ -8732,7 +8732,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Начните с бесплатной редакции Community. Клонирование по требованию включено.",
           "primaryCta": "Начать бесплатно",
           "tierBadge": "Бесплатно для до 5 репозиториев · Кредитная карта не требуется",
@@ -9201,7 +9201,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Начните с бесплатной редакции Community. Восстановите первую среду менее чем за 5 минут.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Кредитная карта не требуется",
@@ -9717,7 +9717,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "Начните с бесплатной редакции Community. Интеграция с Git включена.",
           "primaryCta": "Начать бесплатно",
           "tierBadge": "Бесплатно для до 5 репозиториев · Кредитная карта не требуется",
@@ -10607,7 +10607,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "Начните с бесплатной редакции Community. Зашифрованная миграция включена.",
           "primaryCta": "Начать бесплатно",
           "tierBadge": "Бесплатно для до 5 репозиториев · Кредитная карта не требуется",
@@ -11122,7 +11122,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Начните с бесплатной редакции Community. Паритет с продакшеном включён.",
           "primaryCta": "Начать бесплатно",
           "tierBadge": "Бесплатно для до 5 репозиториев · Кредитная карта не требуется",
@@ -11500,7 +11500,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11603,7 +11603,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Начать бесплатно с Community",
           "description": "Начните с бесплатной редакции Community. Защитите до 10 рабочих нагрузок бесплатно. Без кредитной карты.",
           "title": "Не позволяйте восстановлению быть медленнее атаки"
@@ -11810,7 +11810,7 @@
           "overline": "КАК ЭТО РАБОТАЕТ",
           "steps": [
             {
-              "description": "Запустите rdc repo backup list --verified, чтобы найти последний чистый снимок.",
+              "description": "Запустите rdc backup list, чтобы найти последний чистый снимок.",
               "icon": "eye",
               "title": "Обнаружение"
             },
@@ -12636,7 +12636,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "Начните с бесплатной редакции Community. Клонируйте, тестируйте и проверяйте бесплатно. Без кредитной карты.",
           "primaryCta": "Начать бесплатно с Community",
           "tierBadge": "Бесплатно навсегда для до 10 рабочих нагрузок",
@@ -13150,7 +13150,7 @@
           "title": "Что вы получаете"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Начать бесплатно с Community",
           "description": "Начните с бесплатной редакции Community. Размещайте где угодно. Мигрируйте когда угодно. Без кредитной карты.",
           "title": "Верните контроль над своей инфраструктурой"
@@ -13367,7 +13367,7 @@
               "title": "Стандартные форматы"
             },
             {
-              "description": "Запустите rdc repo push production --to-machine new-provider -m primary --checkpoint. Инкрементальная передача. Нулевой простой.",
+              "description": "Запустите rdc repo push production --to new-provider --checkpoint. Инкрементальная передача. Нулевой простой.",
               "icon": "arrow-right-circle",
               "title": "Миграция одной командой"
             },

@@ -18,7 +18,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.408078,
+      "at": 2.420634,
       "text": "Step one: list the available templates. Rediacc ships ready-made setups for common apps, so there is no docker-compose to write from scratch.",
       "afterText": "The full template catalog. Each one is a tested compose plus Rediaccfile pairing.",
       "cardLabel": "List Templates",
@@ -27,7 +27,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.077084,
+      "at": 6.399014,
       "text": "Step two: drop the app-postgres template into the repo. A tested set of files, copied straight in.",
       "afterText": "Template applied. Let us see what actually landed in the repo.",
       "cardLabel": "Apply Template",
@@ -36,7 +36,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 14.72542,
+      "at": 12.523372,
       "text": "Peek inside the repo and list what landed: a Rediaccfile holding the start and stop hooks, and a docker-compose file describing the containers.",
       "afterText": "Two files: Rediaccfile for the lifecycle hooks, and docker-compose.yml for the containers.",
       "cardLabel": "See the Files",
@@ -45,7 +45,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 21.699752,
+      "at": 17.108804,
       "text": "Step three: bring the repo up. One command — the CLI mounts the encrypted volume, starts the isolated Docker daemon, and launches the containers.",
       "afterText": "Containers running, volume mounted, isolated Docker daemon up.",
       "cardLabel": "Bring Repo Up",
@@ -54,7 +54,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 28.8781,
+      "at": 22.317819,
       "text": "Verify what is running. Docker ps here lists only this repo's containers. Every other repo on this server has its own daemon, completely invisible from this view.",
       "afterText": "Only this repo's containers. The isolation is real, not configuration.",
       "cardLabel": "Verify Isolation",

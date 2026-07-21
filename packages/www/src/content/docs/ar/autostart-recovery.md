@@ -4,7 +4,7 @@ description: "كيف يعمل التشغيل التلقائي، والمُوفِ
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ journalctl -u rediacc-autostart-reconcile.service --since "1 hour ago"
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-كل اسم ملف هو GUID مستودع. استخدم `rdc config repository list` لربط المعرفات بأسماء المستودعات.
+كل اسم ملف هو GUID مستودع. استخدم `rdc repo list` لربط المعرفات بأسماء المستودعات.
 
 لمسح معلّم بعد حل المشكلة الأساسية، احذف الملف:
 

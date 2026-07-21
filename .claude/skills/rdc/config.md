@@ -96,7 +96,7 @@ Each takes the machine positionally.
 `rdc machine provision <name> --provider <provider>` creates a VM via OpenTofu, waits for SSH, registers the machine, installs renet, and runs setup. Auto-detects `baseDomain` from sibling machines in the config; use `--base-domain` to override or `--no-infra` to skip infrastructure setup entirely. Requires `tofu` binary on PATH.
 
 ### Deprovision a machine
-`rdc machine deprovision --name <name>` destroys a cloud-provisioned VM via OpenTofu and removes it from the config. Only works for machines created with `machine provision`.
+`rdc machine deprovision <name>` destroys a cloud-provisioned VM via OpenTofu and removes it from the config. Only works for machines created with `machine provision`.
 
 ### Workflow: Cloud-provisioned machine
 ```bash

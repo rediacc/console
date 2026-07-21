@@ -4,8 +4,8 @@ description: "Referencia rápida de rdc: configuraciones, repositorios, máquina
 category: Guides
 order: 3
 language: es
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 ---
 
 # Hoja de referencia de RDC CLI
@@ -49,7 +49,7 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | `rdc repo push ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al subir (p. ej. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al bajar |
 | `rdc repo push ... --checkpoint` | Guardar punto de control de contenedores antes de subir |
-| `rdc backup list --storage <storage> -m <machine>` | Listar las copias de seguridad disponibles en el almacenamiento |
+| `rdc backup list --storage <storage>` | Listar las copias de seguridad disponibles en el almacenamiento |
 | `rdc storage browse <storage>` | Explorar el contenido del almacenamiento |
 
 ## Migración de repositorios

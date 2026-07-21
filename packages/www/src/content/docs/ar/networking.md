@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: 20f014619af1ee41e75cd46a3c8e4abc5add0983
 ---
 
@@ -132,16 +132,16 @@ labels:
 
    ```bash
    # بيانات اعتماد مشتركة (مرة واحدة لكل إعداد، تُطبّق على جميع الأجهزة)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # إعدادات خاصة بالجهاز
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. سجلات DNS تشير إلى نطاقك على عنوان IP العام للخادم (راجع [تكوين DNS](#تكوين-dns) أدناه).
@@ -185,14 +185,14 @@ services:
 يتم الحصول على شهادات TLS تلقائياً عبر Let's Encrypt باستخدام تحدي Cloudflare DNS-01. تُكوَّن بيانات الاعتماد مرة واحدة لكل إعداد (مشتركة عبر جميع الأجهزة):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 تستخدم المسارات التلقائية **شهادات بدل** على مستوى النطاق الفرعي للمستودع (`*.marketing.server-1.example.com`) بدلاً من شهادات لكل خدمة. تُوفَّر الشهادة تلقائياً بواسطة Traefik عند أول `repo up`، لا خطوة يدوية مطلوبة. تُعيد الفروع استخدام شهادة البدل الموجودة للمستودع الأصل، لذا لا تُطلق طلب شهادة جديدة. مسارات النطاق المخصص تستخدم شهادات بدل على مستوى الجهاز (`*.server-1.example.com`).
 
-> **يتطلب بيانات اعتماد Cloudflare.** تستخدم شهادات البدل تحدي DNS-01. بدون `--cf-dns-token` (واختياريًا `--cert-email`)، لا يستطيع Traefik إكمال التحدي ولن يعمل HTTPS. يبقى HTTP وظيفياً. كوِّن بيانات الاعتماد باستخدام `rdc config infra set` قبل أول نشر.
+> **يتطلب بيانات اعتماد Cloudflare.** تستخدم شهادات البدل تحدي DNS-01. بدون `--cf-dns-token` (واختياريًا `--cert-email`)، لا يستطيع Traefik إكمال التحدي ولن يعمل HTTPS. يبقى HTTP وظيفياً. كوِّن بيانات الاعتماد باستخدام `rdc machine infra set` قبل أول نشر.
 
 لمسارات المستوى 2 مع `traefik.http.routers.{name}.tls.certresolver=letsencrypt`، يتم حقن أسماء نطاقات البدل SAN تلقائياً بناءً على اسم المضيف للمسار.
 
@@ -212,17 +212,17 @@ rdc config infra set -m server-1 \
 
 - تلقائياً بعد `rdc repo up`، لكن فقط إذا كانت ذاكرة التخزين المؤقت المحلية لـ `baseDomain` الجهاز أقدم من 6 ساعات. تُترك ذاكرات التخزين المؤقت الحديثة كما هي حتى لا تُرهق SSH بعمليات النشر المتتالية.
 - عند الطلب: `rdc machine infra cert pull <machine>` (سحب قسري) أو `rdc machine status <machine> --sync-certs` (سحب كأثر جانبي لاستعلام الحالة).
-- عند `rdc config infra push`، تُدفع ذاكرة التخزين المؤقت إلى الجهاز (الشهادات المحلية ذات انتهاء الصلاحية الأطول تفوز على الشهادات البعيدة).
+- عند `rdc machine infra push`، تُدفع ذاكرة التخزين المؤقت إلى الجهاز (الشهادات المحلية ذات انتهاء الصلاحية الأطول تفوز على الشهادات البعيدة).
 
 **صيانة ذاكرة التخزين المؤقت:**
 
 - إدخالات المسارات التلقائية القديمة (النطاقات القديمة الموسومة بمعرف الشبكة مثل `service-3200.rediacc.io`) تُحذف خلال كل عملية سحب.
 - الشهادات التي انتهت صلاحيتها `notAfter` بأكثر من 7 أيام تُزال تماماً. إنها خاملة وتُضخّم ذاكرة التخزين المؤقت فقط.
-- `rdc config cert-cache clear` يمسح كل شيء؛ `rdc config cert-cache status` يُظهر السجل.
+- `rdc config prune --certs-only` يمسح كل شيء؛ `rdc config prune --certs-only` يُظهر السجل.
 
 **استكشاف الأخطاء:** إذا انهار `traefik-certs-dumper` مع `/traefik/acme.json: no such file or directory`، فإن daemon المستودع لا يستطيع رؤية مخزن letsencrypt الخاص بالمضيف. تحقق من (أ) وجود `/opt/rediacc/proxy/letsencrypt/acme.json` على المضيف (هذه مسؤولية `rediacc-proxy` على مستوى المضيف)، و(ب) بدء تشغيل daemon المستودع بإصدار renet حديث بما يكفي يُدرج `/opt/rediacc/proxy` في قائمة السماح. أعد نشر المستودع باستخدام `rdc repo up` بعد ترقية renet للتطبيق.
 
-> **تجريبي:** شُحنت وتيرة المزامنة التلقائية والحذف القائم على انتهاء الصلاحية في renet 0.9+. إصدارات CLI/renet الأقدم تستخدم مزامنة يدوية بحتة عبر `rdc config cert-cache pull`.
+> **تجريبي:** شُحنت وتيرة المزامنة التلقائية والحذف القائم على انتهاء الصلاحية في renet 0.9+. إصدارات CLI/renet الأقدم تستخدم مزامنة يدوية بحتة عبر `rdc config prune --certs-only`.
 
 ## توجيه منافذ TCP/UDP
 
@@ -233,16 +233,16 @@ rdc config infra set -m server-1 \
 أضف المنافذ المطلوبة أثناء تكوين البنية التحتية:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 ينشئ هذا نقاط دخول Traefik باسم `tcp-{port}` و`udp-{port}`.
 
-> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc config infra push` لتحديث تكوين الوكيل.
+> بعد إضافة أو إزالة المنافذ، قم دائماً بتشغيل `rdc machine infra push` لتحديث تكوين الوكيل.
 
 ### الخطوة 2: إضافة علامات TCP/UDP
 
@@ -315,7 +315,7 @@ services:
 
 ### DNS التلقائي (Cloudflare)
 
-عند تكوين `--cf-dns-token`، يقوم `rdc config infra push` تلقائياً بإنشاء سجلات DNS اللازمة في Cloudflare:
+عند تكوين `--cf-dns-token`، يقوم `rdc machine infra push` تلقائياً بإنشاء سجلات DNS اللازمة في Cloudflare:
 
 | السجل | النوع | المحتوى | أُنشئ بواسطة |
 |-------|-------|---------|-------------|
@@ -482,7 +482,7 @@ app.example.com   A   203.0.113.50
 ### النشر
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 في غضون ثوانٍ قليلة، يكتشف خادم التوجيه الحاوية، ويلتقط Traefik المسار، ويطلب شهادة TLS، ويصبح `https://app.example.com` مباشراً.

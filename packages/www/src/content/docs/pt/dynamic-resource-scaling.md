@@ -1,4 +1,5 @@
 ---
+sourceHash: "7a75ab45703267eb"
 title: Escalamento Dinâmico de Recursos
 description: Construa arquitetura cloud com flexibilidade ilimitada para treino de IA e cargas de trabalho dinâmicas.
 category: Use Cases

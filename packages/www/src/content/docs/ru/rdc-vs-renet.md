@@ -4,7 +4,7 @@ description: "Когда использовать rdc и когда исполь
 category: Concepts
 order: 1
 language: ru
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Rediacc поставляется с двумя исполняемыми файл
 
 ```bash
 # Настроить новый сервер
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # Создать и запустить репозиторий
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # Остановить репозиторий
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # Проверить состояние машины
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Подробное пошаговое руководство см. в разделе [Быстрый старт](/ru/docs/quick-start).

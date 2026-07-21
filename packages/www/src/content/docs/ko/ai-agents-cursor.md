@@ -4,7 +4,7 @@ description: .cursorrules 및 터미널 통합을 사용하여 Cursor IDE를 Red
 category: Guides
 order: 32
 language: ko
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Cursor에 요청: *"내 프로덕션 서버의 상태를 확인해 주세요"*
 
 Cursor가 터미널에서 실행:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### 변경사항 배포
@@ -48,7 +48,7 @@ Cursor에 요청: *"업데이트된 nextcloud 설정을 배포해 주세요"*
 
 Cursor가 터미널에서 실행:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### 로그 확인
@@ -57,7 +57,7 @@ Cursor에 요청: *"최근 mail 컨테이너 로그를 보여주세요"*
 
 Cursor가 터미널에서 실행:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## 워크스페이스 설정

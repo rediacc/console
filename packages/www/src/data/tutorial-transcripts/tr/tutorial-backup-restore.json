@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz.",
       "afterText": "Depolama içe aktarıldı. CLI artık buraya yedek gönderebilir.",
       "cardLabel": "Depolama İçe Aktar",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef.",
       "afterText": "İşte burada. Yedek almaya hazır.",
       "cardLabel": "Depolamaları Listele",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez.",
       "afterText": "Yedek yüklendi. Bu depodaki her şey artık uzak depolamada, şifreli olarak duruyor.",
       "cardLabel": "Yedek Gönder",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine.",
       "afterText": "Tüm anlık görüntüleriniz tek bir yerde. Tek bir komutla herhangi birini geri çekebilirsiniz.",
       "cardLabel": "Yedekleri Listele",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Şimdi geri yükleme kanıtı. Önce repository'yi çevrimdışı alın: servisleri durdurun ve şifreli birimi unmount edin. Uygulama bu makineden gitti.",
       "afterText": "Çevrimdışı ve unmount edildi, tam olarak yeni bir sunucunun durumu.",
       "cardLabel": "Çevrimdışı Al",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "Ve yedeği doğrudan depolamadan geri çekin. Repo pull komutu imajı getirir, bütünlüğünü kontrol eder ve tam olarak olduğu yere koyar.",
       "afterText": "Transfer tamamlandı, bütünlük doğrulandı. Repository geri döndü.",
       "cardLabel": "Yedeği Çek",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Tekrar mount edin ve repository geri yüklendi. Push, list, pull, yedeklemenin tüm hikayesi bu.",
       "afterText": "Geri yüklendi. Aynı akış yepyeni bir makinede de çalışır.",
       "cardLabel": "Geri Yüklenmiş Bağla",

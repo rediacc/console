@@ -4,7 +4,7 @@ description: "Otomatik başlatmanın nasıl çalıştığı, önyükleme sonras�
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Kalıcı başarısızlık işaretçisi olan depoları listeleyin:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Her dosya adı bir depo GUID'idir. GUID'leri depo adlarıyla eşleştirmek için `rdc config repository list` komutunu kullanın.
+Her dosya adı bir depo GUID'idir. GUID'leri depo adlarıyla eşleştirmek için `rdc repo list` komutunu kullanın.
 
 Temel sorunu çözdükten sonra işaretçiyi temizlemek için dosyayı silin:
 

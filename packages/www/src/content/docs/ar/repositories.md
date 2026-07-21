@@ -4,7 +4,7 @@ description: "إنشاء وإدارة وتشغيل المستودعات المش
 category: "Guides"
 order: 4
 language: ar
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## إنشاء مستودع
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | الخيار | مطلوب | الوصف |
@@ -40,8 +40,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 التحميل يفك التشفير ويجعل نظام ملفات المستودع متاحاً. الإلغاء يغلق الحجم المشفر.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # فك التشفير والتحميل
-rdc repo unmount --name my-app -m server-1  # الإلغاء وإعادة التشفير
+rdc repo up my-app  # فك التشفير والتحميل
+rdc repo down my-app --unmount  # الإلغاء وإعادة التشفير
 ```
 
 | الخيار | الوصف |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # الإلغاء وإعادة الت
 ## التحقق من الحالة
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## سرد المستودعات
@@ -78,8 +78,8 @@ rdc repo list -m server-1
 اضبط المستودع على حجم دقيق أو وسّع بمقدار معين:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # اضبط على حجم دقيق
-rdc repo expand --name my-app -m server-1 --size 5G  # أضف 5G للحجم الحالي
+rdc repo resize my-app --size 20G  # اضبط على حجم دقيق
+rdc repo expand my-app --size 5G  # أضف 5G للحجم الحالي
 ```
 
 > يجب أن يكون المستودع غير محمل قبل تغيير الحجم. `repo expand` يعمل دون توقف. يؤدي تغيير الحجم إلى تعديل الحجم الأقصى للمستودع؛ لإعادة الكتل المحررة إلى التجمع دون تغيير الحد الأقصى، استخدم [`repo trim`](#استرداد-المساحة-trim) بدلاً من ذلك.
@@ -90,8 +90,8 @@ rdc repo expand --name my-app -m server-1 --size 5G  # أضف 5G للحجم ال
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 حقول السياسة:
@@ -138,7 +138,7 @@ rdc repo policy get -m server-1 --name my-app
 إنشاء نسخة من مستودع موجود في حالته الحالية:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 النسخ تستخدم نموذج name:tag: النسخة الناتجة تُسمى `my-app:staging`. ينشئ نسخة مشفرة جديدة بـ GUID ومعرف شبكة خاص بها، مع مشاركة اسم الوالد. تشارك النسخة نفس بيانات اعتماد LUKS مع الوالد.
@@ -149,14 +149,14 @@ rdc repo fork --parent my-app --tag staging -m server-1
 
 ### النسخ والتشغيل في خطوة واحدة
 
-تقوم `--up` بإنشاء النسخة وتحميلها وتشغيل خدماتها في عملية بعيدة واحدة متواصلة. أضف `--detach` لاستعادة الطرفية فور انطلاق الحاويات؛ تكمل فحوصات الجاهزية في الخلفية، ويواصل الوكيل إعادة المحاولة حتى ترتبط كل خدمة بمنفذها:
+تقوم `--up` بإنشاء النسخة وتحميلها وتشغيل خدماتها في عملية بعيدة واحدة متواصلة. أضف `--no-wait` لاستعادة الطرفية فور انطلاق الحاويات؛ تكمل فحوصات الجاهزية في الخلفية، ويواصل الوكيل إعادة المحاولة حتى ترتبط كل خدمة بمنفذها:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-في اختباراتنا، تولّت النسخة من مستودع حجمه 128 غيغابايت ووصلت إلى خدمات جاهزة في نحو 57 ثانية، وفي نحو 31 ثانية مع `--detach`. تطبع العمليات المنفصلة تلميحاً لمتابعة التقدم: `rdc machine status <machine> --containers`.
+في اختباراتنا، تولّت النسخة من مستودع حجمه 128 غيغابايت ووصلت إلى خدمات جاهزة في نحو 57 ثانية، وفي نحو 31 ثانية مع `--no-wait`. تطبع العمليات المنفصلة تلميحاً لمتابعة التقدم: `rdc machine status <machine> --containers`.
 
 ### أين يذهب الوقت
 
@@ -173,9 +173,9 @@ rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 يمكن للتفريعات أن تعمل كإيداعات git. يُجمِّد `rdc repo commit` تفريعاً عاملاً في إيداع ثابت وغير قابل للتغيير؛ يُسمي `rdc repo branch` خطاً من التاريخ؛ يستنسخ `rdc repo checkout` إيداعاً بنسخة reflink إلى تفريع عمل قابل للكتابة؛ يمشي `rdc repo log` عبر سلسلة الآباء؛ ويدمج `rdc repo merge` خطَّين دون التعديل على مستودع حي في مكانه. ينتج `rdc repo fork --immutable` قاعدة معادلة للإيداع في خطوة واحدة.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 راجع [مرجع التحكم في الإصدارات على غرار Git](/ar/docs/repo-branching) للمجموعة الكاملة من الأوامر والخيارات والأمثلة التفصيلية.
@@ -195,11 +195,11 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 
 ```bash
 # تعيين، قائمة، الحصول (ملخص فقط)، إلغاء التعيين
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get  my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **بوابة الطفرة المتماثلة.** كل من البشر والعاملين يحتاجون إلى `--current <previous-value>` لاستبدال أو إلغاء تعيين سر (شرط مسبق بنمط passwd). للكتابة الأولى لمفتاح جديد، مرّر `--current ""` (فارغ). للدوران دون التحقق من القيمة السابقة، مرّر `--rotate-secret` بدلاً من ذلك. يتم تدقيق هذا بشكل واضح كدوران. `--current` و`--rotate-secret` متنافيان.
@@ -235,7 +235,7 @@ secrets:
 التحقق من سلامة نظام الملفات في مستودع:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## الملكية
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 قم بتعيين ملكية الملف ضمن مستودع للمستخدم العام (UID 7111). يكون هذا ضرورياً عادةً بعد تحميل الملفات من محطة عملك، والتي تصل مع UID المحلي الخاص بك.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 يكشف الأمر تلقائياً عن أدلة بيانات حاوية Docker (bind mounts قابلة للكتابة) ويستبعدها. هذا يمنع كسر الحاويات التي تدير الملفات بـ UIDs الخاصة بها (مثلاً MariaDB=999، www-data=33).
@@ -256,7 +256,7 @@ rdc repo ownership --name my-app -m server-1
 لفرض الملكية على جميع الملفات، بما فيها بيانات الحاوية:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -267,7 +267,7 @@ rdc repo ownership --name my-app -m server-1
 تطبيق نموذج لتهيئة مستودع بملفات:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## حذف
@@ -275,7 +275,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 حذف نهائي لمستودع وجميع البيانات بداخله:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > هذا يدمر نهائياً صورة القرص المشفر. لا يمكن التراجع عن هذا الإجراء.
@@ -285,7 +285,7 @@ rdc repo delete --name my-app -m server-1
 ترحيل مستودع مباشر من جهاز إلى آخر مع الحد الأدنى من وقت التوقف.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | الخيار | الوصف |
@@ -319,10 +319,10 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 ```bash
 # معاينة ما سيتم حذفه
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # إزالة الموارد اليتيمة
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 تتأثر فقط الموارد التي لا توجد صورة مستودع متطابقة لها. أدلة التحميل غير الفارغة لم تُزل أبداً.

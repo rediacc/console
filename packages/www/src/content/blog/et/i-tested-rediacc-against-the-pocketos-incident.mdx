@@ -11,7 +11,7 @@ tags:
   - juhtumiuuring
 featured: true
 language: et
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ Minu agent testi jaoks oli Claude Code, käitades Claude Opust. Sama mudeli pere
 Esimene asi, mida agent (mina sel juhul) prooviks: avada shell tootmisrepositooriumi ja vaadata ringi.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 CLI keeldus. Täpselt nii:
@@ -97,7 +97,7 @@ Proovisin ka ühenduda teise tootmisrepositooriumiga, `nextcloud`, samal ajal ku
 See on töövoog, millega Rediacc tegelikult soovib sind töötada.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Väljund, kopeeritud minu terminalilt:
@@ -129,7 +129,7 @@ Nüüd töötan hargil. Sellel on oma GUID (`22c57178-...`). Oma networkId (`217
 Kui ühendun hargi `term connect` abil, näen seda:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ Aus jääkrisk. Saladused, mille kirjutasid repositooriumi pilti enne `rdc repo 
 
 Agendi ohumudeli jaoks konkreetselt on tasub välja tuua kaks selle disaini kõrvalmõju. Esiteks, `repo secret list` ja `repo secret get` on paljastatud MCP tööriistadena (lugemisohutud. Nimed ja digestid, mitte kunagi väärtused), nii et rakenduse seadistamisel abistav agent suudab avastada, mis on seadistatud, nägemata, mis see on. Teiseks, kui kirjutamine ebaõnnestub eeltingimusel, sisaldab JSON veapakend struktureeritud `next.options[].run` välja konkreetsete käskudega, mida agent peaks inimesele sõna-sõnalt edastama. Kaasa arvatud rotatsiooni pääsetee "unustasin eelmise väärtuse" jaoks. Vaata täielikku mudelit lehelt [AI agendi ohutus](/en/docs/ai-agents-safety).
 
-Täielik juhend elab [Repositooriumid § Saladused](/en/docs/repositories#secrets) lehel. Kolm sammu. Esiteks, sisesta väärtus: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Seejärel viita `${REDIACC_SECRET_<KEY>}` oma compose-failis. Lõpuks käivita `rdc repo fork` ja kinnita, et hargi salajuste nimekiri on tühi.
+Täielik juhend elab [Repositooriumid § Saladused](/en/docs/repositories#secrets) lehel. Kolm sammu. Esiteks, sisesta väärtus: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Seejärel viita `${REDIACC_SECRET_<KEY>}` oma compose-failis. Lõpuks käivita `rdc repo fork` ja kinnita, et hargi salajuste nimekiri on tühi.
 
 ## Mida see muudab kellegi jaoks, kes teeb sellist tööd
 

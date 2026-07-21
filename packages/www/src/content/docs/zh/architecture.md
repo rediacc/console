@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: zh
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -47,7 +47,7 @@ Rediacc 采用两个通过 SSH 协同工作的二进制文件：
 
 ## rediacc 用户
 
-运行 `rdc config machine setup` 时，renet 会在远程服务器上创建一个名为 `rediacc` 的系统用户：
+运行 `rdc machine setup` 时，renet 会在远程服务器上创建一个名为 `rediacc` 的系统用户：
 
 - **UID**：7111
 - **Shell**：`/sbin/nologin`（无法通过 SSH 登录）

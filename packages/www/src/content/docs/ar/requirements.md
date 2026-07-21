@@ -4,7 +4,7 @@ description: متطلبات النظام والمنصات المدعومة لت�
 category: Guides
 order: 0
 language: ar
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 ### سياسات الأمان حسب نظام التشغيل
 
-يعمل عميل Docker لكل مستودع والحاويات نفسها بـ**تسميات الحاويات الافتراضية** على جميع الأنظمة المدعومة. لا يُثبّت `rdc config machine setup` سياسات SELinux مخصصة أو ملفات تعريف AppArmor. السلوك حسب نظام التشغيل:
+يعمل عميل Docker لكل مستودع والحاويات نفسها بـ**تسميات الحاويات الافتراضية** على جميع الأنظمة المدعومة. لا يُثبّت `rdc machine setup` سياسات SELinux مخصصة أو ملفات تعريف AppArmor. السلوك حسب نظام التشغيل:
 
 - **Ubuntu 24.04، openSUSE Leap 16.0**: AppArmor مفعّل افتراضيًا. يُطبَّق ملف التعريف الافتراضي docker-container؛ لا يلزم أي إعداد إضافي.
 - **Fedora 43، Oracle Linux 10**: يعمل SELinux في وضع التطبيق. يُسمّي عميل Docker لكل مستودع الحاويات بسياق `container_t` القياسي. لا تلزم أي سياسة SELinux مخصصة.
@@ -75,7 +75,7 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 ### يُثبَّت تلقائياً
 
-يقوم أمر `rdc config machine setup` بتثبيت ما يلي على الخادم البعيد:
+يقوم أمر `rdc machine setup` بتثبيت ما يلي على الخادم البعيد:
 
 - **Docker** و **containerd** (بيئة تشغيل الحاويات)
 - **cryptsetup** (تشفير أقراص LUKS)

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -20,7 +20,7 @@ Ein **Repository** ist ein mit LUKS verschlüsseltes Disk-Image auf einem entfer
 ## Repository erstellen
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | Option | Erforderlich | Beschreibung |
@@ -42,8 +42,8 @@ Die Ausgabe zeigt drei automatisch generierte Werte:
 Mounten entschlüsselt und macht das Repository-Dateisystem zugänglich. Unmounten schließt das verschlüsselte Volume.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Entschlüsseln und mounten
-rdc repo unmount --name my-app -m server-1  # Unmounten und erneut verschlüsseln
+rdc repo up my-app  # Entschlüsseln und mounten
+rdc repo down my-app --unmount  # Unmounten und erneut verschlüsseln
 ```
 
 | Option | Beschreibung |
@@ -54,7 +54,7 @@ rdc repo unmount --name my-app -m server-1  # Unmounten und erneut verschlüssel
 ## Status überprüfen
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## Repositories auflisten
@@ -80,8 +80,8 @@ Für routinemäßige Bereinigung unbekannter Einträge siehe [`rdc machine prune
 Stelle das Repository auf eine exakte Größe oder erweitere es um einen bestimmten Betrag:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Auf exakte Größe setzen
-rdc repo expand --name my-app -m server-1 --size 5G  # Füge 5G zur aktuellen Größe hinzu
+rdc repo resize my-app --size 20G  # Auf exakte Größe setzen
+rdc repo expand my-app --size 5G  # Füge 5G zur aktuellen Größe hinzu
 ```
 
 > Das Repository muss vor der Größenänderung unmountet sein. `repo expand` funktioniert im laufenden Betrieb. Eine Größenänderung verändert die maximale Größe des Repositories. Um freigegebene Blöcke ohne Änderung der Maximalgröße an den Pool zurückzugeben, verwende stattdessen [`repo trim`](#speicherplatz-zuruckgewinnen-trim).
@@ -92,8 +92,8 @@ Das Löschen von Dateien innerhalb eines Repositories gibt Speicherplatz für di
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -114,10 +114,10 @@ Anstatt die Größe manuell anzupassen, kann die Maschine Repository-Größen se
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 Richtlinienfelder:
@@ -140,7 +140,7 @@ Einstellungen pro Repository überschreiben den maschinenweiten Standard. Wieder
 Erstelle eine Kopie eines bestehenden Repositories in seinem aktuellen Zustand:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 Forks verwenden das name:tag-Modell: Der resultierende Fork heißt `my-app:staging`. Dies erstellt eine neue verschlüsselte Kopie mit ihrer eigenen GUID und Network ID, während sie den Namen des Parents teilt. Der Fork teilt die gleiche LUKS-Credential wie der Parent.
@@ -151,14 +151,14 @@ Beim Fork-Erstellen schreibt `repo fork` das [State-Mirror-Sidecar](#type-spalte
 
 ### Fork und Start in einem Schritt
 
-Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--detach` an; Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
+Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--no-wait` an; Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--detach` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine status <machine> --containers`.
+In unseren Tests hat ein 128-GB-Repository geforkt und laufende Dienste in etwa 57 Sekunden erreicht, mit `--no-wait` in etwa 31 Sekunden. Beim abgetrennten Lauf wird ein Hinweis ausgegeben, wie der Fortschritt verfolgt werden kann: `rdc machine status <machine> --containers`.
 
 ### Wo die Zeit bleibt
 
@@ -175,9 +175,9 @@ Das Dienststartup entspricht dem Hochfahren Ihrer Container (Images laden, Init-
 Forks können als Git-Commits eingesetzt werden. `rdc repo commit` friert einen arbeitenden Fork zu einem unveränderlichen, byte-stabilen Commit ein; `rdc repo branch` benennt eine Historienfolge; `rdc repo checkout` klont einen Commit per Reflink zurück in einen beschreibbaren Fork; `rdc repo log` geht die Elternkette durch; und `rdc repo merge` kombiniert zwei Entwicklungslinien, ohne ein laufendes Repository direkt zu ändern. `rdc repo fork --immutable` erzeugt eine commit-äquivalente Basis in einem einzigen Schritt.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 Siehe die [Referenz für git-ähnliches Branching](/de/docs/repo-branching) für den vollständigen Befehlssatz, Optionen und Beispiele.
@@ -197,11 +197,11 @@ Zwei Zustellungsmodi:
 
 ```bash
 # Setzen, auflisten, abrufen (nur Digest), entfernen
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — kein Wert
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get my-app --key DB_HOST    # → { key, mode, digest } — kein Wert
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **Symmetrisches Mutations-Gate.** Sowohl Menschen als auch Agents benötigen `--current <previous-value>`, um ein Secret zu überschreiben oder zu löschen (passwd-ähnliche Vorbedingung). Für das erste Schreiben eines neuen Keys übergebe `--current ""` (leer). Um zu rotieren, ohne den vorherigen Wert zu überprüfen, übergebe stattdessen `--rotate-secret`. Dies wird laut als Rotation überprüft. `--current` und `--rotate-secret` schließen sich gegenseitig aus.
@@ -237,7 +237,7 @@ Die Referenz auf Service-Seite in Kleinbuchstaben (`stripe_live_key`) ist der Da
 Überprüfe die Dateisystem-Integrität eines Repositories:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## Eigentümerschaft
@@ -245,7 +245,7 @@ rdc repo validate --name my-app -m server-1
 Stelle den Dateieigentümer innerhalb eines Repositories auf den universellen Benutzer (UID 7111). Dies ist normalerweise notwendig, nachdem du Dateien von deiner Workstation hochgeladen hast, die mit deiner lokalen UID ankommen.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbare Bind-Mounts) und schließt sie aus. Dies verhindert, dass Container beschädigt werden, die Dateien mit ihren eigenen UIDs verwalten (z.B. MariaDB=999, www-data=33).
@@ -258,7 +258,7 @@ Der Befehl erkennt automatisch Docker-Container-Datenverzeichnisse (beschreibbar
 Um den Eigentümer auf allen Dateien zu erzwingen, einschließlich Container-Daten:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -269,7 +269,7 @@ Siehe den [Migrationsleitfaden](/de/docs/migration) für eine vollständige Erkl
 Wende eine Vorlage an, um ein Repository mit Dateien zu initialisieren:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## Löschen
@@ -277,7 +277,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 Zerstöre ein Repository und alle darin enthaltenen Daten dauerhaft:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > Dies zerstört das verschlüsselte Disk-Image dauerhaft. Diese Aktion kann nicht rückgängig gemacht werden.
@@ -287,7 +287,7 @@ rdc repo delete --name my-app -m server-1
 Migriere ein Repository live von einer Maschine zu einer anderen. Die einzige Ausfallzeit ist die finale Delta-Sync-Phase: normalerweise Sekunden bis wenige Minuten, abhängig von der Schreibgeschwindigkeit beim Cutover.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Option | Beschreibung |
@@ -321,10 +321,10 @@ Nach dem Löschen von Repositories oder der Wiederherstellung nach fehlgeschlage
 
 ```bash
 # Vorschau, was entfernt würde
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Entferne verwaiste Ressourcen
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 Nur Ressourcen ohne zugehörendes Repository-Image sind betroffen. Nicht-leere Mount-Verzeichnisse werden nie entfernt.

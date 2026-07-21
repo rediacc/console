@@ -4,7 +4,7 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Cursor 可以通过其集成终端执行 `rdc` 命令。常见模式：
 
 Cursor 在终端中运行：
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### 部署更改
@@ -48,7 +48,7 @@ rdc machine query --name prod-1 -o json
 
 Cursor 在终端中运行：
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### 查看日志
@@ -57,7 +57,7 @@ rdc repo up --name nextcloud -m prod-1 --yes
 
 Cursor 在终端中运行：
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## 工作区设置

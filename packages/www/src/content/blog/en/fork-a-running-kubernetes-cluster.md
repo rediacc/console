@@ -31,10 +31,10 @@ The mental model does not change. A Kubernetes app is just a namespace inside th
 
 ```bash
 # Clone an entire cluster, including its repos' data, into a new cluster
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # Move an entire cluster, including its repos' data, to another machine or datacenter
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 The honest numbers, measured end to end in the KVM test lab:

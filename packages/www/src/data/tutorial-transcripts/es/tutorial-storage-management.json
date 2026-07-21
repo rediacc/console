@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.410441,
+      "at": 2.415408,
       "text": "Llena el repositorio casi por completo y revisa: el sistema de archivos se está quedando sin espacio.",
       "afterText": "Casi lleno. Es hora de crecer.",
       "cardLabel": "Llenando",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 12.69586,
+      "at": 10.51664,
       "text": "Hazlo crecer online. El contenedor cifrado y el sistema de archivos se expanden mientras los containers siguen en ejecución: cero downtime, cero desmontaje.",
       "afterText": "Cuatro gigabytes ahora. Nada se reinició.",
       "cardLabel": "Expandir Online",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 19.886575,
+      "at": 14.693193,
       "text": "Verifica desde dentro: mismo volumen, el doble de espacio.",
       "afterText": "La aplicación nunca lo notó.",
       "cardLabel": "Verificar Tamaño",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 26.982758,
+      "at": 19.546232,
       "text": "Ahora en la otra dirección. Elimina el archivo grande, pero fíjate: el pool todavía no recupera ese espacio. Los bloques eliminados siguen reservados dentro de la imagen.",
       "afterText": "Liberado dentro del repo, aún pertenece a la imagen.",
       "cardLabel": "Eliminar Datos",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 33.464064,
+      "at": 23.813547,
       "text": "Trim devuelve esos bloques al pool del datastore, online. Este es el paso que la mayoría de las configuraciones olvida.",
       "afterText": "Recuperado. El pool puede respirar de nuevo.",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 40.097562,
+      "at": 28.710567,
       "text": "Ahora deja de hacerlo a mano. La política habilita el crecimiento automático hasta un límite que tú eliges, más trims programados.",
       "afterText": "Política guardada. La máquina se encarga a partir de aquí.",
       "cardLabel": "Establecer Política",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 50.538253,
+      "at": 36.110527,
       "text": "Léela de vuelta: auto-grow activado, límite en ocho gigabytes, trim programado.",
       "afterText": "Configurado una vez, olvidado sin riesgos.",
       "cardLabel": "Verificar Política",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 57.423655,
+      "at": 41.090184,
       "text": "Y la vista que junta todo: storage health muestra el uso de cada repo, el pool y cuánto te está ahorrando el compartir por copy-on-write.",
       "afterText": "Una vista: uso, ahorro y espacio para crecer.",
       "cardLabel": "Ver Salud",

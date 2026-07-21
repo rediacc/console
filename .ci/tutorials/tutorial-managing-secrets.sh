@@ -30,10 +30,10 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app:test 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app:test --yes 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 # Stage the compose that consumes BOTH secret modes (env interpolation +
 # /run/secrets file mount) so the on-camera `repo up` has something real
@@ -76,12 +76,12 @@ run_cmd "rdc repo up my-app"
 pause 2
 
 section "Proof — the env secret reaches the container"
-run_cmd "rdc term connect my-app -c 'docker exec app printenv DB_HOST'"
+run_cmd "rdc term connect my-app --command 'docker exec app printenv DB_HOST'"
 
 pause 2
 
 section "Proof — the file secret is mounted at /run/secrets"
-run_cmd "rdc term connect my-app -c 'docker exec app cat /run/secrets/stripe_key'"
+run_cmd "rdc term connect my-app --command 'docker exec app cat /run/secrets/stripe_key'"
 
 pause 2
 
@@ -105,6 +105,6 @@ pause 2
 # End the on-camera portion; cleanup below is not recorded.
 end_recording
 # Cleanup
-rdc repo delete my-app:test --archive-config -y 2>/dev/null || true
+rdc repo delete my-app:test --yes --archive-config -y 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

@@ -4,8 +4,8 @@ description: 将加密仓库备份到任何与 rclone 兼容的存储，在任�
 category: Guides
 order: 7
 language: zh
-sourceHash: "d800519615085ee9"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "e4a4e0de5"
 ---
 
 # 备份与恢复
@@ -21,7 +21,7 @@ Rediacc 可以将加密仓库备份到外部存储，并在同一台或不同的
 如果您已经配置了 rclone 远程存储：
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 此命令将 rclone 配置文件中的存储配置导入到当前配置中。支持的类型：S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob 和 Swift。
@@ -29,7 +29,7 @@ rdc config storage import --file rclone.conf
 ### 查看存储
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## 推送备份
@@ -37,10 +37,10 @@ rdc config storage list
 将仓库备份推送到外部存储：
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-备份在仓库推送时已挂载时落入存储的 `hot/` 文件夹，未挂载时落入 `cold/` 文件夹。这与定时备份使用的布局相同，因此 `rdc repo backup list` 会在一张表中显示所有备份。
+备份在仓库推送时已挂载时落入存储的 `hot/` 文件夹，未挂载时落入 `cold/` 文件夹。这与定时备份使用的布局相同，因此 `rdc backup list` 会在一张表中显示所有备份。
 
 | 选项 | 描述 |
 |------|------|
@@ -60,7 +60,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 从外部存储拉取仓库备份：
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 拉取操作在写入前始终检查目标仓库是否已挂载。如果未挂载，操作将中止。
@@ -80,7 +80,7 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 查看存储位置中的可用备份：
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 输出是一个统一的表格，合并了两个[计划备份](#scheduled-backups)文件夹（`hot/` 和 `cold/`），让您一次看到所有备份：
@@ -96,8 +96,8 @@ rdc repo backup list --from my-storage -m server-1
 要深入查看单一模式，传入 `--path`：
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### 存储布局
@@ -184,7 +184,7 @@ Rediacc 使用具名备份策略。每个策略定义了一个计划、备份模
 
 - `rdc machine status <machine> --containers` 显示运行状态。与预期集合进行比较。
 - 机器上的 `/var/run/rediacc/cold-backup-<guid>.status.json`。通过 `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` 检查。`success: false` 加上过时的 `startedAt` 表示上次备份未正常完成。
-- renet 备份运行的日志（`journalctl -u renet-*` 或直接的 `rdc machine backup schedule` 调用）会输出 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 形式的最终摘要行。非空的 `failed_repos` 是 grep 的目标。
+- renet 备份运行的日志（`journalctl -u renet-*` 或直接的 `rdc backup schedule` 调用）会输出 `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` 形式的最终摘要行。非空的 `failed_repos` 是 grep 的目标。
 
 ### 估算冷备份停机时间
 
@@ -248,8 +248,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（`hot/` 和 `cold/`），以保证备份永不混合。
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -271,7 +269,7 @@ cold 策略上的 `--exclude` 过滤器是针对体积过大、无法纳入每�
 
 | 选项 | 描述 |
 |------|------|
-| `--name <name>` | 策略名称（用于机器绑定） |
+| `<strategy>`(位置参数) | 策略名称(用于机器绑定) |
 | `--destination <storage>` | 上传目标存储提供商 |
 | `--cron <expression>` | cron 表达式（例如 `"0 2 * * *"` 表示每天凌晨 2 点） |
 | `--mode <hot\|cold>` | 备份模式 |
@@ -283,14 +281,14 @@ cold 策略上的 `--exclude` 过滤器是针对体积过大、无法纳入每�
 ### 查看策略
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### 删除策略
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### 将策略绑定到机器
@@ -330,8 +328,7 @@ rdc config backup-strategy remove --name weekly-cold
 
 ```bash
 # 热备份策略：每小时备份所有内容
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # 冷备份策略：每周备份所有内容，排除大型派生数据集
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ rdc config backup-strategy set \
 
 > **如果数据是纯粹可再生的**，请考虑是否需要备份它。另一种方法是只备份原始源输入（在本例中是 CSV 转储），完全跳过派生副本。源输入的每周冷备份要小得多，完全足以用于恢复。
 
-未从任何策略中排除的仓库会出现在 `hot/` 和 `cold/` 存储子文件夹中。合并后的 `rdc repo backup list` 输出会显示两行，以便您验证哪些流覆盖了哪些仓库。
+未从任何策略中排除的仓库会出现在 `hot/` 和 `cold/` 存储子文件夹中。合并后的 `rdc backup list` 输出会显示两行，以便您验证哪些流覆盖了哪些仓库。
 
 ## 备份操作
 
@@ -368,8 +364,8 @@ rdc config backup-strategy set \
 将绑定的策略作为 systemd 定时器推送到机器：
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 部署是一个状态协调器。它读取机器上当前的单元文件和 systemd 状态，与配置会生成的内容进行比较（每个文件 SHA-256），只触及内容实际发生变化的单元。在没有配置变更的情况下重新运行是 no-op：无写入、无 `daemon-reload`、无定时器扰动。
@@ -385,8 +381,8 @@ rdc machine backup schedule -m server-1 --dry-run
 无需等待定时器即可立即触发备份。即使没有部署定时器也可使用 `systemd-run` 进行临时执行：
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### 查看备份状态
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 显示备份定时器的当前状态和最近的作业结果：
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### 取消正在运行的备份
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## 仓库迁移
@@ -410,14 +406,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 将仓库从一台机器移动到另一台机器：
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | 选项 | 描述 |
 |------|------|
-| `--name <repo>` | 要迁移的仓库 |
-| `--from <machine>` | 源机器 |
-| `--to <machine>` | 目标机器 |
+| `<ref>`(位置参数) | 要迁移的仓库引用，其 `@machine` 部分指定源 |
+| `--to <place>` | 目标机器或集群 |
 | `--provision` | 在传输前在目标上配置仓库 |
 | `--checkpoint` | 迁移前创建 CRIU 检查点 |
 | `--skip-dns` | 迁移后跳过 DNS 记录更新 |
@@ -430,7 +425,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 浏览存储位置的内容：
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## 最佳实践

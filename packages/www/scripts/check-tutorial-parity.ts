@@ -16,6 +16,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { markerTimestamps, parseCast } from './lib/cast-splitter.ts';
+import { rdcCommandPath } from './lib/cli-reference-catalog.js';
 import { readStoryboard } from './lib/storyboard.ts';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
@@ -47,11 +48,22 @@ function isAuthored(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
 }
 
-// The command "path" = leading tokens up to the first flag (`-`) or template
-// placeholder (`<`). Used to assert a storyboard's full command matches the
+// The command "path" — used to assert a storyboard's full command matches the
 // recorded cast command without requiring identical argument *values* (the web
-// page templates them, e.g. `--name <machine-name>` vs recorded `--name machine-11`).
+// page templates them, e.g. `<machine-name>` vs recorded `machine-11`).
+//
+// For `rdc` this is resolved against the real command tree. It used to be
+// guessed as "leading tokens up to the first `-` or `<`", which held only while
+// every target was a flag. Once the CLI moved to positional refs the guess broke
+// in a way that pointed at the wrong culprit: `rdc machine add <machine-name>`
+// stopped at the placeholder (path `rdc machine add`) while the recording
+// `rdc machine add machine-11` swallowed the value (path `rdc machine add
+// machine-11`), so identical commands "differed". Every such pair — 68 of them —
+// was then absorbed into the baseline as if the storyboards were at fault.
 function commandPath(cmd: string): string {
+  const rdcPath = rdcCommandPath(cmd);
+  if (rdcPath !== null) return rdcPath;
+  // Not an rdc command (ssh, docker, …): fall back to leading non-flag tokens.
   const out: string[] = [];
   for (const tok of cmd.trim().split(/\s+/)) {
     if (tok.startsWith('-') || tok.startsWith('<')) break;
@@ -383,33 +395,28 @@ function checkCrossTutorial(slugs: string[], issues: Issue[]): void {
 }
 
 /**
- * The STALE-RECORDING parity backlog.
+ * The STALE-RECORDING parity backlog — CURRENTLY EMPTY, and the file is gone.
  *
- * BLOCKER: the P4 reshape rewrote the CLI surface (positional refs, the config exodus), so the
- * four onboarding scenes below now carry the command a user must ACTUALLY type
- * (`rdc machine add <machine-name> …`) while their `.cast` recordings still show the pre-P4
- * text (`rdc config machine add --name machine-11 …`). Storyboard, recording and the account
- * portal's first-run flow are locked together and only two of the three can be true at once:
- * the storyboard is *supposed* to describe what the video shows, so fixing the script ahead of
- * the recording is not a repair — it is a third statement of the SAME stale-recording debt.
+ * The mechanism stays because it is a self-destruct ratchet, not a mute: an entry that matches
+ * nothing is a FAILURE, so a deferral cannot outlive the re-record that fixes it. Each entry
+ * pins BOTH texts (storyboard and recording), so it defers exact known facts and never a class;
+ * every other parity check stays live.
  *
- * The command text is the one that must be right: it is generated into the portal's first-run
- * flow (`private/account/web/src/data/onboarding-content.json`) and is the first command a new
- * user ever types. A command that no longer exists is a lie told in someone's first minute with
- * the product. The recording is stale; re-recording needs a live VM lab plus re-narration in 13
- * languages, and is deferred.
+ * HISTORY, because it is the whole reason to distrust the next one. The backlog grew 4 -> 75
+ * entries and was read as accumulated stale-recording debt from the P4 reshape. It was not. 68 of
+ * those were a bug in this file: `commandPath()` guessed the command path as "leading tokens up
+ * to the first `-` or `<`", which is only correct while every target is a flag. Once targets
+ * became positional refs, `rdc machine add <machine-name>` stopped at the placeholder while the
+ * recording `rdc machine add machine-11` swallowed the value, so a command and the recording OF
+ * THAT SAME COMMAND resolved to different paths and compared unequal. The baseline dutifully
+ * absorbed each phantom as though the storyboards were at fault. See `rdcCommandPath()`.
  *
- * ★ NOT A COUNT — AN EXACT PAIR. Each entry pins BOTH texts. Change the storyboard command,
- * change the recording, or drift a DIFFERENT scene, and the key or the text stops matching and
- * the gate goes red. This defers four known facts; it does not mute a class. Every other parity
- * check (missing commandFull, short flags, marker counts, transcripts, mdx steps) is untouched.
+ * The remaining entries were real (recorded commands using short `-c` with a literal value) and
+ * were fixed by re-recording. Parity is now 18/18 with no deferrals.
  *
- * ★ SELF-DESTRUCT, ENFORCED. An entry that matches nothing is a FAILURE, not a shrug — the
- * re-record must delete these, and the gate will not let them outlive it.
- *
- * ★ THEY CLEAR TOGETHER. Same root cause and same fix event as the stale-recording backlog in
- * `tutorial-cast-baseline.json` (see its BLOCKER) and the "188 dead commands" entry in
- * `docs/design/spec/12-carried-debt.md`. One re-record clears all three, or all three are lying.
+ * SO: if this list ever grows large again, suspect THIS GATE before believing the debt. A
+ * baseline that only grows is evidence of a broken check, not of honest accumulated debt — a
+ * large entry count is a symptom to investigate, never a number to re-freeze.
  */
 function loadBaseline(): Baseline {
   if (!existsSync(baselinePath)) return {};

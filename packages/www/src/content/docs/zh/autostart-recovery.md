@@ -4,7 +4,7 @@ description: "自动启动的工作原理、在启动后发生故障的仓库的
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ journalctl -u rediacc-autostart-reconcile.service --since "1 hour ago"
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-每个文件名是一个仓库 GUID。与 `rdc config repository list` 交叉对照，将 GUID 映射到仓库名称。
+每个文件名是一个仓库 GUID。与 `rdc repo list` 交叉对照，将 GUID 映射到仓库名称。
 
 在解决了根本问题后，删除文件以清除标记：
 

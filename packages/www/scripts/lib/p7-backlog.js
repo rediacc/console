@@ -31,11 +31,17 @@
  * ★ COUNTS ARE PER FILE, NEVER A GLOBAL TOTAL. With a single number, a fix in one doc and a
  * regression in another cancel out silently. Per-file, they cannot.
  *
- * ★ A COUNT MAY GO DOWN. Docs improve, and a lower count passes — but it does not auto-update.
- * Improving a doc means editing the baseline deliberately, in a commit, on purpose.
+ * ★ THE RATCHET ONLY TURNS DOWN. A count that FALLS is also RED — the fix is to lower the
+ * entry, and an entry whose file has no violations left must be DELETED. A baseline that
+ * silently keeps a fixed file's old number is not a debt record, it is a pre-authorisation for
+ * the next N breakages in that file. The entry must shrink as the debt shrinks, in a commit, on
+ * purpose. (Ported from `.ci/scripts/quality/check-workflows.sh`, which has enforced this shape
+ * on the workflow-inline baseline since it was introduced.)
  *
  * ★ SELF-DESTRUCT. Every entry MUST vanish when P7 rewrites these docs. A count that outlives
- * the rewrite is a BUG, not a deferral. This is a debt record, not an accepted state.
+ * the rewrite is a BUG, not a deferral. This is a debt record, not an accepted state — and the
+ * ratchet above is what MAKES the self-destruct a build failure rather than a comment nobody
+ * reads.
  */
 
 import fs from 'node:fs';
@@ -47,10 +53,18 @@ export function loadBacklog(baselinePath) {
 }
 
 /**
- * Compare this run to the frozen backlog.
+ * Compare this run to the frozen backlog. The comparison is a RATCHET: it is RED in BOTH
+ * directions, because a baseline entry that outlives its violations is a standing budget for
+ * future breakage.
  *
- * RED when a file exceeds its recorded count, or when a file that is NOT in the backlog has
- * any violation at all. Returns the human-readable regressions; empty means "within budget".
+ * RED when:
+ *   - a file NOT in the backlog has any violation at all (a new ${noun});
+ *   - a file EXCEEDS its recorded count (the debt grew);
+ *   - a file is BELOW its recorded count (the debt shrank — lower the entry);
+ *   - an entry matches NO violation in this run at all (the debt is gone — delete the entry).
+ *
+ * Every message starts `<file>: ` so callers can recover the path with `split(':')[0]`.
+ * Returns the human-readable regressions; empty means "exactly on budget".
  */
 export function findRegressions(errors, backlog, fileOf = (e) => e.file, noun = 'doc') {
   const byFile = new Map();
@@ -70,9 +84,27 @@ export function findRegressions(errors, backlog, fileOf = (e) => e.file, noun = 
       regressions.push(
         `${file}: ${count} violations, backlog allows ${allowed} — the backlog GREW`
       );
+    } else if (count < allowed) {
+      regressions.push(
+        `${file}: only ${count} violation(s) remain but the backlog records ${allowed} — ` +
+          `lower the entry to ${count} (ratchet down)`
+      );
     }
   }
-  return regressions;
+
+  // An entry with NO matching violation this run. Reported separately from the count cases
+  // above because the file may be clean OR gone entirely; either way the entry is dead weight
+  // and, left in place, silently re-authorises ${allowed} future violations in that path.
+  for (const [file, allowed] of Object.entries(backlog)) {
+    if (!byFile.has(file)) {
+      regressions.push(
+        `${file}: 0 violations remain but the backlog records ${allowed} — ` +
+          `delete this stale entry (ratchet down; the ${noun} is clean or gone)`
+      );
+    }
+  }
+
+  return regressions.sort();
 }
 
 /**

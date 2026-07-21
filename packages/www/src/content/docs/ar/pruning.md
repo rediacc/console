@@ -4,7 +4,7 @@ description: "إزالة النسخ الاحتياطية المعزولة وال
 category: "Guides"
 order: 12
 language: ar
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 ```bash
 # المعاينة فقط — إظهار ما سيتم حذفه
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # حذف النسخ الاحتياطية المعزولة فعلياً (السلوك الافتراضي)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # تجاوز فترة السماح (الافتراضي 7 أيام)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # تجاوز فحص أمان التحميل (استخدم بحذر)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` مطلوب لأن استدعاءات rclone تعمل على جهاز التنفيذ، وليس على جهازك المحمول. لا يُتوقع من العملاء تثبيت rclone محلياً. لا تزال بيانات اعتماد التخزين تأتي من إعداداتك المحلية؛ الجهاز هو مجرد مُشغِّل لـ rclone.
@@ -82,10 +82,10 @@ rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 
 ```bash
 # تشغيل تجريبي يُظهر ما سيُزال (دون تطبيق أي تغيير)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # تنفيذ التنظيف
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **تنظيف تتالي.** تعتمد بعض الفئات على فئات سابقة. على سبيل المثال، قد يكشف حذف مجلدات التحميل الفارغة عن مجلدات sandbox معزولة إضافية فقدت لتوها مجلد التحميل الذي كان يدعمها. يؤدي تشغيل `rdc machine prune` للمرة الثانية إلى التقاط هذا التتابع وإكمال التنظيف. ينتهي التشغيل التجريبي الأخير بالرسالة `No orphaned resources found. Datastore is clean.` عندما لا يتبقى شيء للقيام به.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 باستخدام `--orphaned-repos`، يحذف CLI أيضاً صور المستودعات على الجهاز التي لا تظهر في **أي** ملف إعدادات محلي.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 هذا **خشن**. يحذف كل ما هو غير موجود في إعداداتك المحلية، بما في ذلك النسخ المتفرعة الشرعية المُدارة بأدوات أخرى أو من نسخة CLI لمشغل آخر. إذا كانت مرآة renet `.interim/state` تُحدد بشكل صحيح أن مستودعاً ما هو نسخة متفرعة لكن الإعدادات المحلية لم تره أبداً، تظل هذه المرحلة تزيله. يُفضَّل استخدام المرحلة 3 (`--prune-unknown`) عندما تريد التحفظ.
@@ -106,8 +106,8 @@ rdc machine prune --name server-1 --orphaned-repos
 باستخدام `--prune-unknown`، يحذف CLI فقط المستودعات التي تفشل **كلتا** الإشارتين في تصنيفها: ليست في أي إعدادات محلية **و** لا يوجد لها إدخال موسوم كنسخة متفرعة في مرآة `.interim/state` على الجهاز (راجع [المستودعات. عمود `Type`](/ar/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 في الممارسة، `--prune-unknown` هو ما تريده للتنظيف الروتيني؛ بينما `--orphaned-repos` صحيح فقط عندما تكون متأكداً أن إعداداتك المحلية هي الجرد الكامل والموثوق لكل مستودع على الجهاز. تقع كل من النسخ المتفرعة القديمة السابقة للمرآة والمستودعات التي حُذف إدخالها من الإعدادات عن طريق الخطأ في حاوية "غير معروف". فهي حالات غير مؤكدة فعلاً، والراية الدقيقة تطلب من المشغل الإقرار بذلك صراحةً.
@@ -116,7 +116,7 @@ rdc machine prune --name server-1 --prune-unknown
 
 ```bash
 # مدموج: تنظيف كامل للجهاز عبر المسار الجراحي المدرك للنسخ المتفرعة
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## تنظيف الإعدادات
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - الموارد النشطة (الأجهزة، وحدات التخزين، المستودعات، استراتيجيات النسخ الاحتياطي، مزودو السحابة).
 - بيانات الاعتماد، كتلة الحساب، كتلة التشفير، الإعدادات الافتراضية.
 - `vaultContent` للتخزين (بما في ذلك `access_token` المنتهي لـ OneDrive. لا يزال refresh_token يُولِّد رموزاً جديدة؛ التنظيف سيفرض إعادة المصادقة).
-- مدخلات `knownHosts` (مسار التحديث التلقائي هو `rdc config machine scan-keys`).
+- مدخلات `knownHosts` (مسار التحديث التلقائي هو `rdc machine scan-keys`).
 - مصفوفة كتلة الشهادات المضغوطة (`infra.acmeCertCache.<base>.data[]`) تُعاد بناؤها من قائمة الشهادات المُنظَّفة تلقائياً؛ لن تفقد أي سلسلة لا تزال تغطي اسماً محتفظاً به.
 
 ### مثال عملي
@@ -180,7 +180,7 @@ Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 مرآة `.interim/state/<guid>/.rediacc.json` التي تُشغِّل `--prune-unknown` وعمود `Type` في `rdc repo list -m` تُكتب:
 
 - **عند إنشاء النسخة المتفرعة** (`rdc repo fork`). فوراً، حتى قبل أن تُحمَّل النسخة المتفرعة.
-- **عند كل حفظ للحالة** (`rdc repo mount` وأي عملية تُحدِّث حالة المستودع). للمستودعات التي أُنشئت قبل شحن كود المرآة.
+- **عند كل حفظ للحالة** (`rdc repo up` وأي عملية تُحدِّث حالة المستودع). للمستودعات التي أُنشئت قبل شحن كود المرآة.
 
 المستودعات التي أُنشئت **قبل وجود المرآة ولم يُعَد تحميلها منذ الترقية** ليس لها ملف مرآة. تظهر كـ `unknown` في `rdc repo list -m` رغم أن بعضها نسخ متفرعة شرعية. لإصلاح ذلك للمستودعات اليتيمة القديمة، شغّل إعادة الملء لمرة واحدة على الجهاز:
 
@@ -238,6 +238,6 @@ rdc config field set --pointer /defaults/pruneGraceDays --new 14
 - **يُفضَّل `--prune-unknown` على `--orphaned-repos`.** الراية الدقيقة تحترم مرآة renet؛ بينما الراية الخشنة تحذف بسرور النسخ المتفرعة التي أنشأتها أدوات أخرى.
 - **استخدم فترات سماح سخية للإنتاج.** فترة السماح الافتراضية 7 أيام تناسب معظم سيناريوهات العمل. لبيئات الإنتاج ذات فترات الصيانة غير المتكررة، فكر في 14 أو 30 يوماً.
 - **جدوِل تنظيف التخزين بعد عمليات النسخ الاحتياطي.** اربط `storage prune` بجدول النسخ الاحتياطي للتحكم في تكاليف التخزين دون تدخل يدوي.
-- **ادمج تنظيف الجهاز مع جدول النسخ الاحتياطي.** بعد نشر جداول النسخ الاحتياطي (`rdc machine backup schedule`)، أضف تنظيفاً دورياً للجهاز لتنظيف اللقطات القديمة وعناصر مخزن البيانات المعزولة.
+- **ادمج تنظيف الجهاز مع جدول النسخ الاحتياطي.** بعد نشر جداول النسخ الاحتياطي (`rdc backup schedule`)، أضف تنظيفاً دورياً للجهاز لتنظيف اللقطات القديمة وعناصر مخزن البيانات المعزولة.
 - **شغّل `config prune` بشكل دوري.** يتراكم تضخم الإعدادات المحلية (خاصة ذاكرة الشهادات المؤقتة) بصمت؛ يكفي `config prune --dry-run` ربع سنوي لاكتشافه.
 - **راجع قبل استخدام `--force` أو `--force-delete-mounted`.** كلتا الرايتين تتجاوزان فحوصات الأمان. استخدم `--force` فقط عندما تكون متأكداً أن لا إعدادات أخرى تشير إلى المستودعات المعنية؛ استخدم `--force-delete-mounted` فقط عندما تكون متأكداً أن الحالة الحية على الجهاز خاطئة.

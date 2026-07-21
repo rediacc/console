@@ -4,7 +4,7 @@ description: マシンの健全性、コンテナ、サービス、リポジト�
 category: Guides
 order: 9
 language: ja
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ Rediaccは、マシンの健全性、実行中のコンテナ、サービス、�
 マシンのフルヘルスレポートを取得します：
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 レポート内容：
@@ -33,7 +33,7 @@ rdc machine health --name server-1
 マシン上のすべてのリポジトリにわたる実行中のコンテナをすべて表示します：
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | カラム | 説明 |
@@ -57,7 +57,7 @@ JSON 出力には完全なコンテナ詳細（`labels`、`port_mappings`、`ima
 マシン上のRediaccに関連するsystemdサービスを表示します：
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | カラム | 説明 |
@@ -80,7 +80,7 @@ JSON 出力には、`repository`（解決後の名前）と `repository_guid`（
 マシン上のリポジトリを詳細な統計情報とともに表示します：
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | カラム | 説明 |
@@ -104,7 +104,7 @@ JSON 出力には `name`（解決済み）と `guid`（元の GUID）が含ま�
 マシン上のすべてのリポジトリにわたる BTRFS の断片化と reflink 共有を検査します：
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | カラム | 説明 |
@@ -182,7 +182,7 @@ Rediaccはすべてのマシンで毎週 BTRFS スクラブを自動的にスケ
 スクラブを即座に実行するには（例：電源障害またはディスク移行後）：
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 結果は同じ JSON ファイルに保存され、次の `rdc machine status --system` で即座に確認できます。
@@ -192,7 +192,7 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 デプロイ情報を含むマシンの完全な概要を取得します：
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 提供される情報：
@@ -208,7 +208,7 @@ rdc machine query --name server-1
 マシンへのSSH接続を確認します：
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 このコマンドは成功時にリモートのホスト名を表示し、失敗時は接続エラーを表示します。これによりDNS、SSHポート、鍵認証を一度に確認できます。

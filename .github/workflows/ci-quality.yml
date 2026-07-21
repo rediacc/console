@@ -17,6 +17,12 @@ on:
         required: false
       DOCKERHUB_TOKEN:
         required: false
+      R2_MEDIA_ACCESS_KEY_ID:
+        required: false
+      R2_MEDIA_SECRET_ACCESS_KEY:
+        required: false
+      R2_MEDIA_ENDPOINT:
+        required: false
 
 permissions:
   contents: read
@@ -151,7 +157,15 @@ jobs:
 
   quality-i18n:
     name: i18n
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: this job restores the tutorial-narration
+    # audio cache from R2 (see the step below), which needs the AWS CLI. Every
+    # other `aws s3` consumer in this repo already runs on ubuntu-latest, and
+    # ubuntu-slim is a minimal image -- check-workflow-gates.sh notes pyyaml is
+    # absent from it by default, and check-commands.sh exists precisely because
+    # commands "may not be available in ubuntu-slim". Without the restore the
+    # per-file audio assertion silently disables itself, which is the false
+    # green this change removes.
+    runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -183,6 +197,18 @@ jobs:
       # Without this build the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
       # which is why it went unnoticed locally, where dist/ is already warm.
       - run: npm run build:packages
+      # check:i18n -> validate:content -> validate:tutorial-audio asserts that every
+      # narration .mp3 referenced by a tutorial timeline exists on disk. The audio cache
+      # is gitignored and lives in R2, so without this restore AUDIO_TREE_PRESENT is
+      # false (validate-tutorial-audio.js:63) and that assertion silently skips --
+      # the gate has never once run it in CI. Failing here is deliberate: a skip is
+      # exactly the false-green this step exists to remove.
+      - name: Restore tutorial-narration audio cache from R2
+        env:
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          R2_MEDIA_ENDPOINT: ${{ secrets.R2_MEDIA_ENDPOINT }}
+        run: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only
       - run: npm run check:i18n
       - run: npm run check:ci-search-index
 
@@ -425,6 +451,26 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
+      # Field-aware: validates card.commandFull and teardownCommand against the
+      # live CLI tree. Runs BEFORE parity because a storyboard command that does
+      # not exist is a worse failure than one that merely disagrees with its
+      # recording -- teardownCommand is executed by the harness, and
+      # card.commandFull is generated into the portal's first-run flow.
+      - name: Validate tutorial storyboard commands against the live CLI
+        run: npm run check:ci-tutorial-commands
+      # Tutorial scripts run headless inside asciinema. A command that stops to
+      # ask "are you sure?" never returns, and `2>/dev/null || true` hides the
+      # question rather than preventing it -- one such line hung a re-record for
+      # six hours. The prompting commands are derived from the CLI's own command
+      # tree, so a new one is covered the day it lands.
+      - name: Validate tutorial commands are non-interactive
+        run: npm run check:ci-tutorial-noninteractive
+      # `npm run ci` is the promise that a local run catches CI failures. This
+      # fails when a gate is wired into a workflow but not into that chain --
+      # four had already drifted out, including the harness that runs the
+      # meta-gates, so the checks that verify other checks never ran locally.
+      - name: Validate every workflow gate is in `npm run ci`
+        run: npm run check:ci-chain-parity
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
       - name: Validate account onboarding splash against canonical tutorials
@@ -594,6 +640,15 @@ jobs:
       # runs here rather than in quality-security (submodule-less checkout).
       - name: Check embed credits consistency
         run: npm run check:ci-embed-credits
+
+      # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
+      # raises the API rate limit; the gate fails SOFT on any network/rate-limit
+      # error, so a missing token or a blip never reddens the build — only a
+      # confirmed-stale pin does.
+      - name: Check embed-asset upstream freshness
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run check:ci-embed-asset-freshness
 
   quality-account:
     name: Account Server

@@ -4,7 +4,7 @@ description: "rdc を使う場面と renet を使う場面。"
 category: "Concepts"
 order: 1
 language: ja
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 ```bash
 # 新しいサーバーをセットアップ
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # リポジトリを作成して起動
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # リポジトリを停止
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # マシンの健全性を確認
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 完全なウォークスルーについては、[クイックスタート](/ja/docs/quick-start)を参照してください。

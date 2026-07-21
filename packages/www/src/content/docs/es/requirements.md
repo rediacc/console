@@ -4,7 +4,7 @@ description: Requisitos mínimos del sistema y plataformas compatibles para ejec
 category: Guides
 order: 0
 language: es
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ La CLI `rdc` también se instala correctamente en Alpine 3.19+ (APK con la capa 
 
 ### Políticas de Seguridad por SO
 
-El daemon Docker por repositorio y los propios contenedores del repositorio se ejecutan con **etiquetas de contenedor predeterminadas** en todos los sistemas operativos soportados. `rdc config machine setup` no instala políticas SELinux personalizadas ni perfiles AppArmor. Comportamiento por SO:
+El daemon Docker por repositorio y los propios contenedores del repositorio se ejecutan con **etiquetas de contenedor predeterminadas** en todos los sistemas operativos soportados. `rdc machine setup` no instala políticas SELinux personalizadas ni perfiles AppArmor. Comportamiento por SO:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor está habilitado por defecto. Se aplica el perfil docker-container predeterminado; no se requiere configuración adicional.
 - **Fedora 43, Oracle Linux 10**: SELinux funciona en modo enforcing. El daemon por repositorio etiqueta los contenedores con el contexto estándar `container_t`. No se necesita ninguna política SELinux personalizada.
@@ -75,7 +75,7 @@ Si un paso de configuración falla con rechazos AVC de SELinux o rechazos de App
 
 ### Instalado Automáticamente
 
-El comando `rdc config machine setup` instala lo siguiente en el servidor remoto:
+El comando `rdc machine setup` instala lo siguiente en el servidor remoto:
 
 - **Docker** y **containerd** (entorno de ejecución de contenedores)
 - **cryptsetup** (cifrado de disco LUKS)

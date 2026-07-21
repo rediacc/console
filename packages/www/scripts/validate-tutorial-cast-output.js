@@ -293,12 +293,6 @@ function main() {
   console.log('='.repeat(60));
   console.log(colors.dim(`Checked ${castFiles.length} recording(s).`));
 
-  if (errors.length === 0) {
-    console.log(colors.green('✓ No error output detected in tutorial recordings.'));
-    console.log('='.repeat(60));
-    process.exit(0);
-  }
-
   /**
    * The STALE-RECORDING backlog.
    *
@@ -333,12 +327,19 @@ function main() {
     process.exit(0);
   }
 
+  // Reached even when errors is empty: a cleared recording with a surviving baseline entry is
+  // the stale case the ratchet exists to catch.
   const regressions = findRegressions(
     errors,
     loadBacklog(BASELINE_PATH),
     (e) => e.file,
     'recording'
   );
+  if (errors.length === 0 && regressions.length === 0) {
+    console.log(colors.green('✓ No error output detected in tutorial recordings.'));
+    console.log('='.repeat(60));
+    process.exit(0);
+  }
   if (regressions.length === 0) {
     console.log(
       colors.dim(
@@ -350,7 +351,9 @@ function main() {
     process.exit(0);
   }
 
-  console.log(colors.red('\n✗ Tutorial recording errors BEYOND the stale-recording backlog:\n'));
+  console.log(
+    colors.red('\n✗ Stale-recording backlog OUT OF SYNC (the ratchet turns both ways):\n')
+  );
   for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
 
   for (const error of errors) {
@@ -362,7 +365,11 @@ function main() {
   }
 
   console.log('='.repeat(60));
-  console.log(colors.red(`✗ Validation failed (${errors.length} errors)`));
+  console.log(
+    colors.red(
+      `✗ Validation failed (${errors.length} error(s), ${regressions.length} backlog problem(s))`
+    )
+  );
   process.exit(1);
 }
 

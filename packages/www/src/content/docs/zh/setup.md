@@ -4,7 +4,7 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 **配置**是一个命名配置文件，用于存储您的 SSH 凭据、机器定义和仓库映射。可以将其理解为一个项目工作区。
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | 选项 | 必填 | 描述 |
@@ -34,7 +34,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 将您的远程服务器注册为配置中的机器：
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | 选项 | 必填 | 默认值 | 描述 |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 添加机器后，rdc 会自动运行 `ssh-keyscan` 获取服务器的主机密钥。您也可以手动运行：
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 查看所有已注册的机器：
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## 步骤 3：设置机器
@@ -61,7 +61,7 @@ rdc config machine list
 为远程服务器安装所有必需的依赖项：
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 此命令将：
@@ -87,7 +87,7 @@ rdc config machine setup --name server-1
 `--datastore-size` 接受百分比（`95%`）或绝对大小（`50G`、`1T`）。数据存储之后可以在线扩容：
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 数据存储内的仓库在 `repo create` 时独立设置大小，并可以在运行时扩容，因此您无需提前为数据存储预留过多空间。
@@ -98,10 +98,9 @@ rdc datastore resize -m server-1 --size 200G
 
 ```bash
 # 1. 记录机器的 Ceph 引用（池 + RBD 镜像，非机密信息）
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. 在 Ceph 后端上初始化数据存储
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Ceph 密钥环保留在各台机器上；配置文件仅保存非机密的池和镜像引用。Ceph 同时也是 Kubernetes 集群通过 ceph-csi 使用的存储层。关于集群与持久卷，请参阅 [Kubernetes](/en/docs/kubernetes) 指南；关于两种后端的对比，请参阅[架构](/en/docs/architecture)。
@@ -111,7 +110,7 @@ Ceph 密钥环保留在各台机器上；配置文件仅保存非机密的池和
 如果服务器的 SSH 主机密钥发生变化（例如重新安装后），刷新已存储的密钥：
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 此命令更新配置中该机器的 `knownHosts` 字段。
@@ -121,7 +120,7 @@ rdc config machine scan-keys -m server-1
 添加机器后，验证其是否可达：
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 此命令打开到机器的 SSH 连接并运行命令。如果成功，您的 SSH 配置正确。
@@ -141,7 +140,7 @@ rdc doctor
 ### 设置基础设施
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ Machine 范围的选项按机器存储。Config 范围的选项（`--cert-email`
 ### 查看基础设施
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### 推送到服务器
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 生成并部署 Traefik 反向代理配置到服务器：
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 此命令：
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 添加云服务提供商
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### 配置机器
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 此单一命令将：
@@ -244,7 +243,7 @@ rdc machine provision --name prod-2 --provider my-linode
 ### 取消配置机器
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 通过 OpenTofu 销毁虚拟机并将其从配置中移除。除非使用 `--force`，否则需要确认。仅适用于通过 `machine provision` 创建的机器。
@@ -252,7 +251,7 @@ rdc machine deprovision --name prod-2
 ### 列出提供商
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## 设置默认值
@@ -261,13 +260,13 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # 默认机器
-rdc config set --key team --value my-team                   # 配置存储的默认团队
+rdc config set team my-team                   # 配置存储的默认团队
 ```
 
 设置默认机器后，您可以在命令中省略 `-m server-1`：
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## 多配置管理
@@ -276,8 +275,8 @@ rdc repo create --name my-app -m my-server --size 10G
 
 ```bash
 # 创建独立的配置
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # 使用特定配置
 rdc repo list -m server-1 --config production

@@ -4,7 +4,7 @@ description: 既存のプロジェクトを暗号化されたRediaccリポジト
 category: Guides
 order: 11
 language: ja
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 - `rdc` CLIがインストール済み（[インストール](/ja/docs/installation)）
 - マシンが追加・プロビジョニング済み（[セットアップ](/ja/docs/setup)）
-- プロジェクトに十分なディスク容量がサーバーにあること（`rdc machine query`で確認）
+- プロジェクトに十分なディスク容量がサーバーにあること（`rdc machine status`で確認）
 
 ## ステップ1：リポジトリを作成する
 
 プロジェクトに合ったサイズの暗号化リポジトリを作成します。Dockerイメージとコンテナデータ用に容量に余裕を持たせてください。
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **ヒント：** 必要に応じて後から`rdc repo resize`でサイズ変更できますが、リポジトリは先にアンマウントする必要があります。最初から十分な容量で始めるほうが簡単です。
@@ -34,22 +34,22 @@ rdc repo create --name my-project -m server-1 --size 20G
 
 ```bash
 # 転送内容のプレビュー（変更なし）
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # ファイルをアップロード
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 アップロード前にリポジトリがマウントされている必要があります。まだマウントされていない場合：
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 リモートをローカルディレクトリと完全に一致させたい後続の同期の場合：
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > `--mirror`フラグは、ローカルに存在しないリモートのファイルを削除します。まず`--dry-run`で確認してください。
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 アップロードされたファイルはローカルユーザーのUID（例：1000）で到着します。Rediaccはユニバーサルユーザー（UID 7111）を使用し、VS Code、ターミナルセッション、ツールがすべて一貫したアクセスを持てるようにします。所有権コマンドを実行して変換します：
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Docker対応の除外
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Dockerボリューム検出をスキップして、コンテナデータディレクトリを含むすべてを変更するには：
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **警告：** 実行中のコンテナが破損する可能性があります。必要に応じて、先に`rdc repo down`で停止してください。
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 デフォルトの7111以外のUIDを設定するには：
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **注意：** `7111`はどこでも使用されているRediaccの共通UIDです（devcontainerイメージに組み込まれた`rediacc`ユーザーに対応しています）。特定の外部UIDが所有するファイルとのレガシー互換性のためにのみ`--uid`でオーバーライドしてください。これは**移行対象ではありません**。新しいリポジトリはデフォルトを維持すべきです。
@@ -200,7 +200,7 @@ IP割り当てと`.rediacc.json`の詳細については、[サービスネッ�
 リポジトリをマウントし（まだマウントされていない場合）、すべてのサービスを起動します：
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 これにより以下が実行されます：
@@ -212,7 +212,7 @@ rdc repo up --name my-project -m server-1
 コンテナが稼働していることを確認します：
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## ステップ7：自動起動を有効にする（オプション）
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 デフォルトでは、サーバー再起動後にリポジトリを手動でマウントして起動する必要があります。自動起動を有効にして、サービスが自動的に起動するようにします：
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 リポジトリのパスフレーズの入力を求められます。
@@ -275,7 +275,7 @@ Dockerサービスを使用する任意のプロジェクト：
 ファイルにはまだローカルのUIDが設定されています。所有権コマンドを実行してください：
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### コンテナが起動しない
@@ -284,10 +284,10 @@ rdc repo ownership --name my-project -m server-1
 
 ```bash
 # 割り当てられたIPを確認
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # コンテナログを確認
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### リポジトリ間のポート競合
@@ -296,10 +296,10 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### 所有権修正がコンテナを破損する
 
-`rdc repo ownership`を実行してコンテナが動作しなくなった場合、コンテナのデータファイルが変更されています。コンテナを停止し、データディレクトリを削除してから再起動してください。コンテナがデータを再作成します：
+`rdc repo admin ownership`を実行してコンテナが動作しなくなった場合、コンテナのデータファイルが変更されています。コンテナを停止し、データディレクトリを削除してから再起動してください。コンテナがデータを再作成します：
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # コンテナのデータディレクトリを削除（例：database/data）
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

@@ -4,7 +4,7 @@ description: "Quand utiliser rdc et quand utiliser renet."
 category: Concepts
 order: 1
 language: fr
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ Toutes les tâches courantes passent par `rdc` sur votre poste de travail :
 
 ```bash
 # Configurer un nouveau serveur
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # Créer et démarrer un dépôt
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # Arrêter un dépôt
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # Vérifier la santé de la machine
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Consultez le [Démarrage rapide](/fr/docs/quick-start) pour un guide complet.

@@ -1,4 +1,5 @@
 ---
+sourceHash: "dba51d5d6dcf8197"
 title: "Sovranità dei dati"
 description: "Come l'architettura self-hosted di Rediacc soddisfa i requisiti di residenza e sovranità dei dati nelle diverse giurisdizioni globali."
 category: "Legal"

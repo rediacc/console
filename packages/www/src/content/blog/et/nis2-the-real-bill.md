@@ -15,7 +15,7 @@ tags:
   - keskturg
 featured: false
 language: et
-sourceHash: 29fbcbffd8a304bc
+sourceHash: "d5f6a7108f614b9b"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -101,9 +101,9 @@ Rediacc on üks juhtimistasand ühtse auditilogi, asendades nelja viiest kategoo
 
 **Testandmed ja täisvõimsusel kloonimine** töötab BTRFS reflingil. Fork on konstantaja, olenemata repositooriumi suurusest. Täisvõimsusel tähendab andmeid, konfiguratsioone, konteinereid ja teenuseid. Forke 128 GB repositooriumit 7,2 sekundiga meie [PocketOS testis](/et/blog/i-tested-rediacc-against-the-pocketos-incident). Fork on praegune tootmine, mitte kärpitud lavastuskoopia. Vaata [Risk-Free Upgrades](/et/docs/risk-free-upgrades).
 
-**Kiirtaaste**: `rdc repo backup pull` mis tahes rclone-sihtmärgist värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
+**Kiirtaaste**: `rdc repo pull` mis tahes rclone-sihtmärgist värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
 
-**Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc audit verify` kontrollib seda otsast lõpuni.
+**Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc config audit verify` kontrollib seda otsast lõpuni.
 
 250 töötajaga keskturu olulise üksuse jaoks on koondamine neljalt nimetatud tarnijalt (backup, DR, testandmed, kiirtaaste) ühele. Üks litsents, üks auditilog, üks komplekt uuendamisotsuseid, üks registrikirje.
 
@@ -152,7 +152,7 @@ Viis lepingut. Kaks neist (Veeam, Veeam Cloud Connect) on sama tarnijaga, kuid e
 - Drata jääb (18 000 eurot)
 - Omatehtud testandmete skeem lükatakse kasutusest välja; SRE pool päeva iga kahe nädala tagant läheb igal nädalal tõhususe rutiini käitamisele
 
-Andmetasandi koondamine: 5 kulurea kirjet väheneb 1-le (Rediacc) pluss olemasolev IaaS-rida. Tarnijate registri andmetasandi jaotis langeb 5 kirjelt 2-le. Pideva tõhususe lugu on nüüd iganädalased harjutused räsi-aheldatud auditilogi tõenditega; taastamistesti lugu on nüüd toetatud `rdc machine backup status` väljundiga ja iganädalase taastamise harjutusega.
+Andmetasandi koondamine: 5 kulurea kirjet väheneb 1-le (Rediacc) pluss olemasolev IaaS-rida. Tarnijate registri andmetasandi jaotis langeb 5 kirjelt 2-le. Pideva tõhususe lugu on nüüd iganädalased harjutused räsi-aheldatud auditilogi tõenditega; taastamistesti lugu on nüüd toetatud `rdc backup status` väljundiga ja iganädalase taastamise harjutusega.
 
 Numbrid on illustratiivsed, mitte lubadused. Teie pakett on erinev. Kuju, neli kuni viis kulurea kirjet koondumas ühte pluss olemasolev IaaS, on see, milline näeb välja reaalne ostjavestlus.
 

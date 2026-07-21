@@ -1,10 +1,13 @@
 /**
  * ESLint rule to enforce E2E test file naming conventions
  *
- * Pattern: {XX}-{YY}[-{ZZ}]-{feature-name}[.negative].test.ts
+ * Pattern: {NN}[{variant}]-{feature-name}[.negative].test.ts
  *
- * This rule ensures E2E test files follow a consistent naming pattern
- * that aligns with documentation structure (web-application.md).
+ * NN is the two-digit suite number and the optional single-letter variant
+ * marks a split suite (12a / 12b / 12d). The previous {XX}-{YY} pattern and
+ * its `packages/e2e` path both described the web-console suite that PR #513
+ * deleted; neither matched a single file in the surviving `packages/e2e-tests`
+ * suite (0 of 33), so both are updated here to the convention actually in use.
  */
 
 import path from 'node:path';
@@ -19,7 +22,7 @@ export const e2eTestNamingConvention = {
     },
     messages: {
       invalidTestFileName:
-        'E2E test file "{{filename}}" does not match pattern: {XX}-{YY}[-{ZZ}]-{feature-name}[.negative].test.ts',
+        'E2E test file "{{filename}}" does not match pattern: {NN}[{variant}]-{feature-name}[.negative].test.ts',
     },
     schema: [
       {
@@ -41,11 +44,11 @@ export const e2eTestNamingConvention = {
     const options = context.options[0] || {};
     const excludeDirs = new Set(options.excludeDirs || ['helpers', 'setup', 'electron']);
 
-    // Pattern: XX-YY[-ZZ]-feature-name[.negative].test.ts
-    // XX, YY, ZZ: 2-digit numbers
+    // Pattern: NN[variant]-feature-name[.negative].test.ts
+    // NN: 2-digit suite number; variant: optional single letter for split suites
     // feature-name: kebab-case (lowercase letters, numbers, hyphens)
     // .negative: optional suffix for negative test cases
-    const VALID_PATTERN = /^(\d{2})-(\d{2})(?:-(\d{2}))?-([a-z0-9]+(?:-[a-z0-9]+)*)(\.negative)?\.test\.ts$/;
+    const VALID_PATTERN = /^(\d{2})([a-z])?-([a-z0-9]+(?:-[a-z0-9]+)*)(\.negative)?\.test\.ts$/;
 
     return {
       Program(node) {
@@ -54,8 +57,8 @@ export const e2eTestNamingConvention = {
         // Only check .test.ts files
         if (!filename.endsWith('.test.ts')) return;
 
-        // Only check files under packages/e2e/tests
-        const e2eTestsPath = path.join('packages', 'e2e', 'tests');
+        // Only check files under packages/e2e-tests/tests
+        const e2eTestsPath = path.join('packages', 'e2e-tests', 'tests');
         if (!filename.includes(e2eTestsPath)) return;
 
         // Check excluded directories

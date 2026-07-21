@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: zh
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 智能体（这次就是我）会尝试的第一件事：打开一个 shell 进入生产仓库看看。
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 CLI 拒绝了。原话如下：
@@ -97,7 +97,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 这才是 Rediacc 真正想让你走的工作流。
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 输出，直接复制自我的终端：
@@ -129,7 +129,7 @@ Total: 6.3s
 当我 `term connect` 进入 fork 时，看到的是：
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `se
 
 针对智能体威胁模型，这个设计有两个值得专门指出来的副作用。第一，`repo secret list` 和 `repo secret get` 作为 MCP 工具暴露出来（读取安全：只给名字和摘要，绝不给值），所以一个帮你搭应用的智能体可以发现配置了什么，而不会看到具体是什么。第二，当一次写操作未通过前置条件时，JSON 错误信封里包含一个结构化的 `next.options[].run` 字段，列出智能体应当原样转交给人类的具体命令。包括针对“我忘了前一个值”的轮换逃生口。完整模型见 [AI 智能体安全](/zh/docs/ai-agents-safety)。
 
-完整的操作指引见 [仓库 § 密钥](/zh/docs/repositories#secrets)。分三步：首先播种值，运行 `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`；然后在 compose 文件里引用 `${REDIACC_SECRET_<KEY>}`；最后运行 `rdc repo fork`，确认 fork 的密钥列表是空的。
+完整的操作指引见 [仓库 § 密钥](/zh/docs/repositories#secrets)。分三步：首先播种值，运行 `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`；然后在 compose 文件里引用 `${REDIACC_SECRET_<KEY>}`；最后运行 `rdc repo fork`，确认 fork 的密钥列表是空的。
 
 ## 这对做这类工作的人意味着什么
 

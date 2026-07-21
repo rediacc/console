@@ -4,7 +4,7 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 order: 0
 language: zh
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ Oracle Linux 10 默认使用 **Unbreakable Enterprise Kernel (UEK)**，该内核
 
 ### 各操作系统的安全策略
 
-每个仓库的 Docker 守护进程和仓库容器本身在所有受支持的操作系统上均以**默认容器标签**运行。`rdc config machine setup` 不安装自定义 SELinux 策略或 AppArmor 配置文件。各操作系统的行为如下：
+每个仓库的 Docker 守护进程和仓库容器本身在所有受支持的操作系统上均以**默认容器标签**运行。`rdc machine setup` 不安装自定义 SELinux 策略或 AppArmor 配置文件。各操作系统的行为如下：
 
 - **Ubuntu 24.04、openSUSE Leap 16.0**：AppArmor 默认启用。应用默认的 docker-container 配置文件，无需额外设置。
 - **Fedora 43、Oracle Linux 10**：SELinux 处于 enforcing 状态运行。每个仓库的守护进程使用标准 `container_t` 上下文为容器打标签。不需要自定义 SELinux 策略。
@@ -75,7 +75,7 @@ Oracle Linux 10 默认使用 **Unbreakable Enterprise Kernel (UEK)**，该内核
 
 ### 自动安装的组件
 
-`rdc config machine setup` 命令会在远程服务器上安装以下组件：
+`rdc machine setup` 命令会在远程服务器上安装以下组件：
 
 - **Docker** 和 **containerd**（容器运行时）
 - **cryptsetup**（LUKS 磁盘加密）

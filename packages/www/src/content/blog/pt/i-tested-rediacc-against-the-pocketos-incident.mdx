@@ -11,7 +11,7 @@ tags:
   - estudo-de-caso
 featured: true
 language: pt
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ O meu agente para o teste foi o Claude Code, a correr Claude Opus. A mesma famí
 A primeira coisa que o agente (eu, neste caso) tentaria: abrir uma shell no repositório de produção e olhar em volta.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 O CLI recusou. Textualmente:
@@ -97,7 +97,7 @@ Também tentei ligar a um repositório de produção diferente, `nextcloud`, enq
 Este é o fluxo de trabalho que o Rediacc realmente quer que use.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Output, copiado do meu terminal:
@@ -129,7 +129,7 @@ Agora estou a operar no fork. Tem o seu próprio GUID (`22c57178-...`). O seu pr
 Quando faço `term connect` para o fork, é isto que vejo:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ A lacuna residual honesta. Segredos que escreveu na imagem do repositório antes
 
 Para o modelo de ameaça de agente especificamente, dois efeitos secundários deste design merecem ser mencionados. Primeiro, `repo secret list` e `repo secret get` estão expostos como ferramentas MCP (leitura segura -- nomes e digests, nunca valores), para que um agente que o ajude a configurar uma aplicação possa descobrir o que está configurado sem ver o que é. Segundo, quando uma escrita falha a pré-condição, o envelope de erro JSON inclui um campo estruturado `next.options[].run` com comandos concretos que o agente deve transmitir textualmente ao humano. Incluindo a saída de emergência de rotação para "esqueci o valor anterior". Consulte [Segurança de Agentes de IA](/pt/docs/ai-agents-safety) para o modelo completo.
 
-O guia completo está em [Repositórios - Segredos](/pt/docs/repositories#secrets). Três passos. Primeiro, semeie o valor: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Depois referencie `${REDIACC_SECRET_<KEY>}` no seu ficheiro compose. Por fim, execute `rdc repo fork` e confirme que o fork arranca com uma lista de segredos vazia.
+O guia completo está em [Repositórios - Segredos](/pt/docs/repositories#secrets). Três passos. Primeiro, semeie o valor: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Depois referencie `${REDIACC_SECRET_<KEY>}` no seu ficheiro compose. Por fim, execute `rdc repo fork` e confirme que o fork arranca com uma lista de segredos vazia.
 
 ## O que isto muda para quem faz este tipo de trabalho
 

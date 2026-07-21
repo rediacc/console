@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for locale coverage data
 let coverageCache = new Map();
@@ -139,15 +140,15 @@ export const translationCoverage = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localesDir = options.localesDir || 'packages/web/src/i18n/locales';
     const sourceLanguage = options.sourceLanguage || 'en';
     const minimumCoverage = options.minimumCoverage ?? 80;
 
     // Resolve paths
-    const projectRoot = process.cwd();
-    const absoluteLocalesDir = path.isAbsolute(localesDir)
-      ? localesDir
-      : path.join(projectRoot, localesDir);
+    const absoluteLocalesDir = resolveRequiredDirOption(
+      'i18n/translation-coverage',
+      'localesDir',
+      options.localesDir,
+    );
 
     // Get current file info
     const filename = context.filename;

@@ -4,8 +4,8 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "5bdc0ff205ae9c73"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 ---
 
 # 安装
@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 拉取并作为容器运行 CLI：
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 创建别名以方便使用：
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 可用的 Docker 标签：
@@ -174,7 +174,7 @@ REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### 渠道工作原理
@@ -183,7 +183,7 @@ docker pull ghcr.io/rediacc/elite/cli:edge
 
 - **安装脚本**：`REDIACC_CHANNEL` 环境变量选择渠道
 - **包仓库**：`releases.rediacc.com/{格式}/{渠道}/`
-- **Docker 标签**：`ghcr.io/rediacc/elite/cli:{渠道}`
+- **Docker 标签**：`ghcr.io/rediacc/rdc:{渠道}`
 - **CLI 更新**：`rdc update` 检查安装时配置的渠道
 
 ### PR 预览自动配置

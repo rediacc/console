@@ -3,7 +3,7 @@
 # Demonstrates the dev → prod transition: rdc repo up (production), autostart
 # enable, autostart list, rdc repo down. The "renet dev down" piece runs from
 # inside the repo sandbox in the real flow; here we replicate it via
-# `rdc term connect <repo> -c "renet dev down"` for a single-pass cast.
+# `rdc term connect <repo> --command "renet dev down"` for a single-pass cast.
 #
 # Prerequisites: shared tutorial config + provisioned worker VM.
 
@@ -28,9 +28,9 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 rdc repo admin template apply my-app --template app-postgres
 
@@ -50,7 +50,7 @@ run_cmd "rdc repo admin autostart enable my-app"
 pause 1
 
 section "List autostart-enabled repos"
-run_cmd "rdc repo admin autostart list -m $M"
+run_cmd "rdc repo admin autostart list --machine $M"
 
 pause 2
 
@@ -64,4 +64,4 @@ end_recording
 # Cleanup
 rdc repo admin autostart disable my-app 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true

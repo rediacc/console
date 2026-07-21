@@ -4,7 +4,7 @@ description: "شغّل Kubernetes بعقلية مستودع Rediacc: فرّع أ
 category: "Guides"
 order: 6
 language: ar
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,34 +39,32 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 
 ```bash
 # تعريف عنقود مع تجمعات (لا شيء يُجهَّز بعد)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # تجهيز أعضاء التجمع، إقلاع renet على كل منها، تثبيت المكونات (Ceph أولاً)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 أدوار التجمع هي `ceph` و`k8s-server` و`k8s-agent` و`hyperconverged` (اختيار صريح، لأن أهداف ذاكرة Ceph وعتبات إخلاء kubelet تتنافس على الذاكرة العشوائية). يحمل كل تجمع تفاوت العتاد كمعاملات حجم وقرص لكل تجمع: عُقد Ceph الكثيفة القرص، وعُقد Kubernetes الكثيفة المعالج/الذاكرة.
 
-تتجسد أعضاء التجمع في `resources.machines` باسم `<cluster>-<pool>-<n>` مع مرجع عكسي، بحيث **يعمل كل أمر `-m` موجود عليها**: `rdc machine query` و`rdc term connect` وأوامر المستودع واستراتيجيات النسخ الاحتياطي تراها جميعاً عُقد العنقود كأجهزة عادية.
+تتجسد أعضاء التجمع في `resources.machines` باسم `<cluster>-<pool>-<n>` مع مرجع عكسي، بحيث **يعمل كل أمر `-m` موجود عليها**: `rdc machine status` و`rdc term connect` وأوامر المستودع واستراتيجيات النسخ الاحتياطي تراها جميعاً عُقد العنقود كأجهزة عادية.
 
 تُجهِّز مزودات السحابة عبر [OpenTofu](https://opentofu.org/)، متبعة نفس سجل `ProviderMapping` الذي يستخدمه `rdc machine provision`، ممتداً بكتلة شبكة خاصة (VLAN أو VPC، وحدة النقل القصوى المراد ختمها، وتسمية بطاقة الشبكة الخاصة). KVM المحلي هو مسار الاختبار المتاح دائماً عبر `rdc ops`.
 
 ```bash
 # فحص العناقيد
 rdc cluster status                 # سرد جميع العناقيد
-rdc cluster status --name prod     # الإعداد الكامل لعنقود واحد
+rdc cluster status prod     # الإعداد الكامل لعنقود واحد
 
 # تكبير أو تصغير تجمع (إضافة/إزالة أجهزة، ضم/تفريغ عقد)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# تثبيت المكونات على الأعضاء المجهزة بالفعل
-rdc cluster install --name prod
 
 # تفكيك الأعضاء المجهزة وإزالة العنقود من الإعداد
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### الحصول على kubeconfig
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 لا يُخزَّن kubeconfig أبداً في ملف الإعداد الخاص بك (فهو كبير ويتناوب). يُجلب عند الطلب عبر SSH ويُخزَّن مؤقتاً محلياً بصلاحيات `0600`، متبعاً نفس نمط الحالة الجانبية مثل مجلدات عمل OpenTofu وذاكرة الشهادات المؤقتة.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # يطبع: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ rdc cluster kubeconfig --name prod
 
 ```bash
 # مستودع Docker (بلا تغيير): عملية Docker معزولة على جهاز
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # مستودع Kubernetes: فضاء أسماء "shop" بالإضافة إلى تخزينه، داخل عنقود
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 أفعال المستودع هي السطح الوحيد للعمل المرتبط بالمستودع. عبر قمع حل الوجهة، يصبح تقريباً مجموعة أوامر المستودع بأكملها متوافقة مع العناقيد: تقبل `fork` و`migrate` و`push` و`pull` و`up` و`down` و`resize` و`diff` و`commit` و`branch` و`checkout` و`merge` و`trim` و`cat` و`mount` و`sync` و`list` و`status` و`log` كلها `--cluster`. تُحل وجهة العنقود إلى عقدة التحكم الخاصة به بالإضافة إلى سياق KUBECONFIG المثبَّت على فضاء أسماء المستودع، وهو نظير حل جهاز إلى `DOCKER_HOST` بالإضافة إلى مجلد عمل.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # تصدير KUBECONFIG، ثم استخدام kubectl مباشرة
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # تصدير KUBECONFIG، ثم استخدام kubectl مباشرة
 ```
 
 تتجسد عُقد العنقود أيضاً في `resources.machines`، بحيث يمكنك الاتصال عبر SSH بعقدة محددة باستخدام `rdc term connect <cluster>-<pool>-<n>` المعتاد.
@@ -120,7 +118,7 @@ up() {
 `rdc repo fork` على مستودع Kubernetes ينسخ البيانات دائماً، وفوراً دائماً. لا يوجد علم `--full` ولا متغيرات.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 هذا ينشئ فضاء الأسماء `shop-joseph` في نفس العنقود، ويستنسخ كل حجم بنسخ عند الكتابة (استنساخ RBD على Ceph، أو reflink لملفات صور PV على الطبقة المحلية)، وينشر الأعباء هناك. رابط URL الخاص بالتفريع نشط فوراً تحت الشهادة البرية الخاصة بالأصل، لذا لا تُصدَر شهادة أو سجل DNS جديد.
@@ -138,10 +136,10 @@ rdc repo fork --parent shop --tag joseph --cluster prod
 
 ```bash
 # استنساخ عنقود بأكمله، بما في ذلك بيانات مستودعاته، إلى عنقود جديد
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # نقل عنقود بأكمله، بما في ذلك بيانات مستودعاته، إلى جهاز أو مركز بيانات آخر
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 كلاهما ينسّق نسخاً عند الكتابة لصور العنقود بالإضافة إلى كل صورة PV لمستودع، ثم يعيد كتابة هوية العقدة بحيث يقلع النسخ أو العنقود المنقول بصحة على عناوينه الجديدة. بما أن k3s تخزّن حالة مستوى التحكم في مخزن بياناتها المضمّن، فإن صورة العنقود نفسها هي اللقطة: ترتيب الاتساق هو مستوى التحكم أولاً، ثم الأحجام الثابتة، ثم الوكلاء.

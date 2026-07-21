@@ -4,7 +4,7 @@ description: "Migre projetos existentes para repositórios Rediacc encriptados."
 category: "Guides"
 order: 11
 language: pt
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ Migre um projeto existente, ficheiros, serviços Docker e bases de dados de um s
 
 - CLI `rdc` instalada ([Instalação](/pt/docs/installation))
 - Uma máquina adicionada e provisionada ([Configuração](/pt/docs/setup))
-- Espaço em disco suficiente no servidor para o seu projeto (verificar com `rdc machine query`)
+- Espaço em disco suficiente no servidor para o seu projeto (verificar com `rdc machine status`)
 
 ## Passo 1: Criar um Repositório
 
 Crie um repositório encriptado dimensionado para o seu projeto. Aloque espaço extra para imagens Docker e dados de contentores.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **Dica:** Pode redimensionar mais tarde com `rdc repo resize` se necessário, mas o repositório deve estar desmontado primeiro. É mais fácil começar com espaço suficiente.
@@ -34,22 +34,22 @@ Use `rdc repo sync upload` para transferir os ficheiros do seu projeto para o re
 
 ```bash
 # Pré-visualizar o que será transferido (sem alterações)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # Carregar ficheiros
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 O repositório deve estar montado antes de carregar. Se não estiver:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 Para sincronizações subsequentes onde pretende que o remoto corresponda exatamente ao diretório local:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > O sinalizador `--mirror` elimina ficheiros no remoto que não existem localmente. Use `--dry-run` primeiro para verificar.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Os ficheiros carregados chegam com o UID do utilizador local (por exemplo, 1000). O Rediacc usa um utilizador universal (UID 7111) para que o VS Code, as sessões de terminal e as ferramentas tenham acesso consistente. Execute o comando de propriedade para converter:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Exclusão com Reconhecimento de Docker
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Para ignorar a deteção de volumes Docker e aplicar chown a tudo, incluindo diretórios de dados de contentores:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **Aviso:** Isto pode quebrar contentores em execução. Pare-os primeiro com `rdc repo down` se necessário.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 Para definir um UID diferente do predefinido 7111:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **Cuidado:** `7111` é o UID universal do Rediacc utilizado em todo o lado (corresponde ao utilizador `rediacc` integrado na imagem do devcontainer). Só o substitua com `--uid` para compatibilidade com versões anteriores de ficheiros pertencentes a um UID externo específico. **Não** é um destino de migração. Os novos repositórios devem manter o valor predefinido.
@@ -200,7 +200,7 @@ Consulte [Rede de Serviços](/pt/docs/services#service-networking-rediaccjson) p
 Monte o repositório (se ainda não estiver montado) e inicie todos os serviços:
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 Isto irá:
@@ -212,7 +212,7 @@ Isto irá:
 Verificar que os seus contentores estão a correr:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Passo 7: Ativar o Arranque Automático (Opcional)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 Por predefinição, os repositórios devem ser montados e iniciados manualmente após um reinício do servidor. Ative o arranque automático para que os seus serviços iniciem automaticamente:
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 Ser-lhe-á solicitada a frase-passe do repositório.
@@ -275,7 +275,7 @@ Para qualquer projeto com serviços Docker:
 Os ficheiros ainda têm o UID local. Execute o comando de propriedade:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### O Contentor Não Inicia
@@ -284,10 +284,10 @@ Verifique se os serviços estão a correr e consulte os seus registos:
 
 ```bash
 # Verificar IPs atribuídos
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # Verificar registos do contentor
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### Conflito de Portas Entre Repositórios
@@ -296,10 +296,10 @@ Cada repositório obtém IPs de loopback únicos, e o kernel reescreve automatic
 
 ### A Correção de Propriedade Quebra Contentores
 
-Se executou `rdc repo ownership` e um contentor deixou de funcionar, os ficheiros de dados do contentor foram alvo de chown. Pare o contentor, elimine o seu diretório de dados e reinicie. O contentor irá recriá-lo:
+Se executou `rdc repo admin ownership` e um contentor deixou de funcionar, os ficheiros de dados do contentor foram alvo de chown. Pare o contentor, elimine o seu diretório de dados e reinicie. O contentor irá recriá-lo:
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # Eliminar o diretório de dados do contentor (por exemplo, database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

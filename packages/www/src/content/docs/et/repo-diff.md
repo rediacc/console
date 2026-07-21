@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: et
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,25 +24,22 @@ Niisiis: kasuta `repo diff` enne hargnemise edutamist. AI-agent jooksis lahti to
 ### Süntaks
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### Valikud
 
 | Valik | Kirjeldus | Vaikeväärtus |
 |--------|-------------|---------|
-| `--name <name>` | Kontrollitav hoidla (siht, uus pool). Nõutav. | nõutav |
-| `--base <name>` | Hoidla, millega võrrelda (baas, vana pool). Vaikimisi `--name` vanem, lahendatud kohaliku configist. | `--name` vanem |
+| `<ref>` (positsiooniline) | Uuritava hoidla viide (sihtmärk, uus pool). Kohustuslik. | kohustuslik |
+| `--base <ref>` | Hoidla, millega võrreldakse (baaspool, vana pool). Vaikimisi on see positsioonilise viite vanem, mis lahendatakse kohalikust konfiguratsioonist. | viite vanem |
 | (formaadivali puudub) | Nime-staatuse väljund: värviline `A`/`M`/`D`/`R` täht muutunud faili kohta pluss üherealisi kokkuvõte. | sees |
 | `--name-only` | Üks muutunud tee rea kohta, staatuse täht puudub. Müra-sõbralik. | välja |
-| `--stat` | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokku-
-
-võttega jaluses. | välja |
+| `--stat` | Faili kohta muutuste suuruus (baidi ja ploki deltad) kokkuvõttega jaluses. | välja |
 | `--content <path>` | Ühendatud teksti diff ühe faili jaoks. Ainult tekst; binaarfailid teatavad `Binary files differ`. | välja |
-| `--json` | Struktureeritud väljund agentidele ja skriptidele. | välja |
+| `-o json` | Struktureeritud väljund agentidele ja skriptidele. | `table` |
 | `--fast` | Jäta sisu-räsi kinnitamise etapp vahele ja usalda plokkfiltrit. Kiirem, kuid võib üle teatada failidest kui Muudetud. | välja |
-| `-m, --machine <name>` | Sihtmasin. Nõutav. | nõutav |
 | `--debug` | Üksikasjalik diagnostika stderr kohale. | välja |
 | `--skip-router-restart` | Jäta marsruuteri taaskäivitamise etapp vahele. | välja |
 
@@ -53,7 +50,7 @@ võttega jaluses. | välja |
 Ainult `--name` järgi võrdletakse hargnemmist vanemat vastu, mille kohalik konfig salvestab. Siin on hargnemine `test-1gb:fork1` ühe muutunud failiga:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -64,7 +61,7 @@ M  hello.txt
 Kasuta `--base` võrdlemiseks suvalise seotud hoidlaga. `--base` on baas (vana) pool, `--name` on siht (uus) pool:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -77,7 +74,7 @@ M  hello.txt
 võtte jaluse:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -88,7 +85,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` prindib ühe tee rea kohta ilma staatuse tähe, valmis toidame teisele käsule:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -97,7 +94,7 @@ review: hello.txt
 `--content` annab ühendatud diff ühe tekstifaili jaoks:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -107,10 +104,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### JSON filtreerimine jq-ga
 
-`--json` väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt `jq`-sse:
+`-o json` väljastab struktureeritud ümbrise stdout-le, nii et see toru puhtalt `jq`-sse:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -145,7 +142,7 @@ Iga rida kannab faili baidi deltad plokkide deltad. Jalus teatab kogu faili arvu
 
 Standardne ühendatud diff (`---`/`+++` pealkirjad, `@@` hunks) ühe tekstifaili jaoks. Binaarfailid teatavad `Binary files differ` ja ei tekita hunks.
 
-### `--json`
+### `-o json`
 
 Täis struktureeritud tulemus. Andmed lähevad stdout-le; progress ja diagnostika lähevad stderr-le, seega JSON toru puhtalt `jq` või teise parseeri, isegi kui progress trükib.
 

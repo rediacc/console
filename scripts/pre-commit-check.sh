@@ -59,7 +59,10 @@ if ! npm run fix:all > /dev/null 2>&1; then
 fi
 
 # 2. Check if translation files were modified - MUST regenerate hashes
-if echo "$STAGED_FILES" | grep -qE "i18n/locales/.*\.json$"; then
+# The pattern must cover EVERY locale tree fix:i18n regenerates -- www lives
+# under i18n/translations/, not i18n/locales/, so a www-only English change used
+# to slip past this block entirely.
+if echo "$STAGED_FILES" | grep -qE "i18n/(locales|translations)/.*\.json$"; then
     echo "→ Translation files modified, ensuring hashes are up-to-date..."
 
     # Run i18n hash check
@@ -68,9 +71,32 @@ if echo "$STAGED_FILES" | grep -qE "i18n/locales/.*\.json$"; then
         echo "→ Regenerating translation hashes..."
         npm run fix:i18n > /dev/null 2>&1
 
-        # Stage the updated hash files
-        git add packages/web/src/i18n/locales/.translation-hashes.json 2>/dev/null || true
-        git add packages/cli/src/i18n/locales/.translation-hashes.json 2>/dev/null || true
+        # Stage every manifest fix:i18n regenerates in THIS repo. Staging only a
+        # subset left a www or account regeneration unstaged, so the commit
+        # landed with a stale committed manifest.
+        # Source of truth: LOCALE_CONFIGS in scripts/generate-translation-hashes.ts
+        for manifest in \
+            packages/cli/src/i18n/locales/.translation-hashes.json \
+            packages/www/src/i18n/translations/.translation-hashes.json; do
+            if [ -f "$manifest" ]; then
+                git add "$manifest"
+            else
+                echo "⚠️  Expected manifest missing: $manifest"
+                echo "   LOCALE_CONFIGS in scripts/generate-translation-hashes.ts is out of sync."
+            fi
+        done
+
+        # The account manifests live in the private/account submodule and cannot
+        # be staged from this repo. Warn so they are not silently left behind.
+        for sub_manifest in \
+            private/account/web/src/i18n/locales/.translation-hashes.json \
+            private/account/src/i18n/locales/.translation-hashes.json; do
+            if [ -f "$sub_manifest" ] && ! git -C private/account diff --quiet -- \
+                "${sub_manifest#private/account/}"; then
+                echo "⚠️  Regenerated $sub_manifest (private/account submodule)"
+                echo "   Commit it inside private/account before committing this repo."
+            fi
+        done
 
         echo "✓ Translation hashes regenerated and staged"
     else

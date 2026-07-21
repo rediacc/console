@@ -11,11 +11,11 @@ tags:
   - benchmarks
 featured: false
 language: zh
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **太长不看。** Rediacc 的 `rdc machine query --storage-health` 会报告每个仓库的碎片化指标。在某台生产机器上，它把 GitLab 标记为约 19,650 个 extent/GB。直觉是去做碎片整理。我改为实际测了一下。
+> **太长不看。** Rediacc 的 `rdc machine status --storage-health` 会报告每个仓库的碎片化指标。在某台生产机器上，它把 GitLab 标记为约 19,650 个 extent/GB。直觉是去做碎片整理。我改为实际测了一下。
 >
 > - 碎片化程度比邻近仓库高 **16 倍**的仓库，顺序读速度为 **149 MB/s**，而对比仓库是 143 MB/s；随机 4K 读也**更快**（719 us 对 957 us）。
 > - 该设备是闪存。碎片化通过寻道时间损伤旋转磁盘。在 SSD 上，几乎不存在它造成伤害的机制。

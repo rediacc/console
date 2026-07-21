@@ -22,10 +22,6 @@ interface LocaleConfig {
 
 const LOCALE_CONFIGS: LocaleConfig[] = [
   {
-    name: 'web',
-    dir: path.join(__dirname, '../packages/web/src/i18n/locales'),
-  },
-  {
     name: 'cli',
     dir: path.join(__dirname, '../packages/cli/src/i18n/locales'),
   },

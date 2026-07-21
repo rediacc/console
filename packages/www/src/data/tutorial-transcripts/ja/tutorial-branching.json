@@ -6,7 +6,7 @@
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "at": 2.418102,
+      "at": 2.423373,
       "text": "作業中のforkにはアプリの状態のバージョン1が入っています。シンプルなマーカーファイルでそれが確認できます。",
       "afterText": "バージョン1、ディスクに保存されました。",
       "cardLabel": "バージョン1",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "at": 10.876025,
+      "at": 8.659919,
       "text": "ファイルだけではありません。このforkには本物のPostgreSQLデータベースも動いており、customersテーブルには3行のデータがあります。この数を覚えておいてください。",
       "afterText": "3行。これから危険にさらすデータです。",
       "cardLabel": "3行",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "at": 20.708803,
+      "at": 16.216982,
       "text": "フリーズします。commitはrepository全体をメッセージ、作成者、親情報とともに不変のイメージとして記録します。gitとまったく同じ仕組みですが、データベースも含めたすべてが対象です。",
       "afterText": "commitされました。このスナップショットは変更できません。マウントすら拒否します。",
       "cardLabel": "コミット v1",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "at": 29.448478,
+      "at": 21.875788,
       "text": "commitに名前をつけます。stableブランチがバージョン1を指すようになりました。",
       "afterText": "ブランチとは、後で戻れる名前です。",
       "cardLabel": "Stable ブランチ",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "at": 34.241982,
+      "at": 26.408746,
       "text": "作業を続けます。作業中のforkでバージョン2がバージョン1に取って代わりました。commitは影響を受けません。",
       "afterText": "作業中のforkは先に進みました。履歴は変わっていません。",
       "cardLabel": "バージョン2",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "at": 42.690283,
+      "at": 32.630295,
       "text": "次は災害の発生です。危険な変更でcustomersテーブルが削除されます。現実では、胃が沈むような瞬間です。",
       "afterText": "テーブルの削除が実行されました。作業中のforkからデータが消えました。",
       "cardLabel": "テーブルを削除",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "at": 51.047933,
+      "at": 38.597418,
       "text": "再び行を照会すると、データベースははっきりと答えます。リレーション「customers」は存在しない、と。これは本物の災害です。すべての行が消えました。",
       "afterText": "リレーションは存在しません。3行、消滅。",
       "cardLabel": "テーブルが消えた",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "at": 59.69522,
+      "at": 45.023533,
       "text": "危険な変更もcommitします。テーブルが壊れた状態のまま。履歴には実際に起きたことが記録されます。今や2つのcommitがあります。親と子です。",
       "afterText": "チェーンに2つのスナップショット。",
       "cardLabel": "コミット v2",
@@ -78,7 +78,7 @@
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "at": 68.35661,
+      "at": 50.876553,
       "text": "これが履歴です。上にバージョン2、その下にバージョン1、メッセージと作成者も含まれています。一つもイメージをアンロックせずに確認できます。",
       "afterText": "git logとまったく同じ、repoのログです。",
       "cardLabel": "Repo ログ",
@@ -87,7 +87,7 @@
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "at": 75.614559,
+      "at": 55.851239,
       "text": "いよいよ成果です。stableブランチを新しい書き込み可能なforkにcheckoutします。reflinkクローンなので、サイズを問わずほぼ瞬時に完了します。",
       "afterText": "フリーズされたバージョン1の書き込み可能なコピーが、約1秒で完成します。",
       "cardLabel": "チェックアウト",
@@ -96,7 +96,7 @@
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "at": 83.292425,
+      "at": 60.773115,
       "text": "ロールバック用のforkを他のrepoと同様に起動します。",
       "afterText": "2つのforkが動いています。今日のバージョンとチェックポイントです。",
       "cardLabel": "ロールバック開始",
@@ -105,7 +105,7 @@
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "at": 91.555233,
+      "at": 67.070568,
       "text": "そして証明です。ロールバック用のforkはバージョン1を読み取ります。作業中のforkにはまだバージョン2があります。実行できる履歴です。",
       "afterText": "ロールバック完了。ここに至るまで何も上書きされていません。",
       "cardLabel": "証明: v1",
@@ -114,7 +114,7 @@
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "at": 98.952411,
+      "at": 72.350149,
       "text": "そして最も重要な部分です。削除されたテーブルが戻ってきました。3行すべて揃っています。ロールバックはファイルだけでなく、データベースも復元しました。",
       "afterText": "再び3行。災害は取り消されました。",
       "cardLabel": "データ復元",

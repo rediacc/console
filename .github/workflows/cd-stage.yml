@@ -26,13 +26,10 @@ on:
       renet_tag:
         type: string
         required: false
-      plugins_tag:
-        type: string
-        required: false
       web_tag:
         type: string
         required: false
-      cli_tag:
+      rdc_tag:
         type: string
         required: false
       upload_pages:
@@ -169,6 +166,12 @@ jobs:
           cp dist/cli/manifest.json dist/pages/cli/
 
       - name: Build package repositories
+        # build-pkg-repo.sh hard-exits on an empty --channel, and the nightly
+        # (schedule) run derives channel="" on purpose to avoid orphaning ~5 GB
+        # of R2 bytes. Every UPLOAD step here already self-gates; this is a BUILD
+        # step, so it was never covered by that invariant and reddened the whole
+        # nightly. Same gate as its neighbours.
+        if: inputs.channel != ''
         run: |
           VERSION="${{ inputs.next_version }}"
 
@@ -203,13 +206,10 @@ jobs:
           CHANNEL="${{ inputs.channel }}"
 
           .ci/scripts/docker/retag-image.sh --image renet --from "${{ inputs.renet_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image plugin-terminal --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image plugin-browser --from "${{ inputs.plugins_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image web --from "${{ inputs.web_tag }}" --to "$CHANNEL"
-          .ci/scripts/docker/retag-image.sh --image cli --from "${{ inputs.cli_tag }}" --to "$CHANNEL"
+          .ci/scripts/docker/retag-image.sh --image rdc --from "${{ inputs.rdc_tag }}" --to "$CHANNEL"
           # On-prem server image lives outside the elite/ namespace; use --image-path
-          # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the same
-          # build-server-docker-{amd64,arm64} jobs as elite/web, sharing the web_tag.
+          # so retag doesn't try to prepend PUBLISH_DOCKER_REGISTRY. Built by the
+          # build-server-docker-{amd64,arm64} jobs, sharing the web_tag.
           .ci/scripts/docker/retag-image.sh --image-path ghcr.io/rediacc/server --from "${{ inputs.web_tag }}" --to "$CHANNEL"
 
       # -----------------------------------------------------------------------

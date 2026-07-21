@@ -4,7 +4,7 @@ description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kont
 category: "Legal"
 order: 2
 language: et
-sourceHash: "e03bef0cead86ab7"
+sourceHash: "28b4309f81f43d8d"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -18,7 +18,7 @@ Viide: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-
 |----------------|----------|-------------------|
 | **Turvalisus** (CC6) | Loogilised juurdepääsukontrollid, krüptimine | LUKS2 AES-256 puhkeoleku krüptimine. Mandaadid talletatakse ainult operaatori kohalikus konfiguratsioonis (`~/.config/rediacc/`), mitte serveris. SSH-võtmepõhine juurdepääs. Eraldatud Dockeri deemonid hoidla kohta. |
 | **Kättesaadavus** (A1) | Süsteemi taastamine ja resilients | `rdc repo push/pull` krüptitud väliskoopiatega SSH, S3, B2, Azure või GDrive'i. CoW-hetktõmmised koheseks tagasipöördumiseks. Hargnemispõhised uuendused nullilähedase seisakuajaga muutuste jaoks. |
-| **Töötlemise terviklikkus** (PI1) | Täpne ja täielik töötlemine | Deterministlikud Rediaccfile elutsükli haagid (`up`/`down`) tagavad järjepidevad juurutused. `rdc repo validate` kontrollib hoidla terviklikkust ja varukoopia seisundit pärast ootamatuid seisakuid või varundamistoiminguid. |
+| **Töötlemise terviklikkus** (PI1) | Täpne ja täielik töötlemine | Deterministlikud Rediaccfile elutsükli haagid (`up`/`down`) tagavad järjepidevad juurutused. `rdc repo admin validate` kontrollib hoidla terviklikkust ja varukoopia seisundit pärast ootamatuid seisakuid või varundamistoiminguid. |
 | **Konfidentsiaalsus** (C1) | Andmete kaitse volitamata juurdepääsu eest | Hoidlapõhine krüptimine unikaalsete LUKS-mandaatidega. Võrgueraldus iptablesi, eraldi Dockeri deemonite ja loopback-IP-alamvõrkude kaudu. Eri hoidlate konteinerid ei näe üksteist. Zero-knowledge konfiguratsioonihoidla krüpteerib konfiguratsioonid kliendipoolselt enne üleslaadimist. Server talletab ainult läbipaistmatuid plokke, mida ta ei saa dekrüpteerida. |
 | **Privaatsus** (P1-P8) | Isikuandmete käitlemine | Isehallatav: toimingute ajal andmeid välja ei kanta. Auditijälg kogu andmetele juurdepääsu kohta. Krüptimisvõtmete haldus on kliendi kontrolli all. Konfiguratsioonihoidla kasutab jagatud võtme tuletamist (pääsvõtme PRF + serveri saladus), nii et kumbki pool üksi ei pääse andmetele ligi. |
 

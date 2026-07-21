@@ -37,34 +37,31 @@ A cluster is a named set of node pools on a private network. Declare it in confi
 
 ```bash
 # Declare a cluster with pools (nothing is provisioned yet)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # Provision the pool members, bootstrap renet on each, install components (Ceph first)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 Pool roles are `ceph`, `k8s-server`, `k8s-agent`, and `hyperconverged` (explicit opt-in, since Ceph memory targets and kubelet eviction thresholds compete for RAM). Each pool carries the hardware asymmetry as per-pool size and disk parameters: disk-heavy Ceph nodes, cpu/ram-heavy Kubernetes nodes.
 
-Pool members materialize into `resources.machines` as `<cluster>-<pool>-<n>` with a backref, so **every existing `-m` command works on them**: `rdc machine query`, `rdc term connect`, repo commands, and backup strategies all see cluster nodes as ordinary machines.
+Pool members materialize into `resources.machines` as `<cluster>-<pool>-<n>` with a backref, so **every existing `-m` command works on them**: `rdc machine status`, `rdc term connect`, repo commands, and backup strategies all see cluster nodes as ordinary machines.
 
 Cloud providers provision through [OpenTofu](https://opentofu.org/), following the same `ProviderMapping` registry that `rdc machine provision` uses, extended with a private-network block (VLAN or VPC, the MTU to stamp, the private NIC naming). Local KVM is the always-available test path via `rdc ops`.
 
 ```bash
 # Inspect clusters
 rdc cluster status                 # list all clusters
-rdc cluster status --name prod     # full config for one cluster
+rdc cluster status prod            # full config for one cluster
 
 # Grow or shrink a pool (adds/removes machines, joins/drains nodes)
-rdc cluster scale --name prod --pool k8s --count 5
-
-# Install components on already-provisioned members
-rdc cluster install --name prod
+rdc cluster scale prod --pool k8s --count 5
 
 # Tear down provisioned members and remove the cluster from config
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### Getting a kubeconfig
@@ -72,27 +69,27 @@ rdc cluster destroy --name prod
 The kubeconfig is never stored in your config file (it is large and rotates). It is fetched on demand over SSH and cached locally with `0600` permissions, following the same side-state pattern as OpenTofu workdirs and the cert cache.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # Prints: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
 ## Kubernetes Repositories
 
-The target flag decides the runtime. There is no type flag.
+Where you give the repo its home decides the runtime. There is no type flag.
 
 ```bash
 # Docker repo (unchanged): an isolated Docker daemon on a machine
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetes repo: namespace "shop" plus its storage, inside a cluster
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
-Repo verbs are the single surface for repo-scoped work. Through the target-resolution funnel, roughly the whole repo command set becomes cluster-capable: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status`, and `log` all accept `--cluster`. A cluster target resolves to its control node plus the KUBECONFIG context pinned to the repo's namespace, the analog of resolving a machine to `DOCKER_HOST` plus a working directory.
+Repo verbs are the single surface for repo-scoped work. Through the target-resolution funnel, roughly the whole repo command set becomes cluster-capable: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `sync`, `list`, `status`, and `log` all take the repository ref and resolve its placement themselves. A repo homed in a cluster resolves to the cluster's control node plus the KUBECONFIG context pinned to the repo's namespace, the analog of resolving a machine to `DOCKER_HOST` plus a working directory.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # export KUBECONFIG, then use kubectl directly
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # export KUBECONFIG, then use kubectl directly
 ```
 
 Cluster nodes also materialize into `resources.machines`, so you can SSH to a specific node with the ordinary `rdc term connect <cluster>-<pool>-<n>`.
@@ -118,7 +115,7 @@ A repo that lacks the target runtime gets a clear refusal **after** the data tra
 `rdc repo fork` on a Kubernetes repo always copies data, always instantly. There is no `--full` flag and no variants.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 This creates namespace `shop-joseph` in the same cluster, clones every volume copy-on-write (an RBD clone on Ceph, a reflink of the PV image files on the local backend), and deploys the workloads there. The fork URL is live instantly under the parent's wildcard certificate, so no new certificate or DNS record is issued.
@@ -135,11 +132,11 @@ Measured in the KVM test lab, a namespace fork completes in roughly one to five 
 Whole-cluster operations live in the `rdc cluster` group, because they act on a different object (the whole place with all its repos) and cannot be expressed through a command that takes a single repo name. This is the flagship story.
 
 ```bash
-# Clone an entire cluster, including its repos' data, into a new cluster
-rdc cluster fork --name prod --tag staging
+# Clone an entire cluster, including its repos' data, onto another cluster's nodes
+rdc cluster fork prod --to spare --tag staging
 
-# Move an entire cluster, including its repos' data, to another machine or datacenter
-rdc cluster migrate --name prod --to server-2
+# Move an entire cluster, including its repos' data, onto another cluster's nodes
+rdc cluster migrate prod --to spare
 ```
 
 Both coordinate a copy-on-write of the cluster images plus every repo PV image, then rewrite node identity so the clone or the relocated cluster comes up healthy on its new addresses. Because k3s stores control-plane state in its embedded datastore, the cluster image itself is the snapshot: the consistency order is control plane first, then PVs, then agents.

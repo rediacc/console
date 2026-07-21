@@ -6,7 +6,7 @@
     {
       "id": "tutorial-fork-isolation-01",
       "markerIndex": 0,
-      "at": 2.412666,
+      "at": 2.43605,
       "text": "이 앱을 소개합니다. demo-pgadmin, pgAdmin 인터페이스를 갖춘 PostgreSQL이 마운트되어 실행 중입니다.",
       "afterText": "라이브 repo 하나. 클론해 봅시다.",
       "cardLabel": "라이브 앱",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-fork-isolation-02",
       "markerIndex": 1,
-      "at": 8.155445,
+      "at": 7.868777,
       "text": "이 앱을 fork합니다. copy-on-write 클론은 크기와 상관없이 몇 초면 끝나고, detach는 컨테이너가 시작되자마자 반환됩니다. 그동안 헬스 체크는 백그라운드에서 계속됩니다.",
       "afterText": "Fork 완료, 시작 중입니다. 데이터는 복사된 것이 아니라 공유된 것입니다. 한쪽이 변경하기 전까지는요.",
       "cardLabel": "Fork + 실행",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-fork-isolation-03",
       "markerIndex": 2,
-      "at": 19.24953,
+      "at": 16.847684,
       "text": "이제 repository가 두 개입니다. 원본과 실험본이며, 각각 자체 컨테이너와 네트워크, 디스크 뷰를 가집니다.",
       "afterText": "같은 머신, 두 개의 격리된 세계.",
       "cardLabel": "나란히 보기",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-fork-isolation-04",
       "markerIndex": 3,
-      "at": 24.926391,
+      "at": 22.322161,
       "text": "실험이 끝났으면 fork를 삭제합니다. 만드는 것도 몇 초, 버리는 것도 몇 초. 원본은 그런 것이 존재했는지조차 몰랐습니다.",
       "afterText": "사라졌습니다. 원본은 그동안 계속 서비스 중이었습니다.",
       "cardLabel": "Fork 삭제",

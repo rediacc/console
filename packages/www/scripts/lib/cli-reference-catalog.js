@@ -278,8 +278,62 @@ function stripInlineComment(text) {
     if (ch === '#' && !inQuote && (ci === 0 || /\s/.test(text[ci - 1]))) {
       return text.slice(0, ci).trimEnd();
     }
+    // A shell operator ends the rdc command; everything after it belongs to the
+    // shell, not to rdc. Without this, `rdc config audit log --since 1h > out.json`
+    // parsed `>` and `out.json` as two positional args and reported a spurious
+    // "excess positional" error -- a false positive, and a noisy gate is the
+    // failure mode that gets gates suppressed.
+    // `>` must be WHITESPACE-PRECEDED to count as a redirect. Docs are full of
+    // `<ref>` / `<source>` / `<machine-name>` placeholders whose closing bracket
+    // is preceded by a letter; treating those as redirects truncated the command
+    // mid-placeholder and made every mandatory option after it look missing.
+    if (!inQuote && ch === '>' && ci > 0 && /\s/.test(text[ci - 1])) {
+      return text.slice(0, ci).trimEnd();
+    }
+    if (!inQuote && (ch === '|' || ch === ';')) {
+      return text.slice(0, ci).trimEnd();
+    }
+    if (!inQuote && ch === '&' && text[ci + 1] === '&') {
+      return text.slice(0, ci).trimEnd();
+    }
   }
   return text;
+}
+
+/**
+ * The command path of an `rdc …` invocation, resolved against the real command
+ * tree: `rdc machine add machine-11 --ip …` -> `machine add`.
+ *
+ * Callers must not infer this by scanning for the first `-`/`<` token. That
+ * heuristic was correct only while every target was a flag (`--name foo`). Once
+ * targets became positional refs, a CONCRETE value (`machine-11`) was
+ * indistinguishable from a subcommand, while a `<placeholder>` still stopped the
+ * scan -- so a storyboard and the cast recording of the very same command
+ * resolved to different paths and compared unequal.
+ *
+ * Returns null when the text is not an `rdc` command (shell tools, etc.), so the
+ * caller can fall back to its own handling.
+ */
+export function rdcCommandPath(commandText) {
+  const tokens = parseShellTokens(stripInlineComment(String(commandText).trim()));
+  if (tokens[0] !== 'rdc') return null;
+
+  // Skip global options (and their values) before the subcommand path begins.
+  const rootOptionDefs = getCommandTree().options || [];
+  let index = 1;
+  while (index < tokens.length && tokens[index].startsWith('-')) {
+    const token = tokens[index];
+    const flag = token.includes('=') ? token.split('=')[0] : token;
+    if (
+      !token.includes('=') &&
+      (optionExpectsValue(flag, rootOptionDefs) || GLOBAL_VALUE_FLAGS.has(flag))
+    ) {
+      index += 1;
+    }
+    index += 1;
+  }
+
+  return findCommand(tokens.slice(index)).commandPath;
 }
 
 export function parseRdcCommand(commandText) {

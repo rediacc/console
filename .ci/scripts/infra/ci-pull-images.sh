@@ -11,7 +11,7 @@
 #   GITHUB_ACTOR  - GitHub username (required)
 #   RENET_TAG     - Tag for renet image (default: latest)
 #   WEB_TAG       - Tag for web image (default: latest)
-#   DOCKER_REGISTRY - Registry URL (default: ghcr.io/rediacc/elite)
+#   DOCKER_REGISTRY - Registry URL (default: ghcr.io/rediacc)
 
 set -e
 
@@ -37,7 +37,7 @@ if [[ -z "${GITHUB_ACTOR:-}" ]]; then
 fi
 
 # Set defaults
-DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"
 TAG="${TAG:-latest}"
 RENET_TAG="${RENET_TAG:-$TAG}"
 WEB_TAG="${WEB_TAG:-$TAG}"
@@ -48,9 +48,10 @@ WEB_TAG="${WEB_TAG:-$TAG}"
     log_step "Authenticating with ghcr.io..."
     echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-    # Pull all required images
-    log_step "Pulling web:${WEB_TAG}..."
-    docker pull --quiet "${DOCKER_REGISTRY}/web:${WEB_TAG}"
+    # Pull all required images. The server image is the onprem build at
+    # ghcr.io/rediacc/server (outside the elite/ namespace), tagged with WEB_TAG.
+    log_step "Pulling server:${WEB_TAG}..."
+    docker pull --quiet "ghcr.io/rediacc/server:${WEB_TAG}"
 
     log_step "Pulling renet:${RENET_TAG}..."
     docker pull --quiet "${DOCKER_REGISTRY}/renet:${RENET_TAG}"

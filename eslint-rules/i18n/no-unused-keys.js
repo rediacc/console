@@ -5,6 +5,7 @@
 
 import path from 'node:path';
 import { extractUsedKeys } from './shared/key-extractor.js';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUnusedKeys = {
@@ -38,14 +39,14 @@ export const noUnusedKeys = {
 
   create(context) {
     const options = context.options[0] || {};
-    const sourceDir = options.sourceDir || 'packages/web/src';
     const ignorePatterns = (options.ignorePatterns || []).map((p) => new RegExp(p));
 
     // Resolve paths
-    const projectRoot = process.cwd();
-    const absoluteSourceDir = path.isAbsolute(sourceDir)
-      ? sourceDir
-      : path.join(projectRoot, sourceDir);
+    const absoluteSourceDir = resolveRequiredDirOption(
+      'i18n/no-unused-keys',
+      'sourceDir',
+      options.sourceDir,
+    );
 
     // Get namespace from filename
     const filename = context.filename;

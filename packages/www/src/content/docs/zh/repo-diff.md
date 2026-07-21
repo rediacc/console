@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: zh
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 概览
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### 选项
 
 | 选项 | 说明 | 默认值 |
 |--------|-------------|---------|
-| `--name <name>` | 要检查的仓库(目标,新端)。必需。| 必需 |
-| `--base <name>` | 要进行差异比较的仓库(基础,旧端)。默认为 `--name` 的父仓库,从本地配置解析。| `--name` 的父仓库 |
+| `<ref>`(位置参数) | 要检查的仓库引用(目标、新的一侧)，必填。| 必填 |
+| `--base <ref>` | 用于比较的仓库(基准端,旧的一侧)。默认为从本地配置解析出的目标引用的父级。| 目标引用的父级 |
 | (无格式标志) | 名称状态输出:每个更改文件显示彩色的 `A` / `M` / `D` / `R` 字母加一行摘要。| 启用 |
 | `--name-only` | 每行一个更改路径,无状态字母。便于管道。| 禁用 |
 | `--stat` | 每个文件的更改幅度(字节和块增量)及总计页脚。| 禁用 |
 | `--content <path>` | 单个文件的统一文本差异。仅文本;二进制文件报告 `Binary files differ` 。| 禁用 |
-| `--json` | 用于代理和脚本的结构化输出。| 禁用 |
+| `-o json` | 面向代理和脚本的结构化输出。| `table` |
 | `--fast` | 跳过内容哈希确认步骤,信任块筛选器。更快,但可能将文件过度报告为已修改。| 禁用 |
-| `-m, --machine <name>` | 目标机器。必需。| 必需 |
 | `--debug` | stderr上的详细诊断。| 禁用 |
 | `--skip-router-restart` | 跳过路由器重启步骤。| 禁用 |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 仅使用 `--name` 时,分支与本地配置中记录的父仓库进行差异比较。此处分支 `test-1gb:fork1` 有一个已修改的文件:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 传递 `--base` 以针对任意相关仓库进行差异比较。 `--base` 是基础(旧)端, `--name` 是目标(新)端:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` 添加每个文件的字节和块增量及总计页脚:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` 每行打印一个路径,无状态字母,准备好输入到另一条命令:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` 生成单个文本文件的统一差异:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### 使用 jq 筛选JSON
 
-`--json` 在stdout上发出结构化信封,因此它可以干净地输入到 `jq` :
+`-o json` 在stdout上发出结构化信封,因此它可以干净地输入到 `jq` :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ $ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] 
 
 单个文本文件的标准统一差异( `---` / `+++` 头部, `@@` 块)。二进制文件报告 `Binary files differ` 并产生无块。
 
-### `--json`
+### `-o json`
 
 完整的结构化结果。数据输出到stdout;进度和诊断输出到stderr,因此JSON可以干净地输入到 `jq` 或另一个解析器,即使进度正在打印。
 

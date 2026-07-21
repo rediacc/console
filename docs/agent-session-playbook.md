@@ -93,7 +93,7 @@ npx tsc --noEmit -p packages/www/tsconfig.json
 cd private/renet && go build ./... && go vet ./... && go fmt ./...
 
 # Dev binaries
-./rdc.sh --override-local            # rebuild SEA → ~/.local/share/rediacc/bin/rdc (PATH `rdc`)
+./rdc.sh --native            # rebuild SEA → ~/.local/share/rediacc/bin/rdc (PATH `rdc`)
                                      # REQUIRED after CLI changes that storyboards/scripts invoke via plain `rdc`
 
 # Close-out

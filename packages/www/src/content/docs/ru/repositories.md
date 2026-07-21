@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: ru
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -20,7 +20,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ## Создание репозитория
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | Параметр | Обязателен | Описание |
@@ -42,8 +42,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 Монтирование расшифровывает и делает файловую систему репозитория доступной. Отмонтирование закрывает зашифрованный том.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Расшифровать и смонтировать
-rdc repo unmount --name my-app -m server-1  # Отмонтировать и переш...кать
+rdc repo up my-app  # Расшифровать и смонтировать
+rdc repo down my-app --unmount  # Отмонтировать и переш...кать
 ```
 
 | Параметр | Описание |
@@ -54,7 +54,7 @@ rdc repo unmount --name my-app -m server-1  # Отмонтировать и пе
 ## Проверка статуса
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## Список репозиториев
@@ -80,8 +80,8 @@ rdc repo list -m server-1
 Установите репозиторий на точный размер или расширьте его на заданное количество:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Установить точный размер
-rdc repo expand --name my-app -m server-1 --size 5G  # Добавить 5G к текущему размеру
+rdc repo resize my-app --size 20G  # Установить точный размер
+rdc repo expand my-app --size 5G  # Добавить 5G к текущему размеру
 ```
 
 > Репозиторий должен быть отмонтирован перед изменением размера. `repo expand` работает в режиме онлайн. Изменение размера меняет максимальный размер репозитория; чтобы вернуть освободившиеся блоки в пул без изменения максимума, используйте вместо этого [`repo trim`](#освобождение-пространства-trim).
@@ -92,8 +92,8 @@ rdc repo expand --name my-app -m server-1 --size 5G  # Добавить 5G к т
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -114,10 +114,10 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 Поля политики:
@@ -140,7 +140,7 @@ rdc repo policy get -m server-1 --name my-app
 Создайте копию существующего репозитория в его текущем состоянии:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 Форки используют модель name:tag: полученный форк называется `my-app:staging`. Это создаёт новую зашифрованную копию с её собственным GUID и network ID, при этом делясь именем родителя. Форк использует тот же LUKS-credential, что и родитель.
@@ -151,14 +151,14 @@ rdc repo fork --parent my-app --tag staging -m server-1
 
 ### Форк и запуск за один шаг
 
-`--up` создаёт форк, монтирует репозиторий и запускает сервисы в рамках одной удалённой операции. Флаг `--detach` возвращает управление терминалом сразу после старта контейнеров; проверки готовности завершаются в фоновом режиме, а прокси повторяет попытки подключения, пока каждый сервис не будет доступен:
+`--up` создаёт форк, монтирует репозиторий и запускает сервисы в рамках одной удалённой операции. Флаг `--no-wait` возвращает управление терминалом сразу после старта контейнеров; проверки готовности завершаются в фоновом режиме, а прокси повторяет попытки подключения, пока каждый сервис не будет доступен:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-В наших тестах репозиторий объёмом 128 ГБ форкировался и выходил на работающие сервисы примерно за 57 секунд, а с `--detach` это занимает около 31 секунды. Отсоединённый запуск выводит подсказку для отслеживания прогресса: `rdc machine status <machine> --containers`.
+В наших тестах репозиторий объёмом 128 ГБ форкировался и выходил на работающие сервисы примерно за 57 секунд, а с `--no-wait` это занимает около 31 секунды. Отсоединённый запуск выводит подсказку для отслеживания прогресса: `rdc machine status <machine> --containers`.
 
 ### Куда уходит время
 
@@ -175,9 +175,9 @@ rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
 Форки могут выступать как git-коммиты. `rdc repo commit` замораживает рабочий форк в неизменяемый, байт-стабильный коммит; `rdc repo branch` называет линию истории; `rdc repo checkout` клонирует коммит через reflink в новый записываемый форк; `rdc repo log` обходит цепочку родителей; `rdc repo merge` объединяет две линии без мутации живого репозитория на месте. `rdc repo fork --immutable` создаёт коммит-эквивалентную базу в один шаг.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 Смотрите [справочник по версионированию в стиле Git](/ru/docs/repo-branching) для полного набора команд, параметров и примеров.
@@ -197,11 +197,11 @@ Secrets для каждого репозитория - это учётные д�
 
 ```bash
 # Set, list, get (digest only), unset
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get  my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **Симметричный mutation gate.** И люди, и агенты нуждаются в `--current <previous-value>` для перезаписи или отмены secret (предусловие в стиле passwd). Для первой записи нового ключа передайте `--current ""` (пусто). Чтобы произвести ротацию без проверки предыдущего значения, передайте `--rotate-secret`. Это громко логируется как ротация. `--current` и `--rotate-secret` являются взаимоисключающими.
@@ -237,7 +237,7 @@ secrets:
 Проверить целостность файловой системы репозитория:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## Владение
@@ -245,7 +245,7 @@ rdc repo validate --name my-app -m server-1
 Установите владение файлами в репозитории для универсального пользователя (UID 7111). Это обычно требуется после загрузки файлов с вашей рабочей станции, которые приходят с вашим локальным UID.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 Команда автоматически обнаруживает директории данных Docker-контейнеров (монтируемые bind-мауты с правом записи) и исключает их. Это предотвращает разрушение контейнеров, которые управляют файлами со своими собственными UID (например, MariaDB=999, www-data=33).
@@ -258,7 +258,7 @@ rdc repo ownership --name my-app -m server-1
 Чтобы принудительно установить владение всеми файлами, включая данные контейнеров:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -269,7 +269,7 @@ rdc repo ownership --name my-app -m server-1
 Применить шаблон для инициализации репозитория файлами:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## Удаление
@@ -277,7 +277,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 Постоянно уничтожить репозиторий и все данные внутри него:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > Это постоянно уничтожает зашифрованный образ диска. Это действие нельзя отменить.
@@ -287,7 +287,7 @@ rdc repo delete --name my-app -m server-1
 Live-миграция репозитория с одной машины на другую. Единственный downtime - это финальная фаза delta-sync: обычно секунды до низких минут в зависимости от скорости записи в момент перехода.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Параметр | Описание |
@@ -321,10 +321,10 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 ```bash
 # Просмотрите, что будет удалено
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Удалить orphaned ресурсы
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 Затрагиваются только ресурсы без соответствующего образа репозитория. Непустые директории монтирования никогда не удаляются.

@@ -19,7 +19,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.410714,
+      "at": 2.427234,
       "text": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once.",
       "afterText": "Infrastructure recorded in your config.",
       "cardLabel": "Set Infra",
@@ -28,7 +28,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.419888,
+      "at": 12.223183,
       "text": "Let us confirm the infrastructure settings were stored. Public IP, base domain, certificate email, all visible.",
       "afterText": "Settings stored. Ready to push to the server.",
       "cardLabel": "Show Infra",
@@ -37,7 +37,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.924002,
+      "at": 16.437274,
       "text": "Step three: push the configuration to the server. With a real token this creates your DNS records on Cloudflare automatically and prepares the proxy configuration.",
       "afterText": "Pushed. DNS records are being created on Cloudflare.",
       "cardLabel": "Push Infra",
@@ -46,7 +46,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 20.590881,
+      "at": 19.770637,
       "text": "Step four: create a small repo named infra. Why its own repo? The proxy routes traffic for every app on this server. Infrastructure deserves its own isolated box, away from your application code.",
       "afterText": "Infra repo created. Isolated from your app repos.",
       "cardLabel": "Create Repo",
@@ -55,7 +55,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 28.48077,
+      "at": 26.52638,
       "text": "Apply the proxy template. It carries Traefik plus the configuration for Let's Encrypt and Cloudflare DNS-01 challenges, ready to go.",
       "afterText": "Traefik configuration in place.",
       "cardLabel": "Apply Template"
@@ -63,7 +63,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 35.97937,
+      "at": 31.688233,
       "text": "And bring the proxy up. Traefik discovers your containers automatically. TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS.",
       "afterText": "Proxy is live. TLS certificates will arrive automatically.",
       "cardLabel": "Deploy Proxy",

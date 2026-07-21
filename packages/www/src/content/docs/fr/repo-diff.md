@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: fr
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ Ne l'utilisez pas entre des référentiels non associés. Les deux côtés doive
 ### Résumé
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### Options
 
 | Option | Description | Par défaut |
 |--------|-------------|---------|
-| `--name <name>` | Référentiel à inspecter (la cible, côté nouveau). Obligatoire. | obligatoire |
-| `--base <name>` | Référentiel pour comparer avec (la base, côté ancien). Prend par défaut le parent de `--name`, résolu à partir de la configuration locale. | parent de `--name` |
+| `<ref>` (positionnel) | Réf du dépôt à inspecter (le côté cible, nouveau). Requis. | requis |
+| `--base <ref>` | Dépôt à comparer (le côté de base, ancien). Par défaut, le parent de la réf, résolu depuis la configuration locale. | parent de la réf |
 | (no format flag) | Sortie du statut du nom : une lettre colorée `A`/`M`/`D`/`R` par fichier modifié plus un résumé d'une ligne. | activé |
 | `--name-only` | Un chemin modifié par ligne, sans lettre de statut. Convivial pour les tuyaux. | désactivé |
 | `--stat` | Magnitude du changement par fichier (delta en octets et en blocs) avec un pied de page de totaux. | désactivé |
 | `--content <path>` | Comparaison textuelle unifiée d'un seul fichier. Texte uniquement ; les fichiers binaires signalent `Binary files differ`. | désactivé |
-| `--json` | Sortie structurée pour les agents et scripts. | désactivé |
+| `-o json` | Sortie structurée pour les agents et scripts. | `table` |
 | `--fast` | Ignorez l'étape de confirmation de hachage de contenu et faites confiance au filtre de bloc. Plus rapide, mais peut signaler excessivement des fichiers comme Modifiés. | désactivé |
-| `-m, --machine <name>` | Machine cible. Obligatoire. | obligatoire |
 | `--debug` | Diagnostiques détaillés sur stderr. | désactivé |
 | `--skip-router-restart` | Ignorez l'étape de redémarrage du routeur. | désactivé |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 Avec seulement `--name`, le fork est comparé au parent enregistré dans la configuration locale. Ici, le fork `test-1gb:fork1` a un fichier modifié :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 Passez `--base` pour comparer un référentiel connexe arbitraire. `--base` est le côté de base (ancien), `--name` est le côté cible (nouveau) :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` ajoute le delta en octets et le delta en blocs par fichier et un pied de page de totaux :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` imprime un chemin par ligne sans lettre de statut, prêt à être alimenté dans une autre commande :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` produit une comparaison unifiée d'un seul fichier texte :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### Filtrage JSON avec jq
 
-`--json` émet l'enveloppe structurée sur stdout, donc elle se branche facilement dans `jq` :
+`-o json` émet l'enveloppe structurée sur stdout, donc elle se branche facilement dans `jq` :
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ Chaque ligne porte le delta en octets et le delta en blocs du fichier. Un pied d
 
 Une comparaison unifiée standard (en-têtes `---`/`+++`, blocs `@@`) pour un seul fichier texte. Les fichiers binaires signalent `Binary files differ` et ne produisent pas de blocs.
 
-### `--json`
+### `-o json`
 
 Le résultat structuré complet. Les données vont à stdout ; la progression et les diagnostiques vont à stderr, donc le JSON se branche facilement dans `jq` ou un autre analyseur même pendant l'impression de la progression.
 
