@@ -74,7 +74,7 @@ done
 # Fix channel references in config files (mutable channel pointers).
 for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
     aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
-    sed -i 's|/edge/|/stable/|g' /tmp/config
+    sed_in_place 's|/edge/|/stable/|g' /tmp/config
     aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
         --cache-control "$CC_MUTABLE"
     PURGE_URLS+=("https://releases.rediacc.com/${file}")
@@ -86,7 +86,7 @@ done
 # are mutable.
 for file in cli/stable/install.sh cli/stable/install.ps1; do
     aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
-    sed -i \
+    sed_in_place \
         -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
         -e 's|} else { "edge" }|} else { "stable" }|g' \
         /tmp/script

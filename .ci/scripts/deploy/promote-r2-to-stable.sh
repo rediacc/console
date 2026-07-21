@@ -76,17 +76,17 @@ for dir in cli apt rpm apk archlinux; do
         cli)
             for f in "$TMP/install.sh" "$TMP/install.ps1"; do
                 [[ -f "$f" ]] || continue
-                sed -i \
+                sed_in_place \
                     -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
                     -e 's|} else { "edge" }|} else { "stable" }|g' \
                     "$f"
             done
             ;;
         rpm)
-            [[ -f "$TMP/rediacc.repo" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.repo"
+            [[ -f "$TMP/rediacc.repo" ]] && sed_in_place 's|/edge/|/stable/|g' "$TMP/rediacc.repo"
             ;;
         archlinux)
-            [[ -f "$TMP/rediacc.conf" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.conf"
+            [[ -f "$TMP/rediacc.conf" ]] && sed_in_place 's|/edge/|/stable/|g' "$TMP/rediacc.conf"
             ;;
     esac
 

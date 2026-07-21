@@ -63,8 +63,16 @@ CLEANUP_DBS=()
 cleanup() {
     echo "::group::Cleanup: deleting test databases"
     for db in "${CLEANUP_DBS[@]}"; do
-        npx wrangler d1 delete "$db" --skip-confirmation 2>/dev/null || true
-        echo "  Deleted $db"
+        # Report what actually happened. The old form swallowed stderr, ignored
+        # the exit code and then printed "Deleted $db" unconditionally, so a
+        # clone left behind in the Cloudflare account announced itself as
+        # cleaned up. Still non-fatal -- this is an EXIT trap and must not mask
+        # the real failure that triggered it -- but now it says so.
+        if npx wrangler d1 delete "$db" --skip-confirmation >/dev/null 2>&1; then
+            echo "  Deleted $db"
+        else
+            echo "  ::warning::FAILED to delete test database $db -- it is still in the Cloudflare account and needs manual removal"
+        fi
     done
     echo "::endgroup::"
 }

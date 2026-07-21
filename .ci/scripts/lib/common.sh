@@ -71,6 +71,28 @@ detect_os() {
     esac
 }
 
+# Portable in-place sed.
+#
+# GNU sed takes `-i` with no argument; BSD/macOS sed REQUIRES a backup-suffix
+# argument, so `sed -i 's/a/b/' f` on macOS consumes the expression as the
+# suffix and then fails with "no input files" -- or, worse, silently edits the
+# wrong thing. Every .ci script documents itself as locally runnable, so the
+# platform is not ours to assume.
+#
+# Pass ALL sed arguments through, file last, exactly as you would to sed:
+#   sed_in_place -E "s/x/y/" "$file"
+#   sed_in_place -e "s/a/b/" -e "s/c/d/" "$file"
+#
+# This lived privately inside update-homebrew-tap.sh with a fixed (expr, file)
+# signature, which is why five other sites reached for bare `sed -i` instead.
+sed_in_place() {
+    if [[ "$(detect_os)" == "macos" ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Detect architecture
 # Returns: x64, arm64, or unknown
 detect_arch() {

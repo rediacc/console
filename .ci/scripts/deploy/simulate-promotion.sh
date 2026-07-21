@@ -127,7 +127,7 @@ done
 # Sed-fix config files (replace channel in URLs). Mutable.
 for file in "rpm/${PROMOTED}/rediacc.repo" "archlinux/${PROMOTED}/rediacc.conf"; do
     if aws s3 cp "s3://${BUCKET}/${file}" /tmp/config "${EP[@]}" 2>/dev/null; then
-        sed -i "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
+        sed_in_place "s|/${CHANNEL}/|/${PROMOTED}/|g" /tmp/config
         aws_s3_cp_retry /tmp/config "s3://${BUCKET}/${file}" "${EP[@]}" \
             --cache-control "$CC_MUTABLE"
         PURGE_URLS+=("https://releases.rediacc.com/${file}")
