@@ -2,19 +2,45 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { VERSION } from '../../version.js';
 import { compareVersions } from '../update/updater.js';
 
-const readFileMock = vi.fn();
-const writeFileMock = vi.fn();
-const mkdirMock = vi.fn();
-const mkdtempMock = vi.fn();
-const rmMock = vi.fn();
-const statMock = vi.fn();
-const computeSha256Mock = vi.fn();
-const mockInstances: MockSFTPClient[] = [];
-const connectDelegate = vi.fn(() => Promise.resolve());
-const executeRsyncMock = vi.fn();
-const getRsyncCommandMock = vi.fn();
-const createTempSSHKeyFileMock = vi.fn();
-const removeTempSSHKeyFileMock = vi.fn();
+// Declared via vi.hoisted so they exist BEFORE the vi.mock factories below.
+//
+// vitest hoists every vi.mock call above the module body, so a factory that
+// closes over a plain `const` only works while nothing imports the mocked module
+// during the hoisted import phase. This file imports ../update/updater.js at the
+// top, and the moment updater's import graph reached node:fs/promises the
+// factory at line ~55 ran before these bindings initialised and the whole file
+// failed to load with "Cannot access 'readFileMock' before initialization" —
+// taking all of its tests with it while the suite still looked green.
+// vi.hoisted removes the ordering dependency entirely.
+const {
+  readFileMock,
+  writeFileMock,
+  mkdirMock,
+  mkdtempMock,
+  rmMock,
+  statMock,
+  computeSha256Mock,
+  mockInstances,
+  connectDelegate,
+  executeRsyncMock,
+  getRsyncCommandMock,
+  createTempSSHKeyFileMock,
+  removeTempSSHKeyFileMock,
+} = vi.hoisted(() => ({
+  readFileMock: vi.fn(),
+  writeFileMock: vi.fn(),
+  mkdirMock: vi.fn(),
+  mkdtempMock: vi.fn(),
+  rmMock: vi.fn(),
+  statMock: vi.fn(),
+  computeSha256Mock: vi.fn(),
+  mockInstances: [] as MockSFTPClient[],
+  connectDelegate: vi.fn(() => Promise.resolve()),
+  executeRsyncMock: vi.fn(),
+  getRsyncCommandMock: vi.fn(),
+  createTempSSHKeyFileMock: vi.fn(),
+  removeTempSSHKeyFileMock: vi.fn(),
+}));
 
 class MockSFTPClient {
   connect = vi.fn(() => connectDelegate());

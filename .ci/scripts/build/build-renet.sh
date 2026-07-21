@@ -83,7 +83,7 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     (cd "$RENET_DIR" && ./build.sh embed_assets)
 
     log_info "Embedded assets:"
-    ls -la "$RENET_DIR/pkg/embed/assets/amd64" "$RENET_DIR/pkg/embed/assets/arm64"
+    ls -la "$RENET_DIR"/pkg/embed/assets/*/*/
 
     # proxy compose + datastore doc for go:embed (documents, not binary assets)
     # Stage the proxy compose for go:embed via build.sh's own helper (single
@@ -109,18 +109,31 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
         # runtime image (Dockerfile.native) COPYs ALL of these so the cached-renet
         # fast-path reconstructs the SAME complete darwin/windows binaries as a
         # full build — no divergence between cached and Full.
-        _native_assets=(
-            "criu:criu" "rsync:rsync" "rclone:rclone" "zot:zot" "k3s:k3s"
-            "csi:csiprovisioner" "csi:csisnapshotter" "csi:snapshotcontroller"
-        )
+        # Which assets exist, and where they live in the image, comes from
+        # private/renet/embed-assets.lock.json. This used to be a hardcoded
+        # <subdir>:<base> table that had to be kept in step with build.sh's four
+        # lists and extract-renet-from-image.sh's own split, by hand.
+        require_cmd jq
+        _lockfile="$REPO_ROOT/private/renet/embed-assets.lock.json"
+        [[ -f "$_lockfile" ]] || {
+            log_error "embed lockfile not found: $_lockfile"
+            exit 1
+        }
+        mapfile -t _native_assets < <(jq -r '
+            .components
+            | to_entries[]
+            | .value as $c
+            | $c.arches
+            | keys[]
+            | [$c.imageDir, $c.assetBase, .]
+            | @tsv
+        ' "$_lockfile")
+
         _nb_cid="$(docker create rediacc/renet:latest)"
         for _entry in "${_native_assets[@]}"; do
-            _dir="${_entry%%:*}"
-            _base="${_entry##*:}"
-            for _na in amd64 arm64; do
-                docker cp "$_nb_cid:/opt/$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
-                    log_warn "native binary $_base-linux-$_na not found in builder image"
-            done
+            IFS=$'\t' read -r _dir _base _na <<<"$_entry"
+            docker cp "$_nb_cid:$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
+                log_warn "native binary $_base-linux-$_na not found in builder image"
         done
         docker rm "$_nb_cid" >/dev/null 2>&1 || true
 
@@ -128,13 +141,11 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
         # must break HERE, not later as a cryptic COPY error in the docker build
         # job on an artifact that looked complete.
         for _entry in "${_native_assets[@]}"; do
-            _base="${_entry##*:}"
-            for _na in amd64 arm64; do
-                [[ -f "$OUTPUT_DIR/$_base-linux-$_na" ]] || {
-                    log_error "native binary $_base-linux-$_na missing after export — builder image is incomplete"
-                    exit 1
-                }
-            done
+            IFS=$'\t' read -r _dir _base _na <<<"$_entry"
+            [[ -f "$OUTPUT_DIR/$_base-linux-$_na" ]] || {
+                log_error "native binary $_base-linux-$_na missing after export — builder image is incomplete"
+                exit 1
+            }
         done
     fi
 else

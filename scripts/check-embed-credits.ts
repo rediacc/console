@@ -1,43 +1,48 @@
 #!/usr/bin/env node
 /**
- * Embed credits consistency gate.
+ * Embed attribution consistency gate.
  *
- * A third-party binary that renet embeds and conveys must be attributed in BOTH
- * renet-side (private/renet/pkg/embed/credits.go) and CLI-side
- * (packages/cli/src/data/third-party-credits.json) inventories, at the exact
- * version the build actually ships. This gate enforces that so a new or bumped
- * embed cannot silently ship unattributed / mis-versioned.
+ * private/renet/embed-assets.lock.json is the single source of truth for every
+ * binary renet embeds and conveys. This gate asserts two things:
  *
- * It derives the truth from three durable sources:
- *   1. private/renet/Dockerfile ARGs (CRIU_VERSION / RSYNC_VERSION /
- *      RCLONE_VERSION) — the version source of truth (the .gz assets are
- *      gitignored build artifacts, so versions live in the Dockerfile).
- *   2. private/renet/pkg/embed/embed.go assetFilename() — the set of embedded
- *      component base names ("criu", "rsync", "rclone", and any future embed).
- *   3. The two inventories above.
+ *   1. The Dockerfile's `ARG <BASE>_VERSION=` pins agree with the lockfile. The
+ *      Dockerfile keeps its own defaults so `docker build` works standalone, so
+ *      this is what stops the two from drifting.
+ *   2. The generated attribution artifacts are not stale:
+ *        private/renet/pkg/embed/credits_data.go
+ *        packages/cli/src/data/third-party-credits.json
  *
- * For every embedded component it asserts: an entry exists in credits.go and in
- * the JSON, and both versions equal the Dockerfile ARG. Extra non-embedded
- * inventory entries (Node.js runtime, bundled npm deps) are allowed.
+ * WHAT CHANGED AND WHY: this gate used to compare each inventory's VERSION field
+ * against the Dockerfile ARG, independently, and nothing else. It therefore could
+ * not see that the two inventories had already drifted on LICENCE TEXT — all
+ * three CSI sidecars carried a generic "run as a host process (spec 09 CSI
+ * driver)" line in the CLI mirror while credits.go carried three distinct, more
+ * accurate ones. Comparing more fields would have caught that one instance;
+ * generating both artifacts from one source removes the whole class, so this gate
+ * now checks derivation rather than agreement.
  *
  * Usage:
  *   npx tsx scripts/check-embed-credits.ts
  *   npm run check:ci-embed-credits
  *
- * Path overrides (used by the gate test with fixtures):
- *   EMBED_CREDITS_DOCKERFILE, EMBED_CREDITS_EMBED_GO,
- *   EMBED_CREDITS_CREDITS_GO, EMBED_CREDITS_JSON
+ * Path override (used by the gate test with fixtures):
+ *   EMBED_CREDITS_DOCKERFILE
  *
  * Exit codes:
- *   0 - inventories are consistent with the Dockerfile + embed asset list, or
- *       the renet submodule is not checked out (nothing to attribute)
- *   1 - a missing or mismatched attribution was found
+ *   0 - the Dockerfile agrees with the lockfile and the artifacts are current,
+ *       or the renet submodule is not checked out (nothing to attribute)
+ *   1 - a drifted pin or a stale generated artifact
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDockerfileVersions as parseDockerfileVersionsShared } from './lib/dockerfile-versions.js';
+import {
+  type Lockfile,
+  LOCKFILE,
+  generatedArtifacts,
+} from './generate-embed-credits.js';
+import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,198 +50,62 @@ const CONSOLE_ROOT = path.resolve(__dirname, '..');
 
 const DOCKERFILE =
   process.env.EMBED_CREDITS_DOCKERFILE ?? path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
-const EMBED_GO =
-  process.env.EMBED_CREDITS_EMBED_GO ??
-  path.join(CONSOLE_ROOT, 'private/renet/pkg/embed/embed.go');
-const CREDITS_GO =
-  process.env.EMBED_CREDITS_CREDITS_GO ??
-  path.join(CONSOLE_ROOT, 'private/renet/pkg/embed/credits.go');
-const CREDITS_JSON =
-  process.env.EMBED_CREDITS_JSON ??
-  path.join(CONSOLE_ROOT, 'packages/cli/src/data/third-party-credits.json');
-
-const errors: string[] = [];
-
-function read(file: string): string {
-  try {
-    return fs.readFileSync(file, 'utf-8');
-  } catch (err) {
-    errors.push(`cannot read ${file}: ${(err as Error).message}`);
-    return '';
-  }
-}
-
-/** Dockerfile ARG <BASE>_VERSION=<version> -> { base(lowercase): version }. */
-function parseDockerfileVersions(src: string): Map<string, string> {
-  const { versions, conflicts } = parseDockerfileVersionsShared(src);
-  errors.push(...conflicts);
-  return versions;
-}
-
-/** embed.go assetFilename() "<base>-linux-%s.gz" -> set of embedded base names. */
-function parseEmbeddedBases(src: string): Set<string> {
-  const bases = new Set<string>();
-  const re = /Sprintf\("([a-z0-9]+)-linux-/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    bases.add(m[1]);
-  }
-  return bases;
-}
-
-/** embed.go `AssetX = "value"` const map. */
-function parseAssetConsts(src: string): Map<string, string> {
-  const consts = new Map<string, string>();
-  const re = /(Asset\w+)\s*=\s*"([^"]+)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    consts.set(m[1], m[2]);
-  }
-  return consts;
-}
-
-interface GoCredit {
-  base: string;
-  name: string;
-  version: string;
-}
-
-/**
- * Parse credits.go []Credit entries. Each entry's Asset is either a string
- * literal ("criu") or an embed constant (AssetCRIU), which is resolved via the
- * embed.go const map. Fields Asset -> Name -> Version are declared in order.
- */
-function parseGoCredits(src: string, assetConsts: Map<string, string>): GoCredit[] {
-  const out: GoCredit[] = [];
-  const re =
-    /Asset:\s*(?:"([a-z0-9]+)"|(\w+))[\s\S]*?Name:\s*"([^"]+)"[\s\S]*?Version:\s*"([^"]+)"/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    const literal = m[1];
-    const ident = m[2];
-    let base = literal;
-    if (!base && ident) {
-      base = assetConsts.get(ident);
-      if (!base) {
-        errors.push(`credits.go: Asset constant '${ident}' is not defined in embed.go`);
-        continue;
-      }
-    }
-    if (!base) continue;
-    out.push({ base, name: m[3], version: m[4] });
-  }
-  return out;
-}
-
-interface JsonCredit {
-  asset?: string;
-  name: string;
-  version: string;
-}
-
-interface CreditsJson {
-  components: JsonCredit[];
-}
-
-function parseJsonCredits(src: string): JsonCredit[] {
-  if (!src) return [];
-  try {
-    const data = JSON.parse(src) as CreditsJson;
-    if (!Array.isArray(data.components)) {
-      errors.push('third-party-credits.json: missing "components" array');
-      return [];
-    }
-    return data.components;
-  } catch (err) {
-    errors.push(`third-party-credits.json: invalid JSON (${(err as Error).message})`);
-    return [];
-  }
-}
 
 function main(): void {
-  // The renet submodule is optional in a public checkout; skip like the sibling
-  // gates (.ci/scripts/private/run-renet.sh) rather than failing the ci chain.
-  if (!fs.existsSync(DOCKERFILE)) {
-    console.log(`${YELLOW}Renet submodule not available, skipping${NC}`);
+  if (!fs.existsSync(LOCKFILE) || !fs.existsSync(DOCKERFILE)) {
+    console.log(`${YELLOW}⊘ renet submodule not checked out — nothing to attribute${NC}`);
     return;
   }
 
-  const dockerVersions = parseDockerfileVersions(read(DOCKERFILE));
-  const embedSrc = read(EMBED_GO);
-  const embeddedBases = parseEmbeddedBases(embedSrc);
-  const assetConsts = parseAssetConsts(embedSrc);
-  const goCredits = parseGoCredits(read(CREDITS_GO), assetConsts);
-  const jsonCredits = parseJsonCredits(read(CREDITS_JSON));
+  const lock = JSON.parse(fs.readFileSync(LOCKFILE, 'utf-8')) as Lockfile;
+  const errors: string[] = [];
 
-  if (embeddedBases.size === 0) {
-    errors.push('embed.go: no embedded asset base names found (assetFilename parse failed)');
+  const components = Object.entries(lock.components);
+  if (components.length === 0) {
+    console.error(`${RED}✗ the embed lockfile declares no components — this gate is blind${NC}`);
+    process.exit(1);
   }
 
-  const goByBase = new Map(goCredits.map((c) => [c.base, c]));
-  const jsonByBase = new Map(
-    jsonCredits.filter((c) => c.asset).map((c) => [c.asset as string, c])
-  );
-
-  for (const base of [...embeddedBases].sort()) {
-    const dockerVersion = dockerVersions.get(base);
-    if (dockerVersion === undefined) {
+  // 1. Dockerfile ARG pins must equal the lockfile versions.
+  const { versions, conflicts } = parseDockerfileVersions(fs.readFileSync(DOCKERFILE, 'utf-8'));
+  errors.push(...conflicts);
+  if (versions.size === 0) {
+    console.error(`${RED}✗ no ARG <BASE>_VERSION pins found in the Dockerfile — parse failed${NC}`);
+    process.exit(1);
+  }
+  for (const [base, c] of components) {
+    const pinned = versions.get(base);
+    if (pinned === undefined) {
+      errors.push(`Dockerfile: no ARG ${base.toUpperCase()}_VERSION for lockfile component '${base}'`);
+    } else if (pinned !== c.version) {
       errors.push(
-        `Dockerfile: embedded component '${base}' has no ${base.toUpperCase()}_VERSION ARG`
-      );
-    }
-
-    const go = goByBase.get(base);
-    if (!go) {
-      errors.push(`credits.go: missing entry for embedded component '${base}'`);
-    } else if (dockerVersion !== undefined && go.version !== dockerVersion) {
-      errors.push(
-        `credits.go: '${base}' version '${go.version}' != Dockerfile ${base.toUpperCase()}_VERSION '${dockerVersion}'`
-      );
-    }
-
-    const js = jsonByBase.get(base);
-    if (!js) {
-      errors.push(
-        `third-party-credits.json: missing entry for embedded component '${base}'`
-      );
-    } else if (dockerVersion !== undefined && js.version !== dockerVersion) {
-      errors.push(
-        `third-party-credits.json: '${base}' version '${js.version}' != Dockerfile ${base.toUpperCase()}_VERSION '${dockerVersion}'`
+        `Dockerfile ARG ${base.toUpperCase()}_VERSION='${pinned}' != lockfile '${base}' version '${c.version}'`
       );
     }
   }
 
-  // Flag asset-bearing inventory entries that no longer correspond to an embed.
-  for (const c of goCredits) {
-    if (!embeddedBases.has(c.base)) {
+  // 2. Generated artifacts must be current.
+  for (const [file, want] of generatedArtifacts(lock)) {
+    const have = fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : '';
+    if (have !== want) {
       errors.push(
-        `credits.go: entry '${c.name}' (asset '${c.base}') is not in embed.go's asset list`
-      );
-    }
-  }
-  for (const [base, c] of jsonByBase) {
-    if (!embeddedBases.has(base)) {
-      errors.push(
-        `third-party-credits.json: entry '${c.name}' (asset '${base}') is not in embed.go's asset list`
+        `${path.relative(CONSOLE_ROOT, file)} is stale — regenerate with: npx tsx scripts/generate-embed-credits.ts`
       );
     }
   }
 
   if (errors.length > 0) {
-    console.error(`${RED}Embed credits gate FAILED:${NC}`);
-    for (const e of errors) {
-      console.error(`  ${YELLOW}-${NC} ${e}`);
-    }
+    console.error(`${RED}✗ embed attribution is inconsistent:${NC}`);
+    for (const e of errors) console.error(`  ${e}`);
     console.error(
-      '\nFix: keep private/renet/pkg/embed/credits.go and ' +
-        'packages/cli/src/data/third-party-credits.json in sync with the ' +
-        'private/renet/Dockerfile version ARGs and the embed.go asset list.'
+      `\n${YELLOW}The lockfile is the source of truth: private/renet/embed-assets.lock.json${NC}`
     );
     process.exit(1);
   }
 
-  const covered = [...embeddedBases].sort().join(', ');
-  console.log(`${GREEN}Embed credits gate passed${NC} (covered: ${covered})`);
+  console.log(
+    `${GREEN}✓ ${components.length} embedded components: Dockerfile pins and generated attribution match the lockfile${NC}`
+  );
 }
 
 main();

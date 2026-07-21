@@ -88,43 +88,56 @@ OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 # by the full 'Renet (Full)' build (build.sh embed_assets, which hard-requires
 # them) — we deliberately do NOT delegate to it here, because its strictness
 # would fail this path on a legitimately older cached image.
-log_step "Staging embedded assets (per-arch) from container..."
+log_step "Staging embedded assets (per-arch, per-class) from container..."
 EMBED_DIR="$REPO_ROOT/private/renet/pkg/embed/assets"
-mkdir -p "$EMBED_DIR/amd64" "$EMBED_DIR/arm64"
+EMBED_LOCKFILE="$REPO_ROOT/private/renet/embed-assets.lock.json"
+require_cmd jq
+require_cmd zstd
+[[ -f "$EMBED_LOCKFILE" ]] || {
+    log_error "embed lockfile not found: $EMBED_LOCKFILE"
+    exit 1
+}
+
 # Start clean so the embedded set is EXACTLY what this image contains — a stale
-# .gz from a prior extraction must not leak into the binary. (CI checks out
-# fresh; this makes local/repeated runs deterministic too.)
-rm -f "$EMBED_DIR"/amd64/*.gz "$EMBED_DIR"/arm64/*.gz
+# artifact from a prior extraction must not leak into the binary. (CI checks out
+# fresh; this makes local/repeated runs deterministic too.) The glob depth must
+# track the staged layout: a pattern one level too shallow silently matches
+# nothing and leaves the stale payloads in place.
+rm -f "$EMBED_DIR"/*/*/*.zst
 
-REQUIRED_TOOLS="criu rsync rclone"
-OPTIONAL_TOOLS="zot k3s csiprovisioner csisnapshotter snapshotcontroller"
-missing_required=""
-for tool in $REQUIRED_TOOLS $OPTIONAL_TOOLS; do
-    # CSI sidecars live under /opt/csi; every other tool under /opt/<tool>.
-    case "$tool" in
-        csiprovisioner | csisnapshotter | snapshotcontroller) src_dir="csi" ;;
-        *) src_dir="$tool" ;;
-    esac
-    for arch in amd64 arm64; do
-        asset="$tool-linux-$arch"
-        if docker cp "$CONTAINER_ID:/opt/$src_dir/$asset" "$EMBED_DIR/$arch/" 2>/dev/null; then
-            gzip -f "$EMBED_DIR/$arch/$asset"
-        else
-            log_warn "$asset not present in cached image — skipping"
-            case " $REQUIRED_TOOLS " in
-                *" $tool "*) missing_required="$missing_required $asset" ;;
-            esac
-        fi
-    done
-done
+# The component list, its per-arch coverage, where each lives in the image, and
+# whether it is base or cluster ALL come from the lockfile. This script used to
+# carry its own REQUIRED_TOOLS/OPTIONAL_TOOLS split that disagreed with
+# build.sh's, which is how the CSI sidecars ended up optional in one place and
+# mandatory in the other.
+missing=""
+while IFS=$'\t' read -r base image_dir arch class; do
+    [[ -n "$base" ]] || continue
+    asset="$base-linux-$arch"
+    mkdir -p "$EMBED_DIR/$arch/$class"
+    if docker cp "$CONTAINER_ID:$image_dir/$asset" "$EMBED_DIR/$arch/$class/$asset" 2>/dev/null; then
+        zstd -19 -T0 -q --rm -f "$EMBED_DIR/$arch/$class/$asset"
+    else
+        missing="$missing $asset"
+    fi
+done < <(jq -r '
+    .components
+    | to_entries[]
+    | .value as $c
+    | $c.arches
+    | keys[]
+    | [$c.assetBase, $c.imageDir, ., $c.class]
+    | @tsv
+' "$EMBED_LOCKFILE")
 
-if [[ -n "$missing_required" ]]; then
-    log_error "Cached renet image is missing required assets:$missing_required"
+if [[ -n "$missing" ]]; then
+    log_error "Cached renet image is missing assets the lockfile declares:$missing"
+    log_error "Rebuild it with: (cd private/renet && ./build.sh docker_image)"
     exit 1
 fi
 
-log_info "Embedded assets (per-arch):"
-ls -la "$EMBED_DIR"/amd64/*.gz "$EMBED_DIR"/arm64/*.gz 2>/dev/null || true
+log_info "Embedded assets (per-arch, per-class):"
+ls -la "$EMBED_DIR"/*/*/*.zst 2>/dev/null || true
 
 # Stage the proxy compose for go:embed via build.sh (single source of truth for
 # that step). embed_proxy stages ONLY the proxy compose; the datastore README is

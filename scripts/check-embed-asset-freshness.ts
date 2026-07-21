@@ -100,6 +100,23 @@ async function fetchJson(url: string): Promise<unknown> {
   }
 }
 
+/** HEAD a URL and return its response headers (used for Last-Modified dates). */
+async function fetchHead(url: string): Promise<Headers> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      headers: { 'User-Agent': 'rediacc-embed-asset-freshness' },
+      signal: ctl.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.headers;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 async function fetchText(url: string): Promise<string> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), HTTP_TIMEOUT_MS);
@@ -166,7 +183,20 @@ async function latestFor(src: Source): Promise<Latest> {
         .map((n) => n.replace(/^v/i, ''));
       if (stable.length === 0) throw new Error('no stable tags found');
       stable.sort((a, b) => (isNewer(a, b) ? 1 : -1));
-      return { version: stable[stable.length - 1], publishedAt: null };
+      const newest = stable[stable.length - 1];
+
+      // Resolve the tag to its commit date so the soak applies here too.
+      //
+      // A tag carries no publish time of its own, and this gate treats a null
+      // date as NOT deferred, so CRIU — which tags but never cuts GitHub
+      // releases — was the one component that got NO grace period at all: the
+      // moment upstream pushed a tag, the very next CI run went red. Every other
+      // component soaked for a day. One extra request buys uniform behaviour.
+      const commit = (await fetchJson(
+        `https://api.github.com/repos/${src.repo}/commits/${encodeURIComponent(`v${newest}`)}`
+      )) as { commit?: { committer?: { date?: string } } };
+      const date = commit.commit?.committer?.date;
+      return { version: newest, publishedAt: date ? new Date(date) : null };
     }
   }
   // rsync: parse the Samba source index for the highest rsync-X.Y.Z.tar.gz.
@@ -174,7 +204,26 @@ async function latestFor(src: Source): Promise<Latest> {
   const versions = [...html.matchAll(/rsync-(\d+\.\d+\.\d+)\.tar\.gz/g)].map((m) => m[1]);
   if (versions.length === 0) throw new Error('no rsync tarballs found in index');
   versions.sort((a, b) => (isNewer(a, b) ? 1 : -1));
-  return { version: versions[versions.length - 1], publishedAt: null };
+  const newestRsync = versions[versions.length - 1];
+
+  // Same reasoning as the tag path above: the Samba index has no publish column
+  // we can trust, so take the tarball's Last-Modified header. rsync would
+  // otherwise be the second component with no soak.
+  let rsyncPublished: Date | null = null;
+  try {
+    const head = await fetchHead(
+      `https://download.samba.org/pub/rsync/src/rsync-${newestRsync}.tar.gz`
+    );
+    const lastModified = head.get('last-modified');
+    if (lastModified) {
+      const parsed = new Date(lastModified);
+      if (!Number.isNaN(parsed.getTime())) rsyncPublished = parsed;
+    }
+  } catch {
+    // Fall through with a null date: the gate's existing policy is that a
+    // dateless source still surfaces a stale pin rather than hiding it.
+  }
+  return { version: newestRsync, publishedAt: rsyncPublished };
 }
 
 
