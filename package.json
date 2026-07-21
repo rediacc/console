@@ -166,6 +166,7 @@
     "node": ">=22.13.0"
   },
   "overrides": {
+    "body-parser": "2.3.0",
     "glob": "^11.0.0",
     "rimraf": "^6.0.0",
     "inflight": "npm:@isaacs/inflight@^1.0.1",
@@ -206,6 +207,7 @@
     "brace-expansion@^5.0.5": "5.0.7"
   },
   "_overridesReasons": {
+    "body-parser": "BLOCKER: force 2.3.0 to clear GHSA-v422-hmwv-36x6 (DoS via an invalid limit value that silently disables body-size enforcement; vulnerable >=2.0.0 <2.3.0 and <1.20.6). express@5 pulls body-parser ^2.2.1 which froze the lockfile at 2.2.2; 2.3.0 is the patched 2.x line and satisfies express's range. Advisory published after 2.3.0 (2026-06-15) had already aged past minimum-release-age, so this is a straight patched-version bump, not a deferral.",
     "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
     "rimraf": "BLOCKER: force rimraf ^6 to avoid unmaintained v2/v3 transitive chains from older tooling (electron-builder plist, etc.)",
     "inflight": "BLOCKER: replace unmaintained inflight with @isaacs/inflight; original package is unsupported and leaks memory",
