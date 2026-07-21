@@ -72,7 +72,9 @@ jobs:
           retention-days: 3
 
       - name: Create CLI npm package
-        working-directory: packages/cli
+        # No working-directory: the script cd's to packages/cli itself. Setting
+        # it here made the repo-root-relative script path resolve under
+        # packages/cli/ and the step died with exit 127.
         run: .ci/scripts/build/pack-cli-npm.sh
         env:
           VERSION: ${{ inputs.next_version || '0.0.0-dev' }}

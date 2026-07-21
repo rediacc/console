@@ -6,14 +6,19 @@
 # the value the repo carries in git, and a dev build should not masquerade as a
 # release.
 #
-# Usage:
+# Usage (from anywhere):
 #   VERSION=1.2.3 .ci/scripts/build/pack-cli-npm.sh
 #
 # Optional env:
 #   VERSION    version to inject (default 0.0.0-dev, which skips injection)
 #   OUT_DIR    where the tarball lands (default /tmp/cli-npm)
 #
-# Run from the CLI package directory (the workflow does `working-directory`).
+# It cd's to packages/cli itself. It previously relied on the caller doing
+# `working-directory: packages/cli`, and the workflow step ALSO addressed the
+# script by a repo-root-relative path -- so the two combined into
+# `packages/cli/.ci/scripts/build/pack-cli-npm.sh`, which does not exist, and CI
+# died with exit 127. Being self-locating removes the coupling entirely rather
+# than trading one path assumption for another.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -21,6 +26,8 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd jq
 require_cmd npm
+
+cd "$(get_repo_root)/packages/cli"
 
 VERSION="${VERSION:-0.0.0-dev}"
 OUT_DIR="${OUT_DIR:-/tmp/cli-npm}"

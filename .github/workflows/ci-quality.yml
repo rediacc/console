@@ -275,6 +275,27 @@ jobs:
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Submodules are load-bearing here, not incidental. Without them this job
+      # ran FIVE degraded checks and reported success for all of them:
+      #   - test-embed-asset-freshness.sh, test-embed-credits.sh and
+      #     test-renet-deadcode.sh each printed "renet submodule not present --
+      #     skipping" and exited 0, so they had never asserted anything in CI;
+      #   - check:ci-suppression-liveness skipped its .go-deps-upgrade-blocklist
+      #     and .embed-assets-upgrade-blocklist probes (oracles are renet's
+      #     go.mod and Dockerfile), leaving 4 entries "NOT proven clean".
+      # The three tests only became visible once run-all.sh started failing a
+      # test that exits 0 without a single assertion.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
@@ -495,10 +516,10 @@ jobs:
         run: .ci/scripts/quality/check-content-quality.sh
       - name: Verify NIS2 directive quotations match the official source
         run: npm run check:ci-nis2-quotes
-      # Source-only content gates that were in `npm run ci` and nowhere else.
-      # check:ci-seo/-redirects need a built www and live in quality-www-build.
+      # Source-only content gate that was in `npm run ci` and nowhere else.
+      # check:ci-seo/-redirects/-cta-bolt all need a built www, so they live in
+      # quality-www-build instead.
       - run: npm run check:ci-pricing-consistency
-      - run: npm run check:ci-cta-bolt
 
   # check:ci-redirects HARD-requires packages/www/dist/route-manifest.json and
   # check:ci-seo's built-HTML link scan self-skips without packages/www/dist. No
@@ -535,6 +556,10 @@ jobs:
         run: npm run build:www
       - run: npm run check:ci-redirects
       - run: npm run check:ci-seo
+      # Scans the BUILT HTML for duplicate CTA anchors, so it needs dist too --
+      # its source-literal grep only mentions src/i18n/translations/en.json,
+      # which is how it was first mis-placed in quality-content.
+      - run: npm run check:ci-cta-bolt
       # These need BOTH of this job's expensive inputs, which is why they live
       # here and not with the other unit tests: the account submodule (imports
       # above) and packages/www/dist/route-manifest.json, which
