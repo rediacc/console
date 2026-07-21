@@ -107,31 +107,6 @@ extract_template_metadata() {
     echo "$title|$description"
 }
 
-# Function to check if directory should be excluded
-should_exclude_directory() {
-    local dir_name="$1"
-    local exclude_dirs=("dist" "assets" "catalog" "config" "templates" ".github")
-
-    # Check if it's a hidden directory
-    if [[ "$dir_name" =~ ^\..*$ ]]; then
-        return 0  # Should exclude
-    fi
-
-    # Check if it's a file (ends with extension)
-    if [[ "$dir_name" == *.* ]]; then
-        return 0  # Should exclude files
-    fi
-
-    # Check against exclude list
-    for exclude in "${exclude_dirs[@]}"; do
-        if [[ "$dir_name" == "$exclude" ]]; then
-            return 0  # Should exclude
-        fi
-    done
-
-    return 1  # Should not exclude
-}
-
 # Function to get file type based on extension
 get_file_type() {
     local filename="$1"

@@ -29,7 +29,6 @@ done < <(find .github/workflows .github/actions -name "*.yml" -type f 2>/dev/nul
 # --- Inline-run rule config (see check_inline_run_blocks below) ---------------
 # Overridable so the standalone gate test can drive the rule against fixtures.
 WORKFLOW_DIR="${WORKFLOW_DIR:-.github/workflows}"
-WORKFLOW_INLINE_BASELINE="${WORKFLOW_INLINE_BASELINE:-.ci/quality/workflow-inline-baseline.json}"
 INLINE_MAX_LOGIC="${INLINE_MAX_LOGIC:-8}"
 
 # When the gate test exercises ONLY the inline-run rule, empty the file list the
@@ -175,10 +174,13 @@ done
 # CI step LOGIC belongs in .ci/scripts/<area>/<name>.sh, which is locally
 # runnable and shareable across CI systems. A workflow `run:` block scalar whose
 # shell logic (non-blank, non-comment lines) exceeds $INLINE_MAX_LOGIC lines is a
-# violation. Legacy violations are frozen per-file in $WORKFLOW_INLINE_BASELINE
-# and may only ratchet DOWN: a count that rises fails (new inline logic), a count
-# below baseline fails (you extracted a block but did not lower the baseline), and
-# a file with violations absent from the baseline fails.
+# violation. Full stop -- there is no baseline and no grandfathering.
+#
+# There used to be a ratchet: .ci/quality/workflow-inline-baseline.json froze 52
+# legacy violations per-file and only allowed the counts to fall. All 52 were
+# extracted, so the file and its ratchet logic are gone. Do not reintroduce them:
+# an escape hatch that exists gets used, and the rule only actually held once the
+# hatch was removed.
 check_inline_run_blocks() {
     require_cmd jq
     require_cmd awk
@@ -234,25 +236,14 @@ AWK_EOF
 
     log_step "Checking workflow run: blocks stay thin (<= $INLINE_MAX_LOGIC logic lines)..."
 
-    # Portable read loop instead of `mapfile` — the CI runner's minimal bash
-    # (busybox-flavored) does not ship the `mapfile`/`readarray` builtin.
-    local baseline_keys=()
-    if [[ -f "$WORKFLOW_INLINE_BASELINE" ]]; then
-        while IFS= read -r _key; do
-            [[ -n "$_key" ]] && baseline_keys+=("$_key")
-        done < <(jq -r 'keys[] | select(. != "__doc__")' "$WORKFLOW_INLINE_BASELINE")
-    fi
-
     declare -A actual=()
     declare -A detail=()
-    declare -A seen=()
 
     local f bn blocks start cnt name vcount d
     if [[ -d "$WORKFLOW_DIR" ]]; then
         for f in "$WORKFLOW_DIR"/*.yml; do
             [[ -e "$f" ]] || continue
             bn="$(basename "$f")"
-            seen["$bn"]=1
             vcount=0
             d=""
             blocks="$(awk -f "$awk_prog" "$f")"
@@ -268,53 +259,88 @@ AWK_EOF
         done
     fi
 
-    # Union of baseline files and files that currently have any violation.
-    declare -A union=()
-    local k
-    for k in "${baseline_keys[@]}"; do union["$k"]=1; done
-    for k in "${!actual[@]}"; do
-        ((${actual[$k]} > 0)) && union["$k"]=1
-    done
-
-    local sorted=()
-    if ((${#union[@]} > 0)); then
-        while IFS= read -r _k; do
-            [[ -n "$_k" ]] && sorted+=("$_k")
-        done < <(printf '%s\n' "${!union[@]}" | sort)
+    # Anti-vacuity: no workflows parsed means the layout moved and this gate is
+    # asserting nothing. Fail loudly rather than report a clean run.
+    if ((${#actual[@]} == 0)); then
+        log_error "No workflows found under $WORKFLOW_DIR -- this check is blind"
+        ERRORS=$((ERRORS + 1))
+        return
     fi
 
-    local a b
+    local sorted=()
+    while IFS= read -r _k; do
+        [[ -n "$_k" ]] && sorted+=("$_k")
+    done < <(printf '%s\n' "${!actual[@]}" | sort)
+
+    local k
     for k in "${sorted[@]}"; do
-        [[ -z "$k" ]] && continue
-        a="${actual[$k]:-0}"
-        b=0
-        if [[ -f "$WORKFLOW_INLINE_BASELINE" ]]; then
-            b="$(jq -r --arg key "$k" '.[$key] // 0' "$WORKFLOW_INLINE_BASELINE")"
-        fi
-        if ((a > b)); then
-            if ((b == 0)); then
-                log_error "$WORKFLOW_DIR/$k: $a inline run: block(s) exceed $INLINE_MAX_LOGIC logic lines; this file is not in the baseline"
-            else
-                log_error "$WORKFLOW_DIR/$k: $a inline run: block(s) exceed $INLINE_MAX_LOGIC logic lines; baseline allows only $b (regression)"
-            fi
-            [[ -n "${detail[$k]:-}" ]] && printf '%s' "${detail[$k]}"
-            echo "  Fix:  extract each over-threshold block to .ci/scripts/<area>/<name>.sh; the workflow step becomes env wiring + one script call, and the script header documents its required env + how to run it locally."
-            echo ""
-            ERRORS=$((ERRORS + 1))
-        elif ((a < b)); then
-            if [[ -z "${seen[$k]:-}" ]]; then
-                log_error "$WORKFLOW_INLINE_BASELINE lists '$k' ($b) but $WORKFLOW_DIR/$k no longer exists; remove the stale baseline entry (ratchet down)"
-            else
-                log_error "$WORKFLOW_DIR/$k: only $a inline block(s) over $INLINE_MAX_LOGIC lines remain but baseline records $b; lower the baseline entry to $a (ratchet down)"
-            fi
-            echo "  Fix:  edit $WORKFLOW_INLINE_BASELINE and set '$k' to $a (remove the key entirely when $a is 0)."
+        ((${actual[$k]} > 0)) || continue
+        log_error "$WORKFLOW_DIR/$k: ${actual[$k]} inline run: block(s) exceed $INLINE_MAX_LOGIC logic lines"
+        [[ -n "${detail[$k]:-}" ]] && printf '%s' "${detail[$k]}"
+        echo "  Fix:  extract each over-threshold block to .ci/scripts/<area>/<name>.sh; the workflow step becomes env wiring + one script call, and the script header documents its required env + how to run it locally."
+        echo ""
+        ERRORS=$((ERRORS + 1))
+    done
+}
+
+check_inline_run_blocks
+
+# -----------------------------------------------------------------------------
+# `env:` values may not contain a shell-style $RUNNER_TEMP / $HOME / ...
+#
+# GitHub does NOT expand shell syntax in an `env:` VALUE -- only `${{ }}`
+# expressions -- and bash does not recursively expand a variable's value. So
+#
+#     env:
+#       SSH_KEY: $RUNNER_TEMP/renet/staging/.ssh/id_rsa
+#
+# reaches the script as the 24-character literal `$RUNNER_TEMP/renet/...`, and
+# the failure is a confusing "No such file or directory" naming a path with a
+# dollar sign in it. Real case: OPS Provision, run 29830623794.
+#
+# This is specifically an inline-extraction hazard. Inside a `run:` block the
+# shell DOES expand $RUNNER_TEMP, so moving that same text into `env:` while
+# extracting a script silently changes its meaning. That is how it got here.
+#
+# Fix: use the GitHub context (`${{ runner.temp }}`, `${{ github.workspace }}`),
+# or assign on the run line where the shell can expand it
+# (`run: VAR="$HOME/x" ./script.sh`) for variables with no context equivalent.
+check_env_shell_vars() {
+    require_cmd awk
+    local f bn out
+    for f in "$WORKFLOW_DIR"/*.yml; do
+        [[ -e "$f" ]] || continue
+        bn="$(basename "$f")"
+        # Track whether we are inside an `env:` mapping, then flag values that
+        # NOTE the explicit boundary class rather than \b: in awk regex \b is a
+        # BACKSPACE, not a word boundary. The first version of this rule used it
+        # and matched nothing -- permanently vacuous, and green. Caught only by
+        # planting a violation. The class also stops $HOMEBREW_PREFIX reading as
+        # $HOME.
+        # reference a runner variable in shell syntax rather than as ${{ }}.
+        out="$(awk '
+            /^[[:space:]]*env:[[:space:]]*$/ { inenv=1; envind=match($0, /[^ ]/); next }
+            inenv {
+                ind = match($0, /[^ ]/)
+                if ($0 ~ /^[[:space:]]*$/) next
+                if (ind <= envind) { inenv=0 }
+                else if ($0 ~ /\$(RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD)([^A-Za-z0-9_]|$)/ &&
+                         $0 !~ /\$\{\{/) { print NR ":" $0 }
+            }
+        ' "$f")"
+        if [[ -n "$out" ]]; then
+            while IFS= read -r line; do
+                log_error "$WORKFLOW_DIR/$bn:${line%%:*}: env: value uses shell syntax GitHub will not expand"
+                echo "      ${line#*:}"
+            done <<<"$out"
+            echo "  Fix:  use a GitHub context (\${{ runner.temp }}, \${{ github.workspace }}), or assign it on the run line so the shell expands it: run: VAR=\"\$HOME/x\" ./script.sh"
             echo ""
             ERRORS=$((ERRORS + 1))
         fi
     done
 }
 
-check_inline_run_blocks
+check_env_shell_vars
 
 if [[ $ERRORS -gt 0 ]]; then
     echo ""

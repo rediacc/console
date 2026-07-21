@@ -86,7 +86,7 @@ fi
 
 # Step 2: Strip transaction statements (D1 rejects raw BEGIN/COMMIT in SQL imports)
 # These come from sqlite3 .dump output during sanitization or from wrangler export.
-sed -i '/^BEGIN TRANSACTION;$/d; /^COMMIT;$/d; /^BEGIN;$/d; /^SAVEPOINT /d; /^RELEASE /d' "$TMPDIR/export.sql"
+sed_in_place '/^BEGIN TRANSACTION;$/d; /^COMMIT;$/d; /^BEGIN;$/d; /^SAVEPOINT /d; /^RELEASE /d' "$TMPDIR/export.sql"
 
 # Step 3: Generate DROP statements for all tables in the export
 log_step "Preparing import with FK safety wrapper"

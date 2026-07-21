@@ -55,20 +55,6 @@ _sed_i() {
 # CONSOLE-SPECIFIC HELPERS
 # =============================================================================
 
-compute_hash_for_paths() {
-    local root_dir="$1"
-    shift
-
-    (
-        cd "$root_dir" || exit
-        find "$@" -type f -print0 2>/dev/null |
-            LC_ALL=C sort -z |
-            xargs -0 $_SHA256SUM_CMD 2>/dev/null |
-            $_SHA256SUM_CMD |
-            awk '{print $1}'
-    )
-}
-
 compute_hash_for_package_dirs() {
     local root_dir="$1"
     shift

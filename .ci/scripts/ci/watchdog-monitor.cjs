@@ -33,6 +33,32 @@ const BINARY_EXEC_FAILURE_RE = /is not a valid application for this OS platform|
 
 const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p));
 
+// Jobs whose force-cancel `no-cancel-failure` may NOT suppress. Per CLAUDE.md a
+// Review Gate failure means review feedback is outstanding, not that code is
+// broken, so it is never something to label past. Nothing else is immune.
+const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
+
+/**
+ * Should a failed job force-cancel the run immediately, before any label or
+ * retry handling downstream?
+ *
+ * Extracted and exported so the ordering is testable against the REAL
+ * WATCHDOG_NO_RETRY_PATTERNS rather than a copy. The bug this replaces was pure
+ * ordering: the no-retry branch returned before the `no-cancel-failure` check,
+ * and the pattern list is 'Quality,Review Gate', so the label was unreachable
+ * for every Quality job -- the entire class it exists for -- while still being
+ * detected and logged as honoured. Run 29825013399.
+ */
+function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, noRetryPatterns }) {
+  const labelImmune = matchesPatterns(jobName, LABEL_IMMUNE_PATTERNS);
+  const matchesNoRetry = matchesPatterns(jobName, noRetryPatterns);
+  return {
+    cancel: Boolean(isFailure) && matchesNoRetry && (labelImmune || !skipCancellationOnFailure),
+    labelImmune,
+    matchesNoRetry,
+  };
+}
+
 // Formats the COMPLETE set of failed jobs into a human-readable banner plus a
 // one-line summary for the GitHub annotation. The watchdog force-cancels on the
 // first failure it classifies, but a single poll can hold several already-failed
@@ -552,8 +578,33 @@ const monitor = async ({ github, context, core }) => {
       // a Quality job, by contrast, is a runner/infra flake (not a code error) -- nuking
       // a 0-failure run for it is wrong. Let cancellations fall through to the label /
       // retry handling below so a flaky-cancelled job can be re-run instead.
-      if (failed.includes(job) && noRetryPatterns.some(p => job.name.includes(p))) {
-        console.log(`"${job.name}" matches no-retry pattern`);
+      //
+      // The label check is INSIDE this branch's condition, not after it. Without
+      // that, this branch returns before the label handling below, and
+      // WATCHDOG_NO_RETRY_PATTERNS is 'Quality,Review Gate' -- so
+      // `no-cancel-failure` was unreachable for every Quality job, which is the
+      // entire class the label exists to hold the run open for. Worse, the label
+      // was still detected and logged ("will not cancel on job failures") two
+      // minutes before the run was force-cancelled, so the log asserted the
+      // opposite of what happened. Observed on run 29825013399.
+      //
+      // Honouring the label here does NOT reintroduce retries: the label branch
+      // below records the failure via core.setFailed and keeps monitoring; it
+      // never dispatches a rerun. "Do not retry" and "do not cancel" are
+      // compatible.
+      //
+      // LABEL_IMMUNE_PATTERNS is the exception. CLAUDE.md specifies that Review
+      // Gate fails immediately and force-cancels, full stop -- an outstanding
+      // review is not a red to be raced past by labelling the PR. Nothing else
+      // is immune.
+      const noRetryVerdict = evaluateNoRetryCancel({
+        jobName: job.name,
+        isFailure: failed.includes(job),
+        skipCancellationOnFailure,
+        noRetryPatterns,
+      });
+      if (noRetryVerdict.cancel) {
+        console.log(`"${job.name}" matches no-retry pattern${noRetryVerdict.labelImmune ? ' (label-immune)' : ''}`);
         await forceCancel(failureMsg);
         return;
       }
@@ -640,3 +691,5 @@ module.exports = monitor;
 module.exports.evaluateBinaryExecGuard = evaluateBinaryExecGuard;
 module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
 module.exports.formatFailureRoster = formatFailureRoster;
+module.exports.evaluateNoRetryCancel = evaluateNoRetryCancel;
+module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;

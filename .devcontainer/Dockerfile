@@ -34,7 +34,6 @@ ENV DO_NOT_TRACK=1 \
     DISABLE_TELEMETRY=1 \
     DISABLE_ERROR_REPORTING=1 \
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1 \
-    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     POWERSHELL_TELEMETRY_OPTOUT=1 \
     AZURE_CORE_COLLECT_TELEMETRY=0 \
     HOMEBREW_NO_ANALYTICS=1 \
@@ -197,23 +196,6 @@ RUN go telemetry off \
 USER root
 
 # =============================================================================
-# .NET 9.0 SDK (via official install script - supports amd64 + arm64)
-# https://learn.microsoft.com/en-us/dotnet/core/install/linux-scripted-manual
-# =============================================================================
-ENV DOTNET_ROOT=/usr/share/dotnet
-ENV PATH="$PATH:$DOTNET_ROOT"
-
-RUN curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 9.0 --install-dir "$DOTNET_ROOT" \
-    && ln -sf "$DOTNET_ROOT/dotnet" /usr/local/bin/dotnet
-
-# =============================================================================
-# go-sqlcmd (required by ci-start.sh health checks for SQL Server)
-# Same logic as private/middleware/scripts/install-sqlcmd.sh
-# =============================================================================
-COPY install-sqlcmd.sh /tmp/install-sqlcmd.sh
-RUN /tmp/install-sqlcmd.sh && rm /tmp/install-sqlcmd.sh
-
-# =============================================================================
 # Python packages + uv + kimi-cli
 # =============================================================================
 RUN pip install --no-cache-dir --break-system-packages pyyaml uv
@@ -369,8 +351,6 @@ RUN sed -i 's|^PATH=.*|PATH="/home/vscode/.local/bin:/usr/local/share/nvm/curren
     && echo 'NVM_DIR="/usr/local/share/nvm"' >> /etc/environment \
     && echo 'NVM_SYMLINK_CURRENT="true"' >> /etc/environment \
     && echo 'DOCKER_BUILDKIT="1"' >> /etc/environment \
-    && echo 'DOTNET_ROOT="/usr/share/dotnet"' >> /etc/environment \
-    && echo 'DOTNET_CLI_TELEMETRY_OPTOUT="1"' >> /etc/environment \
     && echo 'DO_NOT_TRACK="1"' >> /etc/environment \
     && echo 'DISABLE_TELEMETRY="1"' >> /etc/environment \
     && echo 'DISABLE_ERROR_REPORTING="1"' >> /etc/environment \

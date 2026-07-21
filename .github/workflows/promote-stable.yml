@@ -26,65 +26,27 @@ jobs:
       promoted: ${{ steps.result.outputs.promoted }}
       version: ${{ steps.edge.outputs.version }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check edge manifest
         id: edge
-        run: |
-          EDGE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/edge/manifest.json" || echo "")
-          if [[ -z "$EDGE_MANIFEST" ]]; then
-            echo "No edge manifest found, skipping"
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          EDGE_VERSION=$(echo "$EDGE_MANIFEST" | jq -r '.version')
-          EDGE_DATE=$(echo "$EDGE_MANIFEST" | jq -r '.releaseDate')
-          echo "version=$EDGE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "date=$EDGE_DATE" >> "$GITHUB_OUTPUT"
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-
-          echo "Edge version: $EDGE_VERSION (released: $EDGE_DATE)"
+        run: .ci/scripts/release/check-edge-manifest.sh
 
       - name: Check stable manifest
         if: steps.edge.outputs.skip != 'true'
         id: stable
-        run: |
-          STABLE_MANIFEST=$(curl -sf "https://releases.rediacc.com/cli/stable/manifest.json" || echo "")
-          STABLE_VERSION=""
-          if [[ -n "$STABLE_MANIFEST" ]]; then
-            STABLE_VERSION=$(echo "$STABLE_MANIFEST" | jq -r '.version')
-          fi
-          echo "version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+        run: .ci/scripts/release/check-stable-manifest.sh
 
-          if [[ "$STABLE_VERSION" == "${{ steps.edge.outputs.version }}" ]]; then
-            echo "Edge and stable are the same version ($STABLE_VERSION), skipping"
-            echo "same=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "same=false" >> "$GITHUB_OUTPUT"
-          fi
-
+      # SOAK_DAYS comes from the workflow-level env: above.
       - name: Check soak period
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true'
         id: soak
-        run: |
-          EDGE_DATE="${{ steps.edge.outputs.date }}"
-          EDGE_EPOCH=$(date -d "$EDGE_DATE" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$EDGE_DATE" +%s 2>/dev/null)
-          NOW_EPOCH=$(date +%s)
-          AGE_DAYS=$(( (NOW_EPOCH - EDGE_EPOCH) / 86400 ))
-
-          echo "Edge release age: ${AGE_DAYS} days (soak: ${SOAK_DAYS} days)"
-
-          if [[ "${{ inputs.force }}" == "true" ]]; then
-            echo "Force promotion requested, skipping soak check"
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          elif [[ $AGE_DAYS -lt $SOAK_DAYS ]]; then
-            echo "Edge needs $((SOAK_DAYS - AGE_DAYS)) more day(s) of soak"
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Soak period complete"
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
+        env:
+          EDGE_DATE: ${{ steps.edge.outputs.date }}
+          FORCE: ${{ inputs.force }}
+        run: .ci/scripts/release/check-soak-period.sh
 
       - name: Check for rollback labels
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
@@ -114,140 +76,12 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-        run: |
-          BUCKET="rediacc-releases"
-          EP="--endpoint-url $R2_ENDPOINT"
-
-          # Cache-Control policy: channel paths reuse filenames across
-          # releases, so nothing under <fmt>/<channel>/ is safe to cache.
-          # All channel uploads go no-cache; CF never caches, no stale body
-          # possible. Versioned paths (cli/v<semver>/)
-          # keep their immutable cache via upload-to-r2.sh.
-          CC_MUTABLE="no-cache"
-
-          PURGE_URLS=()
-          # Promote edge -> stable with two-phase upload to prevent clients
-          # from seeing a "new version" signal (metadata) before the binaries
-          # it references finish uploading.
-          #
-          # Phase 1: upload bytes (binaries, packages) -- slow, minutes.
-          #   Client-visible metadata at stable/ still points at the OLD version.
-          # Phase 2: upload metadata (Packages.gz, Release, latest-*.yml,
-          #   manifest.json, APKINDEX.tar.gz, *.db.tar.gz, install scripts, ...).
-          #   Advancement becomes visible at this boundary -- seconds, not minutes.
-          # Within phase 2, split signed/hashed-of metadata from inner metadata
-          # so the Release/InRelease hash of Packages.gz never disagrees with
-          # the bytes on R2.
-          #
-          # Channel-specific rewrites (install.sh / .repo / .conf) happen on
-          # the local tmp copy BEFORE phase 2 upload, eliminating a second
-          # re-upload race that the old sequential version had.
-          for dir in cli apt rpm apk archlinux; do
-            echo "Promoting ${dir}/edge/ -> ${dir}/stable/ (2-phase)"
-            TMP="/tmp/promote-${dir}"
-            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-
-            # Per-dir channel rewrites -- apply to local copy, uploaded in phase 2.
-            case "$dir" in
-              cli)
-                for f in "$TMP/install.sh" "$TMP/install.ps1"; do
-                  [[ -f "$f" ]] || continue
-                  sed -i \
-                    -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
-                    -e 's|} else { "edge" }|} else { "stable" }|g' \
-                    "$f"
-                done
-                ;;
-              rpm)
-                [[ -f "$TMP/rediacc.repo" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.repo"
-                ;;
-              archlinux)
-                [[ -f "$TMP/rediacc.conf" ]] && sed -i 's|/edge/|/stable/|g' "$TMP/rediacc.conf"
-                ;;
-            esac
-
-            META_EXCLUDES=(
-              --exclude 'Packages*' --exclude 'Release*' --exclude 'InRelease'
-              --exclude 'repodata/*'
-              --exclude 'APKINDEX.tar.gz'
-              --exclude '*.db.tar.gz' --exclude '*.files.tar.gz'
-              --exclude 'rediacc.db' --exclude 'rediacc.files'
-              --exclude 'latest*.yml' --exclude 'latest.json' --exclude 'manifest.json'
-              --exclude 'install.sh' --exclude 'install.ps1'
-              --exclude '*.repo' --exclude '*.conf'
-              --exclude 'rediacc-cli-latest.tgz'
-              --exclude 'versions.json'
-            )
-
-            # ----- Phase 1: binaries / packages (slow, no metadata) -----
-            aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-              --cache-control "$CC_MUTABLE" "${META_EXCLUDES[@]}"
-
-            # ----- Phase 2: metadata (fast, flips client view to new version) -----
-            case "$dir" in
-              apt)
-                # 2a: Packages / Packages.gz (hashes of .deb files in phase 1).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'Packages*'
-                # 2b: Release / InRelease / Release.gpg (hash of phase 2a).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'Release*' --include 'InRelease'
-                ;;
-              rpm)
-                # 2a: primary / filelists / other (hashed in 2b repomd).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'repodata/primary*' \
-                  --include 'repodata/filelists*' --include 'repodata/other*'
-                # 2b: repomd.xml + signatures + rediacc.repo (config).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'repodata/repomd.xml*' \
-                  --include '*.repo'
-                ;;
-              apk)
-                # APKINDEX references .apk files in same dir (phase 1).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'APKINDEX.tar.gz'
-                ;;
-              archlinux)
-                # .db/.files reference .pkg.tar.zst in same dir (phase 1).
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include '*.db.tar.gz' --include '*.files.tar.gz' \
-                  --include 'rediacc.db' --include 'rediacc.files' \
-                  --include '*.conf'
-                ;;
-              cli)
-                # manifest + latest.json + rebaked install scripts.
-                aws s3 sync "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --quiet \
-                  --cache-control "$CC_MUTABLE" \
-                  --exclude '*' --include 'manifest.json' --include 'latest.json' \
-                  --include 'install.sh' --include 'install.ps1' \
-                  --include 'versions.json'
-                ;;
-            esac
-
-            while IFS= read -r f; do
-              PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
-            done < <(find "$TMP" -type f)
-            rm -rf "$TMP"
-          done
-
-          echo "R2 promotion complete: edge v${{ steps.edge.outputs.version }} -> stable"
-
-          # Purge CF cache for the mutable URLs we just (re)uploaded.
-          if [[ ${#PURGE_URLS[@]} -gt 0 ]]; then
-            printf '%s\n' "${PURGE_URLS[@]}" \
-              | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
-          fi
+          EDGE_VERSION: ${{ steps.edge.outputs.version }}
+        run: .ci/scripts/deploy/promote-r2-to-stable.sh
 
       - name: Login to GHCR
         if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -345,6 +179,9 @@ jobs:
       AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
       AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      OTLP_CLIENT_CREDENTIALS_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
+      OTLP_CLIENT_CREDENTIALS_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
+      OTLP_CLIENT_CREDENTIALS_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
 
   # Verify stable endpoints after deployment
   verify-stable:
@@ -353,86 +190,13 @@ jobs:
     if: needs.promote.outputs.promoted == 'true'
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: regions.json
+          # .ci/scripts is needed too: the verification itself now lives there.
+          sparse-checkout: |
+            regions.json
+            .ci/scripts
           sparse-checkout-cone-mode: false
 
       - name: Verify stable endpoints
-        run: |
-          echo "Verifying stable deployment..."
-
-          INSTALL_SH=$(curl -fsSL https://www.rediacc.com/install.sh)
-          if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
-            echo "::error::www.rediacc.com/install.sh is not baked to channel=stable"
-            echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
-            exit 1
-          fi
-          echo "  marketing (install.sh): OK (channel=stable)"
-
-          INSTALL_PS1=$(curl -fsSL https://www.rediacc.com/install.ps1)
-          if ! echo "$INSTALL_PS1" | grep -qF '} else { "stable" }'; then
-            echo "::error::www.rediacc.com/install.ps1 is not baked to channel=stable"
-            echo "$INSTALL_PS1" | grep -F '$Channel' || true
-            exit 1
-          fi
-          echo "  marketing (install.ps1): OK (channel=stable)"
-
-          # Worker-fingerprint checks. These assert that the NEW Worker bundle
-          # from workers/www/ is actually serving — not a stale deploy of the
-          # old workers/marketing/ code (which has no redirect table, no
-          # html_handling=drop-trailing-slash, and no asset-path guard).
-          # Cache-busting query strings ensure we hit the Worker, not a cached
-          # response.
-          RNDA=$RANDOM$RANDOM; RNDB=$RANDOM$RANDOM; RNDC=$RANDOM$RANDOM
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/about?cb=$RNDA")
-          [[ "$S" == "410" ]] || { echo "::error::www /about expected 410 (curated redirect table), got $S — old worker bundle likely live"; exit 1; }
-          echo "  worker fingerprint (redirect table): OK (/about=410)"
-
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/en?cb=$RNDB")
-          [[ "$S" == "200" ]] || { echo "::error::www /en expected 200 (html_handling=drop-trailing-slash), got $S"; exit 1; }
-          echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
-
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://www.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
-          [[ "$S" == "200" ]] || { echo "::error::www mixed-case font expected 200 (asset-path guard), got $S"; exit 1; }
-          echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
-
-          # R2 backstop: per-channel copy at releases.rediacc.com/cli/stable/
-          # must also be channel-baked. The re-bake step in the promote job
-          # (above) rewrites REDIACC_CHANNEL:-edge → :-stable; this asserts it
-          # worked and the upload actually landed.
-          R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.sh)
-          if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-stable'; then
-            echo "::error::releases.rediacc.com/cli/stable/install.sh not baked to channel=stable"
-            echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
-            exit 1
-          fi
-          echo "  R2 cli/stable/install.sh: OK (channel=stable)"
-
-          R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/stable/install.ps1)
-          if ! echo "$R2_PS1" | grep -qF '} else { "stable" }'; then
-            echo "::error::releases.rediacc.com/cli/stable/install.ps1 not baked to channel=stable"
-            exit 1
-          fi
-          echo "  R2 cli/stable/install.ps1: OK (channel=stable)"
-
-          while read -r domain; do
-            INFO_URL="https://${domain}/account/api/v1/.well-known/server-info"
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "${INFO_URL}" 2>/dev/null || echo "000")
-            if [[ "$HTTP_CODE" != "200" ]]; then
-              echo "::warning::${domain} health check returned HTTP ${HTTP_CODE}"
-              continue
-            fi
-            HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
-            if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
-              if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
-                echo "::warning::${domain} has HSTS but missing X-Content-Type-Options"
-                continue
-              fi
-              echo "  ${domain} health: OK (security headers verified)"
-            else
-              echo "  ${domain} health: OK (security headers not yet enabled)"
-            fi
-          done < <(jq -r '.regions[] | .domain' regions.json)
-
-          echo "Stable verification complete"
+        run: .ci/scripts/deploy/verify-stable-endpoints.sh

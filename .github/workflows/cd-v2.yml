@@ -68,7 +68,7 @@ jobs:
       retry_mode: ${{ steps.skip-check.outputs.retry_mode }}
       workers_only: ${{ steps.skip-check.outputs.workers_only }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -81,79 +81,22 @@ jobs:
           repositories: console,renet,account,homebrew-tap,elite
 
       # Re-checkout with submodules using app token (needed for submodule branch check)
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Full history needed for merge-base --is-ancestor in submodule divergence check
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
+      # Auto-derives from the latest green Console CI on main when ci_run_id is
+      # empty; otherwise validates the supplied run. See the script header for
+      # why "is this the latest green run" is deliberately NOT one of the checks.
       - name: Resolve CI run context
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
           INPUT_CI_RUN_ID: ${{ inputs.ci_run_id }}
           ALLOW_STALE: ${{ inputs.allow_stale_ci_run_id }}
-        run: |
-          set -euo pipefail
-          # When ci_run_id is empty, auto-derive from the latest Console CI
-          # run on main. Otherwise validate the supplied value -- but ONLY
-          # against branch + workflow + (basic-status) checks, NOT against
-          # "is this the latest green run".
-          #
-          # The previous "must be latest green" rule rejected every
-          # auto-dispatched release: finalize-release-sentinel triggers
-          # cd-v2 mid-CI (after stage-artifacts seals R2, before housekeeping
-          # / pipeline-sentinel finish), so the dispatching run is still
-          # in-progress, conclusion is empty, and it cannot match
-          # "latest GREEN". The artifact-version assertion further down the
-          # init job catches stale-ci_run_id mismatches directly (the actual
-          # foot-gun), which makes the latest-green check redundant.
-          if [[ -z "${INPUT_CI_RUN_ID}" ]]; then
-            LATEST_ID=$(gh api \
-              "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&status=success&per_page=1" \
-              --jq '.workflow_runs[0].id // empty')
-            if [[ -z "${LATEST_ID}" ]]; then
-              echo "::error::No green Console CI run found on main. Cannot auto-derive ci_run_id; dispatch will not proceed."
-              exit 1
-            fi
-            CI_RUN_ID="${LATEST_ID}"
-            echo "::notice::Auto-derived ci_run_id=${CI_RUN_ID} (latest green Console CI on main)."
-          else
-            CI_RUN_ID="${INPUT_CI_RUN_ID}"
-            run_json="$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" 2>/dev/null || echo '{}')"
-            run_branch="$(echo "$run_json" | jq -r '.head_branch // ""')"
-            run_conclusion="$(echo "$run_json" | jq -r '.conclusion // ""')"
-            run_status="$(echo "$run_json" | jq -r '.status // ""')"
-            run_workflow="$(echo "$run_json" | jq -r '.name // ""')"
-
-            failed=false
-            if [[ "$run_branch" != "main" ]]; then
-              echo "::error::ci_run_id ${CI_RUN_ID} is on branch '${run_branch}', not 'main'."
-              failed=true
-            fi
-            if [[ "$run_workflow" != "Console CI" ]]; then
-              echo "::error::ci_run_id ${CI_RUN_ID} is workflow '${run_workflow}', not 'Console CI'."
-              failed=true
-            fi
-            # In-progress runs are valid (auto-dispatched from finalize-
-            # release-sentinel mid-CI). Completed runs must be success.
-            if [[ "$run_status" == "completed" && "$run_conclusion" != "success" ]]; then
-              if [[ "${ALLOW_STALE}" == "true" ]]; then
-                echo "::warning::ci_run_id ${CI_RUN_ID} completed with conclusion '${run_conclusion}'; allow_stale_ci_run_id is set, proceeding anyway."
-              else
-                echo "::error::ci_run_id ${CI_RUN_ID} completed with conclusion '${run_conclusion}', not 'success'."
-                failed=true
-              fi
-            fi
-            if [[ "$failed" == "true" ]]; then
-              echo "::error::ci_run_id validation failed -- refusing to dispatch with invalid CI run."
-              exit 1
-            fi
-          fi
-
-          CI_SHA=$(gh api "repos/${{ github.repository }}/actions/runs/${CI_RUN_ID}" --jq '.head_sha' 2>/dev/null || echo "${{ github.sha }}")
-          echo "ci_run_id=${CI_RUN_ID}" >> $GITHUB_OUTPUT
-          echo "ci_sha=${CI_SHA}" >> $GITHUB_OUTPUT
+        run: .ci/scripts/release/resolve-ci-run.sh
 
       - name: Stale ref check (workers-only)
         if: inputs.deploy_workers_only == true
@@ -171,26 +114,10 @@ jobs:
       # path that skips version bump and publish entirely.
       - name: Decide release mode
         id: skip-check
-        run: |
-          if [[ "${{ inputs.deploy_workers_only }}" == "true" ]]; then
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-            echo "retry_mode=false" >> $GITHUB_OUTPUT
-            echo "workers_only=true" >> $GITHUB_OUTPUT
-            echo "::notice::Workers-only mode -- deploy Workers without version bump or publish"
-            exit 0
-          fi
-          echo "workers_only=false" >> $GITHUB_OUTPUT
-
-          RELEASE_MODE="${{ inputs.release_mode }}"
-          if [[ "$RELEASE_MODE" == "retry" ]]; then
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-            echo "retry_mode=true" >> $GITHUB_OUTPUT
-            echo "::notice::Retry mode -- will re-deploy current version without bumping"
-          else
-            echo "skip_release=false" >> $GITHUB_OUTPUT
-            echo "retry_mode=false" >> $GITHUB_OUTPUT
-            echo "::notice::Release mode: ${RELEASE_MODE} bump -- will create new release"
-          fi
+        env:
+          DEPLOY_WORKERS_ONLY: ${{ inputs.deploy_workers_only }}
+          RELEASE_MODE: ${{ inputs.release_mode }}
+        run: .ci/scripts/release/decide-release-mode.sh
 
       # Retry/workers-only mode: use current version from latest tag without bumping
       - name: Resolve version (retry/workers-only mode)
@@ -232,18 +159,8 @@ jobs:
           steps.skip-check.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          VERSION="${{ steps.init.outputs.next_version }}"
-          git fetch --tags --quiet
-          if git tag -l "v${VERSION}" | grep -q .; then
-            echo "::error::Git tag v${VERSION} already exists. Aborting to prevent duplicate publish."
-            exit 1
-          fi
-          if gh release view "v${VERSION}" --repo "${{ github.repository }}" &>/dev/null; then
-            echo "::error::Release v${VERSION} already exists. Aborting to prevent duplicate publish."
-            exit 1
-          fi
-          echo "Version v${VERSION} is available for publishing."
+          VERSION: ${{ steps.init.outputs.next_version }}
+        run: .ci/scripts/release/check-existing-release.sh
 
       # Artifact-version assertion: catch the stale-ci_run_id foot-gun.
       # If someone dispatches with a ci_run_id whose artifacts were built
@@ -264,38 +181,9 @@ jobs:
           steps.skip-check.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          set -euo pipefail
-          VERSION="${{ steps.init.outputs.next_version }}"
-          CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
-          mkdir -p /tmp/cd-artifact-check
-          # The CLI manifest artifact is named "cli-manifest" by cd-stage.yml.
-          # Tolerate a missing artifact (e.g. older CI runs predating this
-          # check) by emitting a warning instead of failing -- once the
-          # check is established for a few cycles, harden to a hard fail.
-          if ! gh run download "$CI_RUN_ID" --repo "${{ github.repository }}" \
-                --name cli-manifest --dir /tmp/cd-artifact-check 2>/dev/null; then
-            echo "::warning::cli-manifest artifact not found on CI run ${CI_RUN_ID}; skipping artifact-version assertion. Re-run CI on the current main HEAD to produce the manifest."
-            exit 0
-          fi
-          if [[ ! -f /tmp/cd-artifact-check/manifest.json ]]; then
-            echo "::warning::cli-manifest artifact present but manifest.json missing; skipping assertion."
-            exit 0
-          fi
-          ARTIFACT_VERSION="$(jq -r '.version // empty' /tmp/cd-artifact-check/manifest.json)"
-          if [[ -z "$ARTIFACT_VERSION" ]]; then
-            echo "::warning::manifest.json has no .version field; skipping assertion."
-            exit 0
-          fi
-          # Normalise: artifact may or may not carry a leading v.
-          ARTIFACT_VERSION="${ARTIFACT_VERSION#v}"
-          if [[ "$ARTIFACT_VERSION" != "$VERSION" ]]; then
-            echo "::error::Artifact-version mismatch: CI run ${CI_RUN_ID} produced v${ARTIFACT_VERSION}, but CD is promoting as v${VERSION}."
-            echo "::error::This means ci_run_id is stale -- the artifacts were built before the latest tag bump."
-            echo "::error::Either dispatch again with no ci_run_id (auto-derive latest green CI on main), or re-run CI on current main to produce fresh artifacts."
-            exit 1
-          fi
-          echo "::notice::Artifact version v${ARTIFACT_VERSION} matches promotion target v${VERSION}."
+          VERSION: ${{ steps.init.outputs.next_version }}
+          CI_RUN_ID: ${{ steps.resolve.outputs.ci_run_id }}
+        run: .ci/scripts/release/assert-artifact-version.sh
 
   # ============================================================================
   # PUBLISH
@@ -313,7 +201,7 @@ jobs:
       name: edge
       url: https://edge.rediacc.com
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.init.outputs.workers_only != 'true'
 
       - uses: ./.github/actions/app-token
@@ -325,13 +213,13 @@ jobs:
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: needs.init.outputs.workers_only != 'true'
         with:
           fetch-depth: 0
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         if: needs.init.outputs.workers_only != 'true'
         with:
           node-version: '22'
@@ -341,7 +229,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Login to GHCR
         if: needs.init.outputs.workers_only != 'true'
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -411,18 +299,7 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Verifying artifact provenance..."
-          FAILED=false
-          for f in $(find dist/cli dist/packages -type f 2>/dev/null); do
-            gh attestation verify "$f" --repo "${{ github.repository }}" 2>/dev/null || {
-              echo "::warning::No attestation for $f (expected for first run after attestation is enabled)"
-              FAILED=true
-            }
-          done
-          if [[ "$FAILED" == "true" ]]; then
-            echo "::warning::Some artifacts lack attestation — this is expected during the transition period"
-          fi
+        run: .ci/scripts/release/verify-artifact-attestation.sh
 
       # Tag creation + GitHub Release + Homebrew update moved to the
       # `tag-and-release` job below, which runs after edge deploys +
@@ -447,106 +324,21 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-        run: |
-          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
-          export AWS_DEFAULT_REGION="auto"
-          EP="--endpoint-url $R2_ENDPOINT"
-          BUCKET="rediacc-releases"
-
-          # Cache-Control policy: channel paths (apt/<channel>/, cli/<channel>/,
-          # etc.) reuse filenames across releases, so we cannot cache any of
-          # them -- a previous run's cached body under the same URL breaks
-          # APKINDEX/Release signatures. Everything goes no-cache; CF never
-          # caches, no stale body possible. Truly-versioned (cli/v<semver>/,
-          # npm/<channel>/rediacc-cli-<semver>.tgz) keep immutable cache
-          # via upload-to-r2.sh.
-          CC_MUTABLE="no-cache"
-
-          PURGE_URLS=()
-          for dir in cli apt rpm apk archlinux; do
-            echo "Promoting ${dir}/edge/ -> ${dir}/stable/"
-            TMP="/tmp/promote-${dir}"
-            aws s3 cp "s3://${BUCKET}/${dir}/edge/" "$TMP/" $EP --recursive --quiet
-            aws s3 cp "$TMP/" "s3://${BUCKET}/${dir}/stable/" $EP --recursive --quiet \
-              --cache-control "$CC_MUTABLE"
-            # Purge every uploaded URL to flush any previously-cached body
-            # under the same filename; channel paths reuse filenames across
-            # releases.
-            while IFS= read -r f; do
-              PURGE_URLS+=("https://releases.rediacc.com/${dir}/stable/${f#$TMP/}")
-            done < <(find "$TMP" -type f)
-            rm -rf "$TMP"
-          done
-
-          # Fix channel references in config files (mutable channel pointers).
-          for file in rpm/stable/rediacc.repo archlinux/stable/rediacc.conf; do
-            aws s3 cp "s3://${BUCKET}/${file}" /tmp/config $EP --quiet
-            sed -i 's|/edge/|/stable/|g' /tmp/config
-            aws s3 cp /tmp/config "s3://${BUCKET}/${file}" $EP --quiet \
-              --cache-control "$CC_MUTABLE"
-            PURGE_URLS+=("https://releases.rediacc.com/${file}")
-          done
-
-          # Re-bake install scripts: cd-stage.yml baked 'edge' into
-          # cli/edge/install.{sh,ps1}; the raw copy above carried that into
-          # cli/stable/. Rewrite back to stable. Channel-pointer scripts
-          # are mutable.
-          for file in cli/stable/install.sh cli/stable/install.ps1; do
-            aws s3 cp "s3://${BUCKET}/${file}" /tmp/script $EP --quiet
-            sed -i \
-              -e 's|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-stable|g' \
-              -e 's|} else { "edge" }|} else { "stable" }|g' \
-              /tmp/script
-            aws s3 cp /tmp/script "s3://${BUCKET}/${file}" $EP --quiet \
-              --cache-control "$CC_MUTABLE"
-            PURGE_URLS+=("https://releases.rediacc.com/${file}")
-          done
-
-          echo "R2 promoted to stable"
-
-          # Purge CF cache for the mutable URLs we just (re)uploaded.
-          if [[ ${#PURGE_URLS[@]} -gt 0 ]]; then
-            printf '%s\n' "${PURGE_URLS[@]}" \
-              | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
-          fi
+        run: .ci/scripts/deploy/promote-r2-to-stable-hotfix.sh
 
       - name: Promote Docker to stable (hotfix)
         if: needs.init.outputs.workers_only != 'true' && inputs.publish_stable == true
-        run: |
-          for image in renet rdc; do
-            echo "Promoting ${image}: edge -> stable"
-            docker buildx imagetools create \
-              -t "ghcr.io/rediacc/${image}:stable" \
-              "ghcr.io/rediacc/${image}:edge"
-          done
-          # On-prem server image lives at ghcr.io/rediacc/server (outside elite/).
-          echo "Promoting server: edge -> stable"
-          docker buildx imagetools create \
-            -t "ghcr.io/rediacc/server:stable" \
-            "ghcr.io/rediacc/server:edge"
-          echo "Docker promoted to stable"
+        run: .ci/scripts/deploy/promote-docker-to-stable-hotfix.sh
 
       # -----------------------------------------------------------------------
       # Step 5: Cleanup channel Docker tags
       # -----------------------------------------------------------------------
       - name: Cleanup channel Docker tags
         if: needs.init.outputs.workers_only != 'true'
-        run: |
-          CHANNEL="${{ needs.init.outputs.channel }}"
-          echo "## Cleanup Channel Tags" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          # Cleanup is non-critical (channel tags are harmless if they remain),
-          # so we log failures to the step summary but don't fail the job.
-          if .ci/scripts/docker/cleanup-staging.sh --tag "$CHANNEL"; then
-            echo "**Channel tag cleaned up:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Failed to clean up channel tag:** $CHANNEL" >> $GITHUB_STEP_SUMMARY
-            echo "Channel tag cleanup requires \`delete:packages\` scope (non-critical)." >> $GITHUB_STEP_SUMMARY
-          fi
+        run: .ci/scripts/release/cleanup-channel-docker-tags.sh
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CHANNEL: ${{ needs.init.outputs.channel }}
 
       # Stable promotion (CLI, repos, Docker :stable) is handled by
       # promote-stable.yml after 7-day soak. CD only publishes to edge.
@@ -556,21 +348,11 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Deployment summary
         if: needs.init.outputs.workers_only != 'true'
-        run: |
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** v${{ needs.init.outputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Release SHA:** ${{ steps.commit.outputs.release_sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**CI Run:** ${{ needs.init.outputs.ci_run_id }} (sha: ${{ needs.init.outputs.ci_sha }})" >> $GITHUB_STEP_SUMMARY
-          echo "**Pages URL:** https://www.rediacc.com" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Docker images:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/renet:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/rdc:${{ needs.init.outputs.next_version }} + :latest" >> $GITHUB_STEP_SUMMARY
-          echo "- ghcr.io/rediacc/server:${{ needs.init.outputs.next_version }} + :latest (on-prem)" >> $GITHUB_STEP_SUMMARY
+        env:
+          VERSION: ${{ needs.init.outputs.next_version }}
+          CI_RUN_ID: ${{ needs.init.outputs.ci_run_id }}
+          CI_SHA: ${{ needs.init.outputs.ci_sha }}
+        run: .ci/scripts/release/deployment-summary.sh
 
   # Install validation moved to CI (pre-publish). CI validates on all 6 platforms
   # BEFORE publish, so broken artifacts never reach the edge or stable channel.
@@ -651,6 +433,9 @@ jobs:
       AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
       AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      OTLP_CLIENT_CREDENTIALS_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
+      OTLP_CLIENT_CREDENTIALS_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
+      OTLP_CLIENT_CREDENTIALS_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
 
   # ============================================================================
   # DEPLOY STABLE (hotfix only) - Marketing + per-region account workers
@@ -733,6 +518,9 @@ jobs:
       AWS_SES_ACCESS_KEY_ID_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
       AWS_SES_SECRET_ACCESS_KEY_ASIA: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_ASIA }}
       TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
+      OTLP_CLIENT_CREDENTIALS_EU: ${{ secrets.OTLP_CLIENT_CREDENTIALS_EU }}
+      OTLP_CLIENT_CREDENTIALS_US: ${{ secrets.OTLP_CLIENT_CREDENTIALS_US }}
+      OTLP_CLIENT_CREDENTIALS_ASIA: ${{ secrets.OTLP_CLIENT_CREDENTIALS_ASIA }}
 
   # ============================================================================
   # POST-PUBLISH SMOKE TEST - Verify endpoints respond after deployment
@@ -752,138 +540,19 @@ jobs:
       needs.deploy-account-edge.result == 'success' &&
       needs.init.outputs.skip_release != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: regions.json
+          # .ci/scripts is needed too: the smoke test itself now lives there.
+          sparse-checkout: |
+            regions.json
+            .ci/scripts
           sparse-checkout-cone-mode: false
 
       - name: Verify edge endpoints
-        run: |
-          VERSION="${{ needs.init.outputs.next_version }}"
-          echo "Verifying edge deployment for v${VERSION}..."
-
-          # Marketing worker — also verify the channel default was rewritten.
-          INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh)
-          if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
-            echo "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
-            echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
-            exit 1
-          fi
-          echo "  marketing (install.sh): OK (channel=edge)"
-
-          INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1)
-          if ! echo "$INSTALL_PS1" | grep -qF '} else { "edge" }'; then
-            echo "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge"
-            echo "$INSTALL_PS1" | grep -F '$Channel' || true
-            exit 1
-          fi
-          echo "  marketing (install.ps1): OK (channel=edge)"
-
-          # Worker-fingerprint checks. These assert that the NEW Worker bundle
-          # from workers/www/ is actually serving — not a stale deploy of the
-          # old workers/marketing/ code (which has no redirect table, no
-          # html_handling=drop-trailing-slash, and no asset-path guard).
-          # Cache-busting query strings ensure we hit the Worker, not a cached
-          # response.
-          RNDA=$RANDOM$RANDOM; RNDB=$RANDOM$RANDOM; RNDC=$RANDOM$RANDOM
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$RNDA")
-          [[ "$S" == "410" ]] || { echo "::error::edge /about expected 410 (curated redirect table), got $S — old worker bundle likely live"; exit 1; }
-          echo "  worker fingerprint (redirect table): OK (/about=410)"
-
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/en?cb=$RNDB")
-          [[ "$S" == "200" ]] || { echo "::error::edge /en expected 200 (html_handling=drop-trailing-slash), got $S"; exit 1; }
-          echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
-
-          S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
-          [[ "$S" == "200" ]] || { echo "::error::edge mixed-case font expected 200 (asset-path guard), got $S"; exit 1; }
-          echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
-
-          # Footer version assertion: confirm the Astro build baked the
-          # expected semver into the rendered HTML. Catches regressions in
-          # APP_VERSION propagation (cd-deploy-worker.yml -> astro.config.mjs).
-          # Astro SSR inserts React text-boundary comment nodes, so the
-          # rendered HTML is `<p class="footer-version">v<!-- -->1.0.4</p>`
-          # -- the regex collapses any HTML comments between the "v" and
-          # the semver before matching.
-          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
-            FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/)
-            FOOTER_NORMALIZED=$(echo "$FOOTER_HTML" | sed 's/<!--[^>]*-->//g')
-            if ! echo "$FOOTER_NORMALIZED" | grep -qE "footer-version[^<]*>v${VERSION}<"; then
-              echo "::error::edge.rediacc.com footer does not render v${VERSION}"
-              echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<[^>]*>[^<]*<' | head -3 || true
-              exit 1
-            fi
-            echo "  marketing (footer version): OK (v${VERSION})"
-          fi
-
-          # R2 backstop: the per-channel copy at releases.rediacc.com/cli/edge/
-          # is the fallback serving path (not worker-rewritten). It must also
-          # be channel-baked (done at upload time in cd-stage.yml). This
-          # cross-check catches R2 upload regressions.
-          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
-            R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh)
-            if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
-              echo "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge"
-              echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
-              exit 1
-            fi
-            echo "  R2 cli/edge/install.sh: OK (channel=edge)"
-
-            R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1)
-            if ! echo "$R2_PS1" | grep -qF '} else { "edge" }'; then
-              echo "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge"
-              exit 1
-            fi
-            echo "  R2 cli/edge/install.ps1: OK (channel=edge)"
-          else
-            echo "  R2 backstop: skipped (workers-only deployment)"
-          fi
-
-          # R2 releases (skip in workers-only mode -- no new version was published)
-          if [[ "${{ needs.init.outputs.workers_only }}" != "true" ]]; then
-            EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
-            echo "  edge latest.json: v${EDGE_VERSION}"
-
-            if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
-              echo "  version match: OK"
-            else
-              echo "  version mismatch: edge has v${EDGE_VERSION}, expected v${VERSION} (acceptable in retry mode)"
-            fi
-          else
-            echo "  R2 version check: skipped (workers-only)"
-          fi
-
-          # Per-region account health checks (dynamic from regions.json).
-          # The header gate below activates the moment Phase 1 ships (worker
-          # sets Strict-Transport-Security): once HSTS is present, we require
-          # X-Content-Type-Options: nosniff alongside it. Until then the gate
-          # is a no-op — pre-Phase-1 deploys still pass.
-          FAILED=0
-          while read -r domain; do
-            INFO_URL="https://${domain}/account/api/v1/.well-known/server-info"
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "${INFO_URL}" 2>/dev/null || echo "000")
-            if [[ "$HTTP_CODE" != "200" ]]; then
-              echo "::error::${domain} health check failed (HTTP ${HTTP_CODE})"
-              FAILED=1
-              continue
-            fi
-            HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
-            if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
-              if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
-                echo "::error::${domain} has HSTS but missing X-Content-Type-Options: nosniff"
-                FAILED=1
-                continue
-              fi
-              echo "  ${domain} health: OK (security headers verified)"
-            else
-              echo "  ${domain} health: OK (security headers not yet enabled)"
-            fi
-          done < <(jq -r '.regions[] | .edgeDomain' regions.json)
-
-          if [[ "$FAILED" -eq 1 ]]; then
-            exit 1
-          fi
-          echo "Smoke test passed"
+        env:
+          VERSION: ${{ needs.init.outputs.next_version }}
+          WORKERS_ONLY: ${{ needs.init.outputs.workers_only }}
+        run: .ci/scripts/deploy/verify-edge-endpoints.sh
 
   # ============================================================================
   # POST-PUBLISH INSTALL VALIDATION - Reuses ct-install-methods.yml against
@@ -913,8 +582,6 @@ jobs:
     with:
       version: ${{ needs.init.outputs.next_version }}
       repo_channel: ${{ needs.init.outputs.channel }}
-    secrets:
-      APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
 
   # ============================================================================
   # TAG & GITHUB RELEASE - Runs AFTER edge deploys + smoke-test + post-publish
@@ -933,7 +600,7 @@ jobs:
       needs.init.outputs.retry_mode != 'true' &&
       needs.init.outputs.workers_only != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/app-token
         id: app-token
@@ -943,7 +610,7 @@ jobs:
           preset: cd
           repositories: console,renet,account,homebrew-tap,elite
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -967,34 +634,10 @@ jobs:
           echo "::notice::Created tag v${VERSION}"
 
       - name: Tag submodules
-        run: |
-          set -euo pipefail
-          VERSION="${{ needs.init.outputs.next_version }}"
-          for sub in private/renet; do
-            if [[ ! -d "$sub/.git" ]] && [[ ! -f "$sub/.git" ]]; then
-              echo "::notice::Skipping $sub (not initialized)"
-              continue
-            fi
-            cd "$sub"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            head_sha="$(git rev-parse HEAD)"
-            existing_sha="$(git rev-list -n1 "v${VERSION}" 2>/dev/null || true)"
-            if [[ -n "$existing_sha" ]]; then
-              if [[ "$existing_sha" != "$head_sha" ]]; then
-                echo "::error::Submodule $sub tag v${VERSION} already points to $existing_sha but HEAD is $head_sha. Drift must be resolved manually before this release can proceed."
-                exit 1
-              fi
-              echo "::notice::Submodule $sub tag v${VERSION} already at HEAD ($head_sha); reusing"
-            else
-              git tag -a "v${VERSION}" -m "v${VERSION}"
-            fi
-            # Push is idempotent for existing tags pointing at the same SHA.
-            git push origin "v${VERSION}"
-            cd "$GITHUB_WORKSPACE"
-          done
+        run: .ci/scripts/release/tag-submodules.sh
         env:
           GITHUB_PAT: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ needs.init.outputs.next_version }}
 
       - name: Update Homebrew formula
         run: |
@@ -1020,56 +663,13 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           GIT_BOT_NAME: ${{ vars.GIT_BOT_NAME }}
           GIT_BOT_EMAIL: ${{ vars.GIT_BOT_EMAIL }}
-        run: |
-          set -euo pipefail
-          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
-          export AWS_DEFAULT_REGION="auto"
-          source .ci/scripts/lib/release-state-validator.sh
-          FLOOR_FILE=".ci/config/release-contract-floor.txt"
-          if [[ ! -f "$FLOOR_FILE" ]]; then
-            echo "::warning::${FLOOR_FILE} not present; skipping ratchet advance"
-            exit 0
-          fi
-          current="$(grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' "$FLOOR_FILE" | head -1 || echo)"
-          oldest="$(rsv_list_sentinels cli | sort -uV | head -1 || echo)"
-          if [[ -z "$oldest" ]]; then
-            echo "::notice::no cli sentinels on R2; skipping ratchet advance"
-            exit 0
-          fi
-          newer="$(printf '%s\n%s\n' "${current:-v0.0.0}" "$oldest" | sort -V | tail -1)"
-          if [[ "$newer" == "${current:-v0.0.0}" ]]; then
-            echo "::notice::ratchet already at ${current:-<unset>} (>= observed ${oldest}); no change"
-            exit 0
-          fi
-          echo "::notice::advancing ratchet ${current:-<unset>} -> ${oldest}"
-          printf '%s\n' "$oldest" >"$FLOOR_FILE"
-          git config user.name "$GIT_BOT_NAME"
-          git config user.email "$GIT_BOT_EMAIL"
-          git add "$FLOOR_FILE"
-          git commit -m "chore(release-state): advance contract floor to ${oldest} [skip ci]"
-          git push origin HEAD:main
+        run: .ci/scripts/release/advance-contract-floor.sh
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob
-          assets=(dist/cli/**/* dist/packages/**/*)
-          files=()
-          for f in "${assets[@]}"; do [[ -f "$f" ]] && files+=("$f"); done
-          if [[ ${#files[@]} -eq 0 ]]; then
-            echo "::error::No release assets matched dist/{cli,packages}/**/*"
-            exit 1
-          fi
-          gh release create "v${VERSION}" \
-            --title "v${VERSION}" \
-            --target "${GITHUB_SHA}" \
-            --generate-notes \
-            --repo "${GITHUB_REPOSITORY}" \
-            "${files[@]}"
+        run: .ci/scripts/release/create-github-release.sh
 
   # No cleanup-on-failure job. Failure model:
   #   - R2 sentinel is the atomic commit point, written by ci.yml's

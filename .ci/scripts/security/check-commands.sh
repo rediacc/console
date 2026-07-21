@@ -101,7 +101,13 @@ main() {
         fi
     done < <(
         find .ci -name "*.sh" -type f 2>/dev/null
+        # scripts/ was outside the corpus for this gate's whole life, so a
+        # bash-4-only `mapfile` sat in scripts/dev/reset-bench.sh unreported
+        # while the identical call in .ci/ was a hard failure. Same shell, same
+        # runners, same portability constraint -- scan both.
+        find scripts -name "*.sh" -type f 2>/dev/null
         echo "./run.sh"
+        echo "./rdc.sh"
     )
 
     if [[ $total_errors -gt 0 ]]; then

@@ -19,9 +19,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 REPO_ROOT="$(get_repo_root)"
-# The schema and its migrations live in packages/shared so the CLI, the executor,
-# and the web console all consume one definition. The fixtures stay with the CLI,
-# which is the only consumer that loads a config file from disk.
+# The schema and its migrations live in packages/shared so the CLI and the
+# executor consume one definition. The fixtures stay with the CLI, which is the
+# only consumer that loads a config file from disk.
 MIGRATIONS_DIR="$REPO_ROOT/packages/shared/src/config-schema/migrations"
 FIXTURES_DIR="$REPO_ROOT/packages/cli/src/__tests__/fixtures/config"
 RUNNER="$MIGRATIONS_DIR/index.ts"

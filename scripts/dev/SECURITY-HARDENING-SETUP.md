@@ -38,7 +38,7 @@ A new App handles deploys.
 → "Generate a private key". Download the PEM file.
 
 **1c. Install the App on the org**, scoped to repos: `console`, `renet`,
-`middleware`, `elite`, `account`.
+`elite`, `account`.
 
 **1d. Store credentials**:
 ```bash

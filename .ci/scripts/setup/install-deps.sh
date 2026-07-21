@@ -2,8 +2,10 @@
 # Install npm dependencies with platform-specific handling
 # Usage: install-deps.sh [--ignore-scripts]
 #
-# On Windows, --ignore-scripts is added automatically to avoid
-# native module rebuild issues with electron-builder.
+# On Windows, --ignore-scripts is added automatically to avoid native module
+# rebuild issues (ssh2 / cpu-features / esbuild). Note the repo .npmrc now sets
+# ignore-scripts=true globally, so this flag is belt-and-braces rather than the
+# only thing blocking lifecycle scripts.
 #
 # IMPORTANT: The lockfile (package-lock.json) must contain resolved entries
 # for ALL platform-specific optional deps (rollup, lightningcss, esbuild).
@@ -37,13 +39,13 @@ fi
 # Build npm ci command
 NPM_ARGS="ci"
 
-# Windows requires --ignore-scripts to avoid electron-builder install-app-deps timeout
+# Windows requires --ignore-scripts to avoid native-module rebuild timeouts
 if [[ "$CI_OS" == "windows" ]] || [[ "$IGNORE_SCRIPTS" == "true" ]]; then
     NPM_ARGS="$NPM_ARGS --ignore-scripts"
     log_info "Using --ignore-scripts flag"
 fi
 
-# Run npm ci with retry for network failures (Electron downloads can 504)
+# Run npm ci with retry for transient registry/network failures
 run_npm_ci() {
     npm $NPM_ARGS
 }

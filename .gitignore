@@ -115,8 +115,6 @@ playwright_env/
 packages/cli/reports/
 reports/
 
-# CI backend data (SQL Server volumes)
-.ci/docker/ci/mssql/
 .ci/cache/
 
 # Git worktrees

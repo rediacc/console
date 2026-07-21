@@ -34,7 +34,6 @@
   "customizations": {
     "codespaces": {
       "repositories": {
-        "rediacc/middleware": { "permissions": { "contents": "write" } },
         "rediacc/renet": { "permissions": { "contents": "write" } },
         "rediacc/homebrew-tap": { "permissions": { "contents": "write" } },
         "rediacc/account": { "permissions": { "contents": "write" } }

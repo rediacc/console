@@ -5,7 +5,7 @@
 # the previous guard looked at cli/v${V}/manifest.json -- a file nothing
 # ever wrote, so the sentinel was always empty and the guard silently let
 # retries overwrite the binaries. The new prefix-based guard requires that
-# ALL binaries for the version live under cli/v${V}/ and desktop/v${V}/;
+# ALL binaries for the version live under cli/v${V}/;
 # this script verifies the invariant after upload succeeds.
 #
 # Only meaningful on stable / edge channels (only those channels write to

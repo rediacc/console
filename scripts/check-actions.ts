@@ -23,10 +23,11 @@ import https from 'node:https';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
+import { collectActionRefs } from './lib/action-refs.js';
+import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
-const WORKFLOWS_DIR = path.join(CONSOLE_ROOT, '.github', 'workflows');
 const BLOCKLIST_FILE = path.join(CONSOLE_ROOT, '.actions-upgrade-blocklist');
 
 // Parse command line arguments
@@ -135,27 +136,24 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
     return blocklist;
   }
 
-  const content = fs.readFileSync(BLOCKLIST_FILE, 'utf-8');
-  const lines = content.split('\n');
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Skip empty lines and comments
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-
-    // Parse: owner/repo # reason
-    const commentIndex = trimmed.indexOf('#');
-    const actionName = commentIndex >= 0 ? trimmed.slice(0, commentIndex).trim() : trimmed;
-    const reason = commentIndex >= 0 ? trimmed.slice(commentIndex + 1).trim() : '';
-
-    if (!actionName) {
-      continue;
-    }
-
-    blocklist.set(actionName, { reason });
+  // Use the shared BLOCKER parser/validator rather than a bespoke one, so this
+  // suppression mechanism is held to the same standard as every other list in
+  // the repo (see docs/agent/suppressions.md, "Suppression mechanisms and the BLOCKER
+  // convention"). Previously this file accepted any trailing comment — or none
+  // at all — as a "reason", which is how it stayed outside the convention.
+  // Mirrors loadBlocklist() in check-deps.ts.
+  const entries = parseBlockeredList(BLOCKLIST_FILE);
+  const failures = verifyAllBlockers(entries, BLOCKLIST_FILE);
+  if (failures.length > 0) {
+    console.error(`${RED}✗${NC} BLOCKER validation failed for ${BLOCKLIST_FILE}:`);
+    for (const f of failures) console.error(f);
+    console.error(
+      `\n${RED}✗${NC} Blocked actions must carry a substantive '# BLOCKER: <reason>' explaining why the upgrade cannot be taken`
+    );
+    process.exit(1);
+  }
+  for (const { entry, blocker } of entries) {
+    blocklist.set(entry, { reason: blocker });
   }
 
   return blocklist;
@@ -167,75 +165,41 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
 function parseWorkflowFiles(): Map<string, ActionInfo> {
   const actions = new Map<string, ActionInfo>();
 
-  if (!fs.existsSync(WORKFLOWS_DIR)) {
-    console.error(`Workflows directory not found: ${WORKFLOWS_DIR}`);
-    return actions;
-  }
+  // Scanning is delegated to collectActionRefs(), which covers BOTH
+  // .github/workflows and composite actions under .github/actions. Keeping one
+  // scanner matters: this gate and scripts/check-suppression-liveness.ts must
+  // agree on what "referenced" means, or one will condemn what the other sees.
+  //
+  // The composite half was a real blind spot — actions/create-github-app-token
+  // is pinned only in .github/actions/app-token/action.yml, so the action that
+  // mints every CI token in this repo went unchecked for freshness.
+  for (const [actionName, refs] of collectActionRefs(CONSOLE_ROOT)) {
+    let version: string | null = null;
+    let sha: string | null = null;
+    const { ref, comment } = refs[0];
 
-  const files = fs
-    .readdirSync(WORKFLOWS_DIR)
-    .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
-
-  for (const file of files) {
-    const filePath = path.join(WORKFLOWS_DIR, file);
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const lineNum = i + 1;
-
-      // Match: uses: owner/repo@ref  # optional comment
-      const match = line.match(/uses:\s*([\w.-]+\/[\w.-]+)@(\S+)(?:\s+#\s*(.+))?/);
-      if (!match) continue;
-
-      const [, actionName, ref, comment] = match;
-
-      // Skip local actions (./path) and actions from this repo
-      if (actionName.startsWith('.') || actionName.startsWith('rediacc/')) {
-        continue;
-      }
-
-      // Determine version from comment or ref
-      // Common formats:
-      //   owner/repo@sha  # v5
-      //   owner/repo@v5
-      //   owner/repo@v5.1.0
-      let version: string | null = null;
-      let sha: string | null = null;
-
-      // Check if ref looks like a SHA (40 hex chars)
-      if (/^[a-f0-9]{40}$/i.test(ref)) {
-        sha = ref;
-        // Try to get version from comment
-        if (comment) {
-          const versionMatch = comment.match(/v?\d+(?:\.\d+)*(?:\.\d+)?/);
-          if (versionMatch) {
-            version = versionMatch[0];
-            if (!version.startsWith('v')) version = `v${version}`;
-          }
+    // owner/repo@<40-hex sha>  # vX.Y.Z   (the pinned form used throughout)
+    if (/^[a-f0-9]{40}$/i.test(ref)) {
+      sha = ref;
+      if (comment) {
+        const versionMatch = comment.match(/v?\d+(?:\.\d+)*(?:\.\d+)?/);
+        if (versionMatch) {
+          version = versionMatch[0];
+          if (!version.startsWith('v')) version = `v${version}`;
         }
-      } else if (ref.startsWith('v') || /^\d+/.test(ref)) {
-        // ref is a version tag
-        version = ref.startsWith('v') ? ref : `v${ref}`;
-      } else {
-        // ref might be a branch name (e.g., "main")
-        version = ref;
       }
-
-      const location: ActionLocation = { file, line: lineNum };
-
-      if (actions.has(actionName)) {
-        const existing = actions.get(actionName)!;
-        existing.locations.push(location);
-      } else {
-        actions.set(actionName, {
-          version,
-          sha,
-          locations: [location],
-        });
-      }
+    } else if (ref.startsWith('v') || /^\d+/.test(ref)) {
+      version = ref.startsWith('v') ? ref : `v${ref}`;
+    } else {
+      // A branch name such as "main".
+      version = ref;
     }
+
+    actions.set(actionName, {
+      version,
+      sha,
+      locations: refs.map((r) => ({ file: r.file, line: r.line })),
+    });
   }
 
   return actions;
@@ -458,18 +422,44 @@ async function checkActions(): Promise<void> {
 
   if (mustUpgrade.length > 0) {
     hasFailure = true;
-    console.log(`${RED}Outdated actions (must upgrade):${NC}\n`);
+    // Output is deliberately SHARP, not comprehensive. Listing every call site
+    // produced hundreds of file:line entries per action (actions/checkout alone
+    // is pinned at 137 sites), which buried the one thing a reader — human or
+    // agent — actually needs: the exact command that fixes it.
+    console.log(`${RED}Outdated actions (${mustUpgrade.length}):${NC}\n`);
     for (const action of mustUpgrade) {
-      console.log(`  ${action.name}: ${action.version} -> ${action.latest}`);
-      if (action.sha) {
-        console.log(`    Current SHA: ${action.sha}`);
-      }
-      console.log(`    Release: ${action.releaseUrl}`);
-      console.log(`    Files: ${action.locations.map((l) => `${l.file}:${l.line}`).join(', ')}`);
+      const n = action.locations.length;
+      console.log(
+        `  ${action.name}  ${action.version} -> ${action.latest}  (${n} pin${n === 1 ? '' : 's'})`
+      );
+      if (action.sha) console.log(`    ${DIM}current sha: ${action.sha}${NC}`);
+      console.log(`    ${DIM}${action.releaseUrl}${NC}`);
     }
-    console.log();
-    console.log(`To upgrade, update the action reference in the workflow file(s).`);
-    console.log(`For pinned SHAs, visit the release page to get the new SHA.`);
+
+    console.log(`\n${YELLOW}To upgrade — resolves the new SHA and rewrites every pin:${NC}\n`);
+    for (const action of mustUpgrade) {
+      if (!action.sha) continue;
+      // repos/<repo>/commits/<tag> resolves to the commit SHA for BOTH
+      // lightweight and annotated tags, unlike git/ref/tags which returns the
+      // tag object for annotated tags and needs a second dereference.
+      console.log(`  NEW=$(gh api repos/${action.name}/commits/${action.latest} --jq .sha) && \\`);
+      // Search .github, not .github/workflows: composite actions under
+      // .github/actions/*/action.yml pin third-party actions too.
+      console.log(`    find .github -name '*.yml' -o -name '*.yaml' | xargs sed -i \\`);
+      console.log(
+        `      "s|${action.name}@${action.sha}\\( *\\)# ${action.version}|${action.name}@\${NEW}\\1# ${action.latest}|g"`
+      );
+    }
+    console.log(`\n  Then re-run: ${YELLOW}npm run check:actions${NC}`);
+    console.log(
+      `  Verify nothing was missed: ${DIM}grep -rn "<old-sha>" .github/${NC} should return nothing,`
+    );
+    console.log(
+      `  and every workflow must still parse. A major bump (vN -> vN+1) needs a real CI run.\n`
+    );
+    console.log(`  ${DIM}If an upgrade genuinely cannot be taken, record it in`);
+    console.log(`  .actions-upgrade-blocklist (one per line, BLOCKER reason required):${NC}`);
+    console.log(`    ${mustUpgrade[0].name}  # BLOCKER: <why this upgrade is not takeable>`);
     console.log();
   }
 

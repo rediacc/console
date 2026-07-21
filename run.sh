@@ -56,23 +56,6 @@ check_docker() {
     fi
 }
 
-# Load environment file
-load_env() {
-    local env_file="$1"
-
-    if [[ ! -f "$env_file" ]]; then
-        log_warn "Environment file not found: $env_file"
-        return 1
-    fi
-
-    # Export variables from .env file
-    set -a
-    source "$env_file"
-    set +a
-
-    log_debug "Loaded environment from: $env_file"
-}
-
 # Ensure private/generative submodule is initialized
 ensure_generative_submodule() {
     if [[ ! -d "$ROOT_DIR/private/generative" ]]; then
@@ -1236,7 +1219,19 @@ quality_deps() {
 quality_actions() {
     check_node_version
     log_step "Checking GitHub Actions versions..."
-    node "$ROOT_DIR/scripts/check-actions.js"
+    npx tsx "$ROOT_DIR/scripts/check-actions.ts"
+}
+
+quality_dead_bash() {
+    check_node_version
+    log_step "Checking for dead shell functions and orphaned scripts..."
+    npx tsx "$ROOT_DIR/scripts/check-dead-bash.ts"
+}
+
+quality_suppressions() {
+    check_node_version
+    log_step "Checking suppression liveness (are allowlist entries still needed?)..."
+    npx tsx "$ROOT_DIR/scripts/check-suppression-liveness.ts"
 }
 
 quality_audit() {
@@ -1695,6 +1690,8 @@ main() {
                 submodules) quality_submodules ;;
                 deps) quality_deps ;;
                 actions) quality_actions ;;
+                suppressions) quality_suppressions ;;
+                dead-bash) quality_dead_bash ;;
                 audit) quality_audit ;;
                 shell) quality_shell ;;
                 all | "") quality_all ;;

@@ -15,4 +15,7 @@
 # # BLOCKER: legacy doc quotes the GDPR text directly; revisit when we vendor a GDPR snapshot
 # packages/www/src/content/docs/en/legal-gdpr-direct-quotes.md
 
-# BLOCKER: structural stubs for the 6 EU languages where Directive (EU) 2022/2555 has an official translation we vendor a snapshot for (de/es/fr/et/it/pt). Body content is currently the English original (passes validate-translation-freshness via matching sourceHash) and contains directive quotes in English; the gate expects per-language native directive text, so a verbatim check would fail. Once a real translation is authored for any of these files (substituting directive quotes with the language's own official text from scripts/data/nis2-directive-2022-2555-<lang>.txt), the corresponding allowlist line MUST be removed. Track follow-up at: tier-1 EU-language NIS2 translation pass (post-infrastructure milestone).
+# Currently EMPTY, and that is the correct state: the gate passes with no
+# suppressions. A previous BLOCKER here covered per-language stub entries that
+# have since been removed; it was left behind because verifyAllBlockers() walks
+# entries and cannot see a reason that covers nothing.

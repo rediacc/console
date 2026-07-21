@@ -43,10 +43,7 @@ else
 fi
 
 # Phase 2: Run Go tests to validate schema consistency
-if [[ ! -d "$RENET_DIR" ]]; then
-    log_warn "Renet submodule not available, skipping Go validation"
-    exit 0
-fi
+require_submodule "$RENET_DIR" "Renet submodule (Go schema validation)" || exit 0
 
 log_step "Running Go schema validation tests..."
 cd "$RENET_DIR"

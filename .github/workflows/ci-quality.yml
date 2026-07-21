@@ -3,6 +3,26 @@ name: Console CI - Quality
 on:
   workflow_call:
     inputs:
+      # DO NOT DELETE as "always false". A dead-code sweep will correctly
+      # observe that ci.yml is the only caller and already gates this workflow
+      # on `is_bot != 'true'` (ci.yml quality job), making every downstream
+      # `if: inputs.is_bot != 'true'` constant-true. Deleting them anyway
+      # removes the second half of a release-LOOP breaker.
+      #
+      # CD pushes bot commits straight to main: cd-v2.yml's contract-floor
+      # ratchet and .ci/scripts/release/update-homebrew-tap.sh both
+      # `git push origin HEAD:main` with user.name = vars.GIT_BOT_NAME, which
+      # is literally "github-actions[bot]" — the exact string
+      # .ci/scripts/ci/initialize.sh matches to set is_bot.
+      #
+      # Two independent defenses stop those commits re-triggering a release:
+      #   1. ci.yml's initialize job `if:` — github.actor + "[skip ci]"
+      #   2. is_bot — derived from head_commit.author.name
+      # They are not equivalent. Those pushes use the CI App token, so
+      # github.actor is the App, not github-actions[bot]; "[skip ci]" in the
+      # message is what actually fires. If a bot commit ever ships without
+      # "[skip ci]", is_bot is the only remaining backstop against
+      # bot commit -> CI -> release -> bot commit.
       is_bot:
         type: string
         required: false
@@ -13,10 +33,6 @@ on:
     secrets:
       APP_PRIVATE_KEY:
         required: false
-      DOCKERHUB_USERNAME:
-        required: false
-      DOCKERHUB_TOKEN:
-        required: false
       R2_MEDIA_ACCESS_KEY_ID:
         required: false
       R2_MEDIA_SECRET_ACCESS_KEY:
@@ -26,7 +42,6 @@ on:
 
 permissions:
   contents: read
-  statuses: write   # Commit status updates
 
 jobs:
   quality-branch:
@@ -34,15 +49,15 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
+          preset: push      # check-branch.sh auto-rebases and pushes the PR branch
           repositories: console
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.head_ref }}
@@ -64,10 +79,10 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -75,6 +90,9 @@ jobs:
       - name: Verify no peer dependency conflicts
         run: .ci/scripts/quality/check-peer-deps.sh
       - run: npm run version:check
+      # In `npm run ci` since forever, run by no workflow until now: an npm-10
+      # vs npm-11 lockfile drift only ever surfaced as a red `npm ci` in a later job.
+      - run: npm run check:ci-lockfile
 
   quality-deps:
     name: Deps
@@ -82,38 +100,38 @@ jobs:
     timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality')
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/quality/check-deps.sh
+      - run: npm run check:deps
 
   quality-lint:
     name: Lint
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
@@ -121,7 +139,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -137,18 +155,28 @@ jobs:
       - run: npm run lint:unused
       - name: Check account route layer isolation
         run: npm run check:ci-account-layer-isolation
+      # knip's own ignore entries are BLOCKER-gated; the validator for those
+      # reasons was in the chain but never ran in CI.
+      - run: npm run check:ci-knip-blockers
+      # Bash had no dead-code detector at all; this is the analogue of the knip
+      # run above. It lives HERE and not in quality-shell for two reasons, both
+      # of which quality-shell fails: it is a `tsx` gate and needs node_modules
+      # (CI died with `tsx: not found`, exit 127), and its corpus includes
+      # private/**, so without submodules it silently scans a smaller tree and
+      # under-asserts rather than failing.
+      - run: npm run check:ci-dead-bash
 
   quality-format:
     name: Format
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         shell: bash
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -168,14 +196,14 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,account
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           # validate:translation-freshness computes `git diff origin/main...HEAD`
@@ -186,7 +214,7 @@ jobs:
           fetch-depth: 0
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -211,6 +239,11 @@ jobs:
         run: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only
       - run: npm run check:i18n
       - run: npm run check:ci-search-index
+      # Three i18n gates that were in `npm run ci` only. This job already has
+      # build:packages + the account submodule, which is all they need.
+      - run: npm run check:ci-i18n-placeholders
+      - run: npm run check:ci-i18n-untranslated
+      - run: npm run check:ci-i18n-command-parity
 
   quality-types:
     name: TypeScript
@@ -218,18 +251,18 @@ jobs:
     timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -241,8 +274,29 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Submodules are load-bearing here, not incidental. Without them this job
+      # ran FIVE degraded checks and reported success for all of them:
+      #   - test-embed-asset-freshness.sh, test-embed-credits.sh and
+      #     test-renet-deadcode.sh each printed "renet submodule not present --
+      #     skipping" and exited 0, so they had never asserted anything in CI;
+      #   - check:ci-suppression-liveness skipped its .go-deps-upgrade-blocklist
+      #     and .embed-assets-upgrade-blocklist probes (oracles are renet's
+      #     go.mod and Dockerfile), leaving 4 entries "NOT proven clean".
+      # The three tests only became visible once run-all.sh started failing a
+      # test that exits 0 without a single assertion.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -257,6 +311,12 @@ jobs:
         run: npm run check:ci-overrides-reasons
       - name: BLOCKER validator — syncpack versionGroups
         run: npm run check:ci-syncpack-reasons
+      # The BLOCKER validators above prove every suppression HAS a reason. This
+      # one proves the reason is still TRUE — i.e. the thing being suppressed
+      # still exists. Electron left the tree and 101 entries justified by
+      # electron chains stayed behind; nothing noticed.
+      - name: Suppression liveness — are our allowlist entries still needed?
+        run: npm run check:ci-suppression-liveness
       - name: Quality-gate unit tests
         run: npm run check:ci-quality-gates
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -271,8 +331,8 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -289,19 +349,19 @@ jobs:
     # intentionally bypass external checks (e.g., offline branch work).
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -313,7 +373,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install shfmt
         # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
         # only surfaced later as a bare "shfmt is not installed" the watchdog
@@ -326,27 +386,55 @@ jobs:
       - run: .ci/scripts/security/shellcheck.sh
       - run: .ci/scripts/security/shfmt.sh
       - run: .ci/scripts/security/check-commands.sh
+      # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
+      # pipefail` script on empty input. Written after three such outages in
+      # one day, but never wired into a job until now.
+      - run: npm run check:ci-silent-failures
       # Unit tests for shell helpers. Deterministic, no network.
       - run: .ci/scripts/test/test-write-once-guard.sh
       - run: .ci/scripts/test/test-install-script.sh
+      # Pure bash, so it is called by path: this job has no node step and
+      # `npm run` would need one. check-ci-chain-parity.ts resolves the path
+      # against the chain, so both directions still agree.
+      - run: .ci/scripts/test/test-install-sh-config.sh
 
   quality-workflows:
     name: Workflows
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: .ci/scripts/quality/check-workflows.sh
       # Prevent GHA transitive-skip propagation (finding J) from
       # silently disabling downstream jobs on future changes.
-      - run: .ci/scripts/security/check-workflow-gates.sh
+      - run: npm run check:ci-workflow-gates
+      # Keep the CI App off `administration`, which gates environment CRUD.
+      # This gate existed but was never wired into any job, so the constraint
+      # it documents went unenforced for its whole lifetime.
+      - run: npm run check:ci-app-admin-perm
+      # Pinned-action freshness + BLOCKER validation of .actions-upgrade-blocklist.
+      # Third never-wired gate; reachable before only via `npm run check:actions`
+      # and `./run.sh quality actions`.
+      #
+      # GITHUB_TOKEN is REQUIRED, not a nicety: unauthenticated calls hit the 60
+      # req/h GitHub API limit, and the script then reports those actions as
+      # "unknown" and still exits 0 — a silent fail-open that would make this
+      # gate meaningless exactly when it is rate limited.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run check:actions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
   quality-compose-env:
     name: Compose Env
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: .ci/scripts/quality/check-compose-env.sh
 
   quality-e2e-coverage:
@@ -354,10 +442,10 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: false
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -378,7 +466,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check audit logging coverage for CLI operations
         run: .ci/scripts/quality/check-audit-coverage.sh
 
@@ -387,10 +475,10 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: false
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -410,7 +498,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: .ci/scripts/quality/check-editorconfig.sh
 
   quality-content:
@@ -418,8 +506,8 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -428,25 +516,75 @@ jobs:
         run: .ci/scripts/quality/check-content-quality.sh
       - name: Verify NIS2 directive quotations match the official source
         run: npm run check:ci-nis2-quotes
+      # Source-only content gate that was in `npm run ci` and nowhere else.
+      # check:ci-seo/-redirects/-cta-bolt all need a built www, so they live in
+      # quality-www-build instead.
+      - run: npm run check:ci-pricing-consistency
+
+  # check:ci-redirects HARD-requires packages/www/dist/route-manifest.json and
+  # check:ci-seo's built-HTML link scan self-skips without packages/www/dist. No
+  # CI job built www, so both gates lived in `npm run ci` and ran nowhere -- the
+  # redirect table that fronts every marketing URL was validated only on a
+  # laptop. One astro build buys both gates at full strength.
+  quality-www-build:
+    name: Built-www Gates
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Submodules are for the workers/www tests below, not for the www build:
+      # workers/www/src/index.ts imports private/account/src/{app,db/schema,types/env}.js
+      # directly, so vitest cannot resolve them without the account submodule.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - run: npm run build:packages
+      - name: Build www (produces dist/route-manifest.json)
+        run: npm run build:www
+      - run: npm run check:ci-redirects
+      - run: npm run check:ci-seo
+      # Scans the BUILT HTML for duplicate CTA anchors, so it needs dist too --
+      # its source-literal grep only mentions src/i18n/translations/en.json,
+      # which is how it was first mis-placed in quality-content.
+      - run: npm run check:ci-cta-bolt
+      # These need BOTH of this job's expensive inputs, which is why they live
+      # here and not with the other unit tests: the account submodule (imports
+      # above) and packages/www/dist/route-manifest.json, which
+      # redirect-aliases.test.ts imports directly.
+      - name: Worker unit tests (workers/www)
+        run: npm ci --prefix workers/www && npm run check:test-workers
 
   quality-tutorial-parity:
     name: Tutorial Parity
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,elite,sql,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -481,8 +619,8 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -495,8 +633,8 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -511,8 +649,8 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -526,19 +664,19 @@ jobs:
     timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,elite,sql,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -548,25 +686,31 @@ jobs:
       # checking a CLI that no longer exists.
       - run: npm run check:ci-command-tree
       - run: npm run check:cli-examples
+      # Three CLI-shape gates that only ever ran locally. check:ci-design-tree
+      # was RED at HEAD when first run here: `backup strategy bind|unbind`
+      # shipped in #524 and the as-built transcript was never updated.
+      - run: npm run check:ci-command-planes
+      - run: npm run check:ci-design-tree
+      - run: npm run check:ci-schema-coverage
 
   quality-ebpf:
     name: eBPF Objects
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
@@ -597,20 +741,20 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
@@ -621,12 +765,12 @@ jobs:
 
       - name: Check Go dependency freshness
         if: "!(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))"
-        run: .ci/scripts/quality/check-go-deps.sh
+        run: npm run check:ci-go-deps
 
       - name: Check renet types freshness
-        run: .ci/scripts/quality/check-renet-types.sh
+        run: npm run check:ci-renet-types
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -655,21 +799,21 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
@@ -700,24 +844,26 @@ jobs:
       - name: Run Go cross-language signature tests
         working-directory: private/renet
         run: go test -v ./pkg/subscription/... -run TestCrossLanguage
+      - name: Assert no NODE_ENV branching in account routes
+        run: npm run check:ci-account-no-node-env-routes
 
   quality-account-portal:
     name: Account Portal
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -728,14 +874,16 @@ jobs:
         working-directory: private/account
       - name: Check account portal (typecheck + build)
         run: .ci/scripts/quality/check-account-portal.sh
+      - name: Console contract coverage
+        run: npm run check:ci-console-coverage
 
   quality-shared-tests:
     name: Shared Package Tests
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -750,8 +898,8 @@ jobs:
     runs-on: ubuntu-latest
     if: inputs.is_bot != 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -765,6 +913,10 @@ jobs:
         run: npm run build:packages
       - name: Run CLI unit tests
         run: npm run test:unit --workspace=@rediacc/cli
+      # The generated CLI contract drives the web console, `rdc --proxy` and
+      # the executor. It was RED at HEAD when first run here: a stale value
+      # leaked into the `backup list --storage` example and merged green.
+      - run: npm run check:ci-cli-contract
 
 
   # ==============================================================================
@@ -795,15 +947,15 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci  # Needs pull-requests:read for gh pr list
-          repositories: console,renet,account,sql,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+          preset: pr-read   # gh pr list in check-submodule-branches.sh
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: true
@@ -824,7 +976,7 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check for Claude attribution
         run: .ci/scripts/quality/check-claude-attribution.sh
         env:
@@ -836,13 +988,13 @@ jobs:
     runs-on: ubuntu-slim
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
+          preset: pr-read   # gh api reads in check-pr-description.sh
           repositories: console
       - name: Check PR description freshness
         run: .ci/scripts/quality/check-pr-description.sh

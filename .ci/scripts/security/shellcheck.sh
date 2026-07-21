@@ -66,7 +66,8 @@ main() {
     # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
     # ShellCheck doesn't warn about these since they're valid bash, but macOS
     # uses an old bash version due to GPL licensing.
-    # Only check .ci/scripts/build/ since those run on macOS for desktop builds.
+    # Only check .ci/scripts/build/ since those run on macOS for the CLI SEA
+    # builds (ci-build-cli.yml uses macos-latest and macos-15-intel).
     log_info "Checking build scripts for bash 4+ features (macOS compatibility)"
     BASH4_ISSUES=""
 

@@ -19,10 +19,7 @@ OUTPUT_DIR="$REPO_ROOT/packages/shared/src/renet-contract/data"
 
 cd "$REPO_ROOT"
 
-if [[ ! -d "$RENET_DIR" ]]; then
-    log_warn "Renet submodule not available, skipping"
-    exit 0
-fi
+require_submodule "$RENET_DIR" "Renet submodule" || exit 0
 
 # Build renet
 log_step "Building renet..."
