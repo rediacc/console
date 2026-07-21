@@ -110,12 +110,71 @@ rm -f "$EMBED_DIR"/*/*/*.zst
 # carry its own REQUIRED_TOOLS/OPTIONAL_TOOLS split that disagreed with
 # build.sh's, which is how the CSI sidecars ended up optional in one place and
 # mandatory in the other.
+# Assert an extracted binary carries the version the lockfile declares.
+#
+# Only components whose version string is greppable out of the binary are
+# checkable this way; for the rest we return success rather than pretend. That is
+# deliberate and stated, because a check that silently covers nothing is worse
+# than one whose coverage is written down: criu is the component that actually
+# drifted, and it IS checkable.
+_verify_extracted_version() {
+    local file="$1" base="$2" arch="$3" want found
+    want=$(jq -r --arg b "$base" '.components[$b].version // ""' "$EMBED_LOCKFILE")
+    [ -n "$want" ] || return 0
+
+    case "$base" in
+        criu)
+            # Two shapes, because the two arches are built differently and a
+            # pattern that only matched one would leave the OTHER unverified —
+            # which is precisely the arch that drifted. amd64 carries the build
+            # path /build/criu-<version>; the arm64 cross-build carries a bare
+            # <version> string. Collect both and require the declared version to
+            # be among them.
+            found=$(
+                {
+                    strings -a "$file" 2>/dev/null | grep -oE '/build/criu-[0-9][0-9.]*' | sed 's|.*/build/criu-||'
+                    strings -a "$file" 2>/dev/null | grep -xE '[0-9]+\.[0-9]+(\.[0-9]+)?'
+                } | sort -u
+            )
+            ;;
+        *)
+            # Not reliably greppable; the digest-pinned fetch in the Dockerfile is
+            # the guarantee for these.
+            return 0
+            ;;
+    esac
+
+    [ -n "$found" ] || {
+        log_warn "$base-linux-$arch: no version string found; cannot verify against lockfile ($want)"
+        return 0
+    }
+    if printf '%s\n' "$found" | grep -qxF "$want"; then
+        return 0
+    fi
+    log_error "$base-linux-$arch declares version(s) [$(printf '%s' "$found" | tr '\n' ' ')] but the lockfile requires $want"
+    return 1
+}
+
 missing=""
+mismatched=""
 while IFS=$'\t' read -r base image_dir arch class; do
     [[ -n "$base" ]] || continue
     asset="$base-linux-$arch"
     mkdir -p "$EMBED_DIR/$arch/$class"
     if docker cp "$CONTAINER_ID:$image_dir/$asset" "$EMBED_DIR/$arch/$class/$asset" 2>/dev/null; then
+        # Confirm the CACHED image actually contains the version the lockfile
+        # declares, before it gets compressed and embedded.
+        #
+        # This path extracts from a pre-built bridge image rather than rebuilding
+        # from the Dockerfile, so a stale image happily supplies stale payloads. A
+        # missing asset already hard-fails above; a WRONG-VERSION one used to sail
+        # through silently, which is the exact defect the lockfile exists to
+        # remove: arm64 criu shipped 3.17.1 for months while every inventory
+        # declared 4.2.x. The digest guard in private/renet/build.sh does not
+        # cover this path, so it is enforced here.
+        if ! _verify_extracted_version "$EMBED_DIR/$arch/$class/$asset" "$base" "$arch"; then
+            mismatched="$mismatched $asset"
+        fi
         zstd -19 -T0 -q --rm -f "$EMBED_DIR/$arch/$class/$asset"
     else
         missing="$missing $asset"
@@ -133,6 +192,12 @@ done < <(jq -r '
 if [[ -n "$missing" ]]; then
     log_error "Cached renet image is missing assets the lockfile declares:$missing"
     log_error "Rebuild it with: (cd private/renet && ./build.sh docker_image)"
+    exit 1
+fi
+
+if [[ -n "$mismatched" ]]; then
+    log_error "Cached renet image carries assets at versions the lockfile does not declare:$mismatched"
+    log_error "The image predates the current pins. Rebuild it with: (cd private/renet && ./build.sh docker_image --force)"
     exit 1
 fi
 
