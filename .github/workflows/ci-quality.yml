@@ -511,6 +511,20 @@ jobs:
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Submodules are for the workers/www tests below, not for the www build:
+      # workers/www/src/index.ts imports private/account/src/{app,db/schema,types/env}.js
+      # directly, so vitest cannot resolve them without the account submodule.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
@@ -521,6 +535,12 @@ jobs:
         run: npm run build:www
       - run: npm run check:ci-redirects
       - run: npm run check:ci-seo
+      # These need BOTH of this job's expensive inputs, which is why they live
+      # here and not with the other unit tests: the account submodule (imports
+      # above) and packages/www/dist/route-manifest.json, which
+      # redirect-aliases.test.ts imports directly.
+      - name: Worker unit tests (workers/www)
+        run: npm ci --prefix workers/www && npm run check:test-workers
 
   quality-tutorial-parity:
     name: Tutorial Parity
@@ -847,10 +867,6 @@ jobs:
         run: npm run build --workspace=@rediacc/shared
       - name: Run shared package tests
         run: npm run test --workspace=@rediacc/shared
-      - name: Worker unit tests (workers/www)
-        # Nothing in CI ran these at all; the worker serves every marketing
-        # request, and its redirect/rewrite tests only ever ran on a laptop.
-        run: npm ci --prefix workers/www && npm run check:test-workers
 
   quality-cli-unit-tests:
     name: CLI Unit Tests
