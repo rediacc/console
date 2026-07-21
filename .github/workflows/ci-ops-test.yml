@@ -149,8 +149,8 @@ jobs:
       - name: "Verify: SSH connectivity"
         run: .ci/scripts/infra/verify-ssh.sh "${{ steps.status.outputs.bridge_ip }}"
         env:
-          SSH_KEY: $RUNNER_TEMP/renet/staging/.ssh/id_rsa
-          CHOWN_PATH: $RUNNER_TEMP/renet
+          SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
+          CHOWN_PATH: ${{ runner.temp }}/renet
           ATTEMPTS: 15
       - name: "Test: rdc ops down"
         if: always()
@@ -281,10 +281,15 @@ jobs:
 
       - name: "Verify: SSH connectivity"
         shell: bash
-        run: .ci/scripts/infra/verify-ssh.sh ${{ steps.status.outputs.vm_addrs }}
+        # SSH_KEY is assigned on the run line, not in `env:`. GitHub does not
+        # expand shell-style $VAR in an env value and bash does not re-expand a
+        # variable's value, so `SSH_KEY: $HOME/...` would reach the script as
+        # the literal string. $RUNNER_TEMP has a real context (`runner.temp`);
+        # $HOME does not, so the shell has to do it.
+        run: SSH_KEY="$HOME/.ssh/id_ed25519" .ci/scripts/infra/verify-ssh.sh ${{ steps.status.outputs.vm_addrs }}
         env:
-          SSH_KEY: $HOME/.ssh/id_ed25519
           ATTEMPTS: 20
+
       - name: "Test: rdc ops down"
         if: always()
         shell: bash

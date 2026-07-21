@@ -285,6 +285,63 @@ AWK_EOF
 
 check_inline_run_blocks
 
+# -----------------------------------------------------------------------------
+# `env:` values may not contain a shell-style $RUNNER_TEMP / $HOME / ...
+#
+# GitHub does NOT expand shell syntax in an `env:` VALUE -- only `${{ }}`
+# expressions -- and bash does not recursively expand a variable's value. So
+#
+#     env:
+#       SSH_KEY: $RUNNER_TEMP/renet/staging/.ssh/id_rsa
+#
+# reaches the script as the 24-character literal `$RUNNER_TEMP/renet/...`, and
+# the failure is a confusing "No such file or directory" naming a path with a
+# dollar sign in it. Real case: OPS Provision, run 29830623794.
+#
+# This is specifically an inline-extraction hazard. Inside a `run:` block the
+# shell DOES expand $RUNNER_TEMP, so moving that same text into `env:` while
+# extracting a script silently changes its meaning. That is how it got here.
+#
+# Fix: use the GitHub context (`${{ runner.temp }}`, `${{ github.workspace }}`),
+# or assign on the run line where the shell can expand it
+# (`run: VAR="$HOME/x" ./script.sh`) for variables with no context equivalent.
+check_env_shell_vars() {
+    require_cmd awk
+    local f bn out
+    for f in "$WORKFLOW_DIR"/*.yml; do
+        [[ -e "$f" ]] || continue
+        bn="$(basename "$f")"
+        # Track whether we are inside an `env:` mapping, then flag values that
+        # NOTE the explicit boundary class rather than \b: in awk regex \b is a
+        # BACKSPACE, not a word boundary. The first version of this rule used it
+        # and matched nothing -- permanently vacuous, and green. Caught only by
+        # planting a violation. The class also stops $HOMEBREW_PREFIX reading as
+        # $HOME.
+        # reference a runner variable in shell syntax rather than as ${{ }}.
+        out="$(awk '
+            /^[[:space:]]*env:[[:space:]]*$/ { inenv=1; envind=match($0, /[^ ]/); next }
+            inenv {
+                ind = match($0, /[^ ]/)
+                if ($0 ~ /^[[:space:]]*$/) next
+                if (ind <= envind) { inenv=0 }
+                else if ($0 ~ /\$(RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD)([^A-Za-z0-9_]|$)/ &&
+                         $0 !~ /\$\{\{/) { print NR ":" $0 }
+            }
+        ' "$f")"
+        if [[ -n "$out" ]]; then
+            while IFS= read -r line; do
+                log_error "$WORKFLOW_DIR/$bn:${line%%:*}: env: value uses shell syntax GitHub will not expand"
+                echo "      ${line#*:}"
+            done <<<"$out"
+            echo "  Fix:  use a GitHub context (\${{ runner.temp }}, \${{ github.workspace }}), or assign it on the run line so the shell expands it: run: VAR=\"\$HOME/x\" ./script.sh"
+            echo ""
+            ERRORS=$((ERRORS + 1))
+        fi
+    done
+}
+
+check_env_shell_vars
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     log_error "Found $ERRORS problem(s) in workflows"
