@@ -45,7 +45,7 @@ const M = 65536;
 export const DELTA_FORMAT_VERSION = 1;
 
 /** Per block, in order: [weak rolling checksum, strong hash prefix (hex)]. */
-export type DeltaBlock = [number, string];
+type DeltaBlock = [number, string];
 
 export interface DeltaIndex {
   /**
@@ -71,7 +71,7 @@ function strongHash(buf: Uint8Array): string {
 }
 
 /** rsync's weak rolling checksum over a buffer slice. */
-export function weakChecksum(buf: Uint8Array, start: number, end: number): number {
+function weakChecksum(buf: Uint8Array, start: number, end: number): number {
   let a = 0;
   let b = 0;
   for (let i = start; i < end; i++) {

@@ -277,7 +277,7 @@ async function stageDownloadedBinary(
  * Download, verify checksum, and atomically replace the current binary.
  */
 /** URL of the block index published beside a release binary. */
-export function getDeltaIndexUrl(binaryUrl: string): string {
+function getDeltaIndexUrl(binaryUrl: string): string {
   return `${binaryUrl}.delta.json`;
 }
 
