@@ -47,6 +47,27 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 REGISTRY=(
     "check-translation-hashes.ts|locale"
     "check-translation-completeness.ts|locale"
+    # Against an empty tree every oracle is unavailable, so the run is vacuous
+    # and must FAIL rather than report "every entry is still load-bearing".
+    "check-suppression-liveness.ts|vacuous"
+    # A bash gate, reachable only since this harness learned to run .sh. It used
+    # to `exit 0` when private/renet was absent, silently taking govulncheck,
+    # deadcode and golangci-lint with it.
+    ".ci/scripts/private/run-renet.sh|required"
+    # The harness fixture copies scripts/ and .ci/scripts/ but nothing that
+    # REFERENCES them (no workflows, no docs, no allowlist), so the gate must
+    # report the resulting orphans loudly rather than pass. The "ZERO shell
+    # files" guard covers the stricter case of no shell tree at all.
+    "check-dead-bash.ts|dead shell symbol"
+    # Both of its checks walk .github/workflows. The empty tree has no workflow
+    # YAML, so every invariant it asserts is over an empty set. It used to
+    # `exit 0` on a missing directory, which meant renaming the workflow tree
+    # would silently retire the gate.
+    ".ci/scripts/security/check-workflow-gates.sh|blind"
+    # The empty tree has no .github/workflows, so there is no gate census to
+    # compare against the chain. It used to die with a raw ENOENT stack trace,
+    # which reads as a crash rather than a verdict.
+    "check-ci-chain-parity.ts|blind"
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into
@@ -64,13 +85,31 @@ run_against_empty_tree() {
     trap "rm -rf '$TEMP'" RETURN
 
     cp -r "$REPO_ROOT/scripts" "$TEMP/scripts"
+    # .ci/scripts too, so BASH gates can be registered. Without this the harness
+    # could only ever test scripts/*.ts, which excluded ~30 shell gates -- and
+    # the worst real instance of a vacuous gate lived in one of them
+    # (.ci/scripts/private/run-renet.sh used to exit 0, silently taking
+    # govulncheck, deadcode and golangci-lint with it).
+    mkdir -p "$TEMP/.ci"
+    cp -r "$REPO_ROOT/.ci/scripts" "$TEMP/.ci/scripts"
+    [[ -d "$REPO_ROOT/.ci/config" ]] && cp -r "$REPO_ROOT/.ci/config" "$TEMP/.ci/config"
     # node_modules resolution walks upward from the script, so link the real
     # one in; the point of the fixture is an empty SOURCE tree, not a broken
     # runtime.
     ln -s "$REPO_ROOT/node_modules" "$TEMP/node_modules"
 
     local out rc=0
-    out="$(cd "$TEMP" && npx tsx "scripts/$script" 2>&1)" || rc=$?
+    # Registry entries are relative to the repo root and may be .ts (run via
+    # tsx) or .sh (run directly).
+    # CI=true on purpose: a gate is being judged on what it does IN CI, and some
+    # deliberately soften to a warning locally (require_submodule in
+    # .ci/scripts/lib/common.sh does exactly that, so a fresh clone without
+    # --recursive stays workable while CI still fails loudly).
+    if [[ "$script" == *.sh ]]; then
+        out="$(cd "$TEMP" && CI=true bash "$script" 2>&1)" || rc=$?
+    else
+        out="$(cd "$TEMP" && CI=true npx tsx "scripts/$script" 2>&1)" || rc=$?
+    fi
     printf '%s\n' "$out"
     return "$rc"
 }
@@ -105,7 +144,11 @@ test_registry_entries_exist() {
     local entry script
     for entry in "${REGISTRY[@]}"; do
         script="${entry%%|*}"
-        if [[ ! -f "$REPO_ROOT/scripts/$script" ]]; then
+        # .sh entries are repo-root-relative; .ts entries are relative to scripts/.
+        if [[ "$script" == *.sh ]]; then
+            [[ -f "$REPO_ROOT/$script" ]] ||
+                log_fail "registry names $script, which does not exist -- the registry has gone stale"
+        elif [[ ! -f "$REPO_ROOT/scripts/$script" ]]; then
             log_fail "registry names scripts/$script, which does not exist -- the registry has gone stale"
         fi
     done

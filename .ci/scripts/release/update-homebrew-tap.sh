@@ -78,16 +78,6 @@ if [[ -n "${GITHUB_PAT:-}" ]]; then
     git config --global url."https://x-access-token:${GITHUB_PAT}@github.com/".insteadOf "https://github.com/"
 fi
 
-sed_in_place() {
-    local expr="$1"
-    local file="$2"
-    if [[ "$(detect_os)" == "macos" ]]; then
-        sed -i '' -E "$expr" "$file"
-    else
-        sed -i -E "$expr" "$file"
-    fi
-}
-
 sync_to_origin_main() {
     local dir="$1"
     git -C "$dir" fetch origin main >/dev/null 2>&1 || true
@@ -180,7 +170,7 @@ update_formula() {
     log_info "  linux-x64:   $linux_x64_sha"
 
     # Update version
-    sed_in_place "s/version \"[^\"]*\"/version \"$VERSION\"/" "$FORMULA_FILE"
+    sed_in_place -E "s/version \"[^\"]*\"/version \"$VERSION\"/" "$FORMULA_FILE"
 
     # Update SHA256 checksums
     # The formula has a specific structure where each platform block has its own sha256

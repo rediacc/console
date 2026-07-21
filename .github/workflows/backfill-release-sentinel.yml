@@ -65,7 +65,7 @@ jobs:
     steps:
       # Sparse-checkout the action source first; the local app-token action
       # cannot resolve until it exists on disk.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/actions
 
@@ -80,7 +80,7 @@ jobs:
 
       # Full checkout with tags so we can resolve commit_sha from the version
       # tag and verify ancestry against origin/main.
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
@@ -105,49 +105,13 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
           INPUT_SHA: ${{ inputs.commit_sha }}
-        run: |
-          set -euo pipefail
-          if [[ -n "$INPUT_SHA" ]]; then
-            SHA="$INPUT_SHA"
-            echo "→ using operator-supplied commit_sha: $SHA"
-          else
-            SHA="$(git rev-list -n1 "$VERSION" 2>/dev/null || true)"
-            if [[ -z "$SHA" ]]; then
-              echo "::error::tag $VERSION not found in this checkout; pass commit_sha explicitly"
-              exit 1
-            fi
-            echo "→ resolved $VERSION → $SHA"
-          fi
-          # Reachability check: tag must point at something on main.
-          if ! git merge-base --is-ancestor "$SHA" origin/main 2>/dev/null; then
-            echo "::error::commit $SHA is not reachable from origin/main"
-            echo "::error::refusing to backfill a sentinel for a detached tag"
-            exit 1
-          fi
-          echo "commit_sha=$SHA" >>"$GITHUB_OUTPUT"
-          echo "✓ commit reachable from origin/main"
+        run: .ci/scripts/release/resolve-backfill-commit.sh
 
       - name: Verify GitHub Release exists with CLI assets
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          if ! gh release view "$VERSION" --repo "${GITHUB_REPOSITORY}" --json tagName,assets >/tmp/release.json 2>/tmp/release.err; then
-            echo "::error::no GitHub Release found for $VERSION"
-            cat /tmp/release.err
-            exit 1
-          fi
-          # Count CLI assets (rdc-*). Filename pattern matches the existing
-          # release flow's artifact naming.
-          asset_count="$(jq '[.assets[] | select(.name | startswith("rdc-"))] | length' /tmp/release.json)"
-          if [[ "$asset_count" -lt 1 ]]; then
-            echo "::error::Release $VERSION has no rdc-* CLI assets"
-            echo "::error::refusing to seal a version that was never built/published"
-            jq '.assets | map(.name)' /tmp/release.json
-            exit 1
-          fi
-          echo "✓ Release $VERSION has $asset_count rdc-* CLI asset(s)"
+        run: .ci/scripts/release/verify-release-assets.sh
 
       - name: Confirm non-dry-run
         if: ${{ inputs.dry_run == false }}
@@ -172,25 +136,7 @@ jobs:
           CHANNEL: ${{ inputs.channel }}
           COMMIT_SHA: ${{ steps.resolve.outputs.commit_sha }}
           DRY_RUN: ${{ inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          # Strip leading v for the writer (it expects 1.1.2, not v1.1.2).
-          NUMERIC_VERSION="${VERSION#v}"
-          ARGS=(
-            --version "$NUMERIC_VERSION"
-            --channel "$CHANNEL"
-            --commit-sha "$COMMIT_SHA"
-          )
-          if [[ "$DRY_RUN" == "true" ]]; then
-            echo "→ DRY RUN — would invoke:"
-            printf '   .ci/scripts/deploy/write-release-sentinel.sh'
-            printf ' %q' "${ARGS[@]}"
-            printf '\n'
-            echo "→ no R2 mutation performed"
-            exit 0
-          fi
-          echo "→ writing sentinel(s) for $VERSION on channel $CHANNEL (commit $COMMIT_SHA)"
-          .ci/scripts/deploy/write-release-sentinel.sh "${ARGS[@]}"
+        run: .ci/scripts/release/backfill-write-sentinel.sh
 
       - name: Re-probe R2 sentinel state
         if: ${{ inputs.dry_run == false }}
@@ -199,19 +145,4 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-          source .ci/scripts/lib/release-state-validator.sh
-          export AWS_ACCESS_KEY_ID="$R2_ACCESS_KEY_ID"
-          export AWS_SECRET_ACCESS_KEY="$R2_SECRET_ACCESS_KEY"
-          export AWS_DEFAULT_REGION=auto
-          missing=0
-          for product in cli; do
-            if rsv_sentinel_exists "$product" "$VERSION"; then
-              echo "✓ $product/$VERSION/.released present in R2"
-            else
-              echo "::error::$product/$VERSION/.released NOT present after write"
-              missing=1
-            fi
-          done
-          [[ $missing -eq 0 ]]
+        run: .ci/scripts/release/reprobe-r2-sentinel.sh

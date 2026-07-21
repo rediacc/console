@@ -6,14 +6,22 @@ Thank you for your interest in contributing to the Rediacc Console! This documen
 
 ### Protected Branches
 
-The following branches are protected and require pull requests:
+The following branch is protected and requires pull requests:
 
 - **`main`** - Production-ready code, always deployable
-- **`develop`** - Integration branch (if used)
 
 ### Direct Push = Blocked ⛔
 
 You **cannot** push directly to protected branches. All changes must go through the pull request process.
+
+### Fork PRs are not supported
+
+CI must be run from a branch in this repository. A pull request opened from a
+fork cannot access repository secrets, so the very first job (`Initialize`)
+fails to mint its GitHub App token, every downstream job is skipped, and the
+required `CI Complete` check reports red. There is no fork-friendly subset of
+the pipeline and none is planned — the build needs private submodules
+(`renet`, `account`, `elite`) that a fork cannot read anyway.
 
 ## 📝 Contribution Process
 

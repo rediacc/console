@@ -41,8 +41,6 @@ on:
         description: 'Whether all validation passed'
         value: ${{ jobs.stage.outputs.passed }}
     secrets:
-      APP_PRIVATE_KEY:
-        required: true
       GPG_PRIVATE_KEY:
         required: false
       GPG_PASSPHRASE:
@@ -69,8 +67,8 @@ jobs:
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -116,24 +114,9 @@ jobs:
             | sudo tar xz -C /usr/local/bin nfpm
 
       - name: Build Linux packages
-        run: |
-          VERSION="${{ inputs.next_version }}"
-          mkdir -p dist/packages
-          for format in deb rpm apk archlinux; do
-            for pair in "dist/cli/rdc-linux-x64:amd64" "dist/cli/rdc-linux-arm64:arm64"; do
-              binary="${pair%%:*}"; arch="${pair##*:}"
-              # APK targets Alpine (musl) — use musl-linked binary if available
-              if [[ "$format" == "apk" ]]; then
-                musl_binary="${binary/rdc-linux-/rdc-linux-musl-}"
-                [[ -f "$musl_binary" ]] && binary="$musl_binary"
-              fi
-              .ci/scripts/build/build-linux-pkg.sh \
-                --binary "$binary" --version "$VERSION" \
-                --arch "$arch" --format "$format" \
-                --output dist/packages
-            done
-          done
+        run: .ci/scripts/build/build-linux-packages.sh
         env:
+          NEXT_VERSION: ${{ inputs.next_version }}
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
@@ -190,7 +173,7 @@ jobs:
       # Step 5: Stage Docker images (validates existence + retag to channel)
       # -----------------------------------------------------------------------
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -217,81 +200,12 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Validate artifacts
         id: validate
-        run: |
-          MODE="${{ github.event_name != 'push' && '(no-publish) ' || '' }}"
-          echo "## ${MODE}Stage Artifacts Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          CLI_COUNT=$(find dist/cli -type f 2>/dev/null | wc -l)
-          PKG_COUNT=$(find dist/packages -type f 2>/dev/null | wc -l)
-          DEB_COUNT=$(find dist/packages -name "*.deb" 2>/dev/null | wc -l)
-          RPM_COUNT=$(find dist/packages -name "*.rpm" 2>/dev/null | wc -l)
-          APK_COUNT=$(find dist/packages -name "*.apk" 2>/dev/null | wc -l)
-          ARCH_COUNT=$(find dist/packages -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
-          PAGES_SIZE=$(du -sh dist/pages/ 2>/dev/null | cut -f1 || echo "N/A")
-          APT_FILES=$(find dist/repos/apt/dists -type f 2>/dev/null | wc -l)
-          RPM_FILES=$(find dist/repos/rpm/repodata -type f 2>/dev/null | wc -l)
-
-          echo "| Artifact | Count/Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| CLI artifacts | $CLI_COUNT files |" >> $GITHUB_STEP_SUMMARY
-          echo "| Linux packages | $PKG_COUNT files (deb:$DEB_COUNT rpm:$RPM_COUNT apk:$APK_COUNT arch:$ARCH_COUNT) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pages bundle | $PAGES_SIZE |" >> $GITHUB_STEP_SUMMARY
-          echo "| APT metadata | $APT_FILES files |" >> $GITHUB_STEP_SUMMARY
-          echo "| RPM metadata | $RPM_FILES files |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** v${{ inputs.next_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Channel:** ${{ inputs.channel }}" >> $GITHUB_STEP_SUMMARY
-
-          FAILED=false
-
-          if [[ "$CLI_COUNT" -eq 0 ]]; then
-            echo "::error::No CLI artifacts found"
-            FAILED=true
-          fi
-          if [[ "$PKG_COUNT" -eq 0 ]]; then
-            echo "::error::No Linux packages found"
-            FAILED=true
-          fi
-          if [[ "$DEB_COUNT" -lt 2 ]]; then
-            echo "::error::Expected at least 2 DEB packages, found $DEB_COUNT"
-            FAILED=true
-          fi
-          if [[ "$RPM_COUNT" -lt 2 ]]; then
-            echo "::error::Expected at least 2 RPM packages, found $RPM_COUNT"
-            FAILED=true
-          fi
-          if [[ "$APK_COUNT" -lt 2 ]]; then
-            echo "::error::Expected at least 2 APK packages, found $APK_COUNT"
-            FAILED=true
-          fi
-          if [[ "$ARCH_COUNT" -lt 2 ]]; then
-            echo "::error::Expected at least 2 Archlinux packages, found $ARCH_COUNT"
-            FAILED=true
-          fi
-          if [[ "$APT_FILES" -eq 0 ]]; then
-            echo "::error::No APT metadata files found"
-            FAILED=true
-          fi
-          if [[ "$RPM_FILES" -eq 0 ]]; then
-            echo "::error::No RPM metadata files found"
-            FAILED=true
-          fi
-
-          if [[ "$FAILED" == "true" ]]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Status:** Validation FAILED" >> $GITHUB_STEP_SUMMARY
-            echo "passed=false" >> $GITHUB_OUTPUT
-            exit 1
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "**Status:** All validation passed. Ready for publish." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "**Status:** All validation passed." >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "passed=true" >> $GITHUB_OUTPUT
+        env:
+          MODE: ${{ github.event_name != 'push' && '(no-publish) ' || '' }}
+          EVENT_NAME: ${{ github.event_name }}
+          NEXT_VERSION: ${{ inputs.next_version }}
+          CHANNEL: ${{ inputs.channel }}
+        run: .ci/scripts/release/validate-stage-artifacts.sh
 
       # Install validation handled by validate-install job in ci.yml (6 platforms).
 
@@ -343,69 +257,8 @@ jobs:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_ID: ${{ vars.CLOUDFLARE_ZONE_ID }}
-        run: |
-          CHANNEL="${{ inputs.channel }}"
-          export AWS_ACCESS_KEY_ID="${R2_ACCESS_KEY_ID}"
-          export AWS_SECRET_ACCESS_KEY="${R2_SECRET_ACCESS_KEY}"
-          export AWS_DEFAULT_REGION="auto"
-
-          # Cache-Control policy. Package-manager channel paths
-          # (apt/<channel>/, rpm/<channel>/, apk/<channel>/, archlinux/<channel>/)
-          # reuse filenames across releases -- the URL cli/edge/rdc-0.9.13.deb
-          # can serve DIFFERENT bytes from one CI run to the next because
-          # edge builds that happen to land on the same semver produce
-          # slightly different archives. Marking them "immutable" let CF
-          # cache a previous run's body under a URL the next run's APKINDEX
-          # points at with a different sha256 -> "BAD signature" cascades.
-          # no-cache means CF never caches (per developers.cloudflare.com/
-          # cache/concepts/default-cache-behavior), so there is no stale
-          # cached body to go stale. R2 origin is inside CF's network, so
-          # end-user install cost is not materially different.
-          # Truly-versioned paths (cli/v<semver>/,
-          # npm/<channel>/rediacc-cli-<semver>.tgz) keep their 1-year
-          # immutable cache; those are handled by upload-to-r2.sh.
-          CC_MUTABLE="no-cache"
-
-          PURGE_URLS=()
-          for dir in apt rpm apk archlinux; do
-            [[ -d "dist/repos/$dir" ]] || continue
-            aws s3 sync "dist/repos/$dir" "s3://rediacc-releases/${dir}/${CHANNEL}/" \
-              --cache-control "$CC_MUTABLE" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
-            # Purge every uploaded URL to evict entries cached under the
-            # old immutable policy. Once every CI cycle has re-uploaded
-            # with no-cache, CF won't cache anything and subsequent purges
-            # are cheap no-ops.
-            while IFS= read -r f; do
-              PURGE_URLS+=("https://releases.rediacc.com/${dir}/${CHANNEL}/${f#dist/repos/$dir/}")
-            done < <(find "dist/repos/$dir" -type f)
-          done
-
-          # Upload install scripts (rewrite default channel so R2 copies
-          # under cli/${CHANNEL}/ install from ${CHANNEL} by default).
-          # Channel-pointer scripts are mutable.
-          for f in dist/pages/install.sh dist/pages/install.ps1; do
-            [[ -f "$f" ]] || continue
-            tmp="$(mktemp)"
-            sed -e "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-${CHANNEL}|g" \
-                -e "s|} else { \"stable\" }|} else { \"${CHANNEL}\" }|g" \
-                "$f" > "$tmp"
-            aws s3 cp "$tmp" "s3://rediacc-releases/cli/${CHANNEL}/$(basename "$f")" \
-              --cache-control "$CC_MUTABLE" \
-              --endpoint-url "$R2_ENDPOINT" --quiet
-            rm -f "$tmp"
-            PURGE_URLS+=("https://releases.rediacc.com/cli/${CHANNEL}/$(basename "$f")")
-          done
-          echo "Repos uploaded to R2 channel: ${CHANNEL}"
-
-          # Purge CF cache for the mutable URLs we just (re)uploaded. Existing
-          # cached entries from before the no-cache fix would otherwise persist
-          # with their original (default) TTL, breaking apt-get update with
-          # "File has unexpected size".
-          if [[ ${#PURGE_URLS[@]} -gt 0 ]]; then
-            printf '%s\n' "${PURGE_URLS[@]}" \
-              | .ci/scripts/deploy/cf-purge-urls.sh --zone "$CLOUDFLARE_ZONE_ID"
-          fi
+          CHANNEL: ${{ inputs.channel }}
+        run: .ci/scripts/deploy/upload-repos-to-r2.sh
 
       # -----------------------------------------------------------------------
       # Assert the versioned-path sentinel is actually sealed after upload.

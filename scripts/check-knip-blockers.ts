@@ -1,6 +1,6 @@
 /**
  * Validate that every suppression entry in knip.jsonc carries a substantive
- * BLOCKER comment, per the repo-wide BLOCKER convention (see CLAUDE.md).
+ * BLOCKER comment, per the repo-wide BLOCKER convention (see docs/agent/suppressions.md).
  *
  * Suppression contexts: the `ignore`, `ignoreDependencies`, `ignoreBinaries`
  * and `ignoreUnresolved` arrays, both top-level and per-workspace. `entry` /

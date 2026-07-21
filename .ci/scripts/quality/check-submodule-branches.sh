@@ -328,7 +328,6 @@ main() {
     current_branch="$(get_current_branch)"
     local errors=0
     local warnings=0
-    local has_open_submodule_prs=false
     local console_pr_body=""
 
     log_step "Validating submodule branches (console branch: $current_branch)"
@@ -392,7 +391,6 @@ main() {
                     else
                         submodule_pr_number="${pr_info%%|*}"
                         submodule_pr_url="${pr_info##*|}"
-                        has_open_submodule_prs=true
 
                         if [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
                             log_error "✗ $sm_path: PR $submodule_pr_url not linked in console PR description"

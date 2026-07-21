@@ -8,17 +8,9 @@ name: Console CT - Tests
 
 on:
   workflow_call:
-    inputs:
-      renet_tag:
-        type: string
-        required: false
-      web_tag:
-        type: string
-        required: false
-      e2e_browsers:
-        type: string
-        required: false
-        default: 'chromium'
+    # No inputs: every job here builds renet from source
+    # (.ci/scripts/infra/build-renet.sh) rather than pulling a prebuilt image,
+    # so the renet_tag / web_tag this used to accept were never read.
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -43,9 +35,6 @@ permissions:
   contents: read
   packages: read    # GHCR pull for test images
 
-env:
-  E2E_BROWSERS: ${{ inputs.e2e_browsers }}
-
 jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
@@ -57,8 +46,8 @@ jobs:
     name: Unit
     runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -112,36 +101,36 @@ jobs:
       CRIU_EXPECTED: ${{ matrix.full-integration }}
       CLI_SUITE: ${{ matrix.cli-suite }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -163,26 +152,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -262,36 +232,36 @@ jobs:
       VM_CEPH_NODES: '21 22 23'
       CEPH_MODE: 'true'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -313,26 +283,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -405,36 +356,36 @@ jobs:
       VM_RAM_CEPH: '2560'
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -456,26 +407,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -552,36 +484,36 @@ jobs:
       K8S_MODE: '1'
       VM_RAM_WORKER: '4096'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -603,26 +535,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -696,36 +609,36 @@ jobs:
       VM_RAM_CEPH: '2560'
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -747,26 +660,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -844,36 +738,36 @@ jobs:
       VM_RAM_CEPH: '2560'
       CEPH_OSD_MEMORY_TARGET: '1717986918'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -895,26 +789,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -999,36 +874,36 @@ jobs:
       GROUP_B_BRIDGE: '5'
       GROUP_B_WORKER: '51'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1050,24 +925,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Install renet
@@ -1160,36 +1018,36 @@ jobs:
       VM_CEPH_NODES: ''
       REDIACC_SKIP_MACHINE_ACTIVATION: '1'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -1211,26 +1069,7 @@ jobs:
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
-        run: |
-          pull_with_retry() {
-            local image="$1"
-            local platform="${2:-}"
-            local args=""
-            [ -n "$platform" ] && args="--platform $platform"
-            for i in 1 2 3; do
-              if docker pull $args "$image"; then
-                return 0
-              fi
-              echo "Pull failed for $image $platform, retrying in $((i * 30))s..."
-              sleep $((i * 30))
-            done
-            echo "Failed to pull $image $platform after 3 attempts"
-            return 1
-          }
-          pull_with_retry debian:bookworm linux/amd64
-          pull_with_retry debian:bookworm-slim linux/arm64
-          pull_with_retry ubuntu:24.04 linux/amd64
-          pull_with_retry ubuntu:24.04 linux/arm64
+        run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
       - name: Add renet to PATH
@@ -1269,24 +1108,7 @@ jobs:
       - name: Fix renet data dir ownership
         run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
       - name: Wait for VM SSH readiness
-        run: |
-          for vm in ${VM_NET_BASE}.1 ${VM_NET_BASE}.11; do
-            echo "Waiting for $vm as $USER..."
-            for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 $USER@$vm echo ready 2>/dev/null; then
-                echo "VM $vm is SSH-ready"
-                ssh-keyscan $vm >> ~/.ssh/known_hosts 2>/dev/null
-                break
-              fi
-              echo "Waiting for VM $vm SSH... ($i/30)"
-              sleep 5
-              if [[ $i -eq 30 ]]; then
-                echo "VM $vm SSH not ready after 150s"
-                exit 1
-              fi
-            done
-          done
-
+        run: .ci/scripts/infra/wait-for-vm-ssh.sh "${VM_NET_BASE}.1" "${VM_NET_BASE}.11"
       - name: Run concurrent-fork isolation test
         run: .ci/scripts/private/concurrent-fork-isolation-test.sh
         env:
@@ -1335,19 +1157,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
@@ -1355,7 +1177,7 @@ jobs:
 
       # Login to Docker Hub to avoid rate limiting
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -1427,18 +1249,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
           repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'

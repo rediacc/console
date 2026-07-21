@@ -125,15 +125,6 @@ rsv_sentinel_exists() {
         >/dev/null 2>&1
 }
 
-# `0` if the versioned prefix is an orphan: bytes present, no sentinel.
-# Orphans are always safe to scrub.
-rsv_is_orphan() {
-    local product="${1:?product required}"
-    local version="${2:?version required}"
-    rsv_prefix_nonempty "${product}/${version}/" &&
-        ! rsv_sentinel_exists "$product" "$version"
-}
-
 # Fetch and emit the JSON payload of `${product}/${version}/.released`.
 # Empty stdout if the sentinel does not exist.
 rsv_get_sentinel_payload() {

@@ -63,6 +63,13 @@ scan_targets() {
     cd "$REPO_ROOT"
     find scripts -type f \( -name '*.ts' -o -name '*.sh' \) ! -path '*/node_modules/*'
     find packages/www/scripts -type f -name '*.js' ! -path '*/node_modules/*'
+    # .ci/scripts is where the ~120 shell gates live -- the largest body of
+    # path-constant-bearing tooling in the repo, and it was out of scope here
+    # for no documented reason (unlike the deliberate exclusions above).
+    # .ci/scripts/test/** is excluded on purpose: those files name planted
+    # fixture paths that do not exist by design.
+    find .ci/scripts -type f \( -name '*.ts' -o -name '*.sh' \) \
+        ! -path '*/node_modules/*' ! -path '.ci/scripts/test/*'
 }
 
 # extract_literals <file> -- emit "<line>:<path>" for each quoted path literal.

@@ -10,7 +10,9 @@
 # This is the fast local nudge for that rule: it fires only for
 # .github/workflows/*.yml|yaml edits, only when the new content introduces a
 # `run:` block that already crosses the threshold within the edited fragment.
-# The CI gate remains the source of truth (it is baseline-aware; this hook is not).
+# The CI gate remains the source of truth: it parses whole files, so a fat block
+# assembled across several edits still fails there even if no single fragment
+# trips this hook.
 MAX=8
 
 INPUT=$(cat)
@@ -43,7 +45,7 @@ END { flush(); print max + 0 }
 ')
 
 if [ "${WORST:-0}" -gt "$MAX" ]; then
-    echo "❌ BLOCKED: this edit puts a $WORST-line inline 'run:' block in $FILE (limit is $MAX logic lines). Do not add shell logic inline in a workflow. Extract it to .ci/scripts/<area>/<name>.sh (the script header documents required env + how to run it locally), and make the workflow step env wiring + one call to that script. CI enforces this via check-workflows.sh; legacy blocks are grandfathered in .ci/quality/workflow-inline-baseline.json (ratchet-down only), but new inline logic is not allowed." >&2
+    echo "❌ BLOCKED: this edit puts a $WORST-line inline 'run:' block in $FILE (limit is $MAX logic lines). Do not add shell logic inline in a workflow. Extract it to .ci/scripts/<area>/<name>.sh (the script header documents required env + how to run it locally), and make the workflow step env wiring + one call to that script. CI enforces this via check-workflows.sh and there is no exemption list: the 52 legacy blocks that used to be grandfathered have all been extracted and the baseline file was deleted, so the rule now holds for every workflow without exception." >&2
     exit 2
 fi
 exit 0

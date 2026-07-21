@@ -12,8 +12,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
-VALIDATOR="$REPO_ROOT/scripts/check-overrides-reasons.ts"
-
 run_validator_with_pkg() {
     local pkg_content="$1"
     local TEMP

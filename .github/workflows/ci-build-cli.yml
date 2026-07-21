@@ -6,13 +6,6 @@ on:
       next_version:
         type: string
         required: false
-      skip_win_arm64:
-        type: boolean
-        required: false
-        default: false
-    secrets:
-      APP_PRIVATE_KEY:
-        required: false
 
 permissions:
   contents: read
@@ -62,43 +55,32 @@ jobs:
             platform: linux-musl
             arch: arm64
             timeout: 20
-    env:
-      SKIP_THIS: ${{ inputs.skip_win_arm64 && matrix.platform == 'win' && matrix.arch == 'arm64' }}
     steps:
-      - name: Skip win-arm64 on PR
-        if: env.SKIP_THIS == 'true'
-        shell: bash
-        run: |
-          echo "::notice::Skipping win-arm64 CLI build (PR mode)"
-          exit 0
-
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        if: env.SKIP_THIS != 'true'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Download full renet binaries (with embedded CRIU/rsync) from unified build
       - name: Download renet binaries
-        if: env.SKIP_THIS != 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           name: renet-binaries-${{ github.sha }}
           path: private/bin/
 
       # Native build steps (skip for musl — handled inside Docker)
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        if: matrix.platform != 'linux-musl'
         with:
           node-version: '22'
           cache: 'npm'
 
       - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
+        if: matrix.platform != 'linux-musl'
         shell: bash
       - run: .ci/scripts/setup/build-packages.sh
-        if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
+        if: matrix.platform != 'linux-musl'
         shell: bash
 
       - name: Build CLI SEA executable
-        if: env.SKIP_THIS != 'true' && matrix.platform != 'linux-musl'
+        if: matrix.platform != 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
         env:
@@ -106,14 +88,13 @@ jobs:
 
       # Musl build (runs entire build inside Alpine Docker container)
       - name: Build CLI SEA executable (musl)
-        if: env.SKIP_THIS != 'true' && matrix.platform == 'linux-musl'
+        if: matrix.platform == 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
-        if: env.SKIP_THIS != 'true'
         with:
           name: build-cli-${{ matrix.platform }}-${{ matrix.arch }}-${{ github.sha }}
           path: dist/cli/

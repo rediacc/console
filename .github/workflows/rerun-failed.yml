@@ -20,27 +20,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 100
     steps:
+      # Logic lives in .ci/scripts/ci/check-rerun-attempt.sh now, so the repo
+      # must be on disk.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
       - name: Validate and check attempt
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "::group::Fetching run details"
-          echo "Run ID: ${{ inputs.run_id }}"
-
-          ATTEMPT=$(gh api "repos/${GH_REPO}/actions/runs/${{ inputs.run_id }}" --jq '.run_attempt')
-          echo "Current run attempt: ${ATTEMPT}"
-          echo "::endgroup::"
-
-          MAX_ATTEMPTS=2
-          if [ "${ATTEMPT}" -ge "${MAX_ATTEMPTS}" ]; then
-            echo "::warning::Run attempt ${ATTEMPT} >= max ${MAX_ATTEMPTS} - skipping rerun (defense-in-depth)"
-            echo "SKIP_RERUN=true" >> "$GITHUB_ENV"
-          else
-            echo "Run attempt ${ATTEMPT} < max ${MAX_ATTEMPTS} - rerun is allowed"
-            echo "SKIP_RERUN=false" >> "$GITHUB_ENV"
-          fi
-
+          RUN_ID: ${{ inputs.run_id }}
+        run: .ci/scripts/ci/check-rerun-attempt.sh
       - name: Wait for workflow to complete
         if: env.SKIP_RERUN != 'true'
         env:

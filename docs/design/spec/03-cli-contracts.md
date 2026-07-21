@@ -2380,10 +2380,12 @@ Plus the four registration/regeneration duties:
 
 ### 8.4 Housekeeping found in passing
 
-**`EXCLUDED_TOP_LEVEL` in `command-tree-lib.ts:200` is stale.** It lists
-`login, logout, run, trace, cancel, retry`, but only `run` still exists; the rest are residue
-from the retired middleware era. Harmless today, but it would silently erase any future
-top-level command with one of those names. Prune it in P4.
+**`EXCLUDED_TOP_LEVEL` was stale — DONE.** It listed
+`login, logout, run, trace, cancel, retry`, residue from the retired middleware era, and
+would have silently erased any future top-level command with one of those names. It is now
+`new Set(['run'])` in `packages/cli/scripts/lib/command-tree-lib.ts`, and
+`packages/cli/src/config/__tests__/plane-coverage.test.ts` fails if an entry goes stale
+again, so the class is closed rather than just this instance.
 
 ---
 

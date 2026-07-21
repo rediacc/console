@@ -62,6 +62,16 @@ on:
         required: true
       TURNSTILE_SECRET_KEY:
         required: true
+      # An undeclared secret silently reads as "" inside a reusable workflow.
+      # These three were read by the "Set Worker secrets" step but never declared
+      # here nor passed by any caller, so every deployed account Worker got
+      # OTLP_CLIENT_CREDENTIALS="" and shipped no telemetry. Keep them declared.
+      OTLP_CLIENT_CREDENTIALS_EU:
+        required: true
+      OTLP_CLIENT_CREDENTIALS_US:
+        required: true
+      OTLP_CLIENT_CREDENTIALS_ASIA:
+        required: true
 
 jobs:
   # Read regions.json to build the deployment matrix
@@ -71,7 +81,7 @@ jobs:
     outputs:
       matrix: ${{ steps.regions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           sparse-checkout: regions.json
@@ -86,7 +96,7 @@ jobs:
     name: Build account portal
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
 
@@ -98,7 +108,7 @@ jobs:
           preset: cd
           repositories: console,renet,account
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           token: ${{ steps.app-token.outputs.token }}
@@ -106,7 +116,7 @@ jobs:
       - name: Init account submodule
         run: git submodule update --init private/account
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
 
@@ -150,7 +160,7 @@ jobs:
       name: ${{ inputs.target }}-${{ matrix.id }}
       url: ${{ inputs.target == 'stable' && format('https://{0}', matrix.domain) || format('https://{0}', matrix.edgeDomain) }}
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           sparse-checkout: .github/actions
@@ -163,7 +173,7 @@ jobs:
           preset: cd
           repositories: console,account
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref }}
           token: ${{ steps.app-token.outputs.token }}
@@ -171,7 +181,7 @@ jobs:
       - name: Init account submodule
         run: git submodule update --init --depth 1 private/account
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
 
@@ -192,27 +202,21 @@ jobs:
           path: workers/account/
 
       - name: Install wrangler
-        run: npm install -g wrangler
+        run: |
+          source .ci/config/constants.sh
+          npm install -g "wrangler@${WRANGLER_VERSION}"
 
       - name: Resolve deploy config
         id: config
-        run: |
-          REGION="${{ matrix.id }}"
-          SUFFIX="${{ matrix.secretSuffix }}"
-          if [[ "${{ inputs.target }}" == "stable" ]]; then
-            WORKER="${{ matrix.workerName }}"
-            DOMAIN="${{ matrix.domain }}"
-            SANDBOX=""
-          else
-            WORKER="${{ matrix.edgeWorkerName }}"
-            DOMAIN="${{ matrix.edgeDomain }}"
-            SANDBOX="--sandbox"
-          fi
-          echo "region=$REGION" >> "$GITHUB_OUTPUT"
-          echo "suffix=$SUFFIX" >> "$GITHUB_OUTPUT"
-          echo "worker=$WORKER" >> "$GITHUB_OUTPUT"
-          echo "domain=$DOMAIN" >> "$GITHUB_OUTPUT"
-          echo "sandbox=$SANDBOX" >> "$GITHUB_OUTPUT"
+        env:
+          TARGET: ${{ inputs.target }}
+          MATRIX_ID: ${{ matrix.id }}
+          MATRIX_SECRET_SUFFIX: ${{ matrix.secretSuffix }}
+          MATRIX_WORKER_NAME: ${{ matrix.workerName }}
+          MATRIX_DOMAIN: ${{ matrix.domain }}
+          MATRIX_EDGE_WORKER_NAME: ${{ matrix.edgeWorkerName }}
+          MATRIX_EDGE_DOMAIN: ${{ matrix.edgeDomain }}
+        run: .ci/scripts/deploy/resolve-account-deploy-config.sh
 
       # Preflight: the production price catalog is only updated by a manual
       # stripe-sync run per regional Stripe account. Fail the deploy if the
@@ -258,8 +262,10 @@ jobs:
           STRIPE_WH_EU: ${{ secrets.STRIPE_WEBHOOK_SECRET_EU }}
           STRIPE_WH_US: ${{ secrets.STRIPE_WEBHOOK_SECRET_US }}
           STRIPE_WH_ASIA: ${{ secrets.STRIPE_WEBHOOK_SECRET_ASIA }}
-          STRIPE_SANDBOX_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_SANDBOX_WH: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          # No STRIPE_SANDBOX_*: set-account-worker-secrets.sh blanks Stripe on
+          # edge (billing disabled) and uses the regional key on stable, so the
+          # sandbox pair was wired in but never read. The sandbox key is still
+          # used by the "Verify Stripe prices" step above.
           SES_KEY_EU: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
           SES_KEY_US: ${{ secrets.AWS_SES_ACCESS_KEY_ID_US }}
           SES_KEY_ASIA: ${{ secrets.AWS_SES_ACCESS_KEY_ID_ASIA }}
@@ -285,75 +291,5 @@ jobs:
           VAR_SELLER_POSTAL_CODE: ${{ vars.SELLER_POSTAL_CODE }}
           VAR_SELLER_COUNTRY: ${{ vars.SELLER_COUNTRY }}
           VAR_SELLER_EMAIL: ${{ vars.SELLER_EMAIL }}
-        run: |
-          # Resolve region-aware secrets via bash indirection
-          if [[ "$TARGET" == "stable" ]]; then
-            STRIPE_VAR="STRIPE_KEY_${SUFFIX}"; SECRET_STRIPE_KEY="${!STRIPE_VAR}"
-            WH_VAR="STRIPE_WH_${SUFFIX}"; SECRET_STRIPE_WEBHOOK="${!WH_VAR}"
-          else
-            # Edge (beta channel): no Stripe -- billing disabled
-            SECRET_STRIPE_KEY=""
-            SECRET_STRIPE_WEBHOOK=""
-          fi
-          SES_K="SES_KEY_${SUFFIX}"; SECRET_SES_ACCESS_KEY_ID="${!SES_K}"
-          SES_S="SES_SECRET_${SUFFIX}"; SECRET_SES_SECRET_ACCESS_KEY="${!SES_S}"
-          # Asia uses EU SES while ap-northeast-1 production access is pending
-          if [[ "$SUFFIX" == "ASIA" ]]; then
-            SECRET_SES_ACCESS_KEY_ID="$SES_KEY_EU"
-            SECRET_SES_SECRET_ACCESS_KEY="$SES_SECRET_EU"
-          fi
-          OTLP_VAR="OTLP_CRED_${SUFFIX}"; SECRET_OTLP_CREDS="${!OTLP_VAR}"
-
-          jq -n \
-            --arg ed25519_priv "$SECRET_ED25519_PRIVATE_KEY" \
-            --arg ed25519_pub "$SECRET_ED25519_PUBLIC_KEY" \
-            --arg x25519_priv "$SECRET_X25519_PRIVATE_KEY" \
-            --arg x25519_pub "$SECRET_X25519_PUBLIC_KEY" \
-            --arg api_key "$SECRET_API_KEY" \
-            --arg jwt "$SECRET_JWT_SECRET" \
-            --arg stripe "$SECRET_STRIPE_KEY" \
-            --arg stripe_wh "$SECRET_STRIPE_WEBHOOK" \
-            --arg admin "$SECRET_ROOT_EMAIL" \
-            --arg ses_key "$SECRET_SES_ACCESS_KEY_ID" \
-            --arg ses_secret "$SECRET_SES_SECRET_ACCESS_KEY" \
-            --arg ses_region "$SECRET_SES_REGION" \
-            --arg ses_from "$VAR_SES_FROM" \
-            --arg ses_cs "$VAR_SES_CONFIGURATION_SET" \
-            --arg turnstile "$SECRET_TURNSTILE_KEY" \
-            --arg otlp_creds "$SECRET_OTLP_CREDS" \
-            --arg seller_name "$VAR_SELLER_NAME" \
-            --arg seller_vat "$VAR_SELLER_VAT_NUMBER" \
-            --arg seller_reg "$VAR_SELLER_REGISTRATION_NUMBER" \
-            --arg seller_addr1 "$VAR_SELLER_ADDRESS_LINE1" \
-            --arg seller_addr2 "$VAR_SELLER_ADDRESS_LINE2" \
-            --arg seller_city "$VAR_SELLER_CITY" \
-            --arg seller_postal "$VAR_SELLER_POSTAL_CODE" \
-            --arg seller_country "$VAR_SELLER_COUNTRY" \
-            --arg seller_email "$VAR_SELLER_EMAIL" \
-            '{
-              ED25519_PRIVATE_KEY: $ed25519_priv,
-              ED25519_PUBLIC_KEY: $ed25519_pub,
-              X25519_PRIVATE_KEY: $x25519_priv,
-              X25519_PUBLIC_KEY: $x25519_pub,
-              API_KEY: $api_key,
-              JWT_SECRET: $jwt,
-              STRIPE_SECRET_KEY: $stripe,
-              STRIPE_WEBHOOK_SECRET: $stripe_wh,
-              ROOT_EMAIL: $admin,
-              AWS_SES_ACCESS_KEY_ID: $ses_key,
-              AWS_SES_SECRET_ACCESS_KEY: $ses_secret,
-              AWS_SES_REGION: $ses_region,
-              AWS_SES_FROM: $ses_from,
-              AWS_SES_CONFIGURATION_SET: $ses_cs,
-              TURNSTILE_SECRET_KEY: $turnstile,
-              OTLP_CLIENT_CREDENTIALS: $otlp_creds,
-              SELLER_NAME: $seller_name,
-              SELLER_VAT_NUMBER: $seller_vat,
-              SELLER_REGISTRATION_NUMBER: $seller_reg,
-              SELLER_ADDRESS_LINE1: $seller_addr1,
-              SELLER_ADDRESS_LINE2: $seller_addr2,
-              SELLER_CITY: $seller_city,
-              SELLER_POSTAL_CODE: $seller_postal,
-              SELLER_COUNTRY: $seller_country,
-              SELLER_EMAIL: $seller_email
-            }' | npx wrangler secret bulk --name ${{ steps.config.outputs.worker }}
+          WORKER_NAME: ${{ steps.config.outputs.worker }}
+        run: .ci/scripts/deploy/set-account-worker-secrets.sh

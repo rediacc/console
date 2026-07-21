@@ -1,13 +1,19 @@
 # Shared CI Scripts
 
-This directory contains reusable CI scripts that work with both GitHub Actions and GitLab CI.
+This directory contains the reusable CI scripts driven by the workflows in
+`.github/workflows/`.
 
 ## Directory Structure
+
+Abridged — only the entry points most often edited by hand are listed. The full
+set spans `build/ ci/ deploy/ docker/ docs/ env/ housekeeping/ infra/ lib/
+private/ quality/ release/ security/ setup/ signal/ test/ version/`.
 
 ```
 .ci/
 ├── config/
-│   └── matrix.json         # Matrix configurations (browsers, platforms, etc.)
+│   ├── constants.sh         # Pinned tool versions and shared CI constants
+│   └── nfpm.yaml            # Linux package (deb/rpm/apk) build definition
 ├── scripts/
 │   ├── lib/
 │   │   └── common.sh        # Shared utilities (OS detection, logging)
@@ -16,13 +22,12 @@ This directory contains reusable CI scripts that work with both GitHub Actions a
 │   │   └── derive-image-tag.sh # Derive Docker image tag from branch/tag
 │   ├── version/
 │   │   ├── bump.sh            # Semantic version bump (patch/minor/major)
-│   │   ├── commit.sh          # Commit/push version changes (CI-safe)
-│   │   └── bump-submodules.sh # Bump and tag submodule versions
+│   │   ├── detect-bump-type.sh # Infer patch/minor/major from commits
+│   │   └── resolve-version.sh  # Resolve current/next version from git tags
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling
 │   │   ├── build-packages.sh   # Build shared libraries
-│   │   ├── install-vscode.sh   # Cross-platform VS Code installation
-│   │   └── setup-display.sh    # Xvfb setup for Linux
+│   │   └── install-cli-global.sh # Install the built CLI tarball globally
 │   ├── env/
 │   │   └── create-e2e-env.sh   # Create E2E test .env
 │   ├── signal/
@@ -81,15 +86,10 @@ For CI, write the computed version to an output file:
 .ci/scripts/version/bump.sh --auto --output "$GITHUB_OUTPUT"
 ```
 
-Version commits use `.ci/scripts/version/commit.sh`, which includes `[skip ci]` by default to prevent CI loops.
-
-Submodule version bumps (renet) are handled via:
-
-```bash
-.ci/scripts/version/bump-submodules.sh --version 1.2.3
-```
-
-This will commit and tag submodule repos, then update submodule pointers in the console repo.
+Note that the version source of truth is **git tags**, not a file — there are no
+version bump commits. `resolve-version.sh --current` reads the latest tag and
+`--bump-type` computes the next one. See the "Versioning" section of the
+top-level `CLAUDE.md`.
 
 ## Environment Variables
 
@@ -119,8 +119,8 @@ Test scripts locally before CI:
 source .ci/scripts/lib/common.sh
 detect_os  # Should print: linux, macos, or windows
 
-# Dry-run VS Code installation check
-.ci/scripts/setup/install-vscode.sh --check
+# Run the shell-gate suite the way CI does
+npm run test:quality-gates
 ```
 
 ## Adding New Scripts

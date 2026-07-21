@@ -13,27 +13,26 @@ jobs:
   cleanup:
     name: Delete PR Channel
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Same fork guard as cleanup-preview.yml. This job holds R2 delete
+    # credentials for the releases bucket; a fork PR has empty secrets, so the
+    # step would fail into `|| true` and log a confusing no-op. Fork PRs are
+    # unsupported (see .github/CONTRIBUTING.md).
+    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # The logic now lives in .ci/scripts/deploy/delete-r2-channel.sh, so the
+      # repo has to be on disk. Sparse: this job needs nothing but that script
+      # and the lib it sources.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
       - name: Delete channel artifacts
-        run: |
-          PR_NUM="${{ github.event.pull_request.number }}"
-          CHANNEL="pr-${PR_NUM}"
-          echo "Cleaning up R2 channel: ${CHANNEL}..."
-
-          for dir in cli npm apt rpm apk archlinux; do
-            aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}/" \
-              --recursive \
-              --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
-            # Also clean up promotion simulation artifacts
-            aws s3 rm "s3://${RELEASES_BUCKET}/${dir}/${CHANNEL}-promoted/" \
-              --recursive \
-              --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
-          done
-
-          echo "Channel '${CHANNEL}' (+ promoted) deleted from R2"
+        run: .ci/scripts/deploy/delete-r2-channel.sh
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: auto
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           RELEASES_BUCKET: rediacc-releases
+          CHANNEL: pr-${{ github.event.pull_request.number }}

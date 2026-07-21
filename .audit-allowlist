@@ -10,50 +10,12 @@
 #   - Only add dev-dependency advisories after confirming no upgrade path exists.
 #   - Each group MUST have a "# BLOCKER: <reason>" line; the audit script
 #     enforces this strictly. Blank lines separate groups.
-
-# tar — electron-builder dependency chain
-# GHSA-r6q2-hw4h-h46w, GHSA-34x7-hfp2-rc4v, GHSA-8qq5-rm4j-mr97,
-# GHSA-83g3-92jg-28cx, GHSA-qffp-2rhf-9h96
-# BLOCKER: electron-builder transitive; tar@8+ has breaking ESM changes; fix requires electron-builder major migration
-1112329
-1112659
-1113300
-1113375
-1113992
-
-# minimatch ReDoS — transitive across eslint/electron-builder chains
-# GHSA-7r86-cg39-jmmj (matchOne GLOBSTAR), GHSA-23c5-xmqv-rm74 (nested *() extglobs)
-# BLOCKER: transitive dep; fix requires eslint v10 major / electron-builder major upgrade
-1113545
-1113553
-
-# yauzl — electron → extract-zip → yauzl
-# GHSA-gmq8-994r-jv83 (off-by-one)
-# BLOCKER: electron transitive; no upstream fix published
-1114530
-
-# brace-expansion zero-step hang + related superseded advisories
-# GHSA-f886-m6hf-6m8v and sibling advisories sharing the same root cause
-# BLOCKER: transitive via eslint/electron chains; fix requires eslint v10 major upgrade
-1115432
-1115496
-1115497
-1115499
-1115540
-1115541
-1115543
-
-# tmp Path Traversal — electron-builder build chain
-# GHSA-ph9p-34f9-6g65 (app-builder-lib > @malept/flatpak-bundler > tmp-promise > tmp)
-# 1120654 is a sibling re-issue of the same advisory under a new source ID (GitHub
-# Advisory Database split); same chain, same root cause, same rationale.
-# BLOCKER: electron-builder transitive; patched tmp@0.2.6 published <24h ago and is blocked by .npmrc minimum-release-age=1440; prefix/postfix inputs come from trusted desktop build tooling, not untrusted data
-1119610
-1120654
-
-# node-tar PAX/GNU long-name header interpretation differential — file smuggling
-# GHSA-vmf3-w455-68vh (tar <=7.5.15). Dev-only: tar@7.5.15 is pulled via
-# node-gyp -> @electron/rebuild for native-module rebuilds during the desktop
-# build; no fixed version is published yet (7.5.15 is the latest and still in range).
-# BLOCKER: dev/build-only via node-gyp/@electron/rebuild; the parser-differential file-smuggling requires extracting a maliciously-crafted tarball, but our build only unpacks our own first-party and signature-verified npm-registry tarballs, never attacker-supplied archives. Drop once node-tar ships a fixed release.
-1120782
+#
+# Currently EMPTY, and that is the correct state. Every previous entry
+# (tar, minimatch, yauzl, brace-expansion, tmp, node-tar — 18 advisory IDs
+# across 6 groups) was justified by an electron / electron-builder chain.
+# Electron is gone from the tree: package-lock.json contains no electron,
+# electron-builder, electron-vite, electron-updater, electron-publish,
+# app-builder-lib or @electron/* entry, and none of those 18 advisories
+# appears in `npm audit` output any more. Do not re-add an entry without
+# confirming the advisory actually fires.

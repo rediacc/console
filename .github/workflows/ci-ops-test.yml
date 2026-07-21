@@ -24,7 +24,7 @@ jobs:
             arch: x86_64
             full_test: true
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -33,23 +33,23 @@ jobs:
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
+          preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
 
       - name: Checkout with Submodules
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Login to GHCR
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4.3.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -61,13 +61,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -147,23 +147,11 @@ jobs:
         run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
 
       - name: "Verify: SSH connectivity"
-        run: |
-          SSH_KEY="$RUNNER_TEMP/renet/staging/.ssh/id_rsa"
-          sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet"
-          for i in $(seq 1 15); do
-            if ssh -i "$SSH_KEY" \
-              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-              -o ConnectTimeout=5 \
-              "$(whoami)@${{ steps.status.outputs.bridge_ip }}" "echo 'SSH OK'"; then
-              echo "SSH connection successful on attempt $i"
-              exit 0
-            fi
-            echo "Attempt $i failed, retrying in 5s..."
-            sleep 5
-          done
-          echo "SSH connection failed after 15 attempts"
-          exit 1
-
+        run: .ci/scripts/infra/verify-ssh.sh "${{ steps.status.outputs.bridge_ip }}"
+        env:
+          SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
+          CHOWN_PATH: ${{ runner.temp }}/renet
+          ATTEMPTS: 15
       - name: "Test: rdc ops down"
         if: always()
         run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
@@ -203,11 +191,11 @@ jobs:
             platform: darwin
             arch: x86_64
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'
@@ -293,28 +281,14 @@ jobs:
 
       - name: "Verify: SSH connectivity"
         shell: bash
-        run: |
-          VM_ADDRS="${{ steps.status.outputs.vm_addrs }}"
-          SSH_KEY="$HOME/.ssh/id_ed25519"
-
-          for i in $(seq 1 20); do
-            for vm_addr in $VM_ADDRS; do
-              SSH_PORT="${vm_addr#localhost:}"
-              if ssh -i "$SSH_KEY" -p "$SSH_PORT" \
-                -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-                -o ConnectTimeout=5 \
-                "$(whoami)@localhost" "echo 'SSH OK'"; then
-                echo "SSH connection successful via ${vm_addr} on attempt $i"
-                exit 0
-              fi
-              echo "Attempt $i on ${vm_addr} failed"
-            done
-            echo "Attempt $i failed for all VM addresses, retrying in 5s..."
-            sleep 5
-          done
-
-          echo "SSH connection failed for all VM addresses after 20 attempts"
-          exit 1
+        # SSH_KEY is assigned on the run line, not in `env:`. GitHub does not
+        # expand shell-style $VAR in an env value and bash does not re-expand a
+        # variable's value, so `SSH_KEY: $HOME/...` would reach the script as
+        # the literal string. $RUNNER_TEMP has a real context (`runner.temp`);
+        # $HOME does not, so the shell has to do it.
+        run: SSH_KEY="$HOME/.ssh/id_ed25519" .ci/scripts/infra/verify-ssh.sh ${{ steps.status.outputs.vm_addrs }}
+        env:
+          ATTEMPTS: 20
 
       - name: "Test: rdc ops down"
         if: always()
@@ -360,11 +334,11 @@ jobs:
             platform: windows
             arch: amd64
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
           cache: 'npm'

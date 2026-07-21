@@ -38,6 +38,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseDockerfileVersions } from './lib/dockerfile-versions.js';
+// Extracted so scripts/check-suppression-liveness.ts can reuse the inventory
+// without importing this module (which runs main() at import time).
+import { EMBED_ASSET_SOURCES as SOURCES, type EmbedAssetSource as Source } from './lib/embed-asset-sources.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
@@ -51,44 +54,6 @@ const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
 const BLOCKLIST = process.env.EMBED_BLOCKLIST_FILE || path.join(CONSOLE_ROOT, '.embed-assets-upgrade-blocklist');
 
 const HTTP_TIMEOUT_MS = 15_000;
-
-interface Source {
-  /** Dockerfile ARG base, lowercased (matches parseDockerfileVersions keys). */
-  base: string;
-  display: string;
-  kind: 'github' | 'rsync-index';
-  /** owner/repo for github sources. */
-  repo?: string;
-}
-
-// Each embedded binary and where its upstream releases live. Base names match the
-// Dockerfile ARG <BASE>_VERSION. snapshotter and snapshot-controller ship from
-// the one external-snapshotter repo.
-const SOURCES: Source[] = [
-  { base: 'criu', display: 'CRIU', kind: 'github', repo: 'checkpoint-restore/criu' },
-  { base: 'rsync', display: 'rsync', kind: 'rsync-index' },
-  { base: 'rclone', display: 'rclone', kind: 'github', repo: 'rclone/rclone' },
-  { base: 'zot', display: 'zot', kind: 'github', repo: 'project-zot/zot' },
-  { base: 'k3s', display: 'k3s', kind: 'github', repo: 'k3s-io/k3s' },
-  {
-    base: 'csiprovisioner',
-    display: 'csi-provisioner',
-    kind: 'github',
-    repo: 'kubernetes-csi/external-provisioner',
-  },
-  {
-    base: 'csisnapshotter',
-    display: 'csi-snapshotter',
-    kind: 'github',
-    repo: 'kubernetes-csi/external-snapshotter',
-  },
-  {
-    base: 'snapshotcontroller',
-    display: 'snapshot-controller',
-    kind: 'github',
-    repo: 'kubernetes-csi/external-snapshotter',
-  },
-];
 
 interface Latest {
   version: string;

@@ -132,27 +132,6 @@ r2_cp() {
         --no-progress
 }
 
-# Helper: upload directory to R2. Third arg is the Cache-Control value applied
-# to every object in the sync; defaults to the mutable policy. For mixed
-# directories (binaries + metadata) call this twice with --include filters and
-# different cache_control values, or use two separate r2_cp calls.
-r2_sync() {
-    local src="$1"
-    local dest="$2"
-    local cache_control="${3:-$CACHE_CONTROL_MUTABLE}"
-    local full_dest="s3://${RELEASES_BUCKET}/${dest}"
-
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would sync: $src → $full_dest (Cache-Control: $cache_control)"
-        return 0
-    fi
-
-    aws s3 sync "$src" "$full_dest" \
-        --endpoint-url "$R2_ENDPOINT" \
-        --cache-control "$cache_control" \
-        --no-progress
-}
-
 # Helper: write string to R2. Always uses the mutable Cache-Control policy
 # because the only callers (latest.json, manifest.json, versions.json) are by
 # nature mutable channel pointers.

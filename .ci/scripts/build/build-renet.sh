@@ -3,11 +3,9 @@
 #
 # Usage:
 #   build-renet.sh --version 1.2.3 --output ./bin
-#   build-renet.sh --version 1.2.3 --assets-dir ./assets --output ./bin
 #
 # Options:
 #   --version VERSION    Version to embed in binary (required)
-#   --assets-dir DIR     Directory containing CRIU/rsync binaries (default: auto-detect)
 #   --output DIR         Output directory for renet binaries (default: private/bin)
 #   --skip-embed         Build without embedded assets (lightweight, for testing)
 
@@ -17,7 +15,6 @@ source "$SCRIPT_DIR/../lib/common.sh"
 
 # Defaults
 VERSION=""
-ASSETS_DIR=""
 OUTPUT_DIR=""
 SKIP_EMBED=false
 
@@ -26,10 +23,6 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --version)
             VERSION="$2"
-            shift 2
-            ;;
-        --assets-dir)
-            ASSETS_DIR="$2"
             shift 2
             ;;
         --output)
@@ -41,13 +34,12 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         -h | --help)
-            echo "Usage: $0 --version VERSION [--assets-dir DIR] [--output DIR] [--skip-embed]"
+            echo "Usage: $0 --version VERSION [--output DIR] [--skip-embed]"
             echo ""
             echo "Build full renet binaries with embedded CRIU/rsync assets"
             echo ""
             echo "Options:"
             echo "  --version VERSION    Version to embed in binary (required)"
-            echo "  --assets-dir DIR     Directory containing CRIU/rsync binaries"
             echo "  --output DIR         Output directory for renet binaries"
             echo "  --skip-embed         Build without embedded assets"
             exit 0

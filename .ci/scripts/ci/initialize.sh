@@ -150,7 +150,10 @@ log_step "Calculating next version from git tags..."
 # using the app token. The --no-recurse-submodules prevents submodule ref errors.
 FETCH_URL="https://x-access-token:${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"
 git fetch --tags --force --no-recurse-submodules "$FETCH_URL" 2>/dev/null || true
-log_info "Latest tag: $(git tag -l 'v*' --sort=-v:refname | head -1 || echo 'none')"
+# `|| echo 'none'` never fired: git tag -l exits 0 when nothing matches, so an
+# untagged repo logged an empty value rather than the intended "none".
+LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"
+log_info "Latest tag: ${LATEST_TAG:-none}"
 NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-version.sh --current))"

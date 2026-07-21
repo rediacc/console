@@ -71,6 +71,28 @@ detect_os() {
     esac
 }
 
+# Portable in-place sed.
+#
+# GNU sed takes `-i` with no argument; BSD/macOS sed REQUIRES a backup-suffix
+# argument, so `sed -i 's/a/b/' f` on macOS consumes the expression as the
+# suffix and then fails with "no input files" -- or, worse, silently edits the
+# wrong thing. Every .ci script documents itself as locally runnable, so the
+# platform is not ours to assume.
+#
+# Pass ALL sed arguments through, file last, exactly as you would to sed:
+#   sed_in_place -E "s/x/y/" "$file"
+#   sed_in_place -e "s/a/b/" -e "s/c/d/" "$file"
+#
+# This lived privately inside update-homebrew-tap.sh with a fixed (expr, file)
+# signature, which is why five other sites reached for bare `sed -i` instead.
+sed_in_place() {
+    if [[ "$(detect_os)" == "macos" ]]; then
+        sed -i '' "$@"
+    else
+        sed -i "$@"
+    fi
+}
+
 # Detect architecture
 # Returns: x64, arm64, or unknown
 detect_arch() {
@@ -87,31 +109,6 @@ detect_arch() {
 # Returns: 0 if CI, 1 otherwise
 is_ci() {
     [[ "${CI:-false}" == "true" ]] || [[ -n "${GITHUB_ACTIONS:-}" ]] || [[ -n "${GITLAB_CI:-}" ]]
-}
-
-# Check if running on GitHub Actions
-is_github_actions() {
-    [[ -n "${GITHUB_ACTIONS:-}" ]]
-}
-
-# Check if running on GitLab CI
-is_gitlab_ci() {
-    [[ -n "${GITLAB_CI:-}" ]]
-}
-
-# Get runner OS (for GitHub Actions compatibility)
-# Returns: Linux, macOS, or Windows
-get_runner_os() {
-    if [[ -n "${RUNNER_OS:-}" ]]; then
-        echo "$RUNNER_OS"
-    else
-        case "$(detect_os)" in
-            linux) echo "Linux" ;;
-            macos) echo "macOS" ;;
-            windows) echo "Windows" ;;
-            *) echo "Unknown" ;;
-        esac
-    fi
 }
 
 # Get temporary directory (CI-aware)
@@ -180,14 +177,6 @@ get_repo_root() {
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     # Go up from .ci/scripts/lib to repo root (3 levels)
     cd "$script_dir/../../.." && pwd
-}
-
-# Get the .ci directory
-get_ci_dir() {
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    # Go up from .ci/scripts/lib to .ci (2 levels)
-    cd "$script_dir/../.." && pwd
 }
 
 # =============================================================================
@@ -420,6 +409,35 @@ r2_count_objects() {
 # ~5 rounds of feedback + ~5 additional edge cases = 11 reviews max.
 # Exceeding this suggests the PR should be split or closed.
 MAX_GEMINI_REVIEWS=11
+
+# =============================================================================
+# SUBMODULE GUARDS
+# =============================================================================
+
+# require_submodule <marker-path> <label>
+#
+# Returns 0 when the submodule is present. When it is absent:
+#   - in CI  -> hard failure, because a gate that silently skips is worse than
+#               no gate at all. check:ci-renet rides on this, and it carries
+#               govulncheck (Go CVE scanning), deadcode and golangci-lint --
+#               all three would report success while checking nothing.
+#   - locally -> warn and return 1, so a fresh clone without --recursive is
+#               still workable. Callers do: require_submodule ... || exit 0
+require_submodule() {
+    local marker="$1" label="$2"
+
+    [[ -e "$marker" ]] && return 0
+
+    if [[ "${CI:-false}" == "true" ]]; then
+        log_error "$label is required in CI but missing: $marker"
+        log_error "  A gate skipped here would report success while checking nothing."
+        log_error "  Fix the workflow checkout (submodules: true, or git submodule update --init)."
+        exit 1
+    fi
+
+    log_warn "$label not available, skipping (this is a hard failure in CI)"
+    return 1
+}
 
 # =============================================================================
 # INITIALIZATION
