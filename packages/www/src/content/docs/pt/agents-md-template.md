@@ -4,7 +4,7 @@ description: Modelo de copiar e colar para configurar o Claude Code, Cursor e ou
 category: Reference
 order: 50
 language: pt
-sourceHash: "7290c90fe7218ea4"
+sourceHash: "1edff3471ded906d"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -37,32 +37,32 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query --name <machine> -o json
+rdc machine status <machine> -o json
 
 # List containers on a machine
-rdc machine containers --name <machine> -o json
+rdc machine status <machine> --containers -o json
 
 # Machine health check
-rdc machine health --name <machine> -o json
+rdc machine health <machine> -o json
 
 # Deploy a repository
-rdc repo up --name <repo> -m <machine> --yes
+rdc repo up <repo>@<machine> --yes
 
 # Stop a repository
-rdc repo down --name <repo> -m <machine> --yes
+rdc repo down <repo>@<machine> --yes
 
 # SSH terminal to machine
-rdc term connect -m <machine>
+rdc term connect <machine>
 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term connect -m <machine> -r <repo>
+rdc term connect <repo>@<machine>
 
 # Run command on machine
-rdc term connect -m <machine> -c "command"
+rdc term connect <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> --local ./local-path
-rdc repo sync download -m <machine> -r <repo> --local ./local-path
+rdc repo sync upload <repo>@<machine> --local ./local-path
+rdc repo sync download <repo>@<machine> --local ./local-path
 
 # List all available commands
 rdc --help-all
@@ -83,16 +83,16 @@ rdc --help-all
 
 ## Personalização
 
-Substitua `<machine>` e `<repo>` pelos nomes reais da sua máquina e repositório. Execute `rdc config repository list` para listar os repositórios disponíveis com o mapeamento nome-para-GUID.
+Substitua `<machine>` e `<repo>` pelos nomes reais da sua máquina e repositório. Execute `rdc repo list` para listar os repositórios disponíveis com o mapeamento nome-para-GUID.
 
 ### Descobrir a Sua Configuração
 
 ```bash
 # Listar máquinas configuradas
-rdc machine query --name <machine-name>
+rdc machine status <machine-name>
 
 # Listar repositórios com GUIDs
-rdc config repository list
+rdc repo list
 
 # Verificar os comandos disponíveis
 rdc --help-all

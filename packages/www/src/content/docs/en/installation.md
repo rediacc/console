@@ -102,15 +102,15 @@ npm install -g https://releases.rediacc.com/npm/stable/rediacc-cli-0.8.5.tgz
 Pull and run the CLI as a container:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 Create an alias for convenience:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 Available Docker tags:
@@ -184,7 +184,7 @@ For package managers, replace `stable` with `edge` in the repository URL:
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### How channels work
@@ -193,7 +193,7 @@ The channel applies uniformly across all delivery methods:
 
 - **Install scripts**: `REDIACC_CHANNEL` env var selects the channel
 - **Package repos**: `releases.rediacc.com/{format}/{channel}/`
-- **Docker tags**: `ghcr.io/rediacc/elite/cli:{channel}`
+- **Docker tags**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI updates**: `rdc update` checks the channel configured during install
 
 ### PR preview auto-configuration

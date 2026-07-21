@@ -4,7 +4,7 @@ description: "独自インフラ上でアカウントサーバーとCLIディス
 category: "Guides"
 order: 5
 language: ja
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ curl -fsSL https://account.example.com/install.sh | \
 
 ```bash
 # オンプレミスサーバー用のconfigを作成する
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # そのconfigでログインする
 rdc --config myserver subscription login
 
 # --configを指定した全コマンドがオンプレミスサーバーを使用する
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 各名前付きconfigは専用のアカウントサーバーURLとサブスクリプショントークンを保持します。configを切り替えることでサーバーコンテキスト全体が切り替わります。

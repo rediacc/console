@@ -4,7 +4,7 @@ description: "Soluciones para problemas comunes de SSH, configuración, reposito
 category: "Guides"
 order: 10
 language: es
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU es el caso conocido que activa AppArmor. Renet establece automáticamente `
 
 ### Módulo btrfs ausente (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Si `rdc config machine setup` o `renet system check-btrfs` falla con:
+Si `rdc machine setup` o `renet system check-btrfs` falla con:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Revise los registros del contenedor usando el socket Docker del repositorio:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 O vea todos los contenedores:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Errores de permiso denegado
@@ -115,7 +115,7 @@ Cada repositorio tiene su propio Docker daemon. Al ejecutar comandos Docker manu
 
 ```bash
 # Usando rdc term (configurado automáticamente):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # O manualmente con el socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ Esto es intencional. El modelo de red de Rediacc es **red de host para cada serv
 **Para obtener acceso de red en un contenedor ad-hoc, use la red de host:**
 
 ```bash
-# Dentro de un shell de repositorio (rdc term connect -m <machine> -r <repo>)
+# Dentro de un shell de repositorio (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Ahora apt update, curl, pip install todos funcionan.
 ```
@@ -181,7 +181,7 @@ Si `rdc term` no logra abrir una ventana de terminal:
 
 - Use el modo en línea con `-c` para ejecutar comandos directamente:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Fuerce una terminal externa con `--external` si el modo en línea tiene problemas
 - En Linux, asegúrese de tener instalado `gnome-terminal`, `xterm` u otro emulador de terminal

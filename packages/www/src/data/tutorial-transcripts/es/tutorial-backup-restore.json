@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Paso uno. Importamos una configuración de rclone existente. rclone soporta S3, Backblaze, Google Drive, Dropbox y muchos más. Si ya lo usas, puedes importar la misma configuración directamente.",
       "afterText": "Almacenamiento importado. Tu CLI ya puede enviar backups a él.",
       "cardLabel": "Importar Almacenamiento",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Listamos los almacenamientos que el CLI conoce ahora. Cada almacenamiento es un destino al que podemos enviar backups.",
       "afterText": "Ahí está. Listo para recibir backups.",
       "cardLabel": "Listar Almacenamientos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "Paso dos. Enviamos un backup completo. El repositorio entero, app, base de datos, archivos y configuración, se sube. Como el repositorio está cifrado en reposo, el backup también está cifrado. Sin gestión de claves adicional.",
       "afterText": "Backup subido. Todo lo que hay en este repo está ahora en el almacenamiento remoto, cifrado.",
       "cardLabel": "Enviar Copia de Seguridad",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "Listamos los backups disponibles en este almacenamiento. Desde aquí, restaurar en un servidor completamente nuevo es un solo comando: repo pull del CLI. Los mismos datos, los mismos contenedores, una máquina diferente.",
       "afterText": "Todos tus snapshots en un solo lugar. Recupera cualquiera de ellos con un único comando.",
       "cardLabel": "Listar Copias de Seguridad",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Ahora la prueba de restauración. Primero pon el repositorio offline: detén los servicios y desmonta el volumen cifrado. La app desaparece de esta máquina.",
       "afterText": "Offline y desmontado, exactamente el estado de un servidor nuevo.",
       "cardLabel": "Desconectar",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "Y vuelve a descargar el backup directamente desde el almacenamiento. El comando repo pull descarga la imagen, verifica su integridad y la coloca exactamente donde estaba.",
       "afterText": "Transferencia completa, integridad verificada. El repositorio ha vuelto.",
       "cardLabel": "Recuperar Copia",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Móntalo de nuevo y el repositorio queda restaurado. Push, list, pull. Esa es toda la historia del backup.",
       "afterText": "Restaurado. El mismo flujo funciona también en una máquina nueva.",
       "cardLabel": "Montar Restaurado",

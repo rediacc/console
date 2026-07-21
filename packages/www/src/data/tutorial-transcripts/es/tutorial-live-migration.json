@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.413171,
+      "at": 2.420835,
       "text": "Conoce pulse. Mantiene un contador en la memoria del proceso e imprime un latido cada cinco segundos. El contador está en seis y subiendo, y vive solo en RAM. Reinicia el proceso y empieza de nuevo en uno.",
       "afterText": "Un contador en vivo, latiendo en memoria. Esa es nuestra prueba.",
       "cardLabel": "Contador en Vivo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 10.379022,
+      "at": 8.294774,
       "text": "Un solo comando lo mueve, en vivo. La fase uno transfiere el grueso, dos gigabytes en aproximadamente medio minuto, mientras el origen sigue ejecutándose. Luego el corte: crea un checkpoint de los procesos en ejecución, transfiere los últimos megabytes y muestra el tiempo de inactividad ahí mismo. Unos veinte segundos para mover dos gigabytes.",
       "afterText": "Dos gigabytes movidos mientras la aplicación seguía funcionando. La línea de tiempo de inactividad muestra lo que realmente costó el traslado.",
       "cardLabel": "Migrar en Vivo",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 101.149024,
+      "at": 94.394579,
       "text": "Revisa la nueva máquina: ahí está. Montado, Docker ejecutándose, dos containers activos.",
       "afterText": "Mismo repo, nuevo hogar, ya en ejecución.",
       "cardLabel": "Nuevo Hogar",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 106.859481,
+      "at": 99.812481,
       "text": "¿Y el origen? El repositorio sigue listado, pero mira la fila: no montado, sin Docker, cero containers. Ya nada se ejecuta aquí. La imagen se queda a propósito, como base para la próxima transferencia delta.",
       "afterText": "Detenido y desmontado. La imagen restante es una base delta, no una aplicación en ejecución.",
       "cardLabel": "Origen Detenido",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 112.346008,
+      "at": 105.151877,
       "text": "Ahora lo mejor. El contador marca diecisiete, dieciocho, diecinueve, sigue subiendo. Retomó exactamente donde el checkpoint lo congeló, en lugar de empezar de nuevo en uno. El proceso nunca notó que cambió de máquina.",
       "afterText": "El contador siguió contando. La memoria del proceso hizo el viaje.",
       "cardLabel": "Contador Continuó",

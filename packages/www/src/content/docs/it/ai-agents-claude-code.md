@@ -4,7 +4,7 @@ description: "Guida passo passo per configurare Claude Code per la gestione auto
 category: Guides
 order: 31
 language: it
-sourceHash: "0a4b93dedcf18e6d"
+sourceHash: "c0034de091da3349"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -30,11 +30,11 @@ Posiziona questo file nella root del tuo progetto. Consulta il [template AGENTS.
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query --name <machine> -o json
-- Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers --name <machine> -o json
-- Health: rdc machine health --name <machine> -o json
-- SSH: rdc term connect -m <machine> [-r <repo>]
+- Status: rdc machine status <machine> -o json
+- Deploy: rdc repo up <repo>@<machine> --yes
+- Containers: rdc machine status <machine> --containers -o json
+- Health: rdc machine health <machine> -o json
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -46,10 +46,10 @@ Posiziona questo file nella root del tuo progetto. Consulta il [template AGENTS.
 
 Claude Code richiederà il permesso di eseguire comandi `rdc`. Puoi pre-autorizzare le operazioni comuni aggiungendo alle impostazioni di Claude Code:
 
-- Consenti `rdc machine query *`, controlli di stato in sola lettura
-- Consenti `rdc machine containers *`, elenco dei container
+- Consenti `rdc machine status *`, controlli di stato in sola lettura
+- Consenti `rdc machine status * --containers`, elenco dei container
 - Consenti `rdc machine health *`, controlli di salute
-- Consenti `rdc config repository list`, elenco dei repository
+- Consenti `rdc repo list`, elenco dei repository
 
 Per le operazioni distruttive (`rdc repo up`, `rdc repo delete`), Claude Code chiederà sempre conferma, a meno che non le si autorizzi esplicitamente.
 
@@ -60,7 +60,7 @@ Per le operazioni distruttive (`rdc repo up`, `rdc repo delete`), Claude Code ch
 ```
 Tu: "Qual è lo stato di prod-1?"
 
-Claude Code esegue: rdc machine query --name prod-1 -o json
+Claude Code esegue: rdc machine status prod-1 -o json
 → Mostra lo stato della macchina, i repository, i container e i servizi
 ```
 
@@ -69,9 +69,9 @@ Claude Code esegue: rdc machine query --name prod-1 -o json
 ```
 Tu: "Distribuisci il repo mail su prod-1"
 
-Claude Code esegue: rdc repo up --name mail -m prod-1 --dry-run -o json
+Claude Code esegue: rdc repo up mail@prod-1 --dry-run -o json
 → Mostra cosa succederebbe
-Claude Code esegue: rdc repo up --name mail -m prod-1 --yes
+Claude Code esegue: rdc repo up mail@prod-1 --yes
 → Distribuisce il repository
 ```
 
@@ -80,9 +80,9 @@ Claude Code esegue: rdc repo up --name mail -m prod-1 --yes
 ```
 Tu: "Perché il container nextcloud non è in salute?"
 
-Claude Code esegue: rdc machine containers --name prod-1 -o json --fields name,status,repository
+Claude Code esegue: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Elenca gli stati dei container
-Claude Code esegue: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code esegue: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
 → Controlla i log recenti
 ```
 
@@ -91,9 +91,9 @@ Claude Code esegue: rdc term connect -m prod-1 -c "docker logs nextcloud-app --t
 ```
 Tu: "Carica la configurazione locale nel repo mail"
 
-Claude Code esegue: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code esegue: rdc repo sync upload mail@prod-1 --local ./config --dry-run
 → Mostra i file che verrebbero sincronizzati
-Claude Code esegue: rdc repo sync upload -m prod-1 -r mail -l ./config
+Claude Code esegue: rdc repo sync upload mail@prod-1 --local ./config
 → Sincronizza i file
 ```
 

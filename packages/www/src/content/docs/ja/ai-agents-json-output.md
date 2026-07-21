@@ -4,7 +4,7 @@ description: rdc CLIのJSON出力形式、エンベロープスキーマ、エ�
 category: Reference
 order: 51
 language: ja
-sourceHash: "4da1be4753fa62bf"
+sourceHash: "cc88f8f06960df3a"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -15,8 +15,8 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ### 明示的なフラグ
 
 ```bash
-rdc machine query --name prod-1 --output json
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 --output json
+rdc machine status prod-1 -o json
 ```
 
 ### 自動検出
@@ -25,7 +25,7 @@ rdc machine query --name prod-1 -o json
 
 ```bash
 # Produces JSON automatically
-result=$(rdc machine query --name prod-1)
+result=$(rdc machine status prod-1)
 ```
 
 ## JSONエンベロープ
@@ -72,7 +72,7 @@ result=$(rdc machine query --name prod-1)
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+      "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
     }
   ],
   "warnings": [],
@@ -106,11 +106,11 @@ result=$(rdc machine query --name prod-1)
       "options": [
         {
           "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+          "run": "rdc repo secret get mail --key STRIPE_KEY"
         },
         {
           "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
         }
       ]
     }
@@ -142,7 +142,7 @@ result=$(rdc machine query --name prod-1)
 `--fields` を使用して出力を特定のキーに限定し、トークン使用量を削減できます:
 
 ```bash
-rdc machine containers --name prod-1 -o json --fields name,status,repository
+rdc machine status prod-1 --containers -o json --fields name,status,repository
 ```
 
 ## ドライラン出力
@@ -150,7 +150,7 @@ rdc machine containers --name prod-1 -o json --fields name,status,repository
 破壊的なコマンドは `--dry-run` をサポートし、実行前にプレビューできます:
 
 ```bash
-rdc repo delete --name mail -m prod-1 --dry-run -o json
+rdc repo delete mail@prod-1 --dry-run -o json
 ```
 
 ```json
@@ -178,7 +178,7 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine status prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

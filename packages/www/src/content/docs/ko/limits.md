@@ -5,7 +5,7 @@ description: >-
 category: Reference
 order: 99
 language: ko
-sourceHash: "05755ef64f8d0ff6"
+sourceHash: "5b839348d23c213f"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -85,8 +85,8 @@ labels:
 머신 수준에서 포트를 열려면(모든 서비스에서 사용 가능):
 
 ```bash
-rdc config infra set -m server-1 --tcp-ports 25,587,993   # mail server
-rdc config infra push -m server-1
+rdc machine infra set server-1 --tcp-ports 25,587,993   # mail server
+rdc machine infra push server-1
 ```
 
 > 특정 요구사항이 없는 한 데이터베이스나 캐시 포트를 외부에 노출하지 마십시오. 웹 서비스에는 HTTPS 자동 경로를 사용하고 스토리지 서비스는 내부로 유지하십시오.

@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ko
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -212,7 +212,7 @@ renet과 Docker는 의도적으로 컨테이너 재시작 처리 방식이 다�
 
 **드리프트 수정 방법.** 컨테이너의 `.rediacc.json` 저장된 정책이 잘못된 경우(예: compose를 편집했지만 컨테이너를 재생성하지 않은 경우), `rdc repo up <repo>`을 다시 실행하십시오. 컨테이너가 업데이트된 정책으로 재생성됩니다.
 
-> **실험적:** Cold-backup 사이드카 기반 복구와 `rdc machine query`의 `--sync-certs` 플래그는 renet 0.9+에 포함됩니다. 이전 버전은 watchdog 복구를 위해 저장된 `restart_policy`에만 의존하며, cold backup 후 `on-failure` 컨테이너가 중단될 수 있습니다.
+> **실험적:** Cold-backup 사이드카 기반 복구와 `rdc machine status`의 `--sync-certs` 플래그는 renet 0.9+에 포함됩니다. 이전 버전은 watchdog 복구를 위해 저장된 `restart_policy`에만 의존하며, cold backup 후 `on-failure` 컨테이너가 중단될 수 있습니다.
 
 > **Docker 브리지 네트워킹은 저장소별 데몬에서 비활성화됩니다.** 각 저장소별 데몬(`FlavorRediacc`)은 `"bridge": "none"`과 `"iptables": false`로 구성됩니다. 저장소 셸 내에서 일반 `docker run <image>`는 여전히 실행되지만, 컨테이너는 루프백 인터페이스만 받고 DNS나 아웃바운드 연결이 없습니다. 이는 설계상의 것입니다. 저장소 간 루프백 격리는 브리지 컨테이너가 우회할 수 있는 eBPF cgroup 훅에 의해 적용되기 때문입니다. 프로덕션 서비스는 `renet compose`를 사용해야 합니다 (호스트 네트워킹 자동 주입). 임시 디버깅에는 `--network host`를 명시적으로 전달하십시오: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -225,12 +225,12 @@ renet과 Docker는 의도적으로 컨테이너 재시작 처리 방식이 다�
 저장소를 마운트하고 모든 서비스를 시작합니다.
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | 옵션 | 설명 |
 |------|------|
-| `--detach` | 컨테이너가 시작되면 즉시 반환. 헬스체크는 백그라운드에서 계속 진행 |
+| `--no-wait` | 컨테이너 시작 후 즉시 반환. 헬스 체크는 백그라운드에서 계속 진행 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
 실행 순서:
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### 분리 시작
 
-`--detach`를 사용하면 헬스체크 완료를 기다리지 않고 컨테이너가 시작되는 즉시 명령이 반환됩니다. 나머지 시작 과정은 백그라운드에서 진행됩니다. 프록시는 각 서비스가 바인딩될 때까지 업스트림 연결을 재시도하므로 경로는 자동으로 복구됩니다. 진행 상황은 `rdc machine status <machine> --containers`으로 확인할 수 있습니다. 임시 포크나 다음 단계 전에 서비스가 준비될 필요가 없는 스크립트 루프에 적합합니다.
+`--no-wait`를 사용하면 헬스체크 완료를 기다리지 않고 컨테이너가 시작되는 즉시 명령이 반환됩니다. 나머지 시작 과정은 백그라운드에서 진행됩니다. 프록시는 각 서비스가 바인딩될 때까지 업스트림 연결을 재시도하므로 경로는 자동으로 복구됩니다. 진행 상황은 `rdc machine status <machine> --containers`으로 확인할 수 있습니다. 임시 포크나 다음 단계 전에 서비스가 준비될 필요가 없는 스크립트 루프에 적합합니다.
 
 ### 준비 상태 프로브
 
@@ -262,12 +262,12 @@ HTTP services (accessible via proxy after ~3s):
 ## 서비스 중지
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | 옵션 | 설명 |
 |------|------|
-| `--unmount` | 중지 후 암호화된 저장소 언마운트. 이것이 적용되지 않으면 `rdc repo unmount`를 별도로 사용하십시오. |
+| `--unmount` | 중지 후 암호화된 저장소 언마운트. |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
 실행 순서:
@@ -280,13 +280,13 @@ rdc repo down --name my-app -m server-1
 한 번에 머신의 모든 저장소를 시작하거나 중지합니다.
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | 옵션 | 설명 |
 |------|------|
 | `--include-forks` | Fork된 저장소 포함 |
-| `--mount-only` | 마운트만, 컨테이너 시작 안 함 |
+| `--no-start` | 마운트와 준비만 수행하고 저장소의 `up()` 단계는 실행하지 않음 |
 | `--dry-run` | 수행될 작업 미리보기 |
 | `--parallel` | 병렬로 작업 실행 |
 | `--concurrency <n>` | 최대 동시 작업 수 (기본값: 3) |
@@ -311,7 +311,7 @@ rdc repo up -m server-1
 ### 활성화
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 저장소 패스프레이즈를 입력하라는 메시지가 표시됩니다.
@@ -319,13 +319,13 @@ rdc repo autostart enable --name my-app -m server-1
 ### 모두 활성화
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### 비활성화
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 키파일이 제거되고 LUKS 슬롯 1이 삭제됩니다.
@@ -351,7 +351,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ### 상태 목록
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 부팅 후 중단된 레포지토리를 주기적 조정자가 복구하는 방법에 대한 자세한 내용은 [자동 시작 및 복구](/en/docs/autostart-recovery)를 참조하십시오.
@@ -364,16 +364,16 @@ PostgreSQL, Redis, API 서버를 갖춘 웹 애플리케이션을 배포합니�
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. 마운트 및 준비
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. 애플리케이션 파일 생성
@@ -432,13 +432,13 @@ down() {
 ### 4. 시작
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Autostart 활성화
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## compose에서 저장소별 시크릿 사용

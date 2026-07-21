@@ -4,7 +4,7 @@ description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: "Guides"
 order: 4
 language: tr
-sourceHash: "c9553259c9bf6b4c"
+sourceHash: "b67203062ab832f8"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -18,7 +18,7 @@ Bir **depo**, uzak bir sunucudaki LUKS ile şifrelenmiş bir disk görüntüsüd
 ## Depo Oluşturma
 
 ```bash
-rdc repo create --name my-app -m server-1 --size 10G
+rdc repo create my-app -m server-1 --size 10G
 ```
 
 | Seçenek | Zorunlu | Açıklama |
@@ -40,8 +40,8 @@ rdc repo create --name my-app -m server-1 --size 10G
 Bağlama, depoyu şifreler ve dosya sistemine erişilebilir kılar. Çıkarma, şifrelenmiş birimi kapatır.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Decrypt and mount
-rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
+rdc repo up my-app --no-start     # Decrypt and mount, without starting services
+rdc repo down my-app --unmount    # Stop, unmount, and re-encrypt
 ```
 
 | Seçenek | Açıklama |
@@ -52,7 +52,7 @@ rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
 ## Durumu Kontrol Etme
 
 ```bash
-rdc repo status --name my-app -m server-1
+rdc repo status my-app
 ```
 
 ## Depoları Listeleme
@@ -78,8 +78,8 @@ Bilinmeyen girdilerin rutin temizliği için bkz. [`rdc machine prune --prune-un
 Depoyu tam bir boyuta ayarlayın veya belirli bir miktarda genişletin:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
-rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
+rdc repo resize my-app --size 20G  # Set to exact size
+rdc repo expand my-app --size 5G  # Add 5G to current size
 ```
 
 > Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir. `repo expand` çevrimiçi çalışır. Yeniden boyutlandırma deponun maksimum boyutunu değiştirir; maksimumu değiştirmeden serbest kalan blokları havuza geri vermek için bunun yerine [`repo trim`](#alan-kazanma-trim) kullanın.
@@ -90,8 +90,8 @@ Depo içindeki dosyaları silmek o depo için alan serbest bırakır; `repo trim
 
 ```bash
 rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
-rdc repo trim -m server-1 --name my-app          # Trim one repository
-rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim my-app                            # Trim one repository
+rdc repo trim -m server-1 --report-only         # Show reclaimable space without trimming
 rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
 ```
 
@@ -112,10 +112,10 @@ Boyutu elle değiştirmek yerine makine, depo boyutlarını kendisi yönetsin. B
 rdc repo policy set -m server-1 --auto-trim true
 
 # Per-repository: grow my-app automatically, up to a hard ceiling
-rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+rdc repo policy set my-app --auto-grow true --max-quota 50G
 
 # Inspect the stored and effective policy
-rdc repo policy get -m server-1 --name my-app
+rdc repo policy get my-app
 ```
 
 Politika alanları:
@@ -138,7 +138,7 @@ Depo başına ayarlar, makine genelindeki varsayılanı geçersiz kılar. Tekrar
 Mevcut bir deponun mevcut durumunun bir kopyasını oluşturun:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1
+rdc repo fork my-app --tag staging
 ```
 
 Fork'lar isim:etiket modelini kullanır: elde edilen fork, `my-app:staging` olarak adlandırılır. Bu, kendi GUID ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst öğenin adını paylaşır. Fork, üst öğeyle aynı LUKS kimlik bilgisini paylaşır.
@@ -149,14 +149,14 @@ Fork oluşturma sırasında `repo fork`, [durum aynası ek dosyasını](#type-co
 
 ### Tek adımda fork ve başlatma
 
-`--up` seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için `--detach` ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener:
+`--up` seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için `--no-wait` ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener:
 
 ```bash
-rdc repo fork --parent my-app --tag staging -m server-1 --up
-rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+rdc repo fork my-app --tag staging --up
+rdc repo fork my-app --tag scratch --up --no-wait
 ```
 
-Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
+Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--no-wait` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine status <machine> --containers`.
 
 ### Süre nereye gidiyor
 
@@ -173,9 +173,9 @@ Servis başlatma, kapsayıcıların önyüklenmesidir; görüntüler, başlatma,
 Fork'lar git commit'leri gibi davranabilir. `rdc repo commit` çalışan bir fork'u değiştirilemez, byte-kararlı bir commit'e dondurur; `rdc repo branch` bir geçmiş satırını adlandırır; `rdc repo checkout` bir commit'i reflink ile klonlayarak yazılabilir bir fork oluşturur; `rdc repo log` ebeveyn zincirini dolaşır; `rdc repo merge` ise canlı bir depoyu yerinde değiştirmeden iki satırı birleştirir. `rdc repo fork --immutable` tek adımda commit eşdeğeri bir taban üretir.
 
 ```bash
-rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
-rdc repo branch --branch staging --name my-app:work
-rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+rdc repo commit my-app:work --message "schema migration applied"
+rdc repo branch my-app:work --branch staging
+rdc repo checkout staging --from my-app:work --tag staging-copy
 ```
 
 Tam komut kümesi, seçenekler ve çalışılmış örnekler için [Git benzeri dallanma referansına](/en/docs/repo-branching) bakın.
@@ -195,11 +195,11 @@ Depo başına gizli diziler, şifrelenmiş depo görüntüsüne yazılmadan kaps
 
 ```bash
 # Set, list, get (digest only), unset
-rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
-rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
-rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
-rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
+rdc repo secret set my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
+rdc repo secret set my-app --key DB_HOST         --value postgres.internal --mode env --current ""
+rdc repo secret list my-app
+rdc repo secret get  my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret unset my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
 **Simetrik mutasyon kapısı.** Hem insanların hem de ajanların bir gizli diziyi üzerine yazmak veya kaldırmak için `--current <önceki-değer>` girmesi gerekir (passwd tarzı ön koşul). Yeni bir anahtarın ilk yazımı için `--current ""` (boş) girin. Önceki değeri doğrulamadan döndürmek için bunun yerine `--rotate-secret` kullanın. Bu, yüksek sesle bir döndürme olarak denetlenir. `--current` ve `--rotate-secret` birbirini dışlar.
@@ -235,7 +235,7 @@ Küçük harfli hizmet tarafı referansı (`stripe_live_key`), kapsayıcı için
 Bir deponun dosya sistemi bütünlüğünü kontrol edin:
 
 ```bash
-rdc repo validate --name my-app -m server-1
+rdc repo admin validate my-app
 ```
 
 ## Sahiplik
@@ -243,7 +243,7 @@ rdc repo validate --name my-app -m server-1
 Depo içindeki dosya sahipliğini evrensel kullanıcıya (UID 7111) ayarlayın. Bu, genellikle çalışma istasyonunuzdan dosya yükledikten sonra gereklidir; dosyalar yerel UID'inizle gelir.
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 Komut, Docker kapsayıcı veri dizinlerini (yazılabilir bağlama bağlantı noktaları) otomatik olarak algılar ve bunları dışlar. Bu, kendi UID'leri ile dosyaları yöneten kapsayıcıların bozulmasını önler (örneğin MariaDB=999, www-data=33).
@@ -256,7 +256,7 @@ Komut, Docker kapsayıcı veri dizinlerini (yazılabilir bağlama bağlantı nok
 Kapsayıcı verileri de dahil olmak üzere tüm dosyalarda sahipliği zorlamak için:
 
 ```bash
-rdc repo ownership --name my-app -m server-1
+rdc repo admin ownership my-app
 ```
 
 
@@ -267,7 +267,7 @@ Proje geçişi sırasında sahipliğin ne zaman ve nasıl kullanılacağına ili
 Bir depoyu dosyalarla başlatmak için şablon uygulayın:
 
 ```bash
-rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
+rdc repo admin template apply my-app --template my-template --file ./my-template.tar.gz
 ```
 
 ## Silme
@@ -275,7 +275,7 @@ rdc repo admin template apply --name my-template -m server-1 -r my-app --file ./
 Bir depoyu ve içindeki tüm verileri kalıcı olarak yok edin:
 
 ```bash
-rdc repo delete --name my-app -m server-1
+rdc repo delete my-app
 ```
 
 > Bu, şifrelenmiş disk görüntüsünü kalıcı olarak yok eder. Bu işlem geri alınamaz.
@@ -285,7 +285,7 @@ rdc repo delete --name my-app -m server-1
 Bir depoyu bir makineden diğerine canlı olarak geçirin. Kesinti yalnızca son delta-senkronizasyon aşamasında oluşur: kesme noktasındaki yazma hızına bağlı olarak tipik olarak birkaç saniyeden az dakikaya kadar.
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Seçenek | Açıklama |
@@ -319,10 +319,10 @@ Depoları sildikten veya başarısız işlemlerden kurtardıktan sonra, sahipsiz
 
 ```bash
 # Preview what would be removed
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Remove orphaned resources
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 Yalnızca eşleşen depo görüntüsü olmayan kaynaklar etkilenir. Boş olmayan bağlama dizinleri hiçbir zaman kaldırılmaz.

@@ -4,8 +4,8 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "a1350abc611570ef"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "6e81b15303ed64f9"
+sourceCommit: "e4a4e0de5"
 ---
 
 # 빠른 시작
@@ -59,8 +59,8 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### 3. 서버 추가
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user admin
-rdc config machine setup --name my-server  # renet 프로비저닝 + 데이터스토어 생성
+rdc machine add my-server --ip 192.168.1.100 --user admin
+rdc machine setup my-server  # renet 프로비저닝 + 데이터스토어 생성
 ```
 
 **수행되는 작업:** SSH 호스트 키 스캔, renet 바이너리 업로드, 서버에 암호화된 데이터스토어 초기화. 리포지터리 사용 준비 완료.
@@ -83,7 +83,7 @@ cat ~/.config/rediacc/rediacc.json         # 원시 JSON: 머신, 리포지터�
 ### 1. 리포지터리 생성
 
 ```bash
-rdc repo create --name my-app -m my-server --size 2G  # 2 GB 암호화 리포지터리 생성
+rdc repo create my-app -m my-server --size 2G  # 2 GB 암호화 리포지터리 생성
 ```
 
 암호화 볼륨을 생성하고 마운트하며 Docker 데몬을 시작합니다. 리포지터리는 config에 등록되고 사용 준비가 됩니다.
@@ -94,7 +94,7 @@ rdc repo create --name my-app -m my-server --size 2G  # 2 GB 암호화 리포지
 
 ```bash
 rdc repo admin template list                                        # 내장 템플릿 표시
-rdc repo admin template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile 배포
+rdc repo admin template apply my-app --template app-postgres  # docker-compose.yml + Rediaccfile 배포
 ```
 
 템플릿은 `docker-compose.yml`, `Rediaccfile`, 지원 파일을 제공합니다. 템플릿(또는 자체 compose 파일) 없이는 시작할 것이 없습니다. 첫 번째 리포지터리에는 내장된 템플릿을 사용하세요. 전체 워크플로우를 처음부터 끝까지 보는 가장 빠른 방법입니다.
@@ -102,9 +102,9 @@ rdc repo admin template apply --name app-postgres -m my-server -r my-app  # dock
 ### 3. 리포지터리 시작
 
 ```bash
-rdc repo up --name my-app -m my-server  # Rediaccfile up() 실행
+rdc repo up my-app  # Rediaccfile up() 실행
 rdc repo list -m my-server                           # 머신의 모든 리포지터리 보기
-rdc repo status --name my-app -m my-server  # 마운트 상태, Docker, 크기, 암호화
+rdc repo status my-app  # 마운트 상태, Docker, 크기, 암호화
 ```
 
 `repo up`은 필요하면 자동으로 마운트합니다. 플래그가 필요하지 않습니다.
@@ -142,25 +142,25 @@ rdc vscode connect my-app              # VS Code SSH를 열고 리포지터리 �
 
 **터미널:**
 ```bash
-rdc term connect -m my-server -r my-app                            # 리포지터리 샌드박스로 SSH
-rdc term connect -m my-server -r my-app -c "curl localhost:3000"   # 명령 실행 후 종료
-rdc term connect -m my-server                                   # 머신으로 SSH (샌드박스 없음)
+rdc term connect my-app                            # 리포지터리 샌드박스로 SSH
+rdc term connect my-app -c "curl localhost:3000"   # 명령 실행 후 종료
+rdc term connect my-server                                   # 머신으로 SSH (샌드박스 없음)
 ```
 
 **파일 동기화 (SSH를 통한 rsync):**
 ```bash
-rdc repo sync upload -m my-server -r my-app --local ./src                                   # 디렉터리 푸시
-rdc repo sync upload -m my-server -r my-app --local ./config.yml --remote conf              # 단일 파일 푸시
-rdc repo sync download -m my-server -r my-app --local ./backup                              # 디렉터리 풀
-rdc repo sync download -m my-server -r my-app --remote-file conf/config.yml --local ./dl    # 단일 파일 풀
-rdc repo sync download -m my-server -r my-app --local ./backup --dry-run                    # 먼저 미리 보기
+rdc repo sync upload my-app --local ./src                                   # 디렉터리 푸시
+rdc repo sync upload my-app --local ./config.yml --remote conf              # 단일 파일 푸시
+rdc repo sync download my-app --local ./backup                              # 디렉터리 풀
+rdc repo sync download my-app --remote-file conf/config.yml --local ./dl    # 단일 파일 풀
+rdc repo sync download my-app --local ./backup --dry-run                    # 먼저 미리 보기
 ```
 
 **터널 (컨테이너로의 SSH 포트 포워딩):**
 ```bash
-rdc repo tunnel -m my-server -r my-app -c app  # 앱 컨테이너에 대한 포트 자동 감지
-rdc repo tunnel -m my-server -r my-app -c db --port 5432  # Postgres 터널
-rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 사용자 정의 로컬 포트
+rdc repo tunnel my-app -c app  # 앱 컨테이너에 대한 포트 자동 감지
+rdc repo tunnel my-app -c db --port 5432  # Postgres 터널
+rdc repo tunnel my-app -c db --port 5432 --local 15432  # 사용자 정의 로컬 포트
 ```
 
 터널 실행 → 브라우저에서 `localhost:3000` 열기 → 원격 서버의 실제 앱.
@@ -174,9 +174,9 @@ rdc repo tunnel -m my-server -r my-app -c db --port 5432 --local 15432  # 사용
 ### 1. Grand 및 Fork 리포지터리
 
 ```bash
-rdc repo fork --parent my-app -m my-server --tag experiment --up  # 즉각적인 CoW 클론 + 시작
+rdc repo fork my-app --tag experiment --up  # 즉각적인 CoW 클론 + 시작
 rdc repo list -m my-server                                  # 표시: my-app (grand) + my-app:experiment (fork)
-rdc repo delete --name my-app:experiment -m my-server  # 포크 삭제, grand는 그대로 유지
+rdc repo delete my-app:experiment  # 포크 삭제, grand는 그대로 유지
 ```
 
 **즉각적인 제로 카피 클론.** CoW (copy-on-write). 마이크로초, 데이터 복사 없음. 한쪽이 쓸 때까지 블록이 공유됩니다.
@@ -192,32 +192,32 @@ rdc repo delete --name my-app:experiment -m my-server  # 포크 삭제, grand는
 
 ```bash
 # 리포지터리를 다른 머신으로 푸시
-rdc repo push --name my-app -m my-server --to backup-server
+rdc repo push my-app --to backup-server
 
 # 대상에서 자동 배포로 푸시
-rdc repo push --name my-app -m my-server --to backup-server --up
+rdc backup restore my-app --as my-app -m backup-server --up
 
 # CRIU 체크포인트로 푸시 (라이브 마이그레이션, 메모리 상태 보존)
-rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
+rdc repo push my-app --to new-server --checkpoint
 
 # 새 머신으로 푸시 (클라우드 공급자를 통한 자동 프로비저닝)
-rdc repo push --name my-app -m my-server --to new-server --provision linode --up
+rdc repo push my-app --to new-server --provision linode
 ```
 
 ### 3. 클라우드 스토리지로 푸시 (OneDrive, Google Drive, S3)
 
 ```bash
 # rclone config를 스토리지 백엔드로 가져오기
-rdc config storage import --file ~/rclone.conf
+rdc storage import ~/rclone.conf
 
 # 사용 가능한 스토리지 목록
 rdc storage list
 
 # 리포지터리를 클라우드 스토리지로 푸시
-rdc repo push --name my-app -m my-server --to my-s3-backup
+rdc repo push my-app --to my-s3-backup
 
 # 스토리지의 백업 목록
-rdc repo backup list --from my-s3-backup -m my-server
+rdc backup list --storage my-s3-backup
 ```
 
 `--to`는 대상이 머신인지 스토리지 백엔드인지 자동으로 감지합니다. 모든 rclone 지원 공급자와 작동합니다: S3, R2, B2, OneDrive, Google Drive, SFTP 등.
@@ -226,13 +226,13 @@ rdc repo backup list --from my-s3-backup -m my-server
 
 ```bash
 # 클라우드 머신에서 로컬 서버로 리포지터리 풀
-rdc repo pull --name my-app -m my-local-server --from cloud-server
+rdc repo pull my-app@my-local-server --from cloud-server
 
 # 클라우드 스토리지에서 풀
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup
+rdc repo pull my-app@my-local-server --from my-s3-backup
 
 # 풀하고 즉시 시작
-rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from my-s3-backup --up
 ```
 
 **왜 풀인가요?** 로컬 머신이 NAT 뒤에 있습니다. 클라우드가 푸시할 수 없습니다. 하지만 클라우드에는 접근할 수 있습니다. 풀은 리포지터리를 집으로 가져옵니다.
@@ -248,9 +248,9 @@ rdc repo pull --name my-app -m my-local-server --from my-s3-backup --up
 ### 1. 인프라 Config
 
 ```bash
-rdc config infra set -m my-server  # 구성: 기본 도메인, 공용 IP, 포트 범위
-rdc config infra show -m my-server  # 구성 검토
-rdc config infra push -m my-server  # 원격에 프록시 config 푸시
+rdc machine infra set my-server  # 구성: 기본 도메인, 공용 IP, 포트 범위
+rdc machine infra show my-server  # 구성 검토
+rdc machine infra push my-server  # 원격에 프록시 config 푸시
 ```
 
 **라우팅 작동 방식:**
@@ -261,8 +261,8 @@ rdc config infra push -m my-server  # 원격에 프록시 config 푸시
 ### 2. 프록시 템플릿
 
 ```bash
-rdc repo admin template apply --name proxy -m my-server -r infra  # 리포지터리에 프록시 배포
-rdc repo up --name infra -m my-server  # Traefik 시작
+rdc repo admin template apply infra --template proxy  # 리포지터리에 프록시 배포
+rdc repo up infra  # Traefik 시작
 ```
 
 이제 Traefik이 이 머신의 모든 리포지터리로 외부 트래픽을 라우팅합니다. 모든 컨테이너는 자동으로 HTTPS 엔드포인트를 갖습니다.

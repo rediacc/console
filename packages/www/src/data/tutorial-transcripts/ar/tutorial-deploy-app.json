@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.408078,
+      "at": 2.420634,
       "text": "الخطوة الأولى: اعرض القوالب المتاحة. يأتي Rediacc بإعدادات جاهزة للتطبيقات الشائعة، فلا حاجة لكتابة docker-compose من الصفر.",
       "afterText": "كتالوج القوالب الكامل. كل قالب هو مزيج مختبَر من ملف compose وRediaccfile.",
       "cardLabel": "عرض القوالب",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.077084,
+      "at": 6.399014,
       "text": "الخطوة الثانية: أضف قالب app-postgres إلى repo. مجموعة ملفات مُختبرة، تُنسخ مباشرة.",
       "afterText": "تم تطبيق القالب. أصبح المستودع يحتوي على ملف compose وRediaccfile.",
       "cardLabel": "تطبيق القالب",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 14.72542,
+      "at": 12.523372,
       "text": "ألقِ نظرة داخل repo واعرض ما وصل: ملف Rediaccfile يحتوي على hooks التشغيل والإيقاف، وملف docker-compose يصف containers.",
       "afterText": "الحاويات تعمل، والحجم محمَّل، ومحرك Docker المعزول قيد التشغيل.",
       "cardLabel": "عرض الملفات",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 21.699752,
+      "at": 17.108804,
       "text": "الخطوة الثالثة: شغّل repo. أمر واحد، يقوم فيه CLI بتركيب المجلد المشفر، وتشغيل Docker daemon المعزول، وإطلاق containers.",
       "afterText": "حاويات هذا المستودع فقط. العزل حقيقي وليس مجرد إعداد.",
       "cardLabel": "تشغيل المستودع",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 28.8781,
+      "at": 22.317819,
       "text": "تحقق مما يعمل. يعرض Docker ps هنا containers هذا repo فحسب. كل repo آخر على هذا الخادم لديه daemon خاص به، غير مرئي تماماً من هذه النافذة.",
       "afterText": "حاويات هذا الـ repo فقط. العزل حقيقي وليس مجرد إعداد.",
       "cardLabel": "التحقق من العزل",

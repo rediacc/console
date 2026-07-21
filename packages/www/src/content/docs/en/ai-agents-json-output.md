@@ -13,8 +13,8 @@ All `rdc` commands output structured JSON. Pipe it to a script or feed it direct
 ### Explicit Flag
 
 ```bash
-rdc machine query --name prod-1 --output json
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 --output json
+rdc machine status prod-1 -o json
 ```
 
 ### Auto-Detection
@@ -23,7 +23,7 @@ When `rdc` runs in a non-TTY environment (piped, subshell, or spawned by an AI a
 
 ```bash
 # Produces JSON automatically
-result=$(rdc machine query --name prod-1)
+result=$(rdc machine status prod-1)
 ```
 
 ## JSON Envelope
@@ -70,7 +70,7 @@ Failed commands return structured errors with recovery hints:
       "code": "NOT_FOUND",
       "message": "Machine \"prod-2\" not found",
       "retryable": false,
-      "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+      "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
     }
   ],
   "warnings": [],
@@ -104,11 +104,11 @@ For high-value error codes like `PRECONDITION_MISMATCH`, the error includes a `n
       "options": [
         {
           "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+          "run": "rdc repo secret get mail --key STRIPE_KEY"
         },
         {
           "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
         }
       ]
     }
@@ -140,7 +140,7 @@ Non-retryable errors (authentication, not found, invalid arguments) need a fix b
 Use `--fields` to limit output to specific keys and cut token usage:
 
 ```bash
-rdc machine containers --name prod-1 -o json --fields name,status,repository
+rdc machine status prod-1 --containers -o json --fields name,status,repository
 ```
 
 ## Dry-Run Output
@@ -148,7 +148,7 @@ rdc machine containers --name prod-1 -o json --fields name,status,repository
 Destructive commands support `--dry-run` to preview what would happen:
 
 ```bash
-rdc repo delete --name mail -m prod-1 --dry-run -o json
+rdc repo delete mail@prod-1 --dry-run -o json
 ```
 
 ```json
@@ -176,7 +176,7 @@ Commands with `--dry-run` support: `repo up`, `repo down`, `repo delete`, `snaps
 ### Shell (jq)
 
 ```bash
-status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
+status=$(rdc machine status prod-1 -o json | jq -r '.data.status')
 ```
 
 ### Python

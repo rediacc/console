@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 0
 language: ja
-sourceHash: "b1f9e2e3bba92912"
+sourceHash: "16b02000a82f3acd"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -47,7 +47,7 @@ Rediaccは、SSH経由で連携する2つのバイナリを使用しています
 
 ## rediaccユーザー
 
-`rdc config machine setup`を実行すると、renetはリモートサーバー上に`rediacc`というシステムユーザーを作成します:
+`rdc machine setup`を実行すると、renetはリモートサーバー上に`rediacc`というシステムユーザーを作成します:
 
 - **UID**: 7111
 - **Shell**: `/sbin/nologin`(SSH経由のログインはできません)

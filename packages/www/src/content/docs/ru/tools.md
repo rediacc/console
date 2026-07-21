@@ -4,7 +4,7 @@ description: "Синхронизация файлов, доступ через �
 category: Guides
 order: 9
 language: ru
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ Rediacc поставляется с четырьмя инструментами 
 
 ```bash
 # Каталог (содержимое объединяется с удалённым)
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # Один файл в удалённый каталог (имя сохраняется)
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # Один файл, явный путь назначения
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # Несколько источников в одном вызове
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote` и `--remote-file` исключают друг друга. `--remote-file` требует ровно один путь `--local`, указывающий на файл.
@@ -44,16 +44,16 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ```bash
 # Каталог
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # Один файл – `--local` должен быть существующим каталогом
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Проверка статуса синхронизации
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### Параметры
@@ -61,7 +61,7 @@ rdc repo sync status -m server-1 -r my-app
 | Параметр | Описание |
 |----------|----------|
 | `-m, --machine <name>` | Целевая машина |
-| `-r, --repository <name>` | Целевой репозиторий |
+| `<ref>` (позиционный) | Ссылка на целевой репозиторий: `name`, `name:tag`, при необходимости `@machine` |
 | `--local <paths...>` | Один или несколько локальных путей к файлу/каталогу (загрузка) или локальный целевой каталог (скачивание) |
 | `--remote <path>` | Удалённый каталог (относительно точки монтирования репозитория) |
 | `--remote-file <path>` | Один удалённый файл для загрузки или скачивания (альтернатива `--remote`) |
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 Самый быстрый способ подключения:
 
 ```bash
-rdc term connect -m server-1                    # Подключение к машине
-rdc term connect -m server-1 -r my-app             # Подключение к репозиторию
+rdc term connect server-1                    # Подключение к машине
+rdc term connect my-app             # Подключение к репозиторию
 ```
 
 ### Выполнение команды
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # Подключение к �
 Выполнение команды без открытия интерактивной сессии:
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 При подключении к репозиторию переменная `DOCKER_HOST` автоматически указывает на изолированный Docker-сокет репозитория, поэтому `docker ps` показывает только контейнеры этого репозитория.
@@ -101,8 +101,8 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 Или используйте подкоманду `connect` для получения того же результата с явными флагами:
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### Действия с контейнерами
@@ -111,28 +111,29 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # Открыть оболочку внутри контейнера
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # Просмотр логов контейнера
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # Следить за логами в реальном времени
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # Просмотр статистики контейнера
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # Выполнить команду в контейнере
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| Параметр | Описание |
-|----------|----------|
-| `--container <id>` | Идентификатор целевого Docker-контейнера |
-| `--container-action <action>` | Действие: `terminal` (по умолчанию), `logs`, `stats`, `exec` |
-| `--log-lines <n>` | Количество строк логов для отображения (по умолчанию: 50) |
-| `--follow` | Непрерывное отслеживание логов |
-| `--external` | Использовать внешний терминал вместо встроенного SSH |
+| Параметр | Команда | Описание |
+|----------|---------|----------|
+| `-c, --container <name>` | обе | Целевой контейнер внутри репозитория |
+| `--lines <n>` | `repo logs` | Количество строк лога для отображения |
+| `-f, --follow` | `repo logs` | Непрерывно следить за логами |
+| `--timestamps` | `repo logs` | Добавлять временную метку к каждой строке |
+| `-i, --interactive` | `repo exec` | Держать stdin открытым (нужно для оболочки) |
+| `-u, --user <user>` | `repo exec` | Выполнить от имени указанного пользователя |
 
 ## Интеграция с VS Code (vscode)
 
@@ -141,7 +142,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### Подключение к репозиторию
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 Эта команда:
@@ -179,7 +180,7 @@ rdc vscode check
 Нет локального VS Code? Поднимите редактор изнутри песочницы репозитория и откройте его в любом браузере:
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 Эта команда:
@@ -190,8 +191,8 @@ rdc vscode connect -r my-app -m server-1 --browser
 Сервер продолжает работать после закрытия туннеля; повторное подключение использует уже запущенный сервер. Управляйте им с помощью:
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | Параметр | Описание |

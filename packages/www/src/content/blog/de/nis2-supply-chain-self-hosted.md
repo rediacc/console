@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "f6a1604ae2a3a794"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ Self-Hosting verschiebt die Lieferantenliste, es löscht sie nicht. Drei Punkte,
 
 **2. Rediacc hat noch kein ISO 27001, SOC 2 oder BSI C5.** Diese befinden sich auf der Roadmap, liegen aber noch nicht vor. Für ein Einkaufsteam, das Zertifizierungen als Gating-Mechanismus nutzt, ist das eine echte Reibung. Die vertretbare Gegenantwort ist jene, die dieser Beitrag die ganze Zeit macht: Das Datenpfad-Argument bedeutet, dass das meiste, was diese Zertifizierungen bescheinigen (Sicherheitskontrollen in der Anbieter-Cloud, Management des Anbieterpersonalzugangs, Management von Unterauftragsverarbeitern), nicht im Geltungsbereich liegt, weil Rediacc als Unternehmen nicht im Datenpfad ist. Dieses Argument muss sorgfältig und vertretbar vorgebracht werden, nicht als Ersatz für Zertifizierungen, wenn Zertifizierungen das sind, was der Einkäufer benötigt.
 
-**3. Die GRC-Ebene liegt weiterhin bei Ihnen.** Rediacc gibt dem Operator ein Hash-verkettetes Audit-Log mit 70+ Ereignissen (`rdc audit verify` validiert die Kette von Ende zu Ende). Es gibt Ihnen kein Lieferantenregister, kein Kontrollrahmenwerk und keinen Workflow zur Evidenzsammlung. Diese kommen weiterhin von Drata, Vanta, OneTrust oder einem der europäischen Anbieter. Der Begleitbeitrag [zur tatsächlichen Rechnung](/de/blog/nis2-the-real-bill) behandelt die Kostenstruktur dieser Komplementarität im Detail.
+**3. Die GRC-Ebene liegt weiterhin bei Ihnen.** Rediacc gibt dem Operator ein Hash-verkettetes Audit-Log mit 70+ Ereignissen (`rdc config audit verify` validiert die Kette von Ende zu Ende). Es gibt Ihnen kein Lieferantenregister, kein Kontrollrahmenwerk und keinen Workflow zur Evidenzsammlung. Diese kommen weiterhin von Drata, Vanta, OneTrust oder einem der europäischen Anbieter. Der Begleitbeitrag [zur tatsächlichen Rechnung](/de/blog/nis2-the-real-bill) behandelt die Kostenstruktur dieser Komplementarität im Detail.
 
 ## Der AVV, den Sie nicht mehr verhandeln müssen
 
@@ -129,7 +129,7 @@ Nach dem Wechsel zu Rediacc auf Hetzner:
 | Unterauftragsverarbeiter | (1) Keine für Self-Hosted; (2) Nur Hetzner-intern, im Hetzner-AVV aufgelistet |
 | Vertragsstatus | (1) Softwarelizenz, kein AVV erforderlich; (2) Hetzner-AVV + SCCs bereits vorhanden |
 | Schlüsselgewahrsam | Kunde (LUKS-Credential in Operator-Konfiguration, nicht auf dem Server) |
-| Exit-Plan | "rdc repo backup pull von einem beliebigen rclone-kompatiblen Ziel. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
+| Exit-Plan | "rdc repo pull von einem beliebigen rclone-kompatiblen Ziel. Volumes sind LUKS-verschlüsselt; Operator hält Credential." |
 | Letzte Bewertung | (2) durch bestehende IaaS-Bewertung abgedeckt |
 
 Zwei Registereinträge statt einem. Der kritische Eintrag gilt für den IaaS-Anbieter, bei dem der Einkäufer bereits einen AVV und einen getesteten Exit-Plan hatte, weil IaaS eine Beziehung ist, die die meisten Teams zu managen wissen. Der Rediacc-Eintrag ist nicht kritisch, weil es sich um eine Softwarelizenz handelt, nicht um einen Auftragsverarbeitungsvertrag.

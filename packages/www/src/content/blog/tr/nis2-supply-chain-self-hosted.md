@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "f6a1604ae2a3a794"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -103,7 +103,7 @@ Self-hosting tedarikçi listesini kaydırır, silmez. Bir denetçinin hâlâ sor
 
 **2. Rediacc'ın henüz ISO 27001, SOC 2 veya BSI C5 belgesi yok.** Bunlar yol haritasında yer alıyor, elde mevcut değil. Sertifikaları bir geçiş mekanizması olarak kullanan bir tedarik ekibi için bu gerçek bir sürtüşmedir. Savunulabilir karşı argüman bu yazının savunduğu argümandır: veri yolu argümanı, söz konusu sertifikaların onayladığı şeylerin büyük bölümünün (tedarikçi bulut güvenlik kontrolleri, tedarikçi personel erişim yönetimi, tedarikçi alt işlemci yönetimi) kapsam dışında olduğu anlamına gelir; çünkü Rediacc şirketi veri yolunda değildir. Bu argümanın, sertifikaların alıcının ihtiyacı olduğu durumlarda bir ikame olarak değil, dikkatli ve savunulabilir biçimde öne sürülmesi gerekir.
 
-**3. GRC katmanı hâlâ sizin sorumluluğunuzdadır.** Rediacc, operatöre 70'ten fazla olayı kapsayan zincir hashli bir denetim günlüğü sunar (`rdc audit verify` zinciri baştan sona doğrular). Size tedarikçi kaydı, kontrol çerçevesi veya kanıt toplama iş akışı sağlamaz. Bunlar hâlâ Drata, Vanta, OneTrust veya Avrupa'dan çıkan ürünlerden gelir. Yardımcı [gerçek maliyet yazısı](/tr/blog/nis2-the-real-bill), bu tamamlayıcılığın maliyet biçimini ayrıntılı olarak ele alır.
+**3. GRC katmanı hâlâ sizin sorumluluğunuzdadır.** Rediacc, operatöre 70'ten fazla olayı kapsayan zincir hashli bir denetim günlüğü sunar (`rdc config audit verify` zinciri baştan sona doğrular). Size tedarikçi kaydı, kontrol çerçevesi veya kanıt toplama iş akışı sağlamaz. Bunlar hâlâ Drata, Vanta, OneTrust veya Avrupa'dan çıkan ürünlerden gelir. Yardımcı [gerçek maliyet yazısı](/tr/blog/nis2-the-real-bill), bu tamamlayıcılığın maliyet biçimini ayrıntılı olarak ele alır.
 
 ## Artık Müzakere Etmek Zorunda Olmadığınız DPA
 
@@ -130,7 +130,7 @@ Hetzner üzerinde Rediacc'a geçildikten sonra:
 | Alt işlemciler | (1) Self-hosted için hiçbiri; (2) Yalnızca Hetzner dahili, kendi DPA'larında listelenmiş |
 | Sözleşme durumu | (1) Yazılım lisansı, DPA gerekmiyor; (2) Hetzner DPA + SCC'ler zaten mevcut |
 | Anahtar yönetimi | Müşteri (LUKS2 kimlik bilgisi operatör yapılandırmasında, sunucuda değil) |
-| Çıkış planı | "rdc repo backup pull ile herhangi bir rclone uyumlu hedeften. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
+| Çıkış planı | "rdc repo pull ile herhangi bir rclone uyumlu hedeften. Birimler LUKS2 şifreli; operatör kimlik bilgisini tutar." |
 | Son değerlendirme | (2) mevcut IaaS incelemesiyle kapsanmış |
 
 Bir yerine iki kayıt girişi. Kritik katman girişi, alıcının zaten DPA ve test edilmiş çıkış planı mevcut olan IaaS sağlayıcısı içindir; çünkü IaaS, çoğu ekibin nasıl yöneteceğini bildiği bir ilişkidir. Rediacc girişi, veri işleyici değil yazılım lisansı olduğu için kritik olmayan olarak sınıflandırılmıştır.

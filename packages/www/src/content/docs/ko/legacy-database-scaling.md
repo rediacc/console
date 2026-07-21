@@ -1,4 +1,5 @@
 ---
+sourceHash: "b15507f1e0da46d2"
 title: 레거시 데이터베이스 스케일링
 description: 실시간 데이터 복제와 쿼리 분산을 활용하여 마이그레이션 없이 레거시 데이터베이스를 확장하십시오.
 category: Use Cases

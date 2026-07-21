@@ -3883,7 +3883,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "ابدأ مجاناً",
           "description": "ابدأ مع الإصدار المجاني Community. شغّل أول اختبار اختراق في أقل من 60 ثانية.",
           "title": "اكتشف الثغرات قبل المهاجمين"
@@ -4292,7 +4292,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. أنشئ أول تقرير تدقيق في أقل من دقيقة.",
           "title": "شاهد كل شيء. لا تفوّت شيئاً."
@@ -4762,7 +4762,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "ابدأ مع الإصدار المجاني Community. تحقق من أول نسخة في أقل من دقيقة.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -5174,7 +5174,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5274,7 +5274,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "ابدأ مع الإصدار المجاني Community. انسخ عبر المواقع بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -5792,7 +5792,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "ابدأ مجاناً",
           "description": "ابدأ مع الإصدار المجاني Community. جدوِل أول اختبار اختراق مستمر في 30 ثانية.",
           "title": "أغلق النافذة التي يعتمد عليها المهاجمون"
@@ -6672,7 +6672,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. أنشئ أول مفتاح في أقل من دقيقة.",
           "title": "تحكم في تشفيرك"
@@ -7104,7 +7104,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7180,7 +7180,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -7688,7 +7688,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "ابدأ مع الإصدار المجاني Community. شغّل أول اختبار DR في أقل من 5 دقائق.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -8190,7 +8190,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "ابدأ مع الإصدار المجاني Community. احمِ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -8721,7 +8721,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "ابدأ مع الإصدار المجاني Community. الاستنساخ عند الطلب مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -9190,7 +9190,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "ابدأ مع الإصدار المجاني Community. استعد بيئتك الأولى في أقل من 5 دقائق.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "بدون بطاقة ائتمان",
@@ -9706,7 +9706,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "ابدأ مع الإصدار المجاني Community. تكامل Git مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -10596,7 +10596,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "ابدأ مع الإصدار المجاني Community. الترحيل المشفر مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -11111,7 +11111,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "ابدأ مع الإصدار المجاني Community. تطابق الإنتاج مُضمّن.",
           "primaryCta": "ابدأ مجاناً",
           "tierBadge": "مجاني حتى 5 مستودعات · بدون بطاقة ائتمان",
@@ -11489,7 +11489,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11592,7 +11592,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. احمِ حتى 10 أحمال عمل بدون تكلفة. بدون بطاقة ائتمان.",
           "title": "لا تدع الاستعادة أبطأ من الهجوم"
@@ -11799,7 +11799,7 @@
           "overline": "كيف يعمل",
           "steps": [
             {
-              "description": "شغّل rdc repo backup list --verified للعثور على آخر لقطة نظيفة.",
+              "description": "شغّل rdc backup list للعثور على آخر لقطة نظيفة.",
               "icon": "eye",
               "title": "الاكتشاف"
             },
@@ -12625,7 +12625,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "ابدأ مع الإصدار المجاني Community. استنسخ واختبر وتحقق بدون تكلفة. بدون بطاقة ائتمان.",
           "primaryCta": "ابدأ مجاناً مع Community",
           "tierBadge": "مجاني للأبد حتى 10 أحمال عمل",
@@ -13139,7 +13139,7 @@
           "title": "ما تحصل عليه"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "ابدأ مجاناً مع Community",
           "description": "ابدأ مع الإصدار المجاني Community. انشر في أي مكان. رحّل في أي وقت. بدون بطاقة ائتمان.",
           "title": "استعد السيطرة على بنيتك التحتية"
@@ -13356,7 +13356,7 @@
               "title": "تنسيقات قياسية"
             },
             {
-              "description": "شغّل rdc repo push production --to-machine new-provider -m primary --checkpoint. نقل تزايدي. بدون وقت توقف.",
+              "description": "شغّل rdc repo push production --to new-provider --checkpoint. نقل تزايدي. بدون وقت توقف.",
               "icon": "arrow-right-circle",
               "title": "ترحيل بأمر واحد"
             },

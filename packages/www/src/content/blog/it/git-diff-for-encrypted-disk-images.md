@@ -15,7 +15,7 @@ tags:
   - cli
 featured: false
 language: it
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -64,7 +64,7 @@ Questo rende l'identita' un confronto di insiemi. Un inode su entrambi i lati co
 Ecco la forma predefinita del name-status, la stessa grammatica A/M/D/R che gia' leggi da `git status --short`:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -81,7 +81,7 @@ Il motivo per cui questo comando esiste e' il workflow degli agenti. Continuavo 
 L'agente non legge il name-status, legge `--json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 L'output strutturato fornisce all'agente un set di modifiche preciso. Quali percorsi ha modificato, creato, cancellato. Con `--stat`, la dimensione della modifica per file in byte e blocchi. Un agente che vede il proprio diff prima di promuovere e' uno a cui puoi lasciare avvicinare alla produzione. Il raggio d'azione e' ispezionabile, non solo dichiarato. Le altre modalità servono lo stesso loop di revisione. `--name-only` per una lista di percorsi pura. `--content <path>` per un diff unificato in testo di un singolo file (solo testo; un file binario riporta `Binary files differ`). `--stat` quando l'agente deve sapere cosa è cambiato e quanto.

@@ -3,7 +3,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const DEFAULT_LOCALE_DIR = path.join(ROOT_DIR, 'packages/web/src/i18n/locales');
 
 let cachedResources = new Map();
 let cachedAllKeys = new Map();
@@ -125,23 +124,6 @@ export const getValueAtPath = (resource, segments) => {
  * Get the root directory for the console project
  */
 export const getRootDir = () => ROOT_DIR;
-
-/**
- * Get the default locale directory
- */
-export const getDefaultLocaleDir = () => DEFAULT_LOCALE_DIR;
-
-/**
- * Get all supported language codes
- */
-export const getSupportedLanguages = () => {
-  const localesDir = DEFAULT_LOCALE_DIR;
-  if (!fs.existsSync(localesDir)) return [];
-  return fs.readdirSync(localesDir).filter((dir) => {
-    const fullPath = path.join(localesDir, dir);
-    return fs.statSync(fullPath).isDirectory();
-  });
-};
 
 /**
  * Clear all caches (useful for testing or when files change)

@@ -4,7 +4,7 @@ description: "متى تستخدم rdc ومتى تستخدم renet."
 category: Concepts
 order: 1
 language: ar
-sourceHash: "ea6ff6dd3b8f5d5b"
+sourceHash: "938f63c27cdbb192"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -37,17 +37,17 @@ sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 
 ```bash
 # Set up a new server
-rdc config machine setup --name server-1
+rdc machine setup server-1
 
 # Create and start a repository
-rdc repo create --name my-app -m server-1 --size 10G
-rdc repo up --name my-app -m server-1
+rdc repo create my-app -m server-1 --size 10G
+rdc repo up my-app
 
 # Stop a repository
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 
 # Check machine health
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 راجع [البدء السريع](/ar/docs/quick-start) للاطلاع على شرح تفصيلي كامل.

@@ -4,7 +4,7 @@ description: "Correções para problemas comuns com SSH, configuração, reposit
 category: "Guides"
 order: 10
 language: pt
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ O CRIU é o caso conhecido que aciona o AppArmor. O renet define automaticamente
 
 ### Módulo btrfs em falta (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Se `rdc config machine setup` ou `renet system check-btrfs` falhar com:
+Se `rdc machine setup` ou `renet system check-btrfs` falhar com:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Verifique os logs do contentor usando o socket Docker do repositório:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Ou veja todos os contentores:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Erros de Permissão Negada
@@ -115,7 +115,7 @@ Cada repositório tem o seu próprio daemon Docker. Ao executar comandos Docker 
 
 ```bash
 # Usando rdc term (configurado automaticamente):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Ou manualmente com o socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ Isto é intencional. O modelo de rede do Rediacc é **host networking para todos
 **Para obter acesso à rede num contentor ad-hoc, use host networking:**
 
 ```bash
-# Dentro de uma shell de repositório (rdc term connect -m <machine> -r <repo>)
+# Dentro de uma shell de repositório (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Agora apt update, curl e pip install funcionam.
 ```
@@ -181,7 +181,7 @@ Se `rdc term` falhar ao abrir uma janela de terminal:
 
 - Use o modo inline com `-c` para executar comandos diretamente:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Force o terminal externo com `--external` se o modo inline tiver problemas
 - No Linux, certifique-se de que tem `gnome-terminal`, `xterm` ou outro emulador de terminal instalado

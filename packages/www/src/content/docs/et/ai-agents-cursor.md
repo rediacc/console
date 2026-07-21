@@ -4,7 +4,7 @@ description: Konfigureerige Cursor IDE töötama Rediacc infrastruktuuriga .curs
 category: Guides
 order: 32
 language: et
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Küsige Cursorilt: *"Kontrolli minu tootmisserveri olekut"*
 
 Cursor käivitab terminalis:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Muudatuste juurutamine
@@ -48,7 +48,7 @@ Küsige Cursorilt: *"Juuruta uuendatud nextcloud'i konfiguratsioon"*
 
 Cursor käivitab terminalis:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Logide vaatamine
@@ -57,7 +57,7 @@ Küsige Cursorilt: *"Näita mulle hiljutisi mail-konteineri logisid"*
 
 Cursor käivitab terminalis:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Tööruumi seaded

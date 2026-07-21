@@ -4,7 +4,7 @@ description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına da
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "e03bef0cead86ab7"
+sourceHash: "28b4309f81f43d8d"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -18,7 +18,7 @@ Referans: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-a
 |-------------|--------|-----------------|
 | **Güvenlik** (CC6) | Mantıksal erişim kontrolleri, şifreleme | Durağan halde LUKS2 AES-256 şifreleme. Kimlik bilgileri yalnızca operatörün yerel yapılandırmasında (`~/.config/rediacc/`) saklanır, asla sunucuda değil. SSH anahtar tabanlı erişim. Depo başına izole Docker daemon'ları. |
 | **Kullanılabilirlik** (A1) | Sistem kurtarma ve dayanıklılık | `rdc repo push/pull` ile SSH, S3, B2, Azure veya GDrive'a şifreli uzak site kopyaları. Anlık geri alma için CoW anlık görüntüleri. Kesintisiz değişiklikler için fork tabanlı yükseltmeler. |
-| **İşleme bütünlüğü** (PI1) | Doğru ve eksiksiz işleme | Belirleyici Rediaccfile yaşam döngüsü kancaları (`up`/`down`) tutarlı dağıtımlar sağlar. `rdc repo validate` beklenmedik kapanmalar veya yedekleme işlemlerinden sonra depo bütünlüğünü ve yedekleme sağlığını doğrular. |
+| **İşleme bütünlüğü** (PI1) | Doğru ve eksiksiz işleme | Belirleyici Rediaccfile yaşam döngüsü kancaları (`up`/`down`) tutarlı dağıtımlar sağlar. `rdc repo admin validate` beklenmedik kapanmalar veya yedekleme işlemlerinden sonra depo bütünlüğünü ve yedekleme sağlığını doğrular. |
 | **Gizlilik** (C1) | Yetkisiz erişime karşı veri koruması | Benzersiz LUKS kimlik bilgileri ile depo başına şifreleme. iptables, ayrı Docker daemon'ları ve loopback IP alt ağları ile ağ izolasyonu. Farklı depolardan konteynerler birbirini göremez. Sıfır bilgi yapılandırma deposu yapılandırmaları yüklenmeden önce istemci tarafında şifreler. Sunucu yalnızca çözemediği opak blob'lar saklar. |
 | **Mahremiyet** (P1-P8) | Kişisel veri işleme | Kendi sunucunuzda barındırma: işlemler sırasında veri çıkışı yok. Tüm veri erişimi için denetim izi. Şifreleme anahtar yönetimi müşteri kontrolünde. Yapılandırma deposu bölünmüş anahtar türetme (passkey PRF + sunucu sırrı) kullanır, böylece hiçbir taraf tek başına verilere erişemez. |
 

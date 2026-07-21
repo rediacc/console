@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.422355,
+      "at": 2.424604,
       "text": "Agora a bifurcação. Um único comando clona o repositório inteiro -- a aplicação, a base de dados, os ficheiros de configuração -- em segundos, independentemente do tamanho. Um gigabyte, cem gigabytes, um terabyte: o mesmo tempo, sempre.",
       "afterText": "Bifurcação concluída. O clone está pronto a usar, qualquer que seja o tamanho.",
       "cardLabel": "Fork de Repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 12.478171,
+      "at": 9.790706,
       "text": "Os dois repositórios coexistem agora lado a lado. Mesma máquina, mesmo disco, dois ambientes completamente independentes.",
       "afterText": "Dois repos, um disco. Mesmos dados, tudo o resto separado.",
       "cardLabel": "Listar Repos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.050071,
+      "at": 15.362139,
       "text": "Vamos provar o isolamento. No original, o nosso ficheiro de marcação está exatamente onde o deixámos. A existência da bifurcação não alterou nada no repositório pai.",
       "afterText": "O ficheiro original continua lá. A bifurcação não lhe tocou.",
       "cardLabel": "Arquivo Original",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 25.352583,
+      "at": 20.531281,
       "text": "Agora vamos apagar esse ficheiro, mas apenas dentro da bifurcação. Estamos a fazer uma alteração destrutiva aqui.",
       "afterText": "Desapareceu da bifurcação. O original permanece intacto.",
       "cardLabel": "Excluir no Fork",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 33.706234,
+      "at": 26.727498,
       "text": "De volta ao original. O ficheiro de marcação ainda está aqui, intacto. Mesma imagem, daemons Docker separados, sistemas de ficheiros separados.",
       "afterText": "Continua aqui. As bifurcações estão devidamente isoladas.",
       "cardLabel": "Original Intacto",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.0794,
+      "at": 31.831236,
       "text": "Quando terminar, basta apagar a bifurcação. O original fica exatamente como estava. Bifurcar, experimentar, destruir, apagar. Sem risco.",
       "afterText": "Bifurcação removida. O original está exatamente como o deixámos.",
       "cardLabel": "Limpar",

@@ -4,7 +4,7 @@ description: "Cómo Rediacc se ajusta a los controles de seguridad de la informa
 category: "Legal"
 order: 5
 language: es
-sourceHash: "315946a692b6ee29"
+sourceHash: "1e23c89ae8cf0185"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -22,8 +22,8 @@ Mira, Rediacc es un componente de la capa de controles técnicos dentro de un SG
 | **A.8**, Gestión de activos | A.8.24 Uso de criptografía | Cifrado LUKS2 AES-256 obligatorio en todos los repositorios. Gestión de claves: credenciales almacenadas solo en la configuración local del operador, nunca en el servidor. |
 | **A.9**, Control de acceso | A.9.2 Gestión de acceso de usuarios | Autenticación por clave SSH. Tokens API con vinculación IP, alcance por equipos y revocación automática al remover del equipo. Autenticación de dos factores (TOTP). |
 | **A.10**, Criptografía | A.10.1 Controles criptográficos | LUKS2 con parámetros de clave configurables. Credenciales de cifrado por repositorio. Todo el transporte remoto por SSH. El almacén de configuración implementa cifrado de conocimiento cero: AES-256-GCM con derivación de clave HKDF, intercambio de claves X25519 para miembros y claves SDK con ventana temporal para revocación inmediata. |
-| **A.12**, Seguridad operativa | A.12.3 Respaldo | `rdc repo push/pull` con almacenamiento cifrado fuera del sitio a múltiples destinos (SSH, S3, B2, Azure, GDrive). Snapshots CoW para recuperación en punto en el tiempo. `rdc repo validate` verifica la salud del respaldo y la integridad del repositorio. |
-| **A.12**, Seguridad operativa | A.12.4 Registro y monitoreo | 70+ tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Monitoreo de salud de máquinas vía `rdc machine query`. Monitoreo de estado de contenedores y recursos. |
+| **A.12**, Seguridad operativa | A.12.3 Respaldo | `rdc repo push/pull` con almacenamiento cifrado fuera del sitio a múltiples destinos (SSH, S3, B2, Azure, GDrive). Snapshots CoW para recuperación en punto en el tiempo. `rdc repo admin validate` verifica la salud del respaldo y la integridad del repositorio. |
+| **A.12**, Seguridad operativa | A.12.4 Registro y monitoreo | 70+ tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Monitoreo de salud de máquinas vía `rdc machine status`. Monitoreo de estado de contenedores y recursos. |
 | **A.13**, Seguridad de comunicaciones | A.13.1 Gestión de seguridad de red | Aislamiento de Docker daemon por repositorio. Reglas de iptables bloquean tráfico entre repositorios. Subredes de IP loopback (/26) por repositorio. Proxy inverso con terminación TLS para acceso externo. |
 | **A.14**, Desarrollo de sistemas | A.14.2 Seguridad en el desarrollo | Entornos de desarrollo basados en fork proporcionan paridad con producción sin exposición de datos de producción. Los hooks del ciclo de vida de Rediaccfile permiten sanitización automatizada de datos en entornos clonados. |
 
@@ -49,4 +49,4 @@ El flujo de trabajo fork-test-promote se alinea con los requisitos de gestión d
 
 - La exportación de registros de auditoría soporta revisiones de seguridad periódicas
 - Las verificaciones de salud de máquinas (`rdc machine status --system`) soportan monitoreo operativo
-- `rdc repo validate` verifica la salud del respaldo después de cada operación
+- `rdc repo admin validate` verifica la salud del respaldo después de cada operación

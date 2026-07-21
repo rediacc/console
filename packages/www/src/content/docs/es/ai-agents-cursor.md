@@ -4,7 +4,7 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Pregunte a Cursor: *"Verifica el estado de mi servidor de producción"*
 
 Cursor ejecuta en el terminal:
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Desplegar cambios
@@ -48,7 +48,7 @@ Pregunte a Cursor: *"Despliega la configuración actualizada de nextcloud"*
 
 Cursor ejecuta en el terminal:
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Ver registros
@@ -57,7 +57,7 @@ Pregunte a Cursor: *"Muéstrame los registros recientes del contenedor de correo
 
 Cursor ejecuta en el terminal:
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Configuración del espacio de trabajo

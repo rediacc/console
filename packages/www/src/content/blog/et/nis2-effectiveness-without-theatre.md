@@ -17,7 +17,7 @@ tags:
   - intsidentide-teatamine
 featured: false
 language: et
-sourceHash: 0e471ac41759e4cb
+sourceHash: "8f8855f44bcea0b0"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -118,7 +118,7 @@ Siin on konkreetne rutiin, mis rahuldab Article 21(2)(e) ja (f) tootmishoidla ja
 **1. samm**: Forki tootmine.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 Fork on nimetatud ISO nädalaga, nii et auditilogi loeb ennast ise. Repositoorium käivitub hargi alamdomeeni all (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Vanema metamärksertifikaat katab seda. Uut TLS kätlust ei toimu.
@@ -126,8 +126,8 @@ Fork on nimetatud ISO nädalaga, nii et auditilogi loeb ennast ise. Repositooriu
 **2. samm**: Rakenda testitav plaaster forkis.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 Term-seanss töötab privilegeerimata `rediacc` kasutajana (UID 7111), eraldi ühendamisnimeruumis, kusjuures `DOCKER_HOST` on ulatusega forgi deemoni soklale. Risthoidla juurdepääs on blokeeritud tuuma tasemel (fork ei pääse tootmise loopback-alamvõrku). Isolatsioonimudeli kohta vaata [Arhitektuur § Dockeri Isolatsioon](/et/docs/architecture).
@@ -142,8 +142,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **4. samm**: Käivita taastamisharjutus. Kasuta tootmise viimast kuumvarukoopiat, tõmmatud forgi-joondatud sihtmärki.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # kontrolli, et taastatud fork vastab samale suitsutestile
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -153,12 +153,12 @@ See on taastamistest, mida 21(2)(c) ja (f) küsivad: mitte "varundusfaili tervik
 **5. samm**: Auditilogi tulemus, seejärel lamuta.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). See on räsiaheldatud. `rdc audit verify` operaatori tööjaamal kinnitab, et ahelat pole pärast sündmuste kirjutamist muudetud. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
+Auditilogi jäädvustab iga sammu (forgi loomine, repo up, term-seansid, varunduse tõmbamine, repo hävitamine). See on räsiaheldatud. `rdc config audit verify` operaatori tööjaamal kinnitab, et ahelat pole pärast sündmuste kirjutamist muudetud. Auditi mudeli kohta vaata [Konto turvalisus § CLI turvahoiak AI agentide jaoks](/et/docs/account-security).
 
 Rutiini kogu seinakellajaeg 128 GB hoidla puhul on alla 15 minuti. Suurem osa on suitsutets ja varundustõmbamise võrgu edasi-tagasi aeg. Fork operatsioonid ise on sekundid igaüks.
 
@@ -184,11 +184,11 @@ Konkreetselt intsidendi korral:
 
 ```bash
 # Snäppi kompromiteeritud olek kohtuekspertiisiks. Fork on momentülesvõte.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # Käivita teenindav fork viimasest puhtast varukoopiast. Erinev tag.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Lõika liiklus uuele teenindavale forkile DNS-i või marsruudi serveri kaudu.
 ```
 
@@ -218,11 +218,11 @@ Nende õige lugemine: Rediacc on tööriistakiht, mitte turbepagramma. See eemal
 
 Kolm artefakti. Tooda need ja Article 21(2)(e) ja (f) vestlus läheb lühikeseks.
 
-**Artefakt 1: forgi-harjutuse sagedus**. Ajatempliga logi tõhususe harjutustest, mis on läbi viidud iganädalaselt või iga kahe nädala tagant jooksva kaheteistkümne kuu jooksul. Iga kirje näitab vanemhoidlat, forgi tagi, testitavat plaastrit või muudatust, suitsutesti tulemust ja lammutuse ajatempli. `rdc audit log --since` toodetud auditilogi jäädvustab kõike seda.
+**Artefakt 1: forgi-harjutuse sagedus**. Ajatempliga logi tõhususe harjutustest, mis on läbi viidud iganädalaselt või iga kahe nädala tagant jooksva kaheteistkümne kuu jooksul. Iga kirje näitab vanemhoidlat, forgi tagi, testitavat plaastrit või muudatust, suitsutesti tulemust ja lammutuse ajatempli. `rdc config audit log --since` toodetud auditilogi jäädvustab kõike seda.
 
-**Artefakt 2: nende harjutuste auditilogi, räsiaheldatud**. Räsiahel auditilogi on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
+**Artefakt 2: nende harjutuste auditilogi, räsiaheldatud**. Räsiahel auditilogi on see, mis muudab "käitasime 47 harjutust eelmisel aastal" väitest tõendiks. `rdc config audit verify` valideerib ahela otsast lõpuni. Valideerimisetulemus on üks käsu väljund, mida audiitor saab uuesti käivitada.
 
-**Artefakt 3: varunduse kontrollimise rada**. Iga ajakavastatud varundusstrateegiale toodab systemd üksus oleku lisafaili `/var/run/rediacc/cold-backup-<guid>.status.json` hoidla ja käituse kohta ning lõpliku kokkuvõtte logirea. `rdc machine backup status` esitab mõlemaid. Koos 4. sammust iganädalase taastamisharjutusega annab see audiitorile "varundus-ja-taastamine-testitud" raja, mitte ainult "varundus-võetud" raja. Diagnostilise pinna kohta vaata [Jälgimine](/et/docs/monitoring).
+**Artefakt 3: varunduse kontrollimise rada**. Iga ajakavastatud varundusstrateegiale toodab systemd üksus oleku lisafaili `/var/run/rediacc/cold-backup-<guid>.status.json` hoidla ja käituse kohta ning lõpliku kokkuvõtte logirea. `rdc backup status` esitab mõlemaid. Koos 4. sammust iganädalase taastamisharjutusega annab see audiitorile "varundus-ja-taastamine-testitud" raja, mitte ainult "varundus-võetud" raja. Diagnostilise pinna kohta vaata [Jälgimine](/et/docs/monitoring).
 
 Koos vastavad artefaktid küsimusele "kas teie kontrollid on tõhusad" ajatemplite ja räsiahela põhjal. Mitte kinnitustega. Tõenditega.
 

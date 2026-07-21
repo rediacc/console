@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Première étape. Nous allons importer une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox et bien d'autres. Si vous l'utilisez déjà, vous pouvez importer la même configuration directement.",
       "afterText": "Stockage importé. Votre CLI peut maintenant y pousser des sauvegardes.",
       "cardLabel": "Importer le Stockage",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
       "afterText": "Le voilà. Prêt à recevoir des sauvegardes.",
       "cardLabel": "Lister les Stockages",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "Deuxième étape. Nous poussons une sauvegarde complète. Le dépôt entier, application, base de données, fichiers, configuration, est téléversé. Comme le dépôt est chiffré au repos, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire.",
       "afterText": "Sauvegarde téléversée. Tout ce qui se trouve dans ce repo est désormais sur le stockage distant, chiffré.",
       "cardLabel": "Envoyer la Sauvegarde",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente.",
       "afterText": "Tous vos instantanés au même endroit. Restaurez n'importe lequel d'une seule commande.",
       "cardLabel": "Lister les Sauvegardes",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Passons maintenant à la preuve de restauration. D'abord, mettez le repository hors ligne : arrêtez les services et démontez le volume chiffré. L'application a disparu de cette machine.",
       "afterText": "Hors ligne et démonté, exactement l'état d'un serveur vierge.",
       "cardLabel": "Mettre Hors Ligne",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "Et reprenez la sauvegarde directement depuis le stockage. La commande repo pull récupère l'image, vérifie son intégrité et la replace exactement là où elle se trouvait.",
       "afterText": "Transfert terminé, intégrité vérifiée. Le repository est de retour.",
       "cardLabel": "Récupérer Sauvegarde",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Montez-le à nouveau, et le repository est restauré. Push, list, pull, c'est toute l'histoire de la sauvegarde.",
       "afterText": "Restauré. Ce même flux fonctionne aussi sur une toute nouvelle machine.",
       "cardLabel": "Monter Restauré",

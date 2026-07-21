@@ -4,7 +4,7 @@ description: دليل خطوة بخطوة لتهيئة Claude Code لإدارة 
 category: Guides
 order: 31
 language: ar
-sourceHash: "0a4b93dedcf18e6d"
+sourceHash: "c0034de091da3349"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -28,11 +28,11 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query --name <machine> -o json
-- Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers --name <machine> -o json
-- Health: rdc machine health --name <machine> -o json
-- SSH: rdc term connect -m <machine> [repo]
+- Status: rdc machine status <machine> -o json
+- Deploy: rdc repo up <repo>@<machine> --yes
+- Containers: rdc machine status <machine> --containers -o json
+- Health: rdc machine health <machine> -o json
+- SSH: rdc term connect <machine> [repo]
 
 ### Rules
 - Always use --output json when parsing output
@@ -44,10 +44,10 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 
 سيطلب Claude Code إذنًا لتشغيل أوامر `rdc`. يمكنك التفويض المسبق للعمليات الشائعة بإضافتها إلى إعدادات Claude Code الخاصة بك:
 
-- السماح بـ `rdc machine query *`, فحوصات الحالة للقراءة فقط
-- السماح بـ `rdc machine containers *`, عرض الحاويات
+- السماح بـ `rdc machine status *`, فحوصات الحالة للقراءة فقط
+- السماح بـ `rdc machine status * --containers`, عرض الحاويات
 - السماح بـ `rdc machine health *`, فحوصات السلامة
-- السماح بـ `rdc config repository list`, عرض المستودعات
+- السماح بـ `rdc repo list`, عرض المستودعات
 
 بالنسبة للعمليات المدمرة (`rdc repo up`، `rdc repo delete`)، سيطلب Claude Code دائمًا التأكيد ما لم تفوضها صراحةً.
 
@@ -58,7 +58,7 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ```
 You: "What's the status of prod-1?"
 
-Claude Code runs: rdc machine query --name prod-1 -o json
+Claude Code runs: rdc machine status prod-1 -o json
 → Shows machine status, repositories, containers, services
 ```
 
@@ -67,9 +67,9 @@ Claude Code runs: rdc machine query --name prod-1 -o json
 ```
 You: "Deploy the mail repo to prod-1"
 
-Claude Code runs: rdc repo up --name mail -m prod-1 --dry-run -o json
+Claude Code runs: rdc repo up mail@prod-1 --dry-run -o json
 → Shows what would happen
-Claude Code runs: rdc repo up --name mail -m prod-1 --yes
+Claude Code runs: rdc repo up mail@prod-1 --yes
 → Deploys the repository
 ```
 
@@ -78,7 +78,7 @@ Claude Code runs: rdc repo up --name mail -m prod-1 --yes
 ```
 You: "Why is the nextcloud container unhealthy?"
 
-Claude Code runs: rdc machine containers --name prod-1 -o json --fields name,status,repository
+Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
 Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 → Checks recent logs
@@ -89,9 +89,9 @@ Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
 ```
 You: "Upload the local config to the mail repo"
 
-Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code runs: rdc repo sync upload mail@prod-1 --local ./config --dry-run
 → Shows files that would be synced
-Claude Code runs: rdc repo sync upload -m prod-1 -r mail -l ./config
+Claude Code runs: rdc repo sync upload mail@prod-1 --local ./config
 → Syncs the files
 ```
 

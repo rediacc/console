@@ -4,7 +4,7 @@ description: Requisiti di sistema e piattaforme supportate per eseguire Rediacc.
 category: Guides
 order: 0
 language: it
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ La CLI `rdc` si installa correttamente anche su Alpine 3.19+ (APK con il layer d
 
 ### Policy di sicurezza per OS
 
-Il daemon Docker per singolo repository e i container del repository stesso vengono eseguiti con **etichette container predefinite** su ogni OS supportato. `rdc config machine setup` non installa policy SELinux personalizzate né profili AppArmor. Comportamento per OS:
+Il daemon Docker per singolo repository e i container del repository stesso vengono eseguiti con **etichette container predefinite** su ogni OS supportato. `rdc machine setup` non installa policy SELinux personalizzate né profili AppArmor. Comportamento per OS:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor è abilitato per impostazione predefinita. Si applica il profilo docker-container predefinito; nessuna configurazione aggiuntiva richiesta.
 - **Fedora 43, Oracle Linux 10**: SELinux è in modalità enforcing. Il daemon per singolo repository assegna ai container il contesto standard `container_t`. Non è necessaria alcuna policy SELinux personalizzata.
@@ -75,7 +75,7 @@ Se un passaggio di configurazione fallisce con denial AVC SELinux o rifiuti AppA
 
 ### Installato automaticamente
 
-Il comando `rdc config machine setup` installa quanto segue sul server remoto:
+Il comando `rdc machine setup` installa quanto segue sul server remoto:
 
 - **Docker** e **containerd** (runtime container)
 - **cryptsetup** (crittografia disco LUKS)

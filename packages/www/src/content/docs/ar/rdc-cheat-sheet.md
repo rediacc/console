@@ -4,8 +4,8 @@ description: "مرجع سريع لـ rdc: الإعدادات والمستودع�
 category: Guides
 order: 3
 language: ar
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -49,7 +49,7 @@ sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 | `rdc repo push ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء الرفع (مثال: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء السحب |
 | `rdc repo push ... --checkpoint` | عمل نقطة تحقق للحاويات قبل الرفع |
-| `rdc backup list --storage <storage> -m <machine>` | عرض النسخ الاحتياطية المتاحة في التخزين |
+| `rdc backup list --storage <storage>` | عرض النسخ الاحتياطية المتاحة في التخزين |
 | `rdc storage browse <storage>` | تصفح محتويات التخزين |
 
 ## نقل المستودعات

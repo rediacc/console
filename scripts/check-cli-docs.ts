@@ -834,15 +834,11 @@ function main(): void {
     console.log(`Applied curated renames in ${fixedCount} file(s).`);
   }
 
-  if (violations.length === 0) {
-    console.log(
-      `✓ check-cli-docs: ${files.length} docs + cli.json command keys clean (no stale rdc references)`
-    );
-    return;
-  }
-
   // The frozen P7 backlog: see packages/www/scripts/lib/p7-backlog.js for the BLOCKER and
-  // the self-destruct condition. The gate still fails on a NEW doc or a GROWING count.
+  // the self-destruct condition. The backlog is a RATCHET: a NEW doc or a GROWING count fails,
+  // and so does a count that FELL or an entry with no violations left. There is deliberately no
+  // `violations.length === 0` short-circuit before it — zero violations against a non-empty
+  // baseline is exactly the stale-entry case.
   const baselinePath = path.resolve(__dirname, 'cli-docs-baseline.json');
   if (process.argv.includes('--write-baseline')) {
     const { files: n, violations: v } = writeBacklog(baselinePath, violations);
@@ -852,14 +848,23 @@ function main(): void {
 
   const regressions = findRegressions(violations, loadBacklog(baselinePath));
   if (regressions.length === 0) {
+    if (violations.length === 0) {
+      console.log(
+        `✓ check-cli-docs: ${files.length} docs + cli.json command keys clean (no stale rdc references)`
+      );
+      return;
+    }
     console.log(
       `⚠ check-cli-docs: ${violations.length} stale rdc reference(s), ALL within the frozen P7 backlog.`
     );
-    console.log('  These docs are rewritten wholesale in P7. A NEW doc, or a GROWING count, still fails.');
+    console.log(
+      '  These docs are rewritten wholesale in P7. A NEW doc, a GROWING count, a count that FELL,'
+    );
+    console.log('  or an entry with no violations left all still fail.');
     return;
   }
 
-  console.error('✗ check-cli-docs: stale rdc references BEYOND the frozen P7 backlog:\n');
+  console.error('✗ check-cli-docs: P7 backlog OUT OF SYNC (the ratchet turns both ways):\n');
   for (const r of regressions) console.error(`  ✗ ${r}`);
   const offending = new Set(regressions.map((r) => r.split(':')[0]));
   for (const v of violations.filter((x) => offending.has(x.file))) {
@@ -867,7 +872,8 @@ function main(): void {
     console.error(`      in: ${v.command}`);
   }
   console.error(
-    `\nFix the docs to match the CLI (see \`packages/cli/scripts/command-tree.json\`), or add a curated rename to scripts/check-cli-docs.ts and run with --fix.`
+    `\nFix the docs to match the CLI (see \`packages/cli/scripts/command-tree.json\`), or add a curated rename to scripts/check-cli-docs.ts and run with --fix.` +
+      `\nIf a doc IMPROVED, lower its entry in scripts/cli-docs-baseline.json to the count shown above (delete the entry when it reaches 0).`
   );
   process.exit(1);
 }

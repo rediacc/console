@@ -4,7 +4,7 @@ description: "기존 프로젝트를 암호화된 Rediacc 저장소로 마이그
 category: "Guides"
 order: 11
 language: ko
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 - `rdc` CLI 설치됨([설치](/en/docs/installation))
 - 머신 추가 및 프로비저닝 완료([설정](/en/docs/setup))
-- 프로젝트를 위한 충분한 디스크 공간(`rdc machine query`로 확인)
+- 프로젝트를 위한 충분한 디스크 공간(`rdc machine status`로 확인)
 
 ## 1단계: 저장소 생성
 
 프로젝트에 맞는 크기의 암호화된 저장소를 생성합니다. Docker 이미지와 컨테이너 데이터를 위한 추가 공간을 할당하십시오.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **팁:** 필요한 경우 나중에 `rdc repo resize`로 크기를 조정할 수 있지만 저장소를 먼저 마운트 해제해야 합니다. 처음부터 충분한 공간으로 시작하는 것이 더 쉽습니다.
@@ -34,22 +34,22 @@ rdc repo create --name my-project -m server-1 --size 20G
 
 ```bash
 # 전송될 내용 미리보기(변경 없음)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # 파일 업로드
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 업로드 전에 저장소가 마운트되어 있어야 합니다. 아직 마운트되지 않은 경우:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 원격이 로컬 디렉토리와 정확히 일치하도록 후속 동기화를 수행하려면:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > `--mirror` 플래그는 로컬에 존재하지 않는 원격 파일을 삭제합니다. 확인하려면 먼저 `--dry-run`을 사용하십시오.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 업로드된 파일은 로컬 사용자의 UID(예: 1000)로 도착합니다. Rediacc는 VS Code, 터미널 세션 및 도구 모두가 일관된 접근을 할 수 있도록 범용 사용자(UID 7111)를 사용합니다. 변환하려면 소유권 명령을 실행하십시오.
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Docker 인식 제외
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 컨테이너 데이터 디렉토리를 포함한 모든 것을 Docker 볼륨 감지 없이 chown하려면:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **경고:** 이로 인해 실행 중인 컨테이너가 손상될 수 있습니다. 필요한 경우 먼저 `rdc repo down`으로 중지하십시오.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 기본값 7111 이외의 UID를 설정하려면:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **주의:** `7111`은 모든 곳에서 사용되는 범용 Rediacc UID입니다(devcontainer 이미지에 내장된 `rediacc` 사용자와 일치합니다). 특정 외부 UID가 소유한 파일과의 레거시 호환성을 위해서만 `--uid`로 재정의하십시오. 이것은 **마이그레이션 대상이 아닙니다**. 새 저장소는 기본값을 유지해야 합니다.
@@ -200,7 +200,7 @@ IP 할당 및 `.rediacc.json`에 대한 자세한 내용은 [서비스 네트워
 저장소를 마운트하고(아직 마운트되지 않은 경우) 모든 서비스를 시작합니다.
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 이 명령은 다음을 수행합니다.
@@ -212,7 +212,7 @@ rdc repo up --name my-project -m server-1
 컨테이너가 실행 중인지 확인합니다.
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## 7단계: 자동 시작 활성화(선택사항)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 기본적으로 저장소는 서버 재부팅 후 수동으로 마운트하고 시작해야 합니다. 서비스가 자동으로 시작되도록 자동 시작을 활성화하십시오.
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 저장소 패스프레이즈를 입력하라는 메시지가 표시됩니다.
@@ -275,7 +275,7 @@ Docker 서비스가 있는 모든 프로젝트의 경우:
 파일에 아직 로컬 UID가 있습니다. 소유권 명령을 실행하십시오.
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### 컨테이너가 시작되지 않음
@@ -284,10 +284,10 @@ rdc repo ownership --name my-project -m server-1
 
 ```bash
 # 할당된 IP 확인
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # 컨테이너 로그 확인
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### 저장소 간 포트 충돌
@@ -296,10 +296,10 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### 소유권 수정이 컨테이너를 손상시킴
 
-`rdc repo ownership`을 실행했는데 컨테이너가 작동을 중지한 경우 컨테이너의 데이터 파일이 chown되었습니다. 컨테이너를 중지하고 데이터 디렉토리를 삭제한 후 재시작하십시오. 컨테이너가 다시 생성합니다.
+`rdc repo admin ownership`을 실행했는데 컨테이너가 작동을 중지한 경우 컨테이너의 데이터 파일이 chown되었습니다. 컨테이너를 중지하고 데이터 디렉토리를 삭제한 후 재시작하십시오. 컨테이너가 다시 생성합니다.
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # 컨테이너의 데이터 디렉토리 삭제(예: database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

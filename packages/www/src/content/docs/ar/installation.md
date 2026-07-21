@@ -4,8 +4,8 @@ description: "قم بتثبيت واجهة سطر أوامر Rediacc على Linu
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "5bdc0ff205ae9c73"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 ---
 
 # التثبيت
@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 قم بسحب وتشغيل واجهة سطر الأوامر كحاوية:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 أنشئ اسمًا مستعارًا للراحة:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 علامات Docker المتاحة:
@@ -174,7 +174,7 @@ REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### كيف تعمل القنوات
@@ -183,7 +183,7 @@ docker pull ghcr.io/rediacc/elite/cli:edge
 
 - **سكريبتات التثبيت**: متغير البيئة `REDIACC_CHANNEL` يحدد القناة
 - **مستودعات الحزم**: `releases.rediacc.com/{التنسيق}/{القناة}/`
-- **علامات Docker**: `ghcr.io/rediacc/elite/cli:{القناة}`
+- **علامات Docker**: `ghcr.io/rediacc/rdc:{القناة}`
 - **تحديثات CLI**: يتحقق `rdc update` من القناة المُعدّة أثناء التثبيت
 
 ### التكوين التلقائي لمعاينة PR

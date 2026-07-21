@@ -90,10 +90,10 @@ describe('rewriteOrigin', () => {
   });
 
   it('rewrites Docker image tag from :stable to channel', async () => {
-    const body = 'docker pull ghcr.io/rediacc/elite/cli:stable';
+    const body = 'docker pull ghcr.io/rediacc/rdc:stable';
     const htmlUrl = new URL('https://pr-420.rediacc.workers.dev/');
     const out = await rewriteOrigin(makeResponse(body, 'text/html'), htmlUrl, channel);
-    expect(await out.text()).toContain('elite/cli:pr-420');
+    expect(await out.text()).toContain('rdc:pr-420');
   });
 
   it('rewrites production origin references to preview origin', async () => {

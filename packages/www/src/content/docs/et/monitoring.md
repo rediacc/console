@@ -4,7 +4,7 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ Rediacc pakub sisseehitatud jälgimiskäske masina tervise, töötavate konteine
 Hankige masina kohta täielik terviseraport:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 See raporteerib:
@@ -33,7 +33,7 @@ Kasutage `--output json` masinloetava väljundi jaoks.
 Vaadake kõiki töötavaid konteinereid kõikides hoidlates masinal:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | Veerg | Kirjeldus |
@@ -57,7 +57,7 @@ JSON-väljund sisaldab täielikke konteineri üksikasju (`labels`, `port_mapping
 Vaadake Rediacciga seotud systemd teenuseid masinal:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | Veerg | Kirjeldus |
@@ -80,7 +80,7 @@ JSON-väljund sisaldab täielikke teenuse üksikasju koos `repository` (lahendat
 Vaadake hoidlaid masinal koos üksikasjalike statistikatega:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | Veerg | Kirjeldus |
@@ -104,7 +104,7 @@ JSON-väljund sisaldab `name` (lahendatud) ja `guid` (algne GUID) ning pesastab 
 Kontrollige BTRFS-i fragmentatsiooni ja reflink'i jagamist kõikides hoidlates masinal:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | Veerg | Kirjeldus |
@@ -182,7 +182,7 @@ Kui `uncorrectable` on suurem kui null, ei saa mõjutatud plokke automaatselt pa
 Skrubimise koheseks käivitamiseks (nt pärast toitekatkestust või ketta migreerimist):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc machine status --system` väljundis.
@@ -192,7 +192,7 @@ Tulemus salvestatakse samasse JSON-faili ja on koheselt nähtav järgmises `rdc 
 Hankige masina täielik ülevaade koos juurutusteabega:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 See annab:
@@ -208,7 +208,7 @@ Kasutage `--output json` masinloetava väljundi jaoks.
 Kontrollige SSH-ühenduvust masinaga:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Käsk väljastab õnnestumisel kaugmasina hostinime ja ebaõnnestumisel ühendustõrke, kontrollides ühe sammuga nii DNS-i, SSH-porti kui ka võtmepõhist autentimist.

@@ -4,7 +4,7 @@ description: "SSH, kurulum, depo, hizmet ve Docker sorunlarının yaygın çöz�
 category: "Guides"
 order: 10
 language: tr
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU, AppArmor'u vuran bilinen bir durumdur. renet, `rediacc.checkpoint=true` et
 
 ### btrfs Modülü Eksik (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-`rdc config machine setup` veya `renet system check-btrfs` şu hatalarla başarısız olursa:
+`rdc machine setup` veya `renet system check-btrfs` şu hatalarla başarısız olursa:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Deponun Docker soketi kullanarak kapsayıcı günlüklerini kontrol edin:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Veya tüm kapsayıcıları görüntüleyin:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## İzin Reddedildi Hataları
@@ -115,7 +115,7 @@ Her depo kendi Docker daemon'unu vardır. Docker komutlarını manuel olarak ça
 
 ```bash
 # rdc term (otomatik yapılandırma) kullanarak:
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Veya soketi manual olarak belirterek:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ Bu kasıtlıdır. Rediacc'ın ağ modeli `renet compose` tarafından zorlanan **
 **Geçici bir kapsayıcıda ağ erişimi sağlamak için ana bilgisayar ağını kullanın:**
 
 ```bash
-# Bir depo kabuğu içinde (rdc term connect -m <machine> -r <repo>)
+# Bir depo kabuğu içinde (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Şimdi apt update, curl, pip install hepsi çalışır.
 ```
@@ -181,7 +181,7 @@ Kapsayıcılarınız depo'nun izole daemon'u yerine ana bilgisayar sisteminin Do
 
 - Komutları doğrudan çalıştırmak için `-c` ile satır içi modu kullanın:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Satır içi mod sorunları varsa `--external` ile harici terminali zorlayın
 - Linux'ta, `gnome-terminal`, `xterm` veya başka bir terminal emulatörünün yüklü olduğundan emin olun

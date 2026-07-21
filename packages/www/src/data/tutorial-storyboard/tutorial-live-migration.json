@@ -23,7 +23,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <machine-name> --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+        "commandFull": "rdc term connect pulse@<machine-name> --command 'docker logs heartbeat_app --tail 5'"
       }
     },
     {
@@ -33,7 +33,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo migrate --name pulse --from <machine-name> --to <target-machine> --checkpoint --skip-dns"
+        "commandFull": "rdc repo migrate pulse@<machine-name> --to <target-machine> --checkpoint --skip-dns"
       }
     },
     {
@@ -63,7 +63,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc term connect --machine <target-machine> --repository pulse --command 'docker logs heartbeat_app --tail 5'"
+        "commandFull": "rdc term connect pulse@<target-machine> --command 'docker logs heartbeat_app --tail 5'"
       }
     },
     {

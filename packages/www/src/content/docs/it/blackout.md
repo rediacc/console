@@ -1,4 +1,5 @@
 ---
+sourceHash: "51a38f7f8567e63e"
 title: Continuità Bancaria Durante un Blackout
 description: Mantieni le operazioni bancarie durante le interruzioni di corrente con il mirroring intercontinentale dei dati.
 category: Use Cases

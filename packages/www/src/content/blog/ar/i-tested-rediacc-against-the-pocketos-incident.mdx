@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: ar
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 أول شيء سيحاوله الوكيل (وهو أنا في هذه الحالة): فتح صدفة على المستودع الإنتاجي وإلقاء نظرة.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 رفضت أداة سطر الأوامر، حرفياً:
@@ -97,7 +97,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 هذا هو سير العمل الذي يريد Rediacc منك سلوكه فعلاً.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 المخرج، منسوخاً من طرفيتي:
@@ -129,7 +129,7 @@ Total: 6.3s
 حين أستخدم `term connect` للدخول إلى التفريع، هذا ما أراه:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 
 بالنسبة لنموذج تهديد الوكلاء تحديداً، هناك أثران جانبيان لهذا التصميم يستحقان الإشارة. أولاً، `repo secret list` و`repo secret get` مكشوفان كأدوات MCP (آمنان للقراءة. أسماء وبصمات، لا قيم أبداً)، بحيث يستطيع الوكيل الذي يساعدك في إعداد تطبيق أن يكتشف ما هو مُعدّ دون أن يرى ما هو. ثانياً، عند فشل الكتابة بسبب الشرط المسبق، يحوي مغلّف خطأ JSON حقل `next.options[].run` المنظَّم بأوامر ملموسة يجب على الوكيل أن ينقلها للإنسان حرفياً. بما في ذلك مخرج التدوير لحالة "نسيتُ القيمة السابقة". راجع [أمان وكلاء الذكاء الاصطناعي](/ar/docs/ai-agents-safety) للنموذج الكامل.
 
-الدليل الكامل للاستخدام موجود في [المستودعات § الأسرار](/ar/docs/repositories#secrets). ثلاث خطوات. أولاً، زرع القيمة: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. ثم أشِر إلى `${REDIACC_SECRET_<KEY>}` في ملف compose. أخيراً، شغّل `rdc repo fork` وتأكد من أن التفريع يبدأ بقائمة أسرار فارغة.
+الدليل الكامل للاستخدام موجود في [المستودعات § الأسرار](/ar/docs/repositories#secrets). ثلاث خطوات. أولاً، زرع القيمة: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. ثم أشِر إلى `${REDIACC_SECRET_<KEY>}` في ملف compose. أخيراً، شغّل `rdc repo fork` وتأكد من أن التفريع يبدأ بقائمة أسرار فارغة.
 
 ## ما الذي يتغير لمن يقوم بهذا النوع من العمل
 

@@ -238,13 +238,32 @@ function groupByRule(errors) {
 }
 
 function printSummary(errors, warnings) {
+  // Declared up front: the clean-run path below needs it too, so it cannot live further down.
+  const BASELINE_PATH = path.resolve(__dirname, 'content-accuracy-baseline.json');
+
   console.log(colors.bold('Content Accuracy Validation'));
   console.log('='.repeat(60));
 
+  // NOTE: a clean run must still reach the backlog check below. Zero errors against a non-empty
+  // baseline is the stale-entry case — short-circuiting here is what let 13 already-fixed
+  // entries sit in the baseline unnoticed, each one pre-authorising 16 future violations.
   if (errors.length === 0 && warnings.length === 0) {
-    console.log(colors.green('✓ All content accuracy checks passed.'));
+    const stale = findRegressions(errors, loadBacklog(BASELINE_PATH));
+    if (stale.length === 0) {
+      console.log(colors.green('✓ All content accuracy checks passed.'));
+      console.log('='.repeat(60));
+      return 0;
+    }
+    console.log(colors.red('\n✗ Content is CLEAN but the P7 backlog still records violations:\n'));
+    for (const r of stale) console.log(colors.red(`  ✗ ${r}`));
+    console.log(
+      colors.dim(
+        '\n  Delete these entries. An entry that outlives its violations is not a debt record,\n' +
+          '  it is a standing budget for the next breakage in that file.\n'
+      )
+    );
     console.log('='.repeat(60));
-    return 0;
+    return 1;
   }
 
   // Print errors
@@ -278,8 +297,9 @@ function printSummary(errors, warnings) {
   }
 
   // The frozen P7 backlog: see scripts/lib/p7-backlog.js for the BLOCKER and the
-  // self-destruct condition. The gate still fails on a NEW doc or a GROWING count.
-  const BASELINE_PATH = path.resolve(__dirname, 'content-accuracy-baseline.json');
+  // self-destruct condition. The backlog is a RATCHET: a NEW doc or a GROWING count fails, and
+  // so does a count that FELL or an entry whose violations are all gone. (BASELINE_PATH is
+  // declared at the top of this function — the clean-run path above needs it as well.)
   if (process.argv.includes('--write-baseline')) {
     const { files, violations } = writeBacklog(BASELINE_PATH, errors);
     console.log(colors.yellow(`Wrote P7 backlog: ${files} files, ${violations} violations.`));
@@ -295,8 +315,15 @@ function printSummary(errors, warnings) {
   console.log(`SUMMARY: ${parts.join(', ')}`);
 
   if (regressions.length > 0) {
-    console.log(colors.red('\n✗ CLI-usage REGRESSION beyond the frozen P7 backlog:\n'));
+    console.log(colors.red('\n✗ P7 backlog OUT OF SYNC (the ratchet turns both ways):\n'));
     for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
+    console.log(
+      colors.dim(
+        '\n  A count that FELL, or an entry with no violations left, is RED on purpose: an entry\n' +
+          '  above the real count pre-authorises that many future violations in that file. Lower\n' +
+          '  it to the number shown, or delete the entry when it reaches 0.\n'
+      )
+    );
     console.log('='.repeat(60));
     return 1;
   }

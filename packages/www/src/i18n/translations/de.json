@@ -3902,7 +3902,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "Kostenlos starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Führen Sie Ihren ersten Pentest in unter 60 Sekunden durch.",
           "title": "Schwachstellen finden, bevor Angreifer es tun"
@@ -4311,7 +4311,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "Kostenlos mit Community starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Generieren Sie Ihren ersten Audit-Bericht in unter einer Minute.",
           "title": "Alles sehen. Nichts verpassen."
@@ -4781,7 +4781,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verifizieren Sie Ihr erstes Backup in unter einer Minute.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -5193,7 +5193,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5293,7 +5293,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Replizieren Sie standortübergreifend kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -5811,7 +5811,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "Kostenlos starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Planen Sie Ihren ersten kontinuierlichen Pentest in 30 Sekunden.",
           "title": "Schließen Sie das Fenster, auf das Angreifer zählen"
@@ -6691,7 +6691,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "Kostenlos mit Community starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Generieren Sie Ihren ersten Schlüssel in unter einer Minute.",
           "title": "Übernehmen Sie die Kontrolle über Ihre Verschlüsselung"
@@ -7123,7 +7123,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7199,7 +7199,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -7707,7 +7707,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Führen Sie Ihren ersten DR-Test in unter 5 Minuten durch.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -8209,7 +8209,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Schützen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -8740,7 +8740,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "Starten Sie mit der kostenlosen Community-Edition. On-Demand-Klonen inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -9209,7 +9209,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Stellen Sie Ihre erste Umgebung in unter 5 Minuten wieder her.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Keine Kreditkarte erforderlich",
@@ -9725,7 +9725,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Git-Integration inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -10615,7 +10615,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Verschlüsselte Migration inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -11130,7 +11130,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Produktionsparität inklusive.",
           "primaryCta": "Kostenlos starten",
           "tierBadge": "Kostenlos für bis zu 5 Repositories · Keine Kreditkarte erforderlich",
@@ -11508,7 +11508,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11611,7 +11611,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Kostenlos mit Community starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Schützen Sie bis zu 10 Workloads kostenlos. Keine Kreditkarte.",
           "title": "Lassen Sie die Wiederherstellung nicht langsamer sein als den Angriff"
@@ -11818,7 +11818,7 @@
           "overline": "SO FUNKTIONIERT ES",
           "steps": [
             {
-              "description": "rdc repo backup list --verified ausfuehren, um Ihren letzten sauberen Snapshot zu finden.",
+              "description": "rdc backup list ausfuehren, um Ihren letzten sauberen Snapshot zu finden.",
               "icon": "eye",
               "title": "Erkennen"
             },
@@ -12644,7 +12644,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Klonen, testen und verifizieren Sie kostenlos. Keine Kreditkarte.",
           "primaryCta": "Kostenlos mit Community starten",
           "tierBadge": "Für immer kostenlos für bis zu 10 Workloads",
@@ -13158,7 +13158,7 @@
           "title": "Was Sie bekommen"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Kostenlos mit Community starten",
           "description": "Starten Sie mit der kostenlosen Community-Edition. Überall deployen. Jederzeit migrieren. Keine Kreditkarte.",
           "title": "Nehmen Sie die Kontrolle über Ihre Infrastruktur zurück"
@@ -13375,7 +13375,7 @@
               "title": "Standardformate"
             },
             {
-              "description": "rdc repo push production --to-machine new-provider -m primary --checkpoint ausfuehren. Inkrementelle Uebertragung. Null Ausfallzeit.",
+              "description": "rdc repo push production --to new-provider --checkpoint ausfuehren. Inkrementelle Uebertragung. Null Ausfallzeit.",
               "icon": "arrow-right-circle",
               "title": "Ein-Befehl-Migration"
             },

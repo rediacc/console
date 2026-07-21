@@ -4,7 +4,7 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: Guides
 order: 5
 language: tr
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -111,7 +111,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
 - **TCP bağlantıları geri yüklemeden sonra eski olur**, uygulamalar `ECONNRESET` hatasını ele almalı ve yeniden bağlanmalıdır. CRIU, desteklenen hiçbir akışta geri yükleme boyunca aktif TCP bağlantı durumunu korumaz.
 - **Docker deneysel modu** repo başına daemonlarda otomatik olarak etkinleştirilir.
-- **CRIU yüklenir** `rdc config machine setup` sırasında.
+- **CRIU yüklenir** `rdc machine setup` sırasında.
 - **`/etc/criu/runc.conf`** varsayılan olarak `tcp-established` ile yapılandırılır.
 - **Konteyner güvenlik ayarları etiketli konteynerler için otomatik enjekte edilir**, `renet compose`, `rediacc.checkpoint=true` etiketli konteynerlere şunları ekler:
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (çekirdek 5.9+ için minimum CRIU seti)
@@ -132,7 +132,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ### İsletim sistemine göre host güvenlik politikaları
 
-Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/en/docs/requirements)), her deponun Docker daemon'ı ve çalıştırdığı konteynerler **varsayılan konteyner etiketleri** kullanır. `rdc config machine setup`, özel bir SELinux politikası veya AppArmor profili yüklemez. Bu bilinçli bir tercihdir: ödünleşim, konteyner proseslerinin Rediacc'a özgü bir sınırlama profili değil, host işletim sisteminin varsayılan etiket politikası altında çalışmasıdır. Tehdit modeliniz konteyner katmanında zorunlu erişim kontrolleri gerektiriyorsa, bunları dağıtmadan önce host seviyesinde yapılandırın.
+Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/en/docs/requirements)), her deponun Docker daemon'ı ve çalıştırdığı konteynerler **varsayılan konteyner etiketleri** kullanır. `rdc machine setup`, özel bir SELinux politikası veya AppArmor profili yüklemez. Bu bilinçli bir tercihdir: ödünleşim, konteyner proseslerinin Rediacc'a özgü bir sınırlama profili değil, host işletim sisteminin varsayılan etiket politikası altında çalışmasıdır. Tehdit modeliniz konteyner katmanında zorunlu erişim kontrolleri gerektiriyorsa, bunları dağıtmadan önce host seviyesinde yapılandırın.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor varsayılan olarak etkindir. Konteynerler varsayılan docker-container profili altında çalışır. Tek istisna CRIU'dur (`rediacc.checkpoint=true` etiketli konteynerler için `apparmor=unconfined` eklenir, yukarıdaki nota bakın).
 - **Fedora 43 / Oracle Linux 10**: SELinux varsayılan olarak enforcing modda çalışır. Konteynerler standart `container_t` bağlamını alır. Ek politika yüklenmesi gerekmez. Bir kurulum adımı AVC reddiyle başarısız olursa, bkz. [Sorun giderme: SELinux redleri](/en/docs/troubleshooting).

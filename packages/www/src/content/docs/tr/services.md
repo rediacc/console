@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -127,6 +127,26 @@ Servis adlarını **slot** numaralarıyla eşler. Her slot, deponun alt ağı i�
 3. Yeni servislere bir sonraki kullanılabilir slotu atar
 4. Sonucu `{repository}/.rediacc.json` dosyasına kaydeder
 
+### Yetenek Etiketleri
+
+Konteynerler varsayılan olarak asgari bir Linux yetenek kümesiyle çalışır. Bir servis, `docker-compose.yml` dosyasına bir etiket ekleyerek ek yeteneklere dahil olur:
+
+| Etiket | Verdiği yetkiler | Kullanım amacı |
+|--------|------------------|----------------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU denetim noktası/geri yükleme (canlı taşıma, kaydet ve sürdür) |
+| `rediacc.wireguard=true` | `NET_ADMIN` ve `/dev/net/tun` aygıtı | Konteyner içinde bir WireGuard istemcisi çalıştırma |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard`, bir servisin WireGuard tüneli açmasına izin verir; örneğin tek bir süreci uzak bir uç nokta üzerinden yönlendirmek için. Her servis host ağıyla çalıştığı için tüneli konteyner içindeki bir ağ ad alanıyla sınırlayın, aksi hâlde host'un yönlendirmesi değişir. `privileged: true`, `pid: host` ve `ipc: host` gibi geniş ayrıcalık seçenekleri, etiketlerden bağımsız olarak doğrulama tarafından reddedilmeye devam eder.
+
+
 ### IP Hesaplama
 
 Bir servisin IP'si, deponun ağ kimliğinden ve servisin slotundan hesaplanır. Ağ kimliği, `127.x.y.z` loopback adresinin ikinci, üçüncü ve dördüncü oktetlerine dağıtılır. Servisler ofset 2'den başlar:
@@ -194,7 +214,7 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 
 **Sapmanın düzeltilmesi.** Bir konteynerin `.rediacc.json` dosyasındaki kaydedilmiş politika yanlışsa (örneğin compose düzenlendi ama konteyner hiç yeniden oluşturulmadı), `rdc repo up <repo>` komutunu yeniden çalıştırın. Konteyner, güncellenen politika kaydedilerek yeniden oluşturulur.
 
-> **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine query` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
+> **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine status` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
 
 > **Docker bridge ağı, depo başına daemonlarda devre dışıdır.** Her depo başına daemon (`FlavorRediacc`), `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
 >
@@ -207,12 +227,12 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 Depoyu bağlayın ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--detach` | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda sürer |
+| `--no-wait` | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda devam eder |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -235,7 +255,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### Ayrılmış Başlatma
 
-`--detach` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine status <machine> --containers` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
+`--no-wait` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine status <machine> --containers` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
 
 ### Hazırlık Sondası
 
@@ -244,12 +264,12 @@ HTTP services (accessible via proxy after ~3s):
 ## Servisleri Durdurma
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır. Bu etkili olmazsa, `rdc repo unmount` komutunu ayrıca kullanın. |
+| `--unmount` | Durdurduktan sonra şifrelenmiş depoyu ayır. |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -262,13 +282,13 @@ rdc repo down --name my-app -m server-1
 Bir makinedeki tüm depoları aynı anda başlatın veya durdurun:
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | Seçenek | Açıklama |
 |---------|----------|
 | `--include-forks` | Çatallanmış depoları dahil et |
-| `--mount-only` | Yalnızca bağla, konteynerleri başlatma |
+| `--no-start` | Yalnızca bağla ve hazırla, deponun `up()` adımlarını çalıştırma |
 | `--dry-run` | Ne yapılacağını göster |
 | `--parallel` | İşlemleri paralel çalıştır |
 | `--concurrency <n>` | Maksimum eşzamanlı işlem sayısı (varsayılan: 3) |
@@ -293,7 +313,7 @@ Sistem kapatma veya yeniden başlatma sırasında, servis tüm servisleri düzg�
 ### Etkinleştirme
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 Depo parolası sorulacaktır.
@@ -301,13 +321,13 @@ Depo parolası sorulacaktır.
 ### Tümünü Etkinleştirme
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### Devre Dışı Bırakma
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 Bu, anahtar dosyasını kaldırır ve LUKS slot 1'i siler.
@@ -333,7 +353,7 @@ kontrol sessizce atlanır. Hatalar kritik değildir ve dağıtımı engellemez.
 ### Durumu Listeleme
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 Periyodik uzlaştırıcının önyükleme sonrası duran depoları nasıl kurtardığına ilişkin ayrıntılar için bkz. [Otomatik Başlatma ve Kurtarma](/tr/docs/autostart-recovery).
@@ -346,16 +366,16 @@ Bu örnek, PostgreSQL, Redis ve bir API sunucusu içeren bir web uygulamasını 
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. Depoyu Bağlama ve Hazırlama
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. Uygulama Dosyalarını Oluşturma
@@ -414,13 +434,13 @@ down() {
 ### 4. Başlatma
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. Otomatik Başlatmayı Etkinleştirme
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## Compose'ta Depo Başına Sırları Kullanma

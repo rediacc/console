@@ -4,7 +4,7 @@ description: "Monitora la salute della macchina, i container, i servizi, i repos
 category: "Guides"
 order: 9
 language: it
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -17,7 +17,7 @@ Rediacc fornisce comandi di monitoraggio per la salute della macchina, i contain
 Ottieni un report sanitario completo di una macchina:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Questo riporta:
@@ -33,7 +33,7 @@ Usa `--output json` per un output leggibile dalla macchina.
 Visualizza tutti i container in esecuzione su tutti i repository di una macchina:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | Colonna | Descrizione |
@@ -57,7 +57,7 @@ L'output JSON include i dettagli completi del container (`labels`, `port_mapping
 Visualizza i servizi systemd relativi a Rediacc su una macchina:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | Colonna | Descrizione |
@@ -80,7 +80,7 @@ L'output JSON include i dettagli completi del servizio con `repository` (nome ri
 Visualizza i repository su una macchina con statistiche dettagliate:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | Colonna | Descrizione |
@@ -104,7 +104,7 @@ L'output JSON include `name` (risolto) e `guid` (GUID originale), e annida i `co
 Ispeziona la frammentazione BTRFS e la condivisione tramite reflink su tutti i repository di una macchina:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | Colonna | Descrizione |
@@ -182,7 +182,7 @@ Se `uncorrectable` è maggiore di zero, i blocchi interessati non possono essere
 Per eseguire uno scrub immediatamente (ad esempio dopo un'interruzione di corrente o una migrazione del disco):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 Il risultato viene salvato nello stesso file JSON ed è immediatamente visibile nel successivo `rdc machine status --system`.
@@ -192,7 +192,7 @@ Il risultato viene salvato nello stesso file JSON ed è immediatamente visibile 
 Ottieni una panoramica completa di una macchina incluse le informazioni di deployment:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 Questo fornisce:
@@ -208,7 +208,7 @@ Usa `--output json` per un output leggibile dalla macchina.
 Verifica la connettività SSH a una macchina:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Il comando stampa l'hostname remoto in caso di successo e un errore di connessione

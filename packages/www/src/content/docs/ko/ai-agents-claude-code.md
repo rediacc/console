@@ -4,7 +4,7 @@ description: 자율적인 Rediacc 인프라 관리를 위한 Claude Code 구성 
 category: Guides
 order: 31
 language: ko
-sourceHash: "0a4b93dedcf18e6d"
+sourceHash: "c0034de091da3349"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -30,11 +30,11 @@ Claude Code는 시작 시 `CLAUDE.md`를 읽어 모든 상호작용의 영구 �
 ## CLI Tool: rdc
 
 ### Common Operations
-- Status: rdc machine query --name <machine> -o json
-- Deploy: rdc repo up --name <repo> -m <machine> --yes
-- Containers: rdc machine containers --name <machine> -o json
-- Health: rdc machine health --name <machine> -o json
-- SSH: rdc term connect -m <machine> [-r <repo>]
+- Status: rdc machine status <machine> -o json
+- Deploy: rdc repo up <repo>@<machine> --yes
+- Containers: rdc machine status <machine> --containers -o json
+- Health: rdc machine health <machine> -o json
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -46,10 +46,10 @@ Claude Code는 시작 시 `CLAUDE.md`를 읽어 모든 상호작용의 영구 �
 
 Claude Code는 `rdc` 명령 실행 권한을 요청합니다. Claude Code 설정에 다음을 추가하여 일반 작업을 미리 승인할 수 있습니다:
 
-- `rdc machine query *` 허용 - 읽기 전용 상태 확인
-- `rdc machine containers *` 허용 - 컨테이너 목록 조회
+- `rdc machine status *` 허용 - 읽기 전용 상태 확인
+- `rdc machine status * --containers` 허용 - 컨테이너 목록 조회
 - `rdc machine health *` 허용 - 상태 확인
-- `rdc config repository list` 허용 - 리포지토리 목록 조회
+- `rdc repo list` 허용 - 리포지토리 목록 조회
 
 파괴적 작업(`rdc repo up`, `rdc repo delete`)의 경우 명시적으로 승인하지 않는 한 Claude Code가 항상 확인을 요청합니다.
 
@@ -60,7 +60,7 @@ Claude Code는 `rdc` 명령 실행 권한을 요청합니다. Claude Code 설정
 ```
 사용자: "prod-1의 상태가 어떤가요?"
 
-Claude Code 실행: rdc machine query --name prod-1 -o json
+Claude Code 실행: rdc machine status prod-1 -o json
 → 머신 상태, 리포지토리, 컨테이너, 서비스 표시
 ```
 
@@ -69,9 +69,9 @@ Claude Code 실행: rdc machine query --name prod-1 -o json
 ```
 사용자: "mail 리포를 prod-1에 배포해 주세요"
 
-Claude Code 실행: rdc repo up --name mail -m prod-1 --dry-run -o json
+Claude Code 실행: rdc repo up mail@prod-1 --dry-run -o json
 → 실행될 내용 표시
-Claude Code 실행: rdc repo up --name mail -m prod-1 --yes
+Claude Code 실행: rdc repo up mail@prod-1 --yes
 → 리포지토리 배포
 ```
 
@@ -80,9 +80,9 @@ Claude Code 실행: rdc repo up --name mail -m prod-1 --yes
 ```
 사용자: "nextcloud 컨테이너가 비정상 상태인 이유가 뭔가요?"
 
-Claude Code 실행: rdc machine containers --name prod-1 -o json --fields name,status,repository
+Claude Code 실행: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → 컨테이너 상태 목록
-Claude Code 실행: rdc term connect -m prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code 실행: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
 → 최근 로그 확인
 ```
 
@@ -91,9 +91,9 @@ Claude Code 실행: rdc term connect -m prod-1 -c "docker logs nextcloud-app --t
 ```
 사용자: "로컬 설정을 mail 리포에 업로드해 주세요"
 
-Claude Code 실행: rdc repo sync upload -m prod-1 -r mail -l ./config --dry-run
+Claude Code 실행: rdc repo sync upload mail@prod-1 --local ./config --dry-run
 → 동기화될 파일 표시
-Claude Code 실행: rdc repo sync upload -m prod-1 -r mail -l ./config
+Claude Code 실행: rdc repo sync upload mail@prod-1 --local ./config
 → 파일 동기화
 ```
 

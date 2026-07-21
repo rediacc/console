@@ -4,8 +4,8 @@ description: "Rediacc CLI'yı Linux, macOS veya Windows üzerine yükleyin."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "5bdc0ff205ae9c73"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "a557e2aa2cad3a0f"
+sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
 ---
 
 # Kurulum
@@ -92,15 +92,15 @@ sudo pacman -Sy rediacc-cli
 CLI'yi bir konteyner olarak çekin ve çalıştırın:
 
 ```bash
-docker pull ghcr.io/rediacc/elite/cli:stable
+docker pull ghcr.io/rediacc/rdc:stable
 
-docker run --rm ghcr.io/rediacc/elite/cli:stable --version
+docker run --rm ghcr.io/rediacc/rdc:stable --version
 ```
 
 Kolaylık için bir takma ad oluşturun:
 
 ```bash
-alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/elite/cli:stable'
+alias rdc='docker run --rm -it -v $(pwd):/workspace ghcr.io/rediacc/rdc:stable'
 ```
 
 Mevcut Docker etiketleri:
@@ -174,7 +174,7 @@ Paket yöneticileri için depo URL'sindeki `stable` ifadesini `edge` ile değiş
 echo "deb [signed-by=/usr/share/keyrings/rediacc.gpg] https://releases.rediacc.com/apt/edge stable main" | sudo tee /etc/apt/sources.list.d/rediacc.list
 
 # Docker edge
-docker pull ghcr.io/rediacc/elite/cli:edge
+docker pull ghcr.io/rediacc/rdc:edge
 ```
 
 ### Kanallar nasıl çalışır
@@ -183,7 +183,7 @@ Kanal, tüm dağıtım yöntemlerinde aynı şekilde uygulanır:
 
 - **Kurulum betikleri**: `REDIACC_CHANNEL` ortam değişkeni kanalı seçer
 - **Paket depoları**: `releases.rediacc.com/{format}/{kanal}/`
-- **Docker etiketleri**: `ghcr.io/rediacc/elite/cli:{kanal}`
+- **Docker etiketleri**: `ghcr.io/rediacc/rdc:{kanal}`
 - **CLI güncellemeleri**: `rdc update` kurulum sırasında yapılandırılan kanalı kontrol eder
 
 ### PR önizleme otomatik yapılandırması

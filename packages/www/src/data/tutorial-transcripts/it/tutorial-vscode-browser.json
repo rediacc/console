@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.414862,
+      "at": 2.418779,
       "text": "Un solo comando. La CLI installa il server dell'editor sulla macchina una volta sola, lo avvia dentro il sandbox del repo, apre un tunnel e ti consegna un link. Niente VS Code locale, niente estensioni da configurare.",
       "afterText": "Quell'URL è il tuo editor. Funziona da qualsiasi OS, l'unico requisito è un browser.",
       "cardLabel": "Connetti Browser",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 12.531234,
+      "at": 10.10448,
       "text": "Stesso repo dal terminal semplice: la directory di lavoro è il repo, i file sono i file del repo.",
       "afterText": "Il terminal e l'editor concordano: è lo stesso sandbox.",
       "cardLabel": "Stessa Vista",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 19.464899,
+      "at": 14.856043,
       "text": "E il file che abbiamo creato nell'editor del browser? Eccolo qui. I file creati in VS Code sono veri file del repo, all'istante.",
       "afterText": "Creato nel browser, leggibile dal terminal. Un solo repo, due porte.",
       "cardLabel": "Andata e Ritorno",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 26.768996,
+      "at": 19.933198,
       "text": "Ora prova a uscire. Elenca la root del server: permission denied. Il kernel confina l'editor, il suo terminal e ogni processo figlio dentro questo repo.",
       "afterText": "Negato dal kernel, non dalla configurazione.",
       "cardLabel": "Root Negato",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 32.439211,
+      "at": 23.377274,
       "text": "Le home degli altri utenti? Negate anche quelle. Qualsiasi cosa giri dentro questo sandbox, editor, terminal, strumenti di build, si ferma ai confini del repo.",
       "afterText": "Il sandbox non ha eccezioni. Questo è il punto.",
       "cardLabel": "Home Negato",

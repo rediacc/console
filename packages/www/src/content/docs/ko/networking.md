@@ -4,7 +4,7 @@ description: "리버스 프록시, Docker 레이블, TLS 인증서, DNS, TCP/UDP
 category: "Guides"
 order: 6
 language: ko
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -130,16 +130,16 @@ labels:
 
    ```bash
    # 공유 자격증명(구성당 한 번, 모든 머신에 적용)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # 머신별 설정
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. 도메인을 서버의 공용 IP로 가리키는 DNS 레코드(아래 [DNS 구성](#dns-구성) 참조).
@@ -183,14 +183,14 @@ services:
 TLS 인증서는 Cloudflare DNS-01 챌린지를 사용하여 Let's Encrypt를 통해 자동으로 얻어집니다. 자격증명은 구성당 한 번 구성됩니다(모든 머신에서 공유).
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 자동 경로는 서비스별 인증서 대신 저장소 서브도메인 수준에서 **와일드카드 인증서**를 사용합니다(`*.marketing.server-1.example.com`). 인증서는 첫 번째 `repo up` 시 Traefik에 의해 자동으로 프로비저닝됩니다. 수동 단계가 필요하지 않습니다. 포크는 부모 저장소의 기존 와일드카드를 재사용하므로 새 인증서 요청을 트리거하지 않습니다. 사용자 정의 도메인 경로는 머신 수준 와일드카드를 사용합니다(`*.server-1.example.com`).
 
-> **Cloudflare 자격증명이 필요합니다.** 와일드카드 인증서는 DNS-01 챌린지를 사용합니다. `--cf-dns-token`(및 선택적으로 `--cert-email`) 없이는 Traefik이 챌린지를 완료할 수 없으며 HTTPS가 작동하지 않습니다. HTTP는 계속 작동합니다. 첫 번째 배포 전에 `rdc config infra set`으로 자격증명을 구성하십시오.
+> **Cloudflare 자격증명이 필요합니다.** 와일드카드 인증서는 DNS-01 챌린지를 사용합니다. `--cf-dns-token`(및 선택적으로 `--cert-email`) 없이는 Traefik이 챌린지를 완료할 수 없으며 HTTPS가 작동하지 않습니다. HTTP는 계속 작동합니다. 첫 번째 배포 전에 `rdc machine infra set`으로 자격증명을 구성하십시오.
 
 `traefik.http.routers.{name}.tls.certresolver=letsencrypt`가 있는 계층 2 경로의 경우 와일드카드 도메인 SAN이 경로의 호스트명에 따라 자동으로 주입됩니다.
 
@@ -210,17 +210,17 @@ Let's Encrypt 인증서가 발급에서 각 저장소의 컨테이너까지 거�
 
 - `rdc repo up` 후 자동으로, 단 머신의 `baseDomain`에 대한 로컬 캐시가 6시간보다 오래된 경우에만. 새로운 캐시는 그대로 유지되므로 연속 배포가 SSH를 과도하게 사용하지 않습니다.
 - 온디맨드: `rdc machine infra cert pull <machine>`(강제 pull) 또는 `rdc machine status <machine> --sync-certs`(상태 쿼리의 부작용으로 pull).
-- `rdc config infra push` 시 캐시가 머신으로 푸시됩니다(더 긴 만료 기간을 가진 로컬 인증서가 원격보다 우선).
+- `rdc machine infra push` 시 캐시가 머신으로 푸시됩니다(더 긴 만료 기간을 가진 로컬 인증서가 원격보다 우선).
 
 **캐시 유지 관리:**
 
 - 오래된 자동 경로 항목(예: `service-3200.rediacc.io` 같은 이전 네트워크 ID 태그 도메인)은 모든 pull 시 정리됩니다.
 - `notAfter`가 7일 이상 지난 인증서는 완전히 제거됩니다. 비활성 상태이며 캐시를 불필요하게 부풀릴 뿐입니다.
-- `rdc config cert-cache clear`로 모든 것을 지웁니다. `rdc config cert-cache status`는 인벤토리를 표시합니다.
+- `rdc config prune --certs-only`로 모든 것을 지웁니다. `rdc config prune --certs-only`는 인벤토리를 표시합니다.
 
 **문제 해결:** `traefik-certs-dumper`가 `/traefik/acme.json: no such file or directory`로 충돌 루프하는 경우 저장소별 데몬이 호스트의 letsencrypt 저장소를 볼 수 없습니다. (a) `/opt/rediacc/proxy/letsencrypt/acme.json`이 호스트에 존재하는지(이는 호스트 수준 `rediacc-proxy`의 책임입니다) 및 (b) 저장소별 데몬이 `/opt/rediacc/proxy`를 허용 목록에 포함하는 충분히 최신의 renet으로 시작되었는지 확인하십시오. renet을 업그레이드한 후 `rdc repo up`으로 저장소를 재배포하여 적용하십시오.
 
-> **실험적:** 자동 동기화 주기 및 만료 기반 정리는 renet 0.9+에서 출시되었습니다. 이전 CLI/renet 버전은 `rdc config cert-cache pull`을 통한 순수 수동 동기화를 사용합니다.
+> **실험적:** 자동 동기화 주기 및 만료 기반 정리는 renet 0.9+에서 출시되었습니다. 이전 CLI/renet 버전은 `rdc config prune --certs-only`을 통한 순수 수동 동기화를 사용합니다.
 
 ## TCP/UDP 포트 포워딩
 
@@ -231,16 +231,16 @@ Let's Encrypt 인증서가 발급에서 각 저장소의 컨테이너까지 거�
 인프라 구성 중에 필요한 포트를 추가합니다.
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 이는 `tcp-{port}` 및 `udp-{port}`로 명명된 Traefik 엔트리포인트를 생성합니다.
 
-> 포트를 추가하거나 제거한 후에는 항상 `rdc config infra push`를 다시 실행하여 프록시 구성을 업데이트하십시오.
+> 포트를 추가하거나 제거한 후에는 항상 `rdc machine infra push`를 다시 실행하여 프록시 구성을 업데이트하십시오.
 
 ### 2단계: TCP/UDP 레이블 추가
 
@@ -313,7 +313,7 @@ services:
 
 ### 자동 DNS(Cloudflare)
 
-`--cf-dns-token`이 구성된 경우 `rdc config infra push`는 Cloudflare에서 머신 서브도메인의 DNS 레코드를 자동으로 생성합니다.
+`--cf-dns-token`이 구성된 경우 `rdc machine infra push`는 Cloudflare에서 머신 서브도메인의 DNS 레코드를 자동으로 생성합니다.
 
 | 레코드 | 유형 | 내용 | 생성자 |
 |--------|------|---------|------------|
@@ -480,7 +480,7 @@ app.example.com   A   203.0.113.50
 ### 배포
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 몇 초 내에 라우트 서버가 컨테이너를 검색하고, Traefik이 경로를 가져오고, TLS 인증서를 요청하면 `https://app.example.com`이 활성화됩니다.

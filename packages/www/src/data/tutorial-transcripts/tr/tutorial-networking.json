@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.410714,
+      "at": 2.427234,
       "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız.",
       "afterText": "Altyapı bilgileri yapılandırmanıza kaydedildi.",
       "cardLabel": "Altyapı Ayarla",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 12.419888,
+      "at": 12.223183,
       "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor.",
       "afterText": "Ayarlar kaydedildi. Sunucuya gönderilmeye hazır.",
       "cardLabel": "Altyapıyı Göster",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 16.924002,
+      "at": 16.437274,
       "text": "Üçüncü adım: yapılandırmayı sunucuya gönderin. Gerçek bir token ile bu, Cloudflare'deki DNS kayıtlarınızı otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar.",
       "afterText": "Gönderildi. Cloudflare'de DNS kayıtları oluşturuluyor.",
       "cardLabel": "Altyapıyı Gönder",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 20.590881,
+      "at": 19.770637,
       "text": "Dördüncü adım: infra adında küçük bir repo oluşturun. Neden kendi repo'su? proxy, bu sunucudaki her uygulama için trafiği yönlendirir. Altyapı, uygulama kodunuzdan uzakta, kendi izole kutusunu hak ediyor.",
       "afterText": "Infra deposu oluşturuldu. Uygulama depolarınızdan izole.",
       "cardLabel": "Repo Oluştur",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 28.48077,
+      "at": 26.52638,
       "text": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor.",
       "afterText": "Traefik yapılandırması yerinde.",
       "cardLabel": "Şablon Uygula"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 35.97937,
+      "at": 31.688233,
       "text": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir.",
       "afterText": "Proxy yayında. TLS sertifikaları otomatik olarak gelecek.",
       "cardLabel": "Proxy Dağıt",

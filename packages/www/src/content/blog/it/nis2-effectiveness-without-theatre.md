@@ -17,7 +17,7 @@ tags:
   - incident-reporting
 featured: false
 language: it
-sourceHash: 0e471ac41759e4cb
+sourceHash: "8f8855f44bcea0b0"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -118,7 +118,7 @@ Ecco una routine concreta che soddisfa Article 21(2)(e) e (f) per un repository 
 **Passo 1**: fork della produzione.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 Il fork e' nominato con la settimana ISO cosi' il log di audit si legge da solo. Il repo si avvia sotto un sottodominio del fork (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Il cert wildcard del parent lo copre. Nessun nuovo handshake TLS.
@@ -126,8 +126,8 @@ Il fork e' nominato con la settimana ISO cosi' il log di audit si legge da solo.
 **Passo 2**: applica la patch sotto test, sul fork.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 La sessione term viene eseguita come utente non privilegiato `rediacc` (UID 7111), in un mount namespace separato, con `DOCKER_HOST` delimitato al socket del daemon del fork. L'accesso cross-repo è bloccato a livello kernel (il fork non può raggiungere la subnet loopback della produzione). Vedi [Architecture § Docker Isolation](/it/docs/architecture) per il modello di isolamento.
@@ -142,8 +142,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **Passo 4**: esegui l'esercitazione di ripristino. Usa il backup hot più recente della produzione, estratto verso un target allineato al fork.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # verifica che il fork ripristinato risponda allo stesso smoke test
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -153,12 +153,12 @@ Questo è il test di recovery che Article 21(2)(c) e (f) richiedono: non "l'inte
 **Passo 5**: registra il risultato nel log di audit, poi smonta.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Il log di audit cattura ogni passo (creazione del fork, repo up, sessioni term, backup pull, repo destroy). È incatenato per hash. `rdc audit verify` sulla workstation dell'operatore conferma che la catena non è stata modificata dalla scrittura degli eventi. Vedi [Account Security § CLI Security Posture for AI Agents](/it/docs/account-security) per il modello di audit.
+Il log di audit cattura ogni passo (creazione del fork, repo up, sessioni term, backup pull, repo destroy). È incatenato per hash. `rdc config audit verify` sulla workstation dell'operatore conferma che la catena non è stata modificata dalla scrittura degli eventi. Vedi [Account Security § CLI Security Posture for AI Agents](/it/docs/account-security) per il modello di audit.
 
 Il tempo totale di esecuzione per la routine, su un repository da 128 GB, è inferiore a 15 minuti. La maggior parte è lo smoke test e il round-trip di rete per il backup pull. Le operazioni di fork stesse richiedono pochi secondi ciascuna.
 
@@ -184,11 +184,11 @@ In concreto, durante un incidente:
 
 ```bash
 # Snapshot dello stato compromesso per il forensics. Il fork è lo snapshot.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # Avvia un fork di servizio dall'ultimo backup pulito. Tag diverso.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Reindirizza il traffico al nuovo fork di servizio tramite DNS o il route server.
 ```
 
@@ -218,11 +218,11 @@ La lettura corretta di questi post: Rediacc è uno strato di strumenti, non un p
 
 Tre artefatti. Producili e la conversazione su Article 21(2)(e) e (f) diventa breve.
 
-**Artefatto 1: la cadenza delle esercitazioni di fork**. Un log con timestamp delle esercitazioni di efficacia eseguite su base settimanale o bisettimanale nell'arco dei dodici mesi precedenti. Ogni voce mostra il repository padre, il tag del fork, la patch o la modifica sotto test, il risultato dello smoke test e il timestamp di smontaggio. Il log di audit prodotto da `rdc audit log --since` cattura tutto questo.
+**Artefatto 1: la cadenza delle esercitazioni di fork**. Un log con timestamp delle esercitazioni di efficacia eseguite su base settimanale o bisettimanale nell'arco dei dodici mesi precedenti. Ogni voce mostra il repository padre, il tag del fork, la patch o la modifica sotto test, il risultato dello smoke test e il timestamp di smontaggio. Il log di audit prodotto da `rdc config audit log --since` cattura tutto questo.
 
-**Artefatto 2: il log di audit di quelle esercitazioni, incatenato per hash**. La catena hash sul log di audit è ciò che trasforma "abbiamo eseguito 47 esercitazioni l'anno scorso" da una dichiarazione in evidenza. `rdc audit verify` valida la catena end-to-end. Il risultato della validazione è un singolo output di comando che un auditor può rieseguire.
+**Artefatto 2: il log di audit di quelle esercitazioni, incatenato per hash**. La catena hash sul log di audit è ciò che trasforma "abbiamo eseguito 47 esercitazioni l'anno scorso" da una dichiarazione in evidenza. `rdc config audit verify` valida la catena end-to-end. Il risultato della validazione è un singolo output di comando che un auditor può rieseguire.
 
-**Artefatto 3: la traccia di verifica del backup**. Per ogni strategia di backup pianificata, l'unità systemd produce un file sidecar di stato in `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per esecuzione, e una riga di log finale di riepilogo. `rdc machine backup status` espone entrambi. Combinato con l'esercitazione di ripristino settimanale del Passo 4 della routine sopra, questo fornisce all'auditor una traccia "backup-and-restore-tested," non solo "backup-taken." Vedi [Monitoring](/it/docs/monitoring) per la superficie diagnostica.
+**Artefatto 3: la traccia di verifica del backup**. Per ogni strategia di backup pianificata, l'unità systemd produce un file sidecar di stato in `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per esecuzione, e una riga di log finale di riepilogo. `rdc backup status` espone entrambi. Combinato con l'esercitazione di ripristino settimanale del Passo 4 della routine sopra, questo fornisce all'auditor una traccia "backup-and-restore-tested," non solo "backup-taken." Vedi [Monitoring](/it/docs/monitoring) per la superficie diagnostica.
 
 Insieme, gli artefatti rispondono alla domanda "i tuoi controlli sono efficaci" con timestamp e una catena di hash. Non attestazione. Evidenza.
 

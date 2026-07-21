@@ -154,11 +154,11 @@ export function scanSourceText(content: string): Array<CommandPathHit & { line: 
  * Shell scripts discuss the CLI in `echo`/`printf` strings constantly — a naive
  * scan of .sh files is ~1-in-6 precision, and every one of the false hits is
  * prose inside a quoted argument. Requiring command position is what makes
- * scanning shell viable at all. `--dev` / `--override-local` are consumed by the
+ * scanning shell viable at all. `--dev` / `--native` are consumed by the
  * rdc.sh wrapper and never reach the CLI, so they are skipped (see rdc.sh:82).
  */
 const SHELL_COMMAND_POSITION =
-  /(?:^|[;&|]{1,2}\s*|\$\(\s*|`\s*)\s*(?:\.\/)?rdc(?:\.sh)?\s+(?:--(?:dev|override-local)\s+)*([a-z][\w-]*(?:\s+[a-z][\w-]*)*)/g;
+  /(?:^|[;&|]{1,2}\s*|\$\(\s*|`\s*)\s*(?:\.\/)?rdc(?:\.sh)?\s+(?:--(?:dev|native)\s+)*([a-z][\w-]*(?:\s+[a-z][\w-]*)*)/g;
 
 export function scanShellText(content: string): Array<CommandPathHit & { line: number }> {
   const hits: Array<CommandPathHit & { line: number }> = [];

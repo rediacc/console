@@ -445,9 +445,15 @@ class RenetProvisionerService {
     }
 
     if (localBinaryPath) {
-      // On non-Linux hosts, the localBinaryPath points to the host platform binary
-      // (e.g. renet.exe on Windows). Look for the cross-compiled Linux binary instead.
-      if (process.platform !== 'linux') {
+      // localBinaryPath is the HOST binary (e.g. private/renet/bin/renet). It is
+      // only the right thing to send when the remote runs the host's own arch:
+      // on a non-Linux host it never is (the host binary is mac/win, not the
+      // linux binary a VM needs), and on a Linux host only when the remote arch
+      // matches. Otherwise use the cross-compiled renet-linux-<arch> staged next
+      // to it by ./rdc.sh / build.sh dev. This is what lets an amd64 workstation
+      // provision an arm64 machine (and vice-versa) without building the SEA.
+      const hostArch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
+      if (process.platform !== 'linux' || arch !== hostArch) {
         const dir = path.dirname(localBinaryPath);
         const linuxBinaryPath = path.join(dir, `renet-linux-${arch}`);
         try {

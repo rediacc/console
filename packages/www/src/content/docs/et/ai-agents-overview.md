@@ -4,7 +4,7 @@ description: "Kuidas Claude Code, Cursor ja Cline haldavad Rediacc infrastruktuu
 category: Guides
 order: 30
 language: et
-sourceHash: "27ea21c36250d4a9"
+sourceHash: "29eb3ce5a55c36d1"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -56,7 +56,7 @@ Veastavused sisaldavad välju `retryable` ja `guidance`:
     "code": "NOT_FOUND",
     "message": "Machine \"prod-2\" not found",
     "retryable": false,
-    "guidance": "Verify the resource name with \"rdc machine query\" or \"rdc config repository list\""
+    "guidance": "Verify the resource name with \"rdc machine status\" or \"rdc repo list\""
   }]
 }
 ```

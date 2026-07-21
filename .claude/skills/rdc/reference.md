@@ -542,7 +542,7 @@ Declare and provision a cluster: machines, Ceph pools, and Kubernetes. Pass --pr
 
 ### rdc cluster status [cluster]
 
-List all clusters, or show one cluster's full config with --name.
+List all clusters, or pass a cluster name to show that cluster's full config.
 
 > MCP tool
 
@@ -959,11 +959,11 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 
 ### rdc repo diff <ref>
 
-Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.
+Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.
 
 **Options:**
 
-- `--base <ref>` — Repository to diff against (the base / old side); defaults to the parent of --name
+- `--base <ref>` — Repository to diff against (the base / old side); defaults to the parent of <ref>
 - `--name-only` — Print only changed file paths, one per line (no status letters)
 - `--stat` — Show per-file change magnitude (byte and block deltas) and totals
 - `--content [path]` — Show a unified text diff for a single file (requires a file path)

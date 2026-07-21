@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: pt
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ Não use em repositórios não relacionados. Os dois lados devem compartilhar um
 ### Sinopse
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### Opções
 
 | Opção | Descrição | Padrão |
 |--------|-------------|---------|
-| `--name <name>` | Repositório a inspecionar (o alvo, lado novo). Obrigatório. | obrigatório |
-| `--base <name>` | Repositório contra o qual fazer diff (a base, lado antigo). Padrão para o pai de `--name`, resolvido da configuração local. | pai de `--name` |
+| `<ref>` (posicional) | Referência do repositório a inspecionar (o lado alvo, novo). Obrigatório. | obrigatório |
+| `--base <ref>` | Repositório para comparar (o lado base, antigo). Por predefinição usa o pai da referência posicional, resolvido a partir da configuração local. | pai da referência |
 | (sem flag de formato) | Saída de status de nome: uma letra colorida `A`/`M`/`D`/`R` por arquivo alterado mais um resumo de uma linha. | ativado |
 | `--name-only` | Um caminho alterado por linha, sem letra de status. Compatível com pipe. | desativado |
 | `--stat` | Magnitude de alteração por arquivo (deltas de byte e bloco) com rodapé de totais. | desativado |
 | `--content <path>` | Diff de texto unificado de um único arquivo. Somente texto; binários informam `Binary files differ`. | desativado |
-| `--json` | Saída estruturada para agentes e scripts. | desativado |
+| `-o json` | Saída estruturada para agentes e scripts. | `table` |
 | `--fast` | Pule a etapa de confirmação de hash de conteúdo e confie no filtro de blocos. Mais rápido, mas pode sobre-relatar arquivos como Modified. | desativado |
-| `-m, --machine <name>` | Máquina alvo. Obrigatório. | obrigatório |
 | `--debug` | Diagnósticos verbosos em stderr. | desativado |
 | `--skip-router-restart` | Pule a etapa de reinicialização do roteador. | desativado |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 Com apenas `--name`, a bifurcação é comparada contra o pai registrado na configuração local. Aqui a bifurcação `test-1gb:fork1` tem um arquivo modificado:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 Passe `--base` para fazer diff contra um repositório relacionado arbitrário. `--base` é o lado base (antigo), `--name` é o lado alvo (novo):
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` adiciona o delta de byte e bloco por arquivo e um rodapé de totais:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` imprime um caminho por linha sem letra de status, pronto para alimentar outro comando:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` produz um diff unificado de um único arquivo de texto:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### Filtrando JSON com jq
 
-`--json` emite o envelope estruturado em stdout, portanto é canalizado perfeitamente em `jq`:
+`-o json` emite o envelope estruturado em stdout, portanto é canalizado perfeitamente em `jq`:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ Cada linha contém o delta de byte e bloco do arquivo. Um rodapé relata a conta
 
 Um diff unificado padrão (cabeçalhos `---`/`+++`, chunks `@@`) para um arquivo de texto. Arquivos binários informam `Binary files differ` e não produzem chunks.
 
-### `--json`
+### `-o json`
 
 O resultado estruturado completo. Os dados vão para stdout; progresso e diagnósticos vão para stderr, portanto o JSON é canalizado perfeitamente em `jq` ou outro analisador mesmo enquanto o progresso está sendo impresso.
 

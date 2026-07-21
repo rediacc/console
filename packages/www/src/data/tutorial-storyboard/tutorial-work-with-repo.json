@@ -24,7 +24,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc repo tunnel -m my-server -r my-app -c app",
-        "commandFull": "rdc repo tunnel --machine <machine-name> --repository my-app --container app"
+        "commandFull": "rdc repo tunnel my-app@<machine-name> --container app"
       }
     },
     {
@@ -48,8 +48,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc term connect -m my-server -r my-app -c 'docker ps'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps'"
+        "command": "rdc term connect my-app@my-server -c 'docker ps'",
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'docker ps'"
       }
     },
     {
@@ -59,8 +59,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo sync upload -m my-server -r my-app --local ./src --dry-run",
-        "commandFull": "rdc repo sync upload -m <machine-name> --repository my-app --local /tmp/tutorial-src --dry-run"
+        "command": "rdc repo sync upload -r my-app --local ./src --dry-run",
+        "commandFull": "rdc repo sync upload my-app@<machine-name> --local /tmp/tutorial-src --dry-run"
       }
     },
     {
@@ -70,8 +70,8 @@
       "holdSec": 0.8,
       "narrationRole": "transition",
       "card": {
-        "command": "rdc repo sync upload -m my-server -r my-app --local ./src",
-        "commandFull": "rdc repo sync upload -m <machine-name> --repository my-app --local /tmp/tutorial-src"
+        "command": "rdc repo sync upload -r my-app --local ./src",
+        "commandFull": "rdc repo sync upload my-app@<machine-name> --local /tmp/tutorial-src"
       }
     },
     {

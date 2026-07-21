@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 6
 language: ru
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -132,16 +132,16 @@ labels:
 
    ```bash
    # Общие учетные данные (один раз на конфигурацию, применяются ко всем машинам)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Настройки конкретной машины
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. DNS-записи, указывающие ваш домен на публичный IP сервера (см. [Настройка DNS](#настройка-dns) ниже).
@@ -185,14 +185,14 @@ services:
 TLS-сертификаты получаются автоматически через Let's Encrypt с использованием DNS-01 проверки Cloudflare. Учетные данные настраиваются один раз на конфигурацию (общие для всех машин):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 Автомаршруты используют **wildcard-сертификаты** на уровне поддомена репозитория (`*.marketing.server-1.example.com`) вместо сертификатов для каждого сервиса. Сертификат автоматически выпускается Traefik при первом `repo up`; никаких ручных шагов не требуется. Форки повторно используют существующий wildcard родительского репозитория, поэтому никогда не вызывают новый запрос сертификата. Маршруты с пользовательскими доменами используют wildcard на уровне машины (`*.server-1.example.com`).
 
-> **Требуются учетные данные Cloudflare.** Wildcard-сертификаты используют DNS-01 проверку. Без `--cf-dns-token` (и опционально `--cert-email`) Traefik не сможет завершить проверку и HTTPS не будет работать. HTTP остается функциональным. Настройте учетные данные с помощью `rdc config infra set` перед первым деплоем.
+> **Требуются учетные данные Cloudflare.** Wildcard-сертификаты используют DNS-01 проверку. Без `--cf-dns-token` (и опционально `--cert-email`) Traefik не сможет завершить проверку и HTTPS не будет работать. HTTP остается функциональным. Настройте учетные данные с помощью `rdc machine infra set` перед первым деплоем.
 
 Для маршрутов уровня 2 с `traefik.http.routers.{name}.tls.certresolver=letsencrypt` wildcard-домены SAN автоматически добавляются на основе имени хоста маршрута.
 
@@ -212,17 +212,17 @@ API-токен Cloudflare DNS должен иметь разрешение `Zone
 
 - Автоматически после `rdc repo up`, но только если локальный кэш для `baseDomain` машины старше 6 часов. Свежие кэши остаются нетронутыми, чтобы последовательные деплои не нагружали SSH.
 - По запросу: `rdc machine infra cert pull <machine>` (принудительное получение) или `rdc machine status <machine> --sync-certs` (получение как побочный эффект запроса статуса).
-- При `rdc config infra push` кэш загружается на машину (локальные сертификаты с более долгим сроком действия имеют приоритет над удалёнными).
+- При `rdc machine infra push` кэш загружается на машину (локальные сертификаты с более долгим сроком действия имеют приоритет над удалёнными).
 
 **Обслуживание кэша:**
 
 - Устаревшие записи автомаршрутов (старые домены с тегом идентификатора сети, например `service-3200.rediacc.io`) удаляются при каждом получении.
 - Сертификаты, у которых `notAfter` более чем на 7 дней в прошлом, удаляются полностью. Они инертны и только раздувают кэш.
-- `rdc config cert-cache clear` очищает всё; `rdc config cert-cache status` показывает инвентарь.
+- `rdc config prune --certs-only` очищает всё; `rdc config prune --certs-only` показывает инвентарь.
 
 **Устранение неполадок:** если `traefik-certs-dumper` падает с `/traefik/acme.json: no such file or directory`, демон репозитория не видит хранилище letsencrypt хоста. Проверьте (а) наличие `/opt/rediacc/proxy/letsencrypt/acme.json` на хосте (за это отвечает `rediacc-proxy` уровня хоста), и (б) что демон репозитория был запущен с достаточно новым renet, который добавляет `/opt/rediacc/proxy` в список разрешений. После обновления renet выполните `rdc repo up`, чтобы применить изменения.
 
-> **Экспериментально:** Автоматическая частота синхронизации и удаление по истечении срока появились в renet 0.9+. Более старые версии CLI/renet используют исключительно ручную синхронизацию через `rdc config cert-cache pull`.
+> **Экспериментально:** Автоматическая частота синхронизации и удаление по истечении срока появились в renet 0.9+. Более старые версии CLI/renet используют исключительно ручную синхронизацию через `rdc config prune --certs-only`.
 
 ## Проброс TCP/UDP-портов
 
@@ -233,16 +233,16 @@ API-токен Cloudflare DNS должен иметь разрешение `Zone
 Добавьте необходимые порты при настройке инфраструктуры:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 Это создает точки входа Traefik с именами `tcp-{port}` и `udp-{port}`.
 
-> После добавления или удаления портов всегда повторно выполняйте `rdc config infra push` для обновления конфигурации прокси.
+> После добавления или удаления портов всегда повторно выполняйте `rdc machine infra push` для обновления конфигурации прокси.
 
 ### Шаг 2: Добавление TCP/UDP-меток
 
@@ -315,7 +315,7 @@ services:
 
 ### Автоматический DNS (Cloudflare)
 
-Когда настроен `--cf-dns-token`, `rdc config infra push` автоматически создает необходимые DNS-записи в Cloudflare:
+Когда настроен `--cf-dns-token`, `rdc machine infra push` автоматически создает необходимые DNS-записи в Cloudflare:
 
 | Запись | Тип | Содержимое | Создано |
 |--------|-----|------------|---------|
@@ -482,7 +482,7 @@ app.example.com   A   203.0.113.50
 ### Развертывание
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 Через несколько секунд сервер маршрутов обнаружит контейнер, Traefik подхватит маршрут, запросит TLS-сертификат, и `https://app.example.com` станет доступен.

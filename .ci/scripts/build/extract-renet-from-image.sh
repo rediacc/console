@@ -5,7 +5,7 @@
 # Usage: extract-renet-from-image.sh --tag TAG --output DIR
 #   --tag TAG       Renet image tag to extract from (required)
 #   --output DIR    Output directory for binaries (default: private/bin)
-#   --registry REG  Docker registry (default: ghcr.io/rediacc/elite)
+#   --registry REG  Docker registry (default: ghcr.io/rediacc)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,7 +14,7 @@ source "$SCRIPT_DIR/../lib/common.sh"
 # Defaults
 TAG=""
 OUTPUT_DIR=""
-REGISTRY="ghcr.io/rediacc/elite"
+REGISTRY="ghcr.io/rediacc"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -73,36 +73,64 @@ docker cp "$CONTAINER_ID:/opt/renet/renet-linux-arm64" "$OUTPUT_DIR/"
 # Resolve OUTPUT_DIR to absolute path before changing directories
 OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
 
-# Extract embedded assets (CRIU/rsync/rclone) from the renet container.
-# These are Linux binaries deployed INTO VMs during provisioning — needed
-# regardless of host platform (Linux KVM or macOS QEMU).
-log_step "Extracting embedded assets from container..."
+# Stage the embedded Linux assets into the PER-ARCH layout the go:embed
+# directives read (pkg/embed/embed_assets_{amd64,arm64}.go -> assets/<arch>/), so
+# the cross-compiled darwin/windows renet actually carries them. Writing a FLAT
+# assets/ dir here — the pre-per-arch behavior this script never got updated from
+# — is what silently shipped assetless darwin/windows binaries: the per-arch
+# embeds found nothing, so `ops up` failed with "embedded assets missing".
+#
+# Best-effort per asset, on purpose. This is the CACHED fast-path: it reuses an
+# already-built renet image that may predate an asset (an older image has no
+# /opt/zot or /opt/k3s). criu/rsync/rclone are the floor for basic provisioning
+# and are required; the cluster assets (zot/k3s + CSI sidecars) are embedded when
+# the reused image has them. The authoritative, complete asset set is guaranteed
+# by the full 'Renet (Full)' build (build.sh embed_assets, which hard-requires
+# them) — we deliberately do NOT delegate to it here, because its strictness
+# would fail this path on a legitimately older cached image.
+log_step "Staging embedded assets (per-arch) from container..."
 EMBED_DIR="$REPO_ROOT/private/renet/pkg/embed/assets"
-mkdir -p "$EMBED_DIR"
+mkdir -p "$EMBED_DIR/amd64" "$EMBED_DIR/arm64"
+# Start clean so the embedded set is EXACTLY what this image contains — a stale
+# .gz from a prior extraction must not leak into the binary. (CI checks out
+# fresh; this makes local/repeated runs deterministic too.)
+rm -f "$EMBED_DIR"/amd64/*.gz "$EMBED_DIR"/arm64/*.gz
 
-for tool in criu rsync rclone; do
+REQUIRED_TOOLS="criu rsync rclone"
+OPTIONAL_TOOLS="zot k3s csiprovisioner csisnapshotter snapshotcontroller"
+missing_required=""
+for tool in $REQUIRED_TOOLS $OPTIONAL_TOOLS; do
+    # CSI sidecars live under /opt/csi; every other tool under /opt/<tool>.
+    case "$tool" in
+        csiprovisioner | csisnapshotter | snapshotcontroller) src_dir="csi" ;;
+        *) src_dir="$tool" ;;
+    esac
     for arch in amd64 arm64; do
         asset="$tool-linux-$arch"
-        log_info "Extracting $asset..."
-        docker cp "$CONTAINER_ID:/opt/$tool/$asset" "$EMBED_DIR/" 2>/dev/null || {
-            log_error "Failed to extract $asset from container"
-            exit 1
-        }
+        if docker cp "$CONTAINER_ID:/opt/$src_dir/$asset" "$EMBED_DIR/$arch/" 2>/dev/null; then
+            gzip -f "$EMBED_DIR/$arch/$asset"
+        else
+            log_warn "$asset not present in cached image — skipping"
+            case " $REQUIRED_TOOLS " in
+                *" $tool "*) missing_required="$missing_required $asset" ;;
+            esac
+        fi
     done
 done
 
-log_info "Compressing assets..."
-for f in "$EMBED_DIR"/*-linux-*; do
-    [ -f "$f" ] && [ "${f##*.}" != "gz" ] && gzip -f "$f"
-done
+if [[ -n "$missing_required" ]]; then
+    log_error "Cached renet image is missing required assets:$missing_required"
+    exit 1
+fi
 
-log_info "Embedded assets:"
-ls -la "$EMBED_DIR"/*.gz
+log_info "Embedded assets (per-arch):"
+ls -la "$EMBED_DIR"/amd64/*.gz "$EMBED_DIR"/arm64/*.gz 2>/dev/null || true
 
-# Stage proxy and datastore docs for go:embed
-log_step "Staging proxy/datastore for embedding..."
-cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$REPO_ROOT/private/renet/pkg/embed/proxy/"
-cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$REPO_ROOT/private/renet/pkg/embed/datastore/"
+# Stage the proxy compose for go:embed via build.sh (single source of truth for
+# that step). embed_proxy stages ONLY the proxy compose; the datastore README is
+# a tracked embed file and must NOT be overwritten — the old cp here corrupted it.
+log_step "Staging proxy compose for embedding..."
+(cd "$REPO_ROOT/private/renet" && ./build.sh embed_proxy)
 
 # Cross-compile Darwin binaries (with embedded assets for VM provisioning)
 log_step "Cross-compiling renet Darwin binaries..."

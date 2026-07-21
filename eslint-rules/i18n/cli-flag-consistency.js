@@ -33,6 +33,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadValidFlags } from './no-undefined-cli-flags.js';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 const LEADING_TOKEN_CHARS = /^[('"`[]+/;
 const TRAILING_TOKEN_CHARS = /[)'"`\].,;:!?]+$/;
@@ -110,11 +111,11 @@ export const cliFlagConsistency = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localesDir = options.localesDir || 'packages/web/src/i18n/locales';
-    const projectRoot = process.cwd();
-    const absoluteLocalesDir = path.isAbsolute(localesDir)
-      ? localesDir
-      : path.join(projectRoot, localesDir);
+    const absoluteLocalesDir = resolveRequiredDirOption(
+      'i18n/cli-flag-consistency',
+      'localesDir',
+      options.localesDir,
+    );
 
     const namespace = path.basename(context.filename, '.json');
     const currentLang = path.basename(path.dirname(context.filename));

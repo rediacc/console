@@ -2,7 +2,6 @@
 # Build the consolidated rediacc server image locally for testing.
 #
 # Usage:
-#   scripts/docker/build-server.sh cloud   # builds rediacc-server-cloud:dev
 #   scripts/docker/build-server.sh onprem  # builds rediacc-server-onprem:dev
 #
 # Tags are local-only (no ghcr.io/ prefix). They cannot be confused with --
@@ -23,20 +22,16 @@ cd "$ROOT_DIR"
 
 VARIANT="${1:-}"
 case "$VARIANT" in
-    cloud)
-        ACCOUNT_ENTRY=node
-        LOCAL_TAG=rediacc-server-cloud:dev
-        ;;
     onprem)
         ACCOUNT_ENTRY=on-premise
         LOCAL_TAG=rediacc-server-onprem:dev
         ;;
     "")
-        echo "usage: $0 <cloud|onprem>" >&2
+        echo "usage: $0 <onprem>" >&2
         exit 2
         ;;
     *)
-        echo "unknown variant: $VARIANT (expected cloud|onprem)" >&2
+        echo "unknown variant: $VARIANT (expected onprem)" >&2
         exit 2
         ;;
 esac

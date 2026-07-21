@@ -84,8 +84,8 @@ labels:
 To open a port at the machine level (available to all services):
 
 ```bash
-rdc config infra set -m server-1 --tcp-ports 25,587,993   # mail server
-rdc config infra push -m server-1
+rdc machine infra set server-1 --tcp-ports 25,587,993   # mail server
+rdc machine infra push server-1
 ```
 
 > Never expose database or cache ports externally unless you have a specific requirement. Use HTTPS auto-routes for web services and keep storage services internal.

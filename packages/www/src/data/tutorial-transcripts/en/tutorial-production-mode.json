@@ -16,7 +16,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.555418,
+      "at": 2.431606,
       "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going.",
       "afterText": "App running in production. Same command, same result, on the real server.",
       "cardLabel": "Start Prod",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 11.051619,
+      "at": 7.724616,
       "text": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically.",
       "afterText": "Autostart on. The app survives reboots.",
       "cardLabel": "Enable Autostart",
@@ -34,7 +34,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 18.718543,
+      "at": 13.316649,
       "text": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list.",
       "afterText": "There it is, in the boot list.",
       "cardLabel": "List Autostart",
@@ -43,7 +43,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 25.169818,
+      "at": 19.488192,
       "text": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal.",
       "afterText": "Stopped. One command up, one command down.",
       "cardLabel": "Stop Repo",

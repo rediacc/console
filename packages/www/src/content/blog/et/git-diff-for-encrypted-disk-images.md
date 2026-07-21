@@ -17,7 +17,7 @@ tags:
   - cli
 featured: false
 language: et
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -66,7 +66,7 @@ See muudab identiteedi hulkade võrdluseks. Inood mõlemal poolel erineva teega 
 Siin on vaikimisi nimeoleku vorm, sama A/M/D/R grammatika, mida juba lugesid `git status --short` väljundist:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -83,7 +83,7 @@ Põhjus, miks see käsk üldse eksisteerib, on agendi töövoog. Vaatasin pideva
 Agent ei loe nimeolekut, ta loeb `--json` väljundit:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 Struktureeritud väljund annab agendile täpse muudatuste hulga. Milliseid teid ta muutis, lõi, kustutas. Koos `--stat` väljundiga faili muudatuste suurus baitides ja plokkides. Agent, kes näeb oma difi enne edendamist, on selline, keda saad tootmise lähedale lasta. Plahvatusraadius on kontrollitav, mitte kinnitatav. Teised režiimid teenivad sama ülevaatustsüklit. `--name-only` puhta teede loendi jaoks. `--content <tee>` ühe faili ühendatud tekstidifiks (ainult tekst; binaarne fail raporteerib `Binary files differ`). `--stat` kui agent peab teadma, mis muutus ja kui palju.

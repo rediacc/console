@@ -88,8 +88,10 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     BUILD_CONFIG_FILES=(
         "$SUBMODULE_PATH/Dockerfile"
         "$SUBMODULE_PATH/Dockerfile.native"
-        ".github/workflows/ci-build.yml"
-        ".ci/scripts/docker/build-native-binaries.sh"
+        "$SUBMODULE_PATH/build.sh"
+        ".github/workflows/ci-build-renet.yml"
+        ".github/workflows/ci-build-docker.yml"
+        ".ci/scripts/build/build-renet.sh"
     )
     for f in "${BUILD_CONFIG_FILES[@]}"; do
         if [[ -f "$f" ]]; then
@@ -97,9 +99,13 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         fi
     done
 
-    # Combine submodule commit with build config hash (first 7 chars each)
+    # Combine the submodule commit with a hash of the build config. Keep 12 hex
+    # chars (48 bits): the old 3-char (12-bit, 4096-value) hash collided often
+    # enough that a build-config change could map to an existing tag and silently
+    # reuse a stale image built from a DIFFERENT Dockerfile/workflow. 12 chars
+    # makes that collision negligible.
     if [[ -n "$BUILD_CONFIG_HASH" ]]; then
-        CONFIG_SHORT=$(echo -n "$BUILD_CONFIG_HASH" | sha256sum | cut -c1-3)
+        CONFIG_SHORT=$(echo -n "$BUILD_CONFIG_HASH" | sha256sum | cut -c1-12)
         CI_TAG="${SUBMODULE_COMMIT}-${CONFIG_SHORT}"
     else
         CI_TAG="$SUBMODULE_COMMIT"

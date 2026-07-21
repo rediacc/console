@@ -318,13 +318,16 @@ function printSummary(errors) {
   console.log(colors.bold('Docs CLI Usage Validation'));
   console.log('='.repeat(60));
 
-  if (errors.length === 0) {
+  // NOTE: no `errors.length === 0` short-circuit. Zero violations with a non-empty backlog is
+  // precisely the stale-entry case the ratchet exists to catch, so it MUST reach findRegressions.
+  const regressions = findRegressions(errors, P7_BACKLOG);
+
+  if (errors.length === 0 && regressions.length === 0) {
     console.log(colors.green('✓ All targeted docs command examples are valid.'));
     console.log('='.repeat(60));
     return 0;
   }
 
-  const regressions = findRegressions(errors, P7_BACKLOG);
   if (regressions.length === 0) {
     const total = errors.length;
     console.log(
@@ -342,7 +345,7 @@ function printSummary(errors) {
     return 0;
   }
 
-  console.log(colors.red(`\n✗ CLI-usage REGRESSION beyond the frozen P7 backlog:\n`));
+  console.log(colors.red(`\n✗ CLI-usage backlog is OUT OF SYNC (the ratchet turns both ways):\n`));
   for (const r of regressions) console.log(colors.red(`  ✗ ${r}`));
 
   // Show the violations for the OFFENDING files only. Dumping all ~3300 backlog entries
@@ -351,10 +354,11 @@ function printSummary(errors) {
   printSummaryDetail(errors.filter((e) => offending.has(e.file)));
   console.log(
     colors.dim(
-      '\n  The P7 backlog is frozen. A doc may improve (a lower count passes), but it may not\n' +
-        '  get worse, and a doc outside the backlog must be clean. Fix the example, or — if the\n' +
-        '  violation is genuinely new and deferred — update scripts/docs-cli-usage-baseline.json\n' +
-        '  deliberately, in a commit, with a reason.\n'
+      '\n  The P7 backlog is a RATCHET, not a floor. A doc outside it must be clean; a doc in it\n' +
+        '  may not get worse; and when a doc improves, its entry must be LOWERED (or deleted when\n' +
+        '  it reaches 0) in the same commit — an entry left above the real count pre-authorises\n' +
+        '  that many future breakages. Fix the example, or update\n' +
+        '  scripts/docs-cli-usage-baseline.json deliberately, in a commit, with a reason.\n'
     )
   );
   console.log('='.repeat(60));

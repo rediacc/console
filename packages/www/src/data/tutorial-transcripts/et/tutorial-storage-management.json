@@ -6,7 +6,7 @@
     {
       "id": "tutorial-storage-management-01",
       "markerIndex": 0,
-      "at": 2.410441,
+      "at": 2.415408,
       "text": "Täida repository peaaegu ääreni ja kontrolli: failisüsteem hakkab kitsaks jääma.",
       "afterText": "Peaaegu täis. Aeg kasvada.",
       "cardLabel": "Täitumine",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-storage-management-02",
       "markerIndex": 1,
-      "at": 12.69586,
+      "at": 10.51664,
       "text": "Kasvata seda online. Krüpteeritud konteiner ja failisüsteem laienevad, samal ajal kui containers jätkavad tööd -- null seisakuaega, null unmounti.",
       "afterText": "Neli gigabaiti nüüd. Midagi ei taaskäivitunud.",
       "cardLabel": "Laienda Online",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-storage-management-03",
       "markerIndex": 2,
-      "at": 19.886575,
+      "at": 14.693193,
       "text": "Kontrolli seestpoolt: sama köide, kaks korda rohkem ruumi.",
       "afterText": "Rakendus ei märganud midagi.",
       "cardLabel": "Kontrolli Suurust",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-storage-management-04",
       "markerIndex": 3,
-      "at": 26.982758,
+      "at": 19.546232,
       "text": "Nüüd vastupidises suunas. Kustuta suur fail -- aga jälgi: pool ei saa ruumi kohe tagasi. Kustutatud plokid jäävad image'i sees reserveerituks.",
       "afterText": "Vabastatud repo sees, kuid ikka pildi omanduses.",
       "cardLabel": "Kustuta Andmed",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-storage-management-05",
       "markerIndex": 4,
-      "at": 33.464064,
+      "at": 23.813547,
       "text": "Trim annab need plokid datastore poolile tagasi, võrgus. See on samm, mida enamik seadistusi unustab.",
       "afterText": "Tagasi saadud. Pool saab jälle hingata.",
       "cardLabel": "Trim",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-storage-management-06",
       "markerIndex": 5,
-      "at": 40.097562,
+      "at": 28.710567,
       "text": "Nüüd lõpeta selle käsitsi tegemine. Poliitika lubab automaatse kasvu kuni sinu valitud ülempiirini, pluss ajastatud trim'id.",
       "afterText": "Poliitika salvestatud. Masin võtab siit üle.",
       "cardLabel": "Seadista Poliitika",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-storage-management-07",
       "markerIndex": 6,
-      "at": 50.538253,
+      "at": 36.110527,
       "text": "Loe see tagasi: automaatne kasv sees, ülempiir kaheksa gigabaiti, trim ajakava alusel.",
       "afterText": "Seadistatud korra, unustatud turvaliselt.",
       "cardLabel": "Poliitika Kontroll",
@@ -69,7 +69,7 @@
     {
       "id": "tutorial-storage-management-08",
       "markerIndex": 7,
-      "at": 57.423655,
+      "at": 41.090184,
       "text": "Ja vaade, mis kõik kokku seob: storage health näitab iga repo kasutust, pooli ennast ja kui palju copy-on-write jagamine sulle kokku hoiab.",
       "afterText": "Üks vaade: kasutus, kokkuhoid ja ruumi kasvuks.",
       "cardLabel": "Tervise Vaade",

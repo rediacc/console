@@ -69,9 +69,9 @@ When the precondition fails, the JSON envelope (`--output json`) carries a struc
       "summary": "Provide the current value or acknowledge rotation.",
       "options": [
         { "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+          "run": "rdc repo secret get mail --key STRIPE_KEY" },
         { "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
       ]
     }
   }]

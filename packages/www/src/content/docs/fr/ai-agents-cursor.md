@@ -4,7 +4,7 @@ description: Configurez l'IDE Cursor pour travailler avec l'infrastructure Redia
 category: Guides
 order: 32
 language: fr
-sourceHash: "66821f514bc7a8bd"
+sourceHash: "bab7e70ffbd9f32b"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -39,7 +39,7 @@ Demandez à Cursor : *"Vérifie l'état de mon serveur de production"*
 
 Cursor exécute dans le terminal :
 ```bash
-rdc machine query --name prod-1 -o json
+rdc machine status prod-1 -o json
 ```
 
 ### Déployer des modifications
@@ -48,7 +48,7 @@ Demandez à Cursor : *"Déploie la configuration mise à jour de nextcloud"*
 
 Cursor exécute dans le terminal :
 ```bash
-rdc repo up --name nextcloud -m prod-1 --yes
+rdc repo up nextcloud@prod-1 --yes
 ```
 
 ### Voir les journaux
@@ -57,7 +57,7 @@ Demandez à Cursor : *"Montre-moi les journaux récents du conteneur de messager
 
 Cursor exécute dans le terminal :
 ```bash
-rdc term connect -m prod-1 -r mail -c "docker logs mail-postfix --tail 100"
+rdc repo logs mail@prod-1 -c mail-postfix --lines 100
 ```
 
 ## Paramètres de l'espace de travail

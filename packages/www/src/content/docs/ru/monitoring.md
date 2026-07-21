@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "b6deba17f1137188"
+sourceHash: "ab050e731db18848"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,7 +19,7 @@ Rediacc предоставляет встроенные команды мони�
 Получение полного отчёта о состоянии машины:
 
 ```bash
-rdc machine health --name server-1
+rdc machine health server-1
 ```
 
 Отчёт включает:
@@ -35,7 +35,7 @@ rdc machine health --name server-1
 Просмотр всех запущенных контейнеров во всех репозиториях на машине:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 | Столбец | Описание |
@@ -59,7 +59,7 @@ JSON-вывод включает полные сведения о контейн
 Просмотр systemd-сервисов, связанных с Rediacc, на машине:
 
 ```bash
-rdc machine services --name server-1
+rdc machine status server-1 --services
 ```
 
 | Столбец | Описание |
@@ -82,7 +82,7 @@ JSON-вывод включает полные сведения о сервисе
 Просмотр репозиториев на машине с подробной статистикой:
 
 ```bash
-rdc machine repos --name server-1
+rdc machine status server-1 --repositories
 ```
 
 | Столбец | Описание |
@@ -106,7 +106,7 @@ JSON-вывод включает `name` (разрешённое) и `guid` (ис
 Проверка фрагментации BTRFS и совместного использования reflink во всех репозиториях на машине:
 
 ```bash
-rdc machine query --name server-1 --storage-health
+rdc machine status server-1 --storage-health
 ```
 
 | Столбец | Описание |
@@ -184,7 +184,7 @@ Rediacc автоматически планирует еженедельный �
 Для немедленного запуска скраба (например, после перебоя питания или миграции диска):
 
 ```bash
-rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
+rdc term connect server-1 -c "sudo renet maintenance scrub --datastore /mnt/rediacc"
 ```
 
 Результат сохраняется в тот же JSON-файл и сразу становится видимым при следующем вызове `rdc machine status --system`.
@@ -194,7 +194,7 @@ rdc term connect -m server-1 -c "sudo renet maintenance scrub --datastore /mnt/r
 Получение полного обзора машины, включая информацию о развёртывании:
 
 ```bash
-rdc machine query --name server-1
+rdc machine status server-1
 ```
 
 Предоставляет:
@@ -210,7 +210,7 @@ rdc machine query --name server-1
 Проверка SSH-подключения к машине:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Команда выводит удалённое имя хоста при успехе и ошибку соединения в

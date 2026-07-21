@@ -4,7 +4,7 @@ description: Rediacc'ı çalıştırmak için sistem gereksinimleri ve desteklen
 category: Guides
 order: 0
 language: tr
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ Oracle Linux 10 varsayılan olarak **Unbreakable Enterprise Kernel (UEK)** kulla
 
 ### İşletim Sistemine Göre Güvenlik Politikaları
 
-Her repo için Docker daemon'u ve repo konteynerlerinin kendisi, desteklenen tüm işletim sistemlerinde **varsayılan konteyner etiketleriyle** çalışır. `rdc config machine setup`, özel SELinux politikaları veya AppArmor profilleri kurmaz. İşletim sistemine göre davranış:
+Her repo için Docker daemon'u ve repo konteynerlerinin kendisi, desteklenen tüm işletim sistemlerinde **varsayılan konteyner etiketleriyle** çalışır. `rdc machine setup`, özel SELinux politikaları veya AppArmor profilleri kurmaz. İşletim sistemine göre davranış:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor varsayılan olarak etkindir. Varsayılan docker-container profili uygulanır; ek kurulum gerekmez.
 - **Fedora 43, Oracle Linux 10**: SELinux enforcing modunda çalışır. Her repo için daemon, konteynerleri standart `container_t` bağlamıyla etiketler. Özel SELinux politikasına gerek yoktur.
@@ -75,7 +75,7 @@ Bir kurulum adımı SELinux AVC reddi veya AppArmor reddiyle başarısız olursa
 
 ### Otomatik Olarak Kurulanlar
 
-`rdc config machine setup` komutu aşağıdakileri uzak sunucuya kurar:
+`rdc machine setup` komutu aşağıdakileri uzak sunucuya kurar:
 
 - **Docker** ve **containerd** (konteyner çalışma zamanı)
 - **cryptsetup** (LUKS disk şifreleme)

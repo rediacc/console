@@ -6,7 +6,7 @@
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "at": 2.413668,
+      "at": 2.414842,
       "text": "O primeiro push para outra máquina carrega a imagem inteira, e a saída diz claramente: dois gigabytes transferidos, marcado como full. Esta é a linha de base.",
       "afterText": "Dois gigabytes em quarenta e quatro segundos, marcado como full. O CLI também manteve uma base idêntica nos dois lados, e essa é a preparação para a mágica.",
       "cardLabel": "Push Completo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "at": 10.922135,
+      "at": 8.165229,
       "text": "Altere um pouco de dados: cinquenta megabytes de dois gigabytes.",
       "afterText": "Uma pequena alteração em uma imagem grande.",
       "cardLabel": "Alterar Dados",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "at": 21.404869,
+      "at": 16.388163,
       "text": "Faça push novamente. Mesmo comando, mas leia a saída desta vez: cerca de cinquenta megabytes transferidos, marcado como delta, em relação a uma imagem de dois gigabytes. Apenas os blocos alterados foram enviados.",
       "afterText": "Cinquenta megabytes em menos de seis segundos, de uma imagem de dois gigabytes. Os números são a prova.",
       "cardLabel": "Push Delta",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "at": 29.764702,
+      "at": 22.149817,
       "text": "As duas máquinas têm o mesmo repository, atualizado em segundos. Execute de hora em hora se quiser, o custo é a mudança, não o tamanho.",
       "afterText": "Backups frequentes deixam de ser caros.",
       "cardLabel": "Sincronizado",

@@ -5,7 +5,7 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: pt
-sourceHash: "c13a0f880039d7e7"
+sourceHash: "c5c847e04186c9b1"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -70,8 +70,8 @@ E monte-o novamente, totalmente restaurado:
 O mesmo pull funciona num servidor completamente novo: configure-o, adicione-o ao `rdc` e corra o pull lá:
 
 ```bash
-rdc repo pull --name my-app -m new-server --from my-storage
-rdc repo up --name my-app -m new-server
+rdc repo pull my-app@new-server --from my-storage
+rdc repo up my-app@new-server
 ```
 
 Os mesmos dados, os mesmos contentores, uma máquina diferente.
@@ -81,7 +81,7 @@ Os mesmos dados, os mesmos contentores, uma máquina diferente.
 Também pode enviar diretamente entre máquinas, sem armazenamento na nuvem pelo meio:
 
 ```bash
-rdc repo push --name my-app -m my-server --to-machine backup-server
+rdc repo push my-app --to backup-server
 ```
 
 > **Dica profissional.** Os envios máquina-a-máquina enviam apenas os blocos alterados após o primeiro. O [tutorial de Transferência Delta](/pt/docs/tutorial-delta-transfer) mostra ao vivo.

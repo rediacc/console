@@ -38,13 +38,13 @@ for ip in "$TUTORIAL_MACHINE_IP" "$M2_IP"; do
 done
 rdc machine setup "$M"
 rdc machine setup "$M2"
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
-rdc machine prune --name "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M2" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
 # One delete, not two: the machine is derived from the ref, and a repo has a
 # single home in the config. Leftovers on $M2 (the migrate target) are reaped by
 # the `machine prune --orphaned-repos` sweep above, which matches by GUID.
-rdc repo delete pulse --archive-config -y 2>/dev/null || true
+rdc repo delete pulse --yes --archive-config -y 2>/dev/null || true
 rdc repo create pulse --machine "$M" --size 2G
 rdc repo sync upload pulse --local "$APP_DIR/"
 rdc repo up pulse
@@ -63,7 +63,7 @@ exec >&3 2>&4
 clear_screen
 
 section "A live app — its in-memory counter is beating"
-run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse --command 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 
@@ -83,7 +83,7 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "The counter CONTINUED — process memory made the trip"
-run_cmd "rdc term connect pulse -c 'docker logs heartbeat_app --tail 5'"
+run_cmd "rdc term connect pulse --command 'docker logs heartbeat_app --tail 5'"
 
 pause 2
 
@@ -94,5 +94,5 @@ end_recording
 # row, which makes any same-GUID residue left behind on the SOURCE machine
 # orphaned, so the GUID sweep below can reap it.
 rdc repo down pulse --unmount 2>/dev/null || true
-rdc repo delete pulse --archive-config -y 2>/dev/null || true
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc repo delete pulse --yes --archive-config -y 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true

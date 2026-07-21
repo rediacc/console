@@ -29,7 +29,7 @@ WORKFLOW_WEB_TAG="${WEB_TAG:-}"
 # =============================================================================
 # DOCKER REGISTRY CONFIGURATION
 # =============================================================================
-export DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc/elite}"
+export DOCKER_REGISTRY="${DOCKER_REGISTRY:-ghcr.io/rediacc}"
 
 # For GitHub Container Registry, use GITHUB_TOKEN if available (GitHub Actions)
 if [[ -n "${GITHUB_TOKEN:-}" ]]; then

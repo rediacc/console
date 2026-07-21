@@ -4,7 +4,7 @@ description: "Kubernetes'i Rediacc'ın depo zihniyetiyle çalıştırın: çalı
 category: "Guides"
 order: 6
 language: tr
-sourceHash: "d36c468ae2350e25"
+sourceHash: "6ad4b60e09edde94"
 sourceCommit: "4401262fffbf29b9480dee8ecd209013e4b87f60"
 ---
 
@@ -39,34 +39,32 @@ Bir küme, özel bir ağ üzerindeki adlandırılmış bir düğüm havuzları k
 
 ```bash
 # Havuzlarla bir küme tanımlayın (henüz hiçbir şey hazırlanmadı)
-rdc config cluster add --name prod \
+rdc cluster create prod --declare-only \
   --provider my-linode \
   --pool ceph:ceph:3 \
   --pool k8s:k8s-server:3
 
 # Havuz üyelerini hazırlayın, her birinde renet'i başlatın, bileşenleri kurun (önce Ceph)
-rdc cluster create --name prod
+rdc cluster create prod
 ```
 
 Havuz rolleri `ceph`, `k8s-server`, `k8s-agent` ve `hyperconverged`'dir (açık katılım gerektirir, çünkü Ceph bellek hedefleri ile kubelet tahliye eşikleri aynı RAM için yarışır). Her havuz, donanım asimetrisini havuz başına boyut ve disk parametreleri olarak taşır: disk ağırlıklı Ceph düğümleri, cpu/ram ağırlıklı Kubernetes düğümleri.
 
-Havuz üyeleri, geri referansla birlikte `<cluster>-<pool>-<n>` olarak `resources.machines` içinde somutlaşır, bu nedenle **mevcut her `-m` komutu bunlar üzerinde çalışır**: `rdc machine query`, `rdc term connect`, depo komutları ve yedekleme stratejileri, küme düğümlerini sıradan makineler olarak görür.
+Havuz üyeleri, geri referansla birlikte `<cluster>-<pool>-<n>` olarak `resources.machines` içinde somutlaşır, bu nedenle **mevcut her `-m` komutu bunlar üzerinde çalışır**: `rdc machine status`, `rdc term connect`, depo komutları ve yedekleme stratejileri, küme düğümlerini sıradan makineler olarak görür.
 
 Bulut sağlayıcılar, `rdc machine provision`'ın kullandığı aynı `ProviderMapping` kayıt defterini izleyerek [OpenTofu](https://opentofu.org/) üzerinden hazırlanır; bu, özel ağ bloğu (VLAN veya VPC, damgalanacak MTU, özel NIC adlandırması) ile genişletilmiştir. Yerel KVM, `rdc ops` aracılığıyla her zaman kullanılabilir test yoludur.
 
 ```bash
 # Kümeleri inceleyin
 rdc cluster status                 # tüm kümeleri listele
-rdc cluster status --name prod     # bir kümenin tam yapılandırması
+rdc cluster status prod     # bir kümenin tam yapılandırması
 
 # Bir havuzu büyütün veya küçültün (makine ekler/kaldırır, düğümleri katılır/boşaltır)
-rdc cluster scale --name prod --pool k8s --count 5
+rdc cluster scale prod --pool k8s --count 5
 
-# Zaten hazırlanmış üyelere bileşenler kurun
-rdc cluster install --name prod
 
 # Hazırlanmış üyeleri kaldırın ve kümeyi yapılandırmadan çıkarın
-rdc cluster destroy --name prod
+rdc cluster destroy prod
 ```
 
 ### Kubeconfig Alma
@@ -74,7 +72,7 @@ rdc cluster destroy --name prod
 Kubeconfig, büyük olduğu ve döndüğü için yapılandırma dosyanızda asla saklanmaz. OpenTofu çalışma dizinleri ve sertifika önbelleğiyle aynı yan durum desenini izleyerek talep üzerine SSH üzerinden alınır ve `0600` izinleriyle yerel olarak önbelleğe alınır.
 
 ```bash
-rdc cluster kubeconfig --name prod
+rdc cluster kubeconfig prod
 # Yazdırır: export KUBECONFIG=~/.config/rediacc/kube/prod.yaml
 ```
 
@@ -84,17 +82,17 @@ Hedef bayrağı çalışma zamanına karar verir. Bir tür bayrağı yoktur.
 
 ```bash
 # Docker deposu (değişmeden): bir makinede yalıtılmış bir Docker daemon'u
-rdc repo create --name shop -m server-1 --size 10G
+rdc repo create shop -m server-1 --size 10G
 
 # Kubernetes deposu: bir küme içinde "shop" ad alanı artı depolaması
-rdc repo create --name shop --cluster prod --size 10G
+rdc repo create shop --datastore prod --size 10G
 ```
 
 Depo fiilleri, depo kapsamlı çalışma için tek yüzeydir. Hedef çözümleme hunisi sayesinde, depo komut kümesinin neredeyse tamamı `--cluster` kabul eder ve küme uyumlu hale gelir: `fork`, `migrate`, `push`, `pull`, `up`, `down`, `resize`, `diff`, `commit`, `branch`, `checkout`, `merge`, `trim`, `cat`, `mount`, `sync`, `list`, `status` ve `log`. Bir küme hedefi, kendi kontrol düğümü artı deponun ad alanına sabitlenmiş KUBECONFIG bağlamına çözümlenir; bu, bir makineyi `DOCKER_HOST` artı bir çalışma dizinine çözümlemenin analoğudur.
 
 ```bash
-rdc repo sync upload --cluster prod -r shop --local ./config
-rdc cluster kubeconfig --name prod           # KUBECONFIG'i dışa aktarın, ardından kubectl'i doğrudan kullanın
+rdc repo sync upload shop --local ./config
+rdc cluster kubeconfig prod           # KUBECONFIG'i dışa aktarın, ardından kubectl'i doğrudan kullanın
 ```
 
 Küme düğümleri de `resources.machines` içinde somutlaşır, bu nedenle sıradan `rdc term connect <cluster>-<pool>-<n>` komutuyla belirli bir düğüme SSH ile bağlanabilirsiniz.
@@ -120,7 +118,7 @@ Hedef çalışma zamanından yoksun bir depo, veri aktarım aşamasından **sonr
 Bir Kubernetes deposunda `rdc repo fork`, her zaman veriyi kopyalar, her zaman anında. `--full` bayrağı ve varyantları yoktur.
 
 ```bash
-rdc repo fork --parent shop --tag joseph --cluster prod
+rdc repo fork shop --tag joseph
 ```
 
 Bu, aynı kümede `shop-joseph` ad alanını oluşturur, her birimi copy-on-write olarak klonlar (Ceph'te bir RBD klonu, yerel arka uçta PV imaj dosyalarının bir reflink'i) ve iş yüklerini orada dağıtır. Fork URL'si, ebeveynin joker karakter sertifikası altında anında canlıdır, bu nedenle yeni bir sertifika veya DNS kaydı verilmez.
@@ -138,10 +136,10 @@ Kümenin tamamına ait işlemler `rdc cluster` grubunda yaşar, çünkü farklı
 
 ```bash
 # Tüm bir kümeyi, depolarının verileri dahil, yeni bir kümeye klonlayın
-rdc cluster fork --name prod --tag staging
+rdc cluster fork prod --to spare --tag staging
 
 # Tüm bir kümeyi, depolarının verileri dahil, başka bir makineye veya veri merkezine taşıyın
-rdc cluster migrate --name prod --to server-2
+rdc cluster migrate prod --to spare
 ```
 
 Her ikisi de küme imajları artı her depo PV imajının copy-on-write'ını koordine eder, ardından klonun veya taşınan kümenin yeni adreslerinde sağlıklı bir şekilde ayağa kalkması için düğüm kimliğini yeniden yazar. k3s, kontrol düzlemi durumunu gömülü veri deposunda tuttuğundan, kümenin imajının kendisi anlık görüntüdür: tutarlılık sırası önce kontrol düzlemi, sonra PV'ler, sonra ajanlardır.

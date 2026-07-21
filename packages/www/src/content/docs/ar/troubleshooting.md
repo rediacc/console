@@ -4,7 +4,7 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 order: 10
 language: ar
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU هو الحالة المعروفة التي تواجه AppArmor. يضبط R
 
 ### وحدة btrfs مفقودة (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-إذا فشل `rdc config machine setup` أو `renet system check-btrfs` بالرسالة:
+إذا فشل `rdc machine setup` أو `renet system check-btrfs` بالرسالة:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - تحقق من سجلات الحاوية باستخدام مقبس Docker الخاص بالمستودع:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 أو عرض جميع الحاويات:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## أخطاء رفض الصلاحيات
@@ -115,7 +115,7 @@ rdc machine containers --name server-1
 
 ```bash
 # باستخدام rdc term (مُعدّ تلقائياً):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # أو يدوياً مع المقبس:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **للحصول على وصول شبكي في حاوية عابرة، استخدم شبكة المضيف:**
 
 ```bash
-# داخل شل المستودع (rdc term connect -m <machine> -r <repo>)
+# داخل شل المستودع (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # الآن apt update و curl و pip install تعمل جميعها.
 ```
@@ -181,7 +181,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 - استخدم الوضع المضمّن مع `-c` لتشغيل الأوامر مباشرة:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - أجبر الطرفية الخارجية باستخدام `--external` إذا كان الوضع المضمّن يواجه مشاكل
 - على Linux، تأكد من تثبيت `gnome-terminal` أو `xterm` أو محاكي طرفية آخر

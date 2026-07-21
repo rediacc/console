@@ -2,11 +2,11 @@
   "version": 1,
   "tutorial": "tutorial-deploy-app",
   "nextTutorialKey": "tutorial-work-with-repo",
-  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --command 'rm -rf notes'",
-  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository my-app",
+  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect my-app@${TUTORIAL_MACHINE_NAME} --command 'rm -rf notes'",
+  "teardownCommand": "rdc vscode serve stop my-app@${TUTORIAL_MACHINE_NAME}",
   "sessions": {
     "workbench": {
-      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --browser --url-only",
+      "urlFromCommand": "rdc vscode connect my-app@${TUTORIAL_MACHINE_NAME} --browser --url-only",
       "prepActions": [
         {
           "waitForSelector": ".explorer-folders-view .monaco-list-row"
@@ -59,8 +59,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo template list",
-        "commandFull": "rdc repo template list"
+        "command": "rdc repo admin template list",
+        "commandFull": "rdc repo admin template list"
       }
     },
     {
@@ -70,8 +70,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc repo template apply",
-        "commandFull": "rdc repo template apply --name app-postgres -m <machine-name> --repository my-app"
+        "command": "rdc repo admin template apply",
+        "commandFull": "rdc repo admin template apply my-app --template app-postgres"
       }
     },
     {
@@ -82,7 +82,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -c 'ls -la'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'ls -la'"
       }
     },
     {
@@ -124,7 +124,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc repo up",
-        "commandFull": "rdc repo up --name my-app -m <machine-name>"
+        "commandFull": "rdc repo up my-app"
       }
     },
     {
@@ -135,7 +135,7 @@
       "narrationRole": "transition",
       "card": {
         "command": "rdc term connect -c 'docker ps'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps'"
+        "commandFull": "rdc term connect my-app@<machine-name> --command 'docker ps'"
       }
     },
     {

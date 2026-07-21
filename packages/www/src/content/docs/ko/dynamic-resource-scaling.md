@@ -1,4 +1,5 @@
 ---
+sourceHash: "7a75ab45703267eb"
 title: 동적 리소스 스케일링
 description: AI 학습과 동적 워크로드를 위한 무한한 유연성을 갖춘 클라우드 아키텍처를 구축하십시오.
 category: Use Cases

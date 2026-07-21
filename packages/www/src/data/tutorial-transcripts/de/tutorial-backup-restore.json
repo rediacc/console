@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.409089,
+      "at": 2.40238,
       "text": "Schritt eins. Wir importieren eine bestehende rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele mehr. Wenn Sie es bereits verwenden, können Sie dieselbe Konfiguration direkt importieren.",
       "afterText": "Storage importiert. Deine CLI kann jetzt Backups dorthin schicken.",
       "cardLabel": "Speicher importieren",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.555802,
+      "at": 5.948859,
       "text": "Wir listen die Speicher auf, die die CLI jetzt kennt. Jeder Speicher ist ein Ziel, auf das wir Backups übertragen können.",
       "afterText": "Da ist er. Bereit, Backups entgegenzunehmen.",
       "cardLabel": "Speicher auflisten",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.251839,
+      "at": 9.401196,
       "text": "Schritt zwei. Wir übertragen ein vollständiges Backup. Das gesamte Repository, App, Datenbank, Dateien, Konfiguration, wird hochgeladen. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt. Kein zusätzliches Schlüsselmanagement.",
       "afterText": "Backup hochgeladen. Alles in diesem Repo liegt jetzt verschlüsselt im Remote-Storage.",
       "cardLabel": "Backup pushen",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 24.484571,
+      "at": 15.183859,
       "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine.",
       "afterText": "Alle deine Snapshots an einem Ort. Jeden davon holst du mit einem einzigen Befehl zurück.",
       "cardLabel": "Backups auflisten",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 31.133919,
+      "at": 20.72372,
       "text": "Jetzt der Wiederherstellungsbeweis. Erst das repository offline nehmen: die Dienste stoppen und das verschlüsselte Volume aushängen. Die App ist von dieser Maschine verschwunden.",
       "afterText": "Offline und ausgehängt, genau der Zustand eines frischen Servers.",
       "cardLabel": "Offline nehmen",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 39.135694,
+      "at": 26.052361,
       "text": "Und das Backup direkt vom Speicher zurückziehen. Der repo pull-Befehl holt das Image, prüft seine Integrität und legt es genau dort ab, wo es war.",
       "afterText": "Übertragung abgeschlossen, Integrität geprüft. Das repository ist wieder da.",
       "cardLabel": "Backup laden",
@@ -60,7 +60,7 @@
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 48.126162,
+      "at": 32.749903,
       "text": "Noch einmal mounten, und das repository ist wiederhergestellt. Push, list, pull, das ist die ganze Backup-Geschichte.",
       "afterText": "Wiederhergestellt. Derselbe Ablauf funktioniert auch auf einer brandneuen Maschine.",
       "cardLabel": "Wiederhergestellt einbinden",

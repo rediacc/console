@@ -12,7 +12,7 @@ tags:
   - compliance
 featured: false
 language: es
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "f6a1604ae2a3a794"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ El autoalojamiento desplaza la lista de proveedores; no la elimina. Tres aspecto
 
 **2. Rediacc todavía no tiene ISO 27001, SOC 2 ni BSI C5.** Están en la hoja de ruta, no disponibles aún. Para un equipo de compras que utiliza las certificaciones como mecanismo de filtrado, esto supone una fricción real. El contraargumento defendible es el que este artículo ha venido desarrollando: el argumento de la ruta de datos implica que la mayor parte de lo que esas certificaciones atestiguan (controles de seguridad de la nube del proveedor, gestión de acceso del personal del proveedor, gestión de subencargados del proveedor) no está en el ámbito de aplicación, porque Rediacc-la-empresa no está en la ruta de datos. Ese argumento debe plantearse con cuidado y solidez, no como sustituto de las certificaciones cuando estas son lo que el comprador necesita.
 
-**3. La capa GRC sigue siendo suya.** Rediacc proporciona al operador un registro de auditoría con cadena de hash de más de 70 eventos (`rdc audit verify` valida la cadena de extremo a extremo). No le proporciona un registro de proveedores, un marco de controles ni un flujo de trabajo de recopilación de evidencias. Eso sigue viniendo de Drata, Vanta, OneTrust o uno de los competidores europeos. La entrada complementaria sobre [el coste real](/es/blog/nis2-the-real-bill) cubre en detalle la estructura de costes de esa complementariedad.
+**3. La capa GRC sigue siendo suya.** Rediacc proporciona al operador un registro de auditoría con cadena de hash de más de 70 eventos (`rdc config audit verify` valida la cadena de extremo a extremo). No le proporciona un registro de proveedores, un marco de controles ni un flujo de trabajo de recopilación de evidencias. Eso sigue viniendo de Drata, Vanta, OneTrust o uno de los competidores europeos. La entrada complementaria sobre [el coste real](/es/blog/nis2-the-real-bill) cubre en detalle la estructura de costes de esa complementariedad.
 
 ## El DPA que ya no tiene que negociar
 
@@ -129,7 +129,7 @@ Tras migrar a Rediacc en Hetzner:
 | Subencargados | (1) Ninguno para autoalojado; (2) Solo internos de Hetzner, listados en su DPA |
 | Estado del contrato | (1) Licencia de software, no se necesita DPA; (2) DPA de Hetzner + SCCs ya en vigor |
 | Custodia de claves | Cliente (credencial LUKS2 en la configuración del operador, no en el servidor) |
-| Plan de salida | "rdc repo backup pull desde cualquier destino compatible con rclone. Los volúmenes están cifrados con LUKS2; el operador conserva la credencial." |
+| Plan de salida | "rdc repo pull desde cualquier destino compatible con rclone. Los volúmenes están cifrados con LUKS2; el operador conserva la credencial." |
 | Última evaluación | (2) cubierta por la revisión IaaS existente |
 
 Dos entradas en el registro en lugar de una. La entrada de nivel crítico corresponde al proveedor IaaS, para quien el comprador ya tenía un DPA en vigor y un plan de salida probado, porque IaaS es una relación que la mayoría de los equipos sabe gestionar. La entrada de Rediacc es no crítica porque es una licencia de software, no un procesador de datos.

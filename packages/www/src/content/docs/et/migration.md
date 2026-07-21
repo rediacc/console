@@ -4,7 +4,7 @@ description: "Olemasolevate projektide migreerimine krüpteeritud Rediacc hoidla
 category: "Guides"
 order: 11
 language: et
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ Migreerige olemasolev projekt, failid, Dockeri teenused, andmebaasid, traditsioo
 
 - `rdc` CLI installitud ([Installatsioon](/en/docs/installation))
 - Masin lisatud ja ettevalmistatud ([Seadistus](/en/docs/setup))
-- Serveri kettaruum on piisav teie projekti jaoks (kontrollige `rdc machine query` abil)
+- Serveri kettaruum on piisav teie projekti jaoks (kontrollige `rdc machine status` abil)
 
 ## Samm 1: Looge hoidla
 
 Looge krüpteeritud hoidla, mis mahutab teie projekti. Eraldage lisaruumi Dockeri piltide ja konteinerite andmete jaoks.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **Vihje:** Suurust saate hiljem muuta `rdc repo resize` abil vajadusel, kuid hoidla peab enne olema lahti ühendatud. Lihtsam on alustada piisava ruumiga.
@@ -34,22 +34,22 @@ Kasutage `rdc repo sync upload`, et edastada projekti failid hoidlasse.
 
 ```bash
 # Eelvaade edastatavast (muudatusi ei tehta)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # Failide üleslaadimine
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 Hoidla peab olema ühendatud enne üleslaadimist. Kui seda pole veel tehtud:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 Järgnevate sünkroonimiste jaoks, kus soovite kaugserveri täpselt vastata oma kohalikule kaustale:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > Lipp `--mirror` kustutab kaugserveris failid, mis ei ole kohalikult olemas. Kasutage esmalt `--dry-run` kontrollimiseks.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Üleslaaditud failid saabuvad teie kohaliku kasutaja UID-ga (nt 1000). Rediacc kasutab üldkasutajat (UID 7111), et VS Code, terminaliseanssid ja tööriistad omaksid järjepidevat juurdepääsu. Käivitage omandiõiguse käsk teisendamiseks:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Dockeri-teadlik välistamine
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Dockeri mahu tuvastamise vahele jätmiseks ja kõige, sealhulgas konteinerite andmekataloogide, chown'imiseks:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **Hoiatus:** See võib katkestada töötavaid konteinereid. Peatage need esmalt vajaduse korral `rdc repo down` abil.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 Vaikimisi 7111-st erineva UID seadistamiseks:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **Ettevaatus:** `7111` on kõikjal kasutatav universaalne Rediacc UID (see vastab devcontaineri pilti põimitud `rediacc` kasutajale). Seda tuleks `--uid` abil üle kirjutada ainult selleks, et tagada ühilduvus konkreetse välise UID-ga omistatud failidega. See **ei** ole migratsioonisihtmärk. Uued hoidlad peaksid säilitama vaikeväärtuse.
@@ -200,7 +200,7 @@ Vt IP eraldamise ja `.rediacc.json` üksikasju [Teenuse võrgust](/en/docs/servi
 Ühendage hoidla (kui pole veel ühendatud) ja käivitage kõik teenused:
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 See teeb järgmist:
@@ -212,7 +212,7 @@ See teeb järgmist:
 Kontrollige, et teie konteinerid töötavad:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Samm 7: Lubage autostart (valikuline)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 Vaikimisi tuleb hoidlad pärast serveri taaskäivitamist käsitsi ühendada ja käivitada. Lubage autostart, et teie teenused käivituksid automaatselt:
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 Teilt küsitakse hoidla paroolifraasi.
@@ -275,7 +275,7 @@ Mis tahes Dockeri teenustega projekti jaoks:
 Failidel on endiselt teie kohalik UID. Käivitage omandiõiguse käsk:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Konteiner ei käivitu
@@ -284,10 +284,10 @@ Kontrollige, et teenused töötavad ja vaadake nende logid üle:
 
 ```bash
 # Kontrollige eraldatud IP-sid
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # Kontrollige konteineri logisid
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### Pordi konflikt hoidlate vahel
@@ -296,10 +296,10 @@ Iga hoidla saab unikaalsed loopback-IP-d ja tuum kirjutab automaatselt `bind()` 
 
 ### Omandiõiguse parandus katkestab konteinerid
 
-Kui käivitasite `rdc repo ownership` ja konteiner lakkas töötamast, chown'iti konteineri andmefailid. Peatage konteiner, kustutage selle andmekaust ja taaskäivitage. Konteiner loob selle uuesti:
+Kui käivitasite `rdc repo admin ownership` ja konteiner lakkas töötamast, chown'iti konteineri andmefailid. Peatage konteiner, kustutage selle andmekaust ja taaskäivitage. Konteiner loob selle uuesti:
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # Kustutage konteineri andmekaust (nt database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

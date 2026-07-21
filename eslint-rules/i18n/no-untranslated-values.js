@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for English translations
 let englishCache = new Map();
@@ -118,15 +119,15 @@ export const noUntranslatedValues = {
 
   create(context) {
     const options = context.options[0] || {};
-    const localesDir = options.localesDir || 'packages/web/src/i18n/locales';
     const allowedPatterns = (options.allowedPatterns || []).map((p) => new RegExp(p));
     const minLength = options.minLength ?? 3;
 
     // Resolve paths
-    const projectRoot = process.cwd();
-    const absoluteLocalesDir = path.isAbsolute(localesDir)
-      ? localesDir
-      : path.join(projectRoot, localesDir);
+    const absoluteLocalesDir = resolveRequiredDirOption(
+      'i18n/no-untranslated-values',
+      'localesDir',
+      options.localesDir,
+    );
 
     // Get current file info
     const filename = context.filename;

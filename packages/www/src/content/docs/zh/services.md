@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: zh
-sourceHash: "2d470a876c00c352"
+sourceHash: "f33bcf4598caedc8"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -212,7 +212,7 @@ renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试
 
 **如何修复偏差。** 如果容器的 `.rediacc.json` 保存策略错误（例如，因为您编辑了 compose 但未重新创建容器），请重新运行 `rdc repo up <repo>`。容器将以更新的策略重新创建。
 
-> **实验性：** 基于冷备份 sidecar 的恢复和 `rdc machine query` 上的 `--sync-certs` 标志在 renet 0.9+ 中发布。旧版本仅依赖保存的 `restart_policy` 进行看门狗恢复，这可能在冷备份后使 `on-failure` 容器搁浅。
+> **实验性：** 基于冷备份 sidecar 的恢复和 `rdc machine status` 上的 `--sync-certs` 标志在 renet 0.9+ 中发布。旧版本仅依赖保存的 `restart_policy` 进行看门狗恢复，这可能在冷备份后使 `on-failure` 容器搁浅。
 
 > **每个仓库的守护进程禁用了 Docker bridge 网络。** 每个仓库的守护进程（`FlavorRediacc`）都配置了 `"bridge": "none"` 和 `"iptables": false`。在仓库 shell 内运行一个简单的 `docker run <image>` 仍然能启动容器，但该容器只有 loopback 接口，没有 DNS 或出站连接。这是设计使然，因为仓库之间的 loopback 隔离由 eBPF cgroup 钩子强制执行，而 bridge 容器会绕过这些钩子。生产服务应使用 `renet compose`（它会自动为您注入主机网络）；对于临时调试，请显式传递 `--network host`：`docker run --rm --network host -it ubuntu bash`。
 >
@@ -225,12 +225,12 @@ renet 和 Docker 有意在如何处理容器重启方面存在分工。在调试
 挂载仓库并启动所有服务：
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 | 选项 | 描述 |
 |------|------|
-| `--detach` | 容器启动后立即返回；健康检查在后台继续运行 |
+| `--no-wait` | 容器启动后立即返回,健康检查在后台继续 |
 | `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
 执行顺序为：
@@ -253,7 +253,7 @@ HTTP services (accessible via proxy after ~3s):
 
 ### 后台启动
 
-加上 `--detach`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine status <machine> --containers` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
+加上 `--no-wait`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine status <machine> --containers` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
 
 ### 就绪探测
 
@@ -262,12 +262,12 @@ HTTP services (accessible via proxy after ~3s):
 ## 停止服务
 
 ```bash
-rdc repo down --name my-app -m server-1
+rdc repo down my-app
 ```
 
 | 选项 | 描述 |
 |------|------|
-| `--unmount` | 停止服务后卸载加密仓库。如果此操作未生效，请单独使用 `rdc repo unmount`。 |
+| `--unmount` | 停止服务后卸载加密仓库。 |
 | `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
 执行顺序为：
@@ -280,13 +280,13 @@ rdc repo down --name my-app -m server-1
 一次启动或停止机器上的所有仓库：
 
 ```bash
-rdc repo up -m server-1
+rdc repo up --all -m server-1
 ```
 
 | 选项 | 描述 |
 |------|------|
 | `--include-forks` | 包含 fork 仓库 |
-| `--mount-only` | 仅挂载，不启动容器 |
+| `--no-start` | 仅挂载并准备,不运行仓库的 `up()` 步骤 |
 | `--dry-run` | 显示将要执行的操作 |
 | `--parallel` | 并行运行操作 |
 | `--concurrency <n>` | 最大并发操作数（默认：3） |
@@ -311,7 +311,7 @@ rdc repo up -m server-1
 ### 启用
 
 ```bash
-rdc repo autostart enable --name my-app -m server-1
+rdc repo admin autostart enable my-app
 ```
 
 系统将提示您输入仓库密码短语。
@@ -319,13 +319,13 @@ rdc repo autostart enable --name my-app -m server-1
 ### 为所有仓库启用
 
 ```bash
-rdc repo autostart enable -m server-1
+rdc repo admin autostart enable
 ```
 
 ### 禁用
 
 ```bash
-rdc repo autostart disable --name my-app -m server-1
+rdc repo admin autostart disable my-app
 ```
 
 此操作将删除密钥文件并清除 LUKS 槽位 1。
@@ -350,7 +350,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ### 查看状态
 
 ```bash
-rdc repo autostart list -m server-1
+rdc repo admin autostart list -m server-1
 ```
 
 有关周期性协调器在启动后如何恢复停止的仓库的详细信息，请参阅[自动启动与恢复](/zh/docs/autostart-recovery)。
@@ -363,16 +363,16 @@ rdc repo autostart list -m server-1
 
 ```bash
 curl -fsSL https://www.rediacc.com/install.sh | bash
-rdc config init --name production --ssh-key ~/.ssh/id_ed25519
-rdc config machine add --name prod-1 --ip 203.0.113.50 --user deploy
-rdc config machine setup --name prod-1
-rdc repo create --name webapp -m prod-1 --size 10G
+rdc config init production --ssh-key ~/.ssh/id_ed25519
+rdc machine add prod-1 --ip 203.0.113.50 --user deploy
+rdc machine setup prod-1
+rdc repo create webapp -m prod-1 --size 10G
 ```
 
 ### 2. 挂载并准备
 
 ```bash
-rdc repo mount --name webapp -m prod-1
+rdc repo up webapp --no-start
 ```
 
 ### 3. 创建应用文件
@@ -431,13 +431,13 @@ down() {
 ### 4. 启动
 
 ```bash
-rdc repo up --name webapp -m prod-1
+rdc repo up webapp
 ```
 
 ### 5. 启用开机自启
 
 ```bash
-rdc repo autostart enable --name webapp -m prod-1
+rdc repo admin autostart enable webapp
 ```
 
 ## 在 compose 中使用按仓库的密钥

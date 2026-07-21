@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.555418,
+      "at": 2.431606,
       "text": "Vamos a arrancar la app en modo producción desde la laptop. El comando repo up del CLI llama a la misma función up que usábamos durante el desarrollo, pero se ejecuta en segundo plano. Puedes cerrar tu laptop y la app sigue funcionando.",
       "afterText": "App corriendo en producción. Mismo comando, mismo resultado, en el servidor real.",
       "cardLabel": "Iniciar Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 11.051619,
+      "at": 7.724616,
       "text": "Habilitamos el arranque automático para que la app sobreviva a un reinicio del servidor. A partir de ahora, si el servidor se reinicia, este repo vuelve automáticamente.",
       "afterText": "Arranque automático activado. La app sobrevive a los reinicios.",
       "cardLabel": "Activar Inicio Automático",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 18.718543,
+      "at": 13.316649,
       "text": "Listamos los repositorios que tienen el arranque automático habilitado. Confirmamos que nuestra app está ahora en la lista de inicio.",
       "afterText": "Ahí está, en la lista de arranque.",
       "cardLabel": "Listar Inicio Automático",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 25.169818,
+      "at": 19.488192,
       "text": "Y para detener la app, un comando desde la laptop. Un comando para arrancar, un comando para detener. Todo desde tu terminal, sin más sesiones interactivas.",
       "afterText": "Detenida. Un comando para arrancar, un comando para detener.",
       "cardLabel": "Detener Repo",

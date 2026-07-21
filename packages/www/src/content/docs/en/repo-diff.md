@@ -9,11 +9,11 @@ language: en
 
 # rdc repo diff
 
-`rdc repo diff` reports which files changed between two related repositories: a fork and its parent, or any two repositories that share a copy-on-write ancestor. Pass `--name <fork>` to diff a fork against the parent that local config records for it, or add `--base <repo>` to diff against an arbitrary related repository, where `--base` is the base (old) side and `--name` is the target (new) side. The command is read-only and never decrypts the images. It compares them at the block level on the remote machine, so cost tracks the number of changed blocks, not the size of the repository: a 1 GB repo and a 100 GB repo with the same edits take the same time. If the whole repository changed, block count scales with size and so does cost.
+`rdc repo diff` reports which files changed between two related repositories: a fork and its parent, or any two repositories that share a copy-on-write ancestor. Pass the fork's ref to diff it against the parent that local config records for it, or add `--base <repo>` to diff against an arbitrary related repository, where `--base` is the base (old) side and the positional ref is the target (new) side. The command is read-only and never decrypts the images. It compares them at the block level on the remote machine, so cost tracks the number of changed blocks, not the size of the repository: a 1 GB repo and a 100 GB repo with the same edits take the same time. If the whole repository changed, block count scales with size and so does cost.
 
 ## When to use it
 
-So: reach for `repo diff` before you promote a fork. An AI agent ran loose in a forked copy of production and you want to see exactly which files it touched before merging the change back: `repo diff --name <fork> -m <machine>` gives you that file list in seconds. Seconds. After a disaster-recovery restore, diff the restored fork against the snapshot it was supposed to reproduce to confirm the expected file set came back and nothing else drifted. For a long-lived fork that has run alongside its parent for weeks, the diff shows accumulated divergence (config edits, log accretion, schema migrations) without mounting and walking both trees by hand.
+So: reach for `repo diff` before you promote a fork. An AI agent ran loose in a forked copy of production and you want to see exactly which files it touched before merging the change back: `repo diff <fork>` gives you that file list in seconds. Seconds. After a disaster-recovery restore, diff the restored fork against the snapshot it was supposed to reproduce to confirm the expected file set came back and nothing else drifted. For a long-lived fork that has run alongside its parent for weeks, the diff shows accumulated divergence (config edits, log accretion, schema migrations) without mounting and walking both trees by hand.
 
 Do not use it across unrelated repositories. The two sides must share a copy-on-write ancestor, because the comparison works on the shared block history. It is also not a binary diff tool: `--content` produces line-level output only for text files, and binaries report `Binary files differ`.
 
@@ -22,23 +22,22 @@ Do not use it across unrelated repositories. The two sides must share a copy-on-
 ### Synopsis
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # diff a fork against its parent
-rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbitrary related repo
+rdc repo diff <fork>                 # diff a fork against its parent
+rdc repo diff <fork> --base <repo>   # diff against an arbitrary related repo
 ```
 
 ### Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--name <name>` | Repository to inspect (the target, new side). Required. | required |
-| `--base <name>` | Repository to diff against (the base, old side). Defaults to the parent of `--name`, resolved from local config. | parent of `--name` |
+| `<ref>` (positional) | Repository ref to inspect (the target, new side). Required. | required |
+| `--base <ref>` | Repository to diff against (the base, old side). Defaults to the parent of the positional ref, resolved from local config. | parent of the ref |
 | (no format flag) | Name-status output: a colored `A`/`M`/`D`/`R` letter per changed file plus a one-line summary. | on |
 | `--name-only` | One changed path per line, no status letter. Pipe-friendly. | off |
 | `--stat` | Per-file change magnitude (byte and block deltas) with a totals footer. | off |
 | `--content <path>` | Unified text diff of a single file. Text only; binaries report `Binary files differ`. | off |
-| `--json` | Structured output for agents and scripts. | off |
+| `-o json` | Structured output for agents and scripts. | `table` |
 | `--fast` | Skip the content-hash confirmation step and trust the block filter. Faster, but may over-report files as Modified. | off |
-| `-m, --machine <name>` | Target machine. Required. | required |
 | `--debug` | Verbose diagnostics on stderr. | off |
 | `--skip-router-restart` | Skip the router restart step. | off |
 
@@ -49,7 +48,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # diff against an arbit
 With only `--name`, the fork is diffed against the parent recorded in local config. Here the fork `test-1gb:fork1` has one modified file:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -60,7 +59,7 @@ M  hello.txt
 Pass `--base` to diff against an arbitrary related repository. `--base` is the base (old) side, `--name` is the target (new) side:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -71,7 +70,7 @@ M  hello.txt
 `--stat` adds the byte and block delta per file and a totals footer:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -82,7 +81,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` prints one path per line with no status letter, ready to feed into another command:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -91,7 +90,7 @@ review: hello.txt
 `--content` produces a unified diff of a single text file:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -101,10 +100,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### Filtering JSON with jq
 
-`--json` emits the structured envelope on stdout, so it pipes cleanly into `jq`:
+`-o json` emits the structured envelope on stdout, so it pipes cleanly into `jq`:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -139,7 +138,7 @@ Each line carries the file's byte delta and block delta. A footer reports the to
 
 A standard unified diff (`---`/`+++` headers, `@@` hunks) for one text file. Binary files report `Binary files differ` and produce no hunks.
 
-### `--json`
+### `-o json`
 
 The full structured result. Data goes to stdout; progress and diagnostics go to stderr, so the JSON pipes cleanly into `jq` or another parser even while progress is printing.
 

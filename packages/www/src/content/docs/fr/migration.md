@@ -4,7 +4,7 @@ description: "Migrer des projets existants vers des dépôts chiffrés Rediacc."
 category: "Guides"
 order: 11
 language: fr
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ Migrez un projet existant, fichiers, services Docker, bases de données, depuis 
 
 - CLI `rdc` installé ([Installation](/fr/docs/installation))
 - Une machine ajoutée et provisionnée ([Configuration](/fr/docs/setup))
-- Suffisamment d'espace disque sur le serveur pour votre projet (vérifiez avec `rdc machine query`)
+- Suffisamment d'espace disque sur le serveur pour votre projet (vérifiez avec `rdc machine status`)
 
 ## Etape 1 : Créer un dépôt
 
 Créez un dépôt chiffré dimensionné pour votre projet. Prévoyez de l'espace supplémentaire pour les images Docker et les données des conteneurs.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **Astuce :** Vous pouvez redimensionner plus tard avec `rdc repo resize` si nécessaire, mais le dépôt doit d'abord être démonté. Il est plus simple de commencer avec suffisamment d'espace.
@@ -34,22 +34,22 @@ Utilisez `rdc repo sync upload` pour transférer les fichiers de votre projet da
 
 ```bash
 # Aperçu de ce qui sera transféré (aucune modification effectuée)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # Téléverser les fichiers
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 Le dépôt doit être monté avant le téléversement. S'il ne l'est pas encore :
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 Pour les synchronisations suivantes où vous souhaitez que le distant corresponde exactement à votre répertoire local :
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > L'option `--mirror` supprime les fichiers sur le serveur distant qui n'existent pas en local. Utilisez d'abord `--dry-run` pour vérifier.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Les fichiers téléversés arrivent avec l'UID de votre utilisateur local (par ex. 1000). Rediacc utilise un utilisateur universel (UID 7111) afin que VS Code, les sessions terminal et les outils aient un accès cohérent. Exécutez la commande de propriété pour convertir :
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Exclusion compatible Docker
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Pour ignorer la détection des volumes Docker et modifier la propriété de tout, y compris les répertoires de données des conteneurs :
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **Avertissement :** Cela peut casser les conteneurs en cours d'exécution. Arrêtez-les d'abord avec `rdc repo down` si nécessaire.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 Pour définir un UID autre que l'UID par défaut 7111 :
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **Attention :** `7111` est l'UID universel Rediacc utilisé partout (il correspond à l'utilisateur `rediacc` intégré dans l'image du devcontainer). Ne le surchargez avec `--uid` que pour assurer la compatibilité ascendante avec des fichiers appartenant à un UID externe spécifique. Ce n'est **pas** une cible de migration. Les nouveaux dépôts doivent conserver la valeur par défaut.
@@ -200,7 +200,7 @@ Voir [Réseau des services](/fr/docs/services#service-networking-rediaccjson) po
 Montez le dépôt (s'il n'est pas déjà monté) et démarrez tous les services :
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 Cela va :
@@ -212,7 +212,7 @@ Cela va :
 Vérifiez que vos conteneurs sont en cours d'exécution :
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Etape 7 : Activer le démarrage automatique (Optionnel)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 Par défaut, les dépôts doivent être montés et démarrés manuellement après un redémarrage du serveur. Activez le démarrage automatique pour que vos services se lancent automatiquement :
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 Vous serez invité à saisir la phrase de passe du dépôt.
@@ -275,7 +275,7 @@ Pour tout projet avec des services Docker :
 Les fichiers ont encore votre UID local. Exécutez la commande de propriété :
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Le conteneur ne démarre pas
@@ -284,10 +284,10 @@ Vérifiez que les services sont en cours d'exécution et consultez leurs journau
 
 ```bash
 # Vérifier les IPs attribuées
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # Vérifier les logs du conteneur
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### Conflit de ports entre les dépôts
@@ -296,10 +296,10 @@ Chaque dépôt reçoit des IPs de loopback uniques et le noyau réécrit automat
 
 ### La correction de propriété casse les conteneurs
 
-Si vous avez exécuté `rdc repo ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez. Le conteneur le recréera :
+Si vous avez exécuté `rdc repo admin ownership` et qu'un conteneur a cessé de fonctionner, les fichiers de données du conteneur ont été modifiés. Arrêtez le conteneur, supprimez son répertoire de données et redémarrez. Le conteneur le recréera :
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # Supprimer le répertoire de données du conteneur (par ex. database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

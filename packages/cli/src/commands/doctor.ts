@@ -11,7 +11,11 @@ import {
   getSubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
-import { getEmbeddedMetadata, isSEA as isSEAEmbedded } from '../services/core/embedded-assets.js';
+import {
+  getEmbeddedMetadata,
+  isSEA as isSEAEmbedded,
+  verifyEmbeddedRenetIntegrity,
+} from '../services/core/embedded-assets.js';
 import { outputService } from '../services/core/output.js';
 import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
@@ -184,7 +188,15 @@ function checkRenetEmbeddedAssets(checks: CheckResult[]): void {
   if (isSEA() && isSEAEmbedded()) {
     try {
       const archs = Object.keys(getEmbeddedMetadata().binaries).join(', ');
-      pushEmbedAssetChecks(checks, `yes (${archs})`, 'ok');
+      // Read the host's embedded renet binary back out and verify its sha256
+      // against the build-time metadata: proves the SEA asset lookup returns the
+      // exact injected bytes, not just that the metadata asset parses.
+      const integrity = verifyEmbeddedRenetIntegrity();
+      if (integrity.ok) {
+        pushEmbedAssetChecks(checks, `yes (${archs})`, 'ok');
+      } else {
+        pushEmbedAssetChecks(checks, `corrupt — ${integrity.detail}`, 'fail');
+      }
     } catch {
       pushEmbedAssetChecks(checks, 'not available', 'warn');
     }

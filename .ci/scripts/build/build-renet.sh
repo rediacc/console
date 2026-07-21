@@ -79,33 +79,72 @@ log_info "  Output: $OUTPUT_DIR"
 
 # Embed assets if not skipped
 if [[ "$SKIP_EMBED" != "true" ]]; then
-    log_step "Preparing embedded assets..."
+    log_step "Staging embedded assets"
 
-    ASSETS_DIR="${ASSETS_DIR:-$REPO_ROOT/binaries}"
-
-    # Convert to absolute path (handles relative paths, symlinks, and ..)
-    ASSETS_DIR="$(readlink -f "$ASSETS_DIR")"
-
-    EMBED_DIR="$RENET_DIR/pkg/embed/assets"
-    mkdir -p "$EMBED_DIR"
-
-    for asset in criu-linux-amd64 criu-linux-arm64 rsync-linux-amd64 rsync-linux-arm64 rclone-linux-amd64 rclone-linux-arm64; do
-        if [[ -f "$ASSETS_DIR/$asset" ]]; then
-            log_info "Embedding $asset..."
-            gzip -c "$ASSETS_DIR/$asset" >"$EMBED_DIR/$asset.gz"
-        else
-            log_error "Missing asset: $ASSETS_DIR/$asset"
-            exit 1
-        fi
-    done
+    # SINGLE SOURCE OF TRUTH: private/renet/Dockerfile, driven by `build.sh
+    # embed_assets`. It acquires AND per-arch-stages every embedded binary —
+    # criu/rsync/CSI compiled from source, rclone/k3s/zot downloaded at their
+    # pinned versions with sha256 verification — into pkg/embed/assets/<arch>/.
+    # It is idempotent (skips assets already staged). Do NOT re-encode asset
+    # acquisition or the per-arch gzip layout here; that lives in the Dockerfile,
+    # and duplicating it is exactly the drift this consolidation removes.
+    (cd "$RENET_DIR" && ./build.sh embed_assets)
 
     log_info "Embedded assets:"
-    ls -la "$EMBED_DIR"
+    ls -la "$RENET_DIR/pkg/embed/assets/amd64" "$RENET_DIR/pkg/embed/assets/arm64"
 
-    # Stage proxy and datastore docs for go:embed
-    log_info "Staging proxy/datastore for embedding..."
-    cp "$REPO_ROOT/private/renet/proxy/docker-compose.yml" "$RENET_DIR/pkg/embed/proxy/"
-    cp "$REPO_ROOT/private/renet/docs/datastore/README.md" "$RENET_DIR/pkg/embed/datastore/"
+    # proxy compose + datastore doc for go:embed (documents, not binary assets)
+    # Stage the proxy compose for go:embed via build.sh's own helper (single
+    # source). Do NOT copy docs/datastore/README.md over pkg/embed/datastore/
+    # README.md: that embed file is TRACKED and is a distinct, concise server
+    # reference — build.sh's own note forbids overwriting it, and doing so
+    # corrupted the tracked file.
+    log_info "Staging proxy compose doc..."
+    (cd "$RENET_DIR" && ./build.sh embed_proxy)
+
+    # Export the RAW (ungzipped) native binaries from the SAME builder image, for
+    # the renet runtime docker image (private/renet/Dockerfile.native, built by
+    # ci-build-docker). That image used to consume a separate native-* build; now
+    # it takes these from the renet artifact, so the builder image is the single
+    # source for both the SEA embed AND the runtime image. If docker is
+    # unavailable (embed_assets skipped), skip — a no-SEA-assets build anyway.
+    if [[ -n "$OUTPUT_DIR" ]] && command -v docker >/dev/null 2>&1 &&
+        docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
+        log_step "Exporting native binaries (all 8 assets) for the runtime image..."
+        mkdir -p "$OUTPUT_DIR"
+        # <container /opt subdir>:<binary base name>. criu/rsync/rclone/zot/k3s
+        # each live under /opt/<name>; the three CSI sidecars share /opt/csi. The
+        # runtime image (Dockerfile.native) COPYs ALL of these so the cached-renet
+        # fast-path reconstructs the SAME complete darwin/windows binaries as a
+        # full build — no divergence between cached and Full.
+        _native_assets=(
+            "criu:criu" "rsync:rsync" "rclone:rclone" "zot:zot" "k3s:k3s"
+            "csi:csiprovisioner" "csi:csisnapshotter" "csi:snapshotcontroller"
+        )
+        _nb_cid="$(docker create rediacc/renet:latest)"
+        for _entry in "${_native_assets[@]}"; do
+            _dir="${_entry%%:*}"
+            _base="${_entry##*:}"
+            for _na in amd64 arm64; do
+                docker cp "$_nb_cid:/opt/$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
+                    log_warn "native binary $_base-linux-$_na not found in builder image"
+            done
+        done
+        docker rm "$_nb_cid" >/dev/null 2>&1 || true
+
+        # Fail fast: the runtime image COPYs every one of these, so a missing one
+        # must break HERE, not later as a cryptic COPY error in the docker build
+        # job on an artifact that looked complete.
+        for _entry in "${_native_assets[@]}"; do
+            _base="${_entry##*:}"
+            for _na in amd64 arm64; do
+                [[ -f "$OUTPUT_DIR/$_base-linux-$_na" ]] || {
+                    log_error "native binary $_base-linux-$_na missing after export — builder image is incomplete"
+                    exit 1
+                }
+            done
+        done
+    fi
 else
     log_info "Skipping asset embedding (--skip-embed)"
 fi

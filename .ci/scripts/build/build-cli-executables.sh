@@ -150,20 +150,43 @@ if [[ "$PLATFORM" == "linux" ]]; then
 fi
 
 # Step 6: Inject SEA blob
+#
+# We inject with our own streaming injector on EVERY platform, not `npx postject`
+# (#525). postject's binary surgery is LIEF compiled to wasm32, so the executable
+# and the blob must both fit in a 4GB address space, and it amplifies the blob
+# ~11.6x in memory: our ~561MB blob needs ~7.4GB and simply cannot be injected.
+# Upstream is dead (last release 2023-05) and its wasm memory is already at the
+# architectural maximum, so this is not fixable there. sea-inject/ streams the
+# blob in fixed-size chunks, so peak RSS is flat (~64MB) regardless of blob size,
+# and has ELF / Mach-O / PE backends dispatched by magic bytes.
+#
+# The --macho-segment-name argument is retained for argv parity; the Mach-O
+# backend fixes the segment name to NODE_SEA internally (what node's runtime
+# lookup expects, and what the ad-hoc re-signing below must cover on ARM64).
 log_step "Injecting SEA blob into binary..."
-POSTJECT_ARGS=(
+INJECT_ARGS=(
     "$OUTPUT_DIR/$BINARY_NAME"
     NODE_SEA_BLOB
     "$CLI_DIR/dist/sea-prep.blob"
     --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
 )
-# macOS requires --macho-segment-name for proper code signing coverage.
-# Without it, the injected blob segment isn't covered by the ad-hoc signature,
-# causing SIGSEGV on ARM64 where code signing is mandatory.
 if [[ "$PLATFORM" == "mac" ]]; then
-    POSTJECT_ARGS+=(--macho-segment-name NODE_SEA)
+    INJECT_ARGS+=(--macho-segment-name NODE_SEA)
 fi
-npx postject "${POSTJECT_ARGS[@]}"
+node "$SCRIPT_DIR/sea-inject/cli.mjs" "${INJECT_ARGS[@]}"
+
+# Step 7: Integrity gate — re-extract the embedded blob and SHA256-compare it to
+# the source blob, on EVERY platform (this only parses the container, it does not
+# execute it, so it runs for cross-compiled mac/win/arm64 too). This is the check
+# that catches a corrupt or truncated injection before release: the native-only
+# `--version`/doctor smoke tests below exercise the SEA *main script* but not the
+# asset bytes, so a blob whose main is intact but whose payload is corrupt would
+# otherwise pass them (#525).
+log_step "Verifying embedded SEA blob integrity..."
+node "$SCRIPT_DIR/sea-inject/verify.mjs" \
+    "$OUTPUT_DIR/$BINARY_NAME" \
+    "$CLI_DIR/dist/sea-prep.blob" \
+    --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
 
 # Step 8: Re-sign (macOS only)
 if [[ "$PLATFORM" == "mac" ]]; then
@@ -238,6 +261,24 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
                 log_info "Node.js status: $NODE_STATUS"
             else
                 log_error "Node.js check failed: status='$NODE_STATUS'"
+                exit 1
+            fi
+
+            # Runtime embedded-asset integrity: `doctor` reads the host renet
+            # binary back out of the SEA and sha256-checks it against the
+            # build-time metadata. This is the ONE runtime check a corrupt or
+            # unreachable blob cannot pass — --version never touches an asset, and
+            # the build-time verify.mjs only parses the container without running
+            # it. On failure the check's value is prefixed "corrupt — " (a literal
+            # emitted by verifyEmbeddedRenetIntegrity, so this match is
+            # locale-independent). Any such check fails the build.
+            EMBED_CORRUPT=$(echo "$DOCTOR_OUTPUT" | jq -r \
+                '[.Renet[]? | select(.value | startswith("corrupt"))] | length')
+            if [[ "$EMBED_CORRUPT" == "0" ]]; then
+                log_info "Embedded renet asset read back and sha256-verified"
+            else
+                log_error "Embedded renet asset integrity check FAILED (corrupt/unreachable blob)"
+                echo "$DOCTOR_OUTPUT" | jq -r '.Renet[]? | select(.value | startswith("corrupt")) | "  \(.name): \(.value)"'
                 exit 1
             fi
 

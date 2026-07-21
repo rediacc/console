@@ -4,7 +4,7 @@ description: "Come funziona l'avvio automatico, il riconciliatore periodico che 
 category: "Guides"
 order: 5
 language: it
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ Elenca i repository con marcatori di fallimento durevoli:
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-Ogni nome file è un GUID di repository. Usa `rdc config repository list` per mappare i GUID ai nomi dei repository.
+Ogni nome file è un GUID di repository. Usa `rdc repo list` per mappare i GUID ai nomi dei repository.
 
 Per rimuovere un marcatore dopo aver risolto il problema sottostante, elimina il file:
 

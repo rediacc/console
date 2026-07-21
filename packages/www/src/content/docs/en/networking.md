@@ -128,16 +128,16 @@ These use standard [Traefik v3 label syntax](https://doc.traefik.io/traefik/rout
 
    ```bash
    # Shared credentials (once per config, applies to all machines)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Machine-specific settings
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. DNS records pointing your domain to the server's public IP (see [DNS Configuration](#dns-configuration) below).
@@ -181,14 +181,14 @@ The `{name}` in labels is an arbitrary identifier. It just needs to stay consist
 TLS certificates are obtained automatically via Let's Encrypt using the Cloudflare DNS-01 challenge. Credentials are configured once per config (shared across all machines):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 Auto-routes use **wildcard certificates** at the repo subdomain level (`*.marketing.server-1.example.com`) instead of per-service certs. The certificate is provisioned automatically by Traefik on the first `repo up`; no manual step required. Forks reuse the parent repo's existing wildcard, so they never trigger a new certificate request. Custom domain routes use machine-level wildcards (`*.server-1.example.com`).
 
-> **Requires Cloudflare credentials.** Wildcard certs use DNS-01 challenge. Without `--cf-dns-token` (and optionally `--cert-email`), Traefik cannot complete the challenge and HTTPS will not work. HTTP remains functional. Configure credentials with `rdc config infra set` before first deploy.
+> **Requires Cloudflare credentials.** Wildcard certs use DNS-01 challenge. Without `--cf-dns-token` (and optionally `--cert-email`), Traefik cannot complete the challenge and HTTPS will not work. HTTP remains functional. Configure credentials with `rdc machine infra set` before first deploy.
 
 For Tier 2 routes with `traefik.http.routers.{name}.tls.certresolver=letsencrypt`, wildcard domain SANs are automatically injected based on the route's hostname.
 
@@ -208,17 +208,17 @@ The full path a Let's Encrypt cert takes from issuance to each repo's containers
 
 - Automatically after `rdc repo up`, but only if the local cache for the machine's `baseDomain` is older than 6 hours. Fresh caches are left alone so back-to-back deploys don't thrash SSH.
 - On demand: `rdc machine infra cert pull <machine>` (force pull) or `rdc machine status <machine> --sync-certs` (pull as a side effect of a status query).
-- On `rdc config infra push`, the cache is pushed up to the machine (local certs with longer expiry win over remote).
+- On `rdc machine infra push`, the cache is pushed up to the machine (local certs with longer expiry win over remote).
 
 **Cache maintenance:**
 
 - Stale auto-route entries (old network-ID tagged domains like `service-3200.rediacc.io`) are pruned during every pull.
 - Certs whose `notAfter` is more than 7 days in the past are removed outright. They're inert and only bloat the cache.
-- `rdc config cert-cache clear` wipes everything; `rdc config cert-cache status` shows the inventory.
+- `rdc config prune --certs-only` clears stale ACME cert-cache entries; `rdc config show` reports the current config inventory.
 
 **Troubleshooting:** if `traefik-certs-dumper` crashloops with `/traefik/acme.json: no such file or directory`, the per-repo daemon cannot see the host's letsencrypt store. Verify (a) `/opt/rediacc/proxy/letsencrypt/acme.json` exists on the host (this is the responsibility of the host-level `rediacc-proxy`), and (b) the per-repo daemon was started with a recent enough renet that allowlists `/opt/rediacc/proxy`. Redeploy the repo with `rdc repo up` after upgrading renet to apply.
 
-> **Experimental:** The auto-sync cadence and expiry-based pruning shipped in renet 0.9+. Older CLI/renet versions use purely manual sync via `rdc config cert-cache pull`.
+> **Experimental:** The auto-sync cadence and expiry-based pruning shipped in renet 0.9+. Older CLI/renet versions use purely manual sync via `rdc config prune --certs-only`.
 
 ## TCP/UDP Port Forwarding
 
@@ -229,16 +229,16 @@ For non-HTTP protocols (mail servers, DNS, databases exposed externally), use TC
 Add the required ports during infrastructure configuration:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 This creates Traefik entrypoints named `tcp-{port}` and `udp-{port}`.
 
-> After adding or removing ports, always re-run `rdc config infra push` to update the proxy configuration.
+> After adding or removing ports, always re-run `rdc machine infra push` to update the proxy configuration.
 
 ### Step 2: Add TCP/UDP Labels
 
@@ -311,7 +311,7 @@ The following TCP/UDP ports have entrypoints by default (no need to add via `--t
 
 ### Automatic DNS (Cloudflare)
 
-When `--cf-dns-token` is configured, `rdc config infra push` automatically creates DNS records for the machine subdomain in Cloudflare:
+When `--cf-dns-token` is configured, `rdc machine infra push` automatically creates DNS records for the machine subdomain in Cloudflare:
 
 | Record | Type | Content | Created by |
 |--------|------|---------|------------|
@@ -478,7 +478,7 @@ app.example.com   A   203.0.113.50
 ### Deploy
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 Within a few seconds, the route server discovers the container, Traefik picks up the route, requests a TLS certificate, and `https://app.example.com` is live.

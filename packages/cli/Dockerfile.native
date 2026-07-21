@@ -1,24 +1,27 @@
-# CI Dockerfile for CLI - uses pre-built bundle from CI
-# This Dockerfile avoids npm install/build inside Docker by accepting
-# the pre-built CLI bundle from CI. The JS bundle is platform-independent.
+# CI Dockerfile for the rdc CLI — a SEA single-binary image.
 #
-# Usage in CI:
-#   docker buildx build \
-#     --file packages/cli/Dockerfile.native \
-#     --platform linux/amd64 \
-#     --tag ghcr.io/rediacc/elite/cli:tag-amd64 \
-#     --push .
+# `rdc` here is the Node SEA (single executable app), which EMBEDS renet for both
+# linux arches. So `docker run ghcr.io/rediacc/rdc <cmd>` is a fully working CLI
+# that can provision renet to remote machines with zero host installs — unlike
+# the old node+JS-bundle image, where `isSEA()` was false and any renet
+# provisioning threw "not running as SEA".
 #
-# Expected files in context (./bundle/):
-#   - bundle/cli-bundle.cjs
-#   - bundle/package.json
+# The SEA is a stripped, dynamically-linked *musl* `node` copy
+# (rdc-linux-musl-<arch>), so it runs on an Alpine base. CI stages the
+# arch-appropriate musl SEA into ./bin/rdc before each per-arch buildx build.
+#
+# Usage in CI (see build-cli-docker in ci-build-docker.yml):
+#   cp dist/cli/rdc-linux-musl-x64 bin/rdc
+#   docker buildx build --file packages/cli/Dockerfile.native \
+#     --platform linux/amd64 --tag ghcr.io/rediacc/rdc:<tag>-amd64 --push .
+ARG ALPINE_IMAGE=alpine:3.20
+FROM ${ALPINE_IMAGE}
 
-ARG NODE_IMAGE=node:22-alpine
-FROM ${NODE_IMAGE}
+# libstdc++/libgcc: the SEA (node) links them dynamically. ca-certificates:
+# TLS to the account server / registries.
+RUN apk add --no-cache libstdc++ libgcc ca-certificates
 
-WORKDIR /app
+COPY ./bin/rdc /usr/local/bin/rdc
+RUN chmod +x /usr/local/bin/rdc
 
-COPY ./bundle/cli-bundle.cjs /app/rdc.cjs
-COPY ./bundle/package.json /app/package.json
-
-ENTRYPOINT ["node", "/app/rdc.cjs"]
+ENTRYPOINT ["rdc"]

@@ -3891,7 +3891,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork --parent production --tag pentest -m server-1",
+          "command": "rdc repo fork production --tag pentest",
           "ctaText": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。60秒以内に最初のペンテストを実行できます。",
           "title": "攻撃者より先に脆弱性を発見"
@@ -4300,7 +4300,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo status --name production -m server-1",
+          "command": "rdc repo status production",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の監査レポートを生成できます。",
           "title": "すべてを見る。何も見逃さない。"
@@ -4770,7 +4770,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo backup list --from backup-vault -m primary",
+          "command": "rdc backup list --storage backup-vault",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初のバックアップを検証できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -5182,7 +5182,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo backup list",
+              "cmd": "rdc backup list",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -5282,7 +5282,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary-dc -m primary",
+          "command": "rdc repo push production --to secondary-dc",
           "description": "無料のCommunityエディションから始めましょう。ロケーション間レプリケーションが無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -5800,7 +5800,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo validate production -m primary",
+          "command": "rdc backup restore production --as production-verify -m primary --up",
           "ctaText": "無料で始める",
           "description": "無料のCommunityエディションから始めましょう。30秒で最初の継続的ペンテストをスケジュールできます。",
           "title": "攻撃者が頼りにするウィンドウを閉じる"
@@ -6676,7 +6676,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo mount production -m primary",
+          "command": "rdc repo up production",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。1分以内に最初の鍵を生成できます。",
           "title": "暗号化の制御を取り戻す"
@@ -7108,7 +7108,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo mount production",
+              "cmd": "rdc repo up production",
               "flag": "",
               "type": "command",
               "value": ""
@@ -7184,7 +7184,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork production my-first-clone -m primary",
+          "command": "rdc repo fork production --tag my-first-clone",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料でクローン可能。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -7692,7 +7692,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine secondary -m primary --checkpoint",
+          "command": "rdc repo push production --to secondary --checkpoint",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初のDRテストを実行できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -8194,7 +8194,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to backup-vault -m primary",
+          "command": "rdc repo push production --to backup-vault",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -8725,7 +8725,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork production -m primary --tag dev-loadtest",
+          "command": "rdc repo fork production --tag dev-loadtest",
           "description": "無料のCommunityエディションから始めましょう。オンデマンドクローン機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -9194,7 +9194,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from daily-2026-02-27 -m primary",
+          "command": "rdc repo pull production --from daily-2026-02-27",
           "description": "無料のCommunityエディションから始めましょう。5分以内に最初の環境を復元できます。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "クレジットカード不要",
@@ -9710,7 +9710,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork production ci-build -m primary",
+          "command": "rdc repo fork production --tag ci-build",
           "description": "無料のCommunityエディションから始めましょう。Git統合機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -10600,7 +10600,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push --to secondary -m primary",
+          "command": "rdc repo push production --to secondary",
           "description": "無料のCommunityエディションから始めましょう。暗号化移行機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -11115,7 +11115,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo validate dev-sarah",
+          "command": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
           "description": "無料のCommunityエディションから始めましょう。本番パリティ機能付き。",
           "primaryCta": "無料で始める",
           "tierBadge": "5リポジトリまで無料 · クレジットカード不要",
@@ -11493,7 +11493,7 @@
         "terminal": {
           "lines": [
             {
-              "cmd": "rdc repo validate dev-sarah",
+              "cmd": "rdc backup restore dev-sarah --as dev-sarah-verify --up",
               "flag": "",
               "prompt": "$",
               "type": "command",
@@ -11596,7 +11596,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo pull production --from backup-vault -m primary --force",
+          "command": "rdc repo pull production --from backup-vault --force",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。最大10ワークロードまで無料で保護。クレジットカード不要。",
           "title": "復旧を攻撃より遅くしない"
@@ -11803,7 +11803,7 @@
           "overline": "仕組み",
           "steps": [
             {
-              "description": "rdc repo backup list --verifiedを実行して最後のクリーンスナップショットを検索。",
+              "description": "rdc backup listを実行して最後のクリーンスナップショットを検索。",
               "icon": "eye",
               "title": "検知"
             },
@@ -12629,7 +12629,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo fork production patch-test -m primary",
+          "command": "rdc repo fork production --tag patch-test",
           "description": "無料のCommunityエディションから始めましょう。クローン、テスト、検証が無料。クレジットカード不要。",
           "primaryCta": "Communityで無料で始める",
           "tierBadge": "10ワークロードまで永久無料",
@@ -13143,7 +13143,7 @@
           "title": "得られるもの"
         },
         "bottomCta": {
-          "command": "rdc repo push production --to-machine new-provider -m primary --checkpoint",
+          "command": "rdc repo push production --to new-provider --checkpoint",
           "ctaText": "Communityで無料で始める",
           "description": "無料のCommunityエディションから始めましょう。どこにでもデプロイ。いつでも移行。クレジットカード不要。",
           "title": "インフラの制御を取り戻す"
@@ -13360,7 +13360,7 @@
               "title": "標準フォーマット"
             },
             {
-              "description": "rdc repo push production --to-machine new-provider -m primary --checkpointを実行。増分転送。ダウンタイムゼロ。",
+              "description": "rdc repo push production --to new-provider --checkpointを実行。増分転送。ダウンタイムゼロ。",
               "icon": "arrow-right-circle",
               "title": "ワンコマンド移行"
             },

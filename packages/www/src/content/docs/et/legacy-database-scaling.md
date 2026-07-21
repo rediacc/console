@@ -1,4 +1,5 @@
 ---
+sourceHash: "b15507f1e0da46d2"
 title: Päranddandmebaasi skaleerimine
 description: Skaleerige päranddandmebaase ilma andmeid migreerida, kasutades reaalajas andmereplikatsiooni ja päringujaotust.
 category: Use Cases

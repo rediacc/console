@@ -1,8 +1,10 @@
 # Consolidated Dockerfile for the Rediacc server image.
 #
-# Builds two variants from the same source via --target:
-#   --target cloud   -> ghcr.io/rediacc/elite/web    (internal cloud deployment)
+# Builds the customer-facing self-hosted image:
 #   --target onprem  -> ghcr.io/rediacc/server       (customer-facing self-hosted)
+#
+# (The hosted/cloud account server runs on Cloudflare Workers via
+#  private/account/src/entry/cloudflare.ts, not a Docker image.)
 #
 # The build CONTEXT must contain these pre-staged directories (CI populates
 # them by downloading the matching artifacts from build-www, build-cli, and
@@ -24,15 +26,13 @@
 # produced asset-less renet binaries that refused to operate at runtime.
 #
 # Build (CI / local with staged context):
-#   docker buildx build --file Dockerfile --target cloud  --tag ... .
 #   docker buildx build --file Dockerfile --target onprem --tag ... .
 #
 # Build (local with the wrapper):
-#   scripts/docker/build-server.sh cloud
 #   scripts/docker/build-server.sh onprem
 
 ARG NODE_IMAGE=node:22-alpine
-ARG ACCOUNT_ENTRY=node                # node | on-premise
+ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
 
 # =============================================================================
 # Stage 1: account-builder
@@ -128,17 +128,6 @@ EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget --tries=1 --quiet --output-document=/dev/null http://localhost/health || exit 1
 ENTRYPOINT ["/docker-entrypoint.sh"]
-
-# =============================================================================
-# Final target: cloud
-# Internal cloud deployment, published to ghcr.io/rediacc/elite/web.
-# =============================================================================
-FROM runtime-base AS cloud
-LABEL com.rediacc.variant=cloud
-LABEL org.opencontainers.image.title="Rediacc Console (Cloud)"
-LABEL org.opencontainers.image.description="Rediacc cloud console - marketing site, account API/portal, CLI, and renet distribution"
-LABEL org.opencontainers.image.source="https://github.com/rediacc/console"
-LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
 
 # =============================================================================
 # Final target: onprem

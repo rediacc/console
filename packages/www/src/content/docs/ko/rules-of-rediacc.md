@@ -4,7 +4,7 @@ description: "Rediacc 플랫폼에서 애플리케이션을 구축하기 위한 
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "b2d38b48d1fac737"
+sourceHash: "1ceb078c7eb045b7"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -111,7 +111,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
 - **의존성 인식 복원**: compose `depends_on`을 사용하여 먼저 데이터베이스를 시작(정상 상태까지 대기)한 후 앱 컨테이너를 CRIU 복원합니다.
 - **복원 후 TCP 연결이 오래되므로** 앱은 `ECONNRESET`을 처리하고 재연결해야 합니다. CRIU는 지원되는 어떤 흐름에서도 복원 후 활성 TCP 연결 상태를 보존하지 않습니다.
 - **Docker 실험 모드**는 저장소별 데몬에서 자동으로 활성화됩니다.
-- **CRIU는** `rdc config machine setup` 중에 **설치됩니다.**
+- **CRIU는** `rdc machine setup` 중에 **설치됩니다.**
 - **`/etc/criu/runc.conf`**는 기본적으로 `tcp-established`로 구성됩니다.
 - **레이블이 있는 컨테이너에 대해 컨테이너 보안 설정이 자동으로 주입됩니다.** `renet compose`는 `rediacc.checkpoint=true`인 컨테이너에 다음을 추가합니다.
   - `cap_add`: `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` (커널 5.9 이상에서 CRIU를 위한 최소 집합)
@@ -132,7 +132,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
 
 ### OS별 호스트 보안 정책
 
-공식 지원되는 5개 서버 OS([요구 사항](/en/docs/requirements) 참조) 전체에서, 저장소별 docker 데몬과 그것이 실행하는 컨테이너는 **기본 컨테이너 레이블**을 사용합니다. `rdc config machine setup`은 사용자 정의 SELinux 정책이나 AppArmor 프로파일을 설치하지 않습니다.
+공식 지원되는 5개 서버 OS([요구 사항](/en/docs/requirements) 참조) 전체에서, 저장소별 docker 데몬과 그것이 실행하는 컨테이너는 **기본 컨테이너 레이블**을 사용합니다. `rdc machine setup`은 사용자 정의 SELinux 정책이나 AppArmor 프로파일을 설치하지 않습니다.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor가 기본적으로 활성화됩니다. 컨테이너는 기본 docker-container 프로파일에서 실행됩니다. 유일한 예외는 CRIU입니다 (`rediacc.checkpoint=true` 컨테이너에 대해 `apparmor=unconfined`, 위 참조).
 - **Fedora 43 / Oracle Linux 10**: SELinux가 기본적으로 enforcing 모드로 실행됩니다. 컨테이너는 표준 `container_t` 컨텍스트를 받습니다. 추가 정책 설치가 필요하지 않습니다. 설정 단계에서 AVC 거부가 발생하면 [문제 해결 → SELinux 거부](/en/docs/troubleshooting)를 참조하십시오.

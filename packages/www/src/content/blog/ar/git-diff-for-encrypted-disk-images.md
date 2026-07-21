@@ -14,7 +14,7 @@ tags:
   - cli
 featured: false
 language: ar
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -64,7 +64,7 @@ translatedFrom: en
 إليك شكل حالة الاسم الافتراضية، نفس نحو A/M/D/R الذي تقرأه من `git status --short`:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -81,7 +81,7 @@ M  hello.txt
 الوكيل لا يقرأ حالة الاسم، بل يقرأ `--json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 يعطي المخرج المنظَّم الوكيلَ مجموعة تغيير دقيقة. المسارات التي عدّلها، أنشأها، حذفها. مع `--stat`، حجم التغيير لكل ملف بالبايتات والكتل. الوكيل الذي يرى مقارنته قبل الترقية هو الذي يمكنك السماح له بالاقتراب من الإنتاج. نطاق الانفجار قابل للفحص، لا مجرد التأكيد عليه. أوضاع أخرى تخدم حلقة المراجعة نفسها. `--name-only` لقائمة مسارات خام. `--content <path>` للفرق النصي الموحد لملف واحد (نصي فقط؛ الملف الثنائي يُبلَّغ عنه بـ `Binary files differ`). `--stat` حين يحتاج الوكيل معرفة ما تغيّر وبقدر كم.

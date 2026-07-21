@@ -32,16 +32,16 @@ Scans a storage provider and deletes backups whose GUIDs no longer appear in any
 
 ```bash
 # Preview only — show what would be deleted
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Actually delete orphaned backups (default behavior)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Override grace period (default 7 days)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Override the mount-safety check (use with care)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` is required because the rclone calls run on the executor machine, not on your laptop. Clients are not expected to have rclone installed locally. The storage credentials still come from your local config; the machine is just the rclone runner.
@@ -80,10 +80,10 @@ The authorized_keys scan looks at `/home/*/.ssh/authorized_keys` and `/root/.ssh
 
 ```bash
 # Dry-run, shows what would be removed (no changes applied)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Execute cleanup
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Cascading cleanup.** Some categories depend on earlier ones. For example, deleting empty mount directories may expose additional sandbox orphans whose backing mount just went away. Running `rdc machine prune` a second time catches the cascade and finishes the cleanup. The final dry-run ends with `No orphaned resources found. Datastore is clean.` when nothing is left to do.
@@ -93,8 +93,8 @@ rdc machine prune --name server-1
 With `--orphaned-repos`, the CLI also deletes repository images on the machine that do not appear in **any** local config file.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 This is **coarse**. It deletes everything not in your local config, including legitimate forks managed by other tools or another operator's CLI checkout. If the renet `.interim/state` mirror correctly identifies a repo as a fork but the local config has never seen it, this phase still removes it. Prefer phase 3 (`--prune-unknown`) when you want to be conservative.
@@ -104,8 +104,8 @@ This is **coarse**. It deletes everything not in your local config, including le
 With `--prune-unknown`, the CLI deletes only repos that **both** signals fail to classify: not in any local config **and** no fork-marked entry in the machine's `.interim/state` mirror (see [Repositories. `Type` column](/en/docs/repositories#type-column-and-the-state-mirror)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 In practice `--prune-unknown` is what you want for routine cleanup; `--orphaned-repos` is only correct when you're certain your local config is the complete and authoritative inventory of every repo on the machine. Pre-mirror legacy orphans and repos whose config entry was deleted by mistake both fall into the "unknown" bucket. They're genuinely uncertain, and the surgical flag asks the operator to acknowledge that explicitly.
@@ -114,7 +114,7 @@ The mount-safety preflight runs on this phase too: a repo currently mounted on `
 
 ```bash
 # Combined: full machine cleanup with the surgical fork-aware path
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -152,7 +152,7 @@ rdc config prune --grace-days 30
 - Active resources (machines, storages, repositories, backup strategies, cloud providers).
 - Credentials, the account block, the encryption block, defaults.
 - Storage `vaultContent` (including expired OneDrive `access_token`. The refresh_token still mints new ones; pruning would force re-auth).
-- `knownHosts` entries (auto-refresh path is `rdc config machine scan-keys`).
+- `knownHosts` entries (auto-refresh path is `rdc machine scan-keys`).
 - The compressed cert blob array (`infra.acmeCertCache.<base>.data[]`) is rebuilt from the cleaned cert list automatically; you don't lose any chain that still covers a kept name.
 
 ### Worked example
@@ -178,7 +178,7 @@ Cert names whose anchor is a live machine, repo, or GUID are left alone, as are 
 The `.interim/state/<guid>/.rediacc.json` mirror that powers `--prune-unknown` and the `Type` column in `rdc repo list -m` is written:
 
 - **At fork time** (`rdc repo fork`). Immediately, even before the fork is ever mounted.
-- **On every state save** (`rdc repo mount` and any operation that updates repo state). For repos that were created before the mirror code shipped.
+- **On every state save** (`rdc repo up` and any operation that updates repo state). For repos that were created before the mirror code shipped.
 
 Repositories that were created **before the mirror existed and have not been re-mounted since the upgrade** have no mirror file. They show as `unknown` in `rdc repo list -m` even though some are legitimately forks. To fix this for legacy orphans, run the one-shot backfill on the machine:
 
@@ -236,6 +236,6 @@ The `--grace-days` CLI flag overrides this value when provided.
 - **Prefer `--prune-unknown` over `--orphaned-repos`.** The surgical flag respects the renet mirror; the coarse flag will happily delete forks that other tools created.
 - **Use generous grace periods for production.** The default 7-day grace period suits most workflows. For production environments with infrequent maintenance windows, consider 14 or 30 days.
 - **Schedule storage prune after backup runs.** Pair `storage prune` with your backup schedule to keep storage costs under control without manual intervention.
-- **Combine machine prune with the backup schedule.** After deploying backup schedules (`rdc machine backup schedule`), add a periodic machine prune to clean up stale snapshots and orphaned datastore artifacts.
+- **Combine machine prune with the backup schedule.** After deploying backup schedules (`rdc backup schedule`), add a periodic machine prune to clean up stale snapshots and orphaned datastore artifacts.
 - **Run `config prune` periodically.** Local-config bloat (especially cert cache) accumulates silently; a quarterly `config prune --dry-run` is enough to catch it.
 - **Audit before using `--force` or `--force-delete-mounted`.** Both flags bypass safety checks. Use `--force` only when you're certain no other config references the repos in question; use `--force-delete-mounted` only when you're certain the live state on the machine is wrong.

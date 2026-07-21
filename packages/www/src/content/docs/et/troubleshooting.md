@@ -4,7 +4,7 @@ description: "Lahendused tavalistele SSH, seadistuse, repositooriumi, teenuse ja
 category: "Guides"
 order: 10
 language: et
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU on teada juhtum, mis tabab AppArmor-i. renet seab automaatselt `security_op
 
 ### btrfs moodul puudu (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Kui `rdc config machine setup` või `renet system check-btrfs` ebaõnnestub:
+Kui `rdc machine setup` või `renet system check-btrfs` ebaõnnestub:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Kontrolli konteineri logisid, kasutades repositooriumi Docker-i soklit:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Või vaata kõiki konteinereid:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Juurdepääsu keeldumine vead
@@ -115,7 +115,7 @@ Igal repositooriumil on oma Docker daemon. Docker-i käskude käitamisel käsits
 
 ```bash
 # rdc termini kasutamine (automaatselt konfigureeritud):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Või käsitsi soklist:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ See on kavatsuslik. Rediacc-i võrgu mudel on **kõigi teenuste jaoks host võrk
 **Võrguligipääsuks ad-hoc konteineris kasuta host võrgu:**
 
 ```bash
-# Repositooriumi kestis (rdc term connect -m <machine> -r <repo>)
+# Repositooriumi kestis (rdc term connect <repo>)
 docker run --rm --network host -it ubuntu bash
 # Nüüd toimivad apt update, curl, pip install.
 ```
@@ -181,7 +181,7 @@ Kui `rdc term` ei avane terminaliakent:
 
 - Kasuta siseside režiimi koos `-c` käskude otseseks käivitamiseks:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Jõusta väline terminal `--external` kui siseside režiim on probleeme
 - Linux-is tagara sul on `gnome-terminal`, `xterm` või teised terminali emulaator paigaldatud

@@ -741,6 +741,22 @@ while fixing the twelfth.*
 
 ## The website's STRUCTURED command data: 188 dead commands, covered by NOTHING (P4-caused)
 
+> **2026-07-20 — the tutorial half is PAID.** The 70 storyboard commands are now covered by a
+> field-aware gate (`check:ci-tutorial-commands`, validates `commandFull`/`teardownCommand` and
+> deliberately not the `command` display label): 18 storyboards, 100 runnable commands, all
+> resolving against the live CLI. The tutorials were re-recorded, so storyboard, recording and
+> the portal's first-run flow state the same thing again, and BOTH self-destructing backlogs
+> (`tutorial-parity-baseline.json`, `tutorial-cast-baseline.json`) are **deleted, not re-frozen**.
+>
+> One correction to the analysis below: 68 of the 75 parity entries were never storyboard debt at
+> all. They were a bug in `check-tutorial-parity.ts`, which guessed a command's path as "leading
+> tokens up to the first `-` or `<`" — correct only while every target was a flag, and silently
+> wrong once P4 made targets positional refs. The backlog absorbed the phantoms as if the content
+> were at fault. **A baseline that only grows is evidence about the gate, not about the debt.**
+>
+> Still open: the **91** `"command":`/`"commandFull":` fields in
+> `www/src/i18n/translations/*.json` (13 locales), which are a separate surface with no gate.
+
 **Found by asking the question the homepage-hero fix raised: do other structured-data surfaces share that
 blindness? They do, and it is worse.** These are `"command":` / `"commandFull":` FIELDS, not prose — **no
 string-replace sweep can see them, no gate scans them, and the P7 backlog contains ZERO of them.**
@@ -833,6 +849,11 @@ live VM lab and re-narrating in 13 languages, which is exactly the work this ent
 proven red-first: a NEW error in a clean recording still fails. **Every entry must vanish when
 the tutorials are re-recorded; an entry that outlives the re-record is a bug, not a deferral.**
 
+> **2026-07-20 — PAID.** The re-record happened; the ratchet turned down and demanded all three
+> remaining entries be deleted, so the backlog file is **deleted**. The gate was re-proven
+> red-first afterwards (a planted `command not found` in a probe cast fails it, exit 1; clean
+> again at exit 0), confirming the green is not vacuous now that the file is gone.
+
 **Record this as evidence, not as an inconvenience:** the re-record is real work with a real CI
 red behind it, not a tidy-up someone can keep postponing.
 
@@ -871,6 +892,20 @@ self-destructs mechanically** — an entry that matches no drift is a FAILURE, n
 
 These entries clear at the SAME event as `tutorial-cast-baseline.json`: the re-record. **They
 clear together or they are a lie.**
+
+> **2026-07-20 — PAID, and the count was mostly fiction.** Both backlogs cleared at the same
+> event, as predicted. But the prediction held for the wrong reason: 68 of the 75 parity entries
+> were not drift at all. `commandPath()` guessed the path as "leading tokens up to the first `-`
+> or `<`", which broke the moment P4 made targets positional — a `<placeholder>` stopped the scan
+> while a concrete value did not, so a storyboard and the recording of the SAME command resolved
+> to different paths. Every phantom was then filed as content debt. Fixed by resolving against
+> the real command tree (`rdcCommandPath()`); the file is **deleted**, parity is 18/18.
+>
+> **The lesson generalizes past this gate:** "the backlog grew" was read as "the debt grew". It
+> was not. An exact-pair backlog faithfully records whatever the comparator tells it, including
+> nonsense — so a self-destructing backlog proves entries cannot outlive their fix, and proves
+> nothing at all about whether they were ever real. When one grows sharply, suspect the
+> comparator first.
 
 The gate was hardened to compare the command TEXT against its storyboard source, so this class
 cannot come back silently.

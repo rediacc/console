@@ -16,6 +16,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { parseRdcCommand } from '../packages/www/scripts/lib/cli-reference-catalog.js';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
@@ -106,6 +108,22 @@ function expectedCommandFor(step: ManifestStep, issues: Issue[]): string | undef
     });
     return undefined;
   }
+
+  // Presence was never enough. This command is generated verbatim into the
+  // portal's first-run flow, so a brand-new user copies and runs it. Asserting
+  // only that the field EXISTS let a command the CLI rejects reach that flow.
+  // Validated against the live command tree, the same instrument every other
+  // CLI gate uses.
+  const parsed = parseRdcCommand(cmd);
+  if (!parsed.ok && parsed.reason !== 'not-rdc') {
+    issues.push({
+      step: step.id,
+      message:
+        `storyboard card.commandFull does not resolve against the live CLI ` +
+        `(${parsed.reason}${parsed.flag ? `: ${parsed.flag}` : ''}): ${cmd}`,
+    });
+  }
+
   return cmd;
 }
 

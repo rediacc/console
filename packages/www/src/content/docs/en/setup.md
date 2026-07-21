@@ -15,7 +15,7 @@ Four steps get your first machine running: create a config, register the server,
 A **config** is a named configuration file that stores your SSH credentials, machine definitions, and repository mappings. Think of it as a project workspace.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Option | Required | Description |
@@ -32,7 +32,7 @@ This creates a config named `my-infra` and stores it in `~/.config/rediacc/my-in
 Register your remote server as a machine in the config:
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Option | Required | Default | Description |
@@ -45,13 +45,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 After adding the machine, rdc automatically runs `ssh-keyscan` to fetch the server's host keys. You can also run this manually:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 To view all registered machines:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## Step 3: Set Up the Machine
@@ -59,7 +59,7 @@ rdc config machine list
 Provision the remote server with all required dependencies:
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 This command:
@@ -85,7 +85,7 @@ The datastore is the per-machine storage pool that holds encrypted repository im
 `--datastore-size` accepts a percentage (`95%`) or an absolute size (`50G`, `1T`). The datastore can be grown online later:
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 Repositories inside the datastore are sized independently at `repo create` time and can be expanded while running, so you do not need to over-provision the datastore up front.
@@ -95,11 +95,8 @@ Repositories inside the datastore are sized independently at `repo create` time 
 For shared, scale-out, or Kubernetes-backing storage, initialize the datastore on an external Ceph cluster instead. The datastore then lives on an RBD image (BTRFS on top, no per-image LUKS layer), and forks use RBD copy-on-write clones rather than BTRFS reflinks.
 
 ```bash
-# 1. Record the machine's Ceph reference (pool + RBD image, non-secret)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
-
-# 2. Initialize the datastore on the Ceph backend
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+# Create the datastore on the Ceph backend (pool + RBD image are non-secret references)
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Ceph keyrings stay on the machines; the config file holds only the non-secret pool and image references. Ceph is also the storage layer that Kubernetes clusters consume through ceph-csi. See the [Kubernetes](/en/docs/kubernetes) guide for clusters and persistent volumes, and [Architecture](/en/docs/architecture) for how the two backends compare.
@@ -109,7 +106,7 @@ Ceph keyrings stay on the machines; the config file holds only the non-secret po
 If a server's SSH host key changes (e.g., after reinstallation), refresh the stored keys:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 This updates the `knownHosts` field in your config for that machine.
@@ -119,7 +116,7 @@ This updates the `knownHosts` field in your config for that machine.
 After adding a machine, verify it's reachable:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 That opens an SSH connection and runs the command. If it works, your SSH config is correct.
@@ -139,7 +136,7 @@ For machines that need to serve traffic publicly, configure infrastructure setti
 ### Set Infrastructure
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -161,7 +158,7 @@ Machine-scoped options are stored per-machine. Config-scoped options (`--cert-em
 ### View Infrastructure
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### Push to Server
@@ -169,7 +166,7 @@ rdc config infra show -m server-1
 Generate and deploy the Traefik reverse proxy configuration to the server:
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 This command:
@@ -197,7 +194,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### Add a Cloud Provider
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -219,7 +216,7 @@ rdc config provider add --name my-linode \
 ### Provision a Machine
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 This single command:
@@ -242,7 +239,7 @@ This single command:
 ### Deprovision a Machine
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 Destroys the VM via OpenTofu and removes it from your config. Requires confirmation unless `--force` is used. Only works for machines created with `machine provision`.
@@ -250,7 +247,7 @@ Destroys the VM via OpenTofu and removes it from your config. Requires confirmat
 ### List Providers
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## Setting Defaults
@@ -259,13 +256,13 @@ Set default values so you don't need to specify them on every command:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Default machine
-rdc config set --key team --value my-team                   # Default team for the config store
+rdc config set team my-team                   # Default team for the config store
 ```
 
 After setting a default machine, you can omit `-m server-1` from commands:
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## Multiple Configs
@@ -274,8 +271,8 @@ Manage multiple environments with named configs:
 
 ```bash
 # Create separate configs
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # Use a specific config
 rdc repo list -m server-1 --config production

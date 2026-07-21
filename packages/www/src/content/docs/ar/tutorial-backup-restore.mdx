@@ -5,7 +5,7 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: ar
-sourceHash: "c13a0f880039d7e7"
+sourceHash: "c5c847e04186c9b1"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -70,8 +70,8 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 ينجح نفس الأمر على خادم جديد تمامًا: أعِد إعداده، أضفه إلى `rdc`، ونفّذ السحب هناك بدلًا من ذلك.
 
 ```bash
-rdc repo pull --name my-app -m new-server --from my-storage
-rdc repo up --name my-app -m new-server
+rdc repo pull my-app@new-server --from my-storage
+rdc repo up my-app@new-server
 ```
 
 نفس البيانات، نفس الحاويات، جهاز مختلف.
@@ -81,7 +81,7 @@ rdc repo up --name my-app -m new-server
 يمكنك أيضًا الدفع مباشرةً بين الأجهزة بدون تخزين سحابي وسيط:
 
 ```bash
-rdc repo push --name my-app -m my-server --to-machine backup-server
+rdc repo push my-app --to backup-server
 ```
 
 > **نصيحة احترافية.** تُرسل رفعات الجهاز إلى الجهاز الكتل المتغيرة فقط بعد المرة الأولى. يعرض [درس نقل الفروق](/ar/docs/tutorial-delta-transfer) ذلك مباشرة.

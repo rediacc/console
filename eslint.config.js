@@ -840,6 +840,12 @@ export default tseslint.config(
       playwright: playwrightPlugin,
     },
     rules: {
+      // Enforce the e2e test filename convention. The rule was imported and
+      // registered but never switched on in any config block, so it was dead
+      // weight that read as coverage. It self-guards to packages/e2e-tests/tests,
+      // so listing it here does not reach the unit-test globs above.
+      'custom/e2e-test-naming-convention': 'error',
+
       // --- Playwright-specific rules ---
       'playwright/no-wait-for-timeout': 'error',
       'playwright/no-focused-test': 'error',

@@ -1,0 +1,13 @@
+# Embed-asset upgrade blocklist — one <base> per line to HOLD a renet-embedded
+# binary at its current Dockerfile pin instead of tracking upstream latest.
+#
+# Base names match the Dockerfile ARG <BASE>_VERSION, lowercased:
+#   criu rsync rclone zot k3s csiprovisioner csisnapshotter snapshotcontroller
+#
+# Each entry needs a substantive BLOCKER reason (>=30 chars, no banned phrases),
+# exactly like every other suppression list in this repo. Format:
+#
+#   # BLOCKER: <why this component is pinned back and when to revisit>
+#   <base>
+#
+# Empty by default — nothing is held; every pin tracks upstream.

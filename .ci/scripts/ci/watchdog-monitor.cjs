@@ -33,6 +33,29 @@ const BINARY_EXEC_FAILURE_RE = /is not a valid application for this OS platform|
 
 const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p));
 
+// Formats the COMPLETE set of failed jobs into a human-readable banner plus a
+// one-line summary for the GitHub annotation. The watchdog force-cancels on the
+// first failure it classifies, but a single poll can hold several already-failed
+// jobs (e.g. lint + types + tests all red at once). Reporting only the one that
+// drove the decision forces whoever reads the cancelled run to re-scan every job
+// to find the siblings -- so both the banner and the annotation name them all.
+// Pure (no closure/env dependency) so it can be unit-tested in isolation.
+function formatFailureRoster(failedJobs, { owner, repo, runId }) {
+  const jobUrl = (j) => `https://github.com/${owner}/${repo}/actions/runs/${runId}/job/${j.id}`;
+  const lines = [];
+  lines.push('#'.repeat(70));
+  lines.push(`Cancelling: ${failedJobs.length} job(s) failed`);
+  for (const j of failedJobs) {
+    lines.push(`  ✗ "${j.name}"${j.id ? `  ${jobUrl(j)}` : ''}`);
+  }
+  lines.push('#'.repeat(70));
+  const names = failedJobs.map(j => `"${j.name}"`).join(', ');
+  const summary = failedJobs.length === 1
+    ? `Job failed: ${names}`
+    : `${failedJobs.length} jobs failed: ${names}`;
+  return { lines, summary };
+}
+
 // Returns null when the guard does not apply (not an install-validation job, or
 // no binary-exec signature in the log tail). Otherwise returns the decision:
 //   { override: true }  -> the whole matrix failed to execute the binary: corrupt build
@@ -287,6 +310,36 @@ const monitor = async ({ github, context, core }) => {
   // Waits for critical jobs (WATCHDOG_WAIT_PATTERNS) to finish before cancelling,
   // so cleanup traps (e.g., deleting temp D1 databases) can complete.
   async function forceCancel(failureMsg) {
+    // Re-fetch the job list so the cancellation names EVERY job that has failed
+    // by now, not only the one that drove the decision. Between the poll that
+    // detected the first failure and this call (AI classification + the
+    // critical-job wait below both take time) sibling jobs can also flip to
+    // failure; without this an operator or agent reading the cancelled run
+    // re-scans every job to find failures the watchdog already saw. Best-effort:
+    // if the refetch fails we fall back to the driving job's message.
+    try {
+      const jobsNow = await github.paginate(
+        github.rest.actions.listJobsForWorkflowRun,
+        { owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId, per_page: 100 },
+        response => response.data
+      );
+      const failedNow = jobsNow.filter(j =>
+        j.conclusion === 'failure' && !excludePatterns.some(p => j.name.includes(p))
+      );
+      if (failedNow.length > 0) {
+        const { lines, summary } = formatFailureRoster(failedNow, {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          runId: context.runId,
+        });
+        console.log('');
+        for (const line of lines) console.log(line);
+        failureMsg = summary;
+      }
+    } catch (e) {
+      console.log(`Warning: could not build the full failure roster (${e.message}); reporting the driving job only.`);
+    }
+
     const waitPatternsRaw = process.env.WATCHDOG_WAIT_PATTERNS || '';
     const waitPatterns = waitPatternsRaw.split(',').map(s => s.trim()).filter(Boolean);
 
@@ -536,6 +589,17 @@ const monitor = async ({ github, context, core }) => {
           return;
         } else {
           console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          // rerun-failed.yml reruns every failed job from this attempt, so name
+          // them all in the annotation too (not just the classified one).
+          if (failed.length > 1) {
+            const { summary } = formatFailureRoster(failed, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              runId: context.runId,
+            });
+            failureMsg = summary;
+            console.log(`Retrying all ${failed.length} failed jobs: ${failed.map(j => `"${j.name}"`).join(', ')}`);
+          }
           console.log('Dispatching auto-retry and exiting watchdog (rerun-failed.yml waits for run completion and picks up every failed job).');
           await dispatchRerun();
           core.setFailed(failureMsg);
@@ -575,3 +639,4 @@ const monitor = async ({ github, context, core }) => {
 module.exports = monitor;
 module.exports.evaluateBinaryExecGuard = evaluateBinaryExecGuard;
 module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
+module.exports.formatFailureRoster = formatFailureRoster;

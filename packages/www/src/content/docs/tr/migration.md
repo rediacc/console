@@ -4,7 +4,7 @@ description: Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın.
 category: Guides
 order: 11
 language: tr
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ Mevcut bir projeyi, dosyaları, Docker servislerini ve veritabanlarını gelenek
 
 - `rdc` CLI kurulu ([Kurulum](/tr/docs/installation))
 - Bir makine eklenmiş ve hazırlanmış ([Kurulum](/tr/docs/setup))
-- Sunucuda projeniz için yeterli disk alanı (`rdc machine query` ile kontrol edin)
+- Sunucuda projeniz için yeterli disk alanı (`rdc machine status` ile kontrol edin)
 
 ## Adım 1: Depo Oluşturma
 
 Projenize uygun boyutta şifrelenmiş bir depo oluşturun. Docker imajları ve konteyner verileri için ek alan ayırın.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **İpucu:** Daha sonra `rdc repo resize` ile yeniden boyutlandırabilirsiniz, ancak deponun önce bağlantısının kesilmesi gerekir. Yeterli alanla başlamak daha kolaydır.
@@ -34,22 +34,22 @@ Proje dosyalarınızı depoya aktarmak için `rdc repo sync upload` kullanın.
 
 ```bash
 # Ne aktarılacağını önizleyin (değişiklik yapılmaz)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # Dosyaları yükleyin
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 Yüklemeden önce depo bağlı olmalıdır. Henüz bağlı değilse:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 Uzak dizinin yerel dizininizle tam olarak eşleşmesini istediğiniz sonraki senkronizasyonlar için:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > `--mirror` bayrağı, yerel olarak bulunmayan uzak dosyaları siler. Doğrulamak için önce `--dry-run` kullanın.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 Yüklenen dosyalar yerel kullanıcınızın UID'si ile gelir (örneğin 1000). Rediacc, VS Code, terminal oturumları ve araçların tutarlı erişime sahip olması için evrensel bir kullanıcı (UID 7111) kullanır. Dönüştürmek için sahiplik komutunu çalıştırın:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Docker-Duyarlı İstisna
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 Docker birim algılamasını atlayıp konteyner veri dizinleri dahil her şeyi değiştirmek için:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **Uyarı:** Bu, çalışan konteynerleri bozabilir. Gerekirse önce `rdc repo down` ile durdurun.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 Varsayılan 7111 dışında bir UID ayarlamak için:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **Dikkat:** `7111`, her yerde kullanılan evrensel Rediacc UID'sidir (devcontainer imajına yerleşik `rediacc` kullanıcısıyla eşleşir). Yalnızca belirli bir harici UID'e ait dosyalarla geriye dönük uyumluluk için `--uid` ile geçersiz kılın; bu bir geçiş hedefi değildir. Yeni depolar varsayılan değeri korumalıdır.
@@ -200,7 +200,7 @@ IP ataması ve `.rediacc.json` hakkında ayrıntılar için [Servis Ağı](/tr/d
 Depoyu bağlayın (henüz bağlı değilse) ve tüm servisleri başlatın:
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 Bu işlem:
@@ -212,7 +212,7 @@ Bu işlem:
 Konteynerlerinizin çalıştığını doğrulayın:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Adım 7: Otomatik Başlatmayı Etkinleştirme (İsteğe Bağlı)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 Varsayılan olarak, sunucu yeniden başlatıldıktan sonra depolar manuel olarak bağlanmalı ve başlatılmalıdır. Servislerinizin otomatik olarak başlaması için otomatik başlatmayı etkinleştirin:
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 Depo parolası sorulacaktır.
@@ -275,7 +275,7 @@ Docker servisleri olan herhangi bir proje için:
 Dosyalar hâlâ yerel UID'nize sahip. Sahiplik komutunu çalıştırın:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### Konteyner Başlamıyor
@@ -284,10 +284,10 @@ Servislerin çalışıp çalışmadığını kontrol edin ve günlüklerini ince
 
 ```bash
 # Atanmış IP'leri kontrol edin
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # Konteyner günlüklerini kontrol edin
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### Depolar Arasında Port Çakışması
@@ -296,10 +296,10 @@ Her depo benzersiz geri döngü IP'leri alır ve kernel `bind()` çağrıların�
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 
-`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın. Konteyner onu yeniden oluşturacaktır:
+`rdc repo admin ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın. Konteyner onu yeniden oluşturacaktır:
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # Konteynerin veri dizinini silin (örneğin database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

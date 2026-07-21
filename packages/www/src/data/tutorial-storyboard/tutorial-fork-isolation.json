@@ -3,10 +3,10 @@
   "tutorial": "tutorial-fork-isolation",
   "nextTutorialKey": "tutorial-managing-secrets",
   "setupCommand": "bash .ci/tutorials/lib/stage-demo-pgadmin.sh",
-  "teardownCommand": "rdc repo delete --name demo-pgadmin:experiment --machine ${TUTORIAL_MACHINE_NAME}; rdc config repository remove --name demo-pgadmin:experiment",
+  "teardownCommand": "rdc repo delete demo-pgadmin:experiment --yes; rdc config prune",
   "sessions": {
     "grand": {
-      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin --container pgadmin --port 80 --local 18090 --url-only",
+      "urlFromCommand": "rdc repo tunnel demo-pgadmin@${TUTORIAL_MACHINE_NAME} --container pgadmin --port 80 --local 18090 --url-only",
       "prepActions": [
         {
           "waitForSelector": "input[name='email']"
@@ -17,7 +17,7 @@
       ]
     },
     "fork": {
-      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin:experiment --container pgadmin --port 80 --local 18091 --url-only",
+      "urlFromCommand": "rdc repo tunnel demo-pgadmin:experiment@${TUTORIAL_MACHINE_NAME} --container pgadmin --port 80 --local 18091 --url-only",
       "prepActions": [
         {
           "waitForSelector": ".file-tree .file-entry"
@@ -41,7 +41,7 @@
     },
     "fork-pane": {
       "width": "half",
-      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin:experiment --container pgadmin --port 80 --local 18092 --url-only",
+      "urlFromCommand": "rdc repo tunnel demo-pgadmin:experiment@${TUTORIAL_MACHINE_NAME} --container pgadmin --port 80 --local 18092 --url-only",
       "prepActions": [
         {
           "waitForSelector": ".file-tree .file-entry"
@@ -81,7 +81,7 @@
     },
     "grand-pane": {
       "width": "half",
-      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin --container pgadmin --port 80 --local 18093 --url-only",
+      "urlFromCommand": "rdc repo tunnel demo-pgadmin@${TUTORIAL_MACHINE_NAME} --container pgadmin --port 80 --local 18093 --url-only",
       "prepActions": [
         {
           "waitForSelector": "input[name='email']"
@@ -254,7 +254,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo fork --parent demo-pgadmin --tag experiment --machine <machine-name> --up --detach"
+        "commandFull": "rdc repo fork demo-pgadmin --tag experiment --up --no-wait"
       }
     },
     {
@@ -399,7 +399,7 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo delete --name demo-pgadmin:experiment --machine <machine-name>"
+        "commandFull": "rdc repo delete demo-pgadmin:experiment --yes"
       }
     },
     {

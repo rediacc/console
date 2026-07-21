@@ -3,15 +3,15 @@
 # Supports multi-architecture builds via Docker Buildx
 #
 # Usage:
-#   build-image.sh --image api                       # Build API image
-#   build-image.sh --image bridge --version 0.4.30   # Build with version tag
-#   build-image.sh --image api --ci-tag 20260120-104603  # Build with CI tag (no :latest)
+#   build-image.sh --image renet                     # Build renet image
+#   build-image.sh --image cli --version 0.4.30      # Build with version tag
+#   build-image.sh --image cli --ci-tag 20260120-104603  # Build with CI tag (no :latest)
 #   build-image.sh --all                             # Build all images
 #   build-image.sh --all --push                      # Build and push all
 #   build-image.sh --dry-run --all                   # Preview builds
 #
 # Options:
-#   --image NAME     Build specific image (api, bridge, plugin-terminal, plugin-browser)
+#   --image NAME     Build specific image (renet, web, cli)
 #   --all            Build all images
 #   --version X.Y.Z  Version tag (default: latest only)
 #   --ci-tag TAG     CI-only tag (YYYYMMDD-HHMMSS format, no :latest pushed)
@@ -144,18 +144,8 @@ build_image() {
         fi
     fi
 
-    # Build arguments
+    # Build arguments (renet/cli need none; the retired api/web/bridge cases are gone)
     local build_args=""
-    if [[ "$name" == "api" ]]; then
-        # API image may need version build arg
-        build_args="--build-arg VERSION=${VERSION:-dev}"
-    elif [[ "$name" == "bridge" ]]; then
-        # Bridge image may need version for Go ldflags
-        build_args="--build-arg VERSION=${VERSION:-dev}"
-    elif [[ "$name" == "web" ]]; then
-        # Web image needs version for Vite and build type
-        build_args="--build-arg VITE_APP_VERSION=${VERSION:-latest} --build-arg REDIACC_BUILD_TYPE=RELEASE"
-    fi
 
     # Push flag
     local push_flag=""

@@ -78,6 +78,10 @@
       "project": [
         "src/**/*.{ts,tsx,astro}",
         "scripts/**/*.{js,cjs,mjs,ts}"
+      ],
+      "ignore": [
+        // BLOCKER: intentionally unreferenced. Its render was disabled in SolutionPage.astro and PersonaPage.astro because every testimonial quote and impact metric behind it is invented and Rediacc has no public customers (rediacc/console#519). The component is kept, not deleted, so restoring it is a copy-paste once honest content exists; delete this entry when the render is re-enabled.
+        "src/components/solution-pages/SPSocialProof.astro"
       ]
     },
     "private/account": {

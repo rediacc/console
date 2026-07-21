@@ -1,4 +1,5 @@
 ---
+sourceHash: "d534fc11b7ba4fa7"
 title: Ambientes de Desenvolvimento que Arrancam em Segundos
 description: Deixe de esperar dias por ambientes de desenvolvimento. Clone toda a sua infraestrutura de produção em menos de 60 segundos com ambientes efémeros a pedido.
 category: Use Cases

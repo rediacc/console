@@ -4,7 +4,7 @@ description: "إنشاء إعداد، وإضافة أجهزة، وتجهيز ا�
 category: "Guides"
 order: 3
 language: ar
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 **الإعداد** هو ملف إعداد مسمّى يخزّن بيانات اعتماد SSH، وتعريفات الأجهزة، وربط المستودعات. فكّر فيه كمساحة عمل للمشروع.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | الخيار | مطلوب | الوصف |
@@ -34,7 +34,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 سجّل خادمك البعيد كجهاز في الإعداد:
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | الخيار | مطلوب | الافتراضي | الوصف |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 بعد إضافة الجهاز، يقوم rdc تلقائياً بتشغيل `ssh-keyscan` لجلب مفاتيح المضيف الخاصة بالخادم. يمكنك أيضاً تشغيل هذا يدوياً:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 لعرض جميع الأجهزة المسجلة:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## الخطوة 3: إعداد الجهاز
@@ -61,7 +61,7 @@ rdc config machine list
 قم بتجهيز الخادم البعيد بجميع المتطلبات اللازمة:
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 يقوم هذا الأمر بما يلي:
@@ -87,7 +87,7 @@ rdc config machine setup --name server-1
 يقبل `--datastore-size` نسبة مئوية (`95%`) أو حجماً مطلقاً (`50G`، `1T`). يمكن توسيع مخزن البيانات لاحقاً أثناء التشغيل:
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 يُحدَّد حجم المستودعات داخل مخزن البيانات بشكل مستقل عند `repo create` ويمكن توسيعها أثناء التشغيل، لذا لست بحاجة إلى تخصيص مساحة زائدة لمخزن البيانات مسبقاً.
@@ -98,10 +98,9 @@ rdc datastore resize -m server-1 --size 200G
 
 ```bash
 # 1. تسجيل مرجع Ceph الخاص بالجهاز (التجمع + صورة RBD، غير سري)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. تهيئة مخزن البيانات على طبقة Ceph
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 تبقى مفاتيح Ceph على الأجهزة؛ يحتوي ملف الإعداد فقط على مراجع التجمع والصورة غير السرية. Ceph هي أيضاً طبقة التخزين التي تستهلكها عناقيد Kubernetes عبر ceph-csi. راجع دليل [Kubernetes](/ar/docs/kubernetes) للعناقيد والأحجام الثابتة، و[البنية المعمارية](/ar/docs/architecture) لمقارنة الطبقتين.
@@ -111,7 +110,7 @@ rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-serve
 إذا تغيّر مفتاح SSH الخاص بالخادم (مثلاً بعد إعادة التثبيت)، قم بتحديث المفاتيح المخزّنة:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 يُحدّث هذا حقل `knownHosts` في إعداداتك لهذا الجهاز.
@@ -121,7 +120,7 @@ rdc config machine scan-keys -m server-1
 بعد إضافة جهاز، تحقق من إمكانية الوصول إليه:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 يفتح هذا اتصال SSH بالجهاز وينفّذ الأمر. إذا نجح، فإن إعدادات SSH الخاصة بك صحيحة.
@@ -141,7 +140,7 @@ rdc doctor
 ### تعيين البنية التحتية
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ rdc config infra set -m server-1 \
 ### عرض البنية التحتية
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### الدفع إلى الخادم
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 أنشئ وانشر إعدادات وكيل Traefik العكسي على الخادم:
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 هذا الأمر:
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### إضافة مزود سحابي
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### تزويد جهاز
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 يقوم هذا الأمر الواحد بما يلي:
@@ -244,7 +243,7 @@ rdc machine provision --name prod-2 --provider my-linode
 ### إلغاء تزويد جهاز
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 يدمّر الجهاز الافتراضي عبر OpenTofu ويزيله من إعداداتك. يتطلب تأكيداً ما لم يُستخدم `--force`. يعمل فقط مع الأجهزة التي تم إنشاؤها باستخدام `machine provision`.
@@ -252,7 +251,7 @@ rdc machine deprovision --name prod-2
 ### عرض المزودين
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## تعيين القيم الافتراضية
@@ -261,13 +260,13 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Default machine
-rdc config set --key team --value my-team                   # الفريق الافتراضي لمخزن التكوين
+rdc config set team my-team                   # الفريق الافتراضي لمخزن التكوين
 ```
 
 بعد تعيين جهاز افتراضي، يمكنك حذف `-m server-1` من الأوامر:
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## إعدادات متعددة
@@ -276,8 +275,8 @@ rdc repo create --name my-app -m my-server --size 10G
 
 ```bash
 # إنشاء إعدادات منفصلة
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # استخدام إعداد محدد
 rdc repo list -m server-1 --config production

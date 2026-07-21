@@ -4,7 +4,7 @@ description: "자동 시작의 작동 방식, 부팅 후 중단된 레포지토�
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "7fa4f919475b304e"
+sourceHash: "62148f7a55752783"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,7 @@ journalctl -u rediacc-autostart-reconcile.service --since "1 hour ago"
 ls /var/lib/rediacc/reconcile/failed/
 ```
 
-각 파일 이름은 레포지토리 GUID입니다. `rdc config repository list`와 교차 참조하여 GUID를 레포지토리 이름에 매핑하세요.
+각 파일 이름은 레포지토리 GUID입니다. `rdc repo list`와 교차 참조하여 GUID를 레포지토리 이름에 매핑하세요.
 
 근본적인 문제를 해결한 후 마커를 지우려면 파일을 삭제하세요:
 

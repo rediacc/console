@@ -4,8 +4,8 @@ description: "rdc komutları için hızlı referans: yapılandırmalar, depolar,
 category: Guides
 order: 3
 language: tr
-sourceHash: "d92987c4766d91ae"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "baeb612f4804f526"
+sourceCommit: "e4a4e0de5"
 ---
 
 # RDC CLI Hızlı Referans
@@ -49,7 +49,7 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc repo push ... --bwlimit <limit>` | Gönderme sırasında rsync bant genişliğini sınırla (örn. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Alma sırasında rsync bant genişliğini sınırla |
 | `rdc repo push ... --checkpoint` | Göndermeden önce konteynerlerde kontrol noktası oluştur |
-| `rdc backup list --storage <storage> -m <machine>` | Depolamadaki mevcut yedeklemeleri listele |
+| `rdc backup list --storage <storage> | Depolamadaki mevcut yedeklemeleri listele |
 | `rdc storage browse <storage>` | Depolama içeriğine göz at |
 
 ## Depo Taşıma

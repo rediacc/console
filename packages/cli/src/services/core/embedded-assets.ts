@@ -9,9 +9,9 @@
 import * as crypto from 'node:crypto';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { PLATFORM_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { getCacheDir } from '@rediacc/shared/paths';
 
 /** Supported architectures for renet */
 export type RenetArch = 'amd64' | 'arm64';
@@ -173,18 +173,18 @@ export function computeSha256(data: Buffer): string {
 let cachedLocalPath: string | null = null;
 
 /**
- * Per-user extraction directory name. os.tmpdir() is world-writable and
- * shared between users on Unix, so a static directory name invites squatting
- * and symlink games from other local users; suffixing with the UID (username
- * on Windows, where uid is -1 but the tmpdir is per-user anyway) isolates it.
+ * Extraction directory for the local renet binary: `<cache dir>/bin`, created
+ * 0700. It sits under the user's own cache root (getCacheDir() is sudo-aware
+ * and platform-native: ~/.cache on Linux, ~/Library/Caches on macOS) rather
+ * than a shared temp dir, so no other local user can create, replace, or
+ * symlink the binary we are about to spawn.
+ *
+ * Cache, not config: the binary is re-derivable from the embedded copy and is
+ * hash-verified before reuse, so deleting it costs one extraction and nothing
+ * else. Keeping it out of the config root also keeps config backups small.
  */
-function rdcLocalDirName(): string {
-  try {
-    const { uid, username } = os.userInfo();
-    return `.rdc-local-${uid >= 0 ? uid : username}`;
-  } catch {
-    return '.rdc-local';
-  }
+function renetCacheDir(): string {
+  return path.join(getCacheDir(), 'bin');
 }
 
 /** Host platform/arch and the extraction target for the local renet binary. */
@@ -201,7 +201,7 @@ function hostRenetTarget(): {
   };
   const platform: RenetPlatform = platformMap[process.platform] ?? PLATFORM_DEFAULTS.DEFAULT_RENET;
   const arch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-  const dir = path.join(os.tmpdir(), rdcLocalDirName());
+  const dir = renetCacheDir();
   const ext = platform === 'windows' ? '.exe' : '';
   return {
     platform,
@@ -226,9 +226,44 @@ function expectedRenetSha(metaKey: string): string | null {
 }
 
 /**
+ * Read the host's embedded renet binary back out of the SEA at runtime and
+ * verify its sha256 against the value recorded in the embedded metadata (which
+ * is computed at build time by prepare-cli-assets.sh).
+ *
+ * This is the runtime proof that node's SEA asset lookup returns the exact bytes
+ * that were injected. It is distinct from, and stronger than, the two checks
+ * around it: the build-time container check (sea-inject/verify.mjs) re-parses the
+ * file structurally without executing it, and `rdc --version` never touches an
+ * asset at all — so a binary whose main script is intact but whose payload note
+ * is corrupt, truncated, or unreachable at the loaded address would pass both
+ * while failing here.
+ *
+ * Never throws — returns a structured result so callers (the `doctor` health
+ * check, the CI build smoke test) report rather than crash.
+ */
+export function verifyEmbeddedRenetIntegrity(): { ok: boolean; detail: string } {
+  if (!isSEA()) return { ok: false, detail: 'not running as a SEA binary' };
+  try {
+    const { platform, arch, metaKey } = hostRenetTarget();
+    const expected = expectedRenetSha(metaKey);
+    if (!expected) return { ok: false, detail: `metadata has no sha256 for '${metaKey}'` };
+    const actual = computeSha256(getEmbeddedRenetBinary(platform, arch));
+    if (actual !== expected) {
+      return {
+        ok: false,
+        detail: `sha256 mismatch for '${metaKey}': read ${actual.slice(0, 12)}…, expected ${expected.slice(0, 12)}…`,
+      };
+    }
+    return { ok: true, detail: `renet '${metaKey}' read back, sha256 verified` };
+  } catch (err) {
+    return { ok: false, detail: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+/**
  * Reuse a previously extracted binary when it hashes to the embedded sha256.
  * Avoids rewriting the large binary on every invocation, and verifies the
- * agent-writable temp file before anything spawns it.
+ * on-disk copy before anything spawns it.
  */
 function reuseVerifiedExtraction(localPath: string, expectedSha: string | null): boolean {
   if (!expectedSha) return false;
@@ -240,7 +275,7 @@ function reuseVerifiedExtraction(localPath: string, expectedSha: string | null):
 }
 
 /**
- * Extract the embedded renet binary to a local temp file for SEA-mode local spawning.
+ * Extract the embedded renet binary to the local cache dir for SEA-mode local spawning.
  * Cached per-process; reuses an on-disk extraction when its sha256 matches the
  * embedded metadata. Writes go through a temp file + atomic rename so
  * concurrent rdc processes never observe a partial binary (or ETXTBSY).
@@ -265,7 +300,13 @@ export async function extractRenetToLocal(): Promise<string> {
   }
 
   const binary = getEmbeddedRenetBinary(platform, arch);
-  await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+  // mkdir's `mode` applies only when it creates the directory. An extraction dir
+  // left over from an earlier release (or widened by a permissive umask) keeps
+  // its old permissions, so narrow it explicitly rather than assuming.
+  if (platform !== 'windows') {
+    await fs.chmod(dir, 0o700);
+  }
 
   const tmpPath = path.join(dir, `renet.${process.pid}.tmp`);
   await fs.writeFile(tmpPath, binary);
@@ -304,7 +345,11 @@ export function extractRenetToLocalSync(): string {
   }
 
   const binary = getEmbeddedRenetBinary(platform, arch);
-  fsSync.mkdirSync(dir, { recursive: true });
+  fsSync.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // See the async path: mkdir's `mode` does not narrow a pre-existing directory.
+  if (platform !== 'windows') {
+    fsSync.chmodSync(dir, 0o700);
+  }
 
   const tmpPath = path.join(dir, `renet.${process.pid}.tmp`);
   fsSync.writeFileSync(tmpPath, binary);

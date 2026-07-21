@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: ko
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ### 개요
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # fork를 부모 저장소와 비교
-rdc repo diff --name <fork> --base <repo> -m <machine>   # 임의의 관련 저장소와 비교
+rdc repo diff <fork>            # fork를 부모 저장소와 비교
+rdc repo diff <fork> --base <repo>   # 임의의 관련 저장소와 비교
 ```
 
 ### 옵션
 
 | 옵션 | 설명 | 기본값 |
 |--------|-------------|---------|
-| `--name <name>` | 검사할 저장소(대상, 신 측). 필수. | 필수 |
-| `--base <name>` | 비교할 저장소(기본, 구 측). `--name`의 부모로 기본값 설정. | `--name`의 부모 |
+| `<ref>`(위치 인수) | 검사할 저장소 참조(대상, 새 측). 필수. | 필수 |
+| `--base <ref>` | 비교 대상 저장소(베이스, 이전 측). 기본값은 로컬 설정에서 해석된 대상 참조의 부모. | 대상 참조의 부모 |
 | (형식 플래그 없음) | 이름-상태 출력: 변경된 파일당 색상 `A`/`M`/`D`/`R` 문자 및 한 줄 요약. | 켜짐 |
 | `--name-only` | 한 줄에 한 개의 변경된 경로, 상태 문자 없음. 파이프 친화적. | 꺼짐 |
 | `--stat` | 파일당 변경 크기(바이트 및 블록 델타) 및 합계 바닥글. | 꺼짐 |
 | `--content <path>` | 단일 파일의 통합 텍스트 diff. 텍스트만; 바이너리는 `Binary files differ` 보고. | 꺼짐 |
-| `--json` | 에이전트 및 스크립트를 위한 구조화된 출력. | 꺼짐 |
+| `-o json` | 에이전트와 스크립트를 위한 구조화된 출력. | `table` |
 | `--fast` | 컨텐츠-해시 확인 단계를 건너뛰고 블록 필터를 신뢰합니다. 더 빠르지만 Modified로 파일을 과다 보고할 수 있습니다. | 꺼짐 |
-| `-m, --machine <name>` | 대상 머신. 필수. | 필수 |
 | `--debug` | stderr의 상세한 진단. | 꺼짐 |
 | `--skip-router-restart` | 라우터 재시작 단계 건너뜀. | 꺼짐 |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # 임의의 관련 저�
 `--name`만 사용하면 fork가 로컬 설정에 기록된 부모와 비교됩니다. 여기서 fork `test-1gb:fork1`은 하나의 수정된 파일을 가지고 있습니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 `--base`를 사용하여 임의의 관련 저장소와 비교합니다. `--base`는 기본(구) 측이고 `--name`은 대상(신) 측입니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat`은 파일당 바이트 델타 및 블록 델타와 합계 바닥글을 추가합니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only`는 상태 문자 없이 한 줄에 하나의 경로를 인쇄하므로 다른 명령에 공급할 수 있습니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content`는 단일 텍스트 파일의 통합 diff를 생성합니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### jq로 JSON 필터링
 
-`--json`은 stdout의 구조화된 봉투를 내보내므로 `jq`로 깔끔하게 파이프됩니다:
+`-o json`은 stdout의 구조화된 봉투를 내보내므로 `jq`로 깔끔하게 파이프됩니다:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ $ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] 
 
 표준 통합 diff(`---`/`+++` 헤더, `@@` 청크)로 한 텍스트 파일. 바이너리 파일은 `Binary files differ`를 보고하고 청크를 생성하지 않습니다.
 
-### `--json`
+### `-o json`
 
 전체 구조화된 결과. 데이터는 stdout으로 이동하고 진행 상황 및 진단은 stderr로 이동하므로 JSON은 진행 상황이 인쇄되는 동안에도 `jq` 또는 다른 파서로 깔끔하게 파이프됩니다.
 

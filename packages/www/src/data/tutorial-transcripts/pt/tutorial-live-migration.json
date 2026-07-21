@@ -6,7 +6,7 @@
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "at": 2.413171,
+      "at": 2.420835,
       "text": "Conheça o pulse. Ele mantém um contador na memória do processo e imprime uma batida a cada cinco segundos. O contador está em seis e subindo, e vive apenas na RAM. Reinicie o processo e ele começa de novo no um.",
       "afterText": "Um contador ao vivo, batendo na memória. Essa é a nossa prova.",
       "cardLabel": "Contador ao Vivo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "at": 10.379022,
+      "at": 8.294774,
       "text": "Um comando move tudo, ao vivo. A fase um transfere o grosso, dois gigabytes em cerca de meio minuto, enquanto a origem continua rodando. Depois a virada: ele faz o checkpoint dos processos em execução, carrega os últimos megabytes e imprime o tempo de inatividade ali mesmo. Cerca de vinte segundos, para uma migração de dois gigabytes.",
       "afterText": "Dois gigabytes movidos enquanto o app continuava rodando. A linha de inatividade mostra o que a migração realmente custou.",
       "cardLabel": "Migrar ao Vivo",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "at": 101.149024,
+      "at": 94.394579,
       "text": "Verifique a nova máquina: está lá. Montado, Docker rodando, dois containers ativos.",
       "afterText": "Mesmo repositório, novo lar, já rodando.",
       "cardLabel": "Novo Lar",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "at": 106.859481,
+      "at": 99.812481,
       "text": "E a origem? O repositório ainda está listado, mas olhe a linha: não montado, sem Docker, zero containers. Nada roda aqui mais. A imagem fica para trás de propósito, como base para a próxima transferência delta.",
       "afterText": "Parado e desmontado. A imagem restante é uma base delta, não um app em execução.",
       "cardLabel": "Origem Parada",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "at": 112.346008,
+      "at": 105.151877,
       "text": "Agora o ponto principal. O contador mostra dezessete, dezoito, dezenove, ainda subindo. Ele retomou exatamente de onde o checkpoint o congelou, em vez de começar de novo no um. O processo nunca percebeu que mudou de máquina.",
       "afterText": "O contador continuou contando. A memória do processo fez a viagem.",
       "cardLabel": "Contador Continuou",

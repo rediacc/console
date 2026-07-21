@@ -4,7 +4,7 @@ description: "ファイル同期、ターミナルアクセス、VS Code統合�
 category: Guides
 order: 9
 language: ja
-sourceHash: "59abc2faa1157369"
+sourceHash: "2b8afb656455d6ec"
 sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
@@ -22,16 +22,16 @@ SSH経由のrsyncを使用して、ワークステーションとリモートリ
 
 ```bash
 # ディレクトリ（内容がリモートにマージされます）
-rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+rdc repo sync upload my-app --local ./src --remote /app/src
 
 # 単一ファイルをリモートディレクトリに配置（ベース名は保持される）
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+rdc repo sync upload my-app --local ./config.yml --remote /app/conf
 
 # 単一ファイル、明示的な宛先パス
-rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+rdc repo sync upload my-app --local ./config.yml --remote-file /app/conf/config.yml
 
 # 1つのコマンドで複数のソース
-rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
+rdc repo sync upload my-app --local a.yml b.yml ./assets --remote /app
 ```
 
 `--remote`と`--remote-file`は相互排他的です。`--remote-file`は、ファイルを指すちょうど1つの`--local`パスが必要です。
@@ -44,16 +44,16 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ```bash
 # ディレクトリ
-rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+rdc repo sync download my-app --remote /app/data --local ./data
 
 # 単一ファイル：--localは既存のディレクトリである必要があります
-rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
+rdc repo sync download my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### 同期ステータスの確認
 
 ```bash
-rdc repo sync status -m server-1 -r my-app
+rdc repo sync status my-app
 ```
 
 ### オプション
@@ -61,7 +61,7 @@ rdc repo sync status -m server-1 -r my-app
 | オプション | 説明 |
 |--------|-------------|
 | `-m, --machine <name>` | 対象マシン |
-| `-r, --repository <name>` | 対象リポジトリ |
+| `<ref>`（位置引数） | 対象リポジトリの参照：`name`、`name:tag`、任意で`@machine` |
 | `--local <paths...>` | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） |
 | `--remote <path>` | リモートディレクトリ（リポジトリマウントからの相対パス） |
 | `--remote-file <path>` | 単一ファイルアップロード/ダウンロード用リモートファイルパス（`--remote`の代替） |
@@ -81,8 +81,8 @@ rdc repo sync status -m server-1 -r my-app
 最も手軽な接続方法：
 
 ```bash
-rdc term connect -m server-1                    # マシンに接続
-rdc term connect -m server-1 -r my-app             # リポジトリに接続
+rdc term connect server-1                    # マシンに接続
+rdc term connect my-app             # リポジトリに接続
 ```
 
 ### コマンドの実行
@@ -90,8 +90,8 @@ rdc term connect -m server-1 -r my-app             # リポジトリに接続
 インタラクティブセッションを開かずにコマンドを実行します：
 
 ```bash
-rdc term connect -m server-1 -c "uptime"
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect server-1 -c "uptime"
+rdc term connect my-app -c "docker ps"
 ```
 
 リポジトリに接続する際、`DOCKER_HOST`はリポジトリの分離されたDockerソケットに自動的に設定されるため、`docker ps`はそのリポジトリのコンテナのみを表示します。
@@ -101,8 +101,8 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 `connect`サブコマンドは、明示的なフラグを使用して同じ操作を行います：
 
 ```bash
-rdc term connect -m server-1
-rdc term connect -m server-1 -r my-app
+rdc term connect server-1
+rdc term connect my-app
 ```
 
 ### コンテナ操作
@@ -111,28 +111,29 @@ rdc term connect -m server-1 -r my-app
 
 ```bash
 # コンテナ内でシェルを開く
-rdc term connect -m server-1 -r my-app --container <container-id>
+rdc repo exec my-app -c <container> -i -- bash
 
 # コンテナログを表示
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs
+rdc repo logs my-app -c <container>
 
 # リアルタイムでログを追跡
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow
+rdc repo logs my-app -c <container> --follow
 
 # コンテナの統計情報を表示
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats
+rdc repo exec my-app -c <container> -i -- bash --container-action stats
 
 # コンテナ内でコマンドを実行
-rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c "ls -la"
+rdc repo exec my-app -c <container> -- ls -la
 ```
 
-| オプション | 説明 |
-|--------|-------------|
-| `--container <id>` | 対象のDockerコンテナID |
-| `--container-action <action>` | アクション：`terminal`（デフォルト）、`logs`、`stats`、`exec` |
-| `--log-lines <n>` | 表示するログの行数（デフォルト：50） |
-| `--follow` | ログを継続的に追跡 |
-| `--external` | インラインSSHの代わりに外部ターミナルを使用 |
+| オプション | コマンド | 説明 |
+|--------|---------|-------------|
+| `-c, --container <name>` | 両方 | リポジトリ内の対象コンテナ |
+| `--lines <n>` | `repo logs` | 表示するログ行数 |
+| `-f, --follow` | `repo logs` | ログをリアルタイムで追跡 |
+| `--timestamps` | `repo logs` | 各行にタイムスタンプを付与 |
+| `-i, --interactive` | `repo exec` | stdinを開いたままにする（シェルに必要） |
+| `-u, --user <user>` | `repo exec` | 特定のユーザーとして実行 |
 
 ## VS Code統合 (vscode)
 
@@ -141,7 +142,7 @@ rdc term connect -m server-1 -r my-app --container <container-id> --container-ac
 ### リポジトリへの接続
 
 ```bash
-rdc vscode connect -r my-app -m server-1
+rdc vscode connect my-app
 ```
 
 このコマンドは以下を実行します：
@@ -179,7 +180,7 @@ VS Codeのインストール状況、Remote SSH拡張機能、およびアクテ
 ローカルの VS Code がない場合は、リポジトリのサンドボックス内からエディタサーバーを起動してブラウザで開けます。
 
 ```bash
-rdc vscode connect -r my-app -m server-1 --browser
+rdc vscode connect my-app --browser
 ```
 
 このコマンドは以下を実行します。
@@ -190,8 +191,8 @@ rdc vscode connect -r my-app -m server-1 --browser
 トンネルを閉じてもサーバーは動き続けます。再接続するとそのまま再利用されます。管理コマンド：
 
 ```bash
-rdc vscode serve status -r my-app -m server-1
-rdc vscode serve stop -r my-app -m server-1
+rdc vscode serve status my-app
+rdc vscode serve stop my-app
 ```
 
 | オプション | 説明 |

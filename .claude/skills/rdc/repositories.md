@@ -24,7 +24,7 @@ Repositories are isolated application deployments. Each gets an encrypted LUKS v
 `rdc repo delete <ref>` destroys containers, volumes, and encrypted image. The config entry is preserved by default; pass `--archive-config` to move the credentials into the archive, recoverable with `rdc repo admin archive restore <name>`. A bare name resolves to the grand line and is refused when several repos share the base name, so pass `name:tag` to target a fork.
 
 ### Prune orphaned resources
-`rdc machine prune --name <machine>` removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed. Add `--orphaned-repos` to also delete repo images that are in no config.
+`rdc machine prune <machine>` removes empty mount dirs, orphan immovable markers, and stale lock files left behind by deleted repos or failed operations. Only removes resources with no matching repository image. Non-empty mount directories are never removed. Add `--orphaned-repos` to also delete repo images that are in no config.
 
 ### Garbage-collect commits
 `rdc repo gc -m <machine>` deletes immutable commit objects that no branch or HEAD reaches. Dry-run by default; pass `--apply` to actually delete. It never touches a mounted object or a working fork.

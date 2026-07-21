@@ -85,7 +85,7 @@ export async function rewriteOrigin(response: Response, url: URL, channel: strin
   for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
     body = body.replaceAll(`releases.rediacc.com/${format}/stable`, `releases.rediacc.com/${format}/${channel}`);
   }
-  body = body.replaceAll('elite/cli:stable', `elite/cli:${channel}`);
+  body = body.replaceAll('rdc:stable', `rdc:${channel}`);
 
   return new Response(body, {
     status: response.status,

@@ -11,7 +11,7 @@ tags:
   - case-study
 featured: true
 language: ru
-sourceHash: "277ccd50e4bac37f"
+sourceHash: "4658b7226eb1e696"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
@@ -63,7 +63,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 Первое, что попробовал бы агент (в данном случае я): открыть shell в рабочий репозиторий и осмотреться.
 
 ```bash
-$ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
+$ rdc term connect demo-stackoverflow -c "ls -la"
 ```
 
 CLI отказал. Дословно:
@@ -97,7 +97,7 @@ $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
 Это тот рабочий процесс, на котором Rediacc вас и хочет видеть.
 
 ```bash
-$ time rdc repo fork --parent demo-stackoverflow -m hostinger --tag agent-test
+$ time rdc repo fork demo-stackoverflow --tag agent-test
 ```
 
 Вывод, скопированный с моего терминала:
@@ -129,7 +129,7 @@ Total: 6.3s
 Когда я делаю `term connect` в форк, вот что я вижу:
 
 ```
-$ rdc term connect -m hostinger -r demo-stackoverflow:agent-test -c "id"
+$ rdc term connect demo-stackoverflow:agent-test -c "id"
 uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 ```
 
@@ -194,7 +194,7 @@ Rediacc изолирует инфраструктуру: файл на диск�
 
 Для модели угроз с агентами особо стоит упомянуть два побочных эффекта этого дизайна. Во-первых, `repo secret list` и `repo secret get` доступны как MCP-инструменты (read-safe. Имена и дайджесты, никогда значения), поэтому агент, помогающий вам настроить приложение, может узнать, что сконфигурировано, не видя, что именно. Во-вторых, когда запись не проходит предусловие, JSON-конверт ошибки содержит структурированное поле `next.options[].run` с конкретными командами, которые агент должен передать человеку дословно. Включая аварийный вариант ротации для случая «я забыл прежнее значение». Полная модель описана в [AI Agent Safety](/ru/docs/ai-agents-safety).
 
-Полное руководство в [Repositories § Secrets](/ru/docs/repositories#secrets). Три шага. Сначала задайте значение: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Затем сошлитесь на `${REDIACC_SECRET_<KEY>}` в compose-файле. Наконец, запустите `rdc repo fork` и убедитесь, что форк стартует с пустым списком секретов.
+Полное руководство в [Repositories § Secrets](/ru/docs/repositories#secrets). Три шага. Сначала задайте значение: `rdc repo secret set <repo> --key <KEY> --value <val> --current ""`. Затем сошлитесь на `${REDIACC_SECRET_<KEY>}` в compose-файле. Наконец, запустите `rdc repo fork` и убедитесь, что форк стартует с пустым списком секретов.
 
 ## Что это меняет для тех, кто занимается такой работой
 

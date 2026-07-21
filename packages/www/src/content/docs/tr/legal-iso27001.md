@@ -4,7 +4,7 @@ description: "Rediacc'ın şifreleme, erişim yönetimi ve operasyon güvenliği
 category: "Legal"
 order: 5
 language: tr
-sourceHash: "315946a692b6ee29"
+sourceHash: "1e23c89ae8cf0185"
 sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
 ---
 
@@ -22,8 +22,8 @@ Rediacc, bir BGYS içindeki teknik kontrol katmanının bir bileşenidir. Aşağ
 | **A.8**, Varlık yönetimi | A.8.24 Kriptografi kullanımı | Tüm depolarda zorunlu LUKS2 AES-256 şifreleme. Anahtar yönetimi: kimlik bilgileri yalnızca operatörün yerel yapılandırmasında saklanır, asla sunucuda değil. |
 | **A.9**, Erişim kontrolü | A.9.2 Kullanıcı erişim yönetimi | SSH anahtar kimlik doğrulaması. IP bağlama, ekip kapsamı ve ekipten çıkarılma durumunda otomatik iptal ile API token'ları. İki faktörlü kimlik doğrulama (TOTP). |
 | **A.10**, Kriptografi | A.10.1 Kriptografik kontroller | Yapılandırılabilir anahtar parametreleri ile LUKS2. Depo başına şifreleme kimlik bilgileri. Tüm uzak aktarım SSH üzerinden. Yapılandırma deposu sıfır bilgi şifrelemesi uygular: HKDF anahtar türetme ile AES-256-GCM, üyeler için X25519 anahtar değişimi ve anında iptal için zaman pencereli SDK anahtarları. |
-| **A.12**, Operasyon güvenliği | A.12.3 Yedekleme | `rdc repo push/pull` ile birden fazla hedefe (SSH, S3, B2, Azure, GDrive) şifreli uzak site depolama. Belirli bir zamana geri dönüş için CoW anlık görüntüleri. `rdc repo validate` yedekleme sağlığını ve depo bütünlüğünü doğrular. |
-| **A.12**, Operasyon güvenliği | A.12.4 Günlük kaydı ve izleme | 70'den fazla olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama, makine işlemleri). `rdc machine query` ile makine sağlığı izleme. Konteyner durumu ve kaynak izleme. |
+| **A.12**, Operasyon güvenliği | A.12.3 Yedekleme | `rdc repo push/pull` ile birden fazla hedefe (SSH, S3, B2, Azure, GDrive) şifreli uzak site depolama. Belirli bir zamana geri dönüş için CoW anlık görüntüleri. `rdc repo admin validate` yedekleme sağlığını ve depo bütünlüğünü doğrular. |
+| **A.12**, Operasyon güvenliği | A.12.4 Günlük kaydı ve izleme | 70'den fazla olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama, makine işlemleri). `rdc machine status` ile makine sağlığı izleme. Konteyner durumu ve kaynak izleme. |
 | **A.13**, İletişim güvenliği | A.13.1 Ağ güvenliği yönetimi | Depo başına Docker daemon izolasyonu. iptables kuralları depolar arası trafiği engeller. Depo başına loopback IP alt ağları (/26). Dış erişim için TLS sonlandırma ile ters proxy. |
 | **A.14**, Sistem geliştirme | A.14.2 Geliştirmede güvenlik | Fork tabanlı geliştirme ortamları üretim verisi açığa çıkarmadan üretim eşdeğerliği sağlar. Rediaccfile yaşam döngüsü kancaları klonlanmış ortamlarda otomatik veri temizleme sağlar. |
 
@@ -49,4 +49,4 @@ Fork-test-yükseltme iş akışı ISO 27001'in değişiklik yönetimi gereksinim
 
 - Denetim günlüğü dışa aktarımı periyodik güvenlik incelemelerini destekler
 - Makine sağlık kontrolleri (`rdc machine status --system`) operasyonel izlemeyi destekler
-- `rdc repo validate` her işlemden sonra yedekleme sağlığını doğrular
+- `rdc repo admin validate` her işlemden sonra yedekleme sağlığını doğrular

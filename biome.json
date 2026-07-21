@@ -56,10 +56,6 @@
       "packages/**/*.jsx",
       "packages/www/scripts/**/*.js",
       "packages/www/public/**/*.js",
-      "packages/web/public/**/*.js",
-      "packages/desktop/*.js",
-      "packages/desktop/scripts/**/*.js",
-      "packages/e2e/scripts/**/*.js",
       "packages/**/*.json",
       "packages/**/*.css",
       "!**/node_modules/**",
@@ -80,6 +76,9 @@
       "!**/cli-contract/data/**",
       "!**/search-index.json",
       "!**/search-index-*.json",
+      "!packages/www/public/assets/tutorials/video/**",
+      "!packages/www/public/assets/tutorials/audio/**",
+      "!packages/www/public/assets/videos/solutions/**",
       "!**/*.astro",
       "private/account/src/**/*.ts",
       "private/account/tests/**/*.ts",
@@ -128,18 +127,6 @@
     },
     {
       "includes": ["packages/cli/tests/**/*.ts"],
-      "assist": {
-        "actions": {
-          "source": {
-            "organizeImports": {
-              "level": "off"
-            }
-          }
-        }
-      }
-    },
-    {
-      "includes": ["packages/e2e/**/*.ts"],
       "assist": {
         "actions": {
           "source": {

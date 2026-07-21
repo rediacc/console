@@ -12,7 +12,7 @@ tags:
   - cli
 featured: false
 language: zh
-sourceHash: 1b08ca130594e2e4
+sourceHash: "79ca3074954024fd"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
@@ -61,7 +61,7 @@ LUKS 使用 aes-xts 加密。它是长度保持的，并对每个 512 字节扇�
 这是默认的名称状态形式，与你从 `git status --short` 读到的 A/M/D/R 语法相同：
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -78,7 +78,7 @@ M  hello.txt
 智能体不读取名称状态，它读取 `--json`：
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 结构化输出为智能体提供了精确的变更集：它修改、创建、删除了哪些路径。通过 `--stat` 还能获得每个文件的字节和块级别的变更大小。一个在推广之前能看到自己 diff 的智能体，才是你可以让其接近生产环境的智能体。爆炸半径是可检查的，而非仅凭断言。其他模式服务于同样的审查循环：`--name-only` 用于纯路径列表；`--content <path>` 用于单个文件的统一文本 diff（仅文本，二进制文件报告 `Binary files differ`）；`--stat` 用于智能体需要了解变更内容和变更量的场景。

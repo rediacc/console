@@ -37,10 +37,7 @@ const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.mdx
 // translations land in a follow-up via the normal localization pipeline.
 // Remove this entry as soon as the 12 translations are in place.
 const EXCLUDED_EN_PATHS = {
-  docs: [
-    'packages/www/src/content/docs/en/cli/',
-    'packages/www/src/content/docs/en/siem-integration.md',
-  ],
+  docs: ['packages/www/src/content/docs/en/siem-integration.md'],
   blog: [
     'packages/www/src/content/blog/en/fork-a-running-kubernetes-cluster.md', // pending translation; remove after the 12 langs land
   ],

@@ -4,8 +4,8 @@ description: 暗号化されたリポジトリをあらゆるrclone互換スト�
 category: Guides
 order: 7
 language: ja
-sourceHash: "d800519615085ee9"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "7cc6e8e80bab7952"
+sourceCommit: "e4a4e0de5"
 ---
 
 # バックアップと復元
@@ -21,7 +21,7 @@ Rediaccは暗号化されたリポジトリを外部ストレージプロバイ�
 既にrcloneリモートが設定されている場合：
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 これにより、rclone設定ファイルからストレージ構成が現在の設定にインポートされます。サポートされているタイプ：S3、B2、Google Drive、OneDrive、Mega、Dropbox、Box、Azure Blob、Swift。
@@ -29,7 +29,7 @@ rdc config storage import --file rclone.conf
 ### ストレージの表示
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## バックアップの送信
@@ -37,10 +37,10 @@ rdc config storage list
 リポジトリのバックアップを外部ストレージに送信します：
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-バックアップはリポジトリがマウントされた状態でプッシュすると `hot/` フォルダに保存され、アンマウント状態でプッシュすると `cold/` フォルダに保存されます。このレイアウトはスケジュールバックアップと同じ構造なので、`rdc repo backup list` で一覧表示すると両方が1つのテーブルにまとめて表示されます。
+バックアップはリポジトリがマウントされた状態でプッシュすると `hot/` フォルダに保存され、アンマウント状態でプッシュすると `cold/` フォルダに保存されます。このレイアウトはスケジュールバックアップと同じ構造なので、`rdc backup list` で一覧表示すると両方が1つのテーブルにまとめて表示されます。
 
 | オプション | 説明 |
 |-----------|------|
@@ -60,7 +60,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 外部ストレージからリポジトリのバックアップを取得します：
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 プルは書き込み前に常にターゲットリポジトリがマウントされているか確認します。マウントされていない場合、操作は中止されます。
@@ -80,7 +80,7 @@ rdc repo pull --name my-app -m server-1 --from my-storage
 ストレージの場所にある利用可能なバックアップを表示します：
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 出力は [スケジュールバックアップ](#スケジュールバックアップ) のフォルダ（`hot/` と `cold/`）の両方をマージした統一テーブルで、すべてのバックアップを 1 つのビューで確認できます。
@@ -96,8 +96,8 @@ rdc repo backup list --from my-storage -m server-1
 特定のモードに絞り込むには `--path` を渡します。
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### ストレージレイアウト
@@ -184,7 +184,7 @@ Rediaccは名前付きバックアップ戦略を使用します。各戦略は�
 
 - `rdc machine status <machine> --containers`で実行状態を確認します。期待されるセットと比較してください。
 - マシン上の`/var/run/rediacc/cold-backup-<guid>.status.json`を確認します。`rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`で検査できます。`success: false`と古い`startedAt`は、最後のバックアップが正常に完了しなかったことを示します。
-- renetバックアップ実行のログ（`journalctl -u renet-*`または直接の`rdc machine backup schedule`呼び出し）は、`Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`の形式の最終サマリー行を出力します。空でない`failed_repos`がgrepのターゲットです。
+- renetバックアップ実行のログ（`journalctl -u renet-*`または直接の`rdc backup schedule`呼び出し）は、`Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`の形式の最終サマリー行を出力します。空でない`failed_repos`がgrepのターゲットです。
 
 ### コールドバックアップのダウンタイム見積もり
 
@@ -248,8 +248,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 標準的なデフォルトは 2 つの戦略の組み合わせです。すべてのリポジトリをキャプチャする高速な毎時ホットストリームと、アプリケーション整合性のあるスナップショットを取る低速な毎週コールドストリームです。2 つの戦略は異なるストレージサブフォルダ（`hot/` と `cold/`）に書き込むため、バックアップが混ざることはありません。
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -258,8 +257,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -271,7 +269,7 @@ rdc config backup-strategy set \
 
 | オプション | 説明 |
 |-----------|------|
-| `--name <name>` | 戦略名（マシンバインディングに使用） |
+| `<strategy>`（位置引数） | 戦略名（マシンバインディングに使用） |
 | `--destination <storage>` | アップロード先のストレージプロバイダ |
 | `--cron <expression>` | cron式（例：`"0 2 * * *"` で毎日午前2時） |
 | `--mode <hot\|cold>` | バックアップモード |
@@ -283,14 +281,14 @@ rdc config backup-strategy set \
 ### 戦略の表示
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### 戦略の削除
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### マシンへの戦略のバインド
@@ -330,8 +328,7 @@ rdc config backup-strategy remove --name weekly-cold
 
 ```bash
 # ホット戦略：すべてを毎時バックアップ
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -339,8 +336,7 @@ rdc config backup-strategy set \
   --enable
 
 # コールド戦略：毎週すべてをバックアップ、大きな派生データセットを除外
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -359,7 +355,7 @@ rdc config backup-strategy set \
 
 > **データが純粋に再生成可能な場合**、そもそもバックアップする必要があるかどうか検討してください。代替手段として、生のソース入力（この例ではCSVダンプ）のみをバックアップし、派生コピーを完全にスキップすることもできます。ソース入力の週次コールドバックアップははるかに小さく、回復には十分です。
 
-どちらの戦略からも除外されていないリポジトリは、`hot/`と`cold/`の両方のストレージサブフォルダに表示されます。マージされた`rdc repo backup list`出力には両方の行が表示されるため、どのストリームがどのリポジトリをカバーしているか確認できます。
+どちらの戦略からも除外されていないリポジトリは、`hot/`と`cold/`の両方のストレージサブフォルダに表示されます。マージされた`rdc backup list`出力には両方の行が表示されるため、どのストリームがどのリポジトリをカバーしているか確認できます。
 
 ## バックアップ操作
 
@@ -368,8 +364,8 @@ rdc config backup-strategy set \
 バインドされた戦略をsystemdタイマーとしてマシンにプッシュします：
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 デプロイは状態レコンサイラーです。マシン上の現在のユニットファイルと systemd の状態を読み取り、設定が生成するであろう内容と比較し（ファイルごとに SHA-256）、内容が実際に変更されたユニットのみに触れます。設定変更なしで再実行しても no-op です。書き込みなし、`daemon-reload` なし、タイマーの変動なし。
@@ -385,8 +381,8 @@ rdc machine backup schedule -m server-1 --dry-run
 タイマーを待たずに即座にバックアップを開始します。タイマーがデプロイされていなくても、`systemd-run`によるアドホック実行が可能です：
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### バックアップ状態の表示
@@ -394,15 +390,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 バックアップタイマーの現在の状態と最近のジョブ結果を表示します：
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### 実行中のバックアップのキャンセル
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## リポジトリの移行
@@ -410,14 +406,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 リポジトリをあるマシンから別のマシンに移動します：
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | オプション | 説明 |
 |-----------|------|
-| `--name <repo>` | 移行するリポジトリ |
-| `--from <machine>` | ソースマシン |
-| `--to <machine>` | 宛先マシン |
+| `<ref>`（位置引数） | 移行するリポジトリの参照。`@machine`部分が移行元を指定 |
+| `--to <place>` | 宛先のマシンまたはクラスター |
 | `--provision` | 転送前に宛先でリポジトリをプロビジョニング |
 | `--checkpoint` | 移行前にCRIUチェックポイントを作成 |
 | `--skip-dns` | 移行後のDNSレコード更新をスキップ |
@@ -430,7 +425,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 ストレージの場所の内容を参照します：
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## ベストプラクティス

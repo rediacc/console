@@ -14,7 +14,7 @@ tags:
   - incident-reporting
 featured: false
 language: ja
-sourceHash: 0e471ac41759e4cb
+sourceHash: "8f8855f44bcea0b0"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -117,7 +117,7 @@ Rediacc はリポジトリフォークに BTRFS reflink を使用しています
 **ステップ 1**: 本番をフォークします。
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 フォークは ISO 週番号で命名され、監査ログが自己説明的になります。リポジトリはフォーク固有のサブドメイン（`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`）で稼働します。親のワイルドカード証明書がカバーします。新しい TLS ハンドシェイクは不要です。フォーク操作はほぼ瞬時であり、128 GB のリポジトリでも 10 秒以内に完了します。
@@ -125,8 +125,8 @@ rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 **ステップ 2**: テスト対象のパッチをフォークに適用します。
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 term セッションは非特権の `rediacc` ユーザー（UID 7111）として、別々のマウント名前空間内で、`DOCKER_HOST` がフォークのデーモンソケットにスコープされた状態で実行されます。クロスリポジトリアクセスはカーネルレベルでブロックされます。フォークは本番のループバックサブネットに到達できないため、テスト中に誤って本番のデータを変更する経路がありません。分離モデルについては[アーキテクチャ § Docker 分離](/ja/docs/architecture)を参照してください。
@@ -143,8 +143,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **ステップ 4**: リストアドリルを実行します。本番の最新のホットバックアップを使用し、フォーク対応のターゲットに引き出します。
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # リストアされたフォークが同じスモークテストに応答することを確認する
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -154,12 +154,12 @@ curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 **ステップ 5**: 監査ログに結果を記録し、破棄します。
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-監査ログはすべてのステップ（フォーク作成、repo up、term セッション、バックアッププル、repo destroy）をキャプチャします。ハッシュチェーンされています。オペレーターのワークステーションで `rdc audit verify` を実行すると、イベントが書き込まれてからチェーンが変更されていないことが確認されます。監査モデルについては[アカウントセキュリティ § AI エージェント向け CLI セキュリティポスチャー](/ja/docs/account-security)を参照してください。
+監査ログはすべてのステップ（フォーク作成、repo up、term セッション、バックアッププル、repo destroy）をキャプチャします。ハッシュチェーンされています。オペレーターのワークステーションで `rdc config audit verify` を実行すると、イベントが書き込まれてからチェーンが変更されていないことが確認されます。監査モデルについては[アカウントセキュリティ § AI エージェント向け CLI セキュリティポスチャー](/ja/docs/account-security)を参照してください。
 
 128 GB のリポジトリでのルーティンの総壁時計時間は 15 分未満です。そのほとんどはスモークテストとバックアッププルのネットワークラウンドトリップです。フォーク操作自体はそれぞれ数秒です。専任の担当者を置かず、既存の SRE の通常業務の一部として組み込めるサイズです。
 
@@ -185,11 +185,11 @@ NIS2 Article 23 はインシデント報告の時計です。三つの期限が�
 
 ```bash
 # フォレンジクス用に侵害された状態をスナップショット。フォークがスナップショットです。
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # 最後のクリーンなバックアップからサービスフォークを起動。別のタグ。
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # DNS またはルートサーバー経由で新しいサービスフォークにトラフィックを切り替え。
 ```
 
@@ -219,11 +219,11 @@ SRE が残りの投稿を興味深いと判断する前に知っておくべき�
 
 三つの成果物があります。これらを提示すれば、Article 21(2)(e) と (f) の会話は短くなります。
 
-**成果物 1: フォークドリルのサイクル**。直近 12 か月間の週次または隔週サイクルで実施された有効性ドリルのタイムスタンプ付きログです。各エントリは親リポジトリ、フォークタグ、テスト対象のパッチまたは変更、スモークテスト結果、破棄のタイムスタンプを示します。`rdc audit log --since` が生成する監査ログがこのすべてをキャプチャします。47 件のドリル記録があれば、それは継続的に実施しているという主張を裏付ける数字です。
+**成果物 1: フォークドリルのサイクル**。直近 12 か月間の週次または隔週サイクルで実施された有効性ドリルのタイムスタンプ付きログです。各エントリは親リポジトリ、フォークタグ、テスト対象のパッチまたは変更、スモークテスト結果、破棄のタイムスタンプを示します。`rdc config audit log --since` が生成する監査ログがこのすべてをキャプチャします。47 件のドリル記録があれば、それは継続的に実施しているという主張を裏付ける数字です。
 
-**成果物 2: ドリルの監査ログ（ハッシュチェーン済み）**。監査ログのハッシュチェーンが「昨年 47 のドリルを実施した」という主張を証拠に変えるものです。`rdc audit verify` がチェーンをエンドツーエンドで検証します。検証結果は監査人が再実行できる単一のコマンド出力です。ハッシュチェーンは、ログが後から改ざんされていないことを暗号学的に証明します。監査人が「本当にそのとき実施しましたか」と疑問を持った場合、`rdc audit verify` の結果がその答えになります。
+**成果物 2: ドリルの監査ログ（ハッシュチェーン済み）**。監査ログのハッシュチェーンが「昨年 47 のドリルを実施した」という主張を証拠に変えるものです。`rdc config audit verify` がチェーンをエンドツーエンドで検証します。検証結果は監査人が再実行できる単一のコマンド出力です。ハッシュチェーンは、ログが後から改ざんされていないことを暗号学的に証明します。監査人が「本当にそのとき実施しましたか」と疑問を持った場合、`rdc config audit verify` の結果がその答えになります。
 
-**成果物 3: バックアップ検証トレイル**。スケジュールされた各バックアップ戦略に対して、systemd ユニットはリポジトリごと、実行ごとに `/var/run/rediacc/cold-backup-<guid>.status.json` にステータスサイドカーを生成し、最終サマリーのログ行を出力します。`rdc machine backup status` は両方を表示します。上記のルーティンのステップ 4 からの週次リストアドリルと組み合わせると、「バックアップが取得された」だけでなく「バックアップとリストアがテストされた」トレイルが監査人に提供されます。診断サーフェスについては[モニタリング](/ja/docs/monitoring)を参照してください。
+**成果物 3: バックアップ検証トレイル**。スケジュールされた各バックアップ戦略に対して、systemd ユニットはリポジトリごと、実行ごとに `/var/run/rediacc/cold-backup-<guid>.status.json` にステータスサイドカーを生成し、最終サマリーのログ行を出力します。`rdc backup status` は両方を表示します。上記のルーティンのステップ 4 からの週次リストアドリルと組み合わせると、「バックアップが取得された」だけでなく「バックアップとリストアがテストされた」トレイルが監査人に提供されます。診断サーフェスについては[モニタリング](/ja/docs/monitoring)を参照してください。
 
 合わせると、これらの成果物は「コントロールは有効か」という質問にタイムスタンプとハッシュチェーンで答えます。証言ではなく証拠として。
 

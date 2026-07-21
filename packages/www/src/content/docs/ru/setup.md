@@ -4,7 +4,7 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -17,7 +17,7 @@ sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 **Конфигурация**, это именованный файл конфигурации, хранящий ваши SSH-учетные данные, определения машин и привязки репозиториев. Воспринимайте его как рабочее пространство проекта.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Опция | Обязательно | Описание |
@@ -34,7 +34,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 Зарегистрируйте ваш удаленный сервер как машину в конфигурации:
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Опция | Обязательно | По умолчанию | Описание |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 После добавления машины rdc автоматически выполняет `ssh-keyscan` для получения ключей хоста сервера. Вы также можете выполнить это вручную:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Для просмотра всех зарегистрированных машин:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## Шаг 3: Настройка машины
@@ -61,7 +61,7 @@ rdc config machine list
 Подготовьте удаленный сервер, установив все необходимые зависимости:
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 Эта команда:
@@ -87,7 +87,7 @@ rdc config machine setup --name server-1
 `--datastore-size` принимает процент (`95%`) или абсолютный размер (`50G`, `1T`). Хранилище данных можно позже увеличить в режиме онлайн:
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 Репозитории внутри хранилища данных имеют независимый размер, задаваемый во время `repo create`, и могут быть расширены во время работы, поэтому не нужно заранее резервировать избыточный объём хранилища данных.
@@ -98,10 +98,9 @@ rdc datastore resize -m server-1 --size 200G
 
 ```bash
 # 1. Зафиксировать ссылку машины на Ceph (пул + RBD-образ, не секретные данные)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. Инициализировать хранилище данных на бэкенде Ceph
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 Связки ключей Ceph остаются на машинах; файл конфигурации хранит только несекретные ссылки на пул и образ. Ceph также является уровнем хранения, который Kubernetes-кластеры используют через ceph-csi. См. руководство [Kubernetes](/en/docs/kubernetes) для кластеров и постоянных томов, и [Архитектуру](/en/docs/architecture) для сравнения двух бэкендов.
@@ -111,7 +110,7 @@ rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-serve
 Если SSH-ключи хоста сервера изменились (например, после переустановки), обновите сохраненные ключи:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Эта команда обновляет поле `knownHosts` в вашей конфигурации для данной машины.
@@ -121,7 +120,7 @@ rdc config machine scan-keys -m server-1
 После добавления машины убедитесь, что она доступна:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Открывает SSH-подключение к машине и выполняет команду. Если всё прошло успешно, ваша конфигурация SSH верна.
@@ -141,7 +140,7 @@ rdc doctor
 ### Установка инфраструктуры
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ rdc config infra set -m server-1 \
 ### Просмотр инфраструктуры
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### Применение на сервере
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 Сгенерируйте и разверните конфигурацию обратного прокси Traefik на сервере:
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 Эта команда:
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### Добавление облачного провайдера
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### Провизионирование машины
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 Эта единственная команда:
@@ -244,7 +243,7 @@ rdc machine provision --name prod-2 --provider my-linode
 ### Депровизионирование машины
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 Уничтожает VM через OpenTofu и удаляет её из вашей конфигурации. Требует подтверждения, если не используется `--force`. Работает только для машин, созданных с помощью `machine provision`.
@@ -252,7 +251,7 @@ rdc machine deprovision --name prod-2
 ### Список провайдеров
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## Установка значений по умолчанию
@@ -261,13 +260,13 @@ rdc config provider list
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Машина по умолчанию
-rdc config set --key team --value my-team                   # Команда по умолчанию для хранилища конфигурации
+rdc config set team my-team                   # Команда по умолчанию для хранилища конфигурации
 ```
 
 После установки машины по умолчанию можно опускать `-m server-1` в командах:
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## Несколько конфигураций
@@ -276,8 +275,8 @@ rdc repo create --name my-app -m my-server --size 10G
 
 ```bash
 # Создание отдельных конфигураций
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # Использование определенной конфигурации
 rdc repo list -m server-1 --config production

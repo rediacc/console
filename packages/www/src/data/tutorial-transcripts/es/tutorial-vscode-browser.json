@@ -6,7 +6,7 @@
     {
       "id": "tutorial-vscode-browser-01",
       "markerIndex": 0,
-      "at": 2.414862,
+      "at": 2.418779,
       "text": "Un solo comando. El CLI instala el servidor del editor en la máquina una vez, lo inicia dentro del sandbox del repo, abre un túnel y te entrega un enlace. Sin VS Code local, sin extensiones que configurar.",
       "afterText": "Esa URL es tu editor. Funciona desde cualquier sistema operativo, el único requisito es un navegador.",
       "cardLabel": "Conectar Navegador",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-vscode-browser-02",
       "markerIndex": 1,
-      "at": 12.531234,
+      "at": 10.10448,
       "text": "El mismo repo desde la terminal normal: el directorio de trabajo es el repo, los archivos son los archivos del repo.",
       "afterText": "La terminal y el editor coinciden, es el mismo sandbox.",
       "cardLabel": "Misma Vista",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-vscode-browser-03",
       "markerIndex": 2,
-      "at": 19.464899,
+      "at": 14.856043,
       "text": "¿Y el archivo que creamos en el editor del navegador? Aquí mismo. Los archivos creados en VS Code son archivos reales del repo, al instante.",
       "afterText": "Creado en el navegador, legible desde la terminal. Un repo, dos puertas.",
       "cardLabel": "Ida y Vuelta",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-vscode-browser-04",
       "markerIndex": 3,
-      "at": 26.768996,
+      "at": 19.933198,
       "text": "Ahora intenta salir. Listando la raíz del servidor: permiso denegado. El kernel confina el editor, su terminal y cada proceso hijo a este repo.",
       "afterText": "Denegado por el kernel, no por la configuración.",
       "cardLabel": "Raíz Denegada",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-vscode-browser-05",
       "markerIndex": 4,
-      "at": 32.439211,
+      "at": 23.377274,
       "text": "¿Los home de otros usuarios? También denegados. Todo lo que corre dentro de este sandbox (editores, terminales, herramientas de build) termina en los muros del repo.",
       "afterText": "El sandbox no tiene excepciones. Ese es el punto.",
       "cardLabel": "Home Denegado",

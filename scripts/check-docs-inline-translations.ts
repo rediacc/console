@@ -30,7 +30,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
-const WEB_LOCALES = path.join(__dirname, '../packages/web/src/i18n/locales');
 const CLI_LOCALES = path.join(__dirname, '../packages/cli/src/i18n/locales');
 const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
 const KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
@@ -186,10 +185,7 @@ function validateKeyInLocales(
 ): string | null {
   if (P7_DEFERRED_STALE_KEYS.has(`${namespace}.${keyPath}`)) return null;
 
-  const paths = [
-    path.join(WEB_LOCALES, lang, `${namespace}.json`),
-    path.join(CLI_LOCALES, lang, `${namespace}.json`),
-  ];
+  const paths = [path.join(CLI_LOCALES, lang, `${namespace}.json`)];
 
   for (const localePath of paths) {
     const loaded = loadLocale(localePath);

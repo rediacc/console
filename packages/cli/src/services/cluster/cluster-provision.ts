@@ -9,9 +9,9 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { getConfigDir } from '@rediacc/shared/paths';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
 import {
   getCluster,
@@ -41,7 +41,7 @@ import type { ControlDatastoreOptions } from './cluster-kube.js';
 import { installK8s, scaleK8sPool } from './cluster-kube.js';
 import { provisionKvmCluster, teardownKvmCluster } from './kvm-provisioner.js';
 
-const TOFU_CLUSTER_DIR = join(homedir(), '.config', 'rediacc', 'tofu', 'clusters');
+const TOFU_CLUSTER_DIR = join(getConfigDir(), 'tofu', 'clusters');
 
 export interface CreateClusterOptions {
   sshUser?: string;

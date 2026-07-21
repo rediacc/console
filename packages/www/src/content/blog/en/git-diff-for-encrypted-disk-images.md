@@ -59,7 +59,7 @@ That makes identity a set comparison. An inode on both sides with a different pa
 Here is the default name-status form, the same A/M/D/R grammar you already read from `git status --short`:
 
 ```
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,10 +73,10 @@ The default does one more thing for correctness. The block filter is a superset.
 
 The reason this command exists at all is the agent workflow. I kept watching agents fork production, run changes, and then have no clean way to report what they actually touched. An AI agent can fork production instantly. It runs a risky change inside the isolated fork. Then it needs to know exactly what it touched before promoting anything back. Fork is the branch. Diff is the review.
 
-The agent does not read name-status, it reads `--json`:
+The agent does not read name-status, it reads `-o json`:
 
 ```
-$ rdc repo diff --name prod:experiment --json -m hostinger
+$ rdc repo diff prod:experiment -o json
 ```
 
 The structured output gives the agent a precise change set. Which paths it modified, created, deleted. With `--stat`, the per-file change size in bytes and blocks. An agent that sees its diff before it promotes is one you can let near production. The blast radius is inspectable, not asserted. Other modes serve the same review loop. `--name-only` for a bare path list. `--content <path>` for a unified text diff of one file (text only; a binary file reports `Binary files differ`). `--stat` when the agent needs to know what changed and how much.

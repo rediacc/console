@@ -12,7 +12,7 @@ tags:
   - conformita
 featured: false
 language: it
-sourceHash: "ffdb86da48dacc58"
+sourceHash: "f6a1604ae2a3a794"
 sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
@@ -102,7 +102,7 @@ Il self-hosting modifica l'elenco dei fornitori, non lo cancella. Tre aspetti su
 
 **2. Rediacc non ha ancora ISO 27001, SOC 2 o BSI C5.** Questi sono nella roadmap, non ancora in mano. Per un team degli acquisti che usa le certificazioni come meccanismo di sbarramento, questa è una reale frizione. Il contropunto difendibile è quello che questo articolo ha argomentato: l'argomento del percorso dati significa che la maggior parte di ciò che quelle certificazioni attestano (controlli di sicurezza del cloud del fornitore, gestione degli accessi del personale del fornitore, gestione dei sub-responsabili del fornitore) non è in ambito, perché Rediacc (l'azienda) non si trova nel percorso dati. Tale argomento deve essere presentato con cura e in modo difendibile, non come sostituto delle certificazioni quando queste sono ciò di cui l'acquirente ha bisogno.
 
-**3. Il livello GRC rimane a tuo carico.** Rediacc fornisce all'operatore un audit log con catena di hash di oltre 70 eventi (`rdc audit verify` valida la catena dall'inizio alla fine). Non fornisce un registro fornitori, un framework di controllo o un flusso di raccolta delle prove. Queste attività rimangono di competenza di Drata, Vanta, OneTrust o di uno dei player europei. Il [post sui costi reali](/it/blog/nis2-the-real-bill) analizza in dettaglio la struttura dei costi di questa complementarità.
+**3. Il livello GRC rimane a tuo carico.** Rediacc fornisce all'operatore un audit log con catena di hash di oltre 70 eventi (`rdc config audit verify` valida la catena dall'inizio alla fine). Non fornisce un registro fornitori, un framework di controllo o un flusso di raccolta delle prove. Queste attività rimangono di competenza di Drata, Vanta, OneTrust o di uno dei player europei. Il [post sui costi reali](/it/blog/nis2-the-real-bill) analizza in dettaglio la struttura dei costi di questa complementarità.
 
 ## Il DPA che non devi più negoziare
 
@@ -129,7 +129,7 @@ Dopo il passaggio a Rediacc su Hetzner:
 | Sub-responsabili | (1) Nessuno per self-hosted; (2) Solo interni a Hetzner, elencati nel loro DPA |
 | Stato contrattuale | (1) Licenza software, nessun DPA necessario; (2) DPA Hetzner + SCCs già in vigore |
 | Custodia chiavi | Cliente (credenziale LUKS2 nel config dell'operatore, non sul server) |
-| Piano di uscita | "`rdc repo backup pull` da qualsiasi destinazione compatibile con rclone. I volumi sono cifrati con LUKS2; l'operatore detiene la credenziale." |
+| Piano di uscita | "`rdc repo pull` da qualsiasi destinazione compatibile con rclone. I volumi sono cifrati con LUKS2; l'operatore detiene la credenziale." |
 | Ultima valutazione | (2) coperta dalla revisione IaaS esistente |
 
 Due voci nel registro invece di una. La voce di livello critico riguarda il fornitore IaaS, con cui l'acquirente aveva già un DPA in vigore e un piano di uscita testato, perché l'IaaS è un tipo di rapporto che la maggior parte dei team sa gestire. La voce Rediacc è non critica perché si tratta di una licenza software, non di un titolare del trattamento dei dati.

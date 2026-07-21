@@ -4,7 +4,7 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri, depo görüntüler
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "af01691f5fe908ee"
+sourceHash: "928f117282b38484"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -34,16 +34,16 @@ Bir depolama sağlayıcısını tarar ve GUID'leri herhangi bir yerel yapıland�
 
 ```bash
 # Yalnızca önizleme — neyin silineceğini gösterir
-rdc storage prune --name my-s3 -m server-1 --dry-run
+rdc storage prune my-s3 -m server-1 --dry-run
 
 # Sahipsiz yedekleri gerçekten sil (varsayılan davranış)
-rdc storage prune --name my-s3 -m server-1
+rdc storage prune my-s3 -m server-1
 
 # Ek süreyi geçersiz kıl (varsayılan 7 gün)
-rdc storage prune --name my-s3 -m server-1 --grace-days 14
+rdc storage prune my-s3 -m server-1 --grace-days 14
 
 # Bağlama güvenliği kontrolünü geçersiz kıl (dikkatli kullanın)
-rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
+rdc storage prune my-s3 -m server-1 --force-delete-mounted
 ```
 
 `--machine` zorunludur çünkü rclone çağrıları dizüstü bilgisayarınızda değil, yürütücü makinede çalışır. Istemcilerin yerel olarak rclone yüklü olması beklenmez. Depolama kimlik bilgileri yine yerel yapılandırmanızdan gelir; makine yalnızca rclone çalıştırıcısıdır.
@@ -82,10 +82,10 @@ authorized_keys taraması `/home/*/.ssh/authorized_keys` ve `/root/.ssh/authoriz
 
 ```bash
 # Dry-run, neyin kaldırılacağını gösterir (değişiklik uygulanmaz)
-rdc machine prune --name server-1 --dry-run
+rdc machine prune server-1 --dry-run
 
 # Temizliği yürüt
-rdc machine prune --name server-1
+rdc machine prune server-1
 ```
 
 > **Zincirleme temizlik.** Bazı kategoriler öncekilere bağlıdır. Örneğin, boş bağlama dizinlerini silmek, destekleyen bağlaması az önce kaybolan ek sandbox sahipsizlerini ortaya çıkarabilir. `rdc machine prune` komutunu ikinci kez çalıştırmak zinciri yakalar ve temizliği bitirir. Yapılacak bir şey kalmadığında son dry-run `No orphaned resources found. Datastore is clean.` mesajıyla sonlanır.
@@ -95,8 +95,8 @@ rdc machine prune --name server-1
 `--orphaned-repos` ile CLI, makinedeki **herhangi bir** yerel yapılandırma dosyasında görünmeyen depo görüntülerini de siler.
 
 ```bash
-rdc machine prune --name server-1 --orphaned-repos --dry-run
-rdc machine prune --name server-1 --orphaned-repos
+rdc machine prune server-1 --orphaned-repos --dry-run
+rdc machine prune server-1 --orphaned-repos
 ```
 
 Bu **kabadır**. Yerel yapılandırmanızda olmayan her şeyi siler; başka araçların yönettiği meşru çatallar veya başka bir operatörün CLI checkout'u dahil. renet `.interim/state` aynası bir depoyu doğru şekilde çatal olarak tanımlasa bile, yerel yapılandırma onu hiç görmediyse bu aşama yine de onu kaldırır. Muhafazakâr olmak istediğinizde 3. Aşama (`--prune-unknown`) tercih edin.
@@ -106,8 +106,8 @@ Bu **kabadır**. Yerel yapılandırmanızda olmayan her şeyi siler; başka ara�
 `--prune-unknown` ile CLI yalnızca **her iki** sinyalin de sınıflandıramadığı depoları siler: herhangi bir yerel yapılandırmada olmayan **ve** makinenin `.interim/state` aynasında çatal işaretli girişi olmayan (bkz. [Depolar. `Type` sütunu](/tr/docs/repositories#type-sutunu-ve-durum-aynasi)).
 
 ```bash
-rdc machine prune --name server-1 --prune-unknown --dry-run
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown --dry-run
+rdc machine prune server-1 --prune-unknown
 ```
 
 Pratikte rutin temizlik için istediğiniz `--prune-unknown`'dur; `--orphaned-repos` yalnızca yerel yapılandırmanızın makinedeki her deponun eksiksiz ve yetkili envanteri olduğundan emin olduğunuzda doğrudur. Ayna öncesi eski sahipsiz girişler ve yapılandırma girişi yanlışlıkla silinmiş depolar her ikisi de "unknown" kovasına düşer. Gerçekten belirsizdirler ve cerrahi bayrak operatörden bunu açıkça onaylamasını ister.
@@ -116,7 +116,7 @@ Bağlama güvenliği ön denetimi bu aşamada da çalışır: `--machine` üzeri
 
 ```bash
 # Birleşik: cerrahi çatal-farkındalıklı yol ile tam makine temizliği
-rdc machine prune --name server-1 --prune-unknown
+rdc machine prune server-1 --prune-unknown
 ```
 
 ## Config Prune
@@ -154,7 +154,7 @@ rdc config prune --grace-days 30
 - Aktif kaynaklar (machines, storages, repositories, backup strategies, bulut sağlayıcıları).
 - Kimlik bilgileri, hesap bloğu, şifreleme bloğu, defaults.
 - Depolama `vaultContent` (süresi dolmuş OneDrive `access_token` dahil. Refresh_token yenilerini basmaya devam eder; temizleme yeniden kimlik doğrulamayı zorlardı).
-- `knownHosts` girişleri (otomatik yenileme yolu `rdc config machine scan-keys`'tir).
+- `knownHosts` girişleri (otomatik yenileme yolu `rdc machine scan-keys`'tir).
 - Sıkıştırılmış sertifika blob dizisi (`infra.acmeCertCache.<base>.data[]`) temizlenmiş sertifika listesinden otomatik olarak yeniden oluşturulur; korunan bir adı kapsayan herhangi bir zinciri kaybetmezsiniz.
 
 ### İşlenmiş örnek
@@ -180,7 +180,7 @@ Bağlantı noktası canlı bir makine, depo veya GUID olan sertifika adları yal
 `--prune-unknown` ve `rdc repo list -m` çıktısındaki `Type` sütununu besleyen `.interim/state/<guid>/.rediacc.json` aynası şu zamanlarda yazılır:
 
 - **Çatallama anında** (`rdc repo fork`). Çatal hiç bağlanmamış olsa bile anında.
-- **Her durum kaydında** (`rdc repo mount` ve depo durumunu güncelleyen herhangi bir işlem). Ayna kodu yayınlanmadan önce oluşturulmuş depolar için.
+- **Her durum kaydında** (`rdc repo up` ve depo durumunu güncelleyen herhangi bir işlem). Ayna kodu yayınlanmadan önce oluşturulmuş depolar için.
 
 **Ayna var olmadan önce oluşturulmuş ve yükseltmeden bu yana yeniden bağlanmamış** depoların ayna dosyası yoktur. `rdc repo list -m` çıktısında bazıları meşru çatal olsa bile `unknown` olarak görünürler. Bunu eski sahipsiz girişler için düzeltmek için makinede tek seferlik doldurma işlemini çalıştırın:
 
@@ -238,6 +238,6 @@ CLI bayrağı `--grace-days` sağlandığında bu değeri geçersiz kılar.
 - **`--prune-unknown`'u `--orphaned-repos`'a tercih edin.** Cerrahi bayrak renet aynasına saygı gösterir; kaba bayrak başka araçların oluşturduğu çatalları memnuniyetle siler.
 - **Üretim için cömert ek süreler kullanın.** Varsayılan 7 günlük ek süre çoğu iş akışı için uygundur. Seyrek bakım pencerelerine sahip üretim ortamları için 14 veya 30 günü düşünün.
 - **Storage prune'u yedekleme çalıştırmalarından sonra planlayın.** Manuel müdahale olmadan depolama maliyetlerini kontrol altında tutmak için `storage prune` komutunu yedekleme planınızla eşleştirin.
-- **Machine prune'u backup schedule ile birleştirin.** Yedekleme planlarını dağıttıktan sonra (`rdc machine backup schedule`), eski anlık görüntüleri ve sahipsiz veri deposu yapıtaşlarını temizlemek için periyodik bir makine temizlemesi ekleyin.
+- **Machine prune'u backup schedule ile birleştirin.** Yedekleme planlarını dağıttıktan sonra (`rdc backup schedule`), eski anlık görüntüleri ve sahipsiz veri deposu yapıtaşlarını temizlemek için periyodik bir makine temizlemesi ekleyin.
 - **`config prune`'u periyodik olarak çalıştırın.** Yerel yapılandırma şişmesi (özellikle sertifika önbelleği) sessizce birikir; üç ayda bir `config prune --dry-run` yakalamak için yeterlidir.
 - **`--force` veya `--force-delete-mounted` kullanmadan önce denetleyin.** Her iki bayrak da güvenlik kontrollerini atlar. `--force`'u yalnızca söz konusu depolara başka hiçbir yapılandırmanın referans vermediğinden emin olduğunuzda kullanın; `--force-delete-mounted`'ı yalnızca makinedeki canlı durumun yanlış olduğundan emin olduğunuzda kullanın.

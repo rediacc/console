@@ -110,7 +110,7 @@ Here is a concrete routine that satisfies Article 21(2)(e) and (f) for a product
 **Step 1**: Fork production.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 The fork is named with the ISO week so the audit log reads itself. The repo comes up under a fork subdomain (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). The parent wildcard cert covers it. No new TLS handshake.
@@ -118,8 +118,8 @@ The fork is named with the ISO week so the audit log reads itself. The repo come
 **Step 2**: Apply the patch under test, on the fork.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 The term session runs as the unprivileged `rediacc` user (UID 7111), in a separate mount namespace, with `DOCKER_HOST` scoped to the fork's daemon socket. Cross-repo access is blocked at the kernel level (the fork cannot reach production's loopback subnet). See [Architecture § Docker Isolation](/en/docs/architecture) for the isolation model.
@@ -134,8 +134,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **Step 4**: Run the restore drill. Use the most recent hot backup of production, pulled to a fork-aligned target.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # verify the restored fork answers the same smoke test
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -145,12 +145,12 @@ This is the recovery test that 21(2)(c) and (f) ask for: not "the backup file in
 **Step 5**: Audit log the result, then tear down.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-The audit log captures every step (fork creation, repo up, term sessions, backup pull, repo destroy). It is hash-chained. `rdc audit verify` on the operator's workstation confirms the chain has not been modified since the events were written. See [Account Security § CLI Security Posture for AI Agents](/en/docs/account-security) for the audit model.
+The audit log captures every step (fork creation, repo up, term sessions, backup pull, repo destroy). It is hash-chained. `rdc config audit verify` on the operator's workstation confirms the chain has not been modified since the events were written. See [Account Security § CLI Security Posture for AI Agents](/en/docs/account-security) for the audit model.
 
 The total wall-clock time for the routine, on a 128 GB repository, is under 15 minutes. Most of that is the smoke test and the network round-trip for the backup pull. The fork operations themselves are seconds each.
 
@@ -176,11 +176,11 @@ Concretely, in an incident:
 
 ```bash
 # Snapshot the compromised state for forensics. The fork is the snapshot.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # Bring up a serving fork from the last clean backup. Different tag.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Cut traffic to the new serving fork via DNS or the route server.
 ```
 
@@ -210,11 +210,11 @@ The right read of these: Rediacc is a tooling layer, not a security program. It 
 
 Three artefacts. Produce these and the Article 21(2)(e) and (f) conversation gets short.
 
-**Artefact 1: the fork-drill cadence**. A timestamped log of effectiveness drills run on a weekly or bi-weekly cadence over a rolling twelve months. Each entry shows the parent repository, the fork tag, the patch or change under test, the smoke test result, and the teardown timestamp. The audit log produced by `rdc audit log --since` captures all of this.
+**Artefact 1: the fork-drill cadence**. A timestamped log of effectiveness drills run on a weekly or bi-weekly cadence over a rolling twelve months. Each entry shows the parent repository, the fork tag, the patch or change under test, the smoke test result, and the teardown timestamp. The audit log produced by `rdc config audit log --since` captures all of this.
 
-**Artefact 2: the audit log of those drills, hash-chained**. The hash chain on the audit log is what turns "we ran 47 drills last year" from a claim into evidence. `rdc audit verify` validates the chain end-to-end. The validation result is a single command output that an auditor can re-run.
+**Artefact 2: the audit log of those drills, hash-chained**. The hash chain on the audit log is what turns "we ran 47 drills last year" from a claim into evidence. `rdc config audit verify` validates the chain end-to-end. The validation result is a single command output that an auditor can re-run.
 
-**Artefact 3: the backup-verify trail**. For each scheduled backup strategy, the systemd unit produces a status sidecar at `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per run, and a final summary log line. `rdc machine backup status` surfaces both. Combined with the weekly restore drill from Step 4 of the routine above, this gives the auditor a "backup-and-restore-tested" trail, not just a "backup-taken" trail. See [Monitoring](/en/docs/monitoring) for the diagnostic surface.
+**Artefact 3: the backup-verify trail**. For each scheduled backup strategy, the systemd unit produces a status sidecar at `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per run, and a final summary log line. `rdc backup status` surfaces both. Combined with the weekly restore drill from Step 4 of the routine above, this gives the auditor a "backup-and-restore-tested" trail, not just a "backup-taken" trail. See [Monitoring](/en/docs/monitoring) for the diagnostic surface.
 
 Together, the artefacts answer the question "are your controls effective" with timestamps and a hash chain. Not attestation. Evidence.
 

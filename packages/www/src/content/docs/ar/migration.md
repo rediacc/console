@@ -4,7 +4,7 @@ description: "ترحيل المشاريع الحالية إلى مستودعات
 category: Guides
 order: 11
 language: ar
-sourceHash: "4517142676f9fa8f"
+sourceHash: "6817858de56705e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -16,14 +16,14 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 - تثبيت واجهة سطر الأوامر `rdc` ([التثبيت](/ar/docs/installation))
 - إضافة جهاز وتجهيزه ([الإعداد](/ar/docs/setup))
-- مساحة قرص كافية على الخادم لمشروعك (تحقق باستخدام `rdc machine query`)
+- مساحة قرص كافية على الخادم لمشروعك (تحقق باستخدام `rdc machine status`)
 
 ## الخطوة 1: إنشاء مستودع
 
 أنشئ مستودعاً مشفراً بحجم يناسب مشروعك. خصص مساحة إضافية لصور Docker وبيانات الحاويات.
 
 ```bash
-rdc repo create --name my-project -m server-1 --size 20G
+rdc repo create my-project -m server-1 --size 20G
 ```
 
 > **نصيحة:** يمكنك تغيير الحجم لاحقاً باستخدام `rdc repo resize` إذا لزم الأمر، لكن يجب إلغاء تحميل المستودع أولاً. من الأسهل البدء بمساحة كافية.
@@ -34,22 +34,22 @@ rdc repo create --name my-project -m server-1 --size 20G
 
 ```bash
 # معاينة ما سيتم نقله (بدون إجراء تغييرات)
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --dry-run
+rdc repo sync upload my-project --local ./my-project --dry-run
 
 # رفع الملفات
-rdc repo sync upload -m server-1 -r my-project --local ./my-project
+rdc repo sync upload my-project --local ./my-project
 ```
 
 يجب أن يكون المستودع محمّلاً قبل الرفع. إذا لم يكن محمّلاً بالفعل:
 
 ```bash
-rdc repo mount --name my-project -m server-1
+rdc repo up my-project --no-start
 ```
 
 لعمليات المزامنة اللاحقة حيث تريد أن يطابق المحتوى البعيد دليلك المحلي تماماً:
 
 ```bash
-rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
+rdc repo sync upload my-project --local ./my-project --mirror
 ```
 
 > يحذف خيار `--mirror` الملفات على الخادم البعيد التي لا توجد محلياً. استخدم `--dry-run` أولاً للتحقق.
@@ -59,7 +59,7 @@ rdc repo sync upload -m server-1 -r my-project --local ./my-project --mirror
 تصل الملفات المرفوعة بمعرّف المستخدم المحلي الخاص بك (مثل 1000). يستخدم Rediacc مستخدماً موحداً (UID 7111) بحيث يتمتع VS Code وجلسات الطرفية والأدوات جميعها بوصول متسق. شغّل أمر الملكية للتحويل:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### استثناء مدرك لـ Docker
@@ -84,7 +84,7 @@ Ownership set to UID 7111 (245 changed, 4 skipped, 0 errors)
 لتخطي اكتشاف أحجام Docker وتغيير ملكية كل شيء، بما في ذلك أدلة بيانات الحاويات:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 > **تحذير:** قد يؤدي هذا إلى تعطيل الحاويات قيد التشغيل. أوقفها أولاً باستخدام `rdc repo down` إذا لزم الأمر.
@@ -94,7 +94,7 @@ rdc repo ownership --name my-project -m server-1
 لتعيين معرّف مستخدم غير القيمة الافتراضية 7111:
 
 ```bash
-rdc repo ownership --name my-project -m server-1 --uid 1000
+rdc repo admin ownership my-project --uid 1000
 ```
 
 > **تنبيه:** `7111` هو معرّف المستخدم العالمي في Rediacc المستخدم في كل مكان (يتطابق مع المستخدم `rediacc` المدمج في صورة devcontainer). لا تتجاوزه باستخدام `--uid` إلا لضمان التوافق مع الإصدارات القديمة مع الملفات المملوكة لمعرّف مستخدم خارجي محدد. فهو **لا** يُعدّ هدفاً للترحيل. يجب أن تحافظ المستودعات الجديدة على الإعداد الافتراضي.
@@ -200,7 +200,7 @@ services:
 قم بتحميل المستودع (إذا لم يكن محمّلاً بالفعل) وابدأ جميع الخدمات:
 
 ```bash
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```
 
 سيقوم هذا بما يلي:
@@ -212,7 +212,7 @@ rdc repo up --name my-project -m server-1
 تحقق من أن الحاويات تعمل:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## الخطوة 7: تفعيل البدء التلقائي (اختياري)
@@ -220,7 +220,7 @@ rdc machine containers --name server-1
 بشكل افتراضي، يجب تحميل المستودعات وبدء تشغيلها يدوياً بعد إعادة تشغيل الخادم. فعّل البدء التلقائي حتى تبدأ خدماتك تلقائياً:
 
 ```bash
-rdc repo autostart enable --name my-project -m server-1
+rdc repo admin autostart enable my-project
 ```
 
 سيُطلب منك إدخال عبارة مرور المستودع.
@@ -275,7 +275,7 @@ my-api/
 لا تزال الملفات تحمل معرّف المستخدم المحلي الخاص بك. شغّل أمر الملكية:
 
 ```bash
-rdc repo ownership --name my-project -m server-1
+rdc repo admin ownership my-project
 ```
 
 ### الحاوية لا تبدأ
@@ -284,10 +284,10 @@ rdc repo ownership --name my-project -m server-1
 
 ```bash
 # تحقق من عناوين IP المعيّنة
-rdc term connect -m server-1 -r my-project -c "cat .rediacc.json"
+rdc term connect my-project -c "cat .rediacc.json"
 
 # تحقق من سجلات الحاوية
-rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
+rdc term connect my-project -c "docker logs <container-name>"
 ```
 
 ### تعارض المنافذ بين المستودعات
@@ -296,10 +296,10 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### إصلاح الملكية يعطّل الحاويات
 
-إذا شغّلت `rdc repo ownership` وتوقفت حاوية عن العمل، فقد تم تغيير ملكية ملفات بيانات الحاوية. أوقف الحاوية واحذف دليل بياناتها وأعد تشغيلها. ستعيد الحاوية إنشاءه:
+إذا شغّلت `rdc repo admin ownership` وتوقفت حاوية عن العمل، فقد تم تغيير ملكية ملفات بيانات الحاوية. أوقف الحاوية واحذف دليل بياناتها وأعد تشغيلها. ستعيد الحاوية إنشاءه:
 
 ```bash
-rdc repo down --name my-project -m server-1
+rdc repo down my-project
 # احذف دليل بيانات الحاوية (مثل database/data)
-rdc repo up --name my-project -m server-1
+rdc repo up my-project
 ```

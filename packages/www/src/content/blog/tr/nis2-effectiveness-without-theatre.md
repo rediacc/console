@@ -16,7 +16,7 @@ tags:
   - incident-reporting
 featured: false
 language: tr
-sourceHash: 0e471ac41759e4cb
+sourceHash: "8f8855f44bcea0b0"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
@@ -121,7 +121,7 @@ Tek bir SRE tarafından haftalık kadansla çalıştırılabilen, bir üretim de
 **Adım 1**: Üretimi fork'la.
 
 ```bash
-rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
+rdc repo fork prod-app --tag effectiveness-2026w19
 ```
 
 Fork, denetim günlüğünün kendi kendini okuması için ISO haftasıyla adlandırılır. Depo, fork alt alan adı altında çalışır (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Üst deponun wildcard sertifikası bunu kapsar. Yeni TLS el sıkışması gerekmez.
@@ -129,8 +129,8 @@ Fork, denetim günlüğünün kendi kendini okuması için ISO haftasıyla adlan
 **Adım 2**: Test altındaki yamayı fork üzerine uygula.
 
 ```bash
-rdc repo up --name prod-app:effectiveness-2026w19 -m hostinger
-rdc term connect -m hostinger -r prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
+rdc repo up prod-app:effectiveness-2026w19
+rdc term connect prod-app:effectiveness-2026w19 -c "apt-get install -y openssl=3.5.5-1"
 ```
 
 Term oturumu, fork'un daemon soketiyle sınırlandırılmış `DOCKER_HOST` ile ayrı bir bağlama ad alanında ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak çalışır. Depo-çapraz erişim, çekirdek düzeyinde engellenir (fork, üretimin loopback alt ağına ulaşamaz). Yalıtım modeli için bkz. [Mimari § Docker Yalıtımı](/tr/docs/architecture).
@@ -145,8 +145,8 @@ curl -fsS https://app-fork-effectiveness-2026w19.prod-app.hostinger.example.com/
 **Adım 4**: Geri yükleme tatbikatını çalıştır. Fork'la hizalanmış bir hedefe çekilen en son sıcak üretim yedeğini kullan.
 
 ```bash
-rdc repo backup pull --from offsite-b2 --name prod-app:restore-2026w19 -m hostinger
-rdc repo up --name prod-app:restore-2026w19 -m hostinger
+rdc repo pull prod-app:restore-2026w19 --from offsite-b2
+rdc repo up prod-app:restore-2026w19
 # geri yüklenen fork'un aynı duman testine yanıt verdiğini doğrula
 curl -fsS https://app-fork-restore-2026w19.prod-app.hostinger.example.com/health
 ```
@@ -156,12 +156,12 @@ Bu, 21(2)(c) ve (f)'nin istediği kurtarma testidir: "yedek dosya bütünlüğü
 **Adım 5**: Denetim günlüğünü kaydet, ardından yık.
 
 ```bash
-rdc audit log --since "1 hour ago" > /tmp/effectiveness-2026w19.json
-rdc repo destroy --name prod-app:effectiveness-2026w19 -m hostinger --force
-rdc repo destroy --name prod-app:restore-2026w19 -m hostinger --force
+rdc config audit log --since 1h > /tmp/effectiveness-2026w19.json
+rdc repo delete prod-app:effectiveness-2026w19 --yes
+rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Hash zincirine bağlıdır. Operatörün iş istasyonundaki `rdc audit verify`, olaylar yazıldığından bu yana zincirin değiştirilmediğini doğrular. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
+Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Hash zincirine bağlıdır. Operatörün iş istasyonundaki `rdc config audit verify`, olaylar yazıldığından bu yana zincirin değiştirilmediğini doğrular. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
 
 Rutinin 128 GB'lık bir depo için toplam gerçek zamanlı süresi 15 dakikanın altındadır. Bunun büyük çoğunluğu duman testi ve yedek çekme için ağ gidiş-dönüş süresidir. Fork işlemlerinin kendisi saniyeler alır.
 
@@ -187,11 +187,11 @@ Somut olarak bir olayda:
 
 ```bash
 # Adli inceleme için güvenliği ihlal edilmiş durumu anlık görüntüle. Fork anlık görüntüdür.
-rdc repo fork --parent prod-app --tag forensic-2026-05-09T14-23Z -m hostinger
+rdc repo fork prod-app --tag forensic-2026-05-09T14-23Z
 
 # Son temiz yedekten bir sunum fork'u ayağa kaldır. Farklı etiket.
-rdc repo backup pull --from offsite-b2 --name prod-app:serving-2026-05-09T14-30Z -m hostinger
-rdc repo up --name prod-app:serving-2026-05-09T14-30Z -m hostinger
+rdc repo pull prod-app:serving-2026-05-09T14-30Z --from offsite-b2
+rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Trafiği DNS veya rota sunucusu üzerinden yeni sunum fork'una yönlendir.
 ```
 
@@ -221,11 +221,11 @@ Bunların doğru okunması şudur: Rediacc bir araç katmanıdır, güvenlik pro
 
 Üç kanıt. Bunları üretin; Article 21(2)(e) ve (f) görüşmesi kısalır.
 
-**Kanıt 1: fork tatbikat kadansı**. Yuvarlanan on iki ay boyunca haftalık veya iki haftada bir kadansla yürütülen etkinlik tatbikatlarının zaman damgalı günlüğü. Her giriş, üst depoyu, fork etiketini, test altındaki yamayı veya değişikliği, duman testi sonucunu ve yıkma zaman damgasını gösterir. `rdc audit log --since` tarafından üretilen denetim günlüğü bunların tümünü yakalar.
+**Kanıt 1: fork tatbikat kadansı**. Yuvarlanan on iki ay boyunca haftalık veya iki haftada bir kadansla yürütülen etkinlik tatbikatlarının zaman damgalı günlüğü. Her giriş, üst depoyu, fork etiketini, test altındaki yamayı veya değişikliği, duman testi sonucunu ve yıkma zaman damgasını gösterir. `rdc config audit log --since` tarafından üretilen denetim günlüğü bunların tümünü yakalar.
 
-**Kanıt 2: hash zincirine bağlı denetim günlüğü**. Denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
+**Kanıt 2: hash zincirine bağlı denetim günlüğü**. Denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc config audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
 
-**Kanıt 3: yedek doğrulama izi**. Zamanlanmış her yedekleme stratejisi için systemd birimi, depo başına çalışma başına `/var/run/rediacc/cold-backup-<guid>.status.json` konumunda bir durum yan dosyası ve son bir özet günlük satırı üretir. `rdc machine backup status` her ikisini de ortaya çıkarır. Yukarıdaki rutinin 4. Adımındaki haftalık geri yükleme tatbikatıyla birleştirildiğinde, bu denetçiye yalnızca "yedek alındı" izi değil, "yedek alındı ve geri yükleme test edildi" izi sunar. Tanılama yüzeyi için bkz. [İzleme](/tr/docs/monitoring).
+**Kanıt 3: yedek doğrulama izi**. Zamanlanmış her yedekleme stratejisi için systemd birimi, depo başına çalışma başına `/var/run/rediacc/cold-backup-<guid>.status.json` konumunda bir durum yan dosyası ve son bir özet günlük satırı üretir. `rdc backup status` her ikisini de ortaya çıkarır. Yukarıdaki rutinin 4. Adımındaki haftalık geri yükleme tatbikatıyla birleştirildiğinde, bu denetçiye yalnızca "yedek alındı" izi değil, "yedek alındı ve geri yükleme test edildi" izi sunar. Tanılama yüzeyi için bkz. [İzleme](/tr/docs/monitoring).
 
 Kanıtlar birlikte "kontrolleriniz etkin mi" sorusunu zaman damgaları ve hash zinciriyle yanıtlar. Doğrulama değil, kanıt.
 

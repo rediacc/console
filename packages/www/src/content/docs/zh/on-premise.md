@@ -4,7 +4,7 @@ description: "在您自己的基础设施上运行账户服务器和 CLI 分发�
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ curl -fsSL https://account.example.com/install.sh | \
 
 ```bash
 # 为本地部署服务器创建配置
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # 使用该配置登录
 rdc --config myserver subscription login
 
 # 所有带 --config 的命令均使用本地部署服务器
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 每个命名配置存储其独立的账户服务器 URL 和订阅令牌。切换配置即切换整个服务器上下文。

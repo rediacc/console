@@ -4,7 +4,7 @@ description: Requisitos de sistema e plataformas suportadas para executar o Redi
 category: Guides
 order: 0
 language: pt
-sourceHash: "e84db3bb90270473"
+sourceHash: "88e8186bc7c0e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -58,7 +58,7 @@ O CLI `rdc` instala-se também sem problemas em Alpine 3.19+ (APK com a camada d
 
 ### Políticas de Segurança por SO
 
-O daemon Docker por repositório e os próprios contentores do repositório correm com **labels de contentor padrão** em todos os SOs suportados. `rdc config machine setup` não instala políticas SELinux personalizadas nem perfis AppArmor. Comportamento por SO:
+O daemon Docker por repositório e os próprios contentores do repositório correm com **labels de contentor padrão** em todos os SOs suportados. `rdc machine setup` não instala políticas SELinux personalizadas nem perfis AppArmor. Comportamento por SO:
 
 - **Ubuntu 24.04, openSUSE Leap 16.0**: AppArmor está ativado por padrão. O perfil docker-container padrão aplica-se; não é necessária configuração adicional.
 - **Fedora 43, Oracle Linux 10**: SELinux corre em modo enforcing. O daemon por repositório atribui aos contentores o contexto `container_t` padrão. Não é necessária uma política SELinux personalizada.
@@ -75,7 +75,7 @@ Se um passo de configuração falhar com negações AVC do SELinux ou rejeiçõe
 
 ### Instalado Automaticamente
 
-O comando `rdc config machine setup` instala o seguinte no servidor remoto:
+O comando `rdc machine setup` instala o seguinte no servidor remoto:
 
 - **Docker** e **containerd** (runtime de contentores)
 - **cryptsetup** (encriptação de disco LUKS)

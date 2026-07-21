@@ -5,7 +5,7 @@ category: Reference
 subcategory: advanced
 order: 40
 language: tr
-sourceHash: "c72fbcc13e7e77ed"
+sourceHash: "b555f4ca6b58ff4b"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,23 +24,22 @@ Yani: bir fork'u yükseltmeden önce `repo diff` kullanın. Bir AI ajanı prodü
 ### Özet
 
 ```bash
-rdc repo diff --name <fork> -m <machine>            # fork'u ana deposuna karşı karşılaştır
-rdc repo diff --name <fork> --base <repo> -m <machine>   # herhangi bir ilgili depoya karşı karşılaştır
+rdc repo diff <fork>            # fork'u ana deposuna karşı karşılaştır
+rdc repo diff <fork> --base <repo>   # herhangi bir ilgili depoya karşı karşılaştır
 ```
 
 ### Seçenekler
 
 | Seçenek | Açıklama | Varsayılan |
 |--------|----------|-----------|
-| `--name <name>` | İncelenecek depo (hedef, yeni taraf). Gerekli. | gerekli |
-| `--base <name>` | Karşılaştırılacak depo (temel, eski taraf). `--name` adresinin ana deposu olarak yerel konfigürasyondan çözülür. | `--name` adresinin ana deposu |
+| `<ref>` (konumsal) | İncelenecek depo referansı (hedef, yeni taraf). Zorunlu. | zorunlu |
+| `--base <ref>` | Karşılaştırılacak depo (temel, eski taraf). Varsayılan olarak yerel konfigürasyondan çözümlenen konumsal referansın ana deposu. | referansın ana deposu |
 | (format bayrağı yok) | Ad-durum çıktısı: değişen her dosya için renkli `A`/`M`/`D`/`R` harfi ve bir satırlık özet. | açık |
 | `--name-only` | Satır başına bir değişen yol, durum harfi yok. Pipe dostu. | kapalı |
 | `--stat` | Dosya başına değişiklik büyüklüğü (bayt ve blok deltaları) ve toplamlar alt bilgisi. | kapalı |
 | `--content <path>` | Tek bir dosyanın birleştirilmiş metin farkı. Yalnızca metin; ikili dosyalar `Binary files differ` bildirirler. | kapalı |
-| `--json` | Ajanlar ve komut dosyaları için yapılandırılmış çıktı. | kapalı |
+| `-o json` | Ajanlar ve betikler için yapılandırılmış çıktı. | `table` |
 | `--fast` | İçerik-hash doğrulaması adımını atlayın ve blok filtresine güvenin. Daha hızlı, ancak Değiştirilmiş dosyaları aşırı rapor edebilir. | kapalı |
-| `-m, --machine <name>` | Hedef makine. Gerekli. | gerekli |
 | `--debug` | stderr'de ayrıntılı tanılama. | kapalı |
 | `--skip-router-restart` | Yönlendirici yeniden başlatma adımını atlayın. | kapalı |
 
@@ -51,7 +50,7 @@ rdc repo diff --name <fork> --base <repo> -m <machine>   # herhangi bir ilgili d
 Yalnızca `--name` ile, fork yerel konfigürasyonda kaydedilen ana deposuna karşı karşılaştırılır. Burada `test-1gb:fork1` fork'u bir değiştirilmiş dosyaya sahiptir:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 -m hostinger
+$ rdc repo diff test-1gb:fork1
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -62,7 +61,7 @@ M  hello.txt
 `--base` ile herhangi bir ilgili depoya karşı karşılaştırın. `--base` temel (eski) taraf, `--name` hedef (yeni) taraftır:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --base test-1gb:latest -m hostinger
+$ rdc repo diff test-1gb:fork1 --base test-1gb:latest
 M  hello.txt
 
 1 file changed: 0 added, 1 modified, 0 deleted, 0 renamed
@@ -73,7 +72,7 @@ M  hello.txt
 `--stat` dosya başına bayt ve blok deltası ile toplamlar alt bilgisini ekler:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
+$ rdc repo diff test-1gb:fork1 --stat
  hello.txt | +8 bytes, 1 block
 
 1 file changed, 4096 bytes touched
@@ -84,7 +83,7 @@ $ rdc repo diff --name test-1gb:fork1 --stat -m hostinger
 `--name-only` durum harfi olmadan satır başına bir yol yazdırır, başka bir komuta beslemek için hazır:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --name-only -m hostinger | xargs -I{} echo "review: {}"
+$ rdc repo diff test-1gb:fork1 --name-only | xargs -I{} echo "review: {}"
 review: hello.txt
 ```
 
@@ -93,7 +92,7 @@ review: hello.txt
 `--content` tek bir metin dosyasının birleştirilmiş farkını üretir:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
+$ rdc repo diff test-1gb:fork1 --content hello.txt
 --- a/hello.txt
 +++ b/hello.txt
 @@ -1 +1 @@
@@ -103,10 +102,10 @@ $ rdc repo diff --name test-1gb:fork1 --content hello.txt -m hostinger
 
 ### jq ile JSON filtreleme
 
-`--json` yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle `jq` içine temiz bir şekilde pipe edilir:
+`-o json` yapılandırılmış zarf çıktısını stdout'a gönderir, bu nedenle `jq` içine temiz bir şekilde pipe edilir:
 
 ```bash
-$ rdc repo diff --name test-1gb:fork1 --json -m hostinger | jq '.data.entries[] | select(.status=="M")'
+$ rdc repo diff test-1gb:fork1 -o json | jq '.data.entries[] | select(.status=="M")'
 {
   "status": "M",
   "path": "/hello.txt",
@@ -141,7 +140,7 @@ Her satır dosyanın bayt deltası ve blok deltasını taşır. Bir alt bilgi to
 
 Tek bir metin dosyası için standart birleştirilmiş diff (`---`/`+++` başlıkları, `@@` parçaları). İkili dosyalar `Binary files differ` bildirirler ve hiçbir parça üretmezler.
 
-### `--json`
+### `-o json`
 
 Tam yapılandırılmış sonuç. Veri stdout'a gider; ilerleme ve tanılama stderr'e gider, bu nedenle JSON, ilerleme yazdırılırken bile `jq` veya başka bir ayrıştırıcıya temiz bir şekilde pipe edilir.
 

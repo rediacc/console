@@ -27,9 +27,9 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete data-app 2>/dev/null || true
+rdc repo delete data-app --yes 2>/dev/null || true
 rdc repo create data-app --machine "$M" --size 2G
 rdc repo admin template apply data-app --template app-postgres
 rdc repo up data-app
@@ -40,7 +40,7 @@ exec >&3 2>&4
 clear_screen
 
 section "The repo is filling up"
-run_cmd "rdc term connect data-app -c 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
+run_cmd "rdc term connect data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
 
 pause 2
 
@@ -49,12 +49,12 @@ run_cmd "rdc repo expand data-app --size 4G"
 
 pause 1
 
-run_cmd "rdc term connect data-app -c 'df -h .'"
+run_cmd "rdc term connect data-app --command 'df -h .'"
 
 pause 2
 
 section "Delete data, then give the blocks back to the pool"
-run_cmd "rdc term connect data-app -c 'rm big.bin && df -h .'"
+run_cmd "rdc term connect data-app --command 'rm big.bin && df -h .'"
 
 pause 1
 
@@ -81,4 +81,4 @@ end_recording
 # Cleanup
 rdc repo down data-app 2>/dev/null || true
 rdc repo down data-app --unmount 2>/dev/null || true
-rdc repo delete data-app 2>/dev/null || true
+rdc repo delete data-app --yes 2>/dev/null || true

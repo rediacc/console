@@ -14,11 +14,11 @@ tags:
   - benchmarks
 featured: false
 language: de
-sourceHash: 36cb029ebe9b6edc
+sourceHash: "362ac76977739eb6"
 sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
-> **Kurzfassung.** Rediaccs `rdc machine query --storage-health` meldet eine Fragmentierungszahl pro Repository. Auf einer Produktionsmaschine markiert es GitLab mit etwa 19.650 Extents pro Gigabyte. Der Reflex ist zu defragmentieren. Ich habe es stattdessen gemessen.
+> **Kurzfassung.** Rediaccs `rdc machine status --storage-health` meldet eine Fragmentierungszahl pro Repository. Auf einer Produktionsmaschine markiert es GitLab mit etwa 19.650 Extents pro Gigabyte. Der Reflex ist zu defragmentieren. Ich habe es stattdessen gemessen.
 >
 > - Ein Repository, das **16-mal stärker** fragmentiert war als sein Nachbar, las mit **149 MB/s** gegenüber 143 MB/s sequenziell, und war **schneller** bei zufälligen 4K-Lesevorgängen (719 vs. 957 Mikrosekunden).
 > - Das Gerät ist Flash. Fragmentierung schadet rotierenden Festplatten durch Seek-Zeit. Auf einer SSD gibt es fast keinen Mechanismus mehr, durch den sie schaden könnte.

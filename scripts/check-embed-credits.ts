@@ -37,6 +37,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseDockerfileVersions as parseDockerfileVersionsShared } from './lib/dockerfile-versions.js';
 import { GREEN, NC, RED, YELLOW } from './utils/console.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -67,20 +68,8 @@ function read(file: string): string {
 
 /** Dockerfile ARG <BASE>_VERSION=<version> -> { base(lowercase): version }. */
 function parseDockerfileVersions(src: string): Map<string, string> {
-  const versions = new Map<string, string>();
-  const re = /^ARG\s+([A-Z0-9]+)_VERSION=(\S+)/gm;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(src)) !== null) {
-    const base = m[1].toLowerCase();
-    const version = m[2];
-    const existing = versions.get(base);
-    if (existing !== undefined && existing !== version) {
-      errors.push(
-        `Dockerfile: conflicting ${m[1]}_VERSION values ('${existing}' vs '${version}')`
-      );
-    }
-    versions.set(base, version);
-  }
+  const { versions, conflicts } = parseDockerfileVersionsShared(src);
+  errors.push(...conflicts);
   return versions;
 }
 

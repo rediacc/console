@@ -6,7 +6,7 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.408078,
+      "at": 2.420634,
       "text": "Esimene samm: loetle saadaolevad mallid. Rediacc pakub valmis seadistusi levinud rakenduste jaoks, seega pole docker-compose'i vaja nullist kirjutada.",
       "afterText": "Täielik mallide kataloog. Iga mall on testitud compose'i ja Rediaccfile'i paar.",
       "cardLabel": "Loetle mallid",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.077084,
+      "at": 6.399014,
       "text": "Teine samm: lisa app-postgres mall reposse. Testitud failikomplekt, otse sisse kopeeritud.",
       "afterText": "Mall on rakendatud. Repol on nüüd oma compose-fail ja Rediaccfile.",
       "cardLabel": "Rakenda mall",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 14.72542,
+      "at": 12.523372,
       "text": "Vaata reposse ja loetle, mis sinna jõudis: Rediaccfile käivitus- ja peatamise hook'idega ning docker-compose fail, mis kirjeldab konteinereid.",
       "afterText": "Konteinerid töötavad, maht on ühendatud, isoleeritud Dockeri deemon on üleval.",
       "cardLabel": "Vaata faile",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 21.699752,
+      "at": 17.108804,
       "text": "Kolmas samm: käivita repo. Üks käsk ja CLI ühendab krüpteeritud köite, käivitab isoleeritud Docker daemon'i ning laseb konteinerid käima.",
       "afterText": "Ainult selle repo konteinerid. Isolatsioon on tegelik, mitte ainult konfiguratsioon.",
       "cardLabel": "Käivita repo",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 28.8781,
+      "at": 22.317819,
       "text": "Kontrolli, mis töötab. Docker ps kuvab siin ainult selle repo konteinereid. Igal teisel repol sellel serveril on oma daemon, siit vaatest täiesti nähtamatu.",
       "afterText": "Ainult selle repo konteinerid. Isolatsioon on päris, mitte lihtsalt konfiguratsioon.",
       "cardLabel": "Kontrolli isolatsiooni",

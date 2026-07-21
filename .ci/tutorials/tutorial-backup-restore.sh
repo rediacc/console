@@ -36,9 +36,9 @@ for i in $(seq 1 30); do
 done
 rdc machine setup "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rdc repo create my-app --machine "$M" --size 2G
 rdc repo admin template apply my-app --template app-postgres
 
@@ -76,7 +76,7 @@ run_cmd "rdc repo push my-app --to my-storage"
 pause 2
 
 section "Step 3: List the backups"
-run_cmd "rdc backup list --storage my-storage -m $M"
+run_cmd "rdc backup list --storage my-storage"
 
 pause 2
 
@@ -100,5 +100,5 @@ end_recording
 # Cleanup
 rdc repo down my-app 2>/dev/null || true
 rdc repo down my-app --unmount 2>/dev/null || true
-rdc repo delete my-app 2>/dev/null || true
+rdc repo delete my-app --yes 2>/dev/null || true
 rm -f "$RCLONE_CONF"

@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: ru
-sourceHash: "30c1cd3d88219e7c"
+sourceHash: "5dac7c4162cbbb8e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -71,9 +71,9 @@ CLI считает процесс агентом, если выполняетс�
       "summary": "Provide the current value or acknowledge rotation.",
       "options": [
         { "description": "Re-read current digest, then retry with --current",
-          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+          "run": "rdc repo secret get mail --key STRIPE_KEY" },
         { "description": "Skip the precondition (rotation, audited)",
-          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+          "run": "rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
       ]
     }
   }]

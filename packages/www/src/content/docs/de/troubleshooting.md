@@ -4,7 +4,7 @@ description: "Lösungen für häufig auftretende SSH-, Setup-, Repository-, Serv
 category: "Guides"
 order: 10
 language: de
-sourceHash: "a1c58ae1fe3d0514"
+sourceHash: "429b4004d99c37e6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -72,7 +72,7 @@ CRIU ist der bekannte Fall, der AppArmor trifft. renet setzt automatisch `securi
 
 ### btrfs-Modul fehlt (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Falls `rdc config machine setup` oder `renet system check-btrfs` fehlschlägt mit:
+Falls `rdc machine setup` oder `renet system check-btrfs` fehlschlägt mit:
 
 ```
 Module btrfs not found
@@ -94,13 +94,13 @@ Module btrfs not found
 - Überprüfen Sie Container-Logs mit dem Docker-Socket des Repository:
 
 ```bash
-rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
+rdc repo logs my-app -c <container-name>
 ```
 
 Oder zeigen Sie alle Container an:
 
 ```bash
-rdc machine containers --name server-1
+rdc machine status server-1 --containers
 ```
 
 ## Fehler "Berechtigung verweigert"
@@ -115,7 +115,7 @@ Jedes Repository hat seinen eigenen Docker-Daemon. Beim manuellen Ausführen von
 
 ```bash
 # Using rdc term (auto-configured):
-rdc term connect -m server-1 -r my-app -c "docker ps"
+rdc term connect my-app -c "docker ps"
 
 # Or manually with the socket:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
@@ -132,7 +132,7 @@ Dies ist beabsichtigt. Rediacs Netzwerk-Modell ist **Host-Netzwerk für jeden Se
 **Um Netzwerkzugriff in einem Ad-hoc-Container zu erhalten, verwenden Sie Host-Netzwerk:**
 
 ```bash
-# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+# Inside a repository shell (rdc term connect <repo>@<machine>)
 docker run --rm --network host -it ubuntu bash
 # Now apt update, curl, pip install all work.
 ```
@@ -181,7 +181,7 @@ Falls `rdc term` das Öffnen eines Terminal-Fensters fehlschlägt:
 
 - Verwenden Sie den Inline-Modus mit `-c`, um Befehle direkt auszuführen:
   ```bash
-  rdc term connect -m server-1 -c "ls -la"
+  rdc term connect server-1 -c "ls -la"
   ```
 - Erzwingen Sie ein externes Terminal mit `--external`, falls der Inline-Modus Probleme hat
 - Stellen Sie unter Linux sicher, dass Sie `gnome-terminal`, `xterm` oder ein anderes Terminal-Emulator installiert haben

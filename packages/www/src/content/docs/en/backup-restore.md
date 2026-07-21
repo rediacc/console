@@ -20,7 +20,7 @@ Before pushing backups, register a storage provider. Rediacc supports any rclone
 If you already have an rclone remote configured:
 
 ```bash
-rdc config storage import --file rclone.conf
+rdc storage import rclone.conf
 ```
 
 This imports storage configurations from an rclone config file into the current config. Supported types: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob, and Swift.
@@ -28,7 +28,7 @@ This imports storage configurations from an rclone config file into the current 
 ### View Storages
 
 ```bash
-rdc config storage list
+rdc storage list
 ```
 
 ## Push a Backup
@@ -36,10 +36,10 @@ rdc config storage list
 Push a repository backup to external storage:
 
 ```bash
-rdc repo push --name my-app -m server-1 --to my-storage
+rdc repo push my-app --to my-storage
 ```
 
-The backup lands in the storage's `hot/` folder when the repository is mounted at push time, and in `cold/` when it is unmounted. This is the same layout the scheduled backups use, so `rdc repo backup list` shows every backup in one table.
+The backup lands in the storage's `hot/` folder when the repository is mounted at push time, and in `cold/` when it is unmounted. This is the same layout the scheduled backups use, so `rdc backup list` shows every backup in one table.
 
 | Option | Description |
 |--------|-------------|
@@ -59,7 +59,7 @@ The backup lands in the storage's `hot/` folder when the repository is mounted a
 Pull a repository backup from external storage:
 
 ```bash
-rdc repo pull --name my-app -m server-1 --from my-storage
+rdc repo pull my-app --from my-storage
 ```
 
 Pull always checks that the target repository is mounted before writing. If it is not mounted, the operation is aborted.
@@ -79,7 +79,7 @@ Pull always checks that the target repository is mounted before writing. If it i
 View available backups in a storage location:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1
+rdc backup list --storage my-storage
 ```
 
 The output is a unified table that merges both [scheduled-backup folders](#scheduled-backups) (`hot/` and `cold/`) so you see every backup in one view:
@@ -95,8 +95,8 @@ The output is a unified table that merges both [scheduled-backup folders](#sched
 To drill into a single mode, pass `--path`:
 
 ```bash
-rdc repo backup list --from my-storage -m server-1 --path hot
-rdc repo backup list --from my-storage -m server-1 --path cold
+rdc backup list --storage my-storage --path hot
+rdc backup list --storage my-storage --path cold
 ```
 
 ### Storage layout
@@ -183,7 +183,7 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 
 - `rdc machine status <machine> --containers` shows running state. Compare against the expected set.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
-- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine backup schedule` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
+- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc backup schedule` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
 
 ### Estimating Cold Backup Downtime
 
@@ -247,8 +247,7 @@ Interruptions are safe. Stopping the service (or rebooting the machine) makes th
 The default setup is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream for app-consistent snapshots. Both strategies write to separate storage subfolders (`hot/` and `cold/`), so the streams never mix.
 
 ```bash
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -257,8 +256,7 @@ rdc config backup-strategy set \
 ```
 
 ```bash
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -270,7 +268,7 @@ The `--exclude` filter on the cold strategy is the recommended escape hatch for 
 
 | Option | Description |
 |--------|-------------|
-| `--name <name>` | Strategy name (used for machine binding) |
+| `<strategy>` (positional) | Strategy name (used for machine binding) |
 | `--destination <storage>` | Storage provider to upload to |
 | `--cron <expression>` | Cron expression (e.g. `"0 2 * * *"` for daily at 2 AM) |
 | `--mode <hot\|cold>` | Backup mode |
@@ -282,14 +280,14 @@ The `--exclude` filter on the cold strategy is the recommended escape hatch for 
 ### View Strategies
 
 ```bash
-rdc config backup-strategy list
-rdc config backup-strategy show --name weekly-cold
+rdc backup strategy list
+rdc backup strategy show weekly-cold
 ```
 
 ### Remove a Strategy
 
 ```bash
-rdc config backup-strategy remove --name weekly-cold
+rdc backup strategy remove weekly-cold
 ```
 
 ### Bind Strategies to a Machine
@@ -329,8 +327,7 @@ Each strategy can carry `--include` and `--exclude` filters. Repository names th
 
 ```bash
 # Hot strategy: back up everything hourly
-rdc config backup-strategy set \
-  --name hourly-hot \
+rdc backup strategy set hourly-hot \
   --destination my-storage \
   --cron "0 * * * *" \
   --mode hot \
@@ -338,8 +335,7 @@ rdc config backup-strategy set \
   --enable
 
 # Cold strategy: back up everything weekly, excluding the large derived dataset
-rdc config backup-strategy set \
-  --name weekly-cold \
+rdc backup strategy set weekly-cold \
   --destination my-storage \
   --cron "15 3 * * 0" \
   --mode cold \
@@ -358,7 +354,7 @@ Exclude a repository from the high-frequency run when:
 
 > **If the data is purely regenerable**, consider whether you need to back it up at all. An alternative is to back up only the raw source inputs (the CSV dumps, in this example) and skip the derived copy entirely. A weekly cold backup of the source inputs is much smaller and fully sufficient for recovery.
 
-Repos that are not excluded from either strategy appear in both the `hot/` and `cold/` storage subfolders. The merged `rdc repo backup list` output shows both rows so you can verify which streams cover which repos.
+Repos that are not excluded from either strategy appear in both the `hot/` and `cold/` storage subfolders. The merged `rdc backup list` output shows both rows so you can verify which streams cover which repos.
 
 ## Backup Operations
 
@@ -367,8 +363,8 @@ Repos that are not excluded from either strategy appear in both the `hot/` and `
 Push the bound strategies to a machine as systemd timers:
 
 ```bash
-rdc machine backup schedule -m server-1
-rdc machine backup schedule -m server-1 --dry-run
+rdc backup schedule -m server-1
+rdc backup schedule -m server-1 --dry-run
 ```
 
 The deploy is a state reconciler. It reads the current unit files and systemd state on the machine, compares against what the config would produce (SHA-256 per file), and only touches units whose content actually changed. Re-running with no config changes is a no-op: no writes, no `daemon-reload`, no timer churn.
@@ -384,8 +380,8 @@ If a backup is currently running for a strategy you are about to update or remov
 Trigger a backup immediately without waiting for the timer. Works even if no timers have been deployed, using `systemd-run` for ad-hoc execution:
 
 ```bash
-rdc machine backup now -m server-1
-rdc machine backup now -m server-1 --strategy weekly-cold
+rdc backup run -m server-1
+rdc backup run weekly-cold -m server-1
 ```
 
 ### View Backup Status
@@ -393,15 +389,15 @@ rdc machine backup now -m server-1 --strategy weekly-cold
 Show the current status of backup timers and recent job results:
 
 ```bash
-rdc machine backup status -m server-1
-rdc machine backup status -m server-1 --strategy hourly-hot
+rdc backup status -m server-1
+rdc backup status hourly-hot -m server-1
 ```
 
 ### Cancel a Running Backup
 
 ```bash
-rdc machine backup cancel -m server-1
-rdc machine backup cancel -m server-1 --strategy weekly-cold
+rdc backup cancel -m server-1
+rdc backup cancel weekly-cold -m server-1
 ```
 
 ## Repository Migration
@@ -409,14 +405,13 @@ rdc machine backup cancel -m server-1 --strategy weekly-cold
 Move a repository from one machine to another:
 
 ```bash
-rdc repo migrate --name my-app --from server-1 --to server-2
+rdc repo migrate my-app@server-1 --to server-2
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--name <repo>` | Repository to migrate |
-| `--from <machine>` | Source machine |
-| `--to <machine>` | Destination machine |
+| `<ref>` (positional) | Repository ref to migrate; its `@machine` names the source |
+| `--to <place>` | Destination machine or cluster |
 | `--provision` | Provision the repository on the destination before transferring |
 | `--checkpoint` | Create a CRIU checkpoint before migrating |
 | `--skip-dns` | Skip updating DNS records after migration |
@@ -429,7 +424,7 @@ Migration transfers the encrypted repository data via rsync. The source reposito
 Browse the contents of a storage location:
 
 ```bash
-rdc storage browse --name my-storage
+rdc storage browse my-storage
 ```
 
 ## Best Practices

@@ -4,7 +4,7 @@ description: "Avalda teenuseid pöördproksi, Dockeri siltide, TLS-sertifikaatid
 category: "Guides"
 order: 6
 language: et
-sourceHash: "20b29c1a791304e4"
+sourceHash: "89a755491d11fbd6"
 sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
@@ -130,16 +130,16 @@ Need kasutavad standardset [Traefik v3 siltide süntaksit](https://doc.traefik.i
 
    ```bash
    # Ühised mandaadid (üks kord konfiguratsiooni kohta, kehtib kõigile masinatele)
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --cert-email admin@example.com \
      --cf-dns-token your-cloudflare-api-token
 
    # Masinapõhised seaded
-   rdc config infra set -m server-1 \
+   rdc machine infra set server-1 \
      --public-ipv4 203.0.113.50 \
      --base-domain example.com
 
-   rdc config infra push -m server-1
+   rdc machine infra push server-1
    ```
 
 2. DNS-kirjed, mis suunavad sinu domeeni serveri avalikule IP-le (vt allpool [DNS-konfigureerimine](#dns-konfigureerimine)).
@@ -183,14 +183,14 @@ Siltides olev `{name}` on suvaline identifikaator. See peab lihtsalt olema järj
 TLS-sertifikaadid saadakse automaatselt Let's Encrypt'i kaudu, kasutades Cloudflare DNS-01 proovivõtet. Mandaadid seadistatakse üks kord konfiguratsiooni kohta (jagatud kõigi masinate vahel):
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --cert-email admin@example.com \
   --cf-dns-token your-cloudflare-api-token
 ```
 
 Automarsruudid kasutavad **metamärgisertifikaate** hoidla alamdomeeni tasemel (`*.marketing.server-1.example.com`), mitte teenusepõhiseid serte. Sertifikaat provisioreeritakse automaatselt Traefikuga esimese `repo up` käivitamisel -- käsitsi sammu pole vaja. Forkid taaskasutavad vanemhoidla olemasolevat metamärki, seega ei käivita need kunagi uut sertifikaadi taotlust. Kohandatud domeeni marsruudid kasutavad masinatasemel metamärke (`*.server-1.example.com`).
 
-> **Nõuab Cloudflare'i mandaate.** Metamärgiserdid kasutavad DNS-01 proovivõtet. Ilma `--cf-dns-token`'ita (ja valikulise `--cert-email`'ita) ei suuda Traefik proovivõtet lõpetada ja HTTPS ei tööta. HTTP jääb toimivaks. Konfigureeri mandaadid `rdc config infra set` abil enne esimest juurutamist.
+> **Nõuab Cloudflare'i mandaate.** Metamärgiserdid kasutavad DNS-01 proovivõtet. Ilma `--cf-dns-token`'ita (ja valikulise `--cert-email`'ita) ei suuda Traefik proovivõtet lõpetada ja HTTPS ei tööta. HTTP jääb toimivaks. Konfigureeri mandaadid `rdc machine infra set` abil enne esimest juurutamist.
 
 2. taseme marsruutidel `traefik.http.routers.{name}.tls.certresolver=letsencrypt` puhul lisatakse metamärgi domeeni SAN-id automaatselt marsruudi hostinimi põhjal.
 
@@ -210,17 +210,17 @@ Täielik tee, mille Let's Encrypt sert väljastamisest iga hoidla konteineriteni
 
 - Automaatselt pärast `rdc repo up`, kuid ainult juhul, kui masina `baseDomain` kohalik vahemälu on vanem kui 6 tundi. Värskeid vahemälusid ei puudutata, et järjestikused juurutamised SSH-d ei koormaauks.
 - Nõudmisel: `rdc machine infra cert pull <machine>` (sunniviisiline tõmbamine) või `rdc machine status <machine> --sync-certs` (tõmbamine olekupäringu kõrvalefektina).
-- `rdc config infra push` käivitamisel lükatakse vahemälu masinale üles (pikema aegumisega kohalikud serdid võidavad kaugserdi üle).
+- `rdc machine infra push` käivitamisel lükatakse vahemälu masinale üles (pikema aegumisega kohalikud serdid võidavad kaugserdi üle).
 
 **Vahemälu hooldus:**
 
 - Aegunud automarsruudi kirjed (vanad võrgu-ID sildistatud domeenid, nagu `service-3200.rediacc.io`) kustutatakse iga tõmbamise käigus.
 - Serdid, mille `notAfter` on rohkem kui 7 päeva minevikus, eemaldatakse täielikult. Need on passiivsed ja ainult paisutavad vahemälu.
-- `rdc config cert-cache clear` kustutab kõik; `rdc config cert-cache status` näitab inventuuri.
+- `rdc config prune --certs-only` kustutab kõik; `rdc config prune --certs-only` näitab inventuuri.
 
 **Tõrkeotsing:** kui `traefik-certs-dumper` jookseb kokku veateatega `/traefik/acme.json: no such file or directory`, ei näe hoidlapõhine daemon hosti letsencrypt-poodi. Kontrolli, et (a) `/opt/rediacc/proxy/letsencrypt/acme.json` eksisteerib hostil (see on hostitseme `rediacc-proxy` vastutus) ja (b) hoidlapõhine daemon käivitati piisavalt uue renet-versiooniga, mis lubab `/opt/rediacc/proxy`. Renet'i uuendamisel rakenda muudatused käsuga `rdc repo up`.
 
-> **Eksperimentaalne:** Auto-sünkroonimise sagedus ja aegumispõhine puhastamine laevati renet 0.9-ga. Vanemad CLI/renet versioonid kasutavad ainult käsitsi sünkroniseerimist `rdc config cert-cache pull` kaudu.
+> **Eksperimentaalne:** Auto-sünkroonimise sagedus ja aegumispõhine puhastamine laevati renet 0.9-ga. Vanemad CLI/renet versioonid kasutavad ainult käsitsi sünkroniseerimist `rdc config prune --certs-only` kaudu.
 
 ## TCP/UDP pordiedastus
 
@@ -231,16 +231,16 @@ Mitte-HTTP protokollide jaoks (meiliserverid, DNS, väliselt avaldatud andmebaas
 Lisa vajalikud pordid infrastruktuuri konfigureerimisel:
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --tcp-ports 25,143,465,587,993 \
   --udp-ports 53
 
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 See loob Traefiku sisenemispunktid nimedega `tcp-{port}` ja `udp-{port}`.
 
-> Pärast portide lisamist või eemaldamist käivita alati uuesti `rdc config infra push`, et proksi konfiguratsiooni uuendada.
+> Pärast portide lisamist või eemaldamist käivita alati uuesti `rdc machine infra push`, et proksi konfiguratsiooni uuendada.
 
 ### 2. samm: lisa TCP/UDP sildid
 
@@ -313,7 +313,7 @@ Järgmistel TCP/UDP portidel on sisenemispunktid vaikimisi (pole vaja lisada `--
 
 ### Automaatne DNS (Cloudflare)
 
-Kui `--cf-dns-token` on seadistatud, loob `rdc config infra push` automaatselt DNS-kirjed masina alamdomeeni jaoks Cloudflare'is:
+Kui `--cf-dns-token` on seadistatud, loob `rdc machine infra push` automaatselt DNS-kirjed masina alamdomeeni jaoks Cloudflare'is:
 
 | Kirje | Tüüp | Sisu | Loob |
 |--------|------|---------|------------|
@@ -480,7 +480,7 @@ app.example.com   A   203.0.113.50
 ### Juurutamine
 
 ```bash
-rdc repo up --name my-app -m server-1
+rdc repo up my-app
 ```
 
 Mõne sekundi jooksul avastab marsruutimisserver konteineri, Traefik võtab marsruudi üle, taotleb TLS-sertifikaati ja `https://app.example.com` on live.

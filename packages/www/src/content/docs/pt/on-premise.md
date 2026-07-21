@@ -4,7 +4,7 @@ description: "Executar o servidor de conta e a distribuição do CLI na sua pró
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "eea76db2d612133f"
+sourceHash: "a2f88ead9bf140c6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -54,13 +54,13 @@ Para utilizadores que se ligam a vários servidores (on-premise, produção, edg
 
 ```bash
 # Criar uma config para o seu servidor on-premise
-rdc config init --name myserver --server https://account.example.com
+rdc config init myserver --server https://account.example.com
 
 # Iniciar sessão com essa config
 rdc --config myserver subscription login
 
 # Todos os comandos com --config utilizam o servidor on-premise
-rdc --config myserver machine query --name prod-1
+rdc --config myserver machine status prod-1
 ```
 
 Cada config nomeada armazena o seu próprio URL do servidor de conta e token de subscrição. Mudar de config muda todo o contexto do servidor.

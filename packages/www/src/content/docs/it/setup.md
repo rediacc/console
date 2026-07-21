@@ -4,7 +4,7 @@ description: "Crea una config, aggiungi macchine, esegui il provisioning dei ser
 category: "Guides"
 order: 3
 language: it
-sourceHash: "1fba8ac242726528"
+sourceHash: "6e0b338423280f98"
 sourceCommit: "5fab1177d6ceae5211c25cf8fa0176d67259d40e"
 ---
 
@@ -17,7 +17,7 @@ Quattro passi mettono in funzione la tua prima macchina: creare una config, regi
 Una **config** è un file di configurazione con nome che memorizza le credenziali SSH, le definizioni delle macchine e i mapping dei repository. Considerala come un workspace di progetto.
 
 ```bash
-rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
+rdc config init my-infra --ssh-key ~/.ssh/id_ed25519
 ```
 
 | Opzione | Richiesta | Descrizione |
@@ -34,7 +34,7 @@ Questo crea una config denominata `my-infra` e la memorizza in `~/.config/rediac
 Registra il tuo server remoto come macchina nella config:
 
 ```bash
-rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
+rdc machine add server-1 --ip 203.0.113.50 --user deploy
 ```
 
 | Opzione | Richiesta | Predefinito | Descrizione |
@@ -47,13 +47,13 @@ rdc config machine add --name server-1 --ip 203.0.113.50 --user deploy
 Dopo aver aggiunto la macchina, rdc esegue automaticamente `ssh-keyscan` per recuperare le chiavi host del server. Puoi anche eseguire questa operazione manualmente:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Per visualizzare tutte le macchine registrate:
 
 ```bash
-rdc config machine list
+rdc machine list
 ```
 
 ## Passo 3: Configura la macchina
@@ -61,7 +61,7 @@ rdc config machine list
 Esegui il provisioning del server remoto con tutte le dipendenze richieste:
 
 ```bash
-rdc config machine setup --name server-1
+rdc machine setup server-1
 ```
 
 Questo comando:
@@ -87,7 +87,7 @@ Il datastore è il pool di storage per macchina che contiene le immagini dei rep
 `--datastore-size` accetta una percentuale (`95%`) o una dimensione assoluta (`50G`, `1T`). Il datastore può essere ampliato online in seguito:
 
 ```bash
-rdc datastore resize -m server-1 --size 200G
+rdc datastore resize ds-server-1 --size 200G
 ```
 
 I repository all'interno del datastore vengono dimensionati indipendentemente al momento di `repo create` e possono essere espansi mentre sono in esecuzione, quindi non è necessario sovradimensionare il datastore in anticipo.
@@ -98,10 +98,9 @@ Per storage condiviso, scale-out o a supporto di Kubernetes, inizializza invece 
 
 ```bash
 # 1. Registra il riferimento Ceph della macchina (pool + immagine RBD, non segreto)
-rdc config machine set-ceph -m server-1 --pool rbd --image datastore-server1
 
 # 2. Inizializza il datastore sul backend Ceph
-rdc datastore init -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
+rdc datastore create ds-server-1 -m server-1 --backend ceph --pool rbd --image datastore-server1 --size 100G
 ```
 
 I keyring Ceph restano sulle macchine; il file di configurazione contiene solo i riferimenti non segreti di pool e immagine. Ceph è anche lo strato di storage che i cluster Kubernetes utilizzano tramite ceph-csi. Consulta la guida [Kubernetes](/it/docs/kubernetes) per cluster e volumi persistenti, e [Architettura](/it/docs/architecture) per il confronto tra i due backend.
@@ -111,7 +110,7 @@ I keyring Ceph restano sulle macchine; il file di configurazione contiene solo i
 Se la chiave host SSH di un server cambia (es. dopo la reinstallazione), aggiorna le chiavi memorizzate:
 
 ```bash
-rdc config machine scan-keys -m server-1
+rdc machine scan-keys server-1
 ```
 
 Questo aggiorna il campo `knownHosts` nella tua config per quella macchina.
@@ -121,7 +120,7 @@ Questo aggiorna il campo `knownHosts` nella tua config per quella macchina.
 Dopo aver aggiunto una macchina, verifica che sia raggiungibile:
 
 ```bash
-rdc term connect -m server-1 -c "hostname"
+rdc term connect server-1 -c "hostname"
 ```
 
 Questo apre una connessione SSH alla macchina ed esegue il comando. Se ha successo, la configurazione SSH è corretta.
@@ -141,7 +140,7 @@ Per le macchine che devono servire traffico pubblicamente, configura le impostaz
 ### Imposta l'infrastruttura
 
 ```bash
-rdc config infra set -m server-1 \
+rdc machine infra set server-1 \
   --public-ipv4 203.0.113.50 \
   --base-domain example.com \
   --cert-email admin@example.com \
@@ -163,7 +162,7 @@ Le opzioni con ambito macchina vengono memorizzate per ogni macchina. Le opzioni
 ### Visualizza l'infrastruttura
 
 ```bash
-rdc config infra show -m server-1
+rdc machine infra show server-1
 ```
 
 ### Pubblica sul server
@@ -171,7 +170,7 @@ rdc config infra show -m server-1
 Genera e distribuisce la configurazione del reverse proxy Traefik sul server:
 
 ```bash
-rdc config infra push -m server-1
+rdc machine infra push server-1
 ```
 
 Questo comando:
@@ -199,7 +198,7 @@ rdc config ssh set --key ~/.ssh/id_ed25519
 ### Aggiungi un provider cloud
 
 ```bash
-rdc config provider add --name my-linode \
+rdc machine provider add my-linode \
   --provider linode/linode \
   --token $LINODE_API_TOKEN \
   --region us-east \
@@ -221,7 +220,7 @@ rdc config provider add --name my-linode \
 ### Esegui il provisioning di una macchina
 
 ```bash
-rdc machine provision --name prod-2 --provider my-linode
+rdc machine provision prod-2 --provider my-linode
 ```
 
 Questo singolo comando:
@@ -244,7 +243,7 @@ Questo singolo comando:
 ### Deprovisioning di una macchina
 
 ```bash
-rdc machine deprovision --name prod-2
+rdc machine deprovision prod-2
 ```
 
 Distrugge la VM tramite OpenTofu e la rimuove dalla tua config. Richiede conferma a meno che non sia usato `--force`. Funziona solo per le macchine create con `machine provision`.
@@ -252,7 +251,7 @@ Distrugge la VM tramite OpenTofu e la rimuove dalla tua config. Richiede conferm
 ### Elenca i provider
 
 ```bash
-rdc config provider list
+rdc machine provider list
 ```
 
 ## Impostazione dei valori predefiniti
@@ -261,13 +260,13 @@ Imposta valori predefiniti in modo da non doverli specificare ad ogni comando:
 
 ```bash
 rdc config field set --pointer /defaults/machine --new '"server-1"'   # Macchina predefinita
-rdc config set --key team --value my-team                   # Team predefinito per l'archivio di configurazione
+rdc config set team my-team                   # Team predefinito per l'archivio di configurazione
 ```
 
 Dopo aver impostato una macchina predefinita, puoi omettere `-m server-1` dai comandi:
 
 ```bash
-rdc repo create --name my-app -m my-server --size 10G
+rdc repo create my-app -m my-server --size 10G
 ```
 
 ## Config multiple
@@ -276,8 +275,8 @@ Gestisci più ambienti con config con nome:
 
 ```bash
 # Crea config separate
-rdc config init --name production --ssh-key ~/.ssh/id_prod
-rdc config init --name staging --ssh-key ~/.ssh/id_staging
+rdc config init production --ssh-key ~/.ssh/id_prod
+rdc config init staging --ssh-key ~/.ssh/id_staging
 
 # Usa una config specifica
 rdc repo list -m server-1 --config production

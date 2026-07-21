@@ -4,7 +4,7 @@ description: Claude Code, Cursor 및 기타 AI 코딩 어시스턴트를 Rediacc
 category: Reference
 order: 50
 language: ko
-sourceHash: "7290c90fe7218ea4"
+sourceHash: "1edff3471ded906d"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -37,32 +37,32 @@ On error: {"success": false, "command": "...", "data": null, "errors": [{"code":
 ### Common Operations
 
 # Machine status
-rdc machine query --name <machine> -o json
+rdc machine status <machine> -o json
 
 # List containers on a machine
-rdc machine containers --name <machine> -o json
+rdc machine status <machine> --containers -o json
 
 # Machine health check
-rdc machine health --name <machine> -o json
+rdc machine health <machine> -o json
 
 # Deploy a repository
-rdc repo up --name <repo> -m <machine> --yes
+rdc repo up <repo>@<machine> --yes
 
 # Stop a repository
-rdc repo down --name <repo> -m <machine> --yes
+rdc repo down <repo>@<machine> --yes
 
 # SSH terminal to machine
-rdc term connect -m <machine>
+rdc term connect <machine>
 
 # SSH terminal to specific repo (sets DOCKER_HOST)
-rdc term connect -m <machine> -r <repo>
+rdc term connect <repo>@<machine>
 
 # Run command on machine
-rdc term connect -m <machine> -c "command"
+rdc term connect <machine> -c "command"
 
 # File sync
-rdc repo sync upload -m <machine> -r <repo> --local ./local-path
-rdc repo sync download -m <machine> -r <repo> --local ./local-path
+rdc repo sync upload <repo>@<machine> --local ./local-path
+rdc repo sync download <repo>@<machine> --local ./local-path
 
 # List all available commands
 rdc --help-all
@@ -83,16 +83,16 @@ rdc --help-all
 
 ## 커스터마이징
 
-`<machine>`과 `<repo>`를 실제 머신 및 리포지토리 이름으로 교체하세요. `rdc config repository list`를 실행하면 이름과 GUID 매핑과 함께 사용 가능한 리포지토리 목록을 확인할 수 있습니다.
+`<machine>`과 `<repo>`를 실제 머신 및 리포지토리 이름으로 교체하세요. `rdc repo list`를 실행하면 이름과 GUID 매핑과 함께 사용 가능한 리포지토리 목록을 확인할 수 있습니다.
 
 ### 설정 확인
 
 ```bash
 # 구성된 머신 목록 조회
-rdc machine query --name <machine-name>
+rdc machine status <machine-name>
 
 # GUID와 함께 리포지토리 목록 조회
-rdc config repository list
+rdc repo list
 
 # 사용 가능한 명령어 확인
 rdc --help-all

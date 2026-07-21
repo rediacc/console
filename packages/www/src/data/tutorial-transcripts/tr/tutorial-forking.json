@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.422355,
+      "at": 2.424604,
       "text": "Depoyu tek bir komutla fork'lıyoruz. Her şeyi klonladı: uygulama, veritabanı, yapılandırma dosyaları. Ve bu saniyeler içinde oldu; deponun boyutundan bağımsız olarak. 1 gigabayt, 100 gigabayt, 1 terabayt: her seferinde aynı süre.",
       "afterText": "Fork tamam. Klon ayakta ve çalışıyor; boyuttan bağımsız olarak.",
       "cardLabel": "Repo Forkla",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 12.478171,
+      "at": 9.790706,
       "text": "Her iki depo yan yana var. Aynı makine, aynı disk, iki tamamen bağımsız ortam. Fork'un kendi container'ları, kendi dosya sistemi ve kendi Docker daemon'ı var.",
       "afterText": "İki depo, tek disk. Aynı veri, geri kalan her şey ayrı.",
       "cardLabel": "Repo'ları Listele",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.050071,
+      "at": 15.362139,
       "text": "İzolasyonu kanıtlayalım. Orijinalde işaret dosyamız bıraktığımız yerde duruyor. Fork'un varlığı üst depoda hiçbir şeyi değiştirmedi.",
       "afterText": "Orijinal dosya hâlâ orada. Fork ona dokunmadı.",
       "cardLabel": "Orijinal Dosya",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 25.352583,
+      "at": 20.531281,
       "text": "Şimdi o dosyayı siliyoruz; ama yalnızca fork içinde. Fork içinde silindi. Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde kaldı.",
       "afterText": "Fork'ta gitti. Orijinale dokunulmadı.",
       "cardLabel": "Fork'ta Sil",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 33.706234,
+      "at": 26.727498,
       "text": "Orijinale geri döndük. İşaret dosyası hâlâ burada, dokunulmamış. Orijinal, hiçbir şeyin olduğunu fark etmedi. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri.",
       "afterText": "Hâlâ burada. Fork'lar doğru biçimde izole.",
       "cardLabel": "Orijinal Sağlam",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.0794,
+      "at": 31.831236,
       "text": "İşiniz bittiğinde fork'u silin. Orijinal tam olarak olduğu gibi kalır. Fork alın, deneyin, bir şeyleri bozun, silin; hiçbir risk yok.",
       "afterText": "Fork kaldırıldı. Orijinal tam bıraktığımız gibi.",
       "cardLabel": "Temizle",
