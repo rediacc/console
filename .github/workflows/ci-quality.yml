@@ -158,6 +158,13 @@ jobs:
       # knip's own ignore entries are BLOCKER-gated; the validator for those
       # reasons was in the chain but never ran in CI.
       - run: npm run check:ci-knip-blockers
+      # Bash had no dead-code detector at all; this is the analogue of the knip
+      # run above. It lives HERE and not in quality-shell for two reasons, both
+      # of which quality-shell fails: it is a `tsx` gate and needs node_modules
+      # (CI died with `tsx: not found`, exit 127), and its corpus includes
+      # private/**, so without submodules it silently scans a smaller tree and
+      # under-asserts rather than failing.
+      - run: npm run check:ci-dead-bash
 
   quality-format:
     name: Format
@@ -362,9 +369,6 @@ jobs:
       # pipefail` script on empty input. Written after three such outages in
       # one day, but never wired into a job until now.
       - run: npm run check:ci-silent-failures
-      # Bash had no dead-code detector at all (Go has deadcode, TS has knip),
-      # so every orphan script found so far was found by hand.
-      - run: npm run check:ci-dead-bash
       # Unit tests for shell helpers. Deterministic, no network.
       - run: .ci/scripts/test/test-write-once-guard.sh
       - run: .ci/scripts/test/test-install-script.sh
