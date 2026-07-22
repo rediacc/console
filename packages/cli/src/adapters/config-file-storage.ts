@@ -132,8 +132,17 @@ export class ConfigFileStorage {
    * Execute an operation with exclusive file lock.
    * Supports re-entrant calls — if we already hold the lock, skip acquisition.
    */
-  private async withLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
-    await this.ensureConfigFile(name);
+  private async withLock<T>(
+    name: string,
+    operation: () => Promise<T>,
+    opts: { createIfMissing?: boolean } = {}
+  ): Promise<T> {
+    if (opts.createIfMissing === false) {
+      // State-write path: never resurrect a removed config (see updateState).
+      await fs.access(this.getPath(name));
+    } else {
+      await this.ensureConfigFile(name);
+    }
     const configPath = this.getPath(name);
 
     const depth = this.lockDepths.get(name) ?? 0;
@@ -267,16 +276,21 @@ export class ConfigFileStorage {
   private async mutate(
     name: string,
     updater: (config: RdcConfig) => RdcConfig,
-    bumpVersion: boolean
+    bumpVersion: boolean,
+    opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
-    return this.withLock(name, async () => {
-      this.cache.delete(name);
-      const raw = await this.loadUnlocked(name);
-      const plain = await this.decryptConfig(raw);
-      const updated = updater(plain);
-      await this.saveUnlocked(updated, name, bumpVersion);
-      return this.cache.get(name)!;
-    });
+    return this.withLock(
+      name,
+      async () => {
+        this.cache.delete(name);
+        const raw = await this.loadUnlocked(name);
+        const plain = await this.decryptConfig(raw);
+        const updated = updater(plain);
+        await this.saveUnlocked(updated, name, bumpVersion);
+        return this.cache.get(name)!;
+      },
+      opts
+    );
   }
 
   /**
@@ -295,7 +309,21 @@ export class ConfigFileStorage {
    * responsible for touching only `state.*`.
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
-    return this.mutate(name, updater, false);
+    // A STATE write must never CREATE a config file. Status is subordinate to
+    // the config's existence: when the file is gone (the tutorial preambles
+    // `rm` it between runs; `config prune` removes it), a background writer —
+    // the executor daemon's post-request provision bookkeeping above all —
+    // must not resurrect an empty config. Observed live: the daemon recreated
+    // the file between a preamble's `rm` and its `config init`, which then
+    // died on "Config already exists" and cascaded through the whole tutorial
+    // sequence. Callers of updateState are best-effort by contract, so a
+    // missing config surfaces as a rejected promise they already tolerate.
+    try {
+      await fs.access(this.getPath(name));
+    } catch {
+      throw new Error(`Config "${name}" does not exist; refusing to create it for a state write`);
+    }
+    return this.mutate(name, updater, false, { createIfMissing: false });
   }
 
   /**

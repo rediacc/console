@@ -428,6 +428,7 @@
   "commands.doctor.serverMismatch": "عدم تطابق الخادم",
   "commands.doctor.subscriptionUnreachable": "تعذر الوصول إلى خادم الاشتراك",
   "commands.doctor.title": "أداة تشخيص Rediacc CLI",
+  "commands.executor-daemon.description": "التحكم في daemon المنفِّذ المحلي (داخلي): يبدأ تلقائيًا، يُبقي اتصالات SSH وفحوصات التزويد جاهزة بين الأوامر، ويُغلق نفسه تلقائيًا عند الخمول.",
   "commands.job.cancel.alreadyFinished": "المهمة {{jobId}} انتهت بالفعل بحالة {{state}}؛ لا يوجد ما يُلغى.",
   "commands.job.cancel.confirm": "هل تريد إلغاء المهمة {{jobId}} ({{function}}) على {{machine}}؟ سيتم إيقاف العملية.",
   "commands.job.cancel.description": "إلغاء مهمة منفصلة قيد التشغيل",

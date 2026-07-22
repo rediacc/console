@@ -428,6 +428,7 @@
   "commands.doctor.serverMismatch": "несоответствие сервера",
   "commands.doctor.subscriptionUnreachable": "не удалось связаться с сервером подписки",
   "commands.doctor.title": "Диагностика Rediacc CLI",
+  "commands.executor-daemon.description": "Управлять локальным daemon-процессом исполнителя (внутренний): запускается автоматически, поддерживает в готовности SSH-соединения и проверки подготовки инфраструктуры между командами и сам завершает работу при простое.",
   "commands.job.cancel.alreadyFinished": "Задача {{jobId}} уже {{state}}; отменять нечего.",
   "commands.job.cancel.confirm": "Отменить задачу {{jobId}} ({{function}}) на {{machine}}? Операция будет остановлена.",
   "commands.job.cancel.description": "Отменить выполняющуюся отсоединённую задачу",

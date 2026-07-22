@@ -38,6 +38,21 @@ export class ConfigServiceBase {
   }
 
   /**
+   * Drop the memoized resource view (and any remote snapshot) so the next
+   * read re-materializes from the config file. A short-lived CLI process
+   * never needs this — the memo dies with the process — but a LONG-LIVED
+   * process serving many commands (the executor daemon) must call it per
+   * request: the memo otherwise freezes the repository/machine view at
+   * boot time while clients rewrite the config underneath (observed live:
+   * a daemon built vaults from an empty boot snapshot, so renet resolved
+   * repo mounts by NAME instead of GUID and every tutorial failed).
+   */
+  resetResourceView(): void {
+    this._resourceState = null;
+    this._remoteConfig = null;
+  }
+
+  /**
    * Get the ResourceState for the current config, initializing lazily.
    * When remote is enabled, uses RemoteResourceState (push on mutation).
    */

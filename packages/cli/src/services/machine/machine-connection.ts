@@ -56,6 +56,29 @@ interface ConnectionEntry {
   refCount: number;
   /** In-flight connect/reconnect, shared so concurrent acquires dedupe. */
   connectPromise: Promise<void> | null;
+  /** Pending idle close, cancelled when the entry is re-acquired. */
+  lingerTimer: NodeJS.Timeout | null;
+}
+
+/**
+ * How long a released connection lingers before closing (0 = historical
+ * close-at-refcount-zero, the DEFAULT).
+ *
+ * OFF by default on purpose: an open SSH socket is a ref'd libuv handle, so a
+ * lingering connection prevents a short-lived CLI process from exiting until
+ * the linger elapses (observed live — `machine setup` hung for minutes after
+ * completing; unref'ing the TIMER does not unref the SOCKET). Only a
+ * long-lived process wants this, and exactly one exists: the executor daemon,
+ * whose server sets REDIACC_SSH_LINGER_MS for its own process at startup so
+ * re-acquires within the window skip the ~300ms SSH handshake.
+ */
+function idleLingerMs(): number {
+  const raw = process.env.REDIACC_SSH_LINGER_MS;
+  if (raw !== undefined) {
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) return parsed;
+  }
+  return 0;
 }
 
 /**
@@ -158,6 +181,10 @@ class MachineConnectionManager {
     if (!entry) {
       entry = this.createEntry(key, config);
       this.entries.set(key, entry);
+    } else if (entry.lingerTimer) {
+      // Re-acquired within the idle window: keep the warm session.
+      clearTimeout(entry.lingerTimer);
+      entry.lingerTimer = null;
     }
     // Reserve the lease BEFORE awaiting the shared connect: with two
     // concurrent first acquires, the early waiter could otherwise acquire,
@@ -184,6 +211,7 @@ class MachineConnectionManager {
       sftp: new SFTPClient(clientConfig),
       refCount: 0,
       connectPromise: null,
+      lingerTimer: null,
     };
     entry.connectPromise = Promise.resolve(entry.sftp.connect()).finally(() => {
       entry.connectPromise = null;
@@ -238,8 +266,29 @@ class MachineConnectionManager {
   private releaseEntry(entry: ConnectionEntry): void {
     entry.refCount -= 1;
     if (entry.refCount > 0) return;
+    const linger = idleLingerMs();
+    if (linger > 0 && this.entries.get(entry.key) === entry) {
+      // Keep the warm session for the idle window instead of closing at
+      // refcount zero. unref: never keeps a short-lived process alive.
+      entry.lingerTimer = setTimeout(() => {
+        entry.lingerTimer = null;
+        if (entry.refCount === 0 && this.entries.get(entry.key) === entry) {
+          this.closeEntry(entry);
+        }
+      }, linger);
+      entry.lingerTimer.unref();
+      return;
+    }
+    this.closeEntry(entry);
+  }
+
+  private closeEntry(entry: ConnectionEntry): void {
     if (this.entries.get(entry.key) === entry) {
       this.entries.delete(entry.key);
+    }
+    if (entry.lingerTimer) {
+      clearTimeout(entry.lingerTimer);
+      entry.lingerTimer = null;
     }
     try {
       entry.sftp.close();

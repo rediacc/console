@@ -44,6 +44,13 @@ interface TelemetryConfigResponse {
 let cached: OtlpCredentials | null | undefined;
 
 /**
+ * In-flight fetch, memoized so concurrent callers (the deferred telemetry
+ * chain in cli.ts racing an executor's renet env injection) share ONE network
+ * round-trip instead of each starting their own.
+ */
+let inflight: Promise<OtlpCredentials | null> | undefined;
+
+/**
  * Fetch the current OTLP credentials from the account server.
  *
  * Returns `null` when:
@@ -57,17 +64,19 @@ let cached: OtlpCredentials | null | undefined;
  */
 export async function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
   if (cached !== undefined) return cached;
-
-  try {
-    const resp = await accountServerFetch<TelemetryConfigResponse>(
-      '/account/api/v1/telemetry/config',
-      { noAuth: true }
-    );
-    cached = resp.otlp ?? null;
-  } catch {
-    cached = null;
-  }
-  return cached;
+  inflight ??= (async () => {
+    try {
+      const resp = await accountServerFetch<TelemetryConfigResponse>(
+        '/account/api/v1/telemetry/config',
+        { noAuth: true }
+      );
+      cached = resp.otlp ?? null;
+    } catch {
+      cached = null;
+    }
+    return cached;
+  })();
+  return inflight;
 }
 
 /**
@@ -77,6 +86,7 @@ export async function fetchOtlpCredentials(): Promise<OtlpCredentials | null> {
  */
 export function resetOtlpCredentialsCache(): void {
   cached = undefined;
+  inflight = undefined;
 }
 
 /**

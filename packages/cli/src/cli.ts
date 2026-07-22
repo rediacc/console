@@ -7,6 +7,7 @@ import { registerConfigCommands } from './commands/config.js';
 import { registerCreditsCommand } from './commands/credits.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
+import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
 import { registerJobCommands } from './commands/job.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
@@ -45,6 +46,14 @@ let i18nInitialized = false;
 
 // Track command context for telemetry
 const commandContext = new Map<string, { startTime: number }>();
+
+/**
+ * The deferred telemetry-setup chain started in preAction (credential fetch →
+ * initialize → startCommand → user context). postAction awaits it before
+ * closing the command span. Resolved-by-default so a postAction without a
+ * matching preAction (or with telemetry disabled) never hangs.
+ */
+let telemetryReady: Promise<void> = Promise.resolve();
 
 // formatDuration removed — timeline handles all timing display
 
@@ -255,43 +264,50 @@ export function createCli(): Command {
         });
       }
 
-      // Resolve per-region OTLP credentials (unauthenticated fetch, cached
-      // per-process). Must complete before `telemetryService.initialize()`
-      // so the OTel SDK gets the right auth header baked into its exporter.
-      //
-      // Skip entirely when the user opted out of telemetry via CI or
-      // `REDIACC_TELEMETRY_DISABLED=1` — no wasted network round-trip, and
-      // no credentials in memory to accidentally leak downstream.
-      if (!isTelemetryDisabled()) {
-        try {
-          const otlpCreds = await fetchOtlpCredentials();
-          telemetryService.setRuntimeOtlpCredentials(otlpCreds);
-        } catch {
-          // Any failure (network, malformed response) leaves the token null
-          // and telemetry disabled. Never blocks the actual command.
-        }
-      }
-      await telemetryService.initialize({ serviceVersion: VERSION });
-
-      // Start telemetry tracking for the command
+      // Telemetry must never gate the user's command. The OTLP credential
+      // fetch (unauthenticated, ~100-300ms to the account server) used to be
+      // awaited here on EVERY invocation; it now runs CONCURRENTLY with the
+      // command. Ordering inside the chain is unchanged (credentials before
+      // `initialize()` so the exporter gets its auth header; user context
+      // after initialize). Executor paths that inject the credentials into
+      // renet env await the same memoized fetch, and the postAction hook
+      // awaits this chain before ending the command span, so no telemetry is
+      // lost — the span's duration comes from the startTime captured here.
       const commandName = getFullCommandName(actionCommand);
       const startTime = Date.now();
       commandContext.set(commandName, { startTime });
       outputService.setCommandContext(commandName, startTime);
-      telemetryService.startCommand(commandName, {
-        args: actionCommand.args,
-        options: actionCommand.opts(),
+      telemetryReady = (async () => {
+        if (!isTelemetryDisabled()) {
+          try {
+            const otlpCreds = await fetchOtlpCredentials();
+            telemetryService.setRuntimeOtlpCredentials(otlpCreds);
+          } catch {
+            // Any failure (network, malformed response) leaves the token null
+            // and telemetry disabled. Never blocks the actual command.
+          }
+        }
+        await telemetryService.initialize({ serviceVersion: VERSION });
+        telemetryService.startCommand(commandName, {
+          args: actionCommand.args,
+          options: actionCommand.opts(),
+        });
+        telemetryService.startProfiling(commandName);
+        // Set user context and subscription state (extracted to reduce complexity)
+        await setUserAndSubscriptionContext();
+      })().catch(() => {
+        // Telemetry setup failures never surface into the command.
       });
-      telemetryService.startProfiling(commandName);
-
-      // Set user context and subscription state (extracted to reduce complexity)
-      await setUserAndSubscriptionContext();
 
       // License auto-refresh is now handled per-operation in services/license.ts
     })
     .hook('postAction', async (_thisCommand, actionCommand) => {
       // Timeline rendering handles timing display for executor commands.
       // No additional "Completed in X (total: Y)" message needed.
+
+      // The deferred telemetry chain from preAction must land before the
+      // command span is closed — for fast commands it may still be in flight.
+      await telemetryReady;
 
       // Stop profiling before ending telemetry
       await telemetryService.stopProfiling();
@@ -331,6 +347,7 @@ export function createCli(): Command {
   registerSubscriptionCommands(cli);
   registerMcpCommands(cli);
   registerServeCommand(cli);
+  registerExecutorDaemonCommands(cli);
   registerShortcuts(cli);
 
   // Apply mode guards, help tags, and domain grouping from the command registry

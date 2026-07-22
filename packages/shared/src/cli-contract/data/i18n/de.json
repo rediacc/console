@@ -428,6 +428,7 @@
   "commands.doctor.serverMismatch": "Server-Abweichung",
   "commands.doctor.subscriptionUnreachable": "Abonnement-Server nicht erreichbar",
   "commands.doctor.title": "Rediacc CLI-Diagnose",
+  "commands.executor-daemon.description": "Den lokalen Executor-Daemon (intern) steuern: Er startet automatisch, hält SSH-Verbindungen und Provisioning-Prüfungen zwischen Befehlen warm und fährt sich bei Inaktivität selbst herunter.",
   "commands.job.cancel.alreadyFinished": "Job {{jobId}} ist bereits {{state}}; nichts abzubrechen.",
   "commands.job.cancel.confirm": "Job {{jobId}} ({{function}}) auf {{machine}} abbrechen? Der Vorgang wird gestoppt.",
   "commands.job.cancel.description": "Bricht einen laufenden entkoppelten Job ab",

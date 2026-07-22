@@ -622,6 +622,9 @@
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
+    "executor-daemon": {
+      "description": "ローカルの executor daemon を制御する（内部用）：自動的に起動し、コマンド間で SSH 接続とプロビジョニングチェックを待機状態に保ち、アイドル時には自動的にシャットダウンする。"
+    },
     "machine": {
       "deprovision": {
         "completed": "マシン {{name}} が破棄され、設定から削除されました",
@@ -2008,7 +2011,7 @@
       "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up {{name}}:<tag-name>）\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
       "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます",
       "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO は設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nfork優先ワークフローを使用してください:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo promote {{name}}:<tag-name> でforkを昇格できます\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
-      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
+      "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: マシンレベルのアクセスにはワイルドカードが必要です。エージェントセッションを開始する前に、ターミナルで REDIACC_ALLOW_GRAND_REPO=* を設定してください。特定のリポジトリ名を指定しても直接マシンアクセスは解放されません。",
       "machineGuardOverride": "\"{{machine}}\" への直接マシンアクセスは許可されていません。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "\"{{machine}}\" への直接マシンアクセスのオーバーライドが設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "mcpGrandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\nrepo_fork を使用して安全で分離されたサンドボックスコピーを作成し、fork上で操作してください。\n直接アクセスが必要な場合は、ユーザーに REDIACC_ALLOW_GRAND_REPO をエージェント開始前にエクスポートするよう依頼してください。",

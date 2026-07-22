@@ -41,6 +41,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // developer's own config from disk. This is the config the EXECUTOR holds.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
+    resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),

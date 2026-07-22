@@ -622,6 +622,9 @@
       "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
+    "executor-daemon": {
+      "description": "控制本地 executor daemon（内部使用）：自动启动，在命令之间使 SSH 连接和预配置检查保持就绪状态，并在空闲时自动关闭。"
+    },
     "machine": {
       "deprovision": {
         "completed": "机器 {{name}} 已销毁并从配置中移除",
@@ -2008,7 +2011,7 @@
       "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name>）\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork",
       "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受此覆盖。\n\n使用 fork 优先工作流程：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
-      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：机器级别的访问需要通配符 — 请在启动代理会话之前，在终端中设置 REDIACC_ALLOW_GRAND_REPO=*。指定特定的仓库名称不会解锁直接机器访问。",
       "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "对 \"{{machine}}\" 的直接机器访问覆盖已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受此覆盖。\n\n先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
       "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户在启动代理前导出 REDIACC_ALLOW_GRAND_REPO。",

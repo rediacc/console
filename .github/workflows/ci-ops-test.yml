@@ -15,7 +15,7 @@ jobs:
   ops-vm-provision:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 45
+    timeout-minutes: 90
     strategy:
       matrix:
         include:
@@ -74,9 +74,6 @@ jobs:
 
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
-
-      - name: Install asciinema (tutorial recording)
-        run: pip install asciinema
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -154,9 +151,12 @@ jobs:
           BRIDGE_IP=$(echo "$STATUS" | jq -r '.data.vms[0].ip')
           echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
           # `ops status` lists every CONFIGURED VM (absent ones included), so
-          # select the worker by id, never by array position.
+          # select workers by id, never by array position. Worker 12 does not
+          # exist yet at this point — its IP still resolves from the config.
           WORKER_IP=$(echo "$STATUS" | jq -r '.data.vms[] | select(.id == 11) | .ip')
           echo "worker_ip=$WORKER_IP" >> "$GITHUB_OUTPUT"
+          WORKER2_IP=$(echo "$STATUS" | jq -r '.data.vms[] | select(.id == 12) | .ip')
+          echo "worker2_ip=$WORKER2_IP" >> "$GITHUB_OUTPUT"
 
       - name: "Verify: ping connectivity"
         run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
@@ -169,67 +169,88 @@ jobs:
           ATTEMPTS: 15
 
       # ── Tutorial sequence validation (#424) ─────────────────────
-      # Runs the repo tutorials IN USER ORDER against the cluster provisioned
-      # above. Cross-tutorial machine state is the point: renet#60 escaped
-      # because every command passed alone and only the 02→04 sequence broke
-      # (EADDRINUSE on `repo fork --up`). Per-command tests and the static
-      # check:ci-tutorial-* gates are structurally blind to this.
+      # Runs EVERY tutorial script sequentially, in website order, against the
+      # cluster provisioned above — exit codes are the verdict (each script is
+      # set -euo pipefail and run_cmd aborts on the first failing command).
+      # Cross-tutorial machine state is the point: renet#60 escaped because
+      # every command passed alone and only the sequence broke (EADDRINUSE on
+      # `repo fork --up`). Per-command tests and the static check:ci-tutorial-*
+      # gates are structurally blind to this.
       #
-      # Deliberately INSIDE ops-vm-provision: a separate job means a second
-      # runner reprovisioning the cluster (~14 min), doubling the VM bill.
-      # Recording here is VALIDATION ONLY — the .cast artifacts are uploaded
-      # for inspection; the committed casts under packages/www remain the
-      # production artifacts.
-      - name: "Tutorial prep: Docker Hub auth on worker VM"
+      # Single source of truth: .ci/tutorials/run-sequence.sh derives the list
+      # and order from the docs' `order:` frontmatter and fails on doc↔script
+      # drift, so adding/removing/reordering a tutorial updates this job
+      # automatically. Deliberately INSIDE ops-vm-provision: a separate job
+      # means a second runner reprovisioning the cluster (~14 min), doubling
+      # the VM bill.
+      - name: "Tutorial prep: add second worker"
+        # ssh-keys, delta-transfer, and live-migration use a second machine.
+        # Idempotent over the --basic cluster: existing VMs are left alone,
+        # only worker 12 is created. Ceph nodes stay disabled.
+        run: |
+          sudo -E env VM_CEPH_NODES= node packages/cli/dist/cli-bundle.cjs \
+            ops up --skip-orchestration -o json
+
+      - name: "Tutorial prep: start RustFS S3 on bridge"
+        # backup-restore pushes to an S3-compatible store; the tutorial's
+        # default endpoint is the bridge VM at :9000.
+        run: |
+          "$RENET_BINARY" ops rustfs start
+          "$RENET_BINARY" ops rustfs create-bucket rediacc-test
+
+      - name: "Tutorial prep: Docker Hub auth on worker VMs"
         # `rdc repo up` runs renet via sudo on the worker, so image pulls
         # through the per-repo daemon read root's docker config. Written over
-        # SSH as a raw file because docker is not installed on the VM until
-        # `rdc machine setup` runs inside the first tutorial's preamble.
+        # SSH as a raw file because docker is not installed on the VMs until
+        # `rdc machine setup` runs inside the tutorials' preambles.
         env:
           SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
           WORKER_IP: ${{ steps.status.outputs.worker_ip }}
+          WORKER2_IP: ${{ steps.status.outputs.worker2_ip }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           AUTH=$(printf '%s:%s' "$DOCKERHUB_USERNAME" "$DOCKERHUB_TOKEN" | base64 -w0)
-          printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" |
-            ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
-              "$(whoami)@$WORKER_IP" \
-              'sudo mkdir -p /root/.docker && sudo tee /root/.docker/config.json >/dev/null && sudo chmod 600 /root/.docker/config.json'
+          for ip in "$WORKER_IP" "$WORKER2_IP"; do
+            printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" |
+              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "$(whoami)@$ip" \
+                'sudo mkdir -p /root/.docker && sudo tee /root/.docker/config.json >/dev/null && sudo chmod 600 /root/.docker/config.json'
+          done
 
-      - name: "Tutorial: deploy-app (02)"
+      - name: "Tutorial prep: default SSH identity"
+        # The ssh-keys tutorial's ssh-copy-id authenticates with the caller's
+        # default identity; give the runner user one.
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa" ~/.ssh/id_rsa
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa.pub" ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: "Tutorial sequence (all tutorials, website order)"
         env:
           TUTORIAL_RDC_CMD: node ${{ github.workspace }}/packages/cli/dist/cli-bundle.cjs
           TUTORIAL_MACHINE_IP: ${{ steps.status.outputs.worker_ip }}
+          TUTORIAL_BACKUP_HOST: ${{ steps.status.outputs.worker2_ip }}
           TUTORIAL_SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
-          TUTORIAL_CHAR_DELAY: '0.005'
+          TUTORIAL_S3_ENDPOINT: http://${{ steps.status.outputs.bridge_ip }}:9000
+          TUTORIAL_CHAR_DELAY: '0'
+          TUTORIAL_LOG_DIR: ${{ runner.temp }}/tutorial-logs
+          # V8 compile cache: ~120ms of bundle compilation per rdc invocation,
+          # paid ~200 times across the sequence without it.
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/v8-compile-cache
         run: |
           TUTORIAL_MACHINE_USER="$(whoami)"
-          export TUTORIAL_MACHINE_USER
-          mkdir -p "$RUNNER_TEMP/casts"
-          .ci/tutorials/record.sh .ci/tutorials/tutorial-deploy-app.sh \
-            "$RUNNER_TEMP/casts/tutorial-deploy-app.cast" 107 32
+          TUTORIAL_BACKUP_USER="$(whoami)"
+          export TUTORIAL_MACHINE_USER TUTORIAL_BACKUP_USER
+          .ci/tutorials/run-sequence.sh
 
-      - name: "Tutorial: forking (04)"
-        # Same cluster, no reset in between — the machine state deploy-app
-        # left behind is the fixture.
-        env:
-          TUTORIAL_RDC_CMD: node ${{ github.workspace }}/packages/cli/dist/cli-bundle.cjs
-          TUTORIAL_MACHINE_IP: ${{ steps.status.outputs.worker_ip }}
-          TUTORIAL_SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
-          TUTORIAL_CHAR_DELAY: '0.005'
-        run: |
-          TUTORIAL_MACHINE_USER="$(whoami)"
-          export TUTORIAL_MACHINE_USER
-          .ci/tutorials/record.sh .ci/tutorials/tutorial-forking.sh \
-            "$RUNNER_TEMP/casts/tutorial-forking.cast" 107 32
-
-      - name: Upload tutorial casts
+      - name: Upload tutorial sequence logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: tutorial-recordings-${{ github.sha }}
-          path: ${{ runner.temp }}/casts/*.cast
+          name: tutorial-sequence-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/tutorial-logs/
           retention-days: 30
           if-no-files-found: ignore
 

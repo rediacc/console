@@ -22,6 +22,11 @@ import {
 } from '../core/embedded-assets.js';
 import { busy, type CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
+import {
+  dropProvisionEntry,
+  getFreshProvisionEntry,
+  recordProvisionVerified,
+} from './provision-state.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { updateSpinnerText } from '../../utils/spinner.js';
 import {
@@ -229,6 +234,24 @@ class RenetProvisionerService {
       return this.buildVerifiedResult(cached.arch, REMOTE_INSTALL_PATH);
     }
 
+    // Persistent-state second: a recent rdc process may have proven this host
+    // current already. Trust envelope (version match, TTL, dev-binary stat
+    // fingerprint) lives in provision-state.ts; a hit skips the SHA-256 over
+    // the ~220MB dev binary and every provision SSH exec.
+    const persisted = await getFreshProvisionEntry(
+      cacheKey,
+      options?.localBinaryPath ?? null
+    ).catch(() => null);
+    if (persisted && (persisted.arch === 'amd64' || persisted.arch === 'arm64')) {
+      this.cache.set(cacheKey, {
+        hash: persisted.hash,
+        arch: persisted.arch,
+        provisionedAt: persisted.verifiedAt,
+      });
+      this.archByHost.set(cacheKey, persisted.arch);
+      return this.buildVerifiedResult(persisted.arch, REMOTE_INSTALL_PATH);
+    }
+
     const inflight = this.inflight.get(cacheKey);
     if (inflight) {
       return inflight;
@@ -262,6 +285,9 @@ class RenetProvisionerService {
         this.doProvision(sftp, config, options)
       );
     } catch (error) {
+      // Fail open: a machine that failed to provision must not be skipped by
+      // the persistent cache on the next attempt.
+      await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
@@ -312,6 +338,13 @@ class RenetProvisionerService {
       arch: context.arch,
       provisionedAt: Date.now(),
     });
+    // Best-effort: remember the proven-current state across processes so
+    // consecutive rdc commands skip the whole cold path.
+    await recordProvisionVerified(context.cacheKey, {
+      hash: context.localHash,
+      arch: context.arch,
+      sourcePath: options?.localBinaryPath ?? null,
+    }).catch(() => undefined);
     return {
       success: true,
       action: installResult.binaryUpdated ? 'uploaded' : 'verified',

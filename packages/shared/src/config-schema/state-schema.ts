@@ -202,6 +202,42 @@ export const StateSchema = z.object({
    * decided which code path ran.
    */
   licenseRefresh: z.record(z.string(), z.number()).optional(),
+
+  /**
+   * Per-machine (`host:port`) record of the last successful renet provision
+   * and setup verification. Lets a fresh CLI process skip the cold path —
+   * SHA-256 over the ~220MB dev binary plus the provision/verify SSH round
+   * trips — when a recent process already proved this machine current.
+   * Honored only when the recorded CLI version matches and the entry is
+   * within TTL; any provision failure or explicit clearCache() drops it.
+   * Config-state, not a sidecar file, for the same reasons as licenseRefresh.
+   */
+  renetProvision: z
+    .record(
+      z.string(),
+      z.object({
+        /** CLI VERSION that performed the provision. */
+        version: z.string(),
+        /** Local renet binary hash that was verified remote. */
+        hash: z.string(),
+        /** Remote machine architecture (amd64/arm64). */
+        arch: z.string(),
+        /** Epoch ms of the last successful provision verification. */
+        verifiedAt: z.number(),
+        /** Epoch ms of the last successful machine-setup verification. */
+        setupVerifiedAt: z.number().optional(),
+        /**
+         * Dev-mode source-binary fingerprint (stat, ~1ms). A rebuilt
+         * bin/renet changes these and misses the cache, preserving the
+         * "next rdc.sh run deploys your change" promise; dev VERSION is a
+         * constant (0.0.0-dev), so version match alone cannot be trusted
+         * there. Absent for SEA (embedded binary immutable per version).
+         */
+        srcMtimeMs: z.number().optional(),
+        srcSize: z.number().optional(),
+      })
+    )
+    .optional(),
 });
 
 export type RdcState = z.infer<typeof StateSchema>;

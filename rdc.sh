@@ -178,17 +178,14 @@ else
     log_step "Preparing CLI development environment"
 fi
 
-# Ensure npm dependencies are installed
-ensure_deps
-
-# Ensure shared packages are built
-ensure_packages_built
-
-# Ensure CLI is built and type-valid
-ensure_cli_built
-
-# Ensure renet is built and up-to-date
-ensure_renet_built
+# Ensure the toolchain is current. All build/progress output goes to STDERR:
+# stdout belongs to the CLI command — a rebuild triggered by an edit must not
+# corrupt an `rdc ... -o json` pipeline with npm build logs (observed live:
+# the first post-edit invocation broke JSON.parse for the caller).
+ensure_deps >&2
+ensure_packages_built >&2
+ensure_cli_built >&2
+ensure_renet_built >&2
 
 # Regenerate skill reference if CLI has changed
 ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"
@@ -272,4 +269,16 @@ else
 fi
 
 # Run the compiled CLI bundle, passing through all arguments
-node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"
+# exec, not a child: signals sent to this wrapper must reach the CLI directly
+# (a bash layer between kill and node defers SIGINT until the child exits,
+# which hangs tutorial prewarm/interrupt patterns — see tutorial-helpers.sh).
+#
+# NODE_COMPILE_CACHE: V8 spends ~120ms compiling the 15MB bundle on EVERY
+# invocation (measured, --cpu-prof); the on-disk compile cache cuts that to a
+# few ms after the first run. Env-var form on purpose — it covers the entry
+# file itself, which module.enableCompileCache() cannot. Invalidated
+# automatically by node version + file content. (The SEA keeps
+# useCodeCache:false — code cache is platform-bound and the SEAs are
+# cross-compiled.)
+export NODE_COMPILE_CACHE="${NODE_COMPILE_CACHE:-$ROOT_DIR/.ci/cache/v8-compile-cache}"
+exec node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"

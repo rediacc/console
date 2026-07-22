@@ -36,6 +36,23 @@ describe('parseDatastorePruneOutput', () => {
     expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
   });
 
+  it('survives logrus stderr lines interleaved INSIDE the JSON (relay merge)', () => {
+    // The renet relay merges the sub-command's stderr into stdout, so under
+    // load a logrus line can land between the pretty-printed JSON's lines —
+    // inside the brace span. Observed live on `repo trim` (#424 sequence run):
+    // parse failed with `time="…" level=info msg="Starting..."` in the capture.
+    const pretty = JSON.stringify(JSON.parse(RESOURCES_JSON), null, 2).split('\n');
+    const interleaved = [
+      'time="2026-07-22T08:51:39Z" level=info msg="Starting..."',
+      ...pretty.slice(0, 3),
+      'time="2026-07-22T08:51:40Z" level=info msg="Trimming volume..."',
+      ...pretty.slice(3),
+      'time="2026-07-22T08:51:41Z" level=info msg="Complete: repository_trim completed"',
+    ].join('\n');
+    const obj = parseDatastorePruneOutput(interleaved);
+    expect(obj.stale_backup_snapshots).toEqual(['.backup-A', '.backup-B']);
+  });
+
   it('throws when no JSON object is present', () => {
     expect(() => parseDatastorePruneOutput('no json here')).toThrow();
   });

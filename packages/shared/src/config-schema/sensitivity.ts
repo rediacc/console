@@ -288,6 +288,16 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Public: a rate-limiting timestamp keyed by a machine name the config
   // already lists in the clear, carrying no credential and no repo identity.
   '/state/licenseRefresh/*': { kind: 'public' },
+  // Per-machine renet provision/verify cache: version/hash/arch/timestamps of
+  // the last proven-current provision. Public: a binary hash and timestamps
+  // keyed by host:port the config already lists in the clear — no credential.
+  '/state/renetProvision/*/version': { kind: 'public' },
+  '/state/renetProvision/*/hash': { kind: 'public' },
+  '/state/renetProvision/*/arch': { kind: 'public' },
+  '/state/renetProvision/*/verifiedAt': { kind: 'public' },
+  '/state/renetProvision/*/setupVerifiedAt': { kind: 'public' },
+  '/state/renetProvision/*/srcMtimeMs': { kind: 'public' },
+  '/state/renetProvision/*/srcSize': { kind: 'public' },
   // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed
   // acme.json dump — Traefik resolver state with private keys inside —
   // `commit:false` because state never enters the server envelope. The fields

@@ -45,6 +45,7 @@ import { SessionStore } from '../sessions.js';
 // the EXECUTOR holds still comes from the encrypted blob under test.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
+    resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({
         repositoryGuid: `guid-${name}`,

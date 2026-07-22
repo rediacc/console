@@ -428,6 +428,7 @@
   "commands.doctor.serverMismatch": "服务器不匹配",
   "commands.doctor.subscriptionUnreachable": "无法连接订阅服务器",
   "commands.doctor.title": "Rediacc CLI 诊断工具",
+  "commands.executor-daemon.description": "控制本地 executor daemon（内部使用）：自动启动，在命令之间使 SSH 连接和预配置检查保持就绪状态，并在空闲时自动关闭。",
   "commands.job.cancel.alreadyFinished": "任务 {{jobId}} 已经{{state}},无需取消。",
   "commands.job.cancel.confirm": "确定要取消 {{machine}} 上的任务 {{jobId}}({{function}})吗?该操作将被停止。",
   "commands.job.cancel.description": "取消正在运行的分离任务",

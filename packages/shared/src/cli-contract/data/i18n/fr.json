@@ -428,6 +428,7 @@
   "commands.doctor.serverMismatch": "incohérence de serveur",
   "commands.doctor.subscriptionUnreachable": "impossible de joindre le serveur d'abonnement",
   "commands.doctor.title": "Diagnostic Rediacc CLI",
+  "commands.executor-daemon.description": "Contrôle le daemon exécuteur local (interne) : il démarre automatiquement, maintient actives les connexions SSH et les vérifications de provisionnement entre les commandes, et s'arrête de lui-même en cas d'inactivité.",
   "commands.job.cancel.alreadyFinished": "Le job {{jobId}} est déjà {{state}} ; rien à annuler.",
   "commands.job.cancel.confirm": "Annuler le job {{jobId}} ({{function}}) sur {{machine}} ? L'opération sera arrêtée.",
   "commands.job.cancel.description": "Annuler un job détaché en cours d'exécution",

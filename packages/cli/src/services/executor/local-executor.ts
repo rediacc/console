@@ -1378,7 +1378,11 @@ class LocalExecutorService {
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options, collector);
-    const echoStderrLive = Boolean(options.debug && !options.captureOutput && !options.eventsMode);
+    // Renet routes diagnostics (lifecycle brackets, relayed sub-command
+    // stderr) to ITS stderr so they can never interleave with parseable
+    // stdout. Echo them live in interactive text mode — to OUR stderr, same
+    // "stdout belongs to the command" rule as createStdoutHandler.
+    const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
