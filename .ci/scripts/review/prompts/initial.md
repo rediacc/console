@@ -4,6 +4,13 @@ REPO: {{REPO}}
 PR NUMBER: {{PR_NUMBER}}
 HEAD SHA: {{HEAD_SHA}}
 
+Budget rule for LARGE diffs (dozens of files or more): work breadth-first so a
+turn cap still yields a review. First pass the diff stat and description to
+rank areas by risk; deep-read only the riskiest hunks; post inline comments AS
+YOU CONFIRM defects (never save them all for the end); and reserve budget to
+ALWAYS post the summary comment -- a partial review that posted is worth more
+than an exhaustive one that did not.
+
 Process:
 1. Read the PR description and the full diff (gh pr view, gh pr diff). The PR
    head is checked out in the working directory for surrounding context.

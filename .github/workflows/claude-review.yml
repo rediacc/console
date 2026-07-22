@@ -86,9 +86,13 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
           prompt: ${{ steps.gate.outputs.prompt }}
+          # 50 turns: the bootstrap consolidation PR (90+ files) exhausted 30
+          # purely on reading and posted NOTHING ("error_max_turns", zero
+          # buffered comments). The prompt also instructs breadth-first
+          # commenting so a cap still yields output on outsized diffs.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 30
+            --max-turns 50
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
 
       # Ordering is load-bearing: mark only AFTER a successful review step.
