@@ -215,7 +215,12 @@ jobs:
         # not a tutorial target, so give it docker here the same way
         # orchestration would (VM id 1 = bridge; first live run failed with
         # "sudo: docker: command not found").
+        # install-renet first: `ops docker install` runs renet ON the VM at
+        # /usr/lib/rediacc/renet/current, which orchestration would have
+        # deployed; under --skip-orchestration nothing has (round-7 red:
+        # "sudo: /usr/lib/rediacc/renet/current/renet: command not found").
         run: |
+          "$RENET_BINARY" ops service install-renet 1
           "$RENET_BINARY" ops docker install 1
           "$RENET_BINARY" ops rustfs start
           "$RENET_BINARY" ops rustfs create-bucket rediacc-test
