@@ -14,14 +14,35 @@
     },
     {
       "kind": "embedded-binary",
-      "asset": "rsync",
-      "name": "rsync",
-      "version": "3.4.4",
-      "spdx": "GPL-3.0-or-later",
-      "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
-      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.4.4.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.4.4.tar.gz",
-      "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
+      "asset": "csiprovisioner",
+      "name": "csi-provisioner (kubernetes-csi/external-provisioner)",
+      "version": "6.3.0",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-provisioner/archive/v6.3.0/external-provisioner-6.3.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.3.0.tar.gz"
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "csisnapshotter",
+      "name": "csi-snapshotter (kubernetes-csi/external-snapshotter)",
+      "version": "8.6.0",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1/§6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz",
+      "notes": "One upstream source archive (external-snapshotter) builds BOTH csi-snapshotter and snapshot-controller; the embedded VolumeSnapshot v1 CRDs (pkg/kube/csidriver/crds) are vendored verbatim from the same v8.6.0 tag."
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "k3s",
+      "name": "k3s",
+      "version": "1.36.2+k3s1",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.2+k3s1/k3s-1.36.2+k3s1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.2+k3s1.tar.gz",
+      "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
       "kind": "embedded-binary",
@@ -35,6 +56,27 @@
     },
     {
       "kind": "embedded-binary",
+      "asset": "rsync",
+      "name": "rsync",
+      "version": "3.4.4",
+      "spdx": "GPL-3.0-or-later",
+      "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
+      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.4.4.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.4.4.tar.gz",
+      "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
+    },
+    {
+      "kind": "embedded-binary",
+      "asset": "csisnapshotcontroller",
+      "name": "snapshot-controller (kubernetes-csi/external-snapshotter)",
+      "version": "8.6.0",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as the CP-node cluster singleton with --enable-distributed-snapshotting (spec 09 §6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
+      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz"
+    },
+    {
+      "kind": "embedded-binary",
       "asset": "zot",
       "name": "zot",
       "version": "2.1.18",
@@ -43,17 +85,6 @@
       "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.18/zot-2.1.18.tar.gz",
       "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.18.tar.gz",
       "notes": "This is the FULL zot build (zot-linux-<arch>), NOT the -minimal variant. Do not 'optimize' to the minimal build: the pull-through cache depends on the sync extension (sync.onDemand), and zot compiles extensions ONLY into the full binary. The minimal build is distribution-spec-only and cannot mirror upstreams, which defeats the entire purpose (D8)."
-    },
-    {
-      "kind": "embedded-binary",
-      "asset": "k3s",
-      "name": "k3s",
-      "version": "1.36.2+k3s1",
-      "spdx": "Apache-2.0",
-      "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.2+k3s1/k3s-1.36.2+k3s1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.2+k3s1.tar.gz",
-      "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
       "kind": "runtime",
@@ -72,37 +103,6 @@
       "license": "The rdc JavaScript bundle links its production npm dependencies. Their individual licenses and versions are enumerated in the THIRD_PARTY_LICENSES file bundled with release builds (rdc credits --licenses).",
       "upstreamSourceUrl": "",
       "plannedMirrorUrl": ""
-    },
-    {
-      "kind": "embedded-binary",
-      "asset": "csiprovisioner",
-      "name": "csi-provisioner (kubernetes-csi/external-provisioner)",
-      "version": "6.3.0",
-      "spdx": "Apache-2.0",
-      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process (spec 09 CSI driver), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-provisioner/archive/v6.3.0/external-provisioner-6.3.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.3.0.tar.gz"
-    },
-    {
-      "kind": "embedded-binary",
-      "asset": "csisnapshotter",
-      "name": "csi-snapshotter (kubernetes-csi/external-snapshotter)",
-      "version": "8.6.0",
-      "spdx": "Apache-2.0",
-      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process (spec 09 CSI driver), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz",
-      "notes": "One external-snapshotter source archive builds both csi-snapshotter and snapshot-controller; the VolumeSnapshot v1 CRDs are vendored from the same v8.6.0 tag."
-    },
-    {
-      "kind": "embedded-binary",
-      "asset": "snapshotcontroller",
-      "name": "snapshot-controller (kubernetes-csi/external-snapshotter)",
-      "version": "8.6.0",
-      "spdx": "Apache-2.0",
-      "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process (spec 09 CSI driver), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.6.0/external-snapshotter-8.6.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.6.0.tar.gz"
     }
   ]
 }

@@ -79,6 +79,22 @@ Re-running (`gh run rerun`) is only appropriate for transient errors (network, f
 
 Per *Session Defaults*, the standing default is to land nothing at all: leave the work uncommitted and let the operator decide. This section governs the case where the operator HAS asked for the work to land. Then the route is a feature branch and a PR for them to merge, never a direct push to `main`. When in doubt, stop and ask.
 
+**One documented exception, and only one:** a MAIN-ONLY failure during a
+`/pr-merge` run, after that command has already merged. See step 5 of
+`.claude/commands/pr-merge.md` for the full rule and the classification test.
+
+The reason is instrument validity, not urgency: the PR was green, so a failure
+that appears only after the merge lives in a path PR CI structurally cannot run
+(`refs/heads/main`-gated jobs, the dispatch-only Release workflow, or Docker,
+which PRs only dry-run). **A fresh PR would go green without exercising the fix
+at all** -- it is the wrong instrument, so its verdict is worthless. The
+verification loop is the next `main` run.
+
+Classify first: if the failing job RAN AND PASSED on the PR, it is transient, not
+main-only -- do not fix it, the watchdog auto-retries. Only a job the PR could
+never have run earns the direct push. It does not extend to re-cutting a release,
+and it does not apply outside that command's own release path.
+
 ### Submodule commit order
 
 Always commit submodules before the parent repo:

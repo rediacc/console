@@ -18,6 +18,14 @@ import {
 import { VERSION } from '../../version.js';
 import { loadServerConfig } from '../account/subscription-auth.js';
 import { telemetryService } from '../telemetry/telemetry.js';
+import {
+  DELTA_FORMAT_VERSION,
+  type DeltaIndex,
+  bytesToFetch,
+  matchBlocks,
+  reconstruct,
+  remoteRanges,
+} from './delta.js';
 import { getStagedBinaryPath, readUpdateState, writeUpdateState } from './update-state.js';
 
 const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
@@ -268,6 +276,88 @@ async function stageDownloadedBinary(
 /**
  * Download, verify checksum, and atomically replace the current binary.
  */
+/** URL of the block index published beside a release binary. */
+function getDeltaIndexUrl(binaryUrl: string): string {
+  return `${binaryUrl}.delta.json`;
+}
+
+/** Fetch a byte range, insisting on a real 206 so a server that ignores Range
+ *  cannot silently hand back the whole file and corrupt the assembly. */
+function fetchByteRange(url: string, start: number, end: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const getter = getHttpGetter(url);
+    const req = getter(
+      url,
+      {
+        headers: { 'User-Agent': `rdc/${VERSION}`, Range: `bytes=${start}-${end - 1}` },
+      },
+      (res) => {
+        if (res.statusCode !== 206) {
+          res.resume();
+          reject(new Error(`delta: expected 206 for a range request, got ${res.statusCode}`));
+          return;
+        }
+        const chunks: Buffer[] = [];
+        res.on('data', (c) => chunks.push(c as Buffer));
+        res.on('end', () => resolve(Buffer.concat(chunks)));
+        res.on('error', reject);
+      }
+    );
+    req.on('error', reject);
+    req.setTimeout(DOWNLOAD_TIMEOUT_MS, () =>
+      req.destroy(new Error('delta: range request timeout'))
+    );
+  });
+}
+
+/**
+ * Attempt to assemble the new binary from the running one plus fetched ranges.
+ *
+ * Returns true when tempPath now holds a fully assembled candidate, false when
+ * the caller should fall back to a plain download. Never throws for an expected
+ * condition (no index, no range support): a delta is an optimisation, and the
+ * update must still succeed without it.
+ */
+async function tryDeltaDownload(
+  binaryUrl: string,
+  tempPath: string,
+  onProgress?: (downloaded: number, total: number) => void
+): Promise<boolean> {
+  try {
+    const index = await fetchJson<DeltaIndex>(getDeltaIndexUrl(binaryUrl), CHECK_TIMEOUT_MS);
+    if (
+      index.formatVersion !== DELTA_FORMAT_VERSION ||
+      !Array.isArray(index.blocks) ||
+      index.blocks.length === 0
+    ) {
+      return false;
+    }
+
+    const current = await fs.readFile(process.execPath);
+    const sources = matchBlocks(index, current);
+    const ranges = remoteRanges(index, sources);
+    const needed = bytesToFetch(ranges);
+
+    // If almost nothing matched, the delta path only adds a round trip.
+    if (needed > index.totalSize * 0.9) return false;
+
+    let done = 0;
+    const assembled = await reconstruct(index, current, sources, async (start, end) => {
+      const buf = await fetchByteRange(binaryUrl, start, end);
+      done += buf.length;
+      onProgress?.(done, needed);
+      return buf;
+    });
+
+    await fs.writeFile(tempPath, assembled);
+    return true;
+  } catch {
+    // Any failure at all: fall back to the full download.
+    await fs.unlink(tempPath).catch(() => {});
+    return false;
+  }
+}
+
 async function downloadVerifyAndReplace(
   binaryUrl: string,
   expectedSha256: string,
@@ -279,7 +369,16 @@ async function downloadVerifyAndReplace(
   const tempPath = join(execDir, `.rdc-update-${Date.now()}.tmp`);
 
   try {
-    await downloadFile(binaryUrl, tempPath, onProgress);
+    // Try a delta update first: most of a release is embedded third-party
+    // payload that did not change since the running binary was built, so the
+    // blocks holding it can be reused from disk instead of re-downloaded. Any
+    // problem at all — no index published, no range support, a short read —
+    // falls through to the full download, and either way the checksum below is
+    // what actually decides whether the result is acceptable.
+    const viaDelta = await tryDeltaDownload(binaryUrl, tempPath, onProgress);
+    if (!viaDelta) {
+      await downloadFile(binaryUrl, tempPath, onProgress);
+    }
 
     // Verify SHA256 checksum
     const actualHash = await computeSha256(tempPath);
