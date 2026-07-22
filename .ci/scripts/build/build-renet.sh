@@ -94,14 +94,17 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
     log_info "Staging proxy compose doc..."
     (cd "$RENET_DIR" && ./build.sh embed_proxy)
 
-    # Export the RAW (ungzipped) native binaries from the SAME builder image, for
-    # the renet runtime docker image (private/renet/Dockerfile.native, built by
-    # ci-build-docker). That image used to consume a separate native-* build; now
-    # it takes these from the renet artifact, so the builder image is the single
-    # source for both the SEA embed AND the runtime image. If docker is
-    # unavailable (embed_assets skipped), skip — a no-SEA-assets build anyway.
-    if [[ -n "$OUTPUT_DIR" ]] && command -v docker >/dev/null 2>&1 &&
-        docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
+    # Export the RAW (ungzipped) native binaries for the renet runtime docker
+    # image (private/renet/Dockerfile.native, built by ci-build-docker). Two
+    # sources, same bytes:
+    #   A. the builder image (docker cp) — a fresh embed_assets run built it;
+    #   B. the staged .zst tree (zstd -d) — the CI embed-asset cache restored
+    #      a receipt-current tree, so embed_assets skipped and the builder
+    #      image never exists. The .zst ARE the same binaries, compressed.
+    # Source B is what keeps the artifact COMPLETE on a cache hit: skipping
+    # the export here shipped an artifact without criu/rsync/... and failed
+    # ci-build-docker's Dockerfile.native COPY two jobs later.
+    if [[ -n "$OUTPUT_DIR" ]]; then
         log_step "Exporting native binaries (all 8 assets) for the runtime image..."
         mkdir -p "$OUTPUT_DIR"
         # <container /opt subdir>:<binary base name>. criu/rsync/rclone/zot/k3s
@@ -136,13 +139,39 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
             | @tsv
         ' "$_lockfile")
 
-        _nb_cid="$(docker create rediacc/renet:latest)"
-        for _entry in "${_native_assets[@]}"; do
-            IFS=$'\t' read -r _dir _base _na <<<"$_entry"
-            docker cp "$_nb_cid:$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
-                log_warn "native binary $_base-linux-$_na not found in builder image"
-        done
-        docker rm "$_nb_cid" >/dev/null 2>&1 || true
+        if command -v docker >/dev/null 2>&1 &&
+            docker image inspect rediacc/renet:latest >/dev/null 2>&1; then
+            # Source A: the builder image from this run's embed_assets.
+            _nb_cid="$(docker create rediacc/renet:latest)"
+            for _entry in "${_native_assets[@]}"; do
+                IFS=$'\t' read -r _dir _base _na <<<"$_entry"
+                docker cp "$_nb_cid:$_dir/$_base-linux-$_na" "$OUTPUT_DIR/" 2>/dev/null ||
+                    log_warn "native binary $_base-linux-$_na not found in builder image"
+            done
+            docker rm "$_nb_cid" >/dev/null 2>&1 || true
+        else
+            # Source B: cache-hit path. embed_assets returned 0 without a
+            # builder image, which means the receipt check verified every
+            # staged .zst against the lockfile digests -- decompress those.
+            log_info "Builder image absent (cached staged tree); reconstructing via zstd -d"
+            require_cmd zstd
+            for _entry in "${_native_assets[@]}"; do
+                IFS=$'\t' read -r _dir _base _na <<<"$_entry"
+                _zst=""
+                for _class in base cluster; do
+                    if [[ -f "$RENET_DIR/pkg/embed/assets/$_na/$_class/$_base-linux-$_na.zst" ]]; then
+                        _zst="$RENET_DIR/pkg/embed/assets/$_na/$_class/$_base-linux-$_na.zst"
+                        break
+                    fi
+                done
+                if [[ -z "$_zst" ]]; then
+                    log_warn "no staged .zst for $_base-linux-$_na"
+                    continue # the completeness check below fails loudly
+                fi
+                zstd -d -f -q "$_zst" -o "$OUTPUT_DIR/$_base-linux-$_na"
+                chmod +x "$OUTPUT_DIR/$_base-linux-$_na"
+            done
+        fi
 
         # Fail fast: the runtime image COPYs every one of these, so a missing one
         # must break HERE, not later as a cryptic COPY error in the docker build
@@ -150,7 +179,7 @@ if [[ "$SKIP_EMBED" != "true" ]]; then
         for _entry in "${_native_assets[@]}"; do
             IFS=$'\t' read -r _dir _base _na <<<"$_entry"
             [[ -f "$OUTPUT_DIR/$_base-linux-$_na" ]] || {
-                log_error "native binary $_base-linux-$_na missing after export — builder image is incomplete"
+                log_error "native binary $_base-linux-$_na missing after export (builder image or staged tree incomplete)"
                 exit 1
             }
         done
