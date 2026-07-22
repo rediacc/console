@@ -11,10 +11,6 @@
   color: "FEF2C0"
   description: "Prevents watchdog from auto-retrying failed jobs"
 
-- name: no-gemini-review
-  color: "FEF2C0"
-  description: "Skips automatic Gemini Code Assist review triggers"
-
 - name: no-external-quality
   color: "FEF2C0"
   description: "Skips externally-dependent quality checks (npm deps, security audit, Go deps)"

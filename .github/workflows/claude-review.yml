@@ -1,0 +1,103 @@
+name: Claude Review
+
+# Automated PR review by Claude. INVARIANT (operator ruling 2026-07-22): a
+# review fires ONLY for a non-draft PR whose CURRENT head SHA has green CI at
+# decision time. Two entry points cover the two orders in which "green" and
+# "ready" can be reached:
+#   - workflow_run: Console CI completed green for a PR run, and the PR is
+#     already ready (covers fix pushes while ready).
+#   - pull_request/ready_for_review: the PR flips ready after CI is already
+#     green (the babysitter's flip-at-green).
+# All authoritative gating (incl. same-SHA dedup via a marker comment and the
+# pointer-bump skip) lives in .ci/scripts/review/claude-review-gate.sh; the
+# job-level if is only a cheap pre-filter plus the same-repo fork guard
+# (workflow_run executes in base-repo context WITH secrets).
+
+on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+  pull_request:
+    types: [ready_for_review]
+
+permissions:
+  contents: read
+
+# One review pipeline per head branch; a newer green push supersedes an
+# in-flight review of the old head.
+concurrency:
+  group: claude-review-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Claude Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      pull-requests: write # inline review comments + summary comment
+      issues: write # marker comment upsert (issue-comment endpoint on PRs)
+      checks: read # "CI Complete" lookup on the ready_for_review path
+    steps:
+      # Default-branch checkout: gate script, prompt templates, .gitmodules.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Review gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_EVENT: ${{ github.event.workflow_run.event }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: .ci/scripts/review/claude-review-gate.sh
+
+      # Full history so `git diff <last_reviewed>..<head>` works in follow-ups.
+      - name: Checkout PR head
+        if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.gate.outputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # github_token is passed explicitly: comments post as github-actions,
+      # whose events never trigger workflows (anti-recursion), and the run
+      # does not depend on the Claude GitHub App's repo selection. Dropping
+      # it switches to the App/OIDC path and needs `id-token: write`.
+      - name: Claude review
+        if: steps.gate.outputs.go == 'true'
+        uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.gate.outputs.prompt }}
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 30
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api:*),Bash(git diff:*),Bash(git log:*)"
+
+      # Ordering is load-bearing: mark only AFTER a successful review step.
+      # A failed/cancelled review leaves no marker, so the SHA is retried on
+      # the next qualifying event (at-least-once semantics).
+      - name: Record reviewed SHA
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+        run: .ci/scripts/review/claude-review-gate.sh --mark

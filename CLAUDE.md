@@ -74,8 +74,13 @@ them silently is the failure this rule exists to prevent.
   deadlocks: it cannot do those items without racing live work in the same tree, and
   it must not tick or delete another session's tracking. Never tick or remove an item
   that is not yours.
-- **Defer as a QUESTION, not a note.** Three states, and only three: `- [ ]` open,
-  `- [x]` done, `- [?]` needs an operator decision. A `- [?]` goes to AskUserQuestion,
+- **Defer as a QUESTION, not a note.** Four states, and only four: `- [ ]` open,
+  `- [x]` done, `- [?]` needs an operator decision, and `- [>]` in-flight on
+  BACKGROUND work. A `- [>]` carries a UTC lease (`until:<ISO8601>Z`, max 120 min
+  ahead): while fresh, ending the turn is allowed and the item is reported to the
+  operator every stop; an expired or missing lease blocks again (fail-closed).
+  Renew the lease when you wake; never use it for work no delegate is running.
+  A `- [?]` goes to AskUserQuestion,
   and the hook prints every one of them back to the operator on stop, so a deferral
   cannot hide in a paragraph. Reserve it for real decisions: anything you can settle
   from the code, the request, or a sensible default is autonomous, and asking about it

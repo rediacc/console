@@ -28,6 +28,16 @@ SOFT_REQUIRED=(
     MIGRATION_TEST UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW
 )
 
+# Pointer-bump fast path (see .ci/scripts/ci/detect-pointer-bump.sh): the PR
+# head is content-identical to a commit that already passed full CI, and the
+# build jobs are DELIBERATELY skipped by ci.yml. Their skips must read as
+# green here; a genuine failure of any of them still blocks (soft tier only
+# forgives "skipped", never "failure").
+if [[ "${POINTER_BUMP_ONLY:-}" == "true" ]]; then
+    HARD_REQUIRED=(INITIALIZE)
+    SOFT_REQUIRED+=(BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
+fi
+
 failed=false
 
 for job in "${HARD_REQUIRED[@]}"; do

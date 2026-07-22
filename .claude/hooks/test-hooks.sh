@@ -43,11 +43,33 @@ check 2 pre-bash/block-long-sleep.sh        "$(bash_json 'sleep 30')" "long-slee
 check 2 pre-bash/block-git-amend.sh         "$(bash_json 'git commit --amend')" "git-amend"
 check 2 pre-bash/block-git-force-push.sh    "$(bash_json 'git push --force')" "git-force-push"
 check 2 pre-bash/block-git-empty-commit.sh  "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
+check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
+check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
+check 2 pre-bash/block-admin-merge.sh       "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
 check 2 pre-edit/block-suppressions.sh      "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh      "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
 
 # --- should PASS (exit 0) ---
+# NOTE: block-premature-ready.sh and block-admin-merge.sh verify live CI/thread
+# state over the network on their enforcement paths; only their pattern paths
+# (--undo, --auto, --draft flags, non-matching commands) are unit-tested here.
+check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --title x --body y')" "nondraft-create: console with --draft ok"
+check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
+check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
+check 0 pre-bash/block-premature-ready.sh   "$(bash_json 'gh pr ready 531 --undo')" "premature-ready: --undo always allowed"
+check 0 pre-bash/block-premature-ready.sh   "$(bash_json 'gh pr view 531')" "premature-ready: non-ready command ignored"
+# Regression: the phrase inside heredoc/doc prose is NOT an invocation. The
+# unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
+check 0 pre-bash/block-premature-ready.sh   "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
+check 0 pre-bash/block-admin-merge.sh       "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+# Regression: a multi-line quoted COMMIT MESSAGE mentioning the commands (with
+# prose semicolons and even "--admin") is not an invocation. v2 fired on this.
+COMMITMSG=$'git commit -m "feat: x\n\n- gh pr ready is hook-gated; gh pr merge --admin is banned" && git push'
+check 0 pre-bash/block-premature-ready.sh   "$(bash_json "$COMMITMSG")" "premature-ready: quoted commit-msg mention ignored"
+check 0 pre-bash/block-admin-merge.sh       "$(bash_json "$COMMITMSG")" "admin-merge: quoted commit-msg --admin mention ignored"
+check 0 pre-bash/block-admin-merge.sh       "$(bash_json 'gh pr merge 531 --squash --auto')" "admin-merge: --auto allowed"
+check 0 pre-bash/block-admin-merge.sh       "$(bash_json 'gh pr checks 531')" "admin-merge: non-merge command ignored"
 check 0 pre-bash/block-git-amend.sh         "$(bash_json 'git status')" "amend: benign"
 check 0 pre-bash/block-ssh-docker.sh        "$(bash_json 'ssh 192.168.111.1 docker ps')" "ssh-docker: bridge allowed"
 check 0 pre-bash/block-ssh-file-write.sh    "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"

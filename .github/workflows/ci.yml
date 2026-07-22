@@ -33,6 +33,14 @@ jobs:
     name: Initialize
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
     timeout-minutes: 15
+    # checks: read is for detect-pointer-bump.sh (reads the baseline commit's
+    # "CI Complete" check-run with the plain GITHUB_TOKEN; the app token has
+    # no checks scope). Job-level permissions replace the workflow defaults,
+    # so contents+packages are restated.
+    permissions:
+      contents: read
+      packages: read
+      checks: read
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
@@ -49,6 +57,11 @@ jobs:
       # full_suite: run all jobs on PR and nightly. Skip expensive
       # jobs (quality, standalone, elite) on push-to-main since PR already validated.
       full_suite: ${{ github.event_name != 'push' }}
+      # pointer_bump_only: PR head provably identical in content to a commit
+      # that already passed full CI, differing only in submodule pointers that
+      # moved to tree-identical commits on the submodules' main (post-squash
+      # bump). Gates the expensive jobs; see .ci/scripts/ci/detect-pointer-bump.sh.
+      pointer_bump_only: ${{ steps.init.outputs.pointer_bump_only }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -91,6 +104,9 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
           COMMIT_AUTHOR: ${{ github.event.head_commit.author.name }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # Plain job token for detect-pointer-bump.sh: check-runs need
+          # checks:read, which the app-token presets do not carry.
+          CHECKS_TOKEN: ${{ github.token }}
         run: |
           .ci/scripts/ci/initialize.sh --output "$GITHUB_OUTPUT"
 
@@ -144,7 +160,8 @@ jobs:
     timeout-minutes: 10
     if: >-
       always() &&
-      needs.initialize.result == 'success'
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.pointer_bump_only != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -248,12 +265,14 @@ jobs:
       R2_MEDIA_ENDPOINT: ${{ secrets.R2_MEDIA_ENDPOINT }}
 
   # ============================================================================
-  # REVIEW GATE: Trigger Gemini review, wait for it, check threads & comments
+  # REVIEW GATE: enforce review-thread hygiene (bot-agnostic)
   # Dependencies: [initialize, quality]
   # Must pass before Build jobs can start
   #
-  # Flow: Quality passes → Trigger Gemini → Wait for response →
-  #        Check resolved threads → Check unreplied comments
+  # Reviews themselves come from the Claude Review workflow
+  # (claude-review.yml), which fires only when CI is green AND the PR is
+  # non-draft. This gate enforces that the threads any review leaves are
+  # resolved and substantively replied to.
   # ============================================================================
   review-gate:
     name: Review Gate
@@ -272,24 +291,11 @@ jobs:
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # pr-read, not cd: the three scripts below only READ review state.
+          # pr-read, not cd: the two scripts below only READ review state.
           # check-resolved-threads.sh / check-review-comments.sh merely print
           # the resolve/reply commands for a human to run; they never call them.
-          # The one step that posts (trigger-gemini-review) uses GITHUB_TOKEN.
           preset: pr-read
           repositories: console
-      - name: Trigger Gemini review
-        run: .ci/scripts/quality/trigger-gemini-review.sh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-      - name: Wait for Gemini review
-        run: .ci/scripts/quality/wait-gemini-review.sh
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
       - name: Check resolved threads
         run: .ci/scripts/quality/check-resolved-threads.sh
         env:
@@ -317,6 +323,7 @@ jobs:
       always() &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
+      needs.initialize.outputs.pointer_bump_only != 'true' &&
       needs.quality.result == 'success' &&
       needs.review-gate.result == 'success'
     outputs:
@@ -394,7 +401,10 @@ jobs:
     permissions:
       contents: read
       packages: write   # GHCR push
-    if: always() && needs.initialize.result == 'success'
+    # pointer_bump_only gates the whole expensive pipeline here: build-cli,
+    # build-docker(-fast) and everything needing them skip transitively when
+    # this job skips (their ifs check needs.<build>.result == 'success').
+    if: always() && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true'
     uses: ./.github/workflows/ci-build-renet.yml
     with:
       next_version: ${{ needs.initialize.outputs.next_version }}
@@ -485,7 +495,7 @@ jobs:
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped')
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (needs.quality.result == 'success' || needs.quality.result == 'skipped')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -604,10 +614,14 @@ jobs:
   ops-tests:
     name: OPS Tests
     needs: [initialize, quality, review-gate, build-renet]
+    # The explicit pointer_bump_only clause is load-bearing: this if never
+    # references its build-renet need, so under always() the job would RUN on
+    # a fast-path push and die fetching the missing renet artifact.
     if: >-
       always() &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
+      needs.initialize.outputs.pointer_bump_only != 'true' &&
       (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
       (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
     uses: ./.github/workflows/ci-ops-test.yml
@@ -1009,6 +1023,7 @@ jobs:
       - name: Check all jobs passed
         run: .ci/scripts/ci/assert-ci-complete.sh
         env:
+          POINTER_BUMP_ONLY: ${{ needs.initialize.outputs.pointer_bump_only }}
           RESULT_INITIALIZE: ${{ needs.initialize.result }}
           RESULT_BUILD_DOCKER: ${{ needs.build-docker.result }}
           RESULT_BUILD_DOCKER_FAST: ${{ needs.build-docker-fast.result }}

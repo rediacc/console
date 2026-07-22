@@ -80,6 +80,9 @@ else
 fi
 
 write_output "is_bot" "$IS_BOT"
+# Default for every early-exit path; detect-pointer-bump.sh may overwrite with
+# true below (in GITHUB_OUTPUT the last write of a key wins).
+write_output "pointer_bump_only" "false"
 
 # Exit early if bot commit or check-only mode
 if [[ "$IS_BOT" == "true" ]]; then
@@ -119,7 +122,19 @@ else
 fi
 
 # =============================================================================
-# Step 4: Generate CI tags
+# Step 4: Pointer-bump fast-path detection (PR events only)
+# =============================================================================
+# Runs after submodule init so the token insteadOf rewrite (above) makes git
+# fetches authenticated. Fail-safe: any error inside the detector must degrade
+# to a normal full run, never fail initialize.
+log_step "Detecting pointer-bump-only push..."
+if ! .ci/scripts/ci/detect-pointer-bump.sh ${OUTPUT_FILE:+--output "$OUTPUT_FILE"}; then
+    log_warn "detect-pointer-bump.sh errored; running full CI"
+    write_output "pointer_bump_only" "false"
+fi
+
+# =============================================================================
+# Step 5: Generate CI tags
 # =============================================================================
 log_step "Generating CI tags..."
 
@@ -138,7 +153,7 @@ log_info "Web tag: $WEB_TAG (console commit)"
 log_info "RDC tag: $RDC_TAG (console commit)"
 
 # =============================================================================
-# Step 5: Detect bump type and calculate next version
+# Step 6: Detect bump type and calculate next version
 # =============================================================================
 log_step "Detecting bump type from PR labels..."
 BUMP_TYPE=$(.ci/scripts/version/detect-bump-type.sh --verbose)
@@ -180,7 +195,7 @@ if [[ "${GITHUB_EVENT_NAME:-}" == "push" ]]; then
 fi
 
 # =============================================================================
-# Step 6: Check if images exist in registry (requires Docker)
+# Step 7: Check if images exist in registry (requires Docker)
 # =============================================================================
 log_step "Checking image cache in registry..."
 

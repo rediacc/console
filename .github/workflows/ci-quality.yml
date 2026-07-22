@@ -70,9 +70,9 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
-  # NOTE: Gemini Review is now triggered by review-gate job in ci.yml
-  # after all quality jobs pass, to avoid triggering reviews on code
-  # that has lint/type errors
+  # NOTE: PR reviews come from the Claude Review workflow (claude-review.yml),
+  # which fires only when CI Complete is green and the PR is non-draft; the
+  # review-gate job in ci.yml enforces thread resolution afterwards.
 
   quality-versions:
     name: Versions
@@ -976,7 +976,8 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
   # NOTE: Review checks (resolved threads + unreplied comments) are in
-  # review-gate job in ci.yml. They run AFTER Gemini posts its review.
+  # review-gate job in ci.yml. They enforce whatever threads the Claude
+  # review (or a human) left on the PR.
 
   quality-attribution:
     name: Attribution

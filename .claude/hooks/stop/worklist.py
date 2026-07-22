@@ -16,8 +16,24 @@ through the tool layer instead of through a paragraph in my summary:
     - [ ] open        blocks the stop
     - [x] done        silent
     - [?] deferred    allowed, but printed back to the operator every time
+    - [>] in-flight   delegated to BACKGROUND work (agent/task); allowed while
+                      its lease is fresh, printed back every time, and blocks
+                      again the moment the lease expires
 
 A `- [?]` is a QUESTION, not a footnote. Raise it with AskUserQuestion.
+
+WHY v3 (`- [>]`, 2026-07-22, operator request): v2 had no representation for
+"a background agent/task is working this item right now", so a session that
+delegated correctly was blocked for doing nothing wrong -- and the block
+pushed it toward busywork or premature ticks. The hook cannot SEE harness
+background state (a Stop hook gets only the event JSON), so v3 does not
+guess: the session declares the delegation with a LEASE it must renew:
+
+    - [>] (5546d4bb) until:2026-07-22T11:30Z docs rewrite -> docs-writer agent
+
+Fail-closed rules: no parseable `until:` token, a lease in the past, or a
+lease more than MAX_LEASE_MIN ahead of now all count as OPEN and block. A
+lease is a promise to come back, not an exemption.
 
 STATE: one worklist per PROJECT, at $TMPDIR/claude-worklist/<repo-slug>.md.
 
@@ -42,6 +58,7 @@ The counter resets whenever open items reach zero, so later work gets a fresh
 budget.
 """
 
+import datetime
 import json
 import os
 import pathlib
@@ -49,8 +66,31 @@ import re
 import sys
 
 MAX_BLOCKS = 25
+# Leases beyond this horizon are invalid: a `- [>]` marked "until next year"
+# would be a bypass, not a delegation.
+MAX_LEASE_MIN = 120
 # `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
-ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?])\]\s*(?:\((?P<owner>[0-9a-fA-F][0-9a-fA-F-]*)\)\s*)?")
+ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[0-9a-fA-F][0-9a-fA-F-]*)\)\s*)?")
+LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
+
+
+def lease_state(line):
+    """'fresh' | 'expired' | 'invalid' for a `- [>]` line's until: token."""
+    m = LEASE.search(line)
+    if not m:
+        return "invalid"
+    stamp = m.group(1)
+    fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
+    try:
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+    except ValueError:
+        return "invalid"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if until <= now:
+        return "expired"
+    if until > now + datetime.timedelta(minutes=MAX_LEASE_MIN):
+        return "invalid"
+    return "fresh"
 
 
 def owned_by_me(owner, session_id):
@@ -103,7 +143,7 @@ def main():
     session_id = event.get("session_id", "")
     lines = worklist.read_text().splitlines() if worklist.exists() else []
 
-    open_items, others, deferred = [], {}, []
+    open_items, others, deferred, in_flight = [], {}, [], []
     for line in lines:
         m = ITEM.match(line)
         if not m:
@@ -117,6 +157,19 @@ def main():
                 others.setdefault(owner, []).append(line.strip())
         elif state == "?" and mine:
             deferred.append(line.strip())
+        elif state == ">":
+            if not mine:
+                others.setdefault(owner, []).append(line.strip())
+                continue
+            ls = lease_state(line)
+            if ls == "fresh":
+                in_flight.append(line.strip())
+            else:
+                # Fail closed: an expired or malformed lease is an open item.
+                open_items.append(
+                    "%s   <- [>] lease %s; finish it, renew the lease, or tick it"
+                    % (line.strip(), ls)
+                )
 
     def other_sessions_note():
         if not others:
@@ -128,6 +181,13 @@ def main():
     if not open_items:
         counter.unlink(missing_ok=True)
         parts = []
+        if in_flight:
+            # Allowed to stop, but never silently: the operator sees what is
+            # still riding on background work every single time.
+            parts.append(
+                "Worklist: %d item(s) in flight on background work (lease-fresh):\n%s"
+                % (len(in_flight), "\n".join("  " + d for d in in_flight))
+            )
         if deferred:
             # The operator sees these even if my summary buries them.
             parts.append(
@@ -177,12 +237,16 @@ def main():
             "reason": "Do not stop yet: %d open item(s) on the session worklist (%s).\n\n%s\n\n"
             "Pick the next open item and do it. Tick with '- [x]' as they land and append what you discover.\n"
             "If an item needs an OPERATOR DECISION, mark it '- [?]' and ask via AskUserQuestion. "
+            "If a BACKGROUND agent/task is actively working an item, mark it "
+            "'- [>] (prefix) until:<ISO8601>Z <text>' (UTC lease, max %d min ahead, renew on wake) "
+            "and the stop is allowed while the lease is fresh. "
             "Do not tick '- [x]' on a claim you have not probed: run the command that proves it first.\n"
             "Block %d of %d."
             % (
                 len(open_items),
                 worklist,
                 "\n".join("  " + i for i in open_items),
+                MAX_LEASE_MIN,
                 count + 1,
                 MAX_BLOCKS,
             )

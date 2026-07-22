@@ -48,7 +48,7 @@ When fixing CI failures, follow this loop:
 1. **Run locally first**: Run `npm run ci` sub-commands locally before pushing to avoid costly CI round-trips. Use parallel sub-agents for independent checks.
 2. **Push and watch**: After pushing, arm a terminal-state watch in the background: `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs` with run_in_background: true — the process exit notifies on completion. Do NOT use `gh run watch` as the wake-up; it has dropped silently on terminal runs (observed 4/4).
 3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`. A run that ends `cancelled` with a failed job means the watchdog killed it for that failure; `cancelled` with zero failed jobs means your own push superseded it. Cancelled NEVER means green — the run is only done when every job passes (deploy preview is among the last).
-4. **Every PR (console AND submodules) gets bot-reviewed within minutes of each push**: fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL. Unreplied/unresolved threads fail `Review Gate` (console PR) and `Quality / Submodule Branches` (submodule PRs) — check for fresh comments after each push, before the gates do.
+4. **The automated Claude review fires when CI is green AND the PR is non-draft**: first at the babysitter's ready-flip, then again after each green push while the PR stays ready. It never runs on a draft, a red head, or a pointer-bump-only delta. When it posts (inline threads plus one summary comment), fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL. Unreplied/unresolved threads still fail `Review Gate` (console PR) and `Quality / Submodule Branches` (submodule PRs); clear them before the gate re-runs.
 5. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Batch pending fixes into one push — each push restarts the whole pipeline. Continue until green.
 
 ### CI watchdog and auto-retry
@@ -72,6 +72,14 @@ The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-
 | `no-auto-retry` | Skip retry, force-cancel immediately on failure |
 
 Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
+
+### Draft-until-green and the merge hooks
+
+Console PRs are opened as **drafts** (`gh pr create --draft`) and stay draft until CI is green; submodule PRs (renet/account/elite, private repos on the GitHub free plan) are opened plain because private drafts are not free. Three pre-command hooks enforce the flow: `block-nondraft-pr-create` (the draft/plain split at creation time), `block-premature-ready` (`gh pr ready` is allowed only when the required `CI Complete` check is SUCCESS on the PR's current head; `--undo` is always allowed), and `block-admin-merge` (`gh pr merge --admin` is banned outright). The sanctioned merge is `gh pr merge --squash --auto`, which GitHub completes once required checks are green.
+
+### Pointer-bump fast path
+
+A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`, `package-tests`, and `ops-tests`; only `quality`, `review-gate`, and `ci-complete` still run. `assert-ci-complete.sh` accepts those skipped builds as green **only** under this flag, so the aggregated `CI Complete` still goes green, in minutes. This is why `/pr-merge` now WAITS for the fast-path run to go green and merges with `--squash --auto`, instead of admin-merging over a pending run (which used to leave the merged PR with a permanent red `Quality / Branch`, a wall of cancelled jobs, and no `CI Complete`). A pointer-bump-only delta is also deliberately not re-reviewed by Claude.
 
 ### Never push to `main` or cut a release without explicit user authorization
 
