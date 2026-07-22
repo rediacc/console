@@ -193,8 +193,15 @@ jobs:
 
       - name: "Tutorial prep: start RustFS S3 on bridge"
         # backup-restore pushes to an S3-compatible store; the tutorial's
-        # default endpoint is the bridge VM at :9000.
+        # default endpoint is the bridge VM at :9000. RustFS is a renet-managed
+        # CONTAINER on the bridge, and the cluster came up --skip-orchestration
+        # (workers get docker later via `rdc machine setup` in the tutorial
+        # preambles -- that is part of what the sequence proves). The bridge is
+        # not a tutorial target, so give it docker here the same way
+        # orchestration would (VM id 1 = bridge; first live run failed with
+        # "sudo: docker: command not found").
         run: |
+          "$RENET_BINARY" ops docker install 1
           "$RENET_BINARY" ops rustfs start
           "$RENET_BINARY" ops rustfs create-bucket rediacc-test
 
