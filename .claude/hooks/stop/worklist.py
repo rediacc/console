@@ -35,6 +35,30 @@ Fail-closed rules: no parseable `until:` token, a lease in the past, or a
 lease more than MAX_LEASE_MIN ahead of now all count as OPEN and block. A
 lease is a promise to come back, not an exemption.
 
+WHY v4 (dead-session cleanup, 2026-07-22, operator request): items from
+crashed or abandoned sessions lingered forever. Cleanup must not rewrite the
+file: appenders use lock-less `>>`, and a read-modify-rename would eat any
+append that lands in the window (the exact lost-update hazard the file header
+warns about). So the automatic path never moves a byte that exists:
+
+    - liveness oracle: newest mtime of <projects-dir>/<owner-prefix>*.jsonl
+      (the transcript every live session writes continuously). No matching
+      transcript (word labels, foreign machines) = UNKNOWN = never touched.
+    - archival = flipping the state byte to `~` IN PLACE (os.pwrite of one
+      byte, under a non-blocking flock on <worklist>.lock, after re-reading
+      and re-verifying the byte under the lock). File length only ever grows
+      (an appended audit NOTE line), so racing `>>` appends are safe, racing
+      cleaners are serialized, and a reader at any instant sees a valid file.
+    - policy: a DEAD (>WORKLIST_DEAD_HOURS, default 24) session's `[x]` is
+      tombstoned immediately; its `[ ]`/`[?]`/`[>]` are REPORTED as orphaned
+      until WORKLIST_ARCHIVE_HOURS (default 168), then tombstoned. Unfinished
+      work is surfaced for a week before it is archived, never dropped
+      silently. `[~]` lines are invisible to the parser.
+    - `--compact` (manual, operator-run) physically drops `[~]` lines; it is
+      the one op that must rewrite, so it takes the lock, re-checks the file
+      size before an atomic replace, and still documents the microscopic
+      append race -- run it when sessions are quiet.
+
 STATE: one worklist per PROJECT, at $TMPDIR/claude-worklist/<repo-slug>.md.
 
     WORKLIST=$(.claude/hooks/stop/worklist.py --path)
@@ -59,18 +83,29 @@ budget.
 """
 
 import datetime
+import fcntl
+import glob
 import json
 import os
 import pathlib
 import re
 import sys
+import tempfile
+import time
 
 MAX_BLOCKS = 25
 # Leases beyond this horizon are invalid: a `- [>]` marked "until next year"
 # would be a bypass, not a delegation.
 MAX_LEASE_MIN = 120
 # `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
-ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[0-9a-fA-F][0-9a-fA-F-]*)\)\s*)?")
+# Owner accepts any word-ish label, not just hex: a named agent tagged items
+# "(perf6-daemon)", the old hex-only charset failed to parse it, the item read
+# as UNTAGGED, and untagged defaults to mine -- so every OTHER session was
+# blocked on that agent's work. Non-prefix labels now parse as owners and are
+# reported-never-blocking for everyone (including the labeler: only a tag that
+# is a PREFIX of your session id binds you -- use your session prefix if you
+# want the hook to hold you to an item).
+ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
 LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 
 
@@ -126,9 +161,114 @@ def emit(obj):
     sys.exit(0)
 
 
+def owner_age_hours(owner, projects_dir):
+    """Hours since the owner's newest transcript write, or None if no
+    transcript matches (unknown owner: word label, foreign machine). The
+    newest match wins so a short prefix matching several sessions reads as
+    the LIVELIEST of them -- the conservative direction."""
+    if not owner or not projects_dir:
+        return None
+    matches = glob.glob(os.path.join(projects_dir, owner + "*.jsonl"))
+    if not matches:
+        return None
+    newest = max(os.path.getmtime(m) for m in matches)
+    return (time.time() - newest) / 3600.0
+
+
+def cleanup_dead_sessions(worklist, session_id, projects_dir):
+    """Tombstone dead sessions' items by flipping the state byte to `~` in
+    place. Returns (archived_lines, orphaned_lines). Never raises; never
+    truncates; never moves an existing byte. See docstring (WHY v4)."""
+    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
+    data = worklist.read_bytes()
+    flips, orphaned, offset = [], [], 0
+    for raw in data.split(b"\n"):
+        line_start, offset = offset, offset + len(raw) + 1
+        try:
+            line = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
+        m = ITEM.match(line)
+        if not m:
+            continue
+        state, owner = m.group("state"), m.group("owner")
+        if owner is None or owned_by_me(owner, session_id):
+            continue  # untagged or mine: never auto-archived
+        age = owner_age_hours(owner, projects_dir)
+        if age is None or age < dead_h:
+            continue  # unknown or alive
+        bracket = raw.find(b"[")
+        if bracket < 0 or raw[bracket + 1 : bracket + 2] != state.encode():
+            continue
+        if state == "x" or age >= archive_h:
+            flips.append((line_start + bracket + 1, state.encode(), line.strip(), owner, age))
+        else:
+            orphaned.append("%s   (owner dead ~%dh)" % (line.strip(), age))
+    if not flips:
+        return [], orphaned
+
+    archived = []
+    lock_path = str(worklist) + ".lock"
+    with open(lock_path, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return [], orphaned  # another cleaner holds it; next stop retries
+        with open(worklist, "r+b") as f:
+            current = f.read()
+            for pos, expected, text, owner, age in flips:
+                # Re-verify under the lock: offsets of existing lines never
+                # move (no-truncate invariant), but another cleaner may have
+                # flipped this byte already.
+                if len(current) > pos and current[pos : pos + 1] == expected:
+                    os.pwrite(f.fileno(), b"~", pos)
+                    archived.append("%s   (was [%s], owner %s dead ~%dh)" % (text, expected.decode(), owner, age))
+        if archived:
+            stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+            note = "- NOTE cleanup %s: tombstoned %d dead-session item(s) (state -> [~]); compact with worklist.py --compact\n" % (stamp, len(archived))
+            with open(worklist, "a") as f:
+                f.write(note)
+    return archived, orphaned
+
+
+def compact(worklist):
+    """Operator-run: physically drop `[~]` tombstone lines. The one op that
+    rewrites, so: exclusive blocking lock, size re-check before an atomic
+    replace, and a documented microscopic race with lock-less appenders --
+    run when sessions are quiet."""
+    if not worklist.exists():
+        print("nothing to compact: %s absent" % worklist)
+        return
+    lock_path = str(worklist) + ".lock"
+    tomb = re.compile(r"^\s*-\s*\[~\]")
+    with open(lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        for _ in range(5):
+            data = worklist.read_bytes()
+            lines = data.decode("utf-8").splitlines(keepends=True)
+            kept = [ln for ln in lines if not tomb.match(ln)]
+            dropped = len(lines) - len(kept)
+            if dropped == 0:
+                print("nothing to compact: 0 tombstones")
+                return
+            fd, tmp = tempfile.mkstemp(dir=str(worklist.parent), prefix=worklist.name)
+            with os.fdopen(fd, "w") as f:
+                f.writelines(kept)
+            if worklist.stat().st_size == len(data):  # no append landed since read
+                os.replace(tmp, worklist)
+                print("compacted: dropped %d tombstoned line(s)" % dropped)
+                return
+            os.unlink(tmp)  # an append raced us; re-read and retry
+        print("gave up after 5 attempts: file kept changing (sessions active?)")
+
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--path":
         print(worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
+        return
+    if len(sys.argv) > 1 and sys.argv[1] == "--compact":
+        compact(worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
         return
 
     try:
@@ -141,6 +281,19 @@ def main():
     counter = worklist.with_suffix(".blocks")
 
     session_id = event.get("session_id", "")
+
+    archived, orphaned = [], []
+    if worklist.exists():
+        # Dead-session cleanup runs before classification so a tombstoned
+        # line is invisible to this very pass. Never let it break the gate.
+        projects_dir = os.environ.get("WORKLIST_PROJECTS_DIR") or (
+            os.path.dirname(event["transcript_path"]) if event.get("transcript_path") else ""
+        )
+        try:
+            archived, orphaned = cleanup_dead_sessions(worklist, session_id, projects_dir)
+        except Exception:  # noqa: BLE001 -- cleanup must never break gating
+            archived, orphaned = [], []
+
     lines = worklist.read_text().splitlines() if worklist.exists() else []
 
     open_items, others, deferred, in_flight = [], {}, [], []
@@ -181,6 +334,16 @@ def main():
     if not open_items:
         counter.unlink(missing_ok=True)
         parts = []
+        if archived:
+            parts.append(
+                "Worklist: archived %d dead-session item(s) (state -> [~]):\n%s"
+                % (len(archived), "\n".join("  " + a for a in archived))
+            )
+        if orphaned:
+            parts.append(
+                "Worklist: %d ORPHANED item(s) (owner session dead; auto-archive after %sh):\n%s"
+                % (len(orphaned), os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"), "\n".join("  " + o for o in orphaned))
+            )
         if in_flight:
             # Allowed to stop, but never silently: the operator sees what is
             # still riding on background work every single time.
