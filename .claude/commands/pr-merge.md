@@ -56,7 +56,25 @@ The pointer bump changed only submodule SHAs (trees verified identical in step 2
 The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the **real** Docker build+push, not the PR dry-run). When Console CI goes green, its finalize step **dispatches the Release workflow** (`cd-v2.yml`): git tag → GitHub Release → R2 upload → **deploy edge**. Both do main-only work that PR CI only dry-ran, so they can fail where every PR check was green. The land is not done until this is green.
 - Find the **Console CI** run for the merged commit: `gh run list --repo rediacc/console --branch main --workflow "Console CI" --limit 3` (event `push`, matching the merged SHA), then arm a terminal-state watch (run_in_background: true; the process exit notifies on completion — do NOT use `gh run watch`, it has dropped silently on terminal runs): `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs`.
 - Console CI on `main` is green **before** the Release run exists. Once it is, find the **Release** run (`gh run list --repo rediacc/console --workflow "Release" --limit 3`, event `workflow_dispatch`, matching the merged SHA) and background-watch it the same way. That is the run that actually tags and deploys edge.
-- **Monitor-and-report only.** If a CD step fails, surface the exact failed step loudly and read its COMPLETE log before classifying. The edge may be left partially deployed. **Do NOT** push to `main`, re-run, or re-dispatch the release to "fix" it: a code fix goes through a fresh PR (use `/pr-babysit`); a genuinely transient infra failure is the user's call to re-dispatch (`gh workflow run "Release" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`).
+- **Read before classifying.** If a CD step fails, surface the exact failed step loudly and read its COMPLETE log first. The edge may be left partially deployed.
+- **Prefer doing nothing.** The watchdog's AI classifier auto-retries transient failures on `main` by itself (observed: a wrangler `Network connection lost.` during `d1 export` was classified `transient (0.8)` and re-dispatched without intervention). Check whether a retry is already in flight before acting; a second actor racing the watchdog is how a half-deployed edge gets worse.
+- **First, classify: transient, or main-only?** The PR was green, so a failure appearing now is one of exactly two things, and they need opposite responses. The test is one command — **did this job run and pass on the PR run?**
+
+  ```bash
+  gh run view <pr-run-id> --repo rediacc/console --json jobs \
+    --jq '.jobs[]|select(.name=="<failed job>")|"\(.conclusion) \(.name)"'
+  ```
+
+  - **It ran and passed on the PR → transient.** Same code, same job, different outcome. Do NOT fix it. The watchdog auto-retries these itself. (Real case: `Migration Test` passed on PR run 29844923209, then died on `main` with wrangler `Network connection lost.` mid `d1 export`, was classified `transient (0.8)` and cleared on the auto-retry. A "fix" would have been a change to working code.)
+  - **It never ran on the PR, or runs differently there → main-only.** Then it is genuinely untestable by a PR, and that is what licenses the next bullet.
+
+- **A main-only code fix goes DIRECTLY ON `main`, not through a new branch or PR.** The rule is inverted here for a reason that is about INSTRUMENTS, not urgency: **a PR cannot exercise the thing that broke.** It would go green while proving nothing, because the failing path is one PR CI structurally never runs. The verification loop for these fixes is the next `main` run, not a PR check.
+
+  Main-only surfaces in this repo: `finalize-release-sentinel`, `pipeline-sentinel`, `check-release-state`, `build-devcontainer-manifest` (all gated `github.event_name == 'push'` / `refs/heads/main`), the entire Release workflow (`cd-v2.yml`, dispatch-only), and Docker — which PR CI only DRY-RUNS while `main` does the real build+push.
+
+  So: commit on `main` and push. Keep it surgical (name the paths, `git add -A` is still banned) and state plainly in the report that you pushed to `main` and why.
+  - This is the ONLY situation in which pushing `main` is allowed without a fresh per-task request. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else still goes through `/pr-babysit`.
+  - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "Release" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
 
 ### 6. Re-sync main AFTER the release run — CD pushes to main during step 5
 
@@ -89,4 +107,4 @@ git merge-base --is-ancestor origin/main "$rec" && echo "record AHEAD"
 Worktree **behind** the record ⇒ the checkout is stale ⇒ `git submodule update`, **commit nothing**. Committing it would roll that submodule back a release. The naive test ("this isn't my work, leave it out") gives the right answer here only by luck, and the opposite instinct ("the pointer is dirty, carry it at its latest") ships the rollback.
 
 ### 7. Report
-State each merged commit (renet / account / console → their squash SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). **Do not** merge anything else, push to `main`, or re-cut a release.
+State each merged commit (renet / account / console → their squash SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. **Do not** merge anything else or re-cut a release.

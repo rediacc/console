@@ -36,8 +36,13 @@ permissions:
 jobs:
   # Build full renet binaries with embedded assets. The Docker builder image
   # (private/renet/Dockerfile, via build.sh embed_assets) is the SINGLE source
-  # of every embedded binary — criu/rsync/CSI compiled or cross-compiled,
-  # rclone/k3s/zot downloaded (pinned + sha256), arm64 criu from a Debian .deb.
+  # of every embedded binary; private/renet/embed-assets.lock.json is the single
+  # source of WHICH binaries, at which versions, for which architectures.
+  # criu/rsync/CSI are compiled or cross-compiled from pinned commits,
+  # rclone/k3s/zot are downloaded at pinned versions with sha256 verification.
+  # arm64 criu is cross-compiled from the same pinned commit as amd64 — it used
+  # to come from a Debian .deb, which silently shipped 3.17.1 against a declared
+  # 4.2.x with a different shared-library set.
   # It also exports the raw native binaries for the runtime image, so there is
   # no separate native-* build any more.
   build-renet:

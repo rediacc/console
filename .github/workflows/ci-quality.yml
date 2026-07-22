@@ -785,6 +785,13 @@ jobs:
       - name: Check embed credits consistency
         run: npm run check:ci-embed-credits
 
+      # Same submodule requirement: reads private/renet/embed-assets.lock.json.
+      # Asserts every embedded component is pinned for every architecture it
+      # declares — the dimension nothing carried when arm64 criu silently became
+      # a different version from amd64 criu.
+      - name: Check embed arch parity
+        run: npm run check:ci-embed-arch-parity
+
       # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
       # raises the API rate limit; the gate fails SOFT on any network/rate-limit
       # error, so a missing token or a blip never reddens the build — only a
