@@ -23,6 +23,15 @@ const I18N_KEY_OVERRIDES: Record<string, string> = {
   run: 'shortcuts.run',
 };
 
+/**
+ * Hidden internal commands whose help text is deliberately hardcoded English
+ * (see the header of commands/executor-daemon.ts: a debug/ops surface with no
+ * place in the translated help tree). They carry NO i18n key on purpose — the
+ * orphan-key gate (check-cli-i18n-key-usage) enforces the absence, so listing
+ * one here AND adding a catalog key is a contradiction the gates will catch.
+ */
+const HARDCODED_ENGLISH = new Set(['executor-daemon']);
+
 /** Resolve a nested key like "repo.up.description" from the commands object. */
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   let current: unknown = obj;
@@ -42,6 +51,7 @@ describe('command help text coverage', () => {
     const missing: string[] = [];
 
     for (const cmd of COMMAND_REGISTRY) {
+      if (HARDCODED_ENGLISH.has(cmd.name)) continue;
       const key = i18nKeyFor(cmd.name);
       const desc = getNestedValue(commands, `${key}.description`);
       if (typeof desc !== 'string' || desc.trim().length === 0) {

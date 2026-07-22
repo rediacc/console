@@ -44,7 +44,13 @@ for doc in "$DOCS_DIR"/tutorial-*.mdx; do
     fi
     pairs+=("$(printf '%03d %s' "$order" "$slug")")
 done
-mapfile -t sequence < <(printf '%s\n' "${pairs[@]}" | sort | awk '{print $2}')
+# while-read, not mapfile: bash 3.2 / minimal-CI compat, enforced by
+# .ci/scripts/security/check-commands.sh (same pattern as build-renet.sh).
+sequence=()
+while IFS= read -r _line; do
+    [ -n "$_line" ] || continue
+    sequence+=("$_line")
+done < <(printf '%s\n' "${pairs[@]}" | sort | awk '{print $2}')
 
 # ── Drift check: docs ↔ scripts must be 1:1 ────────────────────────────────
 drift=0
