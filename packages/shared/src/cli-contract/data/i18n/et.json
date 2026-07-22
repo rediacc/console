@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "serveri mittevastavus",
   "commands.doctor.subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
   "commands.doctor.title": "Rediacc CLI Doctor",
-  "commands.executor-daemon.description": "Juhi kohalikku täitja-daemonit (sisemine): see käivitub automaatselt, hoiab käskude vahel SSH-ühendused ja provisioneerimiskontrollid valmis ning lülitub jõudeolekus ise välja.",
   "commands.job.cancel.alreadyFinished": "Töö {{jobId}} on juba {{state}}; pole midagi tühistada.",
   "commands.job.cancel.confirm": "Tühistada masinas {{machine}} töö {{jobId}} ({{function}})? Toiming peatatakse.",
   "commands.job.cancel.description": "Tühista töötav eraldiseisev töö",

@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
-    "executor-daemon": {
-      "description": "控制本地 executor daemon（内部使用）：自动启动，在命令之间使 SSH 连接和预配置检查保持就绪状态，并在空闲时自动关闭。"
-    },
     "machine": {
       "deprovision": {
         "completed": "机器 {{name}} 已销毁并从配置中移除",

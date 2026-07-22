@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
       "title": "Rediacc CLI Tanılama"
     },
-    "executor-daemon": {
-      "description": "Yerel yürütücü daemon'ını (dahili) kontrol eder: otomatik olarak başlar, komutlar arasında SSH bağlantılarını ve provisioning kontrollerini hazır tutar ve boşta kaldığında kendini kapatır."
-    },
     "machine": {
       "deprovision": {
         "completed": "Makine {{name}} yok edildi ve yapılandırmadan kaldırıldı",

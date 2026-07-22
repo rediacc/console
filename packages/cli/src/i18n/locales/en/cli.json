@@ -131,9 +131,6 @@
       "gplHeader": "GPL source availability:",
       "licensesUnavailable": "The full THIRD_PARTY_LICENSES text is generated at build time and is only bundled with release builds. In dev mode, run the CLI build to generate it, or view the per-component attributions with: rdc credits"
     },
-    "executor-daemon": {
-      "description": "Control the local executor daemon (internal): it starts automatically, keeps SSH connections and provisioning checks warm between commands, and shuts itself down when idle."
-    },
     "mcp": {
       "descriptionShort": "Model Context Protocol server for AI agents",
       "description": "Expose the CLI as a Model Context Protocol (MCP) server for integration with AI agents. The server wraps CLI commands as MCP tools with structured JSON input/output. Key subcommand: serve (start stdio-based MCP server).",

@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
       "title": "Rediacc CLI Doctor"
     },
-    "executor-daemon": {
-      "description": "Juhi kohalikku täitja-daemonit (sisemine): see käivitub automaatselt, hoiab käskude vahel SSH-ühendused ja provisioneerimiskontrollid valmis ning lülitub jõudeolekus ise välja."
-    },
     "machine": {
       "deprovision": {
         "completed": "Masin {{name}} hävitatud ja konfiguratsioonist eemaldatud",

@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "sunucu uyumsuzluğu",
   "commands.doctor.subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
   "commands.doctor.title": "Rediacc CLI Tanılama",
-  "commands.executor-daemon.description": "Yerel yürütücü daemon'ını (dahili) kontrol eder: otomatik olarak başlar, komutlar arasında SSH bağlantılarını ve provisioning kontrollerini hazır tutar ve boşta kaldığında kendini kapatır.",
   "commands.job.cancel.alreadyFinished": "{{jobId}} görevi zaten {{state}}; iptal edilecek bir şey yok.",
   "commands.job.cancel.confirm": "{{machine}} üzerindeki {{jobId}} ({{function}}) görevi iptal edilsin mi? İşlem durdurulacak.",
   "commands.job.cancel.description": "Çalışan bağımsız bir görevi iptal eder",

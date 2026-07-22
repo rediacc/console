@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "impossible de joindre le serveur d'abonnement",
       "title": "Diagnostic Rediacc CLI"
     },
-    "executor-daemon": {
-      "description": "Contrôle le daemon exécuteur local (interne) : il démarre automatiquement, maintient actives les connexions SSH et les vérifications de provisionnement entre les commandes, et s'arrête de lui-même en cas d'inactivité."
-    },
     "machine": {
       "deprovision": {
         "completed": "Machine {{name}} détruite et supprimée de la configuration",

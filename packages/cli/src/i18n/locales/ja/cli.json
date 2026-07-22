@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
-    "executor-daemon": {
-      "description": "ローカルの executor daemon を制御する（内部用）：自動的に起動し、コマンド間で SSH 接続とプロビジョニングチェックを待機状態に保ち、アイドル時には自動的にシャットダウンする。"
-    },
     "machine": {
       "deprovision": {
         "completed": "マシン {{name}} が破棄され、設定から削除されました",

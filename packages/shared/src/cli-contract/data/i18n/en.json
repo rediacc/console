@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "server mismatch",
   "commands.doctor.subscriptionUnreachable": "unable to reach subscription server",
   "commands.doctor.title": "Rediacc CLI Doctor",
-  "commands.executor-daemon.description": "Control the local executor daemon (internal): it starts automatically, keeps SSH connections and provisioning checks warm between commands, and shuts itself down when idle.",
   "commands.job.cancel.alreadyFinished": "Job {{jobId}} already {{state}}; nothing to cancel.",
   "commands.job.cancel.confirm": "Cancel job {{jobId}} ({{function}}) on {{machine}}? The operation will be stopped.",
   "commands.job.cancel.description": "Cancel a running detached job",

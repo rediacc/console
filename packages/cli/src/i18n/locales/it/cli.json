@@ -622,9 +622,6 @@
       "subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
       "title": "Rediacc CLI Doctor"
     },
-    "executor-daemon": {
-      "description": "Controlla il daemon esecutore locale (interno): si avvia automaticamente, mantiene attive le connessioni SSH e i controlli di provisioning tra un comando e l'altro, e si arresta da solo quando è inattivo."
-    },
     "machine": {
       "deprovision": {
         "completed": "Macchina {{name}} distrutta e rimossa dalla configurazione",

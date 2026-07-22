@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "server non corrispondente",
   "commands.doctor.subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
   "commands.doctor.title": "Rediacc CLI Doctor",
-  "commands.executor-daemon.description": "Controlla il daemon esecutore locale (interno): si avvia automaticamente, mantiene attive le connessioni SSH e i controlli di provisioning tra un comando e l'altro, e si arresta da solo quando è inattivo.",
   "commands.job.cancel.alreadyFinished": "Il job {{jobId}} è già {{state}}; niente da annullare.",
   "commands.job.cancel.confirm": "Annullare il job {{jobId}} ({{function}}) su {{machine}}? L'operazione verrà interrotta.",
   "commands.job.cancel.description": "Annulla un job in background in esecuzione",

@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "servidor não corresponde",
   "commands.doctor.subscriptionUnreachable": "impossível contactar o servidor de subscrição",
   "commands.doctor.title": "Diagnóstico do CLI Rediacc",
-  "commands.executor-daemon.description": "Controlar o daemon executor local (interno): inicia-se automaticamente, mantém as ligações SSH e as verificações de provisionamento prontas entre comandos, e desliga-se sozinho quando está inativo.",
   "commands.job.cancel.alreadyFinished": "O job {{jobId}} já está {{state}}; nada a cancelar.",
   "commands.job.cancel.confirm": "Cancelar o job {{jobId}} ({{function}}) em {{machine}}? A operação será interrompida.",
   "commands.job.cancel.description": "Cancela um job desanexado em execução",

@@ -428,7 +428,6 @@
   "commands.doctor.serverMismatch": "サーバー不一致",
   "commands.doctor.subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
   "commands.doctor.title": "Rediacc CLI 診断ツール",
-  "commands.executor-daemon.description": "ローカルの executor daemon を制御する（内部用）：自動的に起動し、コマンド間で SSH 接続とプロビジョニングチェックを待機状態に保ち、アイドル時には自動的にシャットダウンする。",
   "commands.job.cancel.alreadyFinished": "ジョブ {{jobId}} はすでに {{state}} のため、キャンセルする対象がありません。",
   "commands.job.cancel.confirm": "{{machine}} 上のジョブ {{jobId}}({{function}})をキャンセルしますか? 処理は停止されます。",
   "commands.job.cancel.description": "実行中のデタッチジョブをキャンセル",
