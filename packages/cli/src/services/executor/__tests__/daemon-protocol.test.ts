@@ -36,7 +36,11 @@ describe('daemon protocol codec', () => {
   });
 
   it('reassembles a frame split across chunk boundaries', () => {
-    const frame: Frame = { type: 'result', id: 'x', result: { success: true, exitCode: 0, durationMs: 5 } };
+    const frame: Frame = {
+      type: 'result',
+      id: 'x',
+      result: { success: true, exitCode: 0, durationMs: 5 },
+    };
     const wire = encodeFrame(frame);
     const mid = Math.floor(wire.length / 2);
     // Feed the frame in two pieces; the partial first line must be buffered until
@@ -66,7 +70,11 @@ describe('daemon serializability gate', () => {
 
   it('accepts nested serializable params', () => {
     expect(
-      isDaemonSerializable({ ...base, params: { repository: 'shop', tags: ['a', 'b'] }, timeout: 1000 })
+      isDaemonSerializable({
+        ...base,
+        params: { repository: 'shop', tags: ['a', 'b'] },
+        timeout: 1000,
+      })
     ).toBe(true);
   });
 

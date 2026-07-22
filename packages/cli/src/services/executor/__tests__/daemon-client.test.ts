@@ -13,7 +13,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createDaemonExecutor, type DaemonClientDeps, sendDaemonControl } from '../daemon/client.js';
+import {
+  createDaemonExecutor,
+  type DaemonClientDeps,
+  sendDaemonControl,
+} from '../daemon/client.js';
 import { isDaemonPlatform, tokenPathFor } from '../daemon/lifecycle.js';
 import { type DaemonHandle, startExecutorDaemon } from '../daemon/server.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
@@ -36,16 +40,23 @@ function fakeExecutor(stdout = 'FROM_DAEMON'): { executor: Executor; calls: Exec
 }
 
 /** A fake executor that returns CLI-side provision steps in its result. */
-function fakeExecutorWithSteps(
-  cliSteps: { name: string; duration_ms: number }[]
-): { executor: Executor; calls: ExecuteOptions[] } {
+function fakeExecutorWithSteps(cliSteps: { name: string; duration_ms: number }[]): {
+  executor: Executor;
+  calls: ExecuteOptions[];
+} {
   const calls: ExecuteOptions[] = [];
   return {
     calls,
     executor: {
       execute(options: ExecuteOptions): Promise<ExecuteResult> {
         calls.push(options);
-        return Promise.resolve({ success: true, exitCode: 0, durationMs: 9, stdout: 'DATA', cliSteps });
+        return Promise.resolve({
+          success: true,
+          exitCode: 0,
+          durationMs: 9,
+          stdout: 'DATA',
+          cliSteps,
+        });
       },
     },
   };
@@ -59,7 +70,12 @@ function fallbackExecutor(): { executor: Executor; calls: ExecuteOptions[] } {
     executor: {
       execute(options: ExecuteOptions): Promise<ExecuteResult> {
         calls.push(options);
-        return Promise.resolve({ success: true, exitCode: 0, durationMs: 1, stdout: 'FROM_FALLBACK' });
+        return Promise.resolve({
+          success: true,
+          exitCode: 0,
+          durationMs: 1,
+          stdout: 'FROM_FALLBACK',
+        });
       },
     },
   };

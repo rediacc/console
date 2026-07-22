@@ -156,7 +156,9 @@ export function encodeFrame(frame: Frame): string {
  * that does not parse is dropped (a trusted local peer should never send one; a
  * stray byte must not crash the reader).
  */
-export function createFrameReader<T = Frame>(onFrame: (frame: T) => void): (chunk: Buffer | string) => void {
+export function createFrameReader<T = Frame>(
+  onFrame: (frame: T) => void
+): (chunk: Buffer | string) => void {
   let buffered = '';
   return (chunk: Buffer | string): void => {
     buffered += chunk.toString();
