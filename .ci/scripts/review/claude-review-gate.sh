@@ -94,6 +94,21 @@ emit_prompt() {
 if [[ "${1:-}" == "--mark" ]]; then
     require_var PR_NUMBER
     require_var HEAD_SHA
+    # A marker is a CLAIM that a review happened. Step success alone proved
+    # false once: the reviewer "succeeded" with 36 permission denials and
+    # posted nothing, and the marker then suppressed the retry. Only mark if
+    # a NON-marker comment or an inline review comment landed recently.
+    recent=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
+        --jq "[.[] | select(.body | startswith(\"$MARKER_PREFIX\") | not)
+                   | select(.user.login | contains(\"github-actions\"))
+                   | select(.created_at > (now - 3600 | todate))] | length" 2>/dev/null || echo 0)
+    inline=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments?per_page=100" \
+        --jq "[.[] | select(.user.login | contains(\"github-actions\"))
+                   | select(.created_at > (now - 3600 | todate))] | length" 2>/dev/null || echo 0)
+    if [[ "${recent:-0}" -eq 0 && "${inline:-0}" -eq 0 ]]; then
+        log_error "review step reported success but posted NOTHING in the last hour; refusing to mark ${HEAD_SHA:0:7} (SHA stays retryable)"
+        exit 1
+    fi
     body="${MARKER_PREFIX} ${HEAD_SHA} -->
 Automated Claude review completed for commit ${HEAD_SHA:0:7}."
     comment_id=$(last_marker_id "$PR_NUMBER")
