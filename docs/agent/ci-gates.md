@@ -70,7 +70,7 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
 `ci-complete` still gates.
 
 - **New push -> old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** -- cancelled means superseded.
-- **Job failure (attempt 1)**: Watchdog uses AI (Cloudflare Workers AI) to classify the failure:
+- **Job failure (attempt 1)**: Watchdog uses AI (DeepSeek V4 Pro via Cloudflare's OpenAI-compatible endpoint) to classify the failure from the log excerpt anchored at the first `##[error]` marker (a plain tail showed only post-failure cleanup — run 29931338016):
   - **Transient** (network timeout, flaky test, npm error): the watchdog chain holds a pending rerun, lets the run finish, then reruns every failed job as attempt 2 of the SAME run; other jobs keep running.
   - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.
   - **AI unavailable**: Falls back to retry (same as pre-AI behavior).

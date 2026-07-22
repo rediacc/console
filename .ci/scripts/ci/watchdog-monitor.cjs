@@ -38,8 +38,9 @@
 //                                 deterministic attempt-cap backstop, run as a
 //                                 separate workflow step) refused the rerun
 //
-// Optional env vars (AI failure classification):
-//   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI Read permission
+// Optional env vars (AI failure classification, DeepSeek V4 Pro via Cloudflare's
+// OpenAI-compatible /ai/v1/chat/completions endpoint):
+//   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI permission
 //   CLOUDFLARE_ACCOUNT_ID       - Cloudflare account ID
 //
 // Labels (PR context only):
@@ -211,11 +212,20 @@ const monitor = async ({ github, context, core }) => {
     }
   }
 
-  // AI failure classification: fetch job logs, call Workers AI, classify as transient/code-change.
-  // Falls back to { classification: 'transient', confidence: 0 } on any error (safe default = retry).
+  // AI failure classification: fetch job logs, call the classifier model, classify as
+  // transient/code-change. Falls back to { classification: 'transient', confidence: 0 }
+  // on any error (safe default = retry).
+  // DeepSeek V4 Pro is a partner-served (Fireworks) model in Cloudflare's catalog,
+  // reached through the OpenAI-compatible /ai/v1/chat/completions endpoint rather
+  // than the native-Workers-AI /ai/run/<model> route the previous qwen model used.
   const AI_CONFIDENCE_THRESHOLD = 0.8;
-  const AI_MODEL = '@cf/qwen/qwen2.5-coder-32b-instruct';
-  const AI_TIMEOUT = 10000; // 10 seconds
+  const AI_MODEL = 'deepseek/deepseek-v4-pro';
+  // Reasoning model: thinking happens before the answer, so give it a real
+  // timeout and enough tokens that the reasoning phase cannot starve the
+  // final JSON verdict. Budget-wise 25s still fits the generation deadline
+  // (480s poll + ~25s AI + <=5min force-cancel wait < the 15-min slim cap).
+  const AI_TIMEOUT = 25000; // 25 seconds
+  const AI_MAX_TOKENS = 1024;
 
   // A completed job's log never changes, so a deferred job re-examined on the
   // next poll costs no extra API call.
@@ -238,14 +248,31 @@ const monitor = async ({ github, context, core }) => {
       const stripped = lines.map(l =>
         l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(/\x1b\[[0-9;]*m/g, '')
       );
-      return stripped.slice(-80).join('\n');
+      // Anchor the excerpt at the FIRST failure marker, not the end of the
+      // log: a failed job keeps logging through its if:always() cleanup and
+      // post-steps, so a plain tail shows successful teardown instead of the
+      // error. Run 29931338016 is the receipt: a deterministic `sudo: renet:
+      // command not found` sat hundreds of lines before the tail, the
+      // classifier was shown post-checkout git-config scrubbing, and it
+      // honestly called that "no explicit error messages" -> transient (0.8).
+      // The first marker is the root cause; later ones are cascade (failed
+      // cleanup). Consecutive ##[error] lines belong to the same annotation.
+      // No marker (rare) falls back to the tail. The binary-exec guard reads
+      // this same excerpt, so the anchor un-blinds it too.
+      let end = stripped.findIndex(l => l.startsWith('##[error]'));
+      if (end >= 0) {
+        do { end++; } while (end < stripped.length && stripped[end].startsWith('##[error]'));
+      } else {
+        end = stripped.length;
+      }
+      return stripped.slice(Math.max(0, end - 80), end).join('\n');
     } catch (e) {
       console.log(`[AI] Failed to fetch logs for "${job.name}": ${e.message}`);
       return null;
     }
   }
 
-  async function callWorkersAI(logTail) {
+  async function callClassifierModel(logTail) {
     const token = process.env.CLOUDFLARE_API_TOKEN;
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     if (!token || !accountId) return null;
@@ -259,13 +286,16 @@ const monitor = async ({ github, context, core }) => {
       return null;
     }
 
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${AI_MODEL}`;
+    // OpenAI-compatible chat-completions route: partner-served catalog models
+    // (like deepseek/deepseek-v4-pro) are not addressable via /ai/run/<model>.
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
     const body = JSON.stringify({
+      model: AI_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: logTail }
       ],
-      max_tokens: 150,
+      max_tokens: AI_MAX_TOKENS,
       temperature: 0.1
     });
 
@@ -282,18 +312,19 @@ const monitor = async ({ github, context, core }) => {
       clearTimeout(timeout);
 
       if (!response.ok) {
-        console.log(`[AI] Workers AI returned HTTP ${response.status}`);
+        console.log(`[AI] Classifier endpoint returned HTTP ${response.status}`);
         return null;
       }
 
       const data = await response.json();
-      const aiResponse = data.result?.response;
-      if (!data.success || !aiResponse) {
+      // OpenAI response shape. Reasoning models put their thinking in
+      // message.reasoning_content; the verdict must come from content only.
+      const aiResponse = data.choices?.[0]?.message?.content;
+      if (!aiResponse) {
         console.log(`[AI] Unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
         return null;
       }
 
-      // Workers AI may return response as string, array, or object depending on model
       const rawText = typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse);
       const cleaned = rawText.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       const parsed = JSON.parse(cleaned);
@@ -329,7 +360,7 @@ const monitor = async ({ github, context, core }) => {
     const logTail = await getLogTail(job);
     if (!logTail) return fallback;
 
-    const ai = await callWorkersAI(logTail);
+    const ai = await callClassifierModel(logTail);
     if (!ai) console.log(`[AI] Classification failed for "${job.name}", falling back to retry`);
     const result = ai || fallback;
 
