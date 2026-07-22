@@ -59,6 +59,25 @@ emit() {
     exit 0
 }
 
+# Turn budget scaled to diff size. Turns are the lesser wall (context is the
+# real one -- the prompt's breadth-first rule handles that); this keeps a
+# 100K-line consolidation from starving at a budget sized for a 500-line fix.
+# The first live review burned 30 turns on READING a 90-file diff and posted
+# nothing.
+emit_review_turns() {
+    local changed
+    changed=$(gh pr view "$1" --repo "$GITHUB_REPOSITORY" \
+        --json additions,deletions --jq '.additions + .deletions' 2>/dev/null) || changed=0
+    local turns=50
+    if [[ "${changed:-0}" -ge 30000 ]]; then
+        turns=140
+    elif [[ "${changed:-0}" -ge 5000 ]]; then
+        turns=80
+    fi
+    echo "review_turns=$turns" >>"$GITHUB_OUTPUT"
+    log_info "diff size ${changed:-0} lines -> review_turns=$turns"
+}
+
 # emit_prompt <template>  -- substitutes the {{...}} placeholders.
 emit_prompt() {
     {
@@ -157,9 +176,11 @@ if [[ -n "$last_sha" ]]; then
     else
         log_warn "compare ${last_sha:0:7}...${head_sha:0:7} failed -- reviewing anyway (incremental)"
     fi
+    emit_review_turns "$pr"
     emit_prompt "$SCRIPT_DIR/prompts/followup.md"
     emit true "$pr" "$head_sha" "$last_sha" "follow-up review: delta since ${last_sha:0:7}"
 fi
 
+emit_review_turns "$pr"
 emit_prompt "$SCRIPT_DIR/prompts/initial.md"
 emit true "$pr" "$head_sha" "" "initial review: full PR diff"

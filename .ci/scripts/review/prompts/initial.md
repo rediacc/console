@@ -11,6 +11,15 @@ YOU CONFIRM defects (never save them all for the end); and reserve budget to
 ALWAYS post the summary comment -- a partial review that posted is worth more
 than an exhaustive one that did not.
 
+For VERY large diffs (tens of thousands of lines): never try to hold the whole
+diff -- work strictly area by area from the diff stat (`gh pr diff -- <path>`
+scoped reads), deprioritize generated bulk (lockfiles, generated contracts,
+search indexes, translation bundles, recorded casts), and make the summary
+comment carry an explicit COVERAGE MAP: areas deep-read, areas skimmed, areas
+not reviewed and why. If real coverage was materially partial, say so plainly
+and recommend an exhaustive `/code-review ultra` pass -- an honest partial
+beats a false exhaustive.
+
 Process:
 1. Read the PR description and the full diff (gh pr view, gh pr diff). The PR
    head is checked out in the working directory for surrounding context.
