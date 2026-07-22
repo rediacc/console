@@ -22,6 +22,27 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 ## Preflight (both modes)
 
+### Sibling repos under `private/` that are NOT submodules
+
+Some checkouts contain independent git repos under `private/` that are **not** console submodules and are gitignored. They are invisible to `git status`, to `git submodule status`, and to every submodule-shaped instruction here. Agents have repeatedly assumed everything under `private/` is a submodule and walked straight past uncommitted or unmerged work in them.
+
+Discover them, never hardcode them:
+
+```bash
+for d in private/*/; do
+  d="${d%/}"; [ -e "$d/.git" ] || continue
+  git config -f .gitmodules --get-regexp path 2>/dev/null \
+    | awk '{print $2}' | grep -qx "$d" || echo "NON-SUBMODULE: $d"
+done
+```
+
+For each one found:
+- It is **NOT** part of the console PR. Never `git add` it, never bump a pointer for it, never sweep it into the snapshot. Console gitignores it deliberately.
+- **Do** check it for uncommitted changes and unmerged branches, and report what you find. Do not commit, merge, or delete branches in it without an explicit request.
+- Its remote may not be GitHub. Check `git -C <dir> remote get-url origin` before reaching for `gh`; PR/merge tooling that assumes GitHub silently fails elsewhere.
+- Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it" — this has actually happened.
+
+
 - **One babysit at a time.** Check the task board for a live babysit task and, in default mode, that you are not about to push alongside an existing background babysitter — a second pusher triggers the cancel-old-ci race and the shared-tree hazard. If one is live, stop and say so.
 - **Resume detection**: if PRs already exist for this branch (state block above), the loop resumes at CI/reviews — record that in the wave header/briefing; nothing is re-created.
 - **Stacking decision — made here, not mid-loop**: new `MMDD-N` branch from main, or stack onto an existing branch/PRs? Stack when the work depends on unmerged prerequisites (precedent: a follow-up wave stacked onto its predecessor's open PRs because main lacked the base). Record the decision and rationale in the wave header/briefing.

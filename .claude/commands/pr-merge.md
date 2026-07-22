@@ -20,6 +20,27 @@ Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any 
 Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `private/account` → `rediacc/account`, `private/elite` → `rediacc/elite`, `private/homebrew-tap` → `rediacc/homebrew-tap`.
 
 ### 0. Preconditions (stop and report if any fail)
+
+### Sibling repos under `private/` that are NOT submodules
+
+Some checkouts contain independent git repos under `private/` that are **not** console submodules and are gitignored. They are invisible to `git status`, to `git submodule status`, and to every submodule-shaped instruction here. Agents have repeatedly assumed everything under `private/` is a submodule and walked straight past uncommitted or unmerged work in them.
+
+Discover them, never hardcode them:
+
+```bash
+for d in private/*/; do
+  d="${d%/}"; [ -e "$d/.git" ] || continue
+  git config -f .gitmodules --get-regexp path 2>/dev/null \
+    | awk '{print $2}' | grep -qx "$d" || echo "NON-SUBMODULE: $d"
+done
+```
+
+For each one found:
+- It is **NOT** part of the console PR. Never `git add` it, never bump a pointer for it, never sweep it into the snapshot. Console gitignores it deliberately.
+- **Do** check it for uncommitted changes and unmerged branches, and report what you find. Do not commit, merge, or delete branches in it without an explicit request.
+- Its remote may not be GitHub. Check `git -C <dir> remote get-url origin` before reaching for `gh`; PR/merge tooling that assumes GitHub silently fails elsewhere.
+- Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it" — this has actually happened.
+
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
 - A `rediacc/console` PR exists for this branch. Note its number.

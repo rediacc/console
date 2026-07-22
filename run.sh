@@ -56,17 +56,29 @@ check_docker() {
     fi
 }
 
-# Ensure private/generative submodule is initialized
-ensure_generative_submodule() {
+# Ensure the private/generative working copy is present.
+#
+# It is NOT a submodule. It is an independent repository that this repo
+# gitignores, so `git submodule` commands cannot initialise or recover it: it has
+# no .gitmodules entry for them to act on. The previous version of this function
+# was named ..._submodule and ran `git submodule sync` + `git submodule update
+# --init` here, which silently did nothing and reported a missing checkout as a
+# submodule problem. Fail with the real diagnosis instead.
+#
+# The naming mattered beyond this function: it is the most-read file in the repo,
+# so "generative submodule" taught every reader — human and agent — a wrong model
+# of the tree, and they then walked past uncommitted work in it.
+ensure_generative_repo() {
     if [[ ! -d "$ROOT_DIR/private/generative" ]]; then
         log_error "Missing private/generative directory"
+        log_error "It is a separate repository, not a submodule — clone it to private/generative"
         exit 1
     fi
 
-    if [[ ! -f "$ROOT_DIR/private/generative/.git" ]] && [[ ! -d "$ROOT_DIR/private/generative/.git" ]]; then
-        log_step "Initializing private/generative submodule..."
-        git submodule sync -- private/generative >/dev/null 2>&1 || true
-        git submodule update --init --recursive private/generative
+    if [[ ! -e "$ROOT_DIR/private/generative/.git" ]]; then
+        log_error "private/generative exists but is not a git checkout"
+        log_error "It is a separate repository, not a submodule — re-clone it to private/generative"
+        exit 1
     fi
 }
 
@@ -589,7 +601,7 @@ www_tutorial_audio_upload() {
 
 www_tutorials_generate() {
     check_node_version
-    ensure_generative_submodule
+    ensure_generative_repo
     ensure_python_installed
     ensure_audio_system_deps
     www_tutorial_audio_restore
@@ -842,7 +854,7 @@ www_tutorials_all() {
 
 www_team_video_extract() {
     check_node_version
-    ensure_generative_submodule
+    ensure_generative_repo
     ensure_python_installed
     ensure_audio_system_deps
 
@@ -880,7 +892,7 @@ www_team_video_scaffold_locales() {
 
 www_team_video_generate() {
     check_node_version
-    ensure_generative_submodule
+    ensure_generative_repo
     ensure_python_installed
     ensure_audio_system_deps
 
