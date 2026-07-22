@@ -32,7 +32,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 WATCHDOG="$REPO_ROOT/.ci/scripts/ci/watchdog-monitor.cjs"
-CI_WORKFLOW="$REPO_ROOT/.github/workflows/ci.yml"
+# The WATCHDOG_* env block lives with the monitor step, which moved from
+# ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).
+CI_WORKFLOW="$REPO_ROOT/.github/workflows/watchdog-monitor.yml"
 
 # The patterns under test are the ones CI actually sets, not a copy: a guard that
 # works on invented job names while the real config never matches is the exact
@@ -62,9 +64,9 @@ process.stdout.write(v.cancel ? "cancel" : "continue");
 test_patterns_are_real() {
     # Anti-vacuity: if the pattern list stopped covering Quality, every case
     # below would pass for the wrong reason.
-    assert_contains "$NO_RETRY_PATTERNS" "Quality" "ci.yml still lists Quality as no-retry"
-    assert_contains "$NO_RETRY_PATTERNS" "Review Gate" "ci.yml still lists Review Gate as no-retry"
-    log_pass "reading the real WATCHDOG_NO_RETRY_PATTERNS from ci.yml ($NO_RETRY_PATTERNS)"
+    assert_contains "$NO_RETRY_PATTERNS" "Quality" "watchdog-monitor.yml still lists Quality as no-retry"
+    assert_contains "$NO_RETRY_PATTERNS" "Review Gate" "watchdog-monitor.yml still lists Review Gate as no-retry"
+    log_pass "reading the real WATCHDOG_NO_RETRY_PATTERNS from watchdog-monitor.yml ($NO_RETRY_PATTERNS)"
 }
 
 test_quality_failure_cancels_without_label() {

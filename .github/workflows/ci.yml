@@ -206,11 +206,11 @@ jobs:
   cancel-watchdog:
     name: CI Watchdog
     needs: [initialize]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       actions: write
       contents: read
-    timeout-minutes: 180  # 3 hours max
+    timeout-minutes: 15
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
     steps:
@@ -218,7 +218,6 @@ jobs:
         with:
           sparse-checkout: |
             .ci/scripts
-            .ci/prompts
 
       - name: Cancel older runs
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-cancel-push')
@@ -228,20 +227,23 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: .ci/scripts/ci/cancel-older-runs.sh --timeout 60 --poll-interval 10
 
-      - name: Monitor all jobs and cancel on failure
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+      # The monitor itself lives in watchdog-monitor.yml as a chain of short
+      # ubuntu-slim generations: the 1-vCPU runner's 15-minute job cap is a
+      # hard platform limit, so the old single 3-hour monitor job (which held
+      # a standard runner for the whole run) cannot run there. This bootstrap
+      # only dispatches generation 1; each generation re-dispatches the next
+      # until the run completes or a terminal verdict fires. The WATCHDOG_*
+      # pattern env vars moved to watchdog-monitor.yml with the monitor step.
+      - name: Start watchdog monitor chain
         env:
-          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
-          WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
-          # Per-platform legs only. The aggregator ("Install Methods Complete")
-          # downloads no binary, and it reports skipped/cancelled when its needs
-          # fail, which would make the all-platforms-failed guard never fire.
-          WATCHDOG_INSTALL_VALIDATION_PATTERNS: 'Validate Install Methods / Linux,Validate Install Methods / macOS,Validate Install Methods / Windows'
-          WATCHDOG_WAIT_PATTERNS: 'Migration Test'
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        with:
-          script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          .ci/scripts/ci/dispatch-watchdog.sh --run-id "$GITHUB_RUN_ID" \
+            --generation 1 --pr-number "${PR_NUMBER:-}" --head-ref "${HEAD_REF:-}"
 
   # ============================================================================
   # COLUMN 2: QUALITY
@@ -555,7 +557,7 @@ jobs:
   stage-artifacts:
     name: Stage Artifacts
     # Serialize staging per channel+version: a retried/duplicate run (e.g. a
-    # watchdog rerun-failed attempt 2) must not run a second upload-to-r2 for the
+    # watchdog auto-retry attempt 2) must not run a second upload-to-r2 for the
     # same version concurrently with the first. cancel-in-progress:false — never
     # cancel an in-flight `aws s3 sync` mid-upload; queue instead. Cross-version
     # runs get distinct groups, so normal throughput is unaffected.

@@ -53,11 +53,25 @@ When fixing CI failures, follow this loop:
 
 ### CI watchdog and auto-retry
 
-The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle:
+The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle.
+
+The watchdog runs OUTSIDE the CI run, as a chain of short ubuntu-slim
+generations in the separate "Watchdog Monitor" workflow (`watchdog-monitor.yml`):
+the 1-vCPU runner's 15-minute job cap is a hard platform limit, so each
+generation polls ~8 minutes and dispatches the next via `dispatch-watchdog.sh`.
+The in-run `CI Watchdog` job is only a bootstrap (cancel older runs + dispatch
+generation 1). The retry path lives in the SAME chain: a transient verdict sets
+a `pending_rerun` flag carried through generations; when the run completes, the
+chain reruns the failed jobs itself (with `check-rerun-attempt.sh` as a
+separate deterministic attempt-cap pre-step) and keeps monitoring attempt 2.
+Consequences when triaging: watchdog verdicts, cancellation annotations, and
+retry decisions appear on `Watchdog Monitor` runs, not inside the CI run's own
+job list. A lost dispatch fails open -- the run finishes unwatched, and
+`ci-complete` still gates.
 
 - **New push -> old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** -- cancelled means superseded.
 - **Job failure (attempt 1)**: Watchdog uses AI (Cloudflare Workers AI) to classify the failure:
-  - **Transient** (network timeout, flaky test, npm error): Auto-retries via `rerun-failed.yml`, other jobs keep running.
+  - **Transient** (network timeout, flaky test, npm error): the watchdog chain holds a pending rerun, lets the run finish, then reruns every failed job as attempt 2 of the SAME run; other jobs keep running.
   - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.
   - **AI unavailable**: Falls back to retry (same as pre-AI behavior).
 - **Job failure (attempt 2+)**: Watchdog force-cancels the entire run -- no infinite retry loops.

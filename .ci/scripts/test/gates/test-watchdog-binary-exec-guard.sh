@@ -17,7 +17,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 WATCHDOG="$REPO_ROOT/.ci/scripts/ci/watchdog-monitor.cjs"
-CI_WORKFLOW="$REPO_ROOT/.github/workflows/ci.yml"
+# The WATCHDOG_* env block lives with the monitor step, which moved from
+# ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).
+CI_WORKFLOW="$REPO_ROOT/.github/workflows/watchdog-monitor.yml"
 
 # The patterns under test are the ones CI actually sets, not a copy: a guard that
 # works on invented job names while the real config never matches is the exact
@@ -179,11 +181,10 @@ test_other_failure_signature_is_ignored() {
 }
 
 test_workflow_sets_the_required_env_var() {
-    local ci="$REPO_ROOT/.github/workflows/ci.yml"
-    if ! grep -q "WATCHDOG_INSTALL_VALIDATION_PATTERNS:" "$ci"; then
-        log_fail "ci.yml must set WATCHDOG_INSTALL_VALIDATION_PATTERNS (the watchdog throws without it)"
+    if ! grep -q "WATCHDOG_INSTALL_VALIDATION_PATTERNS:" "$CI_WORKFLOW"; then
+        log_fail "watchdog-monitor.yml must set WATCHDOG_INSTALL_VALIDATION_PATTERNS (the watchdog throws without it)"
     fi
-    log_pass "ci.yml wires WATCHDOG_INSTALL_VALIDATION_PATTERNS"
+    log_pass "watchdog-monitor.yml wires WATCHDOG_INSTALL_VALIDATION_PATTERNS"
 }
 
 # The whole point of the roster: a poll with several failed jobs must name ALL

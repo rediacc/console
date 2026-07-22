@@ -1,10 +1,22 @@
 // Watchdog - monitors workflow jobs, uses AI to classify failures, and manages retries.
-// Polls every 15 seconds, exits when the workflow completes or a failure requires action.
+// Polls every 30 seconds, exits when the workflow completes or a failure requires action.
+//
+// Runs as a CHAIN of short generations on ubuntu-slim (watchdog-monitor.yml):
+// the 1-vCPU runner's 15-minute job cap is a hard platform limit, so instead of
+// one long monitor job, each generation polls until WATCHDOG_DEADLINE_SECONDS
+// and then reports `continue=true` for the workflow to dispatch the next
+// generation. Every terminal path (force-cancel done, rerun dispatched, run
+// completed, mass-cancel observed) returns WITHOUT that output, ending the
+// chain. All decision state is re-derived from the API each poll, so a fresh
+// generation picks up exactly where the last one left off.
 //
 // On first failure: AI classifies logs as transient or code-change.
-//   - Transient: dispatches rerun-failed.yml AND EXITS. rerun-failed.yml
-//     waits for the original run to complete, then reruns every failed job
-//     from that attempt -- no need for the watchdog to keep monitoring.
+//   - Transient: the chain holds a PENDING RERUN. Classification of further
+//     failures stops, the chain waits for the run to complete, then reruns
+//     every failed job itself (POST .../rerun-failed-jobs) and keeps
+//     monitoring attempt 2 with a reset generation. There is no separate
+//     rerun workflow: that split only existed because the old in-run
+//     watchdog died with the run it monitored, and the chain does not.
 //   - Code-change: force-cancels immediately (no point waiting for other jobs).
 //   - AI unavailable: falls back to retry (same as transient).
 // On attempt 2+: force-cancels without retry.
@@ -13,6 +25,18 @@
 //   WATCHDOG_EXCLUDE_PATTERNS            - Comma-separated job name patterns to exclude from monitoring
 //   WATCHDOG_NO_RETRY_PATTERNS           - Comma-separated job name patterns that should never auto-retry
 //   WATCHDOG_INSTALL_VALIDATION_PATTERNS - Comma-separated job name patterns identifying install-validation jobs
+//
+// Optional env vars (chained mode; when unset the script monitors its own run,
+// reading PR context from the event payload as it always did):
+//   WATCHDOG_TARGET_RUN_ID      - CI run to monitor (a dispatched generation's own
+//                                 context.runId is the watchdog run, not the target)
+//   WATCHDOG_PR_NUMBER          - PR number for live label reads
+//   WATCHDOG_DEADLINE_SECONDS   - hand off to the next generation after this long
+//   WATCHDOG_PENDING_RERUN      - 'true' when a prior generation classified a
+//                                 failure as transient; wait + rerun mode
+//   WATCHDOG_SKIP_RERUN         - 'true' when check-rerun-attempt.sh (the dumb,
+//                                 deterministic attempt-cap backstop, run as a
+//                                 separate workflow step) refused the rerun
 //
 // Optional env vars (AI failure classification):
 //   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI Read permission
@@ -130,17 +154,25 @@ const monitor = async ({ github, context, core }) => {
     options.headers['x-github-api-version'] ||= '2026-03-10';
   });
 
-  const pollInterval = 15000;  // 15 seconds
+  // Chained-mode parameters (see the header comment). Fallbacks keep the
+  // module runnable un-chained against its own run, which is what the gate
+  // tests and any ad-hoc github-script invocation exercise.
+  const targetRunId = Number(process.env.WATCHDOG_TARGET_RUN_ID || 0) || context.runId;
+  const prNumber = Number(process.env.WATCHDOG_PR_NUMBER || 0) || context.payload.pull_request?.number || null;
+  const deadlineMs = Number(process.env.WATCHDOG_DEADLINE_SECONDS || 0) * 1000;
+  let pendingRerun = process.env.WATCHDOG_PENDING_RERUN === 'true';
+  const skipRerun = process.env.WATCHDOG_SKIP_RERUN === 'true';
+
+  const pollInterval = 30000;  // 30 seconds (was 15s; halved API quota per generation)
   const maxRuntime = 10800000; // 3 hours
   const minRuntime = 30000;    // 30 seconds minimum before allowing exit
   const startTime = Date.now();
 
   const MAX_ATTEMPTS = 2;
-  const RERUN_WORKFLOW = 'rerun-failed.yml';
 
   // Grace period: wait N consecutive polls with all jobs complete before exiting.
   // Prevents premature exit during partial reruns where new jobs haven't appeared yet.
-  const GRACE_POLLS = 3;     // 3 polls × 15s = 45 seconds grace period
+  const GRACE_POLLS = 3;     // 3 polls × 30s = 90 seconds grace period
   let allCompleteStreak = 0;
 
   // Jobs to exclude from monitoring (required env var)
@@ -162,26 +194,19 @@ const monitor = async ({ github, context, core }) => {
   // separately from handledJobs and only announced once.
   const deferredJobs = new Set();
 
-  // Helper: dispatch rerun-failed.yml to retry failed jobs
-  async function dispatchRerun() {
+  // Helper: rerun the target run's failed jobs (the API behind
+  // `gh run rerun --failed`). Only valid once the run has completed.
+  async function executeRerun() {
     try {
-      // The ref selects which branch's copy of the workflow file to run — it does
-      // NOT affect the retried jobs (gh run rerun uses the original run's branch/SHA).
-      // Use the PR head branch when available, otherwise fall back to the repo default branch.
-      const ref = context.payload.pull_request?.head.ref || context.payload.repository?.default_branch || 'main';
-      console.log(`Dispatching ${RERUN_WORKFLOW} on ref '${ref}' for run ${context.runId}...`);
-      await github.rest.actions.createWorkflowDispatch({
+      await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs', {
         owner: context.repo.owner,
         repo: context.repo.repo,
-        workflow_id: RERUN_WORKFLOW,
-        ref,
-        inputs: { run_id: String(context.runId) }
+        run_id: targetRunId
       });
-      console.log(`Successfully dispatched ${RERUN_WORKFLOW}`);
+      console.log(`Rerun of failed jobs triggered for run ${targetRunId}`);
       return true;
     } catch (e) {
-      console.log(`WARNING: Failed to dispatch ${RERUN_WORKFLOW}: ${e.message}`);
-      console.log('Proceeding with force-cancel without retry.');
+      console.log(`WARNING: Failed to rerun failed jobs for run ${targetRunId}: ${e.message}`);
       return false;
     }
   }
@@ -325,7 +350,7 @@ const monitor = async ({ github, context, core }) => {
     console.log('='.repeat(70));
     console.log(msg);
     if (job.id) {
-      console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}/job/${job.id}`);
+      console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${targetRunId}/job/${job.id}`);
     }
     console.log(`   Run attempt: ${runAttempt}/${MAX_ATTEMPTS}`);
     console.log('='.repeat(70));
@@ -346,7 +371,7 @@ const monitor = async ({ github, context, core }) => {
     try {
       const jobsNow = await github.paginate(
         github.rest.actions.listJobsForWorkflowRun,
-        { owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId, per_page: 100 },
+        { owner: context.repo.owner, repo: context.repo.repo, run_id: targetRunId, per_page: 100 },
         response => response.data
       );
       const failedNow = jobsNow.filter(j =>
@@ -356,7 +381,7 @@ const monitor = async ({ github, context, core }) => {
         const { lines, summary } = formatFailureRoster(failedNow, {
           owner: context.repo.owner,
           repo: context.repo.repo,
-          runId: context.runId,
+          runId: targetRunId,
         });
         console.log('');
         for (const line of lines) console.log(line);
@@ -378,7 +403,7 @@ const monitor = async ({ github, context, core }) => {
         try {
           const allJobs = await github.paginate(
             github.rest.actions.listJobsForWorkflowRun,
-            { owner: context.repo.owner, repo: context.repo.repo, run_id: context.runId, per_page: 100 },
+            { owner: context.repo.owner, repo: context.repo.repo, run_id: targetRunId, per_page: 100 },
             response => response.data
           );
           const criticalRunning = allJobs.filter(j =>
@@ -400,7 +425,7 @@ const monitor = async ({ github, context, core }) => {
       await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel', {
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: context.runId
+        run_id: targetRunId
       });
     } catch (e) {
       // Fallback to regular cancel if force-cancel not available
@@ -408,7 +433,7 @@ const monitor = async ({ github, context, core }) => {
       await github.rest.actions.cancelWorkflowRun({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: context.runId
+        run_id: targetRunId
       });
     }
     core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
@@ -421,13 +446,13 @@ const monitor = async ({ github, context, core }) => {
   // be invisible in context.payload and silently ignored.
   let skipCancellationOnFailure = false;
   let skipAutoRetry = false;
-  if (context.payload.pull_request) {
-    let labels = context.payload.pull_request.labels.map(l => l.name);
+  if (prNumber) {
+    let labels = context.payload.pull_request?.labels.map(l => l.name) || [];
     try {
       const liveLabels = await github.rest.issues.listLabelsOnIssue({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        issue_number: context.payload.pull_request.number
+        issue_number: prNumber
       });
       labels = liveLabels.data.map(l => l.name);
     } catch (e) {
@@ -443,7 +468,17 @@ const monitor = async ({ github, context, core }) => {
     }
   }
 
+  // A refused rerun leaves the pending-rerun chain with nothing to do: in
+  // pending mode nothing is classified or cancelled, and the one remaining
+  // action just got vetoed by the deterministic backstop. End immediately
+  // instead of idle-polling generations until the run completes.
+  if (pendingRerun && skipRerun) {
+    console.log('Pending rerun refused by the attempt-cap backstop - ending the watchdog chain');
+    return;
+  }
+
   console.log('Watchdog started - monitoring jobs for failures...');
+  console.log(`Target run: ${targetRunId}${deadlineMs ? ` | generation deadline: ${deadlineMs / 60000}m` : ''}`);
   console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
   console.log(`Install-validation patterns: ${installValidationPatterns.join(', ')}`);
@@ -464,19 +499,29 @@ const monitor = async ({ github, context, core }) => {
     const elapsed = Date.now() - startTime;
     const elapsedMin = Math.round(elapsed / 60000);
 
+    // Chained mode: hand off before the slim runner's hard 15-minute cap can
+    // kill this job mid-decision. Reaching here means no terminal path fired
+    // (those all return without the output), so the run is still live.
+    if (deadlineMs && elapsed >= deadlineMs) {
+      console.log(`[${elapsedMin}m] Generation deadline reached with the run still live - handing off to the next watchdog generation${pendingRerun ? ' (rerun still pending)' : ''}`);
+      core.setOutput('continue', 'true');
+      core.setOutput('pending_rerun', pendingRerun ? 'true' : 'false');
+      return;
+    }
+
     // Fetch run status and jobs, retrying on transient API errors (e.g. 401 Bad credentials)
     let run, allJobs;
     try {
       ({ data: run } = await github.rest.actions.getWorkflowRun({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: context.runId
+        run_id: targetRunId
       }));
 
       allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: context.runId,
+        run_id: targetRunId,
         per_page: 100
       }, response => response.data);
     } catch (e) {
@@ -523,8 +568,11 @@ const monitor = async ({ github, context, core }) => {
     // (a hung job will hang again on retry).
     const failedOrCancelled = [...failed, ...normalCancellations, ...stuckCancellations];
 
-    // Filter to only NEW failures (not already handled in a previous poll)
-    const newFailures = failedOrCancelled.filter(j => !handledJobs.has(j.name));
+    // Filter to only NEW failures (not already handled in a previous poll).
+    // In pending-rerun mode classification stops entirely: the retry decision
+    // is already made, every failed job gets rerun at completion anyway, and
+    // the old exit-after-dispatch design never classified late failures either.
+    const newFailures = pendingRerun ? [] : failedOrCancelled.filter(j => !handledJobs.has(j.name));
 
     // The binary-exec guard can defer an install-validation failure whose
     // sibling platforms are still running: until the matrix settles, the same
@@ -559,7 +607,9 @@ const monitor = async ({ github, context, core }) => {
         : isStuck
           ? `Job stuck (ran ${jobMin}m before cancellation -- likely timeout-minutes expiry)`
           : 'Job cancelled (likely manual / supersession)';
-      const failureMsg = logFailure(job, reason, run.run_attempt);
+      // let, not const: the transient branch below widens the message to the
+      // full failure roster before recording it.
+      let failureMsg = logFailure(job, reason, run.run_attempt);
       handledJobs.add(job.name);
 
       // 0. Stuck cancellations bypass AI + retry entirely -- the job hung
@@ -628,9 +678,10 @@ const monitor = async ({ github, context, core }) => {
         return;
       }
       // 5. First failure: AI classifies.
-      // Transient -> dispatch rerun and exit. rerun-failed.yml waits for the
-      // original run to complete and reruns every failed job from that attempt,
-      // so the watchdog does not need to stay up monitoring for more failures.
+      // Transient -> hold a PENDING RERUN and keep monitoring. The chain waits
+      // for the run to complete, reruns every failed job from this attempt
+      // itself, and keeps watching attempt 2. Further failures are not
+      // classified while a rerun is pending (they get rerun anyway).
       // Code-change -> force-cancel now, retry would be pointless.
       else {
         const ai = await classifyFailure(job, jobGuard);
@@ -640,23 +691,41 @@ const monitor = async ({ github, context, core }) => {
           return;
         } else {
           console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
-          // rerun-failed.yml reruns every failed job from this attempt, so name
+          // The rerun covers every failed job from this attempt, so name
           // them all in the annotation too (not just the classified one).
           if (failed.length > 1) {
             const { summary } = formatFailureRoster(failed, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              runId: context.runId,
+              runId: targetRunId,
             });
             failureMsg = summary;
-            console.log(`Retrying all ${failed.length} failed jobs: ${failed.map(j => `"${j.name}"`).join(', ')}`);
+            console.log(`Will retry all ${failed.length} failed jobs: ${failed.map(j => `"${j.name}"`).join(', ')}`);
           }
-          console.log('Dispatching auto-retry and exiting watchdog (rerun-failed.yml waits for run completion and picks up every failed job).');
-          await dispatchRerun();
+          console.log('Transient verdict - holding a pending rerun; the chain reruns the failed jobs once the run completes.');
+          pendingRerun = true;
           core.setFailed(failureMsg);
-          return;
+          // DON'T return -- keep monitoring until completion, then rerun below.
         }
       }
+    }
+
+    // Pending rerun: the run has finished, so retry its failed jobs and keep
+    // monitoring the new attempt (the workflow resets the generation counter).
+    // Checked BEFORE the completed-exit below, which would end the chain.
+    if (pendingRerun && run.status === 'completed') {
+      if (run.run_attempt >= MAX_ATTEMPTS) {
+        console.log(`Run ${targetRunId} completed but already at attempt ${run.run_attempt}/${MAX_ATTEMPTS} - ending the chain without retry`);
+        return;
+      }
+      if (await executeRerun()) {
+        core.setOutput('continue', 'true');
+        core.setOutput('pending_rerun', 'false');
+        core.setOutput('rerun_executed', 'true');
+      } else {
+        core.setFailed(`Run ${targetRunId} completed but the pending rerun could not be triggered`);
+      }
+      return;
     }
 
     // Exit when workflow run is externally completed
@@ -665,10 +734,13 @@ const monitor = async ({ github, context, core }) => {
       return;
     }
 
-    // Exit when all monitored jobs are complete, with grace period to handle partial reruns.
-    // Without this check, the watchdog deadlocks (it's the only running job keeping
-    // run.status === 'in_progress'). The grace period ensures rerun jobs have time to appear.
-    if (monitoredJobs.length > 0 && completed.length === monitoredJobs.length && elapsed >= minRuntime) {
+    // Exit when all monitored jobs are complete, with grace period to handle
+    // partial reruns. Not while a rerun is pending: the chain must survive to
+    // the run's completion to trigger that rerun. (The original deadlock this
+    // exit prevented -- the in-run watchdog being the only job keeping
+    // run.status in_progress -- no longer exists in chained mode, but the
+    // grace period still smooths job-list lag around attempt transitions.)
+    if (!pendingRerun && monitoredJobs.length > 0 && completed.length === monitoredJobs.length && elapsed >= minRuntime) {
       allCompleteStreak++;
       if (allCompleteStreak >= GRACE_POLLS) {
         console.log(`All ${monitoredJobs.length} monitored jobs completed for ${allCompleteStreak} consecutive polls - exiting watchdog (after ${elapsedMin}m)`);
