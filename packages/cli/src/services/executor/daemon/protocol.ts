@@ -182,8 +182,9 @@ export function createFrameReader<T = Frame>(
 /** Strip the transported callbacks, leaving the payload that crosses the socket. */
 export function toWireOptions(options: ExecuteOptions): WireExecuteOptions {
   const wire = { ...options };
-  delete wire.onEvent;
-  delete wire.onJobStarted;
+  for (const key of TRANSPORTED_CALLBACK_KEYS) {
+    delete wire[key];
+  }
   return wire;
 }
 
