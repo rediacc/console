@@ -138,7 +138,13 @@ test.describe
         `sudo renet datastore status --path ${dsPath} --json`
       );
       expect(status.code, `status --path: ${status.stderr.slice(-200)}`).toBe(0);
-      expect(status.stdout).toContain('"mounted": true');
+      // Parse, never substring-match: renet emits COMPACT one-line JSON since
+      // the clean-stdout change (atomic relay units; helpers.go), so the old
+      // pretty-printed '"mounted": true' probe matched formatting, not fact.
+      const statusJson = JSON.parse(
+        status.stdout.slice(status.stdout.indexOf('{'), status.stdout.lastIndexOf('}') + 1)
+      ) as { mounted?: boolean };
+      expect(statusJson.mounted, 'status --json reports the datastore unmounted').toBe(true);
     });
 
     test('5. datastore_expand grows the RBD datastore', async () => {
