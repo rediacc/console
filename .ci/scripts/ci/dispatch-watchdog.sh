@@ -109,10 +109,30 @@ dispatch() {
         -f "pending_rerun=${PENDING_RERUN}"
 }
 
-if [[ -n "$HEAD_REF" ]] && dispatch "$HEAD_REF"; then
+DISPATCH_ERR=""
+try_dispatch() {
+    local out
+    if out="$(dispatch "$1" 2>&1)"; then
+        return 0
+    fi
+    DISPATCH_ERR="$out"
+    return 1
+}
+
+if [[ -n "$HEAD_REF" ]] && try_dispatch "$HEAD_REF"; then
     log_info "Dispatched watchdog generation ${GENERATION} for run ${RUN_ID} on ref ${HEAD_REF}"
+elif try_dispatch "$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.default_branch')"; then
+    log_info "Dispatched watchdog generation ${GENERATION} for run ${RUN_ID} on the default branch (head-ref copy unavailable)"
+elif grep -qE "not found on the default branch|HTTP 404.*watchdog-monitor" <<<"$DISPATCH_ERR"; then
+    # workflow_dispatch resolves the workflow FILENAME against the DEFAULT
+    # branch's registry, so until watchdog-monitor.yml has landed on main it
+    # cannot be dispatched from ANY ref (observed live: run 29936730679, HTTP
+    # 404 on both the head-ref and default-branch attempts). One-time
+    # bootstrap condition; fail OPEN with a loud warning instead of failing
+    # the job -- the run finishes unwatched and ci-complete still gates.
+    log_warn "watchdog-monitor.yml is not registered on the default branch yet (pre-merge bootstrap) - run ${RUN_ID} continues UNWATCHED"
+    exit 0
 else
-    DEFAULT_BRANCH="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.default_branch')"
-    dispatch "$DEFAULT_BRANCH"
-    log_info "Dispatched watchdog generation ${GENERATION} for run ${RUN_ID} on ref ${DEFAULT_BRANCH} (head-ref copy unavailable)"
+    log_error "Failed to dispatch watchdog generation ${GENERATION} for run ${RUN_ID}: ${DISPATCH_ERR}"
+    exit 1
 fi
