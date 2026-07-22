@@ -77,8 +77,23 @@ jobs:
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Make renet resolvable without config
         # The tutorial scripts below wipe ~/.config/rediacc/rediacc.json
         # (which carries renetPath) in their pre-recording setup; the CLI

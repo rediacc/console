@@ -8,9 +8,11 @@ name: Console CT - Tests
 
 on:
   workflow_call:
-    # No inputs: every job here builds renet from source
-    # (.ci/scripts/infra/build-renet.sh) rather than pulling a prebuilt image,
-    # so the renet_tag / web_tag this used to accept were never read.
+    # No inputs: every job here builds a nolicense renet from source on-runner
+    # (.ci/scripts/infra/build-renet.sh); console is public, so a prebuilt
+    # nolicense binary must never ship via artifacts. Only the embed-assets
+    # staging is shared, via the renet-embed-assets cache (same key as
+    # ci-build-renet.yml).
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -153,8 +155,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -284,8 +301,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -408,8 +440,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -536,8 +583,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -661,8 +723,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -790,8 +867,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -926,8 +1018,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -1070,8 +1177,23 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         run: .ci/scripts/infra/docker-prepull.sh debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Add renet to PATH
         run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
