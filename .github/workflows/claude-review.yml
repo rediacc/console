@@ -85,6 +85,14 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
+          # track_progress makes the ACTION post/update the tracking comment
+          # carrying Claude's report via github_token -- the summary no longer
+          # depends on model-side Bash(gh) permissions, which the action's SDK
+          # path denied across three attempts (36/29 denials, zero posts)
+          # while byte-identical local runs allowed them. Inline comments may
+          # still land when the MCP tool mounts; the posted report is the
+          # review's floor, and the mark-guard keeps honesty either way.
+          track_progress: true
           prompt: ${{ steps.gate.outputs.prompt }}
           # Tool allowlist lives in `settings` JSON, NOT in a --allowedTools
           # arg string: the Bash(...) patterns contain SPACES, the arg string
