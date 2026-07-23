@@ -61,6 +61,16 @@ jobs:
         with:
           persist-credentials: false
 
+      # BOOTSTRAP fallback: until the review system first lands on main,
+      # console@main has no .ci/scripts/review and the gate would die on
+      # file-not-found. The guard makes it self-disabling: once main has the
+      # gate script, the caller-side bootstrap never executes, so a PR can
+      # never substitute its own review logic in the steady state.
+      - name: Bootstrap review scripts (pre-first-merge only)
+        run: |
+          [ -f .review-scripts/.ci/scripts/review/claude-review-gate.sh ] ||
+            bash .ci/scripts/review/bootstrap-review-scripts.sh
+
       - name: Review gate
         id: gate
         env:
