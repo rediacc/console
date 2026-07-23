@@ -310,6 +310,16 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+      # Inline comments and review threads are covered above; the review's
+      # SUMMARY REPORT is an issue comment (flat, no resolve mechanism) and
+      # would otherwise be ignorable. Requires a substantive reply that
+      # references the newest finished report by comment id.
+      - name: Check unreplied review reports
+        run: .ci/scripts/quality/check-review-report-replies.sh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
   # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
