@@ -36,3 +36,6 @@ eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames l
 playwright  # BLOCKER: a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
+
+# better-sqlite3 v13 — blocked until node-22 prebuilds exist
+better-sqlite3  # BLOCKER: v13.0.1 ships no node-22 prebuilt binary; account sandbox image has no python/gyp toolchain, native fallback build fails (Stripe Sandbox, run 29993043093)
