@@ -98,13 +98,18 @@ if [[ "${1:-}" == "--mark" ]]; then
     # false once: the reviewer "succeeded" with 36 permission denials and
     # posted nothing, and the marker then suppressed the retry. Only mark if
     # a NON-marker comment or an inline review comment landed recently.
-    recent=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments?per_page=100" \
-        --jq "[.[] | select(.body | startswith(\"$MARKER_PREFIX\") | not)
-                   | select(.user.login | contains(\"github-actions\"))
-                   | select(.created_at > (now - 3600 | todate))] | length" 2>/dev/null || echo 0)
-    inline=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments?per_page=100" \
-        --jq "[.[] | select(.user.login | contains(\"github-actions\"))
-                   | select(.created_at > (now - 3600 | todate))] | length" 2>/dev/null || echo 0)
+    # --paginate + stream-count: without it GitHub returns the OLDEST page
+    # only, so on a >100-comment PR a just-posted review is invisible and
+    # this guard would refuse to mark forever (found by the automated review
+    # itself, PR #531 first pass). Per-page --jq emits matches as lines;
+    # wc -l totals across pages -- same pattern as last_marker_sha above.
+    recent=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\") | not)
+                  | select(.user.login | contains(\"github-actions\"))
+                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l)
+    inline=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments" --paginate \
+        --jq ".[] | select(.user.login | contains(\"github-actions\"))
+                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l)
     if [[ "${recent:-0}" -eq 0 && "${inline:-0}" -eq 0 ]]; then
         log_error "review step reported success but posted NOTHING in the last hour; refusing to mark ${HEAD_SHA:0:7} (SHA stays retryable)"
         exit 1

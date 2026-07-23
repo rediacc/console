@@ -112,10 +112,14 @@ while IFS=$'\t' read -r meta sm_path; do
     [[ -n "$meta" ]] || continue
     old_sha=$(awk '{print $3}' <<<"$meta")
     new_sha=$(awk '{print $4}' <<<"$meta")
-    sm_url=$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
-        awk -v p="$sm_path" '$2 == p {print $1}' | sed 's/\.path$/.url/' |
-        xargs -r git config -f .gitmodules --get) ||
-        no_fast_path "no .gitmodules entry for $sm_path"
+    # Two steps, not a pipe into xargs -r: with -r an empty lookup exits 0,
+    # so the no-entry error could never fire (automated review finding; it
+    # fell through to the generic parse error instead -- fail-safe but mute).
+    sm_key=$(git config -f .gitmodules --get-regexp '^submodule\..*\.path$' |
+        awk -v p="$sm_path" '$2 == p {print $1}')
+    [[ -n "$sm_key" ]] || no_fast_path "no .gitmodules entry for $sm_path"
+    sm_url=$(git config -f .gitmodules --get "${sm_key%.path}.url") ||
+        no_fast_path "no url for ${sm_key%.path} in .gitmodules"
     sm_repo=$(sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#' <<<"$sm_url")
     [[ -n "$sm_repo" ]] || no_fast_path "cannot parse repo from $sm_url"
 
