@@ -48,3 +48,10 @@ Rules:
   (lint, shfmt, i18n hashes, generated artifacts).
 - If the diff is entirely mechanical (lockfiles, generated artifacts), say so
   in one short summary comment instead of inventing findings.
+- Do NOT lump hand-maintained config files (dependency pin/blocklist files,
+  syncpack config, label definitions, allowlists) in with generated bulk:
+  they are small, human-written, and deserve a sanity pass (a wrong pin or a
+  deleted label entry is a real finding).
+- Submodule POINTER moves (gitlink-only changes) are reviewed in the
+  submodule's own PR, not here; note them as out of scope rather than
+  unreviewed.

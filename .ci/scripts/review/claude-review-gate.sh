@@ -171,18 +171,31 @@ case "${EVENT_NAME:-}" in
             emit false "$pr" "" "" "PR is a draft"
         head_sha="${WR_HEAD_SHA}"
         ;;
-    pull_request) # ready_for_review
+    pull_request | workflow_dispatch)
+        # pull_request: ready_for_review (console) or opened (submodules).
+        # workflow_dispatch: manual re-review; PR number arrives via input.
         require_var PR_NUMBER
-        require_var PR_HEAD_SHA
         pr="$PR_NUMBER"
-        head_sha="$PR_HEAD_SHA"
-        conclusion=$(gh api -X GET \
-            "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs" \
-            -f check_name='CI Complete' \
-            --jq '[.check_runs[] | select(.conclusion == "success")] | length' 2>/dev/null) ||
-            emit false "$pr" "$head_sha" "" "check-runs lookup failed"
-        [[ "${conclusion:-0}" -ge 1 ]] ||
-            emit false "$pr" "$head_sha" "" "CI Complete is not green on the current head"
+        head_sha="${PR_HEAD_SHA:-}"
+        if [[ -z "$head_sha" ]]; then
+            head_sha=$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" \
+                --json headRefOid --jq .headRefOid 2>/dev/null) ||
+                emit false "$pr" "" "" "cannot resolve PR head"
+        fi
+        # REQUIRED_CHECK empty = no green gate: the submodule repos have no
+        # PR CI of their own (validation lives in console CI), so there is
+        # no signal to wait for; marker dedup alone bounds re-review cost.
+        if [[ -n "${REQUIRED_CHECK:-}" ]]; then
+            conclusion=$(gh api -X GET \
+                "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs" \
+                -f check_name="$REQUIRED_CHECK" \
+                --jq '[.check_runs[] | select(.conclusion == "success")] | length' 2>/dev/null) ||
+                emit false "$pr" "$head_sha" "" "check-runs lookup failed"
+            [[ "${conclusion:-0}" -ge 1 ]] ||
+                emit false "$pr" "$head_sha" "" "$REQUIRED_CHECK is not green on the current head"
+        else
+            log_info "no required check configured; green gate skipped"
+        fi
         ;;
     *)
         log_error "Unsupported EVENT_NAME: ${EVENT_NAME:-unset}"
