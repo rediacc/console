@@ -37,5 +37,3 @@ playwright  # BLOCKER: a playwright version bump changes the bundled browser rev
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
 
-# better-sqlite3 v13 — blocked until node-22 prebuilds exist
-better-sqlite3  # BLOCKER: v13.0.1 ships no node-22 prebuilt binary; account sandbox image has no python/gyp toolchain, native fallback build fails (Stripe Sandbox, run 29993043093)
