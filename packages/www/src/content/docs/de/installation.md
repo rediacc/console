@@ -4,8 +4,8 @@ description: "Installieren Sie die Rediacc CLI für Linux, macOS oder Windows."
 category: "Guides"
 order: 1
 language: de
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # Installation
@@ -209,4 +209,4 @@ Der Neustart ist transparent und verursacht **keine Ausfallzeit**:
 - **Bestehende Client-Verbindungen (HTTP, TCP, UDP) sind nicht betroffen.** Der Route-Server ist ein Konfigurationsanbieter -- er befindet sich nicht im Datenpfad. Traefik verarbeitet den gesamten Datenverkehr direkt.
 - Ihre Anwendungscontainer werden nicht berührt -- nur der Route-Server-Prozess auf Systemebene wird neu gestartet.
 
-Um den automatischen Neustart zu überspringen, übergeben Sie `--skip-router-restart` an einen beliebigen Befehl oder setzen Sie die Umgebungsvariable `RDC_SKIP_ROUTER_RESTART=1`.
+Um den automatischen Neustart zu überspringen, übergeben Sie `--skip-router-restart` an einen beliebigen Befehl oder setzen Sie die Umgebungsvariable `REDIACC_SKIP_ROUTER_RESTART=1`.

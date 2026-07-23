@@ -15,6 +15,7 @@
 
 import * as net from 'node:net';
 import { randomUUID } from 'node:crypto';
+import { debugEnabled } from '../../../utils/debug.js';
 import { currentRequestContext } from '../../core/request-context.js';
 import { renderJobEvent } from '../job-remote.js';
 import type { ExecuteOptions, ExecuteResult, Executor, RenetEvent } from '../types.js';
@@ -59,7 +60,7 @@ const DEFAULT_SPAWN_WAIT_MS = 2000;
 class DaemonUnavailable extends Error {}
 
 function debug(message: string): void {
-  if (process.env.REDIACC_DAEMON_DEBUG === '1' || process.env.REDIACC_DEBUG === '1') {
+  if (debugEnabled('daemon')) {
     process.stderr.write(`[executor-daemon] ${message}\n`);
   }
 }

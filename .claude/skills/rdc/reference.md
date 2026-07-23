@@ -1501,6 +1501,12 @@ Show current config details
 
 > MCP tool
 
+### rdc config current
+
+Show the active config: name, file, resolved server and channel, token state
+
+> MCP tool
+
 ### rdc config delete <name>
 
 Delete a config file
@@ -1593,6 +1599,7 @@ Link this config to remote encrypted storage
 - `--headless` — Use device code flow (for headless servers)
 - `--password` — Enroll headlessly with a pre-provisioned password slot (no browser)
 - `--api-url <url>` — Account server URL
+- `--force` — Replace differing local content with the server copy without confirmation
 
 ### rdc config remote disable
 

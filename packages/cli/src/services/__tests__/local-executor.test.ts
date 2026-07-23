@@ -372,6 +372,52 @@ describe('localExecutorService first-use onboarding', () => {
     expect(result.error).toContain('repository identity does not match');
   });
 
+  it('fails fast on delegation cert expiry without refreshing', async () => {
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"cert_expired","message":"repo license required"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_DELEGATION_CERT_EXPIRED');
+    expect(result.error).toContain('delegation cert covering this license has expired');
+  });
+
+  it('fails fast on an invalid delegation cert without refreshing', async () => {
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"cert_invalid","message":"repo license required"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_DELEGATION_CERT_INVALID');
+    expect(result.error).toContain('could not be trusted');
+  });
+
   it('reports server_rejected_all message when recovery returns no valid licenses', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
     mockRefreshRepoLicensesBatch.mockResolvedValueOnce({

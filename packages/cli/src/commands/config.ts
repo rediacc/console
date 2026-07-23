@@ -13,6 +13,7 @@ import { registerFieldCommands } from './config/field.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
+import { registerCurrentCommand } from './config/current.js';
 
 /** Build display data for a self-hosted config. */
 async function buildSelfHostedDisplay(
@@ -430,6 +431,9 @@ ${t('help.examples')}
         handleError(error);
       }
     });
+
+  // config current
+  registerCurrentCommand(config, program);
 
   // config delete <name>
   config

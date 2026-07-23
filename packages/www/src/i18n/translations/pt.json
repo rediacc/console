@@ -2907,19 +2907,19 @@
         "heading": "Sua infraestrutura. Suas regras.",
         "rows": [
           {
-            "description": "Inicie, pare, exclua, faça backup. Tudo funciona eternamente. Mesmo anos depois que a subscrição termina. Seus dados são sempre seus.",
+            "description": "Iniciar, parar e excluir funcionam sempre, mesmo anos depois que a assinatura termina. Seus dados ficam sempre acessíveis nas suas próprias máquinas.",
             "title": "Suas aplicações rodam para sempre."
           },
           {
-            "description": "Sincronização de arquivos. SSH. Edição remota. Todos os comandos. Sem precisar de licença.",
+            "description": "Suas ferramentas operacionais continuam funcionando: acesso SSH, edição remota e todos os comandos de gestão. Nunca é preciso licença.",
             "title": "Acesso total às suas ferramentas."
           },
           {
-            "description": "Criar ou copiar servidores precisa de assinatura ativa. Expansão continua por 60 dias após expiração. Tudo mais é permanente.",
+            "description": "Criar novos servidores, copiar existentes ou transferir backups precisa de uma assinatura ativa. Redimensionar e expandir continuam funcionando por 60 dias após a expiração. Manter seus servidores em execução é permanente.",
             "title": "Só servidores novos precisam de assinatura."
           },
           {
-            "description": "Quando a assinatura termina, expansão segue por 60 dias. Operações normais funcionam para sempre.",
+            "description": "Quando a assinatura termina, redimensionar e expandir continuam funcionando por mais 60 dias. Iniciar, parar e excluir não são afetados: funcionam para sempre. A transferência de backup exige uma assinatura ativa.",
             "title": "60 dias para expandir."
           },
           {

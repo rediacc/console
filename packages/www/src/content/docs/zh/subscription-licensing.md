@@ -4,8 +4,8 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # 订阅与许可证
@@ -46,13 +46,13 @@ Rediacc 许可证管理分为三个组成部分：
 对于自动化和 AI 代理，请使用范围受限的订阅令牌而非浏览器登录：
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 您也可以直接通过环境注入令牌，使 CLI 无需任何交互式登录步骤即可发放和刷新仓库许可证：
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -66,14 +66,18 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 仓库许可证
 
-仓库许可证是针对一台机器上的一个仓库的签名许可证。它是机器上唯一存储的许可证文件（`/var/lib/rediacc/license/repos/{guid}.json`）。
+仓库许可证是针对一台机器上的一个仓库的签名许可证。它是机器上唯一存储的许可证文件，按签名密钥进行组织：
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` 是一个 16 位十六进制指纹（对签名服务器的 Ed25519 公钥取 `SHA-256` 后的前 8 个字节）。由多个账户宇宙管理的仓库（例如生产环境和 bench 部署到同一台机器上）会在其 `{guid}` 目录下为每个签名密钥保留一个文件。该机器的 renet 构建只会验证其内置密钥、或链接到该密钥的委托证书能够验证的那个文件；其他宇宙的文件则处于无效状态。切换宇宙永远不会使许可证失效：新宇宙中的第一个操作会为该宇宙签发一次许可证（返回 `missing` 结果时会自动签发），此后两者会共存。
 
 用于：
 
 - `rdc repo create` 和 `rdc repo fork`，在配置前验证（预发放无身份证明，创建后用身份证明重新发放）
 - `rdc repo resize` 和 `rdc repo expand`，包括到期在内的完整验证
 - `rdc repo up`、`rdc repo down`、`rdc repo delete`，**跳过到期**验证
-- `rdc repo push`、`rdc repo pull`、`rdc repo sync`，**跳过到期**验证
+- `rdc repo push`、`rdc repo pull`、`rdc repo sync`，**包括到期在内的完整验证**：备份传输需要有效权益
 - 机器重启时的仓库自动启动，**跳过到期**验证
 
 仓库许可证绑定到机器和目标仓库。每个许可证包含机器 ID、仓库 GUID、订阅 ID、计划限制和到期时间。对于加密仓库，Rediacc 还验证底层卷的 LUKS 身份。
@@ -104,7 +108,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 Community 是始终存在的免费基础计划。新账户已不能直接注册使用该计划；相反，只要订阅结束（无论是试用期内取消、日后取消付费计划，还是扣款失败），账户就会回退到 Community。回退到 Community 后，您将保留 1 台机器、每个仓库 10 GB 以及每月 100 次设置的额度。在试用制模型上线之前创建的账户会保留其现有的 Community 权限。
 
-限制的执行方式较为宽松。订阅结束后，正在运行的仓库仍会继续正常工作；只有新的操作（创建、分叉、调整大小和许可证刷新）才会受到有效权益的限制。
+限制的执行方式在最关键之处仍然宽松：订阅结束后，正在运行的仓库（`up`、`down`、`delete`、自动启动）仍会继续正常工作。而新的操作（创建、分叉、调整大小和许可证刷新）以及备份传输（`push`、`pull`、`sync`）则会受到有效权益的限制。
 
 ## 虚拟机迁移宽限期
 
@@ -167,10 +171,10 @@ rdc subscription login
 自动化或 AI 代理登录：
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-对于非交互式环境，设置 `REDIACC_SUBSCRIPTION_TOKEN` 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。
+对于非交互式环境，设置 `REDIACC_TOKEN` 是最简单的选项。令牌应仅限于代理所需的订阅和仓库许可证操作。
 
 显示账户支持的订阅状态：
 
@@ -200,7 +204,7 @@ rdc subscription refresh -m hostinger --repo my-app
 
 首次使用时，找不到可用仓库许可证的已授权仓库或备份操作可以自动触发账户授权移交。CLI 打印授权 URL，在交互式终端中尝试打开浏览器，并在授权和发放成功后重试一次操作。
 
-在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 `rdc subscription login --token ...` 或 `REDIACC_SUBSCRIPTION_TOKEN` 提供范围受限的令牌。
+在非交互式环境中，CLI 不等待浏览器批准。相反，它告诉您使用 `rdc subscription login --token ...` 或 `REDIACC_TOKEN` 提供范围受限的令牌。
 
 有关机器首次设置，请参阅 [机器设置](/zh/docs/setup)。
 
@@ -227,6 +231,8 @@ rdc subscription refresh -m hostinger --repo my-app
 - `sequence_regression`：作为仓库许可证完整性或状态问题快速失败
 - `invalid_signature`：作为仓库许可证完整性或状态问题快速失败
 - `identity_mismatch`：快速失败，仓库身份与已安装许可证不匹配
+- `cert_expired`：在成长类操作（`create`、`fork`、`resize`）和备份传输（`push`、`pull`）上会快速失败；`repo up` 和自动启动仍可正常运行，这与宽松的许可证到期模型一致。请续期该委托证书
+- `cert_invalid`：快速失败，委托证书未通过约束检查（主密钥签名无效、订阅/计划不匹配、超出容量上限，或序列号超过 `maxTotalIssuances`）。请在修复相应限制后重新签发证书
 
 这些快速失败情况不会自动消耗账户支持的刷新或发放调用。
 

@@ -35,7 +35,9 @@ class OutputService {
   private readonly processState: OutputState = createOutputState();
 
   constructor() {
-    this.ttyColor = !process.env.REDIACC_NO_COLOR && process.stdout.isTTY !== false;
+    // NO_COLOR standard (https://no-color.org): any non-empty value disables color.
+    const noColor = process.env.NO_COLOR !== undefined && process.env.NO_COLOR !== '';
+    this.ttyColor = !noColor && process.stdout.isTTY !== false;
   }
 
   /**

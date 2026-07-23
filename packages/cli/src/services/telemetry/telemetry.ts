@@ -25,7 +25,9 @@ import {
   generateSessionId,
 } from '@rediacc/shared/telemetry';
 
+import { isDevBuild } from '../../utils/platform.js';
 import { VERSION as CLI_VERSION } from '../../version.js';
+import { readAccountPointer } from '../account/account-pointer.js';
 import {
   startProfiling as startProfilingImpl,
   stopProfiling as stopProfilingImpl,
@@ -130,7 +132,7 @@ class CliTelemetryService {
     ) {
       return 'development';
     }
-    return DEFAULTS.TELEMETRY.ENVIRONMENT;
+    return isDevBuild() ? 'development' : DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
 
   private getEndpoint(): string {
@@ -143,12 +145,11 @@ class CliTelemetryService {
   }
 
   private resolveUpdateChannel(): string {
-    // Read channel from env (avoids circular/dynamic imports).
-    // server.json channel is resolved later by the updater; for telemetry
-    // resource attributes, env var is sufficient since it's set at startup.
-    const envChannel = process.env.RDC_UPDATE_CHANNEL;
-    if (envChannel) return envChannel;
-    return UPDATE_DEFAULTS.CHANNEL;
+    return (
+      process.env.REDIACC_UPDATE_CHANNEL ??
+      readAccountPointer().updateChannel ??
+      UPDATE_DEFAULTS.CHANNEL
+    );
   }
 
   private getExporterHeaders(): Record<string, string> {
@@ -191,8 +192,7 @@ class CliTelemetryService {
         endpoint: config?.endpoint ?? this.getEndpoint(),
         serviceName: config?.serviceName ?? DEFAULTS.TELEMETRY.SERVICE_NAME,
         serviceVersion: config?.serviceVersion ?? CLI_VERSION,
-        environment:
-          config?.environment ?? process.env.REDIACC_ENVIRONMENT ?? this.detectEnvironment(),
+        environment: config?.environment ?? this.detectEnvironment(),
         updateChannel: this.resolveUpdateChannel(),
         headers: this.getExporterHeaders(),
         sessionId: this.sessionId,

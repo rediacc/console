@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Abonelik ve Lisanslama
@@ -48,13 +48,13 @@ Normal akış şöyle görünür:
 Otomasyon ve yapay zeka ajanları için tarayıcı girişi yerine kapsamlı bir abonelik tokeni kullanın:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 CLI'ın herhangi bir etkileşimli giriş adımı olmadan depo lisansları düzenleyip yenileyebilmesi için tokeni doğrudan ortam üzerinden de enjekte edebilirsiniz:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Makinede hiçbir makine lisans dosyası depolanmaz. Slot uygulaması, sunucuda d
 
 ### Depo lisansı
 
-Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır. Makinede depolanan tek lisans dosyasıdır (`/var/lib/rediacc/license/repos/{guid}.json`).
+Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır. Makinede depolanan tek lisans dosyasıdır ve imzalama anahtarı başına şu şekilde düzenlenir:
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}`, 16 haneli onaltılık bir parmak izidir (imzalayan sunucunun Ed25519 genel anahtarının `SHA-256` değerinin ilk 8 baytı). Birden fazla hesap evreni tarafından yönetilen bir depo (örneğin, aynı makineye dağıtım yapan üretim ve bench), `{guid}` dizini altında imzalama anahtarı başına bir dosya tutar. Makinenin renet derlemesi yalnızca kendi gömülü anahtarının, veya ona zincirlenmiş bir yetkilendirme sertifikasının doğrulayabileceği dosyayı doğrular; diğer evrenlerin dosyaları etkisizdir. Evren değiştirmek lisansları asla geçersiz kılmaz: yeni bir evrendeki ilk işlem, o evrenin lisansını bir kez düzenler (bir `missing` sonucu otomatik olarak düzenlemeyi tetikler) ve ardından ikisi birlikte var olur.
 
 Şunlar için kullanılır:
 
 - `rdc repo create` ve `rdc repo fork`, sağlamadan önce doğrulanır (kimlik kanıtı olmadan önceden düzenlenir, oluşturulduktan sonra kimlik kanıtlarıyla yeniden düzenlenir)
 - `rdc repo resize` ve `rdc repo expand`, son kullanma tarihi dahil tam doğrulama
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, **son kullanma tarihi atlanarak** doğrulanır
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **son kullanma tarihi atlanarak** doğrulanır
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **son kullanma tarihi dahil tam olarak doğrulanır**: yedekleme aktarımı aktif bir hak gerektirir
 - makine yeniden başlatılırken depo otomatik başlatma, **son kullanma tarihi atlanarak** doğrulanır
 
 Depo lisansları makineye ve hedef depoya bağlıdır. Her lisans, makine kimliği, depo GUID'i, abonelik kimliği, plan limitleri ve son kullanma tarihini içerir. Şifrelenmiş depolar için Rediacc, altta yatan birimin LUKS kimliğini de doğrular.
@@ -106,7 +110,7 @@ Yeni kayıtlar Professional veya Business planında 14 günlük ücretsiz deneme
 
 Community, kalıcı ücretsiz tabandır. Artık yeni hesaplar için doğrudan kayıt seçeneği değildir; bunun yerine bir abonelik sona erdiğinde (deneme sırasında iptal, ücretli bir planın sonradan iptali veya başarısız bir ödeme) hesap Community'ye düşer. Community geri dönüşünde bir makine, depo başına 10 GB ve ayda 100 kurulum hakkınız kalır. Deneme tabanlı model başlamadan önce oluşturulmuş hesaplar mevcut Community erişimlerini korur.
 
-Uygulama yumuşak kalmaya devam eder. Abonelik sona erse bile çalışan depolar çalışmaya devam eder; yalnızca yeni işler (oluşturma, çatallama, yeniden boyutlandırma ve lisans yenileme) aktif bir hak ile sınırlandırılır.
+Uygulama en çok önem taşıdığı yerde yumuşak kalmaya devam eder: çalışan depolar (`up`, `down`, `delete`, otomatik başlatma) abonelik sona erse bile çalışmaya devam eder. Buna karşılık yeni işler (oluşturma, çatallama, yeniden boyutlandırma ve lisans yenileme) ve yedekleme aktarımı (`push`, `pull`, `sync`) aktif bir hak ile sınırlandırılır.
 
 ## Makine Geçişi Uyum Dönemi
 
@@ -169,10 +173,10 @@ rdc subscription login
 Otomasyon veya yapay zeka ajanı girişi:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Etkileşimli olmayan ortamlar için `REDIACC_SUBSCRIPTION_TOKEN` ayarlamak en basit seçenektir. Token, ajanın ihtiyaç duyduğu abonelik ve depo lisansı işlemleriyle sınırlı kapsamda olmalıdır.
+Etkileşimli olmayan ortamlar için `REDIACC_TOKEN` ayarlamak en basit seçenektir. Token, ajanın ihtiyaç duyduğu abonelik ve depo lisansı işlemleriyle sınırlı kapsamda olmalıdır.
 
 Hesap destekli abonelik durumunu göster:
 
@@ -202,7 +206,7 @@ rdc subscription refresh -m hostinger --repo my-app
 
 İlk kullanımda, kullanılabilir depo lisansı bulamayan lisanslı bir depo veya yedekleme işlemi otomatik olarak hesap yetkilendirme aktarımını tetikleyebilir. CLI bir yetkilendirme URL'si yazdırır, etkileşimli terminallerde tarayıcıyı açmaya çalışır ve yetkilendirme ile düzenleme başarılı olduktan sonra işlemi bir kez yeniden dener.
 
-Etkileşimli olmayan ortamlarda CLI, tarayıcı onayını beklemez. Bunun yerine, `rdc subscription login --token ...` veya `REDIACC_SUBSCRIPTION_TOKEN` ile kapsamlı bir token sağlamanızı ister.
+Etkileşimli olmayan ortamlarda CLI, tarayıcı onayını beklemez. Bunun yerine, `rdc subscription login --token ...` veya `REDIACC_TOKEN` ile kapsamlı bir token sağlamanızı ister.
 
 İlk makine kurulumu için [Makine Kurulumu](/tr/docs/setup) sayfasına bakın.
 
@@ -229,6 +233,8 @@ Otomatik kurtarma kasıtlı olarak dar tutulmuştur:
 - `sequence_regression`: depo lisansı bütünlüğü/durum sorunu olarak hızla başarısız olur
 - `invalid_signature`: depo lisansı bütünlüğü/durum sorunu olarak hızla başarısız olur
 - `identity_mismatch`: hızla başarısız olur, depo kimliği yüklü lisansla eşleşmiyor
+- `cert_expired`: büyüme işlemlerinde (`create`, `fork`, `resize`) ve yedekleme aktarımında (`push`, `pull`) hızla başarısız olur; `repo up` ve otomatik başlatma çalışmaya devam eder, bu da yumuşak lisans süresi dolumu modeliyle örtüşür. Yetkilendirme sertifikasını yenileyin
+- `cert_invalid`: hızla başarısız olur, yetkilendirme sertifikası bir kısıtlamayı karşılamadı (geçersiz ana anahtar imzası, abonelik/plan uyuşmazlığı, boyut sınırı veya `maxTotalIssuances` üzerinde bir sıra numarası). Altta yatan sınırı düzelttikten sonra sertifikayı yeniden düzenleyin
 
 Bu hızlı başarısızlık durumları otomatik olarak hesap destekli yenileme veya düzenleme çağrısı tüketmez.
 

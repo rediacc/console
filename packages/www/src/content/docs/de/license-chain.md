@@ -4,8 +4,8 @@ description: "Manipulationssichere Lizenzausstellung, delegiertes Signieren für
 category: "Guides"
 order: 8
 language: de
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Lizenz-Chain & Delegation
@@ -18,7 +18,7 @@ Jede von einem Account-Server ausgestellte Lizenz wird in einem Append-Only-Ledg
 
 1. **Sequenznummern** sind global und monoton pro Abonnement. Das Überspringen oder Neuanordnen von Einträgen unterbricht die Kette.
 2. **Chain-Hashes** binden jeden Eintrag an alle vorherigen. Die Änderung eines vergangenen Eintrags macht alle nachfolgenden ungültig.
-3. **Renet speichert die höchste gesehene Sequenz** pro Abonnement. Ein Server, der seine Sequenz zurücksetzt, wird sofort erkannt.
+3. **Renet speichert die höchste gesehene Sequenz** pro Signierschlüssel und Abonnement. Ein Server, der seine Sequenz zurücksetzt, wird sofort erkannt.
 
 ## Wie eine Lizenz ausgestellt wird
 
@@ -35,7 +35,7 @@ Wenn die CLI eine Maschinenaktivierung oder Repo-Lizenz anfordert, führt der Ac
 
 ## Wie Renet validiert
 
-Jede Maschine mit Renet speichert ihren letzten bekannten Kettenzustand unter `{licenseDir}/chain-state.json`. Bei jeder Lizenzvalidierung prüft Renet:
+Jede Maschine mit Renet speichert ihren letzten bekannten Kettenzustand unter `{licenseDir}/chain-state.json` (also `/var/lib/rediacc/license/chain-state.json`, ein Geschwisterverzeichnis des Pro-Repo-Verzeichnisses `repos/`). Der Kettenzustand ist pro Signierschlüssel und Abonnement abgegrenzt, mit dem Schlüssel `"<keyId>:<subscriptionId>"`, sodass Universen, die mit unterschiedlichen Schlüsseln signiert sind, ihre Sequenzen unabhängig voneinander verfolgen. Bei jeder Lizenzvalidierung prüft Renet:
 
 | Prüfung | Fehler bedeutet |
 |---|---|
@@ -57,7 +57,7 @@ Ein Delegierungszertifikat enthält:
 - `subscriptionId` - für welches Abonnement dieses Zertifikat gilt
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` - eingebackene Planlimits
 - `maxTotalIssuances` - Obergrenze für die Chain-Sequenznummer
-- `delegatedPublicKey` - der Ed25519-Öffentlichschlüssel des On-Premise-Servers (SPKI base64)
+- `delegatedPublicKey` - der Ed25519-Öffentlichschlüssel des On-Premise-Servers (SPKI base64). Sein 16-stelliger Hex-Fingerabdruck (die ersten 8 Bytes von `SHA-256` über den rohen Schlüssel) ist die `publicKeyId`, die auf jedem Lizenz-Blob vermerkt wird, den dieser Schlüssel signiert. `publicKeyId` ist immer ein echter Schlüssel-Fingerabdruck, niemals ein Platzhalter wie `"default"`.
 - `genesisHash` - der Startpunkt der Kette (Fortsetzung vom vorherigen Zertifikat oder "genesis")
 - `genesisSequence` - Chain-Sequenz zum Ausstellungszeitpunkt. Wird von `/onprem/cert-upload` verwendet, um zu prüfen, ob das neue Zertifikat noch mit einem bekannten Eintrag im lokalen Ausstellungs-Ledger verbunden ist, wenn die Kette während des Transits fortgeschritten ist. Optional für Abwärtskompatibilität (wird als 0 behandelt, wenn nicht vorhanden).
 - `validFrom`, `validUntil` - Gültigkeitsfenster (durch die Gültigkeitsrichtlinie unten geregelt)
@@ -73,16 +73,21 @@ Ein Delegierungszertifikat enthält:
    ```
 3. Das vorgelagerte System signiert das Zertifikat mit seinem Master-Schlüssel und gibt es zurück.
 4. Der On-Premise-Server speichert das Zertifikat und seinen privaten Schlüssel, bereit zum Signieren von Lizenzen.
-5. Wenn eine CLI eine Lizenz vom On-Premise-Server anfordert, signiert der Server mit seinem delegierten Schlüssel und fügt eine Referenz auf das Zertifikat ein.
-6. Renet führt eine **zweistufige Validierung** durch:
+5. Wenn eine CLI eine Lizenz vom On-Premise-Server anfordert, signiert der Server mit seinem delegierten Schlüssel und **bettet das vollständige Delegierungszertifikat in den Lizenz-Blob ein** (das Feld `delegationCert`). Das Zertifikat wird nicht separat abgerufen; es reist mit jeder Repo-Lizenz mit.
+6. Renet führt eine **zweistufige Validierung** in dieser Reihenfolge durch:
    - Signatur des Zertifikats gegen den eingebackenen vorgelagerten Master-Schlüssel verifizieren.
+   - Setzt das Gültigkeitsfenster des Zertifikats (`validFrom` / `validUntil`) bei Wachstumsoperationen (`repo create`, `fork`, `resize`, `expand`) und beim Backup-Transfer (`repo push`, `pull`, Backups) durch. Die Betriebsstufe (`repo up`, `up all`, Autostart) überspringt nur das Fenster, genau wie sie bereits den Lizenzablauf überspringt: Ihre laufenden Workloads stoppen nie, weil ein Zertifikat abgelaufen ist, aber ein abgelaufenes Zertifikat kann nichts Neues autorisieren. Signatur, Schlüsselbindung und jede sonstige Zertifikatsbeschränkung bleiben auf allen Stufen durchgesetzt.
+   - Verlangen, dass `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (der 16-stellige Hex-Schlüssel-Fingerabdruck), sodass das Zertifikat nur für Lizenzen bürgen kann, die mit genau dem Schlüssel signiert wurden, an den es delegiert.
    - Signatur des Blobs gegen den delegierten Schlüssel aus dem Zertifikat verifizieren.
-   - Prüfen, dass `blob.sequence <= cert.maxTotalIssuances`.
+   - Die Zertifikatsbeschränkungen durchsetzen: Abonnement-Übereinstimmung, Plan-Übereinstimmung, Größenobergrenze (`maxRepositorySizeGb`) und `blob.sequence <= cert.maxTotalIssuances`.
    - Alle Standard-Chain-Prüfungen anwenden.
+
+Ein Zertifikatsfehler schlägt sofort mit einem eigenen Grund fehl: `cert_expired` (außerhalb des Gültigkeitsfensters) oder `cert_invalid` (ungültige Master-Key-Signatur oder eine verletzte Beschränkung). Diese werden **vor** `invalid_signature` geprüft, der Zertifikatsgrund gewinnt also.
 
 Der On-Premise-Server kann nicht:
 - Eine Lizenz außerhalb der Planlimits des Delegierungszertifikats fälschen (renet lehnt sie ab).
 - Mehr als `maxTotalIssuances` Gesamtoperationen ausstellen (renet lehnt Sequenzüberlauf ab).
+- Nach dem `validUntil` des Zertifikats weiterhin lauffähige Lizenzen signieren (das Fenster wird auch bei Operationen durchgesetzt, die den Ablauf sonst überspringen).
 - Das Zertifikat ändern (die vorgelagerte Signatur bricht).
 
 ## Gültigkeitsrichtlinie

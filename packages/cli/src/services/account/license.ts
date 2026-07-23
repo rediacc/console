@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import { DEFAULTS } from '@rediacc/shared/config';
+import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -90,6 +91,8 @@ export interface RuntimeRepoLicenseStatus {
     | 'sequence_regression'
     | 'invalid_signature'
     | 'identity_mismatch'
+    | 'cert_expired'
+    | 'cert_invalid'
     | 'unknown';
   message?: string;
   runtimeValid: boolean;
@@ -360,12 +363,32 @@ async function writeRepoLicense(
   repositoryGuid: string,
   license: unknown
 ): Promise<void> {
-  await sftp.exec(`sudo mkdir -p ${REPO_LICENSE_DIR}`);
-  const repoLicenseFile = `${REPO_LICENSE_DIR}/${repositoryGuid}.json`;
-  await sftp.execStreaming(`sudo tee ${repoLicenseFile} > /dev/null`, {
+  // The license is written under a per-signer name so licenses signed by
+  // different account universes (each with its own baked key in renet)
+  // coexist without clobbering each other. The name is the signing key's
+  // fingerprint, carried in the blob's publicKeyId.
+  const publicKeyId =
+    typeof license === 'object' && license !== null
+      ? (license as { publicKeyId?: unknown }).publicKeyId
+      : undefined;
+  if (typeof publicKeyId !== 'string' || !isValidPublicKeyId(publicKeyId)) {
+    throw new Error(
+      `Refusing to write repo license for ${repositoryGuid}: signed blob has an invalid ` +
+        `publicKeyId (${JSON.stringify(publicKeyId)}); expected a 16-char hex fingerprint. ` +
+        'This usually means the account server and CLI disagree on the fingerprint format.'
+    );
+  }
+
+  const repoDir = `${REPO_LICENSE_DIR}/${repositoryGuid}`;
+  const repoLicenseFile = `${repoDir}/${publicKeyId}.json`;
+  await sftp.exec(`sudo mkdir -p "${repoDir}"`);
+  await sftp.execStreaming(`sudo tee "${repoLicenseFile}" > /dev/null`, {
     stdin: JSON.stringify(license, null, 2),
   });
-  await sftp.exec(`sudo chmod 640 ${repoLicenseFile}`);
+  await sftp.exec(`sudo chmod 640 "${repoLicenseFile}"`);
+  // GC the legacy flat file only. Files for other keyIds are never touched —
+  // that no-clobber property is what lets universes coexist.
+  await sftp.exec(`sudo rm -f "${REPO_LICENSE_DIR}/${repositoryGuid}.json"`);
 }
 
 async function scanRemoteRepoLicenses(
@@ -530,10 +553,14 @@ async function runRepoLicenseBatch(
     scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath).catch(() => []),
   ]);
 
+  // Only machine_mismatch force-reissues (the documented remedy the guidance
+  // points users at). invalid_signature no longer triggers a reissue: with the
+  // per-signer license layout a foreign-universe file is simply never selected,
+  // so a genuine invalid_signature means the machine's OWN key can't validate
+  // its own file — that must fail fast, not loop reissuing (matches
+  // subscription-licensing.md).
   const forceReissueGuids = new Set(
-    licenseStatuses
-      .filter((s) => s.status === 'invalid_signature' || s.status === 'machine_mismatch')
-      .map((s) => s.repositoryGuid)
+    licenseStatuses.filter((s) => s.status === 'machine_mismatch').map((s) => s.repositoryGuid)
   );
 
   const repoByGuid = new Map(

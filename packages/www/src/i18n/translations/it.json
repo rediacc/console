@@ -2896,19 +2896,19 @@
         "heading": "Infrastruttura tua. Regole tue.",
         "rows": [
           {
-            "description": "Avvia, arresta, cancella, fai backup: tutto funziona sempre, anche anni dopo la scadenza. La licenza non viene mai verificata. I tuoi dati restano sempre tuoi.",
+            "description": "Avvio, arresto e cancellazione funzionano sempre, anche anni dopo la scadenza del tuo abbonamento. I tuoi dati restano sempre accessibili sulle tue macchine.",
             "title": "I tuoi repository non si fermano mai."
           },
           {
-            "description": "Sync file, SSH, editing remoto, comandi di gestione: tutto funziona senza licenza. Zero restrizioni, per sempre.",
+            "description": "I tuoi strumenti operativi continuano a funzionare: accesso SSH, editing remoto e tutti i comandi di gestione. Nessuna licenza è mai richiesta.",
             "title": "Accesso totale ai tuoi strumenti."
           },
           {
-            "description": "Ti serve un abbonamento per creare o copiare repository. Ridimensionamento e scaling durano ancora 60 giorni dopo la scadenza. Tutto il resto? Permanente.",
+            "description": "Ti serve un abbonamento attivo per creare nuovi repository, copiarne di esistenti o trasferire backup. Ridimensionamento ed espansione continuano a funzionare per 60 giorni dopo la scadenza. Far funzionare i tuoi repository resta permanente.",
             "title": "Solo i nuovi repository hanno bisogno di un abbonamento."
           },
           {
-            "description": "Quando l'abbonamento finisce, ridimensionamento ed espansione continuano per altri 60 giorni. Avvio, stop, cancellazione, backup rimangono sempre attivi.",
+            "description": "Quando l'abbonamento finisce, ridimensionamento ed espansione continuano per altri 60 giorni. Avvio, stop e cancellazione non sono interessati. Funzionano per sempre. Il trasferimento dei backup richiede un abbonamento attivo.",
             "title": "60 giorni di tolleranza nello scaling."
           },
           {

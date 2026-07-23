@@ -347,6 +347,11 @@
       "remote": {
         "description": "Remote-Konfigurationsspeicher-Verbindung verwalten",
         "tokenExpired": "Remote-Konfigurations-Token abgelaufen. Erneut authentifizieren mit: rdc config remote enable",
+        "unreachable": "Config-Server {{server}} ist nicht erreichbar",
+        "offlineCacheWarning": "Config-Server {{server}} ist nicht erreichbar; Konfiguration \"{{config}}\" wird aus dem Offline-Cache bereitgestellt (Serverversion {{version}}, zwischengespeichert vor {{age}}). Änderungen können erst gespeichert werden, wenn der Server wieder erreichbar ist.",
+        "offlineNoCache": "Config-Server {{server}} ist nicht erreichbar, und für Konfiguration \"{{config}}\" existiert noch kein Offline-Cache. Führen Sie \"rdc config remote refresh\" aus, sobald der Server erreichbar ist, um den Cache zu befüllen.",
+        "writeFailedClosed": "Speichern nicht möglich: Konfiguration \"{{config}}\" liegt auf {{server}}, der nicht erreichbar ist. Die Änderung wurde NICHT gespeichert.",
+        "conflictRetryExhausted": "Konfiguration \"{{config}}\" steht nach 3 Versuchen weiterhin im Konflikt mit einem anderen Gerät. Führen Sie den Befehl erneut aus.",
         "passkeySecretMissing": "Passkey-Geheimnis nicht im OS-Schlüsselbund gefunden. Erneut authentifizieren mit: rdc config remote enable",
         "staleSlot": "Ihr Key-Slot ist veraltet (der Config-Verschlüsselungskey wurde rotiert). Erneut anmelden mit: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "Ein Config-Master-Passwort ist erforderlich. Setzen Sie REDIACC_CONFIG_PASSWORD, oder führen Sie den Befehl ohne --password in einem interaktiven Terminal aus.",
           "passwordRequirePasskey": "Diese Organisation verlangt einen Passkey zum Entsperren des Config-Speichers; die Passwort-Anmeldung ist deaktiviert. Melden Sie sich über einen Browser an mit: rdc config remote enable",
           "passwordNoSlot": "Für Ihren Config-Speicher ist kein Passwort-Slot bereitgestellt. Fügen Sie einen über das Portal hinzu (Config Storage > key slots) und versuchen Sie es erneut.",
-          "passwordWrong": "Die Config konnte mit diesem Passwort nicht entsperrt werden. Prüfen Sie REDIACC_CONFIG_PASSWORD (oder das eingegebene Passwort) und versuchen Sie es erneut."
+          "passwordWrong": "Die Config konnte mit diesem Passwort nicht entsperrt werden. Prüfen Sie REDIACC_CONFIG_PASSWORD (oder das eingegebene Passwort) und versuchen Sie es erneut.",
+          "optionForce": "Abweichenden lokalen Inhalt ohne Bestätigung durch die Serverkopie ersetzen",
+          "seeded": "Speicher war leer; die lokale Konfiguration wurde als Version 1 gepusht.",
+          "overwriteConfirm": "Die lokale Konfiguration \"{{config}}\" enthält {{machines}} Maschine(n) und {{repos}} Repository/Repositories, die durch die Serverkopie ersetzt werden (die bisherige Datei bleibt unter {{backupPath}} erhalten). Fortfahren?",
+          "overwriteAborted": "Aktivierung abgebrochen: Die lokale Konfiguration \"{{config}}\" enthält Inhalte, die von der Serverkopie abweichen. Führen Sie den Befehl mit --force erneut aus, um sie zu ersetzen, oder bestätigen Sie in einem interaktiven Terminal."
         },
         "disable": {
           "description": "Verbindung zum Remote-Speicher trennen und Konfiguration lokal speichern",
           "notEnabled": "Remote-Konfiguration ist nicht aktiviert.",
-          "success": "Remote-Konfiguration deaktiviert. Konfiguration \"{{name}}\" lokal gespeichert."
+          "success": "Remote-Konfiguration deaktiviert. Konfiguration \"{{name}}\" lokal gespeichert.",
+          "serverRequired": "Deaktivieren nicht möglich: Config-Server {{server}} ist nicht erreichbar, und die Deaktivierung muss zuerst die neueste Serverkopie abrufen (ein Deaktivieren aus einem veralteten Cache könnte Schreibvorgänge eines anderen Geräts verlieren). Erneut versuchen, sobald der Server erreichbar ist."
         },
         "status": {
           "description": "Remote-Verbindungsstatus anzeigen"
@@ -473,6 +483,9 @@
         "verifying": "Es wird überprüft, ob der neue Schlüssel die Konfiguration entschlüsselt...",
         "verified": "Neuer Schlüssel verifiziert",
         "success": "Konfiguration \"{{name}}\" ist jetzt mit dem neuen Schlüssel verschlüsselt (Version {{version}})."
+      },
+      "current": {
+        "description": "Die aktive Konfiguration anzeigen: Name, Datei, aufgelöster Server und Kanal, Token-Status"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "Abonnement",
         "virtualization": "Virtualisierung"
       },
-      "serverMismatch": "Server-Abweichung",
       "subscriptionUnreachable": "Abonnement-Server nicht erreichbar",
       "title": "Rediacc CLI-Diagnose"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  Lizenzdatei konnte nicht gelesen werden",
         "remote": "\nRemote-Abonnement:",
         "remoteMachine": "    - {{id}}... (zuletzt gesehen: {{lastSeen}})",
+        "serverWouldUse": "Würde Account-Server verwenden: {{server}}",
         "remoteMachineActivations": "  Maschinenaktivierungen: {{active}}/{{max}}",
         "remotePlan": "  Tarif:    {{plan}}",
         "remoteRepoLicenseIssuances": "  Floating-Lizenzanfragen: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repo-Lizenzen: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen",
-        "remoteStatus": "  Zustand:  {{status}}",
-        "serverMismatch": "Das Dev-Token gehört zu {{actualServerUrl}}, aber dieser Worktree verwendet {{expectedServerUrl}}. Führe `rdc subscription login` erneut aus."
+        "remoteStatus": "  Zustand:  {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "Update verfügbar: v{{version}} (aktuell: v{{current}})",
       "channelDescription": "Release-Kanal festlegen (stable oder edge)",
       "channelSet": "Release-Kanal auf {{channel}} gesetzt",
+      "configMissing": "Konfiguration \"{{name}}\" existiert nicht. Erstellen Sie sie mit: rdc config init {{name}}",
       "checking": "Suche nach Updates...",
       "checkOnly": "Nur auf Updates prüfen, ohne herunterzuladen",
       "description": "CLI-Updates prüfen und anwenden",
@@ -2054,7 +2067,7 @@
     "invalidKey": "Ungültiger Schlüssel. Gültige Schlüssel: {{keys}}",
     "license": {
       "preflightTokenNotReady": "Abonnement-Token ist nicht bereit. Ausführen: rdc subscription login. Bereitstellung auf {{machine}} übersprungen.",
-      "skipActivationHint": "Auf einer Wegwerf-Maschine können Sie die Aktivierung mit REDIACC_SKIP_ACTIVATION=1 vollständig überspringen.",
+      "skipActivationHint": "Auf einer Wegwerf-Maschine können Sie die Aktivierung mit REDIACC_SKIP_MACHINE_ACTIVATION=1 vollständig überspringen.",
       "recoveryFailedNoKnownRepos": "Es wurden Repositories auf {{machine}} gefunden, aber keines ist in Ihrer lokalen Konfiguration eingetragen. Listen Sie Ihre verfolgten Repos mit `rdc repo list` auf, und versuchen Sie es erneut.",
       "recoveryFailedServerRejected": "Der Account-Server hat die Lizenzausstellung für das Repository auf \"{{machine}}\" abgelehnt. Erster Fehler: {{error}}. Ausführen: rdc subscription refresh --repo <repo-ref> für Details.",
       "recoveryFailedTokenNotReady": "Das Subscription-Token ist noch nicht bereit. Ausführen: rdc subscription login, dann erneut versuchen."

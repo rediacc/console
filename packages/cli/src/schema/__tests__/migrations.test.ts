@@ -6,6 +6,9 @@ import {
   RdcConfigSchema,
   runMigrations,
 } from '@rediacc/shared/config-schema';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { nodeCryptoProvider } from '../../adapters/crypto.js';
 
@@ -139,6 +142,39 @@ describe('runMigrations', () => {
   it('produces v3 output that passes RdcConfigSchema', async () => {
     const result = await runMigrations(makeV2Sample(), throwingCtx);
     expect(RdcConfigSchema.safeParse(result.config).success).toBe(true);
+  });
+
+  it('preserves the full account universe (server/e2e/channel/releases) round-tripping a v3 fixture', async () => {
+    const raw = JSON.parse(
+      readFileSync(
+        join(
+          fileURLToPath(new URL('.', import.meta.url)),
+          '..',
+          '..',
+          '__tests__',
+          'fixtures',
+          'config',
+          'v3-account-universe.json'
+        ),
+        'utf-8'
+      )
+    );
+
+    // v3 in, v3 out — a no-op migration that must not touch the account fields.
+    const result = await runMigrations(raw, throwingCtx);
+    expect(result.migrated).toBe(false);
+
+    const parsed = RdcConfigSchema.safeParse(result.config);
+    expect(parsed.success).toBe(true);
+
+    const account = (parsed.success ? parsed.data : {}).account;
+    expect(account).toEqual({
+      userEmail: 'op@example.com',
+      accountServer: 'https://on-prem.example.com',
+      e2ePublicKey: 'MCowBQYDK2VuAyEALY64atDar/bIwKoYEJPoYphKKZ6KUIkPzIHdfH6nKg8=',
+      updateChannel: 'edge',
+      releasesUrl: 'https://releases.on-prem.example.com',
+    });
   });
 });
 

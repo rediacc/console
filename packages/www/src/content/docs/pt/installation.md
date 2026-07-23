@@ -1,6 +1,6 @@
 ---
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Instalação"
 description: "Instale a CLI Rediacc em Linux, macOS ou Windows."
 category: "Guides"
@@ -221,4 +221,4 @@ O reinício é transparente e não causa **nenhuma indisponibilidade**:
 - **As ligações de cliente existentes (HTTP, TCP, UDP) não são afetadas.** O servidor de rotas é um fornecedor de configuração -- não está no caminho de dados. O Traefik trata de todo o tráfego diretamente.
 - Os seus contentores de aplicação não são tocados -- apenas o processo do servidor de rotas ao nível do sistema é reiniciado.
 
-Para ignorar o reinício automático, passe `--skip-router-restart` a qualquer comando ou defina a variável de ambiente `RDC_SKIP_ROUTER_RESTART=1`.
+Para ignorar o reinício automático, passe `--skip-router-restart` a qualquer comando ou defina a variável de ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.

@@ -2887,19 +2887,19 @@
         "heading": "Altyapı Sende, Kurallar Sende",
         "rows": [
           {
-            "description": "Başlat, durdur, sil, yedekle... Aboneliğin sona erdikten sonra bile yıllar boyunca çalışır. Verilerine her zaman erişim var.",
+            "description": "Başlatma, durdurma ve silme, aboneliğin sona ermesinden yıllar sonra bile her zaman çalışır. Verilerine kendi makinelerinde her zaman erişebilirsin.",
             "title": "Uygulamalarınız Sonsuza Kadar Çalışır"
           },
           {
-            "description": "Dosya senkronizasyonu, SSH erişimi, uzaktan düzenleme, yönetim komutları — hiçbir lisansa gerek yok. Hepsi her zaman açık.",
+            "description": "İşletim araçların çalışmaya devam eder: SSH erişimi, uzaktan düzenleme ve tüm yönetim komutları. Hiçbir zaman lisans gerekmez.",
             "title": "Tüm Araçlarına Tam Erişim"
           },
           {
-            "description": "Yeni sunucu oluşturmak veya mevcut olanı kopyalamak için aktif plana ihtiyacın var. Yeniden boyutlandırma ve genişletme, planın sona erdikten 60 gün sonra da çalışır. Geri kalanı kalıcı.",
+            "description": "Yeni sunucu oluşturmak, mevcut birini kopyalamak veya yedek aktarmak için aktif bir plana ihtiyacın var. Yeniden boyutlandırma ve genişletme, planın sona ermesinden 60 gün sonra da çalışmaya devam eder. Sunucularını çalıştırmak kalıcıdır.",
             "title": "Yalnızca Yeni Sunucular İçin Abonelik Gerekir"
           },
           {
-            "description": "Abonelik sona erdiğinde, yeniden boyutlandırma ve genişletme 60 gün daha çalışır. Başlat, durdur, sil, yedekle — bunlar sonsuza kadar çalışır.",
+            "description": "Aboneliğiniz sona erdiğinde, yeniden boyutlandırma ve genişletme 60 gün daha çalışmaya devam eder. Başlatma, durdurma ve silme bundan etkilenmez, sonsuza kadar çalışır. Yedekleme aktarımı aktif bir abonelik gerektirir.",
             "title": "Ölçekleme İçin 60 Günlük İmtiyaz"
           },
           {

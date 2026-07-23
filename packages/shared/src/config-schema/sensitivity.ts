@@ -61,6 +61,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Account ──────────────────────────────────────────────────────────────
   '/account/userEmail': { kind: 'pii' },
   '/account/accountServer': { kind: 'identifier' },
+  '/account/e2ePublicKey': { kind: 'public' }, // public half of server keypair by construction
+  '/account/updateChannel': { kind: 'public' },
+  '/account/releasesUrl': { kind: 'identifier' }, // on-prem endpoint, mirror accountServer
   // Retired cloud-adapter residue (R2-F9): the v2→v3 migration strips team and
   // region and nothing repopulates them. Registered public so the coverage
   // gate stays strict until P4 deletes the fields with the dead command
@@ -352,6 +355,10 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Region display label ("eu"/"us"); public, so never committed either —
   // consistent with the host-local doctrine of its siblings above.
   '/remote/dataRegion': { kind: 'public' },
+  // Offline read-cache metadata (last pulled server version + timestamp).
+  // Host-local observations, same doctrine as dataRegion: public, not committed.
+  '/remote/cachedVersion': { kind: 'public' },
+  '/remote/cachedAt': { kind: 'public' },
 
   // ── Local binary override ────────────────────────────────────────────────
   // renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is

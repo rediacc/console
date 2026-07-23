@@ -59,11 +59,11 @@ export function registerServeCommand(program: Command): void {
       try {
         // --mode is constrained by Commander's .choices(), so an invalid value
         // never reaches here.
-        const executorToken = process.env.REDIACC_EXECUTOR_TOKEN;
+        const executorToken = process.env.REDIACC_TOKEN;
         if (!executorToken) {
           throw new ValidationError(
             'The executor needs its own account token to verify callers. ' +
-              'Set REDIACC_EXECUTOR_TOKEN to a token carrying the proxy:exec scope.'
+              'Set REDIACC_TOKEN to a token carrying the proxy:exec scope.'
           );
         }
 

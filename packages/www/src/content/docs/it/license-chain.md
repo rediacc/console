@@ -4,8 +4,8 @@ description: "Emissione di licenze a prova di manomissione, firma delegata per o
 category: "Guides"
 order: 8
 language: it
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Catena di Licenze e Delega
@@ -18,7 +18,7 @@ Ogni licenza emessa da un server account viene registrata in un registro append-
 
 1. I **numeri di sequenza** sono globali e monotoni per abbonamento. Saltare o riordinare le voci interrompe la catena.
 2. Gli **hash della catena** vincolano ogni voce a tutte le voci precedenti. Modificare qualsiasi voce passata invalida tutte le voci successive.
-3. **Renet memorizza la sequenza più alta che ha visto** per abbonamento. Un server che fa rollback della sua sequenza viene rilevato immediatamente.
+3. **Renet memorizza la sequenza più alta che ha visto** per chiave di firma e abbonamento. Un server che fa rollback della sua sequenza viene rilevato immediatamente.
 
 ## Come Viene Emessa una Licenza
 
@@ -35,7 +35,7 @@ Quando la CLI richiede una licenza per un repository, il server account:
 
 ## Come Renet Valida
 
-Ogni macchina che esegue Renet memorizza il suo ultimo stato della catena noto in `{licenseDir}/chain-state.json`. A ogni validazione della licenza, Renet verifica:
+Ogni macchina che esegue Renet memorizza il suo ultimo stato della catena noto in `{licenseDir}/chain-state.json` (cioè `/var/lib/rediacc/license/chain-state.json`, una directory gemella della `repos/` per repository). Lo stato della catena ha scope per chiave di firma e abbonamento, con chiave nel formato `"<keyId>:<subscriptionId>"`, cosicché gli universi firmati da chiavi diverse tracciano le proprie sequenze in modo indipendente. A ogni validazione della licenza, Renet verifica:
 
 | Verifica | Il fallimento significa |
 |---|---|
@@ -57,7 +57,7 @@ Un certificato di delega contiene:
 - `subscriptionId` -- a quale abbonamento si applica questo certificato
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- limiti del piano inclusi
 - `maxTotalIssuances` -- limite superiore sul numero di sequenza della catena
-- `delegatedPublicKey` -- la chiave pubblica Ed25519 del server on-premise (SPKI base64)
+- `delegatedPublicKey` -- la chiave pubblica Ed25519 del server on-premise (SPKI base64). La sua impronta esadecimale a 16 cifre (i primi 8 byte dello `SHA-256` calcolato sulla chiave grezza) è il `publicKeyId` registrato su ogni blob di licenza firmato da questa chiave. `publicKeyId` è sempre un'impronta di chiave reale, mai un segnaposto come `"default"`.
 - `genesisHash` -- il punto di partenza della catena (continuazione dal precedente certificato, o "genesis")
 - `genesisSequence` -- sequenza della catena al momento dell'emissione. Usato da `/onprem/cert-upload` per validare che il nuovo certificato si colleghi a una voce nota nel registro di emissione locale quando la catena è avanzata durante il transito. Opzionale per retrocompatibilità (trattato come 0 se assente).
 - `validFrom`, `validUntil` -- finestra di validità (regolata dalla politica di validità di seguito)
@@ -73,16 +73,21 @@ Un certificato di delega contiene:
    ```
 3. L'upstream firma il certificato con la sua chiave master e lo restituisce.
 4. Il server on-premise memorizza il certificato e la sua chiave privata, pronto a firmare licenze.
-5. Quando una CLI richiede una licenza dal server on-premise, il server firma con la sua chiave delegata e include un riferimento al certificato.
-6. Renet esegue una **validazione a due livelli**:
+5. Quando una CLI richiede una licenza dal server on-premise, il server firma con la sua chiave delegata e **include l'intero certificato di delega dentro il blob di licenza** (il campo `delegationCert`). Il certificato non viene recuperato separatamente; viaggia con ogni licenza di repository.
+6. Renet esegue una **validazione a due livelli**, in questo ordine:
    - Verifica la firma del certificato rispetto alla chiave master upstream inclusa.
+   - Applica la finestra di validità del certificato (`validFrom` / `validUntil`) sulle operazioni di crescita (`repo create`, `fork`, `resize`, `expand`) e sul trasferimento dei backup (`repo push`, `pull`, backup). Il livello operativo (`repo up`, `up all`, avvio automatico) salta solo la finestra, così come già salta la scadenza della licenza: i carichi di lavoro in esecuzione non si fermano mai perché un certificato è scaduto, ma un certificato scaduto non può autorizzare nulla di nuovo. La firma, il binding della chiave e ogni altro vincolo del certificato restano applicati a tutti i livelli.
+   - Richiede che `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (l'impronta esadecimale a 16 cifre della chiave), in modo che il certificato possa garantire solo le licenze firmate esattamente con la chiave a cui delega.
    - Verifica la firma del blob rispetto alla chiave delegata dal certificato.
-   - Verifica che `blob.sequence <= cert.maxTotalIssuances`.
+   - Applica i vincoli del certificato: corrispondenza dell'abbonamento, corrispondenza del piano, limite di dimensione (`maxRepositorySizeGb`) e `blob.sequence <= cert.maxTotalIssuances`.
    - Applica tutte le verifiche standard della catena.
+
+Un fallimento del certificato fallisce immediatamente con un motivo dedicato: `cert_expired` (fuori dalla finestra di validità) o `cert_invalid` (firma della chiave master non valida o un vincolo violato). Questi vengono controllati **prima** di `invalid_signature`, quindi prevale il motivo del certificato.
 
 Il server on-premise non può:
 - Contraffare una licenza al di fuori dei limiti del piano del certificato di delega (renet la rifiuta).
 - Emettere più di `maxTotalIssuances` operazioni totali (renet rifiuta l'overflow della sequenza).
+- Continuare a firmare licenze eseguibili oltre il `validUntil` del certificato (la finestra viene applicata anche sulle operazioni che saltano la scadenza).
 - Modificare il certificato (la firma upstream si rompe).
 
 ## Politica di Validità

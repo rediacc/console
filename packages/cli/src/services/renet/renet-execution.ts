@@ -106,8 +106,8 @@ export async function provisionRenetToRemote(
   // `systemctl restart`. systemctl try-restart is a no-op when the
   // unit is not running, so this is safe on machines without the
   // router daemon. Opt out via skipRouterRestart=true or
-  // RDC_SKIP_ROUTER_RESTART=1.
-  const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
+  // REDIACC_SKIP_ROUTER_RESTART=1.
+  const skipRestart = options.skipRouterRestart ?? !!process.env.REDIACC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : (options.restartServices ?? true);
 
   const start = Date.now();
@@ -148,7 +148,7 @@ function functionRequiresDatastore(functionName: string): boolean {
  * (backup, snapshot, repo operations). System and admin functions
  * (machine_ping, setup_machine, machine_uninstall, etc.) skip verification
  * so they can operate on machines regardless of setup state.
- * Bypass with RDC_SKIP_SETUP_CHECK=1 environment variable.
+ * Bypass with REDIACC_SKIP_SETUP_CHECK=1 environment variable.
  */
 export async function verifyMachineSetup(
   machine: MachineConfig,
@@ -156,7 +156,7 @@ export async function verifyMachineSetup(
   options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string },
   sharedSftp?: SFTPClient
 ): Promise<void> {
-  if (process.env.RDC_SKIP_SETUP_CHECK) return;
+  if (process.env.REDIACC_SKIP_SETUP_CHECK) return;
 
   // Only verify setup for functions that require the BTRFS datastore.
   // System functions (machine_ping, machine_version, setup_machine,

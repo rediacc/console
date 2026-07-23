@@ -25,10 +25,14 @@ const DEFAULT_CONFIG_NAME = 'rediacc';
 const EXCLUDED_FILES = new Set(['update-state.json', 'server.json', 'api-token.json']);
 
 /**
- * True for JSON files the CLI writes into the config dir that are NOT rdc
- * configs: the updater state, the subscription server pick (server.json),
- * and subscription device tokens (api-token.json / api-token-<config>.json,
- * written by services/subscription-auth.ts).
+ * True for JSON files in the config dir that are NOT rdc configs: the updater
+ * state, and subscription device tokens (api-token-<config>.json, written by
+ * services/subscription-auth.ts).
+ *
+ * `server.json` and the bare `api-token.json` are legacy artifacts from the
+ * pre-universe layout; they are never configs. The CLI no longer reads or
+ * writes them, but a stray file with either name would otherwise be parsed as
+ * a config named `server`/`api-token`, so they stay on the exclusion list.
  */
 function isReservedFile(fileName: string): boolean {
   return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
@@ -322,6 +326,21 @@ export class ConfigFileStorage {
       await fs.access(this.getPath(name));
     } catch {
       throw new Error(`Config "${name}" does not exist; refusing to create it for a state write`);
+    }
+    return this.mutate(name, updater, false, { createIfMissing: false });
+  }
+
+  /**
+   * Update a remote-enabled config's local CACHE (observation of the server
+   * copy, not declared intent). Same contract as updateState: never bumps the
+   * version counter, never resurrects a deleted config — a cache refresh
+   * racing a `config delete` must not bring the file back from the dead.
+   */
+  async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    try {
+      await fs.access(this.getPath(name));
+    } catch {
+      throw new Error(`Config "${name}" does not exist; refusing to create it for a cache write`);
     }
     return this.mutate(name, updater, false, { createIfMissing: false });
   }

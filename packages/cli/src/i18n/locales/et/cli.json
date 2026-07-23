@@ -347,6 +347,11 @@
       "remote": {
         "description": "Halda kaugsalvestuse konfiguratsiooniühendust",
         "tokenExpired": "Kaugsalvestuse konfiguratsioonitõend on aegunud. Autentimine uuesti: rdc config remote enable",
+        "unreachable": "Konfiguratsiooniserver {{server}} pole kättesaadav",
+        "offlineCacheWarning": "Konfiguratsiooniserver {{server}} pole kättesaadav; konfiguratsiooni \"{{config}}\" pakutakse võrguühenduseta vahemälust (serveri versioon {{version}}, vahemällu salvestatud {{age}} tagasi). Muudatusi ei saa salvestada enne, kui server on jälle kättesaadav.",
+        "offlineNoCache": "Konfiguratsiooniserver {{server}} pole kättesaadav ja konfiguratsioonil \"{{config}}\" pole veel võrguühenduseta vahemälu. Käivita \"rdc config remote refresh\", kui server on kättesaadav, et vahemälu täita.",
+        "writeFailedClosed": "Salvestamine ebaõnnestus: konfiguratsioon \"{{config}}\" asub serveris {{server}}, mis pole kättesaadav. Muudatust EI salvestatud.",
+        "conflictRetryExhausted": "Konfiguratsioon \"{{config}}\" on 3 katse järel endiselt konfliktis teise seadmega. Käivita käsk uuesti.",
         "passkeySecretMissing": "Pääsuvõtme saladust ei leitud OS-i võtmehoidlast. Autentimine uuesti: rdc config remote enable",
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "Vajalik on konfiguratsiooni peaparool. Määra REDIACC_CONFIG_PASSWORD või käivita ilma --password liputa interaktiivses terminalis.",
           "passwordRequirePasskey": "See organisatsioon nõuab konfiguratsioonihoidla avamiseks passkey't; parooliga registreerimine on keelatud. Registreeru brauserist käsuga: rdc config remote enable",
           "passwordNoSlot": "Sinu konfiguratsioonihoidla jaoks pole password slot'i jagatud. Lisa see portaalist (Config Storage > key slots) ja proovi uuesti.",
-          "passwordWrong": "Konfiguratsiooni ei õnnestunud selle parooliga avada. Kontrolli REDIACC_CONFIG_PASSWORD väärtust (või sisestatud parooli) ja proovi uuesti."
+          "passwordWrong": "Konfiguratsiooni ei õnnestunud selle parooliga avada. Kontrolli REDIACC_CONFIG_PASSWORD väärtust (või sisestatud parooli) ja proovi uuesti.",
+          "optionForce": "Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta",
+          "seeded": "Hoidla oli tühi; kohalik konfiguratsioon lükati üles versioonina 1.",
+          "overwriteConfirm": "Kohalikus konfiguratsioonis \"{{config}}\" on {{machines}} masin(at) ja {{repos}} hoidla(t), mis asendatakse serveri koopiaga (eelmine fail säilib asukohas {{backupPath}}). Kas jätkata?",
+          "overwriteAborted": "Aktiveerimine katkestati: kohalik konfiguratsioon \"{{config}}\" sisaldab serveri koopiast erinevat sisu. Käivita uuesti lipuga --force, et see asendada, või kinnita interaktiivses terminalis."
         },
         "disable": {
           "description": "Katkesta ühendus kaugsalvestusega ja salvesta konfiguratsioon kohalikult",
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
-          "success": "Kaugkonfiguratsioon keelatud. Konfiguratsioon \"{{name}}\" salvestatud kohalikult."
+          "success": "Kaugkonfiguratsioon keelatud. Konfiguratsioon \"{{name}}\" salvestatud kohalikult.",
+          "serverRequired": "Keelamine ebaõnnestus: konfiguratsiooniserver {{server}} pole kättesaadav ning keelamine peab kõigepealt tooma uusima serveri koopia (keelamine aegunud vahemälust võib kaotada teise seadme muudatused). Proovi uuesti, kui server on kättesaadav."
         },
         "status": {
           "description": "Kuva kaugühenduse olek"
@@ -473,6 +483,9 @@
         "verifying": "Kontrollitakse, kas uus võti dekrüpteerib konfiguratsiooni...",
         "waiting": "Brauseri kinnitust oodatakse...",
         "warning": "See roteerib võtme, millega kogu organisatsiooni konfiguratsioon on krüpteeritud. Iga teine seade peab pärast uuesti liituma."
+      },
+      "current": {
+        "description": "Näita aktiivset konfiguratsiooni: nimi, fail, lahendatud server ja kanal, tõendi olek"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "Tellimus",
         "virtualization": "Virtualiseerimine"
       },
-      "serverMismatch": "serveri mittevastavus",
       "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
       "title": "Rediacc CLI Doctor"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  Kaugmasina olekut ei õnnestunud lugeda",
         "remote": "\nTellimus:",
         "remoteMachine": "    - {{id}}... (viimati nähtud: {{lastSeen}})",
+        "serverWouldUse": "Kasutaks kontoserverit: {{server}}",
         "remoteMachineActivations": "  Masina paigad: {{active}}/{{max}}",
         "remotePlan": "  Plaan:    {{plan}}",
         "remoteRepoLicenseIssuances": "  Igakuised repositooriumi litsentside väljastamised: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repositooriumi litsentsid: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
-        "remoteStatus": "  Olek:     {{status}}",
-        "serverMismatch": "Arendustoken kuulub aadressile {{actualServerUrl}}, kuid see tööpuu kasutab aadressi {{expectedServerUrl}}. Käivita `rdc subscription login` uuesti."
+        "remoteStatus": "  Olek:     {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "Uuendus saadaval: v{{version}} (praegune: v{{current}})",
       "channelDescription": "Seab väljalaskekanali (stable või edge)",
       "channelSet": "Väljalaskekanal seatud väärtusele {{channel}}",
+      "configMissing": "Konfiguratsiooni \"{{name}}\" ei ole olemas. Loo see käsuga: rdc config init {{name}}",
       "checking": "Uuendusi kontrollitakse...",
       "checkOnly": "Kontrollib ainult uuendusi ilma allalaadimiseta",
       "description": "Kontrollib uusi CLI versioone ja rakendab uuendusi. Toetab --check-only kontrolli ilma installimiseta ja --force uuendamist isegi siis, kui on juba uusim versioon.",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "Masinal {{machine}} leiti hoidlaid, kuid ükski neist ei ole sinu kohalikus konfiguratsioonis jälgitud. Kuva jälgitavad hoidlad käsuga `rdc repo list`, seejärel proovi uuesti.",
       "recoveryFailedServerRejected": "Kontoserver lükkas hoidla litsentsi väljastamise tagasi masinal \"{{machine}}\". Esimene viga: {{error}}. Käivita: rdc subscription refresh --repo <repo-ref> üksikasjade saamiseks.",
       "recoveryFailedTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login, seejärel proovi uuesti.",
-      "skipActivationHint": "Äravisataval masinal saad aktiveerimise täielikult vahele jätta lipuga REDIACC_SKIP_ACTIVATION=1."
+      "skipActivationHint": "Äravisataval masinal saad aktiveerimise täielikult vahele jätta lipuga REDIACC_SKIP_MACHINE_ACTIVATION=1."
     },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
     "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",

@@ -4,8 +4,8 @@ description: Null-teadmisega krüpteeritud konfiguratsioonisünkroonimine passke
 category: Guides
 order: 8
 language: et
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Konfiguratsioonisalv
@@ -74,6 +74,16 @@ Nõuded:
 
 Registreerimine on lugemistoiming: CLI toob pesa avalikud KDF-parameetrid ja mähitud võtme, tuletab parooli saladuse lokaalselt ning mähib CEK-i seadmes lahti. See annab seadmele õiguse konfiguratsiooni dekrüpteerida ja sünkroonida; see ei muuda salve.
 
+## Lubamine ja võrguühenduseta lugemine
+
+`rdc config remote enable` ühendab aktiivse konfiguratsiooni salvega. Kui salv on tühi, **lubamine täidab selle sinu praeguse kohaliku konfiguratsiooniga**: kohalikud ressursid saadetakse (push) salve esimese versioonina ja seejärel tuuakse (pull) tagasi, et tõestada ringtee toimimist. Kui salves on juba sisu, lepitab lubamine seda selle asemel, et üle kirjutada (see katkestab tegeliku lahknevuse korral, kui sa ei kasuta `--force`).
+
+Pärast lubamist hoiab konfiguratsioon täielikku **lugemise vahemälu**, mis on puhkeolekus krüpteeritud sama mehhanismiga nagu iga kohalik konfiguratsioon, nii et salv jääb kasutatavaks ka siis, kui kontoserver pole kättesaadav:
+
+- **Lugemine toimib võrguühenduseta.** Vahemälus olev sisu edastatakse koos aegumishoiatusega stderr-is, märgistatuna vahemällu salvestatud versiooni ja ajatempliga (`cachedVersion` / `cachedAt`).
+- **Kirjutamine nõuab serverit ja ebaõnnestub turvaliselt.** Võrguühenduseta kirjutusjärjekorda ei ole: kirjutamine, mis ei jõua serverini, lõpeb veaga, mis nimetab serverit. Kui kirjutuskäsk õnnestus, on muudatus serveris.
+- **Samaaegsed muudatused kahest masinast** lahendatakse pull-replay-repush põhimõttel ressursipaketi tasemel, nii et samaaegne muudatus mujal ei kirjuta sinu oma üle.
+
 ## Võtme pööramine
 
 Salve CEK-i pööramine mähib selle uude põlvkonda:
@@ -91,6 +101,8 @@ Konfiguratsioonisalv on organisatsioonipõhine. Liikmeid hallatakse veebiportaal
 - **Liikme eemaldamine**: Klõpsa eemaldamise nuppu Liikmete lehel (nõuab 2FA + uuesti autentimist)
 
 Turvamehhanismid takistavad viimase aktiivse liikme eemaldamist või enda eemaldamist.
+
+Salves olevad konfiguratsioonid on lisaks piiritletud meeskonna kaupa, kuid see piiritlus on **serveripoolne juurdepääsukontroll, mitte krüptograafiline isolatsioon**: üks organisatsiooniülene CEK krüpteerib kõigi meeskondade konfiguratsioonid ning server jõustab, milliseid meeskondi liige tohib lugeda.
 
 ## Turvalisus
 

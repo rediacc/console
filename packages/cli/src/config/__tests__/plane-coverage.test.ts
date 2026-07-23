@@ -144,8 +144,10 @@ describe('command plane coverage', () => {
     // subtree's config plane, which is correct and deliberate: both only
     // read-modify-write the local config and import no executor or SSH. The
     // machine-plane default of the `backup` domain would have been a false claim.
-    expect(COMMANDS.length).toBe(166);
-    expect(counts).toEqual({ config: 53, machine: 93, other: 20 });
+    // 166 -> 167, config 53 -> 54: the new `config current` leaf, a read-only
+    // config-plane command that reports the resolved server/channel/token state.
+    expect(COMMANDS.length).toBe(167);
+    expect(counts).toEqual({ config: 54, machine: 93, other: 20 });
   });
 
   it('records the interactive commands', () => {

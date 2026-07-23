@@ -4,8 +4,8 @@ description: "在 Linux、macOS 或 Windows 上安装 Rediacc CLI。"
 category: "Guides"
 order: 1
 language: zh
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # 安装
@@ -209,4 +209,4 @@ docker pull ghcr.io/rediacc/rdc:edge
 - **现有客户端连接（HTTP、TCP、UDP）不受影响。** 路由服务器是配置提供者 -- 它不在数据路径中。Traefik 直接处理所有流量。
 - 您的应用容器不会受到影响 -- 只有系统级的路由服务器进程会重启。
 
-要跳过自动重启，请向任何命令传递 `--skip-router-restart`，或设置环境变量 `RDC_SKIP_ROUTER_RESTART=1`。
+要跳过自动重启，请向任何命令传递 `--skip-router-restart`，或设置环境变量 `REDIACC_SKIP_ROUTER_RESTART=1`。

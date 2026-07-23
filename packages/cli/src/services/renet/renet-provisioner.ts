@@ -434,7 +434,7 @@ class RenetProvisionerService {
     context: ProvisionContext
   ): ProvisionResult | null {
     const isDowngrade = remoteVersion && compareVersions(VERSION, remoteVersion) < 0;
-    if (!isDowngrade || process.env.RDC_ALLOW_DOWNGRADE) {
+    if (!isDowngrade || process.env.REDIACC_ALLOW_DOWNGRADE) {
       return null;
     }
 
@@ -443,7 +443,7 @@ class RenetProvisionerService {
       action: 'version_rejected',
       arch: context.arch,
       remotePath: context.remoteInstallPath,
-      error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set RDC_ALLOW_DOWNGRADE=1 to force.`,
+      error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set REDIACC_ALLOW_DOWNGRADE=1 to force.`,
     };
   }
 

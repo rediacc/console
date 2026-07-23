@@ -4,8 +4,8 @@ description: Sincronização de configuração encriptada zero-knowledge com des
 category: Guides
 order: 8
 language: pt
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Armazenamento de Configuração
@@ -74,6 +74,16 @@ Requisitos:
 
 A inscrição é uma leitura: o CLI obtém os parâmetros KDF públicos do slot e a chave protegida, deriva o segredo da palavra-passe localmente e desbloqueia a CEK no próprio dispositivo. Isto concede ao dispositivo a capacidade de desencriptar e sincronizar a configuração; não altera o armazenamento.
 
+## Ativação e leituras offline
+
+`rdc config remote enable` liga a configuração ativa ao armazenamento. Quando o armazenamento está vazio, a ativação **semeia-o a partir da sua configuração local atual**: os recursos locais são enviados como a primeira versão do armazenamento e depois obtidos de volta para comprovar a ida e volta. Quando o armazenamento já tem conteúdo, a ativação concilia com ele em vez de o sobrescrever (aborta em caso de divergência genuína, a menos que passe `--force`).
+
+Depois de ativada, a configuração mantém uma **cache de leitura** completa, encriptada em repouso com o mesmo mecanismo de qualquer configuração local, para que o armazenamento continue utilizável quando o servidor de conta estiver inacessível:
+
+- **As leituras funcionam offline.** O conteúdo em cache é servido com um aviso de desatualização no stderr, identificado com a versão e o carimbo de data/hora em cache (`cachedVersion` / `cachedAt`).
+- **As escritas exigem o servidor e falham de forma fechada.** Não existe fila de escrita offline: uma escrita que não consiga alcançar o servidor termina em erro e indica o servidor. Se um comando de escrita foi bem-sucedido, a alteração está no servidor.
+- **As edições concorrentes a partir de duas máquinas** resolvem-se por obtenção-repetição-reenvio (pull-replay-repush) ao nível do conjunto de recursos, para que uma edição simultânea noutro local não sobreponha a sua.
+
 ## Rotação de chaves
 
 Rodar a CEK do armazenamento volta a protegê-la sob uma nova geração:
@@ -91,6 +101,8 @@ O armazenamento de configuração tem âmbito por organização. Os membros são
 - **Remover membro**: Clique no botão de remoção na página Membros (requer 2FA + reautenticação)
 
 As proteções de segurança impedem a remoção do último membro ativo ou a remoção de si próprio.
+
+As configurações no armazenamento têm ainda âmbito por equipa, mas esse âmbito é **controlo de acesso do lado do servidor, não isolamento criptográfico**: uma única CEK à escala da organização encripta as configurações de todas as equipas, e o servidor impõe quais as equipas que um membro pode ler.
 
 ## Segurança
 

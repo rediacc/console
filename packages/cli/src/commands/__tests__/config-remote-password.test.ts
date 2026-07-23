@@ -24,7 +24,12 @@ const {
   mockConfigServerFetch: vi.fn(),
   secureMem: new Map<string, string>(),
   tokenMem: new Map<string, { token: string; wrappedCek: string }>(),
-  mockConfigFileStorage: { load: vi.fn(), save: vi.fn() },
+  mockConfigFileStorage: {
+    load: vi.fn(),
+    loadDecrypted: vi.fn(),
+    save: vi.fn(),
+    getConfigPath: vi.fn(),
+  },
 }));
 
 vi.mock('../../services/account/account-client.js', () => ({
@@ -178,15 +183,18 @@ describe('config remote enable --password', () => {
     secureMem.clear();
     tokenMem.clear();
     delete process.env.REDIACC_CONFIG_PASSWORD;
-    delete process.env.REDIACC_API_TOKEN;
-    mockConfigFileStorage.load.mockResolvedValue({
+    delete process.env.REDIACC_TOKEN;
+    const localConfig = {
       schemaVersion: 3,
       id: 'local-id',
       version: 1,
       account: { team: 'team', region: 'eu', accountServer: API_URL },
       defaults: { language: 'en' },
-    });
+    };
+    mockConfigFileStorage.load.mockResolvedValue(localConfig);
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue(localConfig);
     mockConfigFileStorage.save.mockResolvedValue(undefined);
+    mockConfigFileStorage.getConfigPath.mockReturnValue(`/tmp/${CONFIG_NAME}.json`);
   });
 
   it('unlocks a pre-provisioned slot end to end (derive → wrap → enroll → probe unwrap)', async () => {
@@ -236,12 +244,12 @@ describe('config remote enable --password', () => {
     expect('teamId' in savedPointer.remote).toBe(true);
   });
 
-  it('passes REDIACC_API_TOKEN through as the enroll bearer token', async () => {
+  it('passes REDIACC_TOKEN through as the enroll bearer token', async () => {
     const f = await provision(PASSWORD);
     mockAccountServerFetch.mockResolvedValue(f.enroll);
     wireConfigApi(f.session, f.config);
     process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
-    process.env.REDIACC_API_TOKEN = 'rdc_api_tok_abc';
+    process.env.REDIACC_TOKEN = 'rdc_api_tok_abc';
 
     await enablePassword(API_URL, CONFIG_NAME);
 

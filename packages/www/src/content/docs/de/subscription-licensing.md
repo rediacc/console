@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Abonnement & Lizenzierung
@@ -48,13 +48,13 @@ Siehe [rdc vs renet](/en/docs/rdc-vs-renet) für die Aufteilung Workstation/Serv
 Für Automatisierung und KI-Agenten verwenden Sie statt Browser-Login ein bereichsspezifisches Abonnement-Token:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 Sie können das Token auch direkt über die Umgebung injizieren, sodass die CLI Repo-Lizenzen ohne interaktiven Login-Schritt ausstellen und aktualisieren kann:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Es wird keine Maschinenlizenz auf der Maschine gespeichert. Die Durchsetzung der
 
 ### Repo-Lizenz
 
-Eine Repo-Lizenz ist eine signierte Lizenz für ein Repository auf einer Maschine. Sie ist die einzige auf der Maschine gespeicherte Lizenzdatei (`/var/lib/rediacc/license/repos/{guid}.json`).
+Eine Repo-Lizenz ist eine signierte Lizenz für ein Repository auf einer Maschine. Sie ist die einzige auf der Maschine gespeicherte Lizenzdatei, angeordnet pro Signierschlüssel:
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` ist ein 16-stelliger Hex-Fingerabdruck (die ersten 8 Bytes von `SHA-256` des Ed25519-Öffentlichschlüssels des signierenden Servers). Ein Repository, das von mehr als einem Account-Universum verwaltet wird (zum Beispiel Produktion und Bench, die auf dieselbe Maschine bereitstellen), enthält eine Datei pro Signierschlüssel in seinem `{guid}`-Verzeichnis. Der Renet-Build der Maschine validiert nur die Datei, die sein eingebackener Schlüssel oder ein daran verketteter Delegierungszertifikat verifizieren kann; Dateien anderer Universen sind inert. Der Wechsel zwischen Universen macht Lizenzen nie ungültig: Die erste Operation in einem neuen Universum stellt dessen Lizenz einmal aus (ein `missing`-Ergebnis stellt automatisch aus), und beide koexistieren danach.
 
 Sie wird verwendet für:
 
 - `rdc repo create` und `rdc repo fork`, validiert vor der Bereitstellung (vorab ohne Identitätsnachweise ausgestellt, dann nach der Erstellung mit Identitätsnachweisen neu ausgestellt)
 - `rdc repo resize` und `rdc repo expand`, vollständige Validierung einschließlich Ablauf
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validiert mit **übersprungener Ablaufprüfung**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validiert mit **übersprungener Ablaufprüfung**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **vollständig validiert einschließlich Ablauf**: Backup-Übertragung erfordert eine aktive Berechtigung
 - Repo-Autostart beim Maschinenneustart, validiert mit **übersprungener Ablaufprüfung**
 
 Repo-Lizenzen sind an die Maschine und das Ziel-Repository gebunden. Jede Lizenz enthält die Maschinen-ID, die Repository-GUID, die Abonnement-ID, die Plan-Limits und den Ablauf. Bei verschlüsselten Repositories verifiziert Rediacc auch die LUKS-Identität des zugrunde liegenden Volumes.
@@ -106,7 +110,7 @@ Neuanmeldungen starten eine 14-tägige kostenlose Testphase im Plan Professional
 
 Community ist die dauerhafte kostenlose Grundstufe. Für neue Konten ist sie keine direkte Anmeldeoption mehr; stattdessen landet ein Konto auf Community, sobald ein Abonnement endet: durch Kündigung während der Testphase, spätere Kündigung eines kostenpflichtigen Plans oder eine fehlgeschlagene Zahlung. Im Community-Fallback behalten Sie eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat. Konten, die vor der Einführung des testphasenbasierten Modells erstellt wurden, behalten ihren bestehenden Community-Zugang.
 
-Die Durchsetzung bleibt bewusst nachsichtig. Laufende Repositories funktionieren auch nach Ablauf eines Abonnements weiter; nur neue Vorgänge (Erstellen, Forken, Größenänderung und Lizenzaktualisierung) setzen eine aktive Berechtigung voraus.
+Die Durchsetzung bleibt dort nachsichtig, wo es am meisten zählt: Laufende Repositories funktionieren auch nach Ablauf eines Abonnements weiter (`up`, `down`, `delete`, Autostart). Neue Vorgänge (Erstellen, Forken, Größenänderung und Lizenzaktualisierung) sowie die Backup-Übertragung (`push`, `pull`, `sync`) setzen dagegen eine aktive Berechtigung voraus.
 
 ## Übergangsfrist für VM-Migration
 
@@ -169,10 +173,10 @@ rdc subscription login
 Automatisierungs- oder KI-Agenten-Anmeldung:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Für nicht-interaktive Umgebungen ist das Setzen von `REDIACC_SUBSCRIPTION_TOKEN` die einfachste Option. Das Token sollte nur für die Abonnement- und Repo-Lizenz-Operationen des Agenten berechtigt sein.
+Für nicht-interaktive Umgebungen ist das Setzen von `REDIACC_TOKEN` die einfachste Option. Das Token sollte nur für die Abonnement- und Repo-Lizenz-Operationen des Agenten berechtigt sein.
 
 Kontogestützten Abonnementstatus anzeigen:
 
@@ -202,7 +206,7 @@ Der `--repo`-Ref muss in Ihrer lokalen `rdc`-Konfiguration auflösbar sein. Ein 
 
 Bei der ersten Verwendung kann eine lizenzierte Repo- oder Backup-Operation, die keine verwendbare Repo-Lizenz findet, automatisch eine Konto-Autorisierungs-Übergabe auslösen. Die CLI gibt eine Autorisierungs-URL aus, versucht den Browser in interaktiven Terminals zu öffnen, und wiederholt die Operation einmal nach erfolgreicher Autorisierung und Ausstellung.
 
-In nicht-interaktiven Umgebungen wartet die CLI nicht auf Browser-Genehmigung. Stattdessen fordert sie Sie auf, ein bereichsspezifisches Token mit `rdc subscription login --token ...` oder `REDIACC_SUBSCRIPTION_TOKEN` anzugeben.
+In nicht-interaktiven Umgebungen wartet die CLI nicht auf Browser-Genehmigung. Stattdessen fordert sie Sie auf, ein bereichsspezifisches Token mit `rdc subscription login --token ...` oder `REDIACC_TOKEN` anzugeben.
 
 Für die erstmalige Maschineneinrichtung siehe [Machine Setup](/en/docs/setup).
 
@@ -229,6 +233,8 @@ Die automatische Wiederherstellung ist bewusst eng gefasst:
 - `sequence_regression`: schlägt sofort fehl als Repo-Lizenz-Integritäts-/Statusproblem
 - `invalid_signature`: schlägt sofort fehl als Repo-Lizenz-Integritäts-/Statusproblem
 - `identity_mismatch`: schlägt sofort fehl, die Repository-Identität stimmt nicht mit der installierten Lizenz überein
+- `cert_expired`: schlägt bei Wachstumsoperationen (`create`, `fork`, `resize`) und beim Backup-Transfer (`push`, `pull`) sofort fehl; `repo up` und Autostart funktionieren weiterhin, passend zum weichen Lizenzablaufmodell. Erneuern Sie das Delegierungszertifikat
+- `cert_invalid`: schlägt sofort fehl, das Delegierungszertifikat hat eine Beschränkung nicht erfüllt (ungültige Master-Key-Signatur, Abonnement-/Plan-Mismatch, Größenobergrenze oder Sequenz über `maxTotalIssuances`). Stellen Sie das Zertifikat nach Behebung der zugrunde liegenden Beschränkung neu aus
 
 Diese Sofort-Fehlschlag-Fälle verbrauchen nicht automatisch kontogestützte Aktualisierungs- oder Ausstellungsaufrufe.
 

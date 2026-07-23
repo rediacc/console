@@ -1,6 +1,6 @@
 ---
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Installazione"
 description: "Installa la CLI Rediacc su Linux, macOS o Windows. È sufficiente un singolo comando e l'installazione è completata in pochi secondi."
 category: "Guides"
@@ -221,4 +221,4 @@ Il riavvio è trasparente e non causa **alcun downtime**:
 - **Le connessioni client esistenti (HTTP, TCP, UDP) non sono interessate.** Il server di routing è un provider di configurazione -- non si trova nel percorso dei dati. Traefik gestisce tutto il traffico direttamente.
 - I tuoi container applicativi non vengono toccati -- viene riavviato solo il processo del server di routing a livello di sistema.
 
-Per saltare il riavvio automatico, passa `--skip-router-restart` a qualsiasi comando, o imposta la variabile d'ambiente `RDC_SKIP_ROUTER_RESTART=1`.
+Per saltare il riavvio automatico, passa `--skip-router-restart` a qualsiasi comando, o imposta la variabile d'ambiente `REDIACC_SKIP_ROUTER_RESTART=1`.

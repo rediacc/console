@@ -4,8 +4,8 @@ description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요�
 category: Guides
 order: 7
 language: ko
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # 구독 및 라이선싱
@@ -46,13 +46,13 @@ Rediacc 라이선싱은 세 가지 주요 부분으로 나뉩니다:
 자동화 및 AI 에이전트의 경우 브라우저 로그인 대신 범위가 지정된 구독 토큰을 사용합니다:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 환경을 통해 토큰을 직접 주입하면 CLI가 대화형 로그인 단계 없이 저장소 라이선스를 발급하고 새로 고칠 수 있습니다:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -66,14 +66,18 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 저장소 라이선스
 
-저장소 라이선스는 하나의 머신의 한 저장소에 대한 서명된 라이선스입니다. 이는 머신에 저장된 유일한 라이선스 파일입니다 (`/var/lib/rediacc/license/repos/{guid}.json`).
+저장소 라이선스는 하나의 머신의 한 저장소에 대한 서명된 라이선스입니다. 이는 머신에 저장된 유일한 라이선스 파일이며, 서명 키별로 다음과 같이 배치됩니다.
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}`는 16자리 16진수 지문(서명 서버의 Ed25519 공개 키에 대한 `SHA-256`의 처음 8바이트)입니다. 둘 이상의 계정 유니버스가 관리하는 저장소(예: 프로덕션과 bench가 같은 머신에 배포하는 경우)는 `{guid}` 디렉터리 아래에 서명 키별로 파일을 하나씩 보유합니다. 머신의 renet 빌드는 자신에게 내장된 키, 또는 그 키에 체인으로 연결된 위임 인증서로 검증할 수 있는 파일만 검증합니다. 다른 유니버스의 파일은 사용되지 않습니다. 유니버스를 전환해도 라이선스는 무효화되지 않습니다: 새 유니버스에서의 첫 작업이 그 유니버스의 라이선스를 한 번 발급하며(결과가 `missing`이면 자동 발급), 이후에는 두 라이선스가 함께 존재합니다.
 
 다음의 경우에 사용됩니다:
 
 - `rdc repo create` 및 `rdc repo fork`, 프로비저닝 전에 검증됨 (신원 증명 없이 사전 발급된 후 생성 후 신원 증명으로 재발급)
 - `rdc repo resize` 및 `rdc repo expand`, 만료를 포함한 전체 검증
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, **만료 검사 생략**으로 검증됨
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **만료 검사 생략**으로 검증됨
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **만료를 포함해 완전히 검증됨**: 백업 전송에는 유효한 권한이 필요합니다
 - 머신 재시작 시 저장소 자동 시작, **만료 검사 생략**으로 검증됨
 
 저장소 라이선스는 머신과 대상 저장소에 바인딩됩니다. 각 라이선스는 머신 ID, 저장소 GUID, 구독 ID, 요금제 제한, 만료를 포함합니다. 암호화된 저장소의 경우 Rediacc는 기본 볼륨의 LUKS 신원도 검증합니다.
@@ -104,7 +108,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 Community는 항상 존재하는 무료 기본 요금제입니다. 신규 계정이 바로 가입할 수 있는 옵션은 아니며, 대신 체험 중 해지, 이후 유료 요금제 해지, 결제 실패 등 구독이 종료될 때마다 계정이 Community로 전환됩니다. Community 폴백 상태에서는 머신 1대, 저장소당 10GB, 월 100회 설정이라는 제한이 적용됩니다. 체험판 기반 모델 도입 이전에 만들어진 계정은 기존 Community 접근 권한을 그대로 유지합니다.
 
-제한 적용 방식은 완만합니다. 구독이 종료되어도 실행 중인 저장소는 계속 정상 작동합니다. 새로운 작업(생성, 포크, 크기 조정, 라이선스 갱신)만 유효한 권한이 있는 계정으로 제한됩니다.
+제한 적용 방식은 가장 중요한 부분에서는 완만하게 유지됩니다. 구독이 종료되어도 실행 중인 저장소(`up`, `down`, `delete`, 자동 시작)는 계속 정상 작동합니다. 반면 새로운 작업(생성, 포크, 크기 조정, 라이선스 갱신)과 백업 전송(`push`, `pull`, `sync`)은 유효한 권한이 있는 계정으로만 제한됩니다.
 
 ## VM 마이그레이션 유예 기간
 
@@ -167,10 +171,10 @@ rdc subscription login
 자동화 또는 AI 에이전트 로그인:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-비대화형 환경의 경우 `REDIACC_SUBSCRIPTION_TOKEN`을 설정하는 것이 가장 간단한 옵션입니다. 토큰은 에이전트가 필요한 구독 및 저장소 라이선스 작업만으로 범위를 지정해야 합니다.
+비대화형 환경의 경우 `REDIACC_TOKEN`을 설정하는 것이 가장 간단한 옵션입니다. 토큰은 에이전트가 필요한 구독 및 저장소 라이선스 작업만으로 범위를 지정해야 합니다.
 
 계정 백업 구독 상태 표시:
 
@@ -200,7 +204,7 @@ rdc subscription refresh -m hostinger --repo my-app
 
 처음 사용할 때 라이선스된 저장소 또는 백업 작업이 사용 가능한 저장소 라이선스를 찾지 못하면 계정 인증을 자동으로 트리거할 수 있습니다. CLI가 권한 부여 URL을 인쇄하고, 대화형 터미널에서 브라우저를 열려고 하며, 권한 부여 및 발급이 성공한 후 작업을 재시도합니다.
 
-비대화형 환경에서 CLI는 브라우저 승인을 기다리지 않습니다. 대신 `rdc subscription login --token ...` 또는 `REDIACC_SUBSCRIPTION_TOKEN`을 사용하여 범위가 지정된 토큰을 제공하도록 요청합니다.
+비대화형 환경에서 CLI는 브라우저 승인을 기다리지 않습니다. 대신 `rdc subscription login --token ...` 또는 `REDIACC_TOKEN`을 사용하여 범위가 지정된 토큰을 제공하도록 요청합니다.
 
 처음 머신 설정의 경우 [Machine Setup](/en/docs/setup)을 참고하세요.
 
@@ -227,6 +231,8 @@ rdc subscription refresh -m hostinger --repo my-app
 - `sequence_regression`: 저장소 라이선스 무결성/상태 문제로 빠르게 실패합니다.
 - `invalid_signature`: 저장소 라이선스 무결성/상태 문제로 빠르게 실패합니다.
 - `identity_mismatch`: 저장소 신원이 설치된 라이선스와 일치하지 않아 빠르게 실패합니다.
+- `cert_expired`: 성장 작업(`create`, `fork`, `resize`)과 백업 전송(`push`, `pull`)에서는 즉시 실패합니다. `repo up`과 자동 시작은 계속 동작하며, 이는 소프트 라이선스 만료 모델과 동일합니다. 위임 인증서를 갱신하세요
+- `cert_invalid`: 빠르게 실패합니다. 위임 인증서가 제약 조건을 충족하지 못했습니다(마스터 키 서명 오류, 구독/플랜 불일치, 크기 상한, 또는 `maxTotalIssuances`를 초과하는 시퀀스). 근본적인 한도를 수정한 뒤 인증서를 재발급하세요
 
 이러한 빠른 실패 경우는 account 지원 갱신 또는 발급 호출을 자동으로 소비하지 않습니다.
 

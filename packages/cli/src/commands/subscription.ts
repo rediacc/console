@@ -2,18 +2,17 @@ import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { configFileStorage } from '../adapters/config-file-storage.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
+import { readAccountPointer } from '../services/account/account-pointer.js';
 import {
-  deleteServerConfig,
   deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
-  isDevelopmentSubscriptionMode,
-  loadServerConfig,
   normalizeServerUrl,
-  saveServerConfig,
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
+import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -39,15 +38,36 @@ function handleServerChange(currentServer: string | undefined, newServer: string
   }
 }
 
+/** Merge account fields into the active config, best-effort (config may not exist yet). */
+async function patchActiveAccount(fields: {
+  accountServer?: string;
+  e2ePublicKey?: string;
+  updateChannel?: string;
+}): Promise<void> {
+  const defined: typeof fields = {};
+  if (fields.accountServer !== undefined) defined.accountServer = fields.accountServer;
+  if (fields.e2ePublicKey !== undefined) defined.e2ePublicKey = fields.e2ePublicKey;
+  if (fields.updateChannel !== undefined) defined.updateChannel = fields.updateChannel;
+  if (Object.keys(defined).length === 0) return;
+  try {
+    await configFileStorage.update(getEffectiveConfigName(), (cfg) => ({
+      ...cfg,
+      account: { ...(cfg.account ?? {}), ...defined },
+    }));
+  } catch {
+    /* config might not exist yet */
+  }
+}
+
 /** Persist explicit --server flag and detect server changes. */
-function persistExplicitServer(server: string): void {
-  handleServerChange(loadServerConfig()?.accountServer, server);
-  saveServerConfig({ accountServer: server });
+async function persistExplicitServer(server: string): Promise<void> {
+  handleServerChange(readAccountPointer().accountServer, server);
+  await patchActiveAccount({ accountServer: server });
 }
 
 /** Prompt user for a data region when no server is configured yet. */
 async function promptRegionIfNeeded(): Promise<void> {
-  if (isDevelopmentSubscriptionMode() || loadServerConfig()?.accountServer) return;
+  if (readAccountPointer().accountServer) return;
 
   const regions = await withSpinner(
     t('commands.subscription.login.discoveringRegions'),
@@ -56,8 +76,8 @@ async function promptRegionIfNeeded(): Promise<void> {
   );
   const selection = await promptRegionSelection(regions);
   const newServer = `https://${selection.domain}`;
-  handleServerChange(loadServerConfig()?.accountServer, newServer);
-  saveServerConfig({ accountServer: newServer, region: selection.region.id });
+  handleServerChange(readAccountPointer().accountServer, newServer);
+  await patchActiveAccount({ accountServer: newServer });
   outputService.info(
     t('commands.subscription.login.regionSelected', {
       region: selection.region.label,
@@ -71,42 +91,18 @@ async function promptRegionIfNeeded(): Promise<void> {
  * Returns the resolved server URL for use in subsequent requests.
  */
 async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
-  // Resolve server URL. See getSubscriptionServerUrl() for the precedence
-  // order — server.json wins over rediacc.json so the region picker's most
-  // recent choice takes effect on the next login.
-  let configAccountServer: string | undefined;
-  try {
-    const currentRdcConfig = await configService.getCurrent();
-    configAccountServer = currentRdcConfig?.account?.accountServer;
-  } catch {
-    /* config might not exist yet */
-  }
-  const serverUrl = getSubscriptionServerUrl(options.server, configAccountServer);
+  // Resolve the server URL from --server / env / active config / default.
+  const serverUrl = getSubscriptionServerUrl(options.server);
 
-  // Save accountServer to active config for per-config isolation
-  try {
-    const configName = configService.getCurrentName();
-    const currentRdcConfig = await configService.getCurrent();
-    if (currentRdcConfig && currentRdcConfig.account?.accountServer !== serverUrl) {
-      const { configFileStorage } = await import('../adapters/config-file-storage.js');
-      await configFileStorage.update(configName, (cfg) => ({
-        ...cfg,
-        account: { ...(cfg.account ?? {}), accountServer: serverUrl },
-      }));
-    }
-  } catch {
-    /* config might not exist yet */
-  }
+  // Pin the resolved server into the active config for per-config isolation.
+  await patchActiveAccount({ accountServer: serverUrl });
 
-  // Auto-sync update channel and e2e key from server-info
+  // Auto-sync update channel and e2e key from server-info into the active config.
   try {
     const info = await fetchServerInfo(serverUrl);
-    const currentServerConfig = loadServerConfig();
-    saveServerConfig({
-      ...currentServerConfig,
-      accountServer: serverUrl,
-      updateChannel: info.updateChannel ?? currentServerConfig?.updateChannel,
-      e2ePublicKey: info.e2e.keys[0]?.publicKeySpki ?? currentServerConfig?.e2ePublicKey,
+    await patchActiveAccount({
+      updateChannel: info.updateChannel,
+      e2ePublicKey: info.e2e.keys[0]?.publicKeySpki,
     });
     if (info.updateChannel) {
       outputService.info(
@@ -153,7 +149,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .action(async (options) => {
       try {
         if (options.server) {
-          persistExplicitServer(options.server);
+          await persistExplicitServer(options.server);
         } else {
           await promptRegionIfNeeded();
         }
@@ -257,14 +253,24 @@ export function registerSubscriptionCommands(program: Command): void {
   sub
     .command('logout')
     .description(t('commands.subscription.logout.description'))
-    .action(() => {
+    .action(async () => {
       try {
         deleteStoredSubscriptionToken();
-        // Also clear the saved server config so the next `login` shows the
-        // region picker again. Without this, a user who logged in once would
-        // be permanently pinned to that region with no way to switch short
-        // of manually deleting ~/.config/rediacc/server.json.
-        deleteServerConfig();
+        // Also clear the active config's server identity so the next `login`
+        // shows the region picker again. Scoped per config: only the active
+        // config's accountServer/e2ePublicKey are cleared; updateChannel and
+        // releasesUrl (update preferences, not server identity) survive.
+        try {
+          await configFileStorage.update(getEffectiveConfigName(), (cfg) => {
+            if (!cfg.account) return cfg;
+            const account = { ...cfg.account };
+            account.accountServer = undefined;
+            account.e2ePublicKey = undefined;
+            return { ...cfg, account };
+          });
+        } catch {
+          /* config might not exist */
+        }
         outputService.success(t('commands.subscription.logout.success'));
       } catch (error) {
         handleError(error);

@@ -31,6 +31,7 @@ const {
       init: vi.fn(),
       save: vi.fn(),
       update: vi.fn(),
+      updateCache: vi.fn(),
       list: vi.fn(),
       delete: vi.fn(),
       clearCache: vi.fn(),
@@ -51,9 +52,12 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: mockConfigFileStorage,
 }));
 
-vi.mock('../../adapters/remote-config-adapter.js', () => ({
-  RemoteConfigAdapter: MockRemoteConfigAdapter,
-}));
+vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
+  // Keep the real error classes (loadRemote branches on RemoteUnreachableError
+  // via instanceof) but stub the adapter itself.
+  const original = await importOriginal<typeof import('../../adapters/remote-config-adapter.js')>();
+  return { ...original, RemoteConfigAdapter: MockRemoteConfigAdapter };
+});
 
 vi.mock('../../adapters/remote-token-storage.js', () => ({
   remoteTokenStorage: mockRemoteTokenStorage,
@@ -124,6 +128,9 @@ describe('ConfigServiceBase remote integration', () => {
     const mod = await import('../config/config-base.js');
     ConfigServiceBase = mod.ConfigServiceBase;
     service = new ConfigServiceBase();
+    // The config-name override is a module-level singleton (config-name.ts), so
+    // reset it between tests — a prior test's setRuntimeConfig would otherwise leak.
+    service.setRuntimeConfig(null);
 
     // Ensure we don't pick up env vars
     delete process.env.REDIACC_CONFIG;
@@ -180,6 +187,81 @@ describe('ConfigServiceBase remote integration', () => {
 
       const result = await service.getCurrent();
       expect(result).toBeNull();
+    });
+  });
+
+  // ─── offline read fallback ─────────────────────────────────────────
+
+  describe('offline read fallback', () => {
+    const cachedOnDisk = {
+      ...localConfig,
+      remote: {
+        ...remotePointer,
+        cachedVersion: 3,
+        cachedAt: '2026-07-22T08:00:00.000Z',
+      },
+      defaults: { language: 'en' },
+    };
+
+    async function unreachable() {
+      const { RemoteUnreachableError } = await import('../../adapters/remote-config-adapter.js');
+      return new RemoteUnreachableError('https://account.example.com', { code: 'ECONNREFUSED' });
+    }
+
+    it('serves the cached config with a single stderr warning when the server is unreachable', async () => {
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(cachedOnDisk);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(cachedOnDisk);
+      mockAdapterInstance.pull.mockRejectedValue(await unreachable());
+
+      const { outputService } = await import('../core/output.js');
+      const warnSpy = vi.spyOn(outputService, 'warn').mockImplementation(() => {});
+
+      const result = await service.getCurrent();
+
+      expect(result?.resources?.machines).toHaveProperty('m1');
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const warning = warnSpy.mock.calls[0][0];
+      expect(warning).toContain('https://account.example.com');
+      expect(warning).toContain('3');
+      warnSpy.mockRestore();
+    });
+
+    it('rethrows with a refresh hint when the pointer has no cache yet', async () => {
+      // Pre-migration bare pointer: no cachedVersion on disk.
+      const bare = { ...localConfigWithRemote };
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(bare);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(bare);
+      mockAdapterInstance.pull.mockRejectedValue(await unreachable());
+
+      await expect(service.getCurrent()).rejects.toThrow(/config remote refresh/);
+    });
+
+    it('rethrows auth errors without falling back to the cache', async () => {
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(cachedOnDisk);
+      mockConfigFileStorage.loadDecrypted.mockResolvedValue(cachedOnDisk);
+      const { RemoteTokenExpiredError } = await import('../../adapters/remote-config-adapter.js');
+      mockAdapterInstance.pull.mockRejectedValue(new RemoteTokenExpiredError());
+
+      await expect(service.getCurrent()).rejects.toBeInstanceOf(RemoteTokenExpiredError);
+      expect(mockConfigFileStorage.updateCache).not.toHaveBeenCalled();
+    });
+
+    it('refreshes the on-disk cache after a successful pull', async () => {
+      mockConfigFileStorage.getOrCreateDefault.mockResolvedValue(cachedOnDisk);
+      mockAdapterInstance.pull.mockResolvedValue({
+        config: { ...pulledConfig },
+        version: 4,
+        sdkEpoch: 42,
+      });
+      mockConfigFileStorage.updateCache.mockResolvedValue(cachedOnDisk);
+
+      await service.getCurrent();
+
+      expect(mockConfigFileStorage.updateCache).toHaveBeenCalledTimes(1);
+      expect(mockConfigFileStorage.updateCache).toHaveBeenCalledWith(
+        'rediacc',
+        expect.any(Function)
+      );
     });
   });
 

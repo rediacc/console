@@ -347,6 +347,11 @@
       "remote": {
         "description": "Uzak yapılandırma depolama bağlantısını yönet",
         "tokenExpired": "Uzak yapılandırma jetonu süresi doldu. Yeniden kimlik doğrulayın: rdc config remote enable",
+        "unreachable": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor",
+        "offlineCacheWarning": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor; \"{{config}}\" yapılandırması çevrimdışı önbellekten sunuluyor (sunucu sürümü {{version}}, {{age}} önce önbelleklendi). Sunucuya ulaşılabilir olana kadar değişiklikler kaydedilemez.",
+        "offlineNoCache": "Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve \"{{config}}\" yapılandırmasının henüz çevrimdışı önbelleği yok. Önbelleği oluşturmak için sunucuya ulaşılabilir olduğunda \"rdc config remote refresh\" komutunu çalıştırın.",
+        "writeFailedClosed": "Kaydedilemiyor: \"{{config}}\" yapılandırması, ulaşılamayan {{server}} üzerinde saklanıyor. Değişiklik KAYDEDİLMEDİ.",
+        "conflictRetryExhausted": "\"{{config}}\" yapılandırması 3 denemeden sonra hâlâ başka bir cihazla çakışıyor. Komutu yeniden çalıştırın.",
         "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "Bir yapılandırma ana parolası gereklidir. REDIACC_CONFIG_PASSWORD değişkenini ayarlayın veya etkileşimli bir terminalde --password olmadan çalıştırın.",
           "passwordRequirePasskey": "Bu organizasyon, yapılandırma deposunun kilidini açmak için passkey gerektiriyor; parolayla kayıt devre dışı. Bir tarayıcıdan şununla kaydolun: rdc config remote enable",
           "passwordNoSlot": "Yapılandırma deponuz için hazırlanmış bir password slot yok. Portaldan bir tane ekleyin (Config Storage > key slots), sonra tekrar deneyin.",
-          "passwordWrong": "Yapılandırmanın kilidi bu parolayla açılamadı. REDIACC_CONFIG_PASSWORD değişkenini (veya girdiğiniz parolayı) kontrol edip tekrar deneyin."
+          "passwordWrong": "Yapılandırmanın kilidi bu parolayla açılamadı. REDIACC_CONFIG_PASSWORD değişkenini (veya girdiğiniz parolayı) kontrol edip tekrar deneyin.",
+          "optionForce": "Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir",
+          "seeded": "Depo boştu; yerel yapılandırma 1. sürüm olarak gönderildi.",
+          "overwriteConfirm": "Yerel yapılandırma \"{{config}}\", sunucu kopyasıyla değiştirilecek {{machines}} makine ve {{repos}} depo içeriyor (önceki dosya {{backupPath}} konumunda saklanır). Devam edilsin mi?",
+          "overwriteAborted": "Etkinleştirme iptal edildi: Yerel yapılandırma \"{{config}}\", sunucu kopyasından farklı içerik barındırıyor. Değiştirmek için --force ile yeniden çalıştırın veya etkileşimli bir terminalde onaylayın."
         },
         "disable": {
           "description": "Uzak depolamadan bağlantıyı kes ve yapılandırmayı yerel olarak kaydet",
           "notEnabled": "Uzak yapılandırma etkin değil.",
-          "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi."
+          "success": "Uzak yapılandırma devre dışı bırakıldı. Yapılandırma \"{{name}}\" yerel olarak kaydedildi.",
+          "serverRequired": "Devre dışı bırakılamıyor: Yapılandırma sunucusu {{server}}'a ulaşılamıyor ve devre dışı bırakma işlemi önce sunucudan en güncel kopyayı almalıdır (eski bir önbellekten devre dışı bırakmak başka bir cihazın yazdıklarını kaybettirebilir). Sunucuya ulaşılabilir olduğunda yeniden deneyin."
         },
         "status": {
           "description": "Uzak bağlantı durumunu göster"
@@ -473,6 +483,9 @@
         "verifying": "Yeni anahtarın yapılandırmanın şifresini çözdüğü doğrulanıyor...",
         "waiting": "Tarayıcı onayı bekleniyor...",
         "warning": "Bu işlem, kuruluşun tüm yapılandırmasının şifrelendiği anahtarı döndürür. Diğer tüm cihazların ardından yeniden bağlanması gerekir."
+      },
+      "current": {
+        "description": "Etkin yapılandırmayı göster: ad, dosya, çözümlenmiş sunucu ve kanal, jeton durumu"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "Abonelik",
         "virtualization": "Sanallaştırma"
       },
-      "serverMismatch": "sunucu uyumsuzluğu",
       "subscriptionUnreachable": "abonelik sunucusuna ulaşılamıyor",
       "title": "Rediacc CLI Tanılama"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  Lisans dosyası ayrıştırılamadı",
         "remote": "\nUzak abonelik:",
         "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})",
+        "serverWouldUse": "Kullanılacak hesap sunucusu: {{server}}",
         "remoteMachineActivations": "  Makine etkinleştirmeleri: {{active}}/{{max}}",
         "remotePlan": "  Plan:      {{plan}}",
         "remoteRepoLicenseIssuances": "  Yüzen lisans istekleri: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
-        "remoteStatus": "  Durum:     {{status}}",
-        "serverMismatch": "Geliştirme belirteci {{actualServerUrl}} için, ancak bu worktree {{expectedServerUrl}} kullanıyor. `rdc subscription login` komutunu yeniden çalıştırın."
+        "remoteStatus": "  Durum:     {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "Güncelleme mevcut: v{{version}} (mevcut: v{{current}})",
       "channelDescription": "Yayın kanalını ayarla (stable veya edge)",
       "channelSet": "Yayın kanalı {{channel}} olarak ayarlandı",
+      "configMissing": "\"{{name}}\" yapılandırması mevcut değil. Şununla oluşturun: rdc config init {{name}}",
       "checking": "Güncellemeler kontrol ediliyor...",
       "checkOnly": "Sadece güncellemeleri kontrol et, indirme",
       "description": "CLI güncellemelerini kontrol et ve uygula",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "{{machine}} üzerinde depolar bulundu ancak hiçbiri yerel yapılandırmanızda kayıtlı değil. İzlenen depolarınızı `rdc repo list` ile listeleyin, ardından yeniden deneyin.",
       "recoveryFailedServerRejected": "Hesap sunucusu \"{{machine}}\" üzerindeki depo için lisans verilmesini reddetti. İlk hata: {{error}}. Ayrıntılar için çalıştırın: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "Abonelik jetonunuz hazır değil. Çalıştırın: rdc subscription login, ardından yeniden deneyin.",
-      "skipActivationHint": "Kullan-at bir makinede REDIACC_SKIP_ACTIVATION=1 ile etkinleştirmeyi tamamen atlayabilirsiniz."
+      "skipActivationHint": "Kullan-at bir makinede REDIACC_SKIP_MACHINE_ACTIVATION=1 ile etkinleştirmeyi tamamen atlayabilirsiniz."
     },
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
     "machineRequired": "Makine adı gerekli. --machine <name> kullanın",

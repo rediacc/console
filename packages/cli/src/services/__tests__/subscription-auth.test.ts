@@ -1,184 +1,207 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { setConfigNameOverride } from '../config/config-name.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
   getSubscriptionTokenFile,
   getSubscriptionTokenState,
-  isDevelopmentSubscriptionMode,
   loadEnvSubscriptionToken,
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../account/subscription-auth.js';
 
+const DEFAULT_SERVER = 'https://eu.rediacc.com';
+
+/**
+ * These tests drive the REAL account-pointer reader against a temp config dir
+ * pointed at by XDG_CONFIG_HOME (getConfigDir() re-reads it on every call), so
+ * the precedence and token-file resolution are exercised end-to-end, not mocked.
+ */
 describe('subscription-auth', () => {
   const envBackup = { ...process.env };
+  let configHome: string;
+  let configDir: string;
+
+  beforeEach(() => {
+    configHome = mkdtempSync(join(tmpdir(), 'sub-auth-'));
+    configDir = join(configHome, 'rediacc');
+    mkdirSync(configDir, { recursive: true });
+    process.env.XDG_CONFIG_HOME = configHome;
+    setConfigNameOverride(null);
+  });
 
   afterEach(() => {
     process.env = { ...envBackup };
+    setConfigNameOverride(null);
+    rmSync(configHome, { recursive: true, force: true });
   });
 
-  it('uses the global config dir by default', async () => {
-    const { getConfigDir } = await import('@rediacc/shared/paths');
-    delete process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE;
-    delete process.env.REDIACC_ENVIRONMENT;
-
-    expect(getSubscriptionTokenFile()).toBe(join(getConfigDir(), 'api-token.json'));
-    expect(isDevelopmentSubscriptionMode()).toBe(false);
-  });
-
-  it('uses the worktree-local token file in development mode', () => {
-    process.env.REDIACC_ENVIRONMENT = 'development';
-    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = '/tmp/worktree-a/dev-token.json';
-
-    expect(isDevelopmentSubscriptionMode()).toBe(true);
-    expect(getSubscriptionTokenFile()).toBe('/tmp/worktree-a/dev-token.json');
-  });
-
-  it('uses REDIACC_ACCOUNT_SERVER as the authoritative dev server', () => {
-    process.env.REDIACC_ENVIRONMENT = 'development';
-    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = '/tmp/worktree-a/dev-token.json';
-    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/';
-
-    expect(getSubscriptionServerUrl('http://localhost:9999')).toBe('http://localhost:4800');
-  });
-
-  it('reports a server mismatch for stale dev tokens', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'subscription-auth-'));
-    const tokenFile = join(tempDir, 'api-token.json');
-
-    process.env.REDIACC_ENVIRONMENT = 'development';
-    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = tokenFile;
-    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800';
-
+  function writeConfig(name: string, account: Record<string, unknown>): void {
     writeFileSync(
-      tokenFile,
+      join(configDir, `${name}.json`),
       JSON.stringify({
-        token: 'rdt_stale',
-        serverUrl: 'http://localhost:4830/',
+        schemaVersion: 3,
+        id: '00000000-0000-4000-8000-000000000000',
+        version: 1,
+        encryption: { mode: 'plaintext' },
+        account,
       })
     );
+  }
 
-    expect(getSubscriptionTokenState()).toEqual({
-      kind: 'server_mismatch',
-      expectedServerUrl: 'http://localhost:4800',
-      actualServerUrl: 'http://localhost:4830',
+  describe('getSubscriptionServerUrl() precedence', () => {
+    // | flag | REDIACC_ACCOUNT_SERVER | config account.accountServer | expect |
+    it('flag wins over env and config', () => {
+      process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com';
+      writeConfig('rediacc', { accountServer: 'https://config.example.com' });
+      expect(getSubscriptionServerUrl('https://flag.example.com')).toBe('https://flag.example.com');
     });
 
-    rmSync(tempDir, { recursive: true, force: true });
+    it('env wins over config when no flag', () => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      process.env.REDIACC_ACCOUNT_SERVER = 'https://env.example.com';
+      writeConfig('rediacc', { accountServer: 'https://config.example.com' });
+      expect(getSubscriptionServerUrl()).toBe('https://env.example.com');
+    });
+
+    it('config wins when no flag and no env', () => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      writeConfig('rediacc', { accountServer: 'https://config.example.com' });
+      expect(getSubscriptionServerUrl()).toBe('https://config.example.com');
+    });
+
+    it('falls back to the SUBSCRIPTION_DEFAULTS default with no signal', () => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      // no config file written
+      expect(getSubscriptionServerUrl()).toBe(DEFAULT_SERVER);
+    });
+
+    it('normalizes trailing slashes on the resolved value', () => {
+      delete process.env.REDIACC_ACCOUNT_SERVER;
+      writeConfig('rediacc', { accountServer: 'https://config.example.com///' });
+      expect(getSubscriptionServerUrl()).toBe('https://config.example.com');
+    });
   });
 
-  it('loads a ready token from REDIACC_SUBSCRIPTION_TOKEN', () => {
-    process.env.REDIACC_SUBSCRIPTION_TOKEN = 'rdt_env';
-    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
-
-    expect(loadEnvSubscriptionToken()).toEqual({
-      token: 'rdt_env',
-      serverUrl: 'http://localhost:4800/account',
+  describe('getSubscriptionTokenFile()', () => {
+    it('returns api-token-rediacc.json for the default config', () => {
+      delete process.env.REDIACC_CONFIG;
+      expect(getSubscriptionTokenFile()).toBe(join(configDir, 'api-token-rediacc.json'));
     });
 
-    expect(getSubscriptionTokenState()).toEqual({
-      kind: 'ready',
-      serverUrl: 'http://localhost:4800/account',
-      token: {
+    it('returns api-token-<name>.json under REDIACC_CONFIG', () => {
+      process.env.REDIACC_CONFIG = 'staging';
+      expect(getSubscriptionTokenFile()).toBe(join(configDir, 'api-token-staging.json'));
+    });
+
+    it('honours an explicit configName argument', () => {
+      expect(getSubscriptionTokenFile('bench')).toBe(join(configDir, 'api-token-bench.json'));
+    });
+  });
+
+  describe('token state', () => {
+    it('is missing when neither env token nor file exists', () => {
+      delete process.env.REDIACC_TOKEN;
+      expect(getSubscriptionTokenState()).toEqual({ kind: 'missing' });
+    });
+
+    it('loads a ready token from REDIACC_TOKEN', () => {
+      process.env.REDIACC_TOKEN = 'rdt_env';
+      process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+
+      expect(loadEnvSubscriptionToken()).toEqual({
         token: 'rdt_env',
         serverUrl: 'http://localhost:4800/account',
-      },
-    });
-  });
+      });
 
-  it('prefers REDIACC_SUBSCRIPTION_TOKEN over the stored token file', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'subscription-auth-'));
-    const tokenFile = join(tempDir, 'api-token.json');
-
-    process.env.REDIACC_SUBSCRIPTION_TOKEN = 'rdt_env';
-    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
-    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = tokenFile;
-
-    writeFileSync(
-      tokenFile,
-      JSON.stringify({
-        token: 'rdt_file',
-        serverUrl: 'http://localhost:4830/account',
-      })
-    );
-
-    expect(getSubscriptionTokenState()).toEqual({
-      kind: 'ready',
-      serverUrl: 'http://localhost:4800/account',
-      token: {
-        token: 'rdt_env',
+      expect(getSubscriptionTokenState()).toEqual({
+        kind: 'ready',
         serverUrl: 'http://localhost:4800/account',
-      },
+        token: {
+          token: 'rdt_env',
+          serverUrl: 'http://localhost:4800/account',
+        },
+      });
     });
 
-    rmSync(tempDir, { recursive: true, force: true });
-  });
+    it('prefers REDIACC_TOKEN over the stored token file', () => {
+      process.env.REDIACC_TOKEN = 'rdt_env';
+      process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/account/';
+      writeFileSync(
+        join(configDir, 'api-token-rediacc.json'),
+        JSON.stringify({ token: 'rdt_file', serverUrl: 'http://localhost:4830/account' })
+      );
 
-  it('persists normalized dev tokens and loads them as ready', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'subscription-auth-'));
-    const tokenFile = join(tempDir, 'nested', 'api-token.json');
-
-    process.env.REDIACC_ENVIRONMENT = 'development';
-    process.env.REDIACC_SUBSCRIPTION_TOKEN_FILE = tokenFile;
-    process.env.REDIACC_ACCOUNT_SERVER = 'http://localhost:4800/';
-
-    mkdirSync(join(tempDir, 'nested'), { recursive: true });
-    saveStoredSubscriptionToken({
-      token: 'rdt_valid',
-      serverUrl: 'http://localhost:4800/',
-      subscriptionId: 'sub_123',
-      orgId: 'org_123',
-      orgName: 'Acme',
-      teamId: 'team_123',
-      teamName: 'Platform',
+      expect(getSubscriptionTokenState()).toEqual({
+        kind: 'ready',
+        serverUrl: 'http://localhost:4800/account',
+        token: {
+          token: 'rdt_env',
+          serverUrl: 'http://localhost:4800/account',
+        },
+      });
     });
 
-    expect(getSubscriptionTokenState()).toEqual({
-      kind: 'ready',
-      serverUrl: 'http://localhost:4800',
-      token: {
+    it('persists a normalized token and loads it as ready', () => {
+      delete process.env.REDIACC_TOKEN;
+      saveStoredSubscriptionToken({
         token: 'rdt_valid',
-        serverUrl: 'http://localhost:4800',
+        serverUrl: 'http://localhost:4800/',
         subscriptionId: 'sub_123',
         orgId: 'org_123',
         orgName: 'Acme',
         teamId: 'team_123',
         teamName: 'Platform',
-      },
-    });
+      });
 
-    rmSync(tempDir, { recursive: true, force: true });
+      expect(getSubscriptionTokenState()).toEqual({
+        kind: 'ready',
+        serverUrl: 'http://localhost:4800',
+        token: {
+          token: 'rdt_valid',
+          serverUrl: 'http://localhost:4800',
+          subscriptionId: 'sub_123',
+          orgId: 'org_123',
+          orgName: 'Acme',
+          teamId: 'team_123',
+          teamName: 'Platform',
+        },
+      });
+    });
   });
 
   it('normalizes trailing slashes consistently', () => {
     expect(normalizeServerUrl('http://localhost:4800///')).toBe('http://localhost:4800');
   });
 
-  it('reports a hard mismatch when the config team differs from the token team', () => {
-    expect(
-      getSubscriptionScopeMismatch(
-        {
-          token: 'rdt_valid',
-          serverUrl: 'http://localhost:4800',
-          teamId: 'team_123',
-          teamName: 'Platform',
-        },
-        'Infra'
-      )
-    ).toContain('Platform');
-  });
+  describe('getSubscriptionScopeMismatch()', () => {
+    it('reports a hard mismatch when the config team differs from the token team', () => {
+      expect(
+        getSubscriptionScopeMismatch(
+          {
+            token: 'rdt_valid',
+            serverUrl: 'http://localhost:4800',
+            teamId: 'team_123',
+            teamName: 'Platform',
+          },
+          'Infra'
+        )
+      ).toContain('Platform');
+    });
 
-  it('requires re-login when config team exists but token team metadata is missing', () => {
-    expect(
-      getSubscriptionScopeMismatch(
-        {
-          token: 'rdt_valid',
-          serverUrl: 'http://localhost:4800',
-        },
-        'Platform'
-      )
-    ).toContain('Run "rdc subscription login" again');
+    it('requires re-login when config team exists but token team metadata is missing', () => {
+      expect(
+        getSubscriptionScopeMismatch(
+          {
+            token: 'rdt_valid',
+            serverUrl: 'http://localhost:4800',
+          },
+          'Platform'
+        )
+      ).toContain('Run "rdc subscription login" again');
+    });
   });
 });

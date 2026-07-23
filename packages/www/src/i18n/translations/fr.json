@@ -2894,19 +2894,19 @@
         "heading": "Votre infrastructure. Vos règles.",
         "rows": [
           {
-            "description": "Démarrer, arrêter, supprimer, sauvegarder — ça marche toujours. Même des années après l'expiration. Vos données restent accessibles.",
+            "description": "Démarrer, arrêter et supprimer fonctionnent toujours, même des années après l'expiration de votre abonnement. Vos données restent accessibles sur vos propres machines.",
             "title": "Vos applications tournent indéfiniment."
           },
           {
-            "description": "Sync de fichiers, SSH, édition à distance, toutes les commandes — tout fonctionne sans licence, jamais de limite.",
+            "description": "Vos outils d'exploitation continuent de fonctionner : accès SSH, édition à distance, toutes les commandes de gestion. Aucune licence n'est jamais nécessaire.",
             "title": "Accès complet à vos outils."
           },
           {
-            "description": "Abonnement actif pour créer ou copier un serveur. Le redimensionnement fonctionne 60 jours après expiration. Tout le reste est permanent.",
+            "description": "Un abonnement actif est nécessaire pour créer un nouveau serveur, en copier un existant ou transférer des sauvegardes. Le redimensionnement et l'extension continuent de fonctionner 60 jours après expiration. L'exécution de vos serveurs reste permanente.",
             "title": "Seuls les nouveaux serveurs demandent un abonnement."
           },
           {
-            "description": "Après expiration, redimensionner fonctionne 60 jours de plus. Démarrer, arrêter, supprimer, sauvegarder ne sont jamais affectés — ça marche pour toujours.",
+            "description": "Après expiration, redimensionner fonctionne 60 jours de plus. Démarrer, arrêter et supprimer ne sont pas affectés. Ça marche pour toujours. Le transfert de sauvegarde nécessite un abonnement actif.",
             "title": "60 jours de grâce pour la mise à l’échelle."
           },
           {

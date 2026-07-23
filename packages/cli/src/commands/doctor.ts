@@ -410,16 +410,6 @@ async function checkSubscription(): Promise<CheckSection> {
     return { title: t('commands.doctor.sections.subscription'), checks };
   }
 
-  if (tokenState.kind === 'server_mismatch') {
-    checks.push({
-      name: t('commands.doctor.checks.subscriptionToken'),
-      value: t('commands.doctor.serverMismatch'),
-      status: 'fail',
-      hint: `Token bound to ${tokenState.actualServerUrl}, expected ${tokenState.expectedServerUrl}. Run: rdc subscription login`,
-    });
-    return { title: t('commands.doctor.sections.subscription'), checks };
-  }
-
   const { token } = tokenState;
   const scopeParts = [token.orgName, token.teamName].filter(Boolean).join(' / ');
   checks.push({

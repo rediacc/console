@@ -219,4 +219,4 @@ The restart is transparent and causes **no downtime**:
 - **Existing client connections (HTTP, TCP, UDP) are not affected.** The route server is a configuration provider -- it is not in the data path. Traefik handles all traffic directly.
 - Your application containers are not touched -- only the system-level route server process is restarted.
 
-To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `RDC_SKIP_ROUTER_RESTART=1` environment variable.
+To skip the automatic restart, pass `--skip-router-restart` to any command, or set the `REDIACC_SKIP_ROUTER_RESTART=1` environment variable.

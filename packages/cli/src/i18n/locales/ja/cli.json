@@ -347,6 +347,11 @@
       "remote": {
         "description": "リモート設定ストレージ接続を管理",
         "tokenExpired": "リモート設定トークンの有効期限が切れました。再認証してください: rdc config remote enable",
+        "unreachable": "設定サーバー {{server}} に到達できません",
+        "offlineCacheWarning": "設定サーバー {{server}} に到達できないため、設定 \"{{config}}\" をオフラインキャッシュから提供しています（サーバーバージョン {{version}}、{{age}}前にキャッシュ済み）。サーバーに到達できるようになるまで変更は保存できません。",
+        "offlineNoCache": "設定サーバー {{server}} に到達できず、設定 \"{{config}}\" にはまだオフラインキャッシュがありません。サーバーに到達できるようになったら \"rdc config remote refresh\" を実行してキャッシュを作成してください。",
+        "writeFailedClosed": "保存できません: 設定 \"{{config}}\" は到達できない {{server}} に保存されています。変更は保存されませんでした。",
+        "conflictRetryExhausted": "設定 \"{{config}}\" は3回試行しても他のデバイスとの競合が解消されません。コマンドを再実行してください。",
         "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "設定のマスターパスワードが必要です。REDIACC_CONFIG_PASSWORD を設定するか、対話的なターミナルで --password を付けずに実行してください。",
           "passwordRequirePasskey": "この組織では、設定ストレージのロック解除にパスキーが必須であり、パスワードによる登録は無効です。次のコマンドでブラウザから登録してください: rdc config remote enable",
           "passwordNoSlot": "設定ストレージ用のパスワードスロットがプロビジョニングされていません。ポータル（Config Storage > key slots）から追加してから、もう一度お試しください。",
-          "passwordWrong": "そのパスワードでは設定のロックを解除できませんでした。REDIACC_CONFIG_PASSWORD（または入力したパスワード）を確認して、もう一度お試しください。"
+          "passwordWrong": "そのパスワードでは設定のロックを解除できませんでした。REDIACC_CONFIG_PASSWORD（または入力したパスワード）を確認して、もう一度お試しください。",
+          "optionForce": "確認なしでローカルの相違内容をサーバーのコピーで置き換える",
+          "seeded": "ストアが空だったため、ローカル設定をバージョン1としてプッシュしました。",
+          "overwriteConfirm": "ローカル設定 \"{{config}}\" にはサーバーのコピーで置き換えられる {{machines}} 台のマシンと {{repos}} 個のリポジトリがあります（以前のファイルは {{backupPath}} に保持されます）。続行しますか？",
+          "overwriteAborted": "有効化を中止しました: ローカル設定 \"{{config}}\" にはサーバーのコピーと異なる内容が含まれています。置き換えるには --force を付けて再実行するか、対話的なターミナルで確認してください。"
         },
         "disable": {
           "description": "リモートストレージから切断し、設定をローカルに保存",
           "notEnabled": "リモート設定は有効になっていません。",
-          "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。"
+          "success": "リモート設定を無効化しました。設定 \"{{name}}\" をローカルに保存しました。",
+          "serverRequired": "無効化できません: 設定サーバー {{server}} に到達できず、無効化には先に最新のサーバーコピーを取得する必要があります（古いキャッシュからの無効化は他のデバイスの書き込みを失う可能性があります）。サーバーに到達できるようになったら再試行してください。"
         },
         "status": {
           "description": "リモート接続状態を表示"
@@ -473,6 +483,9 @@
         "verifying": "新しいキーで設定を復号できるか検証中...",
         "waiting": "ブラウザでの承認を待機中...",
         "warning": "これは組織全体の設定を暗号化しているキーをローテーションする。他のすべてのデバイスは、その後再リンクが必要になる"
+      },
+      "current": {
+        "description": "アクティブな設定を表示します: 名前、ファイル、解決されたサーバーとチャンネル、トークンの状態"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "サブスクリプション",
         "virtualization": "仮想化"
       },
-      "serverMismatch": "サーバー不一致",
       "subscriptionUnreachable": "サブスクリプションサーバーに接続できません",
       "title": "Rediacc CLI 診断ツール"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  ライセンスファイルを解析できませんでした",
         "remote": "\nリモートサブスクリプション:",
         "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})",
+        "serverWouldUse": "使用するアカウントサーバー: {{server}}",
         "remoteMachineActivations": "  マシンアクティベーション: {{active}}/{{max}}",
         "remotePlan": "  プラン:     {{plan}}",
         "remoteRepoLicenseIssuances": "  フローティングライセンス要求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
-        "remoteStatus": "  ステータス: {{status}}",
-        "serverMismatch": "開発トークンは {{actualServerUrl}} 用ですが、このワークツリーは {{expectedServerUrl}} を使用しています。`rdc subscription login` を再実行してください。"
+        "remoteStatus": "  ステータス: {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "アップデート利用可能: v{{version}} (現在: v{{current}})",
       "channelDescription": "リリースチャンネルを設定 (stable または edge)",
       "channelSet": "リリースチャンネルを {{channel}} に設定しました",
+      "configMissing": "設定 \"{{name}}\" は存在しません。次のコマンドで作成してください: rdc config init {{name}}",
       "checking": "アップデートを確認中...",
       "checkOnly": "ダウンロードせずにアップデートの確認のみ",
       "description": "CLIのアップデートを確認して適用",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。",
-      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_ACTIVATION=1 で有効化を完全にスキップできます"
+      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_MACHINE_ACTIVATION=1 で有効化を完全にスキップできます"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",

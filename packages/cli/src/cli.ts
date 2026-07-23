@@ -39,6 +39,7 @@ import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
 import { setOutputFormat } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
+import { isDevBuild } from './utils/platform.js';
 import { VERSION } from './version.js';
 
 // Track if i18n has been initialized
@@ -95,11 +96,7 @@ async function setUserAndSubscriptionContext(): Promise<void> {
     const team = await configService.getTeam();
     const tokenState = getSubscriptionTokenState();
 
-    if (
-      isAgentEnvironment() &&
-      tokenState.kind !== 'ready' &&
-      process.env.REDIACC_ENVIRONMENT !== 'development'
-    ) {
+    if (isAgentEnvironment() && tokenState.kind !== 'ready' && !isDevBuild()) {
       outputService.warn(t('errors.subscription.tokenWarning'));
     }
     const subscriptionContext =

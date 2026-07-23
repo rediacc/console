@@ -73,6 +73,16 @@ Requirements:
 
 Enrollment is a read: the CLI fetches the slot's public KDF parameters and the wrapped key, derives the password secret locally, and unwraps the CEK on the device. It grants the device the ability to decrypt and sync the config; it does not modify the store.
 
+## Enabling and offline reads
+
+`rdc config remote enable` connects the active config to the store. When the store is empty, enabling **seeds it from your current local config**: the local resources are pushed as the store's first version, then pulled back to prove the round trip. When the store already has content, enable reconciles against it instead of overwriting (it aborts on a genuine divergence unless you pass `--force`).
+
+Once enabled, the config keeps a full **read cache**, encrypted at rest with the same mechanism as any local config, so the store stays usable when the account server is unreachable:
+
+- **Reads work offline.** The cached content is served with a staleness warning on stderr, tagged with the cached version and timestamp (`cachedVersion` / `cachedAt`).
+- **Writes require the server and fail closed.** There is no offline write queue: a write that cannot reach the server errors out and names the server. If a write command succeeded, the change is on the server.
+- **Concurrent edits from two machines** resolve by pull-replay-repush at the resource-bucket level, so a simultaneous edit elsewhere does not clobber yours.
+
 ## Key rotation
 
 Rotating the store's CEK re-wraps it under a new generation:
@@ -90,6 +100,8 @@ Config storage is scoped per organization. Members are managed via the web porta
 - **Remove member**: Click the remove button on the Members page (requires 2FA + re-authentication)
 
 Safety guards prevent removing the last active member or removing yourself.
+
+Configs in the store are further scoped per team, but that scoping is **server-side access control, not cryptographic isolation**: one org-wide CEK encrypts every team's configs, and the server enforces which teams a member may read.
 
 ## Security
 

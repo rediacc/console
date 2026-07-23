@@ -2892,19 +2892,19 @@
         "heading": "Deine Infrastruktur. Deine Regeln.",
         "rows": [
           {
-            "description": "Starten, Stoppen, Löschen, Sichern – all das funktioniert immer, auch Jahre nach dem Ablauf deines Abonnements. Deine Daten sind jederzeit verfügbar.",
+            "description": "Starten, Stoppen und Löschen funktionieren immer, auch Jahre nach dem Ablauf deines Abonnements. Deine Daten sind jederzeit auf deinen eigenen Maschinen verfügbar.",
             "title": "Deine Apps laufen immer weiter."
           },
           {
-            "description": "Dateisynchronisierung, SSH-Zugriff, Remote-Bearbeitung, alle Verwaltungsbefehle – alles funktioniert. Keine Lizenz nötig.",
+            "description": "Deine Betriebswerkzeuge funktionieren weiter: SSH-Zugriff, Remote-Bearbeitung, alle Verwaltungsbefehle. Keine Lizenz nötig.",
             "title": "Voller Zugriff auf deine Tools."
           },
           {
-            "description": "Du brauchst einen aktiven Plan, um neue Server zu erstellen oder existierende zu kopieren. Größenänderung und Erweiterung funktionieren noch 60 Tage nach Ablauf. Alles Weitere ist dauerhaft.",
+            "description": "Du brauchst einen aktiven Plan, um neue Server zu erstellen, existierende zu kopieren oder Backups zu übertragen. Größenänderung und Erweiterung funktionieren noch 60 Tage nach Ablauf. Der Betrieb deiner Server bleibt dauerhaft.",
             "title": "Nur neue Server brauchen ein Abonnement."
           },
           {
-            "description": "Wenn dein Abonnement endet, funktionieren Größenänderung und Erweiterung noch 60 Tage. Start, Stop, Löschen und Sichern bleiben uneingeschränkt – sie funktionieren für immer.",
+            "description": "Wenn dein Abonnement endet, funktionieren Größenänderung und Erweiterung noch 60 Tage. Start, Stop und Löschen bleiben uneingeschränkt. Sie funktionieren für immer. Die Backup-Übertragung erfordert ein aktives Abonnement.",
             "title": "60 Tage Nachfrist für Skalierung."
           },
           {

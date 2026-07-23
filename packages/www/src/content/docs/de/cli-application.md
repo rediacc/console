@@ -6,7 +6,7 @@ order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "16f7e9d8dad6e5ec"
+sourceHash: "18dd29870a931fb5"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -112,8 +112,17 @@ rdc config show [options]
 | `--reveal` | {{t:cli.commands.config.show.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-config-current"></a>
+### 1.5 current
+
+{{t:cli.commands.config.current.description}}
+
+```bash
+rdc config current
+```
+
 <a id="cli-local-config-delete"></a>
-### 1.5 delete
+### 1.6 delete
 
 {{t:cli.commands.config.delete.description}}
 
@@ -122,7 +131,7 @@ rdc config delete <name>
 ```
 
 <a id="cli-local-config-set"></a>
-### 1.6 set
+### 1.7 set
 
 {{t:cli.commands.config.set.description}}
 
@@ -131,7 +140,7 @@ rdc config set <key> <value>
 ```
 
 <a id="cli-local-config-clear"></a>
-### 1.7 clear
+### 1.8 clear
 
 {{t:cli.commands.config.clear.description}}
 
@@ -140,7 +149,7 @@ rdc config clear [key]
 ```
 
 <a id="cli-local-config-recover"></a>
-### 1.8 recover
+### 1.9 recover
 
 {{t:cli.commands.config.recover.description}}
 
@@ -154,7 +163,7 @@ rdc config recover [name] [options]
 
 
 <a id="cli-local-config-ssh"></a>
-### 1.9 ssh
+### 1.10 ssh
 
 {{t:cli.commands.config.ssh.description}}
 
@@ -192,7 +201,7 @@ rdc config ssh remove
 ```
 
 <a id="cli-local-config-remote"></a>
-### 1.10 remote
+### 1.11 remote
 
 {{t:cli.commands.config.remote.description}}
 
@@ -210,6 +219,7 @@ rdc config remote enable [options]
 | `--headless` | {{t:cli.commands.config.remote.enable.optionHeadless}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--password` | {{t:cli.commands.config.remote.enable.optionPassword}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--api-url <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.config.remote.enable.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-config-remote-disable"></a>
@@ -240,7 +250,7 @@ rdc config remote refresh
 ```
 
 <a id="cli-local-config-field"></a>
-### 1.11 field
+### 1.12 field
 
 {{t:cli.commands.config.field.description}}
 
@@ -321,7 +331,7 @@ rdc config field list [options]
 
 
 <a id="cli-local-config-edit"></a>
-### 1.12 edit
+### 1.13 edit
 
 {{t:cli.commands.config.edit.description}}
 
@@ -339,7 +349,7 @@ rdc config edit [options]
 
 
 <a id="cli-local-config-audit"></a>
-### 1.13 audit
+### 1.14 audit
 
 {{t:cli.commands.config.audit.description}}
 
@@ -378,7 +388,7 @@ rdc config audit verify
 ```
 
 <a id="cli-local-config-reconcile"></a>
-### 1.14 reconcile
+### 1.15 reconcile
 
 {{t:cli.commands.config.reconcile.description}}
 
@@ -394,7 +404,7 @@ rdc config reconcile [options]
 
 
 <a id="cli-local-config-rotate-cek"></a>
-### 1.15 rotate-cek
+### 1.16 rotate-cek
 
 {{t:cli.commands.config.rotateCek.description}}
 

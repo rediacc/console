@@ -1,4 +1,3 @@
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { Placement } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
@@ -10,6 +9,7 @@ import {
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
 } from '../core/context-language.js';
+import { getEffectiveConfigName, setConfigNameOverride } from './config-name.js';
 import type { ResourceState } from './resource-state.js';
 
 /**
@@ -19,22 +19,24 @@ import type { ResourceState } from './resource-state.js';
  * When a remote pointer is present, transparently fetches/pushes encrypted config.
  */
 export class ConfigServiceBase {
-  private runtimeConfigOverride: string | null = null;
   private _resourceState: ResourceState | null = null;
   private _remoteAdapter: RemoteConfigAdapter | null = null;
   private _remoteConfig: RdcConfig | null = null;
   private _remoteVersion = 0;
   private _remoteSdkEpoch = 0;
+  /** True when the current remote snapshot was served from the offline cache. */
+  private _remoteOffline = false;
 
   /**
    * Set a runtime config override (used by --config flag).
    * Takes precedence over default config name.
    */
   setRuntimeConfig(name: string | null): void {
-    this.runtimeConfigOverride = name;
+    setConfigNameOverride(name);
     this._resourceState = null;
     this._remoteAdapter = null;
     this._remoteConfig = null;
+    this._remoteOffline = false;
   }
 
   /**
@@ -50,6 +52,7 @@ export class ConfigServiceBase {
   resetResourceView(): void {
     this._resourceState = null;
     this._remoteConfig = null;
+    this._remoteOffline = false;
   }
 
   /**
@@ -116,7 +119,7 @@ export class ConfigServiceBase {
    * Priority: --config flag > REDIACC_CONFIG env var > "rediacc"
    */
   getEffectiveConfigName(): string {
-    return this.runtimeConfigOverride ?? process.env.REDIACC_CONFIG ?? DEFAULTS.CONTEXT.CONFIG_NAME;
+    return getEffectiveConfigName();
   }
 
   // ============================================================================
@@ -172,10 +175,51 @@ export class ConfigServiceBase {
   /**
    * Load config from the remote server, caching for the session.
    * Preserves all local-only settings (remote pointer, account defaults, language).
+   *
+   * On success the on-disk offline cache is refreshed. On a network-class
+   * failure (RemoteUnreachableError) the cached copy is served with a stderr
+   * warning; auth/semantic failures still throw — the cache must never mask a
+   * revoked enrollment.
    */
   private async loadRemote(localConfig: RdcConfig, configName: string): Promise<RdcConfig> {
     const adapter = await this.getRemoteAdapter(localConfig, configName);
-    const { config, version, sdkEpoch } = await adapter.pull();
+    const { RemoteUnreachableError } = await import('../../adapters/remote-config-adapter.js');
+    const { formatStaleCacheWarning, writeRemoteCache } = await import('./remote-cache.js');
+    const { outputService } = await import('../core/output.js');
+    const { t } = await import('../../i18n/index.js');
+
+    let config: RdcConfig;
+    let version: number;
+    let sdkEpoch: number;
+    try {
+      ({ config, version, sdkEpoch } = await adapter.pull());
+    } catch (error) {
+      if (!(error instanceof RemoteUnreachableError)) throw error;
+
+      const cached = await configFileStorage.loadDecrypted(configName);
+      const cachedRemote = cached.remote;
+      if (cachedRemote?.cachedVersion === undefined) {
+        // Pre-cache bare pointer: nothing safe to serve.
+        throw new Error(
+          t('commands.config.remote.offlineNoCache', {
+            server: error.apiUrl,
+            config: configName,
+          }),
+          { cause: error }
+        );
+      }
+
+      outputService.warn(
+        formatStaleCacheWarning(
+          { ...cachedRemote, cachedVersion: cachedRemote.cachedVersion },
+          configName
+        )
+      );
+      this._remoteConfig = cached;
+      this._remoteVersion = cachedRemote.cachedVersion;
+      this._remoteOffline = true;
+      return cached;
+    }
 
     // Local pointer fields take precedence over anything remote might send.
     if (localConfig.remote) config.remote = localConfig.remote;
@@ -186,9 +230,14 @@ export class ConfigServiceBase {
       config.defaults = { ...(config.defaults ?? {}), ...localConfig.defaults };
     }
 
+    // Awaited on purpose: a fire-and-forget refresh that loses the write is
+    // silent staleness on the next offline read.
+    await writeRemoteCache(configName, config, version);
+
     this._remoteConfig = config;
     this._remoteVersion = version;
     this._remoteSdkEpoch = sdkEpoch;
+    this._remoteOffline = false;
     return config;
   }
 
@@ -272,13 +321,11 @@ export class ConfigServiceBase {
   // ============================================================================
 
   async getTeam(): Promise<string | undefined> {
-    if (process.env.REDIACC_TEAM) return process.env.REDIACC_TEAM;
     const config = await this.getCurrent();
     return config?.account?.team;
   }
 
   async getRegion(): Promise<string | undefined> {
-    if (process.env.REDIACC_REGION) return process.env.REDIACC_REGION;
     const config = await this.getCurrent();
     return config?.account?.region;
   }

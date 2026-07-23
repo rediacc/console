@@ -1,6 +1,6 @@
 ---
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "Installimine"
 description: "Installige Rediacci CLI Linuxi, macOS-i või Windowsi."
 category: "Guides"
@@ -221,4 +221,4 @@ Taaskäivitamine on läbipaistev ja ei põhjusta **seisakut**:
 - **Olemasolevaid klientühendusi (HTTP, TCP, UDP) ei mõjutata.** Marsruudi server on konfiguratsiooni pakkuja -- see ei ole andmeteel. Traefik haldab kogu liiklust otse.
 - Teie rakenduse konteinereid ei puututa -- taaskäivitatakse ainult süsteemitaseme marsruudi serveri protsess.
 
-Automaatse taaskäivitamise vahelejätmiseks edastage mis tahes käsule `--skip-router-restart` või seadistage keskkonna muutuja `RDC_SKIP_ROUTER_RESTART=1`.
+Automaatse taaskäivitamise vahelejätmiseks edastage mis tahes käsule `--skip-router-restart` või seadistage keskkonna muutuja `REDIACC_SKIP_ROUTER_RESTART=1`.

@@ -16,7 +16,7 @@ import {
   STAGED_UPDATE_DIR,
 } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
-import { loadServerConfig } from '../account/subscription-auth.js';
+import { readAccountPointer } from '../account/account-pointer.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import {
   DELTA_FORMAT_VERSION,
@@ -32,32 +32,20 @@ const DEFAULT_MANIFEST_BASE_URL = 'https://releases.rediacc.com/cli';
 const CHECK_TIMEOUT_MS = 3000;
 const DOWNLOAD_TIMEOUT_MS = 120_000;
 
-/** Resolve the releases base URL from server.json or default. */
+/** Resolve the releases base URL from the active config or default. */
 export function getReleasesBaseUrl(): string {
-  try {
-    const serverConfig = loadServerConfig();
-    if (serverConfig?.releasesUrl) return `${serverConfig.releasesUrl.replace(/\/+$/, '')}/cli`;
-  } catch {
-    // server.json may not exist
-  }
+  const releasesUrl = readAccountPointer().releasesUrl;
+  if (releasesUrl) return `${releasesUrl.replace(/\/+$/, '')}/cli`;
   return DEFAULT_MANIFEST_BASE_URL;
 }
 
-/** Resolve the active release channel from env, server.json, or default. */
+/** Resolve the active release channel from env, config, or default. */
 export function resolveChannel(): ReleaseChannel {
-  const envChannel = process.env.RDC_UPDATE_CHANNEL;
-  if (envChannel) return envChannel;
-
-  try {
-    const serverConfig = loadServerConfig();
-    if (serverConfig?.updateChannel) {
-      return serverConfig.updateChannel;
-    }
-  } catch {
-    // server.json may not exist
-  }
-
-  return UPDATE_DEFAULTS.CHANNEL;
+  return (
+    process.env.REDIACC_UPDATE_CHANNEL ??
+    readAccountPointer().updateChannel ??
+    UPDATE_DEFAULTS.CHANNEL
+  );
 }
 
 /** Get the manifest URL for a given channel. */

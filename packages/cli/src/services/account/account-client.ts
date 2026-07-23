@@ -18,13 +18,14 @@ import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { getInstallMethod, getNpmUpdateCommand } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
 import { resolveChannel } from '../update/updater.js';
+import { readAccountPointer } from './account-pointer.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
-  loadServerConfig,
   normalizeServerUrl,
-  saveServerConfig,
 } from './subscription-auth.js';
 
 /** Cached server key material (imported once per process). */
@@ -35,24 +36,18 @@ let serverKeyCache: {
 
 export async function getServerKeyMaterial() {
   if (!serverKeyCache) {
-    // 1. Explicit env var override (development mode)
-    const envKey = process.env.X25519_PUBLIC_KEY;
-    if (process.env.REDIACC_ENVIRONMENT === 'development' && envKey) {
-      serverKeyCache = { key: await importX25519PublicKey(envKey), keyId: 'dev' };
-      return serverKeyCache;
-    }
-
-    // 2. server.json (written by install script or `subscription login --server`)
-    const serverConfig = loadServerConfig();
-    if (serverConfig?.e2ePublicKey) {
+    // 1. Config account.e2ePublicKey (seeded by install script or a prior
+    //    `subscription login --server`, or discovered-and-cached below)
+    const pointerKey = readAccountPointer().e2ePublicKey;
+    if (pointerKey) {
       serverKeyCache = {
-        key: await importX25519PublicKey(serverConfig.e2ePublicKey),
-        keyId: 'discovered',
+        key: await importX25519PublicKey(pointerKey),
+        keyId: 'config',
       };
       return serverKeyCache;
     }
 
-    // 3. Runtime discovery from server's .well-known endpoint
+    // 2. Runtime discovery from server's .well-known endpoint
     const discoveredKey = await discoverServerKey();
     if (discoveredKey) {
       serverKeyCache = {
@@ -62,7 +57,7 @@ export async function getServerKeyMaterial() {
       return serverKeyCache;
     }
 
-    // 4. Hardcoded production key (fallback)
+    // 3. Hardcoded production key (fallback)
     serverKeyCache = {
       key: await importX25519PublicKey(CURRENT_SERVER_E2E_KEY.publicKeySpki),
       keyId: CURRENT_SERVER_E2E_KEY.keyId,
@@ -88,10 +83,18 @@ async function discoverServerKey(): Promise<{
     const key = info.e2e?.keys?.[0];
     if (!key?.publicKeySpki) return null;
 
-    // Cache in server.json for next startup
-    const serverConfig = loadServerConfig();
-    if (serverConfig && !serverConfig.e2ePublicKey) {
-      saveServerConfig({ ...serverConfig, e2ePublicKey: key.publicKeySpki });
+    // Cache in the active config for next startup, but only when the pointer
+    // had none. Guarded: the config file may not exist yet on a fresh machine
+    // (discovery still returns the key regardless).
+    if (!readAccountPointer().e2ePublicKey) {
+      try {
+        await configFileStorage.update(getEffectiveConfigName(), (cfg) => ({
+          ...cfg,
+          account: { ...(cfg.account ?? {}), e2ePublicKey: key.publicKeySpki },
+        }));
+      } catch {
+        // Config may not exist yet; discovery result still stands.
+      }
     }
 
     return key;

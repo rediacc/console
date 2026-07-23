@@ -9,6 +9,7 @@ import { AggregationTemporality, PeriodicExportingMetricReader } from '@opentele
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { debugEnabled } from '../../utils/debug.js';
 
 export interface SdkSetupResult {
   sdk: NodeSDK;
@@ -31,7 +32,7 @@ export function setupOtelSdk(opts: {
   sessionId: string;
 }): SdkSetupResult {
   // Suppress OTel SDK diagnostic output unless debug is requested.
-  if (process.env.REDIACC_DEBUG !== '1') {
+  if (!debugEnabled('otel')) {
     diag.setLogger(
       { error() {}, warn() {}, info() {}, debug() {}, verbose() {} },
       DiagLogLevel.NONE
