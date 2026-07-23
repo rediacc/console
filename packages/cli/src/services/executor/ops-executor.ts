@@ -13,6 +13,8 @@ import { extractRenetToLocal, isSEA } from '../core/embedded-assets.js';
 
 /** Default timeout for ops commands (15 minutes — Ceph provisioning needs ~10 min) */
 const OPS_COMMAND_TIMEOUT = 900_000;
+// Grace between SIGTERM and SIGKILL when an ops command overruns its timeout.
+const OPS_SIGKILL_GRACE = 10_000;
 
 /** Supported VM backends */
 export type OpsBackend = 'kvm' | 'qemu' | 'hyperv';
@@ -138,7 +140,21 @@ class OpsExecutorService {
       });
 
       const timer = setTimeout(() => {
+        // SIGTERM alone is not enough to end the hang. renet spawns the VM
+        // process (QEMU/KVM) as its own child: killing renet leaves the
+        // grandchild holding the write end of these pipes, so `close` never
+        // fires, and the live handles keep the event loop alive even after
+        // this reject -- the CLI hangs indefinitely instead of surfacing the
+        // timeout (observed: a macOS `ops down` that burned a 45-minute CI job
+        // after its 15-minute timeout had already elapsed).
+        // So: escalate to SIGKILL after a grace window, stop reading the
+        // inherited pipes, and unref the child so exiting is possible.
         child.kill('SIGTERM');
+        const sigkill = setTimeout(() => child.kill('SIGKILL'), OPS_SIGKILL_GRACE);
+        sigkill.unref();
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        child.unref();
         reject(new Error(`renet ops ${subcommand} timed out after ${timeout / 1000}s`));
       }, timeout);
 
