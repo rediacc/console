@@ -67,6 +67,12 @@ jobs:
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
+      # Same preinstalled-bloat removal ct-tests.yml uses (5 sites): this job
+      # died of runner ENOSPC pulling archlinux:latest for pacman metadata
+      # (run 30017108104 attempt 2) -- docker images + package repos + staged
+      # artifacts sit right at the runner's free-space edge.
+      - name: Free runner disk (preinstalled bloat)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
