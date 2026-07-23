@@ -293,9 +293,10 @@ jobs:
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          # pr-read, not cd: the two scripts below only READ review state.
-          # check-resolved-threads.sh / check-review-comments.sh merely print
-          # the resolve/reply commands for a human to run; they never call them.
+          # pr-read, not cd: the three scripts below only READ review state.
+          # check-resolved-threads.sh / check-review-comments.sh /
+          # check-review-report-replies.sh merely print the resolve/reply
+          # commands for a human to run; they never call them.
           preset: pr-read
           repositories: console
       - name: Check resolved threads

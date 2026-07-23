@@ -28,15 +28,15 @@ REPO=$(printf '%s\n' "$STRIPPED" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+
 # session cwd's current branch (matching gh's own default resolution).
 SEL=$(printf '%s\n' "$STRIPPED" | sed -n 's/.*gh pr ready[[:space:]]*//p' | awk '{for (i=1; i<=NF; i++) if ($i !~ /^-/) { print $i; exit }}')
 if [[ -z "$SEL" ]]; then
-  CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
-  SEL=$(git -C "${CWD:-.}" branch --show-current 2>/dev/null)
+    CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
+    SEL=$(git -C "${CWD:-.}" branch --show-current 2>/dev/null)
 fi
 
 CONCLUSION=$(timeout 20 gh pr view "$SEL" --repo rediacc/console \
-  --json statusCheckRollup \
-  --jq '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
+    --json statusCheckRollup \
+    --jq '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
 if [[ "$CONCLUSION" != "SUCCESS" ]]; then
-  echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
-  exit 2
+    echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
+    exit 2
 fi
 exit 0
