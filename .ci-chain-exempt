@@ -25,6 +25,9 @@
 # BLOCKER: pulls bot review comments for the PR over the GitHub API and asserts each has a substantive reply; requires an open PR plus an authenticated token
 .ci/scripts/quality/check-review-comments.sh
 
+# BLOCKER: fetches the PR's issue-comment timeline over the GitHub API to find the newest finished review report and its reply; there is no report to answer before the PR exists and the review has run
+.ci/scripts/quality/check-review-report-replies.sh
+
 # BLOCKER: compares each submodule pointer against the branches open on the submodule's own GitHub remote; needs API access to three repos and a PR context to resolve the expected branch
 .ci/scripts/quality/check-submodule-branches.sh
 
