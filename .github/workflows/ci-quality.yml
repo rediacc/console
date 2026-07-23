@@ -271,7 +271,13 @@ jobs:
 
   quality-security:
     name: Security
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: this job's runtime grew past the slim
+    # runner's hard ~15-minute cap during the 0722-1 wave (8 -> 12 -> 18 min;
+    # the cap kills the job as "cancelled" with no failed step, poisoning
+    # CI Complete). Two such kills in three runs. The growth itself (gate
+    # tests + submodule checkout + upstream freshness queries) is a separate
+    # follow-up; the capped runner just makes it a coin flip.
+    runs-on: ubuntu-latest
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
