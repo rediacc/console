@@ -80,6 +80,7 @@ jobs:
       # does not depend on the Claude GitHub App's repo selection. Dropping
       # it switches to the App/OIDC path and needs `id-token: write`.
       - name: Claude review
+        id: claude
         if: steps.gate.outputs.go == 'true'
         uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
         with:
@@ -132,4 +133,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
           HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          # Cost/token transparency in the marker comment; falls back to the
+          # path the action logs when the output is absent.
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
         run: .ci/scripts/review/claude-review-gate.sh --mark

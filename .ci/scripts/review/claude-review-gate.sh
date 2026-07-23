@@ -114,8 +114,26 @@ if [[ "${1:-}" == "--mark" ]]; then
         log_error "review step reported success but posted NOTHING in the last hour; refusing to mark ${HEAD_SHA:0:7} (SHA stays retryable)"
         exit 1
     fi
+    # Cost transparency (operator request): the action's execution file's
+    # result block carries cost/turns/duration/token usage. Best-effort --
+    # a missing or unparseable file never blocks marking.
+    cost_line=""
+    if [[ -n "${EXECUTION_FILE:-}" && -f "${EXECUTION_FILE:-}" ]]; then
+        cost_line=$(jq -r '
+            (if type == "array" then [.[] | select(.type == "result")][-1] else . end) as $r
+            | select($r != null)
+            | ($r.usage // {}) as $u
+            | "Cost: $\($r.total_cost_usd // 0 | . * 10000 | round / 10000)"
+              + " (\(($r.modelUsage // {}) | keys | first // "model n/a"))"
+              + " | \($r.num_turns // "?") turns"
+              + " | \((($r.duration_ms // 0) / 60000) | floor)m\((($r.duration_ms // 0) / 1000 | floor) % 60)s"
+              + "\nTokens: \($u.input_tokens // 0) in / \($u.output_tokens // 0) out"
+              + " / \($u.cache_read_input_tokens // 0) cache-read / \($u.cache_creation_input_tokens // 0) cache-write"
+        ' "$EXECUTION_FILE" 2>/dev/null) || cost_line=""
+    fi
     body="${MARKER_PREFIX} ${HEAD_SHA} -->
-Automated Claude review completed for commit ${HEAD_SHA:0:7}."
+Automated Claude review completed for commit ${HEAD_SHA:0:7}.${cost_line:+
+$cost_line}"
     comment_id=$(last_marker_id "$PR_NUMBER")
     if [[ -n "$comment_id" ]]; then
         gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
