@@ -91,6 +91,57 @@ emit_prompt() {
     } >>"$GITHUB_OUTPUT"
 }
 
+if [[ "${1:-}" == "--post-findings" ]]; then
+    # Post line-anchored review comments with severity badges from the
+    # machine-readable findings block the reviewer embeds in its report
+    # (```json:review-findings fence inside the newest tracking comment).
+    # The model's final report text is the ONLY channel proven to escape the
+    # action sandbox, so inline posting is done HERE, deterministically, via
+    # github_token. Advisory by design: per-comment failures (line not in
+    # diff, stale position) are logged and skipped; this mode never fails
+    # the job -- the summary report already posted.
+    require_var PR_NUMBER
+    require_var HEAD_SHA
+    findings_json=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+        --jq ".[] | select(.user.login | contains(\"github-actions\"))
+                  | select(.body | contains(\"json:review-findings\")) | .body" 2>/dev/null |
+        tail -n 1 | sed -n '/```json:review-findings/,/```/p' | sed '1d;$d')
+    if [[ -z "$findings_json" ]] || ! jq -e 'type == "array"' <<<"$findings_json" >/dev/null 2>&1; then
+        log_info "no parseable review-findings block; skipping inline comments"
+        exit 0
+    fi
+    posted=0
+    skipped=0
+    while IFS= read -r f; do
+        [[ -n "$f" ]] || continue
+        path=$(jq -r '.path // empty' <<<"$f")
+        fline=$(jq -r '.line // empty' <<<"$f")
+        sev=$(jq -r '.severity // "medium" | ascii_upcase' <<<"$f")
+        title=$(jq -r '.title // "finding"' <<<"$f")
+        fbody=$(jq -r '.body // empty' <<<"$f")
+        if [[ -z "$path" || -z "$fline" ]]; then
+            skipped=$((skipped + 1))
+            continue
+        fi
+        if gh api -X POST "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments" \
+            -f commit_id="$HEAD_SHA" -f path="$path" -F line="$fline" -f side=RIGHT \
+            -f body="**[${sev}]** — ${title}
+
+${fbody}" >/dev/null 2>&1; then
+            posted=$((posted + 1))
+        else
+            skipped=$((skipped + 1))
+            log_warn "inline comment rejected (line not in diff?): $path:$fline"
+        fi
+    done < <(jq -c '
+        sort_by(.severity // "medium"
+            | ascii_downcase
+            | if . == "critical" then 0 elif . == "high" then 1 elif . == "medium" then 2 else 3 end)
+        | .[0:20] | .[]' <<<"$findings_json" 2>/dev/null)
+    log_info "inline findings: $posted posted, $skipped skipped (cap 20)"
+    exit 0
+fi
+
 if [[ "${1:-}" == "--mark" ]]; then
     require_var PR_NUMBER
     require_var HEAD_SHA

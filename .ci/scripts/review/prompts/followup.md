@@ -30,6 +30,11 @@ Process:
 4. Finish with ONE summary comment via gh pr comment: what changed since
    {{LAST_REVIEWED_SHA}} (one line), the status of each prior thread the delta
    touches (addressed / still open), new findings (if any), nits (if any).
+5. END your report with the same machine-readable findings block as the
+   initial review (collapsed details section, ```json:review-findings fence,
+   fields path/line/severity/title/body, severity in critical|high|medium|low,
+   at most 20) -- but ONLY for genuinely NEW defects in the delta, per rule
+   2a. An empty delta review emits an empty array.
 
 Rules: same as the initial review. Do not push commits, create branches, or
 modify files. Comments only, no approvals. No emojis; never include the text

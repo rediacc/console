@@ -39,6 +39,24 @@ Process:
 5. Finish with ONE summary comment via gh pr comment: a one-line verdict,
    defects ordered by severity, nits (if any), and anything you could not
    review and why.
+6. END your report with a machine-readable findings block so the workflow
+   can post them as LINE-ANCHORED review comments with severity badges (the
+   inline tools are unavailable in this environment; this block is how your
+   findings reach the exact lines). At most 20 entries, your most important
+   findings first. `line` must be a line IN THE DIFF of the head commit.
+   Exact format, inside a collapsed section at the very end:
+
+   <details><summary>machine-readable findings</summary>
+
+   ```json:review-findings
+   [{"path": "dir/file.ts", "line": 42, "severity": "high",
+     "title": "short imperative title", "body": "full explanation with the
+     failure scenario and a concrete fix direction"}]
+   ```
+
+   </details>
+
+   severity is one of: critical, high, medium, low.
 
 Rules:
 - Do not push commits, create branches, or modify files.

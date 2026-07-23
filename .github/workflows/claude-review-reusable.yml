@@ -118,6 +118,18 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ steps.gate.outputs.review_turns }}
 
+      # Line-anchored severity-badged comments, posted deterministically from
+      # the machine-readable findings block in the report (the model's final
+      # text is the only channel proven to escape the action sandbox).
+      # Advisory: per-comment failures are skipped, never fail the job.
+      - name: Post inline findings
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+        run: .review-scripts/.ci/scripts/review/claude-review-gate.sh --post-findings
+
       # Mark only AFTER a successful review step, and only when output
       # actually posted (the guard verifies; at-least-once semantics). Also
       # appends cost + token usage parsed from the execution file.
