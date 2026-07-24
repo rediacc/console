@@ -102,11 +102,15 @@ class OpsExecutorService {
       capture?: boolean;
       backend?: OpsBackend;
       timeout?: number;
+      // Grace between SIGTERM and SIGKILL on timeout. Exposed only so the
+      // regression test can drive the real kill path in ~1s instead of 10s.
+      sigkillGraceMs?: number;
     } = {}
   ): Promise<OpsCommandResult> {
     const renetPath = await this.getRenetPath();
     const backend = options.backend ?? this.detectBackend();
     const timeout = options.timeout ?? OPS_COMMAND_TIMEOUT;
+    const sigkillGrace = options.sigkillGraceMs ?? OPS_SIGKILL_GRACE;
 
     const args = ['ops', subcommand, ...flags];
     const env: Record<string, string> = {
@@ -118,6 +122,13 @@ class OpsExecutorService {
       const child = spawn(renetPath, args, {
         env,
         stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : ['inherit', 'pipe', 'pipe'],
+        // detached: renet spawns the VM process (QEMU/KVM) as its own child.
+        // A new process group makes `child.pid` the group leader, so a timeout
+        // can signal the WHOLE tree (renet + the VM grandchild) via a negative
+        // pid — killing renet alone would orphan the grandchild. renet ops runs
+        // non-interactively (-o json), so it never needs the controlling TTY
+        // this detaches from.
+        detached: true,
       });
 
       let stdout = '';
@@ -139,32 +150,69 @@ class OpsExecutorService {
         }
       });
 
+      // Signal the whole process group (renet + its VM grandchild). detached
+      // made child.pid the group leader, so a negative pid reaches the tree;
+      // fall back to the child alone if the group is already gone or the
+      // platform has no process groups (Windows).
+      const killGroup = (signal: NodeJS.Signals): void => {
+        try {
+          if (child.pid) process.kill(-child.pid, signal);
+        } catch {
+          try {
+            child.kill(signal);
+          } catch {
+            /* already dead */
+          }
+        }
+      };
+
+      let settled = false;
+      let timedOut = false;
+      let escalateTimer: ReturnType<typeof setTimeout> | undefined;
+      let hardCapTimer: ReturnType<typeof setTimeout> | undefined;
+      const clearTimers = (): void => {
+        clearTimeout(timer);
+        if (escalateTimer) clearTimeout(escalateTimer);
+        if (hardCapTimer) clearTimeout(hardCapTimer);
+      };
+
       const timer = setTimeout(() => {
-        // SIGTERM alone is not enough to end the hang. renet spawns the VM
-        // process (QEMU/KVM) as its own child: killing renet leaves the
-        // grandchild holding the write end of these pipes, so `close` never
-        // fires, and the live handles keep the event loop alive even after
-        // this reject -- the CLI hangs indefinitely instead of surfacing the
-        // timeout (observed: a macOS `ops down` that burned a 45-minute CI job
-        // after its 15-minute timeout had already elapsed).
-        // So: escalate to SIGKILL after a grace window, stop reading the
-        // inherited pipes, and unref the child so exiting is possible.
-        child.kill('SIGTERM');
-        const sigkill = setTimeout(() => child.kill('SIGKILL'), OPS_SIGKILL_GRACE);
-        sigkill.unref();
-        child.stdout.destroy();
-        child.stderr.destroy();
-        child.unref();
-        reject(new Error(`renet ops ${subcommand} timed out after ${timeout / 1000}s`));
+        timedOut = true;
+        // Round-31's fix rejected here immediately and unref'd the SIGKILL
+        // timer, so process.exit() (reached via handleError) fired before the
+        // 10s escalation, leaving renet AND the QEMU grandchild alive. Instead:
+        // SIGTERM the group now, escalate to SIGKILL after the grace window,
+        // and settle only when the child actually `close`s -- so the kill
+        // completes BEFORE the CLI exits. A hard cap still guarantees we never
+        // hang forever if `close` never arrives (uninterruptible sleep).
+        killGroup('SIGTERM');
+        escalateTimer = setTimeout(() => killGroup('SIGKILL'), sigkillGrace);
+        hardCapTimer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          clearTimers();
+          child.stdout.destroy();
+          child.stderr.destroy();
+          child.unref();
+          reject(new Error(`renet ops ${subcommand} timed out after ${timeout / 1000}s (forced)`));
+        }, sigkillGrace + 5_000);
       }, timeout);
 
       child.on('close', (code) => {
-        clearTimeout(timer);
-        resolve({ exitCode: code ?? 1, stdout, stderr });
+        if (settled) return;
+        settled = true;
+        clearTimers();
+        if (timedOut) {
+          reject(new Error(`renet ops ${subcommand} timed out after ${timeout / 1000}s`));
+        } else {
+          resolve({ exitCode: code ?? 1, stdout, stderr });
+        }
       });
 
       child.on('error', (err) => {
-        clearTimeout(timer);
+        if (settled) return;
+        settled = true;
+        clearTimers();
         reject(new Error(`Failed to spawn renet: ${err.message}`));
       });
     });

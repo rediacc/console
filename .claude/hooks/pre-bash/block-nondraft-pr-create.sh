@@ -13,9 +13,13 @@
 # remote. Unknown/foreign repos are not policed.
 INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
-# Quote-strip + command-position anchor; rationale in block-premature-ready.sh.
+# Bypass-resistant scanning (unwraps sh -c/eval, strips heredocs+prose); a
+# `sh -c 'gh pr create'` must not slip a non-draft past this. STRIPPED is the
+# prose-stripped view kept for field parsing below. See lib/command-scan.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+hook_gh_pr_at_command_pos "$SCAN" create || exit 0
 STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
-echo "$STRIPPED" | grep -qE '(^|[;&|]|\$\()[[:space:]]*gh pr create' || exit 0
 
 REPO=$(printf '%s\n' "$STRIPPED" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+' | head -1 | sed -E 's/^(--repo[= ]|-R )//')
 if [[ -z "$REPO" ]]; then

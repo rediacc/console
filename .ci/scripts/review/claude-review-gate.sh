@@ -34,17 +34,21 @@ require_cmd jq
 MARKER_PREFIX='<!-- claude-reviewed:'
 
 # Newest marker comment's SHA. With `gh api --paginate`, --jq runs PER PAGE,
-# so stream matching bodies flat and let the caller take the last line.
+# so stream matching bodies flat. The marker BODY is multi-line (the SHA line
+# plus an "Automated ... cost" line), so extract the SHA from EVERY line first,
+# THEN take the last -- `tail -n 1` before the sed grabbed the trailing cost
+# line and matched nothing, silently disabling the whole review-dedup (every
+# green push re-reviewed). Found by review finding F4.
 last_marker_sha() {
     gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
         --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\")) | .body" 2>/dev/null |
-        tail -n 1 | sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p'
+        sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p' | tail -n 1 || true
 }
 
 last_marker_id() {
     gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
         --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\")) | .id" 2>/dev/null |
-        tail -n 1
+        tail -n 1 || true
 }
 
 # emit <go> <pr> <head_sha> <last_sha> <reason>  -- terminal.
@@ -102,10 +106,25 @@ if [[ "${1:-}" == "--post-findings" ]]; then
     # the job -- the summary report already posted.
     require_var PR_NUMBER
     require_var HEAD_SHA
+    # Robust extraction: the report is multi-line and a finding's own `body`
+    # may itself embed a ``` fence (a review bot suggesting a code fix), so a
+    # first-closing-fence match truncates and silently drops the whole array.
+    # Anchor to the LAST ```json:review-findings block in the stream and take
+    # its content up to that block's LAST closing fence; an inner fence in a
+    # body no longer ends the block early. jq still validates it as an array.
+    # (A mid-pagination gh failure degrades to empty -> advisory skip, never
+    # an abort that would fail this step and skip the following --mark step.)
     findings_json=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
         --jq ".[] | select(.user.login | contains(\"github-actions\"))
                   | select(.body | contains(\"json:review-findings\")) | .body" 2>/dev/null |
-        tail -n 1 | sed -n '/```json:review-findings/,/```/p' | sed '1d;$d')
+        awk '
+            /^[[:space:]]*```json:review-findings[[:space:]]*$/ { capturing = 1; n = 0; last = 0; next }
+            capturing {
+                buf[++n] = $0
+                if ($0 ~ /^[[:space:]]*```[[:space:]]*$/) last = n
+            }
+            END { if (last > 0) for (i = 1; i < last; i++) print buf[i] }
+        ') || findings_json=""
     if [[ -z "$findings_json" ]] || ! jq -e 'type == "array"' <<<"$findings_json" >/dev/null 2>&1; then
         log_info "no parseable review-findings block; skipping inline comments"
         exit 0
@@ -157,10 +176,10 @@ if [[ "${1:-}" == "--mark" ]]; then
     recent=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
         --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\") | not)
                   | select(.user.login | contains(\"github-actions\"))
-                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l)
+                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l) || recent=0
     inline=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments" --paginate \
         --jq ".[] | select(.user.login | contains(\"github-actions\"))
-                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l)
+                  | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l) || inline=0
     if [[ "${recent:-0}" -eq 0 && "${inline:-0}" -eq 0 ]]; then
         log_error "review step reported success but posted NOTHING in the last hour; refusing to mark ${HEAD_SHA:0:7} (SHA stays retryable)"
         exit 1

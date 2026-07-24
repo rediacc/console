@@ -20,19 +20,26 @@
 #      failures fail CLOSED.
 INPUT=$(cat)
 CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
-# Quote-strip + command-position anchor; rationale in block-premature-ready.sh.
-# Especially load-bearing here: a commit message MENTIONING "gh pr merge
-# --admin" must not trip the unconditional --admin ban.
-STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
-echo "$STRIPPED" | grep -qE '(^|[;&|]|\$\()[[:space:]]*gh pr merge' || exit 0
+# Bypass-resistant command scanning (unwraps sh -c/eval payloads, strips
+# heredocs+prose, matches --flag=value forms). A commit message MENTIONING
+# "gh pr merge --admin" must not trip the ban, but `sh -c 'gh pr merge
+# --admin'` and `--admin=true` MUST. See lib/command-scan.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+SCAN=$(hook_scan_target "$CMD")
+hook_gh_pr_at_command_pos "$SCAN" merge || exit 0
 
-if echo "$STRIPPED" | grep -qE -- '--admin([[:space:]]|$)'; then
+# Prose-stripped view for field parsing (repo/selector) further down.
+STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
+
+# --admin ban: match the flag in ANY form on the raw command (=value,
+# assignment, inside a wrapper payload). Over-blocking is the safe direction.
+if hook_flag_present "$CMD" admin; then
     echo "❌ BLOCKED: 'gh pr merge --admin' is banned. It bypasses the required CI Complete check and is how merged PRs ended up permanently red (pointer-bump commits merged mid-run). The sanctioned path: wait for the fast-path CI run to go green (minutes for pointer-only pushes), then 'gh pr ready' and 'gh pr merge --squash --auto'. If GitHub refuses a plain merge, the PR is not actually green -- fix that instead." >&2
     exit 2
 fi
 
 AUTO=0
-echo "$STRIPPED" | grep -qE -- '--auto([[:space:]]|$)' && AUTO=1
+hook_flag_present "$STRIPPED" auto && AUTO=1
 
 REPO=$(printf '%s\n' "$STRIPPED" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+' | head -1 | sed -E 's/^(--repo[= ]|-R )//')
 [[ -z "$REPO" ]] && REPO="rediacc/console"

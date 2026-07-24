@@ -16,7 +16,10 @@ CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 # 2. Command-position anchor on what remains (line start or after ; & | $( )
 #    -- v1 fired on a heredoc mentioning the command in prose.
 STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
-echo "$STRIPPED" | grep -qE '(^|[;&|]|\$\()[[:space:]]*gh pr ready' || exit 0
+# Bypass-resistant scanning so `sh -c 'gh pr ready'` cannot skip the green
+# gate; STRIPPED stays for field parsing. See lib/command-scan.sh.
+source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
+hook_gh_pr_at_command_pos "$(hook_scan_target "$CMD")" ready || exit 0
 echo "$STRIPPED" | grep -qE -- '--undo' && exit 0
 
 # Only console has draft PRs (free plan, public repo). A --repo pointing

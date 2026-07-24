@@ -494,7 +494,10 @@ const RemoteConfigSchema = z.object({
   storeId: uuid,
   configId: uuid,
   teamId: uuid.optional(),
-  storageKeyId: z.string(),
+  // Server-provided over the config-remote handoff, then fed to native secure
+  // storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a
+  // hostile account server cannot smuggle shell metacharacters this far.
+  storageKeyId: z.string().regex(/^[A-Za-z0-9:_-]{1,200}$/),
   dataRegion: z.string().optional(),
   /** Server envelope version of the last successful pull/push (offline read cache). */
   cachedVersion: z.number().int().optional(),

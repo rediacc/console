@@ -49,6 +49,14 @@ check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empt
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
+# Adversarial bypass cases (review finding F1): the quote-strip used to let
+# shell-wrapper / eval / flag=value / variable-indirection forms slip the ban.
+check 2 pre-bash/block-admin-merge.sh "$(bash_json "sh -c 'gh pr merge 531 --admin'")" "admin-merge: sh -c wrapper bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json 'bash -c "gh pr merge 531 --admin"')" "admin-merge: bash -c wrapper bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json "eval 'gh pr merge 531 --admin'")" "admin-merge: eval wrapper bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin=true')" "admin-merge: --admin=value bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json 'X=--admin; gh pr merge 531 $X')" "admin-merge: variable-indirection bypass blocked"
+check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json "sh -c 'gh pr create --title x --body y'")" "nondraft-create: sh -c wrapper bypass blocked"
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
@@ -66,6 +74,10 @@ check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr view 531')" "prema
 # unanchored v1 fired on a round-log heredoc that merely mentioned the flow.
 check 0 pre-bash/block-premature-ready.sh "$(bash_json $'cat >> log.md <<EOF\ngreen-gated `gh pr ready` + hook-banned --admin\nEOF')" "premature-ready: prose mention in heredoc ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\nthe old flow used gh pr merge --admin, now banned\nEOF')" "admin-merge: prose mention in heredoc ignored"
+# Even a command-position-looking mention inside a heredoc BODY is data, not a
+# command, and must not fire (heredoc-body stripping — the FP that fired on a
+# worklist write).
+check 0 pre-bash/block-admin-merge.sh "$(bash_json $'cat >> log.md <<EOF\n; gh pr merge 531 --admin\nEOF')" "admin-merge: command-position mention in heredoc body ignored"
 # Regression: a multi-line quoted COMMIT MESSAGE mentioning the commands (with
 # prose semicolons and even "--admin") is not an invocation. v2 fired on this.
 COMMITMSG=$'git commit -m "feat: x\n\n- gh pr ready is hook-gated; gh pr merge --admin is banned" && git push'

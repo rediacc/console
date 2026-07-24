@@ -1,90 +1,86 @@
-import { spawn } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { opsExecutorService } from '../ops-executor.js';
 
 /**
- * Regression guard for the `rdc ops down` hang that burned a 45-minute CI job.
+ * Regression guard for the `rdc ops` timeout path (review finding F3).
  *
- * Shape of the bug: renet spawns the VM process as its own child. When the ops
- * timeout fired we sent SIGTERM to renet only, so the grandchild kept the
- * inherited stdout/stderr pipes open. `close` never fired and the live handles
- * kept the event loop alive, so the CLI hung forever even though the timeout
- * had already rejected.
- *
- * This test reproduces that topology with real processes (a parent that spawns
- * a long-lived grandchild inheriting its pipes, then ignores SIGTERM) and
- * asserts the timeout path both rejects AND lets the process exit.
+ * The round-31 fix rejected immediately and unref'd the SIGKILL timer, so
+ * process.exit() (reached via handleError on a real ops command) fired before
+ * the escalation — the SIGKILL never ran and renet's QEMU grandchild was left
+ * alive. This test drives the REAL runOpsCommand against a fake "renet" that
+ * ignores SIGTERM and spawns a grandchild which also ignores SIGTERM, then
+ * asserts BOTH the promise rejects with the timeout AND the grandchild is
+ * actually dead — i.e. the process-group SIGKILL reached the whole tree.
  */
-describe('ops command timeout', () => {
+describe('ops-executor timeout kills the process tree', () => {
   let dir: string;
-  let hangScript: string;
+  let fakeRenet: string;
+  let gcPidFile: string;
 
-  beforeAll(() => {
+  const alive = (pid: number): boolean => {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), 'ops-timeout-'));
-    // Parent ignores SIGTERM and spawns a grandchild that holds the pipes —
-    // exactly what made SIGTERM-only insufficient.
-    hangScript = join(dir, 'hang.cjs');
+    gcPidFile = join(dir, 'grandchild.pid');
+    fakeRenet = join(dir, 'fake-renet');
+    // Fake renet: ignore SIGTERM (wedged), spawn a grandchild in the SAME
+    // process group (default, not detached) that also ignores SIGTERM and
+    // hangs, record its pid, then hang too. Only a group-wide SIGKILL ends it.
     writeFileSync(
-      hangScript,
-      `process.on('SIGTERM', () => {});
+      fakeRenet,
+      `#!/usr/bin/env node
 const { spawn } = require('node:child_process');
-spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'inherit' });
-setInterval(() => {}, 1000);
+const fs = require('node:fs');
+process.on('SIGTERM', () => {});
+const gc = spawn(process.execPath, ['-e', "process.on('SIGTERM',()=>{}); setInterval(()=>{}, 1e9)"], { stdio: 'ignore' });
+fs.writeFileSync(${JSON.stringify(gcPidFile)}, String(gc.pid));
+setInterval(() => {}, 1e9);
 `
     );
+    chmodSync(fakeRenet, 0o755);
+    vi.spyOn(opsExecutorService, 'getRenetPath').mockResolvedValue(fakeRenet);
   });
 
-  afterAll(() => {
+  afterEach(() => {
+    vi.restoreAllMocks();
     rmSync(dir, { recursive: true, force: true });
   });
 
-  it('rejects on timeout and the runner process still exits (no lingering handles)', async () => {
-    // Drive the real timeout logic in a child `node` so "did it hang?" is
-    // observable as a process exit rather than asserted about our own loop.
-    const driver = join(dir, 'driver.cjs');
-    writeFileSync(
-      driver,
-      `const { spawn } = require('node:child_process');
-const child = spawn(process.execPath, [${JSON.stringify(hangScript)}], {
-  stdio: ['inherit', 'pipe', 'pipe'],
-});
-child.stdout.on('data', () => {});
-child.stderr.on('data', () => {});
-const timer = setTimeout(() => {
-  child.kill('SIGTERM');
-  const sigkill = setTimeout(() => child.kill('SIGKILL'), 200);
-  sigkill.unref();
-  child.stdout?.destroy();
-  child.stderr?.destroy();
-  child.unref();
-  console.log('TIMED_OUT');
-}, 300);
-child.on('close', () => clearTimeout(timer));
-`
-    );
+  it('escalates to SIGKILL across the group so the grandchild dies, then rejects', async () => {
+    const started = Date.now();
+    await expect(
+      opsExecutorService.runOpsCommand('down', [], {
+        capture: true,
+        backend: 'kvm',
+        timeout: 500,
+        sigkillGraceMs: 300,
+      })
+    ).rejects.toThrow(/timed out/);
 
-    const result = await new Promise<{ code: number | null; out: string }>((resolve) => {
-      const proc = spawn(process.execPath, [driver], { stdio: ['ignore', 'pipe', 'pipe'] });
-      let out = '';
-      proc.stdout.on('data', (d: Buffer) => {
-        out += d.toString();
-      });
-      // If the fix regresses, the driver never exits; fail loudly rather than
-      // inheriting vitest's generic timeout message.
-      const guard = setTimeout(() => {
-        proc.kill('SIGKILL');
-        resolve({ code: null, out });
-      }, 15_000);
-      proc.on('close', (code) => {
-        clearTimeout(guard);
-        resolve({ code, out });
-      });
-    });
+    // The rejection must come only AFTER the kill sequence, not immediately.
+    expect(Date.now() - started).toBeGreaterThanOrEqual(500);
 
-    expect(result.out).toContain('TIMED_OUT');
-    // null == the guard had to kill it, i.e. the hang came back.
-    expect(result.code).toBe(0);
-  });
+    // Read the grandchild pid the fake renet recorded, and prove it is dead —
+    // the exact thing the old test never checked.
+    const { readFileSync } = await import('node:fs');
+    const gcPid = Number.parseInt(readFileSync(gcPidFile, 'utf8').trim(), 10);
+    expect(Number.isInteger(gcPid)).toBe(true);
+
+    // Give the group SIGKILL a beat to be reaped, then assert liveness is gone.
+    const deadline = Date.now() + 4000;
+    while (alive(gcPid) && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    expect(alive(gcPid)).toBe(false);
+  }, 15_000);
 });
