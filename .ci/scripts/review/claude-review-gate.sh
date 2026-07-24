@@ -33,12 +33,30 @@ require_cmd jq
 
 MARKER_PREFIX='<!-- claude-reviewed:'
 
+# Operator directive (2026-07-24): each review pass costs real turns/tokens,
+# and a security-critical hook file went through 5 consecutive passes each
+# finding one more edge case -- diminishing returns past a point. Cap total
+# reviews per PR; further pushes still get CI, just not another review pass.
+MAX_REVIEWS_PER_PR=3
+
 # Newest marker comment's SHA. With `gh api --paginate`, --jq runs PER PAGE,
 # so stream matching bodies flat. The marker BODY is multi-line (the SHA line
 # plus an "Automated ... cost" line), so extract the SHA from EVERY line first,
 # THEN take the last -- `tail -n 1` before the sed grabbed the trailing cost
 # line and matched nothing, silently disabling the whole review-dedup (every
 # green push re-reviewed). Found by review finding F4.
+# Count finished review reports posted on the PR so far (same signature
+# check-review-report-replies.sh uses: a github-actions issue comment starting
+# with the report header and carrying either the findings fence or the
+# "### Review" heading -- an in-progress tracking comment matches neither).
+review_report_count() {
+    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+        --jq ".[] | select(.user.login | contains(\"github-actions\"))
+                  | select(.body | startswith(\"**Claude finished\"))
+                  | select((.body | contains(\"json:review-findings\")) or (.body | contains(\"### Review\")))
+                  | .id" 2>/dev/null | wc -l || true
+}
+
 last_marker_sha() {
     gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
         --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\")) | .body" 2>/dev/null |
@@ -272,6 +290,11 @@ case "${EVENT_NAME:-}" in
         exit 1
         ;;
 esac
+
+review_count=$(review_report_count "$pr")
+if [[ "${review_count:-0}" -ge "$MAX_REVIEWS_PER_PR" ]]; then
+    emit false "$pr" "$head_sha" "" "review cap reached ($review_count/$MAX_REVIEWS_PER_PR reports already posted on this PR)"
+fi
 
 last_sha=$(last_marker_sha "$pr")
 if [[ -n "$last_sha" ]]; then
