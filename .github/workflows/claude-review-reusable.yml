@@ -85,6 +85,22 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: .review-scripts/.ci/scripts/review/claude-review-gate.sh
 
+      # The anthropics action resets the workspace's UNTRACKED files while it
+      # runs, which deletes .review-scripts before the post-review steps —
+      # proven on run 30085984306: the gate step above used it, then
+      # "Post inline findings" hit ENOENT (exit 127) and the marker never
+      # posted. Stage the TRUSTED copy into $RUNNER_TEMP now (outside
+      # $GITHUB_WORKSPACE, untouched by any checkout or action) and run the
+      # post steps from there. Trusted = whatever fed the gate above (console@
+      # main post-merge, the bootstrap copy pre-merge), so a PR's own tree can
+      # never substitute the marker/inline-posting logic.
+      - name: Stage review scripts outside the workspace
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          rm -rf "${{ runner.temp }}/review-scripts"
+          mkdir -p "${{ runner.temp }}/review-scripts"
+          cp -r .review-scripts/.ci "${{ runner.temp }}/review-scripts/.ci"
+
       # Full history so `git diff <last_reviewed>..<head>` works in follow-ups.
       - name: Checkout PR head
         if: steps.gate.outputs.go == 'true'
@@ -142,7 +158,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
           HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
-        run: .review-scripts/.ci/scripts/review/claude-review-gate.sh --post-findings
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --post-findings
 
       # Mark only AFTER a successful review step, and only when output
       # actually posted (the guard verifies; at-least-once semantics). Also
@@ -154,4 +170,4 @@ jobs:
           PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
           HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
-        run: .review-scripts/.ci/scripts/review/claude-review-gate.sh --mark
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --mark
