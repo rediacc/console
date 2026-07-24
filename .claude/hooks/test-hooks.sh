@@ -59,6 +59,12 @@ check 2 pre-bash/block-admin-merge.sh "$(bash_json "eval 'gh pr merge 531 --admi
 check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -lc 'gh pr merge 531 --admin'")" "admin-merge: bundled-flag wrapper (bash -lc) bypass blocked"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json "sh -eu -c 'gh pr merge 531 --admin'")" "admin-merge: separate-flag wrapper (sh -eu -c) bypass blocked"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -eux -c 'gh pr merge 531 --admin'")" "admin-merge: multi-flag wrapper (bash -eux -c) bypass blocked"
+# Round-40 review finding: GNU long options and value-taking short options
+# before -c also defeated the round-40 flag-shape regex; fixed via
+# token-scanning (any intervening token is skippable) instead of a 4th regex.
+check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash --posix -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --posix -c) bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash --norc -c 'gh pr merge 531 --admin'")" "admin-merge: GNU long-option wrapper (bash --norc -c) bypass blocked"
+check 2 pre-bash/block-admin-merge.sh "$(bash_json "bash -o pipefail -c 'gh pr merge 531 --admin'")" "admin-merge: value-taking-flag wrapper (bash -o pipefail -c) bypass blocked"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin=true')" "admin-merge: --admin=value bypass blocked"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'X=--admin; gh pr merge 531 $X')" "admin-merge: variable-indirection bypass blocked"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json "sh -c 'gh pr create --title x --body y'")" "nondraft-create: sh -c wrapper bypass blocked"

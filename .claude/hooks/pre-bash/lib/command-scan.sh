@@ -27,6 +27,47 @@
 # command-position verb match, over-blocking a command that both names the flag
 # and runs the verb is the safe direction.
 
+# Extract the payload of a shell-wrapper invocation (`<shell> [...anything...]
+# -c <payload>` or `eval <payload>`) by SCANNING TOKENS for the token that
+# actually selects -c mode, instead of enumerating flag shapes in a regex.
+# Review findings (rounds 39-40) showed that a single regex chasing flag
+# shapes is a losing game: bare `-c`, then bundled (`-lc`) and separate
+# (`-eux -c`) short flags, then GNU long options (`--posix`, `--norc`) and
+# value-taking short options (`-o pipefail`) each broke it in turn, and there
+# will always be another shape. Token-scanning treats ANY intervening token as
+# skippable and asks only "is THIS token the -c selector" -- a closed,
+# enumerable question (`-c` exactly, or a single-dash bundle ending in `c`) --
+# so no flag syntax needs to be recognized at all. This also drops the old
+# design's second failure mode: the extraction regex and a separate
+# prefix-strip regex had to independently agree on the exact same shape, and
+# small drift between the two was itself a bug source; this emits the payload
+# directly, so there is nothing left to keep in sync.
+_hook_wrapper_payload() {
+    awk '
+    {
+        n = split($0, tok, /[ \t]+/)
+        for (i = 1; i <= n; i++) {
+            if (tok[i] == "eval") {
+                out = ""
+                for (j = i + 1; j <= n; j++) out = out tok[j] (j < n ? " " : "")
+                print out
+                exit
+            }
+            if (tok[i] ~ /^(sh|bash|dash|zsh|ash|ksh)$/) {
+                for (j = i + 1; j <= n; j++) {
+                    t = tok[j]
+                    if (t == "-c" || t ~ /^-[^-].*c$/) {
+                        out = ""
+                        for (m = j + 1; m <= n; m++) out = out tok[m] (m < n ? " " : "")
+                        print out
+                        exit
+                    }
+                }
+            }
+        }
+    }' 2>/dev/null
+}
+
 # Drop heredoc bodies: from a line introducing `<< [-] ['"]?MARKER['"]?` up to
 # the line that is exactly MARKER (optionally tab-indented for <<-). Keeps the
 # introducing line (which may itself hold the real command) and the rest.
@@ -48,20 +89,10 @@ hook_scan_target() {
     local cmd="$1" nohd stripped wrapped
     nohd=$(printf '%s' "$cmd" | _hook_strip_heredocs)
     stripped=$(printf '%s' "$nohd" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
-    # Extract shell-wrapper payloads and STRIP the wrapper prefix + quotes so
-    # the inner command sits at line start (a command position for the anchor):
+    # Extract the wrapper payload (see _hook_wrapper_payload above), then turn
+    # its quotes to spaces so the inner command lands at a command position:
     # `sh -c 'gh pr merge --admin'` -> `gh pr merge --admin `.
-    # WRAPPER_RE tolerates intervening flags before the final `-c`-ending
-    # token, bundled (`bash -lc`) or separate (`bash -eux -c`, `sh -eu -c`) --
-    # review finding (round 39): the old `[[:space:]]+-c[[:space:]]` required
-    # the shell name and -c to be IMMEDIATELY adjacent, so `bash -lc '...'`
-    # matched neither this extraction NOR the prose-strip (which erases the
-    # quoted payload unconditionally), leaving zero trace of the wrapped
-    # command in either half of the scan target -- a total bypass.
-    local WRAPPER_RE='(sh|bash|dash|zsh|ash|ksh)([[:space:]]+-[[:alnum:]]+)*[[:space:]]-[[:alnum:]]*c[[:space:]].*|eval[[:space:]].*'
-    wrapped=$(printf '%s' "$nohd" | tr '\n' ' ' |
-        grep -oE "$WRAPPER_RE" |
-        sed -E -e 's/^(sh|bash|dash|zsh|ash|ksh)([[:space:]]+-[[:alnum:]]+)*[[:space:]]-[[:alnum:]]*c[[:space:]]+//; s/^eval[[:space:]]+//' -e "s/['\"]/ /g")
+    wrapped=$(printf '%s' "$nohd" | tr '\n' ' ' | _hook_wrapper_payload | sed -e "s/['\"]/ /g")
     printf '%s\n%s' "$stripped" "$wrapped"
 }
 
