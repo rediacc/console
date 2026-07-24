@@ -51,6 +51,12 @@
 # alternatives. `env bash -c` was already fine (`env` isn't a shell name, so
 # the scan naturally advances to the next bare `bash` token) -- only direct
 # path-qualification broke it.
+#
+# Round-44 review finding: the basename strip alone left a QUOTED path
+# broken -- `"/bin/bash"` has its last `/` INSIDE the quotes, so the greedy
+# path-strip left `bash"` (trailing quote intact), which still failed the
+# exact-match test. Fixed by also stripping quote characters from the name
+# copy (either order works: quotes and the basename separator never overlap).
 _hook_wrapper_payload() {
     awk '
     {
@@ -63,6 +69,7 @@ _hook_wrapper_payload() {
                 exit
             }
             name = tok[i]
+            gsub(/["'"'"']/, "", name)
             sub(/.*\//, "", name)
             if (name ~ /^(sh|bash|dash|zsh|ash|ksh)$/) {
                 for (j = i + 1; j <= n; j++) {
