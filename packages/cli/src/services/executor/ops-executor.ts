@@ -152,8 +152,8 @@ class OpsExecutorService {
         child.kill('SIGTERM');
         const sigkill = setTimeout(() => child.kill('SIGKILL'), OPS_SIGKILL_GRACE);
         sigkill.unref();
-        child.stdout?.destroy();
-        child.stderr?.destroy();
+        child.stdout.destroy();
+        child.stderr.destroy();
         child.unref();
         reject(new Error(`renet ops ${subcommand} timed out after ${timeout / 1000}s`));
       }, timeout);
