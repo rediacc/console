@@ -156,7 +156,7 @@ class DpapiStorage implements SecureStorage {
       // Pass the ciphertext through an env var, never interpolated into the
       // script, so a tampered cache file cannot inject PowerShell.
       const script =
-        "[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($env:RDC_DPAPI_ENC), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))";
+        '[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($env:RDC_DPAPI_ENC), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
       const result = execFileSync('powershell', ['-NoProfile', '-Command', script], {
         encoding: 'utf-8',
         env: { ...process.env, RDC_DPAPI_ENC: encrypted.trim() },
@@ -171,7 +171,7 @@ class DpapiStorage implements SecureStorage {
     // Pass the secret through an env var, never interpolated into the script,
     // so a secret containing quotes/newlines cannot inject PowerShell.
     const script =
-      "[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($env:RDC_DPAPI_VALUE), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))";
+      '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($env:RDC_DPAPI_VALUE), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
     const encrypted = execFileSync('powershell', ['-NoProfile', '-Command', script], {
       encoding: 'utf-8',
       env: { ...process.env, RDC_DPAPI_VALUE: value },
