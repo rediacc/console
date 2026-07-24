@@ -207,7 +207,7 @@ jobs:
         run: .ci/scripts/env/create-e2e-env.sh --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Workers)
-        run: .ci/scripts/test/run-e2e.sh --workers 1
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-workers-${{ matrix.os-image }}" --status ${{ job.status }}
@@ -341,7 +341,7 @@ jobs:
         run: .ci/scripts/env/create-e2e-env.sh --ceph --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Ceph)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-ceph" --status ${{ job.status }}
@@ -491,7 +491,7 @@ jobs:
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
       - name: Run E2E Tests (Ceph Workers)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-ceph-workers" --status ${{ job.status }}
@@ -629,7 +629,7 @@ jobs:
             --vm-ram-worker "$VM_RAM_WORKER"
 
       - name: Run E2E Tests (K8s)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s" --status ${{ job.status }}
@@ -773,7 +773,7 @@ jobs:
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
       - name: Run E2E Tests (K8s Ceph)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-ceph.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s-ceph" --status ${{ job.status }}
@@ -918,7 +918,7 @@ jobs:
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
       - name: Run E2E Tests (K8s Multinode)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s-multinode" --status ${{ job.status }}
@@ -1084,7 +1084,7 @@ jobs:
       # group A, then the suite's beforeAll opens the cross-LAN route (host routes
       # between the two private LANs), peers the fleets, and migrates A -> B.
       - name: Run E2E Tests (Dual-group migrate)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.migrate.config.ts
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.migrate.config.ts --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-migrate" --status ${{ job.status }}

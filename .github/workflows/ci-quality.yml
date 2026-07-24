@@ -466,6 +466,12 @@ jobs:
         run: npm ci --workspace=@rediacc/e2e-tests --include-workspace-root --ignore-scripts
       - name: Check E2E test coverage for all renet functions
         run: .ci/scripts/quality/check-e2e-coverage.sh
+      # Static half of the zero-skip contract: every topology subdir of
+      # tests/ must be excluded by the base playwright.config.ts, so the E2E
+      # Workers job never collects-then-skips a foreign-topology suite. The
+      # runtime half is run-e2e.sh --fail-on-skip in the E2E jobs themselves.
+      - name: Check E2E skip hygiene (no collected-then-skipped suites)
+        run: npm run check:ci-e2e-skip-hygiene
 
   quality-audit-coverage:
     name: Audit Coverage
