@@ -42,6 +42,15 @@
 # prefix-strip regex had to independently agree on the exact same shape, and
 # small drift between the two was itself a bug source; this emits the payload
 # directly, so there is nothing left to keep in sync.
+#
+# Round-42 review finding: the shell-name test required an EXACT, bare token
+# match, so a path-qualified shell (`/bin/bash -c`, `./bash -c`) never matched
+# -- the same enumeration trap the flag side already escaped, just moved to
+# the shell-name side. Fixed the same way: match the BASENAME of the token
+# (strip any leading `.*/`) rather than adding literal path prefixes as more
+# alternatives. `env bash -c` was already fine (`env` isn't a shell name, so
+# the scan naturally advances to the next bare `bash` token) -- only direct
+# path-qualification broke it.
 _hook_wrapper_payload() {
     awk '
     {
@@ -53,7 +62,9 @@ _hook_wrapper_payload() {
                 print out
                 exit
             }
-            if (tok[i] ~ /^(sh|bash|dash|zsh|ash|ksh)$/) {
+            name = tok[i]
+            sub(/.*\//, "", name)
+            if (name ~ /^(sh|bash|dash|zsh|ash|ksh)$/) {
                 for (j = i + 1; j <= n; j++) {
                     t = tok[j]
                     if (t == "-c" || t ~ /^-[^-].*c$/) {
