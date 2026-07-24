@@ -11,14 +11,14 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 | Check | Fix |
 |-------|-----|
 | `check:deps` | `npx tsx scripts/check-deps.ts --upgrade`. **Respect `.syncpackrc.json` pins** — packages pinned there (currently `@opentelemetry/sdk-node`, `instrumentation`, `instrumentation-fetch`, `instrumentation-xml-http-request`, `exporter-trace-otlp-http`, `resources`) are deliberately held back across upgrades. Also respect `.deps-upgrade-blocklist` (zod, etc.). If `npm outdated` flags a pinned package, DO NOT bump the package.json — update the pin's `pinVersion` only if the pin is genuinely stale. |
-| `Quality / Versions` (`syncpack lint`) | `.syncpackrc.json` defines `versionGroups` with `pinVersion` and a `sameRange highestSemver` policy. A mismatch means either: (a) you bumped a pinned package beyond its pin — revert to the pin version, or (b) two workspaces disagree on a range — bump the lower one. Run `npx syncpack lint` locally to see exactly which dep violates which group. |
+| `Quality / Code` (`syncpack lint`) | `.syncpackrc.json` defines `versionGroups` with `pinVersion` and a `sameRange highestSemver` policy. A mismatch means either: (a) you bumped a pinned package beyond its pin — revert to the pin version, or (b) two workspaces disagree on a range — bump the lower one. Run `npx syncpack lint` locally to see exactly which dep violates which group. |
 | Lockfile native-binary drift (`Cannot find module @rollup/rollup-*-*` or `lightningcss.*-*.node` or `Expected "0.25.12" but got "..."`) | Lockfile is missing platform-specific native binary entries. npm issue #4828: regenerating `package-lock.json` on a single platform drops optional `@rollup/rollup-*`, `@esbuild/*`, `lightningcss-*-*`, `@tailwindcss/oxide-*-*`, `@img/sharp-*-*`, `@biomejs/biome-*-*`, `oxc-parser-*-*`, `oxc-resolver-*-*`, `syncpack-*-*`, `unrs-resolver-*-*` entries for other OS/CPU combinations. **Never `rm package-lock.json`** on a single-platform checkout; use targeted `npm install <pkg>@<ver> -w <workspace>` instead. If you must regenerate, copy `package-lock.json` from `main` first and let `npm install` reconcile only the diffs. |
 | Lockfile npm-version drift (`npm ci` fails with `Missing: <pkg>@<ver> from lock file` in CI but passes locally) | CI runs the npm bundled with setup-node's Node 22 (npm 10.x). A lockfile regenerated or updated by a newer local npm (11.x) can fail npm 10's stricter sync check, and npm 11 also emits fields npm 10 never writes (`libc`). **After ANY operation that touches a `package-lock.json`** (including `check-deps --upgrade`), validate every touched lockfile with CI's npm: `npx -y npm@10 ci --dry-run` (repo root, `private/account`, `private/account/web`, `private/account/e2e` as applicable). If it fails, reconcile with `npx -y npm@10 install --package-lock-only --ignore-scripts` in that directory and confirm the diff is additive (platform entries preserved), then re-validate under both npm 10 and your local npm. |
 | `check:format` | `npx biome format --write packages/ private/account/` |
 | `check:i18n` | `npm run i18n:generate-hashes && npm run i18n:sync`, then translate missing keys |
 | `check:ci-search-index` | Any www content edit (docs/blog/i18n, all locales) stales the committed indexes: `cd packages/www && node scripts/generate-search-index.js`, commit `public/search-index*.json` |
 | `check:ci-renet` | `cd private/renet && go fmt ./...`, then fix golangci-lint issues. After signature changes also sweep tag-gated files: `go vet -tags "root ebpf_e2e" ./...` (plain `go vet ./...` skips them; OPS CI compiles them) |
-| `Quality / Shell` | `shfmt -w -i 4 <file>` after any shell edit (gate = `npm run check:ci-shell-format`) |
+| `Quality / Static` (shell format) | `shfmt -w -i 4 <file>` after any shell edit (gate = `npm run check:ci-shell-format`) |
 | `lint` / `check:lint` | Fix ESLint errors properly (never suppress with comments). **Never revert a dev-dep bump (or pin it in `.deps-upgrade-blocklist`) just to silence new rules a plugin surfaces.** When `eslint-plugin-react-hooks` 7.x flags `react-hooks/set-state-in-effect` / `refs-in-render` / `immutability` / `preserve-manual-memoization` across existing files, fix each site per React 19 idioms: move ref writes into a dependency-less `useEffect`, derive state via the "previous value" pattern (`const [prev, setPrev] = useState(value); if (prev !== value) { setPrev(value); setDerived(...); }`), wrap effect-only side effects in `useEffectEvent` (from `react`, available in 19+), defer problematic setState with `queueMicrotask`, use `window.location.assign(url)` instead of direct `window.location.href = url` assignments, and initialize state lazily with `useState(() => ...)` instead of a post-mount effect. Downgrade is not a fix. |
 | `lint:unused` | Add to `ignoreDependencies` in `knip.jsonc` with a `// BLOCKER:` reason if it's a transitive/runtime dep |
 | `check:ci-e2e-coverage` | Add coverage for new renet bridge functions in `packages/e2e-tests` (the gate greps e2e-tests for each generated function name) |
@@ -30,7 +30,7 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 | `check:ci-i18n-placeholders` | A locale DROPPED a `{{placeholder}}` English has (information silently lost) or INVENTED one it does not (renders literally to the reader). Covers three sets: `packages/cli`, `packages/www`, `private/account/web`. Fix the locale value; never add the placeholder to English unless the call site passes it. |
 | `check:i18n` (orphan keys) | Same class as renet's, in the JSON catalogs: a locale defines a key English does not. English is the source of truth; remove the extra key. Reported per set by `scripts/check-translation-completeness.ts`. |
 | `Initialize` (PR title) | PR title must follow Conventional Commits (`type(scope): summary` or `type: summary`). Fix with `gh pr edit <N> --title "fix: ..."`. |
-| `Quality / PR Description` (stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |
+| `Quality / Static` (PR description stale) | Description's `updatedAt` is older than 30 min and there are new commits. Run `gh pr edit <N> --body "..."` **immediately before pushing the next commit** so the fresh timestamp is visible to the next CI run (editing alone does not trigger CI). **The body must actually change** — an edit with identical content does NOT bump `updatedAt`; summarize the new commits instead of re-sending the same text. Stale-only failure: refresh + `gh run rerun <id> --failed`, no commit needed. |
 
 ### CI failure triage: read the whole log before diagnosing
 
@@ -50,6 +50,31 @@ When fixing CI failures, follow this loop:
 3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`. A run that ends `cancelled` with a failed job means the watchdog killed it for that failure; `cancelled` with zero failed jobs means your own push superseded it. Cancelled NEVER means green — the run is only done when every job passes (deploy preview is among the last).
 4. **The automated Claude review fires when CI is green AND the PR is non-draft**: first at the babysitter's ready-flip, then again after each green push while the PR stays ready. It never runs on a draft, a red head, or a pointer-bump-only delta. When it posts (inline threads plus one summary comment), fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL. Unreplied/unresolved threads still fail `Review Gate` (console PR) and `Quality / Submodule Branches` (submodule PRs); clear them before the gate re-runs.
 5. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Batch pending fixes into one push — each push restarts the whole pipeline. Continue until green.
+
+### Quality lanes and the ubuntu-slim cap
+
+The quality phase is **ten lanes**, not one job per gate. Gates are grouped by
+what they need on disk (bare checkout / node / node+submodules / node+build /
+go), so a lane pays its setup once: `Static`, `Branch`, `Submodule Branches`,
+`Code`, `Content`, `Packages`, `i18n`, `Built-www Gates`, `Security`, `Go`.
+`.github/workflows/ci-quality.yml` opens with the rules for editing one.
+
+Two things follow that you will hit in practice:
+
+- **A lane runs all of its gates even after one fails.** Every gate step carries
+  `if: ${{ !cancelled() && steps.setup.outcome == 'success' }}`, so one push
+  surfaces every failure in that lane. Do not "fix the first red and push" --
+  read the whole lane's step list first.
+- **`ubuntu-slim` dies at 15 minutes, hard.** The job is marked CANCELLED with no
+  failed step, which reads as neither pass nor fail and poisons `CI Complete`.
+  Every slim job must therefore declare `timeout-minutes` of 14 or less; CHECK 3
+  in `.ci/scripts/security/check-workflow-gates.sh` enforces it. A job that
+  genuinely needs longer moves to `ubuntu-latest` -- the number is not a dial.
+
+Dependencies come from `./.github/actions/setup-workspace`, which restores a
+cached `node_modules` (200 MB, ~2.5s) instead of running `npm ci` per job. On a
+cache miss it falls back to `.ci/scripts/setup/install-deps.sh`, so a miss is
+slow, never broken.
 
 ### CI watchdog and auto-retry
 
@@ -75,7 +100,8 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
   - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.
   - **AI unavailable**: Falls back to retry (same as pre-AI behavior).
 - **Job failure (attempt 2+)**: Watchdog force-cancels the entire run -- no infinite retry loops.
-- **Quality / Review Gate failures**: Never auto-retry, never use AI. Fail immediately and force-cancel.
+- **Quality lane failures**: Never auto-retry, never use AI (a lint or type error is deterministic; retrying it is pointless). The force-cancel now **drains first**: it waits until every other `Quality / *` lane reaches a terminal state, then cancels once with the full failure roster. So one round reports every failing lane instead of only the first, which is what used to make gates look like they failed serially. The expensive legs (E2E, OPS) are not in the no-retry set, so they still die immediately.
+- **Review Gate failures**: Never auto-retry, never use AI, and never drain. Fail immediately and force-cancel -- an outstanding review is not a red to race past.
 
 **PR labels** to control behavior:
 
@@ -93,7 +119,7 @@ Console PRs are opened as **drafts** (`gh pr create --draft`) and stay draft unt
 
 ### Pointer-bump fast path
 
-A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`, `package-tests`, and `ops-tests`; only `quality`, `review-gate`, and `ci-complete` still run. `assert-ci-complete.sh` accepts those skipped builds as green **only** under this flag, so the aggregated `CI Complete` still goes green, in minutes. This is why `/pr-merge` now WAITS for the fast-path run to go green and merges with `--squash --auto`, instead of admin-merging over a pending run (which used to leave the merged PR with a permanent red `Quality / Branch`, a wall of cancelled jobs, and no `CI Complete`). A pointer-bump-only delta is also deliberately not re-reviewed by Claude.
+A push whose commits only move submodule gitlinks to tree-identical, on-submodule-`main` commits (the post-squash pointer bump), on top of a baseline commit that already has a successful `CI Complete`, is detected by `.ci/scripts/ci/detect-pointer-bump.sh`, which sets `pointer_bump_only=true` in the `initialize` job. Under that flag `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `stripe-sandbox`, `package-tests`, and `ops-tests` (`tests` carries `Migration Test`, which skips itself under the flag); only `quality`, `review-gate`, and `ci-complete` still run. `assert-ci-complete.sh` accepts those skipped builds as green **only** under this flag, so the aggregated `CI Complete` still goes green, in minutes. This is why `/pr-merge` now WAITS for the fast-path run to go green and merges with `--squash --auto`, instead of admin-merging over a pending run (which used to leave the merged PR with a permanent red `Quality / Branch`, a wall of cancelled jobs, and no `CI Complete`). A pointer-bump-only delta is also deliberately not re-reviewed by Claude.
 
 ### Never push to `main` or cut a release without explicit user authorization
 

@@ -32,7 +32,7 @@ jobs:
   initialize:
     name: Initialize
     runs-on: ubuntu-latest  # Needs Docker for registry cache check
-    timeout-minutes: 15
+    timeout-minutes: 14
     # checks: read is for detect-pointer-bump.sh (reads the baseline commit's
     # "CI Complete" check-run with the plain GITHUB_TOKEN; the app token has
     # no checks scope). Job-level permissions replace the workflow defaults,
@@ -147,62 +147,6 @@ jobs:
           path: ci-tags.txt
           retention-days: 1
 
-  # ============================================================================
-  # MIGRATION TEST
-  # Validates that D1 migrations apply cleanly against a production data clone.
-  # Creates an ephemeral D1 database, clones production, runs migrations, then
-  # deletes the database. No worker is deployed -- CI-only, no public URL.
-  # ============================================================================
-  migration-test:
-    name: Migration Test
-    needs: [initialize]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    if: >-
-      always() &&
-      needs.initialize.result == 'success' &&
-      needs.initialize.outputs.pointer_bump_only != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          sparse-checkout: .github/actions
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,account
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Init account submodule
-        run: git submodule update --init --depth 1 private/account
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-
-      - name: Install wrangler
-        run: |
-          source .ci/config/constants.sh
-          npm install -g "wrangler@${WRANGLER_VERSION}"
-
-      - name: Reap stale migration-test D1 databases
-        run: .ci/scripts/housekeeping/cleanup-stale-d1.sh --max-age 60
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Test migrations against all regional clones (edge first, then stable)
-        run: .ci/scripts/deploy/test-d1-migrations.sh
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-
   cancel-watchdog:
     name: CI Watchdog
     needs: [initialize]
@@ -210,7 +154,7 @@ jobs:
     permissions:
       actions: write
       contents: read
-    timeout-minutes: 15
+    timeout-minutes: 14
     # Use !cancelled() so force-cancel from newer runs can stop this job
     if: ${{ !cancelled() && needs.initialize.result == 'success' }}
     steps:
@@ -280,7 +224,7 @@ jobs:
     name: Review Gate
     needs: [initialize, quality]
     runs-on: ubuntu-slim
-    timeout-minutes: 15
+    timeout-minutes: 14
     if: needs.initialize.outputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -552,6 +496,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # need full tag history for bijection check
+          filter: blob:none   # tags and commits only, no historical file contents
       - name: Assert release-state bijection
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -606,8 +551,15 @@ jobs:
   tests:
     name: Tests + Infra
     needs: [initialize, build-docker-fast]
-    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
+    # full_suite moved from this `if:` into an INPUT so the workflow is still
+    # CALLED on push-to-main: its migration-test job has to run there (it
+    # validates the D1 migrations that push is about to deploy), while every
+    # test job inside stays gated on full_suite exactly as before.
+    if: always() && needs.initialize.result == 'success' && needs.build-docker-fast.result == 'success'
     uses: ./.github/workflows/ct-tests.yml
+    with:
+      full_suite: ${{ needs.initialize.outputs.full_suite }}
+      pointer_bump_only: ${{ needs.initialize.outputs.pointer_bump_only }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -618,6 +570,7 @@ jobs:
       ACCOUNT_JWT_SECRET: ${{ secrets.ACCOUNT_JWT_SECRET }}
       STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
       STRIPE_SANDBOX_WEBHOOK_SECRET: ${{ secrets.STRIPE_SANDBOX_WEBHOOK_SECRET }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
   # ============================================================================
   # COLUMN 4D: OPS VM TESTS
@@ -658,7 +611,7 @@ jobs:
       needs.initialize.result == 'success' &&
       needs.build-docker-fast.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -719,7 +672,7 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
-    needs: [initialize, stage-artifacts, tests, migration-test]
+    needs: [initialize, stage-artifacts, tests]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: >-
@@ -727,8 +680,7 @@ jobs:
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
       needs.stage-artifacts.result == 'success' &&
-      needs.tests.result == 'success' &&
-      needs.migration-test.result == 'success'
+      needs.tests.result == 'success'
     environment:
       name: pr-${{ github.event.pull_request.number }}
       url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
@@ -873,7 +825,7 @@ jobs:
     name: Smoke Test Preview
     needs: [initialize, deploy-preview]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 14
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
@@ -1023,7 +975,7 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, migration-test, update-flow-test, deploy-preview, smoke-test-preview]
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview]
     timeout-minutes: 5
     if: always() && !cancelled()
     steps:
@@ -1051,7 +1003,6 @@ jobs:
           RESULT_TESTS: ${{ needs.tests.result }}
           RESULT_ELITE_RUN_TEST: ${{ needs.elite-run-test.result }}
           RESULT_OPS_TESTS: ${{ needs.ops-tests.result }}
-          RESULT_MIGRATION_TEST: ${{ needs.migration-test.result }}
           RESULT_UPDATE_FLOW_TEST: ${{ needs.update-flow-test.result }}
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}

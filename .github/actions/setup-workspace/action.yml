@@ -1,0 +1,93 @@
+name: Setup Workspace
+description: >
+  Node 22 plus a restored node_modules tree, replacing the
+  setup-node(cache:npm) + `npm ci` pair that every CI job used to repeat.
+
+  WHY. On run 30064285223 the 33 quality jobs burned 4307s of runner time, 73%
+  of it setup rather than gate work: 24 of them ran node setup + deps for 1566s
+  total (median 58s, max 165s) to reconstruct the SAME tree. Worse, the two
+  halves fought each other -- `cache: 'npm'` restored a ~396 MB ~/.npm cache and
+  install-deps.sh then deleted it with `npm cache clean --force`, so every job
+  re-downloaded all 1096 packages anyway.
+
+  The tree itself is 200 MB compressed and untars in 2.5s, so caching
+  node_modules directly beats caching the thing you build it from. The npm cache
+  is deliberately NOT restored here: measured warm-vs-cold, it was worth ~1s of
+  the install, which never repays a 396 MB download.
+
+inputs:
+  node-version:
+    description: Node major to install.
+    required: false
+    default: '22'
+  account:
+    description: >
+      'true' when the private/account submodule is checked out and its three
+      npm trees (root, web, e2e) are needed. Cached under its own key so a job
+      WITHOUT the submodule cannot split the root cache key by hashing a file
+      that is not there.
+    required: false
+    default: 'false'
+  natives:
+    description: >
+      'true' to run `npm run install:natives` (ssh2 / cpu-features / esbuild).
+      .npmrc sets ignore-scripts=true, so a plain `npm ci` never builds these.
+      The flag is part of the cache key: a tree cached WITHOUT natives must
+      never satisfy a job that needs them, which is exactly the kind of silent
+      cross-job contamination a shared cache invites.
+    required: false
+    default: 'false'
+  build-packages:
+    description: >
+      'true' to run .ci/scripts/setup/build-packages.sh after install.
+      Deliberately NOT cached: build-packages.sh starts by removing
+      packages/shared/dist on purpose, and a stale dist fails open.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - id: cache-root
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          node_modules
+          packages/*/node_modules
+        key: nm-${{ runner.os }}-${{ runner.arch }}-node${{ inputs.node-version }}-nat${{ inputs.natives }}-${{ hashFiles('package-lock.json') }}
+
+    - id: cache-account
+      if: inputs.account == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          private/account/node_modules
+          private/account/web/node_modules
+          private/account/e2e/node_modules
+        key: nma-${{ runner.os }}-${{ runner.arch }}-node${{ inputs.node-version }}-${{ hashFiles('private/account/package-lock.json', 'private/account/web/package-lock.json', 'private/account/e2e/package-lock.json') }}
+
+    # Miss paths. Split so a root hit plus an account miss installs only the
+    # account trees (and vice versa) instead of redoing both.
+    - if: steps.cache-root.outputs.cache-hit != 'true'
+      shell: bash
+      run: .ci/scripts/setup/install-deps.sh --skip-account
+
+    - if: inputs.account == 'true' && steps.cache-account.outputs.cache-hit != 'true'
+      shell: bash
+      run: .ci/scripts/setup/install-deps.sh --account-only
+
+    # Outside the cache-miss guard on purpose: `npm rebuild` is idempotent and
+    # cheap on a warm tree, and the natives flag is in the cache key, so this is
+    # the belt to that braces -- a restored tree that somehow lacks a compiled
+    # binding gets one rather than failing at import time.
+    - if: inputs.natives == 'true'
+      shell: bash
+      run: npm run install:natives
+
+    - if: inputs.build-packages == 'true'
+      shell: bash
+      run: .ci/scripts/setup/build-packages.sh

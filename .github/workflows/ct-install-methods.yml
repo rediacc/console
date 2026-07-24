@@ -207,6 +207,7 @@ jobs:
   install-methods-complete:
     name: Install Methods Complete
     runs-on: ubuntu-slim
+    timeout-minutes: 5
     needs:
       - test-linux-x64
       - test-linux-arm64

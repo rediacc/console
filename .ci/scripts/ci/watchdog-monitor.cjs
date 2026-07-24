@@ -84,6 +84,37 @@ function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, 
   };
 }
 
+/**
+ * Which no-retry jobs are still in flight?
+ *
+ * WHY THIS EXISTS. A failed `Quality / *` job used to force-cancel the run the
+ * instant it was seen. That is why CI gates surfaced exactly ONE failure per
+ * round: nine other quality jobs were killed mid-flight, their verdicts never
+ * reported, and the operator learned about the next problem only after fixing
+ * this one and pushing again. With gates grouped into ten lanes the same
+ * behaviour would be worse, because each kill now discards a whole lane's worth
+ * of pending results.
+ *
+ * So a quality failure now DRAINS: the run is still force-cancelled with no
+ * retry and no AI classification (a lint error is deterministic; retrying it is
+ * pointless), but only once every other no-retry job has reached a terminal
+ * state. The expensive jobs the cancel exists to stop -- the E2E and OPS legs --
+ * are not in this set, so they still die at the same moment they used to.
+ *
+ * Label-immune jobs (Review Gate) are excluded: CLAUDE.md specifies those fail
+ * immediately, full stop, and an outstanding review is not something to wait on.
+ *
+ * Pure so the ordering is testable against the REAL pattern list.
+ */
+function pendingNoRetryJobs({ jobs, noRetryPatterns, excludePatterns = [] }) {
+  return jobs.filter(j =>
+    j.status !== 'completed' &&
+    !excludePatterns.some(p => j.name.includes(p)) &&
+    matchesPatterns(j.name, noRetryPatterns) &&
+    !matchesPatterns(j.name, LABEL_IMMUNE_PATTERNS)
+  );
+}
+
 // Formats the COMPLETE set of failed jobs into a human-readable banner plus a
 // one-line summary for the GitHub annotation. The watchdog force-cancels on the
 // first failure it classifies, but a single poll can hold several already-failed
@@ -194,6 +225,12 @@ const monitor = async ({ github, context, core }) => {
   // Deferred jobs stay eligible for handling on later polls, so they are tracked
   // separately from handledJobs and only announced once.
   const deferredJobs = new Set();
+
+  // A no-retry (quality) failure has been seen and its force-cancel is being
+  // held until the sibling no-retry jobs finish, so one round reports every
+  // failing lane. See pendingNoRetryJobs for why.
+  let pendingQualityCancel = false;
+  let heldQualityFailureMsg = '';
 
   // Helper: rerun the target run's failed jobs (the API behind
   // `gh run rerun --failed`). Only valid once the run has completed.
@@ -574,6 +611,20 @@ const monitor = async ({ github, context, core }) => {
 
     console.log(`[${elapsedMin}m] Run: ${run.status} | Jobs: ${completed.length} done, ${inProgress.length} running, ${queued.length} queued, ${failed.length} failed, ${cancelled.length} cancelled`);
 
+    // A held quality force-cancel fires as soon as its siblings settle. This sits
+    // BEFORE every other exit path in the loop: the all-jobs-complete branch
+    // below would otherwise return first and the run would end with no
+    // cancellation annotation naming the failures at all.
+    if (pendingQualityCancel) {
+      const stillRunning = pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
+      if (stillRunning.length === 0) {
+        console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+        await forceCancel(heldQualityFailureMsg);
+        return;
+      }
+      console.log(`[${elapsedMin}m] Force-cancel held: waiting on ${stillRunning.length} no-retry job(s)`);
+    }
+
     // Check if workflow was externally cancelled (mass cancellation)
     if (cancelled.length > 0 && cancelled.length >= completed.length / 2) {
       console.log(`Workflow externally cancelled (${cancelled.length}/${completed.length} jobs cancelled) - exiting`);
@@ -686,6 +737,27 @@ const monitor = async ({ github, context, core }) => {
       });
       if (noRetryVerdict.cancel) {
         console.log(`"${job.name}" matches no-retry pattern${noRetryVerdict.labelImmune ? ' (label-immune)' : ''}`);
+
+        // Drain before cancelling (see pendingNoRetryJobs). Label-immune jobs
+        // keep the old instant kill; everything else waits for its siblings so
+        // one round reports every failing lane instead of the first one.
+        const stillRunning = noRetryVerdict.labelImmune
+          ? []
+          : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
+        if (stillRunning.length > 0) {
+          pendingQualityCancel = true;
+          // Keep the FIRST held message: forceCancel re-fetches the job list and
+          // builds the full roster itself, so this is only the fallback text for
+          // the case where that refetch fails.
+          heldQualityFailureMsg = heldQualityFailureMsg || failureMsg;
+          console.log(
+            `Holding the force-cancel until ${stillRunning.length} sibling no-retry job(s) finish: ` +
+            stillRunning.map(j => `"${j.name}"`).join(', ')
+          );
+          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          continue;
+        }
+
         await forceCancel(failureMsg);
         return;
       }
@@ -795,4 +867,5 @@ module.exports.evaluateBinaryExecGuard = evaluateBinaryExecGuard;
 module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
 module.exports.formatFailureRoster = formatFailureRoster;
 module.exports.evaluateNoRetryCancel = evaluateNoRetryCancel;
+module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
 module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;

@@ -22,10 +22,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
+# MIGRATION_TEST is deliberately absent: it moved from a top-level ci.yml job
+# into ct-tests.yml, so its result now rolls up through TESTS. A failing
+# migration fails the `tests` reusable workflow, which fails RESULT_TESTS here.
 SOFT_REQUIRED=(
     QUALITY REVIEW_GATE STRIPE_SANDBOX PACKAGE_TESTS STAGE_ARTIFACTS
     VALIDATE_INSTALL VALIDATE_PROMOTE TESTS ELITE_RUN_TEST OPS_TESTS
-    MIGRATION_TEST UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW
+    UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW
 )
 
 # Pointer-bump fast path (see .ci/scripts/ci/detect-pointer-bump.sh): the PR

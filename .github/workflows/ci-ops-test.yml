@@ -74,13 +74,14 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      # account: this job checks out `submodules: recursive`, so install-deps.sh
+      # used to install private/account's tree here as a side effect. Keeping it
+      # explicit preserves that; without it the account trees would silently stop
+      # being installed.
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+          account: 'true'
+          build-packages: 'true'
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
@@ -331,15 +332,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
+          build-packages: 'true'
 
       - name: Download renet binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
@@ -474,15 +469,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
+          build-packages: 'true'
 
       - name: Download renet binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1

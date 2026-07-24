@@ -8,11 +8,25 @@ name: Console CT - Tests
 
 on:
   workflow_call:
-    # No inputs: every job here builds a nolicense renet from source on-runner
+    # Every TEST job here builds a nolicense renet from source on-runner
     # (.ci/scripts/infra/build-renet.sh); console is public, so a prebuilt
     # nolicense binary must never ship via artifacts. Only the embed-assets
     # staging is shared, via the renet-embed-assets cache (same key as
     # ci-build-renet.yml).
+    inputs:
+      # The expensive suites run on PR and nightly only. This used to gate the
+      # CALLER (ci.yml's `tests:` job), which is why migration-test could not
+      # live here: on push-to-main the whole workflow was skipped, and D1
+      # migrations must be validated on exactly that path. Gating each job
+      # instead lets migration-test run on push while the E2E legs still do not.
+      full_suite:
+        type: string
+        required: false
+        default: 'true'
+      pointer_bump_only:
+        type: string
+        required: false
+        default: 'false'
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -32,6 +46,8 @@ on:
         required: false
       STRIPE_SANDBOX_WEBHOOK_SECRET:
         required: false
+      CLOUDFLARE_API_TOKEN:
+        required: false
 
 permissions:
   contents: read
@@ -40,25 +56,82 @@ permissions:
 jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
-  # Jobs: test-unit, test-e2e-workers, test-e2e-ceph, test-e2e-ceph-workers,
-  #       test-e2e-k8s, test-e2e-k8s-ceph, test-e2e-k8s-multinode, test-e2e-migrate,
-  #       test-fork-isolation, test-renet, test-account-e2e
+  # Jobs: migration-test, test-unit, test-e2e-workers, test-e2e-ceph,
+  #       test-e2e-ceph-workers, test-e2e-k8s, test-e2e-k8s-ceph,
+  #       test-e2e-k8s-multinode, test-e2e-migrate, test-fork-isolation,
+  #       test-renet, test-account-e2e
   # ============================================================================
-  test-unit:
-    name: Unit
-    runs-on: ubuntu-slim
+
+  # Validates that D1 migrations apply cleanly against a production data clone.
+  # Creates an ephemeral D1 database, clones production, runs migrations, then
+  # tears the clone down.
+  #
+  # NOT gated on full_suite, unlike every other job here. This one used to be a
+  # top-level ci.yml job needing only `initialize`, and it ran on push-to-main --
+  # the exact path that deploys these migrations. Moving it under `full_suite`
+  # would have stopped validating migrations on the release path, which is the
+  # one place the check has to hold.
+  migration-test:
+    name: Migration Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: inputs.pointer_bump_only != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/actions
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,account
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Init account submodule
+        run: git submodule update --init --depth 1 private/account
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+
+      - name: Install wrangler
+        run: |
+          source .ci/config/constants.sh
+          npm install -g "wrangler@${WRANGLER_VERSION}"
+
+      - name: Reap stale migration-test D1 databases
+        run: .ci/scripts/housekeeping/cleanup-stale-d1.sh --max-age 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Test migrations against all regional clones (edge first, then stable)
+        run: .ci/scripts/deploy/test-d1-migrations.sh
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+  test-unit:
+    name: Unit
+    if: inputs.full_suite == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
       - run: .ci/scripts/test/run-unit.sh --coverage
 
   test-e2e-workers:
     name: E2E Workers (${{ matrix.os-image }})
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -132,21 +205,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -239,6 +309,7 @@ jobs:
 
   test-e2e-ceph:
     name: E2E Ceph
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -278,21 +349,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -375,6 +443,7 @@ jobs:
   # renet #78 removed the old 4 GB LUKS-unlock floor).
   test-e2e-ceph-workers:
     name: E2E Ceph Workers
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -417,21 +486,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -520,6 +586,7 @@ jobs:
 
   test-e2e-k8s:
     name: E2E K8s
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -560,21 +627,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -658,6 +722,7 @@ jobs:
 
   test-e2e-k8s-ceph:
     name: E2E K8s Ceph
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -700,21 +765,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -802,6 +864,7 @@ jobs:
 
   test-e2e-k8s-multinode:
     name: E2E K8s Multinode
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -844,21 +907,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -947,6 +1007,7 @@ jobs:
 
   test-e2e-migrate:
     name: E2E Migrate
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -995,21 +1056,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -1113,6 +1171,7 @@ jobs:
 
   test-fork-isolation:
     name: Concurrent Fork Isolation
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     # 30 min covered the bind-isolation phases; the console#440 checkpoint
     # phase (counter warm-up + fork --checkpoint + restore) adds ~3 min.
@@ -1154,21 +1213,18 @@ jobs:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
       - name: Free Disk Space
         run: |
           echo "=== Disk usage before cleanup ==="
           df -h / || true
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
           docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
         run: .ci/scripts/setup/install-cli-global.sh
@@ -1276,6 +1332,7 @@ jobs:
 
   test-renet:
     name: Renet
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -1368,6 +1425,7 @@ jobs:
   # ============================================================================
   test-account-e2e:
     name: Account E2E
+    if: inputs.full_suite == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -1382,11 +1440,9 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
+          account: 'true'
       - run: npm run build:packages
       - name: Install Stripe CLI
         if: env.STRIPE_SANDBOX_SECRET_KEY != ''

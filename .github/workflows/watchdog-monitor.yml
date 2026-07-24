@@ -59,7 +59,12 @@ jobs:
   monitor:
     name: Monitor run ${{ inputs.target_run_id }} (gen ${{ inputs.generation }})
     runs-on: ubuntu-slim
-    timeout-minutes: 15  # hard platform cap; the deadline below leaves headroom under it
+    # 14, not 15: at exactly the platform cap this timeout races the kill and
+    # loses often enough to matter, and losing means CANCELLED-with-no-failed-step
+    # instead of a timeout naming the step. The worst case here is 480s poll +
+    # ~25s AI + <=5min force-cancel wait = 13.4m, which still fits.
+    # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
+    timeout-minutes: 14
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

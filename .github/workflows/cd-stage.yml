@@ -74,10 +74,9 @@ jobs:
       - name: Free runner disk (preinstalled bloat)
         run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
+
+      # Node + deps moved down to Step 4, where they are first used: the
+      # artifact downloads in between need neither.
 
       # -----------------------------------------------------------------------
       # Step 1: Download all build artifacts
@@ -140,11 +139,10 @@ jobs:
       # -----------------------------------------------------------------------
       # Step 4: Build Pages bundle (www + apt/rpm metadata)
       # -----------------------------------------------------------------------
-      - name: Install dependencies
-        run: .ci/scripts/setup/install-deps.sh
-
-      - name: Build packages
-        run: .ci/scripts/setup/build-packages.sh
+      - name: Install dependencies and build packages
+        uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
 
       - name: Assemble pages package
         run: .ci/scripts/build/build-pages.sh --output dist/pages

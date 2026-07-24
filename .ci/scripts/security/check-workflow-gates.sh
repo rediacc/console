@@ -1,6 +1,6 @@
 #!/bin/bash
 # Structural invariants over GitHub Actions workflow YAML that only a real
-# parser can see. Two independent checks, one pyyaml bootstrap.
+# parser can see. Three independent checks, one pyyaml bootstrap.
 #
 # CHECK 1 -- job-level if: needs always()
 #   Audit JOB-LEVEL if: blocks that reference needs.*.result. Prevents the
@@ -32,6 +32,14 @@
 #     c) a caller may not pass a secret/input the callee never declares (dead
 #        wiring: it looks like the value flows, and it does not)
 #
+# CHECK 3 -- ubuntu-slim jobs declare a timeout under the platform cap
+#   ubuntu-slim has a HARD 15-minute job cap. Exceeding it marks the job
+#   CANCELLED with no failed step, which reads as neither pass nor fail: it
+#   poisons CI Complete and leaves the watchdog nothing to classify.
+#   quality-security hit this twice in three runs. Requiring an explicit
+#   timeout-minutes <= 14 turns that silent kill into an ordinary timeout
+#   failure naming the step that hung.
+#
 # Exit 1 on any offender, 2 on setup error.
 
 set -uo pipefail
@@ -50,8 +58,28 @@ log_success() { echo -e "${GREEN}success: $1${NC}"; }
 log_warn() { echo -e "${YELLOW}warn: $1${NC}"; }
 log_info() { echo "info: $1"; }
 
-# Overridable so the gate test can drive both checks against fixture trees.
+# Overridable so the gate test can drive all three checks against fixture trees.
 WORKFLOWS_DIR="${WORKFLOWS_DIR:-$ROOT_DIR/.github/workflows}"
+
+# Ceiling for CHECK 3. One minute under ubuntu-slim's hard 15-minute platform
+# cap, so the job's own timeout wins the race and the failure says which step
+# hung. Not lower: the watchdog generation budget (480s poll + ~25s AI + up to
+# 5min force-cancel wait) is 13.4 min by design.
+SLIM_TIMEOUT_MAX="${SLIM_TIMEOUT_MAX:-14}"
+
+# Anti-vacuity for CHECK 3: a tree with no ubuntu-slim job at all means the check
+# asserted nothing, which must not read as success -- that is how a renamed
+# runner label turns a gate into a no-op. But the guard is scoped to the REAL
+# workflow tree, because the OTHER checks' fixture trees legitimately contain no
+# slim jobs and CHECK 3 must not fail their tests for them. The test drives this
+# explicitly to cover the blind case.
+if [[ -z "${SLIM_TIMEOUT_REQUIRE_COVERAGE:-}" ]]; then
+    if [[ "$WORKFLOWS_DIR" == "$ROOT_DIR/.github/workflows" ]]; then
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=true
+    else
+        SLIM_TIMEOUT_REQUIRE_COVERAGE=false
+    fi
+fi
 
 # Anti-vacuity: a missing directory used to `exit 0` here, which meant a moved
 # or renamed workflow tree turned this gate into a no-op that still reported
@@ -272,6 +300,107 @@ elif [[ $RC -eq 3 ]]; then
 else
     log_error "Reusable-workflow contract violations (see above)."
     log_error "Fix: declare the secret under on.workflow_call.secrets in the callee AND pass it from every caller. An undeclared secret reads as \"\" with no error."
+    FAILED=1
+fi
+
+# --- Check 3 ---------------------------------------------------------------
+log_info "Checking every ubuntu-slim job declares timeout-minutes <= $SLIM_TIMEOUT_MAX"
+
+python3 - "$WORKFLOWS_DIR" "$SLIM_TIMEOUT_MAX" "$SLIM_TIMEOUT_REQUIRE_COVERAGE" <<'PYEOF'
+# ubuntu-slim is a 1-vCPU runner with a HARD 15-minute job cap enforced by the
+# platform, not by us. When a job hits it the run does not fail -- the job is
+# marked CANCELLED with no failed step, which poisons CI Complete and gives the
+# watchdog nothing to classify. quality-security hit this twice in three runs
+# during the 0722-1 wave before it was moved to ubuntu-latest.
+#
+# So every slim job must declare its own timeout BELOW the cap. Then a hang
+# fails as a timeout, in the job that owns it, with a message naming the step.
+# 12 rather than 15 leaves room for the runner's own setup/teardown, which is
+# outside the steps but inside the cap.
+#
+# A job that legitimately needs longer does not get a bigger number here: it
+# gets ubuntu-latest. That is the whole point -- the number is not a dial, it is
+# an assertion that this job fits on this runner.
+import os
+import sys
+import yaml
+
+workflows_dir, limit = sys.argv[1], int(sys.argv[2])
+require_coverage = sys.argv[3] == 'true'
+SLIM = 'ubuntu-slim'
+offenders = []
+checked = 0
+
+names = sorted(
+    f for f in os.listdir(workflows_dir)
+    if f.endswith(('.yml', '.yaml'))
+)
+if not names:
+    print(f'no workflow files under {workflows_dir}', file=sys.stderr)
+    sys.exit(3)
+
+for fname in names:
+    with open(os.path.join(workflows_dir, fname)) as fh:
+        try:
+            doc = yaml.safe_load(fh)
+        except yaml.YAMLError as exc:
+            print(f'{fname}: unparseable YAML: {exc}', file=sys.stderr)
+            sys.exit(3)
+    if not isinstance(doc, dict):
+        continue
+
+    for jid, job in (doc.get('jobs') or {}).items():
+        if not isinstance(job, dict):
+            continue
+        runs_on = job.get('runs-on')
+        # Matrix-driven runners (`runs-on: ${{ matrix.runner }}`) are not
+        # resolvable here; a literal slim label is.
+        labels = runs_on if isinstance(runs_on, list) else [runs_on]
+        if SLIM not in [x for x in labels if isinstance(x, str)]:
+            continue
+
+        checked += 1
+        timeout = job.get('timeout-minutes')
+        if timeout is None:
+            offenders.append(
+                f"{fname}: job '{jid}' runs on {SLIM} without timeout-minutes -- "
+                f"a hang rides to the platform's 15-minute cap and reports as "
+                f"cancelled, not failed"
+            )
+        elif not isinstance(timeout, int):
+            offenders.append(
+                f"{fname}: job '{jid}' has a non-literal timeout-minutes "
+                f"({timeout!r}); this gate cannot verify it stays under the cap"
+            )
+        elif timeout > limit:
+            offenders.append(
+                f"{fname}: job '{jid}' declares timeout-minutes: {timeout} on "
+                f"{SLIM}, above the {limit}-minute ceiling -- move it to "
+                f"ubuntu-latest instead of raising the number"
+            )
+
+if not checked and require_coverage:
+    print(f'no {SLIM} jobs found under {workflows_dir} -- this check is blind',
+          file=sys.stderr)
+    sys.exit(3)
+
+if offenders:
+    for line in offenders:
+        print(line, file=sys.stderr)
+    sys.exit(1)
+
+sys.exit(0)
+PYEOF
+
+RC=$?
+if [[ $RC -eq 0 ]]; then
+    log_success "Every ubuntu-slim job declares timeout-minutes <= $SLIM_TIMEOUT_MAX"
+elif [[ $RC -eq 3 ]]; then
+    log_error "Fix: point WORKFLOWS_DIR at a tree that contains ubuntu-slim jobs; a check with no input cannot pass."
+    FAILED=1
+else
+    log_error "ubuntu-slim timeout violations (see above)."
+    log_error "Fix: add 'timeout-minutes: $SLIM_TIMEOUT_MAX' (or less) to the job, or move it to ubuntu-latest if it genuinely needs longer."
     FAILED=1
 fi
 

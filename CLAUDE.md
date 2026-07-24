@@ -428,10 +428,11 @@ needed for normal `npm run dev` browsing). Credentials:
 (org secrets, scoped to `console`); bucket/domain names are org variables
 `R2_MEDIA_BUCKET`/`MEDIA_CDN_DOMAIN`.
 
-Remaining open item: the git-history rewrite (`git filter-repo` to shrink
-`.git` itself, since the pre-migration commits still contain the old blobs)
-is a separate, later, human-supervised phase — not done as part of this
-migration.
+Remaining open item, tracked in
+[#532](https://github.com/rediacc/console/issues/532): the git-history rewrite
+that shrinks `.git` itself. CI is insulated from it (every `fetch-depth: 0`
+checkout passes `filter: blob:none`), but a fresh clone still transfers the old
+blobs.
 
 ## CI/CD Pipeline
 

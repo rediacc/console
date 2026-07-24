@@ -192,13 +192,13 @@ test_workflow_sets_the_required_env_var() {
 test_roster_lists_every_failed_job() {
     local out
     out=$(run_roster '[
-      {"name":"Quality / Lint","id":111},
-      {"name":"Quality / TypeScript","id":222},
+      {"name":"Quality / Code","id":111},
+      {"name":"Quality / Content","id":222},
       {"name":"Tests / Unit","id":333}
     ]')
     assert_contains "$out" "3 jobs failed:" "summary must count all failures"
-    assert_contains "$out" '"Quality / Lint"' "summary/banner names the first failure"
-    assert_contains "$out" '"Quality / TypeScript"' "the second failure must not be dropped"
+    assert_contains "$out" '"Quality / Code"' "summary/banner names the first failure"
+    assert_contains "$out" '"Quality / Content"' "the second failure must not be dropped"
     assert_contains "$out" '"Tests / Unit"' "the third failure must not be dropped"
     assert_contains "$out" "runs/42/job/222" "each failed job carries its direct job URL"
     log_pass "roster enumerates every failed job in the poll"
@@ -207,8 +207,8 @@ test_roster_lists_every_failed_job() {
 # A single failure keeps the original, unpluralized phrasing.
 test_roster_single_failure_reads_naturally() {
     local out
-    out=$(run_roster '[{"name":"Quality / Lint","id":111}]')
-    assert_contains "$out" "Job failed: \"Quality / Lint\"" "single failure keeps the singular message"
+    out=$(run_roster '[{"name":"Quality / Code","id":111}]')
+    assert_contains "$out" "Job failed: \"Quality / Code\"" "single failure keeps the singular message"
     log_pass "single-failure roster reads naturally"
 }
 
