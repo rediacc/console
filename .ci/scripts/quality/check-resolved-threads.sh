@@ -58,14 +58,35 @@ query($owner: String!, $repo: String!, $pr: Int!) {
 
 log_step "Fetching review threads via GraphQL..."
 
-# Execute GraphQL query
-RESULT=$(gh api graphql \
-    -f query="$QUERY" \
-    -f owner="$OWNER" \
-    -f repo="$REPO" \
-    -F pr="$PR_NUMBER" 2>/dev/null || echo '{"errors": [{"message": "GraphQL query failed"}]}')
+# Execute GraphQL query, retrying on a transient failure. `gh api graphql` can
+# exit 0 while returning a truncated/malformed body (an upstream hiccup), so
+# a command-exit-code fallback alone misses it -- validate the body is
+# PARSEABLE JSON on each attempt, not just that the command returned.
+RESULT=""
+attempt=1
+while [[ $attempt -le 3 ]]; do
+    CANDIDATE=$(gh api graphql \
+        -f query="$QUERY" \
+        -f owner="$OWNER" \
+        -f repo="$REPO" \
+        -F pr="$PR_NUMBER" 2>/dev/null || true)
+    if [[ -n "$CANDIDATE" ]] && echo "$CANDIDATE" | jq -e . >/dev/null 2>&1; then
+        RESULT="$CANDIDATE"
+        break
+    fi
+    if [[ $attempt -lt 3 ]]; then
+        log_warn "GraphQL response invalid or empty (attempt $attempt/3), retrying..."
+        sleep $((attempt * 3))
+    fi
+    attempt=$((attempt + 1))
+done
+[[ -z "$RESULT" ]] && RESULT='{"errors": [{"message": "GraphQL query failed or returned invalid JSON after 3 attempts"}]}'
 
-# Check for errors
+# Check for errors. RESULT is guaranteed valid JSON at this point (either a
+# real response or the sentinel above), so this jq call cannot itself fail to
+# parse -- it previously could, and a parse-error exit from `jq -e` looks
+# identical to "no .errors field" once stderr is suppressed, silently falling
+# through to a hard, confusing crash further down instead of this clear exit.
 if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
     ERROR_MSG=$(echo "$RESULT" | jq -r '.errors[0].message // "Unknown error"')
     log_error "GraphQL query failed: $ERROR_MSG"
