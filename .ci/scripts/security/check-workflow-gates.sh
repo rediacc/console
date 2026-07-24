@@ -360,21 +360,28 @@ for fname in names:
             continue
 
         checked += 1
-        timeout = job.get('timeout-minutes')
-        if timeout is None:
+        # Named `declared`, not `timeout`: check-commands.sh scans this file as
+        # bash and has no heredoc scoping, so a Python line reading
+        # `timeout = ...` is indistinguishable from the bash command invocation
+        # `timeout = ...` actually is. That gate is RIGHT about bash and must not
+        # be taught to skip heredoc bodies -- a `ssh host <<'EOF' ... timeout 5`
+        # body is exactly the remote-minimal-environment case it exists to
+        # catch. Avoiding the collision is the fix; widening the gate is not.
+        declared = job.get('timeout-minutes')
+        if declared is None:
             offenders.append(
                 f"{fname}: job '{jid}' runs on {SLIM} without timeout-minutes -- "
                 f"a hang rides to the platform's 15-minute cap and reports as "
                 f"cancelled, not failed"
             )
-        elif not isinstance(timeout, int):
+        elif not isinstance(declared, int):
             offenders.append(
                 f"{fname}: job '{jid}' has a non-literal timeout-minutes "
-                f"({timeout!r}); this gate cannot verify it stays under the cap"
+                f"({declared!r}); this gate cannot verify it stays under the cap"
             )
-        elif timeout > limit:
+        elif declared > limit:
             offenders.append(
-                f"{fname}: job '{jid}' declares timeout-minutes: {timeout} on "
+                f"{fname}: job '{jid}' declares timeout-minutes: {declared} on "
                 f"{SLIM}, above the {limit}-minute ceiling -- move it to "
                 f"ubuntu-latest instead of raising the number"
             )
