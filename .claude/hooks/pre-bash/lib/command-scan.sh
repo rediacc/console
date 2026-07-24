@@ -51,9 +51,17 @@ hook_scan_target() {
     # Extract shell-wrapper payloads and STRIP the wrapper prefix + quotes so
     # the inner command sits at line start (a command position for the anchor):
     # `sh -c 'gh pr merge --admin'` -> `gh pr merge --admin `.
+    # WRAPPER_RE tolerates intervening flags before the final `-c`-ending
+    # token, bundled (`bash -lc`) or separate (`bash -eux -c`, `sh -eu -c`) --
+    # review finding (round 39): the old `[[:space:]]+-c[[:space:]]` required
+    # the shell name and -c to be IMMEDIATELY adjacent, so `bash -lc '...'`
+    # matched neither this extraction NOR the prose-strip (which erases the
+    # quoted payload unconditionally), leaving zero trace of the wrapped
+    # command in either half of the scan target -- a total bypass.
+    local WRAPPER_RE='(sh|bash|dash|zsh|ash|ksh)([[:space:]]+-[[:alnum:]]+)*[[:space:]]-[[:alnum:]]*c[[:space:]].*|eval[[:space:]].*'
     wrapped=$(printf '%s' "$nohd" | tr '\n' ' ' |
-        grep -oE '(sh|bash|dash|zsh|ash|ksh)[[:space:]]+-c[[:space:]].*|eval[[:space:]].*' |
-        sed -E -e 's/^(sh|bash|dash|zsh|ash|ksh)[[:space:]]+-c[[:space:]]+//; s/^eval[[:space:]]+//' -e "s/['\"]/ /g")
+        grep -oE "$WRAPPER_RE" |
+        sed -E -e 's/^(sh|bash|dash|zsh|ash|ksh)([[:space:]]+-[[:alnum:]]+)*[[:space:]]-[[:alnum:]]*c[[:space:]]+//; s/^eval[[:space:]]+//' -e "s/['\"]/ /g")
     printf '%s\n%s' "$stripped" "$wrapped"
 }
 
