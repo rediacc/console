@@ -36,6 +36,17 @@ jobs:
       (github.event_name == 'pull_request' &&
        github.event.pull_request.draft == false &&
        github.event.pull_request.head.repo.full_name == github.repository)
+    # A called workflow cannot exceed the CALLER's grant, and this workflow's
+    # top-level default is contents:read — so without restating them here the
+    # reusable's pull-requests/issues/checks requests exceed the caller and
+    # GitHub fails the run at startup with no job and no log (observed: run
+    # 30064158589, startup_failure). Job-level keeps the widening scoped to
+    # the review call instead of raising the whole workflow's default.
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: read
     uses: ./.github/workflows/claude-review-reusable.yml
     with:
       required_check: CI Complete
