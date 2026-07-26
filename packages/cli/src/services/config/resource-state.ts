@@ -19,7 +19,12 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { Placement, RdcConfig, RepoFamily, RepoRecord } from '@rediacc/shared/config-schema';
 import { stripStateForPush } from '../../adapters/config-field-crypto.js';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
-import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
+import {
+  type RemoteConfigAdapter,
+  RemoteUnreachableError,
+  RemoteVersionConflictError,
+} from '../../adapters/remote-config-adapter.js';
+import { t } from '../../i18n/index.js';
 import type {
   ArchivedRepository,
   MachineConfig,
@@ -27,6 +32,7 @@ import type {
   SSHContent,
   StorageConfig,
 } from '../../types/index.js';
+import { mergeRemoteIntoCache } from './remote-cache.js';
 
 // =============================================================================
 // Flatten / decompose: v3 families + state.repos  <->  flat composite view
@@ -308,16 +314,24 @@ export class LocalResourceState implements ResourceState {
 // RemoteResourceState
 // =============================================================================
 
+/** Bounded 409-replay attempts before surfacing the conflict to the user. */
+const REMOTE_PUSH_MAX_ATTEMPTS = 3;
+
 /**
  * ResourceState backed by the remote encrypted config store. Mutations push the
  * REAL on-disk config with `state` stripped (spec 04 §1.3) — never a
  * reconstructed subset, so no bucket can be dropped.
+ *
+ * Writes fail CLOSED when the server is unreachable (no local write, no queue
+ * — a queued write would silently diverge from the server), and replay a 409
+ * up to 3 times by re-pulling and re-applying ONLY the mutated bucket
+ * (bucket-level last-write-wins; cross-bucket concurrent writes survive).
  */
 export class RemoteResourceState implements ResourceState {
   private readonly adapter: RemoteConfigAdapter;
   private readonly configName: string;
   private version: number;
-  private readonly state: LocalState;
+  private state: LocalState;
 
   private constructor(
     adapter: RemoteConfigAdapter,
@@ -363,34 +377,99 @@ export class RemoteResourceState implements ResourceState {
 
   async setMachines(machines: Record<string, MachineConfig>): Promise<void> {
     this.state.machines = machines;
-    await this.persist();
+    await this.persist('machines');
   }
 
   async setStorages(storages: Record<string, StorageConfig>): Promise<void> {
     this.state.storages = storages;
-    await this.persist();
+    await this.persist('storages');
   }
 
   async setRepositories(repos: Record<string, RepositoryConfig>): Promise<void> {
     this.state.repositories = repos;
-    await this.persist();
+    await this.persist('repositories');
   }
 
   async setDeletedRepositories(repos: ArchivedRepository[]): Promise<void> {
     this.state.deletedRepositories = repos;
-    await this.persist();
+    await this.persist('deletedRepositories');
   }
 
   async setSSH(ssh: SSHContent): Promise<void> {
     this.state.sshContent = ssh;
-    await this.persist();
+    await this.persist('sshContent');
   }
 
-  private async persist(): Promise<void> {
+  /**
+   * Push the mutation, replaying version conflicts per the class doc. On
+   * success the on-disk offline cache follows the push (merged carries the
+   * updated `state`, so the runtime half is preserved locally even though the
+   * push strips it).
+   */
+  private async persist(mutated: keyof LocalState): Promise<void> {
+    let conflict: Error | null = null;
+    for (let attempt = 1; attempt <= REMOTE_PUSH_MAX_ATTEMPTS; attempt++) {
+      const result = await this.pushOnce();
+      if (result === null) return;
+      conflict = result;
+      if (attempt < REMOTE_PUSH_MAX_ATTEMPTS) await this.rebaseOnFreshPull(mutated);
+    }
+    throw new Error(
+      t('commands.config.remote.conflictRetryExhausted', { config: this.configName }),
+      { cause: conflict }
+    );
+  }
+
+  /**
+   * One push attempt from the current on-disk config + in-memory view. On
+   * success writes the cache and returns null; a version conflict is RETURNED
+   * (not thrown) so the replay loop stays flat; anything else is thrown, with
+   * unreachable servers converted to the fail-closed error.
+   */
+  private async pushOnce(): Promise<RemoteVersionConflictError | null> {
     const base = await configFileStorage.loadDecrypted(this.configName);
     const merged = persistPatch(this.state, base);
     const pushDoc = stripStateForPush(merged);
-    const result = await this.adapter.push(pushDoc, this.version);
-    this.version = result.version;
+    try {
+      const result = await this.adapter.push(pushDoc, this.version);
+      this.version = result.version;
+      await configFileStorage.updateCache(this.configName, () =>
+        mergeRemoteIntoCache(merged, pushDoc, result.version)
+      );
+      return null;
+    } catch (error) {
+      if (error instanceof RemoteVersionConflictError) return error;
+      throw this.toWriteError(error);
+    }
+  }
+
+  /**
+   * Another device pushed since our snapshot: re-pull, rebuild the view from
+   * the fresh config, and re-apply ONLY this mutation's bucket. An unreachable
+   * server during the re-pull fails closed the same way as the push.
+   */
+  private async rebaseOnFreshPull(mutated: keyof LocalState): Promise<void> {
+    let fresh: Awaited<ReturnType<RemoteConfigAdapter['pull']>>;
+    try {
+      fresh = await this.adapter.pull();
+    } catch (error) {
+      throw this.toWriteError(error);
+    }
+    this.state = { ...loadLocalState(fresh.config), [mutated]: this.state[mutated] };
+    this.version = fresh.version;
+  }
+
+  /** Convert an unreachable-server error into the fail-closed user error. */
+  private toWriteError(error: unknown): unknown {
+    if (error instanceof RemoteUnreachableError) {
+      return new Error(
+        t('commands.config.remote.writeFailedClosed', {
+          config: this.configName,
+          server: error.apiUrl,
+        }),
+        { cause: error }
+      );
+    }
+    return error;
   }
 }

@@ -4,8 +4,8 @@ description: "변조 방지 라이선스 발급, 온프레미스를 위한 위�
 category: "Guides"
 order: 8
 language: ko
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # 라이선스 체인 및 위임
@@ -18,7 +18,7 @@ Rediacc는 라이선스 발급에 변조 방지 해시 체인을, 온프레미�
 
 1. **시퀀스 번호**는 구독당 전역적으로 단조 증가합니다. 항목을 건너뛰거나 순서를 변경하면 체인이 깨집니다.
 2. **체인 해시**는 각 항목을 모든 이전 항목과 바인딩합니다. 과거 항목을 수정하면 그 이후의 모든 항목이 무효화됩니다.
-3. **Renet은 구독당 확인한 최고 시퀀스를 저장합니다**. 시퀀스를 롤백하는 서버는 즉시 감지됩니다.
+3. **Renet은 서명 키와 구독별로 확인한 최고 시퀀스를 저장합니다**. 시퀀스를 롤백하는 서버는 즉시 감지됩니다.
 
 ## 라이선스 발급 방법
 
@@ -35,7 +35,7 @@ CLI가 저장소 라이선스를 요청하면 계정 서버는 다음을 수행�
 
 ## Renet의 검증 방법
 
-Renet을 실행하는 각 머신은 `{licenseDir}/chain-state.json`에 마지막으로 알려진 체인 상태를 저장합니다. 모든 라이선스 검증 시 Renet은 다음을 확인합니다.
+Renet을 실행하는 각 머신은 `{licenseDir}/chain-state.json`(즉 `/var/lib/rediacc/license/chain-state.json`, 저장소별 `repos/` 디렉터리와 같은 레벨)에 마지막으로 알려진 체인 상태를 저장합니다. 체인 상태는 `"<keyId>:<subscriptionId>"` 형태의 키로 서명 키와 구독별로 범위가 지정되므로, 서로 다른 키로 서명된 유니버스는 시퀀스를 독립적으로 추적합니다. 모든 라이선스 검증 시 Renet은 다음을 확인합니다.
 
 | 확인 | 실패 의미 |
 |---|---|
@@ -57,7 +57,7 @@ Renet을 실행하는 각 머신은 `{licenseDir}/chain-state.json`에 마지막
 - `subscriptionId` -- 이 인증서가 적용되는 구독
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- 플랜 제한 내장
 - `maxTotalIssuances` -- 체인 시퀀스 번호의 상한
-- `delegatedPublicKey` -- 온프레미스 서버의 Ed25519 공개 키(SPKI base64)
+- `delegatedPublicKey` -- 온프레미스 서버의 Ed25519 공개 키(SPKI base64). 이 키의 16자리 16진수 지문(원시 키에 대한 `SHA-256`의 처음 8바이트)이, 이 키로 서명되는 모든 라이선스 블롭에 기록되는 `publicKeyId`입니다. `publicKeyId`는 항상 실제 키 지문이며, `"default"`와 같은 자리표시자가 되는 일은 없습니다.
 - `genesisHash` -- 체인 시작점(이전 인증서에서의 계속 또는 "genesis")
 - `genesisSequence` -- 발급 시 체인 시퀀스. 전송 중 체인이 진행된 경우 새 인증서가 로컬 발급 원장의 알려진 항목과 연결되는지 `/onprem/cert-upload`가 검증할 때 사용됩니다. 하위 호환성을 위해 선택적입니다(없으면 0으로 처리됨).
 - `validFrom`, `validUntil` -- 유효 기간(아래 유효성 정책에 의해 규정됨)
@@ -73,16 +73,21 @@ Renet을 실행하는 각 머신은 `{licenseDir}/chain-state.json`에 마지막
    ```
 3. 업스트림이 마스터 키로 인증서에 서명하고 반환합니다.
 4. 온프레미스 서버는 인증서와 개인 키를 저장하고 라이선스에 서명할 준비를 합니다.
-5. CLI가 온프레미스 서버에 라이선스를 요청하면 서버는 위임 키로 서명하고 인증서에 대한 참조를 포함합니다.
-6. Renet은 **2단계 검증**을 수행합니다.
+5. CLI가 온프레미스 서버에 라이선스를 요청하면 서버는 위임 키로 서명하고, **위임 인증서 전체를 라이선스 블롭 안에 임베드합니다**(`delegationCert` 필드). 인증서는 별도로 가져오지 않으며, 모든 저장소 라이선스에 함께 포함되어 전달됩니다.
+6. Renet은 다음 순서로 **2단계 검증**을 수행합니다.
    - 내장된 업스트림 마스터 키에 대해 인증서의 서명을 검증합니다.
+   - 인증서의 유효 기간(`validFrom` / `validUntil`)을 성장 작업(`repo create`, `fork`, `resize`, `expand`)과 백업 전송(`repo push`, `pull`, backups)에 대해 강제합니다. 운영 계층(`repo up`, `up all`, autostart)은 이 유효 기간 검사만 건너뛰며, 이는 이미 라이선스 만료 검사를 건너뛰는 방식과 같습니다. 실행 중인 워크로드는 인증서가 만료되었다는 이유만으로 중단되지 않지만, 만료된 인증서는 새로운 어떤 작업도 승인할 수 없습니다. 서명, 키 바인딩, 그 밖의 모든 인증서 제약은 모든 계층에서 계속 강제됩니다.
+   - `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId`(16자리 16진수 키 지문)를 요구합니다. 이렇게 하면 인증서는 자신이 위임한 바로 그 키로 서명된 라이선스만 보증할 수 있습니다.
    - 인증서의 위임 키에 대해 블롭의 서명을 검증합니다.
-   - `blob.sequence <= cert.maxTotalIssuances`를 확인합니다.
+   - 인증서의 제약(구독 일치, 플랜 일치, 크기 상한 `maxRepositorySizeGb`, `blob.sequence <= cert.maxTotalIssuances`)을 강제합니다.
    - 모든 표준 체인 확인을 적용합니다.
+
+인증서 검증 실패는 전용 사유로 즉시 실패 처리됩니다: `cert_expired`(유효 기간 밖) 또는 `cert_invalid`(마스터 키 서명 오류 또는 제약 위반)입니다. 이들은 `invalid_signature`보다 **먼저** 확인되므로 인증서 사유가 우선합니다.
 
 온프레미스 서버는 다음을 할 수 없습니다.
 - 위임 인증서의 플랜 제한 외의 라이선스 위조(renet이 거부).
 - `maxTotalIssuances` 이상의 총 작업 발급(renet이 시퀀스 오버플로 거부).
+- 인증서의 `validUntil`이 지난 뒤에도 실행 가능한 라이선스에 계속 서명(만료 확인이 생략되는 작업에서도 이 기간은 강제됩니다).
 - 인증서 수정(업스트림 서명이 깨짐).
 
 ## 유효성 정책

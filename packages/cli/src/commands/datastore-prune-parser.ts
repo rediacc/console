@@ -54,6 +54,12 @@ export function parseDatastorePruneOutput(stdout: string): Record<string, unknow
   const cleaned = stdout
     .split('\n')
     .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, ''))
+    // Drop logrus text lines. The renet relay merges the sub-command's stderr
+    // into stdout, so under load a `time="…" level=info msg="…"` line can land
+    // BETWEEN the pretty-printed JSON's lines — inside the brace span — and
+    // break the parse (observed intermittently on `repo trim` right after
+    // heavy I/O; rediacc/console#424 sequence run).
+    .filter((line) => !/^time="[^"]*" level=\w+/.test(line))
     .join('\n')
     .trim();
 

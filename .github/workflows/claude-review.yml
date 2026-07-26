@@ -1,0 +1,54 @@
+name: Claude Review
+
+# Thin caller: all review mechanics live in claude-review-reusable.yml (the
+# single source shared with the submodule repos' callers). Console keeps its
+# two entry points -- Console CI green while ready, and the ready-flip itself
+# -- and its "CI Complete" green gate. INVARIANT (operator ruling
+# 2026-07-22): a review fires ONLY for a non-draft PR whose CURRENT head has
+# green CI at decision time; the authoritative gating (same-SHA marker dedup,
+# pointer-bump skip) lives in the gate script inside the reusable.
+
+on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+  pull_request:
+    types: [ready_for_review]
+
+permissions:
+  contents: read
+
+# One review pipeline per head branch; a newer green push supersedes an
+# in-flight review of the old head.
+concurrency:
+  group: claude-review-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Pre-filter only; the authoritative decision is the gate script. Fork
+    # guard: workflow_run executes in base-repo context WITH secrets.
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    # A called workflow cannot exceed the CALLER's grant, and this workflow's
+    # top-level default is contents:read — so without restating them here the
+    # reusable's pull-requests/issues/checks requests exceed the caller and
+    # GitHub fails the run at startup with no job and no log (observed: run
+    # 30064158589, startup_failure). Job-level keeps the widening scoped to
+    # the review call instead of raising the whole workflow's default.
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      checks: read
+    uses: ./.github/workflows/claude-review-reusable.yml
+    with:
+      required_check: CI Complete
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

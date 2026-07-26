@@ -15,7 +15,7 @@ jobs:
   ops-vm-provision:
     name: OPS Provision (${{ matrix.name }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
+    timeout-minutes: 90
     strategy:
       matrix:
         include:
@@ -24,6 +24,13 @@ jobs:
             arch: x86_64
             full_test: true
     steps:
+      # Same preinstalled-bloat removal ct-tests.yml uses (5 sites): this job
+      # (VM images + renet artifacts + 18 tutorials of casts) crashed the
+      # runner's own worker with ENOSPC mid-sequence (run 30017108104
+      # attempt 1 -- no logs, no artifacts, diag writer itself failed).
+      - name: Free runner disk (preinstalled bloat)
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -43,13 +50,13 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
 
       - name: Login to GHCR
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -67,18 +74,42 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      # account: this job checks out `submodules: recursive`, so install-deps.sh
+      # used to install private/account's tree here as a side effect. Keeping it
+      # explicit preserves that; without it the account trees would silently stop
+      # being installed.
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/setup/build-packages.sh
+          account: 'true'
+          build-packages: 'true'
 
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+      # Staged embed-assets cache, shared with Build (Renet) via the same key
+      # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
+      # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
+      # builder staging. The nolicense go build itself stays on-runner:
+      # console is public, so dev binaries must never be uploaded as artifacts.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Build renet
         run: .ci/scripts/infra/build-renet.sh --nolicense
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+      - name: Make renet resolvable without config
+        # The tutorial scripts below wipe ~/.config/rediacc/rediacc.json
+        # (which carries renetPath) in their pre-recording setup; the CLI
+        # then falls back to resolving `renet` from PATH
+        # (packages/cli/src/services/renet/renet-execution.ts). A symlink in
+        # /usr/local/bin covers both unprivileged steps and the sudo steps
+        # (`ops down` after the wipe), which see secure_path, not GITHUB_PATH.
+        run: sudo ln -sf "$RENET_BINARY" /usr/local/bin/renet
 
       # eBPF socket-isolation behavioral tests. These load the production
       # BPF objects, attach to a fresh test cgroup, and exercise real
@@ -142,6 +173,13 @@ jobs:
           echo "$STATUS"
           BRIDGE_IP=$(echo "$STATUS" | jq -r '.data.vms[0].ip')
           echo "bridge_ip=$BRIDGE_IP" >> "$GITHUB_OUTPUT"
+          # `ops status` lists every CONFIGURED VM (absent ones included), so
+          # select workers by id, never by array position. Worker 12 does not
+          # exist yet at this point — its IP still resolves from the config.
+          WORKER_IP=$(echo "$STATUS" | jq -r '.data.vms[] | select(.id == 11) | .ip')
+          echo "worker_ip=$WORKER_IP" >> "$GITHUB_OUTPUT"
+          WORKER2_IP=$(echo "$STATUS" | jq -r '.data.vms[] | select(.id == 12) | .ip')
+          echo "worker2_ip=$WORKER2_IP" >> "$GITHUB_OUTPUT"
 
       - name: "Verify: ping connectivity"
         run: ping -c 3 -W 5 "${{ steps.status.outputs.bridge_ip }}"
@@ -152,6 +190,105 @@ jobs:
           SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
           CHOWN_PATH: ${{ runner.temp }}/renet
           ATTEMPTS: 15
+
+      # ── Tutorial sequence validation (#424) ─────────────────────
+      # Runs EVERY tutorial script sequentially, in website order, against the
+      # cluster provisioned above — exit codes are the verdict (each script is
+      # set -euo pipefail and run_cmd aborts on the first failing command).
+      # Cross-tutorial machine state is the point: renet#60 escaped because
+      # every command passed alone and only the sequence broke (EADDRINUSE on
+      # `repo fork --up`). Per-command tests and the static check:ci-tutorial-*
+      # gates are structurally blind to this.
+      #
+      # Single source of truth: .ci/tutorials/run-sequence.sh derives the list
+      # and order from the docs' `order:` frontmatter and fails on doc↔script
+      # drift, so adding/removing/reordering a tutorial updates this job
+      # automatically. Deliberately INSIDE ops-vm-provision: a separate job
+      # means a second runner reprovisioning the cluster (~14 min), doubling
+      # the VM bill.
+      - name: "Tutorial prep: add second worker"
+        # ssh-keys, delta-transfer, and live-migration use a second machine.
+        # Idempotent over the --basic cluster: existing VMs are left alone,
+        # only worker 12 is created. Ceph nodes stay disabled.
+        run: |
+          sudo -E env VM_CEPH_NODES= node packages/cli/dist/cli-bundle.cjs \
+            ops up --skip-orchestration -o json
+
+      - name: "Tutorial prep: start RustFS S3 on bridge"
+        # backup-restore pushes to an S3-compatible store; the tutorial's
+        # default endpoint is the bridge VM at :9000. RustFS is a renet-managed
+        # CONTAINER on the bridge, and the cluster came up --skip-orchestration
+        # (workers get docker later via `rdc machine setup` in the tutorial
+        # preambles -- that is part of what the sequence proves). The bridge is
+        # not a tutorial target, so give it docker here the same way
+        # orchestration would (VM id 1 = bridge; first live run failed with
+        # "sudo: docker: command not found").
+        # install-renet first: `ops docker install` runs renet ON the VM at
+        # /usr/lib/rediacc/renet/current, which orchestration would have
+        # deployed; under --skip-orchestration nothing has (round-7 red:
+        # "sudo: /usr/lib/rediacc/renet/current/renet: command not found").
+        run: |
+          "$RENET_BINARY" ops service install-renet 1
+          "$RENET_BINARY" ops docker install 1
+          "$RENET_BINARY" ops rustfs start
+          "$RENET_BINARY" ops rustfs create-bucket rediacc-test
+
+      - name: "Tutorial prep: Docker Hub auth on worker VMs"
+        # `rdc repo up` runs renet via sudo on the worker, so image pulls
+        # through the per-repo daemon read root's docker config. Written over
+        # SSH as a raw file because docker is not installed on the VMs until
+        # `rdc machine setup` runs inside the tutorials' preambles.
+        env:
+          SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
+          WORKER_IP: ${{ steps.status.outputs.worker_ip }}
+          WORKER2_IP: ${{ steps.status.outputs.worker2_ip }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          AUTH=$(printf '%s:%s' "$DOCKERHUB_USERNAME" "$DOCKERHUB_TOKEN" | base64 -w0)
+          for ip in "$WORKER_IP" "$WORKER2_IP"; do
+            printf '{"auths":{"https://index.docker.io/v1/":{"auth":"%s"}}}' "$AUTH" |
+              ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+                "$(whoami)@$ip" \
+                'sudo mkdir -p /root/.docker && sudo tee /root/.docker/config.json >/dev/null && sudo chmod 600 /root/.docker/config.json'
+          done
+
+      - name: "Tutorial prep: default SSH identity"
+        # The ssh-keys tutorial's ssh-copy-id authenticates with the caller's
+        # default identity; give the runner user one.
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa" ~/.ssh/id_rsa
+          cp "$RUNNER_TEMP/renet/staging/.ssh/id_rsa.pub" ~/.ssh/id_rsa.pub
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: "Tutorial sequence (all tutorials, website order)"
+        env:
+          TUTORIAL_RDC_CMD: node ${{ github.workspace }}/packages/cli/dist/cli-bundle.cjs
+          TUTORIAL_MACHINE_IP: ${{ steps.status.outputs.worker_ip }}
+          TUTORIAL_BACKUP_HOST: ${{ steps.status.outputs.worker2_ip }}
+          TUTORIAL_SSH_KEY: ${{ runner.temp }}/renet/staging/.ssh/id_rsa
+          TUTORIAL_S3_ENDPOINT: http://${{ steps.status.outputs.bridge_ip }}:9000
+          TUTORIAL_CHAR_DELAY: '0'
+          TUTORIAL_LOG_DIR: ${{ runner.temp }}/tutorial-logs
+          # V8 compile cache: ~120ms of bundle compilation per rdc invocation,
+          # paid ~200 times across the sequence without it.
+          NODE_COMPILE_CACHE: ${{ runner.temp }}/v8-compile-cache
+        run: |
+          TUTORIAL_MACHINE_USER="$(whoami)"
+          TUTORIAL_BACKUP_USER="$(whoami)"
+          export TUTORIAL_MACHINE_USER TUTORIAL_BACKUP_USER
+          .ci/tutorials/run-sequence.sh
+
+      - name: Upload tutorial sequence logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tutorial-sequence-logs-${{ github.sha }}
+          path: ${{ runner.temp }}/tutorial-logs/
+          retention-days: 30
+          if-no-files-found: ignore
+
       - name: "Test: rdc ops down"
         if: always()
         run: sudo -E node packages/cli/dist/cli-bundle.cjs ops down -o json || true
@@ -195,15 +332,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
+          build-packages: 'true'
 
       - name: Download renet binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
@@ -338,15 +469,9 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        shell: bash
+          build-packages: 'true'
 
       - name: Download renet binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1

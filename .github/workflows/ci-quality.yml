@@ -1,5 +1,48 @@
 name: Console CI - Quality
 
+# ==============================================================================
+# TEN LANES, NOT THIRTY-THREE JOBS
+# ==============================================================================
+# This workflow used to be 33 one-gate-per-job entries. Measured on run
+# 30064285223: 4307s of runner time, of which 3042s (73%) was setup rather than
+# gate work, against a hard 20-slot free-tier concurrency cap that was pegged at
+# exactly 20/20 for the whole phase (the last job started 2m19s late purely from
+# queueing). The gates themselves were 1153s.
+#
+# Two structural fixes, applied together:
+#   1. ./.github/actions/setup-workspace caches node_modules instead of
+#      rebuilding it 24 times (see that action for the measurements).
+#   2. Gates are grouped into lanes by SETUP CLASS -- what a gate needs on disk
+#      (bare checkout / node / node+submodules / node+build / go), not by
+#      subject matter. A lane pays the setup cost once for all of its gates.
+#
+# RULES FOR EDITING A LANE, in order of how easy they are to get wrong:
+#
+#   a. Every gate step carries `if: ${{ !cancelled() && steps.setup.outcome ==
+#      'success' }}`. The `!cancelled()` half is what makes a lane report ALL of
+#      its failures in one round instead of stopping at the first -- without it,
+#      grouping would make CI strictly less informative than it was. The
+#      `steps.setup` half stops a failed install from cascading into twenty
+#      confusing gate failures. `continue-on-error` is banned by
+#      check-workflows.sh and is NOT the same thing: it would make the lane pass.
+#
+#   b. A lane takes the STRICTEST requirement of its members: runner, app-token
+#      preset, submodule checkout, timeout. Never widen a token to fit a gate
+#      into a lane -- move the gate, or leave it alone. quality-branch is alone
+#      precisely because it is the only `push`-preset token in CI.
+#
+#   c. ubuntu-slim has a HARD 15-minute job cap that kills the job as
+#      "cancelled" with no failed step. Slim lanes therefore declare
+#      `timeout-minutes: 12` so they fail with their own message first. This is
+#      enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh; a
+#      slim job without a <=12 timeout is a red gate, not a style nit.
+#
+#   d. Job names are load-bearing for the watchdog:
+#      WATCHDOG_NO_RETRY_PATTERNS is 'Quality,Review Gate' matched with
+#      String.includes, so every job here is no-retry by name. Keep the
+#      `Quality / ` prefix.
+# ==============================================================================
+
 on:
   workflow_call:
     inputs:
@@ -44,9 +87,115 @@ permissions:
   contents: read
 
 jobs:
+  # ============================================================================
+  # L1 STATIC -- no node, no dependencies, bare checkout.
+  # Absorbs: editorconfig, compose-env, audit-coverage, shell, attribution,
+  #          pr-description.
+  # ============================================================================
+  quality-static:
+    name: Static
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
+    if: inputs.is_bot != 'true'
+    steps:
+      - id: setup
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Only pr-description needs a token, and only on a PR. Minting it here
+      # keeps the lane at the narrowest preset any member requires.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: pr-read   # gh api reads in check-pr-description.sh
+          repositories: console
+
+      - name: Install shfmt
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
+        # only surfaced later as a bare "shfmt is not installed" the watchdog
+        # cannot classify as network. Verify the binary here so an install
+        # failure is loud in the step that owns it.
+        run: |
+          curl -sS https://webi.sh/shfmt | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/shfmt" --version
+
+      - name: EditorConfig
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-editorconfig.sh
+
+      - name: Compose env
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-compose-env.sh
+
+      - name: Check audit logging coverage for CLI operations
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-audit-coverage.sh
+
+      - name: Shell lint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/shellcheck.sh
+
+      - name: Shell format
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/shfmt.sh
+
+      - name: Shell commands exist on the runner image
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/check-commands.sh
+
+      # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
+      # pipefail` script on empty input. Written after three such outages in
+      # one day.
+      - name: Silent-failure patterns
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-silent-failures
+
+      # Unit tests for shell helpers. Deterministic, no network.
+      - name: Write-once guard tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-write-once-guard.sh
+
+      - name: Install-script tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-install-script.sh
+
+      # Pure bash, so it is called by path: this lane has no node_modules and
+      # `npm run` would need one. check-ci-chain-parity.ts resolves the path
+      # against the chain, so both directions still agree.
+      - name: install.sh config tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-install-sh-config.sh
+
+      - name: Check for Claude attribution
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
+        run: .ci/scripts/quality/check-claude-attribution.sh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+      - name: Check PR description freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
+        run: .ci/scripts/quality/check-pr-description.sh
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+  # ============================================================================
+  # L2 BRANCH -- alone on purpose.
+  # This is the ONLY `push`-preset app token in CI (check-branch.sh auto-rebases
+  # and pushes the PR branch). Merging it into another lane would hand
+  # contents:write to every gate in that lane, in a job whose code comes from the
+  # PR itself. Do not.
+  # ============================================================================
   quality-branch:
     name: Branch
     runs-on: ubuntu-slim
+    timeout-minutes: 12
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -60,6 +209,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          # 5735 MB of this repo's 5741 MB pack is blobs (the pre-migration
+          # video history, see the git-history-rewrite issue linked from
+          # CLAUDE.md). A plain fetch-depth:0 downloads all of it and took 299s
+          # here to run a 1-second script. blob:none fetches commits and trees
+          # only -- measured 1.93s bare, 10.37s with a working tree -- and
+          # lazily fetches any blob a command actually opens.
+          filter: blob:none
           ref: ${{ github.head_ref }}
           token: ${{ steps.app-token.outputs.token }}
       - name: Check branch status and auto-rebase if needed
@@ -70,35 +226,226 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
-  # NOTE: Gemini Review is now triggered by review-gate job in ci.yml
-  # after all quality jobs pass, to avoid triggering reviews on code
-  # that has lint/type errors
+  # NOTE: PR reviews come from the Claude Review workflow (claude-review.yml),
+  # which fires only when CI Complete is green and the PR is non-draft; the
+  # review-gate job in ci.yml enforces thread resolution afterwards.
 
-  quality-versions:
-    name: Versions
+  # ============================================================================
+  # SUBMODULE BRANCH VALIDATION (L3)
+  # ============================================================================
+  # PURPOSE: Ensures submodule branches match console branch when coordinated
+  #          changes are expected (submodule pointer differs from origin/main),
+  #          and verifies submodule PRs are linked.
+  #
+  # AI TROUBLESHOOTING:
+  #   If this job fails, check the error message for specific fix commands.
+  #
+  #   Branch errors:
+  #   - Create missing branch: cd private/<sm> && git checkout -b <branch>
+  #   - Push branch: git push -u origin <branch>
+  #   - Checkout existing: cd private/<sm> && git checkout <branch>
+  #
+  #   PR linking errors:
+  #   - No open PR: cd private/<sm> && gh pr create --title "..." --body "..."
+  #   - PR not linked: Edit console PR description to include submodule PR URL
+  #
+  # WHEN SUBMODULES STAY ON MAIN:
+  #   If submodule pointer matches origin/main, no branch coordination needed.
+  #   The submodule will stay on main and this check passes.
+  #
+  # Alone rather than in a lane: it is the only gate needing full history AND
+  # submodules AND a PR-metadata token, and it is 6 seconds of work once the
+  # checkout stops downloading 5.7 GB of blobs.
+  # ==============================================================================
+  quality-submodule-branches:
+    name: Submodule Branches
     runs-on: ubuntu-slim
+    timeout-minutes: 12
+    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: pr-read   # gh pr list in check-submodule-branches.sh
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          filter: blob:none   # see quality-branch
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Validate submodule branches
+        run: .ci/scripts/quality/check-submodule-branches.sh
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+  # NOTE: Review checks (resolved threads + unreplied comments) are in
+  # review-gate job in ci.yml. They enforce whatever threads the Claude
+  # review (or a human) left on the PR.
+
+  # ============================================================================
+  # L4 CODE -- node + submodules + account deps. The source-shape lane.
+  # Absorbs: versions, format, lint, typescript, cli-examples, workflows.
+  # ============================================================================
+  quality-code:
+    name: Code
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Runs before node on purpose: it reads .npmrc as text, and a broken
+      # .npmrc is exactly what would make the install below lie.
       - name: Block legacy-peer-deps workarounds
         run: .ci/scripts/quality/check-npmrc.sh
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Verify no peer dependency conflicts
-        run: .ci/scripts/quality/check-peer-deps.sh
-      - run: npm run version:check
-      # In `npm run ci` since forever, run by no workflow until now: an npm-10
-      # vs npm-11 lockfile drift only ever surfaced as a red `npm ci` in a later job.
-      - run: npm run check:ci-lockfile
 
-  quality-deps:
-    name: Deps
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Apply version bump
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
+
+      # account: knip scans the account submodule trees and needs their deps to
+      # resolve imports there; check:ci-dead-bash's corpus includes private/**.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+
+      - name: Verify no peer dependency conflicts
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-peer-deps.sh
+
+      - name: Versions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run version:check
+
+      # An npm-10 vs npm-11 lockfile drift only ever surfaced as a red `npm ci`
+      # in a later job.
+      - name: Lockfile
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-lockfile
+
+      - name: Format
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:format
+
+      - name: Lint
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:lint
+
+      - name: Unused exports (knip)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run lint:unused
+
+      - name: Check account route layer isolation
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-layer-isolation
+
+      # knip's own ignore entries are BLOCKER-gated.
+      - name: knip BLOCKER reasons
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-knip-blockers
+
+      # Bash had no dead-code detector at all; this is the analogue of the knip
+      # run above. It is a `tsx` gate (needs node_modules, CI died with
+      # `tsx: not found`, exit 127) and its corpus includes private/**, so
+      # without submodules it silently scans a smaller tree and under-asserts.
+      - name: Dead bash
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-dead-bash
+
+      - name: TypeScript
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run typecheck
+
+      # The tree first: nine validators (this lane's included) read
+      # command-tree.json as their model of the CLI, and a stale one fails OPEN
+      # — they keep passing while checking a CLI that no longer exists.
+      - name: Command tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-command-tree
+
+      - name: CLI examples
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:cli-examples
+
+      - name: Command planes
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-command-planes
+
+      - name: Design tree
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-design-tree
+
+      - name: Schema coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-schema-coverage
+
+      - name: Workflow banned patterns
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-workflows.sh
+
+      # Prevents GHA transitive-skip propagation (finding J) from silently
+      # disabling downstream jobs, enforces the reusable-workflow secret
+      # contract, and enforces the ubuntu-slim timeout rule (CHECK 3).
+      - name: Workflow structural gates
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-workflow-gates
+
+      # Keep the CI App off `administration`, which gates environment CRUD.
+      - name: App admin permission
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-app-admin-perm
+
+      # Pinned-action freshness + BLOCKER validation of
+      # .actions-upgrade-blocklist. GITHUB_TOKEN is REQUIRED, not a nicety:
+      # unauthenticated calls hit the 60 req/h GitHub API limit, and the script
+      # then reports those actions as "unknown" and still exits 0 — a silent
+      # fail-open that would make this gate meaningless exactly when it is rate
+      # limited.
+      - name: Action freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:actions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  # ============================================================================
+  # L5 CONTENT -- node + submodules. Content, tutorials, and every gate that
+  # touches the public network.
+  # Absorbs: content, locale-tutorial-assets, tutorial-casts,
+  #          tutorial-caption-sync, tutorial-parity, e2e-coverage, deps,
+  #          external-links, dkim-notify.
+  #
+  # The three network gates (check:deps, check:ci-external-links,
+  # check:ci-dkim-notify) are concentrated HERE deliberately: quality jobs never
+  # auto-retry (WATCHDOG_NO_RETRY_PATTERNS), so a transient DNS or registry blip
+  # reddens a lane with no second chance. Keeping all three in one lane bounds
+  # that blast radius to one lane instead of three.
+  # ============================================================================
+  quality-content:
+    name: Content
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality')
+    timeout-minutes: 15
+    if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token
@@ -112,16 +459,107 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:deps
+      - id: setup
+        uses: ./.github/actions/setup-workspace
 
-  quality-lint:
-    name: Lint
+      - name: Check content for AI slop patterns
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-content-quality.sh
+
+      - name: Verify NIS2 directive quotations match the official source
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-nis2-quotes
+
+      # Source-only content gate. check:ci-seo/-redirects/-cta-bolt all need a
+      # built www, so they live in quality-www-build instead.
+      - name: Pricing consistency
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-pricing-consistency
+
+      - name: Validate per-locale tutorial video assets exist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-locale-tutorial-assets
+
+      - name: Validate localized solution videos exist
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-solution-videos
+
+      - name: Block fallback hacks and error output in tutorial recordings
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-casts
+
+      - name: Validate published tutorial word-timing sync (real ASR alignment, not estimated)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-caption-sync
+
+      # Field-aware: validates card.commandFull and teardownCommand against the
+      # live CLI tree. Runs BEFORE parity because a storyboard command that does
+      # not exist is a worse failure than one that merely disagrees with its
+      # recording -- teardownCommand is executed by the harness, and
+      # card.commandFull is generated into the portal's first-run flow.
+      - name: Validate tutorial storyboard commands against the live CLI
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-commands
+
+      # Tutorial scripts run headless inside asciinema. A command that stops to
+      # ask "are you sure?" never returns, and `2>/dev/null || true` hides the
+      # question rather than preventing it -- one such line hung a re-record for
+      # six hours.
+      - name: Validate tutorial commands are non-interactive
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-noninteractive
+
+      # `npm run ci` is the promise that a local run catches CI failures. This
+      # fails when a gate is wired into a workflow but not into that chain.
+      - name: Validate every workflow gate is in `npm run ci`
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-chain-parity
+
+      - name: Validate tutorial cast/storyboard/transcript/mdx parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tutorial-parity
+
+      - name: Validate account onboarding splash against canonical tutorials
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-onboarding
+
+      - name: Check E2E test coverage for all renet functions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-e2e-coverage.sh
+
+      # Static half of the zero-skip contract: every topology subdir of tests/
+      # must be excluded by the base playwright.config.ts, so the E2E Workers
+      # job never collects-then-skips a foreign-topology suite. The runtime half
+      # is run-e2e.sh --fail-on-skip in the E2E jobs themselves.
+      - name: Check E2E skip hygiene (no collected-then-skipped suites)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-e2e-skip-hygiene
+
+      - name: External dependency freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality') }}
+        run: npm run check:deps
+
+      - name: External links
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
+        run: npm run check:ci-external-links
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # Same opt-out label as external-links: both do live public-network
+      # lookups, and both should respect `no-external-quality` on PRs that
+      # intentionally bypass external checks (e.g., offline branch work).
+      - name: DKIM notify DNS
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
+        run: npm run check:ci-dkim-notify
+
+  # ============================================================================
+  # L6 PACKAGES -- node + submodules + built packages + native modules.
+  # Absorbs: account-portal, config-migrations, shared-tests, cli-unit-tests.
+  # ============================================================================
+  quality-packages:
+    name: Packages
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -130,59 +568,55 @@ jobs:
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      # natives: config-migrations loads the CLI's runtime imports, which pull
+      # in ssh2/cpu-features. build-packages: the cluster services import
+      # @rediacc/provisioning through its dist/, and check-account-portal.sh
+      # typechecks against @rediacc/shared's dist.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:lint
-      # knip now scans the account submodule trees; install their deps so it can
-      # resolve imports there (mirrors quality-account's submodule checkout).
-      - name: Install account submodule dependencies
-        run: |
-          npm ci --prefix private/account
-          npm ci --prefix private/account/web
-          npm ci --prefix private/account/e2e
-      - run: npm run lint:unused
-      - name: Check account route layer isolation
-        run: npm run check:ci-account-layer-isolation
-      # knip's own ignore entries are BLOCKER-gated; the validator for those
-      # reasons was in the chain but never ran in CI.
-      - run: npm run check:ci-knip-blockers
-      # Bash had no dead-code detector at all; this is the analogue of the knip
-      # run above. It lives HERE and not in quality-shell for two reasons, both
-      # of which quality-shell fails: it is a `tsx` gate and needs node_modules
-      # (CI died with `tsx: not found`, exit 127), and its corpus includes
-      # private/**, so without submodules it silently scans a smaller tree and
-      # under-asserts rather than failing.
-      - run: npm run check:ci-dead-bash
+          account: 'true'
+          natives: 'true'
+          build-packages: 'true'
 
-  quality-format:
-    name: Format
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Apply version bump
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:format
+      - name: Check account portal (typecheck + build)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-account-portal.sh
 
+      - name: Console contract coverage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-console-coverage
+
+      - name: Check config-migration runner + fixtures
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-config-migrations.sh
+
+      - name: Run shared package tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run test --workspace=@rediacc/shared
+
+      - name: Run CLI unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run test:unit --workspace=@rediacc/cli
+
+      # The generated CLI contract drives the web console, `rdc --proxy` and
+      # the executor. It was RED at HEAD when first run here: a stale value
+      # leaked into the `backup list --storage` example and merged green.
+      - name: CLI contract
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-cli-contract
+
+  # ============================================================================
+  # L7 i18n -- alone. Needs full history (translation freshness diffs against
+  # origin/main), the account submodule, built packages, AND a ~100s R2 audio
+  # restore that no other gate wants.
+  # ============================================================================
   quality-i18n:
     name: i18n
     # ubuntu-latest, not ubuntu-slim: this job restores the tutorial-narration
@@ -194,6 +628,7 @@ jobs:
     # per-file audio assertion silently disables itself, which is the false
     # green this change removes.
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -212,19 +647,21 @@ jobs:
           # an empty diff, so the script becomes a no-op. Full history is
           # required for the freshness gate to actually fire.
           fetch-depth: 0
+          filter: blob:none   # see quality-branch
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      # check:i18n ends with check:cli-docs, which imports the LIVE Commander tree
-      # (packages/cli/src/cli.js) rather than a hand-maintained list. That import pulls in
-      # kvm-provisioner.ts -> @rediacc/provisioning, whose package main is ./dist/index.js.
-      # Without this build the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
+      # build-packages: check:i18n ends with check:cli-docs, which imports the
+      # LIVE Commander tree (packages/cli/src/cli.js) rather than a
+      # hand-maintained list. That import pulls in kvm-provisioner.ts ->
+      # @rediacc/provisioning, whose package main is ./dist/index.js. Without
+      # this the gate does not fail — it CRASHES with ERR_MODULE_NOT_FOUND,
       # which is why it went unnoticed locally, where dist/ is already warm.
-      - run: npm run build:packages
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
+
       # check:i18n -> validate:content -> validate:tutorial-audio asserts that every
       # narration .mp3 referenced by a tutorial timeline exists on disk. The audio cache
       # is gitignored and lives in R2, so without this restore AUDIO_TREE_PRESENT is
@@ -232,46 +669,111 @@ jobs:
       # the gate has never once run it in CI. Failing here is deliberate: a skip is
       # exactly the false-green this step exists to remove.
       - name: Restore tutorial-narration audio cache from R2
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
           R2_MEDIA_ENDPOINT: ${{ secrets.R2_MEDIA_ENDPOINT }}
         run: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only
-      - run: npm run check:i18n
-      - run: npm run check:ci-search-index
-      # Three i18n gates that were in `npm run ci` only. This job already has
-      # build:packages + the account submodule, which is all they need.
-      - run: npm run check:ci-i18n-placeholders
-      - run: npm run check:ci-i18n-untranslated
-      - run: npm run check:ci-i18n-command-parity
 
-  quality-types:
-    name: TypeScript
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+      - name: i18n
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:i18n
+
+      - name: Search index
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-search-index
+
+      - name: i18n placeholders
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-i18n-placeholders
+
+      - name: i18n untranslated
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-i18n-untranslated
+
+      - name: i18n command parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-i18n-command-parity
+
+  # ============================================================================
+  # L8 BUILT-WWW GATES -- alone. One astro build is the expensive input.
+  #
+  # check:ci-redirects HARD-requires packages/www/dist/route-manifest.json and
+  # check:ci-seo's built-HTML link scan self-skips without packages/www/dist. No
+  # CI job built www, so both gates lived in `npm run ci` and ran nowhere -- the
+  # redirect table that fronts every marketing URL was validated only on a
+  # laptop. One astro build buys both gates at full strength.
+  # ============================================================================
+  quality-www-build:
+    name: Built-www Gates
+    runs-on: ubuntu-slim
+    timeout-minutes: 12
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Submodules are for the workers/www tests below, not for the www build:
+      # workers/www/src/index.ts imports private/account/src/{app,db/schema,types/env}.js
+      # directly, so vitest cannot resolve them without the account submodule.
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ vars.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
           repositories: console,renet,account,elite,homebrew-tap
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      - id: setup
+        uses: ./.github/actions/setup-workspace
         with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run typecheck
+          account: 'true'
+          build-packages: 'true'
 
+      - name: Build www (produces dist/route-manifest.json)
+        id: build-www
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run build:www
+
+      - name: Redirects
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-redirects
+
+      - name: SEO
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-seo
+
+      # Scans the BUILT HTML for duplicate CTA anchors, so it needs dist too --
+      # its source-literal grep only mentions src/i18n/translations/en.json,
+      # which is how it was first mis-placed in the content lane.
+      - name: CTA bolt
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-cta-bolt
+
+      # These need BOTH of this job's expensive inputs, which is why they live
+      # here and not with the other unit tests: the account submodule (imports
+      # above) and packages/www/dist/route-manifest.json, which
+      # redirect-aliases.test.ts imports directly.
+      - name: Worker unit tests (workers/www)
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm ci --prefix workers/www && npm run check:test-workers
+
+  # ============================================================================
+  # L9 SECURITY -- alone. 291s of meta-gate unit tests makes this the phase's
+  # wall-clock pole; grouping anything with it only makes that worse.
+  # ============================================================================
   quality-security:
     name: Security
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: this job's runtime grew past the slim
+    # runner's hard ~15-minute cap during the 0722-1 wave (8 -> 12 -> 18 min;
+    # the cap kills the job as "cancelled" with no failed step, poisoning
+    # CI Complete). Two such kills in three runs. The growth itself (gate
+    # tests + submodule checkout + upstream freshness queries) is a separate
+    # follow-up; the capped runner just makes it a coin flip.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -296,29 +798,38 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: .ci/scripts/security/audit.sh
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+
+      - name: Audit
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/security/audit.sh
         env:
           # Authenticates `gh api /advisories/...` calls inside audit.sh so the
           # GHSA detail fetch uses the 1000/hr github.token limit instead of
           # the 60/hr anonymous limit.
           GH_TOKEN: ${{ github.token }}
+
       - name: BLOCKER validator — package.json overrides
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-overrides-reasons
+
       - name: BLOCKER validator — syncpack versionGroups
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-syncpack-reasons
+
       # The BLOCKER validators above prove every suppression HAS a reason. This
       # one proves the reason is still TRUE — i.e. the thing being suppressed
       # still exists. Electron left the tree and 101 entries justified by
       # electron chains stayed behind; nothing noticed.
       - name: Suppression liveness — are our allowlist entries still needed?
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-suppression-liveness
+
       - name: Quality-gate unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates
+
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: always()
         with:
@@ -326,342 +837,14 @@ jobs:
           path: audit-report.json
           retention-days: 3
 
-  quality-external-links:
-    name: External Links
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:ci-external-links
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-  quality-dkim-notify:
-    name: DKIM Notify DNS
-    runs-on: ubuntu-slim
-    # Same opt-out label as external-links: both do live public-network
-    # lookups, and both should respect `no-external-quality` on PRs that
-    # intentionally bypass external checks (e.g., offline branch work).
-    if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:ci-dkim-notify
-
-  quality-shell:
-    name: Shell
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install shfmt
-        # `curl | sh` exits 0 on an empty body (webi.sh outage), so the miss
-        # only surfaced later as a bare "shfmt is not installed" the watchdog
-        # cannot classify as network. Verify the binary here so an install
-        # failure is loud in the step that owns it.
-        run: |
-          curl -sS https://webi.sh/shfmt | sh
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-          "$HOME/.local/bin/shfmt" --version
-      - run: .ci/scripts/security/shellcheck.sh
-      - run: .ci/scripts/security/shfmt.sh
-      - run: .ci/scripts/security/check-commands.sh
-      # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
-      # pipefail` script on empty input. Written after three such outages in
-      # one day, but never wired into a job until now.
-      - run: npm run check:ci-silent-failures
-      # Unit tests for shell helpers. Deterministic, no network.
-      - run: .ci/scripts/test/test-write-once-guard.sh
-      - run: .ci/scripts/test/test-install-script.sh
-      # Pure bash, so it is called by path: this job has no node step and
-      # `npm run` would need one. check-ci-chain-parity.ts resolves the path
-      # against the chain, so both directions still agree.
-      - run: .ci/scripts/test/test-install-sh-config.sh
-
-  quality-workflows:
-    name: Workflows
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: .ci/scripts/quality/check-workflows.sh
-      # Prevent GHA transitive-skip propagation (finding J) from
-      # silently disabling downstream jobs on future changes.
-      - run: npm run check:ci-workflow-gates
-      # Keep the CI App off `administration`, which gates environment CRUD.
-      # This gate existed but was never wired into any job, so the constraint
-      # it documents went unenforced for its whole lifetime.
-      - run: npm run check:ci-app-admin-perm
-      # Pinned-action freshness + BLOCKER validation of .actions-upgrade-blocklist.
-      # Third never-wired gate; reachable before only via `npm run check:actions`
-      # and `./run.sh quality actions`.
-      #
-      # GITHUB_TOKEN is REQUIRED, not a nicety: unauthenticated calls hit the 60
-      # req/h GitHub API limit, and the script then reports those actions as
-      # "unknown" and still exits 0 — a silent fail-open that would make this
-      # gate meaningless exactly when it is rate limited.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run check:actions
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-  quality-compose-env:
-    name: Compose Env
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: .ci/scripts/quality/check-compose-env.sh
-
-  quality-e2e-coverage:
-    name: E2E Coverage
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      # The forward half (scripts/check-e2e-coverage.ts) was pure-bash until the
-      # live-config-membership check landed; it now needs `glob` (root dep) AND
-      # dynamically imports the playwright.config.ts files, which pull in
-      # @playwright/test (an e2e-tests workspace dep). --ignore-scripts skips the
-      # browser download the check never needs.
-      - name: Install dependencies (minimal)
-        run: npm ci --workspaces=false --include-workspace-root --ignore-scripts
-      - name: Install e2e-tests workspace deps (for the playwright config imports)
-        run: npm ci --workspace=@rediacc/e2e-tests --include-workspace-root --ignore-scripts
-      - name: Check E2E test coverage for all renet functions
-        run: .ci/scripts/quality/check-e2e-coverage.sh
-
-  quality-audit-coverage:
-    name: Audit Coverage
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Check audit logging coverage for CLI operations
-        run: .ci/scripts/quality/check-audit-coverage.sh
-
-  quality-config-migrations:
-    name: Config Migrations
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - name: Install dependencies (minimal)
-        run: npm ci --workspaces=false --include-workspace-root --ignore-scripts
-      - name: Install CLI workspace deps
-        run: npm ci --workspace=@rediacc/cli --include-workspace-root --ignore-scripts
-      - name: Rebuild native modules
-        run: npm run install:natives
-      - name: Build shared package (required for runtime imports)
-        run: npm run build --workspace=@rediacc/shared
-      - name: Check config-migration runner + fixtures
-        run: .ci/scripts/quality/check-config-migrations.sh
-
-  quality-editorconfig:
-    name: EditorConfig
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: .ci/scripts/quality/check-editorconfig.sh
-
-  quality-content:
-    name: Content Quality
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Check content for AI slop patterns
-        run: .ci/scripts/quality/check-content-quality.sh
-      - name: Verify NIS2 directive quotations match the official source
-        run: npm run check:ci-nis2-quotes
-      # Source-only content gate that was in `npm run ci` and nowhere else.
-      # check:ci-seo/-redirects/-cta-bolt all need a built www, so they live in
-      # quality-www-build instead.
-      - run: npm run check:ci-pricing-consistency
-
-  # check:ci-redirects HARD-requires packages/www/dist/route-manifest.json and
-  # check:ci-seo's built-HTML link scan self-skips without packages/www/dist. No
-  # CI job built www, so both gates lived in `npm run ci` and ran nowhere -- the
-  # redirect table that fronts every marketing URL was validated only on a
-  # laptop. One astro build buys both gates at full strength.
-  quality-www-build:
-    name: Built-www Gates
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Submodules are for the workers/www tests below, not for the www build:
-      # workers/www/src/index.ts imports private/account/src/{app,db/schema,types/env}.js
-      # directly, so vitest cannot resolve them without the account submodule.
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run build:packages
-      - name: Build www (produces dist/route-manifest.json)
-        run: npm run build:www
-      - run: npm run check:ci-redirects
-      - run: npm run check:ci-seo
-      # Scans the BUILT HTML for duplicate CTA anchors, so it needs dist too --
-      # its source-literal grep only mentions src/i18n/translations/en.json,
-      # which is how it was first mis-placed in quality-content.
-      - run: npm run check:ci-cta-bolt
-      # These need BOTH of this job's expensive inputs, which is why they live
-      # here and not with the other unit tests: the account submodule (imports
-      # above) and packages/www/dist/route-manifest.json, which
-      # redirect-aliases.test.ts imports directly.
-      - name: Worker unit tests (workers/www)
-        run: npm ci --prefix workers/www && npm run check:test-workers
-
-  quality-tutorial-parity:
-    name: Tutorial Parity
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      # Field-aware: validates card.commandFull and teardownCommand against the
-      # live CLI tree. Runs BEFORE parity because a storyboard command that does
-      # not exist is a worse failure than one that merely disagrees with its
-      # recording -- teardownCommand is executed by the harness, and
-      # card.commandFull is generated into the portal's first-run flow.
-      - name: Validate tutorial storyboard commands against the live CLI
-        run: npm run check:ci-tutorial-commands
-      # Tutorial scripts run headless inside asciinema. A command that stops to
-      # ask "are you sure?" never returns, and `2>/dev/null || true` hides the
-      # question rather than preventing it -- one such line hung a re-record for
-      # six hours. The prompting commands are derived from the CLI's own command
-      # tree, so a new one is covered the day it lands.
-      - name: Validate tutorial commands are non-interactive
-        run: npm run check:ci-tutorial-noninteractive
-      # `npm run ci` is the promise that a local run catches CI failures. This
-      # fails when a gate is wired into a workflow but not into that chain --
-      # four had already drifted out, including the harness that runs the
-      # meta-gates, so the checks that verify other checks never ran locally.
-      - name: Validate every workflow gate is in `npm run ci`
-        run: npm run check:ci-chain-parity
-      - name: Validate tutorial cast/storyboard/transcript/mdx parity
-        run: npm run check:ci-tutorial-parity
-      - name: Validate account onboarding splash against canonical tutorials
-        run: npm run check:ci-account-onboarding
-
-  quality-tutorial-casts:
-    name: Tutorial Cast Hygiene
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Block fallback hacks and error output in tutorial recordings
-        run: npm run check:ci-tutorial-casts
-
-  quality-locale-tutorial-assets:
-    name: Locale Tutorial Assets
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Validate per-locale tutorial video assets exist
-        run: npm run check:ci-locale-tutorial-assets
-      - name: Validate localized solution videos exist
-        run: npm run check:ci-solution-videos
-
-  quality-tutorial-caption-sync:
-    name: Tutorial Caption Sync
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Validate published tutorial word-timing sync (real ASR alignment, not estimated)
-        run: npm run check:ci-tutorial-caption-sync
-
-  quality-cli-examples:
-    name: CLI Examples
+  # ============================================================================
+  # L10 GO -- everything needing a Go toolchain and the renet/account submodules.
+  # Absorbs: renet, ebpf-objects, account-server.
+  # ============================================================================
+  quality-go:
+    name: Go
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -676,45 +859,13 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      # The tree first: nine validators (this job's included) read command-tree.json as
-      # their model of the CLI, and a stale one fails OPEN — they keep passing while
-      # checking a CLI that no longer exists.
-      - run: npm run check:ci-command-tree
-      - run: npm run check:cli-examples
-      # Three CLI-shape gates that only ever ran locally. check:ci-design-tree
-      # was RED at HEAD when first run here: `backup strategy bind|unbind`
-      # shipped in #524 and the as-built transcript was never updated.
-      - run: npm run check:ci-command-planes
-      - run: npm run check:ci-design-tree
-      - run: npm run check:ci-schema-coverage
 
-  quality-ebpf:
-    name: eBPF Objects
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
           cache: true
           cache-dependency-path: private/renet/go.sum
+
       - name: Install clang
         # `apt-get update` is mandatory before install: the Azure runner image
         # ships with stale apt metadata referencing a kernel ABI that may have
@@ -722,67 +873,37 @@ jobs:
         # `linux-headers-generic` to 404 on the matching versioned headers
         # package. Refresh metadata first, then install.
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
-      - name: Verify BPF objects are up-to-date
-        run: |
-          cd private/renet
-          go generate ./pkg/ebpf/...
-          git diff --exit-code pkg/ebpf/
-      - name: Verify BPF verifier accepts program
-        run: |
-          cd private/renet
-          go test ./pkg/ebpf/ -run TestBPFVerifier -v
-      - name: Run eBPF unit tests
-        run: |
-          cd private/renet
-          go test ./pkg/ebpf/ -v
 
-  quality-renet:
-    name: Renet
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
+      # natives: run-account.sh test and the shared build both need the
+      # compiled ssh2/cpu-features bindings. account: the integration tests run
+      # out of private/account's own tree.
+      - id: setup
+        uses: ./.github/actions/setup-workspace
         with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
+          account: 'true'
+          natives: 'true'
+          build-packages: 'true'
 
       - name: Run renet quality
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/private/run-renet.sh quality
 
       - name: Check Go dependency freshness
-        if: "!(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))"
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
         run: npm run check:ci-go-deps
 
       - name: Check renet types freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-renet-types
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh
-
       - name: Check subscription schema consistency
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-subscription-schema.sh
 
       # Needs the renet submodule (Dockerfile ARGs + pkg/embed sources), so it
-      # runs here rather than in quality-security (submodule-less checkout).
+      # runs here rather than in the security lane (submodule-less checkout).
       - name: Check embed credits consistency
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-embed-credits
 
       # Same submodule requirement: reads private/renet/embed-assets.lock.json.
@@ -790,6 +911,7 @@ jobs:
       # declares — the dimension nothing carried when arm64 criu silently became
       # a different version from amd64 criu.
       - name: Check embed arch parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-embed-arch-parity
 
       # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
@@ -797,215 +919,53 @@ jobs:
       # error, so a missing token or a blip never reddens the build — only a
       # confirmed-stale pin does.
       - name: Check embed-asset upstream freshness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run check:ci-embed-asset-freshness
 
-  quality-account:
-    name: Account Server
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: 'stable'
-          cache: true
-          cache-dependency-path: private/renet/go.sum
-
-      - name: Build shared package (required for subscription types)
+      # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
+      # extracted: a check-*.sh path would make check-ci-chain-parity require it
+      # in `npm run ci`, which would newly demand clang + libbpf on a developer
+      # machine. Same coverage, no new local prerequisite.
+      - name: Verify BPF objects are up-to-date
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
-          npm ci --workspace=@rediacc/shared
-          npm run install:natives
-          npm run build --workspace=@rediacc/shared
+          cd private/renet
+          go generate ./pkg/ebpf/...
+          git diff --exit-code pkg/ebpf/
 
-      - name: Install account dependencies
-        working-directory: private/account
-        run: npm ci && cd ../.. && npm run install:natives
+      - name: Verify BPF verifier accepts program
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        working-directory: private/renet
+        run: go test ./pkg/ebpf/ -run TestBPFVerifier -v
+
+      - name: Run eBPF unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        working-directory: private/renet
+        run: go test ./pkg/ebpf/ -v
 
       - name: Check config token auth requires org membership
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-config-auth
 
       - name: Check no admin user role (must be root)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-no-admin-role
 
       - name: Check scope registry audit
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-scope-audit
 
+      - name: Assert no NODE_ENV branching in account routes
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-no-node-env-routes
+
       - name: Run account integration tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/private/run-account.sh test
 
       - name: Run Go cross-language signature tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         working-directory: private/renet
         run: go test -v ./pkg/subscription/... -run TestCrossLanguage
-      - name: Assert no NODE_ENV branching in account routes
-        run: npm run check:ci-account-no-node-env-routes
-
-  quality-account-portal:
-    name: Account Portal
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - run: npm run build:packages
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-      - name: Check account portal (typecheck + build)
-        run: .ci/scripts/quality/check-account-portal.sh
-      - name: Console contract coverage
-        run: npm run check:ci-console-coverage
-
-  quality-shared-tests:
-    name: Shared Package Tests
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      - name: Build shared package
-        run: npm run build --workspace=@rediacc/shared
-      - name: Run shared package tests
-        run: npm run test --workspace=@rediacc/shared
-
-  quality-cli-unit-tests:
-    name: CLI Unit Tests
-    runs-on: ubuntu-latest
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
-        with:
-          node-version: '22'
-          cache: 'npm'
-      - run: .ci/scripts/setup/install-deps.sh
-      # The cluster services import @rediacc/provisioning at runtime (OpsManager),
-      # which resolves through its dist/. Without this the suites that pull in
-      # cluster-provision fail with "Failed to resolve entry for package".
-      # `build:packages` is the single list of what the CLI imports — naming the
-      # workspaces here instead means a third package silently rots this job.
-      - name: Build the packages the CLI imports
-        run: npm run build:packages
-      - name: Run CLI unit tests
-        run: npm run test:unit --workspace=@rediacc/cli
-      # The generated CLI contract drives the web console, `rdc --proxy` and
-      # the executor. It was RED at HEAD when first run here: a stale value
-      # leaked into the `backup list --storage` example and merged green.
-      - run: npm run check:ci-cli-contract
-
-
-  # ==============================================================================
-  # SUBMODULE BRANCH VALIDATION
-  # ==============================================================================
-  # PURPOSE: Ensures submodule branches match console branch when coordinated
-  #          changes are expected (submodule pointer differs from origin/main),
-  #          and verifies submodule PRs are linked.
-  #
-  # AI TROUBLESHOOTING:
-  #   If this job fails, check the error message for specific fix commands.
-  #
-  #   Branch errors:
-  #   - Create missing branch: cd private/<sm> && git checkout -b <branch>
-  #   - Push branch: git push -u origin <branch>
-  #   - Checkout existing: cd private/<sm> && git checkout <branch>
-  #
-  #   PR linking errors:
-  #   - No open PR: cd private/<sm> && gh pr create --title "..." --body "..."
-  #   - PR not linked: Edit console PR description to include submodule PR URL
-  #
-  # WHEN SUBMODULES STAY ON MAIN:
-  #   If submodule pointer matches origin/main, no branch coordination needed.
-  #   The submodule will stay on main and this check passes.
-  # ==============================================================================
-  quality-submodule-branches:
-    name: Submodule Branches
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: pr-read   # gh pr list in check-submodule-branches.sh
-          repositories: console,renet,account,elite,homebrew-tap
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          submodules: true
-          token: ${{ steps.app-token.outputs.token }}
-      - name: Validate submodule branches
-        run: .ci/scripts/quality/check-submodule-branches.sh
-        env:
-          GITHUB_HEAD_REF: ${{ github.head_ref }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-
-  # NOTE: Review checks (resolved threads + unreplied comments) are in
-  # review-gate job in ci.yml. They run AFTER Gemini posts its review.
-
-  quality-attribution:
-    name: Attribution
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Check for Claude attribution
-        run: .ci/scripts/quality/check-claude-attribution.sh
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-
-  quality-pr-description:
-    name: PR Description
-    runs-on: ubuntu-slim
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: pr-read   # gh api reads in check-pr-description.sh
-          repositories: console
-      - name: Check PR description freshness
-        run: .ci/scripts/quality/check-pr-description.sh
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}

@@ -61,6 +61,9 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Account ──────────────────────────────────────────────────────────────
   '/account/userEmail': { kind: 'pii' },
   '/account/accountServer': { kind: 'identifier' },
+  '/account/e2ePublicKey': { kind: 'public' }, // public half of server keypair by construction
+  '/account/updateChannel': { kind: 'public' },
+  '/account/releasesUrl': { kind: 'identifier' }, // on-prem endpoint, mirror accountServer
   // Retired cloud-adapter residue (R2-F9): the v2→v3 migration strips team and
   // region and nothing repopulates them. Registered public so the coverage
   // gate stays strict until P4 deletes the fields with the dead command
@@ -288,6 +291,16 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Public: a rate-limiting timestamp keyed by a machine name the config
   // already lists in the clear, carrying no credential and no repo identity.
   '/state/licenseRefresh/*': { kind: 'public' },
+  // Per-machine renet provision/verify cache: version/hash/arch/timestamps of
+  // the last proven-current provision. Public: a binary hash and timestamps
+  // keyed by host:port the config already lists in the clear — no credential.
+  '/state/renetProvision/*/version': { kind: 'public' },
+  '/state/renetProvision/*/hash': { kind: 'public' },
+  '/state/renetProvision/*/arch': { kind: 'public' },
+  '/state/renetProvision/*/verifiedAt': { kind: 'public' },
+  '/state/renetProvision/*/setupVerifiedAt': { kind: 'public' },
+  '/state/renetProvision/*/srcMtimeMs': { kind: 'public' },
+  '/state/renetProvision/*/srcSize': { kind: 'public' },
   // ACME cert cache moved from /infra/acmeCertCache. `data` is the compressed
   // acme.json dump — Traefik resolver state with private keys inside —
   // `commit:false` because state never enters the server envelope. The fields
@@ -342,6 +355,10 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Region display label ("eu"/"us"); public, so never committed either —
   // consistent with the host-local doctrine of its siblings above.
   '/remote/dataRegion': { kind: 'public' },
+  // Offline read-cache metadata (last pulled server version + timestamp).
+  // Host-local observations, same doctrine as dataRegion: public, not committed.
+  '/remote/cachedVersion': { kind: 'public' },
+  '/remote/cachedAt': { kind: 'public' },
 
   // ── Local binary override ────────────────────────────────────────────────
   // renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is

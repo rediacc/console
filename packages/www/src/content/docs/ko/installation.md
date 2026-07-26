@@ -1,6 +1,6 @@
 ---
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 title: "설치"
 description: "Linux, macOS, 또는 Windows에 Rediacc CLI를 설치합니다."
 category: "Guides"
@@ -221,4 +221,4 @@ PR 프리뷰 배포(예: `pr-420.rediacc.workers.dev`)에서 설치하면 채널
 - **기존 클라이언트 연결(HTTP, TCP, UDP)은 영향을 받지 않습니다.** 라우트 서버는 설정 공급자로, 데이터 경로에 있지 않습니다. Traefik이 모든 트래픽을 직접 처리합니다.
 - 애플리케이션 컨테이너는 건드리지 않습니다. 시스템 수준의 라우트 서버 프로세스만 재시작됩니다.
 
-자동 재시작을 건너뛰려면 모든 명령에 `--skip-router-restart`를 전달하거나 `RDC_SKIP_ROUTER_RESTART=1` 환경 변수를 설정하십시오.
+자동 재시작을 건너뛰려면 모든 명령에 `--skip-router-restart`를 전달하거나 `REDIACC_SKIP_ROUTER_RESTART=1` 환경 변수를 설정하십시오.

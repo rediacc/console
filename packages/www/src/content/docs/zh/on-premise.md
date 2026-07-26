@@ -4,8 +4,8 @@ description: "在您自己的基础设施上运行账户服务器和 CLI 分发�
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediacc 可以完全运行在您自己的基础设施上。独立 Docker 镜像包含账户服务器、Web 管理门户、营销网站和 CLI 分发端点，无需依赖 Rediacc 托管服务。
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 此单条命令将：
 1. 从服务器的 `/releases/` 端点下载 CLI 二进制文件
 2. 查询 `/account/api/v1/.well-known/server-info` 以发现更新通道
-3. 将服务器 URL、更新通道和加密密钥写入 `server.json`
+3. 将服务器 URL、更新通道和加密密钥写入默认配置（`rediacc.json`）的 `account.*` 字段下
 4. 配置 `rdc update`，使其从您的服务器检查后续更新
 
 无需设置 `REDIACC_CHANNEL` 变量。安装脚本会自动从服务器配置中读取通道。
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-每个命名配置存储其独立的账户服务器 URL 和订阅令牌。切换配置即切换整个服务器上下文。
+每个命名配置存储其独立的账户服务器 URL（位于 `account.*` 下）以及独立的账户 API 令牌，令牌保存在配置旁边的 `api-token-<name>.json` 文件中。切换配置即切换整个服务器上下文。
 
 ## 离网环境（Air-Gapped）
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | 安装脚本、CLI 更新器 | CLI 二进制文件的自定义发布端点，默认值：`https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | 安装脚本 | 覆盖更新通道，未设置时从服务器自动检测 |
 | `REDIACC_ACCOUNT_SERVER` | CLI 运行时 | 覆盖所有 CLI 命令使用的账户服务器 URL |
-| `RDC_UPDATE_CHANNEL` | CLI 运行时 | 覆盖 `rdc update` 使用的更新通道 |
+| `REDIACC_UPDATE_CHANNEL` | CLI 运行时 | 覆盖 `rdc update` 使用的更新通道 |
 
 ## 服务器配置
 
@@ -177,6 +177,8 @@ DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+启动时，如果加载的证书所委托的密钥与服务器实际用于签署许可证的密钥不同，服务器将拒绝启动（记录 FATAL 日志并以非零状态退出）：它会比较签名密钥的指纹与证书 `delegatedPublicKey` 的指纹，一旦不匹配就中止，因为使用证书未授权的密钥签署的许可证在任何机器上都将无法通过验证。请始终保持签名密钥对与证书的 `delegatedPublicKey` 同步。
 
 ### 4. 配置上游验证与自动续期（可选但推荐）
 

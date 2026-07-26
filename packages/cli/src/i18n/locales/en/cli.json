@@ -175,7 +175,6 @@
       "notInstalled": "not installed",
       "notConfigured": "not configured",
       "notLoggedIn": "not logged in",
-      "serverMismatch": "server mismatch",
       "subscriptionUnreachable": "unable to reach subscription server",
       "opsSkipped": "renet not available (skipped)"
     },
@@ -226,6 +225,9 @@
         "noConfig": "No active config. Create one with: rdc config init",
         "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
+      "current": {
+        "description": "Show the active config: name, file, resolved server and channel, token state"
+      },
       "delete": {
         "description": "Delete a config file",
         "success": "Config \"{{name}}\" deleted"
@@ -269,6 +271,11 @@
       "remote": {
         "description": "Manage remote config storage connection",
         "tokenExpired": "Remote config token expired. Re-authenticate with: rdc config remote enable",
+        "unreachable": "Config server {{server}} is unreachable",
+        "offlineCacheWarning": "Config server {{server}} is unreachable; serving config \"{{config}}\" from the offline cache (server version {{version}}, cached {{age}} ago). Changes cannot be saved until the server is reachable.",
+        "offlineNoCache": "Config server {{server}} is unreachable and config \"{{config}}\" has no offline cache yet. Run \"rdc config remote refresh\" once the server is reachable to seed the cache.",
+        "writeFailedClosed": "Cannot save: config \"{{config}}\" is stored on {{server}}, which is unreachable. The change was NOT saved.",
+        "conflictRetryExhausted": "Config \"{{config}}\" is still conflicting with another device after 3 attempts. Re-run the command.",
         "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
         "staleSlot": "Your key slot is outdated (the config encryption key was rotated). Re-enroll with: rdc config remote enable",
         "enable": {
@@ -287,12 +294,17 @@
           "passwordNonInteractive": "A config master password is required. Set REDIACC_CONFIG_PASSWORD, or run without --password in an interactive terminal.",
           "passwordRequirePasskey": "This organization requires a passkey to unlock config storage; password enrollment is disabled. Enroll from a browser with: rdc config remote enable",
           "passwordNoSlot": "No password slot is provisioned for your config storage. Add one from the portal (Config Storage > key slots), then retry.",
-          "passwordWrong": "Could not unlock the config with that password. Check REDIACC_CONFIG_PASSWORD (or the password you entered) and try again."
+          "passwordWrong": "Could not unlock the config with that password. Check REDIACC_CONFIG_PASSWORD (or the password you entered) and try again.",
+          "optionForce": "Replace differing local content with the server copy without confirmation",
+          "seeded": "Store was empty; pushed the local config as version 1.",
+          "overwriteConfirm": "Local config \"{{config}}\" has {{machines}} machine(s) and {{repos}} repository(ies) that will be replaced by the server copy (the previous file is kept at {{backupPath}}). Continue?",
+          "overwriteAborted": "Enable aborted: local config \"{{config}}\" has content that differs from the server copy. Re-run with --force to replace it, or confirm in an interactive terminal."
         },
         "disable": {
           "description": "Disconnect from remote storage and save config locally",
           "success": "Remote config disabled. Config \"{{name}}\" saved locally.",
-          "notEnabled": "Remote config is not enabled."
+          "notEnabled": "Remote config is not enabled.",
+          "serverRequired": "Cannot disable: config server {{server}} is unreachable, and disable must pull the latest server copy first (a disable from a stale cache could lose another device's writes). Retry once the server is reachable."
         },
         "status": {
           "description": "Show remote connection status"
@@ -1661,7 +1673,7 @@
         "remotePlan": "  Plan:     {{plan}}",
         "remoteStatus": "  Status:   {{status}}",
         "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
-        "serverMismatch": "Dev token belongs to {{actualServerUrl}}, but this worktree is using {{expectedServerUrl}}. Run `rdc subscription login` again.",
+        "serverWouldUse": "Would use account server: {{server}}",
         "remoteMachineActivations": "  Machine slots: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Monthly repo license issuances: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
@@ -1760,6 +1772,7 @@
       "statusDescription": "Show auto-update status and diagnostics",
       "channelDescription": "Set release channel (stable or edge)",
       "channelSet": "Release channel set to {{channel}}",
+      "configMissing": "Config \"{{name}}\" does not exist. Create it with: rdc config init {{name}}",
       "invalidChannel": "Invalid channel: {{channel}}. Use stable or edge.",
       "npmUpdateHint": "To update, run:\n  {{command}}",
       "rollbackRequiresSEA": "Rollback is only available for SEA binary installations."
@@ -1980,7 +1993,7 @@
       "grandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nUse a fork instead: forks are safe, isolated sandbox copies.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Operate on the fork\n  3. When done, the user can promote the fork with rdc repo promote {{name}}:<tag-name>",
       "mcpGrandGuard": "\"{{name}}\" is a grand (production) repository. Agents cannot modify grand repositories directly.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.\nIf you need direct access, ask the user to export REDIACC_ALLOW_GRAND_REPO before starting the agent.",
       "mcpGrandGuardOverride": "\"{{name}}\" is a grand (production) repository. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO.\n\nUse repo_fork to create a safe, isolated sandbox copy, then operate on the fork.",
-      "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUser: to allow direct machine access, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
+      "machineGuard": "Direct machine access to \"{{machine}}\" is not allowed in agent mode.\n\nAgents must connect through a repository context for sandboxed access. Fork a repository first, then connect to the fork.\n\nWorkflow:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUser: machine-level access needs the wildcard — set REDIACC_ALLOW_GRAND_REPO=* in your terminal before starting the agent session. A specific repo name does not unlock direct machine access.",
       "machineGuardOverride": "Direct machine access to \"{{machine}}\" is not allowed. Agent-initiated overrides are not accepted.\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO — only the user can authorize this before the agent starts.\n\nFork a repository first, then connect to the fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "forkBlocked": "Command \"{{command}}\" is not available on fork repositories.\n\nFork repos are interim sandbox environments. This operation only applies to grand (production) repositories. Ask the user to run this command directly.",
       "createGuard": "Cannot create a new grand repository \"{{name}}\" in agent mode.\n\nAgents operate in fork-only mode. Grand repositories are production environments that agents cannot access after creation.\n\nInstead, fork an existing repository:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUser: to allow repository creation, set REDIACC_ALLOW_GRAND_REPO=* (or a specific repo name) in your terminal before starting the agent session.",
@@ -2046,7 +2059,7 @@
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",
       "recoveryFailedServerRejected": "The account server rejected license issuance for the repository on \"{{machine}}\". First error: {{error}}. Run: rdc subscription refresh --repo <repo-ref> for details.",
       "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
-      "skipActivationHint": "On a throwaway machine you can skip activation entirely with REDIACC_SKIP_ACTIVATION=1."
+      "skipActivationHint": "On a throwaway machine you can skip activation entirely with REDIACC_SKIP_MACHINE_ACTIVATION=1."
     },
     "machineNotFound": "Machine \"{{name}}\" not found",
     "machineRequired": "Machine name required. Use --machine <name>",

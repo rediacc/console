@@ -89,7 +89,7 @@ describe('license sharedSftp plumb-through', () => {
   it('refreshRepoLicenseIdentity uses the provided sharedSftp end-to-end without constructing a new SFTPClient', async () => {
     const { sftp, spies } = createSharedSftp();
     mockAccountServerFetch.mockResolvedValueOnce({
-      license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
+      license: { payload: 'a', signature: 'b', publicKeyId: 'fc6a12b178711e65' },
     });
 
     const result = await refreshRepoLicenseIdentity(
@@ -113,7 +113,7 @@ describe('license sharedSftp plumb-through', () => {
 
   it('refreshRepoLicenseIdentity without sharedSftp opens a single connection and reuses it for issueRepoLicense', async () => {
     mockAccountServerFetch.mockResolvedValueOnce({
-      license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
+      license: { payload: 'a', signature: 'b', publicKeyId: 'fc6a12b178711e65' },
     });
 
     const result = await refreshRepoLicenseIdentity(

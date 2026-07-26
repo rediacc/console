@@ -4,8 +4,8 @@ description: Zero-Knowledge-verschlüsselte Konfigurationssynchronisierung mit P
 category: Guides
 order: 8
 language: de
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Konfigurationsspeicher
@@ -74,6 +74,16 @@ Voraussetzungen:
 
 Die Einbindung ist ein Lesevorgang: Die CLI ruft die öffentlichen KDF-Parameter des Slots und den verpackten Schlüssel ab, leitet das Passwort-Geheimnis lokal ab und entschlüsselt die CEK auf dem Gerät. Sie gewährt dem Gerät die Fähigkeit, die Konfiguration zu entschlüsseln und zu synchronisieren; der Speicher selbst wird dabei nicht verändert.
 
+## Aktivierung und Offline-Lesezugriffe
+
+`rdc config remote enable` verbindet die aktive Konfiguration mit dem Speicher. Wenn der Speicher leer ist, **befüllt die Aktivierung ihn mit Ihrer aktuellen lokalen Konfiguration**: Die lokalen Ressourcen werden als erste Version des Speichers gepusht und anschließend zurückgeholt, um den Round-Trip zu belegen. Enthält der Speicher bereits Inhalte, gleicht die Aktivierung stattdessen mit ihm ab, statt ihn zu überschreiben (sie bricht bei einer echten Abweichung ab, sofern Sie nicht `--force` übergeben).
+
+Nach der Aktivierung führt die Konfiguration einen vollständigen **Lese-Cache**, der mit demselben Mechanismus wie jede lokale Konfiguration verschlüsselt gespeichert wird, sodass der Speicher auch nutzbar bleibt, wenn der Account-Server nicht erreichbar ist:
+
+- **Lesevorgänge funktionieren offline.** Der zwischengespeicherte Inhalt wird mit einer Veraltungswarnung auf stderr ausgeliefert, versehen mit der zwischengespeicherten Version und dem Zeitstempel (`cachedVersion` / `cachedAt`).
+- **Schreibvorgänge erfordern den Server und schlagen sicher fehl.** Es gibt keine Offline-Schreibwarteschlange: Ein Schreibvorgang, der den Server nicht erreicht, bricht mit einer Fehlermeldung ab, die den Server benennt. Ist ein Schreibbefehl erfolgreich, ist die Änderung auf dem Server.
+- **Gleichzeitige Änderungen von zwei Geräten** werden per Pull-Replay-Repush auf Ebene des Ressourcen-Buckets aufgelöst, sodass eine zeitgleiche Änderung an anderer Stelle Ihre nicht überschreibt.
+
 ## Schlüsselrotation
 
 Beim Rotieren der CEK des Speichers wird diese unter einer neuen Generation neu verpackt:
@@ -91,6 +101,8 @@ Der Konfigurationsspeicher ist pro Organisation begrenzt. Mitglieder werden übe
 - **Mitglied entfernen**: Klicken Sie auf die Entfernen-Schaltfläche auf der Mitgliederseite (erfordert 2FA + erneute Authentifizierung)
 
 Sicherheitsvorkehrungen verhindern das Entfernen des letzten aktiven Mitglieds oder das Entfernen von sich selbst.
+
+Konfigurationen im Speicher sind zusätzlich pro Team begrenzt, aber diese Begrenzung ist **serverseitige Zugriffskontrolle, keine kryptografische Isolierung**: Eine organisationsweite CEK verschlüsselt die Konfigurationen aller Teams, und der Server setzt durch, welche Teams ein Mitglied lesen darf.
 
 ## Sicherheit
 

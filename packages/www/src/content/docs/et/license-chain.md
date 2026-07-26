@@ -4,8 +4,8 @@ description: "Võltsimiskindel litsentside väljastamine, delegeeritud allkirjas
 category: "Guides"
 order: 8
 language: et
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Litsentsiahelad ja delegeerimine
@@ -18,7 +18,7 @@ Iga kontoserveri poolt väljastatud litsents salvestatakse ainult lisatavasse re
 
 1. **Järjekorranumbrid** on globaalsed ja monotoonselt kasvavad tellimuse kohta. Kirjete vahelejätmine või ümberseadmine murrab ahela.
 2. **Ahela räsid** seovad iga kirje kõikide eelmistega. Mis tahes varasema kirje muutmine tühistab kõik sellele järgnevad kirjed.
-3. **Renet talletab kõrgeima nähtud järjekorranumbri** tellimuse kohta. Server, mis oma järjekorranumbrit tagasi pöörab, tuvastatakse koheselt.
+3. **Renet talletab kõrgeima nähtud järjekorranumbri** allkirjastamisvõtme ja tellimuse kohta. Server, mis oma järjekorranumbrit tagasi pöörab, tuvastatakse koheselt.
 
 ## Kuidas litsents väljastatakse
 
@@ -35,7 +35,7 @@ Kui CLI taotleb hoidla litsentsi, teeb kontoserver järgmist:
 
 ## Kuidas Renet valideerib
 
-Iga Renet'i käitav masin talletab oma viimati teada ahela oleku aadressil `{licenseDir}/chain-state.json`. Iga litsentsi valideerimisel kontrollib Renet:
+Iga Renet'i käitav masin talletab oma viimati teada ahela oleku aadressil `{licenseDir}/chain-state.json` (see tähendab `/var/lib/rediacc/license/chain-state.json`, mis asub hoidla-põhise `repos/` kataloogi kõrval). Ahela olek on piiritletud allkirjastamisvõtme ja tellimuse kaupa, võtmega `"<keyId>:<subscriptionId>"`, nii et eri võtmetega allkirjastatud universumid jälgivad oma järjekorranumbreid sõltumatult. Iga litsentsi valideerimisel kontrollib Renet:
 
 | Kontroll | Tõrge tähendab |
 |---|---|
@@ -57,7 +57,7 @@ Delegeerimissertifikaat sisaldab järgmist:
 - `subscriptionId` -- millisele tellimusele see sertifikaat kohaldub
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- plaani piirangud sisseehitatuna
 - `maxTotalIssuances` -- ahela järjekorranumbri ülempiir
-- `delegatedPublicKey` -- kohapealse serveri Ed25519 avalik võti (SPKI base64)
+- `delegatedPublicKey` -- kohapealse serveri Ed25519 avalik võti (SPKI base64). Selle 16-kohaline hex-sõrmejälg (toorvõtme `SHA-256` esimesed 8 baiti) on `publicKeyId`, mis salvestatakse igasse litsentsiplokki, mille see võti allkirjastab. `publicKeyId` on alati tegelik võtme sõrmejälg, mitte kunagi kohatäide nagu `"default"`.
 - `genesisHash` -- ahela lähtepunkt (jätk eelmisest sertifikaadist või "genesis")
 - `genesisSequence` -- ahela järjekorranumber väljastamise ajal. Kasutatakse `/onprem/cert-upload` poolt, et valideerida, et uus sertifikaat seostub kohaliku väljastamisregistri teadaoleva kirjega, kui ahel on transiidi ajal edenenud. Valikuline tagasiühilduvuse jaoks (käsitletakse 0-na, kui puudub).
 - `validFrom`, `validUntil` -- kehtivusaken (reguleeritud allpool kirjeldatud kehtivuspoliitika järgi)
@@ -73,16 +73,21 @@ Delegeerimissertifikaat sisaldab järgmist:
    ```
 3. Ülesvoolu server allkirjastab sertifikaadi oma peamise võtmega ja tagastab selle.
 4. Kohapealne server talletab sertifikaadi ja oma privaatvõtme, olles valmis litsentse allkirjastama.
-5. Kui CLI taotleb kohapealselt serverilt litsentsi, allkirjastab server delegeeritud võtmega ja lisab viite sertifikaadile.
-6. Renet teostab **kaheastmelise valideerimise**:
+5. Kui CLI taotleb kohapealselt serverilt litsentsi, allkirjastab server delegeeritud võtmega ja **manustab kogu delegeerimissertifikaadi litsentsiploki sisse** (väli `delegationCert`). Sertifikaati ei tooda eraldi; see liigub kaasas iga hoidla litsentsiga.
+6. Renet teostab **kaheastmelise valideerimise** selles järjekorras:
    - Kontrollib sertifikaadi allkirja sisseehitatud ülesvoolu peamise võtme suhtes.
+   - Jõustab sertifikaadi kehtivusakna (`validFrom` / `validUntil`) kasvutoimingutel (`repo create`, `fork`, `resize`, `expand`) ja varunduse ülekandel (`repo push`, `pull`, varundused). Käitustase (`repo up`, `up all`, automaatkäivitus) jätab vahele ainult akna, sarnaselt sellele, kuidas ta juba jätab vahele litsentsi aegumise: teie töötavad koormused ei peatu kunagi sertifikaadi aegumise tõttu, kuid aegunud sertifikaat ei saa autoriseerida midagi uut. Allkiri, võtme sidumine ja kõik muud sertifikaadi piirangud jäävad jõustatuks kõigil tasemetel.
+   - Nõuab, et `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (16-kohaline hex-võtme sõrmejälg), nii et sertifikaat saab kinnitada ainult litsentse, mis on allkirjastatud täpselt selle võtmega, millele ta delegeerib.
    - Kontrollib ploki allkirja sertifikaadi delegeeritud võtme suhtes.
-   - Kontrollib, et `blob.sequence <= cert.maxTotalIssuances`.
+   - Jõustab sertifikaadi piirangud: tellimuse vastavus, plaani vastavus, suuruse ülempiir (`maxRepositorySizeGb`) ja `blob.sequence <= cert.maxTotalIssuances`.
    - Rakendab kõik standardsed ahela kontrollid.
+
+Sertifikaadi tõrge nurjub kohe pühendatud põhjusega: `cert_expired` (väljaspool kehtivusakent) või `cert_invalid` (vigane peamise võtme allkiri või rikutud piirang). Neid kontrollitakse **enne** `invalid_signature` kontrolli, seega võidab sertifikaadi põhjus.
 
 Kohapealne server ei saa:
 - Võltsida litsentsi väljaspool delegeerimissertifikaadi plaani piiranguid (Renet lükkab selle tagasi).
 - Väljastada rohkem kui `maxTotalIssuances` kokku toiminguid (Renet lükkab järjekorranumbri ületamise tagasi).
+- Jätkata käivitatavate litsentside allkirjastamist pärast sertifikaadi `validUntil` möödumist (aken jõustatakse ka toimingutel, mis aegumist muidu vahele jätavad).
 - Muuta sertifikaati (ülesvoolu allkiri murrab).
 
 ## Kehtivuspoliitika

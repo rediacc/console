@@ -35,7 +35,9 @@ import type { ContractCommand, ContractOption } from '@rediacc/shared/cli-contra
 import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
 import { CommanderError } from 'commander';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
+import { configService } from '../config/config-resources.js';
 import { createOutputState, DispatchExit, runInRequestContext } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
 
@@ -314,6 +316,14 @@ export function prepareCommand(
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
   const { argv, entry } = args.prepared;
   const started = Date.now();
+
+  // Per-dispatch config freshness: configService memoizes a ResourceState
+  // view per process, which in a long-lived serve process freezes the
+  // repository/machine world at first use while clients may rewrite the
+  // config between dispatches — the same staleness class the executor daemon
+  // hit (it built vaults from a boot snapshot). Reset both layers up front.
+  configFileStorage.clearCache();
+  configService.resetResourceView();
 
   // The result of the LAST machine call the command made. A command can make
   // several (fork then up); the caller cares about how the command as a whole

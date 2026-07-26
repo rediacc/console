@@ -4,8 +4,8 @@ description: "قم بتثبيت واجهة سطر أوامر Rediacc على Linu
 category: "Guides"
 order: 1
 language: ar
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # التثبيت
@@ -209,4 +209,4 @@ docker pull ghcr.io/rediacc/rdc:edge
 - **لا تتأثر اتصالات العملاء الحالية (HTTP، TCP، UDP).** خادم المسارات هو مزوّد تكوين -- وليس في مسار البيانات. يتعامل Traefik مع كل حركة المرور مباشرة.
 - لا يتم المساس بحاويات التطبيقات الخاصة بك -- يتم إعادة تشغيل عملية خادم المسارات على مستوى النظام فقط.
 
-لتخطي إعادة التشغيل التلقائية، مرّر `--skip-router-restart` إلى أي أمر، أو عيّن متغير البيئة `RDC_SKIP_ROUTER_RESTART=1`.
+لتخطي إعادة التشغيل التلقائية، مرّر `--skip-router-restart` إلى أي أمر، أو عيّن متغير البيئة `REDIACC_SKIP_ROUTER_RESTART=1`.

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "id": "abcd1234-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+  "version": 7,
+  "account": {
+    "userEmail": "op@example.com",
+    "accountServer": "https://on-prem.example.com",
+    "e2ePublicKey": "MCowBQYDK2VuAyEALY64atDar/bIwKoYEJPoYphKKZ6KUIkPzIHdfH6nKg8=",
+    "updateChannel": "edge",
+    "releasesUrl": "https://releases.on-prem.example.com"
+  },
+  "defaults": { "language": "en", "datastoreSize": "95%" },
+  "encryption": { "mode": "plaintext" }
+}

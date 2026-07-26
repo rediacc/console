@@ -347,6 +347,11 @@
       "remote": {
         "description": "إدارة اتصال تخزين الإعدادات عن بُعد",
         "tokenExpired": "انتهت صلاحية رمز الإعدادات عن بُعد. أعد المصادقة باستخدام: rdc config remote enable",
+        "unreachable": "خادم الإعدادات {{server}} غير قابل للوصول",
+        "offlineCacheWarning": "خادم الإعدادات {{server}} غير قابل للوصول؛ يتم تقديم الإعدادات \"{{config}}\" من الذاكرة المؤقتة دون اتصال (إصدار الخادم {{version}}، تم التخزين المؤقت قبل {{age}}). لا يمكن حفظ التغييرات حتى يصبح الخادم قابلاً للوصول.",
+        "offlineNoCache": "خادم الإعدادات {{server}} غير قابل للوصول، وليس لدى الإعدادات \"{{config}}\" ذاكرة مؤقتة دون اتصال بعد. شغّل \"rdc config remote refresh\" بمجرد أن يصبح الخادم قابلاً للوصول لتهيئة الذاكرة المؤقتة.",
+        "writeFailedClosed": "تعذّر الحفظ: الإعدادات \"{{config}}\" مخزّنة على {{server}} غير القابل للوصول. لم يتم حفظ التغيير.",
+        "conflictRetryExhausted": "لا تزال الإعدادات \"{{config}}\" متعارضة مع جهاز آخر بعد 3 محاولات. أعد تشغيل الأمر.",
         "passkeySecretMissing": "لم يتم العثور على مفتاح المرور في حلقة مفاتيح النظام. أعد المصادقة باستخدام: rdc config remote enable",
         "staleSlot": "فتحة مفتاحك قديمة (تم تدوير مفتاح تشفير الإعدادات). أعد التسجيل عبر: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "كلمة مرور الإعدادات الرئيسية مطلوبة. عيّن REDIACC_CONFIG_PASSWORD، أو شغّل الأمر بلا --password في طرفية تفاعلية.",
           "passwordRequirePasskey": "تتطلب هذه المؤسسة مفتاح مرور (passkey) لفتح تخزين الإعدادات؛ التسجيل بكلمة المرور معطَّل. سجِّل من متصفح عبر: rdc config remote enable",
           "passwordNoSlot": "لا توجد فتحة كلمة مرور مُجهَّزة لتخزين إعداداتك. أضف واحدة من البوابة (Config Storage > key slots) ثم أعد المحاولة.",
-          "passwordWrong": "تعذّر فتح الإعدادات بكلمة المرور تلك. تحقّق من REDIACC_CONFIG_PASSWORD (أو كلمة المرور التي أدخلتها) ثم أعد المحاولة."
+          "passwordWrong": "تعذّر فتح الإعدادات بكلمة المرور تلك. تحقّق من REDIACC_CONFIG_PASSWORD (أو كلمة المرور التي أدخلتها) ثم أعد المحاولة.",
+          "optionForce": "استبدال المحتوى المحلي المختلف بنسخة الخادم دون تأكيد",
+          "seeded": "كان المخزن فارغاً؛ تم دفع الإعدادات المحلية كإصدار 1.",
+          "overwriteConfirm": "تحتوي الإعدادات المحلية \"{{config}}\" على {{machines}} جهاز/أجهزة و{{repos}} مستودع/مستودعات سيتم استبدالها بنسخة الخادم (يتم الاحتفاظ بالملف السابق في {{backupPath}}). هل تريد المتابعة؟",
+          "overwriteAborted": "تم إلغاء التفعيل: تحتوي الإعدادات المحلية \"{{config}}\" على محتوى يختلف عن نسخة الخادم. أعد التشغيل مع --force لاستبدالها، أو أكّد في طرفية تفاعلية."
         },
         "disable": {
           "description": "قطع الاتصال بالتخزين عن بُعد وحفظ الإعدادات محلياً",
           "notEnabled": "الإعدادات عن بُعد غير مفعّلة.",
-          "success": "تم تعطيل الإعدادات عن بُعد. تم حفظ الإعدادات \"{{name}}\" محلياً."
+          "success": "تم تعطيل الإعدادات عن بُعد. تم حفظ الإعدادات \"{{name}}\" محلياً.",
+          "serverRequired": "تعذّر التعطيل: خادم الإعدادات {{server}} غير قابل للوصول، ويجب أن يقوم التعطيل أولاً بسحب أحدث نسخة من الخادم (قد يؤدي التعطيل من ذاكرة مؤقتة قديمة إلى فقدان تغييرات جهاز آخر). أعد المحاولة بمجرد أن يصبح الخادم قابلاً للوصول."
         },
         "status": {
           "description": "عرض حالة الاتصال عن بُعد"
@@ -473,6 +483,9 @@
         "verifying": "جارٍ التحقق من أن المفتاح الجديد يفكّ تشفير التكوين...",
         "waiting": "في انتظار موافقة المتصفح...",
         "warning": "هذا يُدوِّر المفتاح الذي يُشفَّر به تكوين المؤسسة بأكمله. يجب على كل جهاز آخر إعادة الربط بعد ذلك."
+      },
+      "current": {
+        "description": "عرض الإعدادات النشطة: الاسم، الملف، الخادم والقناة بعد الحل، حالة الرمز"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "الاشتراك",
         "virtualization": "المحاكاة الافتراضية"
       },
-      "serverMismatch": "عدم تطابق الخادم",
       "subscriptionUnreachable": "تعذر الوصول إلى خادم الاشتراك",
       "title": "أداة تشخيص Rediacc CLI"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  تعذر تحليل ملف الترخيص",
         "remote": "\nالاشتراك البعيد:",
         "remoteMachine": "    - {{id}}... (آخر ظهور: {{lastSeen}})",
+        "serverWouldUse": "سيتم استخدام خادم الحساب: {{server}}",
         "remoteMachineActivations": "  تفعيلات الأجهزة: {{active}}/{{max}}",
         "remotePlan": "  الخطة:    {{plan}}",
         "remoteRepoLicenseIssuances": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
-        "remoteStatus": "  الحالة:   {{status}}",
-        "serverMismatch": "رمز المطور يتبع {{actualServerUrl}}، لكن شجرة العمل هذه تستخدم {{expectedServerUrl}}. شغّل `rdc subscription login` مرة أخرى."
+        "remoteStatus": "  الحالة:   {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "تحديث متوفر: v{{version}} (الحالي: v{{current}})",
       "channelDescription": "تعيين قناة الإصدار (stable أو edge)",
       "channelSet": "تم تعيين قناة الإصدار إلى {{channel}}",
+      "configMissing": "الإعدادات \"{{name}}\" غير موجودة. أنشئها باستخدام: rdc config init {{name}}",
       "checking": "جارٍ البحث عن تحديثات...",
       "checkOnly": "التحقق من التحديثات فقط دون التنزيل",
       "description": "التحقق من تحديثات CLI وتطبيقها",
@@ -2008,7 +2021,7 @@
       "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up {{name}}:<tag-name>)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo promote {{name}}:<tag-name>\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
       "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تم تعيين REDIACC_ALLOW_GRAND_REPO، لكن لا يمكن التحقق من أصله على {{platform}} (أداة التحقق من السلالة غير متاحة أو فشلت)، لذلك لا يُقبل التجاوز.\n\nاستخدم سير عمل fork أولاً:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo promote {{name}}:<tag-name>\n\nملاحظة: التحقق يعمل على Linux و macOS و Windows مع تثبيت rdc سليم. أعد تثبيت rdc إذا استمرت المشكلة، وعيّن المتغير في الطرفية قبل بدء الوكيل.",
-      "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
+      "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: الوصول على مستوى الآلة يتطلب حرف البدل — عيّن REDIACC_ALLOW_GRAND_REPO=* في الطرفية قبل بدء جلسة الوكيل. اسم مستودع محدد لا يتيح الوصول المباشر للآلة.",
       "machineGuardOverride": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح. لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "الوصول المباشر إلى الآلة \"{{machine}}\" متجاوَز عليه، لكن لا يمكن التحقق من أصل هذا التجاوز على {{platform}} (أداة التحقق من السلالة غير متاحة أو فشلت)، لذلك لا يُقبل التجاوز.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nملاحظة: التحقق يعمل على Linux و macOS و Windows مع تثبيت rdc سليم. أعد تثبيت rdc إذا استمرت المشكلة، وعيّن المتغير في الطرفية قبل بدء الوكيل.",
       "mcpGrandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nاستخدم repo_fork لإنشاء نسخة معزولة وآمنة، ثم اعمل على الـ fork.\nإذا كنت بحاجة إلى وصول مباشر، اطلب من المستخدم تعيين REDIACC_ALLOW_GRAND_REPO قبل بدء الوكيل.",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "تم العثور على مستودعات على {{machine}} لكن لا يوجد أي منها في إعداداتك المحلية. راجع مستودعاتك المتابَعة باستخدام `rdc repo list`، ثم أعد المحاولة.",
       "recoveryFailedServerRejected": "رفض خادم الحساب إصدار الترخيص للمستودع على \"{{machine}}\". الخطأ الأول: {{error}}. شغّل: rdc subscription refresh --repo <repo-ref> للمزيد من التفاصيل.",
       "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة.",
-      "skipActivationHint": "على جهاز مؤقت يمكنك تخطي التفعيل تمامًا بـ REDIACC_SKIP_ACTIVATION=1."
+      "skipActivationHint": "على جهاز مؤقت يمكنك تخطي التفعيل تمامًا بـ REDIACC_SKIP_MACHINE_ACTIVATION=1."
     },
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",

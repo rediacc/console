@@ -4,8 +4,8 @@ description: Sincronizzazione cifrata zero-knowledge della configurazione con sb
 category: Guides
 order: 8
 language: it
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Archivio di Configurazione
@@ -74,6 +74,16 @@ Requisiti:
 
 L'iscrizione è una lettura: la CLI recupera i parametri KDF pubblici dello slot e la chiave avvolta, deriva localmente il segreto della password e sblocca la CEK sul dispositivo. Concede al dispositivo la capacità di decifrare e sincronizzare la configurazione; non modifica l'archivio.
 
+## Abilitazione e letture offline
+
+`rdc config remote enable` collega la configurazione attiva all'archivio. Quando l'archivio è vuoto, l'abilitazione **lo inizializza a partire dalla configurazione locale corrente**: le risorse locali vengono inviate (push) come prima versione dell'archivio, quindi recuperate (pull) per verificare il ciclo completo. Quando l'archivio contiene già dei dati, l'abilitazione si riconcilia con esso invece di sovrascriverlo (si interrompe in caso di divergenza reale, a meno che non venga passato `--force`).
+
+Una volta abilitata, la configurazione mantiene una **cache di lettura** completa, cifrata a riposo con lo stesso meccanismo di qualsiasi configurazione locale, così l'archivio resta utilizzabile anche quando il server dell'account non è raggiungibile:
+
+- **Le letture funzionano offline.** Il contenuto in cache viene servito con un avviso di obsolescenza su stderr, etichettato con la versione e il timestamp memorizzati in cache (`cachedVersion` / `cachedAt`).
+- **Le scritture richiedono il server e falliscono in modo sicuro.** Non esiste una coda di scrittura offline: una scrittura che non riesce a raggiungere il server fallisce indicando il server. Se un comando di scrittura ha avuto successo, la modifica è presente sul server.
+- **Le modifiche concorrenti da due macchine** si risolvono tramite pull-replay-repush a livello di bucket delle risorse, così una modifica simultanea altrove non sovrascrive la tua.
+
 ## Rotazione delle chiavi
 
 Ruotare la CEK dell'archivio la riavvolge con una nuova generazione:
@@ -91,6 +101,8 @@ L'archivio di configurazione ha scope per organizzazione. I membri vengono gesti
 - **Rimuovi un membro**: fai clic sul pulsante di rimozione nella pagina Membri (richiede 2FA + ri-autenticazione)
 
 Le protezioni di sicurezza impediscono di rimuovere l'ultimo membro attivo o di rimuovere se stessi.
+
+Le configurazioni nell'archivio sono inoltre delimitate per team, ma questa delimitazione è un **controllo di accesso lato server, non un isolamento crittografico**: un'unica CEK a livello di organizzazione cifra le configurazioni di tutti i team, ed è il server a imporre quali team un membro può leggere.
 
 ## Sicurezza
 

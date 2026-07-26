@@ -47,6 +47,9 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
 
   // ── Execution ───────────────────────────────────────────────────────
   { name: 'run', domain: 'EXECUTION' },
+  // Hidden control surface of the auto-spawned executor daemon (Perf 6);
+  // excluded from the generated contract like `run`.
+  { name: 'executor-daemon', domain: 'EXECUTION' },
   { name: 'term', domain: 'EXECUTION' },
   // Detached jobs: started by any long command, outlive the connection.
   { name: 'job', domain: 'EXECUTION' },

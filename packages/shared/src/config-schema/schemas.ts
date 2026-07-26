@@ -437,6 +437,9 @@ const BackupStrategyConfigSchema = z.object({
 const AccountSchema = z.object({
   userEmail: z.string().optional(),
   accountServer: z.string().optional(),
+  e2ePublicKey: z.string().optional(), // server X25519 SPKI, discovered or seeded
+  updateChannel: z.string().optional(), // free-form R2 channel segment (edge, stable, pr-N)
+  releasesUrl: z.string().optional(), // on-prem releases base URL override
   // team/region are retired cloud-adapter residue (R2-F9). The v2→v3 migration
   // strips them and nothing repopulates them; kept optional only so the dead
   // `config set/clear team|region` command surface compiles until P4 removes it.
@@ -491,8 +494,15 @@ const RemoteConfigSchema = z.object({
   storeId: uuid,
   configId: uuid,
   teamId: uuid.optional(),
-  storageKeyId: z.string(),
+  // Server-provided over the config-remote handoff, then fed to native secure
+  // storage (keyctl / macOS security / DPAPI). Constrain to a safe charset so a
+  // hostile account server cannot smuggle shell metacharacters this far.
+  storageKeyId: z.string().regex(/^[A-Za-z0-9:_-]{1,200}$/),
   dataRegion: z.string().optional(),
+  /** Server envelope version of the last successful pull/push (offline read cache). */
+  cachedVersion: z.number().int().optional(),
+  /** ISO timestamp of the last successful pull/push (offline read cache). */
+  cachedAt: z.string().optional(),
 });
 
 // =============================================================================

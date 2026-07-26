@@ -76,7 +76,7 @@
         "src/components/Sidebar.tsx"
       ],
       "project": [
-        "src/**/*.{ts,tsx,astro}",
+        "src/**/*.{ts,tsx,astro,mdx}",
         "scripts/**/*.{js,cjs,mjs,ts}"
       ],
       "ignore": [
@@ -108,15 +108,13 @@
         "index.html"
       ],
       "project": [
-        "src/**/*.{ts,tsx}"
+        "src/**/*.{ts,tsx,css}"
       ],
       "ignoreDependencies": [
         // BLOCKER: ui components import { Slot } from the radix-ui meta-package; this pins the underlying Slot implementation the meta resolves — no direct import ever appears
         "@radix-ui/react-slot",
         // BLOCKER: code imports react-router-dom (a thin re-export of react-router); both are declared so syncpack sameRange holds the pair to one version
-        "react-router",
-        // BLOCKER: referenced via `@import 'tailwindcss'` in src/styles/app.css and as peer of @tailwindcss/vite; CSS references are invisible to knip
-        "tailwindcss"
+        "react-router"
       ]
     },
     "private/account/e2e": {
@@ -149,14 +147,12 @@
     "fast-xml-parser"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.27 still parses bare `which` (doctor PATH probes) and `qemu-img` (e2e VM image inspection on the KVM host), so they stay listed; it now resolves `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
     "dscl",
     "getent",
     "keyctl",
     "osascript",
     "qemu-img",
-    "security",
-    "which",
     "wsl.exe",
 
     // BLOCKER: terminal emulators probed by the CLI terminal launcher (the remote/ terminal detector tries each candidate); presence is optional per host

@@ -15,6 +15,7 @@ import { extractRenetToLocal, isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool
 // can read a team key without importing renet. Re-exported here: this module is
@@ -105,8 +106,8 @@ export async function provisionRenetToRemote(
   // `systemctl restart`. systemctl try-restart is a no-op when the
   // unit is not running, so this is safe on machines without the
   // router daemon. Opt out via skipRouterRestart=true or
-  // RDC_SKIP_ROUTER_RESTART=1.
-  const skipRestart = options.skipRouterRestart ?? !!process.env.RDC_SKIP_ROUTER_RESTART;
+  // REDIACC_SKIP_ROUTER_RESTART=1.
+  const skipRestart = options.skipRouterRestart ?? !!process.env.REDIACC_SKIP_ROUTER_RESTART;
   const restartServices = skipRestart ? false : (options.restartServices ?? true);
 
   const start = Date.now();
@@ -147,7 +148,7 @@ function functionRequiresDatastore(functionName: string): boolean {
  * (backup, snapshot, repo operations). System and admin functions
  * (machine_ping, setup_machine, machine_uninstall, etc.) skip verification
  * so they can operate on machines regardless of setup state.
- * Bypass with RDC_SKIP_SETUP_CHECK=1 environment variable.
+ * Bypass with REDIACC_SKIP_SETUP_CHECK=1 environment variable.
  */
 export async function verifyMachineSetup(
   machine: MachineConfig,
@@ -155,7 +156,7 @@ export async function verifyMachineSetup(
   options: Pick<RenetSpawnOptions, 'debug'> & { functionName?: string },
   sharedSftp?: SFTPClient
 ): Promise<void> {
-  if (process.env.RDC_SKIP_SETUP_CHECK) return;
+  if (process.env.REDIACC_SKIP_SETUP_CHECK) return;
 
   // Only verify setup for functions that require the BTRFS datastore.
   // System functions (machine_ping, machine_version, setup_machine,
@@ -169,6 +170,13 @@ export async function verifyMachineSetup(
   const cacheKey = `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}`;
   const cached = setupCache.get(cacheKey);
   if (cached && Date.now() - cached < SETUP_CACHE_TTL_MS) return;
+
+  // Persistent-state second: a recent rdc process may have verified setup on
+  // this machine already — skip both SSH round-trips (marker + btrfs check).
+  if (await isSetupVerifiedFresh(cacheKey).catch(() => false)) {
+    setupCache.set(cacheKey, Date.now());
+    return;
+  }
 
   await withSharedOrPooledSftp(
     sharedSftp,
@@ -199,6 +207,8 @@ export async function verifyMachineSetup(
       }
 
       setupCache.set(cacheKey, Date.now());
+      // Best-effort cross-process memo (annotates the provision entry only).
+      await recordSetupVerified(cacheKey).catch(() => undefined);
       if (options.debug) {
         outputService.info(`Setup verified on ${machine.ip}`);
       }

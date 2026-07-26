@@ -10,12 +10,30 @@
  * Each secret is indexed by a server-provided storageKeyId.
  */
 
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getRediaccDirs } from '@rediacc/shared/paths';
 
 const SERVICE_NAME = 'rdc-config';
+
+// ─── Key allowlist (defense-in-depth) ───────────────────────────────────
+//
+// The storage key (`storageKeyId`) is SERVER-provided over the config-remote
+// handoff, so it reaches these sinks fully untrusted. Even though every
+// backend below now passes it as an argv element (never interpolated into a
+// shell string), we reject anything outside a conservative allowlist so a
+// hostile value can never reach a native tool at all. Covers the handoff
+// storageKeyId and the `rdc:pw:<uuid>` password-flow keys.
+const SAFE_KEY = /^[A-Za-z0-9:_-]{1,200}$/;
+
+function assertSafeStorageKey(key: string): void {
+  if (!SAFE_KEY.test(key)) {
+    throw new Error(
+      `Refusing unsafe secure-storage key: only [A-Za-z0-9:_-] (max 200 chars) are allowed`
+    );
+  }
+}
 
 // ─── Interface ──────────────────────────────────────────────────────────
 
@@ -33,11 +51,12 @@ class KeyctlStorage implements SecureStorage {
 
   get(key: string): Promise<string | null> {
     try {
-      const keyId = execSync(`keyctl search @u user "${key}" 2>/dev/null`, {
+      const keyId = execFileSync('keyctl', ['search', '@u', 'user', key], {
         encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
       }).trim();
       if (!keyId) return Promise.resolve(null);
-      return Promise.resolve(execSync(`keyctl pipe ${keyId}`, { encoding: 'utf-8' }));
+      return Promise.resolve(execFileSync('keyctl', ['pipe', keyId], { encoding: 'utf-8' }));
     } catch {
       return Promise.resolve(null);
     }
@@ -46,7 +65,7 @@ class KeyctlStorage implements SecureStorage {
   async set(key: string, value: string): Promise<void> {
     // Remove existing key if present
     await this.delete(key);
-    execSync(`keyctl add user "${key}" "${value}" @u`, { encoding: 'utf-8' });
+    execFileSync('keyctl', ['add', 'user', key, value, '@u'], { encoding: 'utf-8' });
     // No timeout — passkey_secret must persist across reboots/days.
     // The user keyring (@u) lives for the session by default; keys
     // without an explicit timeout persist until the session ends or
@@ -56,11 +75,12 @@ class KeyctlStorage implements SecureStorage {
 
   delete(key: string): Promise<void> {
     try {
-      const keyId = execSync(`keyctl search @u user "${key}" 2>/dev/null`, {
+      const keyId = execFileSync('keyctl', ['search', '@u', 'user', key], {
         encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
       }).trim();
       if (keyId) {
-        execSync(`keyctl unlink ${keyId} @u`);
+        execFileSync('keyctl', ['unlink', keyId, '@u']);
       }
     } catch {
       // Key doesn't exist — ok
@@ -76,9 +96,10 @@ class KeychainStorage implements SecureStorage {
 
   get(key: string): Promise<string | null> {
     try {
-      const result = execSync(
-        `security find-generic-password -a "${key}" -s "${SERVICE_NAME}" -w 2>/dev/null`,
-        { encoding: 'utf-8' }
+      const result = execFileSync(
+        'security',
+        ['find-generic-password', '-a', key, '-s', SERVICE_NAME, '-w'],
+        { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }
       );
       return Promise.resolve(result.trim() || null);
     } catch {
@@ -89,15 +110,18 @@ class KeychainStorage implements SecureStorage {
   async set(key: string, value: string): Promise<void> {
     // Delete existing entry first (update not supported directly)
     await this.delete(key);
-    execSync(`security add-generic-password -a "${key}" -s "${SERVICE_NAME}" -w "${value}" -U`, {
-      encoding: 'utf-8',
-    });
+    execFileSync(
+      'security',
+      ['add-generic-password', '-a', key, '-s', SERVICE_NAME, '-w', value, '-U'],
+      { encoding: 'utf-8' }
+    );
   }
 
   delete(key: string): Promise<void> {
     try {
-      execSync(`security delete-generic-password -a "${key}" -s "${SERVICE_NAME}" 2>/dev/null`, {
+      execFileSync('security', ['delete-generic-password', '-a', key, '-s', SERVICE_NAME], {
         encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
       });
     } catch {
       // Entry doesn't exist — ok
@@ -129,10 +153,14 @@ class DpapiStorage implements SecureStorage {
     if (!existsSync(path)) return Promise.resolve(null);
     try {
       const encrypted = readFileSync(path, 'utf-8');
-      const result = execSync(
-        `powershell -NoProfile -Command "[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String('${encrypted}'), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))"`,
-        { encoding: 'utf-8' }
-      );
+      // Pass the ciphertext through an env var, never interpolated into the
+      // script, so a tampered cache file cannot inject PowerShell.
+      const script =
+        '[Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($env:RDC_DPAPI_ENC), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
+      const result = execFileSync('powershell', ['-NoProfile', '-Command', script], {
+        encoding: 'utf-8',
+        env: { ...process.env, RDC_DPAPI_ENC: encrypted.trim() },
+      });
       return Promise.resolve(result.trim() || null);
     } catch {
       return Promise.resolve(null);
@@ -140,10 +168,14 @@ class DpapiStorage implements SecureStorage {
   }
 
   set(key: string, value: string): Promise<void> {
-    const encrypted = execSync(
-      `powershell -NoProfile -Command "[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes('${value}'), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))"`,
-      { encoding: 'utf-8' }
-    ).trim();
+    // Pass the secret through an env var, never interpolated into the script,
+    // so a secret containing quotes/newlines cannot inject PowerShell.
+    const script =
+      '[Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($env:RDC_DPAPI_VALUE), $null, [Security.Cryptography.DataProtectionScope]::CurrentUser))';
+    const encrypted = execFileSync('powershell', ['-NoProfile', '-Command', script], {
+      encoding: 'utf-8',
+      env: { ...process.env, RDC_DPAPI_VALUE: value },
+    }).trim();
     writeFileSync(this.keyPath(key), encrypted, { mode: 0o600 });
     return Promise.resolve();
   }
@@ -201,13 +233,40 @@ class FileStorage implements SecureStorage {
   }
 }
 
-// ─── Factory ────────────────────────────────────────────────────────────
+// ─── Validating wrapper (single choke-point) ────────────────────────────
 
 /**
- * Get the platform-appropriate secure storage implementation.
- * Falls back to file-based storage if native storage is unavailable.
+ * Wraps any backend and rejects unsafe keys BEFORE they reach a native tool.
+ * Every path that touches secure storage goes through `getSecureStorage()`, so
+ * validating here guarantees no untrusted `storageKeyId` reaches keyctl,
+ * security, or PowerShell — regardless of which backend is active.
  */
-export function getSecureStorage(): SecureStorage {
+class ValidatingStorage implements SecureStorage {
+  constructor(private readonly inner: SecureStorage) {}
+
+  get type(): string {
+    return this.inner.type;
+  }
+
+  get(key: string): Promise<string | null> {
+    assertSafeStorageKey(key);
+    return this.inner.get(key);
+  }
+
+  set(key: string, value: string): Promise<void> {
+    assertSafeStorageKey(key);
+    return this.inner.set(key, value);
+  }
+
+  delete(key: string): Promise<void> {
+    assertSafeStorageKey(key);
+    return this.inner.delete(key);
+  }
+}
+
+// ─── Factory ────────────────────────────────────────────────────────────
+
+function selectBackend(): SecureStorage {
   switch (process.platform) {
     case 'linux':
       try {
@@ -230,4 +289,13 @@ export function getSecureStorage(): SecureStorage {
     default:
       return new FileStorage();
   }
+}
+
+/**
+ * Get the platform-appropriate secure storage implementation.
+ * Falls back to file-based storage if native storage is unavailable.
+ * The returned storage validates every key (see ValidatingStorage).
+ */
+export function getSecureStorage(): SecureStorage {
+  return new ValidatingStorage(selectBackend());
 }

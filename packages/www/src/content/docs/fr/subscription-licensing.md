@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Abonnement et licences
@@ -48,13 +48,13 @@ Consultez [rdc vs renet](/fr/docs/rdc-vs-renet) pour la répartition station de 
 Pour l'automatisation et les agents IA, utilisez un token d'abonnement à portée limitée plutôt que la connexion par navigateur :
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 Vous pouvez également injecter le token directement via l'environnement afin que le CLI puisse émettre et renouveler les licences de dépôt sans aucune étape de connexion interactive :
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Aucun fichier de licence de machine n'est stocké sur la machine. L'application 
 
 ### Licence de dépôt
 
-Une licence de dépôt est une licence signée pour un dépôt sur une machine. C'est le seul fichier de licence stocké sur la machine (`/var/lib/rediacc/license/repos/{guid}.json`).
+Une licence de dépôt est une licence signée pour un dépôt sur une machine. C'est le seul fichier de licence stocké sur la machine, organisé par clé de signature :
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` est une empreinte hexadécimale à 16 caractères (les 8 premiers octets du `SHA-256` de la clé publique Ed25519 du serveur signataire). Un dépôt géré par plus d'un univers de compte (par exemple production et bench se déployant sur la même machine) conserve un fichier par clé de signature dans son répertoire `{guid}`. Le build renet de la machine ne valide que le fichier que sa clé intégrée, ou un certificat de délégation qui en découle, peut vérifier ; les fichiers des autres univers restent inertes. Le changement d'univers n'invalide jamais les licences : la première opération dans un nouvel univers émet la licence de cet univers une seule fois (un résultat `missing` déclenche une émission automatique), et les deux coexistent ensuite.
 
 Elle est utilisée pour :
 
 - `rdc repo create` et `rdc repo fork`, validé avant l'approvisionnement (pré-émise sans preuves d'identité, puis réémise avec preuves d'identité après création)
 - `rdc repo resize` et `rdc repo expand`, validation complète incluant l'expiration
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validé avec **expiration ignorée**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validé avec **expiration ignorée**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **validé intégralement, expiration incluse** : le transfert de sauvegarde nécessite un droit actif
 - démarrage automatique du dépôt au redémarrage de la machine, validé avec **expiration ignorée**
 
 Les licences de dépôt sont liées à la machine et au dépôt cible. Chaque licence contient l'ID de machine, le GUID du dépôt, l'ID d'abonnement, les limites de plan et l'expiration. Pour les dépôts chiffrés, Rediacc vérifie également l'identité LUKS du volume sous-jacent.
@@ -106,7 +110,7 @@ Les nouvelles inscriptions démarrent un essai gratuit de 14 jours sur Professio
 
 Community est le socle gratuit permanent. Ce n'est plus une option d'inscription directe pour les nouveaux comptes ; à la place, un compte bascule sur Community dès qu'un abonnement prend fin : annulation pendant l'essai, annulation ultérieure d'un plan payant, ou paiement en échec. Sur le repli Community, vous conservez une machine avec 10 Go par dépôt et 100 setups par mois. Les comptes créés avant le lancement du modèle basé sur l'essai conservent leur accès Community existant.
 
-L'application des limites reste souple. Les dépôts en cours d'exécution continuent de fonctionner même après la fin d'un abonnement ; seules les nouvelles opérations (création, fork, redimensionnement et renouvellement de licence) sont soumises à un droit actif.
+L'application des limites reste souple là où cela compte le plus : les dépôts en cours d'exécution continuent de fonctionner même après la fin d'un abonnement (`up`, `down`, `delete`, démarrage automatique). Les nouvelles opérations (création, fork, redimensionnement et renouvellement de licence) ainsi que le transfert de sauvegarde (`push`, `pull`, `sync`) sont en revanche soumis à un droit actif.
 
 ## Période de grâce pour la migration de VM
 
@@ -169,10 +173,10 @@ rdc subscription login
 Connexion pour automatisation ou agent IA :
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Pour les environnements non interactifs, définir `REDIACC_SUBSCRIPTION_TOKEN` est l'option la plus simple. Le token ne doit avoir une portée que pour les opérations d'abonnement et de licence de dépôt dont l'agent a besoin.
+Pour les environnements non interactifs, définir `REDIACC_TOKEN` est l'option la plus simple. Le token ne doit avoir une portée que pour les opérations d'abonnement et de licence de dépôt dont l'agent a besoin.
 
 Afficher le statut d'abonnement soutenu par le compte :
 
@@ -202,7 +206,7 @@ La réf `--repo` doit se résoudre dans votre configuration `rdc` locale. Un dé
 
 Lors de la première utilisation, une opération de dépôt ou de sauvegarde sous licence qui ne trouve pas de licence de dépôt utilisable peut déclencher automatiquement un transfert d'autorisation de compte. Le CLI imprime une URL d'autorisation, essaie d'ouvrir le navigateur dans les terminaux interactifs, et retente l'opération une fois après que l'autorisation et l'émission ont réussi.
 
-Dans les environnements non interactifs, le CLI n'attend pas l'approbation du navigateur. Il vous indique plutôt de fournir un token à portée limitée avec `rdc subscription login --token ...` ou `REDIACC_SUBSCRIPTION_TOKEN`.
+Dans les environnements non interactifs, le CLI n'attend pas l'approbation du navigateur. Il vous indique plutôt de fournir un token à portée limitée avec `rdc subscription login --token ...` ou `REDIACC_TOKEN`.
 
 Pour la configuration initiale de la machine, consultez [Configuration de machine](/fr/docs/setup).
 
@@ -229,6 +233,8 @@ La récupération automatique est intentionnellement limitée :
 - `sequence_regression` : échoue rapidement comme un problème d'intégrité/état de licence de dépôt
 - `invalid_signature` : échoue rapidement comme un problème d'intégrité/état de licence de dépôt
 - `identity_mismatch` : échoue rapidement, l'identité du dépôt ne correspond pas à la licence installée
+- `cert_expired` : échoue immédiatement sur les opérations de croissance (`create`, `fork`, `resize`) et sur le transfert de sauvegardes (`push`, `pull`) ; `repo up` et le démarrage automatique continuent de fonctionner, conformément au modèle souple d'expiration de licence. Renouvelez le certificat de délégation
+- `cert_invalid` : échoue immédiatement, le certificat de délégation a échoué à une contrainte (signature de clé maître invalide, incompatibilité d'abonnement/de plan, plafond de taille ou séquence dépassant `maxTotalIssuances`). Réémettez le certificat après avoir corrigé la limite sous-jacente
 
 Ces cas d'échec rapide ne consomment pas automatiquement les appels de renouvellement ou d'émission soutenus par le compte.
 

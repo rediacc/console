@@ -1,0 +1,173 @@
+name: Claude Review (reusable)
+
+# The single source of truth for automated Claude PR review, callable from
+# console itself AND from the private submodule repos (console is public, so
+# cross-repo `uses:` works). The caller's github context governs which repo's
+# PR gets reviewed; the gate/prompts/marker/cost logic always comes from
+# console@main via an explicit checkout, so there is exactly one copy to
+# maintain.
+#
+# required_check semantics:
+#   - non-empty (console: "CI Complete"): the pull_request path requires that
+#     check green on the current head -- the draft-until-green flow.
+#   - empty (submodules): no PR CI exists in those repos (their validation
+#     runs inside console CI), so the green gate is deliberately skipped and
+#     the marker/dedup machinery alone bounds cost.
+
+on:
+  workflow_call:
+    inputs:
+      required_check:
+        description: 'Check-run name that must be green on the PR head; empty skips the green gate'
+        required: false
+        type: string
+        default: ''
+      pr_number:
+        description: 'PR number for workflow_dispatch re-reviews'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    name: Claude Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write # inline review comments + summary comment
+      issues: write # marker comment upsert (issue-comment endpoint on PRs)
+      checks: read # required_check lookup on the pull_request path
+    steps:
+      # Review tooling always comes from console@main -- one copy, no drift.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rediacc/console
+          ref: main
+          path: .review-scripts
+          persist-credentials: false
+
+      # Caller repo's default branch at the WORKSPACE ROOT: the action's git
+      # plumbing expects the reviewed repo there, and the gate reads
+      # ./.gitmodules (pointer-skip) from it. For console-as-caller this
+      # matches the original behavior exactly.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # BOOTSTRAP fallback: until the review system first lands on main,
+      # console@main has no .ci/scripts/review and the gate would die on
+      # file-not-found. The guard makes it self-disabling: once main has the
+      # gate script, the caller-side bootstrap never executes, so a PR can
+      # never substitute its own review logic in the steady state.
+      - name: Bootstrap review scripts (pre-first-merge only)
+        run: |
+          [ -f .review-scripts/.ci/scripts/review/claude-review-gate.sh ] ||
+            bash .ci/scripts/review/bootstrap-review-scripts.sh
+
+      - name: Review gate
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REQUIRED_CHECK: ${{ inputs.required_check }}
+          WR_EVENT: ${{ github.event.workflow_run.event }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: .review-scripts/.ci/scripts/review/claude-review-gate.sh
+
+      # The anthropics action resets the workspace's UNTRACKED files while it
+      # runs, which deletes .review-scripts before the post-review steps —
+      # proven on run 30085984306: the gate step above used it, then
+      # "Post inline findings" hit ENOENT (exit 127) and the marker never
+      # posted. Stage the TRUSTED copy into $RUNNER_TEMP now (outside
+      # $GITHUB_WORKSPACE, untouched by any checkout or action) and run the
+      # post steps from there. Trusted = whatever fed the gate above (console@
+      # main post-merge, the bootstrap copy pre-merge), so a PR's own tree can
+      # never substitute the marker/inline-posting logic.
+      - name: Stage review scripts outside the workspace
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          rm -rf "${{ runner.temp }}/review-scripts"
+          mkdir -p "${{ runner.temp }}/review-scripts"
+          cp -r .review-scripts/.ci "${{ runner.temp }}/review-scripts/.ci"
+
+      # Full history so `git diff <last_reviewed>..<head>` works in follow-ups.
+      - name: Checkout PR head
+        if: steps.gate.outputs.go == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.gate.outputs.head_sha }}
+          fetch-depth: 0
+          # blob:none: the diff below opens only the changed files, which a partial
+          # clone fetches on demand. Downloading 5.7 GB of historical blobs to
+          # read a PR diff was pure waste.
+          filter: blob:none
+          clean: false
+          persist-credentials: false
+
+      # github_token is passed explicitly: comments post as github-actions,
+      # whose events never trigger workflows (anti-recursion), and the run
+      # does not depend on the Claude GitHub App's repo selection.
+      - name: Claude review
+        id: claude
+        if: steps.gate.outputs.go == 'true'
+        uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          # track_progress: the ACTION posts/updates the report comment via
+          # github_token -- model-side posting proved undeliverable (SDK
+          # permission denials, three attempts) and stays best-effort only.
+          track_progress: true
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "mcp__github_inline_comment__create_inline_comment",
+                  "Bash(gh pr view:*)",
+                  "Bash(gh pr diff:*)",
+                  "Bash(gh pr comment:*)",
+                  "Bash(gh api:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)"
+                ]
+              }
+            }
+          # Turn budget from the gate, scaled to diff size (50/80/140).
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns ${{ steps.gate.outputs.review_turns }}
+
+      # Line-anchored severity-badged comments, posted deterministically from
+      # the machine-readable findings block in the report (the model's final
+      # text is the only channel proven to escape the action sandbox).
+      # Advisory: per-comment failures are skipped, never fail the job.
+      - name: Post inline findings
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --post-findings
+
+      # Mark only AFTER a successful review step, and only when output
+      # actually posted (the guard verifies; at-least-once semantics). Also
+      # appends cost + token usage parsed from the execution file.
+      - name: Record reviewed SHA
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --mark

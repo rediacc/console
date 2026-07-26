@@ -4,8 +4,8 @@ description: "Emissão de licenças à prova de adulteração, assinatura delega
 category: "Guides"
 order: 8
 language: pt
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Cadeia de Licenças e Delegação
@@ -18,7 +18,7 @@ Cada licença emitida por um servidor de conta é registada num livro-razão de 
 
 1. Os **números de sequência** são globais e monotónicos por subscrição. Saltar ou reordenar entradas quebra a cadeia.
 2. Os **hashes da cadeia** vinculam cada entrada a todas as anteriores. Modificar qualquer entrada passada invalida todas as que se seguem.
-3. O **Renet armazena a sequência mais alta que viu** por subscrição. Um servidor que reverta a sua sequência é detetado imediatamente.
+3. O **Renet armazena a sequência mais alta que viu** por chave de assinatura e subscrição. Um servidor que reverta a sua sequência é detetado imediatamente.
 
 ## Como uma Licença é Emitida
 
@@ -35,7 +35,7 @@ A `sequence` e o `prevChainHash` estão dentro do payload assinado (por isso nã
 
 ## Como o Renet Valida
 
-Cada máquina que corre o Renet armazena o seu último estado conhecido da cadeia em `{licenseDir}/chain-state.json`. Em cada validação de licença, o Renet verifica:
+Cada máquina que corre o Renet armazena o seu último estado conhecido da cadeia em `{licenseDir}/chain-state.json` (ou seja, `/var/lib/rediacc/license/chain-state.json`, um irmão do diretório `repos/` por repositório). O estado da cadeia tem âmbito por chave de assinatura e subscrição, indexado como `"<keyId>:<subscriptionId>"`, pelo que universos assinados por chaves diferentes seguem as suas sequências de forma independente. Em cada validação de licença, o Renet verifica:
 
 | Verificação | Falha significa |
 |---|---|
@@ -57,7 +57,7 @@ Um certificado de delegação contém:
 - `subscriptionId` -- a que subscrição este certificado se aplica
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- limites do plano incorporados
 - `maxTotalIssuances` -- limite superior no número de sequência da cadeia
-- `delegatedPublicKey` -- a chave pública Ed25519 do servidor on-premise (SPKI base64)
+- `delegatedPublicKey` -- a chave pública Ed25519 do servidor on-premise (SPKI base64). A sua impressão digital de 16 caracteres hexadecimais (os primeiros 8 bytes de `SHA-256` sobre a chave em bruto) é o `publicKeyId` registado em cada blob de licença que esta chave assina. O `publicKeyId` é sempre uma impressão digital de chave real, nunca um placeholder como `"default"`.
 - `genesisHash` -- o ponto de partida da cadeia (continuação do certificado anterior, ou "genesis")
 - `genesisSequence` -- sequência da cadeia no momento da emissão. Usado por `/onprem/cert-upload` para validar que o novo certificado se liga a uma entrada conhecida no livro-razão de emissão local quando a cadeia avançou durante o trânsito. Opcional para compatibilidade retroativa (tratado como 0 se ausente).
 - `validFrom`, `validUntil` -- janela de validade (regida pela política de validade abaixo)
@@ -73,16 +73,21 @@ Um certificado de delegação contém:
    ```
 3. O upstream assina o certificado com a sua chave mestra e devolve-o.
 4. O servidor on-premise armazena o certificado e a sua chave privada, pronto para assinar licenças.
-5. Quando uma CLI solicita uma licença ao servidor on-premise, o servidor assina com a sua chave delegada e inclui uma referência ao certificado.
-6. O Renet realiza **validação de dois níveis**:
+5. Quando uma CLI solicita uma licença ao servidor on-premise, o servidor assina com a sua chave delegada e **incorpora o certificado de delegação completo dentro do blob da licença** (o campo `delegationCert`). O certificado não é obtido separadamente; viaja com cada licença de repositório.
+6. O Renet realiza **validação de dois níveis** por esta ordem:
    - Verificar a assinatura do certificado contra a chave mestra upstream incorporada.
+   - Impor a janela de validade do certificado (`validFrom` / `validUntil`) nas operações de crescimento (`repo create`, `fork`, `resize`, `expand`) e na transferência de backup (`repo push`, `pull`, backups). O nível de operação (`repo up`, `up all`, autostart) ignora apenas essa janela, espelhando o que já faz com o prazo de expiração da licença: as suas cargas de trabalho em execução nunca param por um certificado ter expirado, mas um certificado expirado não pode autorizar nada novo. A assinatura, a vinculação de chave e todas as demais restrições do certificado continuam a ser impostas em todos os níveis.
+   - Exigir `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (a impressão digital de chave de 16 caracteres hexadecimais), para que o certificado só possa validar licenças assinadas exatamente pela chave que delega.
    - Verificar a assinatura do blob contra a chave delegada do certificado.
-   - Verificar que `blob.sequence <= cert.maxTotalIssuances`.
+   - Impor as restrições do certificado: correspondência de subscrição, correspondência de plano, limite de tamanho (`maxRepositorySizeGb`) e `blob.sequence <= cert.maxTotalIssuances`.
    - Aplicar todas as verificações padrão da cadeia.
+
+Uma falha no certificado falha rapidamente com um motivo dedicado: `cert_expired` (fora da janela de validade) ou `cert_invalid` (assinatura de chave mestra inválida ou uma restrição violada). Estes são verificados **antes** de `invalid_signature`, pelo que o motivo do certificado prevalece.
 
 O servidor on-premise não pode:
 - Falsificar uma licença fora dos limites do plano do certificado de delegação (o renet rejeita-a).
 - Emitir mais do que `maxTotalIssuances` operações no total (o renet rejeita excesso de sequência).
+- Continuar a assinar licenças executáveis depois do `validUntil` do certificado (a janela é imposta mesmo em operações que ignoram a expiração).
 - Modificar o certificado (a assinatura upstream quebra).
 
 ## Política de Validade

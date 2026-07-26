@@ -4,6 +4,7 @@ import {
   cleanupOldBinary,
   getOldBinaryPath,
   getPlatformKey,
+  isDevBuild,
   isSEA,
   isUpdateDisabled,
 } from '../platform.js';
@@ -90,14 +91,14 @@ describe('utils/platform', () => {
 
   describe('isUpdateDisabled()', () => {
     beforeEach(() => {
-      delete process.env.RDC_DISABLE_AUTOUPDATE;
+      delete process.env.REDIACC_DISABLE_AUTOUPDATE;
       delete process.env.CI;
       Object.defineProperty(process, 'execPath', { value: '/usr/local/bin/rdc', writable: true });
       versionMock.VERSION = '1.2.3';
     });
 
-    it('returns true when RDC_DISABLE_AUTOUPDATE=1', () => {
-      process.env.RDC_DISABLE_AUTOUPDATE = '1';
+    it('returns true when REDIACC_DISABLE_AUTOUPDATE=1', () => {
+      process.env.REDIACC_DISABLE_AUTOUPDATE = '1';
       expect(isUpdateDisabled()).toBe(true);
     });
 
@@ -142,6 +143,27 @@ describe('utils/platform', () => {
 
     it('returns false when none of the conditions apply', () => {
       expect(isUpdateDisabled()).toBe(false);
+    });
+  });
+
+  describe('isDevBuild()', () => {
+    afterEach(() => {
+      versionMock.VERSION = '1.2.3';
+    });
+
+    it('is true for the 0.0.0-dev placeholder', () => {
+      versionMock.VERSION = '0.0.0-dev';
+      expect(isDevBuild()).toBe(true);
+    });
+
+    it('is true for any -dev suffix', () => {
+      versionMock.VERSION = '1.0.13-dev';
+      expect(isDevBuild()).toBe(true);
+    });
+
+    it('is false for a released version', () => {
+      versionMock.VERSION = '1.2.3';
+      expect(isDevBuild()).toBe(false);
     });
   });
 

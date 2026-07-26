@@ -1036,19 +1036,19 @@
         "rows": [
           {
             "title": "Your apps keep running forever.",
-            "description": "Start, stop, delete, and back up. These always work, even years after your subscription ends. Your data is always accessible."
+            "description": "Start, stop, and delete. These always work, even years after your subscription ends. Your data is always accessible on your own machines."
           },
           {
             "title": "Full access to your tools.",
-            "description": "All your tools keep working. File sync. SSH access. Remote editing. Every management command. No license ever needed."
+            "description": "Your operating tools keep working. SSH access. Remote editing. Every management command. No license ever needed."
           },
           {
             "title": "Only new servers need a subscription.",
-            "description": "You need an active plan to create new servers or copy existing ones. Resizing and expanding work for 60 days after your plan expires. Everything else is permanent."
+            "description": "You need an active plan to create new servers, copy existing ones, or transfer backups. Resizing and expanding work for 60 days after your plan expires. Running your servers is permanent."
           },
           {
             "title": "60-day grace for scaling.",
-            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, delete, and backup are not affected. They work forever."
+            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, and delete are not affected. They work forever. Backup transfer needs an active subscription."
           },
           {
             "title": "Unlimited machines. Pay only when adding new ones.",

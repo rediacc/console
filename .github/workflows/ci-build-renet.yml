@@ -71,6 +71,21 @@ jobs:
           cache: true
           cache-dependency-path: private/renet/go.sum
 
+      # Staged-embed-assets cache: the ~12-minute cost of this job is
+      # `_build_docker_for_assets` (from-scratch CRIU/rsync/CSI compile, arm64
+      # under QEMU) feeding embed_assets staging. The staged tree is fully
+      # determined by embed-assets.lock.json (pinned versions + sha256), and
+      # build.sh's content-based receipt (.staged.json: lockfile sha +
+      # per-asset digests) makes embed_assets a VERIFIED no-op on a warm tree,
+      # so a stale or corrupt cache blob cannot pass silently -- it just
+      # triggers a full restage. Restore after the submodule checkout so
+      # hashFiles can read the lockfile.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+
       # QEMU lets the Docker builder image's arm64 stages run on this amd64
       # runner (arm64 CRIU comes from a Debian .deb, so this is package
       # extraction under emulation, not a slow source compile).
@@ -114,6 +129,14 @@ jobs:
       # release binaries, which is the only place the claim is falsifiable.
       - name: Assert no OTLP credentials baked into the built binaries
         run: .ci/scripts/quality/check-no-otlp-creds.sh
+
+      # Save even if a later step fails (the staging work is done and valid);
+      # the receipt makes a partially-staged tree self-healing on restore.
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && steps.embed-cache.outputs.cache-hit != 'true'
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
@@ -167,7 +190,7 @@ jobs:
           cache-dependency-path: private/renet/go.sum
 
       - name: Login to GHCR
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -251,3 +274,45 @@ jobs:
       - name: Test procwalk (native syscalls)
         shell: bash
         run: cd private/renet && go test -race -count=1 ./pkg/procwalk/...
+
+  # Cross-compile smoke: every GOOS/GOARCH target compiles WITHOUT the embed
+  # payload (committed BPF .o objects satisfy linux; committed .gitkeep
+  # placeholders satisfy the go:embed globs; darwin/windows resolve pkg/ebpf
+  # to the !linux stub). ~1-2 min, no clang, no assets, no QEMU. Catches
+  # //go:build symbol-split breaks (a real darwin one lived at minute ~13 of
+  # Renet (Full) in run 29913979252) at minute ~2 instead. Runs on BOTH the
+  # full and cached paths; a failure here fails the caller job and gates the
+  # pipeline honestly.
+  cross-compile-smoke:
+    name: Renet (cross-compile smoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet
+      # submodules: true would clone ALL five submodules and the least-privilege
+      # token above can only see renet -- account/elite clones 404 and fail the
+      # checkout (round-3 red). Init exactly the one submodule this job needs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Init renet submodule only
+        run: git submodule update --init private/renet
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      - name: Cross-compile all targets (no payload)
+        run: |
+          cd private/renet
+          for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
+            echo "::group::$t"
+            CGO_ENABLED=0 GOOS="${t%/*}" GOARCH="${t#*/}" go build -tags nolicense -o /dev/null ./cmd/renet/
+            echo "::endgroup::"
+          done

@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-slim
     # Skip fork PRs (no access to secrets)
     if: github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
     steps:
       # Initial checkout uses the default GITHUB_TOKEN. We need this to land
       # before the local `./.github/actions/app-token` reference because

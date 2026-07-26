@@ -76,29 +76,24 @@ git push -u origin feat/your-feature-name
 ### 5. Create a Pull Request
 
 ```bash
-# Using GitHub CLI (recommended)
-gh pr create --fill
+# Using GitHub CLI (recommended): open as a draft until CI is green
+gh pr create --draft --fill
 
 # Or manually via GitHub web interface
 ```
 
-### 6. Wait for CI & Reviews
+### 6. Open as a Draft, Wait for CI, then Ready + Review
 
-Your PR must meet the following requirements before it can be merged:
+Keep the PR a **draft** until CI is green. The pipeline runs on every push; the single required status check is **`CI Complete`**, an aggregator that turns green only when the whole pipeline (quality, builds, tests, install matrix, preview, review gate) has passed.
 
-#### ✅ Required Checks (All Must Pass)
+#### ✅ Required check
 
-- **pr-validation** - PR title and description format validation
-- **pr-size-check** - Ensures PR size is manageable
-- **build** - Production build must succeed
-- **lint** - ESLint checks must pass
-- **test** - All unit and integration tests must pass
-- **type-check** - TypeScript type checking must pass
+- **`CI Complete`** - the one required status check. There are **no required human approvals**.
 
-#### ✅ Required Reviews
+#### ✅ Automated review
 
-- At least **1 approval** from a team member
-- All review comments must be **resolved**
+- When `CI Complete` is green, flip the PR ready (`gh pr ready` - allowed only once `CI Complete` is green). Marking it ready triggers an **automated Claude review**; it also re-runs after each later green push while the PR is ready.
+- Claude posts inline comments as review threads. **All of its threads must be resolved (or substantively replied to)** before the PR can merge; the `Review Gate` job enforces this.
 
 #### ✅ Branch Requirements
 
@@ -107,11 +102,11 @@ Your PR must meet the following requirements before it can be merged:
 
 ### 7. Merge Your PR
 
-Once all checks pass and you have approval:
+Once `CI Complete` is green and all review threads are resolved:
 
-1. Click **"Squash and merge"** button on GitHub
-2. Edit the commit message if needed (uses PR title and description by default)
-3. Confirm the merge
+1. Merge is **squash-only**. Use auto-merge so GitHub lands it the moment required checks are green: `gh pr merge --squash --auto` (or the **"Squash and merge"** button on GitHub).
+2. The commit message uses the PR title and description by default; edit if needed.
+3. `gh pr merge --admin` is **not** allowed - the sanctioned path is `--squash --auto`.
 
 Your feature branch will be **automatically deleted** after merge.
 
@@ -119,9 +114,9 @@ Your feature branch will be **automatically deleted** after merge.
 
 ❌ **Don't push directly to main** - All changes require PRs
 ❌ **Don't force push to main** - Protected and will be rejected
-❌ **Don't merge without CI passing** - Merges are blocked
-❌ **Don't merge without approval** - At least 1 review required
-❌ **Don't leave unresolved conversations** - All must be resolved
+❌ **Don't merge with `CI Complete` red** - the required check must be green
+❌ **Don't `gh pr merge --admin`** - banned; use `--squash --auto`
+❌ **Don't leave unresolved review threads** - all must be resolved
 
 ## 🧪 Testing Locally
 
@@ -254,7 +249,7 @@ git push --force-with-lease origin feat/your-feature-name
 
 ### Q: What if I need to make an urgent hotfix?
 
-**A:** Create an emergency PR, request expedited review, and use auto-merge once approved.
+**A:** Open a PR as usual; there is no separate approval step. Once `CI Complete` is green and the automated review's threads are resolved, `gh pr merge --squash --auto` lands it the moment checks pass.
 
 ### Q: How long do reviews usually take?
 
@@ -262,7 +257,7 @@ git push --force-with-lease origin feat/your-feature-name
 
 ### Q: Can I merge my own PR?
 
-**A:** You can click merge after approval, but you cannot approve your own PR.
+**A:** Yes. There are no required human approvals; once `CI Complete` is green and the automated Claude review's threads are resolved, you (or auto-merge) can squash-merge.
 
 ### Q: What happens to my branch after merge?
 
@@ -278,11 +273,11 @@ git push --force-with-lease origin feat/your-feature-name
 1. Create branch     → git checkout -b feat/name
 2. Make changes      → code, test, commit
 3. Push branch       → git push -u origin feat/name
-4. Create PR         → gh pr create --fill
-5. Wait for CI       → All 6 checks must pass ✅
-6. Get review        → At least 1 approval required ✅
-7. Resolve comments  → All conversations resolved ✅
-8. Squash & merge    → Click button, branch auto-deleted ✅
+4. Open draft PR     → gh pr create --draft --fill
+5. Wait for CI       → CI Complete must go green ✅
+6. Flip ready        → gh pr ready (triggers the Claude review) ✅
+7. Resolve threads   → Claude's review threads resolved ✅
+8. Squash & merge    → gh pr merge --squash --auto, branch auto-deleted ✅
 ```
 
 ## 📞 Getting Help

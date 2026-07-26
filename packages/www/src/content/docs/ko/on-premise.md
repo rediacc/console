@@ -4,8 +4,8 @@ description: "자체 인프라에서 계정 서버 및 CLI 배포를 실행하�
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediacc는 자체 인프라에서 완전히 실행할 수 있습니다. 독립 실행형 Docker 이미지에는 계정 서버, 웹 포털, 마케팅 사이트, CLI 배포 엔드포인트가 포함되어 있습니다. Rediacc의 호스팅 서비스에 대한 외부 의존성은 필요하지 않습니다.
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 이 단일 명령은 다음을 수행합니다.
 1. 서버의 `/releases/` 엔드포인트에서 CLI 바이너리를 다운로드합니다.
 2. `/account/api/v1/.well-known/server-info`를 쿼리하여 업데이트 채널을 검색합니다.
-3. 서버 URL, 업데이트 채널, 암호화 키를 포함한 `server.json`을 작성합니다.
+3. 서버 URL, 업데이트 채널, 암호화 키를 `account.*` 필드 아래에 포함한 기본 config(`rediacc.json`)를 작성합니다.
 4. `rdc update`가 향후 업데이트를 위해 서버를 확인하도록 구성합니다.
 
 `REDIACC_CHANNEL` 변수는 필요하지 않습니다. 설치 스크립트는 서버 구성에서 채널을 자동으로 읽습니다.
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-각 명명된 config는 자체 계정 서버 URL 및 구독 토큰을 저장합니다. config를 전환하면 전체 서버 컨텍스트가 전환됩니다.
+각 명명된 config는 자체 계정 서버 URL(`account.*` 아래)과 자체 계정 API 토큰을 저장하며, 토큰은 config 옆에 `api-token-<name>.json`으로 보관됩니다. config를 전환하면 전체 서버 컨텍스트가 전환됩니다.
 
 ## 에어갭 환경
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | 설치 스크립트, CLI 업데이터 | CLI 바이너리에 대한 사용자 정의 릴리스 엔드포인트. 기본값: `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | 설치 스크립트 | 업데이트 채널을 재정의합니다. 설정되지 않은 경우 서버에서 자동으로 감지됩니다. |
 | `REDIACC_ACCOUNT_SERVER` | CLI 런타임 | 모든 CLI 명령에 대한 계정 서버 URL을 재정의합니다. |
-| `RDC_UPDATE_CHANNEL` | CLI 런타임 | `rdc update`의 업데이트 채널을 재정의합니다. |
+| `REDIACC_UPDATE_CHANNEL` | CLI 런타임 | `rdc update`의 업데이트 채널을 재정의합니다. |
 
 ## 서버 구성
 
@@ -177,6 +177,8 @@ DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+부팅 시, 로드된 인증서가 서버가 실제로 라이선스 서명에 사용하는 키와 다른 키에 위임되어 있으면 서버는 시작을 거부합니다(FATAL 로그와 0이 아닌 종료 코드). 서버는 서명 키의 지문을 인증서의 `delegatedPublicKey` 지문과 비교하며, 일치하지 않으면 중단합니다. 인증서가 승인하지 않은 키로 서명된 라이선스는 모든 머신에서 검증할 수 없게 되기 때문입니다. 서명 키 쌍과 인증서의 `delegatedPublicKey`는 항상 동기화된 상태로 유지하세요.
 
 ### 4. 업스트림 검증 및 자동 갱신 구성 (선택 사항이지만 권장)
 

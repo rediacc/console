@@ -4,8 +4,8 @@ description: "Instale la CLI de Rediacc en Linux, macOS o Windows."
 category: "Guides"
 order: 1
 language: es
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # Instalación
@@ -209,4 +209,4 @@ El reinicio es transparente y no causa **ningún tiempo de inactividad**:
 - **Las conexiones de cliente existentes (HTTP, TCP, UDP) no se ven afectadas.** El servidor de rutas es un proveedor de configuración -- no está en la ruta de datos. Traefik gestiona todo el tráfico directamente.
 - Sus contenedores de aplicación no se tocan -- solo se reinicia el proceso del servidor de rutas a nivel de sistema.
 
-Para omitir el reinicio automático, pase `--skip-router-restart` a cualquier comando, o establezca la variable de entorno `RDC_SKIP_ROUTER_RESTART=1`.
+Para omitir el reinicio automático, pase `--skip-router-restart` a cualquier comando, o establezca la variable de entorno `REDIACC_SKIP_ROUTER_RESTART=1`.

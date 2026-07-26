@@ -2126,6 +2126,33 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "config",
+        "current"
+      ],
+      "pathKey": "config current",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.current.description",
+      "label": "Show the active config: name, file, resolved server and channel, token state",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
         "delete"
       ],
       "pathKey": "config delete",
@@ -2927,6 +2954,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "options.serverUrl",
           "label": "Account server URL"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.remote.enable.optionForce",
+          "label": "Replace differing local content with the server copy without confirmation"
         }
       ],
       "positionals": [],

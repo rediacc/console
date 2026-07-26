@@ -4,8 +4,8 @@ description: "Kurcalamaya karşı kanıt lisans düzenleme, yerinde yetkilendiri
 category: "Guides"
 order: 8
 language: tr
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Lisans Zinciri ve Yetkilendirme
@@ -18,7 +18,7 @@ Bir hesap sunucusu tarafından düzenlenen her lisans, salt ekleme yapılan bir 
 
 1. **Sıra numaraları** abonelik başına global ve monotoniktir. Girdileri atlamak veya yeniden sıralamak zinciri bozar.
 2. **Zincir hash'leri** her girdiyi önceki tüm girdilere bağlar. Geçmişteki herhangi bir girdiyi değiştirmek, onu izleyen her girdiyi geçersiz kılar.
-3. **Renet, gördüğü en yüksek sırayı** abonelik başına saklar. Sırasını geri alan bir sunucu anında tespit edilir.
+3. **Renet, gördüğü en yüksek sırayı** imzalama anahtarı ve abonelik başına saklar. Sırasını geri alan bir sunucu anında tespit edilir.
 
 ## Lisans Nasıl Düzenlenir
 
@@ -35,7 +35,7 @@ CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu:
 
 ## Renet Nasıl Doğrular
 
-Renet çalıştıran her makine, son bilinen zincir durumunu `{licenseDir}/chain-state.json` adresinde saklar. Her lisans doğrulamasında Renet şunları kontrol eder:
+Renet çalıştıran her makine, son bilinen zincir durumunu `{licenseDir}/chain-state.json` adresinde saklar (yani depo başına `repos/` dizininin bir kardeşi olan `/var/lib/rediacc/license/chain-state.json`). Zincir durumu, `"<keyId>:<subscriptionId>"` şeklinde anahtarlanarak imzalama anahtarı ve abonelik başına kapsamlandırılır; böylece farklı anahtarlarla imzalanan evrenler sıralarını birbirinden bağımsız olarak takip eder. Her lisans doğrulamasında Renet şunları kontrol eder:
 
 | Kontrol | Başarısızlık anlamı |
 |---|---|
@@ -57,7 +57,7 @@ Bir yetkilendirme sertifikası şunları içerir:
 - `subscriptionId` -- bu sertifikanın uygulandığı abonelik
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- içine gömülü plan limitleri
 - `maxTotalIssuances` -- zincir sıra numarasının üst sınırı
-- `delegatedPublicKey` -- yerinde sunucunun Ed25519 genel anahtarı (SPKI base64)
+- `delegatedPublicKey` -- yerinde sunucunun Ed25519 genel anahtarı (SPKI base64). Bu anahtarın 16 haneli onaltılık parmak izi (ham anahtarın `SHA-256` değerinin ilk 8 baytı), bu anahtarın imzaladığı her lisans blob'unda kaydedilen `publicKeyId`'dir. `publicKeyId` her zaman gerçek bir anahtar parmak izidir, asla `"default"` gibi bir yer tutucu değildir.
 - `genesisHash` -- zincir başlangıç noktası (önceki sertifikadan devam veya "genesis")
 - `genesisSequence` -- düzenleme zamanındaki zincir sırası. Zincir transit sırasında ilerlediğinde yeni sertifikanın yerel düzenleme defterindeki bilinen bir girdiye bağlandığını doğrulamak için `/onprem/cert-upload` tarafından kullanılır. Geriye dönük uyumluluk için isteğe bağlıdır (eksikse 0 olarak değerlendirilir).
 - `validFrom`, `validUntil` -- geçerlilik penceresi (aşağıdaki geçerlilik politikası tarafından yönetilir)
@@ -73,16 +73,21 @@ Bir yetkilendirme sertifikası şunları içerir:
    ```
 3. Yukarı akış, sertifikayı ana anahtarıyla imzalar ve döndürür.
 4. Yerinde sunucu sertifikayı ve özel anahtarını saklayarak lisans imzalamaya hazır hale gelir.
-5. CLI yerinde sunucudan lisans talep ettiğinde, sunucu yetkilendirilmiş anahtarıyla imzalar ve sertifikaya referans ekler.
-6. Renet **iki düzeyli doğrulama** yapar:
+5. CLI yerinde sunucudan lisans talep ettiğinde, sunucu yetkilendirilmiş anahtarıyla imzalar ve **yetkilendirme sertifikasının tamamını lisans blob'unun içine gömer** (`delegationCert` alanı). Sertifika ayrıca getirilmez; her depo lisansıyla birlikte taşınır.
+6. Renet şu sırayla **iki düzeyli doğrulama** yapar:
    - Sertifikanın imzasını içine gömülü yukarı akış ana anahtarına karşı doğrular.
+   - Sertifikanın geçerlilik penceresini (`validFrom` / `validUntil`), büyüme işlemlerinde (`repo create`, `fork`, `resize`, `expand`) ve yedekleme aktarımında (`repo push`, `pull`, backups) uygular. İşletim katmanı (`repo up`, `up all`, autostart) yalnızca bu pencere kontrolünü atlar; bu, lisans süresi dolumunu zaten atladığı şekli yansıtır: çalışan iş yükleriniz bir sertifikanın süresi dolduğu için asla durmaz, ancak süresi dolmuş bir sertifika yeni hiçbir şeyi yetkilendiremez. İmza, anahtar bağlama ve diğer tüm sertifika kısıtlamaları tüm katmanlarda uygulanmaya devam eder.
+   - `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (16 haneli onaltılık anahtar parmak izi) koşulunu zorunlu kılar; böylece sertifika yalnızca kendisinin yetkilendirdiği anahtarla imzalanan lisanslara kefil olabilir.
    - Blob'un imzasını sertifikadaki yetkilendirilmiş anahtara karşı doğrular.
-   - `blob.sequence <= cert.maxTotalIssuances` olduğunu kontrol eder.
+   - Sertifika kısıtlamalarını uygular: abonelik eşleşmesi, plan eşleşmesi, boyut sınırı (`maxRepositorySizeGb`) ve `blob.sequence <= cert.maxTotalIssuances`.
    - Standart zincir kontrollerinin tamamını uygular.
+
+Bir sertifika hatası, özel bir nedenle hızlıca başarısız olur: `cert_expired` (geçerlilik penceresi dışında) veya `cert_invalid` (geçersiz ana anahtar imzası veya ihlal edilmiş bir kısıtlama). Bunlar `invalid_signature`'dan **önce** kontrol edilir; dolayısıyla sertifika nedeni önceliklidir.
 
 Yerinde sunucu şunları yapamaz:
 - Yetkilendirme sertifikasının plan limitleri dışında lisans oluşturamaz (renet reddeder).
 - `maxTotalIssuances` toplam işlemi aşacak şekilde düzenleyemez (renet sıra taşmasını reddeder).
+- Sertifikanın `validUntil` tarihinden sonra çalıştırılabilir lisanslar imzalamaya devam edemez (bu pencere, geçerlilik süresi atlanan işlemlerde bile uygulanır).
 - Sertifikayı değiştiremez (yukarı akış imzası bozulur).
 
 ## Geçerlilik Politikası

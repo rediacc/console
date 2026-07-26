@@ -34,5 +34,7 @@ eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames l
 
 # playwright — E2E/test runner; any version bump changes the bundled browser revisions
 playwright  # BLOCKER: a playwright version bump changes the bundled browser revisions, so it is never a drop-in dependency bump — the pinned browsers must be re-downloaded (npx playwright install) and the E2E/bridge suites re-validated against the new revisions in the same change; take any future bump together with that test-infra revalidation
+@playwright/test  # BLOCKER: same hold as playwright above, and not a separate judgement call — @playwright/test@X depends on playwright@X pinned EXACTLY (verified: @playwright/test@1.62.0 -> "playwright": "1.62.0"), so upgrading it upgrades the browser revisions the entry above defers. Listing only `playwright` left the gate demanding the bump through its sibling; move both with the E2E/bridge revalidation.
 # ESLint v10 core — same constraint as @eslint/js: plugin ecosystem lacks v10 support
 eslint  # BLOCKER: v10 requires typescript-eslint/import/react plugin majors that have no eslint v10 peer support yet; take together with @eslint/js in a dedicated lint-tooling PR
+

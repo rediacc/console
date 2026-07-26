@@ -19,3 +19,25 @@
 # app-builder-lib or @electron/* entry, and none of those 18 advisories
 # appears in `npm audit` output any more. Do not re-add an entry without
 # confirming the advisory actually fires.
+
+# BLOCKER: brace-expansion GHSA-mh99-v99m-4gvg (unbounded expansion LENGTH -> OOM).
+# DEV-ONLY: the remaining vulnerable copies are the six eslint/minimatch@3 edges
+# (eslint-plugin-import/jsx-a11y/react, @eslint/config-array, @eslint/eslintrc)
+# pinned to 1.1.16 by the brace-expansion@^1.1.7 override. The top-level v5 edge
+# IS fixed (override moved 5.0.7 -> 5.0.8 in this change), so this covers only
+# the 1.x line.
+# NO UPGRADE PATH EXISTS, verified rather than assumed:
+#   1. The advisory patches at 5.0.8 ONLY; the 1.x line ends at 1.1.16
+#      (2026-07-08) with no 1.1.17, and every 1.x/2.x/3.x/4.x release is inside
+#      the declared "<= 5.0.7" range.
+#   2. Forcing those edges to 5.0.8 crashes eslint. Tested directly against
+#      5.0.8 in a scratch package: `require('brace-expansion')` returns
+#      { EXPANSION_MAX, EXPANSION_MAX_LENGTH, expand } and calling it throws
+#      "e is not a function" -- which is exactly what minimatch@3.1.5 does at
+#      minimatch.js:10 (`var expand = require('brace-expansion')`) and :271
+#      (`return expand(pattern)`).
+# EXPOSURE: the DoS needs attacker-controlled brace patterns; these copies only
+# ever expand our own lint globs, in a dev-time tool that is not on any
+# runtime path. Revisit when eslint v10 lands (blocklisted separately) and
+# drops the minimatch@3 chain.
+1124334

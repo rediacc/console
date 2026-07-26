@@ -13,6 +13,7 @@ import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
 import { createTempSSHKeyFile, removeTempSSHKeyFile } from '../../remote/ssh/index.js';
 import { executeRsync, getRsyncCommand } from '../../remote/sync/index.js';
+import { debugEnabled } from '../../utils/debug.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
 
@@ -101,7 +102,7 @@ async function tryDeltaSyncStage(
   } catch (error) {
     outputService.info(`Falling back to full upload to ${config.host}...`);
     await cleanupStagingPath(sftp, stagingPath);
-    if (process.env.RDC_DEBUG_RENET_PROVISION === '1') {
+    if (debugEnabled('renet')) {
       outputService.info(
         `Delta sync fallback reason: ${error instanceof Error ? error.message : String(error)}`
       );

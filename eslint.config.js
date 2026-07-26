@@ -899,7 +899,11 @@ export default tseslint.config(
       // E2E: tests with setup/cleanup steps lacking assertions
       'packages/e2e-tests/tests/12a-full-integration-repository.test.ts',
       'packages/e2e-tests/tests/13-postgres-fork-isolation.test.ts',
-      'packages/e2e-tests/tests/18-ops-workflow.test.ts',
+      // The destructive VM-lifecycle tests (diagnostic reachability logging
+      // without assertions) moved here from 18-ops-workflow.test.ts; the
+      // remaining Parallel Execution test in that file DOES assert, so it left
+      // the list.
+      'packages/e2e-tests/tests/ops-lifecycle/18-ops-lifecycle.test.ts',
     ],
     rules: {
       'playwright/expect-expect': 'off',

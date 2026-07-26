@@ -88,6 +88,15 @@ export default class TextFileReporter implements Reporter {
     console.log(`[TextFileReporter] Results saved to ${path.resolve(this.outputDir)}`);
     // eslint-disable-next-line no-console
     console.log(`[TextFileReporter] Summary: ${summaryPath}`);
+
+    // Machine-readable skip count for the zero-skip gate. run-e2e.sh
+    // --fail-on-skip sums these sentinels across every reporter/config and
+    // fails the job if any test was skipped: a skipped test is invisible
+    // coverage loss, so every job must SELECT only the tests its topology can
+    // run (config testMatch/testIgnore) instead of collecting-then-skipping.
+    // process.stdout.write (not console) so no lint suppression is needed.
+    const counts = this.countTestResults();
+    process.stdout.write(`[TextFileReporter] E2E_SKIPPED=${counts.skipped}\n`);
   }
 
   private sanitizeFilename(title: string): string {

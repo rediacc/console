@@ -59,22 +59,29 @@ export function getNpmUpdateCommand(channel: string): string {
 }
 
 /**
+ * Whether this is a dev / pre-release build. A locally-built SEA carries
+ * 0.0.0-dev (or any -dev suffix); the version constant is injected at build
+ * time, so this evaluates identically across all platforms.
+ */
+export function isDevBuild(): boolean {
+  return VERSION === '0.0.0-dev' || VERSION.endsWith('-dev');
+}
+
+/**
  * Check if auto-update should be disabled based on environment.
  */
 export function isUpdateDisabled(): boolean {
   // Explicit opt-out
-  if (process.env.RDC_DISABLE_AUTOUPDATE === '1') return true;
+  if (process.env.REDIACC_DISABLE_AUTOUPDATE === '1') return true;
 
   // CI environments
   if (process.env.CI === 'true') return true;
 
-  // Dev / pre-release builds. A locally-built SEA carries 0.0.0-dev (or any
-  // -dev suffix) and is sitting somewhere like ~/.local/share/rediacc/bin/rdc.
-  // Auto-update would clobber it with the latest stable on every invocation,
-  // making local renet/CLI iteration impossible. The version constant is
-  // injected at build time, so this short-circuits identically across all
-  // platforms.
-  if (VERSION === '0.0.0-dev' || VERSION.endsWith('-dev')) return true;
+  // Dev / pre-release builds. A locally-built SEA is sitting somewhere like
+  // ~/.local/share/rediacc/bin/rdc. Auto-update would clobber it with the
+  // latest stable on every invocation, making local renet/CLI iteration
+  // impossible.
+  if (isDevBuild()) return true;
 
   // Binary in build/dist/node_modules path
   const execDir = dirname(process.execPath);

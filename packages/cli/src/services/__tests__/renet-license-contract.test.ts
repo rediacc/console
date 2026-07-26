@@ -37,4 +37,19 @@ describe('renet-license-contract', () => {
   it('ignores unrelated JSON payloads', () => {
     expect(parseRenetLicenseFailure('{"code":"OTHER","reason":"missing"}')).toBeNull();
   });
+
+  it.each(['cert_expired', 'cert_invalid'])(
+    'parses the delegation-cert failure reason %s',
+    (reason) => {
+      expect(
+        parseRenetLicenseFailure(
+          `{"code":"${RENET_LICENSE_REQUIRED_CODE}","reason":"${reason}","message":"delegation cert problem"}`
+        )
+      ).toEqual({
+        code: RENET_LICENSE_REQUIRED_CODE,
+        reason,
+        message: 'delegation cert problem',
+      });
+    }
+  );
 });

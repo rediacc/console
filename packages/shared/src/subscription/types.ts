@@ -143,6 +143,27 @@ export interface SignedRepoLicense {
   publicKeyId: string;
   /** Chain hash: SHA256(prevChainHash + ":" + payload). Computed post-signing. */
   chainHash?: string;
+  /**
+   * Delegation certificate embedded in on-premise-signed licenses. Present
+   * when the license was signed by a delegated key rather than the upstream
+   * master key; renet validates it against its baked master key before
+   * trusting the delegated signature.
+   */
+  delegationCert?: SignedDelegationCert;
+}
+
+/**
+ * Signed delegation certificate.
+ * Wraps a {@link DelegationCert} payload with the upstream master key's
+ * Ed25519 signature. Travels embedded in on-premise-signed repo licenses.
+ */
+export interface SignedDelegationCert {
+  /** Base64-encoded DelegationCert JSON */
+  payload: string;
+  /** Base64-encoded Ed25519 signature by the upstream master key */
+  signature: string;
+  /** Fingerprint of the upstream master key that signed this cert */
+  publicKeyId: string;
 }
 
 /**

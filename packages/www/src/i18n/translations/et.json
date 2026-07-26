@@ -2894,19 +2894,19 @@
         "heading": "Teie infrastruktuur. Teie reeglid.",
         "rows": [
           {
-            "description": "Käivita, peata, kustuta ja varunda - töötavad alati, isegi aastaid pärast tellimuse lõppemist. Teie andmed on alati kättesaadavad.",
+            "description": "Käivitamine, peatamine ja kustutamine töötavad alati, isegi aastaid pärast tellimuse lõppemist. Teie andmed on alati kättesaadavad teie enda masinatel.",
             "title": "Teie hoidlad töötavad igavesti."
           },
           {
-            "description": "Kõik tööristad töötavad jätkuvalt. Failisünkroonimine, SSH juurdepääs, kaugeditid, kõik haldusfunktsioonid. Litsentsi ei ole kunagi vaja.",
+            "description": "Teie töövahendid töötavad jätkuvalt: SSH juurdepääs, kaugredigeerimine ja kõik haldustoimingud. Litsentsi ei ole kunagi vaja.",
             "title": "Täielik juurdepääs teie tööriistadele."
           },
           {
-            "description": "Aktiivne pakett on vajalik uute hoidlate loomiseks ja olemasolevate kloonimisel. Suurendamine ja laiendamine töötavad 60 päeva pärast aegumist. Ülejäänu on igavene.",
+            "description": "Aktiivne pakett on vajalik uute hoidlate loomiseks, olemasolevate kloonimiseks või varukoopiate ülekandmiseks. Suurendamine ja laiendamine töötavad 60 päeva pärast aegumist. Hoidlate käitamine jääb igaveseks.",
             "title": "Ainult uued hoidlad vajavad tellimust."
           },
           {
-            "description": "Kui pakett lõpeb, töötavad suurendamine ja laiendamine veel 60 päeva. Käivitamine, peatamine, kustutamine ja varundamine - need töötavad igavesti.",
+            "description": "Kui pakett lõpeb, töötavad suurendamine ja laiendamine veel 60 päeva. Käivitamine, peatamine ja kustutamine ei muutu. Need töötavad igavesti. Varunduse ülekandmine vajab aktiivset paketti.",
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {

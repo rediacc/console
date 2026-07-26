@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: et
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Tellimus ja litsentsid
@@ -48,13 +48,13 @@ Vt [rdc vs renet](/en/docs/rdc-vs-renet), et mõista tööjaama ja serveri jagam
 Automatiseerimise ja AI-agentide jaoks kasuta brauseri sisselogimise asemel ulatuspiiratud tellimustokenit:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 Tokeni saab süstida ka otse keskkonna kaudu, et CLI saaks repositooriumilitsentse väljastada ja uuendada ilma interaktiivse sisselogimiseta:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Masinas ei salvestata ühtegi masina litsentsi faili. Koha jõustamine toimub v�
 
 ### Repositooriumilitsents
 
-Repositooriumilitsents on allkirjastatud litsents ühe repositooriumi jaoks ühel masinal. See on ainus litsentsifail, mis masinas salvestatakse (`/var/lib/rediacc/license/repos/{guid}.json`).
+Repositooriumilitsents on allkirjastatud litsents ühe repositooriumi jaoks ühel masinal. See on ainus litsentsifail, mis masinas salvestatakse, korraldatuna allkirjastamisvõtme kaupa:
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` on 16-kohaline hex-sõrmejälg (allkirjastava serveri Ed25519 avaliku võtme `SHA-256` esimesed 8 baiti). Repositoorium, mida haldab rohkem kui üks konto-universum (näiteks tootmine ja bench, mis mõlemad juurutavad samasse masinasse), hoiab oma `{guid}` kataloogi all ühte faili iga allkirjastamisvõtme kohta. Masina renet'i ehitus valideerib ainult faili, mida tema sisseehitatud võti või sellele ahelatud delegeerimissert suudab kontrollida; teiste universumite failid on passiivsed. Universumite vahetamine ei muuda kunagi litsentse kehtetuks: esimene toiming uues universumis väljastab selle universumi litsentsi ühe korra (`missing` tulemus väljastab automaatselt) ja mõlemad eksisteerivad seejärel koos.
 
 Seda kasutatakse järgmistel juhtudel:
 
 - `rdc repo create` ja `rdc repo fork`, valideeritakse enne ettevalmistamist (eelväljastatud ilma identiteedi tõenditeta, seejärel uuesti väljastatud identiteedi tõenditega pärast loomist)
 - `rdc repo resize` ja `rdc repo expand`, täielik valideerimine koos aegumisega
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, valideeritakse **aegumist vahele jättes**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, valideeritakse **aegumist vahele jättes**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **valideeritakse täielikult, sealhulgas aegumist**: varunduse ülekandmine nõuab aktiivset õigust
 - repositooriumi automaatkäivitus masina taaskäivitusel, valideeritakse **aegumist vahele jättes**
 
 Repositooriumilitsentsid on seotud masina ja sihtrepositooriumiga. Iga litsents sisaldab masina ID-d, repositooriumi GUID-i, tellimuse ID-d, plaani piiranguid ja aegumist. Krüptitud repositooriumide puhul kontrollib Rediacc ka aluseks oleva mahu LUKS-identiteeti.
@@ -106,7 +110,7 @@ Uued kasutajad alustavad 14-päevase tasuta prooviperioodiga Professionali või 
 
 Community on püsiv tasuta baastase. See ei ole enam uutele kontodele otsene registreerimisvõimalus; selle asemel langeb konto Community peale iga kord, kui tellimus lõpeb: tühistamine prooviperioodi ajal, tasulise plaani hilisem tühistamine või ebaõnnestunud makse. Community tagasilanguse puhul jääb alles üks masin, 10 GB repositooriumi kohta ja 100 seadistust kuus. Kontod, mis loodi enne prooviperioodil põhineva mudeli käivitamist, säilitavad oma senise Community juurdepääsu.
 
-Jõustamine jääb pehmeks. Töötavad repositooriumid jätkavad tööd ka pärast tellimuse lõppemist; ainult uus töö (loomine, kahveldamine, suuruse muutmine ja litsentsi uuendamine) nõuab aktiivset õigust.
+Jõustamine jääb pehmeks seal, kus see kõige rohkem loeb: töötavad repositooriumid jätkavad tööd ka pärast tellimuse lõppemist (`up`, `down`, `delete`, automaatkäivitus). Uus töö (loomine, kahveldamine, suuruse muutmine ja litsentsi uuendamine) ning varunduse ülekandmine (`push`, `pull`, `sync`) nõuavad seevastu aktiivset õigust.
 
 ## VM-i migratsiooni tähtajaperiood
 
@@ -169,10 +173,10 @@ rdc subscription login
 Automatiseerimise või AI-agendi sisselogimine:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Mitteinteraktiivsetes keskkondades on `REDIACC_SUBSCRIPTION_TOKEN` seadistamine lihtsaim valik. Token peaks olema ulatuspiiratud ainult nende tellimuse ja repositooriumilitsentsi toimingute jaoks, mida agent vajab.
+Mitteinteraktiivsetes keskkondades on `REDIACC_TOKEN` seadistamine lihtsaim valik. Token peaks olema ulatuspiiratud ainult nende tellimuse ja repositooriumilitsentsi toimingute jaoks, mida agent vajab.
 
 Kuva account-põhine tellimuse olek:
 
@@ -202,7 +206,7 @@ rdc subscription refresh -m hostinger --repo my-app
 
 Esmakordsel kasutamisel võib litsentsitud repositooriumi või varunduse toiming, mis ei leia kasutatavat repositooriumilitsentsi, käivitada account-autoriseerimise ülemineku automaatselt. CLI kuvab autoriseerimise URL-i, üritab interaktiivsetes terminalides brauserit avada ja kordab toimingut üks kord pärast eduka autoriseerimise ja väljastamise toimumist.
 
-Mitteinteraktiivsetes keskkondades CLI ei oota brauseri kinnitust. Selle asemel palutakse sul esitada ulatuspiiratud token käsuga `rdc subscription login --token ...` või `REDIACC_SUBSCRIPTION_TOKEN`.
+Mitteinteraktiivsetes keskkondades CLI ei oota brauseri kinnitust. Selle asemel palutakse sul esitada ulatuspiiratud token käsuga `rdc subscription login --token ...` või `REDIACC_TOKEN`.
 
 Masina esmakordse seadistamise kohta vaata [Masina seadistamine](/en/docs/setup).
 
@@ -229,6 +233,8 @@ Automaatne taastumine on tahtlikult piiratud:
 - `sequence_regression`: ebaõnnestub kiiresti kui repositooriumilitsentsi terviklikkuse/oleku probleem
 - `invalid_signature`: ebaõnnestub kiiresti kui repositooriumilitsentsi terviklikkuse/oleku probleem
 - `identity_mismatch`: ebaõnnestub kiiresti, repositooriumi identiteet ei ühti paigaldatud litsentsiga
+- `cert_expired`: nurjub kiiresti kasvutoimingutel (`create`, `fork`, `resize`) ja varunduse ülekandel (`push`, `pull`); `repo up` ja automaatkäivitus töötavad jätkuvalt, vastavalt pehmele litsentsi aegumise mudelile. Uuenda delegeerimissert
+- `cert_invalid`: ebaõnnestub kiiresti, delegeerimissert ei vastanud mõnele piirangule (vigane peamise võtme allkiri, tellimuse/plaani mittevastavus, suuruse ülempiir või järjestus üle `maxTotalIssuances`). Väljasta sert pärast aluspiirangu parandamist uuesti
 
 Need kiire ebaõnnestumise juhtumid ei tarbi automaatselt account-põhiseid uuendus- või väljastamistaotlusi.
 

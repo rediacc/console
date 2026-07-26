@@ -22,19 +22,24 @@ SERVER_URL="${REDIACC_SERVER_URL:-}"
 
 # Channel resolution. Order:
 #   1. REDIACC_CHANNEL env var (explicit caller intent — wins).
-#   2. Existing server.json::updateChannel (the channel `rdc update` uses).
+#   2. Existing rediacc.json::account.updateChannel (the channel `rdc update`
+#      uses — one CLI config is one universe: server, E2E key, update channel).
 #   3. Default 'stable'.
-# Reading server.json on a re-install avoids the trap where install.sh picks
-# `stable` while `rdc update` reads server.json::updateChannel=edge and jumps
-# the binary on the very next invocation. Both paths now agree by default.
-SERVER_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc/server.json"
-if [[ -z "${REDIACC_CHANNEL:-}" && -f "$SERVER_JSON" ]]; then
-    # Best-effort grep+sed (jq not assumed). Matches "updateChannel": "value".
+# Reading the config on a re-install avoids the trap where install.sh picks
+# `stable` while `rdc update` reads account.updateChannel=edge and jumps the
+# binary on the very next invocation. Both paths now agree by default.
+case "$(uname -s)" in
+    Darwin) CONFIG_JSON="$HOME/Library/Application Support/rediacc/rediacc.json" ;;
+    *) CONFIG_JSON="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc/rediacc.json" ;;
+esac
+if [[ -z "${REDIACC_CHANNEL:-}" && -f "$CONFIG_JSON" ]]; then
+    # Best-effort grep+sed (jq not assumed). Matches "updateChannel": "value"
+    # anywhere in the config (the account section is always plaintext).
     # Trailing `|| true` keeps a no-match (most users, who never set a channel)
     # from tripping `set -o pipefail`. Empty result falls through to the
     # 'stable' default below.
-    EXISTING_CHANNEL=$( { grep -oE '"updateChannel"[[:space:]]*:[[:space:]]*"[^"]+"' "$SERVER_JSON" 2>/dev/null \
-        | sed -E 's/.*"([^"]+)"$/\1/' | head -1; } || true)
+    EXISTING_CHANNEL=$({ grep -oE '"updateChannel"[[:space:]]*:[[:space:]]*"[^"]+"' "$CONFIG_JSON" 2>/dev/null |
+        sed -E 's/.*"([^"]+)"$/\1/' | head -1; } || true)
     if [[ -n "${EXISTING_CHANNEL:-}" ]]; then
         REDIACC_CHANNEL="$EXISTING_CHANNEL"
     fi
@@ -139,6 +144,25 @@ sha256() {
     fi
 }
 
+# Generate a v4 UUID for a fresh config's `id` field (the CLI schema validates
+# it as a UUID). uuidgen isn't always present; fall back to the kernel's uuid
+# source, then to od(1) over /dev/urandom formatted as a v4 UUID.
+gen_uuid() {
+    if command -v uuidgen &>/dev/null; then
+        uuidgen | tr 'A-Z' 'a-z'
+        return
+    fi
+    if [[ -r /proc/sys/kernel/random/uuid ]]; then
+        cat /proc/sys/kernel/random/uuid
+        return
+    fi
+    local h
+    h=$(od -An -tx1 -N16 /dev/urandom | tr -d ' \n')
+    # Force the version (4) and variant (8-b) nibbles so the result is a valid
+    # v4 UUID the schema accepts.
+    printf '%s-%s-4%s-a%s-%s\n' "${h:0:8}" "${h:8:4}" "${h:13:3}" "${h:17:3}" "${h:20:12}"
+}
+
 # Clean up artefacts from the pre-collapse layout and from any in-flight
 # background update the previous install might have staged. This is
 # unconditional: a fresh install should always produce exactly the new
@@ -158,15 +182,21 @@ cleanup_legacy_state() {
     fi
 }
 
-# Persist channel + server config so `rdc update` honors the channel this
-# install came from. We write server.json when EITHER a specific server was
-# requested OR the channel differs from the default. Writing on channel-alone
-# is the fail-safe for cases where a preview host rewrites CHANNEL but fails
-# to rewrite SERVER_URL -- without this, `rdc update` would silently drift
-# back to stable on every update.
+# Persist channel + server into the default CLI config (rediacc.json) so
+# `rdc update` honors the channel this install came from. We write when EITHER a
+# specific server was requested OR the channel differs from the default. Writing
+# on channel-alone is the fail-safe for a preview host that rewrites CHANNEL but
+# not SERVER_URL -- without it, `rdc update` would drift back to stable.
+#
+# The config file is USER DATA (one config = one universe: server, E2E key,
+# update channel, machines). So we never wholesale-overwrite it:
+#   - absent          -> write a minimal, valid v3 config carrying only account
+#   - present + jq     -> merge the account fields, never touching other keys
+#   - present + no jq  -> do NOT rewrite a live config; print the exact
+#                         follow-up commands and continue.
 #
 # Reads: CHANNEL, SERVER_URL, RELEASES_URL, REDIACC_CHANNEL, HOME, XDG_CONFIG_HOME
-# Writes: ${HOME}/.config/rediacc/server.json (or macOS equivalent)
+# Writes: ${config_dir}/rediacc.json (account section only)
 write_install_config() {
     local default_channel="stable"
     if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then
@@ -179,6 +209,7 @@ write_install_config() {
         *) config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rediacc" ;;
     esac
     mkdir -p "$config_dir"
+    local config_file="$config_dir/rediacc.json"
 
     # Discover E2E public key and update channel from server (only when we
     # have a server to ask).
@@ -208,19 +239,63 @@ write_install_config() {
 
     # accountServer defaults to production when unknown -- matches what
     # `rdc update --channel <x>` writes when no server was previously set
-    # (packages/cli/src/commands/update.ts:35).
+    # (packages/cli/src/commands/update.ts).
     local account_server="${SERVER_URL:-https://www.rediacc.com}"
-    local server_json="{\"accountServer\":\"$account_server\",\"updateChannel\":\"$CHANNEL\""
-    if [[ -n "$e2e_key" ]]; then
-        server_json="$server_json,\"e2ePublicKey\":\"$e2e_key\""
-    fi
-    # Store custom releases URL for on-premise CLI updates
+    local custom_releases=""
     if [[ "${RELEASES_URL:-https://releases.rediacc.com}" != "https://releases.rediacc.com" ]]; then
-        server_json="$server_json,\"releasesUrl\":\"$RELEASES_URL\""
+        custom_releases="$RELEASES_URL"
     fi
-    server_json="$server_json}"
-    echo "$server_json" >"$config_dir/server.json"
-    chmod 600 "$config_dir/server.json"
+
+    if [[ -f "$config_file" ]]; then
+        if command -v jq &>/dev/null; then
+            # Merge ONLY the account fields; never touch machines/other keys.
+            # Atomic: write to a tmp sibling, then mv over the original.
+            local tmp
+            tmp="$(mktemp "${config_file}.XXXXXX")"
+            if jq \
+                --arg s "$account_server" \
+                --arg c "$CHANNEL" \
+                --arg k "$e2e_key" \
+                --arg r "$custom_releases" \
+                '.account = (.account // {})
+                 | .account.accountServer = $s
+                 | .account.updateChannel = $c
+                 | (if $k != "" then .account.e2ePublicKey = $k else . end)
+                 | (if $r != "" then .account.releasesUrl = $r else . end)' \
+                "$config_file" >"$tmp" 2>/dev/null; then
+                mv "$tmp" "$config_file"
+                chmod 600 "$config_file"
+            else
+                rm -f "$tmp"
+                warn "Could not update $config_file (invalid JSON?); leaving it untouched."
+                return 0
+            fi
+        else
+            # No jq: the config is user data -- do NOT rewrite it blindly. Print
+            # the exact command(s) that pin the channel (and server) instead.
+            echo ""
+            warn "jq not found; leaving existing $config_file untouched."
+            echo "  To pin this channel, run:"
+            echo "    rdc update --channel $CHANNEL"
+            if [[ -n "${SERVER_URL:-}" ]]; then
+                echo "    rdc subscription login --server $SERVER_URL"
+            fi
+            return 0
+        fi
+    else
+        # Absent: write a minimal, valid v3 config with only the account fields.
+        local account_json="{\"accountServer\":\"$account_server\",\"updateChannel\":\"$CHANNEL\""
+        if [[ -n "$e2e_key" ]]; then
+            account_json="$account_json,\"e2ePublicKey\":\"$e2e_key\""
+        fi
+        if [[ -n "$custom_releases" ]]; then
+            account_json="$account_json,\"releasesUrl\":\"$custom_releases\""
+        fi
+        account_json="$account_json}"
+        printf '{"schemaVersion":3,"id":"%s","version":1,"encryption":{"mode":"plaintext"},"account":%s}\n' \
+            "$(gen_uuid)" "$account_json" >"$config_file"
+        chmod 600 "$config_file"
+    fi
 
     echo ""
     if [[ -n "${SERVER_URL:-}" ]]; then

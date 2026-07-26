@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: it
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Abbonamento e licenze
@@ -48,13 +48,13 @@ Consulta [rdc vs renet](/it/docs/rdc-vs-renet) per la divisione workstation/serv
 Per automazione e agenti AI, utilizza un token di abbonamento con scope specifico invece del login tramite browser:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 Puoi anche iniettare il token direttamente tramite l'ambiente in modo che la CLI possa emettere e aggiornare le licenze repo senza alcun passaggio di login interattivo:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione
 
 ### Licenza repo
 
-Una licenza repo è una licenza firmata per un repository su una macchina. È l'unico file di licenza memorizzato sulla macchina (`/var/lib/rediacc/license/repos/{guid}.json`).
+Una licenza repo è una licenza firmata per un repository su una macchina. È l'unico file di licenza memorizzato sulla macchina, organizzato per chiave di firma:
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` è un'impronta esadecimale a 16 cifre (i primi 8 byte dello `SHA-256` della chiave pubblica Ed25519 del server firmatario). Un repository gestito da più di un universo account (ad esempio produzione e bench che effettuano il deployment sulla stessa macchina) mantiene un file per ogni chiave di firma nella propria directory `{guid}`. La build renet della macchina valida solo il file che la sua chiave incorporata, o un certificato di delega concatenato ad essa, può verificare; i file degli altri universi restano inerti. Il passaggio tra universi non invalida mai le licenze: la prima operazione in un nuovo universo emette la licenza di quell'universo una volta sola (un risultato `missing` la emette automaticamente), e da quel momento coesistono entrambe.
 
 Viene utilizzata per:
 
 - `rdc repo create` e `rdc repo fork`, validata prima del provisioning (pre-emessa senza prove di identità, poi ri-emessa con prove di identità dopo la creazione)
 - `rdc repo resize` e `rdc repo expand`, validazione completa inclusa la scadenza
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validata con **scadenza ignorata**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validata con **scadenza ignorata**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **validata integralmente, scadenza inclusa**: il trasferimento dei backup richiede un diritto attivo
 - autostart del repository al riavvio della macchina, validata con **scadenza ignorata**
 
 Le licenze repo sono legate alla macchina e al repository target. Ogni licenza contiene l'ID macchina, il GUID del repository, l'ID abbonamento, i limiti del piano e la scadenza. Per i repository cifrati, Rediacc verifica anche l'identità LUKS del volume sottostante.
@@ -106,7 +110,7 @@ Le nuove registrazioni iniziano con una prova gratuita di 14 giorni sul piano Pr
 
 Community resta il piano gratuito di base permanente. Non è più selezionabile direttamente in fase di registrazione per i nuovi account; un account passa a Community ogni volta che un abbonamento termina: disdetta durante la prova, disdetta successiva di un piano a pagamento, oppure un pagamento non riuscito. Nel piano Community di riserva mantieni una macchina con 10 GB per repository e 100 configurazioni al mese. Gli account creati prima del lancio del modello basato su prova gratuita mantengono il loro accesso a Community esistente.
 
-L'applicazione resta permissiva. I repository in esecuzione continuano a funzionare anche dopo la fine di un abbonamento; solo le nuove operazioni (creazione, fork, ridimensionamento e aggiornamento della licenza) richiedono un diritto attivo.
+L'applicazione resta permissiva dove conta di più: i repository in esecuzione continuano a funzionare anche dopo la fine di un abbonamento (`up`, `down`, `delete`, autostart). Le nuove operazioni (creazione, fork, ridimensionamento e aggiornamento della licenza) e il trasferimento dei backup (`push`, `pull`, `sync`) richiedono invece un diritto attivo.
 
 ## Periodo di grazia per migrazione VM
 
@@ -169,10 +173,10 @@ rdc subscription login
 Login per automazione o agenti AI:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Per gli ambienti non interattivi, impostare `REDIACC_SUBSCRIPTION_TOKEN` è l'opzione più semplice. Il token dovrebbe avere scope limitato solo alle operazioni di abbonamento e licenza repo di cui l'agente ha bisogno.
+Per gli ambienti non interattivi, impostare `REDIACC_TOKEN` è l'opzione più semplice. Il token dovrebbe avere scope limitato solo alle operazioni di abbonamento e licenza repo di cui l'agente ha bisogno.
 
 Mostra lo stato dell'abbonamento supportato dall'account:
 
@@ -202,7 +206,7 @@ Il ref `--repo` deve risolversi nella tua configurazione `rdc` locale. Un reposi
 
 Al primo utilizzo, un'operazione su un repository con licenza o un backup che non trova una licenza repo utilizzabile può attivare automaticamente un handoff di autorizzazione account. La CLI stampa un URL di autorizzazione, cerca di aprire il browser nei terminali interattivi e riprova l'operazione una volta dopo che l'autorizzazione e l'emissione hanno avuto successo.
 
-Negli ambienti non interattivi, la CLI non attende l'approvazione del browser. Invece, ti dice di fornire un token con scope specifico con `rdc subscription login --token ...` o `REDIACC_SUBSCRIPTION_TOKEN`.
+Negli ambienti non interattivi, la CLI non attende l'approvazione del browser. Invece, ti dice di fornire un token con scope specifico con `rdc subscription login --token ...` o `REDIACC_TOKEN`.
 
 Per la configurazione iniziale della macchina, consulta [Configurazione della macchina](/it/docs/setup).
 
@@ -229,6 +233,8 @@ Il ripristino automatico è intenzionalmente limitato:
 - `sequence_regression`: fallisce immediatamente come problema di integrità/stato della licenza repo
 - `invalid_signature`: fallisce immediatamente come problema di integrità/stato della licenza repo
 - `identity_mismatch`: fallisce immediatamente, l'identità del repository non corrisponde alla licenza installata
+- `cert_expired`: fallisce immediatamente sulle operazioni di crescita (`create`, `fork`, `resize`) e sul trasferimento dei backup (`push`, `pull`); `repo up` e l'avvio automatico continuano a funzionare, in linea con il modello permissivo di scadenza della licenza. Riemetti il certificato di delega
+- `cert_invalid`: fallisce immediatamente, il certificato di delega non ha soddisfatto un vincolo (firma della chiave master non valida, mancata corrispondenza di abbonamento/piano, limite di dimensione o sequenza superiore a `maxTotalIssuances`). Riemetti il certificato dopo aver corretto il limite sottostante
 
 Questi casi di fallimento immediato non consumano automaticamente chiamate di aggiornamento o emissione supportate dall'account.
 

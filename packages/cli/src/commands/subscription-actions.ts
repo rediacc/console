@@ -18,6 +18,7 @@ import {
 } from '../services/account/license.js';
 import {
   getSubscriptionScopeMismatch,
+  getSubscriptionServerUrl,
   getSubscriptionTokenState,
 } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
@@ -44,14 +45,8 @@ function handleSubscriptionTokenState(
 ): boolean {
   if (tokenState.kind === 'missing') {
     outputService.info(t('errors.subscription.notLoggedIn'));
-    return true;
-  }
-  if (tokenState.kind === 'server_mismatch') {
-    outputService.warn(
-      t('commands.subscription.status.serverMismatch', {
-        actualServerUrl: tokenState.actualServerUrl,
-        expectedServerUrl: tokenState.expectedServerUrl,
-      })
+    outputService.info(
+      t('commands.subscription.status.serverWouldUse', { server: getSubscriptionServerUrl() })
     );
     return true;
   }

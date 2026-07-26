@@ -22,9 +22,7 @@ const {
   mockOutputWarn,
   mockOutputSuccess,
   mockWithSpinner,
-  mockIsDevelopmentSubscriptionMode,
-  mockLoadServerConfig,
-  mockSaveServerConfig,
+  mockReadAccountPointer,
   mockDiscoverRegions,
   mockPromptRegionSelection,
 } = vi.hoisted(() => ({
@@ -54,9 +52,7 @@ const {
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
   mockWithSpinner: vi.fn(),
-  mockIsDevelopmentSubscriptionMode: vi.fn(() => false),
-  mockLoadServerConfig: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
-  mockSaveServerConfig: vi.fn(),
+  mockReadAccountPointer: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
   mockDiscoverRegions: vi.fn(),
   mockPromptRegionSelection: vi.fn(),
 }));
@@ -72,9 +68,10 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
   getSubscriptionServerUrl: mockGetSubscriptionServerUrl,
   getSubscriptionScopeMismatch: mockGetSubscriptionScopeMismatch,
   saveStoredSubscriptionToken: mockSaveStoredSubscriptionToken,
-  isDevelopmentSubscriptionMode: mockIsDevelopmentSubscriptionMode,
-  loadServerConfig: mockLoadServerConfig,
-  saveServerConfig: mockSaveServerConfig,
+}));
+
+vi.mock('../../services/account/account-pointer.js', () => ({
+  readAccountPointer: mockReadAccountPointer,
 }));
 
 vi.mock('../../services/provision/region-discovery.js', () => ({
@@ -240,26 +237,14 @@ describe('subscription command helpers', () => {
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
   });
 
-  it('status handles missing token state without fetching report', async () => {
+  it('status handles missing token state without fetching report, and prints would-use server', async () => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
     await executeSubscriptionStatus();
 
     expect(mockOutputInfo).toHaveBeenCalledWith('errors.subscription.notLoggedIn');
-    expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
-  });
-
-  it('status warns on server mismatch without fetching report', async () => {
-    mockGetSubscriptionTokenState.mockReturnValue({
-      kind: 'server_mismatch',
-      actualServerUrl: 'http://localhost:4830',
-      expectedServerUrl: 'http://localhost:4800',
-    });
-
-    await executeSubscriptionStatus();
-
-    expect(mockOutputWarn).toHaveBeenCalledWith(
-      'commands.subscription.status.serverMismatch:http://localhost:4830:http://localhost:4800'
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.status.serverWouldUse:http://localhost:4800'
     );
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
   });
@@ -447,24 +432,12 @@ describe('subscription command helpers', () => {
   // ─── Region selection on first login ─────────────────────────────────
 
   describe('region selection on first login', () => {
-    it('should skip region prompt when server.json has accountServer', () => {
-      mockLoadServerConfig.mockReturnValue({ accountServer: 'https://eu.rediacc.com' });
-      mockIsDevelopmentSubscriptionMode.mockReturnValue(false);
+    it('should skip region prompt when the config has an accountServer', () => {
+      mockReadAccountPointer.mockReturnValue({ accountServer: 'https://eu.rediacc.com' });
 
-      // With accountServer set, the prompt should not trigger
-      const config = mockLoadServerConfig() as { accountServer?: string } | null;
-      expect(config).not.toBeNull();
-      expect(config!.accountServer).toBeTruthy();
-      expect(mockDiscoverRegions).not.toHaveBeenCalled();
-      expect(mockPromptRegionSelection).not.toHaveBeenCalled();
-    });
-
-    it('should skip region prompt in development mode', () => {
-      mockLoadServerConfig.mockReturnValue(null);
-      mockIsDevelopmentSubscriptionMode.mockReturnValue(true);
-
-      // In dev mode, even without server.json, the prompt should not trigger
-      expect(mockIsDevelopmentSubscriptionMode()).toBe(true);
+      // With accountServer set in the config pointer, the prompt should not trigger.
+      const pointer = mockReadAccountPointer() as { accountServer?: string };
+      expect(pointer.accountServer).toBeTruthy();
       expect(mockDiscoverRegions).not.toHaveBeenCalled();
       expect(mockPromptRegionSelection).not.toHaveBeenCalled();
     });

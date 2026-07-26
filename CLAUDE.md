@@ -74,8 +74,13 @@ them silently is the failure this rule exists to prevent.
   deadlocks: it cannot do those items without racing live work in the same tree, and
   it must not tick or delete another session's tracking. Never tick or remove an item
   that is not yours.
-- **Defer as a QUESTION, not a note.** Three states, and only three: `- [ ]` open,
-  `- [x]` done, `- [?]` needs an operator decision. A `- [?]` goes to AskUserQuestion,
+- **Defer as a QUESTION, not a note.** Four states, and only four: `- [ ]` open,
+  `- [x]` done, `- [?]` needs an operator decision, and `- [>]` in-flight on
+  BACKGROUND work. A `- [>]` carries a UTC lease (`until:<ISO8601>Z`, max 120 min
+  ahead): while fresh, ending the turn is allowed and the item is reported to the
+  operator every stop; an expired or missing lease blocks again (fail-closed).
+  Renew the lease when you wake; never use it for work no delegate is running.
+  A `- [?]` goes to AskUserQuestion,
   and the hook prints every one of them back to the operator on stop, so a deferral
   cannot hide in a paragraph. Reserve it for real decisions: anything you can settle
   from the code, the request, or a sensible default is autonomous, and asking about it
@@ -132,9 +137,9 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 - **Fork**: `rdc repo fork <name> --tag <tag>` makes a new repo (`<name>:<tag>`) with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
-- **Config**: CLI configuration file for connecting to machines. Each config is a flat JSON file (~/.config/rediacc/rediacc.json by default) with a unique ID and version number. Multiple named configs supported (e.g., production.json, staging.json).
+- **Config**: CLI configuration file for connecting to machines, and a complete "universe": each config is a flat JSON file (`~/.config/rediacc/<name>.json`, default `rediacc.json`) carrying its account server and keys under `account.*`, its machines/repos/credentials, and a unique ID and version number. Its token lives beside it at `api-token-<name>.json`. Multiple named configs are supported; `--config <name>` (or `REDIACC_CONFIG`) selects one, `rdc config current` shows the active one.
 - **State Provider**: Abstraction layer (`CloudStateProvider`, `LocalStateProvider`) that routes API calls based on adapter detection.
-- **Config Storage**: Optional zero-knowledge encrypted config sync. Setup via web portal (`/account/config-setup`), requires passkey with PRF extension. One store per org, configs scoped per team. Member management via portal. CLI push/pull commands planned but not yet implemented.
+- **Config Storage**: Optional zero-knowledge encrypted config sync. Setup and management via the web portal (`/account/config-storage`), unlock via passkey with PRF, master password, or recovery code (LUKS-style key slots). One org-wide CEK encrypts every team's configs; team scoping is server-side access control, not cryptographic isolation. Enabled from the CLI with `rdc config remote enable` (opens an `/account/config-remote` handoff page, seeds the store from the local config on first enable); sync is implicit, and reads are served from an encrypted-at-rest local cache when the server is offline (with a staleness warning), while writes require the server and fail closed. Member management via portal.
 
 ### Packages
 
@@ -309,13 +314,20 @@ cd packages/www && npm run dev
 
 ### `./rdc.sh` targets production by default (`RDC_DEV=1` for local dev)
 
-Bare `./rdc.sh` behaves like an installed `rdc`: real config and token in
-`~/.config/rediacc`, account server via `server.json` → `eu.rediacc.com`. Local
-development against the dev gateway is an explicit opt-in — `RDC_DEV=1 ./rdc.sh …`
-(or `./rdc.sh --dev …`), which uses the `.rdc-dev/` token file and the gateway URL
-from `private/account/.env`, and fails fast if `./run.sh account dev` isn't
-running. `RDC_BENCH=1` targets bench.rediacc.com as before. There is no
-`RDC_PROD` any more. The renet build stays `--nolicense` in all wrapper modes;
+Bare `./rdc.sh` behaves like an installed `rdc`: the default config
+`~/.config/rediacc/rediacc.json` (its `account.*` fields carry the account server;
+there is no `server.json` any more) and its own token at
+`~/.config/rediacc/api-token-rediacc.json`. Each named config is a self-contained
+universe with its own server, keys, machines, and token beside it at
+`api-token-<name>.json`; there are no `.rdc-dev/` or `.rdc-bench/` token files.
+
+Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev …`
+(or `RDC_DEV=1 ./rdc.sh …`). `--dev` reads `REDIACC_ACCOUNT_SERVER` and
+`X25519_PUBLIC_KEY` from `private/account/.env`, seeds or patches
+`~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails
+fast if `./run.sh account dev` isn't running. Bench is just another config now:
+`./rdc.sh --config bench …` replaces the old `RDC_BENCH=1`. There is no `RDC_PROD`
+or `RDC_BENCH` any more. The renet build stays `--nolicense` in all wrapper modes;
 `RDC_RENET_LICENSE=1` is the independent enforcement opt-in (below).
 
 ### Iterating on a local SEA (`./rdc.sh --native`)
@@ -416,10 +428,11 @@ needed for normal `npm run dev` browsing). Credentials:
 (org secrets, scoped to `console`); bucket/domain names are org variables
 `R2_MEDIA_BUCKET`/`MEDIA_CDN_DOMAIN`.
 
-Remaining open item: the git-history rewrite (`git filter-repo` to shrink
-`.git` itself, since the pre-migration commits still contain the old blobs)
-is a separate, later, human-supervised phase — not done as part of this
-migration.
+Remaining open item, tracked in
+[#532](https://github.com/rediacc/console/issues/532): the git-history rewrite
+that shrinks `.git` itself. CI is insulated from it (every `fetch-depth: 0`
+checkout passes `filter: blob:none`), but a fresh clone still transfers the old
+blobs.
 
 ## CI/CD Pipeline
 

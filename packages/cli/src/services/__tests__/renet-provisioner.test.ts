@@ -42,6 +42,18 @@ const {
   removeTempSSHKeyFileMock: vi.fn(),
 }));
 
+// The persistent provision-state layer has its own suite (provision-state.
+// test.ts); here it must be inert — its real config reads would wedge inside
+// this file's blanket node:fs/promises mock.
+vi.mock('../renet/provision-state.js', () => ({
+  getFreshProvisionEntry: vi.fn(() => Promise.resolve(null)),
+  recordProvisionVerified: vi.fn(() => Promise.resolve()),
+  dropProvisionEntry: vi.fn(() => Promise.resolve()),
+  isSetupVerifiedFresh: vi.fn(() => Promise.resolve(false)),
+  recordSetupVerified: vi.fn(() => Promise.resolve()),
+  RENET_PROVISION_STATE_TTL_MS: 60 * 60 * 1000,
+}));
+
 class MockSFTPClient {
   connect = vi.fn(() => connectDelegate());
   exec = vi.fn<(command: string) => Promise<string>>((command: string) => {

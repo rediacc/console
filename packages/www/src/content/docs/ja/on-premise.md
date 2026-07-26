@@ -4,8 +4,8 @@ description: "独自インフラ上でアカウントサーバーとCLIディス
 category: "Guides"
 order: 5
 language: ja
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 このコマンド一つで以下を行います：
 1. サーバーの`/releases/`エンドポイントからCLIバイナリをダウンロードします
 2. `/account/api/v1/.well-known/server-info`をクエリして更新チャネルを検出します
-3. サーバーURL、更新チャネル、暗号化キーを含む`server.json`を書き込みます
+3. サーバーURL、更新チャネル、暗号化キーを`account.*`フィールド以下に含めた、デフォルトconfig（`rediacc.json`）を書き込みます
 4. `rdc update`が今後の更新をサーバーから確認するよう設定します
 
 `REDIACC_CHANNEL`変数は不要です。インストールスクリプトはサーバーの設定からチャネルを自動的に読み取ります。
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-各名前付きconfigは専用のアカウントサーバーURLとサブスクリプショントークンを保持します。configを切り替えることでサーバーコンテキスト全体が切り替わります。
+各名前付きconfigは専用のアカウントサーバーURL（`account.*`以下）と専用のアカウントAPIトークンを保持し、トークンはconfigのそばに`api-token-<name>.json`として保存されます。configを切り替えることでサーバーコンテキスト全体が切り替わります。
 
 ## エアギャップ環境
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | インストールスクリプト、CLIアップデーター | CLIバイナリ用カスタムリリースエンドポイント。デフォルト：`https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | インストールスクリプト | 更新チャネルを上書きします。未設定の場合はサーバーから自動検出されます。 |
 | `REDIACC_ACCOUNT_SERVER` | CLIランタイム | 全CLIコマンドのアカウントサーバーURLを上書きします。 |
-| `RDC_UPDATE_CHANNEL` | CLIランタイム | `rdc update`の更新チャネルを上書きします。 |
+| `REDIACC_UPDATE_CHANNEL` | CLIランタイム | `rdc update`の更新チャネルを上書きします。 |
 
 ## サーバー設定
 
@@ -177,6 +177,8 @@ DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+起動時に、ロードされた証明書が実際にサーバーがライセンスの署名に使用している鍵とは異なる鍵に委任している場合、サーバーは起動を拒否します（FATALログと非ゼロの終了コード）：署名鍵のフィンガープリントと証明書の`delegatedPublicKey`のフィンガープリントを比較し、一致しない場合は処理を中断します。これは、証明書が認可していない鍵で署名されたライセンスがすべてのマシンで検証不能になってしまうためです。署名用のキーペアと証明書の`delegatedPublicKey`は常に同期させてください。
 
 ### 4. 上流検証と自動更新の設定（オプション、推奨）
 

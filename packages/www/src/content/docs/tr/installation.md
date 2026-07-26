@@ -4,8 +4,8 @@ description: "Rediacc CLI'yı Linux, macOS veya Windows üzerine yükleyin."
 category: "Guides"
 order: 1
 language: tr
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # Kurulum
@@ -209,4 +209,4 @@ Yeniden başlatma şeffaftır ve **kesinti yaratmaz**:
 - **Mevcut istemci bağlantıları (HTTP, TCP, UDP) etkilenmez.** Yol sunucusu bir yapılandırma sağlayıcısıdır -- veri yolunda değildir. Traefik tüm trafiği doğrudan yönetir.
 - Uygulama konteynerlerinize dokunulmaz -- yalnızca sistem düzeyindeki yol sunucusu süreci yeniden başlatılır.
 
-Otomatik yeniden başlatmayı atlamak için herhangi bir komuta `--skip-router-restart` parametresini ekleyin veya `RDC_SKIP_ROUTER_RESTART=1` ortam değişkenini ayarlayın.
+Otomatik yeniden başlatmayı atlamak için herhangi bir komuta `--skip-router-restart` parametresini ekleyin veya `REDIACC_SKIP_ROUTER_RESTART=1` ortam değişkenini ayarlayın.

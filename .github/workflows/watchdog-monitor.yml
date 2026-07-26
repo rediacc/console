@@ -1,0 +1,132 @@
+name: Watchdog Monitor
+run-name: "Watchdog: run ${{ inputs.target_run_id }} (gen ${{ inputs.generation }}${{ inputs.pending_rerun == 'true' && ', rerun pending' || '' }})"
+
+# One ~8-minute generation of the chained CI watchdog. ubuntu-slim (1 vCPU)
+# has a hard, non-overridable 15-minute job cap, so the old single 3-hour
+# monitor job cannot run there; instead each generation polls until
+# WATCHDOG_DEADLINE_SECONDS and then dispatches the next generation via
+# dispatch-watchdog.sh, which also enforces the generation cap reproducing
+# the old 3-hour backstop. Dispatched by ci.yml's CI Watchdog bootstrap
+# (gen 1) and by itself (gen N+1). A lost dispatch fails open: the run
+# finishes unwatched and ci-complete still gates on every job's real
+# conclusion.
+#
+# The retry path lives in this same chain (the old separate Rerun Failed
+# Jobs workflow existed only because the in-run watchdog died with the run
+# it monitored): a transient verdict sets pending_rerun, carried through
+# generations; when the run completes, the chain reruns the failed jobs
+# itself and keeps monitoring attempt 2 with the generation counter reset.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_run_id:
+        description: 'CI run to monitor'
+        required: true
+        type: string
+      generation:
+        description: 'Chain generation (1-based, resets when a rerun starts a new attempt)'
+        required: false
+        type: string
+        default: '1'
+      pr_number:
+        description: 'PR number for live label reads (empty on push/schedule runs)'
+        required: false
+        type: string
+        default: ''
+      head_ref:
+        description: 'Head branch carrying this workflow copy (chain dispatch ref)'
+        required: false
+        type: string
+        default: ''
+      pending_rerun:
+        description: 'true when a prior generation classified a failure as transient; wait for completion, then rerun failed jobs'
+        required: false
+        type: string
+        default: 'false'
+
+permissions:
+  contents: read
+  actions: write   # cancel the target run, rerun failed jobs, dispatch next generation
+
+# One chain per monitored run: a duplicate dispatch queues behind the live
+# generation, then sees the run already completed (or handled) and exits fast.
+concurrency:
+  group: watchdog-${{ inputs.target_run_id }}
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Monitor run ${{ inputs.target_run_id }} (gen ${{ inputs.generation }})
+    runs-on: ubuntu-slim
+    # 14, not 15: at exactly the platform cap this timeout races the kill and
+    # loses often enough to matter, and losing means CANCELLED-with-no-failed-step
+    # instead of a timeout naming the step. The worst case here is 480s poll +
+    # ~25s AI + <=5min force-cancel wait = 13.4m, which still fits.
+    # Enforced by CHECK 3 in .ci/scripts/security/check-workflow-gates.sh.
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .ci/scripts
+            .ci/prompts
+
+      # Deterministic attempt-cap backstop, deliberately OUTSIDE the AI-driven
+      # monitor process it guards: a misclassification loop cannot talk its way
+      # past a separate step that just reads run_attempt. Writes SKIP_RERUN to
+      # GITHUB_ENV; the monitor refuses the rerun when it is true.
+      - name: Attempt cap (deterministic backstop)
+        if: inputs.pending_rerun == 'true'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.target_run_id }}
+        run: .ci/scripts/ci/check-rerun-attempt.sh
+
+      - name: Monitor jobs and cancel on failure
+        id: monitor
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          WATCHDOG_TARGET_RUN_ID: ${{ inputs.target_run_id }}
+          WATCHDOG_PR_NUMBER: ${{ inputs.pr_number }}
+          WATCHDOG_PENDING_RERUN: ${{ inputs.pending_rerun }}
+          WATCHDOG_SKIP_RERUN: ${{ env.SKIP_RERUN }}
+          # 480s of polling plus the worst-case post-detection tail (AI
+          # classification, then force-cancel waiting up to 5 minutes for
+          # WATCHDOG_WAIT_PATTERNS jobs) stays under the 15-minute cap.
+          WATCHDOG_DEADLINE_SECONDS: '480'
+          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
+          WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
+          # Per-platform legs only. The aggregator ("Install Methods Complete")
+          # downloads no binary, and it reports skipped/cancelled when its needs
+          # fail, which would make the all-platforms-failed guard never fire.
+          WATCHDOG_INSTALL_VALIDATION_PATTERNS: 'Validate Install Methods / Linux,Validate Install Methods / macOS,Validate Install Methods / Windows'
+          WATCHDOG_WAIT_PATTERNS: 'Migration Test'
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        with:
+          script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
+
+      # !cancelled(), not the implicit success(): the no-cancel-failure label
+      # path and the transient-classification generation both core.setFailed()
+      # while the run must STAY monitored, so the chain has to continue from a
+      # red monitor step. A rerun resets the generation counter: the new
+      # attempt earns the full chain budget, like the old attempt-2 watchdog
+      # job got a fresh 3-hour clock.
+      - name: Dispatch next generation
+        if: ${{ !cancelled() && steps.monitor.outputs.continue == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_RUN_ID: ${{ inputs.target_run_id }}
+          GENERATION: ${{ inputs.generation }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_REF: ${{ inputs.head_ref }}
+          PENDING_RERUN: ${{ steps.monitor.outputs.pending_rerun }}
+          RERUN_EXECUTED: ${{ steps.monitor.outputs.rerun_executed }}
+        run: |
+          NEXT=$((GENERATION + 1))
+          if [ "$RERUN_EXECUTED" = "true" ]; then NEXT=1; fi
+          .ci/scripts/ci/dispatch-watchdog.sh --run-id "$TARGET_RUN_ID" \
+            --generation "$NEXT" --pending-rerun "${PENDING_RERUN:-false}" \
+            --pr-number "$PR_NUMBER" --head-ref "$HEAD_REF"

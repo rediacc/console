@@ -1,5 +1,5 @@
 ---
-description: Land the current branch's stacked PRs: squash-merge submodule PRs first, bump the console pointers to the merged commits, admin-squash-merge the console PR, check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Use when all three PRs are green and you want to release without re-typing the submodule sequence and --admin.
+description: Land the current branch's stacked PRs: squash-merge submodule PRs first, bump the console pointers to the merged commits, wait for the fast-path CI run and auto-merge the console PR (flipping it ready first if needed), check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Use when the console PR is ready + Claude-reviewed with threads resolved, and you want to release without re-typing the submodule sequence.
 argument-hint: "[branch]  (optional; defaults to the current branch)"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
@@ -44,7 +44,8 @@ For each one found:
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
 - A `rediacc/console` PR exists for this branch. Note its number.
-- The latest **console** CI run for this branch is **green** (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is not green, stop and tell the user: do not admin-merge over red.
+- The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the latest console CI run green (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
+- `/code-review ultra` is available as an optional deep pre-land review for a big wave (operator-invoked; it does not replace the automated Claude review).
 
 ### 1. Merge submodule PRs first (submodule-first, squash)
 For each submodule that has an **open PR on this branch** (check the list above):
@@ -62,9 +63,10 @@ Then in the console repo: `git add private/renet private/account …` (only the 
 
 Refresh the console PR body before pushing (staleness gate reads `updatedAt`; the body must actually change): summarize the merges + pointer bump.
 
-### 3. Merge the console PR
-The pointer bump changed only submodule SHAs (trees verified identical in step 2), so the just-triggered console CI run is testing the exact code an earlier run already passed. You do **not** need to wait for it:
-- `gh pr merge <console-pr> --repo rediacc/console --squash --admin` (console is squash-only; `--admin` bypasses the still-pending re-run since the content is proven-green).
+### 3. Wait for the fast-path run, then auto-merge the console PR
+The pointer bump changed only submodule SHAs (trees verified identical in step 2), so the push is a **pointer-bump fast path**: `.ci/scripts/ci/detect-pointer-bump.sh` sets `pointer_bump_only=true` in the `initialize` job and `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`, `package-tests`, and `ops-tests`. Only `quality`, `review-gate`, and `ci-complete` run, so the run goes green in **minutes**, and `assert-ci-complete.sh` accepts the skipped builds under this flag. The pointer-only diff deliberately triggers **no** Claude re-review.
+- Arm the standard terminal-state watch on that run (run_in_background: true; do NOT use `gh run watch`): `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs`.
+- When `CI Complete` is green: `gh pr merge <console-pr> --repo rediacc/console --squash --auto` (console is squash-only; `--squash --auto` is the sanctioned merge, which GitHub lands the moment required checks are green. `--admin` is banned by the `block-admin-merge` hook; there is no place for it here).
 - Verify: `gh pr view <console-pr> --repo rediacc/console --json state` → `MERGED`, and capture `console/main` HEAD.
 
 ### 4. Check out main (first pass — it will go stale again in step 5, see step 6)

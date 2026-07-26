@@ -47,6 +47,13 @@ main() {
     # shellcheck disable=SC2086
     find .ci -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
 
+    # Claude hooks carry live PR policy (draft enforcement, --admin ban,
+    # merge-time review hygiene) — policy-critical shell gets formatted too.
+    log_info "Checking .claude/hooks/**/*.sh"
+    # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
+    # shellcheck disable=SC2086
+    find .claude/hooks -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+
     # Check the main run.sh script
     log_info "Checking ./run.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry

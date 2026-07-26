@@ -48,6 +48,18 @@ export REDIACC_DEFAULT_OUTPUT=table
 TUTORIAL_PROMPT="\033[1;32muser@rediacc\033[0m:\033[1;34m~\033[0m\$ "
 TUTORIAL_CHAR_DELAY="${TUTORIAL_CHAR_DELAY:-0.04}"
 
+# TUTORIAL_FAST=1 zeroes all presentation sleeps (typing settle, prompt holds,
+# section pauses) for validation runs where nobody watches — the sequence
+# driver sets it. Recordings never do: unset keeps the exact historical
+# timing. run_cmd_interrupt's run window is FUNCTIONAL (the command must live
+# long enough to demo and die cleanly), so fast mode only halves it.
+if [[ "${TUTORIAL_FAST:-0}" == "1" ]]; then
+    TUTORIAL_CHAR_DELAY=0
+    _t_sleep() { :; }
+else
+    _t_sleep() { sleep "$1"; }
+fi
+
 # Emit an OSC marker that the post-processor will detect.
 _emit_marker() {
     printf '\033]rediacc-marker:%s\007' "$1"
@@ -128,22 +140,27 @@ _type_command() {
     if [[ -n "$HOME" ]]; then display_cmd="${display_cmd//$HOME/\~}"; fi
     display_cmd="$(_format_display_cmd "$display_cmd")"
 
-    # Type each character
-    for ((i = 0; i < ${#display_cmd}; i++)); do
-        printf '%s' "${display_cmd:$i:1}"
-        sleep "$delay"
-    done
+    # Type each character (zero delay prints in one write — a `sleep 0`
+    # process per character is pure overhead in fast mode)
+    if [[ "$delay" == "0" ]]; then
+        printf '%s' "$display_cmd"
+    else
+        for ((i = 0; i < ${#display_cmd}; i++)); do
+            printf '%s' "${display_cmd:$i:1}"
+            sleep "$delay"
+        done
+    fi
 
     # Press enter
     printf '\n'
-    sleep 0.3
+    _t_sleep 0.3
 }
 
 # Internal: print the fresh empty prompt that marks "command done, awaiting
 # next" — this is what plays under the after-narration freeze in the MP4.
 _settle_prompt() {
     printf '%b' "$TUTORIAL_PROMPT"
-    sleep 1.5
+    _t_sleep 1.5
 }
 
 # Simulate typing a command, then execute it. The command MUST succeed —
@@ -201,6 +218,11 @@ run_cmd_expect_fail() {
 run_cmd_interrupt() {
     local cmd="$1"
     local run_secs="${2:-4}"
+    # The run window is FUNCTIONAL (the command must live long enough to bind
+    # and demo before the ^C), so fast mode only halves it, never zeroes it.
+    if [[ "${TUTORIAL_FAST:-0}" == "1" ]]; then
+        run_secs=$(((run_secs + 1) / 2))
+    fi
 
     _type_command "$cmd"
 
@@ -230,7 +252,7 @@ run_cmd_interrupt() {
 # cleanup commands follow this call.
 end_recording() {
     printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-    sleep 2
+    _t_sleep 2
     exec >/dev/null 2>&1
 }
 
@@ -255,32 +277,36 @@ type_only_cmd() {
     local display_cmd="$cmd"
     if [[ -n "$HOME" ]]; then display_cmd="${cmd//$HOME/\~}"; fi
 
-    for ((i = 0; i < ${#display_cmd}; i++)); do
-        printf '%s' "${display_cmd:$i:1}"
-        sleep "$delay"
-    done
+    if [[ "$delay" == "0" ]]; then
+        printf '%s' "$display_cmd"
+    else
+        for ((i = 0; i < ${#display_cmd}; i++)); do
+            printf '%s' "${display_cmd:$i:1}"
+            sleep "$delay"
+        done
+    fi
 
     # No newline, no eval. Hold the typed command on screen.
-    sleep 1.5
+    _t_sleep 1.5
 }
 
 # Pause between sections.
 pause() {
-    sleep "${1:-2}"
+    _t_sleep "${1:-2}"
 }
 
 # Print a visible comment / section header. Records the header in
 # TUTORIAL_CURRENT_SECTION so run_cmd reprints it after each per-command clear.
 section() {
     printf '\033[H\033[3J\033[2J'
-    sleep 0.3
+    _t_sleep 0.3
     printf '\033[1;33m# %s\033[0m\n' "$1"
     TUTORIAL_CURRENT_SECTION="$1"
-    sleep 1
+    _t_sleep 1
 }
 
 # Clear screen for a fresh start.
 clear_screen() {
     printf '\033[2J\033[H'
-    sleep 0.5
+    _t_sleep 0.5
 }

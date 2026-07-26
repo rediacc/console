@@ -3668,6 +3668,13 @@
           "subcommands": []
         },
         {
+          "name": "current",
+          "descriptionKey": "commands.config.current.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "delete",
           "descriptionKey": "commands.config.delete.description",
           "options": [],
@@ -3893,6 +3900,12 @@
                 {
                   "flags": "--api-url <url>",
                   "descriptionKey": "options.serverUrl",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--force",
+                  "descriptionKey": "commands.config.remote.enable.optionForce",
                   "mandatory": false,
                   "defaultValue": null
                 }

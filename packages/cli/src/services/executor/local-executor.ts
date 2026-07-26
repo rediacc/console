@@ -20,6 +20,7 @@ import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
+import { isDevBuild } from '../../utils/platform.js';
 import { ValidationError } from '../../utils/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { formatDuration } from '../../utils/format.js';
@@ -694,6 +695,9 @@ export function buildRenetEnvPrefix(params: {
   const { isDevelopment, telemetryDisabled, otlpCreds, envSecrets, kubeconfig } = params;
   const envParts: string[] = [];
   if (isDevelopment) {
+    // REMOTE plane: this REDIACC_ENVIRONMENT travels to the renet process on
+    // the machine, a different plane from the local CLI's dev signal. Keep the
+    // name; the env-tombstone test allowlists this one literal.
     envParts.push('REDIACC_ENVIRONMENT=development');
   }
   if (kubeconfig) {
@@ -1234,6 +1238,23 @@ class LocalExecutorService {
             `The repository identity does not match the installed repo license. ` +
             `Reissue repo licenses with: rdc subscription refresh -m ${machineName}`,
         };
+      case 'cert_expired':
+        return {
+          errorCode: 'REPO_LICENSE_DELEGATION_CERT_EXPIRED',
+          guidance: `Renew the on-prem delegation cert, then: rdc subscription refresh -m ${machineName}`,
+          failFastMessage:
+            `The on-prem delegation cert covering this license has expired. ` +
+            `Renew it on the on-prem account server (auto-renew or the portal renew flow), ` +
+            `then run: rdc subscription refresh -m ${machineName}`,
+        };
+      case 'cert_invalid':
+        return {
+          errorCode: 'REPO_LICENSE_DELEGATION_CERT_INVALID',
+          guidance: `Fix the on-prem delegation cert, then: rdc subscription refresh -m ${machineName}`,
+          failFastMessage:
+            `The delegation cert attached to the installed repo license could not be trusted. ` +
+            `Fix the on-prem cert, then reissue with: rdc subscription refresh -m ${machineName}`,
+        };
       default:
         return {};
     }
@@ -1378,7 +1399,11 @@ class LocalExecutorService {
     let stdout = '';
     let stderr = '';
     const stdoutHandler = createStdoutHandler(options, collector);
-    const echoStderrLive = Boolean(options.debug && !options.captureOutput && !options.eventsMode);
+    // Renet routes diagnostics (lifecycle brackets, relayed sub-command
+    // stderr) to ITS stderr so they can never interleave with parseable
+    // stdout. Echo them live in interactive text mode — to OUR stderr, same
+    // "stdout belongs to the command" rule as createStdoutHandler.
+    const echoStderrLive = Boolean(!options.captureOutput && !options.eventsMode);
     const execStart = Date.now();
     const exitCode = await sftp.execStreaming(command, {
       stdin: vault,
@@ -1856,7 +1881,7 @@ class LocalExecutorService {
     ) {
       return 'development';
     }
-    return process.env.REDIACC_ENVIRONMENT ?? DEFAULTS.TELEMETRY.ENVIRONMENT;
+    return isDevBuild() ? 'development' : DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
 
   /**

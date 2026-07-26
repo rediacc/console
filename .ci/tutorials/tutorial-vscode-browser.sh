@@ -41,6 +41,11 @@ rdc repo up my-app
 rdc vscode connect my-app --browser --url-only &
 PREWARM_PID=$!
 sleep 60
+# Signal the CHILD first, then the subshell — same pattern as
+# run_cmd_interrupt. When rdc is a TUTORIAL_RDC_CMD wrapper function, $! is
+# the function-subshell; bash defers a SIGINT sent to it until its child
+# exits, so signalling only $PREWARM_PID hangs the wait forever.
+pkill -INT -P "$PREWARM_PID" 2>/dev/null || true
 kill -INT "$PREWARM_PID" 2>/dev/null || true
 wait "$PREWARM_PID" 2>/dev/null || true
 

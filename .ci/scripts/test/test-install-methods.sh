@@ -413,7 +413,7 @@ test_channel_verify() {
 
     # Verify channel resolution (via env var, simulating what install.sh configures)
     local doctor_output
-    doctor_output=$(RDC_UPDATE_CHANNEL="${REPO_CHANNEL}" "$binary" doctor -o json 2>/dev/null || true)
+    doctor_output=$(REDIACC_UPDATE_CHANNEL="${REPO_CHANNEL}" "$binary" doctor -o json 2>/dev/null || true)
     if [[ -z "$doctor_output" ]] || ! command -v jq &>/dev/null; then
         log_error "Failed to get doctor output or jq not available"
         rm -f "$binary"

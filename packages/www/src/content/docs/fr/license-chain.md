@@ -4,8 +4,8 @@ description: "Émission de licences inviolable, signature déléguée pour l'on-
 category: "Guides"
 order: 8
 language: fr
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # Chaîne de licence et délégation
@@ -18,7 +18,7 @@ Chaque licence émise par un serveur de compte est enregistrée dans un registre
 
 1. **Les numéros de séquence** sont globaux et monotoniques par abonnement. Sauter ou réordonner des entrées brise la chaîne.
 2. **Les hachages de chaîne** lient chaque entrée à toutes les entrées précédentes. La modification d'une entrée passée invalide toutes les entrées suivantes.
-3. **Renet stocke la séquence la plus élevée vue** par abonnement. Un serveur qui effectue un rollback de séquence est détecté immédiatement.
+3. **Renet stocke la séquence la plus élevée vue** par clé de signature et par abonnement. Un serveur qui effectue un rollback de séquence est détecté immédiatement.
 
 ## Comment une licence est émise
 
@@ -35,7 +35,7 @@ La `sequence` et `prevChainHash` se trouvent dans la charge utile signée (elles
 
 ## Comment Renet valide
 
-Chaque machine exécutant Renet stocke son dernier état de chaîne connu dans `{licenseDir}/chain-state.json`. À chaque validation de licence, Renet vérifie :
+Chaque machine exécutant Renet stocke son dernier état de chaîne connu dans `{licenseDir}/chain-state.json` (c'est-à-dire `/var/lib/rediacc/license/chain-state.json`, un répertoire frère du `repos/` propre à chaque dépôt). L'état de la chaîne est délimité par clé de signature et par abonnement, indexé sous la forme `"<keyId>:<subscriptionId>"`, de sorte que les univers signés par des clés différentes suivent leurs séquences indépendamment. À chaque validation de licence, Renet vérifie :
 
 | Vérification | Échec signifie |
 |---|---|
@@ -57,7 +57,7 @@ Un certificat de délégation contient :
 - `subscriptionId` - l'abonnement auquel ce certificat s'applique
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` - limites de plan intégrées
 - `maxTotalIssuances` - borne supérieure sur le numéro de séquence de la chaîne
-- `delegatedPublicKey` - la clé publique Ed25519 du serveur on-premise (SPKI base64)
+- `delegatedPublicKey` - la clé publique Ed25519 du serveur on-premise (SPKI base64). Son empreinte hexadécimale à 16 caractères (les 8 premiers octets du `SHA-256` de la clé brute) est le `publicKeyId` enregistré sur chaque blob de licence que cette clé signe. `publicKeyId` est toujours une véritable empreinte de clé, jamais un espace réservé comme `"default"`.
 - `genesisHash` - le point de départ de la chaîne (continuation depuis un certificat précédent, ou "genesis")
 - `genesisSequence` - séquence de chaîne au moment de l'émission. Utilisé par `/onprem/cert-upload` pour valider que le nouveau certificat lie à une entrée connue dans le registre d'émission local lorsque la chaîne a avancé pendant le transit. Optionnel pour la rétrocompatibilité (traité comme 0 si absent).
 - `validFrom`, `validUntil` - fenêtre de validité (régie par la politique de validité ci-dessous)
@@ -73,16 +73,21 @@ Un certificat de délégation contient :
    ```
 3. L'amont signe le certificat avec sa clé maître et le retourne.
 4. Le serveur on-premise stocke le certificat et sa clé privée, prêt à signer les licences.
-5. Lorsqu'une CLI demande une licence au serveur on-premise, le serveur signe avec sa clé déléguée et inclut une référence au certificat.
-6. Renet effectue une **validation à deux niveaux** :
+5. Lorsqu'une CLI demande une licence au serveur on-premise, le serveur signe avec sa clé déléguée et **intègre le certificat de délégation complet dans le blob de licence** (le champ `delegationCert`). Le certificat n'est pas récupéré séparément ; il voyage avec chaque licence de dépôt.
+6. Renet effectue une **validation à deux niveaux**, dans cet ordre :
    - Vérifie la signature du certificat contre la clé maître amont intégrée.
+   - Applique la fenêtre de validité du certificat (`validFrom` / `validUntil`) sur les opérations de croissance (`repo create`, `fork`, `resize`, `expand`) et sur le transfert de sauvegardes (`repo push`, `pull`, sauvegardes). Le niveau d'exploitation (`repo up`, `up all`, démarrage automatique) ignore uniquement la fenêtre, à l'image de ce qu'il fait déjà pour l'expiration de la licence : vos charges de travail en cours ne s'arrêtent jamais parce qu'un certificat a expiré, mais un certificat expiré ne peut autoriser rien de nouveau. La signature, la liaison de clé et toutes les autres contraintes du certificat restent appliquées à tous les niveaux.
+   - Exige que `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (l'empreinte de clé hexadécimale à 16 caractères), de sorte que le certificat ne puisse garantir que les licences signées avec exactement la clé à laquelle il délègue.
    - Vérifie la signature du blob contre la clé déléguée du certificat.
-   - Vérifie que `blob.sequence <= cert.maxTotalIssuances`.
+   - Applique les contraintes du certificat : correspondance de l'abonnement, correspondance du plan, plafond de taille (`maxRepositorySizeGb`) et `blob.sequence <= cert.maxTotalIssuances`.
    - Applique toutes les vérifications standard de la chaîne.
+
+Un échec du certificat échoue immédiatement avec une raison dédiée : `cert_expired` (hors de la fenêtre de validité) ou `cert_invalid` (signature de clé maître invalide ou contrainte violée). Ces raisons sont vérifiées **avant** `invalid_signature`, la raison liée au certificat l'emporte donc.
 
 Le serveur on-premise ne peut pas :
 - Forger une licence hors des limites de plan du certificat de délégation (renet la rejette).
 - Émettre plus de `maxTotalIssuances` opérations au total (renet rejette le débordement de séquence).
+- Continuer à signer des licences exploitables après le `validUntil` du certificat (la fenêtre est appliquée même sur les opérations qui ignorent l'expiration).
 - Modifier le certificat (la signature amont est invalidée).
 
 ## Politique de validité

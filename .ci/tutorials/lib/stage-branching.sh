@@ -25,7 +25,12 @@ prewarm_vscode() {
         kill -0 "$pid" 2>/dev/null || break
         sleep 1
     done
-    kill "$pid" 2>/dev/null || true
+    # Signal the CHILD first, then the subshell — same pattern as
+    # run_cmd_interrupt. When rdc is a TUTORIAL_RDC_CMD wrapper function, $pid
+    # is the function-subshell: killing only it orphans the real process,
+    # which keeps holding the tunnel.
+    pkill -INT -P "$pid" 2>/dev/null || true
+    kill -INT "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
     rm -f "$out"
 }
