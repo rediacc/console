@@ -159,12 +159,24 @@ jobs:
     name: Session (${{ inputs.tunnel-mode }})
     needs: [preflight]
     runs-on: ${{ inputs.runner }}
-    # duration + 40 for boot and teardown, CAPPED AT 350 AND NEVER 360.
-    # 360 is exactly GitHub's hosted-job cap, so at 360 the platform kill races
-    # the declared timeout and wins, and a platform kill reports as
-    # cancelled-with-no-failed-step: neither pass nor fail. The old workflow
-    # declared exactly 360.
-    timeout-minutes: ${{ fromJSON(inputs.duration) + 40 > 350 && 350 || fromJSON(inputs.duration) + 40 }}
+    # STATIC 350, and it has to be: GitHub Actions expressions have NO
+    # ARITHMETIC OPERATORS. `${{ fromJSON(inputs.duration) + 40 }}` is not a
+    # value that evaluates oddly, it is a SYNTAX ERROR -- the whole workflow
+    # fails to parse, and GitHub reports it as a run with zero jobs and
+    # "This run likely failed because of a workflow file issue", listing the
+    # workflow by file path because it never read the `name:` field.
+    #
+    # 350 rather than 360: 360 is exactly GitHub's hosted-job cap, so declaring
+    # it makes the platform kill race the declared timeout, and a platform kill
+    # reports as cancelled-with-no-failed-step -- neither pass nor fail. The
+    # deleted standalone-run.yml declared exactly 360.
+    #
+    # Being static costs little: the job ends when hold-breakpoint.sh returns
+    # after `duration` minutes, so a 5-minute session still finishes in ~5. This
+    # is only the backstop for a WEDGED session, which now holds a runner up to
+    # 350 minutes instead of duration+40. Acceptable for a manually-dispatched
+    # debug tool, and it errs toward never colliding with the platform cap.
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
