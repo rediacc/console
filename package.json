@@ -189,7 +189,7 @@
     "hono": ">=4.12.25",
     "@hono/node-server": ">=1.19.13",
     "vite": ">=6.4.2 <8",
-    "postcss": ">=8.5.10",
+    "postcss": ">=8.5.18",
     "fast-uri": ">=3.1.3 <4",
     "fast-xml-builder": ">=1.1.7",
     "ip-address": "^10.1.1",
@@ -207,7 +207,7 @@
     },
     "linkify-it": ">=5.0.1",
     "brace-expansion@^1.1.7": "1.1.16",
-    "brace-expansion@^5.0.5": "5.0.7"
+    "brace-expansion@^5.0.5": "5.0.8"
   },
   "_overridesReasons": {
     "body-parser": "BLOCKER: force 2.3.0 to clear GHSA-v422-hmwv-36x6 (DoS via an invalid limit value that silently disables body-size enforcement; vulnerable >=2.0.0 <2.3.0 and <1.20.6). express@5 pulls body-parser ^2.2.1 which froze the lockfile at 2.2.2; 2.3.0 is the patched 2.x line and satisfies express's range. Advisory published after 2.3.0 (2026-06-15) had already aged past minimum-release-age, so this is a straight patched-version bump, not a deferral.",
@@ -224,7 +224,7 @@
     "hono": "BLOCKER: force >=4.12.25 to carry the >=4.12.18 fixes plus serve-static path traversal (GHSA-wwfh-h76j-fc44), CORS wildcard reflection (GHSA-88fw-hqm2-52qc), Set-Cookie merge (GHSA-j6c9-x7qj-28xf), body-limit bypass (GHSA-rv63-4mwf-qqc2), and Lambda@Edge header drop (GHSA-wgpf-jwqj-8h8p); @modelcontextprotocol/sdk transitively pulls older hono",
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.25 override; pre-1.19 cannot start against hono 4.12.x",
     "vite": "BLOCKER: bound >=6.4.2 <8 to capture dev-server path-traversal + fs.deny fixes while staying compatible with vitest/@vitest 3.x and the astro stack; vite 8 release is a breaking major we have not planned for",
-    "postcss": "BLOCKER: force >=8.5.10 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag fix; vite/marpit transitives otherwise hold tree at 8.5.8",
+    "postcss": "BLOCKER: force >=8.5.18 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag and GHSA-r28c-9q8g-f849 sourceMappingURL path-traversal (arbitrary .map file disclosure, patched 8.5.18) fixes; vite/marpit transitives otherwise hold tree at 8.5.8",
     "fast-uri": "BLOCKER: force >=3.1.3 to include GHSA-q3j6-qgpj-74h6 (encoded path-separator normalization), GHSA-v39h-62p7-jpjc (encoded authority delimiter), and GHSA-4c8g-83qw-93j6 (host confusion via failed IDN canonicalization; vulnerable >=3.0.0 <3.1.3) fixes; transitive consumers (fastify-swagger, ajv-formats) otherwise hold older versions. Bounded <4 because the only consumer in this tree is ajv@8.20.0, which declares fast-uri ^3.0.1; an unbounded range would drag the untested 4.x major into the MCP SDK's schema validator.",
     "fast-xml-builder": "BLOCKER: force >=1.1.7 to include GHSA-5wm8-gmm8-39j9 attribute-quote injection fix; aws-sdk @aws-sdk/xml-builder transitively pulls older fast-xml-parser/fast-xml-builder",
     "ip-address": "BLOCKER: force ^10.1.1 to include GHSA-v2v4-37r5-5v8g (XSS in Address6 HTML-emitting methods) fix; express-rate-limit@8.3.1 pulls 10.1.0 which is in the affected <= 10.1.0 range",
@@ -236,6 +236,6 @@
     "gray-matter": "BLOCKER: nested override pins js-yaml ^3.15.0 inside the gray-matter chain since gray-matter's frontmatter parser is written against the js-yaml v3 API and cannot accept v4; GHSA-h67p-54hq-rp68 covers two disjoint ranges (>=4.0.0 <=4.1.1 AND <3.15.0), so the v3 line also needed bumping to its final 3.15.0 patch release",
     "linkify-it": "BLOCKER: force >=5.0.1 to include GHSA-22p9-wv53-3rq4 (quadratic-complexity DoS in LinkifyIt#match) fix; markdown-it (via @marp-team/marpit) transitively pulls linkify-it@5.0.0",
     "brace-expansion@^1.1.7": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp (DoS via exponential-time expansion of consecutive non-expanding {} groups; vulnerable <1.1.16 || >=3.0.0 <5.0.7) for the six eslint/minimatch@3 edges that request ^1.1.7. Pin to 1.1.16 (the patched 1.x) rather than blanket-bumping to v5: brace-expansion v5 became ESM-only and its CommonJS build changed from `module.exports = expand` to a NAMED export `{ expand, EXPANSION_MAX }`, so minimatch@3's `var expand = require('brace-expansion'); expand(pattern)` throws 'expand is not a function' and eslint crashes. 1.1.16 keeps the callable default export and is out of the vulnerable range.",
-    "brace-expansion@^5.0.5": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp for the single top-level minimatch@10 edge that requests ^5.0.5 (5.0.6 is vulnerable, >=5.0.7 <=5.0.6-range fixed at 5.0.7). This consumer expects the v5 named-export API, so it stays on the v5 line — kept separate from the ^1.1.7 override above so neither consumer is forced across brace-expansion's v4->v5 export-shape break."
+    "brace-expansion@^5.0.5": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp and GHSA-mh99-v99m-4gvg (unbounded expansion LENGTH — expand() caps the result count but not each result's size, so chained brace groups OOM the process; vulnerable <=5.0.7, patched 5.0.8) for the single top-level minimatch@10 edge that requests ^5.0.5. This consumer expects the v5 named-export API, so it stays on the v5 line — kept separate from the ^1.1.7 override above so neither consumer is forced across brace-expansion's v4->v5 export-shape break."
   }
 }
