@@ -25,10 +25,14 @@ HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
 # MIGRATION_TEST is deliberately absent: it moved from a top-level ci.yml job
 # into ct-tests.yml, so its result now rolls up through TESTS. A failing
 # migration fails the `tests` reusable workflow, which fails RESULT_TESTS here.
+# BREAKPOINT_LIFECYCLE is SOFT, not HARD: it is gated on full_suite
+# (github.event_name != 'push'), so it legitimately skips on push-to-main.
+# Soft still blocks on "failure" -- which is what matters, because a failing
+# lifecycle test means the debug box's teardown cannot be trusted.
 SOFT_REQUIRED=(
     QUALITY REVIEW_GATE STRIPE_SANDBOX PACKAGE_TESTS STAGE_ARTIFACTS
     VALIDATE_INSTALL VALIDATE_PROMOTE TESTS ELITE_RUN_TEST OPS_TESTS
-    UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW
+    UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW BREAKPOINT_LIFECYCLE
 )
 
 # Pointer-bump fast path (see .ci/scripts/ci/detect-pointer-bump.sh): the PR

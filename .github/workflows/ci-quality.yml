@@ -411,6 +411,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-workflow-gates
 
+      # .ci/breakpoint/ is VENDORED into other repos, so a local edit here is
+      # invisible to them and a local edit THERE is silently reverted by the
+      # next re-vendor. This proves the copy matches its manifest, and also
+      # cmp's workflow/breakpoint.yml against the live .github/ copy -- which
+      # matters because every other workflow gate scans .github/ only, so the
+      # template would otherwise be unreviewed by any of them.
+      - name: Breakpoint drift
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-breakpoint-drift
+
       # Keep the CI App off `administration`, which gates environment CRUD.
       - name: App admin permission
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

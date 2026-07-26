@@ -4,6 +4,24 @@
 # Architecture:
 #   Xvfb (:99) -> XFCE4 -> x11vnc (:5999) -> websockify+noVNC (:6080)
 #
+# ⚠️  THIS FILE IS A SHIPPED PRODUCT INTERFACE, NOT ONLY A DEVCONTAINER HELPER.
+# The Dockerfile installs it at /usr/local/bin/start-desktop.sh, and the hub
+# feature invokes it BY NAME as a container entry command and as CRIU
+# checkpoint hooks -- see packages/www/src/content/docs/*/hub.md (13 locales):
+#     rediacc.hub.command=start-desktop.sh & ttyd ... & exec openvscode-server
+#     rediacc.hub.hook.checkpoint.pre_dump=start-desktop.sh stop
+#     rediacc.hub.hook.checkpoint.post_restore=start-desktop.sh
+# Hub users run that image WITHOUT this repository mounted, so this file must
+# stay self-contained. Do not turn it into a shim that execs something under
+# the workspace: that path does not exist for them.
+#
+# A near-copy of this stack lives at .ci/breakpoint/scripts/desktop-ctl.sh for
+# the CI debug box. The duplication is DELIBERATE and the reason is the
+# paragraph above; the alternative (one shared file) is blocked because the
+# devcontainer image's docker build context is .devcontainer/, so the Dockerfile
+# cannot COPY from .ci/. Keep behavioural fixes in sync by hand, and prefer
+# making them here first -- this is the copy customers run.
+#
 # This script ONLY starts services. All packages must be pre-installed
 # in the container image (see Dockerfile).
 #

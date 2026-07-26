@@ -1,0 +1,70 @@
+# Gateway for a breakpoint session. Caddy listens on :8080 and multiplexes a
+# SINGLE tunnel hostname across several local services by path.
+#
+# WHY A GATEWAY AT ALL, AND WHY IT IS NOT A "VNC HELPER"
+# A quick tunnel gives you exactly ONE hostname. Without path multiplexing you
+# must choose: tunnel the application, or tunnel the desktop, never both. The
+# catch-all rule at the bottom is the load-bearing one -- it is what makes this
+# a gateway rather than a noVNC front end.
+#
+# Routing:
+#   /health     -> answered HERE, by Caddy itself
+#   /desktop    -> redirect into an already-connected noVNC session
+#   /desktop/*  -> noVNC static assets      (websockify on :6080)
+#   /vnc        -> the VNC WebSocket stream (websockify on :6080)
+#   /*          -> the application          (nginx on :80)
+#
+# THE /health ROUTE IS NEW AND IS A BUG FIX. The deleted
+# .ci/docker/desktop/Caddyfile had no /health rule, so /health fell through to
+# the catch-all and hit nginx. Combined with the fact that the old workflow
+# never actually started nginx, the tunnel's own health gate could not pass even
+# in principle -- it burned three 60s attempts per matrix leg and `|| true`
+# swallowed the failure. Answering /health at the gateway makes tunnel liveness
+# independent of whether the app behind it is up, which is the correct split:
+# transport liveness and application health are different questions.
+#
+# HOST NETWORKING IS LOAD-BEARING, not a convenience. The desktop stack (Xvfb,
+# x11vnc, websockify) runs DIRECTLY ON THE RUNNER, not in a container, so
+# `localhost:6080` only resolves for a container sharing the host's network
+# namespace. Same for nginx on :80 when the compose stack is up.
+#
+# GROWING THIS: the hub product already routes code-server on 8080, ttyd on 7681
+# and noVNC on 6080 over one hostname (see packages/www/src/content/docs/*/hub.md,
+# `rediacc.hub.route.*`). Adding /code or /term here later is a three-line edit
+# rather than a re-architecture, which is the whole argument for a gateway over
+# a static origin.
+
+:8080 {
+	# Answered by the gateway itself, so tunnel liveness never depends on the
+	# application being up. Must stay ABOVE the catch-all.
+	handle /health {
+		respond "breakpoint-origin-ok" 200
+	}
+
+	# Land on a session that is already connected, rather than on noVNC's
+	# host/port prompt. `path=vnc` matches the /vnc WebSocket route below.
+	redir /desktop /desktop/vnc.html?path=vnc&autoconnect=true permanent
+
+	# The VNC WebSocket data channel -- the actual pixel stream.
+	# websockify validates the Host header, so it is rewritten rather than
+	# passed through as the tunnel hostname.
+	handle /vnc {
+		reverse_proxy localhost:6080 {
+			header_up Host localhost:6080
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# noVNC's static assets. `handle_path` (not `handle`) strips the /desktop
+	# prefix before proxying, because websockify serves the web root at /.
+	handle_path /desktop/* {
+		reverse_proxy localhost:6080
+	}
+
+	# Everything else is the application. THIS is what makes one tunnel serve
+	# both the app and the desktop. If no app is running this returns 502,
+	# which is correct and visible rather than silently empty.
+	handle {
+		reverse_proxy localhost:80
+	}
+}
