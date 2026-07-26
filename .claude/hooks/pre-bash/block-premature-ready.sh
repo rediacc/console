@@ -15,31 +15,43 @@ CMD=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null)
 #    `git commit -m` body whose prose said "; gh pr ready is hook-gated".
 # 2. Command-position anchor on what remains (line start or after ; & | $( )
 #    -- v1 fired on a heredoc mentioning the command in prose.
-STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
 # Bypass-resistant scanning so `sh -c 'gh pr ready'` cannot skip the green
-# gate; STRIPPED stays for field parsing. See lib/command-scan.sh.
+# gate. SCAN carries both the prose-stripped command and any unwrapped
+# wrapper payload, and every field below is parsed from it -- one view, no
+# drift between two regexes. See lib/command-scan.sh.
 source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
-hook_gh_pr_at_command_pos "$(hook_scan_target "$CMD")" ready || exit 0
-echo "$STRIPPED" | grep -qE -- '--undo' && exit 0
+SCAN=$(hook_scan_target "$CMD")
+hook_gh_pr_at_command_pos "$SCAN" ready || exit 0
 
-# Only console has draft PRs (free plan, public repo). A --repo pointing
-# elsewhere is a no-op flip; let gh handle it.
-REPO=$(printf '%s\n' "$STRIPPED" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+' | head -1 | sed -E 's/^(--repo[= ]|-R )//')
-[[ -n "$REPO" && "$REPO" != "rediacc/console" ]] && exit 0
+# Every field below is read from the SEGMENT that carries `gh pr ready`, never
+# from the whole bash line. Line-wide parsing let a sibling command donate its
+# fields to this one: `gh pr ready --undo 1; gh pr ready 531` looked like an
+# always-allowed undo, and `gh pr view 1 --repo rediacc/renet; gh pr ready 531`
+# looked like a non-console flip -- both would have skipped the green gate
+# entirely. See hook_gh_pr_segment.
+CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
+while IFS= read -r SEG; do
+    [[ -z "$SEG" ]] && continue
+    # --undo (always safe: it can only push a PR back to draft) must belong to
+    # THIS invocation, not to a sibling one earlier on the line.
+    printf '%s\n' "$SEG" | grep -qE -- '--undo' && continue
 
-# PR selector: first bare number/URL/branch token after `ready`, else the
-# session cwd's current branch (matching gh's own default resolution).
-SEL=$(printf '%s\n' "$STRIPPED" | sed -n 's/.*gh pr ready[[:space:]]*//p' | awk '{for (i=1; i<=NF; i++) if ($i !~ /^-/) { print $i; exit }}')
-if [[ -z "$SEL" ]]; then
-    CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
-    SEL=$(git -C "${CWD:-.}" branch --show-current 2>/dev/null)
-fi
+    # Only console has draft PRs (free plan, public repo). A --repo pointing
+    # elsewhere is a no-op flip; let gh handle it.
+    REPO=$(hook_target_repo "$SEG" "$SCAN" "$CWD")
+    [[ "$REPO" != "rediacc/console" ]] && continue
 
-CONCLUSION=$(timeout 20 gh pr view "$SEL" --repo rediacc/console \
-    --json statusCheckRollup \
-    --jq '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
-if [[ "$CONCLUSION" != "SUCCESS" ]]; then
-    echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
-    exit 2
-fi
+    # PR selector: first bare number/URL/branch token after `ready`, else the
+    # session cwd's current branch (matching gh's own default resolution).
+    SEL=$(hook_pr_selector "$SEG" ready)
+    [[ -z "$SEL" ]] && SEL=$(git -C "${CWD:-.}" branch --show-current 2>/dev/null)
+
+    CONCLUSION=$(timeout 20 gh pr view "$SEL" --repo rediacc/console \
+        --json statusCheckRollup \
+        --jq '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
+    if [[ "$CONCLUSION" != "SUCCESS" ]]; then
+        echo "❌ BLOCKED: 'gh pr ready' requires CI Complete = SUCCESS on the PR's current head (got: ${CONCLUSION:-verification failed}). A draft flips to ready only when CI is green -- that flip triggers the automated Claude review, whose invariant is non-draft AND green. Wait out the running CI (armed terminal-state watch), fix the red, or if this was a gh/network hiccup, re-run the exact same command." >&2
+        exit 2
+    fi
+done <<<"$(hook_gh_pr_segment "$SCAN" ready)"
 exit 0

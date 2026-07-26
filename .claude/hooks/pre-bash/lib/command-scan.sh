@@ -127,3 +127,63 @@ hook_flag_present() {
     local cmd="$1" flag="$2"
     printf '%s' "$cmd" | grep -qE -- "--${flag}([[:space:]=;&|)\"'\`]|\$)"
 }
+
+# hook_gh_pr_segment <scan-target> <verb>
+# Print ONLY the command segment that actually invokes `gh pr <verb>`, so
+# per-invocation fields (--repo, -R, the PR selector) are read from ONE
+# invocation instead of from the whole bash line.
+#
+# Round-46 finding, hit live during a real merge: every field was parsed from
+# the entire line, so when several gh commands shared it the repo of one was
+# paired with the PR number of another --
+#   gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo rediacc/account
+# resolved as rediacc/renet#66 (a long-merged, unrelated PR) and blocked the
+# merge on THAT PR's unresolved thread. Same class as the wrapper/flag/path
+# findings the rest of this file records: a field read at the wrong scope.
+# Splitting on command separators fixes the scope rather than special-casing
+# the observed pairing.
+# Prints EVERY such segment, one per line, so a caller checks each invocation
+# on its own. The old line-wide parsing also silently checked only ONE of
+# several same-verb invocations (the greedy selector regex took the last PR
+# number, the repo grep took the first repo), so a second `gh pr merge` on the
+# line went entirely unexamined; looping closes that too.
+hook_gh_pr_segment() {
+    local scan="$1" verb="$2" segs
+    segs=$(printf '%s' "$scan" |
+        sed -e 's/[;&|()`]/\n/g' |
+        grep -E "^[[:space:]]*gh[[:space:]]+pr[[:space:]]+${verb}([[:space:]]|\$)")
+    # Fail closed: if the split finds nothing (a shape not anticipated here)
+    # hand back the WHOLE scan, i.e. the old behavior, never an empty scope
+    # that would silently resolve to defaults and skip the real check.
+    printf '%s' "${segs:-$scan}"
+}
+
+# hook_target_repo <segment> <whole-scan> <cwd>
+# Resolve the rediacc repo a `gh pr` invocation targets, in order:
+#   1. --repo/-R in the SAME segment as the verb
+#   2. a `cd`/`git -C` into private/<submodule> anywhere on the line (a cd
+#      applies to every later segment, so this one is deliberately line-wide)
+#   3. the session cwd's origin remote
+#   4. rediacc/console
+hook_target_repo() {
+    local seg="$1" scan="$2" cwd="$3" repo sm
+    repo=$(printf '%s\n' "$seg" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+' | head -1 | sed -E 's/^(--repo[= ]|-R )//')
+    if [[ -z "$repo" ]]; then
+        sm=$(printf '%s\n' "$scan" | grep -oE '(cd |-C )[^;|&]*private/(renet|account|elite|homebrew-tap)' | grep -oE 'private/(renet|account|elite|homebrew-tap)' | head -1)
+        [[ -n "$sm" ]] && repo="rediacc/${sm#private/}"
+    fi
+    if [[ -z "$repo" && -n "$cwd" ]]; then
+        repo=$(git -C "$cwd" remote get-url origin 2>/dev/null | sed -E 's#\.git$##; s#.*[:/]([^/]+/[^/]+)$#\1#')
+    fi
+    printf '%s' "${repo:-rediacc/console}"
+}
+
+# hook_pr_selector <segment> <verb>
+# The PR selector (number/url/branch) belongs to the same invocation as the
+# verb -- read it from the segment, never from the line.
+hook_pr_selector() {
+    local seg="$1" verb="$2"
+    printf '%s\n' "$seg" |
+        sed -n "s/.*gh pr ${verb}[[:space:]]*//p" |
+        awk '{for (i = 1; i <= NF; i++) if ($i !~ /^-/) { print $i; exit }}'
+}

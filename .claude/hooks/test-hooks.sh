@@ -76,6 +76,12 @@ check 2 pre-bash/block-admin-merge.sh "$(bash_json "'/bin/bash' -c 'gh pr merge 
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin=true')" "admin-merge: --admin=value bypass blocked"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'X=--admin; gh pr merge 531 $X')" "admin-merge: variable-indirection bypass blocked"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json "sh -c 'gh pr create --title x --body y'")" "nondraft-create: sh -c wrapper bypass blocked"
+# Round-46 (live during a real /pr-merge): fields were parsed from the WHOLE
+# bash line, so sibling gh invocations donated fields to each other and only
+# ONE invocation per line was ever examined. Each of these pairs a compliant
+# invocation with a violating one; both must be judged on their own segment.
+check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --repo rediacc/console -t y')" "nondraft-create: second create on the line is judged too (no --draft donation)"
+check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --repo rediacc/console -t x; gh pr create --draft --repo rediacc/renet -t y')" "nondraft-create: draft-on-private caught in the second segment (no --repo donation)"
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
@@ -108,6 +114,18 @@ check 0 pre-bash/block-admin-merge.sh "$(bash_json "$COMMITMSG")" "admin-merge: 
 # early-exit still holds for --auto.
 check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 7 --squash --auto --repo otherorg/tool')" "admin-merge: --auto on non-rediacc repo ignored"
 check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr checks 531')" "admin-merge: non-merge command ignored"
+# Round-46 cross-attribution, the exact live firing: a sibling `gh pr view`
+# donated its --repo to the merge's PR number, resolving a DIFFERENT repo's
+# PR #66 (long merged, one unresolved thread) and blocking a clean merge.
+# With the segment fix this stays a foreign-repo no-op and never hits the
+# network; with the bug it resolves rediacc/renet and blocks.
+check 0 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo otherorg/tool')" "admin-merge: sibling gh --repo does not donate to the merge segment"
+# NOT asserted here: per-segment --auto and per-segment PR selectors on
+# block-admin-merge. Both only change behavior once a rediacc repo is
+# resolved, which puts them on the network path this offline harness cannot
+# drive (same limitation as the NOTE above). They are covered by the hook's
+# live proofs, not by a case that would pass either way -- a green assertion
+# that cannot fail is worse than no assertion.
 check 0 pre-bash/block-git-amend.sh "$(bash_json 'git status')" "amend: benign"
 check 0 pre-bash/block-ssh-docker.sh "$(bash_json 'ssh 192.168.111.1 docker ps')" "ssh-docker: bridge allowed"
 check 0 pre-bash/block-ssh-file-write.sh "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"

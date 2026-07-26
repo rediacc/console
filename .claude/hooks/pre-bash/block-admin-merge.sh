@@ -28,8 +28,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/command-scan.sh"
 SCAN=$(hook_scan_target "$CMD")
 hook_gh_pr_at_command_pos "$SCAN" merge || exit 0
 
-# Prose-stripped view for field parsing (repo/selector) further down.
-STRIPPED=$(printf '%s' "$CMD" | tr '\n' '\001' | sed -e "s/'[^']*'//g" -e 's/"[^"]*"//g' | tr '\001' '\n')
+# SCAN is the only parsed view: it already carries the prose-stripped command
+# plus any unwrapped shell-wrapper payload. A second, separately-built stripped
+# view used to exist for field parsing; keeping two views in sync is the drift
+# hazard lib/command-scan.sh already records, so fields are read from SCAN.
 
 # --admin ban: match the flag in ANY form on the raw command (=value,
 # assignment, inside a wrapper payload). Over-blocking is the safe direction.
@@ -38,51 +40,62 @@ if hook_flag_present "$CMD" admin; then
     exit 2
 fi
 
-AUTO=0
-hook_flag_present "$STRIPPED" auto && AUTO=1
-
-REPO=$(printf '%s\n' "$STRIPPED" | grep -oE -- '(--repo[= ]|-R )[A-Za-z0-9_./-]+' | head -1 | sed -E 's/^(--repo[= ]|-R )//')
-[[ -z "$REPO" ]] && REPO="rediacc/console"
-case "$REPO" in rediacc/*) ;; *) exit 0 ;; esac
-
-SEL=$(printf '%s\n' "$STRIPPED" | sed -n 's/.*gh pr merge[[:space:]]*//p' | awk '{for (i=1; i<=NF; i++) if ($i !~ /^-/) { print $i; exit }}')
-PRDATA=$(timeout 20 gh pr view ${SEL:+"$SEL"} --repo "$REPO" --json number,statusCheckRollup 2>/dev/null)
-NUM=$(printf '%s' "$PRDATA" | jq -r '.number // empty' 2>/dev/null)
-if [[ -z "$NUM" ]]; then
-    echo "❌ BLOCKED: could not resolve the PR for 'gh pr merge' (repo $REPO, selector '${SEL:-<current branch>}'). Cannot verify green + resolved threads, so the merge is not allowed. Name the PR explicitly or re-run after checking 'gh pr view'." >&2
-    exit 2
-fi
-
-if [[ "$AUTO" == "0" && "$REPO" == "rediacc/console" ]]; then
-    CONCLUSION=$(printf '%s' "$PRDATA" | jq -r '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
-    if [[ "$CONCLUSION" != "SUCCESS" ]]; then
-        echo "❌ BLOCKED: immediate merge of console PR #$NUM requires CI Complete = SUCCESS on the current head (got: ${CONCLUSION:-verification failed}). Use 'gh pr merge --squash --auto' to let GitHub merge at green, or wait for the run." >&2
-        exit 2
-    fi
-fi
-
-# Report-reply hygiene (both --auto and immediate): the newest finished
-# review report must have a substantive id-referencing reply. Reuses the CI
-# gate script verbatim; fails CLOSED on script/network failure.
 # CLAUDE_PROJECT_DIR is unset outside hook invocation (e.g. the harness);
 # fall back to the git toplevel so the script path stays absolute.
 ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null)}"
-if ! OUT=$(timeout 30 env GH_TOKEN="$(gh auth token)" \
-    PR_NUMBER="$NUM" GITHUB_REPOSITORY="$REPO" \
-    bash "$ROOT/.ci/scripts/quality/check-review-report-replies.sh" 2>&1); then
-    echo "❌ BLOCKED: $REPO#$NUM has an unaddressed review REPORT (or the check could not run). Required checks are per-commit, so a report posted after CI went green can only be enforced here. Details:" >&2
-    printf '%s\n' "$OUT" | tail -15 >&2
-    exit 2
-fi
+CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
 
-OWNER=${REPO%%/*}
-NAME=${REPO##*/}
-UNRESOLVED=$(timeout 20 gh api graphql \
-    -f query='query($o: String!, $r: String!, $n: Int!) { repository(owner: $o, name: $r) { pullRequest(number: $n) { reviewThreads(first: 100) { nodes { isResolved } } } } }' \
-    -f o="$OWNER" -f r="$NAME" -F n="$NUM" \
-    --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length' 2>/dev/null)
-if [[ -z "$UNRESOLVED" || "$UNRESOLVED" != "0" ]]; then
-    echo "❌ BLOCKED: $REPO#$NUM has ${UNRESOLVED:-unverifiable} unresolved review thread(s). Reply substantively and resolve them (GraphQL resolveReviewThread) before merging -- review threads are the blocking channel of the Claude review flow." >&2
-    exit 2
-fi
+# Every field (repo, selector, --auto) is read from the SEGMENT that carries
+# this `gh pr merge`, and EACH merge on the line is checked on its own. Parsing
+# line-wide cross-attributed fields between sibling invocations -- observed
+# live: `gh pr view 94 --repo rediacc/renet; gh pr merge 66 --repo
+# rediacc/account` resolved as rediacc/renet#66, an unrelated long-merged PR,
+# and blocked the merge on THAT PR's threads. It also examined only one of
+# several merges on a line. See hook_gh_pr_segment.
+while IFS= read -r SEG; do
+    [[ -z "$SEG" ]] && continue
+    REPO=$(hook_target_repo "$SEG" "$SCAN" "$CWD")
+    case "$REPO" in rediacc/*) ;; *) continue ;; esac
+
+    AUTO=0
+    hook_flag_present "$SEG" auto && AUTO=1
+
+    SEL=$(hook_pr_selector "$SEG" merge)
+    PRDATA=$(timeout 20 gh pr view ${SEL:+"$SEL"} --repo "$REPO" --json number,statusCheckRollup 2>/dev/null)
+    NUM=$(printf '%s' "$PRDATA" | jq -r '.number // empty' 2>/dev/null)
+    if [[ -z "$NUM" ]]; then
+        echo "❌ BLOCKED: could not resolve the PR for 'gh pr merge' (repo $REPO, selector '${SEL:-<current branch>}'). Cannot verify green + resolved threads, so the merge is not allowed. Name the PR explicitly or re-run after checking 'gh pr view'." >&2
+        exit 2
+    fi
+
+    if [[ "$AUTO" == "0" && "$REPO" == "rediacc/console" ]]; then
+        CONCLUSION=$(printf '%s' "$PRDATA" | jq -r '[.statusCheckRollup[] | select(.name == "CI Complete")] | first | .conclusion // "ABSENT"' 2>/dev/null)
+        if [[ "$CONCLUSION" != "SUCCESS" ]]; then
+            echo "❌ BLOCKED: immediate merge of console PR #$NUM requires CI Complete = SUCCESS on the current head (got: ${CONCLUSION:-verification failed}). Use 'gh pr merge --squash --auto' to let GitHub merge at green, or wait for the run." >&2
+            exit 2
+        fi
+    fi
+
+    # Report-reply hygiene (both --auto and immediate): the newest finished
+    # review report must have a substantive id-referencing reply. Reuses the CI
+    # gate script verbatim; fails CLOSED on script/network failure.
+    if ! OUT=$(timeout 30 env GH_TOKEN="$(gh auth token)" \
+        PR_NUMBER="$NUM" GITHUB_REPOSITORY="$REPO" \
+        bash "$ROOT/.ci/scripts/quality/check-review-report-replies.sh" 2>&1); then
+        echo "❌ BLOCKED: $REPO#$NUM has an unaddressed review REPORT (or the check could not run). Required checks are per-commit, so a report posted after CI went green can only be enforced here. Details:" >&2
+        printf '%s\n' "$OUT" | tail -15 >&2
+        exit 2
+    fi
+
+    OWNER=${REPO%%/*}
+    NAME=${REPO##*/}
+    UNRESOLVED=$(timeout 20 gh api graphql \
+        -f query='query($o: String!, $r: String!, $n: Int!) { repository(owner: $o, name: $r) { pullRequest(number: $n) { reviewThreads(first: 100) { nodes { isResolved } } } } }' \
+        -f o="$OWNER" -f r="$NAME" -F n="$NUM" \
+        --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved | not)] | length' 2>/dev/null)
+    if [[ -z "$UNRESOLVED" || "$UNRESOLVED" != "0" ]]; then
+        echo "❌ BLOCKED: $REPO#$NUM has ${UNRESOLVED:-unverifiable} unresolved review thread(s). Reply substantively and resolve them (GraphQL resolveReviewThread) before merging -- review threads are the blocking channel of the Claude review flow." >&2
+        exit 2
+    fi
+done <<<"$(hook_gh_pr_segment "$SCAN" merge)"
 exit 0
