@@ -66,18 +66,16 @@ jobs:
           path: private/bin/
 
       # Native build steps (skip for musl — handled inside Docker)
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+      #
+      # The explicit `--ignore-scripts` on Windows is gone, not lost:
+      # install-deps.sh adds it itself when CI_OS is windows (common.sh exports
+      # CI_OS), so the flag was already redundant at the call site. The cache key
+      # in setup-workspace carries runner.os, so the Windows tree (built with
+      # --ignore-scripts) can never be served to a Linux job.
+      - uses: ./.github/actions/setup-workspace
         if: matrix.platform != 'linux-musl'
         with:
-          node-version: '22'
-          cache: 'npm'
-
-      - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
-        if: matrix.platform != 'linux-musl'
-        shell: bash
-      - run: .ci/scripts/setup/build-packages.sh
-        if: matrix.platform != 'linux-musl'
-        shell: bash
+          build-packages: 'true'
 
       - name: Build CLI SEA executable
         if: matrix.platform != 'linux-musl'

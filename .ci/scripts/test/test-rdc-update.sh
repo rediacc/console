@@ -226,13 +226,13 @@ run_rdc() {
     shift
     # Unset XDG_* so rdc's getConfigDir/getStateDir/getCacheDir all resolve
     # relative to our isolated HOME (getLinuxDirs prefers XDG_* when set).
-    # Without this, channel-switch scenario's server.json ends up at the
+    # Without this, channel-switch scenario's rediacc.json ends up at the
     # runner's XDG_CONFIG_HOME and the test asserts on $home/.config/... .
     env -u CI -u GITHUB_ACTIONS -u GITHUB_RUN_ID -u RUNNER_OS \
         -u XDG_CONFIG_HOME -u XDG_STATE_HOME -u XDG_CACHE_HOME -u XDG_DATA_HOME \
         HOME="$home_dir" \
         REDIACC_RELEASES_URL="http://127.0.0.1:$FIXTURE_PORT" \
-        RDC_DISABLE_AUTOUPDATE="0" \
+        REDIACC_DISABLE_AUTOUPDATE="0" \
         REDIACC_TELEMETRY_DISABLED=1 \
         "$home_dir/.local/bin/rdc" "$@"
 }
@@ -420,7 +420,7 @@ scenario_reinstall() {
 }
 
 scenario_channel_switch() {
-    log_step "scenario: channel switch persists to server.json"
+    log_step "scenario: channel switch persists to rediacc.json"
     CURRENT_SCENARIO_FAILED=0
     local tmp home serve_root
     tmp="$(mktemp -d)"
@@ -432,18 +432,20 @@ scenario_channel_switch() {
     start_fixture "$serve_root"
     fresh_install "$home" stable 1.0.3
 
-    # Switch channel via rdc update --channel
+    # Switch channel via rdc update --channel. `rdc update --channel edge`
+    # writes account.updateChannel into the default config (rediacc.json),
+    # creating it via getOrCreateDefault when absent.
     run_rdc "$home" update --channel edge --check-only >/dev/null 2>&1 ||
         log_fail "--channel edge --check-only non-zero"
-    local config="$home/.config/rediacc/server.json"
+    local config="$home/.config/rediacc/rediacc.json"
     assert_file_exists "$config"
     grep -q '"updateChannel":"edge"' "$config" ||
         grep -q '"updateChannel": "edge"' "$config" ||
-        log_fail "server.json did not record updateChannel=edge"
+        log_fail "rediacc.json did not record account.updateChannel=edge"
     stop_fixture
     rm -rf "$tmp"
     ((CURRENT_SCENARIO_FAILED)) && FAILED_SCENARIOS+=("channel-switch")
-    ((CURRENT_SCENARIO_FAILED)) || log_pass "channel switch writes server.json"
+    ((CURRENT_SCENARIO_FAILED)) || log_pass "channel switch writes rediacc.json"
 }
 
 # -----------------------------------------------------------------------

@@ -36,6 +36,7 @@ import { SessionStore } from '../sessions.js';
 // developer's own config off disk. This is the only stub.
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
+    resetResourceView: vi.fn(),
     getRepository: vi.fn((name: string) =>
       Promise.resolve({ repositoryGuid: `guid-${name}`, credential: 'set', networkId: 7 })
     ),

@@ -2892,19 +2892,19 @@
         "heading": "Tu infraestructura, tus reglas",
         "rows": [
           {
-            "description": "Iniciar, detener, eliminar, hacer copias de seguridad. Siempre funcionan, incluso años después de que venza tu suscripción. Tus datos siempre son accesibles.",
+            "description": "Iniciar, detener y eliminar siempre funcionan, incluso años después de que venza tu suscripción. Tus datos siempre son accesibles en tus propias máquinas.",
             "title": "Tu infraestructura sigue funcionando para siempre"
           },
           {
-            "description": "Todas tus herramientas siguen funcionando. Sincronización de archivos, acceso SSH, edición remota, todos los comandos de gestión. Sin licencia nunca.",
+            "description": "Tus herramientas operativas siguen funcionando: acceso SSH, edición remota y todos los comandos de gestión. Sin licencia nunca.",
             "title": "Acceso total a tus herramientas"
           },
           {
-            "description": "Necesitas un plan activo para crear nuevos repositorios o hacer fork de los existentes. El cambio de tamaño y la expansión funcionan 60 días después de la expiración. Todo lo demás es permanente.",
+            "description": "Necesitas un plan activo para crear nuevos repositorios, hacer fork de los existentes o transferir copias de seguridad. El cambio de tamaño y la expansión funcionan 60 días después de la expiración. Ejecutar tus repositorios es permanente.",
             "title": "Solo los nuevos repositorios necesitan suscripción"
           },
           {
-            "description": "Cuando vence tu suscripción, cambiar de tamaño y ampliar siguen funcionando 60 días más. Iniciar, detener, eliminar, hacer copias: no se afectan. Funcionan para siempre.",
+            "description": "Cuando vence tu suscripción, cambiar de tamaño y ampliar siguen funcionando 60 días más. Iniciar, detener y eliminar no se ven afectados. Funcionan para siempre. La transferencia de copias de seguridad necesita una suscripción activa.",
             "title": "60 días de gracia para escalar"
           },
           {

@@ -37,7 +37,7 @@ fresh_home() {
 # Source install.sh with source-only mode. Resets variables that were
 # already evaluated at source time and re-sources if HOME changed.
 # XDG_CONFIG_HOME is unset so every test assertion can look at
-# $HOME/.config/rediacc/server.json deterministically (some CI runners
+# $HOME/.config/rediacc/rediacc.json deterministically (some CI runners
 # set XDG_CONFIG_HOME which would redirect the write).
 source_install() {
     export HOME="$1"
@@ -79,11 +79,11 @@ test_write_install_config_default_noop() {
     source_install "$HOME"
     CHANNEL=stable SERVER_URL="" RELEASES_URL=https://releases.rediacc.com \
         write_install_config >/dev/null 2>&1 || true
-    local config="$HOME/.config/rediacc/server.json"
+    local config="$HOME/.config/rediacc/rediacc.json"
     if [[ -f "$config" ]]; then
         log_fail "write_install_config should not write on default channel + no server (wrote: $(cat "$config"))"
     fi
-    log_pass "default channel + no server -> no server.json"
+    log_pass "default channel + no server -> no rediacc.json"
 }
 
 test_write_install_config_channel_only() {
@@ -91,16 +91,20 @@ test_write_install_config_channel_only() {
     source_install "$HOME"
     CHANNEL=edge SERVER_URL="" RELEASES_URL=https://releases.rediacc.com \
         write_install_config >/dev/null 2>&1
-    local config="$HOME/.config/rediacc/server.json"
-    [[ -f "$config" ]] || log_fail "write_install_config should write server.json when channel != stable"
+    local config="$HOME/.config/rediacc/rediacc.json"
+    [[ -f "$config" ]] || log_fail "write_install_config should write rediacc.json when channel != stable"
     local body
     body="$(cat "$config")"
     echo "$body" | grep -q '"updateChannel":"edge"' || log_fail "updateChannel field not edge: $body"
     echo "$body" | grep -q '"accountServer":"https://www.rediacc.com"' || log_fail "accountServer should default to production: $body"
+    # The absent-file branch must produce a valid minimal v3 config, not a bare
+    # account blob — the CLI parses this file directly.
+    echo "$body" | grep -q '"schemaVersion":3' || log_fail "minimal config must carry schemaVersion 3: $body"
+    echo "$body" | grep -q '"encryption":{"mode":"plaintext"}' || log_fail "minimal config must be plaintext: $body"
     local perms
     perms="$(stat -c '%a' "$config" 2>/dev/null || stat -f '%A' "$config")"
-    [[ "$perms" == "600" ]] || log_fail "server.json mode must be 600 (got $perms)"
-    log_pass "non-default channel writes server.json with correct fields and mode"
+    [[ "$perms" == "600" ]] || log_fail "rediacc.json mode must be 600 (got $perms)"
+    log_pass "non-default channel writes rediacc.json with correct fields and mode"
 }
 
 test_write_install_config_custom_releases() {
@@ -108,12 +112,40 @@ test_write_install_config_custom_releases() {
     source_install "$HOME"
     CHANNEL=stable SERVER_URL=https://custom.example RELEASES_URL=https://my.r2.example \
         write_install_config >/dev/null 2>&1 || true
-    local config="$HOME/.config/rediacc/server.json"
+    local config="$HOME/.config/rediacc/rediacc.json"
     [[ -f "$config" ]] || log_fail "write_install_config should write when SERVER_URL is set"
     local body
     body="$(cat "$config")"
     echo "$body" | grep -q '"releasesUrl":"https://my.r2.example"' || log_fail "releasesUrl must persist: $body"
-    log_pass "custom releases URL persists in server.json"
+    log_pass "custom releases URL persists in rediacc.json"
+}
+
+# Present config + no jq: the config is user data; write_install_config must
+# leave it byte-for-byte untouched and print a follow-up command instead of
+# rewriting it (the no-jq branch of the present-file path).
+test_write_install_config_present_no_jq_untouched() {
+    HOME="$(fresh_home)"
+    source_install "$HOME"
+    mkdir -p "$HOME/.config/rediacc"
+    local config="$HOME/.config/rediacc/rediacc.json"
+    printf '%s' '{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,"encryption":{"mode":"plaintext"},"machines":{"keep":"yes"},"account":{}}' >"$config"
+    local before
+    before="$(cat "$config")"
+    # Hide jq by running write_install_config with a PATH that lacks it.
+    local shim
+    shim="$(mktemp -d "$TEMP/nojq.XXXXXX")"
+    for t in grep sed awk cat mktemp mv rm chmod od tr uuidgen stat mkdir head curl uname dirname basename env; do
+        local p
+        p="$(command -v "$t" 2>/dev/null)" && ln -sf "$p" "$shim/$t"
+    done
+    local out
+    out="$(PATH="$shim" CHANNEL=edge SERVER_URL="" RELEASES_URL=https://releases.rediacc.com \
+        write_install_config 2>&1 || true)"
+    local after
+    after="$(cat "$config")"
+    [[ "$before" == "$after" ]] || log_fail "no-jq path must not modify the live config (before=$before after=$after)"
+    echo "$out" | grep -q 'rdc update --channel edge' || log_fail "no-jq path must print the follow-up command: $out"
+    log_pass "present config + no jq -> untouched, prints follow-up command"
 }
 
 test_cleanup_legacy_state_removes_versions_dir() {
@@ -152,62 +184,62 @@ test_no_versions_constant() {
     log_pass "legacy VERSIONS_DIR / MAX_VERSIONS constants removed"
 }
 
-# Channel resolution (env > server.json::updateChannel > 'stable').
+# Channel resolution (env > rediacc.json::account.updateChannel > 'stable').
 # Asymmetry between install.sh defaulting to stable and `rdc update` reading
-# server.json caused a real user-visible bug: stable install followed by an
+# the config caused a real user-visible bug: stable install followed by an
 # immediate "update" jumping to edge. These tests pin the unified contract.
 
 test_channel_default_stable_when_unset() {
     HOME="$(fresh_home)"
     unset REDIACC_CHANNEL
     source_install "$HOME"
-    [[ "$CHANNEL" == "stable" ]] || log_fail "no env, no server.json -> CHANNEL must be stable, got: $CHANNEL"
-    log_pass "no env, no server.json -> stable"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "no env, no config -> CHANNEL must be stable, got: $CHANNEL"
+    log_pass "no env, no config -> stable"
 }
 
-test_channel_inherits_from_server_json() {
+test_channel_inherits_from_config() {
     HOME="$(fresh_home)"
     unset REDIACC_CHANNEL
     mkdir -p "$HOME/.config/rediacc"
-    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
-{"accountServer":"https://eu.rediacc.com","updateChannel":"edge"}
+    cat >"$HOME/.config/rediacc/rediacc.json" <<'EOF'
+{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,"encryption":{"mode":"plaintext"},"account":{"accountServer":"https://eu.rediacc.com","updateChannel":"edge"}}
 EOF
     source_install "$HOME"
-    [[ "$CHANNEL" == "edge" ]] || log_fail "server.json updateChannel=edge must be inherited, got: $CHANNEL"
-    log_pass "no env + server.json updateChannel=edge -> edge"
+    [[ "$CHANNEL" == "edge" ]] || log_fail "config account.updateChannel=edge must be inherited, got: $CHANNEL"
+    log_pass "no env + config account.updateChannel=edge -> edge"
 }
 
-test_channel_env_overrides_server_json() {
+test_channel_env_overrides_config() {
     HOME="$(fresh_home)"
     mkdir -p "$HOME/.config/rediacc"
-    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
-{"updateChannel":"edge"}
+    cat >"$HOME/.config/rediacc/rediacc.json" <<'EOF'
+{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,"encryption":{"mode":"plaintext"},"account":{"updateChannel":"edge"}}
 EOF
     REDIACC_CHANNEL=stable source_install "$HOME"
-    [[ "$CHANNEL" == "stable" ]] || log_fail "REDIACC_CHANNEL=stable must override server.json edge, got: $CHANNEL"
-    log_pass "env REDIACC_CHANNEL=stable overrides server.json edge"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "REDIACC_CHANNEL=stable must override config edge, got: $CHANNEL"
+    log_pass "env REDIACC_CHANNEL=stable overrides config edge"
 }
 
-test_channel_malformed_server_json_falls_back() {
+test_channel_malformed_config_falls_back() {
     HOME="$(fresh_home)"
     unset REDIACC_CHANNEL
     mkdir -p "$HOME/.config/rediacc"
-    printf 'not even valid json {{{' >"$HOME/.config/rediacc/server.json"
+    printf 'not even valid json {{{' >"$HOME/.config/rediacc/rediacc.json"
     source_install "$HOME"
-    [[ "$CHANNEL" == "stable" ]] || log_fail "malformed server.json must fall back to stable, got: $CHANNEL"
-    log_pass "malformed server.json -> stable fallback"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "malformed config must fall back to stable, got: $CHANNEL"
+    log_pass "malformed config -> stable fallback"
 }
 
-test_channel_server_json_without_updateChannel() {
+test_channel_config_without_updateChannel() {
     HOME="$(fresh_home)"
     unset REDIACC_CHANNEL
     mkdir -p "$HOME/.config/rediacc"
-    cat >"$HOME/.config/rediacc/server.json" <<'EOF'
-{"accountServer":"https://eu.rediacc.com","region":"eu"}
+    cat >"$HOME/.config/rediacc/rediacc.json" <<'EOF'
+{"schemaVersion":3,"id":"11111111-1111-4111-a111-111111111111","version":1,"encryption":{"mode":"plaintext"},"account":{"accountServer":"https://eu.rediacc.com","region":"eu"}}
 EOF
     source_install "$HOME"
-    [[ "$CHANNEL" == "stable" ]] || log_fail "server.json without updateChannel must default to stable, got: $CHANNEL"
-    log_pass "server.json without updateChannel -> stable"
+    [[ "$CHANNEL" == "stable" ]] || log_fail "config without updateChannel must default to stable, got: $CHANNEL"
+    log_pass "config without updateChannel -> stable"
 }
 
 test_detect_platform
@@ -215,14 +247,15 @@ test_detect_arch
 test_write_install_config_default_noop
 test_write_install_config_channel_only
 test_write_install_config_custom_releases
+test_write_install_config_present_no_jq_untouched
 test_cleanup_legacy_state_removes_versions_dir
 test_cleanup_legacy_state_removes_staged_update
 test_no_versions_constant
 test_channel_default_stable_when_unset
-test_channel_inherits_from_server_json
-test_channel_env_overrides_server_json
-test_channel_malformed_server_json_falls_back
-test_channel_server_json_without_updateChannel
+test_channel_inherits_from_config
+test_channel_env_overrides_config
+test_channel_malformed_config_falls_back
+test_channel_config_without_updateChannel
 
 echo ""
 log_pass "all install.sh unit cases"

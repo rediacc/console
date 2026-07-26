@@ -4,8 +4,8 @@ description: "Linux、macOS、またはWindowsにRediacc CLIをインストー�
 category: "Guides"
 order: 1
 language: ja
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # インストール
@@ -209,4 +209,4 @@ PRプレビューデプロイメント (例: `pr-420.rediacc.workers.dev`) か�
 - **既存のクライアント接続 (HTTP、TCP、UDP) は影響を受けません。** ルートサーバーは設定プロバイダーであり、データパス上にはありません。Traefikがすべてのトラフィックを直接処理します。
 - アプリケーションコンテナには一切触れません -- システムレベルのルートサーバープロセスのみが再起動されます。
 
-自動再起動をスキップするには、任意のコマンドに `--skip-router-restart` を渡すか、環境変数 `RDC_SKIP_ROUTER_RESTART=1` を設定してください。
+自動再起動をスキップするには、任意のコマンドに `--skip-router-restart` を渡すか、環境変数 `REDIACC_SKIP_ROUTER_RESTART=1` を設定してください。

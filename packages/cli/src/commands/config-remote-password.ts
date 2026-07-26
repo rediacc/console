@@ -3,10 +3,9 @@ import { toBase64 } from '@rediacc/shared/config-crypto';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { outputService } from '../services/core/output.js';
-import type { RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { askPassword } from '../utils/prompt.js';
-import { finalizeEnable } from './config-remote.js';
+import { finalizeEnable, type PendingRemoteConfig } from './config-remote-enable.js';
 
 // ─── Headless Password Enroll ────────────────────────────────────────────
 
@@ -17,7 +16,8 @@ interface PasswordEnrollResponse {
   wrappedCek: string;
   token: string;
   storeId: string;
-  configId: string;
+  /** null for a zero-config store — the CLI then mints an id and seeds it. */
+  configId: string | null;
   /** The selected config's teamId; null for the default/org-level config. */
   teamId: string | null;
 }
@@ -48,7 +48,11 @@ async function resolveConfigPassword(): Promise<string> {
  * shared password (out of band) derives the slot secret locally; a probe pull
  * proves the unwrap actually opens the config before anything is written.
  */
-export async function enablePassword(apiUrl: string, configName: string): Promise<void> {
+export async function enablePassword(
+  apiUrl: string,
+  configName: string,
+  opts: { force?: boolean } = {}
+): Promise<void> {
   // 1. Ask the server to hand back the pre-provisioned password slot. userId is
   //    resolved server-side from the token creator, so the body is empty. An
   //    api token with the config:enroll scope authenticates the call.
@@ -59,7 +63,7 @@ export async function enablePassword(apiUrl: string, configName: string): Promis
       {
         method: 'POST',
         serverUrl: apiUrl,
-        token: process.env.REDIACC_API_TOKEN,
+        token: process.env.REDIACC_TOKEN,
         body: {},
       }
     );
@@ -90,10 +94,12 @@ export async function enablePassword(apiUrl: string, configName: string): Promis
   const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
   await remoteTokenStorage.set(configName, { token: enroll.token, wrappedCek: enroll.wrappedCek });
 
-  const remote: RemoteConfig = {
+  const remote: PendingRemoteConfig = {
     apiUrl,
     storeId: enroll.storeId,
-    configId: enroll.configId,
+    // null (zero-config store) collapses to undefined so finalizeEnable mints
+    // a configId from the local config's id and seeds the store.
+    configId: enroll.configId ?? undefined,
     storageKeyId,
     // null (default/org config) collapses to undefined — RemoteConfig.teamId is
     // an optional uuid, and a falsy teamId already means "no team filter" on pull.
@@ -104,7 +110,7 @@ export async function enablePassword(apiUrl: string, configName: string): Promis
   //    (RemoteStaleSlotError from the adapter). Clean up the stored artifacts so a
   //    retry starts from a clean slate, and report an actionable message.
   try {
-    await finalizeEnable(remote, configName);
+    await finalizeEnable(remote, configName, opts);
   } catch (error) {
     await secureStorage.delete(storageKeyId).catch(() => {});
     await remoteTokenStorage.delete(configName).catch(() => {});

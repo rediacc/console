@@ -6,6 +6,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -174,6 +175,11 @@ function registerBackupRestore(backup: Command): void {
             t('commands.backup.restore.targetExists', { name: targetName })
           );
         }
+
+        // Restore of a nonexistent target registers a brand-new grand repo, so it
+        // must clear the same agent gate as `repo create`. assertCommandPolicy above
+        // returns early here (the repo isn't in config yet), so gate it explicitly.
+        assertAgentRepoCreate(targetName);
 
         // The artifact carries its source repo's identity; the pushed copy on
         // <place> is that repo under its GUID (06 §6.5). Look it up to learn the

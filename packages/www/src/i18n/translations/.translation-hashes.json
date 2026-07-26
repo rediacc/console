@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 8461,
-    "sourceCommit": "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+    "sourceCommit": "018665c7c35e0bea3349818b12a5906828240a29"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -1698,13 +1698,13 @@
     "pages.pricing.trust.items.1": "fb8c7d09",
     "pages.pricing.trustSection.corporateGuarantee": "ee6e5875",
     "pages.pricing.trustSection.heading": "c70e022f",
-    "pages.pricing.trustSection.rows.0.description": "f2cb8ce8",
+    "pages.pricing.trustSection.rows.0.description": "0e120283",
     "pages.pricing.trustSection.rows.0.title": "26d9184f",
-    "pages.pricing.trustSection.rows.1.description": "0fbdd4e3",
+    "pages.pricing.trustSection.rows.1.description": "7fa0831d",
     "pages.pricing.trustSection.rows.1.title": "c6fd0f23",
-    "pages.pricing.trustSection.rows.2.description": "86261d7d",
+    "pages.pricing.trustSection.rows.2.description": "e0966eaf",
     "pages.pricing.trustSection.rows.2.title": "125a3e24",
-    "pages.pricing.trustSection.rows.3.description": "db717045",
+    "pages.pricing.trustSection.rows.3.description": "71c0b79e",
     "pages.pricing.trustSection.rows.3.title": "c975d657",
     "pages.pricing.trustSection.rows.4.description": "c6879d09",
     "pages.pricing.trustSection.rows.4.title": "e5a53440",

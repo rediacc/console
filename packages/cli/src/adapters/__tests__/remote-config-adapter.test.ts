@@ -43,10 +43,13 @@ vi.mock('@rediacc/shared/config-crypto', () => ({
 
 import type { RemoteConfig } from '../../types/index.js';
 import {
+  isNetworkError,
   RemoteConfigAdapter,
   RemotePasskeySecretMissingError,
   RemoteStaleSlotError,
   RemoteTokenExpiredError,
+  RemoteUnreachableError,
+  RemoteVersionConflictError,
 } from '../remote-config-adapter.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
@@ -303,6 +306,89 @@ describe('RemoteConfigAdapter', () => {
       await adapter.push({ id: 'id', version: 1 }, 1);
 
       expect(tokenStorage.updateToken).toHaveBeenCalledWith(CONFIG_NAME, 'tok_push_rotated');
+    });
+  });
+
+  // ─── error taxonomy ──────────────────────────────────────────────────
+
+  describe('error taxonomy', () => {
+    it('should throw RemoteVersionConflictError carrying the server 409 message verbatim', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      // Session succeeds; the PUT then conflicts.
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+      });
+      mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', hmac: 'h' });
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new ConfigServerError('Version conflict: current version is 7', 409)
+      );
+
+      const err = await adapter.push({ id: 'id', version: 1 }, 1).then(
+        () => null,
+        (e: unknown) => e
+      );
+      expect(err).toBeInstanceOf(RemoteVersionConflictError);
+      expect((err as Error).message).toBe('Version conflict: current version is 7');
+    });
+
+    it('should wrap a fetch network failure into RemoteUnreachableError naming the apiUrl', async () => {
+      mockConfigServerFetch.mockRejectedValueOnce(
+        new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } })
+      );
+
+      const err = await adapter.pull().then(
+        () => null,
+        (e: unknown) => e
+      );
+      expect(err).toBeInstanceOf(RemoteUnreachableError);
+      expect((err as RemoteUnreachableError).apiUrl).toBe(REMOTE.apiUrl);
+      expect((err as Error).message).toContain(REMOTE.apiUrl);
+    });
+
+    it('should wrap a 5xx ConfigServerError into RemoteUnreachableError', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      mockConfigServerFetch.mockRejectedValueOnce(new ConfigServerError('Bad gateway', 502));
+
+      await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteUnreachableError);
+    });
+
+    it('should surface a 404 unchanged as ConfigServerError (the seed path branches on it)', async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      // Session succeeds; the config GET 404s (fresh store, nothing pushed yet).
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+      });
+      mockConfigServerFetch.mockRejectedValueOnce(new ConfigServerError('Config not found', 404));
+
+      const err = await adapter.pull().then(
+        () => null,
+        (e: unknown) => e
+      );
+      expect(err).toBeInstanceOf(ConfigServerError);
+      expect((err as { status: number }).status).toBe(404);
+      expect(err).not.toBeInstanceOf(RemoteUnreachableError);
+    });
+  });
+
+  describe('isNetworkError', () => {
+    it('classifies fetch TypeErrors and known socket codes, walking cause chains', () => {
+      expect(isNetworkError(new TypeError('fetch failed'))).toBe(true);
+      expect(isNetworkError({ code: 'ECONNREFUSED' })).toBe(true);
+      expect(isNetworkError({ code: 'UND_ERR_CONNECT_TIMEOUT' })).toBe(true);
+      // Nested one level deeper, as undici does.
+      expect(isNetworkError(new Error('outer', { cause: { code: 'ETIMEDOUT' } }))).toBe(true);
+      expect(
+        isNetworkError(
+          new Error('outer', { cause: new Error('mid', { cause: { code: 'EPIPE' } }) })
+        )
+      ).toBe(true);
+    });
+
+    it('does not classify semantic/auth failures as network errors', () => {
+      expect(isNetworkError(new Error('plain'))).toBe(false);
+      expect(isNetworkError(new TypeError('undefined is not a function'))).toBe(false);
+      expect(isNetworkError({ code: 'SOMETHING_ELSE' })).toBe(false);
+      expect(isNetworkError(null)).toBe(false);
     });
   });
 

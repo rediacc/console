@@ -347,6 +347,11 @@
       "remote": {
         "description": "管理远程配置存储连接",
         "tokenExpired": "远程配置令牌已过期。请重新认证: rdc config remote enable",
+        "unreachable": "配置服务器 {{server}} 不可达",
+        "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
+        "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"rdc config remote refresh\" 以生成缓存。",
+        "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。",
+        "conflictRetryExhausted": "配置 \"{{config}}\" 在 3 次尝试后仍与另一台设备冲突。请重新运行该命令。",
         "passkeySecretMissing": "在系统密钥链中未找到通行密钥。请重新认证: rdc config remote enable",
         "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "需要配置主密码。请设置 REDIACC_CONFIG_PASSWORD，或在交互式终端中不带 --password 运行。",
           "passwordRequirePasskey": "该组织要求使用 passkey 才能解锁配置存储；密码注册已被禁用。请在浏览器中使用以下命令注册：rdc config remote enable",
           "passwordNoSlot": "你的配置存储尚未配置密码槽位。请从门户（Config Storage > key slots）添加一个，然后重试。",
-          "passwordWrong": "无法使用该密码解锁配置。请检查 REDIACC_CONFIG_PASSWORD（或你输入的密码）后重试。"
+          "passwordWrong": "无法使用该密码解锁配置。请检查 REDIACC_CONFIG_PASSWORD（或你输入的密码）后重试。",
+          "optionForce": "无需确认，直接用服务器副本替换不同的本地内容",
+          "seeded": "存储为空；本地配置已作为版本 1 推送。",
+          "overwriteConfirm": "本地配置 \"{{config}}\" 包含 {{machines}} 台机器和 {{repos}} 个仓库，将被服务器副本替换（旧文件保留在 {{backupPath}}）。是否继续？",
+          "overwriteAborted": "已中止启用：本地配置 \"{{config}}\" 的内容与服务器副本不同。使用 --force 重新运行以替换它，或在交互式终端中确认。"
         },
         "disable": {
           "description": "断开远程存储连接并将配置保存到本地",
           "notEnabled": "远程配置未启用。",
-          "success": "远程配置已禁用。配置 \"{{name}}\" 已保存到本地。"
+          "success": "远程配置已禁用。配置 \"{{name}}\" 已保存到本地。",
+          "serverRequired": "无法禁用：配置服务器 {{server}} 不可达，而禁用必须先拉取最新的服务器副本（从过期缓存禁用可能会丢失另一台设备的写入）。服务器恢复可达后重试。"
         },
         "status": {
           "description": "显示远程连接状态"
@@ -473,6 +483,9 @@
         "optionApiUrl": "账户服务器 URL",
         "verified": "新密钥已验证",
         "success": "配置 \"{{name}}\" 现已使用新密钥加密（版本 {{version}}）。"
+      },
+      "current": {
+        "description": "显示当前配置：名称、文件、解析出的服务器和渠道、令牌状态"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "订阅",
         "virtualization": "虚拟化"
       },
-      "serverMismatch": "服务器不匹配",
       "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  无法解析许可证文件",
         "remote": "\n远程订阅:",
         "remoteMachine": "    - {{id}}...（最后上线: {{lastSeen}}）",
+        "serverWouldUse": "将使用的账户服务器：{{server}}",
         "remoteMachineActivations": "  机器激活: {{active}}/{{max}}",
         "remotePlan": "  计划:     {{plan}}",
         "remoteRepoLicenseIssuances": "  浮动许可证请求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  仓库许可证: 已跟踪 {{totalTrackedRepos}}，有效 {{validCount}}，建议刷新 {{refreshRecommendedCount}}，彻底过期 {{hardExpiredCount}}",
-        "remoteStatus": "  状态:     {{status}}",
-        "serverMismatch": "开发令牌属于 {{actualServerUrl}}，但此工作树正在使用 {{expectedServerUrl}}。请重新运行 `rdc subscription login`。"
+        "remoteStatus": "  状态:     {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "有可用更新: v{{version}} (当前: v{{current}})",
       "channelDescription": "设置发布渠道 (stable 或 edge)",
       "channelSet": "发布渠道已设置为 {{channel}}",
+      "configMissing": "配置 \"{{name}}\" 不存在。使用以下命令创建：rdc config init {{name}}",
       "checking": "正在检查更新...",
       "checkOnly": "仅检查更新，不下载",
       "description": "检查并应用CLI更新",
@@ -2008,7 +2021,7 @@
       "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up {{name}}:<tag-name>）\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork",
       "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受此覆盖。\n\n使用 fork 优先工作流程：\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo promote {{name}}:<tag-name> 提升 fork\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
-      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
+      "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：机器级别的访问需要通配符 — 请在启动代理会话之前，在终端中设置 REDIACC_ALLOW_GRAND_REPO=*。指定特定的仓库名称不会解锁直接机器访问。",
       "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "对 \"{{machine}}\" 的直接机器访问覆盖已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受此覆盖。\n\n先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
       "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户在启动代理前导出 REDIACC_ALLOW_GRAND_REPO。",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc repo list` 列出已追踪的仓库，然后重试。",
       "recoveryFailedServerRejected": "账户服务器拒绝为 \"{{machine}}\" 上的仓库签发许可证。首个错误：{{error}}。请运行：rdc subscription refresh --repo <repo-ref> 获取详情。",
       "recoveryFailedTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login，然后重试。",
-      "skipActivationHint": "在一次性机器上，可以使用 REDIACC_SKIP_ACTIVATION=1 完全跳过激活。"
+      "skipActivationHint": "在一次性机器上，可以使用 REDIACC_SKIP_MACHINE_ACTIVATION=1 完全跳过激活。"
     },
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",

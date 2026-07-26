@@ -8,6 +8,7 @@
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { isDevBuild } from '../../utils/platform.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { buildRenetEnvPrefix } from '../executor/local-executor.js';
@@ -85,7 +86,7 @@ export async function fetchMachineStatus(
     ]);
 
     const envPrefix = buildRenetEnvPrefix({
-      isDevelopment: process.env.NODE_ENV !== 'production',
+      isDevelopment: isDevBuild(),
       telemetryDisabled: telemetryOff,
       otlpCreds,
     });

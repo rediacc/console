@@ -4,8 +4,8 @@ description: Passkey, ana parola ve kurtarma koduyla açılabilen sıfır bilgi 
 category: Guides
 order: 8
 language: tr
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Yapılandırma Depolama
@@ -74,6 +74,16 @@ Gereksinimler:
 
 Kayıt işlemi bir okumadır: CLI, yuvanın herkese açık KDF parametrelerini ve sarmalanmış anahtarı getirir, parola sırrını yerel olarak türetir ve CEK'in kilidini cihazda açar. Bu işlem cihaza yapılandırmayı çözme ve senkronize etme yetkisi verir; depoda herhangi bir değişiklik yapmaz.
 
+## Etkinleştirme ve Çevrimdışı Okumalar
+
+`rdc config remote enable`, etkin yapılandırmayı depoya bağlar. Depo boşsa, etkinleştirme işlemi **depoyu mevcut yerel yapılandırmanızdan tohumlar**: yerel kaynaklar deponun ilk sürümü olarak gönderilir, ardından geri çekilerek gidiş-dönüşün doğru çalıştığı kanıtlanır. Depoda zaten içerik varsa, etkinleştirme üzerine yazmak yerine mevcut içerikle uzlaştırılır (gerçek bir sapma olduğunda `--force` geçirilmediği sürece işlem iptal edilir).
+
+Etkinleştirildikten sonra yapılandırma, herhangi bir yerel yapılandırmayla aynı mekanizmayla durağan halde şifrelenmiş tam bir **okuma önbelleği** tutar; böylece hesap sunucusuna ulaşılamadığında bile depo kullanılabilir kalır:
+
+- **Okumalar çevrimdışı çalışır.** Önbelleğe alınmış içerik, önbellek sürümü ve zaman damgasıyla (`cachedVersion` / `cachedAt`) etiketlenmiş bir bayatlık uyarısıyla birlikte stderr'e yazdırılır.
+- **Yazmalar sunucu gerektirir ve kapalı biçimde başarısız olur.** Çevrimdışı bir yazma kuyruğu yoktur: sunucuya ulaşamayan bir yazma işlemi, sunucunun adını belirterek hata verir. Bir yazma komutu başarılı olduysa, değişiklik sunucudadır.
+- **İki makineden gelen eşzamanlı düzenlemeler**, kaynak-bucket düzeyinde çek-yeniden oynat-yeniden gönder (pull-replay-repush) ile çözülür; böylece başka bir yerdeki eşzamanlı bir düzenleme sizinkini geçersiz kılmaz.
+
 ## Anahtar Rotasyonu
 
 Deponun CEK'ini rotasyona sokmak, anahtarı yeni bir nesil altında yeniden sarmalar:
@@ -91,6 +101,8 @@ Yapılandırma depolama, organizasyon bazında kapsamlıdır. Üyeler web portal
 - **Üye kaldır**: Üyeler sayfasındaki kaldır düğmesine tıklayın (2FA + yeniden kimlik doğrulama gerektirir)
 
 Güvenlik korumaları, son aktif üyeyi kaldırmayı veya kendinizi kaldırmayı engeller.
+
+Depodaki yapılandırmalar ayrıca ekip bazında da kapsamlıdır, ancak bu kapsam **sunucu tarafı erişim denetimidir, kriptografik izolasyon değildir**: organizasyon genelinde tek bir CEK tüm ekiplerin yapılandırmalarını şifreler ve bir üyenin hangi ekipleri okuyabileceğini sunucu belirler.
 
 ## Güvenlik
 

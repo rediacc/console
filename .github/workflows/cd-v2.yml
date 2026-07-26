@@ -84,6 +84,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # Full history needed for merge-base --is-ancestor in submodule divergence check
+          filter: blob:none   # commit topology only; 5735 of this repo's 5741 MB of pack is blobs
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
@@ -217,6 +218,7 @@ jobs:
         if: needs.init.outputs.workers_only != 'true'
         with:
           fetch-depth: 0
+          filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
@@ -229,7 +231,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Login to GHCR
         if: needs.init.outputs.workers_only != 'true'
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -532,6 +534,7 @@ jobs:
     # See deploy-marketing-edge above for why we don't use bare success().
     # smoke-test must still run when publish is skipped (workers_only),
     # because the workers themselves were redeployed and need verifying.
+    timeout-minutes: 10
     if: >-
       always() &&
       needs.init.result == 'success' &&
@@ -613,6 +616,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          filter: blob:none   # see the divergence-check checkout above
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 

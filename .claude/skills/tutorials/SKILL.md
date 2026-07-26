@@ -217,3 +217,30 @@ drops every entry whose media is not checked out.
 2. Fix the command against `./rdc.sh <cmd> --help`, never from memory.
 3. Update the storyboard `commandFull` to match, or parity breaks.
 4. Restart. Completed tutorials are skipped only if the previous run finished.
+
+## Sequence validation (CI + local)
+
+`.ci/tutorials/run-sequence.sh` runs EVERY tutorial script sequentially in
+website order (derived from the docs' `order:` frontmatter — single source of
+truth) on one shared cluster, exit code = verdict. No casts, no asciinema —
+this validates the user journey, not the recordings. A doc without a script or
+an orphan script is drift and fails the run. CI runs it inside
+`ops-vm-provision` (`.github/workflows/ci-ops-test.yml`); adding/removing/
+reordering a tutorial updates CI automatically.
+
+Local (cluster must be up; second worker + RustFS needed for the full set):
+
+```bash
+VM_CEPH_NODES= ./rdc.sh ops up            # bridge + 2 workers
+./private/renet/bin/renet ops rustfs start
+./private/renet/bin/renet ops rustfs create-bucket rediacc-test
+HOME=<scratch> TUTORIAL_RDC_CMD=$PWD/rdc.sh \
+  TUTORIAL_MACHINE_IP=192.168.111.11 TUTORIAL_BACKUP_HOST=192.168.111.12 \
+  TUTORIAL_SSH_KEY=~/.renet/staging/.ssh/id_rsa TUTORIAL_CHAR_DELAY=0 \
+  .ci/tutorials/run-sequence.sh
+```
+
+Use a SCRATCH `HOME` — every tutorial preamble wipes
+`~/.config/rediacc/rediacc.json`. `TUTORIAL_ONLY="slug slug"` runs a subset in
+sequence order. Local port 3000 must be free (work-with-repo's tunnel; the
+driver prechecks and names the holder).

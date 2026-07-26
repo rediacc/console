@@ -25,10 +25,14 @@ const DEFAULT_CONFIG_NAME = 'rediacc';
 const EXCLUDED_FILES = new Set(['update-state.json', 'server.json', 'api-token.json']);
 
 /**
- * True for JSON files the CLI writes into the config dir that are NOT rdc
- * configs: the updater state, the subscription server pick (server.json),
- * and subscription device tokens (api-token.json / api-token-<config>.json,
- * written by services/subscription-auth.ts).
+ * True for JSON files in the config dir that are NOT rdc configs: the updater
+ * state, and subscription device tokens (api-token-<config>.json, written by
+ * services/subscription-auth.ts).
+ *
+ * `server.json` and the bare `api-token.json` are legacy artifacts from the
+ * pre-universe layout; they are never configs. The CLI no longer reads or
+ * writes them, but a stray file with either name would otherwise be parsed as
+ * a config named `server`/`api-token`, so they stay on the exclusion list.
  */
 function isReservedFile(fileName: string): boolean {
   return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
@@ -132,8 +136,17 @@ export class ConfigFileStorage {
    * Execute an operation with exclusive file lock.
    * Supports re-entrant calls — if we already hold the lock, skip acquisition.
    */
-  private async withLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
-    await this.ensureConfigFile(name);
+  private async withLock<T>(
+    name: string,
+    operation: () => Promise<T>,
+    opts: { createIfMissing?: boolean } = {}
+  ): Promise<T> {
+    if (opts.createIfMissing === false) {
+      // State-write path: never resurrect a removed config (see updateState).
+      await fs.access(this.getPath(name));
+    } else {
+      await this.ensureConfigFile(name);
+    }
     const configPath = this.getPath(name);
 
     const depth = this.lockDepths.get(name) ?? 0;
@@ -267,16 +280,21 @@ export class ConfigFileStorage {
   private async mutate(
     name: string,
     updater: (config: RdcConfig) => RdcConfig,
-    bumpVersion: boolean
+    bumpVersion: boolean,
+    opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
-    return this.withLock(name, async () => {
-      this.cache.delete(name);
-      const raw = await this.loadUnlocked(name);
-      const plain = await this.decryptConfig(raw);
-      const updated = updater(plain);
-      await this.saveUnlocked(updated, name, bumpVersion);
-      return this.cache.get(name)!;
-    });
+    return this.withLock(
+      name,
+      async () => {
+        this.cache.delete(name);
+        const raw = await this.loadUnlocked(name);
+        const plain = await this.decryptConfig(raw);
+        const updated = updater(plain);
+        await this.saveUnlocked(updated, name, bumpVersion);
+        return this.cache.get(name)!;
+      },
+      opts
+    );
   }
 
   /**
@@ -295,7 +313,36 @@ export class ConfigFileStorage {
    * responsible for touching only `state.*`.
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
-    return this.mutate(name, updater, false);
+    // A STATE write must never CREATE a config file. Status is subordinate to
+    // the config's existence: when the file is gone (the tutorial preambles
+    // `rm` it between runs; `config prune` removes it), a background writer —
+    // the executor daemon's post-request provision bookkeeping above all —
+    // must not resurrect an empty config. Observed live: the daemon recreated
+    // the file between a preamble's `rm` and its `config init`, which then
+    // died on "Config already exists" and cascaded through the whole tutorial
+    // sequence. Callers of updateState are best-effort by contract, so a
+    // missing config surfaces as a rejected promise they already tolerate.
+    try {
+      await fs.access(this.getPath(name));
+    } catch {
+      throw new Error(`Config "${name}" does not exist; refusing to create it for a state write`);
+    }
+    return this.mutate(name, updater, false, { createIfMissing: false });
+  }
+
+  /**
+   * Update a remote-enabled config's local CACHE (observation of the server
+   * copy, not declared intent). Same contract as updateState: never bumps the
+   * version counter, never resurrects a deleted config — a cache refresh
+   * racing a `config delete` must not bring the file back from the dead.
+   */
+  async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
+    try {
+      await fs.access(this.getPath(name));
+    } catch {
+      throw new Error(`Config "${name}" does not exist; refusing to create it for a cache write`);
+    }
+    return this.mutate(name, updater, false, { createIfMissing: false });
   }
 
   /**

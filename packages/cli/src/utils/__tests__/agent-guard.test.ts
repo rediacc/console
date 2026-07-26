@@ -242,10 +242,38 @@ describe('assertAgentRepoCreate', () => {
     expect(() => assertAgentRepoCreate('my-app')).toThrow();
   });
 
-  it('blocks when only a comma list is set (no wildcard)', () => {
+  it('allows when the exact repo name is set (ancestry-legitimate)', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app';
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+  });
+
+  it('allows when a comma list contains the exact name (ancestry-legitimate)', () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,other';
-    expect(() => assertAgentRepoCreate('my-app')).toThrow();
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+  });
+
+  it('blocks when a different repo name is set', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'other';
+    expect(() => assertAgentRepoCreate('my-app')).toThrow('Cannot create repository "my-app"');
+  });
+
+  it('blocks when a comma list does not contain the target name', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'other,web';
+    expect(() => assertAgentRepoCreate('my-app')).toThrow('Cannot create repository "my-app"');
+  });
+
+  it('throws the override error when the exact name is set but ancestry is illegitimate', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    mockIsAncestryAvailable.mockReturnValue(true);
+    expect(() => assertAgentRepoCreate('my-app')).toThrow(/errors\.agent\.createGuardOverride$/);
   });
 
   it('allows when `*` appears inside a comma list', () => {

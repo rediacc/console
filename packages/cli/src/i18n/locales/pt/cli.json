@@ -347,6 +347,11 @@
       "remote": {
         "description": "Gerir a ligação ao armazenamento de configuração remoto",
         "tokenExpired": "O token de configuração remota expirou. Autentique-se novamente com: rdc config remote enable",
+        "unreachable": "O servidor de configuração {{server}} está inacessível",
+        "offlineCacheWarning": "O servidor de configuração {{server}} está inacessível; a servir a configuração \"{{config}}\" a partir da cache offline (versão do servidor {{version}}, em cache há {{age}}). As alterações não podem ser guardadas até o servidor ficar acessível.",
+        "offlineNoCache": "O servidor de configuração {{server}} está inacessível e a configuração \"{{config}}\" ainda não tem cache offline. Execute \"rdc config remote refresh\" assim que o servidor estiver acessível para preencher a cache.",
+        "writeFailedClosed": "Não é possível guardar: a configuração \"{{config}}\" está armazenada em {{server}}, que está inacessível. A alteração NÃO foi guardada.",
+        "conflictRetryExhausted": "A configuração \"{{config}}\" continua em conflito com outro dispositivo após 3 tentativas. Execute o comando novamente.",
         "passkeySecretMissing": "Segredo de chave de acesso não encontrado no porta-chaves do sistema operativo. Autentique-se novamente com: rdc config remote enable",
         "staleSlot": "O seu key slot está desatualizado (a chave de encriptação da config foi rodada). Volte a inscrever-se com: rdc config remote enable",
         "enable": {
@@ -365,12 +370,17 @@
           "passwordNonInteractive": "É necessária uma password mestra da config. Defina REDIACC_CONFIG_PASSWORD, ou execute sem --password num terminal interativo.",
           "passwordRequirePasskey": "Esta organização exige uma passkey para desbloquear o config storage; a inscrição por password está desativada. Inscreva-se a partir de um browser com: rdc config remote enable",
           "passwordNoSlot": "Não há nenhum password slot aprovisionado para o seu config storage. Adicione um a partir do portal (Config Storage > key slots) e tente novamente.",
-          "passwordWrong": "Não foi possível desbloquear a config com essa password. Verifique REDIACC_CONFIG_PASSWORD (ou a password introduzida) e tente novamente."
+          "passwordWrong": "Não foi possível desbloquear a config com essa password. Verifique REDIACC_CONFIG_PASSWORD (ou a password introduzida) e tente novamente.",
+          "optionForce": "Substituir o conteúdo local divergente pela cópia do servidor sem confirmação",
+          "seeded": "O armazenamento estava vazio; a configuração local foi enviada como versão 1.",
+          "overwriteConfirm": "A configuração local \"{{config}}\" tem {{machines}} máquina(s) e {{repos}} repositório(s) que serão substituídos pela cópia do servidor (o ficheiro anterior é mantido em {{backupPath}}). Continuar?",
+          "overwriteAborted": "Activação abortada: a configuração local \"{{config}}\" tem conteúdo que difere da cópia do servidor. Execute novamente com --force para a substituir, ou confirme num terminal interativo."
         },
         "disable": {
           "description": "Desligar do armazenamento remoto e guardar a configuração localmente",
           "notEnabled": "A configuração remota não está activada.",
-          "success": "Configuração remota desactivada. Configuração \"{{name}}\" guardada localmente."
+          "success": "Configuração remota desactivada. Configuração \"{{name}}\" guardada localmente.",
+          "serverRequired": "Não é possível desactivar: o servidor de configuração {{server}} está inacessível, e a desactivação tem de obter primeiro a cópia mais recente do servidor (desactivar a partir de uma cache desactualizada pode perder as alterações de outro dispositivo). Tente novamente assim que o servidor estiver acessível."
         },
         "status": {
           "description": "Mostrar o estado da ligação remota"
@@ -473,6 +483,9 @@
         "verifying": "A verificar se a nova chave desencripta a configuração...",
         "waiting": "À espera de aprovação pelo browser...",
         "warning": "Isto roda a chave com que está encriptada toda a configuração da organização. Todos os outros dispositivos terão de voltar a ligar-se depois."
+      },
+      "current": {
+        "description": "Mostra a configuração ativa: nome, ficheiro, servidor e canal resolvidos, estado do token"
       }
     },
     "credits": {
@@ -618,7 +631,6 @@
         "subscription": "Subscrição",
         "virtualization": "Virtualização"
       },
-      "serverMismatch": "servidor não corresponde",
       "subscriptionUnreachable": "impossível contactar o servidor de subscrição",
       "title": "Diagnóstico do CLI Rediacc"
     },
@@ -1685,12 +1697,12 @@
         "parseFailed": "  Não foi possível ler o estado da máquina remota",
         "remote": "\nSubscrição:",
         "remoteMachine": "    - {{id}}... (visto por último: {{lastSeen}})",
+        "serverWouldUse": "Usaria o servidor de conta: {{server}}",
         "remoteMachineActivations": "  Slots de máquina: {{active}}/{{max}}",
         "remotePlan": "  Plano:     {{plan}}",
         "remoteRepoLicenseIssuances": "  Emissões mensais de licenças de repositório: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licenças de repositório: {{totalTrackedRepos}} rastreadas, {{validCount}} válidas, {{refreshRecommendedCount}} recomendada atualização, {{hardExpiredCount}} expiradas definitivamente",
-        "remoteStatus": "  Estado:   {{status}}",
-        "serverMismatch": "O token de desenvolvimento pertence a {{actualServerUrl}}, mas esta worktree está a usar {{expectedServerUrl}}. Execute `rdc subscription login` novamente."
+        "remoteStatus": "  Estado:   {{status}}"
       }
     },
     "sync": {
@@ -1746,6 +1758,7 @@
       "available": "Atualização disponível: v{{version}} (atual: v{{current}})",
       "channelDescription": "Definir canal de versão (stable ou edge)",
       "channelSet": "Canal de versão definido para {{channel}}",
+      "configMissing": "A configuração \"{{name}}\" não existe. Crie-a com: rdc config init {{name}}",
       "checking": "A verificar atualizações...",
       "checkOnly": "Apenas verificar atualizações sem transferir",
       "description": "Verificar novas versões do CLI e aplicar atualizações. Suporta --check-only para verificar sem instalar e --force para atualizar mesmo que já esteja na versão mais recente.",
@@ -2008,7 +2021,7 @@
       "grandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nOs repositórios grand contêm dados de produção. Use um fork em vez disso: os forks são cópias de sandbox isoladas e seguras.\n\nFluxo de trabalho:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork (ex.: rdc repo up {{name}}:<tag-name>)\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>\n\nUtilizador: para permitir acesso direto, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
       "grandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nUse um fork em vez disso: os forks são cópias de sandbox isoladas e seguras.\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>",
       "grandGuardOverrideNonLinux": "\"{{name}}\" é um repositório grand (produção). REDIACC_ALLOW_GRAND_REPO está definido, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou), portanto a substituição não é aceite.\n\nUse o fluxo fork-first:\n  1. rdc repo fork {{name}} --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo promote {{name}}:<tag-name>\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
-      "machineGuard": "O acesso direto à máquina \"{{machine}}\" não é permitido no modo de agente.\n\nOs agentes têm de se ligar através de um contexto de repositório para acesso em sandbox. Faça primeiro um fork de um repositório e ligue-se ao fork.\n\nFluxo de trabalho:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: para permitir acesso direto à máquina, defina REDIACC_ALLOW_GRAND_REPO=* (ou um nome de repositório específico) no terminal antes de iniciar a sessão do agente.",
+      "machineGuard": "O acesso direto à máquina \"{{machine}}\" não é permitido no modo de agente.\n\nOs agentes têm de se ligar através de um contexto de repositório para acesso em sandbox. Faça primeiro um fork de um repositório e ligue-se ao fork.\n\nFluxo de trabalho:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: o acesso ao nível da máquina requer o carácter universal — defina REDIACC_ALLOW_GRAND_REPO=* no terminal antes de iniciar a sessão do agente. Um nome de repositório específico não desbloqueia o acesso direto à máquina.",
       "machineGuardOverride": "O acesso direto à máquina \"{{machine}}\" não é permitido. Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "O acesso direto à máquina \"{{machine}}\" está com substituição definida, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou), portanto a substituição não é aceite.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
       "mcpGrandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nUse repo_fork para criar uma cópia de sandbox isolada e segura, depois opere no fork.\nSe precisar de acesso direto, peça ao utilizador que exporte REDIACC_ALLOW_GRAND_REPO antes de iniciar o agente.",
@@ -2057,7 +2070,7 @@
       "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc repo list`, depois tente novamente.",
       "recoveryFailedServerRejected": "O servidor de conta rejeitou a emissão de licença para o repositório em \"{{machine}}\". Primeiro erro: {{error}}. Execute: rdc subscription refresh --repo <repo-ref> para obter detalhes.",
       "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente.",
-      "skipActivationHint": "Numa máquina descartável, pode ignorar a ativação por completo com REDIACC_SKIP_ACTIVATION=1."
+      "skipActivationHint": "Numa máquina descartável, pode ignorar a ativação por completo com REDIACC_SKIP_MACHINE_ACTIVATION=1."
     },
     "machineNotFound": "Máquina \"{{name}}\" não encontrada",
     "machineRequired": "Nome da máquina necessário. Use --machine <name>",

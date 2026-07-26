@@ -44,13 +44,13 @@ See [rdc vs renet](/en/docs/rdc-vs-renet) for the workstation-vs-server split, a
 For automation and AI agents, use a scoped subscription token instead of browser login:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -64,14 +64,20 @@ No machine license file is stored on the machine. Slot enforcement happens at is
 
 ### Repo license
 
-A repo license is a signed license for one repository on one machine. It is the only license file stored on the machine (`/var/lib/rediacc/license/repos/{guid}.json`).
+A repo license is a signed license for one repository on one machine. It is the only license file stored on the machine, laid out per signing key:
+
+```
+/var/lib/rediacc/license/repos/{guid}/{keyId}.json
+```
+
+`{keyId}` is a 16-hex fingerprint (the first 8 bytes of `SHA-256` of the signing server's Ed25519 public key). A repository managed by more than one account universe (for example production and bench deploying to the same box) holds one file per signing key under its `{guid}` directory. The machine's renet build validates only the file its baked key, or a delegation cert chained to it, can verify; other universes' files are inert. Switching universes never invalidates licenses: the first operation in a new universe issues that universe's license once (a `missing` result auto-issues), and both coexist afterwards.
 
 It is used for:
 
 - `rdc repo create` and `rdc repo fork`, validated before provisioning (pre-issued without identity proofs, then re-issued with identity proofs after creation)
 - `rdc repo resize` and `rdc repo expand`, full validation including expiry
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validated with **expiry skipped**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validated with **expiry skipped**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **fully validated including expiry**: backup transfer needs an active entitlement
 - repo autostart on machine restart, validated with **expiry skipped**
 
 Repo licenses are bound to the machine and the target repository. Each license contains the machine ID, repository GUID, subscription ID, plan limits, and expiry. For encrypted repositories, Rediacc also verifies the LUKS identity of the underlying volume.
@@ -102,7 +108,7 @@ New signups start a 14-day free trial on Professional or Business. A credit card
 
 Community is the standing free floor. It is no longer a direct signup option for new accounts; instead, an account lands on Community whenever a subscription ends: cancelling during the trial, cancelling a paid plan later, or a failed payment. On the Community fallback you keep one machine with 10 GB per repository and 100 setups a month. Accounts created before the trial-based model launched keep their existing Community access.
 
-Enforcement stays soft. Running repositories keep working even after a subscription ends; only new work (create, fork, resize, and license refresh) is gated by an active entitlement.
+Enforcement stays soft where it matters most: running repositories keep working even after a subscription ends (`up`, `down`, `delete`, autostart). New work (create, fork, resize, license refresh) and backup transfer (`push`, `pull`, `sync`) are gated by an active entitlement.
 
 ## VM Migration Grace Period
 
@@ -165,10 +171,10 @@ rdc subscription login
 Automation or AI-agent login:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-For non-interactive environments, setting `REDIACC_SUBSCRIPTION_TOKEN` is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs.
+For non-interactive environments, setting `REDIACC_TOKEN` is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs.
 
 Show account-backed subscription status:
 
@@ -198,7 +204,7 @@ The `--repo` ref must resolve in your local `rdc` config. A repository discovere
 
 On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed.
 
-In non-interactive environments, the CLI does not wait for browser approval. Instead, it tells you to supply a scoped token with `rdc subscription login --token ...` or `REDIACC_SUBSCRIPTION_TOKEN`.
+In non-interactive environments, the CLI does not wait for browser approval. Instead, it tells you to supply a scoped token with `rdc subscription login --token ...` or `REDIACC_TOKEN`.
 
 For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
@@ -225,6 +231,8 @@ Automatic recovery is intentionally narrow:
 - `sequence_regression`: fails fast as a repo-license integrity/state problem
 - `invalid_signature`: fails fast as a repo-license integrity/state problem
 - `identity_mismatch`: fails fast, the repository identity does not match the installed license
+- `cert_expired`: fails fast on growth operations (`create`, `fork`, `resize`) and on backup transfer (`push`, `pull`); `repo up` and autostart keep working, matching the soft license-expiry model. Renew the delegation cert
+- `cert_invalid`: fails fast, the delegation cert failed a constraint (bad master-key signature, subscription/plan mismatch, size cap, or sequence over `maxTotalIssuances`). Reissue the cert after fixing the underlying limit
 
 These fail-fast cases do not automatically consume account-backed refresh or issuance calls.
 

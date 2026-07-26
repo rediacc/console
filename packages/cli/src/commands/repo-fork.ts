@@ -29,6 +29,7 @@ import {
   machineConnections,
 } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { debugEnabled } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -312,10 +313,10 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
 
 /**
  * Render the end-of-run timing charts (bars + waterfall + attribution).
- * TTY-gated; RDC_TIMING_CHART=1 forces rendering for piped output.
+ * TTY-gated; REDIACC_DEBUG=timing (or 1/*) forces rendering for piped output.
  */
 function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: number): void {
-  if (!process.stdout.isTTY && process.env.RDC_TIMING_CHART !== '1') return;
+  if (!process.stdout.isTTY && !debugEnabled('timing')) return;
   const summary = buildTimingSummary(steps, wallMs, {
     epochMs: plan.startedAt,
     suggestDetach: Boolean(plan.options.up && !plan.options.detach),

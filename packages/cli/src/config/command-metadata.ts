@@ -456,6 +456,9 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'config show': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  'config current': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
   'config audit log': {
     mcp: {
       destructive: false,

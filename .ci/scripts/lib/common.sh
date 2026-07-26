@@ -229,60 +229,6 @@ wait_for() {
     return 1
 }
 
-# Poll a condition with watchdog timeout and optional progress tracking
-# Usage: poll_with_watchdog <timeout> <interval> <condition_cmd> [on_poll_cmd]
-#
-# Arguments:
-#   timeout        - Maximum wait time in seconds
-#   interval       - Polling interval in seconds
-#   condition_cmd  - Command/function returning 0 when condition met
-#   on_poll_cmd    - Optional: called each poll with (elapsed, timeout, interval_num)
-#
-# Environment (set for callbacks):
-#   WATCHDOG_ELAPSED  - Elapsed seconds
-#   WATCHDOG_TIMEOUT  - Timeout value
-#   WATCHDOG_INTERVAL - Current interval number
-#
-# Returns: 0 on success, 124 on timeout
-#
-# Example:
-#   poll_with_watchdog 300 5 "check_api_health" "log_progress"
-#
-poll_with_watchdog() {
-    local timeout="$1"
-    local interval="$2"
-    local condition_cmd="$3"
-    local on_poll_cmd="${4:-}"
-
-    local elapsed=0
-    local interval_num=0
-
-    # Export for callbacks
-    export WATCHDOG_TIMEOUT="$timeout"
-
-    while [[ $elapsed -lt $timeout ]]; do
-        export WATCHDOG_ELAPSED="$elapsed"
-        export WATCHDOG_INTERVAL="$((++interval_num))"
-
-        # Check condition
-        if $condition_cmd; then
-            return 0
-        fi
-
-        # Call progress callback if provided
-        if [[ -n "$on_poll_cmd" ]]; then
-            $on_poll_cmd "$elapsed" "$timeout" "$interval_num" || true
-        fi
-
-        sleep "$interval"
-        elapsed=$((elapsed + interval))
-    done
-
-    # Timeout reached
-    export WATCHDOG_ELAPSED="$elapsed"
-    return 124
-}
-
 # Run a command with a timeout (portable: works on Linux, macOS, Windows Git Bash)
 # Usage: run_with_timeout <timeout_seconds> <command...>
 # Returns: 0 on success, 124 on timeout, or command's exit code on failure
@@ -396,19 +342,6 @@ r2_count_objects() {
     fi
     printf '%s\n' "$count"
 }
-
-# =============================================================================
-# SHARED CONSTANTS
-# =============================================================================
-# Define constants here to avoid duplication across scripts.
-# The shellcheck.sh linter will catch if these are redefined elsewhere.
-
-# Maximum number of Gemini review triggers per PR
-# This limit prevents excessive API usage on PRs with many iterations.
-# Value chosen based on typical PR lifecycle: initial review (1) +
-# ~5 rounds of feedback + ~5 additional edge cases = 11 reviews max.
-# Exceeding this suggests the PR should be split or closed.
-MAX_GEMINI_REVIEWS=11
 
 # =============================================================================
 # SUBMODULE GUARDS

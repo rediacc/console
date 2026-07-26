@@ -32,7 +32,9 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
 WATCHDOG="$REPO_ROOT/.ci/scripts/ci/watchdog-monitor.cjs"
-CI_WORKFLOW="$REPO_ROOT/.github/workflows/ci.yml"
+# The WATCHDOG_* env block lives with the monitor step, which moved from
+# ci.yml to the chained watchdog-monitor.yml (ubuntu-slim generations).
+CI_WORKFLOW="$REPO_ROOT/.github/workflows/watchdog-monitor.yml"
 
 # The patterns under test are the ones CI actually sets, not a copy: a guard that
 # works on invented job names while the real config never matches is the exact
@@ -62,20 +64,20 @@ process.stdout.write(v.cancel ? "cancel" : "continue");
 test_patterns_are_real() {
     # Anti-vacuity: if the pattern list stopped covering Quality, every case
     # below would pass for the wrong reason.
-    assert_contains "$NO_RETRY_PATTERNS" "Quality" "ci.yml still lists Quality as no-retry"
-    assert_contains "$NO_RETRY_PATTERNS" "Review Gate" "ci.yml still lists Review Gate as no-retry"
-    log_pass "reading the real WATCHDOG_NO_RETRY_PATTERNS from ci.yml ($NO_RETRY_PATTERNS)"
+    assert_contains "$NO_RETRY_PATTERNS" "Quality" "watchdog-monitor.yml still lists Quality as no-retry"
+    assert_contains "$NO_RETRY_PATTERNS" "Review Gate" "watchdog-monitor.yml still lists Review Gate as no-retry"
+    log_pass "reading the real WATCHDOG_NO_RETRY_PATTERNS from watchdog-monitor.yml ($NO_RETRY_PATTERNS)"
 }
 
 test_quality_failure_cancels_without_label() {
-    assert_eq "$(verdict 'Quality / Shared Package Tests' 1 0)" "cancel" \
+    assert_eq "$(verdict 'Quality / Packages' 1 0)" "cancel" \
         "a Quality failure with no label must force-cancel (unchanged behaviour)"
     log_pass "Quality failure without the label still force-cancels"
 }
 
 test_quality_failure_honors_label() {
     # The regression. This returned "cancel" before the fix.
-    assert_eq "$(verdict 'Quality / Shared Package Tests' 1 1)" "continue" \
+    assert_eq "$(verdict 'Quality / Packages' 1 1)" "continue" \
         "no-cancel-failure must hold the run open for a Quality failure"
     log_pass "no-cancel-failure is honoured for Quality (the unreachable branch)"
 }
@@ -109,9 +111,85 @@ test_cancellation_is_not_a_failure() {
     # Branch 1 is gated on `failed.includes(job)` on purpose: a non-stuck
     # CANCELLATION of a Quality job is an infra flake, and nuking a 0-failure run
     # for it is wrong.
-    assert_eq "$(verdict 'Quality / Shared Package Tests' 0 0)" "continue" \
+    assert_eq "$(verdict 'Quality / Packages' 0 0)" "continue" \
         "a cancelled (not failed) Quality job must not force-cancel the run"
     log_pass "a cancellation is not treated as a failure"
+}
+
+# --- Drain-before-cancel (pendingNoRetryJobs) -------------------------------
+#
+# A Quality failure still force-cancels with no retry and no AI. What changed is
+# WHEN: it now waits for the sibling no-retry jobs to reach a terminal state, so
+# one round reports every failing lane instead of only the first. Before this,
+# nine other quality jobs were killed mid-flight and their verdicts were never
+# reported -- which is why CI gates surfaced exactly one failure per round.
+
+# pending <json-jobs> -> comma-joined names of the jobs still holding the cancel
+pending() {
+    node -e '
+const w = require(process.argv[1]);
+const out = w.pendingNoRetryJobs({
+  jobs: JSON.parse(process.argv[2]),
+  noRetryPatterns: process.argv[3].split(",").map(s => s.trim()),
+  excludePatterns: (process.argv[4] || "").split(",").map(s => s.trim()).filter(Boolean),
+});
+process.stdout.write(out.map(j => j.name).join(","));
+' "$WATCHDOG" "$1" "$NO_RETRY_PATTERNS" "${2:-}"
+}
+
+test_drain_waits_for_running_quality_lanes() {
+    local jobs='[
+      {"name":"Quality / Code","status":"completed"},
+      {"name":"Quality / Content","status":"in_progress"},
+      {"name":"Quality / Go","status":"queued"}
+    ]'
+    assert_eq "$(pending "$jobs")" "Quality / Content,Quality / Go" \
+        "a running and a queued lane both hold the cancel"
+    log_pass "the force-cancel is held while sibling lanes are still running"
+}
+
+test_drain_releases_when_all_terminal() {
+    local jobs='[
+      {"name":"Quality / Code","status":"completed"},
+      {"name":"Quality / Content","status":"completed"}
+    ]'
+    assert_eq "$(pending "$jobs")" "" \
+        "with every lane terminal, nothing holds the cancel"
+    log_pass "the force-cancel fires once every no-retry job is terminal"
+}
+
+test_drain_ignores_expensive_jobs() {
+    # The whole point of force-cancelling is to stop the expensive legs. Those
+    # are NOT in the no-retry list, so they must never hold the cancel open --
+    # otherwise a lint error would wait 50 minutes for the E2E matrix.
+    local jobs='[
+      {"name":"Tests + Infra / E2E Workers (fedora-43)","status":"in_progress"},
+      {"name":"OPS Tests / OPS Provision (linux-amd64)","status":"in_progress"}
+    ]'
+    assert_eq "$(pending "$jobs")" "" \
+        "E2E and OPS jobs must not delay the cancel"
+    log_pass "expensive non-quality jobs do not hold the cancel open"
+}
+
+test_drain_never_waits_on_review_gate() {
+    # CLAUDE.md: Review Gate fails immediately, full stop. It is label-immune,
+    # and it must not be something the drain waits on either.
+    local jobs='[{"name":"Review Gate","status":"in_progress"}]'
+    assert_eq "$(pending "$jobs")" "" \
+        "Review Gate is excluded from the drain set"
+    log_pass "Review Gate never holds the cancel open"
+}
+
+test_drain_honours_exclude_patterns() {
+    # The watchdog's own job is excluded from monitoring; it must not be able to
+    # hold its own cancel open forever.
+    local jobs='[
+      {"name":"Quality / Watchdog Helper","status":"in_progress"},
+      {"name":"Quality / Code","status":"in_progress"}
+    ]'
+    assert_eq "$(pending "$jobs" "Watchdog Helper")" "Quality / Code" \
+        "excluded jobs are dropped from the drain set"
+    log_pass "excluded jobs do not hold the cancel open"
 }
 
 log_test "test-watchdog-cancel-label"
@@ -122,5 +200,10 @@ test_review_gate_is_label_immune
 test_quality_review_gate_substring_is_immune
 test_non_no_retry_job_is_unaffected
 test_cancellation_is_not_a_failure
+test_drain_waits_for_running_quality_lanes
+test_drain_releases_when_all_terminal
+test_drain_ignores_expensive_jobs
+test_drain_never_waits_on_review_gate
+test_drain_honours_exclude_patterns
 echo ""
 log_pass "all tests passed"

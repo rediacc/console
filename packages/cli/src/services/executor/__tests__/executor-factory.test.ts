@@ -30,8 +30,14 @@ function fakeExecutor(): { executor: Executor; calls: ExecuteOptions[] } {
 }
 
 describe('executor factory', () => {
-  it('is the local executor when nothing is dispatching', () => {
-    expect(getExecutor()).toBe(localExecutorService);
+  it('is the daemon-backed executor when nothing is dispatching', () => {
+    // Perf 6: outside a dispatch the process default is now the daemon-backed
+    // executor, which transparently falls back to the local executor whenever the
+    // daemon is unavailable or the work is not daemon-eligible. It is a wrapper,
+    // so it is deliberately NOT the localExecutorService singleton itself.
+    const executor = getExecutor();
+    expect(executor).not.toBe(localExecutorService);
+    expect(typeof executor.execute).toBe('function');
   });
 
   it('prefers the executor a dispatch pinned on the request context', async () => {

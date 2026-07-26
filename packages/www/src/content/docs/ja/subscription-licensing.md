@@ -4,8 +4,8 @@ description: account、rdc、renetがマシンスロット、リポジトリラ�
 category: Guides
 order: 7
 language: ja
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # サブスクリプションとライセンス
@@ -46,13 +46,13 @@ Rediaccのライセンス管理には3つの可動部品があります：
 自動化およびAIエージェントには、ブラウザログインの代わりにスコープ付きサブスクリプショントークンを使用してください：
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 環境を通じてトークンを直接注入することで、CLIが対話的なログインステップなしにリポジトリライセンスを発行・更新できるようにすることもできます：
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -66,14 +66,18 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### リポジトリライセンス
 
-リポジトリライセンスは、1台のマシン上の1つのリポジトリに対する署名付きライセンスです。これはマシンに保存される唯一のライセンスファイルです（`/var/lib/rediacc/license/repos/{guid}.json`）。
+リポジトリライセンスは、1台のマシン上の1つのリポジトリに対する署名付きライセンスです。これはマシンに保存される唯一のライセンスファイルであり、署名キーごとに次のように配置されます：
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` は16桁の16進数フィンガープリント（署名元サーバーのEd25519公開鍵に対する`SHA-256`の先頭8バイト）です。複数のアカウントユニバースによって管理されているリポジトリ（例えば本番とbenchが同じマシンにデプロイしている場合）は、`{guid}`ディレクトリの下に署名キーごとに1つのファイルを保持します。マシンのrenetビルドは、自身に組み込まれたキー、またはそのキーにチェーンされた委任証明書で検証できるファイルのみを検証します。他のユニバースのファイルは無効なままです。ユニバースを切り替えてもライセンスは無効になりません：新しいユニバースでの最初の操作でそのユニバースのライセンスが一度だけ発行され（`missing`という結果になった場合は自動発行）、その後は両方が共存します。
 
 以下のために使用されます：
 
 - `rdc repo create` および `rdc repo fork`：プロビジョニング前に検証（アイデンティティ証明なしで事前発行され、作成後にアイデンティティ証明付きで再発行）
 - `rdc repo resize` および `rdc repo expand`：有効期限を含む完全な検証
 - `rdc repo up`、`rdc repo down`、`rdc repo delete`：**有効期限をスキップして**検証
-- `rdc repo push`、`rdc repo pull`、`rdc repo sync`：**有効期限をスキップして**検証
+- `rdc repo push`、`rdc repo pull`、`rdc repo sync`：**有効期限を含めて完全に検証**：バックアップ転送には有効な権利が必要です
 - マシン再起動時のリポジトリ自動起動：**有効期限をスキップして**検証
 
 リポジトリライセンスはマシンとターゲットリポジトリに紐付けられています。各ライセンスには、マシンID、リポジトリGUID、サブスクリプションID、プラン制限、有効期限が含まれます。暗号化されたリポジトリの場合、Rediaccは基盤となるボリュームのLUKSアイデンティティも検証します。
@@ -104,7 +108,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 Communityは無料の標準プランとして常に存在します。新規アカウントが直接申し込むことはできなくなり、代わりにサブスクリプションが終了するたびにCommunityへ自動的に移行します。具体的には、トライアル中の解約、有料プランの後日解約、または支払い失敗の場合です。Communityへのフォールバック後は、マシン1台、リポジトリあたり10GB、月100回のセットアップという制限になります。トライアル制導入前に作成されたアカウントは、既存のCommunityアクセス権をそのまま維持します。
 
-制限の適用は緩やかです。サブスクリプションが終了した後も、稼働中のリポジトリはそのまま動作を続けます。新規の操作（作成、フォーク、リサイズ、ライセンス更新）のみ、有効な権利を持つアカウントに限定されます。
+制限の適用は、最も重要な部分では緩やかなままです。サブスクリプションが終了した後も、稼働中のリポジトリ（`up`、`down`、`delete`、自動起動）はそのまま動作を続けます。一方、新規の操作（作成、フォーク、リサイズ、ライセンス更新）とバックアップ転送（`push`、`pull`、`sync`）は、有効な権利を持つアカウントに限定されます。
 
 ## VM移行猶予期間
 
@@ -167,10 +171,10 @@ rdc subscription login
 自動化またはAIエージェントによるログイン：
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-非対話型環境では、`REDIACC_SUBSCRIPTION_TOKEN` を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。
+非対話型環境では、`REDIACC_TOKEN` を設定するのが最もシンプルな選択肢です。トークンはエージェントが必要とするサブスクリプションとリポジトリライセンス操作のみにスコープを限定する必要があります。
 
 アカウントバックアップされたサブスクリプションステータスを表示：
 
@@ -200,7 +204,7 @@ rdc subscription refresh -m hostinger --repo my-app
 
 初回使用時、使用可能なリポジトリライセンスが見つからないライセンス済みリポジトリまたはバックアップ操作は、アカウント認可ハンドオフを自動的にトリガーする場合があります。CLIは認可URLを表示し、対話型ターミナルではブラウザを開こうとし、認可と発行が成功した後に一度操作を再試行します。
 
-非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、`rdc subscription login --token ...` または `REDIACC_SUBSCRIPTION_TOKEN` でスコープ付きトークンを提供するよう指示します。
+非対話型環境では、CLIはブラウザの承認を待ちません。代わりに、`rdc subscription login --token ...` または `REDIACC_TOKEN` でスコープ付きトークンを提供するよう指示します。
 
 マシンの初回セットアップについては、[マシンセットアップ](/ja/docs/setup) を参照してください。
 
@@ -227,6 +231,8 @@ rdc subscription refresh -m hostinger --repo my-app
 - `sequence_regression`：リポジトリライセンスの整合性/状態の問題として即時失敗します
 - `invalid_signature`：リポジトリライセンスの整合性/状態の問題として即時失敗します
 - `identity_mismatch`：即時失敗します。リポジトリのアイデンティティがインストール済みライセンスと一致しません
+- `cert_expired`：成長操作（`create`、`fork`、`resize`）とバックアップ転送（`push`、`pull`）では即座に失敗します。`repo up`と自動起動は引き続き動作し、ソフトなライセンス有効期限モデルと同じ扱いになります。委任証明書を更新してください
+- `cert_invalid`：即時失敗します。委任証明書が制約を満たしていません（マスターキー署名が不正、サブスクリプション/プランの不一致、サイズ上限、または`maxTotalIssuances`を超えるシーケンス）。根本的な制限を修正した上で証明書を再発行してください
 
 これらの即時失敗ケースは、アカウントバックアップされた更新または発行呼び出しを自動的に消費しません。
 

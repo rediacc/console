@@ -8,7 +8,7 @@
 #   worker_full                    both rewritten, server unreachable
 #   worker_channel_only            only CHANNEL rewritten (fail-safe path)
 #   worker_server_only             only SERVER_URL rewritten
-#   worker_none                    neither rewritten; no server.json written
+#   worker_none                    neither rewritten; no rediacc.json written
 #   worker_full_with_server_info   both rewritten + reachable server-info
 #                                  returning a different updateChannel
 #                                  (regression guard: baked channel must win)
@@ -51,7 +51,7 @@ run_case() {
 
     local tmp_home
     tmp_home=$(mktemp -d)
-    local config_file="$tmp_home/.config/rediacc/server.json"
+    local config_file="$tmp_home/.config/rediacc/rediacc.json"
 
     # BLOCKER: test runs install.sh in a subshell via source-only mode; the path is a dynamic variable so shellcheck cannot statically resolve the source target
     # shellcheck disable=SC1090
@@ -81,17 +81,17 @@ run_case() {
 
     if [[ "$expect_file" == "no" ]]; then
         if [[ -f "$config_file" ]]; then
-            fail "$name: expected no server.json, but file was written: $(cat "$config_file")"
+            fail "$name: expected no rediacc.json, but file was written: $(cat "$config_file")"
         else
-            pass "$name: no server.json written"
+            pass "$name: no rediacc.json written"
         fi
     else
         if [[ ! -f "$config_file" ]]; then
-            fail "$name: expected server.json, but none was written"
+            fail "$name: expected rediacc.json, but none was written"
         else
             local got_channel got_account
-            got_channel=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['updateChannel'])" "$config_file")
-            got_account=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['accountServer'])" "$config_file")
+            got_channel=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['account']['updateChannel'])" "$config_file")
+            got_account=$(python3 -c "import json,sys; print(json.load(open(sys.argv[1]))['account']['accountServer'])" "$config_file")
             if [[ "$got_channel" == "$expect_channel" && "$got_account" == "$expect_account" ]]; then
                 pass "$name: channel=$got_channel accountServer=$got_account"
             else
@@ -147,8 +147,8 @@ run_case "worker_none" \
 
 # worker_server_only: SERVER_URL rewritten but CHANNEL not. install.sh's
 # server-info lookup would auto-detect in production; with no reachable
-# server, we still write server.json with the accountServer field and
-# the default channel. Fail-safe: rdc doctor reveals the channel and
+# server, we still write rediacc.json with the account.accountServer field
+# and the default channel. Fail-safe: rdc doctor reveals the channel and
 # the user can switch with `rdc update --channel edge`.
 run_case "worker_server_only" \
     "stable" "https://unreachable-server.invalid" \

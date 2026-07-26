@@ -216,7 +216,6 @@ describe('executeRdcCommand', () => {
     const callOpts = mockExecFile.mock.calls[0][2] as { env: Record<string, string> };
     expect(callOpts.env.REDIACC_YES).toBe('1');
     expect(callOpts.env.NO_COLOR).toBe('1');
-    expect(callOpts.env.REDIACC_NO_COLOR).toBe('1');
   });
 
   it('uses custom timeoutMs when provided', async () => {

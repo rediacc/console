@@ -1,6 +1,6 @@
 import { t } from '../i18n/index.js';
 import { ValidationError } from './errors.js';
-import { isGrandEnvWildcard } from './grand-env.js';
+import { isGrandEnvWildcard, isRepoAllowedByGrandEnv } from './grand-env.js';
 import {
   _resetAncestryCache,
   isAgentByAncestry,
@@ -88,11 +88,12 @@ export function assertAgentMachineAccess(machineName: string): void {
  * Assert that the current agent is allowed to create a new repository.
  * Agents operate in fork-only mode — creating a grand repo is blocked because the agent
  * can't operate on it afterwards. Use `repo fork` instead.
- * Throws ValidationError unless REDIACC_ALLOW_GRAND_REPO=* is set by the user.
+ * Throws ValidationError unless the user authorized this repo by name (or `*`)
+ * via REDIACC_ALLOW_GRAND_REPO, set before the agent started.
  */
 export function assertAgentRepoCreate(repoName: string): void {
   if (!isAgentEnvironment()) return;
-  if (isGrandEnvWildcard()) {
+  if (isRepoAllowedByGrandEnv(repoName)) {
     if (isOverrideAllowed()) return;
     const errorKey = isAncestryVerificationAvailable()
       ? 'errors.agent.createGuardOverride'

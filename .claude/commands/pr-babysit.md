@@ -1,5 +1,5 @@
 ---
-description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default — run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. Stops at green PRs; never merges.
+description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default — run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges.
 argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*)
@@ -45,6 +45,7 @@ For each one found:
 
 - **One babysit at a time.** Check the task board for a live babysit task and, in default mode, that you are not about to push alongside an existing background babysitter — a second pusher triggers the cancel-old-ci race and the shared-tree hazard. If one is live, stop and say so.
 - **Resume detection**: if PRs already exist for this branch (state block above), the loop resumes at CI/reviews — record that in the wave header/briefing; nothing is re-created.
+- **On resume, read the console PR's review state too**: note whether it is still a draft or already flipped ready, and whether a `<!-- claude-reviewed: <sha> -->` marker comment matches the current head. That determines whether the loop resumes pre-review (still driving CI green under a draft) or post-review (ready, addressing Claude's threads).
 - **Stacking decision — made here, not mid-loop**: new `MMDD-N` branch from main, or stack onto an existing branch/PRs? Stack when the work depends on unmerged prerequisites (precedent: a follow-up wave stacked onto its predecessor's open PRs because main lacked the base). Record the decision and rationale in the wave header/briefing.
 - **Cold-start rule**: if you lack session context to fill the wave header's first four slots (intent, deliberate renames, sanctioned reds, frozen surfaces — spec in the agent file's round-log section), survey the diff, fill what you can, and **ask the user the unfillable questions before starting** — sanctioned reds? deliberate renames? stack or new branch? Three questions up front beat a wrong round 1.
 

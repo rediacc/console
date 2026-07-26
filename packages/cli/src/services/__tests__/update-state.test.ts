@@ -44,7 +44,7 @@ describe('services/update-state', () => {
   });
 
   afterEach(() => {
-    delete process.env.RDC_UPDATE_INTERVAL_HOURS;
+    delete process.env.REDIACC_UPDATE_INTERVAL_HOURS;
   });
 
   describe('readUpdateState()', () => {
@@ -155,8 +155,8 @@ describe('services/update-state', () => {
       expect(isCooldownExpired(state2)).toBe(false);
     });
 
-    it('respects RDC_UPDATE_INTERVAL_HOURS env override', () => {
-      process.env.RDC_UPDATE_INTERVAL_HOURS = '1';
+    it('respects REDIACC_UPDATE_INTERVAL_HOURS env override', () => {
+      process.env.REDIACC_UPDATE_INTERVAL_HOURS = '1';
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
       const state = makeState({ lastAttemptAt: twoHoursAgo });
       // 1-hour base, 0 failures → 1 hour cooldown. 2 hours elapsed → expired

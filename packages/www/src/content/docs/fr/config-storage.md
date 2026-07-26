@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 8
 language: fr
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Stockage de configuration
@@ -76,6 +76,16 @@ Prérequis :
 
 L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de l'emplacement ainsi que la clé enveloppée, dérive localement le secret du mot de passe, puis déballe la CEK sur l'appareil. Cela donne à l'appareil la capacité de déchiffrer et de synchroniser la configuration ; cela ne modifie pas le store.
 
+## Activation et lectures hors ligne
+
+`rdc config remote enable` connecte la configuration active au store. Lorsque le store est vide, l'activation **l'amorce à partir de votre configuration locale actuelle** : les ressources locales sont poussées (push) comme première version du store, puis récupérées (pull) pour prouver l'aller-retour. Lorsque le store contient déjà du contenu, l'activation se réconcilie avec lui plutôt que de l'écraser (elle échoue en cas de divergence réelle, sauf si vous passez `--force`).
+
+Une fois activée, la configuration conserve un **cache de lecture** complet, chiffré au repos avec le même mécanisme que n'importe quelle configuration locale, de sorte que le store reste utilisable même lorsque le serveur de compte est inaccessible :
+
+- **Les lectures fonctionnent hors ligne.** Le contenu en cache est servi avec un avertissement d'obsolescence sur stderr, étiqueté avec la version et l'horodatage mis en cache (`cachedVersion` / `cachedAt`).
+- **Les écritures nécessitent le serveur et échouent proprement.** Il n'existe pas de file d'écriture hors ligne : une écriture qui ne peut pas atteindre le serveur échoue en nommant le serveur concerné. Si une commande d'écriture a réussi, le changement est sur le serveur.
+- **Les modifications concurrentes depuis deux machines** se résolvent par pull-replay-repush au niveau du bucket de ressources, de sorte qu'une modification simultanée ailleurs n'écrase pas la vôtre.
+
 ## Rotation de clé
 
 Faire tourner la CEK du store la réenveloppe sous une nouvelle génération :
@@ -93,6 +103,8 @@ Le stockage de configuration est limité par organisation. Les membres sont gér
 - **Supprimer un membre** : Cliquez sur le bouton de suppression sur la page Membres (nécessite 2FA + ré-authentification)
 
 Les protections de sécurité empêchent la suppression du dernier membre actif ou de vous-même.
+
+Les configurations du store sont en outre limitées par équipe, mais cette limitation relève du **contrôle d'accès côté serveur, pas d'un isolement cryptographique** : une seule CEK à l'échelle de l'organisation chiffre les configurations de toutes les équipes, et c'est le serveur qui impose quelles équipes un membre peut lire.
 
 ## Sécurité
 

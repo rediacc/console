@@ -4,8 +4,8 @@ description: "Konto-serveri ja CLI jaotuse käitamine oma infrastruktuuris."
 category: "Guides"
 order: 5
 language: et
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 See üks käsk:
 1. Laadib alla CLI binaari sinu serveri `/releases/` lõpp-punktist
 2. Pärib `/account/api/v1/.well-known/server-info`, et tuvastada uuenduskanal
-3. Kirjutab `server.json` sinu serveri URL-i, uuenduskanali ja krüptovõtmetega
+3. Kirjutab vaikekonfiguratsiooni (`rediacc.json`) sinu serveri URL-i, uuenduskanali ja krüptovõtmetega selle `account.*` väljade all
 4. Seadistab `rdc update` kontrollima sinu serverist tulevasi uuendusi
 
 `REDIACC_CHANNEL` muutujat pole vaja. Paigaldusskript loeb kanali automaatselt sinu serveri konfiguratsioonist.
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-Iga nimega konfiguratsioon salvestab oma konto-serveri URL-i ja tellimustoekeni. Konfiguratsiooni vahetamine vahetab kogu serveri konteksti.
+Iga nimega konfiguratsioon salvestab oma konto-serveri URL-i (`account.*` väljade all) ja oma konto API-tokeni, mis hoitakse konfiguratsiooni kõrval failis `api-token-<name>.json`. Konfiguratsiooni vahetamine vahetab kogu serveri konteksti.
 
 ## Õhulõhega keskkonnad
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | Paigaldusskript, CLI uuendaja | Kohandatud väljalasete lõpp-punkt CLI binaride jaoks. Vaikimisi: `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | Paigaldusskript | Uuenduskanali alistamine. Tuvastab serverist automaatselt, kui pole seatud. |
 | `REDIACC_ACCOUNT_SERVER` | CLI käitusaeg | Konto-serveri URL-i alistamine kõigi CLI käskude jaoks. |
-| `RDC_UPDATE_CHANNEL` | CLI käitusaeg | Uuenduskanali alistamine `rdc update` jaoks. |
+| `REDIACC_UPDATE_CHANNEL` | CLI käitusaeg | Uuenduskanali alistamine `rdc update` jaoks. |
 
 ## Serveri seadistamine
 
@@ -177,6 +177,8 @@ Või lühiajaliste / Dockeri saladuste töövoogude jaoks manusta sert base64-na
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+Käivitamisel keeldub server käivitumast (FATAL logikirje ja nullist erinev väljumiskood), kui laaditud sert delegeerib teisele võtmele kui see, millega server litsentse allkirjastab: see võrdleb allkirjastamisvõtme sõrmejälge serdi `delegatedPublicKey` sõrmejäljega ja katkestab mittevastavuse korral, sest võtmega, mida sert ei volita, allkirjastatud litsentsid oleksid igal masinal valideerimatud. Hoia allkirjastamise võtmepaar ja serdi `delegatedPublicKey` sünkroonis.
 
 ### 4. Seadista ülesvoolu kontroll + automaatne uuendamine (valikuline, kuid soovitatav)
 

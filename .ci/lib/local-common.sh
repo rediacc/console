@@ -72,6 +72,79 @@ compute_hash_for_package_dirs() {
     )
 }
 
+# Content-derived tree fingerprint via the git index (fast path).
+#
+# The full find+sha256 walk above hashes EVERY file on EVERY invocation
+# (~100-500ms per tree). git answers "which files differ from HEAD" from the
+# index stat-cache in milliseconds, re-hashing content whenever stat info is
+# inconclusive — the same correctness property, without hashing unchanged
+# files. The fingerprint combines:
+#   1. the HEAD tree object id per path (exact committed content), and
+#   2. every staged/unstaged/deleted/untracked path with its content hash
+#      (git hash-object, one batch process),
+# so any content change flips the fingerprint regardless of mtime games — the
+# historical `find -newer` race (checkout/stash/cp -p writing OLDER mtimes) is
+# caught because git updates the index on those operations and hash-object
+# reads bytes, never timestamps.
+#
+# Prints nothing and fails when git cannot answer authoritatively (git absent,
+# not a work tree, no HEAD) — callers fall back to the full walk.
+_git_tree_fingerprint() {
+    local root="$1"
+    shift
+    (
+        cd "$root" || exit 1
+        command -v git >/dev/null 2>&1 || exit 1
+        git rev-parse --verify -q HEAD >/dev/null 2>&1 || exit 1
+
+        local p changed existing hashes
+        changed="$(
+            {
+                git ls-files -m -d -z -- "$@" 2>/dev/null
+                git ls-files -o --exclude-standard -z -- "$@" 2>/dev/null
+                git diff --cached --name-only -z -- "$@" 2>/dev/null
+            } | LC_ALL=C sort -zu | tr '\0' '\n'
+        )" || exit 1
+
+        existing=""
+        if [[ -n "$changed" ]]; then
+            existing="$(
+                while IFS= read -r f; do
+                    [[ -f "$f" ]] && printf '%s\n' "$f"
+                done <<<"$changed"
+            )"
+        fi
+        hashes=""
+        if [[ -n "$existing" ]]; then
+            hashes="$(git hash-object --stdin-paths <<<"$existing" 2>/dev/null)" || exit 1
+        fi
+
+        {
+            for p in "$@"; do
+                if [[ "$p" == "." ]]; then
+                    git rev-parse -q --verify 'HEAD^{tree}' 2>/dev/null || printf 'no-tree:.\n'
+                else
+                    git rev-parse -q --verify "HEAD:$p" 2>/dev/null || printf 'no-tree:%s\n' "$p"
+                fi
+            done
+            printf '%s\n' "$changed"
+            printf '%s\n' "$hashes"
+        } | $_SHA256SUM_CMD | awk '{print $1}'
+    )
+}
+
+# Tree fingerprint with fallback: git index when available, full walk otherwise.
+compute_tree_hash() {
+    local root="$1"
+    shift
+    local fp
+    if fp="$(_git_tree_fingerprint "$root" "$@")" && [[ -n "$fp" ]]; then
+        printf '%s\n' "$fp"
+        return 0
+    fi
+    compute_hash_for_package_dirs "$root" "$@"
+}
+
 read_stamp_hash() {
     local stamp_file="$1"
 
@@ -137,7 +210,7 @@ ensure_packages_built() {
     local saved_hash=""
 
     current_hash="$(
-        compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" \
+        compute_tree_hash "$LOCAL_ROOT_DIR" \
             packages/shared \
             packages/provisioning
     )"
@@ -167,7 +240,7 @@ ensure_cli_built() {
     local packages_stamp="$LOCAL_ROOT_DIR/.ci/cache/build-packages.stamp"
     current_hash="$(
         {
-            compute_hash_for_package_dirs "$LOCAL_ROOT_DIR" packages/cli
+            compute_tree_hash "$LOCAL_ROOT_DIR" packages/cli
             cat "$packages_stamp" 2>/dev/null
         } | _sha256sum | awk '{print $1}'
     )"
@@ -268,7 +341,7 @@ check_go_installed() {
         log_info "Install Go from: https://go.dev/dl/"
         exit 1
     fi
-    log_debug "Go version: $(go version)"
+    log_debug "Go present: $(command -v go)"
 }
 
 # Compute a content hash of every input that determines the renet binary's
@@ -338,10 +411,17 @@ ensure_renet_built() {
     if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
         _account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
     fi
+    # Git-index fast path with the renet-specific full walk as fallback (the
+    # generic walk lacks renet's bin//embed-assets prunes, so compute_tree_hash
+    # is not usable here).
+    local _src_hash
+    if ! { _src_hash="$(_git_tree_fingerprint "$renet_dir" .)" && [[ -n "$_src_hash" ]]; }; then
+        _src_hash="$(_renet_source_hash "$renet_dir")"
+    fi
     local current_hash saved_hash=""
     current_hash="$(
         {
-            _renet_source_hash "$renet_dir"
+            printf 'src=%s\n' "$_src_hash"
             printf 'license=%s\n' "$_license_mode"
             printf 'key=%s\n' "$_account_key"
         } | _sha256sum | awk '{print $1}'

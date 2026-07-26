@@ -84,6 +84,7 @@ jobs:
         with:
           token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
+          filter: blob:none   # tag + commit topology only
           fetch-tags: true
 
       - name: Install jq

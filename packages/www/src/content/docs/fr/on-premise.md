@@ -4,8 +4,8 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediacc peut fonctionner entièrement sur votre propre infrastructure. L'image Docker autonome inclut le serveur de compte, le portail web, le site marketing et le point de terminaison de distribution de la CLI. Aucune dépendance externe aux services hébergés de Rediacc n'est requise.
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 Cette commande unique :
 1. Télécharge le binaire CLI depuis le point de terminaison `/releases/` de votre serveur
 2. Interroge `/account/api/v1/.well-known/server-info` pour découvrir le canal de mise à jour
-3. Écrit `server.json` avec l'URL de votre serveur, le canal de mise à jour et les clés de chiffrement
+3. Écrit la configuration par défaut (`rediacc.json`) avec l'URL de votre serveur, le canal de mise à jour et les clés de chiffrement sous ses champs `account.*`
 4. Configure `rdc update` pour vérifier les mises à jour futures sur votre serveur
 
 Aucune variable `REDIACC_CHANNEL` n'est nécessaire. Le script d'installation lit le canal depuis la configuration de votre serveur automatiquement.
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-Chaque config nommé stocke sa propre URL de serveur de compte et son jeton d'abonnement. Changer de config change tout le contexte serveur.
+Chaque config nommé stocke sa propre URL de serveur de compte (sous `account.*`) et son propre jeton d'API de compte, conservé à côté du config sous `api-token-<name>.json`. Changer de config change tout le contexte serveur.
 
 ## Environnements isolés du réseau
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | Script d'installation, mise à jour CLI | Point de terminaison de publications personnalisé pour les binaires CLI. Par défaut : `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | Script d'installation | Remplace le canal de mise à jour. Détecte automatiquement depuis le serveur si non défini. |
 | `REDIACC_ACCOUNT_SERVER` | CLI en exécution | Remplace l'URL du serveur de compte pour toutes les commandes CLI. |
-| `RDC_UPDATE_CHANNEL` | CLI en exécution | Remplace le canal de mise à jour pour `rdc update`. |
+| `REDIACC_UPDATE_CHANNEL` | CLI en exécution | Remplace le canal de mise à jour pour `rdc update`. |
 
 ## Configuration du serveur
 
@@ -177,6 +177,8 @@ Ou, pour les workflows éphémères ou Docker secrets, incorporez le certificat 
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+Au démarrage, le serveur refuse de démarrer (un log FATAL et un code de sortie non nul) si le certificat chargé délègue à une clé différente de celle avec laquelle le serveur signe les licences : il compare l'empreinte de la clé de signature à l'empreinte du `delegatedPublicKey` du certificat et abandonne en cas de non-correspondance, car des licences signées avec une clé que le certificat n'autorise pas seraient invalidables sur chaque machine. Gardez la paire de clés de signature et le `delegatedPublicKey` du certificat synchronisés.
 
 ### 4. Configurer la vérification amont et le renouvellement automatique (optionnel mais recommandé)
 

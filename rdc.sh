@@ -178,17 +178,14 @@ else
     log_step "Preparing CLI development environment"
 fi
 
-# Ensure npm dependencies are installed
-ensure_deps
-
-# Ensure shared packages are built
-ensure_packages_built
-
-# Ensure CLI is built and type-valid
-ensure_cli_built
-
-# Ensure renet is built and up-to-date
-ensure_renet_built
+# Ensure the toolchain is current. All build/progress output goes to STDERR:
+# stdout belongs to the CLI command — a rebuild triggered by an edit must not
+# corrupt an `rdc ... -o json` pipeline with npm build logs (observed live:
+# the first post-edit invocation broke JSON.parse for the caller).
+ensure_deps >&2
+ensure_packages_built >&2
+ensure_cli_built >&2
+ensure_renet_built >&2
 
 # Regenerate skill reference if CLI has changed
 ref_file="$ROOT_DIR/.claude/skills/rdc/reference.md"
@@ -208,18 +205,25 @@ fi
 renet_bin_dir="$ROOT_DIR/private/renet/bin"
 export PATH="$renet_bin_dir:$PATH"
 
-# Production is the default; two explicit opt-in modes on top:
-#   default       → user's real config in ~/.config/rediacc. The CLI's own
-#                   resolution applies (server.json → eu.rediacc.com), same as
-#                   an installed rdc binary.
-#   RDC_DEV=1     → local dev gateway (REDIACC_ENVIRONMENT=development, token
-#     (or --dev)    under .rdc-dev/, gateway URL sourced from
-#                   private/account/.env). Requires a running dev gateway:
-#                   ./run.sh account dev (default port 4800).
-#   RDC_BENCH=1   → bench.rediacc.com, our internal real-D1 test environment.
-#                   Uses a separate token file under .rdc-bench/ so it never
-#                   collides with the local-dev or production token state.
-#                   Deploy/reset bench via scripts/dev/{deploy,reset}-bench.sh.
+# Production is the default; dev is the one explicit opt-in mode on top. Every
+# universe is now a named CLI config (one config = server URL + E2E key + update
+# channel + token), so there are no per-mode token-file or env exports here —
+# selecting a config is all that changes:
+#   default       → user's real config "rediacc" in ~/.config/rediacc. The CLI's
+#                   own resolution applies: account server + update channel come
+#                   from that config's account section, falling back to the
+#                   built-in production defaults, same as an installed rdc.
+#   RDC_DEV=1     → the named config "dev" (REDIACC_CONFIG=dev). We auto-seed
+#     (or --dev)    ~/.config/rediacc/dev.json with the gateway URL and E2E
+#                   public key READ (never sourced) from private/account/.env.
+#                   Requires a running dev gateway: ./run.sh account dev
+#                   (default port 4800); we probe its /server-info first.
+#   bench         → no dedicated flag. Use the named config "bench":
+#                     ./rdc.sh --config bench <cmd>
+#                   Seed it once (token lands in api-token-bench.json, isolated
+#                   from dev and production by config name):
+#                     ./rdc.sh --config bench subscription login \
+#                         --server https://bench.rediacc.com
 #
 # Independent renet build modifier:
 #   RDC_RENET_LICENSE=1 → Build dev renet WITHOUT the --nolicense build tag, so
@@ -232,39 +236,62 @@ if [[ "${1:-}" == "--dev" ]]; then
     RDC_DEV=1
     shift
 fi
-if [[ "${RDC_BENCH:-0}" == "1" ]]; then
-    export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-bench/api-token.json"
-    export REDIACC_ACCOUNT_SERVER="https://bench.rediacc.com"
-    unset REDIACC_SKIP_MACHINE_ACTIVATION
-    mkdir -p "$ROOT_DIR/.rdc-bench"
-    log_info "Renet available at: $renet_bin_dir/renet"
-    log_step "Starting CLI (bench config — bench.rediacc.com)"
-elif [[ "${RDC_DEV:-0}" == "1" ]]; then
-    export REDIACC_ENVIRONMENT=development
-    export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-dev/api-token.json"
-
-    if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
-        log_info "Renet available at: $renet_bin_dir/renet"
-    fi
-
-    # The dev gateway writes its URL into private/account/.env as
-    # REDIACC_ACCOUNT_SERVER. Fail fast when it is absent — a half-configured
-    # dev mode would otherwise surface as a confusing CLI error later.
+if [[ "${RDC_DEV:-0}" == "1" ]]; then
+    # Read EXACTLY two values from the dev gateway's env file, by grep. NEVER
+    # `source` it (not even with `set -a`): private/account/.env also holds
+    # ED25519_PRIVATE_KEY, X25519_PRIVATE_KEY, JWT_SECRET and API_KEY, and
+    # sourcing would leak every one of those secrets into the CLI process
+    # environment. grep + cut extracts only the two public values the dev
+    # config needs — the gateway URL and the server's X25519 public key.
     account_env="$ROOT_DIR/private/account/.env"
-    if [[ -f "$account_env" ]]; then
-        set -a
-        # shellcheck source=/dev/null
-        source "$account_env"
-        set +a
-    fi
-    if [[ -z "${REDIACC_ACCOUNT_SERVER:-}" ]]; then
+    dev_server=$(grep -E '^REDIACC_ACCOUNT_SERVER=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
+    dev_e2e_key=$(grep -E '^X25519_PUBLIC_KEY=' "$account_env" 2>/dev/null | tail -1 | cut -d= -f2-)
+
+    # Fail fast when the gateway is not configured — a half-configured dev mode
+    # would otherwise surface as a confusing CLI error later.
+    if [[ -z "$dev_server" ]]; then
         log_error "RDC_DEV=1 but no dev gateway configured (private/account/.env missing REDIACC_ACCOUNT_SERVER)."
         log_error "Start it first: ./run.sh account dev"
         exit 1
     fi
 
+    # Probe liveness so a stale/unstarted gateway fails here with a clear
+    # message instead of a confusing CLI error deep in a later request.
+    if ! curl -fsS --max-time 2 "$dev_server/account/api/v1/.well-known/server-info" >/dev/null 2>&1; then
+        log_error "Dev gateway not responding at $dev_server"
+        log_error "Start it first: ./run.sh account dev"
+        exit 1
+    fi
+
+    # Seed/patch the "dev" named config. node is guaranteed present (we exec it
+    # below); jq is not. The seeder writes a minimal v3 config when the file is
+    # absent and merges only the account fields when it exists, leaving every
+    # other key intact. `rdc config set` cannot reach account fields, so this
+    # small node snippet is the mechanism.
+    node -e '
+      const fs = require("fs"), path = require("path"), p = process.argv[1];
+      let c;
+      try {
+        c = JSON.parse(fs.readFileSync(p, "utf8"));
+      } catch {
+        c = { schemaVersion: 3, id: require("crypto").randomUUID(), version: 1, encryption: { mode: "plaintext" } };
+      }
+      c.account = {
+        ...(c.account ?? {}),
+        accountServer: process.argv[2],
+        ...(process.argv[3] ? { e2ePublicKey: process.argv[3] } : {}),
+      };
+      fs.mkdirSync(path.dirname(p), { recursive: true, mode: 0o700 });
+      fs.writeFileSync(p, JSON.stringify(c, null, 2) + "\n", { mode: 0o600 });
+    ' "$HOME/.config/rediacc/dev.json" "$dev_server" "$dev_e2e_key"
+
+    # The only export the dev path adds: select the "dev" config. Everything
+    # else (server URL, E2E key) now lives inside that config file.
+    export REDIACC_CONFIG=dev
+
     if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" != "1" ]]; then
-        log_step "Starting CLI (dev mode — $REDIACC_ACCOUNT_SERVER)"
+        log_info "Renet available at: $renet_bin_dir/renet"
+        log_step "Starting CLI (dev config — $dev_server)"
     fi
 else
     log_info "Renet available at: $renet_bin_dir/renet"
@@ -272,4 +299,16 @@ else
 fi
 
 # Run the compiled CLI bundle, passing through all arguments
-node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"
+# exec, not a child: signals sent to this wrapper must reach the CLI directly
+# (a bash layer between kill and node defers SIGINT until the child exits,
+# which hangs tutorial prewarm/interrupt patterns — see tutorial-helpers.sh).
+#
+# NODE_COMPILE_CACHE: V8 spends ~120ms compiling the 15MB bundle on EVERY
+# invocation (measured, --cpu-prof); the on-disk compile cache cuts that to a
+# few ms after the first run. Env-var form on purpose — it covers the entry
+# file itself, which module.enableCompileCache() cannot. Invalidated
+# automatically by node version + file content. (The SEA keeps
+# useCodeCache:false — code cache is platform-bound and the SEAs are
+# cross-compiled.)
+export NODE_COMPILE_CACHE="${NODE_COMPILE_CACHE:-$ROOT_DIR/.ci/cache/v8-compile-cache}"
+exec node "$ROOT_DIR/packages/cli/dist/cli-bundle.cjs" "$@"

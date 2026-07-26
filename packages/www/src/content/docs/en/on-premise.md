@@ -41,7 +41,7 @@ curl -fsSL https://account.example.com/install.sh | \
 This single command:
 1. Downloads the CLI binary from your server's `/releases/` endpoint
 2. Queries `/account/api/v1/.well-known/server-info` to discover the update channel
-3. Writes `server.json` with your server URL, update channel, and encryption keys
+3. Writes the default config (`rediacc.json`) with your server URL, update channel, and encryption keys under its `account.*` fields
 4. Configures `rdc update` to check your server for future updates
 
 No `REDIACC_CHANNEL` variable is needed. The install script reads the channel from your server's configuration automatically.
@@ -61,7 +61,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-Each named config stores its own account server URL and subscription token. Switching configs switches the entire server context.
+Each named config stores its own account server URL (under `account.*`) and its own account api-token, kept beside the config at `api-token-<name>.json`. Switching configs switches the entire server context.
 
 ## Air-Gapped Environments
 
@@ -90,7 +90,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | Install script, CLI updater | Custom releases endpoint for CLI binaries. Default: `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | Install script | Override the update channel. Auto-detected from server if not set. |
 | `REDIACC_ACCOUNT_SERVER` | CLI runtime | Override account server URL for all CLI commands. |
-| `RDC_UPDATE_CHANNEL` | CLI runtime | Override update channel for `rdc update`. |
+| `REDIACC_UPDATE_CHANNEL` | CLI runtime | Override update channel for `rdc update`. |
 
 ## Server Configuration
 
@@ -175,6 +175,8 @@ Or, for ephemeral / Docker-secrets workflows, embed the cert as base64 in an env
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+At boot the server refuses to start (a FATAL log and non-zero exit) if the loaded cert delegates to a different key than the one the server signs licenses with: it compares the signing key's fingerprint against the cert's `delegatedPublicKey` fingerprint and bails on a mismatch, because licenses signed under a key the cert does not authorize would be unvalidatable on every machine. Keep the signing keypair and the cert's `delegatedPublicKey` in sync.
 
 ### 4. Configure upstream verification + auto-renew (optional but recommended)
 

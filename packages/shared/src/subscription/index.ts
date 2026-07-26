@@ -65,6 +65,12 @@ export {
   computeRenewalThresholdDays,
   SubscriptionExpiredForDelegationError,
 } from './delegation-cert-policy';
+// Public-key fingerprint (shared with Go renet)
+export {
+  computePublicKeyId,
+  isValidPublicKeyId,
+  PUBLIC_KEY_ID_PATTERN,
+} from './fingerprint';
 export type {
   RenewalRequestManifest,
   SignedRenewalRequestManifest,
@@ -92,6 +98,7 @@ export type {
   PlanPricing,
   RepoLicense,
   RepoLicenseKind,
+  SignedDelegationCert,
   SignedRepoLicense,
   SignedSubscriptionBlob,
   SubscriptionData,

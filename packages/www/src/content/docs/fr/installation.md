@@ -4,8 +4,8 @@ description: "Installez la CLI Rediacc sur Linux, macOS ou Windows à l'aide du 
 category: "Guides"
 order: 1
 language: fr
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # Installation
@@ -209,4 +209,4 @@ Le redémarrage est transparent et ne cause **aucune interruption** :
 - **Les connexions client existantes (HTTP, TCP, UDP) ne sont pas affectées.** Le serveur de routes est un fournisseur de configuration -- il n'est pas dans le chemin de données. Traefik gère tout le trafic directement.
 - Vos conteneurs d'application ne sont pas touchés -- seul le processus du serveur de routes au niveau système est redémarré.
 
-Pour ignorer le redémarrage automatique, passez `--skip-router-restart` à n'importe quelle commande, ou définissez la variable d'environnement `RDC_SKIP_ROUTER_RESTART=1`.
+Pour ignorer le redémarrage automatique, passez `--skip-router-restart` à n'importe quelle commande, ou définissez la variable d'environnement `REDIACC_SKIP_ROUTER_RESTART=1`.

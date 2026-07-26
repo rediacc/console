@@ -7,6 +7,7 @@
 
 import { createRequire } from 'node:module';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { isDevBuild } from '../../utils/platform.js';
 
 /** Minimal interface for @pyroscope/nodejs methods we use. */
 interface PyroscopeModule {
@@ -72,7 +73,7 @@ export function startProfiling(commandName: string, environment?: string): void 
     const pyroscope = loadPyroscope();
     if (!pyroscope) return;
 
-    const env = environment ?? process.env.REDIACC_ENVIRONMENT ?? detectEnvironment();
+    const env = environment ?? (isDevBuild() ? 'development' : detectEnvironment());
 
     pyroscope.init({
       appName: DEFAULTS.TELEMETRY.SERVICE_NAME,

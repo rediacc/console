@@ -51,6 +51,13 @@ main() {
     # shellcheck disable=SC2086
     find .ci -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
 
+    # Claude hooks carry live PR policy (draft enforcement, --admin ban,
+    # merge-time review hygiene) — policy-critical shell gets linted too.
+    log_info "Checking .claude/hooks/**/*.sh"
+    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
+    # shellcheck disable=SC2086
+    find .claude/hooks -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
+
     # Check the main run.sh script
     log_info "Checking ./run.sh"
     # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
@@ -105,26 +112,10 @@ main() {
         exit 1
     fi
 
-    # Check for duplicated constants that should be in common.sh
-    # These constants are defined in .ci/scripts/lib/common.sh and should not be redefined elsewhere
-    log_info "Checking for duplicated constants (should be in common.sh only)"
-    SHARED_CONSTANTS="MAX_GEMINI_REVIEWS"
-    DUPE_ISSUES=""
-
-    for const in $SHARED_CONSTANTS; do
-        # Find assignments like CONST=value (not comments, not references)
-        MATCHES=$(grep -rn "^[[:space:]]*${const}=" .ci/scripts --include="*.sh" 2>/dev/null | grep -v "lib/common.sh" || true)
-        if [[ -n "$MATCHES" ]]; then
-            DUPE_ISSUES="$DUPE_ISSUES\n$const is defined in common.sh but also in:\n$MATCHES"
-        fi
-    done
-
-    if [[ -n "$DUPE_ISSUES" ]]; then
-        log_error "Found duplicated constants that should only be in common.sh:"
-        echo -e "$DUPE_ISSUES"
-        log_info "Move shared constants to .ci/scripts/lib/common.sh and reference them from there."
-        exit 1
-    fi
+    # NOTE: a "duplicated shared constants" check lived here until 2026-07-22.
+    # It guarded exactly one constant (MAX_GEMINI_REVIEWS, removed with the
+    # Gemini review machinery) and an empty guard list checks nothing.
+    # Reintroduce the loop if common.sh ever grows shared constants again.
 
     log_success "Shell scripts passed"
 }

@@ -18,8 +18,16 @@ dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
  */
 export default test.defineConfig({
   testDir: './tests',
-  /* Exclude Ceph tests - they have their own config (playwright.ceph.config.ts) */
-  testIgnore: ['**/ceph/**'],
+  /* Topology-specific suites live in subdirs and each has its own config that
+   * scopes to it (ceph -> playwright.ceph.config.ts, kube -> playwright.k8s*.
+   * config.ts, migrate -> playwright.migrate.config.ts). The projects below
+   * match `NN-*.test.ts` recursively, so without these ignores this base
+   * (worker-topology) run COLLECTS the kube/migrate suites and then skips
+   * every one of them at runtime for lack of a cluster/second-group — 38
+   * dishonest "skipped" lines that look like coverage but run elsewhere. Only
+   * ceph was excluded originally; kube/ and migrate/ were added later and the
+   * ignore list was never updated. Keep this list in sync with the subdirs. */
+  testIgnore: ['**/ceph/**', '**/kube/**', '**/migrate/**', '**/ops-lifecycle/**'],
   /* Global setup ensures infrastructure is running */
   globalSetup: require.resolve('./src/base/bridge-global-setup'),
   globalTeardown: require.resolve('./src/base/bridge-global-teardown'),

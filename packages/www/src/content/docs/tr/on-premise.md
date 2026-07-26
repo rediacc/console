@@ -4,8 +4,8 @@ description: "Hesap sunucusunu ve CLI dağıtımını kendi altyapınızda çal�
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 Bu tek komut:
 1. CLI ikili dosyasını sunucunuzun `/releases/` uç noktasından indirir
 2. Güncelleme kanalını keşfetmek için `/account/api/v1/.well-known/server-info` adresini sorgular
-3. Sunucu URL'nizi, güncelleme kanalınızı ve şifreleme anahtarlarınızı içeren `server.json` dosyasını yazar
+3. Sunucu URL'nizi, güncelleme kanalınızı ve şifreleme anahtarlarınızı `account.*` alanları altında içeren varsayılan yapılandırmayı (`rediacc.json`) yazar
 4. Gelecekteki güncellemeler için `rdc update` komutunu sunucunuzu kontrol edecek şekilde yapılandırır
 
 `REDIACC_CHANNEL` değişkenine gerek yoktur. Kurulum betiği kanalı sunucunuzun yapılandırmasından otomatik olarak okur.
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-Her adlandırılmış yapılandırma kendi hesap sunucusu URL'sini ve abonelik tokenini saklar. Yapılandırma değiştirmek tüm sunucu bağlamını değiştirir.
+Her adlandırılmış yapılandırma kendi hesap sunucusu URL'sini (`account.*` altında) ve kendi hesap API tokenini saklar; token, yapılandırmanın yanında `api-token-<name>.json` olarak tutulur. Yapılandırma değiştirmek tüm sunucu bağlamını değiştirir.
 
 ## İnternet Erişimi Olmayan Ortamlar
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | Kurulum betiği, CLI güncelleyici | CLI ikili dosyaları için özel sürüm uç noktası. Varsayılan: `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | Kurulum betiği | Güncelleme kanalını geçersiz kılar. Ayarlanmamışsa sunucudan otomatik algılanır. |
 | `REDIACC_ACCOUNT_SERVER` | CLI çalışma zamanı | Tüm CLI komutları için hesap sunucusu URL'sini geçersiz kılar. |
-| `RDC_UPDATE_CHANNEL` | CLI çalışma zamanı | `rdc update` için güncelleme kanalını geçersiz kılar. |
+| `REDIACC_UPDATE_CHANNEL` | CLI çalışma zamanı | `rdc update` için güncelleme kanalını geçersiz kılar. |
 
 ## Sunucu Yapılandırması
 
@@ -177,6 +177,8 @@ Veya geçici / Docker-secrets iş akışları için sertifikayı env var'da base
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+Açılışta, yüklenen sertifika sunucunun lisansları imzalamak için kullandığı anahtardan farklı bir anahtara yetki devrediyorsa sunucu başlamayı reddeder (bir FATAL log ve sıfır olmayan çıkış kodu): imzalama anahtarının parmak izini sertifikanın `delegatedPublicKey` parmak iziyle karşılaştırır ve uyuşmazlık durumunda durur; çünkü sertifikanın yetkilendirmediği bir anahtarla imzalanan lisanslar her makinede doğrulanamaz hale gelirdi. İmzalama anahtar çiftini ve sertifikanın `delegatedPublicKey`'ini senkronize tutun.
 
 ### 4. Yukarı akış doğrulaması ve otomatik yenileme yapılandırması (isteğe bağlı ancak önerilir)
 

@@ -20,9 +20,29 @@
  */
 
 import { currentRequestContext } from '../core/request-context.js';
+import { createDaemonExecutor } from './daemon/client.js';
 import { requestExecutor, tapExecutor } from './event-tap.js';
 import { localExecutorService } from './local-executor.js';
 import type { Executor } from './types.js';
+
+/**
+ * The process default outside a dispatch: the same-host executor daemon, backed
+ * by the direct local executor. The daemon amortises SSH/provision/cache cold
+ * costs across consecutive `rdc` runs and falls back to the direct executor on
+ * anything (no daemon, wrong platform, non-serializable options, a served
+ * dispatch).
+ *
+ * Built lazily on first use, not at module load. `getExecutor` already read
+ * `localExecutorService` lazily; constructing the wrapper here at module-init
+ * would instead read it EAGERLY, and this module sits in an import cycle where
+ * `localExecutorService` is not yet initialised at that moment — capturing
+ * `undefined` as the fallback. One instance, since it holds no per-call state.
+ */
+let daemonBackedExecutor: Executor | undefined;
+function getDaemonBackedExecutor(): Executor {
+  daemonBackedExecutor ??= createDaemonExecutor(localExecutorService);
+  return daemonBackedExecutor;
+}
 
 // The factory is the entry point to the executor layer, so callers get the
 // seam's types from here too rather than reaching into an implementation.
@@ -72,10 +92,11 @@ export function backgroundDecorator(inner: Executor): Executor {
  *
  * An in-process dispatch (the executor serving a command) pins its own executor
  * on the request context, so that wins. Outside a dispatch there is no context
- * and this is the local executor, which is the only one there has ever been on a
- * laptop. `--background` composes over whichever it is, and is inert inside a
- * dispatch.
+ * and this is the daemon-backed executor, which transparently falls back to the
+ * local executor whenever the daemon is unavailable or the work is not
+ * daemon-eligible — so the effective behaviour on a laptop is unchanged.
+ * `--background` composes over whichever it is, and is inert inside a dispatch.
  */
 export function getExecutor(): Executor {
-  return tapExecutor(backgroundDecorator(requestExecutor() ?? localExecutorService));
+  return tapExecutor(backgroundDecorator(requestExecutor() ?? getDaemonBackedExecutor()));
 }

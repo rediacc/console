@@ -4,8 +4,8 @@ description: "تشغيل خادم الحساب وتوزيع CLI على بنيت�
 category: "Guides"
 order: 5
 language: ar
-sourceHash: "a2f88ead9bf140c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "f05bd90f123befad"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 يمكن تشغيل Rediacc بالكامل على بنيتك التحتية الخاصة. تتضمن صورة Docker المستقلة خادم الحساب وبوابة الويب وموقع التسويق ونقطة توزيع CLI. لا تتطلب أي اعتماديات خارجية على خدمات Rediacc المستضافة.
@@ -43,7 +43,7 @@ curl -fsSL https://account.example.com/install.sh | \
 هذا الأمر الواحد يقوم بما يلي:
 1. تنزيل ثنائي CLI من نقطة نهاية `/releases/` بخادمك
 2. الاستعلام عن `/account/api/v1/.well-known/server-info` لاكتشاف قناة التحديث
-3. كتابة `server.json` بعنوان URL للخادم وقناة التحديث ومفاتيح التشفير
+3. كتابة التكوين الافتراضي (`rediacc.json`) بعنوان URL للخادم وقناة التحديث ومفاتيح التشفير ضمن حقول `account.*` الخاصة به
 4. تكوين `rdc update` للتحقق من خادمك للتحديثات المستقبلية
 
 لا حاجة لمتغير `REDIACC_CHANNEL`. يقرأ سكريبت التثبيت القناة من تكوين خادمك تلقائياً.
@@ -63,7 +63,7 @@ rdc --config myserver subscription login
 rdc --config myserver machine status prod-1
 ```
 
-يخزن كل تكوين مسمى عنوان URL لخادم الحساب الخاص به ورمز الاشتراك. يُؤدي التبديل بين التكوينات إلى تبديل سياق الخادم بأكمله.
+يخزن كل تكوين مسمى عنوان URL لخادم الحساب الخاص به (ضمن حقول `account.*`) ورمز API الخاص بحسابه، محفوظاً بجانب التكوين في `api-token-<name>.json`. يُؤدي التبديل بين التكوينات إلى تبديل سياق الخادم بأكمله.
 
 ## البيئات المعزولة عن الإنترنت
 
@@ -92,7 +92,7 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 | `REDIACC_RELEASES_URL` | سكريبت التثبيت، مُحدِّث CLI | نقطة نهاية مخصصة للإصدارات لثنائيات CLI. الافتراضي: `https://releases.rediacc.com` |
 | `REDIACC_CHANNEL` | سكريبت التثبيت | تجاوز قناة التحديث. يتم الاكتشاف التلقائي من الخادم إذا لم يُضبط. |
 | `REDIACC_ACCOUNT_SERVER` | وقت تشغيل CLI | تجاوز عنوان URL لخادم الحساب لجميع أوامر CLI. |
-| `RDC_UPDATE_CHANNEL` | وقت تشغيل CLI | تجاوز قناة التحديث لـ `rdc update`. |
+| `REDIACC_UPDATE_CHANNEL` | وقت تشغيل CLI | تجاوز قناة التحديث لـ `rdc update`. |
 
 ## تكوين الخادم
 
@@ -177,6 +177,8 @@ DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
 ```bash
 DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
 ```
+
+عند الإقلاع، يرفض الخادم البدء (سجل FATAL وخروج غير صفري) إذا كانت الشهادة المحمَّلة تُفوِّض إلى مفتاح مختلف عن ذلك الذي يوقّع به الخادم التراخيص: فهو يقارن بصمة مفتاح التوقيع مع بصمة `delegatedPublicKey` الخاصة بالشهادة ويتوقف عند عدم التطابق، لأن التراخيص الموقَّعة بمفتاح لا تُخوِّله الشهادة ستكون غير قابلة للتحقق على كل جهاز. حافظ على تزامن زوج مفاتيح التوقيع مع `delegatedPublicKey` الخاص بالشهادة.
 
 ### 4. تكوين التحقق الأعلى والتجديد التلقائي (اختياري لكن موصى به)
 

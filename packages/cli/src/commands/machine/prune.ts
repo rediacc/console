@@ -55,7 +55,9 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
   try {
     parsed = parseDatastorePruneOutput(result.stdout ?? '');
   } catch {
-    const raw = result.stdout?.trim();
+    // Report passthrough, not a parse: renet's diagnostics now arrive on
+    // stderr (data/diag channel split), so include both streams.
+    const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
     if (raw) outputService.print(raw);
     outputService.success(t('commands.machine.prune.datastoreCompleted'));
     return;
@@ -97,8 +99,9 @@ async function pruneUnits(machineName: string, options: PruneOptions): Promise<v
   }
 
   // `renet prune` emits a human-readable report, not JSON, so pass it through
-  // rather than inventing a parse for a format that has no schema.
-  const raw = result.stdout?.trim();
+  // rather than inventing a parse for a format that has no schema. Diagnostics
+  // arrive on stderr since the data/diag channel split — include both streams.
+  const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
   if (raw) outputService.print(raw);
   outputService.success(t('commands.machine.prune.unitsCompleted'));
 }

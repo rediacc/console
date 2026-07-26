@@ -1,11 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { promises as fs } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
+import { DEFAULTS, STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { isCooldownExpired } from '@rediacc/shared/update';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { configFileStorage } from '../adapters/config-file-storage.js';
 import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { getEffectiveConfigName } from '../services/config/config-name.js';
 import { outputService } from '../services/core/output.js';
 import { applyPendingUpdate, getAppliedAtStartup } from '../services/update/background-updater.js';
 import { readUpdateState, writeUpdateState } from '../services/update/update-state.js';
@@ -35,11 +37,18 @@ export async function handleChannelSwitch(
     outputService.error(t('commands.update.invalidChannel', { channel }));
     process.exit(1);
   }
-  const { loadServerConfig, saveServerConfig } = await import(
-    '../services/account/subscription-auth.js'
-  );
-  const config = loadServerConfig() ?? { accountServer: 'https://www.rediacc.com' };
-  saveServerConfig({ ...config, updateChannel: channel });
+  const name = getEffectiveConfigName();
+  if (name === DEFAULTS.CONTEXT.CONFIG_NAME) {
+    // Ensure the default config exists before writing to it.
+    await configFileStorage.getOrCreateDefault();
+  } else if (!(await configFileStorage.exists(name))) {
+    outputService.error(t('commands.update.configMissing', { name }));
+    process.exit(1);
+  }
+  await configFileStorage.update(name, (cfg) => ({
+    ...cfg,
+    account: { ...(cfg.account ?? {}), updateChannel: channel },
+  }));
   outputService.success(t('commands.update.channelSet', { channel }));
   return !options.force && !options.checkOnly;
 }

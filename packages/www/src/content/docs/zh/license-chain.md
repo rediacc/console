@@ -4,8 +4,8 @@ description: "可验证防篡改的许可证颁发、本地部署的委托签名
 category: "Guides"
 order: 8
 language: zh
-sourceHash: "9b062d6866c1ccb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2e2ff813fabf2422"
+sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
 ---
 
 # 许可证链与委托
@@ -18,7 +18,7 @@ Rediacc 为许可证颁发使用可验证防篡改的哈希链，并为本地部
 
 1. **序列号**在每个订阅中是全局单调递增的。跳过或重排条目会破坏链。
 2. **链哈希**将每个条目绑定到所有前序条目。修改任何历史条目会使其后所有条目失效。
-3. **Renet 存储每个订阅所见的最高序列号**。回滚序列号的服务器会被立即检测到。
+3. **Renet 按签名密钥和订阅存储所见的最高序列号**。回滚序列号的服务器会被立即检测到。
 
 ## 许可证颁发流程
 
@@ -35,7 +35,7 @@ CLI 请求机器激活或仓库许可证时，账户服务器会：
 
 ## Renet 的验证方式
 
-每台运行 Renet 的机器在 `{licenseDir}/chain-state.json` 中存储其最后已知的链状态。每次验证许可证时，Renet 会执行以下检查：
+每台运行 Renet 的机器都会在 `{licenseDir}/chain-state.json`（即 `/var/lib/rediacc/license/chain-state.json`，与按仓库划分的 `repos/` 目录同级）中存储其最后已知的链状态。链状态按签名密钥和订阅划定范围，以 `"<keyId>:<subscriptionId>"` 的形式作为键，因此由不同密钥签名的宇宙会各自独立追踪其序列号。每次验证许可证时，Renet 会执行以下检查：
 
 | 检查项 | 失败意味着 |
 |---|---|
@@ -57,7 +57,7 @@ CLI 请求机器激活或仓库许可证时，账户服务器会：
 - `subscriptionId` - 该证书适用的订阅
 - `planCode`、`maxMachines`、`maxRepositorySizeGb`、`maxRepoLicenseIssuancesPerMonth` - 内置的计划限制
 - `maxTotalIssuances` - 链序列号的上限
-- `delegatedPublicKey` - 本地部署服务器的 Ed25519 公钥（SPKI base64）
+- `delegatedPublicKey` - 本地部署服务器的 Ed25519 公钥（SPKI base64）。该密钥的 16 位十六进制指纹（对原始密钥取 `SHA-256` 后的前 8 个字节）就是该密钥签名的每个许可证 blob 中记录的 `publicKeyId`。`publicKeyId` 始终是真实的密钥指纹，绝不会是像 `"default"` 这样的占位符。
 - `genesisHash` - 链的起始点（从前一个证书继续，或为"genesis"）
 - `genesisSequence` - 颁发时的链序列号。用于 `/onprem/cert-upload` 在传输期间链已推进的情况下验证新证书链接到本地颁发账本的已知条目。向后兼容时为可选项（缺失时视为 0）
 - `validFrom`、`validUntil` - 有效期窗口（受以下有效期策略约束）
@@ -73,16 +73,21 @@ CLI 请求机器激活或仓库许可证时，账户服务器会：
    ```
 3. 上游使用主密钥对证书进行签名并返回。
 4. 本地部署服务器存储证书及私钥，准备好签名许可证。
-5. CLI 向本地部署服务器请求许可证时，服务器使用委托密钥签名，并包含对证书的引用。
-6. Renet 执行**两级验证**：
+5. 当 CLI 向本地部署服务器请求许可证时，服务器会使用其委托密钥签名，并**将完整的委托证书嵌入许可证 blob 中**（`delegationCert` 字段）。证书不会单独获取；它会随每张仓库许可证一起传输。
+6. Renet 按以下顺序执行**两级验证**：
    - 根据内置的上游主密钥验证证书签名。
+   - 在成长类操作（`repo create`、`fork`、`resize`、`expand`）和备份传输（`repo push`、`pull`、backups）上强制执行证书的有效期窗口（`validFrom` / `validUntil`）。运维层级（`repo up`、`up all`、autostart）只会跳过这一窗口检查，这与它已经跳过许可证到期检查的方式一致：正在运行的工作负载不会仅因证书过期而停止，但过期的证书无法为任何新操作授权。签名、密钥绑定以及其他所有证书约束仍会在所有层级强制执行。
+   - 要求 `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId`（16 位十六进制密钥指纹），使证书只能为其所委托的那一把密钥签署的许可证背书。
    - 根据证书中的委托密钥验证 blob 签名。
-   - 检查 `blob.sequence <= cert.maxTotalIssuances`。
+   - 强制执行证书的约束条件：订阅匹配、计划匹配、容量上限（`maxRepositorySizeGb`），以及 `blob.sequence <= cert.maxTotalIssuances`。
    - 应用所有标准链检查。
+
+证书验证失败会以专门的原因快速失败：`cert_expired`（超出有效期窗口）或 `cert_invalid`（主密钥签名错误或违反约束条件）。这些检查会在 `invalid_signature` **之前**进行，因此证书相关的失败原因优先。
 
 本地部署服务器无法：
 - 在委托证书计划限制之外伪造许可证（renet 会拒绝）。
 - 颁发超过 `maxTotalIssuances` 的总操作数（renet 拒绝序列号溢出）。
+- 在证书 `validUntil` 之后继续为可运行的许可证签名（即使在跳过到期检查的操作中，该时间窗口也会被强制执行）。
 - 修改证书（上游签名会失效）。
 
 ## 有效期策略

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 8
 language: es
-sourceHash: "73c75b1f00630553"
-sourceCommit: "5197d1c0349438c2bff2442377a5166d0b8214b6"
+sourceHash: "97c64241ff4c0d81"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Almacenamiento de configuración
@@ -76,6 +76,16 @@ Requisitos:
 
 La inscripción es una lectura: el CLI obtiene los parámetros públicos de KDF de la ranura y la clave envuelta, deriva el secreto de la contraseña localmente y desenvuelve la CEK en el dispositivo. Otorga al dispositivo la capacidad de descifrar y sincronizar la configuración; no modifica el almacén.
 
+## Activación y lecturas sin conexión
+
+`rdc config remote enable` conecta la configuración activa con el almacén. Cuando el almacén está vacío, activarlo **lo siembra con su configuración local actual**: los recursos locales se envían (push) como la primera versión del almacén y luego se recuperan (pull) para comprobar el ciclo completo. Cuando el almacén ya tiene contenido, la activación concilia con él en lugar de sobrescribirlo (se cancela ante una divergencia real a menos que pase `--force`).
+
+Una vez activado, la configuración mantiene una **caché de lectura** completa, cifrada en reposo con el mismo mecanismo que cualquier configuración local, de modo que el almacén siga siendo utilizable cuando el servidor de cuenta no esté accesible:
+
+- **Las lecturas funcionan sin conexión.** El contenido en caché se sirve con una advertencia de desactualización en stderr, etiquetada con la versión y la marca de tiempo en caché (`cachedVersion` / `cachedAt`).
+- **Las escrituras requieren el servidor y fallan de forma segura.** No hay cola de escritura sin conexión: una escritura que no puede alcanzar el servidor falla con un error que nombra al servidor. Si un comando de escritura tuvo éxito, el cambio está en el servidor.
+- **Las ediciones simultáneas desde dos máquinas** se resuelven mediante pull-replay-repush a nivel del bucket de recursos, de modo que una edición simultánea en otro lugar no sobrescribe la suya.
+
 ## Rotación de claves
 
 Rotar la CEK del almacén la vuelve a envolver bajo una nueva generación:
@@ -93,6 +103,8 @@ El almacenamiento de configuración está delimitado por organización. Los miem
 - **Eliminar miembro**: Haga clic en el botón de eliminar en la página de Miembros (requiere 2FA + re-autenticación)
 
 Las protecciones de seguridad impiden eliminar al último miembro activo o eliminarse a sí mismo.
+
+Las configuraciones del almacén también están delimitadas por equipo, pero esa delimitación es **control de acceso del lado del servidor, no aislamiento criptográfico**: una única CEK a nivel de organización cifra las configuraciones de todos los equipos, y es el servidor quien aplica qué equipos puede leer cada miembro.
 
 ## Seguridad
 

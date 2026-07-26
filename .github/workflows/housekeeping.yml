@@ -33,7 +33,11 @@ concurrency:
 jobs:
   cleanup:
     name: Cleanup versions
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
+    # cap, so the 60-minute timeout below was unreachable -- a long run was
+    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
+    # .ci/scripts/security/check-workflow-gates.sh.
+    runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -61,7 +65,11 @@ jobs:
 
   stripe-cleanup:
     name: Stripe sandbox cleanup
-    runs-on: ubuntu-slim
+    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
+    # cap, so the 30-minute timeout below was unreachable -- a long run was
+    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
+    # .ci/scripts/security/check-workflow-gates.sh.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

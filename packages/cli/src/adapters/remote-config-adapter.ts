@@ -57,14 +57,62 @@ export class RemoteTokenExpiredError extends Error {
   }
 }
 
-class RemoteVersionConflictError extends Error {
-  constructor(serverVersion: number) {
-    super(
-      `Remote config updated by another device (v${serverVersion}). ` +
-        'Refresh with: rdc config remote refresh'
-    );
+/**
+ * Optimistic-version conflict (HTTP 409). Carries the server's message
+ * verbatim — it names the real current version (config.service.ts builds it),
+ * so no client-side guess is layered on top.
+ */
+export class RemoteVersionConflictError extends Error {
+  constructor(serverMessage: string) {
+    super(serverMessage);
     this.name = 'RemoteVersionConflictError';
   }
+}
+
+/**
+ * The config server could not be reached at all (DNS, refused connection,
+ * timeout, or a 5xx). Distinct from auth/semantic failures: reads may fall
+ * back to the offline cache on this error, writes must fail closed.
+ */
+export class RemoteUnreachableError extends Error {
+  constructor(
+    public readonly apiUrl: string,
+    cause: unknown
+  ) {
+    super(t('commands.config.remote.unreachable', { server: apiUrl }), { cause });
+    this.name = 'RemoteUnreachableError';
+  }
+}
+
+/** Error codes (Node net/undici) that mean the server was never reached. */
+const NETWORK_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'EPIPE',
+]);
+
+/**
+ * Classify an error as network-class (server unreachable / not answering).
+ * Walks the `.cause` chain — fetch wraps the socket error in a TypeError, and
+ * undici nests its own codes one level deeper.
+ */
+export function isNetworkError(err: unknown): boolean {
+  let current: unknown = err;
+  const seen = new Set<unknown>();
+  while (current && typeof current === 'object' && !seen.has(current)) {
+    seen.add(current);
+    if (current instanceof ConfigServerError) return current.status >= 500;
+    const code = (current as { code?: unknown }).code;
+    if (typeof code === 'string' && (NETWORK_ERROR_CODES.has(code) || code.startsWith('UND_ERR'))) {
+      return true;
+    }
+    if (current instanceof TypeError && /fetch failed/i.test(current.message)) return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
 }
 
 export class RemotePasskeySecretMissingError extends Error {
@@ -286,15 +334,24 @@ export class RemoteConfigAdapter {
 
       return { data: resp.data };
     } catch (error) {
-      if (error instanceof ConfigServerError) {
-        if (error.status === 401) {
-          throw new RemoteTokenExpiredError();
-        }
-        if (error.status === 409) {
-          throw new RemoteVersionConflictError(0);
-        }
-      }
-      throw error;
+      throw classifyFetchError(error, this.remote.apiUrl);
     }
   }
+}
+
+/**
+ * Map a transport/server failure onto the adapter's typed taxonomy: 401 →
+ * token expired, 409 → version conflict (server message verbatim), and
+ * network-class failures (fetch TypeError, ECONN*, 5xx, including the
+ * getServerKeyMaterial fetch inside configServerFetch) → unreachable, so read
+ * paths can cache-serve and write paths fail closed. Everything else passes
+ * through unchanged.
+ */
+function classifyFetchError(error: unknown, apiUrl: string): unknown {
+  if (error instanceof ConfigServerError) {
+    if (error.status === 401) return new RemoteTokenExpiredError();
+    if (error.status === 409) return new RemoteVersionConflictError(error.message);
+  }
+  if (isNetworkError(error)) return new RemoteUnreachableError(apiUrl, error);
+  return error;
 }

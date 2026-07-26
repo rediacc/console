@@ -4,8 +4,8 @@ description: "Установите CLI Rediacc на Linux, macOS или Windows.
 category: "Guides"
 order: 1
 language: ru
-sourceHash: "a557e2aa2cad3a0f"
-sourceCommit: "6bec8a25ef911a0a26ed273c92f4aa7201b9870f"
+sourceHash: "ffd05e67767ba9f2"
+sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
 ---
 
 # Установка
@@ -209,4 +209,4 @@ docker pull ghcr.io/rediacc/rdc:edge
 - **Существующие клиентские подключения (HTTP, TCP, UDP) не затрагиваются.** Маршрутный сервер является поставщиком конфигурации -- он не находится на пути данных. Traefik обрабатывает весь трафик напрямую.
 - Контейнеры ваших приложений не затрагиваются -- перезапускается только системный процесс маршрутного сервера.
 
-Чтобы пропустить автоматический перезапуск, передайте `--skip-router-restart` любой команде или установите переменную окружения `RDC_SKIP_ROUTER_RESTART=1`.
+Чтобы пропустить автоматический перезапуск, передайте `--skip-router-restart` любой команде или установите переменную окружения `REDIACC_SKIP_ROUTER_RESTART=1`.

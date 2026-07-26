@@ -147,14 +147,26 @@ function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatCue[] {
 }
 
 async function checkTarget(target: Target): Promise<FlatCue[] | { error: string }> {
-  try {
-    const res = await fetch(target.url);
-    if (!res.ok) return { error: `HTTP ${res.status}` };
-    const doc = (await res.json()) as WordsDoc;
-    return findFlatCues(target.slug, target.lang, doc);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : String(e) };
+  // 180 single-attempt remote fetches make the gate flaky by construction
+  // (one transient reset = red run). Retry network errors and 5xx with
+  // backoff; 4xx is a deterministic missing/misplaced asset — fail fast.
+  const ATTEMPTS = 3;
+  let lastError = 'unknown';
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(target.url);
+      if (res.ok) {
+        const doc = (await res.json()) as WordsDoc;
+        return findFlatCues(target.slug, target.lang, doc);
+      }
+      if (res.status < 500) return { error: `HTTP ${res.status}` };
+      lastError = `HTTP ${res.status}`;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+    if (attempt < ATTEMPTS) await new Promise((r) => setTimeout(r, 1000 * attempt));
   }
+  return { error: `${lastError} after ${ATTEMPTS} attempts` };
 }
 
 function printRemediation(slug: string, lang: string): void {

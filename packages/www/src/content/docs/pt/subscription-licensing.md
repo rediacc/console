@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: pt
-sourceHash: "5fb6196d9b6e9b0b"
-sourceCommit: "70a4ca883754f1c0a7f4684c9fde02a5a01d3681"
+sourceHash: "bac2903bdb56e7df"
+sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
 ---
 
 # Assinatura e Licenciamento
@@ -48,13 +48,13 @@ Veja [rdc vs renet](/en/docs/rdc-vs-renet) para a divisão estação de trabalho
 Para automação e agentes de IA, use um token de assinatura com escopo em vez de login pelo navegador:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
 Você também pode injetar o token diretamente através do ambiente para que a CLI possa emitir e atualizar licenças de repositório sem qualquer etapa de login interativo:
 
 ```bash
-export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
+export REDIACC_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
@@ -68,14 +68,18 @@ Nenhum arquivo de licença de máquina é armazenado na máquina. A aplicação 
 
 ### Licença de repositório
 
-Uma licença de repositório é uma licença assinada para um repositório em uma máquina. É o único arquivo de licença armazenado na máquina (`/var/lib/rediacc/license/repos/{guid}.json`).
+Uma licença de repositório é uma licença assinada para um repositório em uma máquina. É o único arquivo de licença armazenado na máquina, organizado por chave de assinatura:
+
+    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+
+`{keyId}` é uma impressão digital de 16 caracteres hexadecimais (os primeiros 8 bytes de `SHA-256` da chave pública Ed25519 do servidor de assinatura). Um repositório gerido por mais de um universo de conta (por exemplo, produção e bench a implantar na mesma máquina) mantém um ficheiro por chave de assinatura sob o seu diretório `{guid}`. A compilação renet da máquina valida apenas o ficheiro que a sua chave incorporada, ou um certificado de delegação encadeado a ela, consegue verificar; os ficheiros de outros universos ficam inertes. Trocar de universo nunca invalida licenças: a primeira operação num novo universo emite a licença desse universo uma vez (um resultado `missing` emite automaticamente), e ambos coexistem depois disso.
 
 É utilizada para:
 
 - `rdc repo create` e `rdc repo fork`, validada antes do provisionamento (pré-emitida sem provas de identidade, depois re-emitida com provas de identidade após criação)
 - `rdc repo resize` e `rdc repo expand`, validação completa incluindo expiração
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, validada com **expiração pulada**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validada com **expiração pulada**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **totalmente validada, incluindo expiração**: a transferência de backup exige um direito de uso ativo
 - autostart de repositório no reinício da máquina, validada com **expiração pulada**
 
 Licenças de repositório são vinculadas à máquina e ao repositório de destino. Cada licença contém o ID da máquina, GUID do repositório, ID da assinatura, limites de plano e expiração. Para repositórios criptografados, o Rediacc também verifica a identidade LUKS do volume subjacente.
@@ -106,7 +110,7 @@ Novas contas começam um teste gratuito de 14 dias no plano Professional ou Busi
 
 Community é o piso gratuito permanente. Ele não é mais uma opção de cadastro direta para novas contas; em vez disso, uma conta cai para o Community sempre que uma assinatura termina: cancelamento durante o teste, cancelamento de um plano pago depois, ou um pagamento que falhou. No Community de fallback você mantém uma máquina com 10 GB por repositório e 100 configurações por mês. Contas criadas antes do lançamento do modelo baseado em teste mantêm o acesso Community que já tinham.
 
-A aplicação continua branda. Repositórios em execução continuam funcionando mesmo depois que uma assinatura termina; apenas trabalho novo (criar, fazer fork, redimensionar e renovar a licença) é bloqueado sem um direito de uso ativo.
+A aplicação continua branda onde mais importa: repositórios em execução (`up`, `down`, `delete`, autostart) continuam funcionando mesmo depois que uma assinatura termina. Já o trabalho novo (criar, fazer fork, redimensionar e renovar a licença) e a transferência de backup (`push`, `pull`, `sync`) são bloqueados sem um direito de uso ativo.
 
 ## Período de Graça de Migração de VM
 
@@ -169,10 +173,10 @@ rdc subscription login
 Login de automação ou agente de IA:
 
 ```bash
-rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
+rdc subscription login --token "$REDIACC_TOKEN"
 ```
 
-Para ambientes não interativos, definir `REDIACC_SUBSCRIPTION_TOKEN` é a opção mais simples. O token deve ter escopo apenas para as operações de assinatura e licenças de repositório que o agente precisa.
+Para ambientes não interativos, definir `REDIACC_TOKEN` é a opção mais simples. O token deve ter escopo apenas para as operações de assinatura e licenças de repositório que o agente precisa.
 
 Mostrar status de assinatura respaldado por conta:
 
@@ -202,7 +206,7 @@ O ref de `--repo` tem de ser resolúvel na sua configuração `rdc` local. Um re
 
 No primeiro uso, uma operação de repositório licenciado ou backup que não encontra nenhuma licença de repositório utilizável pode acionar um handoff de autorização de conta automaticamente. A CLI imprime uma URL de autorização, tenta abrir o navegador em terminais interativos e tenta novamente a operação uma vez após autorização e emissão bem-sucedidas.
 
-Em ambientes não interativos, a CLI não aguarda aprovação do navegador. Em vez disso, ela informa para você fornecer um token com escopo usando `rdc subscription login --token ...` ou `REDIACC_SUBSCRIPTION_TOKEN`.
+Em ambientes não interativos, a CLI não aguarda aprovação do navegador. Em vez disso, ela informa para você fornecer um token com escopo usando `rdc subscription login --token ...` ou `REDIACC_TOKEN`.
 
 Para configuração inicial de máquina, veja [Machine Setup](/en/docs/setup).
 
@@ -229,6 +233,8 @@ A recuperação automática é intencionalmente restrita:
 - `sequence_regression`: falha rápido como um problema de integridade/estado de licença de repositório
 - `invalid_signature`: falha rápido como um problema de integridade/estado de licença de repositório
 - `identity_mismatch`: falha rápido, a identidade do repositório não corresponde à licença instalada
+- `cert_expired`: falha rapidamente nas operações de crescimento (`create`, `fork`, `resize`) e na transferência de backup (`push`, `pull`); `repo up` e autostart continuam a funcionar, o que corresponde ao modelo de expiração suave da licença. Renove o certificado de delegação
+- `cert_invalid`: falha rápido, o certificado de delegação falhou numa restrição (assinatura de chave mestra inválida, incompatibilidade de subscrição/plano, limite de tamanho, ou sequência acima de `maxTotalIssuances`). Reemita o certificado depois de corrigir o limite subjacente
 
 Esses casos de falha rápida não consomem automaticamente chamadas de atualização ou emissão respaldadas por conta.
 

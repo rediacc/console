@@ -16,7 +16,7 @@ Every license issued by an account server is recorded in an append-only ledger. 
 
 1. **Sequence numbers** are global and monotonic per subscription. Skipping or reordering entries breaks the chain.
 2. **Chain hashes** bind each entry to all previous entries. Modifying any past entry invalidates every entry that follows.
-3. **Renet stores the highest sequence it has seen** per subscription. A server that rolls back its sequence is detected immediately.
+3. **Renet stores the highest sequence it has seen** per signing key and subscription. A server that rolls back its sequence is detected immediately.
 
 ## How a License is Issued
 
@@ -33,7 +33,7 @@ The `sequence` and `prevChainHash` are inside the signed payload (so they cannot
 
 ## How Renet Validates
 
-Each machine running Renet stores its last-known chain state at `{licenseDir}/chain-state.json`. On every license validation, Renet checks:
+Each machine running Renet stores its last-known chain state at `{licenseDir}/chain-state.json` (that is `/var/lib/rediacc/license/chain-state.json`, a sibling of the per-repo `repos/` directory). Chain state is scoped per signing key and subscription, keyed as `"<keyId>:<subscriptionId>"`, so universes signed by different keys track their sequences independently. On every license validation, Renet checks:
 
 | Check | Failure means |
 |---|---|
@@ -55,7 +55,7 @@ A delegation cert contains:
 - `subscriptionId` -- which subscription this cert applies to
 - `planCode`, `maxMachines`, `maxRepositorySizeGb`, `maxRepoLicenseIssuancesPerMonth` -- plan limits baked in
 - `maxTotalIssuances` -- upper bound on the chain sequence number
-- `delegatedPublicKey` -- the on-premise server's Ed25519 public key (SPKI base64)
+- `delegatedPublicKey` -- the on-premise server's Ed25519 public key (SPKI base64). Its 16-hex fingerprint (first 8 bytes of `SHA-256` over the raw key) is the `publicKeyId` recorded on every license blob this key signs. `publicKeyId` is always a real key fingerprint, never a placeholder like `"default"`.
 - `genesisHash` -- the chain starting point (continuation from previous cert, or "genesis")
 - `genesisSequence` -- chain sequence at issuance time. Used by `/onprem/cert-upload` to validate that the new cert links to a known entry in the local issuance ledger when the chain has advanced during transit. Optional for backward compatibility (treated as 0 if missing).
 - `validFrom`, `validUntil` -- validity window (governed by the validity policy below)
@@ -71,16 +71,21 @@ A delegation cert contains:
    ```
 3. Upstream signs the cert with its master key and returns it.
 4. On-premise server stores the cert and its private key, ready to sign licenses.
-5. When a CLI requests a license from the on-premise server, the server signs with its delegated key and includes a reference to the cert.
-6. Renet performs **two-level validation**:
+5. When a CLI requests a license from the on-premise server, the server signs with its delegated key and **embeds the full delegation cert inside the license blob** (the `delegationCert` field). The cert is not fetched separately; it travels with every repo license.
+6. Renet performs **two-level validation** in this order:
    - Verify the cert's signature against the baked-in upstream master key.
+   - Enforce the cert's validity window (`validFrom` / `validUntil`) on growth operations (`repo create`, `fork`, `resize`, `expand`) and on backup transfer (`repo push`, `pull`, backups). The operate tier (`repo up`, `up all`, autostart) skips only the window, mirroring how it already skips license expiry: your running workloads never stop because a cert lapsed, but an expired cert cannot authorize anything new. Signature, key binding, and every cert constraint stay enforced on all tiers.
+   - Require `fingerprint(cert.delegatedPublicKey) == blob.publicKeyId` (the 16-hex key fingerprint), so the cert can only vouch for licenses signed by the exact key it delegates to.
    - Verify the blob's signature against the delegated key from the cert.
-   - Check that `blob.sequence <= cert.maxTotalIssuances`.
+   - Enforce the cert constraints: subscription match, plan match, size cap (`maxRepositorySizeGb`), and `blob.sequence <= cert.maxTotalIssuances`.
    - Apply all the standard chain checks.
+
+A cert failure fails fast with a dedicated reason: `cert_expired` (outside the validity window) or `cert_invalid` (bad master-key signature or a violated constraint). These are checked **before** `invalid_signature`, so the cert reason wins.
 
 The on-premise server cannot:
 - Forge a license outside the delegation cert's plan limits (renet rejects it).
 - Issue more than `maxTotalIssuances` total operations (renet rejects sequence overflow).
+- Keep signing runnable licenses past the cert's `validUntil` (the window is enforced even on expiry-skipped operations).
 - Modify the cert (the upstream signature breaks).
 
 ## Validity Policy

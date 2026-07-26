@@ -37,7 +37,7 @@ exists in the CLI, and every leaf in the CLI appears below. **166 contract comma
 out of the contract.
 
 ```
-rdc config:     init list show delete set clear recover prune edit reconcile rotate-cek
+rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh}    ssh {set show remove}
 rdc machine:    add remove list status setup scan-keys health prune
@@ -68,11 +68,12 @@ rdc doctor | credits | update | serve | mcp serve | run (hidden)
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Six differences. The first five are deliberate and each is traceable to a ruling. The
-sixth IS drift, and is recorded as such: it is what this gate exists to catch.
+Seven differences. The first six are deliberate and each is traceable to a ruling. The
+seventh IS drift, and is recorded as such: it is what this gate exists to catch.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
+| `config` with no `current` | `config current` | The config-universe refactor (server.json folded into per-config `account.*`, dev/prod/bench as named configs) added a "where am I connected" surface: active config, resolved account server with winning source, channel, token state, remote-store status. `show` dumps the config document; `current` answers the runtime resolution question `show` cannot. |
 | `storage create \| delete` | `storage add \| remove` | Gate ruling R3, and spec/03 §4.1's own rule: a storage entry REGISTERS an existing external endpoint (an S3 bucket, an rsync target), it does not create one. §4.1 explicitly deferred the rename here to this as-built pass. |
 | `machine` with no `infra` | `machine infra {set show push}` + `machine infra cert {pull push status clear}` | The config exodus (§5.2 / w2a) moved `config infra *` and `config cert-cache *` onto the machine noun. Seven leaves this section simply never listed. |
 | `repo replicate {status remove}` | `repo replicate <ref>` (actionable parent) + `{status remove refresh}` | `refresh` was a CONDITIONAL in the table below: delete it if it only reconciles, keep it if it forces a re-fork. It forces a re-fork, so it stays, and its help says so. The parent keeps its bare create form (spec §5.4), which makes it an actionable parent — that is load-bearing, see §7's Commander note. |

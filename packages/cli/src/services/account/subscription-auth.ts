@@ -2,54 +2,10 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from '
 import { dirname, join } from 'node:path';
 import { SUBSCRIPTION_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
+import { getEffectiveConfigName } from '../config/config-name.js';
+import { readAccountPointer } from './account-pointer.js';
 
-const TOKEN_FILE_ENV = 'REDIACC_SUBSCRIPTION_TOKEN_FILE';
-const SUBSCRIPTION_TOKEN_ENV = 'REDIACC_SUBSCRIPTION_TOKEN';
-const DEV_ENV = 'development';
-const SERVER_CONFIG_FILE = 'server.json';
-
-export interface ServerConfig {
-  accountServer: string;
-  e2ePublicKey?: string;
-  updateChannel?: string;
-  region?: string;
-  releasesUrl?: string;
-}
-
-function getServerConfigFile(): string {
-  return join(getConfigDir(), SERVER_CONFIG_FILE);
-}
-
-export function loadServerConfig(): ServerConfig | null {
-  const configFile = getServerConfigFile();
-  if (!existsSync(configFile)) return null;
-
-  try {
-    return JSON.parse(readFileSync(configFile, 'utf-8')) as ServerConfig;
-  } catch {
-    return null;
-  }
-}
-
-export function saveServerConfig(config: ServerConfig): void {
-  const configFile = getServerConfigFile();
-  mkdirSync(dirname(configFile), { recursive: true, mode: 0o700 });
-  writeFileSync(configFile, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
-}
-
-/**
- * Remove the persisted server config (server.json). Used by `subscription
- * logout` to ensure the next login starts from a clean slate and shows the
- * region picker again. Without this, the saved `accountServer` would cause
- * `promptRegionIfNeeded()` to skip the picker on the next login, silently
- * pinning the user to whatever region they were on before.
- */
-export function deleteServerConfig(): void {
-  const configFile = getServerConfigFile();
-  if (existsSync(configFile)) {
-    unlinkSync(configFile);
-  }
-}
+const SUBSCRIPTION_TOKEN_ENV = 'REDIACC_TOKEN';
 
 export interface StoredSubscriptionToken {
   token: string;
@@ -65,53 +21,25 @@ export function normalizeServerUrl(serverUrl: string): string {
   return serverUrl.replace(/\/+$/, '');
 }
 
-export function isDevelopmentSubscriptionMode(): boolean {
-  return process.env.REDIACC_ENVIRONMENT === DEV_ENV && !!process.env[TOKEN_FILE_ENV];
-}
-
 /**
- * Get the subscription token file path.
- * When configName is provided, uses per-config token files (api-token-{name}.json).
- * Falls back to global api-token.json for backward compatibility.
+ * Get the subscription token file path for a config.
+ * Always per-config: `api-token-{name}.json` (default config included, so
+ * `api-token-rediacc.json`). Defaults to the effective config name.
  */
-export function getSubscriptionTokenFile(configName?: string): string {
-  if (process.env[TOKEN_FILE_ENV]) return process.env[TOKEN_FILE_ENV];
-  if (configName && configName !== 'rediacc') {
-    return join(getConfigDir(), `api-token-${configName}.json`);
-  }
-  return join(getConfigDir(), 'api-token.json');
+export function getSubscriptionTokenFile(configName = getEffectiveConfigName()): string {
+  return join(getConfigDir(), `api-token-${configName}.json`);
 }
 
-export function getSubscriptionServerUrl(
-  preferredServerUrl?: string,
-  configAccountServer?: string
-): string {
-  if (isDevelopmentSubscriptionMode()) {
-    const serverUrl = process.env.REDIACC_ACCOUNT_SERVER;
-    if (!serverUrl) {
-      throw new Error('Development mode requires REDIACC_ACCOUNT_SERVER to be set');
-    }
-    return normalizeServerUrl(serverUrl);
-  }
-
+export function getSubscriptionServerUrl(preferredServerUrl?: string): string {
   // Precedence (highest first):
-  //   1. preferredServerUrl   — runtime override (--server flag)
-  //   2. REDIACC_ACCOUNT_SERVER — env override
-  //   3. server.json          — most recent explicit choice from the region
-  //                             picker. Wins over rediacc.json because the
-  //                             picker writes here on every login, while
-  //                             rediacc.json's accountServer is a stale
-  //                             snapshot from whenever the user last set it.
-  //   4. configAccountServer  — older accountServer field in rediacc.json
-  //                             (kept as a fallback so configs that were
-  //                             pinned via `rdc config set --key accountServer`
-  //                             still work when server.json is absent)
-  //   5. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL — hardcoded default
+  //   1. preferredServerUrl        — runtime override (--server flag)
+  //   2. REDIACC_ACCOUNT_SERVER    — env override
+  //   3. config account.accountServer — the active config's server pointer
+  //   4. SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL — hardcoded default
   return normalizeServerUrl(
     preferredServerUrl ??
       process.env.REDIACC_ACCOUNT_SERVER ??
-      loadServerConfig()?.accountServer ??
-      configAccountServer ??
+      readAccountPointer().accountServer ??
       SUBSCRIPTION_DEFAULTS.ACCOUNT_SERVER_URL
   );
 }
@@ -191,29 +119,11 @@ export function getSubscriptionScopeMismatch(
 
 export type SubscriptionTokenState =
   | { kind: 'missing' }
-  | { kind: 'server_mismatch'; expectedServerUrl: string; actualServerUrl: string }
   | { kind: 'ready'; token: StoredSubscriptionToken; serverUrl: string };
 
 export function getSubscriptionTokenState(): SubscriptionTokenState {
   const token = loadEnvSubscriptionToken() ?? loadStoredSubscriptionToken();
   if (!token) return { kind: 'missing' };
-
-  if (isDevelopmentSubscriptionMode()) {
-    const expectedServerUrl = getSubscriptionServerUrl();
-    if (token.serverUrl !== expectedServerUrl) {
-      return {
-        kind: 'server_mismatch',
-        expectedServerUrl,
-        actualServerUrl: token.serverUrl,
-      };
-    }
-
-    return {
-      kind: 'ready',
-      token,
-      serverUrl: expectedServerUrl,
-    };
-  }
 
   return {
     kind: 'ready',

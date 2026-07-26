@@ -1,11 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const mockReadAccountPointer = vi.hoisted(() => vi.fn((): Record<string, unknown> => ({})));
+const mockConfigUpdate = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+
 vi.mock('../account/subscription-auth.js', () => ({
   normalizeServerUrl: (url: string) => url.replace(/\/+$/, ''),
-  loadServerConfig: vi.fn().mockReturnValue(null),
-  saveServerConfig: vi.fn(),
   getSubscriptionServerUrl: vi.fn().mockReturnValue('https://eu.rediacc.com'),
   getSubscriptionTokenState: vi.fn().mockReturnValue({ kind: 'missing' }),
+}));
+
+vi.mock('../account/account-pointer.js', () => ({
+  readAccountPointer: mockReadAccountPointer,
+}));
+
+vi.mock('../../adapters/config-file-storage.js', () => ({
+  configFileStorage: { update: mockConfigUpdate },
+}));
+
+vi.mock('../config/config-name.js', () => ({
+  getEffectiveConfigName: vi.fn().mockReturnValue('rediacc'),
 }));
 
 vi.mock('../update/updater.js', () => ({
@@ -16,7 +29,7 @@ vi.mock('../../version.js', () => ({
   VERSION: '0.9.0',
 }));
 
-import { fetchServerInfo } from '../account/account-client.js';
+import { fetchServerInfo, getServerKeyMaterial } from '../account/account-client.js';
 
 describe('fetchServerInfo', () => {
   const originalFetch = globalThis.fetch;
@@ -132,5 +145,26 @@ describe('fetchServerInfo', () => {
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network error'));
 
     await expect(fetchServerInfo('https://eu.rediacc.com')).rejects.toThrow('Network error');
+  });
+});
+
+describe('getServerKeyMaterial tiers', () => {
+  // A real, valid X25519 SPKI (the hardcoded production key), reused so
+  // importX25519PublicKey does not reject.
+  const VALID_SPKI = 'MCowBQYDK2VuAyEALY64atDar/bIwKoYEJPoYphKKZ6KUIkPzIHdfH6nKg8=';
+
+  afterEach(() => {
+    delete process.env.X25519_PUBLIC_KEY;
+    mockReadAccountPointer.mockReset();
+    mockReadAccountPointer.mockReturnValue({});
+  });
+
+  it('uses the config account.e2ePublicKey (keyId "config"); the deleted X25519_PUBLIC_KEY env gate no longer applies', async () => {
+    // The old dev gate would have honored this env var; it must now be ignored.
+    process.env.X25519_PUBLIC_KEY = 'unused-env-key';
+    mockReadAccountPointer.mockReturnValue({ e2ePublicKey: VALID_SPKI });
+
+    const material = await getServerKeyMaterial();
+    expect(material.keyId).toBe('config');
   });
 });
