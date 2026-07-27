@@ -43,6 +43,7 @@ declare -A BASELINE_RESULTS=(
     [RESULT_UPDATE_FLOW_TEST]=success
     [RESULT_DEPLOY_PREVIEW]=success
     [RESULT_SMOKE_TEST_PREVIEW]=success
+    [RESULT_BREAKPOINT_LIFECYCLE]=success
 )
 
 # run_assert <expected-exit> <case-name> [VAR=value ...]
@@ -79,6 +80,8 @@ FASTPATH_SKIPS=(
     RESULT_SMOKE_TEST_PREVIEW=skipped
     RESULT_STRIPE_SANDBOX=skipped
     RESULT_PACKAGE_TESTS=skipped
+    # breakpoint-lifecycle's if: excludes pointer_bump_only, so it skips here too
+    RESULT_BREAKPOINT_LIFECYCLE=skipped
 )
 
 test_all_green_passes() {

@@ -292,6 +292,27 @@ translation.** Key rules:
 
 `.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
 
+### The 27-line `package-lock.json` flip is npm 11 vs npm 10, and it is cosmetic
+
+A working tree can sprout a `package-lock.json` diff of exactly 27 deletions,
+all `"dev": true`, that nobody remembers making. Do not go hunting for the
+script that "corrupted" it, and do not commit it either:
+
+- **Trigger**: any `npm install`-family write run under the *system* npm 11
+  (`npm install --package-lock-only` reproduces it exactly). npm 11 omits
+  redundant nested dev markers that npm 10 writes. CI pins `npm@10`
+  (`check-lockfile.sh`), so npm 10's form is the canonical one.
+- **NOT the trigger**: `npm run install:natives`. `npm rebuild` does not write
+  the lockfile, verified on both a warm tree and a fresh one straight after
+  `npm@10 ci`. Nor do `npm outdated`, `npm ls`, or `npm audit`.
+- **Impact: none.** All 27 entries sit under `node_modules/tsx/**`, and `tsx`
+  is a devDependency still marked dev at its own node, so npm prunes the whole
+  subtree regardless. `npm@10 ci --omit=dev --dry-run` resolves 179 packages
+  from *either* form, and `check:ci-lockfile` passes both. It is diff noise,
+  not a correctness problem, which is why there is no gate for it.
+- **Fix**: `npx -y npm@10 install --package-lock-only --ignore-scripts`
+  restores the canonical form byte for byte.
+
 ```bash
 # Install dependencies
 npm install && npm run install:natives
@@ -473,9 +494,11 @@ Secret rotation lives in `private/account/scripts/rotation/` (private submodule)
 | `sweep` | Run deactivate + delete for everything past its eligibility window |
 | `history [<slug>]` | Audit log of every rotation event |
 
-Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-media`, `turnstile`, `turnstile-bench`, `otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`, `dkim-notify`.
+Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-media`, `cf-breakpoint`, `turnstile`, `turnstile-bench`, `otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`, `dkim-notify`.
 
 `cf-r2-media` is bucket-scoped (`rediacc-www-media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
+
+`cf-breakpoint` (secret `BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.
 
 `dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.com`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.com`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
 

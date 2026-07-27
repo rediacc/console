@@ -11,6 +11,15 @@ private/ quality/ release/ security/ setup/ signal/ test/ version/`.
 
 ```
 .ci/
+├── breakpoint/              # On-demand CI debug box (tunnel + shell + desktop).
+│   │                        # A self-contained, VENDORABLE feature package: it
+│   │                        # is copied wholesale into other repos, so it has
+│   │                        # its own lib and depends on nothing under scripts/.
+│   ├── breakpoint.conf      # the only file a downstream repo should edit
+│   ├── MANIFEST.sha256      # drift oracle; check-breakpoint-drift.sh verifies it
+│   ├── lib/                 # vendored logging/parse_args + BLOCKER validation
+│   ├── scripts/             # one script per step (start/stop/sweep/drift)
+│   └── workflow/            # breakpoint.yml, copied to .github/workflows/
 ├── config/
 │   ├── constants.sh         # Pinned tool versions and shared CI constants
 │   └── nfpm.yaml            # Linux package (deb/rpm/apk) build definition

@@ -55,3 +55,6 @@ manual:scripts/dev/r2-oneshot-scrub.sh
 
 # BLOCKER: pre-commit quality gate wired through the operator's local Claude Code hook settings rather than tracked config, and explicitly protected from deletion by .claude/hooks/pre-bash/block-protected-files.sh
 manual:scripts/pre-commit-check.sh
+
+# BLOCKER: downstream re-vendor helper for the copyable .ci/breakpoint/ folder, run by the operator in a repo that vendored breakpoint when check-breakpoint-drift.sh reports the copy has fallen behind rediacc/console
+manual:.ci/breakpoint/scripts/sync-breakpoint.sh
