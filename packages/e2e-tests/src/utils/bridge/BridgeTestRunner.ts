@@ -373,7 +373,10 @@ export class BridgeTestRunner {
     };
 
     try {
-      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout, maxBuffer: EXEC_MAX_BUFFER });
+      const { stdout, stderr } = await execAsync(sshCmd, {
+        timeout: cmdTimeout,
+        maxBuffer: EXEC_MAX_BUFFER,
+      });
       this.logExecutionResult(stdout, stderr, 0);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {
@@ -422,7 +425,10 @@ export class BridgeTestRunner {
     console.log(`\n[SSH ${host}] ${command}`);
 
     try {
-      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout, maxBuffer: EXEC_MAX_BUFFER });
+      const { stdout, stderr } = await execAsync(sshCmd, {
+        timeout: cmdTimeout,
+        maxBuffer: EXEC_MAX_BUFFER,
+      });
       this.logExecutionResult(stdout, stderr, 0);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {

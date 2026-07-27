@@ -33,7 +33,10 @@ describe('describeExecFailure', () => {
   it('still reports a buffer overflow correctly when Node also set killed', () => {
     // The dangerous ordering: `killed` is checked AFTER the buffer code, because
     // Node may set both and a timeout message would be actively misleading.
-    const r = describeExecFailure({ code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER', killed: true }, 1000);
+    const r = describeExecFailure(
+      { code: 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER', killed: true },
+      1000
+    );
     expect(r.code).toBe(125);
     expect(r.prefix).not.toContain('timed out');
   });
