@@ -130,7 +130,7 @@ jobs:
 
       - name: Verify Stripe sandbox webhook endpoints (per-region)
         run: |
-          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
+          jq -r '.regions[] | .edgeDomain' regions.json | while read -r domain; do
             echo "Verifying sandbox webhook for ${domain}..."
             npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
           done

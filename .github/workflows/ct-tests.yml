@@ -251,7 +251,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       - name: Free Disk Space
         run: |
@@ -279,7 +279,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       - name: Create E2E Test Environment
         run: .ci/scripts/env/create-e2e-env.sh --renet-path /usr/bin/renet --output packages/e2e-tests/.env
@@ -395,7 +395,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same VM base-image cache as the E2E Workers ubuntu leg: this job
       # sets no VM_IMAGE, so it downloads only the Ubuntu default image and
@@ -411,7 +411,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       - name: Create E2E Test Environment
         run: .ci/scripts/env/create-e2e-env.sh --ceph --renet-path /usr/bin/renet --output packages/e2e-tests/.env
@@ -532,7 +532,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same VM base-image cache as the E2E Workers ubuntu leg: this job sets
       # no VM_IMAGE, so it downloads only the Ubuntu default image and can share
@@ -548,7 +548,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       # Explicit --vm-workers AND --vm-ceph-nodes (NOT --ceph, which zeroes
       # workers). Per-role RAM + osd_memory_target are passed through so the
@@ -673,7 +673,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
       # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
@@ -688,7 +688,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       # Single worker, no Ceph: a k8s repo runs a self-contained k3s inside a
       # datastore-backed image. VM_RAM_WORKER=4096 gives k3s + a workload pod room.
@@ -811,7 +811,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
       # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
@@ -826,7 +826,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       # Combined k8s + Ceph topology (2 k3s workers + 3 ceph nodes). Explicit
       # --vm-workers AND --vm-ceph-nodes (NOT --ceph, which zeroes workers);
@@ -953,7 +953,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same Ubuntu VM base-image cache as the E2E Workers ubuntu leg (no
       # VM_IMAGE set -> Ubuntu default image, same key + disks-dir path).
@@ -968,7 +968,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       # Multi-node k8s topology (2 k3s workers = server + agent, 3 ceph nodes).
       # Explicit
@@ -1102,7 +1102,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Install renet
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # Same Ubuntu VM base-image cache as the other E2E legs.
       - name: Compute VM image cache key
@@ -1116,7 +1116,7 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
 
       # Group A .env drives the harness global setup (source fleet). Group B is
       # booted separately below; both auto-detect the same RENET_DATA_DIR
@@ -1259,7 +1259,7 @@ jobs:
           path: private/renet/pkg/embed/assets
           key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
       - name: Add renet to PATH
-        run: sudo cp $RENET_BINARY /usr/bin/renet && sudo chmod +x /usr/bin/renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
       # VM base-image cache shared with the OPS Provision / E2E jobs. Key and
       # path MUST match those jobs exactly (`vm-base-image-e2e-ubuntu-24.04-<YYYY-MM>`
@@ -1278,21 +1278,21 @@ jobs:
           key: ${{ steps.vm-image-key.outputs.key }}
 
       - name: Setup KVM Host
-        run: sudo $RENET_BINARY ops host setup
+        run: sudo "$RENET_BINARY" ops host setup
       - name: Generate SSH keypair
         run: |
           ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N "" -q
           cp ~/.ssh/id_ed25519 ~/.ssh/id_rsa
           cp ~/.ssh/id_ed25519.pub ~/.ssh/id_rsa.pub
       - name: Provision VM
-        run: sudo -E $RENET_BINARY ops up --force --parallel
+        run: sudo -E "$RENET_BINARY" ops up --force --parallel
         env:
           VM_NET_BASE: ${{ env.VM_NET_BASE }}
           VM_WORKERS: '11'
           VM_CEPH_NODES: ''
           VM_BRIDGE: '1'
       - name: Fix renet data dir ownership
-        run: sudo chown -R $USER:$USER $RUNNER_TEMP/renet
+        run: sudo chown -R "$USER:$USER" "$RUNNER_TEMP/renet"
       - name: Wait for VM SSH readiness
         run: .ci/scripts/infra/wait-for-vm-ssh.sh "${VM_NET_BASE}.1" "${VM_NET_BASE}.11"
       - name: Run concurrent-fork isolation test

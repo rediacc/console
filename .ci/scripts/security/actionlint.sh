@@ -22,16 +22,16 @@
 # every one of them -- it could carry an unpinned action SHA or a broken
 # expression and no gate would say a word. It is the file that broke twice.
 #
-# THE SHELLCHECK INTEGRATION IS OFF, AND THAT IS A SCOPE DECISION, NOT A
-# SUPPRESSION. actionlint can also pipe every inline `run:` block through
-# ShellCheck; enabling that here adds 44 pre-existing findings (38 SC2086, 3
-# SC2129, 2 SC2162, 1 SC2155) across the CI workflows, none of which this gate
-# was added to catch, and fixing them is a bulk quoting change to live CI script
-# text -- exactly the kind of scripted rewrite that lands in a neighbouring line.
-# Those findings are real and are reported as a follow-up rather than silently
-# dropped. Shell FILES are already covered by check-shellcheck.sh; it is inline
-# `run:` blocks specifically that remain uncovered. Re-enable by deleting the
-# `-shellcheck=` flag below, in a change that also fixes those 44.
+# THE SHELLCHECK INTEGRATION IS ON, which closes a real hole: check-shellcheck.sh
+# covers shell FILES, and nothing covered the inline `run:` blocks, which are
+# just as much executable shell. Turning it on required clearing 44 pre-existing
+# findings first (38 SC2086, 3 SC2129, 2 SC2162, 1 SC2155); they are fixed, so
+# the gate now starts from zero and any new one is a regression.
+#
+# Do NOT disable this flag to get past a finding. If a `run:` block genuinely
+# needs word-splitting, annotate that block with a `# shellcheck disable=SC2086`
+# line carrying a reason, so the exception is local, visible and reviewable
+# rather than global and silent.
 #
 # Usage: actionlint.sh
 # Exit:  0 clean, 1 findings, 2 tool unavailable, 3 nothing to check (vacuous).
@@ -145,12 +145,13 @@ main() {
 
     local rc=0
     # shellcheck disable=SC2086  # word-splitting the newline-separated list is intended
-    "$BIN" -no-color -shellcheck= $targets || rc=$?
+    "$BIN" -no-color $targets || rc=$?
 
     if [[ "$rc" -ne 0 ]]; then
         log_error "actionlint reported findings in the workflow files above"
-        log_error "these are parse/expression/context errors, not style: a bad \${{ }}"
-        log_error "expression makes a run start with ZERO jobs and no error message"
+        log_error "these are parse/expression/context errors or ShellCheck findings in"
+        log_error "an inline run: block. A bad \${{ }} expression makes a run start with"
+        log_error "ZERO jobs and no error message anywhere."
         exit 1
     fi
 

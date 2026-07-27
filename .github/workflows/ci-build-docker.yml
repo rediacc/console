@@ -614,6 +614,8 @@ jobs:
       - name: Verify
         run: |
           docker buildx imagetools inspect ghcr.io/rediacc/devcontainer:latest
-          echo "## Devcontainer Image Published" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **latest:** \`ghcr.io/rediacc/devcontainer:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **dated:** \`ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## Devcontainer Image Published"
+            echo "- **latest:** \`ghcr.io/rediacc/devcontainer:latest\`"
+            echo "- **dated:** \`ghcr.io/rediacc/devcontainer:${{ steps.tags.outputs.date_tag }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
