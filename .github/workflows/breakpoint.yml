@@ -65,10 +65,10 @@ on:
         options: ['5', '10', '15', '30', '45', '60', '90', '120', '180', '240', '300']
 
       services:
-        description: 'none = tunnel + static origin only. core = ci-start.sh. full = core plus account/elite stacks.'
+        description: 'none = tunnel + desktop only (no token, no submodule). onprem = the on-prem server stack customers deploy (ghcr.io/rediacc/server), via ci-start-elite.sh.'
         type: choice
-        default: 'core'
-        options: ['none', 'core', 'full']
+        default: 'none'
+        options: ['none', 'onprem']
 
       desktop:
         description: 'Browser desktop over noVNC. xfce only: three environments meant three untested start paths.'
@@ -209,6 +209,25 @@ jobs:
       # because these are the tools you want when you SSH in.
       - name: Install extra packages
         run: .ci/breakpoint/scripts/install-extra-packages.sh
+
+      # ONLY when services are requested. `services: none` stays completely
+      # token-free and submodule-free, which is what keeps the folder portable
+      # to repos that have neither -- the app-token dependency is confined to
+      # the one input that genuinely cannot work without it.
+      # private/elite is a PRIVATE repo, so the default GITHUB_TOKEN cannot
+      # clone it; the on-prem compose file lives inside that submodule.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        if: inputs.services != 'none'
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,elite
+
+      - name: Check out the on-prem stack
+        if: inputs.services != 'none'
+        run: git submodule update --init --depth 1 private/elite
 
       - name: Install desktop packages
         if: inputs.desktop != 'none'

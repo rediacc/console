@@ -73,9 +73,21 @@ bp_state_set BP_DESKTOP "$DESKTOP"
 # under Actions; pwd is the fallback so this works from a laptop.
 REPO_ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 
+# WHICH STACK, AND WHY NOT THE OTHER ONE.
+# `.ci/docker/ci/` expects ghcr.io/rediacc/WEB and builds account-server from
+# private/account/Dockerfile. Neither is reachable here: nothing publishes a
+# `web` image any more (the on-prem build is `server`), and the account
+# Dockerfile lives in a submodule. So compose fell through to a build and died
+# with `failed to read dockerfile` even though the pull had just succeeded --
+# the orphaned-stack problem filed as issue #533.
+# `private/elite/` expects ghcr.io/rediacc/SERVER, which is exactly what
+# ci-pull-images.sh fetches, and it is exercised by the live `Elite Run` CI job.
+# Use the stack that works.
+SERVICES_SCRIPT="$REPO_ROOT/.ci/scripts/infra/ci-start-elite.sh"
+
 if [[ "$SERVICES" != "none" ]]; then
-    if [[ -x "$REPO_ROOT/.ci/scripts/infra/ci-start.sh" ]]; then
-        log_step "starting services ($SERVICES) via ci-start.sh..."
+    if [[ -x "$SERVICES_SCRIPT" ]]; then
+        log_step "starting the on-prem stack via ci-start-elite.sh..."
         # `>&2` IS LOAD-BEARING, not tidiness. This script's stdout contract is
         # "exactly one line, the origin URL", and the caller does
         # `URL=$(start-origin.sh ...)`. ci-start.sh sources ci-env.sh, which
@@ -89,12 +101,12 @@ if [[ "$SERVICES" != "none" ]]; then
         # so the very keys they were meant to hide got echoed into the log by
         # the error message. Anything this script calls must send its chatter to
         # stderr; only the URL may touch stdout.
-        if ! "$REPO_ROOT/.ci/scripts/infra/ci-start.sh" >&2; then
+        if ! "$SERVICES_SCRIPT" >&2; then
             # FAIL. The operator asked for --services "$SERVICES"; delivering a
             # box whose app is silently absent is how you end up opening the
             # tunnel and getting "bad gateway" with nothing explaining why.
             # Pass hold-on-failure to keep the box alive for inspection.
-            log_error "ci-start.sh FAILED -- --services $SERVICES cannot be delivered"
+            log_error "ci-start-elite.sh FAILED -- --services $SERVICES cannot be delivered"
             log_error "refusing to hand over a session that is missing what was asked for"
             log_error "re-dispatch with services: none, or with hold-on-failure to debug this boot"
             exit 1
@@ -104,8 +116,8 @@ if [[ "$SERVICES" != "none" ]]; then
         # infra tree. Still a failure: --services was explicitly requested and
         # cannot be honoured here. The correct dispatch for such a repo is
         # services: none.
-        log_error "--services $SERVICES requested but $REPO_ROOT/.ci/scripts/infra/ci-start.sh does not exist"
-        log_error "this repo cannot start services; dispatch with services: none"
+        log_error "--services $SERVICES requested but $SERVICES_SCRIPT does not exist"
+        log_error "the elite submodule is probably not checked out; dispatch with services: none"
         exit 1
     fi
 fi
