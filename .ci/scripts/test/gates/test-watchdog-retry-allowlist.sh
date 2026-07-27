@@ -46,7 +46,7 @@ if [[ -z "$ALLOWLIST" ]]; then
     exit 1
 fi
 
-# verdict <job-name> <classification> <confidence> <classifier-available 0|1> -> "retry" | "no-retry"
+# verdict <job-name> <classification> <confidence> <available 0|1> [isFailure 0|1] -> "retry" | "no-retry"
 verdict() {
     node -e '
 const w = require(process.argv[1]);
@@ -55,15 +55,19 @@ const v = w.evaluateRetryEligibility({
   classification: process.argv[3],
   confidence: Number(process.argv[4]),
   classifierAvailable: process.argv[5] === "1",
+  isFailure: process.argv[7] !== "0",
   threshold: 0.8,
   retryAllowlistPatterns: process.argv[6].split(",").map(s => s.trim()).filter(Boolean),
 });
 process.stdout.write(v.retry ? "retry" : "no-retry");
-' "$WATCHDOG" "$1" "$2" "$3" "$4" "$ALLOWLIST"
+' "$WATCHDOG" "$1" "$2" "$3" "$4" "$ALLOWLIST" "${5:-1}"
 }
 
-# down <job-name> -> verdict with the classifier UNAVAILABLE (the live situation)
-down() { verdict "$1" transient 0 0; }
+# down <job-name> -> a FAILED job with the classifier UNAVAILABLE (the live situation)
+down() { verdict "$1" transient 0 0 1; }
+
+# cancelled_down <job-name> -> a CANCELLED (not failed) job, classifier unavailable
+cancelled_down() { verdict "$1" transient 0 0 0; }
 
 # ---------------------------------------------------------------------------
 
@@ -95,6 +99,28 @@ test_classifier_down_still_retries_known_flaky_jobs() {
     assert_eq "$(down 'Tests + Infra / Concurrent Fork Isolation')" "retry" \
         "Fork Isolation still retries (observed: a live Docker Hub AUTH TIMEOUT)"
     log_pass "with the classifier down, known-flaky VM and image-pull jobs still retry"
+}
+
+test_a_cancellation_is_retried_not_used_to_kill_the_run() {
+    # THE REGRESSION THIS FILE'S FIRST VERSION SHIPPED, caught by PR #541's own
+    # CI within one round. The allowlist must govern FAILURES only.
+    #
+    # A non-stuck CANCELLATION is not a verdict about the code: the job never
+    # reached one. The watchdog's branch-1 comment already states the rule --
+    # "nuking a 0-failure run for it is wrong" -- which is exactly why
+    # cancellations are routed to the retry path at all.
+    #
+    # What actually happened: `Quality / Built-www Gates` was CANCELLED, zero
+    # jobs had failed anywhere in run 30304346151, and the watchdog force-
+    # cancelled the whole pipeline -- 39 green jobs, 16 killed -- because that
+    # job is not on the allowlist. Before the change it would have been re-run.
+    assert_eq "$(cancelled_down 'Quality / Built-www Gates')" "retry" \
+        "a CANCELLED non-allowlisted job must be re-run, not used to kill a zero-failure run"
+    assert_eq "$(down 'Quality / Built-www Gates')" "no-retry" \
+        "the same job FAILING must still fail fast (the allowlist still governs failures)"
+    assert_eq "$(cancelled_down 'Stage Artifacts / Stage Artifacts')" "retry" \
+        "any cancellation is a runner/infra flake, whatever the job"
+    log_pass "the allowlist governs failures only; cancellations are still retried"
 }
 
 test_confident_code_change_never_retries() {
@@ -139,18 +165,42 @@ test_confidence_zero_is_not_the_signal() {
 }
 
 test_empty_allowlist_fails_closed() {
+    # isFailure is explicit here: an empty allowlist only constrains FAILURES,
+    # so omitting it would exercise the cancellation path and prove nothing
+    # about the allowlist. (That omission is exactly how this case broke when
+    # the cancellation branch was added.)
     local out
     out="$(node -e '
 const w = require(process.argv[1]);
 const v = w.evaluateRetryEligibility({
   jobName: "Tests + Infra / E2E Workers (fedora-43)",
   classification: "transient", confidence: 0, classifierAvailable: false,
+  isFailure: true,
   threshold: 0.8, retryAllowlistPatterns: [],
 });
 process.stdout.write(v.retry ? "retry" : "no-retry");
 ' "$WATCHDOG")"
-    assert_eq "$out" "no-retry" "an empty allowlist must fail closed, not open"
+    assert_eq "$out" "no-retry" "an empty allowlist must fail closed for a FAILURE"
     log_pass "an empty or missing allowlist fails closed"
+}
+
+test_unknown_isFailure_degrades_to_the_safe_direction() {
+    # If a future caller forgets the flag, the ambiguity must resolve toward
+    # "retry" (the pre-change behaviour), never toward "kill the run". Killing a
+    # pipeline on a missing boolean is the failure mode this whole branch exists
+    # to prevent, and it cost run 30304346151 its 39 green jobs.
+    local out
+    out="$(node -e '
+const w = require(process.argv[1]);
+const v = w.evaluateRetryEligibility({
+  jobName: "Quality / Built-www Gates",
+  classification: "transient", confidence: 0, classifierAvailable: false,
+  threshold: 0.8, retryAllowlistPatterns: ["E2E"],
+});
+process.stdout.write(v.retry ? "retry" : "no-retry");
+' "$WATCHDOG")"
+    assert_eq "$out" "retry" "a missing isFailure must degrade to retry, not to killing the run"
+    log_pass "an unspecified isFailure resolves to the safe direction"
 }
 
 test_allowlist_is_required_config() {
@@ -166,11 +216,13 @@ log_test "test-watchdog-retry-allowlist"
 test_allowlist_is_real
 test_classifier_down_fails_fast_for_deterministic_jobs
 test_classifier_down_still_retries_known_flaky_jobs
+test_a_cancellation_is_retried_not_used_to_kill_the_run
 test_confident_code_change_never_retries
 test_low_confidence_code_change_still_retries
 test_available_classifier_governs_non_allowlisted_jobs
 test_confidence_zero_is_not_the_signal
 test_empty_allowlist_fails_closed
+test_unknown_isFailure_degrades_to_the_safe_direction
 test_allowlist_is_required_config
 echo ""
 log_pass "all tests passed"

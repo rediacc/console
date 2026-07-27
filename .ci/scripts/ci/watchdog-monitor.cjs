@@ -177,6 +177,7 @@ function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, 
  */
 function evaluateRetryEligibility({
   jobName,
+  isFailure,
   classification,
   confidence,
   classifierAvailable,
@@ -193,6 +194,27 @@ function evaluateRetryEligibility({
     return {
       retry: true,
       reason: `classifier returned ${classification} at confidence ${confidence} -- treating as transient`,
+    };
+  }
+  // THE ALLOWLIST GOVERNS FAILURES ONLY. A non-stuck CANCELLATION is not a
+  // verdict about the code: the job never reached one. It is a runner or infra
+  // flake, and the branch-1 comment above already states the rule this restores
+  // -- "nuking a 0-failure run for it is wrong" -- which is precisely why
+  // cancellations are routed to the retry path in the first place.
+  //
+  // Getting this wrong is not theoretical. The first version of this function
+  // applied the allowlist to cancellations too, and PR #541's own CI caught it
+  // within one round: `Quality / Built-www Gates` was CANCELLED with zero failed
+  // jobs anywhere in the run, and the watchdog force-cancelled the entire
+  // pipeline (39 green jobs, 16 killed) on the strength of an allowlist miss.
+  // Before the change that cancellation would simply have been re-run.
+  //
+  // Stuck cancellations never arrive here: they bypass classification entirely
+  // at branch 0 and force-cancel, because a job that hung will hang again.
+  if (!isFailure) {
+    return {
+      retry: true,
+      reason: `classifier unavailable, but "${jobName}" was CANCELLED rather than failed -- a non-stuck cancellation is a runner/infra flake, not a code verdict, so it is re-run rather than used to kill the run`,
     };
   }
   const allowlisted = matchesPatterns(jobName, retryAllowlistPatterns || []);
@@ -1004,6 +1026,9 @@ const monitor = async ({ github, context, core }) => {
         const ai = await classifyFailure(job, jobGuard);
         const eligibility = evaluateRetryEligibility({
           jobName: job.name,
+          // Failures and non-stuck cancellations both reach this branch; only
+          // the former is a verdict about the code. See evaluateRetryEligibility.
+          isFailure: failed.includes(job),
           classification: ai.classification,
           confidence: ai.confidence,
           classifierAvailable: ai.classifierAvailable !== false,
