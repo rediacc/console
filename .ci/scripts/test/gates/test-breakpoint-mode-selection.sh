@@ -256,4 +256,43 @@ with_temp_dir test_auto_with_credentials_picks_named
 with_temp_dir test_auto_without_credentials_warns
 with_temp_dir test_repeated_mode_flag_is_last_wins
 with_temp_dir test_invalid_mode_rejected
+# =============================================================================
+# NAMED MODE REFUSES A DURATION TOO SHORT TO LOG IN
+# =============================================================================
+# Regression test for a real session. Named mode fronts the box with Cloudflare
+# Access, whose one-time-PIN login is TWO email round trips. Teardown deletes
+# the Access application the instant the timer expires, so run 30259141278
+# (duration 5) died mid-login and Cloudflare answered:
+#
+#   That account does not have access.
+#
+# ...which blames the policy, the one component that was correct. The operator
+# went looking for a permissions bug that did not exist. This guard turns a
+# misleading runtime failure into an accurate refusal before anything is built.
+test_named_refuses_too_short_a_duration() {
+    local tmp="$1" rc
+    local pre="$REPO_ROOT/.ci/breakpoint/scripts/preflight-breakpoint.sh"
+
+    run_pre() {
+        rc=0
+        env RUNNER_TEMP="$tmp" GITHUB_RUN_ID=1 BP_ACTOR=mfbayraktar \
+            BP_RUNNER=ubuntu-latest BP_LABEL=rdc-ci BP_MODE="$1" BP_DURATION="$2" \
+            bash "$pre" >/dev/null 2>&1 || rc=$?
+    }
+
+    run_pre named 5
+    [[ "$rc" -ne 0 ]] || log_fail "named mode accepted a 5-minute duration; the session would be torn down mid-login"
+
+    run_pre named 15
+    assert_exit_code 0 "$rc" "named mode must accept the documented 15-minute minimum"
+
+    # Quick mode has NO login step, so a short session is legitimate there. If
+    # this ever fails the guard has been applied too broadly.
+    run_pre quick 5
+    assert_exit_code 0 "$rc" "quick mode must still allow short sessions (it has no login step)"
+
+    log_pass "named mode requires >= 15m; quick mode is unaffected"
+}
+
 with_temp_dir test_named_never_falls_back_to_quick
+with_temp_dir test_named_refuses_too_short_a_duration
