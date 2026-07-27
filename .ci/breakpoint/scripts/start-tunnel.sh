@@ -183,8 +183,22 @@ start_quick() {
     fi
 
     local status
-    if ! status="$(bp_wait_for_transport "$url" 60)"; then
-        log_error "tunnel URL $url never answered (transport never came up)"
+    # Honours --connect-timeout, like the named path below. This used to be a
+    # hardcoded 60 while the flag was advertised in the usage line and applied
+    # only to the URL-publish wait -- so `--connect-timeout 180` silently still
+    # gave the transport 60 seconds. A flag that does not do what it says is a
+    # defect even when the default happens to be adequate.
+    #
+    # It also cost a CI round: the lifecycle regression passes no flag, so the
+    # transport got 60s, trycloudflare's edge did not route in time, and
+    # `Breakpoint Lifecycle` went red on run 30270471731 with the breakpoint
+    # code byte-identical to the previous green round. The default 90s is not a
+    # cure for a genuine edge outage -- nothing here can be -- but the flag now
+    # actually raises the ceiling when a caller asks it to.
+    if ! status="$(bp_wait_for_transport "$url" "$CONNECT_TIMEOUT")"; then
+        log_error "tunnel URL $url never answered in ${CONNECT_TIMEOUT}s (transport never came up)"
+        log_error "the URL was published, so cloudflared started: this is the EDGE not routing,"
+        log_error "not a local failure. Raise --connect-timeout if this recurs on a slow runner."
         return 1
     fi
     log_info "quick tunnel live: HTTP $status from the edge"

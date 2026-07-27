@@ -59,7 +59,7 @@ on:
           - 'ubuntu-latest-16-core-arm'
 
       duration:
-        description: 'Minutes to hold the box open.'
+        description: 'Minutes to hold the box open. NAMED mode requires >= 15: its Cloudflare Access login is two email round trips, and a shorter session is torn down mid-login.'
         type: choice
         default: '30'
         options: ['5', '10', '15', '30', '45', '60', '90', '120', '180', '240', '300']

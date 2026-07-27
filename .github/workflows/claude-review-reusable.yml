@@ -65,8 +65,26 @@ jobs:
       # plumbing expects the reviewed repo there, and the gate reads
       # ./.gitmodules (pointer-skip) from it. For console-as-caller this
       # matches the original behavior exactly.
+      #
+      # `clean: false` IS LOAD-BEARING. actions/checkout defaults to clean:true,
+      # which wipes the workspace -- INCLUDING the `.review-scripts` checkout
+      # made by the step above. The consequences were different per caller and
+      # both wrong:
+      #
+      #   - Submodule callers (rediacc/account): the bootstrap guard below then
+      #     falls through to `.ci/scripts/review/bootstrap-review-scripts.sh`,
+      #     which those repos do not have, so the job died with exit 127 before
+      #     any review could run. Observed on rediacc/account#68,
+      #     run 30264668660.
+      #   - console-as-caller: it "worked", but only via the bootstrap fallback
+      #     copying the PR's OWN scripts into .review-scripts -- defeating the
+      #     property the comment below states outright, that a PR can never
+      #     substitute its own review logic. A PR could have edited its reviewer.
+      #
+      # Same flag, same reason, as the "Checkout PR head" step further down.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          clean: false
           persist-credentials: false
 
       # BOOTSTRAP fallback: until the review system first lands on main,
