@@ -199,6 +199,25 @@ jobs:
         if: inputs.desktop != 'none'
         run: .ci/breakpoint/scripts/install-vnc-desktop.sh --extras vscode,chromium
 
+      # ci-start.sh SKIPS building when GITHUB_ACTIONS is set and expects the
+      # images to be pre-pulled (ci-start.sh:33-38). Nothing here pulled them,
+      # so compose fell through to a build and died with
+      #   "target account-server: failed to solve: failed to read dockerfile"
+      # -- the account Dockerfile lives in a submodule this workflow does not
+      # check out. Pull instead of build: it is what CI does everywhere else,
+      # and it keeps the session's startup measured in seconds.
+      # Non-fatal on purpose: a debug box whose app image is unavailable is
+      # still a usable debug box, and start-origin.sh already reports the
+      # degraded state loudly rather than hiding it.
+      # NOT `continue-on-error` -- that is banned by check-workflows.sh. The
+      # script itself exits 0 on a pull failure and says so.
+      - name: Pre-pull service images
+        if: inputs.services != 'none'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: .ci/breakpoint/scripts/pull-service-images.sh
+
       - name: Start origin
         id: origin
         env:

@@ -76,7 +76,20 @@ REPO_ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 if [[ "$SERVICES" != "none" ]]; then
     if [[ -x "$REPO_ROOT/.ci/scripts/infra/ci-start.sh" ]]; then
         log_step "starting services ($SERVICES) via ci-start.sh..."
-        if ! "$REPO_ROOT/.ci/scripts/infra/ci-start.sh"; then
+        # `>&2` IS LOAD-BEARING, not tidiness. This script's stdout contract is
+        # "exactly one line, the origin URL", and the caller does
+        # `URL=$(start-origin.sh ...)`. ci-start.sh sources ci-env.sh, which
+        # prints `::add-mask::<secret>` lines to STDOUT (ci-env.sh:94-100) to
+        # register its generated ephemeral keys with the runner. Without this
+        # redirect those lines were swallowed into $URL, producing a multi-line
+        # value that killed the step with:
+        #     Unable to process file command 'output' successfully.
+        #     Invalid format 'MC4CAQAwBQYDK2VwBCIEID...'
+        # -- and, worse, the mask directives never reached the runner at all,
+        # so the very keys they were meant to hide got echoed into the log by
+        # the error message. Anything this script calls must send its chatter to
+        # stderr; only the URL may touch stdout.
+        if ! "$REPO_ROOT/.ci/scripts/infra/ci-start.sh" >&2; then
             log_error "ci-start.sh failed; the box will still come up, but the app is not running"
             log_error "(this is reported, not swallowed -- the old workflow hid exactly this)"
         fi
@@ -89,7 +102,9 @@ fi
 
 if [[ "$DESKTOP" != "none" ]]; then
     log_step "starting desktop ($DESKTOP)..."
-    "$SCRIPT_DIR/desktop-ctl.sh" start --resolution "${DESKTOP_RESOLUTION:-1600x900}" ||
+    # Same stdout discipline as ci-start.sh above: nothing but the URL may
+    # reach this script's stdout.
+    "$SCRIPT_DIR/desktop-ctl.sh" start --resolution "${DESKTOP_RESOLUTION:-1600x900}" >&2 ||
         log_warn "desktop failed to start; continuing without it"
 fi
 
