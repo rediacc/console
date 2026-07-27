@@ -70,6 +70,40 @@ if [[ ! "$DURATION" =~ ^[0-9]+$ ]] || [[ "$DURATION" -lt 1 ]] || [[ "$DURATION" 
     FAILED=true
 fi
 
+# NAMED MODE NEEDS TIME FOR A HUMAN TO LOG IN, and this refusal exists because
+# the alternative failure is actively misleading.
+#
+# Observed on the first real named session (run 30259141278, duration 5):
+#   10:43:47  URL emailed to the operator
+#   10:48:48  Access application DELETED by teardown
+# In those five minutes the operator had to read the mail, open the URL, submit
+# their address, wait for Cloudflare's one-time-PIN email, and enter the code.
+# Teardown removed the application mid-flow, and Cloudflare answered the
+# callback with:
+#
+#   That account does not have access.
+#
+# Which points at the POLICY -- the one thing that was correct. The operator
+# reasonably went looking for a permissions bug that did not exist. A short
+# named session is not a short session; it is a session that ends in a wrong
+# diagnosis.
+#
+# Quick mode is deliberately unaffected: it has no login step, so a 5-minute
+# quick session is a perfectly reasonable thing to ask for.
+readonly BP_NAMED_MIN_DURATION=15
+if [[ "$MODE" == "named" ]] && [[ "$DURATION" =~ ^[0-9]+$ ]] && [[ "$DURATION" -lt "$BP_NAMED_MIN_DURATION" ]]; then
+    log_error "duration ${DURATION}m is too short for named mode (minimum ${BP_NAMED_MIN_DURATION}m)"
+    log_error "Rejected because: named mode puts Cloudflare Access in front of the box, and the"
+    log_error "                  one-time-PIN login is two round trips through EMAIL. Teardown"
+    log_error "                  deletes the Access app the moment the timer expires, so a short"
+    log_error "                  session dies mid-login and reports 'That account does not have"
+    log_error "                  access' -- blaming the policy, which is not the problem."
+    log_error "Action, pick one:"
+    log_error "  1. Dispatch with duration >= ${BP_NAMED_MIN_DURATION}."
+    log_error "  2. Use tunnel-mode: quick if you only need a few minutes and no authentication."
+    FAILED=true
+fi
+
 # ---------------------------------------------------------------------------
 # Identity derivation must work BEFORE the session starts
 # ---------------------------------------------------------------------------
