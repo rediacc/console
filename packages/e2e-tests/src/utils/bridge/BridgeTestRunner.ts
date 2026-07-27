@@ -44,6 +44,62 @@ import { getOpsManager, OpsManager } from './OpsManager';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
 
 const execAsync = promisify(exec);
+
+/**
+ * Capture buffer for every SSH command this runner issues.
+ *
+ * WHY THIS EXISTS. `child_process.exec` defaults to a 1 MB stdout/stderr buffer
+ * and KILLS the child the moment it overflows. Every bridge and VM command in
+ * every E2E suite goes through the two execAsync calls below, so any command
+ * chatty enough to produce a megabyte of output was being killed mid-flight --
+ * not failing, killed -- and the test saw a nonsense result instead of the
+ * command's real outcome.
+ *
+ * Observed 2026-07-27 on run 30307775327, `Tests + Infra / E2E Migrate` test 4:
+ * `renet backup push --strategy physical` streams transfer progress, overflowed
+ * the default, and the assertion read
+ * `Expected: 0  Received: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER"`.
+ *
+ * 64 MB, above the 32 MB in CliRunner and the 50 MB in ImageTestHelper, because
+ * this path carries whole-image transfer logs rather than CLI output.
+ */
+export const EXEC_MAX_BUFFER = 64 * 1024 * 1024;
+
+/**
+ * Map a child_process failure onto an ExecResult exit code plus a stderr prefix.
+ *
+ * `ExecResult.code` is typed `number`, but Node reports some failures with a
+ * STRING code (`ERR_CHILD_PROCESS_STDIO_MAXBUFFER`, `ERR_CHILD_PROCESS_EPIPE`).
+ * Both call sites used `err.code ?? 1`, which passed that string straight
+ * through as the exit status and produced assertion messages comparing a number
+ * against an error name. Worse, both treated `killed` as proof of a timeout,
+ * so a buffer kill was reported as "Command timed out" and sent the reader
+ * looking for a slow command that was in fact merely verbose.
+ */
+export function describeExecFailure(
+  err: { code?: number | string; killed?: boolean },
+  cmdTimeout: number
+): { code: number; prefix: string } {
+  if (err.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+    return {
+      code: 125,
+      prefix:
+        `Command produced more than ${EXEC_MAX_BUFFER} bytes of output and was killed by the ` +
+        `capture buffer (not a timeout, not a command failure). Raise EXEC_MAX_BUFFER or make ` +
+        `the command quieter.\n`,
+    };
+  }
+  if (err.killed) {
+    return { code: 124, prefix: `Command timed out after ${cmdTimeout}ms\n` };
+  }
+  if (typeof err.code === 'number') {
+    return { code: err.code, prefix: '' };
+  }
+  if (typeof err.code === 'string') {
+    return { code: 1, prefix: `Command failed with ${err.code}\n` };
+  }
+  return { code: 1, prefix: '' };
+}
 const DEFAULT_DATASTORE_PATH = '/mnt/rediacc';
 
 // Re-export types for backwards compatibility
@@ -317,20 +373,22 @@ export class BridgeTestRunner {
     };
 
     try {
-      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout });
+      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout, maxBuffer: EXEC_MAX_BUFFER });
       this.logExecutionResult(stdout, stderr, 0);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {
       const err = error as Error & {
         stdout?: string;
         stderr?: string;
-        code?: number;
+        // Node reports some failures with a STRING code, e.g.
+        // ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        code?: number | string;
         killed?: boolean;
       };
       const stdout = err.stdout ?? '';
-      const stderrPrefix = err.killed ? `Command timed out after ${cmdTimeout}ms\n` : '';
-      const stderr = stderrPrefix + (err.stderr ?? '');
-      const code = err.killed ? 124 : (err.code ?? 1);
+      const failure = describeExecFailure(err, cmdTimeout);
+      const stderr = failure.prefix + (err.stderr ?? '');
+      const code = failure.code;
 
       this.logExecutionResult(stdout, stderr, code);
 
@@ -364,20 +422,22 @@ export class BridgeTestRunner {
     console.log(`\n[SSH ${host}] ${command}`);
 
     try {
-      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout });
+      const { stdout, stderr } = await execAsync(sshCmd, { timeout: cmdTimeout, maxBuffer: EXEC_MAX_BUFFER });
       this.logExecutionResult(stdout, stderr, 0);
       return { stdout, stderr, code: 0 };
     } catch (error: unknown) {
       const err = error as Error & {
         stdout?: string;
         stderr?: string;
-        code?: number;
+        // Node reports some failures with a STRING code, e.g.
+        // ERR_CHILD_PROCESS_STDIO_MAXBUFFER. See describeExecFailure.
+        code?: number | string;
         killed?: boolean;
       };
       const stdout = err.stdout ?? '';
-      const stderrPrefix = err.killed ? `Command timed out after ${cmdTimeout}ms\n` : '';
-      const stderr = stderrPrefix + (err.stderr ?? '');
-      const code = err.killed ? 124 : (err.code ?? 1);
+      const failure = describeExecFailure(err, cmdTimeout);
+      const stderr = failure.prefix + (err.stderr ?? '');
+      const code = failure.code;
 
       this.logExecutionResult(stdout, stderr, code);
       return { stdout, stderr, code };
