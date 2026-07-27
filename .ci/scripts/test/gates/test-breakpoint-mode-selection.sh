@@ -84,7 +84,11 @@ test_named_without_credentials_fails_hard() {
     # shouts "FALLING BACK TO QUICK MODE" in capitals -- a case-sensitive check
     # for the lowercase spelling would pass while the script fell back.
     assert_not_contains "$SEL_ERR" "falling back" "named mode must not fall back silently"
-    assert_contains "$SEL_ERR" "refusing to fall back" "the refusal must say why"
+    # The message must EXPLAIN, not just exit non-zero. Asserting on
+    # "unauthenticated" rather than the old "refusing to fall back" wording:
+    # there is no fallback to refuse any more, so the reason is now the property
+    # that makes downgrading wrong in the first place.
+    assert_contains "$SEL_ERR" "unauthenticated" "the refusal must say WHY quick is not an acceptable substitute"
     log_pass "named without credentials: exit 3, empty stdout, no fallback"
 }
 
@@ -200,31 +204,46 @@ test_invalid_mode_rejected() {
 }
 
 # =============================================================================
-# THE ESCAPE HATCH HAS ITS OWN LIMIT
+# THERE IS NO ESCAPE HATCH -- NAMED NEVER DOWNGRADES
 # =============================================================================
-test_allow_fallback_refused_for_interactive_sessions() {
+# This replaces a test for `--allow-fallback`, a flag that let named mode
+# silently become quick mode. The flag was removed, and this proves the removal
+# rather than merely deleting its test: a deleted test and a removed feature
+# look identical in a diff, and only one of them is safe.
+#
+# The old flag carried its own refusal for debug-shell/desktop sessions, which
+# was the tell -- the guard existed because the downgrade was already known to
+# be dangerous, and it narrowed the blast radius instead of removing it.
+test_named_never_falls_back_to_quick() {
     local tmp="$1"
 
-    # Baseline: with no shell and no desktop, the explicit escape hatch works.
-    # Without this control the two refusals below would pass even if
-    # --allow-fallback were broken outright.
+    # The flag itself must be GONE, not merely defaulted off. A flag that still
+    # parses can be passed by a vendored workflow that was not updated.
+    if grep -q 'allow-fallback' "$SELECT" && ! grep -q '# .*allow-fallback' "$SELECT"; then
+        log_fail "select-mode.sh still handles --allow-fallback; the downgrade path is reachable"
+    fi
+
+    # An unconfigured named request fails, and emits NOTHING on stdout. Empty
+    # stdout is the load-bearing half: callers do `MODE=$(select-mode.sh ...)`,
+    # so a stray "quick" on stdout would be consumed as a successful choice.
+    select_mode "$tmp" -- --mode named
+    assert_exit_code 3 "$SEL_RC" "an unconfigurable named request must fail, not downgrade"
+    assert_eq "$SEL_OUT" "" "a refusal must produce EMPTY stdout, or the caller consumes it as a mode"
+    assert_not_contains "$SEL_ERR" "falling back" "the word 'falling back' must not appear: there is no fallback"
+
+    # ...and passing the removed flag must not resurrect the behaviour. Whether
+    # it errors on the unknown flag or ignores it, what it must NEVER do is
+    # print "quick" and exit 0.
     select_mode "$tmp" -- --mode named --allow-fallback
-    assert_exit_code 0 "$SEL_RC" "--allow-fallback must work for a plain web origin"
-    assert_eq "$SEL_OUT" "quick" "--allow-fallback yields quick"
-    assert_contains "$SEL_ERR" "no access authentication" "the fallback must be announced loudly"
+    assert_eq "$SEL_OUT" "" "the removed flag must not produce a mode on stdout"
+    [[ "$SEL_RC" -ne 0 ]] || log_fail "passing the removed --allow-fallback still exits 0 -- the downgrade survived"
 
-    # An unauthenticated tunnel to a web app is a bad day. An unauthenticated
-    # tunnel to an interactive shell on a runner holding the repo source is a
-    # different category, so the hatch is closed there.
-    select_mode "$tmp" "BREAKPOINT_DEBUG_SHELL=true" -- --mode named --allow-fallback
-    assert_exit_code 3 "$SEL_RC" "--allow-fallback must be REFUSED with debug-shell on"
-    assert_eq "$SEL_OUT" "" "a refused fallback must produce no stdout"
-    assert_contains "$SEL_ERR" "refused" "the refusal must be explicit"
+    # Same with an interactive session, which is the case that most needs auth.
+    select_mode "$tmp" "BREAKPOINT_DEBUG_SHELL=true" -- --mode named
+    assert_exit_code 3 "$SEL_RC" "named + debug-shell must fail rather than downgrade"
+    assert_eq "$SEL_OUT" "" "no stdout on refusal"
 
-    select_mode "$tmp" "BREAKPOINT_DESKTOP=xfce" -- --mode named --allow-fallback
-    assert_exit_code 3 "$SEL_RC" "--allow-fallback must be REFUSED with a desktop enabled"
-    assert_eq "$SEL_OUT" "" "a refused fallback must produce no stdout"
-    log_pass "--allow-fallback works for a web origin but is refused for shell/desktop"
+    log_pass "named mode never downgrades to quick, with or without the removed flag"
 }
 
 with_temp_dir test_named_without_credentials_fails_hard
@@ -237,4 +256,4 @@ with_temp_dir test_auto_with_credentials_picks_named
 with_temp_dir test_auto_without_credentials_warns
 with_temp_dir test_repeated_mode_flag_is_last_wins
 with_temp_dir test_invalid_mode_rejected
-with_temp_dir test_allow_fallback_refused_for_interactive_sessions
+with_temp_dir test_named_never_falls_back_to_quick

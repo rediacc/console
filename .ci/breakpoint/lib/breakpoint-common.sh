@@ -327,6 +327,16 @@ bp_state_set() {
     mv "${file}.tmp" "$file"
 }
 
+# bp_regex_escape <string> -- escape ERE metacharacters in a literal
+#
+# For building a regex whose needle is DATA (an email address, a path). Without
+# it, the `.` in "bob@example.com" matches any character, so the address would
+# also be satisfied by "bobXexample.com" -- which matters when the regex is the
+# thing deciding whether somebody gets a shell.
+bp_regex_escape() {
+    printf '%s' "$1" | sed -E 's/[][(){}.*+?^$|\\]/\\&/g'
+}
+
 # bp_state_get <key>  -- empty string when unset or when there is no state file
 bp_state_get() {
     local key="$1" file

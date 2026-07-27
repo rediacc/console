@@ -65,6 +65,49 @@ if [[ -n "$ACCESS_EMAILS" ]]; then
         log_error "expected e.g.: alice@example.com,bob@example.com"
         exit 4
     fi
+
+    # SHAPE IS NOT AUTHORISATION. The check above only proves the value LOOKS
+    # like an email list; on its own it let any address through to Cloudflare's
+    # Access policy. Dispatching this workflow needs push access, so the input
+    # is not reachable by the public -- but it still turned "can push" into
+    # "can hand an outsider a shell on a box holding the repo source", with no
+    # record of it beyond a workflow input, and a single typo grants access to
+    # whoever owns the mistyped address.
+    #
+    # So the input is a SELECTOR over people we already know, never a grant to
+    # an arbitrary address. The roster is BREAKPOINT_ACTOR_EMAILS in
+    # breakpoint.conf -- the same map that resolves the dispatching actor, so
+    # there is no second list to keep in sync, and a vendored repo controls its
+    # own roster by editing the one file it is expected to edit.
+    #
+    # FAIL CLOSED when the roster is empty: with no roster there is nothing to
+    # authorise against, and "no roster means allow anything" would make this
+    # check evaporate in exactly the repo that configured the least.
+    roster="${BREAKPOINT_ACTOR_EMAILS:-}"
+    if [[ -z "$roster" ]]; then
+        log_error "--access-emails was given but BREAKPOINT_ACTOR_EMAILS is empty"
+        log_error "there is no roster to authorise against, so this fails closed"
+        log_error "Action: add the people to BREAKPOINT_ACTOR_EMAILS in breakpoint.conf"
+        exit 4
+    fi
+
+    IFS=',' read -ra _requested <<<"$ACCESS_EMAILS"
+    for _want in "${_requested[@]}"; do
+        _want="${_want#"${_want%%[![:space:]]*}"}"
+        _want="${_want%"${_want##*[![:space:]]}"}"
+        [[ -z "$_want" ]] && continue
+        # Match the VALUE half of each actor=email pair, anchored on both sides
+        # so "bob@example.com" cannot be satisfied by "notbob@example.com.evil".
+        if ! grep -qiE "(^|,)[[:space:]]*[^=,]+=[[:space:]]*$(bp_regex_escape "$_want")[[:space:]]*(,|$)" <<<"$roster"; then
+            log_error "refusing to grant Access to '${_want}': not in BREAKPOINT_ACTOR_EMAILS"
+            log_error "Rejected because: this input selects among people the repo already knows;"
+            log_error "                  it is not a way to grant a box to an arbitrary address."
+            log_error "Action: add them to BREAKPOINT_ACTOR_EMAILS in breakpoint.conf, in a"
+            log_error "        commit somebody reviews, rather than in a dispatch input."
+            exit 4
+        fi
+    done
+    log_info "all requested Access emails are on the roster"
 fi
 
 STATE_DIR="$(bp_state_dir)"

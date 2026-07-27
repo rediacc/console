@@ -15,7 +15,7 @@
 # a fallback is to ask for one explicitly.
 #
 # Usage:
-#   select-mode.sh [--mode quick|named|auto] [--allow-fallback]
+#   select-mode.sh [--mode quick|named|auto]
 #
 # Stdout: exactly one of `quick` or `named`, and NOTHING on failure.
 # Exit:   0 ok, 3 named requested but not configured, 4 bad arguments.
@@ -38,7 +38,6 @@ parse_args "$@"
 MODE="${ARG_MODE:-quick}"
 
 # parse_args turns a valueless flag into the literal string "true".
-ALLOW_FALLBACK="${ARG_ALLOW_FALLBACK:-false}"
 
 ZONE="${BREAKPOINT_TUNNEL_ZONE:-}"
 
@@ -80,27 +79,23 @@ case "$MODE" in
 
         missing="$(named_missing_what)"
 
-        if [[ "$ALLOW_FALLBACK" == "true" ]]; then
-            # Even with fallback allowed, refuse when the session would hand out
-            # an interactive shell or a desktop. An unauthenticated tunnel to a
-            # web app is a bad day; an unauthenticated tunnel to a root-ish
-            # shell on a runner holding the repo source is a different category.
-            if [[ "${BREAKPOINT_DEBUG_SHELL:-false}" == "true" ]] ||
-                [[ "${BREAKPOINT_DESKTOP:-none}" != "none" ]]; then
-                log_error "named mode is not configured (missing: $missing)"
-                log_error "--allow-fallback REFUSED: debug-shell or desktop is enabled"
-                log_error "quick mode has no authentication, and this session would expose an interactive session"
-                exit 3
-            fi
-            bp_gha_warning "named mode not configured (missing: $missing); FALLING BACK TO QUICK MODE -- this session has NO Access authentication"
-            echo "quick"
-            exit 0
-        fi
-
+        # THERE IS NO FALLBACK, DELIBERATELY. This used to accept
+        # --allow-fallback and silently downgrade to quick, guarded by a refusal
+        # when debug-shell or a desktop was on. The guard was the tell: it
+        # existed because the maintainer already knew the downgrade was
+        # dangerous, and it only narrowed the blast radius rather than removing
+        # it. A flag whose entire purpose is "drop authentication and keep
+        # going" cannot be made safe by listing the cases where dropping it is
+        # worst -- someone asked for an authenticated tunnel, and quick mode is
+        # not one. Failing to start is the correct outcome and is trivially
+        # recoverable: fix the configuration, or dispatch with tunnel-mode:
+        # quick and mean it.
         log_error "named mode requested but not configured (missing: $missing)"
-        log_error "refusing to fall back to quick mode: quick mode is unauthenticated, and"
-        log_error "silently dropping authentication is worse than failing to start."
-        log_error "Either configure the above, or pass --allow-fallback to accept an unauthenticated tunnel."
+        log_error "Rejected because: quick mode is UNAUTHENTICATED. Silently downgrading would"
+        log_error "                  hand out a box that the operator believed was behind Access."
+        log_error "Action, pick one:"
+        log_error "  1. Configure the above, then re-dispatch."
+        log_error "  2. Dispatch with tunnel-mode: quick, explicitly accepting no authentication."
         exit 3
         ;;
 
