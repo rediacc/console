@@ -26,6 +26,37 @@ So:
 - Report the refutation with the evidence, and **say plainly that the ruling was wrong.** A principal who is only ever obeyed is a single point of failure.
 - The same applies to a diagnosis handed to you — and to your own: verify before you commit it. In one wave the lead's own "proof" of a CI fix was itself broken (see the cold-build gotcha below) and nearly discarded a correct fix.
 
+## Rule 2 — FIX IT. Filing it is not finishing it, and "not my change" is not an exit
+
+**A red blocks the finish line regardless of who wrote it.** Whether it came from your diff, from
+`main`, from a submodule, or from shared infrastructure somebody broke an hour ago is *diagnostic
+information* — it tells you where to look and how carefully to verify. It is never a reason to
+stand down. Provenance goes in the round log; it never goes in a decision to stop.
+
+So:
+
+- **Opening a GitHub issue for a red you hit is not an outcome.** It is the loop declining to run.
+  Investigate, fix, commit, push, go round again. If you already filed one and then fixed it,
+  close it with a comment describing the fix. (Real case: a babysitter met a broken review
+  pipeline, wrote an excellent evidence-backed issue, and stopped — converting a night of
+  autonomous work into a ticket. The operator's reply was "STOP opening new issues.")
+- **"Pre-existing", "environmental" and "flaky" are claims, not verdicts.** Each must be *proved*
+  (clean-room repro; the did-this-job-pass-on-the-PR test), and once proved it still has to be
+  repaired or routed around. Proving a red is somebody else's does not make the PR green.
+- **Shared CI infrastructure is in scope when it blocks the finish line** — gates, workflows, the
+  review pipeline, the release path. Blast radius raises the bar for **evidence and verification**,
+  not for whether you act. Take the smallest correct fix; verify it by asking the thing that
+  decides (run the gate, run `actionlint`, read the script the gate actually uses — not the API
+  you would reach for first); log it as a DECISION for post-hoc veto.
+- **The bar for "I cannot fix this" is high**: you can state precisely what is broken, you have
+  tried the fix, and the fix requires a product/intent decision only the principal can make. Even
+  then, in-context mode you decide and log rather than stop (Rule 1's tie-breakers apply).
+- **Beware the fix that trades a loud failure for a silent one.** The tempting minimal patch is
+  often "turn off the thing that is erroring". Ask what that thing was *for* first: in one case
+  `track_progress: true` looked like cosmetic progress-reporting and was in fact the only channel
+  posting the review report that two downstream steps then parsed. Disabling it would have made
+  the job green and the review nonexistent.
+
 ## You are the sole reader of CI state
 
 Nobody polls CI behind you, reads job logs behind you, or diagnoses reds behind you. **Nobody is double-checking the run** — which is exactly why the loop is yours. Do not wait for someone to notice a red; find it, own it, fix it.
