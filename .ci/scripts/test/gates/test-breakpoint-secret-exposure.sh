@@ -57,11 +57,11 @@ detect_credential_exposure() {
     for expr in "${CREDENTIAL_EXPRESSIONS[@]}"; do
         hits="$(grep -n -F "$expr" "$file" || true)"
         if [[ -n "$hits" ]]; then
-            log_error "credential expression '$expr' appears in $WORKFLOW:"
-            log_error "$hits"
-            log_error "the runner prints env: blocks BEFORE the step runs, so this"
-            log_error "value is published to the log before it can be masked."
-            log_error "pass it through the session state file instead (bp_state_set/get)."
+            printf 'ERROR: %s\n' "credential expression '$expr' appears in $WORKFLOW:" >&2
+            printf 'ERROR: %s\n' "$hits" >&2
+            printf 'ERROR: %s\n' "the runner prints env: blocks BEFORE the step runs, so this" >&2
+            printf 'ERROR: %s\n' "value is published to the log before it can be masked." >&2
+            printf 'ERROR: %s\n' "pass it through the session state file instead (bp_state_set/get)." >&2
             found=1
         fi
     done
@@ -143,14 +143,59 @@ test_live_workflow_matches_template() {
         return
     fi
     if ! cmp -s "$WORKFLOW" "$LIVE_WORKFLOW"; then
-        log_error "$(diff "$WORKFLOW" "$LIVE_WORKFLOW" || true)"
+        printf 'ERROR: %s\n' "$(diff "$WORKFLOW" "$LIVE_WORKFLOW" || true)" >&2
         log_fail ".github/workflows/breakpoint.yml differs from the template; the fix may not be deployed"
     fi
     log_pass "live workflow is byte-identical to the template"
 }
 
+# =============================================================================
+# f) workflow commands must never touch STDOUT
+# =============================================================================
+# bp_gha_mask/bp_gha_warning emit `::add-mask::` / `::warning::` lines. Several
+# scripts here have a stdout DATA CONTRACT (start-tunnel.sh prints exactly one
+# line, the URL, and the workflow does `URL=$(start-tunnel.sh ...)`), so a
+# workflow command on stdout is CAPTURED INTO the value. That killed the first
+# real named-mode run after it had already created the tunnel, DNS record and
+# Access app:
+#
+#   ##[error]Invalid format 'https://rdc-ci-30258284234.rediacc.io'
+#
+# GITHUB_ACTIONS=true is the load-bearing part of this test. Both helpers no-op
+# without it, so the identical check run locally passes while the bug is fully
+# present -- which is exactly how it reached CI.
+test_workflow_commands_never_hit_stdout() {
+    local temp="$1" out err
+    local lib="$BP/lib/breakpoint-common.sh"
+
+    out="$temp/out"
+    err="$temp/err"
+    (
+        set +e
+        # shellcheck source=/dev/null
+        GITHUB_ACTIONS=true bash -c "source '$lib'; bp_gha_mask 'sup3rs3cret'; bp_gha_warning 'careful'" \
+            >"$out" 2>"$err"
+    )
+
+    if [[ -s "$out" ]]; then
+        printf 'ERROR: %s\n' "stdout was: $(cat "$out")" >&2
+        log_fail "bp_gha_mask/bp_gha_warning wrote to STDOUT; any \$(...) capture of a script using them is corrupted"
+    fi
+    log_pass "workflow commands stay off stdout under GITHUB_ACTIONS=true"
+
+    # ...and they must still be EMITTED, or masking silently stops protecting
+    # the per-tunnel connector token (which is not a repo secret, so the runner
+    # does not mask it for us). Off-stdout must not become not-at-all.
+    grep -q '::add-mask::sup3rs3cret' "$err" ||
+        log_fail "bp_gha_mask emitted no ::add-mask:: at all -- masking is silently dead"
+    grep -q '::warning::careful' "$err" ||
+        log_fail "bp_gha_warning emitted no ::warning:: at all"
+    log_pass "workflow commands are still emitted (on stderr), so masking keeps working"
+}
+
 test_no_credential_expression_in_workflow
 with_temp_dir test_detector_fires_on_the_real_leak
+with_temp_dir test_workflow_commands_never_hit_stdout
 test_publish_reads_state
 test_shell_does_not_mask_unconditionally
 test_live_workflow_matches_template

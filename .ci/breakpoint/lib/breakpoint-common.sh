@@ -388,16 +388,39 @@ bp_kill_recorded() {
 
 # Emit a GitHub Actions workflow command, but only when running under Actions.
 # Guarded so every script stays runnable on a laptop.
+# BOTH WRITE TO STDERR, AND THAT IS A BUG FIX WITH A RECEIPT.
+#
+# These used to `echo` workflow commands to STDOUT. Several scripts here have a
+# stdout DATA CONTRACT -- start-tunnel.sh prints exactly one line, the URL, and
+# the workflow does `URL=$(start-tunnel.sh ...)`. So in CI the `::add-mask::`
+# line was captured INTO $URL, making it two lines, and the next statement
+# `echo "url=$URL" >> "$GITHUB_OUTPUT"` wrote a second line with no `key=`:
+#
+#   ##[error]Unable to process file command 'output' successfully.
+#   ##[error]Invalid format 'https://rdc-ci-30258284234.rediacc.io'
+#
+# That killed the first real named-mode run AFTER it had already created the
+# tunnel, the DNS record and the Access app.
+#
+# The bug is invisible locally, which is why a local reproduction of the same
+# command passed: both helpers no-op unless GITHUB_ACTIONS is set. Any test for
+# this MUST set GITHUB_ACTIONS=true or it proves nothing.
+#
+# stderr is correct rather than merely convenient: the runner scans the step's
+# output for `::` commands and does not care which stream carried them, while
+# only stdout is subject to `$(...)` capture. Masking therefore still applies --
+# and it must, because bp_gha_mask is called on the per-tunnel CONNECTOR token,
+# which is NOT a repo secret and so is not auto-masked by the runner.
 bp_gha_warning() {
     if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-        echo "::warning::$*"
+        echo "::warning::$*" >&2
     fi
     log_warn "$*"
 }
 
 bp_gha_mask() {
     if [[ -n "${GITHUB_ACTIONS:-}" ]] && [[ -n "${1:-}" ]]; then
-        echo "::add-mask::$1"
+        echo "::add-mask::$1" >&2
     fi
 }
 

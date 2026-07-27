@@ -217,7 +217,7 @@ test_write_is_byte_identical_to_committed() {
     regenerated="$(grep -v '^#' "$bp/MANIFEST.sha256" | sort)"
 
     if [[ "$committed" != "$regenerated" ]]; then
-        log_error "$(diff <(echo "$committed") <(echo "$regenerated") || true)"
+        printf 'ERROR: %s\n' "$(diff <(echo "$committed") <(echo "$regenerated") || true)" >&2
         log_fail "the committed MANIFEST.sha256 is STALE: a frozen file changed without --write being re-run"
     fi
     log_pass "the committed manifest matches a fresh regeneration (no forgotten --write)"
