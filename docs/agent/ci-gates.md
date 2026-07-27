@@ -101,12 +101,18 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
   it is fatal, because the nightly is the only suite validating `main`
   (`full_suite` is `event != 'push'`) and nobody is watching it. Measured
   2026-07-27: **12 of 12 scheduled runs `cancelled`, zero successes, back to
-  2026-07-16**, entirely unnoticed. A scheduled run now behaves as though it wore
-  `no-cancel-failure`: the failure is recorded, the run is left to conclude as
-  `failure`, and the watchdog KEEPS MONITORING so later failures are still logged
-  and captured. See `evaluateCancelExemption`. The `no-cancel-failure` label
-  could never have covered this: labels live on a PR, and a scheduled run has
-  none.
+  2026-07-16**, entirely unnoticed. On a scheduled run the failure is recorded,
+  the run is left to conclude as `failure`, and the watchdog KEEPS MONITORING so
+  later failures are still logged and captured. See `evaluateCancelExemption`.
+  The `no-cancel-failure` label could never have covered this: labels live on a
+  PR, and a scheduled run has none.
+
+  **Retries are NOT suppressed on the nightly, only cancels are.** A flaky E2E
+  leg is still re-run under the allowlist rules below. Suppressing both would
+  make a network blip turn the nightly red, and a nightly that cries wolf trains
+  everyone to ignore it -- the same disease as the laundering. `forceCancel`
+  therefore reports whether it actually cancelled, and only a real cancel ends
+  the watchdog generation.
 - **Job failure (attempt 1)**: Watchdog uses AI (DeepSeek V4 Pro via Cloudflare's OpenAI-compatible endpoint) to classify the failure from the log excerpt anchored at the first `##[error]` marker (a plain tail showed only post-failure cleanup — run 29931338016):
   - **Transient** (network timeout, flaky test, npm error): the watchdog chain holds a pending rerun, lets the run finish, then reruns every failed job as attempt 2 of the SAME run; other jobs keep running.
   - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.

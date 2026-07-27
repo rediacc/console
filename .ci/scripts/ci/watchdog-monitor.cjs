@@ -395,6 +395,7 @@ const monitor = async ({ github, context, core }) => {
   // fails closed (null is not exempt, so it cancels as it always did), and
   // every forceCancel call site sits after that fetch inside the poll loop.
   let targetRunEvent = null;
+  let announcedExemption = false;
 
   // Helper: rerun the target run's failed jobs (the API behind
   // `gh run rerun --failed`). Only valid once the run has completed.
@@ -643,6 +644,14 @@ const monitor = async ({ github, context, core }) => {
   // Helper: force-cancel the workflow run.
   // Waits for critical jobs (WATCHDOG_WAIT_PATTERNS) to finish before cancelling,
   // so cleanup traps (e.g., deleting temp D1 databases) can complete.
+  //
+  // RETURNS true when the run was actually cancelled, false when the cancel was
+  // suppressed by the event exemption. Callers use it to decide whether to end
+  // the generation: a real cancel is terminal, a suppressed one is not, and the
+  // watchdog must keep monitoring an exempt run so later failures still get
+  // their logs captured. `await forceCancel(...)` without checking the result
+  // would end the chain at the first failure on the nightly, which is precisely
+  // the under-diagnosis this wave exists to fix.
   async function forceCancel(failureMsg) {
     // Re-fetch the job list so the cancellation names EVERY job that has failed
     // by now, not only the one that drove the decision. Between the poll that
@@ -688,7 +697,7 @@ const monitor = async ({ github, context, core }) => {
       console.log('Leaving the run to finish so GitHub reports its true conclusion.');
       console.log('#'.repeat(70));
       core.setFailed('PIPELINE FAILED (run left uncancelled so it concludes as "failure"): ' + failureMsg);
-      return;
+      return false;
     }
 
     const waitPatternsRaw = process.env.WATCHDOG_WAIT_PATTERNS || '';
@@ -737,6 +746,7 @@ const monitor = async ({ github, context, core }) => {
       });
     }
     core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
+    return true;
   }
 
   // Check for skip-cancellation and skip-auto-retry labels.
@@ -822,22 +832,9 @@ const monitor = async ({ github, context, core }) => {
       // forceCancel can never act on a stale value from a previous generation.
       targetRunEvent = run.event;
 
-      // A cancel-exempt run behaves exactly like one wearing `no-cancel-failure`:
-      // record the failure, do not cancel, KEEP MONITORING. Setting the same flag
-      // the label sets means every downstream branch already does the right
-      // thing, instead of each one needing its own exemption check.
-      //
-      // The important half is "keep monitoring". Without this, the exemption
-      // inside forceCancel returns and its caller returns, so the watchdog chain
-      // ENDS at the first failing job -- and the nightly then runs unwatched, so
-      // no later failure gets its log captured and no roster names it. Stopping
-      // at the first red is precisely how a twelve-night outage stays
-      // under-diagnosed. The forceCancel chokepoint stays as the backstop for
-      // the branches that call it without consulting this flag (no-auto-retry,
-      // max-attempts, stuck cancellations).
-      if (!skipCancellationOnFailure && evaluateCancelExemption({ runEvent: targetRunEvent }).exempt) {
-        skipCancellationOnFailure = true;
-        console.log(`Run event "${targetRunEvent}" is cancel-exempt - recording failures and continuing to monitor, not cancelling`);
+      if (!announcedExemption && evaluateCancelExemption({ runEvent: targetRunEvent }).exempt) {
+        announcedExemption = true;
+        console.log(`Run event "${targetRunEvent}" is cancel-exempt - failures are recorded and the run is left to conclude on its own`);
       }
 
       allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
@@ -873,8 +870,8 @@ const monitor = async ({ github, context, core }) => {
       const stillRunning = pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
       if (stillRunning.length === 0) {
         console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
-        await forceCancel(heldQualityFailureMsg);
-        return;
+        if (await forceCancel(heldQualityFailureMsg)) return;
+        pendingQualityCancel = false; // exempt run: recorded, not cancelled; keep monitoring
       }
       console.log(`[${elapsedMin}m] Force-cancel held: waiting on ${stillRunning.length} no-retry job(s)`);
     }
@@ -969,8 +966,7 @@ const monitor = async ({ github, context, core }) => {
       if (isStuck) {
         console.log(`"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`);
         core.error(`Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`);
-        await forceCancel(failureMsg);
-        return;
+        if (await forceCancel(failureMsg)) return;
       }
 
       // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI.
@@ -1027,8 +1023,7 @@ const monitor = async ({ github, context, core }) => {
           continue;
         }
 
-        await forceCancel(failureMsg);
-        return;
+        if (await forceCancel(failureMsg)) return;
       }
 
       // 2. Label: no-cancel-failure -- let everything finish
@@ -1040,14 +1035,12 @@ const monitor = async ({ github, context, core }) => {
       // 3. Label: no-auto-retry -- force-cancel immediately
       else if (skipAutoRetry) {
         console.log('Force-cancel due to "no-auto-retry" label');
-        await forceCancel(failureMsg);
-        return;
+        if (await forceCancel(failureMsg)) return;
       }
       // 4. Max attempts reached -- force-cancel
       else if (run.run_attempt >= MAX_ATTEMPTS) {
         console.log(`Attempt ${run.run_attempt}/${MAX_ATTEMPTS} -- no more retries`);
-        await forceCancel(failureMsg);
-        return;
+        if (await forceCancel(failureMsg)) return;
       }
       // 5. First failure: AI classifies.
       // Transient -> hold a PENDING RERUN and keep monitoring. The chain waits
@@ -1084,8 +1077,7 @@ const monitor = async ({ github, context, core }) => {
         if (!eligibility.retry) {
           console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
           console.log(`No retry: ${eligibility.reason}`);
-          await forceCancel(failureMsg);
-          return;
+          if (await forceCancel(failureMsg)) return;
         } else {
           console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
           // The rerun covers every failed job from this attempt, so name

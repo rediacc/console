@@ -192,6 +192,24 @@ test_a_scheduled_run_records_the_failure_and_keeps_monitoring() {
     log_pass "a scheduled run records the failure, captures the log, and keeps monitoring ($trace)"
 }
 
+test_a_scheduled_run_still_retries_a_known_flaky_leg() {
+    # The nightly must not cry wolf. Suppressing the CANCEL must not also
+    # suppress the RETRY: a flaky E2E leg blipping on the network should be
+    # re-run, not turned into a red nightly that trains everyone to ignore the
+    # signal -- which is the same disease as the laundering this wave fixes.
+    #
+    # An earlier revision of this fix set skipCancellationOnFailure for exempt
+    # runs, which sits in an `else if` chain and therefore skipped the retry
+    # branch entirely. Caught by reading the branch structure, not by a test,
+    # so this is the test that would have caught it.
+    local trace
+    trace="$(run_monitor 'Tests + Infra / E2E Workers (fedora-43)' 'completed' 'schedretry' 'schedule')"
+    assert_contains "$trace" "request:rerun" "an allowlisted flaky leg is still retried on the nightly"
+    assert_not_contains "$trace" "force-cancel" "and the run is still never cancelled"
+    assert_eq "$(captured_files schedretry)" "1" "with its log captured first"
+    log_pass "a scheduled run still retries a known-flaky leg ($trace)"
+}
+
 log_test "test-watchdog-log-capture"
 test_capture_on_the_fail_fast_path
 test_capture_before_the_rerun
@@ -199,5 +217,6 @@ test_captured_content_is_the_whole_log_not_the_excerpt
 test_capture_filename_is_traceable
 test_no_capture_dir_means_no_capture_and_no_crash
 test_a_scheduled_run_records_the_failure_and_keeps_monitoring
+test_a_scheduled_run_still_retries_a_known_flaky_leg
 echo ""
 log_pass "all tests passed"
