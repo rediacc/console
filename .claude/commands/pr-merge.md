@@ -43,6 +43,20 @@ For each one found:
 
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
+
+  **If it is NOT clean, do not just stop — identify whose work it is first.** This tree is
+  shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of
+  this land. Steps 4 and 6 run `git checkout main` / `git merge --ff-only`, which carry
+  uncommitted changes across silently when they do not conflict and abort mid-way when they do.
+  Neither outcome is one you want to discover after a merge has already landed.
+
+  So: report what is dirty and who it belongs to, and **never** `git add`, `stash`, `restore`
+  or `checkout` those paths to make the precondition pass — that destroys another session's
+  work and is banned by CLAUDE.md. Either the operator lands with the dirty tree acknowledged
+  (the changes ride along untouched, which is safe as long as they do not overlap what `main`
+  moved), or the other session commits first. Observed live: a session held 18 uncommitted
+  paths through a `/pr-merge`; nothing was lost, but only because `main`'s two new commits
+  happened to touch none of them.
 - A `rediacc/console` PR exists for this branch. Note its number.
 - The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the latest console CI run green (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
 - `/code-review ultra` is available as an optional deep pre-land review for a big wave (operator-invoked; it does not replace the automated Claude review).
@@ -129,5 +143,28 @@ git merge-base --is-ancestor origin/main "$rec" && echo "record AHEAD"
 
 Worktree **behind** the record ⇒ the checkout is stale ⇒ `git submodule update`, **commit nothing**. Committing it would roll that submodule back a release. The naive test ("this isn't my work, leave it out") gives the right answer here only by luck, and the opposite instinct ("the pointer is dirty, carry it at its latest") ships the rollback.
 
-### 7. Report
-State each merged commit (renet / account / console → their squash SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. **Do not** merge anything else or re-cut a release.
+### 7. Hand the tree back safely — you are now sitting on `main`
+
+Steps 4 and 6 leave the checkout on `main`, which is correct for verifying the release but is a
+**loaded gun for whatever happens next**: `main` is the one branch this repo forbids pushing,
+and a tree parked there invites the next piece of work to be written straight onto it.
+
+That is not hypothetical. A session finished a `/pr-merge`, stayed on `main`, and built an
+entire feature there — 26 new files across 18 paths — before anything noticed. It reached a
+branch only because `/pr-babysit` happened to be invoked afterwards and created one. Nothing
+was lost, but the recovery was luck, not design: had the operator not run `/pr-babysit`, the
+work would still be uncommitted on `main`, one careless `git commit` away from a forbidden push.
+
+So finish by making the state explicit rather than leaving it implied:
+
+- Confirm and **state in the report** that the checkout is on `main` and that `main` is
+  read-only here: the next task must start with a fresh `MMDD-N` branch (`/pr-babysit` does
+  this, or `git checkout -b <MMDD-N>` by hand) **before** any tracked file is edited.
+- If the tree already carries uncommitted work (the §0 shared-tree case), say so again here —
+  that work is now sitting on `main` and needs a branch before it can be committed at all.
+- Do **not** pre-create the next branch yourself. The branch name encodes the next wave's date
+  and number, and guessing it produces stray `MMDD-N` refs that the next `/pr-babysit` then has
+  to skip past.
+
+### 8. Report
+State each merged commit (renet / account / console → their squash SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.

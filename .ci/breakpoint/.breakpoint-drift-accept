@@ -1,0 +1,28 @@
+# Accepted divergences from the canonical .ci/breakpoint/ in rediacc/console.
+#
+# EMPTY IS THE CORRECT STATE FOR THE CANONICAL REPO. This file exists for
+# repositories that VENDORED breakpoint and have a genuine, repo-specific reason
+# to carry a modified copy of one of the frozen files.
+#
+# Before adding an entry, try the other three options first. In order of
+# preference:
+#   1. Revert your local edit.
+#   2. Land the change in rediacc/console, run check-breakpoint-drift.sh --write
+#      there, and re-vendor here with sync-breakpoint.sh. This is nearly always
+#      the right answer: breakpoint is meant to be one implementation.
+#   3. Move the varying value into breakpoint.conf, which is not frozen and is
+#      the sanctioned per-repo edit point.
+#   4. Only then, accept the divergence here.
+#
+# FORMAT -- a BLOCKER comment immediately above each accepted path:
+#
+#   # BLOCKER: <>=30 chars naming what is different about THIS repo AND why the
+#   #          canonical copy cannot carry the change>
+#   scripts/install-vnc-desktop.sh
+#
+# Validated by lib/breakpoint-blocker.sh: a reason shorter than 30 characters,
+# or one matching the banned-phrase list ("tbd", "wip", "ok", "later", ...), is
+# rejected. So is an entry naming a path that is not in MANIFEST.sha256 -- a
+# stale accept is reported as a hard failure rather than lingering forever,
+# which is the lesson from the 101 dead entries documented in
+# docs/agent/suppressions.md.

@@ -15,8 +15,14 @@
 #   Emits to $GITHUB_OUTPUT: go, pr_number, head_sha, last_reviewed_sha,
 #   and (when go=true) a heredoc `prompt` assembled from prompts/initial.md
 #   or prompts/followup.md.
-# Mark mode (--mark): upsert the marker comment AFTER a successful review.
+# Post-report mode (--post-report): post the model's final report as a PR
+#   comment on the entry points where the action cannot (see the mode itself).
+#   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
+# Post-findings mode (--post-findings): turn the report's machine-readable
+#   findings block into line-anchored review comments.
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA
+# Mark mode (--mark): upsert the marker comment AFTER a successful review.
+#   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
 #
 # Local dry-run (read-only):
 #   GH_TOKEN=$(gh auth token) GITHUB_REPOSITORY=rediacc/console \
@@ -112,6 +118,59 @@ emit_prompt() {
         echo "CLAUDE_REVIEW_PROMPT_EOF"
     } >>"$GITHUB_OUTPUT"
 }
+
+if [[ "${1:-}" == "--post-report" ]]; then
+    # Post the review report when the ACTION could not. track_progress (which
+    # makes the action itself post/update the report comment) is rejected by
+    # the action for any event outside pull_request/issues/issue_comment/
+    # pull_request_review{,_comment} -- so on the workflow_run entry point the
+    # action runs in AGENT mode, which creates no tracking comment at all and
+    # leaves the report existing only as the model's final text inside the
+    # execution file. Post it from here so both entry points end up with one
+    # shape of report: the header prefix is the action's own
+    # ("**Claude finished ...", src/github/operations/comment-logic.ts), which
+    # is the signature review_report_count above, check-review-report-replies.sh,
+    # and --post-findings all match on.
+    require_var PR_NUMBER
+    require_var HEAD_SHA
+    report=""
+    if [[ -n "${EXECUTION_FILE:-}" && -f "${EXECUTION_FILE:-}" ]]; then
+        # Same result-object shape --mark parses for cost; `.result` carries the
+        # model's final text (the action's own format-turns.ts reads that field
+        # to render the "Final Result" section).
+        report=$(jq -r '
+            (if type == "array" then [.[] | select(.type == "result")][-1] else . end) as $r
+            | select($r != null) | $r.result // empty
+        ' "$EXECUTION_FILE" 2>/dev/null) || report=""
+    fi
+    if [[ -z "$report" ]]; then
+        # Fail OPEN, not closed: --mark is the honesty guard and will refuse to
+        # stamp the SHA when nothing posted, so the SHA stays retryable.
+        log_warn "no final report text in ${EXECUTION_FILE:-<unset>}; nothing to post"
+        exit 0
+    fi
+    # GitHub rejects issue-comment bodies over 65536 chars with a 422, which
+    # would fail this step and strand the SHA in a permanent retry loop. Keep
+    # the head (verdict + findings prose) AND the tail (the json:review-findings
+    # fence --post-findings parses) rather than a plain truncation that would
+    # drop the fence.
+    if [[ ${#report} -gt 60000 ]]; then
+        log_warn "report is ${#report} chars; truncating the middle to fit the comment limit"
+        report="${report:0:30000}
+
+_[report truncated: middle omitted to fit GitHub's comment size limit]_
+
+${report: -25000}"
+    fi
+    gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+        -f body="**Claude finished the automated review of ${HEAD_SHA:0:7}**
+
+---
+
+${report}" >/dev/null
+    log_info "Posted review report for ${HEAD_SHA:0:7} (${#report} chars)"
+    exit 0
+fi
 
 if [[ "${1:-}" == "--post-findings" ]]; then
     # Post line-anchored review comments with severity badges from the

@@ -63,6 +63,26 @@ jobs:
           # release, so Phase 8d's sentinel+tag bijection is the correct guard.
           # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
 
+      # Reap breakpoint tunnels whose in-job teardown never ran. Two paths skip
+      # `if: always()` entirely -- the CI watchdog's force-cancel and a runner
+      # crash -- so this is the ONLY backstop for them. Terminal run state is
+      # the primary signal (the tunnel name encodes the run id); age is a
+      # secondary guard; an inconclusive GitHub answer is never acted on.
+      #
+      # Age-guarded nightly rather than workflow_run-triggered on purpose:
+      # cleanup-on-ci-cancel.yml was exactly that reactive shape and it deleted
+      # in-flight release binaries (9384e046c). Same lesson, shorter floor.
+      #
+      # Continues past a failure of the step above: an unrelated R2 hiccup must
+      # not leave a live tunnel up for another 24 hours.
+      - name: Reap orphaned breakpoint tunnels
+        if: ${{ !cancelled() }}
+        run: .ci/breakpoint/scripts/reap-breakpoint-orphans.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
   stripe-cleanup:
     name: Stripe sandbox cleanup
     # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform

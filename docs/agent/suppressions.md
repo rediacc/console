@@ -16,6 +16,7 @@ Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists)
 | Go dep upgrade blocklist | `.go-deps-upgrade-blocklist` | `.ci/scripts/quality/check-go-deps.sh` |
 | Embed-asset upgrade blocklist | `.embed-assets-upgrade-blocklist` | `scripts/check-embed-asset-freshness.ts` |
 | GitHub Actions upgrade blocklist | `.actions-upgrade-blocklist` | `scripts/check-actions.ts` |
+| Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
 | Dead-bash discovery allowlist | `.dead-bash-allowlist` | `scripts/check-dead-bash.ts` |
 | CI-chain parity exemptions | `.ci-chain-exempt` | `scripts/check-ci-chain-parity.ts` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |

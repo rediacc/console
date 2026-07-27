@@ -39,6 +39,14 @@ jobs:
     name: Claude Review
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # track_progress makes the ACTION post/update the report comment, but it
+      # is REJECTED (hard error, whole review dies) for any event outside this
+      # list -- mirrored from the action's own validateTrackProgressEvent
+      # (src/modes/detector.ts). workflow_run is an automation context, so the
+      # flag has to follow the trigger; "Post review report" below covers the
+      # events where the action cannot post for us.
+      TRACK_PROGRESS: ${{ contains(fromJSON('["pull_request", "issues", "issue_comment", "pull_request_review_comment", "pull_request_review"]'), github.event_name) }}
     permissions:
       contents: read
       pull-requests: write # inline review comments + summary comment
@@ -125,10 +133,18 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
+          # The prompt is what makes this a REVIEW rather than an @claude
+          # mention bot: without it the action auto-detects tag mode and skips
+          # every run that carries no mention ("No trigger was met for
+          # @claude"). With track_progress on an entity event the action still
+          # forces tag mode -- that is intended, the prompt then rides along as
+          # <custom_instructions> and the action owns the report comment.
+          prompt: ${{ steps.gate.outputs.prompt }}
           # track_progress: the ACTION posts/updates the report comment via
           # github_token -- model-side posting proved undeliverable (SDK
           # permission denials, three attempts) and stays best-effort only.
-          track_progress: true
+          # Per-event, because the action rejects the flag outright elsewhere.
+          track_progress: ${{ env.TRACK_PROGRESS }}
           settings: |
             {
               "permissions": {
@@ -147,6 +163,22 @@ jobs:
           claude_args: |
             --model claude-sonnet-5
             --max-turns ${{ steps.gate.outputs.review_turns }}
+
+      # Without track_progress the action ran in AGENT mode, which creates no
+      # tracking comment at all -- the report exists only as the model's final
+      # text in the execution file. Post it here so the workflow_run entry
+      # point yields the same report shape as the ready-flip one; the two
+      # steps below (and the review cap, and the report-reply gate) all read
+      # that comment. Ordering is load-bearing: this must precede
+      # --post-findings, which parses the findings fence out of it.
+      - name: Post review report
+        if: steps.gate.outputs.go == 'true' && env.TRACK_PROGRESS != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --post-report
 
       # Line-anchored severity-badged comments, posted deterministically from
       # the machine-readable findings block in the report (the model's final
