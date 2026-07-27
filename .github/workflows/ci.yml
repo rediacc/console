@@ -125,7 +125,7 @@ jobs:
           else
             CHANNEL=""
           fi
-          echo "channel=${CHANNEL}" >> $GITHUB_OUTPUT
+          echo "channel=${CHANNEL}" >> "$GITHUB_OUTPUT"
 
       - name: Assert channel matches event
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
@@ -817,7 +817,7 @@ jobs:
       # Create Stripe webhook pointing to pr-N
       - name: Setup Stripe webhook
         id: stripe-webhook
-        run: npx tsx scripts/setup-sandbox.ts --pr-number ${PR_NUMBER}
+        run: npx tsx scripts/setup-sandbox.ts --pr-number "${PR_NUMBER}"
         working-directory: private/account
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
@@ -854,12 +854,14 @@ jobs:
 
       - name: Deployment summary
         run: |
-          echo "## Preview Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**URL:** https://pr-${PR_NUMBER}.rediacc.workers.dev" >> $GITHUB_STEP_SUMMARY
-          echo "**Console:** https://pr-${PR_NUMBER}.rediacc.workers.dev/console/" >> $GITHUB_STEP_SUMMARY
-          echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health" >> $GITHUB_STEP_SUMMARY
-          echo "**PR:** #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Preview Deployment"
+            echo ""
+            echo "**URL:** https://pr-${PR_NUMBER}.rediacc.workers.dev"
+            echo "**Console:** https://pr-${PR_NUMBER}.rediacc.workers.dev/console/"
+            echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health"
+            echo "**PR:** #${PR_NUMBER}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
   # COLUMN 5b: SMOKE TEST PREVIEW

@@ -126,8 +126,8 @@ jobs:
         id: version
         run: |
           VERSION=$(.ci/scripts/version/resolve-version.sh --current)
-          echo "next_version=$VERSION" >> $GITHUB_OUTPUT
-          echo "bump_type=none" >> $GITHUB_OUTPUT
+          echo "next_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "bump_type=none" >> "$GITHUB_OUTPUT"
           echo "::notice::Using existing version $VERSION (from latest tag)"
 
       # Normal mode: recalculate version from git state
@@ -150,7 +150,7 @@ jobs:
         if: steps.skip-check.outputs.skip_release != 'true'
         id: channel
         run: |
-          echo "channel=edge" >> $GITHUB_OUTPUT
+          echo "channel=edge" >> "$GITHUB_OUTPUT"
 
       # Version guard: fail early if this version was already published (skip in retry/workers-only mode)
       - name: Check for existing release
@@ -277,7 +277,7 @@ jobs:
       - name: Verify Stripe webhook endpoints (per-region)
         if: needs.init.outputs.workers_only != 'true' && needs.init.outputs.retry_mode != 'true'
         run: |
-          jq -r '.regions[] | .domain' regions.json | while read domain; do
+          jq -r '.regions[] | .domain' regions.json | while read -r domain; do
             echo "Verifying webhook for ${domain}..."
             npx tsx private/account/scripts/verify-webhook.ts --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
           done

@@ -113,12 +113,14 @@ jobs:
       - name: Summary
         if: steps.result.outputs.promoted == 'true'
         run: |
-          echo "## Stable Promotion" >> $GITHUB_STEP_SUMMARY
-          echo "- Edge version: ${{ steps.edge.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Previous stable: ${{ steps.stable.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Soak days: ${{ env.SOAK_DAYS }}" >> $GITHUB_STEP_SUMMARY
-          echo "- R2: CLI, APT, RPM, APK, Archlinux promoted" >> $GITHUB_STEP_SUMMARY
-          echo "- Docker: all images retagged :edge -> :stable" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Stable Promotion"
+            echo "- Edge version: ${{ steps.edge.outputs.version }}"
+            echo "- Previous stable: ${{ steps.stable.outputs.version }}"
+            echo "- Soak days: ${{ env.SOAK_DAYS }}"
+            echo "- R2: CLI, APT, RPM, APK, Archlinux promoted"
+            echo "- Docker: all images retagged :edge -> :stable"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Deploy stable Workers from the exact tagged version
   deploy-marketing-stable:
