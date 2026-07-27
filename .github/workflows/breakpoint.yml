@@ -87,11 +87,6 @@ on:
         type: boolean
         default: false
 
-      allow-fallback:
-        description: 'If named mode cannot be configured, fall back to quick. OFF by default: quick is unauthenticated, and silently dropping auth is worse than failing to start.'
-        type: boolean
-        default: false
-
       send-email:
         description: 'Email the access details. ON by default: on a public repo the URL is a bearer credential and the log is world-readable. Turning this off PRINTS the URL instead.'
         type: boolean
@@ -196,12 +191,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
-          BP_ALLOW_FALLBACK: ${{ inputs.allow-fallback }}
           BP_TUNNEL_MODE: ${{ inputs.tunnel-mode }}
         run: |
-          FLAGS=""
-          [ "$BP_ALLOW_FALLBACK" = "true" ] && FLAGS="--allow-fallback"
-          MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "$BP_TUNNEL_MODE" $FLAGS)
+          MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "$BP_TUNNEL_MODE")
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
       # Operator's own tool list, from BREAKPOINT_EXTRA_PACKAGES in
