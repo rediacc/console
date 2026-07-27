@@ -52,6 +52,21 @@ CONNECT_TIMEOUT="${ARG_CONNECT_TIMEOUT:-90}"
     exit 4
 }
 
+# Validate the ONE free-text, operator-supplied value this feature accepts.
+# Defence in depth: the workflow now passes it via `env:` so it can never be
+# script text, and parse_args no longer evals -- this is the third layer, and
+# the only one that constrains the CONTENT rather than the handling. A value
+# reaching Cloudflare's Access policy API should look like an email list and
+# nothing else.
+if [[ -n "$ACCESS_EMAILS" ]]; then
+    if [[ ! "$ACCESS_EMAILS" =~ ^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}([[:space:]]*,[[:space:]]*[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})*$ ]]; then
+        log_error "--access-emails is not a comma-separated list of email addresses"
+        log_error "got: ${ACCESS_EMAILS}"
+        log_error "expected e.g.: alice@example.com,bob@example.com"
+        exit 4
+    fi
+fi
+
 STATE_DIR="$(bp_state_dir)"
 LOG_FILE="$STATE_DIR/cloudflared.log"
 mkdir -p "$STATE_DIR"

@@ -80,6 +80,22 @@ log_debug() {
 # ARGUMENT PARSING  (verbatim from common.sh:270-307)
 # =============================================================================
 #
+# ONE DELIBERATE DIVERGENCE FROM common.sh: assignment uses `printf -v`, NOT
+# `eval "$key=\"$2\""`. This is the single place the vendored copy is not
+# verbatim, and it is a security fix, not a style preference.
+#
+# `eval` re-parses its argument as a fresh command line, so a value containing
+# backticks, $(...) or a `;` is EXECUTED rather than stored. That is a second
+# injection layer underneath the workflow, and this feature is what first routes
+# a free-text, operator-supplied value (`access-emails`) through parse_args --
+# every earlier caller in this codepath passed a choice-enum. `printf -v`
+# assigns the bytes and interprets nothing.
+#
+# Behavioural delta, stated so nobody is surprised: `--foo '$HOME'` now stores
+# the literal string `$HOME` instead of the expanded path. Nothing here wants
+# that expansion, and silently expanding a caller's data was never intended.
+# Console's own common.sh still uses eval; see the PR discussion.
+#
 # THREE QUIRKS, PRESERVED DELIBERATELY AND PINNED BY test-breakpoint-mode-selection.sh:
 #   1. Repeated flags DO NOT accumulate. `--mode a --mode b` yields ARG_MODE=b,
 #      because each eval overwrites the same variable name. No script in
@@ -106,7 +122,7 @@ parse_args() {
                 key="${key#--}"
                 key="${key//-/_}"
                 key="ARG_$(to_upper "$key")"
-                eval "$key=\"$value\""
+                printf -v "$key" '%s' "$value"
                 shift
                 ;;
             --*)
@@ -114,10 +130,10 @@ parse_args() {
                 key="${key//-/_}"
                 key="ARG_$(to_upper "$key")"
                 if [[ $# -gt 1 ]] && [[ ! "$2" =~ ^-- ]]; then
-                    eval "$key=\"$2\""
+                    printf -v "$key" '%s' "$2"
                     shift 2
                 else
-                    eval "$key=true"
+                    printf -v "$key" '%s' "true"
                     shift
                 fi
                 ;;
