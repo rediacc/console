@@ -114,6 +114,15 @@ on:
 
 permissions:
   contents: read
+  # packages: read is REQUIRED, not decorative. Without it the pre-pull gets
+  # part-way and then dies:
+  #     Pulling server:latest...  ghcr.io/rediacc/server:latest   OK
+  #     Pulling renet:latest...   Error response from daemon: denied
+  # `server` happens to be readable without it; `renet` is not, so the failure
+  # looked like a broken image reference rather than a missing scope. ci.yml
+  # carries the same line with the comment "Most jobs pull from GHCR"; this
+  # workflow simply omitted it.
+  packages: read
 
 # Keyed on run_id, so the group is unique per run and can NEVER collide.
 # cancel-in-progress is therefore false rather than true: the old
@@ -194,6 +203,12 @@ jobs:
           [ "$BP_ALLOW_FALLBACK" = "true" ] && FLAGS="--allow-fallback"
           MODE=$(.ci/breakpoint/scripts/select-mode.sh --mode "$BP_TUNNEL_MODE" $FLAGS)
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+
+      # Operator's own tool list, from BREAKPOINT_EXTRA_PACKAGES in
+      # breakpoint.conf. Runs for every session regardless of desktop/services,
+      # because these are the tools you want when you SSH in.
+      - name: Install extra packages
+        run: .ci/breakpoint/scripts/install-extra-packages.sh
 
       - name: Install desktop packages
         if: inputs.desktop != 'none'

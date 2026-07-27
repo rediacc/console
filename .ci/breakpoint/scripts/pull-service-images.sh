@@ -15,15 +15,19 @@
 # deliberately does not check out (see the no-app-token decision in README.md).
 # Pulling is both faster and the thing every other CI job does.
 #
-# ALWAYS EXITS 0. A debug box whose application image is missing is still a
-# perfectly good debug box -- you still get the tunnel, the desktop and the
-# shell. start-origin.sh already reports the degraded state loudly, so failing
-# here would throw away a working session over an optional extra.
+# FAILS LOUDLY. An earlier draft of this script always exited 0, on the theory
+# that a box without its app image is still a useful box. That is a fallback,
+# and fallbacks hide: the operator asked for --services, the pull silently did
+# not happen, ci-start.sh then could not start anything, and the first symptom
+# was "bad gateway" at the tunnel root with nothing in between explaining why.
+# If the images cannot be pulled, say so HERE, where the reason is still in
+# scope, and let the run fail. `hold-on-failure: true` keeps the box alive for
+# inspection when you want to debug the boot itself.
 #
 # Env: GITHUB_TOKEN, GITHUB_ACTOR (both required to reach GHCR)
-# Exit: 0, always.
+# Exit: 0 pulled, 1 pull failed, 3 misconfigured.
 
-set -uo pipefail # NOT -e: a pull failure must not end the session
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/breakpoint-common.sh
 source "$SCRIPT_DIR/../lib/breakpoint-common.sh"
@@ -32,15 +36,14 @@ REPO_ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 PULLER="$REPO_ROOT/.ci/scripts/infra/ci-pull-images.sh"
 
 if [[ ! -x "$PULLER" ]]; then
-    # Normal for a repo that vendored breakpoint without console's infra tree.
-    log_warn "no $PULLER in this repo; skipping the image pre-pull"
-    exit 0
+    log_error "no $PULLER in this repo, so --services cannot be honoured"
+    log_error "dispatch with services: none in a repo without console's infra tree"
+    exit 3
 fi
 
 if [[ -z "${GITHUB_TOKEN:-}" ]] || [[ -z "${GITHUB_ACTOR:-}" ]]; then
-    log_warn "GITHUB_TOKEN/GITHUB_ACTOR not set; skipping the image pre-pull"
-    log_warn "services will start only if the images are already on this runner"
-    exit 0
+    log_error "GITHUB_TOKEN/GITHUB_ACTOR are required to reach GHCR and are not set"
+    exit 3
 fi
 
 log_step "pre-pulling service images from GHCR..."
@@ -49,11 +52,11 @@ log_step "pre-pulling service images from GHCR..."
 # sibling scripts have a one-line-stdout contract, and ci-pull-images.sh is
 # chatty. Keeping the habit everywhere is cheaper than remembering where it
 # matters.
-if "$PULLER" >&2; then
-    log_info "service images pulled"
-else
-    log_warn "image pre-pull FAILED; the session continues without the app stack"
-    log_warn "the tunnel, desktop and shell are unaffected -- only --services is degraded"
+if ! "$PULLER" >&2; then
+    log_error "image pre-pull FAILED -- ci-start.sh cannot start anything without these images"
+    log_error "(it skips 'docker compose build' whenever GITHUB_ACTIONS is set)"
+    log_error "re-dispatch with services: none, or with hold-on-failure to debug the pull"
+    exit 1
 fi
 
-exit 0
+log_info "service images pulled"
