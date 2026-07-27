@@ -63,9 +63,13 @@ const report = async ({ github, context, core }) => {
 
   // The rolling issue is identified by LABEL, not by title: a human may retitle
   // it while investigating, and that must not orphan the tracking.
-  const open = await github.paginate(github.rest.issues.listForRepo, {
+  //
+  // `.pull_request` filter: GitHub's issues API returns PULL REQUESTS as issues.
+  // A PR that happened to carry this label would otherwise be treated as the
+  // tracking issue and get commented on, or closed on the next green nightly.
+  const open = (await github.paginate(github.rest.issues.listForRepo, {
     owner, repo, state: 'open', labels: ISSUE_LABEL, per_page: 100,
-  });
+  })).filter(i => !i.pull_request);
 
   if (isGreen(conclusion)) {
     if (open.length === 0) {
@@ -111,6 +115,32 @@ const report = async ({ github, context, core }) => {
 
   if (open.length > 0) {
     const issue = open[0];
+
+    // Dedupe by run id. `workflow_run: completed` fires once per ATTEMPT, and a
+    // run keeps its id across attempts, so a nightly whose failed jobs are
+    // re-run reaches this code twice for the same night. Without this check the
+    // issue collects a duplicate comment per attempt, which makes a streak look
+    // longer than it is -- and the streak length is the one number this issue
+    // exists to communicate.
+    let alreadyReported = String(issue.body || '').includes(`run ${runId}`);
+    if (!alreadyReported) {
+      try {
+        const comments = await github.paginate(github.rest.issues.listComments, {
+          owner, repo, issue_number: issue.number, per_page: 100,
+        });
+        alreadyReported = comments.some(c => String(c.body || '').includes(`run ${runId}`));
+      } catch (e) {
+        // Fail toward reporting: a duplicate comment is noise, a missing one is
+        // the silence this whole workflow exists to break.
+        console.log(`Could not read existing comments (${e.message}); reporting anyway.`);
+      }
+    }
+    if (alreadyReported) {
+      console.log(`#${issue.number} already reports run ${runId}; not commenting twice.`);
+      core.warning(`Nightly CI is still red (${conclusion}); see issue #${issue.number}.`);
+      return;
+    }
+
     await github.rest.issues.createComment({ owner, repo, issue_number: issue.number, body });
     console.log(`Commented on #${issue.number}: the nightly is still red.`);
     core.warning(`Nightly CI is still red (${conclusion}); see issue #${issue.number}.`);

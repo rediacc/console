@@ -822,6 +822,24 @@ const monitor = async ({ github, context, core }) => {
       // forceCancel can never act on a stale value from a previous generation.
       targetRunEvent = run.event;
 
+      // A cancel-exempt run behaves exactly like one wearing `no-cancel-failure`:
+      // record the failure, do not cancel, KEEP MONITORING. Setting the same flag
+      // the label sets means every downstream branch already does the right
+      // thing, instead of each one needing its own exemption check.
+      //
+      // The important half is "keep monitoring". Without this, the exemption
+      // inside forceCancel returns and its caller returns, so the watchdog chain
+      // ENDS at the first failing job -- and the nightly then runs unwatched, so
+      // no later failure gets its log captured and no roster names it. Stopping
+      // at the first red is precisely how a twelve-night outage stays
+      // under-diagnosed. The forceCancel chokepoint stays as the backstop for
+      // the branches that call it without consulting this flag (no-auto-retry,
+      // max-attempts, stuck cancellations).
+      if (!skipCancellationOnFailure && evaluateCancelExemption({ runEvent: targetRunEvent }).exempt) {
+        skipCancellationOnFailure = true;
+        console.log(`Run event "${targetRunEvent}" is cancel-exempt - recording failures and continuing to monitor, not cancelling`);
+      }
+
       allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
         owner: context.repo.owner,
         repo: context.repo.repo,
@@ -929,6 +947,21 @@ const monitor = async ({ github, context, core }) => {
       // full failure roster before recording it.
       let failureMsg = logFailure(job, reason, run.run_attempt);
       handledJobs.add(job.name);
+
+      // Capture this job's log NOW, before any branch below decides what to do
+      // about it. Capture is evidence, not classification, and tying the two
+      // together loses the evidence exactly where it matters most.
+      //
+      // It used to happen as a side effect of classifyFailure, which is only
+      // reached on branch 5. Every earlier branch -- a no-retry Quality
+      // failure, the `no-cancel-failure` label, a cancel-exempt scheduled run,
+      // max-attempts -- returned or continued without ever fetching a log. So
+      // the NIGHTLY, which now takes the exempt path by construction, captured
+      // nothing at all. Caught by test-watchdog-log-capture.sh's scheduled-run
+      // case, which expected one captured file and found zero.
+      //
+      // Cached in logTails, so the later classification does not re-fetch.
+      await getLogTail(job);
 
       // 0. Stuck cancellations bypass AI + retry entirely -- the job hung
       // once, retrying would just hang again. Force-cancel and surface a

@@ -38,6 +38,7 @@ const monitor = require(process.argv[2]);
 const captureDir = process.argv[3];
 const jobName = process.argv[4];
 const runStatus = process.argv[5];
+const runEvent = process.argv[6] || 'pull_request';
 
 const LOG_BODY = [
   'Run some/step@v1',
@@ -57,7 +58,7 @@ const github = {
   request: async (route) => { actions.push(`request:${route.includes('force-cancel') ? 'force-cancel' : route.includes('rerun-failed-jobs') ? 'rerun' : route}`); return {}; },
   rest: {
     actions: {
-      getWorkflowRun: async () => ({ data: { status: runStatus, conclusion: null, run_attempt: 1, event: 'pull_request' } }),
+      getWorkflowRun: async () => ({ data: { status: runStatus, conclusion: null, run_attempt: 1, event: runEvent } }),
       listJobsForWorkflowRun: () => {},
       downloadJobLogsForWorkflowRun: async () => { actions.push('fetched-logs'); return { data: LOG_BODY }; },
       cancelWorkflowRun: async () => { actions.push('request:cancel'); return {}; },
@@ -83,16 +84,16 @@ HARNESS
 
 # run <job-name> <run-status> <capture-subdir> -> prints the action trace
 run_monitor() {
-    local job="$1" status="$2" dir="$WORK/$3"
+    local job="$1" status="$2" dir="$WORK/$3" event="${4:-pull_request}" deadline="${5:-}"
     mkdir -p "$dir"
     WATCHDOG_TARGET_RUN_ID=999 \
         WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
         WATCHDOG_NO_RETRY_PATTERNS='Quality,Review Gate' \
         WATCHDOG_INSTALL_VALIDATION_PATTERNS='Validate Install Methods / Linux' \
         WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \
-        WATCHDOG_DEADLINE_SECONDS='' \
+        WATCHDOG_DEADLINE_SECONDS="$deadline" \
         CLOUDFLARE_API_TOKEN='' CLOUDFLARE_ACCOUNT_ID='' \
-        node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" 2>/dev/null | tail -1
+        node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" "$event" 2>/dev/null | tail -1
 }
 
 captured_files() { find "$WORK/$1" -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' '; }
@@ -167,11 +168,36 @@ test_no_capture_dir_means_no_capture_and_no_crash() {
     log_pass "capture is best-effort: unset directory disables it without breaking the monitor"
 }
 
+test_a_scheduled_run_records_the_failure_and_keeps_monitoring() {
+    # THE NIGHTLY PATH. A scheduled run must never be cancelled -- cancelling
+    # rewrites its conclusion from `failure` to `cancelled`, which is what hid
+    # twelve consecutive red nights.
+    #
+    # The half that is easy to get wrong is "keeps monitoring". If the exemption
+    # merely suppressed the cancel and returned, the watchdog chain would END at
+    # the first failing job, the nightly would run unwatched from there, and no
+    # later failure would get its log captured or its name into a roster.
+    # Stopping at the first red is how an outage stays under-diagnosed.
+    #
+    # Deadline of 1s so the generation hands off promptly instead of idling out
+    # the 30s poll loop; the handoff (continue=true) IS the "still monitoring"
+    # signal.
+    local trace
+    trace="$(run_monitor 'Stage Artifacts / Stage Artifacts' 'in_progress' 'sched' 'schedule' '1')"
+    assert_not_contains "$trace" "force-cancel" "a scheduled run must NOT be force-cancelled"
+    assert_not_contains "$trace" "request:cancel" "nor cancelled by the fallback path"
+    assert_contains "$trace" "setFailed" "the failure is still recorded"
+    assert_contains "$trace" "output:continue=true" "and the chain keeps monitoring rather than ending"
+    assert_eq "$(captured_files sched)" "1" "the log is still captured on the nightly path"
+    log_pass "a scheduled run records the failure, captures the log, and keeps monitoring ($trace)"
+}
+
 log_test "test-watchdog-log-capture"
 test_capture_on_the_fail_fast_path
 test_capture_before_the_rerun
 test_captured_content_is_the_whole_log_not_the_excerpt
 test_capture_filename_is_traceable
 test_no_capture_dir_means_no_capture_and_no_crash
+test_a_scheduled_run_records_the_failure_and_keeps_monitoring
 echo ""
 log_pass "all tests passed"

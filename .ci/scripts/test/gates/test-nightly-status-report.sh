@@ -33,13 +33,15 @@ cat >"$WORK/harness.cjs" <<'HARNESS'
 const report = require(process.argv[2]);
 const openIssues = JSON.parse(process.argv[3]);   // e.g. [] or [{number: 7}]
 const labelExists = process.argv[4] === '1';
+const existingComments = JSON.parse(process.argv[5] || '[]');
 
 const trace = [];
 const github = {
   paginate: async (fn, params) => {
-    // Two paginated endpoints are used: listForRepo (open issues) and
-    // listJobsForWorkflowRun (the failed-job roster).
+    // Three paginated endpoints: listForRepo (open issues), listComments (the
+    // run-id dedupe) and listJobsForWorkflowRun (the failed-job roster).
     if (params && params.labels) { trace.push(`list-issues:${params.labels}`); return openIssues; }
+    if (params && params.issue_number) { trace.push(`list-comments:${params.issue_number}`); return existingComments; }
     trace.push('list-jobs');
     return [
       { name: 'Stage Artifacts / Stage Artifacts', conclusion: 'failure', html_url: 'u1' },
@@ -50,7 +52,7 @@ const github = {
   },
   rest: {
     issues: {
-      listForRepo: () => {}, create: async (p) => { trace.push(`create:${p.title}:${(p.labels||[]).join('+')}`); global.__body = p.body; return { data: { number: 99 } }; },
+      listForRepo: () => {}, listComments: () => {}, create: async (p) => { trace.push(`create:${p.title}:${(p.labels||[]).join('+')}`); global.__body = p.body; return { data: { number: 99 } }; },
       createComment: async (p) => { trace.push(`comment:${p.issue_number}`); global.__body = p.body; return {}; },
       update: async (p) => { trace.push(`update:${p.issue_number}:${p.state}`); return {}; },
       getLabel: async () => { if (!labelExists) throw new Error('404'); trace.push('label-exists'); return {}; },
@@ -70,11 +72,11 @@ report({ github, context, core })
   .catch((e) => { console.log('THREW:' + e.message); process.exitCode = 3; });
 HARNESS
 
-# run <conclusion> <event> <open-issues-json> [label-exists 0|1]
+# run <conclusion> <event> <open-issues-json> [label-exists 0|1] [comments-json]
 run_report() {
     NIGHTLY_RUN_ID=30237524399 NIGHTLY_CONCLUSION="$1" NIGHTLY_EVENT="$2" \
         NIGHTLY_URL='https://github.com/rediacc/console/actions/runs/30237524399' \
-        node "$WORK/harness.cjs" "$REPORTER" "$3" "${4:-1}" 2>/dev/null
+        node "$WORK/harness.cjs" "$REPORTER" "$3" "${4:-1}" "${5:-[]}" 2>/dev/null
 }
 trace_of() { run_report "$@" | sed -n 's/^TRACE=//p'; }
 
@@ -177,6 +179,40 @@ test_workflow_is_wired_to_schedule_runs_only() {
     log_pass "nightly-status.yml is wired to scheduled runs with the right grant"
 }
 
+test_a_rerun_of_the_same_night_does_not_double_comment() {
+    # `workflow_run: completed` fires once per ATTEMPT and a run keeps its id
+    # across attempts, so a nightly whose failed jobs are re-run reaches this
+    # code twice for the same night. A duplicate comment per attempt makes a
+    # streak look longer than it is -- and streak length is the one number this
+    # issue exists to communicate.
+    local t
+    t="$(trace_of cancelled schedule '[{"number":7}]' 1 '[{"body":"### 2026-07-27 -- nightly [run 30237524399](x) concluded `cancelled`"}]')"
+    assert_contains "$t" "list-comments:7" "existing comments are consulted"
+    assert_not_contains "$t" "comment:7" "the same run must not be reported twice"
+    log_pass "a rerun of the same night does not double-comment ($t)"
+}
+
+test_a_different_night_still_comments() {
+    # The control for the dedupe: it must suppress only the SAME run id, not
+    # every subsequent night. Getting this wrong would silence the streak
+    # entirely after night one.
+    local t
+    t="$(trace_of cancelled schedule '[{"number":7}]' 1 '[{"body":"### 2026-07-26 -- nightly [run 30187728271](x) concluded `cancelled`"}]')"
+    assert_contains "$t" "comment:7" "a new night is still reported on the rolling issue"
+    log_pass "a different night is still reported (the dedupe is per-run, not blanket)"
+}
+
+test_a_pull_request_carrying_the_label_is_ignored() {
+    # GitHub's issues API returns PULL REQUESTS as issues. A PR wearing this
+    # label would otherwise be adopted as the tracking issue -- commented on,
+    # and CLOSED on the next green nightly.
+    local t
+    t="$(trace_of success schedule '[{"number":42,"pull_request":{"url":"x"}}]')"
+    assert_not_contains "$t" "update:42:closed" "a PR must never be closed by this workflow"
+    assert_not_contains "$t" "comment:42" "and never commented on"
+    log_pass "a pull request carrying the label is filtered out"
+}
+
 log_test "test-nightly-status-report"
 test_cancelled_is_not_green
 test_non_schedule_event_is_a_no_op
@@ -187,5 +223,8 @@ test_green_with_nothing_open_is_a_no_op
 test_missing_label_is_created_before_use
 test_body_names_the_failed_jobs
 test_workflow_is_wired_to_schedule_runs_only
+test_a_rerun_of_the_same_night_does_not_double_comment
+test_a_different_night_still_comments
+test_a_pull_request_carrying_the_label_is_ignored
 echo ""
 log_pass "all tests passed"
