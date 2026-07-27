@@ -12,7 +12,7 @@
 #   open Dockerfile: no such file or directory
 #
 # because the account image's Dockerfile lives in a submodule this workflow
-# deliberately does not check out (see the no-app-token decision in README.md).
+# deliberately does not check out (see the "no GitHub App" decision in README.md).
 # Pulling is both faster and the thing every other CI job does.
 #
 # FAILS LOUDLY. An earlier draft of this script always exited 0, on the theory

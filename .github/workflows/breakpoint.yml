@@ -65,7 +65,7 @@ on:
         options: ['5', '10', '15', '30', '45', '60', '90', '120', '180', '240', '300']
 
       services:
-        description: 'none = tunnel + desktop only (no token, no submodule). onprem = the on-prem server stack customers deploy (ghcr.io/rediacc/server), via ci-start-elite.sh.'
+        description: 'none = tunnel + desktop only (no token, no submodule). onprem = the on-prem server stack customers deploy, started by the ci-start-elite.sh hook in this repo.'
         type: choice
         default: 'none'
         options: ['none', 'onprem']
@@ -305,20 +305,18 @@ jobs:
           AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
           SES_FROM: ${{ vars.AWS_SES_FROM }}
           GITHUB_ACTOR: ${{ github.actor }}
-          # Same rule as the tunnel step, and here the values are EXTERNAL:
-          # the tmate strings come from tmate.io and the URL ultimately from
-          # cloudflared's log output, while this step's environment holds the
-          # AWS SES keys. Never interpolate third-party text into script text.
-          BP_URL: ${{ steps.tunnel.outputs.url }}
+          # The URL and the tmate strings are DELIBERATELY ABSENT from this
+          # env: block, and must never be added back. The runner prints every
+          # step's env: block to the log before the step runs, so a value
+          # passed here is published seconds before publish-endpoints.sh can
+          # mask it -- which is exactly how run 30254567365 emailed the URL
+          # correctly and ALSO leaked it in cleartext on a public repo.
+          # The script reads all of them from the session state file instead.
           BP_SEND_EMAIL: ${{ inputs.send-email }}
           BP_DURATION: ${{ inputs.duration }}
-          BP_TMATE_SSH: ${{ steps.shell.outputs.ssh-connection }}
-          BP_TMATE_WEB: ${{ steps.shell.outputs.web-url }}
         run: |
-          .ci/breakpoint/scripts/publish-endpoints.sh --url "$BP_URL" \
-            --send-email "$BP_SEND_EMAIL" --duration "$BP_DURATION" \
-            --tmate-ssh "$BP_TMATE_SSH" \
-            --tmate-web "$BP_TMATE_WEB"
+          .ci/breakpoint/scripts/publish-endpoints.sh \
+            --send-email "$BP_SEND_EMAIL" --duration "$BP_DURATION"
 
       - name: Hold session open
         if: ${{ !cancelled() && (success() || inputs.hold-on-failure) }}

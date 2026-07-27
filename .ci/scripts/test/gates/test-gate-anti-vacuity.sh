@@ -54,6 +54,13 @@ REGISTRY=(
     # to `exit 0` when private/renet was absent, silently taking govulncheck,
     # deadcode and golangci-lint with it.
     ".ci/scripts/private/run-renet.sh|required"
+    # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
+    # This harness's fixture copies scripts/ and .ci/scripts/ but not
+    # .ci/breakpoint/, so the drift gate would fail with "No such file or
+    # directory" -- non-zero for a reason that has nothing to do with vacuity,
+    # which is precisely the false signal the REGISTRY POLICY above warns about.
+    # Its missing-manifest behaviour is proven in test-breakpoint-portability.sh
+    # instead, where an isolated copy of the folder genuinely exists.
     # The harness fixture copies scripts/ and .ci/scripts/ but nothing that
     # REFERENCES them (no workflows, no docs, no allowlist), so the gate must
     # report the resulting orphans loudly rather than pass. The "ZERO shell

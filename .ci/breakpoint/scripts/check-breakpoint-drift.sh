@@ -129,7 +129,17 @@ bp_current_repo() {
     fi
     url="$(git -C "$BP_ROOT" remote get-url origin 2>/dev/null || true)"
     [[ -n "$url" ]] || return 1
-    slug="$(echo "$url" | sed -E 's#^.*[/:]([^/:]+/[^/]+?)(\.git)?/?$#\1#')"
+    # Strip the trailing `.git` and any trailing slash with parameter expansion
+    # BEFORE the regex, rather than trying to make the regex optional-match it.
+    # sed has NO lazy quantifiers: in `([^/]+?)(\.git)?$` the `+?` is not
+    # non-greedy, so `[^/]+` swallowed "console.git" and the `(\.git)?` group
+    # matched empty. That made this return "rediacc/console.git", which never
+    # equals "rediacc/console" -- so --write refused inside the CANONICAL repo
+    # and the only documented way forward was the accept list. A gate whose
+    # legitimate update path is broken teaches people to suppress it.
+    url="${url%/}"
+    url="${url%.git}"
+    slug="$(echo "$url" | sed -E 's#^.*[/:]([^/:]+/[^/]+)$#\1#')"
     [[ "$slug" =~ ^[^/]+/[^/]+$ ]] || return 1
     echo "$slug"
 }
