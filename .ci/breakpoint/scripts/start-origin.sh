@@ -90,13 +90,23 @@ if [[ "$SERVICES" != "none" ]]; then
         # the error message. Anything this script calls must send its chatter to
         # stderr; only the URL may touch stdout.
         if ! "$REPO_ROOT/.ci/scripts/infra/ci-start.sh" >&2; then
-            log_error "ci-start.sh failed; the box will still come up, but the app is not running"
-            log_error "(this is reported, not swallowed -- the old workflow hid exactly this)"
+            # FAIL. The operator asked for --services "$SERVICES"; delivering a
+            # box whose app is silently absent is how you end up opening the
+            # tunnel and getting "bad gateway" with nothing explaining why.
+            # Pass hold-on-failure to keep the box alive for inspection.
+            log_error "ci-start.sh FAILED -- --services $SERVICES cannot be delivered"
+            log_error "refusing to hand over a session that is missing what was asked for"
+            log_error "re-dispatch with services: none, or with hold-on-failure to debug this boot"
+            exit 1
         fi
     else
-        # A repo that vendored breakpoint but has no ci-start.sh is a normal
-        # case, not an error. Say so plainly instead of failing.
-        log_warn "--services $SERVICES requested but $REPO_ROOT/.ci/scripts/infra/ci-start.sh is absent; skipping"
+        # Absent script = a repo that vendored breakpoint without console's
+        # infra tree. Still a failure: --services was explicitly requested and
+        # cannot be honoured here. The correct dispatch for such a repo is
+        # services: none.
+        log_error "--services $SERVICES requested but $REPO_ROOT/.ci/scripts/infra/ci-start.sh does not exist"
+        log_error "this repo cannot start services; dispatch with services: none"
+        exit 1
     fi
 fi
 
@@ -104,8 +114,10 @@ if [[ "$DESKTOP" != "none" ]]; then
     log_step "starting desktop ($DESKTOP)..."
     # Same stdout discipline as ci-start.sh above: nothing but the URL may
     # reach this script's stdout.
-    "$SCRIPT_DIR/desktop-ctl.sh" start --resolution "${DESKTOP_RESOLUTION:-1600x900}" >&2 ||
-        log_warn "desktop failed to start; continuing without it"
+    if ! "$SCRIPT_DIR/desktop-ctl.sh" start --resolution "${DESKTOP_RESOLUTION:-1600x900}" >&2; then
+        log_error "desktop ($DESKTOP) FAILED to start -- refusing to hand over a session without it"
+        exit 1
+    fi
 fi
 
 # -----------------------------------------------------------------------------
@@ -122,13 +134,15 @@ if [[ "$KIND" == "auto" ]]; then
 fi
 
 if [[ "$KIND" == "gateway" ]] && ! command -v docker >/dev/null 2>&1; then
-    # Degrade loudly rather than failing: a session with no gateway still gives
-    # you a reachable box, just without /desktop routing. Silence here would be
-    # the old bug -- a desktop that exists but cannot be reached, with nothing
-    # in the log saying why.
-    log_warn "--kind gateway requested but docker is unavailable; falling back to the static origin"
-    log_warn "the desktop will NOT be reachable through the tunnel (it listens on localhost:6080 only)"
-    KIND="static"
+    # FAIL, do not degrade. A silent downgrade to the static origin produces a
+    # session where /desktop 404s and the app is unreachable, and the operator
+    # discovers it minutes later by opening the URL. Fallbacks hide; a dead
+    # session that says why is worth more than a live one that lies.
+    # `hold-on-failure: true` is the sanctioned way to keep a failed boot open
+    # for inspection.
+    log_error "--kind gateway needs docker, and docker is not available on this runner"
+    log_error "without the gateway there is no path routing: /desktop and the app would both be unreachable"
+    exit 1
 fi
 
 bp_state_set BP_ORIGIN_KIND "$KIND"
