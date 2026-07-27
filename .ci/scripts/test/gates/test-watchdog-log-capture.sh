@@ -1,0 +1,177 @@
+#!/bin/bash
+# Behavioural test for failed-step log capture in .ci/scripts/ci/watchdog-monitor.cjs.
+#
+# WHAT BROKE. The watchdog auto-retries failures, and a rerun makes attempt 1's
+# job logs unreachable. Nothing persisted them: fetchJobLogs kept an 80-line
+# excerpt in an in-process Map that dies with the generation, and there was no
+# upload-artifact anywhere in the watchdog path. So the retry destroyed the
+# evidence for the only question worth asking afterwards -- was that a real
+# break or a flake? -- and it destroyed it as a direct consequence of the
+# action taken in response to it.
+#
+# WHY THIS IS NOT A UNIT TEST. The claim being tested is an ORDERING claim
+# across the whole monitor: "the log is on disk BEFORE anything reruns the job".
+# A pure-function test cannot see that. So this drives the REAL monitor() with a
+# mocked GitHub client and asserts on the filesystem afterwards.
+#
+# Both directions matter:
+#   - Capture must happen on the retry path (or the evidence is still lost).
+#   - Capture must happen on the fail-fast path too (that log is the one a human
+#     reads to fix the break).
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# shellcheck source=../lib/test-helpers.sh
+# BLOCKER: shared assertion helpers used by every .ci/scripts/test/gates/test-*.sh
+source "$SCRIPT_DIR/../lib/test-helpers.sh"
+
+WATCHDOG="$REPO_ROOT/.ci/scripts/ci/watchdog-monitor.cjs"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+# The harness: mock github/context/core, run the real monitor once, print what
+# it did. Argv: <watchdog> <capture-dir> <job-name> <run-status>
+cat >"$WORK/harness.cjs" <<'HARNESS'
+const monitor = require(process.argv[2]);
+const captureDir = process.argv[3];
+const jobName = process.argv[4];
+const runStatus = process.argv[5];
+
+const LOG_BODY = [
+  'Run some/step@v1',
+  'preparing the thing',
+  '##[error]No APT metadata files found',
+  '##[error]Process completed with exit code 1.',
+  'Post job cleanup.',
+].join('\n');
+
+const actions = [];
+const job = { id: 4242, name: jobName, status: 'completed', conclusion: 'failure',
+              started_at: '2026-07-27T04:00:00Z', completed_at: '2026-07-27T04:05:00Z' };
+
+const github = {
+  hook: { before: () => {} },
+  paginate: async () => [job],
+  request: async (route) => { actions.push(`request:${route.includes('force-cancel') ? 'force-cancel' : route.includes('rerun-failed-jobs') ? 'rerun' : route}`); return {}; },
+  rest: {
+    actions: {
+      getWorkflowRun: async () => ({ data: { status: runStatus, conclusion: null, run_attempt: 1, event: 'pull_request' } }),
+      listJobsForWorkflowRun: () => {},
+      downloadJobLogsForWorkflowRun: async () => { actions.push('fetched-logs'); return { data: LOG_BODY }; },
+      cancelWorkflowRun: async () => { actions.push('request:cancel'); return {}; },
+    },
+    issues: { listLabelsOnIssue: async () => ({ data: [] }) },
+  },
+};
+const core = {
+  setFailed: (m) => actions.push(`setFailed:${String(m).slice(0, 40)}`),
+  warning: (m) => actions.push(`warning:${String(m).slice(0, 30)}`),
+  error: () => {},
+  setOutput: (k, v) => actions.push(`output:${k}=${v}`),
+  info: () => {},
+};
+const context = { repo: { owner: 'rediacc', repo: 'console' }, runId: 1, payload: {} };
+
+process.env.WATCHDOG_LOG_CAPTURE_DIR = captureDir;
+
+monitor({ github, context, core })
+  .then(() => { console.log(actions.join('|')); })
+  .catch((e) => { console.log('THREW:' + e.message); process.exitCode = 3; });
+HARNESS
+
+# run <job-name> <run-status> <capture-subdir> -> prints the action trace
+run_monitor() {
+    local job="$1" status="$2" dir="$WORK/$3"
+    mkdir -p "$dir"
+    WATCHDOG_TARGET_RUN_ID=999 \
+        WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
+        WATCHDOG_NO_RETRY_PATTERNS='Quality,Review Gate' \
+        WATCHDOG_INSTALL_VALIDATION_PATTERNS='Validate Install Methods / Linux' \
+        WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \
+        WATCHDOG_DEADLINE_SECONDS='' \
+        CLOUDFLARE_API_TOKEN='' CLOUDFLARE_ACCOUNT_ID='' \
+        node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" 2>/dev/null | tail -1
+}
+
+captured_files() { find "$WORK/$1" -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' '; }
+
+# ---------------------------------------------------------------------------
+
+test_capture_on_the_fail_fast_path() {
+    # Stage Artifacts is not on the retry allowlist, so with the classifier
+    # unavailable this force-cancels. The log must still be on disk: it is the
+    # one a human reads to fix the break.
+    local trace
+    trace="$(run_monitor 'Stage Artifacts / Stage Artifacts' 'in_progress' 'fastfail')"
+    assert_contains "$trace" "force-cancel" "a non-allowlisted failure force-cancels when the classifier is down"
+    assert_eq "$(captured_files fastfail)" "1" "exactly one log was captured on the fail-fast path"
+    log_pass "the failed job's log is captured on the fail-fast path ($trace)"
+}
+
+test_capture_before_the_rerun() {
+    # THE ORDERING CLAIM. An allowlisted (known-flaky) job with the classifier
+    # down takes the retry path. The capture must already be on disk by the time
+    # the rerun is dispatched -- after it, attempt 1's logs are unreachable.
+    local trace
+    trace="$(run_monitor 'Tests + Infra / E2E Workers (fedora-43)' 'completed' 'retry')"
+    assert_contains "$trace" "rerun" "an allowlisted failure still reruns when the classifier is down"
+    assert_not_contains "$trace" "force-cancel" "the retry path must not cancel"
+    assert_eq "$(captured_files retry)" "1" "the log was captured even though the job was rerun"
+    # The trace is ordered: the log fetch (which performs the capture) must
+    # appear before the rerun request.
+    local before_rerun
+    before_rerun="${trace%%request:rerun*}"
+    assert_contains "$before_rerun" "fetched-logs" "the log was fetched and captured BEFORE the rerun was dispatched"
+    log_pass "the log is captured before the rerun destroys it ($trace)"
+}
+
+test_captured_content_is_the_whole_log_not_the_excerpt() {
+    # The excerpt is tuned for the classifier's context window and stops at the
+    # first error block. A human debugging afterwards wants everything, and this
+    # is the last moment it exists -- so the file must contain the post-error
+    # cleanup lines the 80-line excerpt deliberately cuts.
+    local file
+    file="$(find "$WORK/retry" -type f -name '*.log' | head -1)"
+    assert_contains "$(cat "$file")" "Post job cleanup." \
+        "the captured file holds the COMPLETE log, not the classifier excerpt"
+    assert_contains "$(cat "$file")" "No APT metadata files found" "the captured file holds the error itself"
+    log_pass "the captured file is the complete log, not the truncated excerpt"
+}
+
+test_capture_filename_is_traceable() {
+    # A job name carries slashes, spaces and parentheses, none of which belong
+    # in a filename; the job id disambiguates legs that sanitise alike. The
+    # name must still be recognisable or the artifact is useless.
+    local base
+    base="$(basename "$(find "$WORK/retry" -type f -name '*.log' | head -1)")"
+    assert_contains "$base" "E2E_Workers" "the sanitised filename still names the job"
+    assert_contains "$base" "4242" "the filename carries the job id for disambiguation"
+    log_pass "captured filenames are sanitised but still traceable ($base)"
+}
+
+test_no_capture_dir_means_no_capture_and_no_crash() {
+    # Capture is best-effort by design: an ad-hoc or local invocation sets no
+    # directory, and that must not break the watchdog.
+    local trace
+    trace="$(WATCHDOG_TARGET_RUN_ID=999 \
+        WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
+        WATCHDOG_NO_RETRY_PATTERNS='Quality,Review Gate' \
+        WATCHDOG_INSTALL_VALIDATION_PATTERNS='Validate Install Methods / Linux' \
+        WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \
+        CLOUDFLARE_API_TOKEN='' CLOUDFLARE_ACCOUNT_ID='' \
+        node "$WORK/harness.cjs" "$WATCHDOG" "" 'Stage Artifacts / Stage Artifacts' 'in_progress' 2>/dev/null | tail -1)"
+    assert_not_contains "$trace" "THREW" "an unset capture directory must not throw"
+    assert_contains "$trace" "force-cancel" "the watchdog still does its job with capture disabled"
+    log_pass "capture is best-effort: unset directory disables it without breaking the monitor"
+}
+
+log_test "test-watchdog-log-capture"
+test_capture_on_the_fail_fast_path
+test_capture_before_the_rerun
+test_captured_content_is_the_whole_log_not_the_excerpt
+test_capture_filename_is_traceable
+test_no_capture_dir_means_no_capture_and_no_crash
+echo ""
+log_pass "all tests passed"

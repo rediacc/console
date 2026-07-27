@@ -18,13 +18,26 @@
 //     rerun workflow: that split only existed because the old in-run
 //     watchdog died with the run it monitored, and the chain does not.
 //   - Code-change: force-cancels immediately (no point waiting for other jobs).
-//   - AI unavailable: falls back to retry (same as transient).
+//   - AI unavailable: retries ONLY jobs on WATCHDOG_RETRY_ALLOWLIST_PATTERNS
+//     (the ones that boot VMs or pull images); everything else fails fast.
+//     See evaluateRetryEligibility -- this used to be "retry everything", which
+//     meant every failure in the repo was retried on a judgment nobody made.
 // On attempt 2+: force-cancels without retry.
+//
+// TWO THINGS THE WATCHDOG MUST NOT DO, both learned the hard way:
+//   - It must never cancel a `schedule` run. Cancelling rewrites the run's
+//     conclusion from `failure` to `cancelled`, which reads as "superseded,
+//     ignore" -- and that is exactly how twelve consecutive red nightlies went
+//     unnoticed. See evaluateCancelExemption.
+//   - It must never rerun a job without first persisting that job's log. The
+//     rerun makes attempt 1's logs unreachable, so retrying blind destroys the
+//     evidence needed to tell a real break from a flake. See persistJobLog.
 //
 // Required env vars:
 //   WATCHDOG_EXCLUDE_PATTERNS            - Comma-separated job name patterns to exclude from monitoring
 //   WATCHDOG_NO_RETRY_PATTERNS           - Comma-separated job name patterns that should never auto-retry
 //   WATCHDOG_INSTALL_VALIDATION_PATTERNS - Comma-separated job name patterns identifying install-validation jobs
+//   WATCHDOG_RETRY_ALLOWLIST_PATTERNS    - Comma-separated job name patterns retryable when the classifier is down
 //
 // Optional env vars (chained mode; when unset the script monitors its own run,
 // reading PR context from the event payload as it always did):
@@ -42,6 +55,11 @@
 // OpenAI-compatible /ai/v1/chat/completions endpoint):
 //   CLOUDFLARE_API_TOKEN        - Cloudflare API token with Workers AI permission
 //   CLOUDFLARE_ACCOUNT_ID       - Cloudflare account ID
+//
+// Optional env vars (failure-log capture):
+//   WATCHDOG_LOG_CAPTURE_DIR    - directory to write failed jobs' COMPLETE logs
+//                                 into before any rerun; the workflow uploads it
+//                                 as an artifact. Unset = no capture.
 //
 // Labels (PR context only):
 //   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
@@ -63,6 +81,49 @@ const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p))
 // broken, so it is never something to label past. Nothing else is immune.
 const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
 
+// Run events the watchdog must never cancel.
+const CANCEL_EXEMPT_EVENTS = ['schedule'];
+
+/**
+ * May the watchdog cancel this run at all?
+ *
+ * WHY THIS EXISTS. Cancelling a run REWRITES ITS CONCLUSION. A run whose job
+ * genuinely failed reports `conclusion: failure`; the same run, force-cancelled
+ * by the watchdog, reports `conclusion: cancelled` -- and everything downstream
+ * reads `cancelled` as "superseded by a newer push, ignore me". On a PR that is
+ * fine, because a human is watching the PR and the next push supersedes it
+ * anyway. On the NIGHTLY it is a disaster, because the nightly is the only thing
+ * validating main (`full_suite` is `github.event_name != 'push'`, so
+ * push-to-main runs no tests) and nobody is watching it.
+ *
+ * Measured 2026-07-27: `gh run list --workflow ci.yml --event schedule -L 12`
+ * returned TWELVE `cancelled` and ZERO `success`, unbroken back to 2026-07-16.
+ * Every one of those nights had a real, fixable gate failure. None of them were
+ * noticed, because the run-level rollup said `cancelled`. The individual gate
+ * breaks were the symptom; this laundering is why they survived twelve days.
+ *
+ * WHY NOT THE EXISTING LABEL. `no-cancel-failure` already means "record the
+ * failure, do not cancel". It cannot help here: labels live on a PR, and a
+ * `schedule` run has no PR, so `prNumber` is null and the label block never
+ * runs. The nightly is structurally incapable of wearing the one escape hatch
+ * that would have saved it.
+ *
+ * FAIL-CLOSED DIRECTION. An unknown or unreadable event is NOT exempt, so it
+ * cancels exactly as it does today. The exemption only ever fires on a positive
+ * match, which keeps the PR path byte-identical.
+ */
+function evaluateCancelExemption({ runEvent }) {
+  const event = String(runEvent || '');
+  const exempt = CANCEL_EXEMPT_EVENTS.includes(event);
+  return {
+    exempt,
+    event,
+    reason: exempt
+      ? `run event "${event}" is cancel-exempt: cancelling would rewrite this run's conclusion from "failure" to "cancelled", which is what hid twelve consecutive red nightlies`
+      : '',
+  };
+}
+
 /**
  * Should a failed job force-cancel the run immediately, before any label or
  * retry handling downstream?
@@ -82,6 +143,68 @@ function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, 
     labelImmune,
     matchesNoRetry,
   };
+}
+
+/**
+ * A failure was not a confident code-change verdict. May it be RETRIED?
+ *
+ * WHY THIS EXISTS (issue #537). The classifier has been returning HTTP 402, so
+ * `classifyFailure` falls back to `{ classification: 'transient', confidence: 0 }`
+ * on every single failure. The retry branch only checks for a CONFIDENT
+ * code-change verdict, so a confidence-0 fallback always lands in the retry
+ * path: every failure in the repo, of every kind, has been auto-retried on the
+ * strength of a judgment nobody made.
+ *
+ * That is only defensible while somebody reads the log afterwards, and nobody
+ * does -- worse, the retry itself destroyed the log (see persistJobLog). The
+ * 07-27 nightly is the receipt: `Stage Artifacts` failed on a deterministic,
+ * perfectly reproducible empty-channel bug, and the watchdog spent a full
+ * second attempt (~55 minutes of machine time) re-proving it before cancelling
+ * anyway.
+ *
+ * So when the classifier cannot speak, retry ONLY the jobs whose failures are
+ * known to be genuinely flaky -- the ones that boot VMs or pull images across
+ * the network -- and fail everything else fast. A deterministic gate failure
+ * should cost one attempt, not two.
+ *
+ * FAIL-CLOSED DIRECTION. Unknown job, empty allowlist, or a classifier that
+ * cannot be reached all resolve to NO retry. The permissive answer requires a
+ * positive match, so a typo in the allowlist costs an extra red round, never a
+ * silent blind retry.
+ *
+ * Pure so the policy is testable against the REAL allowlist and the REAL job
+ * names, not a copy of either.
+ */
+function evaluateRetryEligibility({
+  jobName,
+  classification,
+  confidence,
+  classifierAvailable,
+  threshold,
+  retryAllowlistPatterns,
+}) {
+  if (classification === 'code-change' && confidence >= threshold) {
+    return {
+      retry: false,
+      reason: `classifier returned code-change at confidence ${confidence} (>= ${threshold}) -- a retry would re-prove a deterministic failure`,
+    };
+  }
+  if (classifierAvailable) {
+    return {
+      retry: true,
+      reason: `classifier returned ${classification} at confidence ${confidence} -- treating as transient`,
+    };
+  }
+  const allowlisted = matchesPatterns(jobName, retryAllowlistPatterns || []);
+  return allowlisted
+    ? {
+      retry: true,
+      reason: `classifier unavailable, but "${jobName}" is on the known-flaky retry allowlist (boots VMs or pulls images), so one retry is warranted`,
+    }
+    : {
+      retry: false,
+      reason: `classifier unavailable and "${jobName}" is not on the known-flaky retry allowlist -- failing fast rather than retrying blind`,
+    };
 }
 
 /**
@@ -211,6 +334,12 @@ const monitor = async ({ github, context, core }) => {
   if (!process.env.WATCHDOG_EXCLUDE_PATTERNS || !process.env.WATCHDOG_NO_RETRY_PATTERNS || !process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS) {
     throw new Error('WATCHDOG_EXCLUDE_PATTERNS, WATCHDOG_NO_RETRY_PATTERNS and WATCHDOG_INSTALL_VALIDATION_PATTERNS env vars are required');
   }
+  // Required too, and deliberately so: defaulting it would let a config drift
+  // silently restore retry-everything, which is the behaviour issue #537 is
+  // about. Missing config must be loud, not permissive.
+  if (!process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS) {
+    throw new Error('WATCHDOG_RETRY_ALLOWLIST_PATTERNS env var is required (see evaluateRetryEligibility)');
+  }
   const excludePatterns = process.env.WATCHDOG_EXCLUDE_PATTERNS.split(',').map(s => s.trim());
 
   // Jobs that should not trigger auto-retry (failures are never transient)
@@ -218,6 +347,10 @@ const monitor = async ({ github, context, core }) => {
 
   // Jobs that download and execute a released binary; subject to the binary-exec guard
   const installValidationPatterns = process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS.split(',').map(s => s.trim()).filter(Boolean);
+
+  // Jobs whose failures may still be retried when the classifier cannot speak.
+  // See evaluateRetryEligibility.
+  const retryAllowlistPatterns = process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS.split(',').map(s => s.trim()).filter(Boolean);
 
   // Track jobs already handled to avoid re-logging the same failure every poll
   const handledJobs = new Set();
@@ -231,6 +364,15 @@ const monitor = async ({ github, context, core }) => {
   // failing lane. See pendingNoRetryJobs for why.
   let pendingQualityCancel = false;
   let heldQualityFailureMsg = '';
+
+  // The TARGET run's event, re-read from the API every poll. Not
+  // `context.eventName`: in chained mode this process is a `workflow_dispatch`
+  // watchdog generation monitoring somebody else's run, so its own event name
+  // says nothing about what it is watching. Consumed by evaluateCancelExemption
+  // inside forceCancel. Stays null until the first successful fetch, which
+  // fails closed (null is not exempt, so it cancels as it always did), and
+  // every forceCancel call site sits after that fetch inside the poll loop.
+  let targetRunEvent = null;
 
   // Helper: rerun the target run's failed jobs (the API behind
   // `gh run rerun --failed`). Only valid once the run has completed.
@@ -273,6 +415,40 @@ const monitor = async ({ github, context, core }) => {
     return logTails.get(job.name);
   }
 
+  // Persist a failed job's COMPLETE log to disk so the workflow can upload it
+  // as an artifact.
+  //
+  // WHY THIS EXISTS. A rerun DESTROYS the evidence it was triggered by: once
+  // attempt 2 starts, attempt 1's job logs are no longer reachable through the
+  // normal run view, and the watchdog retries blind by default (the classifier
+  // has been returning HTTP 402, so every failure fell back to
+  // `transient, confidence 0` = retry). The only thing that ever saw attempt
+  // 1's log was an 80-line in-memory excerpt in `logTails`, which dies with the
+  // generation. So the single most common question after an auto-retry -- "was
+  // that a real break or a flake?" -- was unanswerable by construction.
+  //
+  // Best-effort by design: capture must never be able to break the watchdog, so
+  // every failure here is swallowed with a log line. No capture directory
+  // configured means no capture, which is what ad-hoc/local invocations get.
+  const LOG_CAPTURE_DIR = process.env.WATCHDOG_LOG_CAPTURE_DIR || '';
+  function persistJobLog(job, fullText) {
+    if (!LOG_CAPTURE_DIR) return;
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      fs.mkdirSync(LOG_CAPTURE_DIR, { recursive: true });
+      // Job names carry slashes, spaces and parentheses ("Tests + Infra / E2E
+      // Workers (opensuse-16.0)"), none of which belong in a filename. The id
+      // keeps it unique when two legs sanitise to the same string.
+      const safeName = String(job.name).replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120);
+      const file = path.join(LOG_CAPTURE_DIR, `${safeName}-${job.id}.log`);
+      fs.writeFileSync(file, fullText);
+      console.log(`[logs] captured the full log for "${job.name}" (${fullText.length} bytes) before any retry`);
+    } catch (e) {
+      console.log(`[logs] could not capture the log for "${job.name}": ${e.message}`);
+    }
+  }
+
   async function fetchJobLogs(job) {
     try {
       const response = await github.rest.actions.downloadJobLogsForWorkflowRun({
@@ -285,6 +461,10 @@ const monitor = async ({ github, context, core }) => {
       const stripped = lines.map(l =>
         l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(/\x1b\[[0-9;]*m/g, '')
       );
+      // Persist the WHOLE log, not the excerpt below. The excerpt is tuned for
+      // the classifier's context window; a human debugging afterwards wants
+      // everything, and this is the last moment it exists.
+      persistJobLog(job, stripped.join('\n'));
       // Anchor the excerpt at the FIRST failure marker, not the end of the
       // log: a failed job keeps logging through its if:always() cleanup and
       // post-steps, so a plain tail shows successful teardown instead of the
@@ -393,19 +573,32 @@ const monitor = async ({ github, context, core }) => {
   }
 
   async function classifyFailure(job, guard) {
-    const fallback = { classification: 'transient', confidence: 0, reason: 'AI unavailable, defaulting to retry' };
+    // `classifierAvailable: false` is the load-bearing field, not `confidence: 0`.
+    // Downstream needs to tell "the model looked and was unsure" apart from
+    // "the model never answered", and those are indistinguishable by confidence
+    // alone -- a real verdict may legitimately carry a low confidence. Sniffing
+    // `confidence === 0` would conflate them, which is how retry-everything got
+    // mistaken for a judgment in the first place.
+    const fallback = {
+      classification: 'transient',
+      confidence: 0,
+      reason: 'classifier unavailable',
+      classifierAvailable: false,
+    };
     const logTail = await getLogTail(job);
-    if (!logTail) return fallback;
+    if (!logTail) return { ...fallback, reason: 'no job log available to classify' };
 
     const ai = await callClassifierModel(logTail);
-    if (!ai) console.log(`[AI] Classification failed for "${job.name}", falling back to retry`);
-    const result = ai || fallback;
+    if (!ai) console.log(`[AI] Classification failed for "${job.name}" -- the classifier did not answer`);
+    const result = ai ? { ...ai, classifierAvailable: true } : fallback;
 
     if (guard) {
       console.log(`[guard] ${guard.reason}`);
       if (guard.override) {
         console.log(`[guard] Overriding "${result.classification}" (${result.confidence}) with code-change -- no retry`);
-        return { classification: 'code-change', confidence: 1, reason: guard.reason };
+        // The guard is a deterministic cross-job check, not a model call, so it
+        // counts as an available verdict even when the classifier was down.
+        return { classification: 'code-change', confidence: 1, reason: guard.reason, classifierAvailable: true };
       }
     }
     return result;
@@ -457,6 +650,23 @@ const monitor = async ({ github, context, core }) => {
       }
     } catch (e) {
       console.log(`Warning: could not build the full failure roster (${e.message}); reporting the driving job only.`);
+    }
+
+    // The cancel-exemption check sits AFTER the roster build (an exempt run
+    // still gets the full "here is everything that failed" banner) and BEFORE
+    // the critical-job drain (there is nothing to drain for if nothing is being
+    // cancelled). This is the single chokepoint: all five call sites route
+    // through forceCancel, including the label-immune Review Gate path, so the
+    // exemption cannot be bypassed by adding a sixth.
+    const exemption = evaluateCancelExemption({ runEvent: targetRunEvent });
+    if (exemption.exempt) {
+      console.log('');
+      console.log('#'.repeat(70));
+      console.log(`NOT cancelling run ${targetRunId}: ${exemption.reason}`);
+      console.log('Leaving the run to finish so GitHub reports its true conclusion.');
+      console.log('#'.repeat(70));
+      core.setFailed('PIPELINE FAILED (run left uncancelled so it concludes as "failure"): ' + failureMsg);
+      return;
     }
 
     const waitPatternsRaw = process.env.WATCHDOG_WAIT_PATTERNS || '';
@@ -585,6 +795,10 @@ const monitor = async ({ github, context, core }) => {
         repo: context.repo.repo,
         run_id: targetRunId
       }));
+      // Refreshed every poll rather than captured once: a rerun keeps the same
+      // run id and the same event, so this is stable, but re-reading it means
+      // forceCancel can never act on a stale value from a previous generation.
+      targetRunEvent = run.event;
 
       allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
         owner: context.repo.owner,
@@ -788,8 +1002,30 @@ const monitor = async ({ github, context, core }) => {
       // Code-change -> force-cancel now, retry would be pointless.
       else {
         const ai = await classifyFailure(job, jobGuard);
-        if (ai.classification === 'code-change' && ai.confidence >= AI_CONFIDENCE_THRESHOLD) {
-          console.log(`[AI] "${job.name}" -> code-change (${ai.confidence}): ${ai.reason}`);
+        const eligibility = evaluateRetryEligibility({
+          jobName: job.name,
+          classification: ai.classification,
+          confidence: ai.confidence,
+          classifierAvailable: ai.classifierAvailable !== false,
+          threshold: AI_CONFIDENCE_THRESHOLD,
+          retryAllowlistPatterns,
+        });
+
+        // Make a classifier outage visible at run level rather than letting it
+        // hide behind a confident-looking "transient" line. Without this the
+        // only symptom of a dead classifier is that everything gets retried,
+        // which looks exactly like a healthy classifier meeting a flaky day.
+        if (ai.classifierAvailable === false) {
+          core.warning(
+            `Failure classifier unavailable for "${job.name}" (${ai.reason}). ` +
+            `Retry policy fell back to the known-flaky allowlist: ${eligibility.retry ? 'retrying' : 'failing fast'}. ` +
+            `See issue #537.`
+          );
+        }
+
+        if (!eligibility.retry) {
+          console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          console.log(`No retry: ${eligibility.reason}`);
           await forceCancel(failureMsg);
           return;
         } else {
@@ -805,7 +1041,8 @@ const monitor = async ({ github, context, core }) => {
             failureMsg = summary;
             console.log(`Will retry all ${failed.length} failed jobs: ${failed.map(j => `"${j.name}"`).join(', ')}`);
           }
-          console.log('Transient verdict - holding a pending rerun; the chain reruns the failed jobs once the run completes.');
+          console.log(`Retrying: ${eligibility.reason}`);
+          console.log('Holding a pending rerun; the chain reruns the failed jobs once the run completes.');
           pendingRerun = true;
           core.setFailed(failureMsg);
           // DON'T return -- keep monitoring until completion, then rerun below.
@@ -869,3 +1106,6 @@ module.exports.formatFailureRoster = formatFailureRoster;
 module.exports.evaluateNoRetryCancel = evaluateNoRetryCancel;
 module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
 module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;
+module.exports.evaluateCancelExemption = evaluateCancelExemption;
+module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
+module.exports.evaluateRetryEligibility = evaluateRetryEligibility;

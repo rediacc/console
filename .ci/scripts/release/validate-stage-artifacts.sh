@@ -103,13 +103,43 @@ if [[ "$ARCH_COUNT" -lt 2 ]]; then
     echo "::error::Expected at least 2 Archlinux packages, found $ARCH_COUNT"
     FAILED=true
 fi
-if [[ "$APT_FILES" -eq 0 ]]; then
-    echo "::error::No APT metadata files found"
-    FAILED=true
-fi
-if [[ "$RPM_FILES" -eq 0 ]]; then
-    echo "::error::No RPM metadata files found"
-    FAILED=true
+# APT/RPM repository metadata is CHANNEL-SCOPED, and on a channel-less event it
+# is never built, so asserting it unconditionally fails a run that did nothing
+# wrong.
+#
+# The producer is cd-stage.yml's "Build package repositories" step, which
+# self-gates on `inputs.channel != ''`. The channel is empty for anything that
+# is not push or pull_request (ci.yml's "Generate channel context"), i.e. for
+# the nightly -- deliberately, so a scheduled run cannot orphan ~5 GB of R2
+# bytes. So on the nightly the metadata is correctly absent and these two
+# assertions failed it anyway. That is one of the three breaks behind twelve
+# consecutive red nightlies (07-27: "No APT metadata files found" / "No RPM
+# metadata files found", run 30237524399).
+#
+# WHY GATE THE ASSERTION RATHER THAN ALWAYS BUILD THE METADATA. Building it
+# unconditionally was the other candidate and it is worse here:
+# build-pkg-repo.sh hard-exits on an empty --channel, and it bakes CHANNEL into
+# the generated content (`baseurl`, `gpgkey`, `Server`). Generating always would
+# mean inventing a placeholder channel and emitting a repo definition pointing
+# at a URL that does not exist -- shipping a plausible-looking broken artifact
+# to make a check pass. The APT half is channel-agnostic and could be built,
+# but a fix that repairs one of two formats is not a fix.
+#
+# The skip is announced in the step summary and as a notice, because a silently
+# weakened check is how this class of bug survives in the first place.
+if [[ -n "$CHANNEL" ]]; then
+    if [[ "$APT_FILES" -eq 0 ]]; then
+        echo "::error::No APT metadata files found"
+        FAILED=true
+    fi
+    if [[ "$RPM_FILES" -eq 0 ]]; then
+        echo "::error::No RPM metadata files found"
+        FAILED=true
+    fi
+else
+    echo "::notice::Channel is empty for event '${EVENT_NAME}', so no package-repository metadata was built; skipping the APT/RPM metadata assertions."
+    echo "" >>"$GITHUB_STEP_SUMMARY"
+    echo "> **APT/RPM metadata assertions skipped.** This run has no release channel (event: \`${EVENT_NAME}\`), so cd-stage.yml did not build package repositories. Every other artifact assertion above still applied." >>"$GITHUB_STEP_SUMMARY"
 fi
 
 if [[ "$FAILED" == "true" ]]; then

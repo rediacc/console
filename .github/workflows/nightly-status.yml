@@ -1,0 +1,71 @@
+name: Nightly Status
+
+run-name: "Nightly status: run ${{ github.event.workflow_run.id }} (${{ github.event.workflow_run.conclusion }})"
+
+# Reports the nightly's verdict somewhere a human will actually see it.
+#
+# WHY THIS EXISTS. `ci.yml` sets `full_suite: github.event_name != 'push'`, so
+# push-to-main skips the expensive suites on the grounds that the PR already
+# validated them. That makes the 01:00 UTC nightly the ONLY thing validating
+# main -- and a scheduled run that fails at 01:00 notifies nobody, appears in no
+# PR, and blocks nothing. Measured 2026-07-27: twelve consecutive `cancelled`
+# nightlies, zero successes, back to 2026-07-16, entirely unnoticed.
+#
+# WHY A SEPARATE WORKFLOW rather than a branch inside watchdog-monitor.yml:
+#   - Opening an issue needs `issues: write`. The watchdog runs on EVERY CI run
+#     (many times per PR); this runs once a night. Granting the write here keeps
+#     it off the hot path.
+#   - No `.github/actions/app-token` preset grants `issues` (readonly, pr-read,
+#     push, cd, housekeeping), and that wrapper is deliberately narrow because
+#     the app holds an `always` bypass on the main ruleset. The built-in
+#     `github.token` with a job-scoped grant is the smaller change: it cannot
+#     bypass the ruleset, and issues it creates do not trigger further workflows.
+#   - The watchdog is a chained poller that exits mid-run; the final conclusion
+#     is only knowable from `workflow_run: completed`, which is a different
+#     trigger entirely.
+#
+# TESTING NOTE, and it is a real limitation: `workflow_run` always executes the
+# workflow file from the DEFAULT BRANCH. This file therefore cannot run from a
+# PR, and its first real execution is after merge, on the next nightly. The
+# logic it calls is unit-tested; the wiring is not testable pre-merge.
+
+on:
+  workflow_run:
+    workflows: ["Console CI"]
+    types: [completed]
+
+# Read-only by default; the reporting job widens to issues:write for itself.
+permissions:
+  contents: read
+
+# Serialise per run so a rerun's completion cannot race the first report and
+# double-post. Never cancel: a dropped report is the whole failure mode here.
+concurrency:
+  group: nightly-status-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  report:
+    name: Report nightly verdict
+    # Scheduled runs only. Every other event has a human attached to it already.
+    if: github.event.workflow_run.event == 'schedule'
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read    # list the failed jobs of the run being reported on
+      issues: write    # open, comment on and close the rolling nightly-red issue
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Report nightly verdict
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          NIGHTLY_RUN_ID: ${{ github.event.workflow_run.id }}
+          NIGHTLY_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          NIGHTLY_EVENT: ${{ github.event.workflow_run.event }}
+          NIGHTLY_URL: ${{ github.event.workflow_run.html_url }}
+        with:
+          script: return await require('./.ci/scripts/ci/report-nightly-status.cjs')({github, context, core})
