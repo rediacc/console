@@ -35,10 +35,24 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 BP_SRC="$REPO_ROOT/.ci/breakpoint"
 CANONICAL_VALIDATOR="$REPO_ROOT/.ci/scripts/lib/blocker-validator.sh"
 
-# The two scripts allowed to reach for console's tree, and the reason. Both
-# call a console-only service helper behind an [[ -x ]] existence test, so a
-# repo without it takes the skip branch instead of dying.
-ALLOWED_CONSOLE_HOOKS="scripts/start-origin.sh
+# The scripts allowed to reach for console's tree, and the reason. Each calls a
+# console-only service helper behind an [[ -x ]] existence test, so a repo
+# without that tree takes an explicit branch instead of dying obscurely.
+#
+# This is an EXACT set, not a prefix or a count: a new hardcoded reference is
+# red until it is listed here with a justification. Widening it is a decision,
+# which is the point.
+#
+# pull-service-images.sh joined the set on 2026-07-27. It is the same shape as
+# the other two -- it drives console's ci-pull-images.sh and, when that file is
+# absent, exits 3 saying "dispatch with services: none in a repo without
+# console's infra tree". Note the deliberate asymmetry: a MISSING infra tree is
+# a configuration fact and gets a clear instruction, whereas a FAILED pull is a
+# real failure and exits 1. Collapsing those two into one tolerant branch is
+# what would actually break vendoring, because the session would then boot with
+# no services and report success.
+ALLOWED_CONSOLE_HOOKS="scripts/pull-service-images.sh
+scripts/start-origin.sh
 scripts/stop-breakpoint.sh"
 
 # -----------------------------------------------------------------------------
@@ -98,17 +112,42 @@ test_console_script_tree_is_optional() {
 
     files="$(bp_hit_files "$bp" '\.ci/scripts/')"
     assert_eq "$files" "$ALLOWED_CONSOLE_HOOKS" \
-        "only the two optional-hook scripts may name console's .ci/scripts/ in code"
+        "only the listed optional-hook scripts may name console's .ci/scripts/ in code"
     log_pass "no new script reaches into console's .ci/scripts/ tree"
 
-    # ...and in those two, the reference is guarded by an existence test, so a
-    # repo without ci-start.sh / ci-stop.sh SKIPS rather than breaks.
+    # ...and in each of them the reference is guarded by an existence test, so a
+    # repo without ci-start.sh / ci-stop.sh takes an explicit branch rather than
+    # dying obscurely.
+    #
+    # BOTH idioms count, and that is a fix rather than a relaxation. This used
+    # to demand the literal inline form `-x "$REPO_ROOT/.ci/scripts/`, which
+    # only stop-breakpoint.sh happens to use; the other two assign the path to a
+    # variable first and test `[[ -x "$VAR" ]]`, which is the same guard and
+    # arguably the clearer one. The old check therefore reported a guard as
+    # MISSING when it was present -- and nobody noticed, because the exact-set
+    # assertion above fails first and log_fail exits, so this loop had only ever
+    # run against stop-breakpoint.sh. Two of the three scripts were unchecked.
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
-        assert_contains "$(cat "$bp/$line")" '-x "$REPO_ROOT/.ci/scripts/' \
-            "$line must guard its console hook with an [[ -x ]] existence test"
+        local body guarded=0 var
+        body="$(cat "$bp/$line")"
+
+        # idiom 1: the path tested inline
+        if grep -qF -- '-x "$REPO_ROOT/.ci/scripts/' <<<"$body"; then
+            guarded=1
+        fi
+
+        # idiom 2: assigned to a variable, then that variable tested
+        while IFS= read -r var; do
+            [[ -z "$var" ]] && continue
+            if grep -qF -- "-x \"\$$var\"" <<<"$body"; then
+                guarded=1
+            fi
+        done < <(grep -oE '^[A-Za-z_][A-Za-z0-9_]*(?==")' <<<"$body" 2>/dev/null || grep -oE '^[A-Za-z_][A-Za-z0-9_]*="\$REPO_ROOT/\.ci/scripts/' <<<"$body" | sed 's/=.*//')
+
+        [[ "$guarded" -eq 1 ]] || log_fail "$line references console's .ci/scripts/ without an [[ -x ]] existence guard (checked both the inline and the assigned-variable idiom)"
     done <<<"$ALLOWED_CONSOLE_HOOKS"
-    log_pass "both console hooks are [[ -x ]]-guarded (absent tree => skip, not break)"
+    log_pass "every console hook is [[ -x ]]-guarded (absent tree => explicit branch, not break)"
 }
 
 # =============================================================================
@@ -138,9 +177,44 @@ test_no_app_token_plumbing() {
 
     # Not comment-stripped on purpose: even a commented-out app-token step is a
     # copy-paste hazard in a repo that has no such app registered.
+    #
+    # THE CONTRACT CHANGED, AND THIS ENCODES THE NEW ONE RATHER THAN LEAVING THE
+    # OLD ONE VIOLATED. The original rule was "no app token anywhere", which was
+    # correct while breakpoint only ever served its own origin. Then `services:
+    # onprem` landed, and the on-prem compose file lives in private/elite -- a
+    # PRIVATE repo the default GITHUB_TOKEN cannot clone. There is no way to
+    # honour that input without elevated credentials.
+    #
+    # So the property being protected is no longer "never", it is "not on the
+    # default path": a vendored copy in a repo with no App registered must still
+    # work. `services` defaults to `none`, so the default dispatch stays
+    # token-free and submodule-free, and any repo can run it. The token step is
+    # legal ONLY in the workflow and ONLY behind `inputs.services != 'none'`.
+    #
+    # Scripts remain absolutely forbidden: a script is what gets vendored and
+    # called directly, so a token dependency there has no `if:` to hide behind.
     hits="$(grep -rlE 'app-token|vars\.APP_ID|APP_PRIVATE_KEY' "$bp" || true)"
-    assert_eq "$hits" "" "breakpoint must not depend on console's GitHub App token"
-    log_pass "zero app-token / APP_ID / APP_PRIVATE_KEY references anywhere in the folder"
+    local offenders=""
+    while IFS= read -r hit; do
+        [[ -z "$hit" ]] && continue
+        if [[ "$hit" != *"/workflow/breakpoint.yml" ]]; then
+            offenders="${offenders}${hit}"$'\n'
+        fi
+    done <<<"$hits"
+    assert_eq "${offenders%$'\n'}" "" "only the workflow may reference the GitHub App token; scripts must never"
+
+    # ...and in the workflow, every app-token step must be gated off the default
+    # path. An ungated one silently makes the whole folder un-vendorable again.
+    if grep -qF 'uses: ./.github/actions/app-token' "$bp/workflow/breakpoint.yml" 2>/dev/null; then
+        local step
+        step="$(grep -A 4 'uses: ./.github/actions/app-token' "$bp/workflow/breakpoint.yml")"
+        assert_contains "$step" "if: inputs.services != 'none'" \
+            "the app-token step must be guarded by inputs.services != 'none' so the default dispatch needs no App"
+        log_pass "app-token step exists but is confined to services != none (default path stays token-free)"
+    else
+        log_pass "workflow references no GitHub App token at all"
+    fi
+    log_pass "no script references the GitHub App token (workflow-only, checked above)"
 }
 
 # =============================================================================
@@ -232,6 +306,22 @@ test_drift_gate_runs_standalone() {
     assert_contains "$out" "Verified" "the drift gate must report what it verified"
     assert_not_contains "$out" "Verified 0 files" "a drift gate that verified nothing is vacuous"
     log_pass "check-breakpoint-drift.sh self-verifies standalone (no .ci/scripts, no .git)"
+
+    # ...and it must FAIL when the manifest is gone. Deleting MANIFEST.sha256 is
+    # the cheapest possible way to make a diverged vendored copy "pass", so
+    # "nothing to compare against" has to be a hard error, not a quiet success.
+    #
+    # This lives here rather than in the anti-vacuity meta-gate because that
+    # harness's fixture does not copy .ci/breakpoint/ at all: registered there,
+    # it could only ever observe a "No such file or directory" crash and score
+    # it as a pass, which is the exact false signal that gate warns about.
+    rm -f "$bp/MANIFEST.sha256"
+    rc=0
+    out="$(env -i PATH="$PATH" HOME="$1" RUNNER_TEMP="$1" \
+        bash "$bp/scripts/check-breakpoint-drift.sh" 2>&1)" || rc=$?
+    [[ "$rc" -ne 0 ]] || log_fail "check-breakpoint-drift.sh reported SUCCESS with no manifest -- deleting it would be a free pass"
+    assert_contains "$out" "no manifest" "the drift gate must say WHY it refused, not just exit non-zero"
+    log_pass "check-breakpoint-drift.sh rejects a copy whose manifest was deleted"
 }
 
 # =============================================================================

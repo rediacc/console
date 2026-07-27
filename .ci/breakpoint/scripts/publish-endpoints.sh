@@ -49,15 +49,29 @@ source "$SCRIPT_DIR/../lib/breakpoint-common.sh"
 bp_load_conf "$SCRIPT_DIR"
 parse_args "$@"
 
-URL="${ARG_URL:-}"
+# READ FROM SESSION STATE, NOT FROM THE WORKFLOW`s `env:`. This is a security
+# fix with a live receipt, not a refactor.
+#
+# GitHub prints every step`s `env:` block into the log BEFORE the step`s script
+# runs. Passing the URL as `env: BP_URL: ${{ steps.tunnel.outputs.url }}` meant
+# the runner published it ~4 seconds before this script could call
+# `::add-mask::` on it -- and `::add-mask::` only redacts occurrences AFTER it
+# registers. Observed in run 30254567365 on a PUBLIC repo: the email was sent
+# correctly AND the URL sat in cleartext at log line 1700, defeating the entire
+# reason the email channel is the default.
+#
+# The state file never touches the log, so reading from it closes the window
+# completely rather than narrowing it. Args remain as a test override only.
+URL="${ARG_URL:-$(bp_state_get BP_PUBLIC_URL)}"
 SEND_EMAIL="${ARG_SEND_EMAIL:-true}"
 DURATION="${ARG_DURATION:-}"
-TMATE_SSH="${ARG_TMATE_SSH:-}"
-TMATE_WEB="${ARG_TMATE_WEB:-}"
+TMATE_SSH="${ARG_TMATE_SSH:-$(bp_state_get BP_TMATE_SSH)}"
+TMATE_WEB="${ARG_TMATE_WEB:-$(bp_state_get BP_TMATE_WEB)}"
 DESKTOP_URL="${ARG_DESKTOP_URL:-}"
 
 [[ -n "$URL" ]] || {
-    log_error "missing required --url"
+    log_error "no access URL: neither --url nor BP_PUBLIC_URL in the session state"
+    log_error "state file: $(bp_state_file)"
     exit 4
 }
 

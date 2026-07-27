@@ -85,18 +85,24 @@ if [[ -z "$SSH_CONN" ]]; then
     exit 1
 fi
 
-# Mask all four unconditionally. Unlike the tunnel URL, these are never a
-# deliberate log-channel payload: a tmate string is a shell, and there is no
-# Access equivalent in front of tmate.io to make publishing one acceptable.
-for s in "$SSH_CONN" "$WEB_URL" "$SSH_RO" "$WEB_RO"; do
-    [[ -n "$s" ]] && bp_gha_mask "$s"
-done
+# DELIBERATELY NOT MASKED HERE. This script does not know the delivery
+# channel, and masking is irreversible within a run: once a value is masked it
+# can never be printed, so masking here made the logs channel emit
+# "SSH: ***" -- a shell nobody can reach. That is the exact bug already fixed
+# for the tunnel URL (never mask without a working alternative channel); this
+# was the same bug's second instance, in a place the first fix did not reach.
+#
+# publish-endpoints.sh owns the decision, because it is the only thing that
+# knows whether email is actually available. It reads these back from the
+# session state file rather than being handed them through the workflow`s
+# `env:`, because GitHub echoes every step`s `env:` block into the log -- which
+# would leak the connection string before any masking could apply.
 
 bp_state_set BP_TMATE_SSH "$SSH_CONN"
 bp_state_set BP_TMATE_WEB "$WEB_URL"
-bp_set_output "ssh-connection" "$SSH_CONN"
-bp_set_output "web-url" "$WEB_URL"
-bp_set_output "ssh-ro-connection" "$SSH_RO"
-bp_set_output "web-ro-url" "$WEB_RO"
+bp_state_set BP_TMATE_SSH_RO "$SSH_RO"
+bp_state_set BP_TMATE_WEB_RO "$WEB_RO"
 
-log_info "tmate session ready (connection details are masked; delivery is publish-endpoints.sh's job)"
+# No bp_set_output here on purpose: a step output that the workflow then puts in
+# an `env:` block is printed in the log by the runner. State file only.
+log_info "tmate session ready (details go to the session state; publish-endpoints.sh decides how to deliver them)"
