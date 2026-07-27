@@ -432,6 +432,17 @@ jobs:
       # then reports those actions as "unknown" and still exits 0 — a silent
       # fail-open that would make this gate meaningless exactly when it is rate
       # limited.
+      # Parses workflow YAML rather than grepping it: `${{ }}` expression syntax
+      # and types, matrix property references, runner labels, action input
+      # names. Catches the class where a bad expression makes a run start with
+      # ZERO jobs and no error message anywhere -- which reached main and was
+      # only found by dispatching the workflow. Also the only gate that sees
+      # workflow TEMPLATES under .ci/*/workflow/, which .github-scoped gates
+      # cannot.
+      - name: Workflow lint (actionlint)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-actionlint
+
       - name: Action freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:actions

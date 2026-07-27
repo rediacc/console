@@ -125,6 +125,17 @@ readonly NFPM_VERSION="2.45.0"
 # this and NFPM_VERSION together.
 readonly NFPM_SHA256_LINUX_X86_64="940f0c3ba8e2c9cc5669026a1c0c20453403b9c32ea4c66fd25426bcbe605a84"
 
+# actionlint validates workflow YAML itself: `${{ }}` expression types, matrix
+# property references, runner labels, action input names, `if:` syntax. Pinned
+# and checksum-verified like everything else fetched from a release page.
+#
+# Verified against
+# https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt
+# Update the version and BOTH checksums together.
+readonly ACTIONLINT_VERSION="1.7.12"
+readonly ACTIONLINT_SHA256_LINUX_AMD64="8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+readonly ACTIONLINT_SHA256_LINUX_ARM64="325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
+
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.
 readonly WRANGLER_VERSION="4.112.0"

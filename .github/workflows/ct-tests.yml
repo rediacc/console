@@ -161,10 +161,18 @@ jobs:
           # machine-registration/SSH wiring first (plan phase 5). To turn it on,
           # add `cli-suite: '1'` to the ubuntu-24.04 leg below. Rationale +
           # local-run instructions in packages/e2e-tests/README.md.
+          # cli-suite is declared EMPTY rather than omitted. An omitted matrix
+          # property still resolves to "" in `${{ matrix.cli-suite }}`, so the
+          # behaviour is identical -- but actionlint rightly flags a reference
+          # to a property the matrix never declares, and silencing that check
+          # would cost far more than it saves. Flipping the suite on is still a
+          # one-character edit: change '' to '1' on the ubuntu leg.
           - os-image: ubuntu-24.04
             full-integration: '1'
+            cli-suite: ''
           - os-image: fedora-43
             full-integration: '1'
+            cli-suite: ''
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
