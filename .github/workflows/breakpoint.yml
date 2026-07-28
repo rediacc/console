@@ -225,9 +225,9 @@ jobs:
         if: inputs.desktop != 'none'
         run: .ci/breakpoint/scripts/install-vnc-desktop.sh --extras vscode,chromium
 
-      # ci-start.sh SKIPS building when GITHUB_ACTIONS is set and expects the
-      # images to be pre-pulled (ci-start.sh:33-38). Nothing here pulled them,
-      # so compose fell through to a build and died with
+      # ci-start-elite.sh goes straight to `up -d` and expects the images to be
+      # pre-pulled. Nothing here pulled them, so compose fell through to a build
+      # and died with
       #   "target account-server: failed to solve: failed to read dockerfile"
       # -- the account Dockerfile lives in a submodule this workflow does not
       # check out. Pull instead of build: it is what CI does everywhere else,
