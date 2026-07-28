@@ -92,6 +92,20 @@ const EXPECTED_JOB_NAMES = {
   ],
 };
 
+// Plan keys whose expected name CONTAINS ' / ' but which are flat top-level
+// jobs rather than leaves of a reusable-workflow caller.
+//
+// Derived, not guessed: parsing ci.yml's top-level jobs for `uses:
+// ./.github/workflows/` classifies every job whose display name carries a
+// ' / '. Ten are genuine reusable callers (Quality, Build (Renet), Build
+// (Docker), Build (Docker Fast), Build (CLI), Tests + Infra / Update Flow,
+// Stage Artifacts, Tests + Infra, OPS Tests, Validate Install Methods) and
+// exactly ONE is flat: package-tests, named "Tests + Infra / Linux Packages".
+//
+// Keys with no ' / ' at all need no entry: their derived caller would be their
+// own name, and a job with that exact name would already have been matched.
+const FLAT_JOB_KEYS = new Set(['package_tests']);
+
 // The name table and scope-map's surface table must cover exactly the same
 // plan keys, or a job could be planned that the reconciler cannot verify (or
 // verified that can never be planned). Drift in either direction throws at
@@ -103,6 +117,12 @@ function validateNameTable(names, surfaces) {
   }
   for (const key of Object.keys(names)) {
     if (!surfaces[key]) throw new Error(`EXPECTED_JOB_NAMES has orphan key '${key}'`);
+  }
+  // A FLAT_JOB_KEYS entry that no longer names a real plan key is a dead
+  // exemption: it would sit there reading as deliberate while suppressing
+  // nothing. Fail at load rather than let it rot.
+  for (const key of FLAT_JOB_KEYS) {
+    if (!names[key]) throw new Error(`FLAT_JOB_KEYS has orphan key '${key}'`);
   }
 }
 validateNameTable(EXPECTED_JOB_NAMES, scopeMap.JOB_SURFACES);
@@ -176,7 +196,19 @@ function reconcile(plan, jobs, ctx = {}) {
         // the false-fire it was built to surface before the gate went live.
         // Reported as planned-run-but-skipped, the same finding a directly
         // skipped leaf produces, because that is what actually happened.
-        const callers = [...new Set(expected.map((e) => e.split(' / ')[0]))];
+        // Derive the caller ONLY for keys that really are reusable-workflow
+        // leaves. `package_tests` shares the "Tests + Infra" prefix by
+        // coincidence: it is a FLAT top-level job (ci.yml:572-573,
+        // `needs: [initialize, quality]`), not a leaf of the `tests` caller
+        // whose own display name is exactly "Tests + Infra" (ci.yml:673-674).
+        // Splitting on ' / ' regardless would hand back 'Tests + Infra' and
+        // then blame the unrelated `tests` job for `package_tests` going
+        // missing, turning a real case-27 rename or DAG break into a bogus
+        // case-25 caller-skip. The header two screens up already warns about
+        // this exact name, which is how it was caught.
+        const callers = FLAT_JOB_KEYS.has(key)
+          ? []
+          : [...new Set(expected.map((e) => e.split(' / ')[0]))];
         const skippedCaller = jobs.find(
           (j) => callers.includes(j.name) && j.conclusion === 'skipped'
         );
