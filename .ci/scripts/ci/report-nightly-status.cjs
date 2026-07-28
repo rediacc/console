@@ -91,13 +91,40 @@ const report = async ({ github, context, core }) => {
   // run link alone means opening a 90-job run to find the two that matter.
   let failedList = '_(could not read the job list)_';
   try {
-    const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+    const page = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
       owner, repo, run_id: Number(runId), per_page: 100,
     });
-    const bad = jobs.filter(j => j.conclusion && j.conclusion !== 'success' && j.conclusion !== 'skipped');
-    failedList = bad.length
-      ? bad.map(j => `- **${j.name}** -- \`${j.conclusion}\`${j.html_url ? ` ([log](${j.html_url}))` : ''}`).join('\n')
-      : '_(no job reported a non-success conclusion; the run itself concluded ' + `\`${conclusion}\`)_`;
+
+    // SHAPE-AGNOSTIC on purpose. `github.paginate` sometimes yields the flattened
+    // job objects and sometimes an array of RESPONSE objects (`{total_count,
+    // jobs}`), depending on whether it recognises the endpoint's collection key.
+    // Observed live on nightly 30327872124: the call threw nothing, but every
+    // element lacked `.conclusion`, so the filter matched zero of NINE failed
+    // jobs and the issue said no job had failed. Normalise instead of assuming.
+    const jobs = Array.isArray(page)
+      ? page.flatMap(entry => (entry && Array.isArray(entry.jobs) ? entry.jobs : [entry]))
+      : Array.isArray(page?.jobs) ? page.jobs : [];
+
+    const usable = jobs.filter(j => j && typeof j.conclusion !== 'undefined');
+    const bad = usable.filter(j => j.conclusion && j.conclusion !== 'success' && j.conclusion !== 'skipped');
+
+    if (bad.length > 0) {
+      failedList = bad
+        .map(j => `- **${j.name}** -- \`${j.conclusion}\`${j.html_url ? ` ([log](${j.html_url}))` : ''}`)
+        .join('\n');
+    } else if (usable.length === 0) {
+      // ANTI-VACUITY. Zero readable jobs is not evidence that nothing failed, it
+      // is evidence that the read failed. Saying "no job reported a non-success
+      // conclusion" there is the same defect this whole programme is about:
+      // reporting empty data as clean data. Fail toward "I could not tell".
+      failedList = `_(could not read the job list: the API returned ${jobs.length} entr${jobs.length === 1 ? 'y' : 'ies'}, none carrying a conclusion. The run itself concluded \`${conclusion}\`.)_`;
+      console.log(`Job list for run ${runId} was unreadable (${jobs.length} entries, none with a conclusion).`);
+    } else {
+      // Genuinely readable and genuinely all-green at job level. This does
+      // happen: a run can conclude `failure` because a job was cancelled by the
+      // 6h limit or a required check failed outside the job list.
+      failedList = `_(read ${usable.length} job(s); none reported a non-success conclusion, yet the run concluded \`${conclusion}\`.)_`;
+    }
   } catch (e) {
     console.log(`Could not list jobs for run ${runId}: ${e.message}`);
   }

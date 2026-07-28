@@ -34,6 +34,13 @@ const report = require(process.argv[2]);
 const openIssues = JSON.parse(process.argv[3]);   // e.g. [] or [{number: 7}]
 const labelExists = process.argv[4] === '1';
 const existingComments = JSON.parse(process.argv[5] || '[]');
+// JOBS SHAPE. `github.paginate` does not always hand back flattened job
+// objects: for listJobsForWorkflowRun it can yield the RESPONSE objects
+// ({total_count, jobs}) instead. The original fixture only ever produced the
+// flat shape, which is why this suite stayed green while production reported
+// "no job reported a non-success conclusion" for a nightly with NINE failures
+// (run 30327872124). The shape is now a parameter so both are exercised.
+const jobsShape = process.argv[6] || 'flat';
 
 const trace = [];
 const github = {
@@ -43,12 +50,16 @@ const github = {
     if (params && params.labels) { trace.push(`list-issues:${params.labels}`); return openIssues; }
     if (params && params.issue_number) { trace.push(`list-comments:${params.issue_number}`); return existingComments; }
     trace.push('list-jobs');
-    return [
+    const flat = [
       { name: 'Stage Artifacts / Stage Artifacts', conclusion: 'failure', html_url: 'u1' },
       { name: 'Quality / Workflows', conclusion: 'failure', html_url: 'u2' },
       { name: 'Build (CLI) / Linux', conclusion: 'success', html_url: 'u3' },
       { name: 'Tests + Infra / E2E Ceph', conclusion: 'skipped', html_url: 'u4' },
     ];
+    if (jobsShape === 'paged') return [{ total_count: flat.length, jobs: flat }];
+    if (jobsShape === 'unreadable') return [{ total_count: 4 }, { total_count: 4 }];
+    if (jobsShape === 'empty') return [];
+    return flat;
   },
   rest: {
     issues: {
@@ -76,7 +87,7 @@ HARNESS
 run_report() {
     NIGHTLY_RUN_ID=30237524399 NIGHTLY_CONCLUSION="$1" NIGHTLY_EVENT="$2" \
         NIGHTLY_URL='https://github.com/rediacc/console/actions/runs/30237524399' \
-        node "$WORK/harness.cjs" "$REPORTER" "$3" "${4:-1}" "${5:-[]}" 2>/dev/null
+        node "$WORK/harness.cjs" "$REPORTER" "$3" "${4:-1}" "${5:-[]}" "${6:-flat}" 2>/dev/null
 }
 trace_of() { run_report "$@" | sed -n 's/^TRACE=//p'; }
 
@@ -151,6 +162,40 @@ test_missing_label_is_created_before_use() {
     assert_contains "$t" "create-label:nightly-red" "the missing label is created"
     assert_contains "$t" "create:Nightly CI is red" "and the issue is still opened"
     log_pass "a missing nightly-red label is created before the issue uses it ($t)"
+}
+
+test_paginated_response_shape_still_names_jobs() {
+    # THE REGRESSION THIS SUITE MISSED. `github.paginate` returned RESPONSE
+    # objects ({total_count, jobs}) rather than flattened jobs, so every element
+    # lacked `.conclusion`, the filter matched none of NINE real failures, and
+    # issue #544 told a human "no job reported a non-success conclusion". The
+    # old fixture only produced the flat shape, so the suite could not see it.
+    local body
+    body="$(run_report failure schedule '[]' 1 '[]' paged | sed -n 's/^BODY=//p')"
+    assert_contains "$body" "Stage Artifacts" "the failing job is named from the paginated shape"
+    assert_contains "$body" "Quality / Workflows" "every failing job is named from the paginated shape"
+    assert_not_contains "$body" "Build (CLI) / Linux" "successes are still filtered out"
+    log_pass "the paginated {total_count, jobs} shape is read as well as the flat one"
+}
+
+test_unreadable_job_list_is_not_reported_as_clean() {
+    # ANTI-VACUITY, and the actual lesson of #544. Zero READABLE jobs is evidence
+    # the read failed, never evidence that nothing failed. Reporting empty data
+    # as clean data is the defect class this whole programme exists to remove, so
+    # the body must say it could not tell rather than implying an all-green run.
+    local body
+    body="$(run_report failure schedule '[]' 1 '[]' unreadable | sed -n 's/^BODY=//p')"
+    assert_contains "$body" "could not read the job list" "an unreadable roster says so plainly"
+    assert_not_contains "$body" "none reported a non-success conclusion" \
+        "and must NOT imply every job passed"
+    log_pass "an unreadable job list fails toward 'I could not tell', not toward 'nothing failed'"
+}
+
+test_empty_job_list_is_not_reported_as_clean() {
+    local body
+    body="$(run_report failure schedule '[]' 1 '[]' empty | sed -n 's/^BODY=//p')"
+    assert_contains "$body" "could not read the job list" "an empty roster is treated as unreadable"
+    log_pass "an empty job roster is also treated as a failed read"
 }
 
 test_body_names_the_failed_jobs() {
@@ -236,6 +281,9 @@ test_green_closes_the_open_issue
 test_green_with_nothing_open_is_a_no_op
 test_missing_label_is_created_before_use
 test_body_names_the_failed_jobs
+test_paginated_response_shape_still_names_jobs
+test_unreadable_job_list_is_not_reported_as_clean
+test_empty_job_list_is_not_reported_as_clean
 test_workflow_is_wired_to_schedule_runs_only
 test_a_rerun_of_the_same_night_does_not_double_comment
 test_a_different_night_still_comments
