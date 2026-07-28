@@ -7,8 +7,24 @@ on:
     types: [opened, synchronize]
   schedule:
     - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
-  # workflow_dispatch removed: manual triggers don't satisfy PR checks and waste CI budget.
-  # Use empty commits (git commit --allow-empty) to retrigger PR CI instead.
+  # workflow_dispatch is the NIGHTLY REHEARSAL, guarded to main by the first
+  # step of `initialize`.
+  #
+  # This supersedes the previous note here ("workflow_dispatch removed: manual
+  # triggers don't satisfy PR checks and waste CI budget. Use empty commits to
+  # retrigger PR CI instead."). That reasoning was about retriggering a PR, and
+  # it still holds: this is NOT for PRs, and the guard makes using it for one
+  # impossible.
+  #
+  # It exists because the nightly can only be tested by waiting a day, and the
+  # nightly had been red for twelve consecutive nights (2026-07-16 to 07-27,
+  # zero successes). Fixing that at one attempt per 24 hours is not a feedback
+  # loop. A dispatch on main is schedule-equivalent BY CONSTRUCTION, not by
+  # convention: `full_suite` is `github.event_name != 'push'` (true for both),
+  # and "Generate channel context" yields an empty channel for anything that is
+  # not push or pull_request (both). assert-channel-for-event.sh has an explicit
+  # workflow_dispatch arm asserting exactly that.
+  workflow_dispatch:
 
 # Minimal default permissions — jobs that need more declare their own.
 # NOTE: `statuses: write` was removed. Nothing here ever wrote a commit status,
@@ -63,6 +79,20 @@ jobs:
       # bump). Gates the expensive jobs; see .ci/scripts/ci/detect-pointer-bump.sh.
       pointer_bump_only: ${{ steps.init.outputs.pointer_bump_only }}
     steps:
+      # The rehearsal is only schedule-equivalent when it runs where the nightly
+      # runs. A dispatch on a feature branch would produce a full ~70-minute run
+      # whose result says nothing about the nightly, which is worse than no
+      # rehearsal because it looks like evidence. Fail loudly rather than
+      # skipping: a silently skipped guard is the failure mode this whole wave
+      # is about.
+      - name: Guard the rehearsal dispatch to main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        env:
+          DISPATCH_REF: ${{ github.ref }}
+        run: |
+          echo "::error::The nightly rehearsal may only be dispatched on main (got: $DISPATCH_REF)."
+          exit 1
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
