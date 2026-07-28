@@ -36,6 +36,24 @@ emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
 
 emit "### Skip-plan reconciliation (shadow, fails nothing)" ""
 
+# TOOL PROBE, and it is not defensive boilerplate. ci-complete runs on
+# ubuntu-slim, where NO other job uses node and none sets it up
+# (assert-ci-complete.sh is pure bash; only `gh` is evidenced there, by
+# finalize-release-sentinel). If node is absent, running the reconciler would
+# exit 127 and this script would dutifully print "WOULD HAVE FAILED" on every
+# single PR: a fabricated verdict, and the precise dead-instrument failure this
+# whole programme exists to eliminate. An absent tool must read as "could not
+# measure", never as a result.
+for tool in gh node; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        emit "_**cannot reconcile**: \`$tool\` is not available on this runner" \
+            "(ci-complete runs on ubuntu-slim). This is a GAP IN THE EVIDENCE, not a" \
+            "clean result. Fix by adding setup-node to ci-complete, or by moving this" \
+            "step to a job on ubuntu-latest._" ""
+        exit 0
+    fi
+done
+
 # The plan was uploaded by initialize's shadow step earlier in THIS run. The
 # name is the bare `ci-skip-plan`, NOT run-id-suffixed: artifact names are
 # already scoped per run, and scope-engine's createRepoIo looks up exactly this
