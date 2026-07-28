@@ -235,8 +235,8 @@ jobs:
         with:
           name: scope-shadow-${{ github.run_id }}
           path: |
-            scope-classify.json
-            scope-baseline.json
+            .ci/cache/scope-shadow/scope-classify.json
+            .ci/cache/scope-shadow/scope-baseline.json
           retention-days: 7
           if-no-files-found: ignore
 
