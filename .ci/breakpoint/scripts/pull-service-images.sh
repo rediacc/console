@@ -1,12 +1,13 @@
 #!/bin/bash
-# Pre-pull the service images ci-start.sh expects, and NEVER fail the session
-# because they were unavailable.
+# Pre-pull the service images the origin stack expects, and NEVER fail the
+# session because they were unavailable.
 #
 # WHY THIS EXISTS
-# `.ci/scripts/infra/ci-start.sh` skips `docker compose build` whenever
-# GITHUB_ACTIONS is set (ci-start.sh:33-38) and goes straight to `up -d`, on the
-# assumption that a prior CI step already pulled the images. The breakpoint
-# workflow had no such step, so compose fell back to building and died with:
+# The services path is: this script -> ci-pull-images.sh (pulls
+# ghcr.io/rediacc/server) -> start-origin.sh -> ci-start-elite.sh, which goes
+# straight to `up -d` on the assumption that a prior step already pulled the
+# images. The breakpoint workflow had no such step, so compose fell back to
+# building and died with:
 #
 #   target account-server: failed to solve: failed to read dockerfile:
 #   open Dockerfile: no such file or directory
@@ -18,8 +19,9 @@
 # FAILS LOUDLY. An earlier draft of this script always exited 0, on the theory
 # that a box without its app image is still a useful box. That is a fallback,
 # and fallbacks hide: the operator asked for --services, the pull silently did
-# not happen, ci-start.sh then could not start anything, and the first symptom
-# was "bad gateway" at the tunnel root with nothing in between explaining why.
+# not happen, the origin stack then could not start anything, and the first
+# symptom was "bad gateway" at the tunnel root with nothing in between
+# explaining why.
 # If the images cannot be pulled, say so HERE, where the reason is still in
 # scope, and let the run fail. `hold-on-failure: true` keeps the box alive for
 # inspection when you want to debug the boot itself.
@@ -53,7 +55,7 @@ log_step "pre-pulling service images from GHCR..."
 # chatty. Keeping the habit everywhere is cheaper than remembering where it
 # matters.
 if ! "$PULLER" >&2; then
-    log_error "image pre-pull FAILED -- ci-start.sh cannot start anything without these images"
+    log_error "image pre-pull FAILED -- the origin stack cannot start anything without these images"
     log_error "(it skips 'docker compose build' whenever GITHUB_ACTIONS is set)"
     log_error "re-dispatch with services: none, or with hold-on-failure to debug the pull"
     exit 1

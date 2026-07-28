@@ -3,15 +3,17 @@
 #
 # WHY THIS EXISTS AT ALL: the deleted standalone-run.yml never started any
 # services. `grep -n "docker compose\|ci-start" standalone-run.yml` on the
-# recovered file finds only the desktop gateway overlay -- ci-start.sh is never
-# invoked -- yet the hold loop curled http://localhost/health and the tunnel
+# recovered file finds only the desktop gateway overlay -- no service stack is
+# ever started -- yet the hold loop curled http://localhost/health and the tunnel
 # gated its own success on the same endpoint. So the tunnel step could not
 # succeed even in principle: it burned three 60s attempts per matrix leg and
 # `|| true` swallowed the failure. Three CI legs per PR, every PR, for months.
 #
-# The fix is not "call ci-start.sh somewhere". It is to make the origin an
-# explicit, checked step that FAILS LOUDLY when the thing behind it is not
-# serving, which is what this script is.
+# The fix was never "call some start script from somewhere". It is to make the
+# origin an explicit, checked step that FAILS LOUDLY when the thing behind it is
+# not serving, which is what this script is. (The script this originally named,
+# .ci/scripts/infra/ci-start.sh, was itself deleted under issue #533: it had zero
+# execution sites, so declining to adopt it here was the right call.)
 #
 # ONE ORIGIN PORT, ALWAYS. Everything the tunnel fronts is reachable on
 # --port (default 8080), so start-tunnel.sh's --origin is a constant and there
@@ -90,7 +92,7 @@ if [[ "$SERVICES" != "none" ]]; then
         log_step "starting the on-prem stack via ci-start-elite.sh..."
         # `>&2` IS LOAD-BEARING, not tidiness. This script's stdout contract is
         # "exactly one line, the origin URL", and the caller does
-        # `URL=$(start-origin.sh ...)`. ci-start.sh sources ci-env.sh, which
+        # `URL=$(start-origin.sh ...)`. ci-start-elite.sh sources ci-env.sh, which
         # prints `::add-mask::<secret>` lines to STDOUT (ci-env.sh:94-100) to
         # register its generated ephemeral keys with the runner. Without this
         # redirect those lines were swallowed into $URL, producing a multi-line
@@ -124,7 +126,7 @@ fi
 
 if [[ "$DESKTOP" != "none" ]]; then
     log_step "starting desktop ($DESKTOP)..."
-    # Same stdout discipline as ci-start.sh above: nothing but the URL may
+    # Same stdout discipline as ci-start-elite.sh above: nothing but the URL may
     # reach this script's stdout.
     if ! "$SCRIPT_DIR/desktop-ctl.sh" start --resolution "${DESKTOP_RESOLUTION:-1600x900}" >&2; then
         log_error "desktop ($DESKTOP) FAILED to start -- refusing to hand over a session without it"
