@@ -35,9 +35,41 @@ permissions:
   contents: read
   packages: read    # Most jobs pull from GHCR
 
+# Supersede-cancellation, which was previously absent rather than disabled.
+#
+# The old group was:
+#   group: ${{ github.event_name == 'push' && 'ci-main' || format('ci-{0}', github.run_id) }}
+#   cancel-in-progress: false
+#
+# `github.run_id` is UNIQUE PER RUN, so every pull_request run got a group
+# containing only itself. A group of one can never collide, so it could never
+# cancel anything, and `cancel-in-progress: false` made it moot regardless.
+# Pushing twice to a PR therefore left BOTH runs going, each ~500 machine-minutes.
+# The only thing actually cancelling superseded runs was a LOCAL Claude hook
+# (.claude/hooks/post-bash/cancel-old-ci.sh) that fires after a git push from one
+# particular machine, so pushes from anywhere else were unprotected.
+#
+# The three arms are deliberately different, and the distinction is load-bearing:
+#
+#   pull_request -> keyed on the PR NUMBER, cancel-in-progress TRUE. A newer
+#     commit supersedes an older one, which is the intended saving.
+#
+#   push (main)  -> keyed on 'ci-main', cancel-in-progress FALSE. Main is the
+#     release path: finalize-release-sentinel dispatches cd-v2, so cancelling a
+#     main run mid-flight could interrupt a release. Queue instead.
+#
+#   everything else (schedule, workflow_dispatch) -> keyed on run_id, so they are
+#     never grouped and never cancelled. This is REQUIRED, not incidental: the
+#     nightly and its rehearsal both run on main's ref, so a shared ref-based key
+#     would let a rehearsal cancel the nightly, and a cancelled nightly reports
+#     `cancelled` rather than `failure`, which is exactly the laundering that hid
+#     twelve consecutive red nights.
 concurrency:
-  group: ${{ github.event_name == 'push' && 'ci-main' || format('ci-{0}', github.run_id) }}
-  cancel-in-progress: false
+  group: >-
+    ${{ github.event_name == 'push' && 'ci-main'
+     || github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number)
+     || format('ci-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # ============================================================================
