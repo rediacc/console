@@ -1428,6 +1428,68 @@ jobs:
           if-no-files-found: ignore
 
   # ============================================================================
+  # LICENSE ENFORCEMENT: prove a release-shaped renet really refuses unlicensed
+  # work and really accepts a valid licence, against a key minted for this run.
+  #
+  # Every other leg in this file builds --nolicense, so the only licensing code
+  # CI has ever executed is the stub in runtime_nolicense.go, which returns
+  # success unconditionally for all three validators. renet's unit tests cover
+  # the crypto negatives well but never execute cmd/renet, so nothing proved the
+  # command wiring, the ldflags key injection, or the exit-10 contract.
+  #
+  # DELIBERATELY UNLIKE ITS SIBLINGS, and each omission was measured:
+  #   - no embed-assets cache. pkg/embed/assets is gitignored, and a fresh
+  #     checkout carries the committed .gitkeep placeholders that keep the
+  #     `//go:embed assets/<arch>/base/*` patterns matching. Proven in a
+  #     throwaway git worktree: the enforcing binary links in 4.6s at 44MB with
+  #     no payload staged, against 233MB with it. Nothing here reads an embedded
+  #     asset.
+  #   - no Docker Hub login, no VM, no BTRFS, no LUKS. The licence gate fires
+  #     before any storage work, so acceptance shows up as renet getting past
+  #     the gate and then failing at the same later point an unlicensed twin
+  #     fails at.
+  # Whole battery measured at ~11s locally against an asset-free checkout.
+  #
+  # `sudo` is required only to install the licence fixtures: RepoLicenseDir is
+  # the hardcoded /var/lib/rediacc/license/repos with no env override.
+  # ============================================================================
+  test-license-enforcement:
+    name: License Enforcement
+    if: inputs.full_suite == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          # Both module graphs: renet's, and the mint tool's own (it imports the
+          # real pkg/license and pkg/subscription through a replace directive so
+          # the licence payload cannot drift from the verifier).
+          cache-dependency-path: |
+            private/renet/go.sum
+            .ci/scripts/private/license-mint/go.sum
+
+      # The script IS the local-dev entry point; there is no CI-only variant to
+      # drift from. It mints its own throwaway key when ACCOUNT_ED25519_PUBLIC_KEY
+      # is unset, which is the case here on purpose: no production key is
+      # involved, and nothing it signs outlives the job.
+      - name: Run the license enforcement battery
+        run: .ci/scripts/private/license-e2e.sh
+
+  # ============================================================================
   # ACCOUNT E2E: Full Playwright E2E tests for the account portal
   # Spins up account server + RustFS via Docker, runs Playwright tests
   # ============================================================================

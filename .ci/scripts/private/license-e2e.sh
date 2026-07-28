@@ -55,7 +55,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 REPO_ROOT="$(get_repo_root)"
 
-RENET_SRC="$REPO_ROOT/private/renet"
+# Overridable so the battery can be pointed at a CLEAN checkout of renet, which
+# is the state CI actually builds in. It matters because pkg/embed/assets is
+# gitignored: a fresh checkout carries only the committed .gitkeep placeholders,
+# which is exactly what makes the `//go:embed assets/<arch>/base/*` patterns
+# still compile. Verified by building in a throwaway `git worktree`: the binary
+# links in 4.6s at 44MB there, against 233MB with the 340MB payload staged.
+#
+# So this leg needs NO embed-assets cache, unlike every other renet job. Being
+# able to PROVE that rather than reason about Go's embed globbing is the whole
+# reason this is a variable.
+RENET_SRC="${RENET_SRC:-$REPO_ROOT/private/renet}"
 MINT_SRC="$SCRIPT_DIR/license-mint"
 KEYS_LDPATH="github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey"
 
