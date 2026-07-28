@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { BLUE, DIM, GREEN, NC, RED, YELLOW } from './utils/console.js';
 import { collectActionRefs } from './lib/action-refs.js';
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from './lib/release-age.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..');
@@ -76,12 +77,6 @@ interface ActionResult extends ActionInfo {
 }
 
 /**
- * Release-age defer window, mirroring .ci/scripts/lib/release-age.sh and
- * .npmrc's `minimum-release-age=1440`. Overridable for tests.
- */
-const RELEASE_AGE_WINDOW_SECONDS = Number(process.env.RELEASE_AGE_WINDOW_SECONDS || 24 * 60 * 60);
-
-/**
  * Is this release too fresh to demand an upgrade to?
  *
  * WHY THIS EXISTS. This gate had no notion of release age, so an action
@@ -90,21 +85,31 @@ const RELEASE_AGE_WINDOW_SECONDS = Number(process.env.RELEASE_AGE_WINDOW_SECONDS
  * Observed 2026-07-28: docker/login-action v4.5.2 was published at 07:04:43Z and
  * had reddened the gate by 07:21Z, seventeen minutes later.
  *
- * Taking it immediately is also against this repo's own supply-chain posture:
- * `.npmrc` sets `minimum-release-age=1440` precisely so a fresh publish is not
- * consumed on sight, and the Go and npm gates already defer via
- * `is_release_deferred`. An action pin is the same kind of dependency.
+ * Delegates to the SHARED window in ./lib/release-age.js rather than carrying
+ * its own copy, so this gate, check-deps and check-embed-asset-freshness all
+ * read `minimum-release-age` from .npmrc and all inherit the same round-up to
+ * the next UTC day, which batches a day's upgrades into one surfacing instead of
+ * trickling them in one at a time. An action pin is the same kind of dependency
+ * as an npm one and gets the same treatment.
  *
- * FAIL-CLOSED, matching the bash helper: a missing or unparseable timestamp is
- * treated as DEFERRED, because a lookup hiccup must never manufacture a "you
- * must upgrade now" failure. The cost of that direction is one day of latency;
- * the cost of the other is a red build nobody can honestly clear.
+ * NULL POLICY IS FAIL-CLOSED, matching check-deps: a missing or unparseable
+ * timestamp defers, because a lookup hiccup must never manufacture a "you must
+ * upgrade now" failure. (check-embed-asset-freshness deliberately chooses the
+ * opposite for dateless git tags; the lib leaves the choice to the caller.)
+ *
+ * `minReleaseAgeMs` is injectable purely so tests can drive both directions:
+ * with a zero window nothing defers, which is what proves the deferral is doing
+ * one specific thing rather than muting the gate.
  */
-function isReleaseDeferred(publishedAt: string | undefined, nowMs = Date.now()): boolean {
+export function isReleaseDeferred(
+  publishedAt: string | undefined,
+  nowMs: number = Date.now(),
+  minReleaseAgeMs: number = getMinReleaseAgeMs()
+): boolean {
   if (!publishedAt) return true;
   const published = Date.parse(publishedAt);
   if (Number.isNaN(published)) return true;
-  return nowMs < published + RELEASE_AGE_WINDOW_SECONDS * 1000;
+  return isWithinFreshnessWindow(published, nowMs, minReleaseAgeMs);
 }
 
 /**
@@ -445,7 +450,7 @@ async function checkActions(): Promise<void> {
         latest: latestVersion,
         releaseUrl: release.url,
         reason: release.publishedAt
-          ? `published ${release.publishedAt}, inside the ${Math.round(RELEASE_AGE_WINDOW_SECONDS / 3600)}h window`
+          ? `published ${release.publishedAt}, inside the shared minimum-release-age window`
           : 'no publish date returned by the API (deferring fail-closed)',
       });
       continue;
