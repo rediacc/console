@@ -88,13 +88,22 @@ export function remarkVideoEmbed() {
       const imageNode = node.children[imageIndex] as Image;
       const caption = extractCaption(node, imageIndex);
 
-      // Always render <video> elements. These were meant to be filled in
-      // post-build by a CI inject step, but no workflow has ever produced the
-      // `e2e-videos-*` artifact it downloaded, so that step and its script were
-      // removed. The sources are therefore missing in practice and the browser
-      // renders an empty player. That is pre-existing behaviour, not a
-      // regression from the removal, and it is tracked separately: the fix is
-      // to produce the recordings or to stop emitting the element.
+      // Always render <video> elements rather than probing for the file: the
+      // sources are populated after this plugin runs, so an existence check here
+      // would be wrong even when the video is present.
+      //
+      // Status of the user-guide set, checked 2026-07-28 so the next reader does
+      // not have to: NOTHING currently references it. Zero .md/.mdx files under
+      // packages/www/src embed an /assets/videos/user-guide/ path, there is no
+      // such directory locally (only videos/solutions/), nothing is tracked in
+      // git for it, and media.rediacc.com 404s for one. So this branch is not
+      // reached for user-guide today and no empty player is served.
+      //
+      // It used to be fed by a CI step that downloaded an `e2e-videos-*`
+      // artifact. That artifact has never been produced by any workflow, so the
+      // step and its script were removed. Solution and tutorial videos are a
+      // DIFFERENT set: those are produced by the local pipelines and served from
+      // media.rediacc.com, and they are unaffected by that removal.
       const html = buildVideoHtml(imageNode.url, imageNode.alt ?? '', caption);
 
       // Replace the entire paragraph node with raw HTML
