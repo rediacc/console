@@ -95,10 +95,40 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
 `ci-complete` still gates.
 
 - **New push -> old runs cancelled**: `cancel-older-runs.sh` force-cancels all older in-progress runs on the same branch. **Never re-run a cancelled run** -- cancelled means superseded.
+- **Scheduled (nightly) runs are NEVER cancelled.** Cancelling rewrites a run's
+  conclusion from `failure` to `cancelled`, and everything downstream reads
+  `cancelled` as "superseded, ignore". On a PR that is survivable; on the nightly
+  it is fatal, because the nightly is the only suite validating `main`
+  (`full_suite` is `event != 'push'`) and nobody is watching it. Measured
+  2026-07-27: **12 of 12 scheduled runs `cancelled`, zero successes, back to
+  2026-07-16**, entirely unnoticed. On a scheduled run the failure is recorded,
+  the run is left to conclude as `failure`, and the watchdog KEEPS MONITORING so
+  later failures are still logged and captured. See `evaluateCancelExemption`.
+  The `no-cancel-failure` label could never have covered this: labels live on a
+  PR, and a scheduled run has none.
+
+  **Retries are NOT suppressed on the nightly, only cancels are.** A flaky E2E
+  leg is still re-run under the allowlist rules below. Suppressing both would
+  make a network blip turn the nightly red, and a nightly that cries wolf trains
+  everyone to ignore it -- the same disease as the laundering. `forceCancel`
+  therefore reports whether it actually cancelled, and only a real cancel ends
+  the watchdog generation.
 - **Job failure (attempt 1)**: Watchdog uses AI (DeepSeek V4 Pro via Cloudflare's OpenAI-compatible endpoint) to classify the failure from the log excerpt anchored at the first `##[error]` marker (a plain tail showed only post-failure cleanup — run 29931338016):
   - **Transient** (network timeout, flaky test, npm error): the watchdog chain holds a pending rerun, lets the run finish, then reruns every failed job as attempt 2 of the SAME run; other jobs keep running.
   - **Code-change** (TypeScript error, lint failure, missing artifact): Force-cancels immediately, no retry.
-  - **AI unavailable**: Falls back to retry (same as pre-AI behavior).
+  - **AI unavailable**: retries **only** jobs matching `WATCHDOG_RETRY_ALLOWLIST_PATTERNS`
+    (`E2E,OPS,Fork Isolation` -- the legs that boot VMs or pull images, i.e. the
+    ones whose failures are genuinely non-deterministic). Everything else fails
+    fast. The classifier has been returning HTTP 402, so the old
+    fall-back-to-retry meant every failure in the repo was retried on a judgment
+    nobody made, at ~55 minutes a time. The allowlist governs **failures only**:
+    a non-stuck CANCELLATION is a runner/infra flake, not a verdict about the
+    code, and is still retried. Issue #537.
+- **Failed-step logs are captured BEFORE any rerun** and uploaded as the
+  `watchdog-logs-<run-id>-gen<n>` artifact on the corresponding `Watchdog
+  Monitor` run. A rerun makes attempt 1's logs unreachable, so retrying used to
+  destroy the evidence for the only question worth asking afterwards. Capture
+  happens for every handled failure regardless of which branch handles it.
 - **Job failure (attempt 2+)**: Watchdog force-cancels the entire run -- no infinite retry loops.
 - **Quality lane failures**: Never auto-retry, never use AI (a lint or type error is deterministic; retrying it is pointless). The force-cancel now **drains first**: it waits until every other `Quality / *` lane reaches a terminal state, then cancels once with the full failure roster. So one round reports every failing lane instead of only the first, which is what used to make gates look like they failed serially. The expensive legs (E2E, OPS) are not in the no-retry set, so they still die immediately.
 - **Review Gate failures**: Never auto-retry, never use AI, and never drain. Fail immediately and force-cancel -- an outstanding review is not a red to race past.
@@ -111,7 +141,29 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
 | `no-cancel-failure` | Don't cancel run when jobs fail |
 | `no-auto-retry` | Skip retry, force-cancel immediately on failure |
 
+Labels apply to PR runs only. A `push` or `schedule` run has no PR, so none of
+them are readable there -- which is why the nightly exemption above is in code
+rather than in a label.
+
 Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
+
+### The nightly is reported, not just run
+
+A red nightly opens (or comments on) a single rolling `nightly-red` issue,
+labelled `bug` + `automated`, naming the failed jobs with log links; it closes
+itself on the next green nightly. One rolling issue rather than one per night,
+because the observed failure mode is a long unbroken streak and a wall of
+identical issues is its own kind of invisible. Driven by `nightly-status.yml`
+(`workflow_run` on Console CI, filtered to `event == 'schedule'`) calling
+`report-nightly-status.cjs`.
+
+**A scheduled run can also be rehearsed on demand**: `ci.yml` accepts
+`workflow_dispatch` on `main` (guarded; a dispatch on any other ref fails
+loudly). It is schedule-equivalent by construction -- `full_suite` is
+`event != 'push'` and the channel resolves to empty for anything that is not
+push or pull_request -- so it exercises the nightly path without waiting a day.
+That matters because the alternative is one attempt per 24 hours, which is not a
+feedback loop.
 
 ### Draft-until-green and the merge hooks
 

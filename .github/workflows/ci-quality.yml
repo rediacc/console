@@ -728,8 +728,27 @@ jobs:
   # ============================================================================
   quality-www-build:
     name: Built-www Gates
-    runs-on: ubuntu-slim
-    timeout-minutes: 12
+    # Standard runner (not ubuntu-slim), for the same reason build-www in
+    # ci-build-docker.yml already uses one: an astro build of the 13-locale site
+    # does not reliably fit on 1 vCPU.
+    #
+    # Measured across eight consecutive runs 2026-07-27: it finished in 4, 4, 4,
+    # 5 and 7 minutes when it fitted, and was KILLED at 14 and 15 minutes when it
+    # did not. Roughly a one-in-four failure rate on a required quality lane.
+    #
+    # The kill is worse than a timeout. `timeout-minutes: 12` never fired,
+    # because the runner could not interrupt the build: the job ran 15.2 minutes
+    # and the platform's hard 15-minute slim cap ended it, which surfaces as
+    # `cancelled` with NO failed step. The log's last words were the runner
+    # terminating orphan `npm run build:www` / `node` / `esbuild` processes. A
+    # cancelled job and a passing job look identical in a run summary, so this
+    # read as noise rather than as a job that never finished.
+    #
+    # Per CHECK 3 in .ci/scripts/security/check-workflow-gates.sh, a bigger
+    # timeout is NOT the fix: "the number is not a dial, it is an assertion that
+    # this job fits on this runner." It does not fit, so it moves.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

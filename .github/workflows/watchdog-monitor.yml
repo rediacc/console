@@ -102,11 +102,37 @@ jobs:
           # downloads no binary, and it reports skipped/cancelled when its needs
           # fail, which would make the all-platforms-failed guard never fire.
           WATCHDOG_INSTALL_VALIDATION_PATTERNS: 'Validate Install Methods / Linux,Validate Install Methods / macOS,Validate Install Methods / Windows'
+          # Jobs that may still be auto-retried when the failure classifier is
+          # unavailable. The class is "boots a VM or pulls images across the
+          # network", i.e. failures that are genuinely non-deterministic.
+          # Everything else fails fast rather than being retried blind on a
+          # judgment nobody made -- see issue #537 and evaluateRetryEligibility.
+          # The 07-27 nightly is why: a deterministic Stage Artifacts bug bought
+          # a full second attempt before being cancelled anyway.
+          WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation'
           WATCHDOG_WAIT_PATTERNS: 'Migration Test'
+          # Where the monitor writes failed jobs' COMPLETE logs before anything
+          # reruns them. A rerun makes attempt 1's logs unreachable, so without
+          # this the evidence for "real break or flake?" is destroyed by the
+          # very action taken in response to it.
+          WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
+
+      # always(), and if-no-files-found: ignore -- most generations observe no
+      # failure at all and capture nothing, which is not an error. This step
+      # must also survive a red monitor step, because the generation that
+      # classifies a failure is exactly the one that core.setFailed()s.
+      - name: Preserve captured failure logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: watchdog-logs-${{ inputs.target_run_id }}-gen${{ inputs.generation }}
+          path: ${{ runner.temp }}/watchdog-logs/
+          if-no-files-found: ignore
+          retention-days: 14
 
       # !cancelled(), not the implicit success(): the no-cancel-failure label
       # path and the transient-classification generation both core.setFailed()

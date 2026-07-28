@@ -53,7 +53,42 @@ jobs:
       issues: write # marker comment upsert (issue-comment endpoint on PRs)
       checks: read # required_check lookup on the pull_request path
     steps:
-      # Review tooling always comes from console@main -- one copy, no drift.
+      # ORDER IS THE WHOLE FIX. The caller repo lands at the WORKSPACE ROOT
+      # FIRST, and the review tooling is fetched into a subdirectory AFTER it.
+      #
+      # It used to be the other way round, guarded by `clean: false` on this
+      # step. That guard does not do what it was believed to do. `clean: false`
+      # only suppresses `git clean -ffdx` on an ALREADY-INITIALISED repo; when
+      # actions/checkout initialises a fresh clone into a non-empty directory it
+      # empties that directory regardless. The log says so in as many words,
+      # with the flag set:
+      #
+      #     clean: false
+      #     Deleting the contents of '/home/runner/work/console/console'
+      #
+      # So `.review-scripts` was destroyed on EVERY run, and the two callers
+      # failed differently:
+      #
+      #   - Submodule callers (rediacc/account) fell through to the bootstrap,
+      #     which only exists in console, and died at exit 127 before any review
+      #     could run. Observed on rediacc/account#68 (run 30264668660) and
+      #     again on #69 (run 30318251767).
+      #   - console-as-caller "worked", but only because the bootstrap copied
+      #     the CALLER checkout's scripts into .review-scripts -- and on a
+      #     pull_request that checkout is the PR's own merge ref. Verified on
+      #     run 30317293249: `HEAD is now at d1d1812 Merge 7020ff44 into
+      #     7000f21cf`, i.e. the review of PR #541 ran on review logic taken
+      #     from PR #541. A PR could have edited its own reviewer, which is
+      #     exactly the property this file claims to guarantee.
+      #
+      # Reversing the order removes the failure mode instead of guarding it:
+      # nothing runs after the .review-scripts checkout that could delete it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Review tooling always comes from console@main -- one copy, no drift, and
+      # never the reviewed PR's copy.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rediacc/console
@@ -61,41 +96,15 @@ jobs:
           path: .review-scripts
           persist-credentials: false
 
-      # Caller repo's default branch at the WORKSPACE ROOT: the action's git
-      # plumbing expects the reviewed repo there, and the gate reads
-      # ./.gitmodules (pointer-skip) from it. For console-as-caller this
-      # matches the original behavior exactly.
-      #
-      # `clean: false` IS LOAD-BEARING. actions/checkout defaults to clean:true,
-      # which wipes the workspace -- INCLUDING the `.review-scripts` checkout
-      # made by the step above. The consequences were different per caller and
-      # both wrong:
-      #
-      #   - Submodule callers (rediacc/account): the bootstrap guard below then
-      #     falls through to `.ci/scripts/review/bootstrap-review-scripts.sh`,
-      #     which those repos do not have, so the job died with exit 127 before
-      #     any review could run. Observed on rediacc/account#68,
-      #     run 30264668660.
-      #   - console-as-caller: it "worked", but only via the bootstrap fallback
-      #     copying the PR's OWN scripts into .review-scripts -- defeating the
-      #     property the comment below states outright, that a PR can never
-      #     substitute its own review logic. A PR could have edited its reviewer.
-      #
-      # Same flag, same reason, as the "Checkout PR head" step further down.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          clean: false
-          persist-credentials: false
-
-      # BOOTSTRAP fallback: until the review system first lands on main,
-      # console@main has no .ci/scripts/review and the gate would die on
-      # file-not-found. The guard makes it self-disabling: once main has the
-      # gate script, the caller-side bootstrap never executes, so a PR can
-      # never substitute its own review logic in the steady state.
-      - name: Bootstrap review scripts (pre-first-merge only)
+      # Fail loudly if the tooling is not where it must be. This replaces a
+      # "bootstrap" fallback that copied the caller's own scripts in when
+      # .review-scripts was missing -- which is precisely how the PR-reviews-
+      # itself hole above stayed invisible. A missing reviewer must stop the
+      # run, never be silently substituted.
+      - name: Assert review tooling came from console@main
         run: |
-          [ -f .review-scripts/.ci/scripts/review/claude-review-gate.sh ] ||
-            bash .ci/scripts/review/bootstrap-review-scripts.sh
+          test -f .review-scripts/.ci/scripts/review/claude-review-gate.sh ||
+            { echo "::error::review tooling missing from console@main checkout"; exit 1; }
 
       - name: Review gate
         id: gate
