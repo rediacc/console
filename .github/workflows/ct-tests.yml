@@ -1373,6 +1373,22 @@ jobs:
 
       # Unit tests
       - name: Run renet tests
+        env:
+          # Declares that this job has no account server, so renet's
+          # subscription system tests are expected NOT to run here. Without
+          # this declaration run-tests.sh now FAILS rather than warning, because
+          # a job that silently omits the only real-licence-issuance tests looks
+          # exactly like one that ran and passed them.
+          #
+          # This job has no `services:` block and provisions no server; the
+          # enforcing-licence coverage lives in the License Enforcement leg
+          # below, against a per-run ephemeral key. Giving this job a real
+          # account server is T1's remaining tier in
+          # docs/config-universe-follow-up/03-testing-pillar.md.
+          RENET_EXPECT_NO_ACCOUNT_SERVER: >-
+            test-renet provisions no account server; real-issuance coverage is
+            tracked as T1 tier 2 and the enforcing-binary path is covered by the
+            License Enforcement job.
         run: .ci/scripts/private/run-renet.sh test
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
