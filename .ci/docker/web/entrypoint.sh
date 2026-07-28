@@ -225,11 +225,44 @@ main() {
     # Customers can still override at runtime via `docker run -e UPSTREAM_PUBLIC_KEY=...`.
     export UPSTREAM_PUBLIC_KEY="${UPSTREAM_PUBLIC_KEY:-${UPSTREAM_PUBLIC_KEY_DEFAULT:-}}"
 
-    # Start account server (background) if present
-    # The server is optional - nginx will serve the SPA even if the API is down
+    # Start the account server, and when it CANNOT start, say why in a way the
+    # operator can act on.
+    #
+    # This server is meant to run on-premise: the on-prem image bundles the
+    # dedicated entry (Dockerfile: ARG ACCOUNT_ENTRY=on-premise -> esbuild
+    # entry/on-premise.js -> /app/account/bundle.js), which carries the
+    # delegation-cert loader and the auto-renew service. Suppressing it would
+    # disable a designed component, so this does NOT do that.
+    #
+    # What it fixes is the un-enrolled state being ILLEGIBLE. The server's schema
+    # requires ED25519_PRIVATE_KEY unconditionally
+    # (private/account/src/types/env.ts: z.string().min(1)), and nothing in the
+    # on-prem boot path provisions it, so on a fresh install the old
+    # `if [ -f bundle.js ]` test launched a process that died instantly.
+    # Verified locally against ghcr.io/rediacc/server:edge:
+    #
+    #   ZodError: ED25519_PRIVATE_KEY: expected string, received undefined
+    #   Warning: account server exited with code 1
+    #
+    # plus a Node stack trace -- while nginx kept serving /health 200, so every
+    # health check passed and nobody was told. Someone reading those logs
+    # reasonably concludes the product is broken, when the true state is
+    # "this box has not been enrolled yet".
+    #
+    # ED25519_PRIVATE_KEY is the right sentinel precisely because the schema
+    # makes it mandatory: its absence GUARANTEES the crash rather than merely
+    # suggesting it. Nothing that could have worked is prevented from starting.
     if [ -f /app/account/bundle.js ]; then
-        echo "Starting account server on port 3000..."
-        (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
+        if [ -n "${ED25519_PRIVATE_KEY:-}" ]; then
+            echo "Starting account server on port 3000..."
+            (node /app/account/bundle.js || echo "Warning: account server exited with code $?") &
+        else
+            echo "Account server NOT STARTED: this instance has no identity keys yet."
+            echo "  ED25519_PRIVATE_KEY is unset, and the server requires it, so starting it"
+            echo "  would fail immediately with a schema error rather than serve anything."
+            echo "  This is the expected state before enrolment. Serving the web UI only;"
+            echo "  account requests fall through to ACCOUNT_BACKEND / ACCOUNT_SERVER_URL."
+        fi
     fi
 
     # Configure account server backend (default: embedded 127.0.0.1:3000)
