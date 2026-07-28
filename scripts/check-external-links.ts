@@ -38,6 +38,14 @@ const ALLOWLISTED_DOMAINS = new Set([
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
   'www.ftc.gov',       // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
   'www.dataprotection.ie', // Ireland DPC - whole domain unreachable from CI/datacenter IPs (connection fails at site root, not just deep links); the Meta-fine press release resolves from browsers
+  // Brazil Planalto (LGPD, Lei 13.709/2018 full text) - ECONNRESET to
+  // GitHub-hosted runners, reported by this checker as `fetch failed`.
+  // Measured rather than assumed: the SAME request, using this file's own
+  // buildHeaders() UA and Accept, returns 200 six times out of six (three
+  // HEAD, three GET) from a non-datacenter IP. Without a browser UA the same
+  // host times out, and the domain root answers 200 either way. So the deep
+  // path is filtered by source IP and by client fingerprint, not dead.
+  'www.planalto.gov.br',
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
 ]);
@@ -280,6 +288,27 @@ async function main() {
 
   // Find all markdown files
   const files = globSync(`${DOCS_DIR}/**/*.md`);
+
+  // ANTI-VACUITY GUARD. DOCS_DIR is a hardcoded path constant, which is root
+  // pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh: move or
+  // rename the docs tree and this glob returns zero files, every loop below
+  // iterates zero times, and the gate prints "All external links are valid"
+  // while checking nothing. Measured, not assumed: before this guard the whole
+  // script exited 0 against an empty tree.
+  //
+  // Zero files is never a legitimate state here. The tree carries 781 markdown
+  // files across 13 locales, and the locale set itself is asserted by
+  // check-translation-completeness.ts, so "no docs" means the path is wrong,
+  // not that the docs went away.
+  if (files.length === 0) {
+    console.error(
+      `\n  Refusing to run: no markdown files under ${DOCS_DIR}.\n` +
+      `  A link checker with nothing to scan reports success while asserting\n` +
+      `  nothing. Fix DOCS_DIR, or fix the checkout that left the tree empty.`
+    );
+    process.exit(1);
+  }
+
   console.log(`Scanning ${files.length} markdown files...\n`);
 
   // Extract and deduplicate links
