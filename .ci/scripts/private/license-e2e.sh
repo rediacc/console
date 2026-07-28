@@ -186,7 +186,23 @@ install_license() {
     $SUDO cp "$WORK"/stage/*.json "$REPO_LICENSE_ROOT/$repo/"
     # World-readable so the unprivileged renet invocations can read them, which
     # is how a real install looks.
-    $SUDO chmod -R a+rX "$LICENSE_ROOT"
+    #
+    # SCOPED TO THIS REPO'S OWN DIRECTORY, and the scope is the point. This was
+    # `chmod -R a+rX "$LICENSE_ROOT"`, which recursed over the WHOLE store on
+    # each of the 11 install_license calls. On the ephemeral CI runner nothing
+    # else lives there so it was invisible, but this script documents itself as
+    # a local-dev entry point "run from anywhere in the repo", and the cleanup
+    # trap only restores this battery's own fixtures and chain-state.json. So on
+    # a developer machine holding real repo licenses it permanently loosened
+    # their modes to world-readable with no restoration path, contradicting the
+    # guarantee stated at the top of this file that it "does not disturb them".
+    #
+    # The two parents are made traversable non-recursively: renet has to walk
+    # $LICENSE_ROOT and $REPO_LICENSE_ROOT to reach this directory, and the
+    # dir bits alone are needed for that. Without -R they cannot touch any
+    # other repo's contents.
+    $SUDO chmod a+rX "$LICENSE_ROOT" "$REPO_LICENSE_ROOT"
+    $SUDO chmod -R a+rX "$REPO_LICENSE_ROOT/$repo"
 }
 
 install_fixtures() {

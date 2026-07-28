@@ -309,6 +309,49 @@ test_matrix_match_by_prefix_never_sloppy() {
     log_pass "matrix legs match by prefix + ' (', never bare startsWith (case 32)"
 }
 
+test_flat_job_never_blames_a_lookalike_caller() {
+    # Edge case 33: caller-derivation must not fire for a FLAT job whose
+    # display name merely shares a prefix with a reusable caller.
+    #
+    # `package-tests` is a plain top-level job named "Tests + Infra / Linux
+    # Packages" (ci.yml:572-573, needs: [initialize, quality]). The `tests`
+    # reusable caller's own display name is exactly "Tests + Infra"
+    # (ci.yml:673-674). Splitting the expected name on ' / ' regardless would
+    # derive 'Tests + Infra' and then blame that unrelated job, converting a
+    # real case-27 rename or DAG break into a bogus case-25 caller-skip.
+    #
+    # This also exercises the `matched.length === 0` branch with a skipped
+    # lookalike present, which nothing did before: the other cases only ever
+    # mutate an existing job's conclusion.
+    mutate "$WORK/jobs.json" "$WORK/jobs-flat-trap.json" \
+        'data.jobs = data.jobs.filter((j) => j.name !== "Tests + Infra / Linux Packages");
+         data.jobs.push({ name: "Tests + Infra", conclusion: "skipped" })'
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs-flat-trap.json")" "1" \
+        "a flat job missing from the payload still hard-fails"
+    assert_contains "$(err)" "planned-job-missing: 'package_tests'" \
+        "reported as the rename/DAG break it actually is"
+    assert_not_contains "$(err)" "planned-run-but-skipped: 'package_tests'" \
+        "never misattributed to the lookalike 'Tests + Infra' caller"
+
+    # CONTROL, and without it this test would pass just as well if caller
+    # derivation were deleted outright. A GENUINE reusable leaf must still
+    # produce the caller-skip diagnosis under the same shape of mutation.
+    mutate "$WORK/jobs.json" "$WORK/jobs-ops-caller-skipped.json" \
+        'data.jobs = data.jobs.filter((j) => !j.name.startsWith("OPS Tests / "));
+         data.jobs.push({ name: "OPS Tests", conclusion: "skipped" })'
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs-ops-caller-skipped.json")" "1" \
+        "a genuinely skipped reusable caller still hard-fails"
+    assert_contains "$(err)" "planned-run-but-skipped: 'ops' -> reusable caller 'OPS Tests'" \
+        "and is still diagnosed as a caller skip, not a missing job"
+    assert_not_contains "$(err)" "planned-job-missing: 'ops'" \
+        "so the caller-derivation path is alive, not merely disabled"
+
+    # CONTROL: the untouched fixture stays clean.
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs.json")" "0" \
+        "the healthy fixture reconciles clean throughout"
+    log_pass "flat lookalikes never borrow a caller's skip (case 33)"
+}
+
 test_unknown_plan_key_fails_closed() {
     # A plan key the table cannot map cannot be verified: red, not shrug
     # (same polarity as case 29).
@@ -404,6 +447,7 @@ test_missing_plan_hard_fails_polarity_inverted
 test_run_id_mismatch_is_tamper
 test_naming_trap_uses_explicit_table
 test_matrix_match_by_prefix_never_sloppy
+test_flat_job_never_blames_a_lookalike_caller
 test_unknown_plan_key_fails_closed
 test_name_table_parity_with_scope_map
 test_jobs_payload_forms_and_absence
