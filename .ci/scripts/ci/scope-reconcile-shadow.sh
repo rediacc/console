@@ -34,6 +34,22 @@ mkdir -p "$OUT_DIR"
 
 emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
 
+# HARD TIME BOUND on every external call, and this is the important safety
+# property of this script, not a nicety.
+#
+# This runs inside ci-complete, which is `runs-on: ubuntu-slim` with
+# `timeout-minutes: 5`. Per docs/agent/ci-gates.md, a slim job that runs out of
+# time is marked CANCELLED with NO failed step, "which reads as neither pass nor
+# fail and poisons CI Complete" -- the pipeline's single required check. So a
+# hung `gh` retry or a slow artifact download in this SHADOW observer could
+# cancel the required check for the whole PR.
+#
+# Bounding each call means the worst case is a missing measurement, which is
+# what a shadow observer is allowed to cost. The total ceiling here is well
+# under one minute against that 5-minute budget.
+GH_TIMEOUT="${SCOPE_SHADOW_TIMEOUT:-45}"
+bounded() { timeout "$GH_TIMEOUT" "$@"; }
+
 emit "### Skip-plan reconciliation (shadow, fails nothing)" ""
 
 # TOOL PROBE, and it is not defensive boilerplate. ci-complete runs on
@@ -59,7 +75,7 @@ done
 # already scoped per run, and scope-engine's createRepoIo looks up exactly this
 # name when a LATER run goes hunting for a baseline. A suffixed name would be
 # undiscoverable by the very consumer it exists for.
-if ! gh run download "${GITHUB_RUN_ID}" --repo "${GITHUB_REPOSITORY}" \
+if ! bounded gh run download "${GITHUB_RUN_ID}" --repo "${GITHUB_REPOSITORY}" \
     -n "ci-skip-plan" -D "$OUT_DIR/plan-dl" >/dev/null 2>&1; then
     emit "_no attested plan for this run: nothing to reconcile (expected on push-to-main," \
         "where the shadow attestation does not run)._" ""
@@ -67,7 +83,7 @@ if ! gh run download "${GITHUB_RUN_ID}" --repo "${GITHUB_REPOSITORY}" \
 fi
 
 # Per-job outcomes, the thing the reconciler compares intent against.
-if ! gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" \
+if ! bounded gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" \
     --paginate >"$OUT_DIR/jobs.json" 2>/dev/null; then
     emit "_could not read the jobs API; reconciliation skipped (this is a gap in the" \
         "evidence, NOT a clean result)._" ""
@@ -75,13 +91,20 @@ if ! gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_p
 fi
 
 set +e
-node "$RECONCILER" --plan "$OUT_DIR/plan-dl/plan.json" \
+bounded node "$RECONCILER" --plan "$OUT_DIR/plan-dl/plan.json" \
     --jobs "$OUT_DIR/jobs.json" --run-id "${GITHUB_RUN_ID}" \
     >"$OUT_DIR/reconcile.out" 2>"$OUT_DIR/reconcile.err"
 rc=$?
 set -e
 
-if [[ $rc -eq 0 ]]; then
+if [[ $rc -eq 124 ]]; then
+    # 124 is `timeout` killing it, NOT the reconciler's verdict. Reporting this
+    # as WOULD HAVE FAILED would re-create, one line lower, exactly the
+    # fabricated-verdict bug the tool probe above exists to prevent: the
+    # reconciler never reached a conclusion, so there is nothing to report.
+    emit "_**cannot reconcile**: the reconciler exceeded ${GH_TIMEOUT}s and was killed." \
+        "This is a GAP IN THE EVIDENCE, not a verdict._" ""
+elif [[ $rc -eq 0 ]]; then
     emit "**WOULD HAVE PASSED** (exit 0). One more data point toward wiring this for real." ""
 else
     emit "**WOULD HAVE FAILED** (exit ${rc}). Read the reason before blaming the plan:" \

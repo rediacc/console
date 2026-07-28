@@ -56,6 +56,15 @@ mkdir -p "$OUT_DIR"
 
 emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
 
+# Time bound, for the same reason as the reconcile shadow: this runs inside
+# `initialize`, which every other job depends on, so a hang here stalls the
+# ENTIRE pipeline rather than just losing a measurement. --resolve-baseline
+# makes up to `limit` candidate lookups, each one a `gh run list` plus a
+# `gh run download`, so the call count is bounded but the latency is not.
+# A shadow observer must never be able to cost more than the data it gathers.
+SCOPE_TIMEOUT="${SCOPE_SHADOW_TIMEOUT:-120}"
+bounded() { timeout "$SCOPE_TIMEOUT" "$@"; }
+
 # CI checks out the merge commit, whose ^1 is the base and ^2 the PR head.
 # Both may be absent (a non-merge checkout, or a shallow clone that never
 # fetched the parents), so neither is assumed.
@@ -78,7 +87,7 @@ emit "### Scope engine (shadow, decides nothing)" \
 
 if [[ -n "$base" && -n "$head" ]]; then
     git diff-tree -r --raw --no-commit-id "$base" "$head" >"$OUT_DIR/changed.raw" 2>/dev/null || true
-    node "$ENGINE" --classify --files "$OUT_DIR/changed.raw" >"$OUT_DIR/scope-classify.json" 2>/dev/null || true
+    bounded node "$ENGINE" --classify --files "$OUT_DIR/changed.raw" >"$OUT_DIR/scope-classify.json" 2>/dev/null || true
     emit "**--classify over the merge-base delta**" "" '```json'
     head -c 4000 "$OUT_DIR/scope-classify.json" 2>/dev/null >>"$SUMMARY" || emit "(no output)"
     emit '```' ""
@@ -101,7 +110,7 @@ fi
 #
 # Writing `reconciled` here would be attesting to an outcome nobody verified.
 if [[ -s "$OUT_DIR/scope-classify.json" ]]; then
-    node -e '
+    bounded node -e '
 const fs = require("fs");
 const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
 plan.run_id = Number(process.env.GITHUB_RUN_ID || 0);
@@ -112,7 +121,7 @@ fs.writeFileSync(process.argv[4], JSON.stringify(plan, null, 2));
 fi
 
 if [[ -n "$head" ]]; then
-    node "$ENGINE" --resolve-baseline \
+    bounded node "$ENGINE" --resolve-baseline \
         --repo "${GITHUB_REPOSITORY}" --head "$head" --merge-sha "${MERGE_SHA}" \
         >"$OUT_DIR/scope-baseline.json" 2>"$OUT_DIR/scope-baseline.err" || true
     emit "**--resolve-baseline** (expect \`baseline:none-usable\` until the reconciler is wired)" "" '```json'
