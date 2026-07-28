@@ -61,7 +61,7 @@ FIXTURE='[
 mk_gh_shim() {
     local dir="$1"
     mkdir -p "$dir"
-    cat > "$dir/gh" <<SHIM
+    cat >"$dir/gh" <<SHIM
 #!/bin/bash
 cat <<'JSON'
 $FIXTURE
@@ -92,13 +92,13 @@ build_harness() {
         sed -n '/^is_low_effort_reply()/,/^}/p' "$src"
         sed -n '/^check_pr_review_comments()/,/^}/p' "$src"
         echo 'check_pr_review_comments some/repo 1'
-    } > "$out"
+    } >"$out"
     chmod +x "$out"
 }
 
 run_harness() {
     local harness="$1" shim="$2"
-    ( PATH="$shim:$PATH" "$harness" 2>/dev/null )
+    (PATH="$shim:$PATH" "$harness" 2>/dev/null)
 }
 
 # ---------------------------------------------------------------------------
@@ -130,7 +130,7 @@ test_prefix_version_could_not_count_at_all() {
     # this ever starts returning 2, the bug is gone from git history and this
     # whole test is measuring nothing, so it fails loudly instead.
     local old="$WORK/old-gate.sh"
-    if ! git -C "$REPO_ROOT" show "HEAD:$GATE_REL" > "$old" 2>/dev/null; then
+    if ! git -C "$REPO_ROOT" show "HEAD:$GATE_REL" >"$old" 2>/dev/null; then
         log_fail "could not recover the pre-fix gate from HEAD; control unavailable"
         return 1
     fi
