@@ -148,7 +148,26 @@ jobs:
           # read a PR diff was pure waste.
           filter: blob:none
           clean: false
-          persist-credentials: false
+          # persist-credentials MUST stay true here, and the `false` that used to
+          # sit on this line is why review never worked on a private repo.
+          #
+          # claude-code-action runs its own `git fetch origin --depth=20 <branch>`
+          # internally. Without persisted credentials that fetch is anonymous.
+          # Anonymous works fine against console, which is PUBLIC, so the review
+          # pipeline looked healthy. Against renet, account and elite, which are
+          # private, the fetch is denied and the action dies with
+          # "Command failed: git fetch origin --depth=20 <branch>".
+          #
+          # That is the second of two independent breaks that both happened to
+          # land only on private repos, which is why they masked each other: the
+          # first was CLAUDE_CODE_OAUTH_TOKEN arriving empty, because on the Free
+          # plan an ORGANISATION secret is not available to a private repo. Fixing
+          # the token alone still left this, and the log moved from an empty
+          # credential to a failed fetch.
+          #
+          # The credential written into .git/config is this job's GITHUB_TOKEN,
+          # which is already present in the job environment, so persisting it for
+          # a SHA-pinned action does not widen exposure.
 
       # github_token is passed explicitly: comments post as github-actions,
       # whose events never trigger workflows (anti-recursion), and the run
