@@ -748,15 +748,26 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
-    needs: [initialize, stage-artifacts, tests]
+    # `tests` was in `needs` and gated in the `if:`, and this job consumes
+    # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
+    # cd-stage.yml:223 through the `stage-artifacts` job, which is still
+    # required below. Waiting on `tests` meant the preview URL appeared only
+    # after the full E2E fleet finished, roughly 44 minutes for the slowest leg.
+    #
+    # BEHAVIOUR CHANGE, stated rather than buried: previews are now published
+    # for PRs whose tests are RED. That is the point. A preview is a debugging
+    # tool, and it was least available exactly when it was most useful. Nothing
+    # here promotes anything: the environment is `pr-N`, the URL is a
+    # workers.dev subdomain, and release promotion is gated separately on
+    # push-to-main plus a release channel.
+    needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
-      needs.stage-artifacts.result == 'success' &&
-      needs.tests.result == 'success'
+      needs.stage-artifacts.result == 'success'
     environment:
       name: pr-${{ github.event.pull_request.number }}
       url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
@@ -832,17 +843,22 @@ jobs:
           VITE_TURNSTILE_SITE_KEY: ${{ steps.create-widget.outputs.sitekey }}
           VITE_CI_MODE: 'false'
 
-      # Inject e2e test videos into pages for documentation embedding
-      - name: Inject E2E videos
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output workers/www/dist/assets/videos/user-guide/ || true
-
-      # Inject tutorial recordings into pages for interactive player
-      - name: Inject tutorials
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-tutorials.sh --run-id "${{ github.run_id }}" --artifact-name "tutorial-recordings-${{ github.sha }}" --output workers/www/dist/assets/tutorials/ || true
+      # REMOVED: "Inject E2E videos" and "Inject tutorials".
+      #
+      # Both downloaded artifacts that NOTHING IN THIS REPOSITORY HAS EVER
+      # PRODUCED. Enumerating every `upload-artifact` name across
+      # .github/workflows/ yields no `e2e-videos-*` and no
+      # `tutorial-recordings-*`, and the live artifacts API agrees: of 1335
+      # artifacts retained at the time of removal, zero matched either prefix,
+      # while a dozen other prefixes matched normally, so the zero is a real
+      # absence rather than a query that saw nothing.
+      #
+      # Both steps ended in `|| true`, so they failed silently on every run
+      # since they were written and nobody could tell. The videos users actually
+      # see are served from media.rediacc.com via PUBLIC_VIDEO_CDN_BASE_URL,
+      # which is why nothing was visibly missing.
+      #
+      # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
       # Create Stripe webhook pointing to pr-N
       - name: Setup Stripe webhook
@@ -1053,7 +1069,15 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
+    # check-release-state is aggregated here because it was a live FALSE-GREEN
+    # path, found by .ci/scripts/quality/check-ci-job-aggregation.sh. It is not
+    # merely unobserved: stage-artifacts requires
+    # `check-release-state.result == 'success' || == 'skipped'`, so a FAILURE
+    # makes stage-artifacts SKIP, `skipped` is forgiven by the soft tier, and
+    # `CI Complete` reports success while a release-state assertion failed on
+    # main. It is soft-required, because it legitimately skips on every PR
+    # (it is gated on push-to-main plus a release channel).
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
     timeout-minutes: 5
     if: always() && !cancelled()
     steps:
@@ -1075,6 +1099,7 @@ jobs:
           RESULT_REVIEW_GATE: ${{ needs.review-gate.result }}
           RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
+          RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}

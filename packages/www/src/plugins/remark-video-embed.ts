@@ -88,9 +88,13 @@ export function remarkVideoEmbed() {
       const imageNode = node.children[imageIndex] as Image;
       const caption = extractCaption(node, imageIndex);
 
-      // Always render <video> elements — video files are injected post-build
-      // by CI (inject-e2e-videos.sh) before deployment. The browser handles
-      // missing sources gracefully (shows empty player).
+      // Always render <video> elements. These were meant to be filled in
+      // post-build by a CI inject step, but no workflow has ever produced the
+      // `e2e-videos-*` artifact it downloaded, so that step and its script were
+      // removed. The sources are therefore missing in practice and the browser
+      // renders an empty player. That is pre-existing behaviour, not a
+      // regression from the removal, and it is tracked separately: the fix is
+      // to produce the recordings or to stop emitting the element.
       const html = buildVideoHtml(imageNode.url, imageNode.alt ?? '', caption);
 
       // Replace the entire paragraph node with raw HTML

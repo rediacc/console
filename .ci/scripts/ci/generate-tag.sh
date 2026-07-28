@@ -84,6 +84,26 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     SUBMODULE_COMMIT=$(git -C "$SUBMODULE_PATH" rev-parse --short HEAD)
 
     # Include build config files in tag hash (Dockerfiles, CI build workflow)
+    #
+    # MEMBERSHIP RULE: a file belongs here when its content determines the
+    # CONTENT OF THE PUBLISHED IMAGE this tag names. The tag is what
+    # initialize.sh checks against GHCR to decide `renet_exists`, so an input
+    # missing from this list means a changed build produces an existing tag and
+    # a stale image is reused; an input that does NOT affect the image means a
+    # harmless edit costs a 45-minute rebuild.
+    #
+    # NOT IN THE LIST, DELIBERATELY: .ci/scripts/infra/build-renet.sh. It looks
+    # like it belongs (nine CI steps run it: eight in ct-tests.yml, one in
+    # ci-ops-test.yml, against one step here for the build/ script). It does not.
+    # It compiles a dev binary from source into private/renet/bin for those test
+    # jobs, which never pull ghcr.io/rediacc/renet and are never handed this tag
+    # -- ct-tests.yml takes only full_suite and pointer_bump_only, and its own
+    # cache is keyed on private/renet/embed-assets.lock.json. Its edits take
+    # effect immediately in all nine, so there is nothing here to invalidate.
+    #
+    # The first three entries are already covered by SUBMODULE_COMMIT above
+    # (they live inside the submodule). They are kept because they cost nothing
+    # and make the intent readable.
     BUILD_CONFIG_HASH=""
     BUILD_CONFIG_FILES=(
         "$SUBMODULE_PATH/Dockerfile"
@@ -93,10 +113,22 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         ".github/workflows/ci-build-docker.yml"
         ".ci/scripts/build/build-renet.sh"
     )
+    # A missing entry used to be skipped in silence. That is the failure mode
+    # this list is most exposed to: rename or move one of these files and the
+    # hash quietly stops covering it, while STILL minting a brand-new tag (the
+    # remaining digests concatenate differently), so the one visible symptom --
+    # a cache miss -- looks like normal behaviour. Renames happen: there are two
+    # build-renet.sh scripts in this repo, in .ci/scripts/build/ and
+    # .ci/scripts/infra/. Fail loudly instead.
     for f in "${BUILD_CONFIG_FILES[@]}"; do
-        if [[ -f "$f" ]]; then
-            BUILD_CONFIG_HASH+=$(sha256sum "$f" 2>/dev/null | cut -c1-8)
+        if [[ ! -f "$f" ]]; then
+            log_error "Build-config input not found: $f"
+            log_error "This file is hashed into the renet image tag. A missing entry silently"
+            log_error "narrows what the tag covers, so a changed build can reuse a stale image."
+            log_error "Fix the path in BUILD_CONFIG_FILES, or delete the entry if the file is gone."
+            exit 1
         fi
+        BUILD_CONFIG_HASH+=$(sha256sum "$f" | cut -c1-8)
     done
 
     # Combine the submodule commit with a hash of the build config. Keep 12 hex

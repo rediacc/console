@@ -82,7 +82,23 @@ const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p))
 const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
 
 // Run events the watchdog must never cancel.
-const CANCEL_EXEMPT_EVENTS = ['schedule'];
+//
+// `workflow_dispatch` is here for a reason that is easy to miss. `ci.yml`'s
+// dispatch path IS the nightly rehearsal, and its own header calls it
+// "schedule-equivalent BY CONSTRUCTION". That claim was false on the single
+// dimension that matters most: with only `schedule` exempt, a rehearsal whose
+// gate failed got force-cancelled and reported `cancelled`, so the rehearsal
+// reproduced the laundering bug instead of proving its absence. A tool built to
+// prove the nightly is honest cannot itself be dishonest in the same way.
+//
+// It is also the right answer independent of the rehearsal. Force-cancelling
+// exists to stop burning runners on a run that a newer push has already
+// superseded. Nothing supersedes a dispatch: a human asked for it deliberately,
+// there is no later commit implying they stopped caring, and the conclusion is
+// the entire product of the run. Cancelling it destroys the only thing it was
+// for. Retry handling is separate and unaffected, so a flaky leg in a dispatched
+// run is still re-run; only the conclusion-rewriting cancel is withheld.
+const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
 
 /**
  * May the watchdog cancel this run at all?
