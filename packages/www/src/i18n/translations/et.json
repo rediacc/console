@@ -2902,11 +2902,11 @@
             "title": "Täielik juurdepääs teie tööriistadele."
           },
           {
-            "description": "Aktiivne pakett on vajalik uute hoidlate loomiseks, olemasolevate kloonimiseks või varukoopiate ülekandmiseks. Suurendamine ja laiendamine töötavad 60 päeva pärast aegumist. Hoidlate käitamine jääb igaveseks.",
+            "description": "Uute serverite loomiseks või olemasolevate kopeerimiseks on vaja aktiivset paketti. Suuruse muutmine ja laiendamine töötavad veel 60 päeva pärast paketi aegumist. Serverite käitamine jääb aga alatiseks.",
             "title": "Ainult uued hoidlad vajavad tellimust."
           },
           {
-            "description": "Kui pakett lõpeb, töötavad suurendamine ja laiendamine veel 60 päeva. Käivitamine, peatamine ja kustutamine ei muutu. Need töötavad igavesti. Varunduse ülekandmine vajab aktiivset paketti.",
+            "description": "Kui tellimus lõpeb, jätkavad suuruse muutmine ja laiendamine tööd veel 60 päeva. Käivitamine, peatamine ja kustutamine jäävad samaks. Need töötavad alati.",
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {

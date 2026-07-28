@@ -1044,11 +1044,11 @@
           },
           {
             "title": "Only new servers need a subscription.",
-            "description": "You need an active plan to create new servers, copy existing ones, or transfer backups. Resizing and expanding work for 60 days after your plan expires. Running your servers is permanent."
+            "description": "You need an active plan to create new servers or copy existing ones. Resizing and expanding work for 60 days after your plan expires. Running your servers is permanent."
           },
           {
             "title": "60-day grace for scaling.",
-            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, and delete are not affected. They work forever. Backup transfer needs an active subscription."
+            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, and delete are not affected. They work forever."
           },
           {
             "title": "Unlimited machines. Pay only when adding new ones.",

@@ -2900,11 +2900,11 @@
             "title": "Voller Zugriff auf deine Tools."
           },
           {
-            "description": "Du brauchst einen aktiven Plan, um neue Server zu erstellen, existierende zu kopieren oder Backups zu übertragen. Größenänderung und Erweiterung funktionieren noch 60 Tage nach Ablauf. Der Betrieb deiner Server bleibt dauerhaft.",
+            "description": "Um neue Server zu erstellen oder bestehende zu kopieren, brauchst du einen aktiven Plan. Größenänderungen und Erweiterungen funktionieren noch 60 Tage nach Ablauf deines Plans. Der Betrieb deiner Server läuft dauerhaft weiter.",
             "title": "Nur neue Server brauchen ein Abonnement."
           },
           {
-            "description": "Wenn dein Abonnement endet, funktionieren Größenänderung und Erweiterung noch 60 Tage. Start, Stop und Löschen bleiben uneingeschränkt. Sie funktionieren für immer. Die Backup-Übertragung erfordert ein aktives Abonnement.",
+            "description": "Wenn dein Abo ausläuft, funktionieren Größenänderungen und Erweiterungen noch 60 weitere Tage. Start, Stopp und Löschen sind davon nicht betroffen, die funktionieren für immer.",
             "title": "60 Tage Nachfrist für Skalierung."
           },
           {

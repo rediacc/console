@@ -2900,11 +2900,11 @@
             "title": "Acceso total a tus herramientas"
           },
           {
-            "description": "Necesitas un plan activo para crear nuevos repositorios, hacer fork de los existentes o transferir copias de seguridad. El cambio de tamaño y la expansión funcionan 60 días después de la expiración. Ejecutar tus repositorios es permanente.",
+            "description": "Necesitas un plan activo para crear servidores nuevos o copiar los que ya tienes. Cambiar el tamaño y ampliar tus servidores siguen funcionando 60 días después de que caduque tu plan. Pero ejecutarlos es para siempre.",
             "title": "Solo los nuevos repositorios necesitan suscripción"
           },
           {
-            "description": "Cuando vence tu suscripción, cambiar de tamaño y ampliar siguen funcionando 60 días más. Iniciar, detener y eliminar no se ven afectados. Funcionan para siempre. La transferencia de copias de seguridad necesita una suscripción activa.",
+            "description": "Cuando termina tu suscripción, cambiar el tamaño y ampliar siguen funcionando 60 días más. Iniciar, detener y eliminar no se ven afectados: funcionan para siempre.",
             "title": "60 días de gracia para escalar"
           },
           {

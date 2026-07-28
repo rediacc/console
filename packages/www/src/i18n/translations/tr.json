@@ -2895,11 +2895,11 @@
             "title": "Tüm Araçlarına Tam Erişim"
           },
           {
-            "description": "Yeni sunucu oluşturmak, mevcut birini kopyalamak veya yedek aktarmak için aktif bir plana ihtiyacın var. Yeniden boyutlandırma ve genişletme, planın sona ermesinden 60 gün sonra da çalışmaya devam eder. Sunucularını çalıştırmak kalıcıdır.",
+            "description": "Yeni sunucu oluşturmak veya mevcutları kopyalamak için aktif bir plana ihtiyacın var. Yeniden boyutlandırma ve genişletme, planın süresi bittikten sonra 60 gün daha çalışmaya devam eder. Sunucularını çalıştırmak ise kalıcıdır.",
             "title": "Yalnızca Yeni Sunucular İçin Abonelik Gerekir"
           },
           {
-            "description": "Aboneliğiniz sona erdiğinde, yeniden boyutlandırma ve genişletme 60 gün daha çalışmaya devam eder. Başlatma, durdurma ve silme bundan etkilenmez, sonsuza kadar çalışır. Yedekleme aktarımı aktif bir abonelik gerektirir.",
+            "description": "Aboneliğin sona erdiğinde, yeniden boyutlandırma ve genişletme 60 gün daha çalışmaya devam eder. Başlatma, durdurma ve silme bundan etkilenmez, bunlar sonsuza dek çalışır.",
             "title": "Ölçekleme İçin 60 Günlük İmtiyaz"
           },
           {
