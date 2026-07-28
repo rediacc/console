@@ -1030,9 +1030,26 @@ jobs:
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
+    # from how cd-stage.yml already solved it (see its "Build package
+    # repositories" step). `initialize` derives channel="" for anything that is
+    # not push or pull_request, deliberately, so a nightly does not orphan ~5 GB
+    # of R2 bytes. This job then ran anyway and died at
+    # simulate-promotion.sh:41 with "CHANNEL is required (the source channel,
+    # e.g. pr-123)", observed on nightly 30327872124.
+    #
+    # Skipping is the honest outcome, not a workaround: promotion validation
+    # copies a STAGED channel and re-tests installs from the copy. With no
+    # channel there is nothing staged, so the job has no subject. VALIDATE_PROMOTE
+    # is soft-required in assert-ci-complete.sh, which forgives `skipped`.
+    #
+    # The other two instances of this class: Stage Artifacts (fixed in Wave A)
+    # and Validate Install Methods (fixed on this branch). All three shared one
+    # cause -- a job assuming a channel that schedule runs deliberately lack.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success'
+      needs.stage-artifacts.result == 'success' &&
+      needs.initialize.outputs.channel != ''
     env:
       CHANNEL: ${{ needs.initialize.outputs.channel }}
     steps:
