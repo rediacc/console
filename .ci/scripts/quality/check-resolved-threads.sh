@@ -58,35 +58,28 @@ query($owner: String!, $repo: String!, $pr: Int!) {
 
 log_step "Fetching review threads via GraphQL..."
 
-# Execute GraphQL query, retrying on a transient failure. `gh api graphql` can
-# exit 0 while returning a truncated/malformed body (an upstream hiccup), so
-# a command-exit-code fallback alone misses it -- validate the body is
-# PARSEABLE JSON on each attempt, not just that the command returned.
-RESULT=""
-attempt=1
-while [[ $attempt -le 3 ]]; do
-    CANDIDATE=$(gh api graphql \
-        -f query="$QUERY" \
-        -f owner="$OWNER" \
-        -f repo="$REPO" \
-        -F pr="$PR_NUMBER" 2>/dev/null || true)
-    if [[ -n "$CANDIDATE" ]] && echo "$CANDIDATE" | jq -e . >/dev/null 2>&1; then
-        RESULT="$CANDIDATE"
-        break
-    fi
-    if [[ $attempt -lt 3 ]]; then
-        log_warn "GraphQL response invalid or empty (attempt $attempt/3), retrying..."
-        sleep $((attempt * 3))
-    fi
-    attempt=$((attempt + 1))
-done
-[[ -z "$RESULT" ]] && RESULT='{"errors": [{"message": "GraphQL query failed or returned invalid JSON after 3 attempts"}]}'
+# Execute the GraphQL query. `gh api graphql` can exit 0 while returning a
+# truncated or malformed body (an upstream hiccup), so a command-exit-code check
+# alone misses it -- gh_json validates that the body is PARSEABLE JSON on each of
+# its three attempts, which is what the hand-rolled loop that used to live here
+# did. It moved to lib/common.sh because eight other call sites across the review
+# and attribution gates needed exactly this and had none of it.
+if ! RESULT=$(gh_json "review threads for PR #${PR_NUMBER}" -- \
+    api graphql \
+    -f query="$QUERY" \
+    -f owner="$OWNER" \
+    -f repo="$REPO" \
+    -F pr="$PR_NUMBER"); then
+    log_error "Cannot determine whether review threads are resolved. Failing closed."
+    exit 1
+fi
 
-# Check for errors. RESULT is guaranteed valid JSON at this point (either a
-# real response or the sentinel above), so this jq call cannot itself fail to
-# parse -- it previously could, and a parse-error exit from `jq -e` looks
-# identical to "no .errors field" once stderr is suppressed, silently falling
-# through to a hard, confusing crash further down instead of this clear exit.
+# A GraphQL error response is valid JSON and exits 0, so it survives gh_json and
+# still has to be caught here. RESULT is guaranteed parseable at this point
+# (gh_json returned success), so this jq call cannot itself fail to parse -- it
+# previously could, and a parse-error exit from `jq -e` looks identical to "no
+# .errors field" once stderr is suppressed, silently falling through to a hard,
+# confusing crash further down instead of this clear exit.
 if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
     ERROR_MSG=$(echo "$RESULT" | jq -r '.errors[0].message // "Unknown error"')
     log_error "GraphQL query failed: $ERROR_MSG"
@@ -104,7 +97,14 @@ UNRESOLVED_COUNT=$(echo "$UNRESOLVED" | jq 'length')
 # Check for "Changes Requested" reviews
 log_step "Checking review status..."
 
-REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" 2>/dev/null || echo "[]")
+# FAIL CLOSED. `|| echo "[]"` here meant a gh failure produced an empty review
+# list, so CHANGES_REQUESTED came out 0 and the gate reported that nobody had
+# requested changes. That is a silent green on a merge-blocking check.
+if ! REVIEWS=$(gh_json "review status for PR #${PR_NUMBER}" -- \
+    api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews"); then
+    log_error "Cannot determine whether a reviewer requested changes. Failing closed."
+    exit 1
+fi
 
 # Get the latest review state per reviewer (reviewers can change their review)
 CHANGES_REQUESTED=$(echo "$REVIEWS" | jq '[

@@ -312,8 +312,9 @@ parse_args() {
 
 # r2_count_objects <bucket> <prefix> [<endpoint>]
 #
-# Emit the number of objects under s3://<bucket>/<prefix>/ to stdout.
-# Always exits 0 — empty prefix returns "0" rather than erroring out.
+# Emit the number of objects under s3://<bucket>/<prefix>/ to stdout, and
+# return 0. An UNREACHABLE bucket returns 1 with a diagnostic and emits
+# nothing.
 #
 # Rationale: `aws s3 ls --recursive` returns exit code 1 when the prefix
 # is empty, which under `set -eo pipefail` aborts the calling script
@@ -322,26 +323,105 @@ parse_args() {
 # `length(Contents || `[]`)` returns 0 cleanly for empty prefixes, which
 # is what callers actually want.
 #
+# WHY THE FAILURE PATH IS SEPARATE FROM THE EMPTY PATH. This used to end in
+# `|| echo 0`, which made an expired credential, a DNS failure and a genuinely
+# empty prefix produce the same "0". Callers use this count to decide whether a
+# release prefix holds bytes, so a swallowed failure reads as "the bytes are
+# gone" and the caller acts on it. An empty prefix is data; an unreachable
+# bucket is an absence of data, and the two must not share a return value.
+#
 # Requires AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY exported, or callers
 # may set them inline from R2_* before invocation.
 r2_count_objects() {
     local bucket="${1:?bucket required}"
     local prefix="${2:?prefix required}"
     local endpoint="${3:-${R2_ENDPOINT:-}}"
-    local count
+    local count err rc=0
+    err="$(mktemp)"
     count="$(aws s3api list-objects-v2 \
         --bucket "$bucket" \
         --prefix "$prefix" \
         ${endpoint:+--endpoint-url "$endpoint"} \
         --query 'length(Contents || `[]`)' \
-        --output text 2>/dev/null || echo 0)"
-    # Defensive: list-objects-v2 emits "None" instead of an integer when
-    # the prefix is missing in some edge cases. Normalise to 0.
-    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        --output text 2>"$err")" || rc=$?
+    if ((rc != 0)); then
+        log_error "r2_count_objects: list-objects-v2 failed for s3://${bucket}/${prefix} (exit $rc)"
+        [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+        rm -f "$err"
+        return 1
+    fi
+    rm -f "$err"
+    # list-objects-v2 emits "None" instead of an integer when the prefix is
+    # missing. That is a genuine "no objects", unlike the failure above.
+    if [[ "$count" == "None" ]]; then
         count=0
+    fi
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        log_error "r2_count_objects: unparseable count '$count' for s3://${bucket}/${prefix}"
+        return 1
     fi
     printf '%s\n' "$count"
 }
+
+# =============================================================================
+# GITHUB CLI HELPERS
+# =============================================================================
+
+# _gh_probe <require-json:true|false> <what> -- <gh args...>
+#
+# Run `gh <args>`, echo its stdout, and return non-zero when the call did not
+# actually succeed. Retries twice on a transient failure.
+#
+# WHY THIS EXISTS. Nine call sites across the review, attribution and
+# submodule-branch gates were spelled `X=$(gh api ... 2>/dev/null || echo "[]")`.
+# A rate limit, an expired token or a network blip produced the same value as
+# "this PR has no review comments", so the gate printed its success message and
+# exited 0. Those are merge-blocking gates: a swallowed failure there is a
+# silent green on the check that is supposed to stop the merge.
+#
+# `gh api --jq` emits plain text rather than JSON, and an empty result can be
+# legitimate (a PR with an empty body), so JSON validation is opt-in. The exit
+# status is always checked, because that is the part that was being thrown away.
+_gh_probe() {
+    local require_json="$1" what="$2"
+    shift 2
+    [[ "${1:-}" == "--" ]] && shift
+    local err out attempt=1 rc=0
+    err="$(mktemp)"
+    while ((attempt <= 3)); do
+        rc=0
+        out="$(gh "$@" 2>"$err")" || rc=$?
+        if ((rc == 0)); then
+            if [[ "$require_json" != "true" ]]; then
+                rm -f "$err"
+                printf '%s' "$out"
+                return 0
+            fi
+            # `gh api graphql` can exit 0 while returning a truncated or
+            # malformed body, so an exit-code check alone misses it.
+            if [[ -n "$out" ]] && jq -e . >/dev/null 2>&1 <<<"$out"; then
+                rm -f "$err"
+                printf '%s' "$out"
+                return 0
+            fi
+        fi
+        if ((attempt < 3)); then
+            log_warn "$what: gh call failed or returned unusable output (attempt $attempt/3), retrying..."
+            sleep $((attempt * 3))
+        fi
+        attempt=$((attempt + 1))
+    done
+    log_error "$what: gh failed after 3 attempts (last exit $rc)."
+    [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+    rm -f "$err"
+    return 1
+}
+
+# gh_retry <what> -- <gh args...>   exit status checked; output may be anything
+gh_retry() { _gh_probe false "$@"; }
+
+# gh_json <what> -- <gh args...>    exit status checked AND body must parse as JSON
+gh_json() { _gh_probe true "$@"; }
 
 # =============================================================================
 # SUBMODULE GUARDS

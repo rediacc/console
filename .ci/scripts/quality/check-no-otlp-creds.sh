@@ -57,7 +57,32 @@ else
         log_info "inspecting $(basename "$bin")..."
 
         # Check 1: .go.buildinfo ldflags
-        buildinfo=$(go version -m "$bin" 2>/dev/null || true)
+        #
+        # FAIL LOUDLY. This used to end in `|| true`, so a `go version -m`
+        # failure (a corrupt binary, a toolchain mismatch, a path that is not a
+        # Go binary at all) left buildinfo empty, both greps below found
+        # nothing, and this SECURITY gate reported the binary clean without
+        # having read a single byte of it. ci-build-renet.yml:130 calls this
+        # "the only place the claim is falsifiable", so a probe failure here has
+        # to be an error, not a pass.
+        buildinfo_err="$(mktemp)"
+        buildinfo_rc=0
+        buildinfo=$(go version -m "$bin" 2>"$buildinfo_err") || buildinfo_rc=$?
+        if ((buildinfo_rc != 0)); then
+            log_error "$bin: 'go version -m' failed (exit $buildinfo_rc); cannot inspect for baked credentials"
+            [[ -s "$buildinfo_err" ]] && sed 's/^/    /' "$buildinfo_err" >&2
+            rm -f "$buildinfo_err"
+            ERRORS=$((ERRORS + 1))
+            continue
+        fi
+        rm -f "$buildinfo_err"
+        # A Go binary always reports at least its module path and build
+        # settings, so empty output means the probe returned nothing usable.
+        if [[ -z "${buildinfo//[[:space:]]/}" ]]; then
+            log_error "$bin: 'go version -m' returned no build info; the binary was not inspected"
+            ERRORS=$((ERRORS + 1))
+            continue
+        fi
         if echo "$buildinfo" | grep -q 'telemetry\.otlpUser'; then
             log_error "$bin: .go.buildinfo contains telemetry.otlpUser ldflag"
             ERRORS=$((ERRORS + 1))

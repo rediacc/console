@@ -9,7 +9,8 @@
 #
 # WHEN THIS CHECK RUNS:
 #   - On every PR (pull_request event)
-#   - On pushes to main (push event to refs/heads/main)
+#   - On pushes to main, and on the nightly, where it asserts the STRONGER rule
+#     that every gitlink is reachable from the submodule's own origin/main
 #
 # WHAT IT CHECKS:
 #   1. For each submodule with pointer changes (different from origin/main):
@@ -204,8 +205,16 @@ branch_has_merged_pr() {
         return 1
     fi
 
+    # A failed probe used to become "0", i.e. "no merged PR". The direction is
+    # safe (the caller reports the branch as unmerged, which is the louder
+    # answer), but it is still a guess presented as a fact. Say so instead.
     local merged_count
-    merged_count=$(gh pr list --repo "$repo" --head "$branch" --state merged --json number --jq 'length' 2>/dev/null || echo "0")
+    if ! merged_count=$(gh_retry "merged-PR lookup for ${repo}#${branch}" -- \
+        pr list --repo "$repo" --head "$branch" --state merged --json number --jq 'length'); then
+        log_warn "${repo}: could not determine whether ${branch} has a merged PR; treating it as NOT merged"
+        return 1
+    fi
+    [[ "$merged_count" =~ ^[0-9]+$ ]] || return 1
     [[ "$merged_count" -gt 0 ]]
 }
 
@@ -266,9 +275,19 @@ check_pr_review_comments() {
         return 0
     fi
 
-    # Fetch all review comments
+    # Fetch all review comments.
+    #
+    # FAIL CLOSED. `|| echo "[]"` here meant a gh failure produced the same
+    # value as a PR with no review comments, and the function then echoed "0"
+    # unreplied comments, which the caller reads as "this submodule PR is
+    # clean". Return non-zero so the caller can tell a real zero from an
+    # unanswered question.
     local comments
-    comments=$(gh api "repos/${repo}/pulls/${pr_number}/comments" --paginate 2>/dev/null || echo "[]")
+    if ! comments=$(gh_json "review comments for ${repo}#${pr_number}" -- \
+        api "repos/${repo}/pulls/${pr_number}/comments" --paginate); then
+        log_error "${repo}#${pr_number}: could not fetch review comments; refusing to report zero unreplied"
+        return 1
+    fi
 
     if [[ "$comments" == "[]" ]]; then
         echo "0"
@@ -315,7 +334,7 @@ check_pr_review_comments() {
 
         # Check if this comment has a substantive reply
         if [[ -z "${has_substantive_reply[$comment_id]:-}" ]]; then
-            ((unreplied_count++))
+            unreplied_count=$((unreplied_count + 1))
         fi
     done < <(echo "$original_comments" | jq -c '.[]')
 
@@ -332,9 +351,50 @@ main() {
 
     log_step "Validating submodule branches (console branch: $current_branch)"
 
-    # Skip check on main branch (no coordinated branches needed)
+    # On main the coordinated-branch rules do not apply, but a DIFFERENT and
+    # stronger invariant does, and until now nothing checked it.
+    #
+    # THE HOLE THIS CLOSES, hit for real on 2026-07-28. console#541 merged while
+    # rediacc/account#69 was still open, so main's gitlink pointed at b0ea51f, a
+    # commit that existed ONLY on that PR's branch. Had the branch been deleted
+    # (which merging normally does), every `submodule update` on main would have
+    # failed with "reference is not a tree", and nothing would have warned. The
+    # PR-side rules cannot catch this: they legitimately ALLOW a pointer at an
+    # unmerged branch commit, because submodule-first means the submodule PR is
+    # still open while the console PR runs.
+    #
+    # So on main, assert the thing that must be true once everything has landed:
+    # every gitlink is reachable from the submodule's own origin/main.
     if [[ "$current_branch" == "main" ]]; then
-        log_info "On main branch - submodule branch validation skipped"
+        log_step "On main: asserting every submodule pointer is on the submodule's main"
+        local main_errors=0
+        for sm_path in private/renet private/homebrew-tap private/account private/elite; do
+            if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
+                log_warn "Submodule $sm_path not initialized - cannot verify its pointer"
+                continue
+            fi
+            local sm_commit
+            sm_commit=$(git ls-tree HEAD -- "$sm_path" 2>/dev/null | awk '{ print $3 }')
+            if [[ -z "$sm_commit" ]]; then
+                log_warn "$sm_path: no gitlink recorded at HEAD - skipping"
+                continue
+            fi
+            git -C "$sm_path" fetch origin main --quiet 2>/dev/null || true
+            if git -C "$sm_path" merge-base --is-ancestor "$sm_commit" origin/main 2>/dev/null; then
+                log_info "✓ $sm_path: pointer $sm_commit is on ${SUBMODULE_REPOS[$sm_path]:-origin}/main"
+            else
+                log_error "✗ $sm_path: pointer $sm_commit is NOT reachable from origin/main"
+                log_error "  main must never depend on a commit that lives only on a branch:"
+                log_error "  delete that branch and the superproject stops resolving."
+                log_error "  Fix: merge the submodule PR, then bump this pointer to the merge commit."
+                main_errors=$((main_errors + 1))
+            fi
+        done
+        if [[ "$main_errors" -gt 0 ]]; then
+            log_error "$main_errors submodule pointer(s) on main are not on the submodule's main"
+            exit 1
+        fi
+        log_info "All submodule pointers on main are reachable from their own main"
         exit 0
     fi
 
@@ -350,7 +410,7 @@ main() {
     for sm_path in private/renet private/homebrew-tap private/account private/elite; do
         if [[ ! -d "$sm_path/.git" ]] && [[ ! -f "$sm_path/.git" ]]; then
             log_warn "Submodule $sm_path not initialized - skipping"
-            ((warnings++))
+            warnings=$((warnings + 1))
             continue
         fi
 
@@ -386,7 +446,7 @@ main() {
                         else
                             log_error "✗ $sm_path: no open PR found for branch '$current_branch' in $repo"
                             log_error "  AI FIX: cd $sm_path && gh pr create --title 'Your PR title' --body 'Description'"
-                            ((errors++))
+                            errors=$((errors + 1))
                         fi
                     else
                         submodule_pr_number="${pr_info%%|*}"
@@ -395,20 +455,28 @@ main() {
                         if [[ -n "$console_pr_body" ]] && ! pr_is_linked "$submodule_pr_url" "$console_pr_body"; then
                             log_error "✗ $sm_path: PR $submodule_pr_url not linked in console PR description"
                             log_error "  AI FIX: Edit console PR description to include: $submodule_pr_url"
-                            ((errors++))
+                            errors=$((errors + 1))
                         else
                             log_info "✓ $sm_path: PR $submodule_pr_url is linked"
                         fi
 
-                        # Check for unreplied review comments on submodule PR
-                        local unreplied_count
-                        unreplied_count="$(check_pr_review_comments "$repo" "$submodule_pr_number")"
+                        # Check for unreplied review comments on submodule PR.
+                        # A non-zero return means the comments could not be
+                        # read, which is a finding rather than a clean PR: this
+                        # branch used to be reachable only with a real count,
+                        # because the fetch fell back to "[]" and echoed 0.
+                        local unreplied_count unreplied_rc=0
+                        unreplied_count="$(check_pr_review_comments "$repo" "$submodule_pr_number")" || unreplied_rc=$?
 
-                        if [[ "$unreplied_count" -gt 0 ]]; then
+                        if ((unreplied_rc != 0)); then
+                            log_error "✗ $sm_path: could not read review comments for $submodule_pr_url"
+                            log_error "  This gate cannot certify the PR is clean, so it counts as an error."
+                            errors=$((errors + 1))
+                        elif [[ "$unreplied_count" -gt 0 ]]; then
                             log_error "✗ $sm_path: PR has $unreplied_count unreplied review comment(s)"
                             log_error "  AI FIX: Go to $submodule_pr_url and reply to all review comments"
                             log_error "  NOTE: Low-effort replies like 'ok', 'done', 'fixed' don't count"
-                            ((errors++))
+                            errors=$((errors + 1))
                         else
                             log_info "✓ $sm_path: all review comments addressed"
                         fi
@@ -417,7 +485,7 @@ main() {
             else
                 log_error "✗ $sm_path: has pointer changes but branch '$current_branch' not found"
                 log_error "  AI FIX: cd $sm_path && git checkout -b $current_branch && git push -u origin $current_branch"
-                ((errors++))
+                errors=$((errors + 1))
             fi
         else
             # Submodule has no changes - should be on main
@@ -428,7 +496,7 @@ main() {
                 log_info "✓ $sm_path: no pointer changes, on '$sm_branch' (expected)"
             else
                 log_warn "⚠ $sm_path: no pointer changes but on branch '$sm_branch' (expected main)"
-                ((warnings++))
+                warnings=$((warnings + 1))
             fi
         fi
     done

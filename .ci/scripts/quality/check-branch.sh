@@ -39,7 +39,23 @@ log_info "Fetching origin/${BASE_BRANCH}..."
 git fetch origin "${BASE_BRANCH}" --quiet
 
 # Check 1: Is the PR behind the base branch?
-BEHIND_COUNT=$(git rev-list --count "HEAD..origin/${BASE_BRANCH}" 2>/dev/null || echo "0")
+#
+# FAIL LOUDLY. This used to end in `|| echo "0"`, and 0 is the same value the
+# gate reads as "up-to-date" two lines down, where it exits 0. So a missing
+# origin ref, a shallow clone with no merge base, or any other rev-list failure
+# reported the branch as current and let the merge proceed. The fetch above has
+# to have succeeded for the ref to exist, so a failure here is a real breakage.
+REV_LIST_ERR="$(mktemp)"
+BEHIND_RC=0
+BEHIND_COUNT=$(git rev-list --count "HEAD..origin/${BASE_BRANCH}" 2>"$REV_LIST_ERR") || BEHIND_RC=$?
+if ((BEHIND_RC != 0)); then
+    log_error "git rev-list failed for HEAD..origin/${BASE_BRANCH} (exit ${BEHIND_RC})"
+    [[ -s "$REV_LIST_ERR" ]] && sed 's/^/    /' "$REV_LIST_ERR" >&2
+    rm -f "$REV_LIST_ERR"
+    log_error "Cannot tell whether this branch is behind ${BASE_BRANCH}, so it must not be reported as up-to-date."
+    exit 1
+fi
+rm -f "$REV_LIST_ERR"
 
 if [[ "$BEHIND_COUNT" -eq 0 ]]; then
     log_info "Branch is up-to-date with origin/${BASE_BRANCH}"

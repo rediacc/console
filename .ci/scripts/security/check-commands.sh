@@ -93,7 +93,7 @@ main() {
                         echo "  Line: $line_content"
                         echo "  Fix:  $alt"
                         echo ""
-                        ((total_errors++))
+                        total_errors=$((total_errors + 1))
                         break
                     fi
                 done

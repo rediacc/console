@@ -81,17 +81,32 @@ rsv_list_git_tags() {
     } || true
 }
 
-# `0` if the R2 prefix contains at least one object.
+# `0` if the R2 prefix contains at least one object, `1` if it is empty, and
+# `2` if the question could not be answered.
+#
+# THREE STATES, DELIBERATELY. This used to end in `|| echo 0`, collapsing "the
+# prefix is empty" and "R2 is unreachable" into the same answer. Release-state
+# validation is exactly the place that must not confuse those two: "no objects
+# under this version prefix" is the signal for a scrubbed or corrupt release,
+# and reporting it because a credential expired would condemn a healthy release.
 rsv_prefix_nonempty() {
     local prefix="${1:?prefix required}"
-    local count
+    local count err rc=0
+    err="$(mktemp)"
     count="$(aws s3api list-objects-v2 \
         --bucket "$RSV_BUCKET" \
         --prefix "$prefix" \
         --max-items 1 \
         --endpoint-url "$R2_ENDPOINT" \
         --query 'KeyCount' \
-        --output text 2>/dev/null || echo 0)"
+        --output text 2>"$err")" || rc=$?
+    if ((rc != 0)); then
+        log_error "rsv_prefix_nonempty: list-objects-v2 failed for s3://${RSV_BUCKET}/${prefix} (exit $rc)"
+        [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+        rm -f "$err"
+        return 2
+    fi
+    rm -f "$err"
     [[ "$count" != "0" && "$count" != "None" ]]
 }
 
@@ -101,16 +116,36 @@ rsv_prefix_nonempty() {
 # sealed release (sentinel + binaries) from the corrupt "sealed-but-empty"
 # state (sentinel only, binaries scrubbed). A versioned prefix holds far fewer
 # than the 1000-key list page, so no pagination is needed.
+#
+# Returns non-zero and emits nothing when the count could not be obtained.
+# `|| echo 0` here meant an unreachable bucket produced the same "0" as a
+# scrubbed prefix, and 0 is precisely the value callers act on: it is the
+# "sealed-but-empty" signal that write-release-sentinel.sh and upload-to-r2.sh
+# use to refuse a release. Callers run under `set -e`, so a failed probe now
+# aborts them instead of feeding them a fabricated zero.
 rsv_binary_count() {
     local prefix="${1:?prefix required}"
-    local count
+    local count err rc=0
+    err="$(mktemp)"
     count="$(aws s3api list-objects-v2 \
         --bucket "$RSV_BUCKET" \
         --prefix "$prefix" \
         --endpoint-url "$R2_ENDPOINT" \
         --query "length(Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`) == \`false\`] || \`[]\`)" \
-        --output text 2>/dev/null || echo 0)"
-    [[ "$count" =~ ^[0-9]+$ ]] || count=0
+        --output text 2>"$err")" || rc=$?
+    if ((rc != 0)); then
+        log_error "rsv_binary_count: list-objects-v2 failed for s3://${RSV_BUCKET}/${prefix} (exit $rc)"
+        [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+        rm -f "$err"
+        return 1
+    fi
+    rm -f "$err"
+    # "None" is how list-objects-v2 spells a genuinely absent prefix.
+    [[ "$count" == "None" ]] && count=0
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        log_error "rsv_binary_count: unparseable count '$count' for s3://${RSV_BUCKET}/${prefix}"
+        return 1
+    fi
     echo "$count"
 }
 
