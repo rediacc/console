@@ -89,6 +89,10 @@ jobs:
       contents: read
       packages: read
       checks: read
+      # For the scope-engine shadow step only: it calls `gh run list` and
+      # `gh run download` to look for an attested skip-plan on an ancestor
+      # commit. Read-only, and the step cannot fail the job.
+      actions: read
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
@@ -129,6 +133,19 @@ jobs:
         with:
           persist-credentials: false
           fetch-tags: true
+          # fetch-depth: 0 is REQUIRED by the scope-engine shadow step below,
+          # and it is not a nicety. With the default depth-1 clone
+          # `git rev-parse --is-shallow-repository` is true, so the engine
+          # answers `baseline:shallow-clone` on every single run and reports
+          # full CI forever while looking perfectly healthy from the outside.
+          # That is exactly how D9 stayed false for twelve consecutive runs,
+          # so the depth and the step have to land together or not at all.
+          #
+          # filter: blob:none keeps it cheap: commits and trees only, no
+          # historical file contents. Same pairing already used at ci.yml's
+          # tag-bijection checkout.
+          fetch-depth: 0
+          filter: blob:none
 
       # Fork PRs are not supported (see .github/CONTRIBUTING.md). They fail
       # here anyway: secrets are empty on a fork, so the app-token step below
@@ -193,6 +210,35 @@ jobs:
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
         # for schedule events.
         run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
+
+      # SHADOW ONLY: publishes what the scope engine WOULD decide, gates
+      # nothing, and always exits 0. Evidence on real traffic before anything
+      # is allowed to skip work. Rationale and the deliberate absence of a
+      # `reconciled` flag are documented in the script header.
+      # No continue-on-error, and none is needed: scope-shadow.sh ends in an
+      # unconditional `exit 0` and every command inside it is `|| true`-guarded.
+      # The script owning its own success is stronger than the workflow
+      # forgiving its failure, because it keeps the guarantee where the logic is.
+      - name: Scope engine (shadow, decides nothing)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: .ci/scripts/ci/scope-shadow.sh
+
+      # if-no-files-found: ignore is what makes this succeed unconditionally:
+      # the shadow step may legitimately produce neither file (no base/head
+      # pair resolved), and that is data, not a failure.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          name: scope-shadow-${{ github.run_id }}
+          path: |
+            scope-classify.json
+            scope-baseline.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
