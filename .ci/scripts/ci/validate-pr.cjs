@@ -15,7 +15,37 @@ module.exports = async ({ github, context, core }) => {
     options.headers['x-github-api-version'] ||= '2026-03-10';
   });
 
-  const pr = context.payload.pull_request;
+  // Read the PR LIVE rather than from context.payload.
+  //
+  // context.payload.pull_request is frozen at the moment the run was created,
+  // so on a re-run it replays the ORIGINAL title and body. That makes this
+  // validator unfixable by the one action its own error message invites: it
+  // says "PR title must follow Conventional Commits format", you fix the
+  // title, you re-run, and it fails again on the stale payload. The only way
+  // out was to push a commit, which is not obvious and costs a full round.
+  //
+  // Verified live: run 30393629318 failed on the title, the title was
+  // corrected to a compliant one (checked against this very regex), and
+  // `gh run rerun --failed` failed again with the identical message.
+  //
+  // Falling back to the payload keeps this working for any caller that has no
+  // token or hits an API error; the fallback is strictly the old behaviour.
+  const payloadPr = context.payload.pull_request;
+  let pr = payloadPr;
+  if (payloadPr && payloadPr.number) {
+    try {
+      const { data } = await github.rest.pulls.get({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        pull_number: payloadPr.number,
+      });
+      pr = data;
+    } catch {
+      // Keep the payload copy. A validator that cannot read the PR must still
+      // validate SOMETHING rather than silently pass.
+      pr = payloadPr;
+    }
+  }
   const errors = [];
   const warnings = [];
 
