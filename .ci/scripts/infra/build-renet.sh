@@ -41,10 +41,51 @@ if [[ ! -d "$RENET_SRC" ]]; then
     exit 1
 fi
 
-# Step 2: Skip if binary already exists
-if [[ -f "$RENET_BIN" ]]; then
-    log_info "Renet binary already exists: $RENET_BIN"
+# Step 2: Skip only if the existing binary was built the SAME WAY.
+#
+# This used to be a bare `if [[ -f "$RENET_BIN" ]]`, which silently handed back
+# whatever happened to be in bin/ regardless of how it was built. Ten CI steps
+# run this script (eight in ct-tests.yml, one in ci-ops-test.yml, one elsewhere),
+# so a job that built --nolicense followed by one wanting an enforcing binary
+# got the nolicense one and its licence assertions passed for free. The same
+# applies to a changed ACCOUNT_ED25519_PUBLIC_KEY: the key is baked in at link
+# time via ldflags, so a different key is a different binary.
+#
+# The identity below must therefore cover everything that changes the BYTES.
+# The pattern is lifted from .ci/lib/local-common.sh's ensure_renet_built, which
+# already stamps the effective mode and key for exactly this reason; that path
+# was correct while this one was not.
+#
+# The key is hashed rather than stored, so no key material lands in a file even
+# though it is a public key. bin/ is gitignored (private/renet/.gitignore:6), so
+# the stamp is never committed.
+renet_build_identity() {
+    local mode="default"
+    case " ${BUILD_ARGS[*]-} " in
+        *" --license "*) mode="license" ;;
+        *" --nolicense "*) mode="nolicense" ;;
+    esac
+    # build.sh dev also opts into enforcement from the environment, so a stamp
+    # that only looked at the flags would miss RDC_RENET_LICENSE=1.
+    if [[ "${RDC_RENET_LICENSE:-0}" == "1" || "${RDC_BENCH:-0}" == "1" ]]; then
+        mode="enforce"
+    fi
+    printf '%s|%s' "$mode" \
+        "$(printf '%s' "${ACCOUNT_ED25519_PUBLIC_KEY:-}" | sha256sum | cut -c1-16)"
+}
+
+RENET_STAMP="$RENET_SRC/bin/.renet-build-identity"
+WANT_IDENTITY="$(renet_build_identity)"
+
+if [[ -f "$RENET_BIN" ]] && [[ -f "$RENET_STAMP" ]] &&
+    [[ "$(cat "$RENET_STAMP" 2>/dev/null)" == "$WANT_IDENTITY" ]]; then
+    log_info "Renet binary already built the same way: $RENET_BIN"
 else
+    if [[ -f "$RENET_BIN" ]]; then
+        log_info "Renet binary exists but was built differently — rebuilding for: $WANT_IDENTITY"
+        rm -f "$RENET_BIN"
+    fi
+
     # Step 3: Require Go
     if ! command -v go &>/dev/null; then
         log_error "Go is not installed (required for building renet)"
@@ -64,6 +105,10 @@ else
         log_error "Renet build failed: binary not found at $RENET_BIN"
         exit 1
     fi
+    # Stamp AFTER the binary is verified present, never before: a stamp written
+    # ahead of a failed build would make the next run skip and hand back nothing,
+    # or worse, a half-written binary that looks current.
+    printf '%s' "$WANT_IDENTITY" >"$RENET_STAMP"
     log_info "Renet built successfully: $RENET_BIN"
 fi
 
