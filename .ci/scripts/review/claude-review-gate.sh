@@ -271,7 +271,28 @@ if [[ "${1:-}" == "--mark" ]]; then
             | select($r != null)
             | ($r.usage // {}) as $u
             | "Cost: $\($r.total_cost_usd // 0 | . * 10000 | round / 10000)"
-              + " (\(($r.modelUsage // {}) | keys | first // "model n/a"))"
+              + " (\(
+                  ($r.modelUsage // {}) as $m
+                  | if ($m | length) == 0 then "model n/a"
+                    else
+                      # EVERY model, ordered by output-token share, not `keys|first`.
+                      #
+                      # `keys | first` reported ONE model chosen by arbitrary key
+                      # order. Observed on PR #543: the line read
+                      # "(claude-haiku-4-5-20251001)" while the action was invoked
+                      # with `--model claude-sonnet-5`, which reads as "the flag was
+                      # ignored" when it may only mean haiku sorted first among the
+                      # models used. The action legitimately uses a small model for
+                      # its own sub-steps, so a single name can never answer "which
+                      # model reviewed my code?" -- it can only mislead. Issue #539.
+                      [ $m | to_entries[]
+                        | { k: .key,
+                            out: (.value.outputTokens // .value.output_tokens // 0) } ]
+                      | sort_by(-.out)
+                      | map(.k + (if .out > 0 then " " + (.out|tostring) + "out" else "" end))
+                      | join(", ")
+                    end
+                ))"
               + " | \($r.num_turns // "?") turns"
               + " | \((($r.duration_ms // 0) / 60000) | floor)m\((($r.duration_ms // 0) / 1000 | floor) % 60)s"
               + "\nTokens: \($u.input_tokens // 0) in / \($u.output_tokens // 0) out"
