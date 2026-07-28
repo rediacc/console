@@ -64,6 +64,8 @@ interface GitHubRelease {
   tag: string;
   url: string;
   targetCommit: string;
+  /** ISO8601 from the release payload; absent if the API omitted it. */
+  publishedAt?: string;
 }
 
 interface ActionResult extends ActionInfo {
@@ -71,6 +73,38 @@ interface ActionResult extends ActionInfo {
   latest?: string;
   releaseUrl?: string;
   reason?: string;
+}
+
+/**
+ * Release-age defer window, mirroring .ci/scripts/lib/release-age.sh and
+ * .npmrc's `minimum-release-age=1440`. Overridable for tests.
+ */
+const RELEASE_AGE_WINDOW_SECONDS = Number(process.env.RELEASE_AGE_WINDOW_SECONDS || 24 * 60 * 60);
+
+/**
+ * Is this release too fresh to demand an upgrade to?
+ *
+ * WHY THIS EXISTS. This gate had no notion of release age, so an action
+ * published MINUTES ago turned the build red and the only ways out were to pin
+ * a barely-vetted SHA or to blocklist a version that is not actually blocked.
+ * Observed 2026-07-28: docker/login-action v4.5.2 was published at 07:04:43Z and
+ * had reddened the gate by 07:21Z, seventeen minutes later.
+ *
+ * Taking it immediately is also against this repo's own supply-chain posture:
+ * `.npmrc` sets `minimum-release-age=1440` precisely so a fresh publish is not
+ * consumed on sight, and the Go and npm gates already defer via
+ * `is_release_deferred`. An action pin is the same kind of dependency.
+ *
+ * FAIL-CLOSED, matching the bash helper: a missing or unparseable timestamp is
+ * treated as DEFERRED, because a lookup hiccup must never manufacture a "you
+ * must upgrade now" failure. The cost of that direction is one day of latency;
+ * the cost of the other is a red build nobody can honestly clear.
+ */
+function isReleaseDeferred(publishedAt: string | undefined, nowMs = Date.now()): boolean {
+  if (!publishedAt) return true;
+  const published = Date.parse(publishedAt);
+  if (Number.isNaN(published)) return true;
+  return nowMs < published + RELEASE_AGE_WINDOW_SECONDS * 1000;
 }
 
 /**
@@ -244,11 +278,13 @@ async function fetchLatestRelease(owner: string, repo: string): Promise<GitHubRe
               tag_name: string;
               html_url: string;
               target_commitish: string;
+              published_at?: string;
             };
             resolve({
               tag: json.tag_name,
               url: json.html_url,
               targetCommit: json.target_commitish,
+              publishedAt: json.published_at,
             });
           } catch {
             resolve(null);
@@ -360,6 +396,7 @@ async function checkActions(): Promise<void> {
   const latestReleases = await fetchLatestReleases(actions);
 
   const mustUpgrade: ActionResult[] = [];
+  const deferred: ActionResult[] = [];
   const blocked: ActionResult[] = [];
   const upToDate: ActionResult[] = [];
   const unknown: ActionResult[] = [];
@@ -392,6 +429,24 @@ async function checkActions(): Promise<void> {
         ...info,
         latest: latestVersion,
         releaseUrl: release.url,
+      });
+      continue;
+    }
+
+    // Outdated, but possibly TOO FRESH to demand. A release published inside the
+    // age window is reported as a notice and does not fail the gate: the upgrade
+    // is real, it is simply not yet takeable under this repo's supply-chain
+    // posture. It becomes a normal finding once the window passes, so nothing is
+    // lost, and no blocklist entry has to be invented for a non-blocked version.
+    if (isReleaseDeferred(release.publishedAt)) {
+      deferred.push({
+        name: actionName,
+        ...info,
+        latest: latestVersion,
+        releaseUrl: release.url,
+        reason: release.publishedAt
+          ? `published ${release.publishedAt}, inside the ${Math.round(RELEASE_AGE_WINDOW_SECONDS / 3600)}h window`
+          : 'no publish date returned by the API (deferring fail-closed)',
       });
       continue;
     }
@@ -463,6 +518,24 @@ async function checkActions(): Promise<void> {
     console.log();
   }
 
+  // Deferred, not blocked, and deliberately reported even though the gate
+  // passes: a silent defer is indistinguishable from a gate that stopped
+  // looking, which is the failure mode this repo keeps finding in its own
+  // tooling. Naming them means the next run's "must upgrade" is never a
+  // surprise.
+  if (deferred.length > 0) {
+    console.log(`${BLUE}Deferred upgrades (${deferred.length}) -- too fresh to take yet:${NC}\n`);
+    for (const action of deferred) {
+      console.log(`  ${action.name}: ${action.version} -> ${action.latest}`);
+      console.log(`    ${DIM}${action.reason}${NC}`);
+    }
+    console.log(
+      `\n  ${DIM}These are real upgrades held back by the release-age window, the same one`
+    );
+    console.log(`  .npmrc enforces with minimum-release-age and the Go/npm gates apply via`);
+    console.log(`  is_release_deferred. They become normal findings once the window passes.${NC}\n`);
+  }
+
   if (blocked.length > 0) {
     console.log(`${YELLOW}Blocked actions (${blocked.length}):${NC}\n`);
     for (const action of blocked) {
@@ -494,6 +567,35 @@ async function checkActions(): Promise<void> {
   }
 
   if (hasFailure) {
+    console.log(`${RED}GitHub Actions check FAILED${NC}`);
+    process.exit(1);
+  }
+
+  // ANTI-VACUITY. A gate that passes when it checked NOTHING is broken by
+  // definition, and this one did exactly that: with every GitHub API lookup
+  // rate-limited it printed "All GitHub Actions are up-to-date (14 unknown)"
+  // and exited 0. Fourteen unknown means fourteen unchecked, which is the
+  // opposite of up-to-date. Measured 2026-07-28 by running the gate without a
+  // token until the anonymous rate limit tripped.
+  //
+  // An offline or rate-limited CI run would therefore have reported freshness it
+  // never verified, indefinitely, which is the same swallowed-failure shape this
+  // repo keeps finding in its own tooling: empty evidence rendered as a clean
+  // result.
+  //
+  // Scope is deliberately narrow: only a TOTAL lookup failure is fatal. A
+  // partial one still proves something about the actions it did reach, and
+  // failing the build for one flaky lookup would make the gate the flakiest
+  // thing in CI.
+  if (actions.size > 0 && unknown.length === actions.size) {
+    console.log(
+      `${RED}✗ Could not resolve the latest release for ANY of the ${actions.size} action(s).${NC}`
+    );
+    console.log(
+      `${DIM}  Nothing was verified, so "up-to-date" would be a claim about data this run never saw.`
+    );
+    console.log('  Most likely the anonymous GitHub API rate limit: set GITHUB_TOKEN (or GH_TOKEN)');
+    console.log(`  and re-run. CI already sets one, so this is usually a local-only condition.${NC}`);
     console.log(`${RED}GitHub Actions check FAILED${NC}`);
     process.exit(1);
   }
