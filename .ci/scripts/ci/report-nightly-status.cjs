@@ -122,13 +122,21 @@ const report = async ({ github, context, core }) => {
     // issue collects a duplicate comment per attempt, which makes a streak look
     // longer than it is -- and the streak length is the one number this issue
     // exists to communicate.
-    let alreadyReported = String(issue.body || '').includes(`run ${runId}`);
+    // Anchored on the markdown link's closing bracket, not a bare substring.
+    // Every posted body writes the run as `[run <id>](<url>)`, so matching
+    // `run <id>]` pins both ends. A bare `includes('run ' + runId)` would also
+    // match a LONGER id that happens to start with these digits, which run ids
+    // eventually will as they gain a digit -- and a false dedupe is silent, so
+    // it would drop a night from the streak with nothing to show for it.
+    // Flagged as a non-blocking nit in review of PR #541.
+    const runMarker = `run ${runId}]`;
+    let alreadyReported = String(issue.body || '').includes(runMarker);
     if (!alreadyReported) {
       try {
         const comments = await github.paginate(github.rest.issues.listComments, {
           owner, repo, issue_number: issue.number, per_page: 100,
         });
-        alreadyReported = comments.some(c => String(c.body || '').includes(`run ${runId}`));
+        alreadyReported = comments.some(c => String(c.body || '').includes(runMarker));
       } catch (e) {
         // Fail toward reporting: a duplicate comment is noise, a missing one is
         // the silence this whole workflow exists to break.

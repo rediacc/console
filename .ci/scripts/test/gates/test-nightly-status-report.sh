@@ -213,6 +213,20 @@ test_a_pull_request_carrying_the_label_is_ignored() {
     log_pass "a pull request carrying the label is filtered out"
 }
 
+test_dedupe_is_anchored_not_a_bare_substring() {
+    # A LONGER run id that merely starts with these digits must not be mistaken
+    # for this night. Run ids gain a digit over time, so a bare
+    # `includes("run " + runId)` becomes wrong on its own schedule -- and a false
+    # dedupe is SILENT, dropping a night from the streak with nothing to show.
+    # The posted format is always `[run <id>](<url>)`, so the marker is anchored
+    # on the closing bracket.
+    local t
+    t="$(trace_of cancelled schedule '[{"number":7}]' 1 '[{"body":"### earlier -- nightly [run 302375243990](x) concluded `cancelled`"}]')"
+    assert_contains "$t" "comment:7" \
+        "a longer run id containing this one as a prefix must NOT suppress the comment"
+    log_pass "the run-id dedupe is anchored, not a bare substring"
+}
+
 log_test "test-nightly-status-report"
 test_cancelled_is_not_green
 test_non_schedule_event_is_a_no_op
@@ -225,6 +239,7 @@ test_body_names_the_failed_jobs
 test_workflow_is_wired_to_schedule_runs_only
 test_a_rerun_of_the_same_night_does_not_double_comment
 test_a_different_night_still_comments
+test_dedupe_is_anchored_not_a_bare_substring
 test_a_pull_request_carrying_the_label_is_ignored
 echo ""
 log_pass "all tests passed"

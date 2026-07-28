@@ -967,6 +967,25 @@ const monitor = async ({ github, context, core }) => {
         console.log(`"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`);
         core.error(`Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`);
         if (await forceCancel(failureMsg)) return;
+
+        // Cancel-exempt run (the nightly): the failure is recorded but the run is
+        // left to conclude on its own, so forceCancel returned false and did NOT
+        // end this generation. The job is nonetheless TERMINAL AND STUCK, so it
+        // must not fall through into the branches below.
+        //
+        // Falling through was a real regression, introduced when forceCancel
+        // began returning a boolean and caught in review of PR #541. Branch 5
+        // would be reached with `isFailure: failed.includes(job)` === false --
+        // correct, it IS a cancellation -- and evaluateRetryEligibility's
+        // "non-stuck cancellation is a runner/infra flake" path would resolve it
+        // to retry:true. The nightly would then re-run a job that had already
+        // hung for STUCK_THRESHOLD_MIN, which is exactly what branch 0 exists to
+        // prevent: "the job hung once, retrying would just hang again".
+        //
+        // sleep+continue rather than a bare `continue`, matching the drain path
+        // above: skipping the poll interval would busy-loop.
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        continue;
       }
 
       // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI.
@@ -1024,6 +1043,17 @@ const monitor = async ({ github, context, core }) => {
         }
 
         if (await forceCancel(failureMsg)) return;
+
+        // Cancel-exempt run: recorded, not cancelled, and this branch has
+        // already reached its verdict -- a no-retry job never retries, by
+        // definition. Falling through would hand it to branch 5, which
+        // independently re-derives "no retry" for a real failure and so reaches
+        // the same answer, but only after paying for a classifyFailure call (a
+        // billed Workers AI request) and emitting duplicate log lines. Same
+        // outcome, wasted work, noisier log. Flagged as a non-blocking nit in
+        // review of PR #541; skipping is both cheaper and clearer.
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        continue;
       }
 
       // 2. Label: no-cancel-failure -- let everything finish

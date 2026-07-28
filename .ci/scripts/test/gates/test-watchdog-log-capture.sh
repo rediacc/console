@@ -39,6 +39,8 @@ const captureDir = process.argv[3];
 const jobName = process.argv[4];
 const runStatus = process.argv[5];
 const runEvent = process.argv[6] || 'pull_request';
+const jobConclusion = process.argv[7] || 'failure';
+const elapsedMin = Number(process.argv[8] || 5);
 
 const LOG_BODY = [
   'Run some/step@v1',
@@ -49,12 +51,22 @@ const LOG_BODY = [
 ].join('\n');
 
 const actions = [];
-const job = { id: 4242, name: jobName, status: 'completed', conclusion: 'failure',
-              started_at: '2026-07-27T04:00:00Z', completed_at: '2026-07-27T04:05:00Z' };
+// Two healthy siblings so a single CANCELLED job does not trip the
+// mass-cancellation guard (`cancelled >= completed / 2`), which would exit
+// before any failure handling and leave the trace empty.
+const siblings = [
+  { id: 1, name: 'Quality / Code', status: 'completed', conclusion: 'success' },
+  { id: 2, name: 'Quality / Static', status: 'completed', conclusion: 'success' },
+];
+const allJobsRef = () => [job, ...siblings];
+const startMs = Date.parse('2026-07-27T04:00:00Z');
+const job = { id: 4242, name: jobName, status: 'completed', conclusion: jobConclusion,
+              started_at: new Date(startMs).toISOString(),
+              completed_at: new Date(startMs + elapsedMin * 60_000).toISOString() };
 
 const github = {
   hook: { before: () => {} },
-  paginate: async () => [job],
+  paginate: async () => allJobsRef(),
   request: async (route) => { actions.push(`request:${route.includes('force-cancel') ? 'force-cancel' : route.includes('rerun-failed-jobs') ? 'rerun' : route}`); return {}; },
   rest: {
     actions: {
@@ -85,6 +97,7 @@ HARNESS
 # run <job-name> <run-status> <capture-subdir> -> prints the action trace
 run_monitor() {
     local job="$1" status="$2" dir="$WORK/$3" event="${4:-pull_request}" deadline="${5:-}"
+    # $6 = job conclusion (failure|cancelled), $7 = elapsed minutes (drives isStuck)
     mkdir -p "$dir"
     WATCHDOG_TARGET_RUN_ID=999 \
         WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
@@ -93,7 +106,7 @@ run_monitor() {
         WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \
         WATCHDOG_DEADLINE_SECONDS="$deadline" \
         CLOUDFLARE_API_TOKEN='' CLOUDFLARE_ACCOUNT_ID='' \
-        node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" "$event" 2>/dev/null | tail -1
+        node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" "$event" "${6:-failure}" "${7:-5}" 2>/dev/null | tail -1
 }
 
 captured_files() { find "$WORK/$1" -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' '; }
@@ -210,6 +223,43 @@ test_a_scheduled_run_still_retries_a_known_flaky_leg() {
     log_pass "a scheduled run still retries a known-flaky leg ($trace)"
 }
 
+test_a_stuck_job_on_a_scheduled_run_is_never_retried() {
+    # THE REVIEW FINDING (PR #541, high severity), and a regression from the
+    # forceCancel-returns-bool refactor two commits earlier.
+    #
+    # Branch 0 exists to say: a STUCK cancellation never goes near AI or retry,
+    # because "the job hung once, retrying would just hang again". It ended with
+    # `if (await forceCancel(msg)) return;`. Once forceCancel began returning
+    # FALSE on a cancel-exempt run, that return stopped firing on the nightly and
+    # execution fell through into branches 1-5. Branch 5 then received
+    # `isFailure: false` -- correct, it IS a cancellation -- and the
+    # "non-stuck cancellation is a runner/infra flake" path resolved it to
+    # retry:true. So the one run type that must never burn a pointless hour would
+    # have re-run a job that had already hung for STUCK_THRESHOLD_MIN.
+    #
+    # A cancelled job with elapsed >= STUCK_THRESHOLD_MIN (60m default) is the
+    # shape no previous test produced: the other scheduled cases hardcode
+    # conclusion 'failure', which never reaches branch 0 at all.
+    local trace
+    trace="$(run_monitor 'Tests + Infra / E2E Workers (fedora-43)' 'completed' 'stuck' 'schedule' '1' 'cancelled' '90')"
+    assert_not_contains "$trace" "request:rerun" \
+        "a STUCK job must never be retried, even on a run where cancelling is suppressed"
+    assert_not_contains "$trace" "force-cancel" "and an exempt run is still never cancelled"
+    assert_contains "$trace" "setFailed" "the stuck job is still recorded"
+    log_pass "a stuck job on a scheduled run is recorded, not retried ($trace)"
+}
+
+test_a_stuck_job_on_a_PR_run_still_cancels() {
+    # The other direction: on a normal PR the stuck branch must still terminate
+    # the run exactly as before. If this regressed, the fix would have traded one
+    # bug for another.
+    local trace
+    trace="$(run_monitor 'Tests + Infra / E2E Workers (fedora-43)' 'completed' 'stuckpr' 'pull_request' '1' 'cancelled' '90')"
+    assert_contains "$trace" "force-cancel" "a stuck job on a PR run still force-cancels"
+    assert_not_contains "$trace" "request:rerun" "and is never retried"
+    log_pass "a stuck job on a PR run still cancels the run ($trace)"
+}
+
 log_test "test-watchdog-log-capture"
 test_capture_on_the_fail_fast_path
 test_capture_before_the_rerun
@@ -218,5 +268,7 @@ test_capture_filename_is_traceable
 test_no_capture_dir_means_no_capture_and_no_crash
 test_a_scheduled_run_records_the_failure_and_keeps_monitoring
 test_a_scheduled_run_still_retries_a_known_flaky_leg
+test_a_stuck_job_on_a_scheduled_run_is_never_retried
+test_a_stuck_job_on_a_PR_run_still_cancels
 echo ""
 log_pass "all tests passed"
