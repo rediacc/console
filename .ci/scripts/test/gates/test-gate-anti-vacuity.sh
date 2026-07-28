@@ -88,6 +88,12 @@ REGISTRY=(
     # draft did the opposite: a wrong ledger path made the protected set empty,
     # so it reported OK on a planted fabrication. Only a control caught that.
     "check-locale-only-edits.ts|Refusing to run"
+    # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1
+    # verbatim: point it at a tree without packages/www/src/content/docs and
+    # the glob returns zero files, every loop iterates zero times, and it
+    # printed "All external links are valid". Measured on the empty fixture
+    # before the guard was added, not inferred from reading it.
+    "check-external-links.ts|Refusing to run"
     # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its
