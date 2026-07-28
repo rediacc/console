@@ -166,6 +166,26 @@ function reconcile(plan, jobs, ctx = {}) {
 
     if (planned && planned.run === true) {
       if (matched.length === 0) {
+        // A SKIPPED REUSABLE CALLER is not a missing job. When the caller of a
+        // reusable workflow is skipped, GitHub materialises only the caller
+        // ("OPS Tests") and never its inner jobs ("OPS Tests / OPS Provision
+        // (linux-amd64)"), so a table keyed on inner names matches nothing and
+        // this would report planned-job-missing for what is really a skip.
+        //
+        // Found by the shadow reconciler on run 30388401305, which is exactly
+        // the false-fire it was built to surface before the gate went live.
+        // Reported as planned-run-but-skipped, the same finding a directly
+        // skipped leaf produces, because that is what actually happened.
+        const callers = [...new Set(expected.map((e) => e.split(' / ')[0]))];
+        const skippedCaller = jobs.find(
+          (j) => callers.includes(j.name) && j.conclusion === 'skipped'
+        );
+        if (skippedCaller) {
+          failures.push(
+            `planned-run-but-skipped: '${key}' -> reusable caller '${skippedCaller.name}' was skipped, so its inner jobs never ran`
+          );
+          continue;
+        }
         // Case 27: planned to run, absent from the Jobs API entirely (a
         // rename, a dropped call, a DAG break). Nothing validated the delta.
         failures.push(`planned-job-missing: '${key}' matched no job (expected: ${expected.join(' | ')})`);
