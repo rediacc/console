@@ -32,7 +32,19 @@ SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 OUT_DIR="${SCOPE_SHADOW_OUT:-$SCRIPT_DIR/../../cache/scope-shadow}"
 mkdir -p "$OUT_DIR"
 
-emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
+# Emit to BOTH the step summary and stdout.
+#
+# The summary alone was a mistake: GitHub exposes no API for step summaries
+# (the job object has no summary field), so everything this script reported was
+# readable only by a human in the web UI. An automated caller - the thing most
+# likely to be reading a SHADOW observer's verdict - saw an empty job log and
+# could not tell "reported nothing" from "never ran". That is the same
+# unreadable-instrument failure this whole mechanism exists to avoid.
+#
+# stdout lands in the job log, which IS in the API.
+emit() {
+    printf '%s\n' "$@" | tee -a "$SUMMARY"
+}
 
 # HARD TIME BOUND on every external call, and this is the important safety
 # property of this script, not a nicety.
@@ -112,8 +124,8 @@ else
         "condition, not the run skipping attested work." ""
 fi
 emit '```'
-head -c 3000 "$OUT_DIR/reconcile.err" 2>/dev/null >>"$SUMMARY"
-head -c 1500 "$OUT_DIR/reconcile.out" 2>/dev/null >>"$SUMMARY"
+head -c 3000 "$OUT_DIR/reconcile.err" 2>/dev/null | tee -a "$SUMMARY"
+head -c 1500 "$OUT_DIR/reconcile.out" 2>/dev/null | tee -a "$SUMMARY"
 emit '```'
 
 # Always green. A shadow observer that can red a run is not a shadow observer.

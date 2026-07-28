@@ -54,7 +54,19 @@ SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 OUT_DIR="${SCOPE_SHADOW_OUT:-$SCRIPT_DIR/../../cache/scope-shadow}"
 mkdir -p "$OUT_DIR"
 
-emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
+# Emit to BOTH the step summary and stdout.
+#
+# The summary alone was a mistake: GitHub exposes no API for step summaries
+# (the job object has no summary field), so everything this script reported was
+# readable only by a human in the web UI. An automated caller - the thing most
+# likely to be reading a SHADOW observer's verdict - saw an empty job log and
+# could not tell "reported nothing" from "never ran". That is the same
+# unreadable-instrument failure this whole mechanism exists to avoid.
+#
+# stdout lands in the job log, which IS in the API.
+emit() {
+    printf '%s\n' "$@" | tee -a "$SUMMARY"
+}
 
 # Time bound, for the same reason as the reconcile shadow: this runs inside
 # `initialize`, which every other job depends on, so a hang here stalls the
@@ -89,7 +101,7 @@ if [[ -n "$base" && -n "$head" ]]; then
     git diff-tree -r --raw --no-commit-id "$base" "$head" >"$OUT_DIR/changed.raw" 2>/dev/null || true
     bounded node "$ENGINE" --classify --files "$OUT_DIR/changed.raw" >"$OUT_DIR/scope-classify.json" 2>/dev/null || true
     emit "**--classify over the merge-base delta**" "" '```json'
-    head -c 4000 "$OUT_DIR/scope-classify.json" 2>/dev/null >>"$SUMMARY" || emit "(no output)"
+    head -c 4000 "$OUT_DIR/scope-classify.json" 2>/dev/null | tee -a "$SUMMARY" || emit "(no output)"
     emit '```' ""
 else
     emit "_skipped --classify: no base/head pair resolved_" ""
@@ -125,11 +137,11 @@ if [[ -n "$head" ]]; then
         --repo "${GITHUB_REPOSITORY}" --head "$head" --merge-sha "${MERGE_SHA}" \
         >"$OUT_DIR/scope-baseline.json" 2>"$OUT_DIR/scope-baseline.err" || true
     emit "**--resolve-baseline** (expect \`baseline:none-usable\` until the reconciler is wired)" "" '```json'
-    head -c 4000 "$OUT_DIR/scope-baseline.json" 2>/dev/null >>"$SUMMARY" || emit "(no output)"
+    head -c 4000 "$OUT_DIR/scope-baseline.json" 2>/dev/null | tee -a "$SUMMARY" || emit "(no output)"
     emit '```'
     if [[ -s "$OUT_DIR/scope-baseline.err" ]]; then
         emit "stderr:" '```'
-        head -c 1000 "$OUT_DIR/scope-baseline.err" >>"$SUMMARY"
+        head -c 1000 "$OUT_DIR/scope-baseline.err" | tee -a "$SUMMARY"
         emit '```'
     fi
 fi
