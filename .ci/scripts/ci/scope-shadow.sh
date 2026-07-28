@@ -86,6 +86,31 @@ else
     emit "_skipped --classify: no base/head pair resolved_" ""
 fi
 
+# Emit an ATTESTED-SHAPED plan: the classify verdict plus the run identity the
+# reconciler checks (skip-plan-reconcile.cjs refuses a plan whose run_id is not
+# this run's, as anti-tamper). Uploaded under the name --resolve-baseline looks
+# for, deliberately:
+#
+#   - it proves the whole artifact path end to end (upload here, discover and
+#     download on a LATER run), which is the half that cannot be unit-tested;
+#   - and it still cannot be USED, because evaluateBaselineCandidate requires
+#     `reconciled: true` and this plan has no such flag. A later run finds it
+#     and answers `unreconciled-outcome` instead of `no-skip-plan`, which is a
+#     strictly better signal: it says the plumbing works and the ATTESTATION is
+#     what is missing.
+#
+# Writing `reconciled` here would be attesting to an outcome nobody verified.
+if [[ -s "$OUT_DIR/scope-classify.json" ]]; then
+    node -e '
+const fs = require("fs");
+const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+plan.run_id = Number(process.env.GITHUB_RUN_ID || 0);
+plan.base_sha = process.argv[2] || null;
+plan.head_sha = process.argv[3] || null;
+fs.writeFileSync(process.argv[4], JSON.stringify(plan, null, 2));
+' "$OUT_DIR/scope-classify.json" "$base" "$head" "$OUT_DIR/plan.json" 2>/dev/null || true
+fi
+
 if [[ -n "$head" ]]; then
     node "$ENGINE" --resolve-baseline \
         --repo "${GITHUB_REPOSITORY}" --head "$head" --merge-sha "${MERGE_SHA}" \
