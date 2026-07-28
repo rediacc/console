@@ -39,9 +39,17 @@ RUN_ID="30307775327"
 
 # Base fixtures. The plan is generated FROM scope-map's job keys so a key
 # rename there flows into the fixture (parity between the two tables is
-# asserted separately). The jobs payload mirrors run 30307775327: a success
-# leaf for every planned key, the eleven structural skips observed live, and
-# unplanned extras the reconciler must ignore.
+# asserted separately). The jobs payload is run 30307775327: a success leaf for
+# every planned key, the eleven structural skips observed live, and unplanned
+# extras the reconciler must ignore.
+#
+# It is that run PLUS any leg added since, which is a real obligation rather
+# than a footnote: because the plan is generated from JOB_SURFACES, adding a
+# key there without adding its leaf here makes the healthy fixture fail as
+# planned-run-but-missing. That is the gate working (a planned job with no
+# observed leaf IS a defect in a real run), so the fix is always to add the
+# leaf, never to loosen the check. `License Enforcement` is the first such
+# addition.
 node -e '
 const fs = require("fs");
 const m = require(process.argv[1]);
@@ -68,6 +76,7 @@ const jobs = [
   S("Tests + Infra / E2E Migrate"),
   S("Tests + Infra / Concurrent Fork Isolation"),
   S("Tests + Infra / Renet"),
+  S("Tests + Infra / License Enforcement"),
   S("Tests + Infra / Account E2E"),
   S("Tests + Infra / Migration Test"),
   S("OPS Tests / OPS Provision (linux-amd64)"),
