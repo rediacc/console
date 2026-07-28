@@ -82,6 +82,12 @@ REGISTRY=(
     # that moving or renaming the workflow tree cannot silently turn the
     # closure test into a tautology over an empty set.
     ".ci/scripts/test/gates/test-scope-engine.sh|closure"
+    # A DIFF gate with no baseline and no ledger measures nothing, and
+    # "measured nothing" must never read as "found nothing". Against the empty
+    # fixture both its inputs are gone, so it must refuse to run. Its first
+    # draft did the opposite: a wrong ledger path made the protected set empty,
+    # so it reported OK on a planted fabrication. Only a control caught that.
+    "check-locale-only-edits.ts|Refusing to run"
     # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its

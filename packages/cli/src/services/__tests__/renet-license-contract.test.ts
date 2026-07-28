@@ -4,8 +4,6 @@ import {
 } from '../renet/renet-license-contract.js';
 
 describe('renet-license-contract', () => {
-
-
   it('parses the structured license-required payload from stderr', () => {
     expect(
       parseRenetLicenseFailure(
