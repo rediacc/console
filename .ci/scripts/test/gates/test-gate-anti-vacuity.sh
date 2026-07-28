@@ -75,6 +75,21 @@ REGISTRY=(
     # compare against the chain. It used to die with a raw ENOENT stack trace,
     # which reads as a crash rather than a verdict.
     "check-ci-chain-parity.ts|blind"
+    # The scope engine's workflow closure is computed by ITERATING
+    # `uses: ./.github/workflows/*` at runtime, never by matching names, so the
+    # test asserts a real closure over the real tree. On the empty fixture that
+    # closure is {} and the assertion must fail: registering it pins the fact
+    # that moving or renaming the workflow tree cannot silently turn the
+    # closure test into a tautology over an empty set.
+    ".ci/scripts/test/gates/test-scope-engine.sh|closure"
+    # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
+    # Measured, not assumed: it passes all 55 assertions against the empty tree,
+    # because it is a pure unit test that builds every fixture it needs (its
+    # plans and job lists are constructed in-test, and it reads scope-map only
+    # for the job-key list, which .ci/scripts carries into the fixture). Passing
+    # with the repo absent is CORRECT for it rather than vacuous, so an entry
+    # here could never fail and would be exactly the dead assertion this
+    # harness exists to catch. Its anti-vacuity controls are inline instead.
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into
