@@ -79,6 +79,7 @@ const EXPECTED_JOB_NAMES = {
   e2e_migrate: ['Tests + Infra / E2E Migrate'],
   fork_isolation: ['Tests + Infra / Concurrent Fork Isolation'],
   renet: ['Tests + Infra / Renet'],
+  license_enforcement: ['Tests + Infra / License Enforcement'],
   account_e2e: ['Tests + Infra / Account E2E'],
   ops: ['OPS Tests / OPS Provision', 'OPS Tests / OPS Check'],
   elite_run: ['Elite Run'],

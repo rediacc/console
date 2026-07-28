@@ -223,6 +223,11 @@ const JOB_SURFACES = {
   unit: ['shared', 'cli', 'www', 'provisioning', 'e2e', 'json', 'workers'],
   ...Object.fromEntries(VM_E2E_JOB_KEYS.map((k) => [k, VM_E2E_SURFACE])),
   renet: ['renet'],
+  // The licensing enforcement leg builds renet from source and drives cmd/renet,
+  // so renet is its whole surface. Its own harness (.ci/scripts/private/
+  // license-e2e.sh and license-mint/) lives under .ci/, which already forces
+  // full CI, so it needs no separate module.
+  license_enforcement: ['renet'],
   account_e2e: ['account', 'shared'],
   ops: ['cli', 'shared', 'provisioning', 'json', 'renet', 'account', 'tutorials'],
   elite_run: ['elite', 'renet'],
