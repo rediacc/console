@@ -240,6 +240,20 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      # The attested-shaped plan, under the BARE name scope-engine's
+      # createRepoIo looks up. Artifact names are already run-scoped, so no
+      # suffix: a suffixed name would be undiscoverable by the later run that
+      # goes hunting for a baseline, which is the only consumer it has.
+      # It carries no `reconciled` flag, so it can be found and parsed but
+      # never used as a baseline. That is the point at this stage.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          name: ci-skip-plan
+          path: .ci/cache/scope-shadow/plan.json
+          retention-days: 7
+          if-no-files-found: ignore
+
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
         if: steps.init.outputs.is_bot != 'true'
@@ -1174,6 +1188,14 @@ jobs:
     # (it is gated on push-to-main plus a release channel).
     needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
     timeout-minutes: 5
+    # Job-level permissions REPLACE the workflow defaults, so contents and
+    # packages are restated. actions: read is for the shadow reconciliation
+    # step at the end, which downloads this run's attested plan and reads its
+    # own per-job outcomes. Read-only, and that step fails nothing.
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     if: always() && !cancelled()
     steps:
       # The tier logic now lives in .ci/scripts/ci/assert-ci-complete.sh, so the
@@ -1205,6 +1227,23 @@ jobs:
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}
           RESULT_BREAKPOINT_LIFECYCLE: ${{ needs.breakpoint-lifecycle.result }}
+
+      # SHADOW reconciliation, and it runs AFTER the real gate above on
+      # purpose: this must never influence the verdict, only observe it.
+      # always() so the evidence is collected even when the gate above failed,
+      # which is exactly the case worth understanding.
+      #
+      # It answers the one question that decides whether the reconciler can be
+      # turned on for real: would it have fired FALSELY? The reconciler
+      # hard-fails on any planned-run job that skipped, and today's shadow plan
+      # does not encode pre-existing skip conditions (full_suite, and
+      # pointer_bump_only). Wiring it before seeing a clean run of PRs would
+      # red a required check for reasons unrelated to scope.
+      - name: Skip-plan reconciliation (shadow, fails nothing)
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/ci/scope-reconcile-shadow.sh
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
   # Atomic commit point of the release pipeline. Writes `.released` sentinels
