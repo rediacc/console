@@ -47,6 +47,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENGINE="$SCRIPT_DIR/scope-engine.cjs"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
 
+# Outputs go under .ci/cache/ (gitignored, .gitignore:118) rather than the repo
+# root. Running this locally used to drop changed.raw and three scope-*.json
+# files as untracked litter in the working tree, which in a repo where sessions
+# share a tree is one `git add -A` away from being committed by someone else.
+OUT_DIR="${SCOPE_SHADOW_OUT:-$SCRIPT_DIR/../../cache/scope-shadow}"
+mkdir -p "$OUT_DIR"
+
 emit() { printf '%s\n' "$@" >>"$SUMMARY"; }
 
 # CI checks out the merge commit, whose ^1 is the base and ^2 the PR head.
@@ -70,10 +77,10 @@ emit "### Scope engine (shadow, decides nothing)" \
     ""
 
 if [[ -n "$base" && -n "$head" ]]; then
-    git diff-tree -r --raw --no-commit-id "$base" "$head" >changed.raw 2>/dev/null || true
-    node "$ENGINE" --classify --files changed.raw >scope-classify.json 2>/dev/null || true
+    git diff-tree -r --raw --no-commit-id "$base" "$head" >"$OUT_DIR/changed.raw" 2>/dev/null || true
+    node "$ENGINE" --classify --files "$OUT_DIR/changed.raw" >"$OUT_DIR/scope-classify.json" 2>/dev/null || true
     emit "**--classify over the merge-base delta**" "" '```json'
-    head -c 4000 scope-classify.json 2>/dev/null >>"$SUMMARY" || emit "(no output)"
+    head -c 4000 "$OUT_DIR/scope-classify.json" 2>/dev/null >>"$SUMMARY" || emit "(no output)"
     emit '```' ""
 else
     emit "_skipped --classify: no base/head pair resolved_" ""
@@ -82,13 +89,13 @@ fi
 if [[ -n "$head" ]]; then
     node "$ENGINE" --resolve-baseline \
         --repo "${GITHUB_REPOSITORY}" --head "$head" --merge-sha "${MERGE_SHA}" \
-        >scope-baseline.json 2>scope-baseline.err || true
+        >"$OUT_DIR/scope-baseline.json" 2>"$OUT_DIR/scope-baseline.err" || true
     emit "**--resolve-baseline** (expect \`baseline:none-usable\` until the reconciler is wired)" "" '```json'
-    head -c 4000 scope-baseline.json 2>/dev/null >>"$SUMMARY" || emit "(no output)"
+    head -c 4000 "$OUT_DIR/scope-baseline.json" 2>/dev/null >>"$SUMMARY" || emit "(no output)"
     emit '```'
-    if [[ -s scope-baseline.err ]]; then
+    if [[ -s "$OUT_DIR/scope-baseline.err" ]]; then
         emit "stderr:" '```'
-        head -c 1000 scope-baseline.err >>"$SUMMARY"
+        head -c 1000 "$OUT_DIR/scope-baseline.err" >>"$SUMMARY"
         emit '```'
     fi
 fi
