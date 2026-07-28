@@ -173,17 +173,266 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 }
 
 // ---------------------------------------------------------------------------
+// Baseline harvesting: the --resolve-baseline mode (edge cases 1 to 5, 22, 23)
+//
+// This is the half the headline case needs: "CI went green on a full round,
+// then a one-line change was pushed, so the next round should not be full
+// again". A MERGE BASE cannot express that. The merge base does not move when
+// a second commit lands on the PR branch, so every push re-diffs the entire
+// branch and the tenth push costs exactly what the first did. The baseline
+// that CAN express it is the newest ANCESTOR OF HEAD whose own run was green,
+// ran a FULL suite, and proved it with a reconciled skip-plan.
+//
+// Everything here fails OPEN. A shallow clone, an unwalkable history, a
+// missing or unreadable plan artifact, a base that moved under us, a
+// truncated file list: all converge on one outcome, which is to run
+// everything and say which of them happened. The only direction this
+// mechanism can be wrong in is running MORE CI than needed.
+//
+// Like --classify, this mode lands INERT. Nothing in CI produces an attested
+// skip-plan artifact yet, so every candidate today resolves to 'no-skip-plan'
+// and the answer is full CI with that reason. It cannot change CI behaviour
+// until the attestation side is wired, which is deliberate: it means this can
+// be landed and observed before it is trusted.
+//
+// WIRING PRECONDITION, and it is not optional. `initialize` checks out with
+// `fetch-tags: true` and NO `fetch-depth` (ci.yml:128-131), which is a depth-1
+// shallow clone. Wired there as it stands, this mode would answer
+// 'baseline:shallow-clone' on every single run and go full forever, while
+// looking perfectly healthy from the outside. That is D9's exact failure
+// shape, so whoever wires it must add `fetch-depth: 0` plus `filter:
+// blob:none` to that ONE job (blob:none keeps it cheap: commits and trees
+// only, no historical file contents), and must then confirm a reduced run on
+// real traffic rather than assuming one.
+// ---------------------------------------------------------------------------
+
+// GitHub truncates a compare file list at 300 entries. Past that the list is
+// a lie by omission, and an omission classifies as REDUCED (the missing paths
+// simply do not vote), so the cap is a fail-open trigger and not a display
+// limit.
+const DIFF_FILE_CAP = 300;
+
+// How many ancestors to interrogate before giving up. Each candidate costs at
+// least one API round trip, and the headline case is satisfied by the FIRST
+// candidate (the commit immediately before this push), so a small number is
+// right: a deep walk mostly buys latency on branches that were never going to
+// find a green full baseline anyway.
+const DEFAULT_CANDIDATE_LIMIT = 5;
+
+// Walk candidates newest-first, returning the first usable baseline and the
+// complete rejection trail. The trail is the load-bearing part: when a round
+// runs full, the operator has to be able to see why every NEARER candidate
+// was refused, because a permanently-full pipeline and a correctly-full one
+// look identical from the outside. D9 stayed false for twelve runs precisely
+// because nothing printed its reason.
+function selectBaseline(candidates) {
+  const trail = [];
+  for (const candidate of candidates || []) {
+    const verdict = evaluateBaselineCandidate(candidate);
+    trail.push({
+      sha: candidate && candidate.sha ? candidate.sha : null,
+      usable: verdict.usable,
+      reason: verdict.reason,
+    });
+    if (verdict.usable) return { baseline: candidate, trail };
+  }
+  return { baseline: null, trail };
+}
+
+// Case 5. The baseline proved head-at-that-time against one specific main
+// tip. If main has moved since, that proof no longer covers what CI will
+// actually merge, so either main's own delta folds into the net diff or the
+// round goes full. Missing information is never read as 'unchanged'.
+function decideBaseMove({ planBaseSha, mergeParentSha, mainDeltaAvailable }) {
+  if (!planBaseSha || !mergeParentSha) {
+    return { action: 'full', reason: 'base-sha-unknown' };
+  }
+  if (isBaseUnchanged({ planBaseSha, mergeParentSha })) {
+    return { action: 'proceed', reason: 'base-unchanged' };
+  }
+  return mainDeltaAvailable
+    ? { action: 'fold', reason: 'base-moved:fold-main-delta' }
+    : { action: 'full', reason: 'base-moved' };
+}
+
+// A full plan carrying one machine-readable reason. Built THROUGH buildPlan
+// rather than hand-rolled, so the job table can never drift from the one the
+// reduced path emits.
+function forcedFullPlan(reason) {
+  return scopeMap.buildPlan({
+    modules: new Set(),
+    reasons: [],
+    mode: 'full',
+    full_reasons: [reason],
+  });
+}
+
+// io is injected so every decision above is testable with no git, no gh and
+// no network. Each io call is wrapped: a throw becomes an ANSWER ('full'),
+// never an exception, because a scope engine that crashes inside `initialize`
+// would take the whole run down in exchange for an optimisation.
+function resolveBaseline(opts, io) {
+  const { head, mergeSha, limit = DEFAULT_CANDIDATE_LIMIT, workflowClosure } = opts || {};
+  const notes = [];
+  const fail = (reason, baseline = null, trail = []) => ({
+    baseline,
+    trail,
+    notes,
+    plan: forcedFullPlan(reason),
+  });
+  const msg = (e) => (e && e.message ? e.message : String(e));
+
+  if (!head) return fail('baseline:head-sha-missing');
+
+  // A shallow superproject cannot be walked. A PARTIAL walk is the dangerous
+  // case, not the empty one: it would find no green ancestor and report
+  // 'none-usable', which reads as a considered verdict rather than as a
+  // truncated history.
+  try {
+    if (io.isShallow()) return fail('baseline:shallow-clone');
+  } catch (e) {
+    return fail(`baseline:shallow-probe-failed:${msg(e)}`);
+  }
+
+  let candidates;
+  try {
+    candidates = io.listCandidates(head, limit);
+  } catch (e) {
+    return fail(`baseline:candidate-walk-failed:${msg(e)}`);
+  }
+  if (!candidates || candidates.length === 0) return fail('baseline:no-candidates');
+
+  const { baseline, trail } = selectBaseline(candidates);
+  if (!baseline) return fail('baseline:none-usable', null, trail);
+
+  let mergeParentSha = null;
+  if (mergeSha) {
+    try {
+      mergeParentSha = io.firstParent(mergeSha);
+    } catch (e) {
+      notes.push(`merge-parent-unreadable:${msg(e)}`);
+    }
+  }
+
+  const move = decideBaseMove({
+    planBaseSha: baseline.plan.base_sha,
+    mergeParentSha,
+    mainDeltaAvailable: Boolean(mergeParentSha),
+  });
+  if (move.action === 'full') return fail(`baseline:${move.reason}`, baseline, trail);
+
+  let paths;
+  try {
+    paths = io.diffPaths(baseline.sha, head);
+    if (move.action === 'fold') {
+      notes.push(move.reason);
+      paths = paths.concat(io.diffPaths(baseline.plan.base_sha, mergeParentSha));
+    }
+  } catch (e) {
+    return fail(`baseline:diff-failed:${msg(e)}`, baseline, trail);
+  }
+
+  // Checked BEFORE classify, because classify would happily reduce on a list
+  // it does not know is incomplete.
+  if (paths.length > DIFF_FILE_CAP) {
+    return fail(`baseline:diff-truncated:${paths.length}`, baseline, trail);
+  }
+
+  const plan = scopeMap.buildPlan(scopeMap.classify(paths, { workflowClosure }));
+  return { baseline, trail, notes, plan };
+}
+
+// ---------------------------------------------------------------------------
+// The real io: git for history, gh for runs and the attested plan artifact.
+// ---------------------------------------------------------------------------
+
+function defaultRun(cmd, args) {
+  const { execFileSync } = require('child_process');
+  return execFileSync(cmd, args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+}
+
+function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
+  const git = (...args) => run('git', ['-C', repoRoot, ...args]);
+  const gh = (...args) => run('gh', args);
+
+  const readPlanForRun = (runId) => {
+    const os = require('os');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-plan-'));
+    try {
+      gh('run', 'download', String(runId), '--repo', repo, '-n', artifactName, '-D', dir);
+    } catch {
+      // Absent or expired reads exactly like never-attested (case 3), which is
+      // the correct conflation: neither can prove what that run executed.
+      return null;
+    }
+    const candidatePaths = ['plan.json', 'skip-plan.json'].map((f) => path.join(dir, f));
+    for (const p of candidatePaths) {
+      try {
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+      } catch {
+        continue;
+      }
+    }
+    return null;
+  };
+
+  return {
+    isShallow: () => git('rev-parse', '--is-shallow-repository').trim() === 'true',
+
+    firstParent: (sha) => git('rev-parse', `${sha}^1`).trim(),
+
+    // `git diff-tree -r --raw` rather than --name-only: renames carry both
+    // sides and parseLine unions them (case 20), which --name-only cannot say.
+    diffPaths: (from, to) =>
+      parseFileList(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to)),
+
+    listCandidates: (head, limit) => {
+      const shas = git('rev-list', '--first-parent', `--max-count=${Number(limit) + 1}`, head)
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .filter((s) => s !== head); // head is not its own baseline
+      return shas.map((sha) => {
+        let runs = [];
+        try {
+          runs = JSON.parse(
+            gh('run', 'list', '--repo', repo, '--workflow', workflow, '--commit', sha,
+              '--json', 'databaseId,conclusion,status', '-L', '5'),
+          );
+        } catch {
+          return { sha, conclusion: null, plan: null };
+        }
+        const done = runs.filter((r) => r.status === 'completed');
+        if (done.length === 0) return { sha, conclusion: null, plan: null };
+        const green = done.find((r) => r.conclusion === 'success') || done[0];
+        return {
+          sha,
+          conclusion: green.conclusion,
+          runId: green.databaseId,
+          plan: green.conclusion === 'success' ? readPlanForRun(green.databaseId) : null,
+        };
+      });
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
 function usage() {
   return [
     'usage: scope-engine.cjs --classify [--files <path>]',
+    '       scope-engine.cjs --resolve-baseline --head <sha> [--merge-sha <sha>]',
+    '                        [--repo <owner/name>] [--limit <n>] [--workflow <name>]',
     '',
-    '--classify is the only wired mode in this chunk. It reads a newline-',
-    'delimited changed-file list from --files or stdin and prints the plan',
-    'JSON. Baseline resolution is exported for unit tests only and gets its',
-    'own mode (with gh/git access) in a later chunk.',
+    '--classify reads a newline-delimited changed-file list from --files or',
+    'stdin and prints the plan JSON. It performs no I/O beyond that read.',
+    '',
+    '--resolve-baseline finds the newest ancestor of --head whose run was green,',
+    'ran a full suite and left a reconciled skip-plan, then classifies the NET',
+    'delta from there. It needs git and gh. Every failure mode resolves to full',
+    'CI with a stated reason; it never resolves to a smaller run on bad input.',
   ].join('\n');
 }
 
@@ -191,17 +440,64 @@ function main(argv) {
   const args = argv.slice(2);
   let mode = null;
   let filesPath = null;
+  const opts = {};
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--classify') mode = 'classify';
+    else if (args[i] === '--resolve-baseline') mode = 'resolve-baseline';
     else if (args[i] === '--files') filesPath = args[++i];
+    else if (args[i] === '--head') opts.head = args[++i];
+    else if (args[i] === '--merge-sha') opts.mergeSha = args[++i];
+    else if (args[i] === '--repo') opts.repo = args[++i];
+    else if (args[i] === '--workflow') opts.workflow = args[++i];
+    else if (args[i] === '--limit') opts.limit = Number(args[++i]);
     else {
       process.stderr.write(`scope-engine: unknown argument '${args[i]}'\n${usage()}\n`);
       return 2;
     }
   }
-  if (mode !== 'classify') {
+  if (mode === null) {
     process.stderr.write(`scope-engine: no mode given\n${usage()}\n`);
     return 2;
+  }
+
+  if (mode === 'resolve-baseline') {
+    const repoRoot = path.resolve(__dirname, '../../..');
+    // A missing --repo is a CALLER bug, not a CI condition, so it is a usage
+    // error rather than a fail-open-to-full: silently running full CI forever
+    // because a flag was misspelled is exactly the D9 failure shape.
+    if (!opts.repo) {
+      process.stderr.write(`scope-engine: --resolve-baseline needs --repo\n${usage()}\n`);
+      return 2;
+    }
+    const io = createRepoIo({
+      repoRoot,
+      repo: opts.repo,
+      ...(opts.workflow ? { workflow: opts.workflow } : {}),
+    });
+    const result = resolveBaseline(
+      {
+        head: opts.head,
+        mergeSha: opts.mergeSha,
+        limit: Number.isFinite(opts.limit) ? opts.limit : DEFAULT_CANDIDATE_LIMIT,
+        workflowClosure: computeWorkflowClosure(repoRoot),
+      },
+      io,
+    );
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          ...result.plan,
+          baseline: result.baseline
+            ? { sha: result.baseline.sha, run_id: result.baseline.runId || null }
+            : null,
+          baseline_trail: result.trail,
+          baseline_notes: result.notes,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return 0;
   }
   if (filesPath === null || filesPath === undefined) {
     // No --files: stdin. fd 0 read synchronously, same as every gate script.
@@ -234,6 +530,13 @@ module.exports = {
   computeWorkflowClosure,
   evaluateBaselineCandidate,
   isBaseUnchanged,
+  selectBaseline,
+  decideBaseMove,
+  forcedFullPlan,
+  resolveBaseline,
+  createRepoIo,
+  DIFF_FILE_CAP,
+  DEFAULT_CANDIDATE_LIMIT,
   classify: scopeMap.classify,
   buildPlan: scopeMap.buildPlan,
   main,

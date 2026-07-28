@@ -379,6 +379,75 @@ process.stdout.write("ok");
     log_pass "the job-surface table is validated against the known modules"
 }
 
+test_baseline_resolution_fails_open_on_every_defect() {
+    # resolveBaseline with an INJECTED io: no git, no gh, no network. Each case
+    # states the mode and the machine-readable reason, because "full" alone
+    # cannot distinguish a correct full round from a permanently stuck one.
+    resolve() {
+        # $1 = JS expression overriding the default (healthy) io
+        # $2 = optional JS expression overriding the default opts
+        node -e '
+const e = require(process.argv[1]);
+const B = "b".repeat(40), H = "h".repeat(40), M = "m".repeat(40), P = "p".repeat(40);
+const base = {
+  isShallow: () => false,
+  firstParent: () => P,
+  diffPaths: () => ["docs/x.md"],
+  listCandidates: () => [{ sha: B, conclusion: "success", runId: 1,
+    plan: { mode: "full", reconciled: true, base_sha: P } }],
+};
+const io = Object.assign({}, base, eval("(" + process.argv[2] + ")"));
+const opts = Object.assign({ head: H, mergeSha: M }, eval("(" + process.argv[3] + ")"));
+const r = e.resolveBaseline(opts, io);
+process.stdout.write(r.plan.mode + ":" + (r.plan.full_reasons[0] || r.plan.modules.join(",")));
+' "$ENGINE" "$1" "${2:-{\}}"
+    }
+
+    # CONTROL, and it is the whole point of the mode: a green full attested
+    # baseline plus a one-file docs delta MUST reduce. Without this passing,
+    # every "full" below would be indistinguishable from a dead mechanism.
+    assert_eq "$(resolve '{}')" "reduced:docs" \
+        "green+full+reconciled baseline with a docs delta reduces (the headline case)"
+
+    # SHAPE CHECK: it can still see a real source change through the same path.
+    assert_eq "$(resolve '{diffPaths:()=>["packages/cli/src/a.ts"]}')" "reduced:cli" \
+        "and it still classifies a source change into its module"
+
+    # Fail-open matrix. Every one of these must be full, with its own reason.
+    assert_eq "$(resolve '{isShallow:()=>true}')" "full:baseline:shallow-clone" \
+        "a shallow clone cannot be walked, so it is full (not a partial walk)"
+    assert_eq "$(resolve '{listCandidates:()=>{throw new Error("boom")}}')" \
+        "full:baseline:candidate-walk-failed:boom" "a throwing git walk is an answer, never a crash"
+    assert_eq "$(resolve '{listCandidates:()=>[]}')" "full:baseline:no-candidates" \
+        "no ancestors means full"
+    assert_eq "$(resolve '{listCandidates:()=>[{sha:"x",conclusion:"failure",plan:null}]}')" \
+        "full:baseline:none-usable" "a red ancestor is not a baseline"
+    assert_eq "$(resolve '{diffPaths:()=>{throw new Error("nope")}}')" \
+        "full:baseline:diff-failed:nope" "a failed diff is full, never an empty delta"
+    assert_eq "$(resolve '{diffPaths:()=>Array.from({length:301},(_,i)=>"docs/f"+i+".md")}')" \
+        "full:baseline:diff-truncated:301" "past the 300-file cap the list is incomplete, so full"
+    assert_eq "$(resolve '{}' '{mergeSha:null}')" "full:baseline:base-sha-unknown" \
+        "an unknown merge parent is never read as an unchanged base"
+
+    # Case 5 fold: main moved, and main's OWN delta must be unioned in or a
+    # change that landed on main would be invisible to this round.
+    local folded
+    folded="$(resolve '{firstParent:()=>"n".repeat(40),diffPaths:(f)=>f==="b".repeat(40)?["docs/x.md"]:["packages/cli/src/leaked.ts"]}')"
+    assert_eq "$folded" "reduced:cli,docs" \
+        "a moved base folds main's delta in rather than losing it (case 5)"
+    log_pass "baseline resolution reduces when it should and fails open on every defect"
+}
+
+test_resolve_baseline_needs_a_repo() {
+    # A misspelled/absent --repo must be a USAGE error. Failing open to full
+    # here would hide a caller bug as a permanently expensive pipeline, which
+    # is precisely how D9 stayed false for twelve runs.
+    local rc=0
+    node "$ENGINE" --resolve-baseline --head deadbeef >/dev/null 2>&1 || rc=$?
+    assert_eq "$rc" "2" "--resolve-baseline without --repo exits 2 (usage), not 0 (silent full)"
+    log_pass "a caller bug is reported, not absorbed into a full run"
+}
+
 log_test "test-scope-engine"
 test_unclassified_path_fails_closed
 test_empty_delta_is_full_never_reduced
@@ -393,6 +462,8 @@ test_docs_only_delta_reduces_everything
 test_full_mode_runs_every_job
 test_classify_mode_is_pure
 test_baseline_helpers_refuse_weak_baselines
+test_baseline_resolution_fails_open_on_every_defect
+test_resolve_baseline_needs_a_repo
 test_surface_table_is_self_validating
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
