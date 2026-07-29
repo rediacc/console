@@ -1132,6 +1132,69 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 77. an over-length body is REFUSED, never silently truncated =="
+# Silent write-time truncation would be the commit-message defect one layer
+# down: the tail (often the crucial part) vanishes while the sender is told
+# the payload was delivered.
+setup
+say "done for now"
+brief_now
+if reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1000)")" >/dev/null 2>&1; then
+    echo "  PASS: a body exactly at the 1000-char limit is accepted"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: an at-limit body was refused"
+    FAIL=$((FAIL + 1))
+fi
+if reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1100)")" >/dev/null 2>"$BASE/asklen.err"; then
+    echo "  FAIL: an over-length ask was accepted"
+    FAIL=$((FAIL + 1))
+elif grep -qF "REFUSED rather than silently truncated" "$BASE/asklen.err" &&
+    [[ "$(grep -c '"ev":"ask"' "${WL%.md}.requests")" == "1" ]]; then
+    echo "  PASS: an over-length ask is refused loudly and writes nothing"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: over-length refusal was silent or leaked an event: $(cat "$BASE/asklen.err")"
+    FAIL=$((FAIL + 1))
+fi
+RID=$(reqcli --requests | sed -n 's/^#\([0-9a-f]\{8\}\).*/\1/p' | head -n1)
+if reqcli --answer deadbeef "$RID" "$(python3 -c "print('y' * 1100)")" >/dev/null 2>"$BASE/anslen.err"; then
+    echo "  FAIL: an over-length answer was accepted"
+    FAIL=$((FAIL + 1))
+elif grep -qF "REFUSED rather than silently truncated" "$BASE/anslen.err" &&
+    ! grep -q '"ev":"answer"' "${WL%.md}.requests"; then
+    echo "  PASS: an over-length answer is refused loudly and writes nothing"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: over-length answer refusal was silent or leaked an event"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 78. --compact never touches the requests sidecar; blocking survives it =="
+setup
+say "done for now"
+brief_now
+askid cafe1234 deadbeef "must survive compaction" >/dev/null
+printf -- '- [~] (cafe1234) archived tombstone line\n' >>"$WL"
+BEFORE=$(md5sum "${WL%.md}.requests" | cut -d' ' -f1)
+reqcli --compact >/dev/null 2>&1
+if grep -q 'archived tombstone' "$WL"; then
+    echo "  FAIL: --compact did not run (tombstone still present), test is vacuous"
+    FAIL=$((FAIL + 1))
+else
+    echo "  PASS: --compact really ran (tombstone dropped)"
+    PASS=$((PASS + 1))
+fi
+AFTER=$(md5sum "${WL%.md}.requests" | cut -d' ' -f1)
+if [[ "$BEFORE" == "$AFTER" ]]; then
+    echo "  PASS: the requests sidecar is byte-identical after --compact"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --compact modified the requests sidecar"
+    FAIL=$((FAIL + 1))
+fi
+check "an open request still blocks after --compact" block "waiting on you"
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

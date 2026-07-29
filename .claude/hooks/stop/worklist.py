@@ -1222,6 +1222,21 @@ def request_cli(argv, worklist):
         print(msg, file=sys.stderr)
         sys.exit(1)
 
+    def request_body(what):
+        """Join, flatten, and LENGTH-CHECK the free-text argument. Over-length
+        is REFUSED, never silently clipped: a write-time truncation would be
+        the commit-message defect one layer down, losing the tail (often the
+        crucial part) while telling the sender it was delivered."""
+        body = " ".join(argv[3:]).replace("\n", " ").strip()
+        if len(body) > REQUEST_BODY_MAX:
+            die(
+                "%s is %d chars, limit %d. REFUSED rather than silently truncated: "
+                "the tail is often the crucial part, and a clipped payload that "
+                "reports success is how findings get lost. Shorten it, or put the "
+                "detail in a file and cite the path." % (what, len(body), REQUEST_BODY_MAX)
+            )
+        return body
+
     mode = argv[0]
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if mode == "--requests":
@@ -1260,7 +1275,7 @@ def request_cli(argv, worklist):
             die("bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast" % to)
         if to != "*" and same_session(me, to):
             die("that request is addressed to yourself; use the worklist for your own items")
-        body = " ".join(argv[3:]).replace("\n", " ").strip()[:REQUEST_BODY_MAX]
+        body = request_body("request body")
         if not body:
             die("an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered")
         rid = hashlib.sha1(
@@ -1314,7 +1329,7 @@ def request_cli(argv, worklist):
         append_request_event(worklist, {"ev": "ack", "id": rid, "by": me, "at": stamp})
         print("acked #%s; it will not block you again" % rid)
         return
-    body = " ".join(argv[3:]).replace("\n", " ").strip()[:REQUEST_BODY_MAX]
+    body = request_body("answer/decline text")
     if same_session(me, r["from"]):
         die("#%s is your own request; answering yourself defeats the mechanism" % rid)
     if mode == "--answer":
