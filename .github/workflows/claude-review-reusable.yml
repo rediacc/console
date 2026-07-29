@@ -240,9 +240,19 @@ jobs:
               }
             }
           # Turn budget from the gate, scaled to diff size (50/80/140).
+          # NO SUB-AGENTS, and this is a cost fix rather than a style rule.
+          # Observed on PR #543: the model spawned THREE background review
+          # agents, ran out of turns, and posted "Waiting on the three
+          # background review agents to finish before synthesizing findings"
+          # as its final report. Nothing joins those agents, so every token
+          # they spent was thrown away and the PR got a placeholder instead
+          # of a review. A review has a fixed turn budget and no join point,
+          # so the work must happen inline: delegation is only cheaper when
+          # something collects the result.
           claude_args: |
             --model claude-sonnet-5
             --max-turns ${{ steps.gate.outputs.review_turns }}
+            --disallowed-tools Task,Agent
 
       # Without track_progress the action ran in AGENT mode, which creates no
       # tracking comment at all -- the report exists only as the model's final
