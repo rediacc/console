@@ -16,11 +16,11 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  *
  * Localized videos are published to Cloudflare R2 (`videos/solutions/<lang>/<slug>.mp4`
  * + `.vertical.mp4`, `.poster.jpg`) by the pipeline's `--publish-www` command, for the
- * 11 languages the TTS pipeline can voice with a native narrator. Bucket keys and hashes
- * are tracked in `src/data/video-manifest.json`. The 2 remaining site locales (ar/et) have
- * no localized video and fall back to `en` here at render time, so we never duplicate the
- * English files. Estonian is PERMANENT fallback: it appears in no supported-language list
- * of any model in the stack. Arabic is pending a narrator a fluent speaker has approved.
+ * all 13 site locales, each with its own native narrator. Bucket keys and hashes are
+ * tracked in `src/data/video-manifest.json`. Nothing falls back to English any more:
+ * VoxCPM2 voices every locale including Estonian, which no other model in the stack
+ * supports. Estonian's CAPTIONS remain estimated rather than force-aligned — that is a
+ * caption-precision caveat, not an audio one.
  *
  * WHY a constant lang-set (not derived from the manifest):
  *   Completeness (every slug × every VIDEO_LANG present in the manifest) is GUARANTEED
@@ -39,7 +39,7 @@ export interface SolutionVideo {
   landscape: string;
   vertical: string;
   poster: string;
-  /** The language actually used (the request, or 'en' for ar/et/tr fallback). */
+  /** The language actually used. Falls back to 'en' only if a locale is missing entirely. */
   lang: VideoLang;
 }
 

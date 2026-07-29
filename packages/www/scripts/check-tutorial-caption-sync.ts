@@ -19,6 +19,14 @@
  * each words.json from media.rediacc.com and checks the actual per-word
  * durations for real variance.
  *
+ * COROLLARY, learned the hard way: fetching the published asset means fetching whatever
+ * the CDN currently serves. Immediately after a publish that is the OLD copy, and this
+ * gate will report a large, entirely false set of failures. Run
+ * `.ci/scripts/deploy/purge-media-cache.sh` and re-check before acting on any mass
+ * failure. Once the cache is fresh, a surviving failure is real: it means the published
+ * timings themselves are flat, and the fix is to RE-ALIGN (`--subtitle --resubtitle`),
+ * not to re-publish the same files.
+ *
  * CJK (ja/zh): spaceless text means the duration-variance check alone can't
  * see inside a cue whose words collapsed to one token. The pipeline now
  * segments CJK with Intl.Segmenter (vtt-emit.ts::tokenizeForTiming) and the
@@ -28,16 +36,14 @@
  * carries <= 1 word entry has no intra-cue timing (the pre-fix data shape)
  * and fails, in addition to the flat-spread check that applies everywhere.
  *
- * ar/et/tr have real VoxCPM2 narration generated locally but NOT YET PUBLISHED, so they
- * stay out of scope here until that publish lands (see the note on AUDIO_LANGUAGES).
- * Estonian will remain a caveat even then: no forced aligner in the stack supports it, so
- * its timings come from an English-hinted alignment and are approximate. They are NOT the
- * flat estimator output this script flags (measured: 0.20s median per-word duration
- * spread, zero flat cues). Historically ar/et/tr reused English
- * audio with translated captions and deliberately strip wordTimings (real
- * per-word timing against translated text would render as scrambled
- * karaoke highlighting) -- see derive-fallback-timeline.ts. Flat timing
- * there is by design, not a bug.
+ * All 13 locales are in scope: ar/et/tr are natively narrated by VoxCPM2 and published.
+ *
+ * ESTONIAN IS A KNOWN, UNFIXABLE CAVEAT. No forced aligner in the stack supports it, so its
+ * word timings come from the estimator and ARE flat — measured across the published fleet:
+ * 394 of Estonian's cues are flat, against ~107 genuine alignment failures spread over
+ * every other locale. An earlier version of this comment claimed Estonian had "zero flat
+ * cues"; that was measured before the migration and is simply false now. Until this gate
+ * learns to exempt Estonian, its findings for `et` are expected output, not defects.
  */
 import process from 'node:process';
 import type { VideoManifest } from './lib/update-video-manifest.js';
@@ -45,21 +51,13 @@ import type { VideoManifest } from './lib/update-video-manifest.js';
 import { SITE_LOCALES } from '@rediacc/locales';
 const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 
-// Cross-reference: AUDIO_LANGUAGES in
-// private/generative/src/tutorial_tts/cli.py. Keep in sync -- this is the
-// TypeScript side of that list and can't import the Python source directly.
-// NOTE: tr/ar/et are intentionally NOT in this list YET. They now have real VoxCPM2
-// narration generated locally, but this gate fetches the PUBLISHED words.json from
-// media.rediacc.com, where they still carry the old flat fallback timings. Widening the
-// list before publishing turns this gate red on 54 combos (18 casts x 3 locales) for a
-// reason nobody can fix without publishing. Add them in the SAME change that publishes
-// the regenerated tutorial audio.
 // All 13 site locales, sourced from packages/locales rather than hand-maintained.
+//
 // This gate fetches words.json from media.rediacc.com, so it only ever sees PUBLISHED
-// state. It stayed at ten while ar/et/tr were unpublished, and briefly reported 53 flat
-// combos afterwards purely because Cloudflare was still serving pre-publish copies —
-// a stale cache, not a timings defect. If it ever fails en masse right after a publish,
-// run `.ci/scripts/deploy/purge-media-cache.sh` before believing the finding.
+// state. That has one sharp consequence: right after a publish it will report failures
+// from the pre-publish copies Cloudflare is still serving. Run
+// `.ci/scripts/deploy/purge-media-cache.sh` and re-check BEFORE believing any en-masse
+// finding — a stale cache has already produced one false 53-combo report here.
 const AUDIO_LANGUAGES = SITE_LOCALES;
 
 // 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL
