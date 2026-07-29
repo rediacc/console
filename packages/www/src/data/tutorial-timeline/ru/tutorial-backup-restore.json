@@ -93,7 +93,7 @@
         },
         {
           "startSec": 7.6,
-          "endSec": 8.16,
+          "endSec": 8.24,
           "startChar": 107,
           "endChar": 114
         },
@@ -881,7 +881,7 @@
         },
         {
           "startSec": 0.64,
-          "endSec": 1.28,
+          "endSec": 1.36,
           "startChar": 16,
           "endChar": 30
         },
@@ -902,6 +902,12 @@
           "endSec": 3.04,
           "startChar": 61,
           "endChar": 62
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 63,
+          "endChar": 69
         },
         {
           "startSec": 3.6,
@@ -965,14 +971,8 @@
         },
         {
           "startSec": 8.32,
-          "endSec": 8.4,
-          "startChar": 155,
-          "endChar": 157
-        },
-        {
-          "startSec": 8.4,
           "endSec": 8.8,
-          "startChar": 157,
+          "startChar": 155,
           "endChar": 165
         }
       ],
@@ -1054,7 +1054,7 @@
         },
         {
           "startSec": 0.72,
-          "endSec": 1.04,
+          "endSec": 1.12,
           "startChar": 15,
           "endChar": 20
         },
@@ -1362,16 +1362,16 @@
       "audioDurationSec": 9.0,
       "wordTimings": [
         {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 29,
-          "endChar": 31
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 46,
+          "endChar": 51
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 52,
-          "endChar": 53
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 83,
+          "endChar": 85
         }
       ]
     },

@@ -20,8 +20,8 @@
       "audioDurationSec": 19.224,
       "wordTimings": [
         {
-          "startSec": 4.32,
-          "endSec": 4.56,
+          "startSec": 5.44,
+          "endSec": 5.6,
           "startChar": 115,
           "endChar": 116
         },
@@ -42,6 +42,12 @@
           "endSec": 14.72,
           "startChar": 191,
           "endChar": 196
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 17.68,
+          "startChar": 238,
+          "endChar": 241
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-01-after.8281f433.mp3",
@@ -361,7 +367,7 @@
         },
         {
           "startSec": 2.56,
-          "endSec": 2.64,
+          "endSec": 2.72,
           "startChar": 36,
           "endChar": 38
         },
@@ -539,7 +545,7 @@
           "endChar": 25
         },
         {
-          "startSec": 1.52,
+          "startSec": 1.44,
           "endSec": 1.76,
           "startChar": 27,
           "endChar": 32
@@ -659,7 +665,7 @@
         },
         {
           "startSec": 6.64,
-          "endSec": 7.44,
+          "endSec": 7.52,
           "startChar": 96,
           "endChar": 108
         },
@@ -916,7 +922,7 @@
           "endChar": 45
         },
         {
-          "startSec": 2.64,
+          "startSec": 2.56,
           "endSec": 3.12,
           "startChar": 46,
           "endChar": 55

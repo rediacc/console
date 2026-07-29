@@ -27,12 +27,12 @@
         },
         {
           "startSec": 1.2,
-          "endSec": 1.52,
+          "endSec": 1.6,
           "startChar": 21,
           "endChar": 26
         },
         {
-          "startSec": 1.52,
+          "startSec": 1.6,
           "endSec": 1.68,
           "startChar": 27,
           "endChar": 29
@@ -57,9 +57,9 @@
         },
         {
           "startSec": 2.96,
-          "endSec": 3.04,
-          "startChar": 53,
-          "endChar": 54
+          "endSec": 3.36,
+          "startChar": 48,
+          "endChar": 56
         },
         {
           "startSec": 3.36,
@@ -77,7 +77,7 @@
           "startSec": 4.48,
           "endSec": 4.8,
           "startChar": 76,
-          "endChar": 81
+          "endChar": 82
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-01-after.71e520e8.mp3",
@@ -119,20 +119,6 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-02.1d088856.mp3",
       "textHash": "1d088856bd23ed849663b7f5003072fee9584024a0bdeb6b6de32e4a9a0023bb",
       "audioDurationSec": 7.08,
-      "wordTimings": [
-        {
-          "startSec": 4.64,
-          "endSec": 4.96,
-          "startChar": 29,
-          "endChar": 30
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.08,
-          "startChar": 37,
-          "endChar": 39
-        }
-      ],
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-02-after.1bbc7a8b.mp3",
       "afterAudioDurationSec": 3.072,
       "afterTextHash": "1bbc7a8b7d400113859db412a43e61d4d9ee377a45f8ae6710583a3a8efc39e9",
@@ -169,7 +155,7 @@
         },
         {
           "startSec": 2.16,
-          "endSec": 2.96,
+          "endSec": 3.04,
           "startChar": 35,
           "endChar": 50
         }
@@ -185,6 +171,12 @@
       "textHash": "8bbfbd15a5874ca0600aa799712ebce967e7850926b978129bb87eb0408e767e",
       "audioDurationSec": 2.904,
       "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 9
+        },
         {
           "startSec": 0.4,
           "endSec": 0.8,
@@ -336,7 +328,7 @@
         },
         {
           "startSec": 5.28,
-          "endSec": 5.76,
+          "endSec": 5.84,
           "startChar": 90,
           "endChar": 97
         },
@@ -455,7 +447,7 @@
         },
         {
           "startSec": 2.72,
-          "endSec": 3.12,
+          "endSec": 3.2,
           "startChar": 51,
           "endChar": 57
         },
@@ -691,6 +683,18 @@
       "textHash": "1666c234dd6eee14d28675d596838fb55641ebd1a1df7a1c4acbcda353583dbf",
       "audioDurationSec": 4.992,
       "wordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 37
+        },
         {
           "startSec": 2.48,
           "endSec": 2.72,
@@ -1137,12 +1141,12 @@
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.24,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.24,
+          "startSec": 0.16,
           "endSec": 0.48,
           "startChar": 4,
           "endChar": 7

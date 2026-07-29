@@ -62,7 +62,7 @@
           "endChar": 58
         },
         {
-          "startSec": 4.0,
+          "startSec": 3.92,
           "endSec": 4.08,
           "startChar": 60,
           "endChar": 61
@@ -81,13 +81,13 @@
         },
         {
           "startSec": 5.04,
-          "endSec": 5.28,
+          "endSec": 5.76,
           "startChar": 77,
           "endChar": 79
         },
         {
-          "startSec": 5.84,
-          "endSec": 6.4,
+          "startSec": 5.76,
+          "endSec": 6.48,
           "startChar": 81,
           "endChar": 90
         },
@@ -117,7 +117,7 @@
         },
         {
           "startSec": 8.48,
-          "endSec": 8.64,
+          "endSec": 9.04,
           "startChar": 123,
           "endChar": 129
         },
@@ -134,7 +134,7 @@
           "endChar": 136
         },
         {
-          "startSec": 9.84,
+          "startSec": 9.92,
           "endSec": 10.56,
           "startChar": 139,
           "endChar": 146
@@ -254,9 +254,15 @@
         },
         {
           "startSec": 5.76,
-          "endSec": 6.0,
+          "endSec": 6.08,
           "startChar": 70,
           "endChar": 74
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 75,
+          "endChar": 78
         }
       ]
     },
@@ -320,7 +326,7 @@
         },
         {
           "startSec": 2.4,
-          "endSec": 2.96,
+          "endSec": 3.04,
           "startChar": 56,
           "endChar": 61
         },
@@ -344,12 +350,12 @@
         },
         {
           "startSec": 4.32,
-          "endSec": 4.48,
+          "endSec": 4.56,
           "startChar": 84,
           "endChar": 88
         },
         {
-          "startSec": 4.48,
+          "startSec": 4.56,
           "endSec": 4.72,
           "startChar": 89,
           "endChar": 93
@@ -362,7 +368,7 @@
         },
         {
           "startSec": 5.12,
-          "endSec": 5.36,
+          "endSec": 5.44,
           "startChar": 102,
           "endChar": 108
         },
@@ -451,7 +457,7 @@
         },
         {
           "startSec": 0.4,
-          "endSec": 0.48,
+          "endSec": 1.12,
           "startChar": 6,
           "endChar": 10
         },
@@ -492,13 +498,13 @@
           "endChar": 47
         },
         {
-          "startSec": 3.36,
+          "startSec": 3.28,
           "endSec": 3.84,
           "startChar": 48,
           "endChar": 56
         },
         {
-          "startSec": 4.4,
+          "startSec": 4.32,
           "endSec": 4.48,
           "startChar": 58,
           "endChar": 59
@@ -516,7 +522,7 @@
           "endChar": 79
         },
         {
-          "startSec": 6.0,
+          "startSec": 5.92,
           "endSec": 6.72,
           "startChar": 83,
           "endChar": 92
@@ -624,7 +630,7 @@
           "endChar": 223
         },
         {
-          "startSec": 15.12,
+          "startSec": 15.04,
           "endSec": 15.28,
           "startChar": 224,
           "endChar": 228
@@ -681,6 +687,12 @@
           "endSec": 0.32,
           "startChar": 6,
           "endChar": 8
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.4,
+          "startChar": 28,
+          "endChar": 32
         },
         {
           "startSec": 2.56,
@@ -858,7 +870,7 @@
         },
         {
           "startSec": 6.72,
-          "endSec": 6.96,
+          "endSec": 7.04,
           "startChar": 118,
           "endChar": 123
         },
@@ -900,7 +912,7 @@
         },
         {
           "startSec": 9.6,
-          "endSec": 10.4,
+          "endSec": 10.48,
           "startChar": 161,
           "endChar": 172
         }
@@ -926,6 +938,12 @@
           "endSec": 1.36,
           "startChar": 14,
           "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 24,
+          "endChar": 27
         },
         {
           "startSec": 1.52,
@@ -1006,7 +1024,7 @@
           "endChar": 7
         },
         {
-          "startSec": 1.04,
+          "startSec": 0.96,
           "endSec": 1.36,
           "startChar": 8,
           "endChar": 13
@@ -1115,7 +1133,7 @@
         },
         {
           "startSec": 10.64,
-          "endSec": 11.04,
+          "endSec": 11.12,
           "startChar": 139,
           "endChar": 146
         }
@@ -1215,7 +1233,7 @@
           "endChar": 57
         },
         {
-          "startSec": 4.0,
+          "startSec": 3.84,
           "endSec": 4.24,
           "startChar": 63,
           "endChar": 68
@@ -1280,14 +1298,14 @@
           "endChar": 22
         },
         {
-          "startSec": 1.52,
+          "startSec": 1.44,
           "endSec": 2.32,
           "startChar": 24,
           "endChar": 35
         },
         {
           "startSec": 2.32,
-          "endSec": 3.12,
+          "endSec": 3.2,
           "startChar": 36,
           "endChar": 46
         },
@@ -1382,7 +1400,7 @@
           "endChar": 58
         },
         {
-          "startSec": 5.12,
+          "startSec": 5.04,
           "endSec": 5.28,
           "startChar": 60,
           "endChar": 64
@@ -1436,7 +1454,7 @@
         },
         {
           "startSec": 1.6,
-          "endSec": 2.0,
+          "endSec": 2.08,
           "startChar": 20,
           "endChar": 25
         },
@@ -1465,7 +1483,7 @@
           "endChar": 54
         },
         {
-          "startSec": 3.52,
+          "startSec": 3.44,
           "endSec": 3.84,
           "startChar": 55,
           "endChar": 61
@@ -1513,7 +1531,7 @@
         },
         {
           "startSec": 1.44,
-          "endSec": 1.6,
+          "endSec": 1.68,
           "startChar": 24,
           "endChar": 26
         },
@@ -1572,7 +1590,7 @@
           "endChar": 85
         },
         {
-          "startSec": 6.24,
+          "startSec": 6.08,
           "endSec": 6.64,
           "startChar": 86,
           "endChar": 94
@@ -1590,7 +1608,7 @@
           "endChar": 116
         },
         {
-          "startSec": 8.0,
+          "startSec": 7.92,
           "endSec": 8.24,
           "startChar": 117,
           "endChar": 121
@@ -1621,7 +1639,7 @@
         },
         {
           "startSec": 11.28,
-          "endSec": 11.76,
+          "endSec": 12.16,
           "startChar": 167,
           "endChar": 178
         }
@@ -1654,7 +1672,7 @@
         },
         {
           "startSec": 0.64,
-          "endSec": 1.28,
+          "endSec": 1.36,
           "startChar": 11,
           "endChar": 20
         },
@@ -1731,7 +1749,7 @@
           "endChar": 116
         },
         {
-          "startSec": 8.64,
+          "startSec": 8.56,
           "endSec": 9.12,
           "startChar": 117,
           "endChar": 122
