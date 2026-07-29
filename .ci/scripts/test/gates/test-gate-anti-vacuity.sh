@@ -102,6 +102,18 @@ REGISTRY=(
     # with the repo absent is CORRECT for it rather than vacuous, so an entry
     # here could never fail and would be exactly the dead assertion this
     # harness exists to catch. Its anti-vacuity controls are inline instead.
+    #
+    # NOT registered here either: .ci/scripts/test/gates/test-scope-baseline-attest.sh,
+    # for the same reason and measured the same way: all 75 assertions pass
+    # against the empty tree (exit 0), because it too builds every fixture it
+    # needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
+    # no git call, no gh call and no network call; the only repo files it reads
+    # are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway.
+    # Passing with the source tree absent is CORRECT for it, so an entry here
+    # would assert nothing. Its controls are inline instead, one per planted
+    # defect, plus three engine mutants run by hand during authoring (drop the
+    # `delete plan.reconciled`, drop the cheap-first mode gate, restore the
+    # one-green-run-per-sha pick) each of which flips a different case red.
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into
