@@ -624,6 +624,24 @@ say "answer
 task 7 pending "thing"
 check "no found-not-fixed list, no complaint" allow ""
 
+echo "== 44. a handover just over the limit is STALE (the limit is load-bearing) =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+# Age it past the default without touching the clock: the check reads mtime.
+HAND="$(dirname "$WL")/$(basename "${WL%.md}").handover-deadbeef.md"
+touch -d '11 minutes ago' "$HAND"
+check "an 11-minute-old handover blocks at the 10-minute limit" block "handover is stale"
+
+echo "== 45. and one just inside it does not =="
+touch -d '5 minutes ago' "$HAND"
+check "a 5-minute-old handover is fine" allow ""
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

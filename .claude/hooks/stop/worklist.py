@@ -416,7 +416,13 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
     return last_text, since_user, readable
 
 
-HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "120"))
+# TEN MINUTES, operator directive 2026-07-29. 120 was chosen to keep the write
+# cheap, which was optimising the wrong thing: compaction does not wait for a
+# convenient moment, so the only useful handover is one that is true RIGHT NOW.
+# At this limit it gets rewritten most turns, and that is the intended cost -- a
+# 560-character write against losing an operator decision, which has already
+# happened once (the autopilot App reported blocked AFTER it was created).
+HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "10"))
 HANDOVER_MIN_CHARS = 250
 HANDOVER_MAX_CHARS = 600
 
