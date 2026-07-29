@@ -183,7 +183,7 @@ function selftest(): void {
   write('de', { pick: GERMAN });
   write('fr', { pick: GERMAN });
   write('es', { pick: SPANISH });
-  let found = findCrossLocaleContamination(root);
+  const found = findCrossLocaleContamination(root);
   check(
     'detects German text sitting in the French file',
     found.map((f) => `${f.locale}<-${f.detected}:${f.key}`),

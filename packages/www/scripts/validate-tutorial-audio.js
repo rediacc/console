@@ -38,19 +38,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
 const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
-// The DEFAULT set, and deliberately still ten rather than the thirteen that
-// tutorial_tts/cli.py::AUDIO_LANGUAGES now narrates. This gate runs in CI *after*
-// `sync-media-from-r2.sh --audio-only` (ci-quality.yml), so it validates PUBLISHED
-// audio. ar/et/tr have real locally-generated narration that has not been published
-// yet, so adding them here would turn a blocking gate red for a reason that can only
-// be cleared by publishing. Widen this list in the same change that publishes them;
-// until then use `--lang <code>`, which validates any locale on demand.
-const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'];
+// All 13 site locales. This gate runs in CI *after* `sync-media-from-r2.sh --audio-only`
+// (ci-quality.yml), so it validates PUBLISHED audio — which is why it stayed at ten while
+// ar/et/tr were narrated locally but unpublished. All three are published now, so the list
+// is the full set, sourced from packages/locales rather than hand-maintained.
+// `--lang <code>` still validates any single locale on demand.
+const AUDIO_LANGUAGES = SITE_LOCALES;
 
 // --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and
 // consistent?" between a narration run and dispatching its renders. Everything this
@@ -118,8 +117,7 @@ const KNOWN_TTS_PROVIDERS = new Set(['qwen3-tts', 'voxcpm2']);
 // them; VoxCPM2 now narrates all 13 natively, so those three have their own mp3s and
 // their own word timings like every other locale. derive-fallback-timeline.ts is dormant
 // (its FALLBACK_LANGUAGES is empty) and refuses to overwrite a locale that has real
-// narration. They are excluded from the DEFAULT run above only because their audio is
-// not published to R2 yet, which is a publishing state, not a fallback.
+// narration.
 
 // The audio tree is synced to R2, not committed to git (see
 // .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally,

@@ -1,3 +1,4 @@
+import { SITE_LOCALES } from '@rediacc/locales';
 import process from 'node:process';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
 import type { Language } from '../i18n/types';
@@ -30,19 +31,7 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  * Empty (unset) falls back to the local `/assets/videos/solutions/...` path so a
  * developer previewing a freshly-generated-but-not-yet-published local file still works.
  */
-export const VIDEO_LANGS = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'it',
-  'pt',
-  'ru',
-  'ja',
-  'ko',
-  'tr',
-  'zh',
-] as const;
+export const VIDEO_LANGS = SITE_LOCALES;
 
 type VideoLang = (typeof VIDEO_LANGS)[number];
 
