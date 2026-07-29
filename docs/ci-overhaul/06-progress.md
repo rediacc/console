@@ -119,6 +119,26 @@ green ancestor sits at depth 7 must be UNREACHABLE at limit 5 and REACHED at the
 engine default. Without the control half, the case would pass on a fixture that
 proves nothing.
 
+**THE BASELINE RESOLVED, first time ever, on run `30486245900`.** With the walk
+at 20 the trail reads `623e87092 not-green` then
+**`681443ad3 full-green-attested`**, and `"baseline"` is a real object instead of
+`null`. Everything the design assumed but had never observed is now on real
+traffic: the walk reaches a green ancestor, the plan behind it attests, and the
+delta is computed from there.
+
+**And the engine measurably narrows the diff.** From that baseline the net delta
+is **2 files** (`scope-engine.cjs`, `test-scope-baseline-attest.sh`); the
+merge-base classify over the same head lists **80+**. That is the entire point
+of scoping to the last green rather than to the merge base, shown rather than
+argued.
+
+It still reports `mode: full`, for an honest reason: both files are `harness:`
+under `.ci/`. **So the recipe for the first reduced run is now known and needs no
+throwaway PR**: push a delta that touches only paths carrying no `full:` reason.
+A `docs/`-only push qualifies, because `docs` appears in no job surface. This is
+what the operator meant by "we don't need a new PR": the net delta from the green
+baseline is what is classified, not the PR's whole diff.
+
 **D5 has a live receipt.** `web-27a7cd16729b` and `rdc-334c6306793e` are now
 distinct where `RDC_TAG` was literally assigned `"$WEB_TAG"`. Changing
 `--extra` (the renet tag) changes the web tag, which closes the most likely
