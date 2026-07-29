@@ -674,7 +674,17 @@ test.describe
       // The control plane is still healthy: exactly one Ready node (NODE1).
       expect(await readyNodeCount(KC)).toBe(1);
       // The NODE1-pinned workload is unaffected by the agent leaving.
-      expect(await podRunningOn(KC, NODE1)).toBe(true);
+      //
+      // POLL, do not snapshot. This was the one single-shot liveness read in the
+      // file (the other podRunningOn call, :505, already polls to 180s) and it
+      // went red in run 30446348669 on a pod that was FINE: the reporter caught
+      // `web-6b4bdbcb87-d4v8h 0/1 ContainerCreating 3m49s ... rediacc11`, i.e.
+      // already scheduled on NODE1 and still mounting its RBD volume after the
+      // parent restart in test 5. The assertion is about where the workload runs
+      // and whether it survives the eviction, not about the exact instant the
+      // container finishes starting, so reading a transient state as a failure
+      // is the instrument being wrong, not the product.
+      expect(await poll(() => podRunningOn(KC, NODE1), 180_000)).toBe(true);
     });
 
     test('6. cluster migrate (in-Ceph fenced remap): detach → fenced re-attach → identity-rewrite migrate', async () => {
