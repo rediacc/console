@@ -479,3 +479,50 @@ CI_TEMP="$(get_temp_dir)"
 
 # Export for subprocesses
 export CI_OS CI_ARCH CI_TEMP
+
+# --- Review budget, sized to the diff -----------------------------------------
+#
+# Operator directive (2026-07-29): a flat cap of 3 is right for a small PR and
+# wrong for a consolidation. Big diffs need more passes because each pass can
+# only hold so much of them at once.
+#
+#   up to  10,000 changed lines -> 3 reviews
+#   up to  50,000               -> 5 reviews
+#   above  50,000               -> 7 reviews
+#
+# The 50k-100k band lands in the TOP bucket deliberately: a 60,000-line diff is
+# not meaningfully easier to review than a 100,000-line one, and the alternative
+# is an arbitrary fourth tier nobody asked for.
+#
+# THIS LIVES IN THE SHARED LIB ON PURPOSE. claude-review-gate.sh decides whether
+# to run a review and review-status.sh reports whether the cap is reached; the
+# two disagreeing about the cap resurrects exactly the deadlock review-status.sh
+# was written to prevent. One table, one function, both callers.
+REVIEW_CAP_TIERS='10000:3 50000:5 :7'
+
+# review_cap_for <changed-lines> -> the number of review passes allowed.
+review_cap_for() {
+    local loc="${1:-0}" tier limit bound
+    [[ "$loc" =~ ^[0-9]+$ ]] || loc=0
+    for tier in $REVIEW_CAP_TIERS; do
+        bound="${tier%%:*}"
+        limit="${tier##*:}"
+        # An empty bound is the catch-all top tier.
+        if [[ -z "$bound" || "$loc" -le "$bound" ]]; then
+            echo "$limit"
+            return 0
+        fi
+    done
+    echo 3
+}
+
+# pr_diff_loc <pr> -> additions + deletions, or 0 when it cannot be read.
+# Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the
+# conservative direction: it spends fewer review passes, never more.
+pr_diff_loc() {
+    local n
+    n=$(gh pr view "$1" --repo "$GITHUB_REPOSITORY" \
+        --json additions,deletions --jq '.additions + .deletions' 2>/dev/null) || n=0
+    [[ "$n" =~ ^[0-9]+$ ]] || n=0
+    echo "$n"
+}

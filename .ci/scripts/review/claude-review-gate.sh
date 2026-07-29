@@ -43,7 +43,12 @@ MARKER_PREFIX='<!-- claude-reviewed:'
 # and a security-critical hook file went through 5 consecutive passes each
 # finding one more edge case -- diminishing returns past a point. Cap total
 # reviews per PR; further pushes still get CI, just not another review pass.
-MAX_REVIEWS_PER_PR=3
+#
+# (2026-07-29) The cap is now SIZED TO THE DIFF: 3 passes up to 10k changed
+# lines, 5 up to 50k, 7 above. A flat 3 is right for a small PR and wrong for a
+# consolidation, where each pass can only hold so much of the diff at once.
+# REVIEW_CAP_TIERS and review_cap_for() live in ../lib/common.sh so this script
+# and review-status.sh cannot drift apart about it.
 
 # Newest marker comment's SHA. With `gh api --paginate`, --jq runs PER PAGE,
 # so stream matching bodies flat. The marker BODY is multi-line (the SHA line
@@ -372,9 +377,13 @@ case "${EVENT_NAME:-}" in
 esac
 
 review_count=$(review_report_count "$pr")
+pr_loc=$(pr_diff_loc "$pr")
+MAX_REVIEWS_PER_PR=$(review_cap_for "$pr_loc")
 if [[ "${review_count:-0}" -ge "$MAX_REVIEWS_PER_PR" ]]; then
-    emit false "$pr" "$head_sha" "" "review cap reached ($review_count/$MAX_REVIEWS_PER_PR reports already posted on this PR)"
+    emit false "$pr" "$head_sha" "" \
+        "review cap reached ($review_count/$MAX_REVIEWS_PER_PR reports already posted; cap is $MAX_REVIEWS_PER_PR for a ${pr_loc}-line diff)"
 fi
+log_info "review budget: $review_count/$MAX_REVIEWS_PER_PR used (${pr_loc} changed lines)"
 
 last_sha=$(last_marker_sha "$pr")
 if [[ -n "$last_sha" ]]; then
