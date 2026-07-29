@@ -586,6 +586,30 @@ say "answer
 task 7 in_progress "thing"
 check "an in_progress task labelled ongoing is fine" allow ""
 
+echo "== 42. a 'found, not fixed' list blocks: fix it or track it =="
+setup
+brief_now
+hand_now
+say "answer
+
+Found, not fixed: CLAUDE.md points at a dead endpoint.
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "reporting instead of fixing blocks" block "CLAUDE.md's rule is to FIX"
+
+echo "== 43. the same message without that phrase passes =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "no found-not-fixed list, no complaint" allow ""
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

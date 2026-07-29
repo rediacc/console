@@ -1292,6 +1292,18 @@ def main():
                 mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
             elif status == "pending" and word in ONGOING:
                 mislabelled.append("#%s is pending but reads '%s'" % (tid, word))
+    # CLAUDE.md rule 2 says discovery is always in scope and FIXING is the default;
+    # the "found, not fixed" list is meant as a last resort, not a parking bay. A
+    # session that ends every turn with one has converted a fixing rule into a
+    # reporting habit, which is exactly what the operator objected to.
+    if re.search(r"found,?\s+not\s+fixed", last_msg or "", re.I):
+        violations.append(
+            "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
+            "what you find: reporting it is the fallback, not the default. For each item, "
+            "either fix it now and say you did, or record it as '- [?] ... DEFAULT: <what "
+            "you will do if unanswered>' so it is tracked and time-boxed rather than "
+            "restated every turn. Then drop the phrase."
+        )
     if unstated:
         violations.append(
             "%s listed without a STATE. Every remaining item must say whether it is "
