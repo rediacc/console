@@ -2,74 +2,770 @@
   "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "8a8454fa6a16912a34194b726e0692e2a979057bd128e57ab05b786c6c791ff4",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.617466,
-      "replayEndSec": 6.370674,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.d9e3eb30.mp3",
-      "audioDurationSec": 16.927347,
-      "textHash": "d9e3eb3031398f29505093133a919c00fc82417b87626d1bc574efd86046a593",
+      "replayStartSec": 1.625253,
+      "replayEndSec": 6.458857,
       "narrationText": "الخطوة الأولى. ننشئ مفتاح SSH جديدًا من نوع ed25519. هو الخيار الحديث الافتراضي: صغير وسريع ومدعوم على نطاق واسع. تحتاج لفعل ذلك مرة واحدة فقط عبر كل خادم ستضيفه.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01-after.35e2a62c.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "35e2a62c80dce929f07bb86575c2755ab1ca3e4c7fc130ca2418834e171866ee"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-01.145d21f1.mp3",
+      "textHash": "145d21f17d6406e1476793b48e7b629d0f340c088f78f3f80d7ba7036a8cf659",
+      "audioDurationSec": 19.224,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 8.08,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.04,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.52,
+          "startChar": 70,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.64,
+          "startChar": 86,
+          "endChar": 91
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.72,
+          "startChar": 92,
+          "endChar": 98
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 99,
+          "endChar": 102
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.56,
+          "startChar": 103,
+          "endChar": 107
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 13.12,
+          "startChar": 108,
+          "endChar": 112
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 14.96,
+          "startChar": 114,
+          "endChar": 119
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.68,
+          "startChar": 120,
+          "endChar": 124
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.8,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 16.96,
+          "startChar": 139,
+          "endChar": 142
+        },
+        {
+          "startSec": 16.96,
+          "endSec": 17.68,
+          "startChar": 143,
+          "endChar": 146
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-01-after.a595f497.mp3",
+      "afterAudioDurationSec": 5.304,
+      "afterTextHash": "a595f49773bb7c3db3f36e8a170a6efb1c9bc5698fdd4a525a605a67a9235011",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 9,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.44,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.32,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 47,
+          "endChar": 53
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.370674,
-      "replayEndSec": 13.176828,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.1290a416.mp3",
-      "audioDurationSec": 10.762449,
-      "textHash": "1290a4169f720cf49ab3dbb01ad781337534ebf7be0f1bbf3afc3aa4873ce986",
+      "replayStartSec": 6.458857,
+      "replayEndSec": 13.298492,
       "narrationText": "الخطوة الثانية. ننسخ المفتاح العام إلى الخادم باستخدام ssh-copy-id. تُطلب كلمة مرور الخادم لآخر مرة. بعد ذلك، لن يكون التحقق بكلمة المرور مطلوبًا لذلك الخادم.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02-after.7acc6fe5.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "7acc6fe541a4697c14eeb95a1728982645fdc02cb6c5350d285cfdfbbf89cdf3"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-02.89c8e095.mp3",
+      "textHash": "89c8e0958cd6c5ce3ae1509deac4efac9c530692e8ff9165acbd706f0f590b62",
+      "audioDurationSec": 16.68,
+      "wordTimings": [
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.96,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 46,
+          "endChar": 54
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.48,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 68,
+          "endChar": 73
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.32,
+          "startChar": 84,
+          "endChar": 90
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 91,
+          "endChar": 95
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.16,
+          "startChar": 101,
+          "endChar": 104
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.48,
+          "startChar": 105,
+          "endChar": 108
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.28,
+          "startChar": 110,
+          "endChar": 112
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.6,
+          "startChar": 113,
+          "endChar": 117
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.16,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.72,
+          "startChar": 125,
+          "endChar": 130
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.2,
+          "startChar": 131,
+          "endChar": 137
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 16.08,
+          "startChar": 138,
+          "endChar": 145
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.56,
+          "startChar": 151,
+          "endChar": 157
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-02-after.1298eeea.mp3",
+      "afterAudioDurationSec": 7.872,
+      "afterTextHash": "1298eeeac30a0a54d59ca417341b351e63b8756438525b8d77916ed5b3e327a8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 3.2,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4.08,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 43,
+          "endChar": 49
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 50,
+          "endChar": 54
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.68,
+          "startChar": 55,
+          "endChar": 63
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.176828,
-      "replayEndSec": 19.095233,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.31167cec.mp3",
-      "audioDurationSec": 8.672653,
-      "textHash": "31167cec061931d5a906821feda37668ab6bdccf63f10e0b9923b326670b8646",
+      "replayStartSec": 13.298492,
+      "replayEndSec": 19.181151,
       "narrationText": "الخطوة الثالثة. نسجّل المفتاح مع الأداة. من الآن فصاعدًا، تتحقق كل أوامر الأداة باستخدام هذا المفتاح. لا كلمات مرور، لا موجّهات تفاعلية.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03-after.aab5eaf4.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "aab5eaf4cc5f2ab1c0f01588cf3741c1c7611f7bf1953a3f00f432e0eff0cefa"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-03.fcfed43b.mp3",
+      "textHash": "fcfed43becc4505acd3ba6e24ec09b938b38f39247ddb3dd834bdf11f049d666",
+      "audioDurationSec": 15.864,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.68,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.32,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.36,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 10.08,
+          "startChar": 80,
+          "endChar": 88
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.4,
+          "startChar": 89,
+          "endChar": 92
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 12.16,
+          "startChar": 93,
+          "endChar": 100
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.24,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.8,
+          "startChar": 105,
+          "endChar": 110
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.28,
+          "startChar": 111,
+          "endChar": 115
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.32,
+          "startChar": 117,
+          "endChar": 119
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.88,
+          "startChar": 120,
+          "endChar": 127
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.76,
+          "startChar": 128,
+          "endChar": 135
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/tutorial-ssh-keys-03-after.0303d0a0.mp3",
+      "afterAudioDurationSec": 2.592,
+      "afterTextHash": "0303d0a0cfe330d8ffd79c3852049a4b966b4bf9f7c4a0ef751f378a94b28f9c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.04,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.76,
+          "startChar": 9,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 20,
+          "endChar": 26
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/intro.81ac38a9.mp3",
-      "textHash": "81ac38a9650ac8e79d9c844ba6f5fa737e33c91eaaf57e93d16d3fe7e64b476c",
-      "audioDurationSec": 8.437551,
-      "narrationText": "حسنًا! لنُعدّ مفاتيح SSH حتى تتمكن الأداة من الوصول إلى خوادمك بدون كلمات مرور."
+      "textHash": "5f75290107a093c7e8382a27f2cd384a3162fee2906beb581815b3d60ccb9fe9",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/intro.5f752901.mp3",
+      "narrationText": "حسنًا! لنُعدّ مفاتيح SSH حتى تتمكن الأداة من الوصول إلى خوادمك بدون كلمات مرور.",
+      "audioDurationSec": 9.144,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.6,
+          "startChar": 35,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.88,
+          "startChar": 74,
+          "endChar": 78
+        }
+      ]
     },
     {
       "id": "three-steps-generate-copy-register",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/three-steps-generate-copy-register.a1b96f22.mp3",
-      "textHash": "a1b96f221c5f062461b2362c843ada618e4d5715b9befcfb2d9f4142c0911699",
-      "audioDurationSec": 10.44898,
-      "narrationText": "ثلاث خطوات إجمالًا. أنشئ مفتاحًا على حاسوبك، انسخه إلى الخادم، ثم سجّله مع أداة سطر الأوامر. خطوتان منها تفعلهما مرة واحدة فقط."
+      "textHash": "de57b97b7a543c8c929a1af9bc167daae1a21399ef54c183b28f17bcbe0ca4ba",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/three-steps-generate-copy-register.de57b97b.mp3",
+      "narrationText": "ثلاث خطوات إجمالًا. أنشئ مفتاحًا على حاسوبك، انسخه إلى الخادم، ثم سجّله مع أداة سطر الأوامر. خطوتان منها تفعلهما مرة واحدة فقط.",
+      "audioDurationSec": 15.072,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 3.6,
+          "startChar": 11,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 7.36,
+          "startChar": 55,
+          "endChar": 61
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.2,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.76,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.16,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.64,
+          "startChar": 84,
+          "endChar": 91
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.4,
+          "startChar": 93,
+          "endChar": 99
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.88,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.52,
+          "startChar": 105,
+          "endChar": 112
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.6,
+          "startChar": 113,
+          "endChar": 116
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.4,
+          "startChar": 117,
+          "endChar": 122
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.8,
+          "startChar": 123,
+          "endChar": 126
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/next-tutorial.fb33610e.mp3",
-      "textHash": "fb33610ec7ff47b1fd6aa3a49928a3154448169026997a85b3271b9f79a68f98",
-      "audioDurationSec": 6.765714,
-      "narrationText": "تم تسجيل المفتاح والأداة جاهزة. في الدرس التالي، نضيف أول خادم لك."
+      "textHash": "ef7a4c073e56483116fecef7364d93c080b16c794762e6e4fa4da494e0024e3f",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-ssh-keys/next-tutorial.ef7a4c07.mp3",
+      "narrationText": "تم تسجيل المفتاح والأداة جاهزة. في الدرس التالي، نضيف أول خادم لك.",
+      "audioDurationSec": 6.432,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 9,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 17,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.24,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.84,
+          "startChar": 63,
+          "endChar": 65
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "7c59d78cc7181b2b47de4a8d2c0ff9450a35ca08e2e8a9764fd8ef07f9811b73"
+  ]
 }

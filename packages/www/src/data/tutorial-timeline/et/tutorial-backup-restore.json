@@ -2,126 +2,724 @@
   "cast": "/assets/tutorials/tutorial-backup-restore.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "ce4f4634b2b9e251bfc33117c0c0d24da8811411d9d8fe1068d103e8ec94f8ff",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409089,
-      "replayEndSec": 6.555802,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01.96283916.mp3",
-      "audioDurationSec": 14.106122,
-      "textHash": "962839166a20ad3f71b480b720dad61320969416a772cf7364e7c7f2dc6a1374",
+      "replayStartSec": 2.40238,
+      "replayEndSec": 5.948859,
       "narrationText": "Esimene samm. Impordime olemasoleva rclone konfiguratsiooni. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi -- kui kasutad seda juba, saad sama konfiguratsiooni otse importida.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01-after.56b948b9.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "56b948b90c846e08ed748c46dcca8ed6601c82923c09c0bde277dd5619a72560"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-01.f3449b5e.mp3",
+      "textHash": "f3449b5efef746b89f31f1ec5f476ff1c4346c792e01ca74a56bfb023d2322d6",
+      "audioDurationSec": 12.024,
+      "wordTimings": [
+        {
+          "startSec": 6.0,
+          "endSec": 6.4,
+          "startChar": 90,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.52,
+          "startChar": 104,
+          "endChar": 111
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.16,
+          "startChar": 156,
+          "endChar": 160
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.4,
+          "startChar": 161,
+          "endChar": 165
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.52,
+          "startChar": 166,
+          "endChar": 182
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-01-after.d14461f0.mp3",
+      "afterAudioDurationSec": 5.952,
+      "afterTextHash": "d14461f02657c26286107cdd7bb89c7c6fd799e53f367dd7e30cb020a1e489f1",
+      "afterWordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 3.84,
+          "startChar": 13,
+          "endChar": 24
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.555802,
-      "replayEndSec": 10.251839,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02.b535c5a9.mp3",
-      "audioDurationSec": 6.269388,
-      "textHash": "b535c5a97755de8f98a6efc4974be3c38c0b4502c98c092dcf04edaef0b5a47e",
+      "replayStartSec": 5.948859,
+      "replayEndSec": 9.401196,
       "narrationText": "Loetleme salvestused, millest CLI nüüd teab. Iga salvestus on sihtkoht, kuhu saame varukoopiad tõugata.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02-after.29592aab.mp3",
-      "afterAudioDurationSec": 2.507755,
-      "afterTextHash": "29592aab4a9db187110d68c26016c873a6026e79b7e1b326be0177770bc73da0"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-02.106537d7.mp3",
+      "textHash": "106537d77c1d2fd966b8a6c389dd2b1d00587a09f52bbda3f3699f5eade8a738",
+      "audioDurationSec": 8.184,
+      "wordTimings": [
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.12,
+          "startChar": 49,
+          "endChar": 58
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.68,
+          "startChar": 62,
+          "endChar": 71
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 77,
+          "endChar": 82
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.68,
+          "startChar": 83,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 95,
+          "endChar": 103
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-02-after.6392b597.mp3",
+      "afterAudioDurationSec": 3.072,
+      "afterTextHash": "6392b5972baefed956b6ea94e1330e0a6221abde96f53ab5c46d44344581ef0a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.52,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 20,
+          "endChar": 32
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.251839,
-      "replayEndSec": 24.484571,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03.22e5440c.mp3",
-      "audioDurationSec": 14.759184,
-      "textHash": "22e5440c87a66cbaf7345cdcfaab93f9816108284ef8aafc445f88776c180c6a",
+      "replayStartSec": 9.401196,
+      "replayEndSec": 15.183859,
       "narrationText": "Teine samm. Tõukame täieliku varukoopia. Terve repositoorium -- rakendus, andmebaas, failid, konfiguratsioon -- laaditakse üles. Kuna repositoorium on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud. Lisavõtme haldamine pole vajalik.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03-after.e404cb74.mp3",
-      "afterAudioDurationSec": 4.989388,
-      "afterTextHash": "e404cb746cb585ed4b97a75875f54dc07bbb4035d183629251322d62fa02cbf4"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-03.87de0c21.mp3",
+      "textHash": "87de0c21f15d8861f840429c2351090f7d50090d06ff46a982fbd4752d11afb4",
+      "audioDurationSec": 14.592,
+      "wordTimings": [
+        {
+          "startSec": 7.6,
+          "endSec": 8.16,
+          "startChar": 112,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.04,
+          "startChar": 129,
+          "endChar": 132
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 177,
+          "endChar": 182
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.92,
+          "startChar": 183,
+          "endChar": 193
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.48,
+          "startChar": 194,
+          "endChar": 207
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.36,
+          "startChar": 208,
+          "endChar": 217
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.76,
+          "startChar": 218,
+          "endChar": 227
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.08,
+          "startChar": 228,
+          "endChar": 235
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.4,
+          "startChar": 235,
+          "endChar": 241
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-03-after.6aea3ae5.mp3",
+      "afterAudioDurationSec": 5.952,
+      "afterTextHash": "6aea3ae50fc9227810ace65e25f03d3c5812c32987160d664f617d10a188f8ea",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 47,
+          "endChar": 49
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 24.484571,
-      "replayEndSec": 31.133919,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04.fa462f64.mp3",
-      "audioDurationSec": 8.045714,
-      "textHash": "fa462f6411e41c5947ad664161ad83be00028bcba611bad1bf6edca098b0f893",
+      "replayStartSec": 15.183859,
+      "replayEndSec": 20.72372,
       "narrationText": "Loetleme sellel salvestusel saadaolevad varukoopiad. Edaspidi on taastamine uuel serveril üks käsk -- CLI repo pull. Samad andmed, samad konteinerid, erinev masin.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04-after.254ba819.mp3",
-      "afterAudioDurationSec": 4.597551,
-      "afterTextHash": "254ba8197c7a576c588cd74f04d620469d68c771a7c46a989517fc9b065c1299"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-04.56de61d8.mp3",
+      "textHash": "56de61d8839075cef256c1cd6a59857ce19cc7178d240610a9b6b65349e0f8f6",
+      "audioDurationSec": 11.712,
+      "wordTimings": [
+        {
+          "startSec": 3.2,
+          "endSec": 3.92,
+          "startChar": 53,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.8,
+          "startChar": 65,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 106,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 117,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 123,
+          "endChar": 130
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 131,
+          "endChar": 136
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.96,
+          "startChar": 137,
+          "endChar": 149
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-04-after.87b80c66.mp3",
+      "afterAudioDurationSec": 4.992,
+      "afterTextHash": "87b80c665f5e6d4a25df396c735e174874d18f70b4f34f634217eab7e758d13f",
+      "afterWordTimings": [
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 40,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 48,
+          "endChar": 53
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "replayStartSec": 31.133919,
-      "replayEndSec": 39.135694,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05.07efe4fe.mp3",
-      "audioDurationSec": 9.16898,
-      "textHash": "07efe4fe6e13027f63d4d9fcbb8ecb4c06aefc29373ecc853d4669a82099b65f",
+      "replayStartSec": 20.72372,
+      "replayEndSec": 26.052361,
       "narrationText": "Nüüd taastamise tõestus. Võta kõigepealt repository võrguühenduseta: peata teenused ja ühenda krüptitud maht lahti. Rakendus on sellelt masinalt kadunud.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05-after.39a09453.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "39a09453e5d43a927cfaa5eea2841bb86a2c80222a861fc391a4cafdcc117d33"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-05.a1988c75.mp3",
+      "textHash": "a1988c757174ecf91408a4c94b023a53a0bb55ebeb9f69eac15a73ce2381cd50",
+      "audioDurationSec": 11.232,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 17
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 84,
+          "endChar": 86
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 87,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 94,
+          "endChar": 103
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 9.92,
+          "startChar": 125,
+          "endChar": 127
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-05-after.467c05d2.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "467c05d21a7ccbeeaff4e0b5627357f0cad754de384c8a174a2499d4fc19cabe",
+      "afterWordTimings": [
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 36,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 44,
+          "endChar": 48
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "replayStartSec": 39.135694,
-      "replayEndSec": 48.126162,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06.a2eb07bf.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "a2eb07bfdb282b5f323134db7f4e725e8b95fa10f327eab80489f634a03950b0",
+      "replayStartSec": 26.052361,
+      "replayEndSec": 32.749903,
       "narrationText": "Ja tõmba varukoopia otse salvestusruumist tagasi. Repo pull käsk tõmbab image'i, kontrollib selle terviklikkust ja paigutab selle täpselt sinna, kus see oli.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06-after.568e143c.mp3",
-      "afterAudioDurationSec": 4.597551,
-      "afterTextHash": "568e143cd7c720ed15abf1dfa832209c0006c7e3ff46de9d81809a5d53fdefab"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-06.6d0cf087.mp3",
+      "textHash": "6d0cf087e0ed08ae5bb5fa298fc7d870675e2423fe351941ed16b4974bd6e0ae",
+      "audioDurationSec": 7.872,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.08,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.56,
+          "startChar": 25,
+          "endChar": 41
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.76,
+          "startChar": 92,
+          "endChar": 94
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-06-after.05078d5c.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "05078d5c5f797198d33046026fbf917e8e7e6be65238bfe478687ac69c3b6413",
+      "afterWordTimings": [
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 59,
+          "endChar": 66
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "replayStartSec": 48.126162,
-      "replayEndSec": 54.070366,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07.66a28bad.mp3",
-      "audioDurationSec": 7.810612,
-      "textHash": "66a28bad256b1579461240f574d6850bf847c212f6b7be4774ab8e5056396e3a",
+      "replayStartSec": 32.749903,
+      "replayEndSec": 37.020579,
       "narrationText": "Ühenda see uuesti ja repository on taastatud. Push, list, pull, see on kogu varukoopia lugu.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07-after.91a561e6.mp3",
-      "afterAudioDurationSec": 4.127347,
-      "afterTextHash": "91a561e6f5145a8fad630d31563162356613c13fb928d0d2829c10d09064b32f"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-07.b081e488.mp3",
+      "textHash": "b081e488f09cc4ea9ba1b1e628bedac420c35770558883e4ec85b4806c1ad220",
+      "audioDurationSec": 5.304,
+      "wordTimings": [
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 68,
+          "endChar": 70
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/tutorial-backup-restore-07-after.dabe1941.mp3",
+      "afterAudioDurationSec": 4.032,
+      "afterTextHash": "dabe1941b38876cb95bbcb2a880604f628f6c3281c2883bd77e22aeddfcd591b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 11,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 16,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 25,
+          "endChar": 31
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/intro.503c9ebf.mp3",
-      "textHash": "503c9ebff9e3836287d03b899f7adcd72d2f1ccb197876ae43d727ed3b6f9a56",
-      "audioDurationSec": 10.684082,
-      "narrationText": "Sinu rakendus on töös, nii et veendume, et sa seda kunagi ei kaota! Selles õpetuses tõukame terve repositooriumi välisesse salvestusse ja tõmbame selle nõudmisel tagasi."
+      "textHash": "9d5abf00c93de8a2a848125182e6c38f0f356b18597ff708e6f0b56bc4667460",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/intro.9d5abf00.mp3",
+      "narrationText": "Sinu rakendus on töös, nii et veendume, et sa seda kunagi ei kaota! Selles õpetuses tõukame terve repositooriumi välisesse salvestusse ja tõmbame selle nõudmisel tagasi.",
+      "audioDurationSec": 10.584,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 5,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 68,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 75,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.92,
+          "startChar": 84,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.4,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.36,
+          "startChar": 98,
+          "endChar": 112
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.84,
+          "startChar": 113,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.56,
+          "startChar": 135,
+          "endChar": 137
+        }
+      ]
     },
     {
       "id": "three-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/three-steps.162fbbc2.mp3",
-      "textHash": "162fbbc26755b4cf70c29a0ac51c08d4f68d58181b2c702ff03439afdad953bd",
-      "audioDurationSec": 8.045714,
-      "narrationText": "Varundamine ja taastamine taandub kolmele sammule. Seadista salvestuse pakkuja, tõuka varukoopia ja taasta see, kui vaja."
+      "textHash": "d1650eae742d246d7354e750235bb96c337a87542d7e267f2f095d7e19b8e9f1",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/three-steps.d1650eae.mp3",
+      "narrationText": "Varundamine ja taastamine taandub kolmele sammule. Seadista salvestuse pakkuja, tõuka varukoopia ja taasta see, kui vaja.",
+      "audioDurationSec": 7.872,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.4,
+          "startChar": 34,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 42,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 51,
+          "endChar": 59
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 83,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.16,
+          "startChar": 90,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.8,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.2,
+          "startChar": 107,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.76,
+          "startChar": 112,
+          "endChar": 120
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/next-tutorial.20e5f875.mp3",
-      "textHash": "20e5f875c6f72890c60e38d35874035356ff0ed2005b44cd2f34eddef80714bd",
-      "audioDurationSec": 5.146122,
-      "narrationText": "Sinu andmed on turvalised ja masinate vahel kaasaskantavad. Kohtumiseni järgmises!"
+      "textHash": "2fe4f011475bef1884ec005ac7839785b52ff75876632148024bf2c250a303da",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-backup-restore/next-tutorial.2fe4f011.mp3",
+      "narrationText": "Sinu andmed on turvalised ja masinate vahel kaasaskantavad. Kohtumiseni järgmises!",
+      "audioDurationSec": 4.512,
+      "wordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 60,
+          "endChar": 71
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 72,
+          "endChar": 82
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "8e4da959574e05a9d4a62c6ea837febeed7c3fb576f0882d8d240b1941f41754"
+  ]
 }

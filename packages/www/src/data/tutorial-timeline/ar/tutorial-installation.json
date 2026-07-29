@@ -2,75 +2,783 @@
   "cast": "/assets/tutorials/tutorial-installation.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "b27cda8ad05395ae44b2224d86e263b2367b66919fa4baedfbe81dd57d5f20ef",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.614947,
-      "replayEndSec": 8.543153,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01.259d62a6.mp3",
-      "audioDurationSec": 19.565714,
-      "textHash": "259d62a6337ffd068912f1851d4b7f2c830494dfc8093acaab5f7b4e0613a8a3",
+      "replayStartSec": 1.624699,
+      "replayEndSec": 8.885041,
       "narrationText": "أولًا، نتأكد من وجود أداة CLI في المسار. تشغيل الأداة مع علامة الإصدار يطبع الإصدار المثبت ويؤكد اكتمال التثبيت بنجاح.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01-after.9358f2b7.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "9358f2b793833ef9623f4d2367c6cef4d028559be0594f2f02d22aa3cf4fdcbb"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-01.2eb3d0c4.mp3",
+      "textHash": "2eb3d0c4d359d9ba3030c1c2ccd8fa0bebe0d1a4c15eef6371d5d307dc980974",
+      "audioDurationSec": 12.84,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.36,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.68,
+          "startChar": 41,
+          "endChar": 46
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 47,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.24,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.72,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 63,
+          "endChar": 70
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.88,
+          "startChar": 76,
+          "endChar": 83
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.52,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 12.16,
+          "startChar": 104,
+          "endChar": 111
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.72,
+          "startChar": 112,
+          "endChar": 117
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-01-after.bedd3172.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "bedd31721a21f2b1b974ac38c142607dd8553aa78e8f178c4d1c997ea42578e5",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 2.72,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 33,
+          "endChar": 39
+        }
+      ]
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.543153,
-      "replayEndSec": 10.766661,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02.b3ec043b.mp3",
-      "audioDurationSec": 6.347755,
-      "textHash": "b3ec043bddee40e09a9c7ae8ba7b8ee800901d4a9cc795a9922c8ad1fb5b68db",
+      "replayStartSec": 8.885041,
+      "replayEndSec": 10.904926,
       "narrationText": "بعد ذلك نشغّل الفحص الصحي للأداة. يمر على المتطلبات التي تحتاجها الأداة، وهي Node وSSH وما سواها، ويُبلّغ عن أي ثغرات. تقرير نظيف يعني أنك مستعد لإضافة خادم.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02-after.ba4b38e7.mp3",
-      "afterAudioDurationSec": 1.880816,
-      "afterTextHash": "ba4b38e751086e310a48c5ccf1475f848a0a1e5c6b983900cf9ff8cbba6934e4"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-02.0181b7e7.mp3",
+      "textHash": "0181b7e752e7effe0bd0e3f44990d26bc43ed46f28570714003e3ffd28798815",
+      "audioDurationSec": 18.12,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.32,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 4.16,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.28,
+          "startChar": 42,
+          "endChar": 51
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.4,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.0,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.16,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.84,
+          "startChar": 106,
+          "endChar": 108
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 109,
+          "endChar": 111
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.48,
+          "startChar": 112,
+          "endChar": 117
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 14.24,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.72,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.76,
+          "startChar": 130,
+          "endChar": 134
+        },
+        {
+          "startSec": 15.92,
+          "endSec": 16.16,
+          "startChar": 135,
+          "endChar": 138
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.64,
+          "startChar": 139,
+          "endChar": 144
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 17.44,
+          "startChar": 145,
+          "endChar": 151
+        },
+        {
+          "startSec": 17.44,
+          "endSec": 18.0,
+          "startChar": 152,
+          "endChar": 156
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-installation/tutorial-installation-02-after.4c923734.mp3",
+      "afterAudioDurationSec": 4.032,
+      "afterTextHash": "4c923734a2329541583b577fee7bc8b877aeb15193c238dd712661224e0ed53b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 22,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.84,
+          "startChar": 27,
+          "endChar": 35
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/intro.622bab70.mp3",
-      "textHash": "622bab701622b2f408ab73ae313a4bd1e0ad7f3fc2610fbe9310c0ab414bfe36",
-      "audioDurationSec": 3.787755,
-      "narrationText": "حسنًا! لنُثبّت أداة سطر الأوامر على حاسوبك."
+      "textHash": "0694b127866e772ced884d74f7e71f577e935d3401889f10b0b3624f4553c711",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/intro.0694b127.mp3",
+      "narrationText": "حسنًا! لنُثبّت أداة سطر الأوامر على حاسوبك.",
+      "audioDurationSec": 4.824,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 7,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.72,
+          "startChar": 36,
+          "endChar": 42
+        }
+      ]
     },
     {
       "id": "three-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/three-steps.1e03c43c.mp3",
-      "textHash": "1e03c43cfdc5f9a4e55595ff1ebc78a01febe8a2c2968fa07c69cb7232cb2b8b",
-      "audioDurationSec": 7.000816,
-      "narrationText": "ثلاث خطوات. افتح صفحة التثبيت، اختر نظام التشغيل، ثم الصق الأمر في طرفيتك."
+      "textHash": "48725690d60c410335db3aa41f71dc801f5e6d87a0381b5e31e2f64171ecc2f6",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/three-steps.48725690.mp3",
+      "narrationText": "ثلاث خطوات. افتح صفحة التثبيت، اختر نظام التشغيل، ثم الصق الأمر في طرفيتك.",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 5.52,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 8.24,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 58,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.44,
+          "startChar": 67,
+          "endChar": 74
+        }
+      ]
     },
     {
       "id": "open-install-page",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/open-install-page.d928832f.mp3",
-      "textHash": "d928832f598206f6b018ced77b4f3b13b28243bd633272a9f61cf5ebddd9f80b",
-      "audioDurationSec": 7.235918,
-      "narrationText": "توجّه إلى صفحة التثبيت ومرّر إلى قسم التثبيت السريع. سيُولّد الأمر المناسب لأي نظام أنت عليه."
+      "textHash": "6a01f1d2fd6e68f0ad5ec8d4b3d9febb691f432d4410d1d7ce0089bebfff4331",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/open-install-page.6a01f1d2.mp3",
+      "narrationText": "توجّه إلى صفحة التثبيت ومرّر إلى قسم التثبيت السريع. سيُولّد الأمر المناسب لأي نظام أنت عليه.",
+      "audioDurationSec": 9.792,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.8,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 3.36,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.56,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 6.72,
+          "startChar": 53,
+          "endChar": 60
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.92,
+          "startChar": 67,
+          "endChar": 74
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.48,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.6,
+          "startChar": 88,
+          "endChar": 92
+        }
+      ]
     },
     {
       "id": "laptop-vs-server",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/laptop-vs-server.d8722404.mp3",
-      "textHash": "d8722404dd854e6f045e400f54ce6c3b560ae8bf69a245a9ceabe3276ad0ccd6",
-      "audioDurationSec": 11.72898,
-      "narrationText": "تعيش أداة سطر الأوامر على حاسوبك. يُشغّل الخادم مكوّنًا منفصلًا اسمه renet، تُجهّزه الأداة وتُديره عبر SSH، فلا تحتاج أبدًا إلى تسجيل الدخول يدويًا."
+      "textHash": "8bfd4c5d75731e88ea2863bc876902aeda30952528b693db86a124d4d6bf5074",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/laptop-vs-server.8bfd4c5d.mp3",
+      "narrationText": "تعيش أداة سطر الأوامر على حاسوبك. يُشغّل الخادم مكوّنًا منفصلًا اسمه renet، تُجهّزه الأداة وتُديره عبر SSH، فلا تحتاج أبدًا إلى تسجيل الدخول يدويًا.",
+      "audioDurationSec": 14.904,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 14,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 4.32,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.56,
+          "startChar": 64,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.88,
+          "startChar": 84,
+          "endChar": 90
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.92,
+          "startChar": 91,
+          "endChar": 98
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.8,
+          "startChar": 103,
+          "endChar": 106
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.84,
+          "startChar": 108,
+          "endChar": 111
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.48,
+          "startChar": 112,
+          "endChar": 117
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 118,
+          "endChar": 123
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.12,
+          "startChar": 124,
+          "endChar": 127
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.4,
+          "startChar": 134,
+          "endChar": 140
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.64,
+          "startChar": 141,
+          "endChar": 148
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/next-tutorial.65708b9b.mp3",
-      "textHash": "65708b9b3733b4c02ceff79eb8529f02aa371d67e7feadeee02ea9b30a463503",
-      "audioDurationSec": 7.000816,
-      "narrationText": "اكتمل التثبيت. في الدرس التالي، سنُعدّ مفتاح SSH حتى تتمكن الأداة من الوصول إلى خوادمك."
+      "textHash": "ede58aae0b90f68244f6791d7539ca17cd92228b2a4bb090d7cbd11e1a95bf35",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-installation/next-tutorial.ede58aae.mp3",
+      "narrationText": "اكتمل التثبيت. في الدرس التالي، سنُعدّ مفتاح SSH حتى تتمكن الأداة من الوصول إلى خوادمك.",
+      "audioDurationSec": 10.104,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 39,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.0,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.96,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.76,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.24,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.48,
+          "startChar": 66,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.04,
+          "startChar": 69,
+          "endChar": 75
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.84,
+          "startChar": 80,
+          "endChar": 86
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "fecd13e678ecda99a050c54fb7a93e19db3ae05db3667c2e41556029445213b7"
+  ]
 }

@@ -2,74 +2,428 @@
   "cast": "/assets/tutorials/tutorial-add-server.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "de5cd1292ac7356dad60e07ad43f0866fef379ed17accf100925bf4fcc1e305a",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.629299,
-      "replayEndSec": 8.575098,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-01.bc84d482.mp3",
-      "audioDurationSec": 23.484082,
-      "textHash": "bc84d4826f274bc7d58637ed51ef779b508bbafde734bd3dab6c5df041b6291a",
+      "replayStartSec": 1.627855,
+      "replayEndSec": 7.25092,
       "narrationText": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-01-after.a9c445a7.mp3",
-      "afterAudioDurationSec": 3.395918,
-      "afterTextHash": "a9c445a7ca9c63b5af3741f163384f2d5117e9c16fede770589acd8d811d26e8"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-01.8c185fba.mp3",
+      "textHash": "8c185fba10f80e6750399b2d87b70878e7633ac6e6d12e04a3498ddd89e45de3",
+      "audioDurationSec": 11.4,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 3.04,
+          "startChar": 9,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.28,
+          "startChar": 82,
+          "endChar": 84
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-01-after.f4fbb8b2.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "f4fbb8b29376f18b2e7f07c713db245c9213ff04250afd23fe6b9a5a92e25cee",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        }
+      ]
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 8.575098,
-      "replayEndSec": 19.204906,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02.f46381ee.mp3",
-      "audioDurationSec": 4.989388,
-      "textHash": "f46381ee93a41c0af307819769a24cec82dd4658c8a87ac16ca60e113dc9fcb3",
+      "replayStartSec": 7.25092,
+      "replayEndSec": 13.396171,
       "narrationText": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02-after.e61cf6bb.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "e61cf6bb3d2db75c4cb2376c7c743732859c17695ec4cc5d9136380ee6561188"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-02.c6b98fae.mp3",
+      "textHash": "c6b98faeb66c1c9de7e9a667a1b4826b7c99bda7ccb85fe64f6a5c321413e1a2",
+      "audioDurationSec": 12.84,
+      "wordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 19,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.56,
+          "startChar": 57,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.04,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.6,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.72,
+          "startChar": 76,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 90,
+          "endChar": 95
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.56,
+          "startChar": 96,
+          "endChar": 103
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 10.0,
+          "startChar": 104,
+          "endChar": 118
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.56,
+          "startChar": 119,
+          "endChar": 131
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.36,
+          "startChar": 132,
+          "endChar": 145
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-02-after.786f52a1.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "786f52a1ec166ee4e9a0c80b32b8605541510d694dec2c8e2caa7c1d2df30f6c",
+      "afterWordTimings": [
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.48,
+          "startChar": 48,
+          "endChar": 60
+        }
+      ]
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 19.204906,
-      "replayEndSec": 21.464422,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-03.5b592319.mp3",
-      "audioDurationSec": 19.565714,
-      "textHash": "5b592319a41bb6a3cf71ace99fcef1d5dcbb0cb1ee11ecac6d7782ed0e27ffb8",
+      "replayStartSec": 13.396171,
+      "replayEndSec": 15.698213,
       "narrationText": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-03-after.25e2c3cd.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "25e2c3cde50a4cd8a3be22567c1731dd2ba3893dc686f407fcdad5f720a106d6"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-03.ae297de5.mp3",
+      "textHash": "ae297de5de34e80ea3b1dc098ff4355427229285d771eeefbebd4a2180be6ac2",
+      "audioDurationSec": 11.544,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 34
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-add-server/tutorial-add-server-03-after.63724e4a.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "63724e4ad3c72d7ec3cf7d740f372ce3b156690b1c81fe248a5292913efd371b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.32,
+          "startChar": 17,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 44,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 47,
+          "endChar": 57
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/intro.dd1a0d33.mp3",
-      "textHash": "dd1a0d3391c2e74ca7e7451e1be4b2293d498e1dd6104ba9f9bc3d8cbecfad9d",
-      "audioDurationSec": 4.04898,
-      "narrationText": "Olgu! Lisame su esimese serveri. See võtab kaks käsku ja umbes minuti."
+      "textHash": "f90a2ac85311cb260e5655a6fe77324a4db3ed0296c000ee641492f75adcd0e0",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/intro.f90a2ac8.mp3",
+      "narrationText": "Olgu! Lisame su esimese serveri. See võtab kaks käsku ja umbes minuti.",
+      "audioDurationSec": 5.952,
+      "wordTimings": [
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 16,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.04,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.84,
+          "startChar": 63,
+          "endChar": 70
+        }
+      ]
     },
     {
       "id": "two-tool-architecture",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/two-tool-architecture.7535b7bf.mp3",
-      "textHash": "7535b7bf53183e9bde26899f54fc2995280949bc045701cedfaaea21a51f6fa8",
-      "audioDurationSec": 14.210612,
-      "narrationText": "Osi on kaks. Käsurea tööriist elab sinu sülearvutis ja orkestraator nimega renet töötab serveris. CLI ühendub üle SSH, nii et sa ei pea kunagi serverisse käsitsi sisse logima."
+      "textHash": "a967962cd984a6663ec22ce46f3dea2e1f6ee9d77ac9b2fee6560ffc4a7482ab",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/two-tool-architecture.a967962c.mp3",
+      "narrationText": "Osi on kaks. Käsurea tööriist elab sinu sülearvutis ja orkestraator nimega renet töötab serveris. CLI ühendub üle SSH, nii et sa ei pea kunagi serverisse käsitsi sisse logima.",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.24,
+          "startChar": 55,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 88,
+          "endChar": 96
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.68,
+          "startChar": 114,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 119,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 132,
+          "endChar": 134
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.2,
+          "startChar": 136,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 10.0,
+          "startChar": 143,
+          "endChar": 153
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.48,
+          "startChar": 162,
+          "endChar": 167
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.8,
+          "startChar": 168,
+          "endChar": 175
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/next-tutorial.caba796d.mp3",
-      "textHash": "caba796d99d6fa41b74d4d4ec22a1564ac4f8c8b79197fb92e1c7076ef6d6d2d",
-      "audioDurationSec": 3.317551,
-      "narrationText": "Ja sellega on serveri lisamine pakitud! Kohtumiseni järgmises."
+      "textHash": "067e35b2440f087298e6b215bea72c5433956150a03a138217b50ea9df993da6",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-add-server/next-tutorial.067e35b2.mp3",
+      "narrationText": "Ja sellega on serveri lisamine pakitud! Kohtumiseni järgmises.",
+      "audioDurationSec": 3.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.08,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 14,
+          "endChar": 21
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 22,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 31,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 40,
+          "endChar": 51
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 52,
+          "endChar": 62
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ccb4f9d12853629087b65a19feefd83ddec855495730c268f19b1f7f3ca4ab0d"
+  ]
 }

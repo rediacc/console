@@ -2,100 +2,556 @@
   "cast": "/assets/tutorials/tutorial-monitoring.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "061f0ec64285bbfd4eaa1bcbdde3b2d8ec5e91420a6dfa6ac0891dd29dc45f0c",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.416158,
-      "replayEndSec": 8.503611,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.abea5009.mp3",
-      "audioDurationSec": 8.124082,
-      "textHash": "abea50098c72703c86e5da08b28b0ecb0e662c1ca294947c18a07686cb710065",
+      "replayStartSec": 2.425818,
+      "replayEndSec": 7.947473,
       "narrationText": "Alustame süsteemivaatega. CLI machine query süsteemifiltriga näitab tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, ütleb aruanne meile seda.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01-after.196f738d.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "196f738dbcb20287d4b7b6affed163e092c438e437466aa6781feb3da0a5c55a"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-01.314909e0.mp3",
+      "textHash": "314909e013ac4d3512766ba5a409f99e9576812b65c6ddd5d3d3e6620f33b910",
+      "audioDurationSec": 13.464,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 2.56,
+          "startChar": 9,
+          "endChar": 25
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.08,
+          "startChar": 82,
+          "endChar": 90
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.56,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.2,
+          "startChar": 94,
+          "endChar": 103
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.96,
+          "startChar": 113,
+          "endChar": 116
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 117,
+          "endChar": 123
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 124,
+          "endChar": 126
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.68,
+          "startChar": 127,
+          "endChar": 135
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.28,
+          "startChar": 150,
+          "endChar": 158
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-01-after.a4bf96a3.mp3",
+      "afterAudioDurationSec": 5.952,
+      "afterTextHash": "a4bf96a3d5872e923b22c2e2d273564dfad0f7cf158659b80947834802ea9833",
+      "afterWordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.24,
+          "startChar": 15,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 37,
+          "endChar": 43
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.503611,
-      "replayEndSec": 14.799411,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.fc135b6e.mp3",
-      "audioDurationSec": 12.042449,
-      "textHash": "fc135b6ed9c522d336e24ffb3bc5606ce60e036792956bdab8858a726239d793",
+      "replayStartSec": 7.947473,
+      "replayEndSec": 13.691193,
       "narrationText": "Nüüd konteinerid. See vaade loetleb kõik töötavad konteinerid kõigis masina repositooriumides -- nimi, olek, tervis, CPU, mälu, lisaks sellele, millisele repositooriumile igaüks kuulub.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02-after.a56bb4c5.mp3",
-      "afterAudioDurationSec": 3.787755,
-      "afterTextHash": "a56bb4c5bd73e61263f27aa3efaaa2cc133966d0251581760589afc7238b4207"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-02.029b0040.mp3",
+      "textHash": "029b0040867bf0bf134b92ceed241d93c686c2fd781fb2bcc009296d53e5cc51",
+      "audioDurationSec": 12.36,
+      "wordTimings": [
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 109,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.24,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 122,
+          "endChar": 127
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 171,
+          "endChar": 174
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-02-after.aa8ade66.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "aa8ade667c6c7b0b2f1a55e326c7e191e00620168d7ae369f120c6a1e119d83c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 13
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 14.799411,
-      "replayEndSec": 21.195367,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.def5e9f5.mp3",
-      "audioDurationSec": 9.717551,
-      "textHash": "def5e9f5b23e62344d7e69259899fd4fc407243da9de783e5f02fed9b3b63611",
+      "replayStartSec": 13.691193,
+      "replayEndSec": 19.532776,
       "narrationText": "Ja repositooriumid ise. Suurus, ühendamise olek, Dockeri deemoni olek, kettakasutus. Kõik, mida pead teadma iga isoleeritud keskkonna kohta masinas.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03-after.495fc923.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "495fc9236361795074beeb04ff0991efe3b7e385b53187e6f7dfc1bcb7625c1a"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-03.b19517b4.mp3",
+      "textHash": "b19517b47211f51507f549fb5de129bfc3cfcc10c7e20e923d37a80d889f7c84",
+      "audioDurationSec": 10.272,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.6,
+          "startChar": 49,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.68,
+          "startChar": 78,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 91,
+          "endChar": 95
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.12,
+          "startChar": 112,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 124,
+          "endChar": 133
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-03-after.8db2eeb3.mp3",
+      "afterAudioDurationSec": 3.552,
+      "afterTextHash": "8db2eeb359dc671575b6574bd578e85e165213fe79ab7c4fb83206a0acb6d468"
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 21.195367,
-      "replayEndSec": 26.969407,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.952a05b4.mp3",
-      "audioDurationSec": 8.672653,
-      "textHash": "952a05b4536e2ed98fa434c4bc86a30d8f56990967826944609b708635adf8ba",
+      "replayStartSec": 19.532776,
+      "replayEndSec": 24.783224,
       "narrationText": "CLI machine query annab sulle kõik korraga. Süsteemiteave, konteinerid, repositooriumid, kõik koos. Käivita korra ja sul on täielik pilt.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04-after.f98de3e9.mp3",
-      "afterAudioDurationSec": 2.690612,
-      "afterTextHash": "f98de3e93233ea29ee2af4c032c5ac70274ba207dab7258d00d79c0b4d83a92c"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-04.72deb730.mp3",
+      "textHash": "72deb730f769789f199f251672cd8d31dd88371c683da2706ec5f54fca5816c0",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.64,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 121,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 124,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.44,
+          "startChar": 132,
+          "endChar": 136
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-04-after.4dd01162.mp3",
+      "afterAudioDurationSec": 2.112,
+      "afterTextHash": "4dd01162e0fd61780491776cea2f6b77609985a8f8f3c66a97de9c58afdfcd50",
+      "afterWordTimings": [
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 19,
+          "endChar": 23
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 26.969407,
-      "replayEndSec": 29.019779,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.ac6cfcac.mp3",
-      "audioDurationSec": 15.229388,
-      "textHash": "ac6cfcace593e6a47aa0c353d7a2f1c11883a8e2aa235c5e162eca03a7513af5",
+      "replayStartSec": 24.783224,
+      "replayEndSec": 26.8461,
       "narrationText": "Ja lõpuks CLI doctor kohaliku tervise kontrolliks sülearvutis. Node, SSH võti, renet, Docker -- kõik asjad, millest CLI ise sõltub. See on terve sari. Paigaldamisest monitoorimiseni, kõik sinu terminalist.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05-after.516ff012.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "516ff012736daf0ef3bcd343ed3f83128902d33bc58650d39bbad0047def4cc2"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-05.01061f20.mp3",
+      "textHash": "01061f2048b234ffc87d2391cb729eb72b8887e6235ebb7c3aaebaa4e4b7d7ae",
+      "audioDurationSec": 15.72,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.08,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 1.12,
+          "startChar": 3,
+          "endChar": 9
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 79,
+          "endChar": 84
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/tutorial-monitoring-05-after.e0c273cb.mp3",
+      "afterAudioDurationSec": 3.552,
+      "afterTextHash": "e0c273cb214988f94b9207f26aec8128b1870856fd4e7576931385732f107d64",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 45,
+          "endChar": 48
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/intro.bdefb9f3.mp3",
-      "textHash": "bdefb9f318f511db0543e5eb8eb06c460aed4a5f574aa7f474782d0031788ad3",
-      "audioDurationSec": 3.970612,
-      "narrationText": "Olgu! Sinu rakendus on töös ja varundatud, nüüd veendume, et see jääb terveks."
+      "textHash": "d27b87bf52c9b9133ec6a364626e7f89318cdefef823b4bd3c46d9a498bd39b7",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/intro.d27b87bf.mp3",
+      "narrationText": "Olgu! Sinu rakendus on töös ja varundatud, nüüd veendume, et see jääb terveks.",
+      "audioDurationSec": 6.12,
+      "wordTimings": [
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 23,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 31,
+          "endChar": 42
+        }
+      ]
     },
     {
       "id": "three-checks",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/three-checks.4c46c78b.mp3",
-      "textHash": "4c46c78b9219f10728b61cb9bf4b8e8fca24289521f87964ee48948f3e76b72e",
-      "audioDurationSec": 10.762449,
-      "narrationText": "CLI annab sulle täieliku pildi igast serverist sinu sülearvutist. Kolm vaatenurka kontrolliks: süsteemi tervis, töötavad konteinerid ja repositooriumid ise."
+      "textHash": "0e08c70f65bc025ba73d2da7bb4b563cb129e9630888d7a0e76858dc1cbc72d4",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/three-checks.0e08c70f.mp3",
+      "narrationText": "CLI annab sulle täieliku pildi igast serverist sinu sülearvutist. Kolm vaatenurka kontrolliks: süsteemi tervis, töötavad konteinerid ja repositooriumid ise.",
+      "audioDurationSec": 11.4,
+      "wordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.56,
+          "startChar": 52,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 66,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.92,
+          "startChar": 71,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.88,
+          "startChar": 82,
+          "endChar": 94
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.25da519a.mp3",
-      "textHash": "25da519a8f2beb86d6f7ed6a441b2310841503b003453e2a38335f03254137dd",
-      "audioDurationSec": 12.826122,
-      "narrationText": "Nüüd saad installida, seadistada, juurutada, fork'ida, live'sse lasta, autostart'ida, varundada ja jälgida. Edasijõudnute osa algab järgmisena: versiooni oma repo'd nagu koodi, commit'ide ja rollback'idega."
+      "textHash": "daaa956886f3d832837cf25e894158e72f53b02f6af0da6ab0d9001d121ed7dd",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-monitoring/next-tutorial.daaa9568.mp3",
+      "narrationText": "Nüüd saad installida, seadistada, juurutada, fork'ida, live'sse lasta, autostart'ida, varundada ja jälgida. Edasijõudnute osa algab järgmisena: versiooni oma repo'd nagu koodi, commit'ide ja rollback'idega.",
+      "audioDurationSec": 12.192,
+      "wordTimings": [
+        {
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 65,
+          "endChar": 69
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.48,
+          "startChar": 71,
+          "endChar": 85
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 86,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 96,
+          "endChar": 98
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 99,
+          "endChar": 107
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.12,
+          "startChar": 108,
+          "endChar": 121
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 126,
+          "endChar": 131
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.32,
+          "startChar": 132,
+          "endChar": 143
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.2,
+          "startChar": 144,
+          "endChar": 153
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "74e6f261ab9f9b6b0dd55494a4ba7d13377d910492e44688b459f8f9b0cd4231"
+  ]
 }

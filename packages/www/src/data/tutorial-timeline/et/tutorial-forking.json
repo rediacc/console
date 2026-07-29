@@ -2,148 +2,896 @@
   "cast": "/assets/tutorials/tutorial-forking.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "53cab494630e6029432d102cd6fa978f1995eca41c4419fdb617377943e27bc0",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.422355,
-      "replayEndSec": 12.478171,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01.2f627b22.mp3",
-      "audioDurationSec": 15.15102,
-      "textHash": "2f627b22641ccde22e2d5e1dae446ff47645af491bf680782ac69cb5664c9769",
+      "replayStartSec": 2.424604,
+      "replayEndSec": 9.790706,
       "narrationText": "Teeme repositooriumist forki ühe käsuga. See kloonib kõik -- rakenduse, andmebaasi, konfiguratsioonifailid. Ja see juhtub sekunditega, olenemata repositooriumi suurusest. Üks gigabait, sada gigabaiti, üks terabait: sama aeg, iga kord.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01-after.461471d1.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "461471d1cd02998a3243cb26510bd3aadb1da2f404f061cfc34cd7ae8c4adb9f"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-01.dadf968f.mp3",
+      "textHash": "dadf968f2d58182867c2f690c2fc0863a023d35773ae61498a6751e47bdb9370",
+      "audioDurationSec": 17.784,
+      "wordTimings": [
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 61,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.96,
+          "startChar": 72,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 6.08,
+          "startChar": 84,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.56,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 108,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.28,
+          "startChar": 111,
+          "endChar": 113
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.64,
+          "startChar": 122,
+          "endChar": 133
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.44,
+          "startChar": 160,
+          "endChar": 169
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.24,
+          "startChar": 215,
+          "endChar": 219
+        },
+        {
+          "startSec": 16.96,
+          "endSec": 17.2,
+          "startChar": 225,
+          "endChar": 228
+        },
+        {
+          "startSec": 17.28,
+          "endSec": 17.6,
+          "startChar": 229,
+          "endChar": 234
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-01-after.7bf81e18.mp3",
+      "afterAudioDurationSec": 3.552,
+      "afterTextHash": "7bf81e182dc6cedef17b450c96af019da41f7c569f229713932bba3657b9a206"
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 12.478171,
-      "replayEndSec": 18.050071,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02.f9334190.mp3",
-      "audioDurationSec": 7.88898,
-      "textHash": "f9334190b2f7c6803613df56763a9b4d48e742de07642c9936af00ce771f9402",
+      "replayStartSec": 9.790706,
+      "replayEndSec": 15.362139,
       "narrationText": "Mõlemad repositooriumid eksisteerivad nüüd kõrvuti. Sama masin, sama ketas, kaks täiesti sõltumatut keskkonda. Forkil on oma konteinerid, oma failisüsteem ja oma Dockeri deemon.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02-after.0db6276f.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "0db6276f21b58e075539726da8a131f40cd65ddd59b36ca71fa440a23abb55ed"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-02.cd7a3f3d.mp3",
+      "textHash": "cd7a3f3d0899a593ac802c7e4f106949eaecb33fd376617d0b16bdb91ac506c9",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 111,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 121,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.88,
+          "startChar": 125,
+          "endChar": 137
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 9.84,
+          "startChar": 155,
+          "endChar": 157
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-02-after.5c56a4f0.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "5c56a4f0d2e43063aff88950b1646247c3fd5dfe02aaaf65767b040479885473",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 42,
+          "endChar": 44
+        }
+      ]
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.050071,
-      "replayEndSec": 25.352583,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03.7d9d0a3a.mp3",
-      "audioDurationSec": 9.325714,
-      "textHash": "7d9d0a3af2f797109c5c88630d5990c32e11faf8d070fdd5da58d2f252f40986",
+      "replayStartSec": 15.362139,
+      "replayEndSec": 20.531281,
       "narrationText": "Tõestame isolatsiooni. Originaalis on meie markerifail täpselt seal, kuhu me selle jätsime. Forki olemasolu ei ole originaalis midagi muutnud.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03-after.6a012f89.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "6a012f895035005a7cf85510aab5258cd094c54b83e73e9fcc7d9e26742bd8e8"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-03.31096f26.mp3",
+      "textHash": "31096f2647eca021fa4d3b6293c73e3e1b554d7cbe294855a001ffead892f5ed",
+      "audioDurationSec": 16.824,
+      "wordTimings": [
+        {
+          "startSec": 7.52,
+          "endSec": 7.92,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.56,
+          "startChar": 9,
+          "endChar": 22
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.56,
+          "startChar": 23,
+          "endChar": 34
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.0,
+          "startChar": 43,
+          "endChar": 50
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.8,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.04,
+          "startChar": 98,
+          "endChar": 103
+        },
+        {
+          "startSec": 15.12,
+          "endSec": 15.36,
+          "startChar": 103,
+          "endChar": 107
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.52,
+          "startChar": 108,
+          "endChar": 110
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 15.6,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.16,
+          "startChar": 115,
+          "endChar": 126
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-03-after.ed35d4ef.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "ed35d4ef81ef87e160182e5f2ac4de4aac8a36f8602cea6006e75be6c412f5ec"
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.352583,
-      "replayEndSec": 33.706234,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04.ce85c437.mp3",
-      "audioDurationSec": 5.877551,
-      "textHash": "ce85c4377c7c17a778906d10e858cfbaca6d2cbd7b798ef04774466821803c6a",
+      "replayStartSec": 20.531281,
+      "replayEndSec": 26.727498,
       "narrationText": "Nüüd kustutame selle faili -- kuid ainult forki sees. Forki sees on see kadunud. Tegime hävitava muudatuse ja see jäi forki sisse.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04-after.846d677e.mp3",
-      "afterAudioDurationSec": 3.082449,
-      "afterTextHash": "846d677eb0b4cbc764d2ee591d378d0003d09ebbb377805f042ebe172de921ce"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-04.cd539e6f.mp3",
+      "textHash": "cd539e6f997c613b2cd566e5443f2a2b77c4c5b8bf9087d6721b1e8263beb156",
+      "audioDurationSec": 8.04,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.44,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.0,
+          "startChar": 88,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.56,
+          "startChar": 97,
+          "endChar": 106
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-04-after.5f662eea.mp3",
+      "afterAudioDurationSec": 3.072,
+      "afterTextHash": "5f662eeaf87026263b31949bd679b2dd450d968129eb3f67ce9ff834542ab030"
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.706234,
-      "replayEndSec": 41.0794,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05.a0d89b45.mp3",
-      "audioDurationSec": 8.437551,
-      "textHash": "a0d89b45c839af6f9f38d65d32b8422f026ae32f101c36440c68833f2d70c88e",
+      "replayStartSec": 26.727498,
+      "replayEndSec": 31.831236,
       "narrationText": "Tagasi originaalile. Markerifail on siin ikka alles, puutumata. Originaal ei teadnud, et midagi juhtus. Samad kujutised, eraldi Dockeri deemonid, eraldi failisüsteemid.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05-after.5255fd6a.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "5255fd6a0838c1079ccd5f13bf3757ac9f9a0f5151dec8f629ad7a75a3d5f0da"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-05.1967ca85.mp3",
+      "textHash": "1967ca85efc15b2efc0731211736ad9717fc07d824b5ae7d69ab1d6fb404220b",
+      "audioDurationSec": 10.272,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 53,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 64,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.84,
+          "startChar": 89,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 96,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 104,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.52,
+          "startChar": 110,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 121,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 146,
+          "endChar": 152
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 10.08,
+          "startChar": 153,
+          "endChar": 168
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-05-after.5583b07e.mp3",
+      "afterAudioDurationSec": 3.072,
+      "afterTextHash": "5583b07e246da32d6891de03afe3efdda0a184095f3b484fab568f43519794ff",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.04,
+          "startChar": 37,
+          "endChar": 48
+        }
+      ]
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.0794,
-      "replayEndSec": 48.135359,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06.3480d69d.mp3",
-      "audioDurationSec": 10.03102,
-      "textHash": "3480d69d3d1c4105f8d065f38bc5111dbb1751b005842a06eb0e63b3ffcc0fb0",
+      "replayStartSec": 31.831236,
+      "replayEndSec": 37.012611,
       "narrationText": "Kui oled lõpetanud, kustuta lihtsalt fork. Originaal jääb täpselt selliseks, nagu ta oli. Tee fork, katse, riku asju, kustuta -- riskita.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06-after.dc610654.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "dc6106548e42c093c327d461690d3f67a23aa41574af8d2e51512854a2ba39cf"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-06.8757e858.mp3",
+      "textHash": "8757e8583bc586ecbcb7c74e74e00ca3891f7a723688f26ba5e35080e40db388",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 2.24,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.68,
+          "startChar": 43,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.64,
+          "startChar": 94,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.36,
+          "startChar": 100,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.8,
+          "startChar": 118,
+          "endChar": 125
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-forking/tutorial-forking-06-after.db438c94.mp3",
+      "afterAudioDurationSec": 4.344,
+      "afterTextHash": "db438c94c154cfc020193394722ee7b775dc28bdbd73b9225c2939bf68687b73",
+      "afterWordTimings": [
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 30,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.24,
+          "startChar": 52,
+          "endChar": 60
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/intro.52c78504.mp3",
-      "textHash": "52c78504c16cab19064aa718534c5c7ea5a90ed6ad63a1b91aa79e13a4eb34e8",
-      "audioDurationSec": 6.844082,
-      "narrationText": "Tere tulemast tapja-funktsiooni juurde! Klooni terve tootmisrepo sõltumata suurusest ja ära riku midagi."
+      "textHash": "dd54dd7cee8b0bd559c07e8502618233661898eb3d90a1c731e9445c9f9418a4",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/intro.dd54dd7c.mp3",
+      "narrationText": "Tere tulemast tapja-funktsiooni juurde! Klooni terve tootmisrepo sõltumata suurusest ja ära riku midagi.",
+      "audioDurationSec": 6.12,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 40,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.24,
+          "startChar": 53,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 85,
+          "endChar": 87
+        }
+      ]
     },
     {
       "id": "fan-out",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/fan-out.d6195195.mp3",
-      "textHash": "d61951959b64025bc25317d24dc0448393cc8efc4a1d599a13b53f5c5bfacebb",
-      "audioDurationSec": 9.874286,
-      "narrationText": "Üks vanemrepo hargneb nii paljudeks sõltumatuteks kloonideks, kui soovid. Iga fork on oma isoleeritud keskkond, mis töötab originaaliga kõrvuti."
+      "textHash": "3849df2bd77ad784865fde3983c68619636a89e2f05b330742cfa4d84c471a94",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/fan-out.3849df2b.mp3",
+      "narrationText": "Üks vanemrepo hargneb nii paljudeks sõltumatuteks kloonideks, kui soovid. Iga fork on oma isoleeritud keskkond, mis töötab originaaliga kõrvuti.",
+      "audioDurationSec": 8.52,
+      "wordTimings": [
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 14,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.36,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 83,
+          "endChar": 85
+        }
+      ]
     },
     {
       "id": "link-speed",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/link-speed.1418de94.mp3",
-      "textHash": "1418de940e96edd8372967a1aaff5f0ce75947d33f9b7b7611cf44e892b67690",
-      "audioDurationSec": 8.907755,
-      "narrationText": "Mõtle, nagu jagaksid kausta linki. Link on sama kerge asi, olgu kaust väike või tohutu, ja forkimine töötab sama põhimõtte alusel."
+      "textHash": "ca96c47d5db422452c2b20de385e8999852be72265751392859a7ca7b69fac8c",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/link-speed.ca96c47d.mp3",
+      "narrationText": "Mõtle, nagu jagaksid kausta linki. Link on sama kerge asi, olgu kaust väike või tohutu, ja forkimine töötab sama põhimõtte alusel.",
+      "audioDurationSec": 9.144,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 21,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 43,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.44,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.68,
+          "startChar": 91,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 101,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 108,
+          "endChar": 112
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 113,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.96,
+          "startChar": 123,
+          "endChar": 129
+        }
+      ]
     },
     {
       "id": "scale-invariance",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/scale-invariance.7dda1e54.mp3",
-      "textHash": "7dda1e54aa5f757dafc83745b07dbfa7894e383f9213777fa5531f7a3f539a1c",
-      "audioDurationSec": 10.527347,
-      "narrationText": "Üks gigabait, sada gigabaiti, üks terabait: fork käitub samamoodi. Repo suurus ei tule võrrandisse."
+      "textHash": "f12c67e15f93138a25932bb397ca387c6a515881e233b40fc27a4759e103bdb2",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/scale-invariance.f12c67e1.mp3",
+      "narrationText": "Üks gigabait, sada gigabaiti, üks terabait: fork käitub samamoodi. Repo suurus ei tule võrrandisse.",
+      "audioDurationSec": 6.912,
+      "wordTimings": [
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 60,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.12,
+          "startChar": 67,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.84,
+          "startChar": 72,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 82,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.72,
+          "startChar": 87,
+          "endChar": 99
+        }
+      ]
     },
     {
       "id": "sun-mirrors",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/sun-mirrors.1207afb5.mp3",
-      "textHash": "1207afb52238d7058dc8922459c141d46eea41044e6e6f8ff996b5af37d6ccbc",
-      "audioDurationSec": 10.605714,
-      "narrationText": "Vanemrepo on päike ja sinu fork on peegel, mis selle valgust püüab. Jagatud alus jääb puutumata, samas kui kõik, mida sa peeglile maalid, kuulub ainult sulle."
+      "textHash": "ee6a474d2c2541cc5cc9d6fffbb4a5b117d8a5fa21172c15816d382df1c8e2d2",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/sun-mirrors.ee6a474d.mp3",
+      "narrationText": "Vanemrepo on päike ja sinu fork on peegel, mis selle valgust püüab. Jagatud alus jääb puutumata, samas kui kõik, mida sa peeglile maalid, kuulub ainult sulle.",
+      "audioDurationSec": 8.184,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 13,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 27,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 86,
+          "endChar": 93
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.28,
+          "startChar": 97,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 152,
+          "endChar": 157
+        }
+      ]
     },
     {
       "id": "river-photo",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/river-photo.c385ec2d.mp3",
-      "textHash": "c385ec2d7cf03016cc2ff92f09c2a14d0a6573674a7c260b2b73ec01287b18fa",
-      "audioDurationSec": 9.639184,
-      "narrationText": "Fork on vanema külmutatud foto ühel hetkel. Vanem voolab edasi nagu jõgi, kuid sinu hetkpilt jääb täpselt sinna, kus oli."
+      "textHash": "87bdc885987a1c7d0d5ac38fb74b956afe8f7acedd0b9bc27f48b0f4a9fedf36",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/river-photo.87bdc885.mp3",
+      "narrationText": "Fork on vanema külmutatud foto ühel hetkel. Vanem voolab edasi nagu jõgi, kuid sinu hetkpilt jääb täpselt sinna, kus oli.",
+      "audioDurationSec": 8.184,
+      "wordTimings": [
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.16,
+          "startChar": 84,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 106,
+          "endChar": 111
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.08,
+          "startChar": 117,
+          "endChar": 120
+        }
+      ]
     },
     {
       "id": "flat-disk",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/flat-disk.959411f0.mp3",
-      "textHash": "959411f0a3c033f1a2e90cc1a91b6c1341964cd79fd4d6236d5988441253019a",
-      "audioDurationSec": 9.560816,
-      "narrationText": "Viis forki saja gigabaidisest repost moodustavad kettal ikkagi umbes sada gigabaiti. Sa maksad ainult baitide eest, mida tegelikult iga forki sees muudad."
+      "textHash": "593c39341b1946f0514d44631448e99c90179191c562ecfc49d6d13e3dde6b68",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/flat-disk.593c3934.mp3",
+      "narrationText": "Viis forki saja gigabaidisest repost moodustavad kettal ikkagi umbes sada gigabaiti. Sa maksad ainult baitide eest, mida tegelikult iga forki sees muudad.",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 63,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 69,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 74,
+          "endChar": 84
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 6.72,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 95,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 110,
+          "endChar": 114
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 127,
+          "endChar": 135
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.1c0080c0.mp3",
-      "textHash": "1c0080c0639e9ce66487d9c4cca3a7cd3b163654743706a9672a212652f4127d",
-      "audioDurationSec": 12.277551,
-      "narrationText": "Sa nägid just käske. Nüüd muudame selle nähtavaks: päris andmebaasirakendus, fork'itud reaalajas, kõrvuti muudetud, ja originaal ei võpata kordagi."
+      "textHash": "ee468bf3eeb83979047d6a25d9bd9c062aa296cb65851240e185a8d3a12e9d26",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-forking/next-tutorial.ee468bf3.mp3",
+      "narrationText": "Sa nägid just käske. Nüüd muudame selle nähtavaks: päris andmebaasirakendus, fork'itud reaalajas, kõrvuti muudetud, ja originaal ei võpata kordagi.",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 2.4,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 4.08,
+          "startChar": 40,
+          "endChar": 50
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.24,
+          "startChar": 93,
+          "endChar": 95
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c625a1247b298194120645240e199c2899a839c8164322889142b27574d85a26"
+  ]
 }

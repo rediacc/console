@@ -54,16 +54,13 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 // list before publishing turns this gate red on 54 combos (18 casts x 3 locales) for a
 // reason nobody can fix without publishing. Add them in the SAME change that publishes
 // the regenerated tutorial audio.
-// DELIBERATELY still the ten previously-published locales, NOT SITE_LOCALES, even though
-// ar/et/tr are now published. This gate fetches words.json from media.rediacc.com, and the
-// Cloudflare CDN is still serving the PRE-publish copies (verified: published tr shows
-// start 1.368 where the local file has 2.04). Widening it now reports 53 flat-timing
-// combos that are an artefact of a stale cache, not of the timings.
-//
-// Widen this to SITE_LOCALES immediately after running
-// `.ci/scripts/deploy/purge-media-cache.sh`, which needs CLOUDFLARE_API_TOKEN (or
-// CF_GLOBAL_API_KEY + CF_EMAIL). That is deferring, not suppressing.
-const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'];
+// All 13 site locales, sourced from packages/locales rather than hand-maintained.
+// This gate fetches words.json from media.rediacc.com, so it only ever sees PUBLISHED
+// state. It stayed at ten while ar/et/tr were unpublished, and briefly reported 53 flat
+// combos afterwards purely because Cloudflare was still serving pre-publish copies —
+// a stale cache, not a timings defect. If it ever fails en masse right after a publish,
+// run `.ci/scripts/deploy/purge-media-cache.sh` before believing the finding.
+const AUDIO_LANGUAGES = SITE_LOCALES;
 
 // 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL
 // 3-word cue quite often lands three identical durations (seen live in

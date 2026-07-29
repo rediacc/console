@@ -2,94 +2,1018 @@
   "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "8050c031356442171130c3bef03acbbdb48e10153aa267dda91f62f9b1ea09f0",
   "steps": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.414306,
-      "replayEndSec": 10.610488,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01.27a11bdb.mp3",
-      "audioDurationSec": 11.075918,
-      "textHash": "27a11bdba2d0520778d21d95003d9a12f69a7895ff31a7703b9763359f4f1352",
+      "replayStartSec": 2.412087,
+      "replayEndSec": 7.70388,
       "narrationText": "أولًا، أمر الإحالة. التطبيق يعمل على الخادم وليس على حاسوبك. يُحيل أمر النفق منفذ الحاوية عبر SSH حتى تتمكن من فتحه على localhost في متصفحك.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01-after.9d140616.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "9d140616e38a9d0ea0574f4b6fdaefe756cf3b949b44ad1f6814fc08f8a0f789"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-01.bf2cb272.mp3",
+      "textHash": "bf2cb27215b99460e54359ebfeb6eaef12a2e15f1a0cf840f0e3268786dee172",
+      "audioDurationSec": 14.592,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 11,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.0,
+          "startChar": 20,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 4.4,
+          "startChar": 28,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.68,
+          "startChar": 44,
+          "endChar": 48
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.4,
+          "startChar": 53,
+          "endChar": 59
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.8,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.28,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.92,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 11.04,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.84,
+          "startChar": 102,
+          "endChar": 107
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 108,
+          "endChar": 110
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.16,
+          "startChar": 111,
+          "endChar": 115
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.8,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.44,
+          "startChar": 120,
+          "endChar": 129
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 130,
+          "endChar": 132
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.4,
+          "startChar": 133,
+          "endChar": 139
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-01-after.19947432.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "19947432862a6cc027d1c1b14f955603132ad94f9a31e350ece46e988d23ef1f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 9,
+          "endChar": 15
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 37,
+          "endChar": 40
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.610488,
-      "replayEndSec": 17.555154,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02.aab6bbcf.mp3",
-      "audioDurationSec": 13.400816,
-      "textHash": "aab6bbcfd6deb10f891a8c6bb14b31ba759d4839102746ead62730800c8ad6bb",
+      "replayStartSec": 7.70388,
+      "replayEndSec": 12.470166,
       "narrationText": "ثانيًا، أمر الطرفية. يُدخلك أمر اتصال الطرفية داخل صندوق رمل المستودع، نفس العرض المعزول الذي يوفره VS Code. نفّذ أي أمر على محرك Docker الخاص بهذا المستودع دون مغادرة طرفيتك.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02-after.83b74d9b.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "83b74d9b337e39917159361f463526846b42a06c282add5ddc2ca7f5bf6cb780"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-02.88249ad8.mp3",
+      "textHash": "88249ad8632ce6f91331802c9099abe39261007440282302ebd2c1b39423f087",
+      "audioDurationSec": 18.12,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 1.6,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 5.2,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 8.48,
+          "startChar": 61,
+          "endChar": 69
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.84,
+          "startChar": 81,
+          "endChar": 88
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.24,
+          "startChar": 89,
+          "endChar": 93
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.56,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.96,
+          "startChar": 137,
+          "endChar": 142
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.28,
+          "startChar": 143,
+          "endChar": 147
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.92,
+          "startChar": 148,
+          "endChar": 156
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-02-after.de84344c.mp3",
+      "afterAudioDurationSec": 7.872,
+      "afterTextHash": "de84344c431fbe92cf2f0e71963cba9853dded202b269156103a4ad31f6389c9",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.48,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.88,
+          "startChar": 50,
+          "endChar": 56
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.555154,
-      "replayEndSec": 24.76977,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03.bac87e7c.mp3",
-      "audioDurationSec": 9.247347,
-      "textHash": "bac87e7cc11b0179c9e91e5d0345fb35ef5656d980bf01e014df35000349068a",
+      "replayStartSec": 12.470166,
+      "replayEndSec": 17.752905,
       "narrationText": "قبل رفع الملفات، استعرض باستخدام --dry-run. يُظهر بالضبط ما سيتغير دون نسخ أي شيء. استعرض دائمًا عندما لا تكون متأكدًا.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03-after.6e025361.mp3",
-      "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "6e025361972ec725111b3f2432be40986d347bb3c5dc18a09b88998a8feccab3"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-03.24ea95ef.mp3",
+      "textHash": "24ea95ef7c9b34ebba6d71271b8f24ae9af6a6112b242267da7744f6224f8455",
+      "audioDurationSec": 15.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 2.72,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.44,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 60,
+          "endChar": 66
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.84,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.24,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.56,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.88,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.48,
+          "startChar": 83,
+          "endChar": 89
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 90,
+          "endChar": 96
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.0,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.08,
+          "startChar": 103,
+          "endChar": 105
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.56,
+          "startChar": 106,
+          "endChar": 110
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.36,
+          "startChar": 111,
+          "endChar": 119
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-03-after.803af163.mp3",
+      "afterAudioDurationSec": 5.16,
+      "afterTextHash": "803af163bf3c32b15183e7258966046e568bcfe461d962a698fdcffd54fcfe11",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 2.72,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 30,
+          "endChar": 33
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "replayStartSec": 24.76977,
-      "replayEndSec": 31.479627,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04.5df2e073.mp3",
-      "audioDurationSec": 13.479184,
-      "textHash": "5df2e07358117742ea4a2892cc86ac37eb4e4d0c2559571414652bc0307b9ef0",
+      "replayStartSec": 17.752905,
+      "replayEndSec": 22.568523,
       "narrationText": "الآن نُشغّل الرفع الفعلي. ينقل أمر رفع المزامنة الملفات من حاسوبك إلى المستودع عبر SSH مع ضغط الفرق بـrsync. الإحالة والطرفية والمزامنة، ثلاثة أوامر تغطي الحلقة اليومية.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04-after.f227dfa2.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "f227dfa2fe0c2e685cd819748cd3633e7d9d973c66d2239bb504b416a464648e"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-04.f19649ac.mp3",
+      "textHash": "f19649ac49059538acb5259fccb236f27689aa98c0878cf3eb5b87d4f1774a34",
+      "audioDurationSec": 17.304,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 26,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 4.64,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.44,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.4,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 70,
+          "endChar": 78
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.68,
+          "startChar": 79,
+          "endChar": 82
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.4,
+          "startChar": 83,
+          "endChar": 86
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.88,
+          "startChar": 87,
+          "endChar": 89
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.84,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 12.32,
+          "startChar": 109,
+          "endChar": 116
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 13.28,
+          "startChar": 117,
+          "endChar": 125
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 14.08,
+          "startChar": 126,
+          "endChar": 135
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 14.96,
+          "startChar": 137,
+          "endChar": 142
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.68,
+          "startChar": 143,
+          "endChar": 148
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.16,
+          "startChar": 149,
+          "endChar": 153
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.64,
+          "startChar": 154,
+          "endChar": 160
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 17.2,
+          "startChar": 161,
+          "endChar": 168
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/tutorial-work-with-repo-04-after.f503f695.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "f503f6954047c11c1f56ee46acada76ab34dcfc632a3fe775a5897844d852e2c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 2.72,
+          "startChar": 7,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 4.0,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.72,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.0,
+          "startChar": 44,
+          "endChar": 51
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/intro.ebabbf1c.mp3",
-      "textHash": "ebabbf1c5261a57bcf3a2b35ac935a45a2f280e7e9eb84abb04ccca21d6c800b",
-      "audioDurationSec": 5.642449,
-      "narrationText": "حسنًا! تطبيقك يعمل، فلنبدأ العمل معه فعليًا. ثلاثة أوامر تغطي الحلقة اليومية."
+      "textHash": "fe711a00067f5824b35a3201776bf09b6e1a10c68a9e8f75e87160fb96b91259",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/intro.fe711a00.mp3",
+      "narrationText": "حسنًا! تطبيقك يعمل، فلنبدأ العمل معه فعليًا. ثلاثة أوامر تغطي الحلقة اليومية.",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.24,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 27,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.2,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.8,
+          "startChar": 62,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.52,
+          "startChar": 69,
+          "endChar": 76
+        }
+      ]
     },
     {
       "id": "daily-three",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/daily-three.0dbef833.mp3",
-      "textHash": "0dbef833f31a6265b2f5bb77d8a7414af7a433d92a9f7dbda936c35e2643ee3b",
-      "audioDurationSec": 9.717551,
-      "narrationText": "tunnel يفتح تطبيقك في المتصفح، وterm يُشغّل الأوامر داخل sandbox، وsync ينقل الملفات إلى الداخل والخارج. هذا هو سير العمل اليومي بأكمله."
+      "textHash": "11269d88e775d0116dd50f28d1f426b9c02951222ae9869757b69e5d1078cb62",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/daily-three.11269d88.mp3",
+      "narrationText": "tunnel يفتح تطبيقك في المتصفح، وterm يُشغّل الأوامر داخل sandbox، وsync ينقل الملفات إلى الداخل والخارج. هذا هو سير العمل اليومي بأكمله.",
+      "audioDurationSec": 14.592,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.88,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 66,
+          "endChar": 71
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.68,
+          "startChar": 77,
+          "endChar": 84
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.0,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.96,
+          "startChar": 89,
+          "endChar": 95
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.96,
+          "startChar": 116,
+          "endChar": 121
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.84,
+          "startChar": 122,
+          "endChar": 128
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.4,
+          "startChar": 129,
+          "endChar": 135
+        }
+      ]
     },
     {
       "id": "open-tunnel",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/open-tunnel.fef328da.mp3",
-      "textHash": "fef328dae60c718945fee32d466bd5a803be6510d80436bccf67325f80518ebc",
-      "audioDurationSec": 9.325714,
-      "narrationText": "مع تشغيل النفق، تنفتح التطبيق مباشرةً في متصفحك. في هذا العرض نفتح rediacc.com، تمامًا كما ستصل إلى تطبيقك الخاص المقدَّم مباشرةً من الحاوية."
+      "textHash": "a216b9cf4015dc979b7d42c5d67017d8d718d267080c780af979294c7f69c89c",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/open-tunnel.a216b9cf.mp3",
+      "narrationText": "مع تشغيل النفق، تنفتح التطبيق مباشرةً في متصفحك. في هذا العرض نفتح rediacc.com، تمامًا كما ستصل إلى تطبيقك الخاص المقدَّم مباشرةً من الحاوية.",
+      "audioDurationSec": 15.864,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 2.24,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 16,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 5.12,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 6.56,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.76,
+          "startChar": 91,
+          "endChar": 95
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.48,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.8,
+          "startChar": 122,
+          "endChar": 128
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.2,
+          "startChar": 130,
+          "endChar": 132
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.76,
+          "startChar": 133,
+          "endChar": 140
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/next-tutorial.7e29d6c4.mp3",
-      "textHash": "7e29d6c4b871d9c8f1e41e16c644c879b0bc0551157243b799c72f1b69f8da66",
-      "audioDurationSec": 3.709388,
-      "narrationText": "وهذه هي الأوامر الثلاثة اليومية. نراكم في الدرس التالي!"
+      "textHash": "4873cb7291badc18a3114e1346dc14117933267caed7193820690974527494bf",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-work-with-repo/next-tutorial.4873cb72.mp3",
+      "narrationText": "وهذه هي الأوامر الثلاثة اليومية. نراكم في الدرس التالي!",
+      "audioDurationSec": 5.952,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.4,
+          "startChar": 16,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.12,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.72,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 48,
+          "endChar": 54
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5d13caa087069b03259e05a3a085016b018de3e527a8b3a4b19466cf6bb33734"
+  ]
 }
