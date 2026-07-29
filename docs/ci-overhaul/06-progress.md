@@ -68,6 +68,33 @@ reconciler does not crash, not that it can detect anything. **#543 can never
 produce a non-vacuous reconcile**, because it touches `.ci/` and is therefore
 fail-closed to `mode: full`.
 
+**FIRST GREEN RUN: `30472960194` on `2469e5d72`, 95 jobs, zero failed, zero
+cancelled.** It exists only because the session stopped pushing: the eleven runs
+before it were all `cancelled` with ZERO failed jobs, each superseded by the next
+push, and the pointer-bump detector had named the consequence precisely
+(`baseline 3e483a6 has no successful CI Complete`). Not pushing was the work.
+Note the run grew 92 -> 95 jobs while being read, so a job count is never a
+terminal-state signal.
+
+Shadow evidence from that run, recorded verbatim rather than summarised:
+
+- **D9's fix is confirmed on real traffic.** Initialize reports
+  `pointer_bump_only=false -- no baseline within 5 commits`. The old reason was
+  `merge commit <x> in the walk` on 13 of 13 runs, meaning the walk aborted
+  instantly on the synthetic `refs/pull/N/merge` head. It now runs and stops on
+  its own cap.
+- **Baseline resolver: `baseline:none-usable`, `"baseline": null`**, as expected
+  until an attested plan exists upstream of a green run.
+- **The `ubuntu-slim` question is ANSWERED: node IS available.** The reconcile
+  shadow ran to completion in 3.4s against `ci-complete`'s `timeout-minutes: 5`,
+  so the "cannot reconcile: node is not available" branch is not the live one.
+- **And the reconcile is still VACUOUS, confirmed by reading the artifact rather
+  than the summary.** `ci-skip-plan`'s `plan.json` is `mode: full` with 17 keys,
+  and all 17 are `{"run": true, "reason": "full"}`, so it reconciles trivially.
+  `WOULD HAVE PASSED` means the reconciler does not crash, nothing more. #543
+  touches `.ci/`, so it is fail-closed to full mode and can never produce a
+  non-vacuous reconcile; that prediction is now live-verified, not inferred.
+
 **D5 has a live receipt.** `web-27a7cd16729b` and `rdc-334c6306793e` are now
 distinct where `RDC_TAG` was literally assigned `"$WEB_TAG"`. Changing
 `--extra` (the renet tag) changes the web tag, which closes the most likely
