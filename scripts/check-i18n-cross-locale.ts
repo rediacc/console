@@ -214,6 +214,19 @@ function selftest(): void {
 function main(): void {
   const argv = process.argv.slice(2);
   if (argv.includes('--selftest')) return selftest();
+
+  // CONTROL FIRST, ALWAYS. This selftest plants German inside a French file and
+  // requires the detector to report it. It used to run only behind --selftest,
+  // and NOTHING invoked that flag: `check:ci-i18n-cross-locale` runs this file
+  // bare, so the one proof that this gate can FIRE was dead code. A gate whose
+  // fire-proof never runs is indistinguishable from a gate that always passes,
+  // which is exactly the defect class this file was written to catch.
+  //
+  // Running it inline turns "did the control fire" into "did the gate exit 0",
+  // which CI already checks. Same shape as scripts/check-schema-coverage.ts.
+  // Cost is a few temp files and milliseconds.
+  if (!argv.includes('--skip-control')) selftest();
+
   const rootIdx = argv.indexOf('--root');
   const base = rootIdx >= 0 ? path.resolve(argv[rootIdx + 1]) : REPO_ROOT;
 

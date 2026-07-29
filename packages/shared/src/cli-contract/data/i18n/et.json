@@ -437,7 +437,7 @@
   "commands.doctor.sections.subscription": "Tellimus",
   "commands.doctor.sections.virtualization": "Virtualiseerimine",
   "commands.doctor.subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
-  "commands.doctor.title": "Rediacc CLI Doctor",
+  "commands.doctor.title": "Rediacc CLI diagnostika",
   "commands.job.cancel.alreadyFinished": "Töö {{jobId}} on juba {{state}}; pole midagi tühistada.",
   "commands.job.cancel.confirm": "Tühistada masinas {{machine}} töö {{jobId}} ({{function}})? Toiming peatatakse.",
   "commands.job.cancel.description": "Tühista töötav eraldiseisev töö",
