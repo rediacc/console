@@ -345,15 +345,26 @@ def pending_tasks(session_id):
     return out
 
 
-def transcript_tail(path):
-    """(last_assistant_text, tool_names_since_last_user) from the JSONL tail.
+def transcript_tail(path, want=None, tries=6, delay=0.25):
+    """(last_assistant_text, tool_names_since_last_user, readable) from the tail.
+
+    THE RACE THIS RIDES OUT, found the hard way: the gate blocked a message that
+    DID carry its `## Remaining` heading. Re-reading the transcript afterwards
+    showed the heading present in a single text block, so the extraction was
+    fine and the file simply had not been flushed when the hook ran. A check that
+    reads the transcript to judge the message that just ended is racing the
+    writer, so when `want` is absent it retries briefly before believing it.
+
+    `readable` distinguishes "I read the message and the heading is absent" from
+    "I could not read any assistant text at all". Those need different verdicts:
+    the first is the session's fault, the second is this hook's.
 
     Tail-read, because the transcript is tens of MB and the hook runs on every
     stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so
     this is not the expensive part of anything.
     """
     if not path or not os.path.exists(path):
-        return "", []
+        return "", [], False
     try:
         with open(path, "rb") as f:
             f.seek(0, 2)
@@ -361,12 +372,12 @@ def transcript_tail(path):
             f.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
             chunk = f.read()
     except OSError:
-        return "", []
+        return "", [], False
     # Drop the first (probably partial) line unless we read from byte 0.
     lines = chunk.split(b"\n")
     if size > TRANSCRIPT_TAIL_BYTES:
         lines = lines[1:]
-    last_text, tools, since_user = "", [], []
+    turn_texts, since_user = [], []
     for raw in lines:
         if not raw.strip():
             continue
@@ -378,6 +389,7 @@ def transcript_tail(path):
         if rtype == "user":
             # A new operator turn resets what "this turn" means.
             since_user = []
+            turn_texts = []
             continue
         if rtype != "assistant":
             continue
@@ -385,11 +397,21 @@ def transcript_tail(path):
             if not isinstance(block, dict):
                 continue
             if block.get("type") == "text" and block.get("text", "").strip():
-                last_text = block["text"]
+                # EVERY narration line before a tool call is its own text block,
+                # so the LAST block mid-turn is a one-liner, not the answer. That
+                # is what made this check fire on a message that did carry its
+                # heading. Judge the whole turn's output instead.
+                turn_texts.append(block["text"])
             elif block.get("type") == "tool_use" and block.get("name"):
                 since_user.append(block["name"])
-    tools = since_user
-    return last_text, tools
+    last_text = "\n\n".join(turn_texts)
+    readable = bool(last_text)
+    if want is not None and readable and want.search(last_text) is None and tries > 1:
+        # Not there yet. Give the writer a moment rather than calling the session
+        # a liar about a message it actually wrote.
+        time.sleep(delay)
+        return transcript_tail(path, want, tries - 1, delay)
+    return last_text, since_user, readable
 
 
 HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "120"))
@@ -807,7 +829,18 @@ def main():
     # pre-flight, one block, every violation named at once.
     judged_ok = None
     tasks = pending_tasks(session_id)
-    last_msg, tools_this_turn = transcript_tail(event.get("transcript_path", ""))
+    last_msg, tools_this_turn, msg_readable = transcript_tail(
+        event.get("transcript_path", ""), want=REMAINING_HEADING
+    )
+    # Keep the raw event: when a check fires wrongly the first question is always
+    # "what did the hook actually receive", and that is unanswerable afterwards.
+    try:
+        worklist.with_suffix(".lastevent-%s.json" % (session_id or "unknown")[:8]).write_text(
+            json.dumps({k: v for k, v in event.items() if k != "transcript"}, indent=2),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
     bstate, bage, others_briefs = brief_state(worklist, session_id)
     lstate, lnext, llabel, others_loops, lcrons = loop_state(worklist, session_id)
     hstate, hage, _htext = handover_state(worklist, session_id)
@@ -889,7 +922,19 @@ def main():
             "the ones that are done."
             % (len(missing_ids), ", ".join("#" + i for i in missing_ids))
         )
-    if something_remains and not REMAINING_HEADING.search(last_msg or ""):
+    if something_remains and not msg_readable:
+        violations.append(
+            "THIS IS A HOOK BUG, not something you did wrong: no assistant text could be "
+            "read from the transcript (path=%r), so the '## Remaining' check is BLIND. "
+            "It blocks rather than waving you through, per no-escape-hatch. Inspect the "
+            "captured event at %s and fix transcript_tail in %s."
+            % (
+                event.get("transcript_path", ""),
+                worklist.with_suffix(".lastevent-%s.json" % (session_id or "unknown")[:8]),
+                __file__,
+            )
+        )
+    elif something_remains and not REMAINING_HEADING.search(last_msg or ""):
         violations.append(
             "work remains and your last message has no '## Remaining' section. The "
             "operator reads YOUR message, not this hook's output, so a report that "

@@ -317,6 +317,54 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 22. an UNREADABLE transcript blames the HOOK, not the session =="
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/does-not-exist.jsonl" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+        WORKLIST_JUDGE=off python3 "$HOOK" 2>/dev/null)"
+if grep -qF "THIS IS A HOOK BUG" <<<"$out" && grep -qF '"decision": "block"' <<<"$out"; then
+    echo "  PASS: a blind read blocks AND says it is the hook's fault"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: blind read not distinguished: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 23. a heading that lands LATE is still honoured (flush race) =="
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+say "answer with no section yet"
+(
+    sleep 0.6
+    say "answer
+
+## Remaining
+- #7 thing"
+) &
+check "a heading written mid-check is picked up by the retry" allow ""
+wait
+
+echo "== 24. THE REGRESSION: narration blocks after the answer must not hide it =="
+# Every narration line before a tool call is its own assistant text block, so
+# reading only the LAST block sees a one-liner and calls the section missing.
+# This fired on a real message that did carry its heading.
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+say "Here is the answer.
+
+## Remaining
+| #7 | thing | me |"
+say "Checking one more thing."
+say "And another."
+check "a Remaining section survives later narration blocks" allow ""
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
