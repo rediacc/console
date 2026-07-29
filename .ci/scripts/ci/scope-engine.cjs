@@ -311,11 +311,20 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 const DIFF_FILE_CAP = 300;
 
 // How many ancestors to interrogate before giving up. Each candidate costs at
-// least one API round trip, and the headline case is satisfied by the FIRST
-// candidate (the commit immediately before this push), so a small number is
-// right: a deep walk mostly buys latency on branches that were never going to
-// find a green full baseline anyway.
-const DEFAULT_CANDIDATE_LIMIT = 5;
+// least one API round trip, so this is a latency budget, not a correctness
+// knob: walking further can only find an OLDER baseline, which yields a BIGGER
+// net delta and therefore MORE jobs. Overshooting is safe; undershooting is not.
+//
+// MEASURED, 2026-07-29, and it is why this is 20 and not 5. The original value
+// assumed "the headline case is satisfied by the FIRST candidate (the commit
+// immediately before this push)". That is false on the branch this engine was
+// built to serve. A babysat PR accumulates a run of red and superseded commits
+// between greens, so the nearest green ancestor is far from the first candidate.
+// On run 30478917957 the walk rejected all five candidates as `not-green` while
+// the genuinely green commit 2469e5d72 (run 30472960194, 95 jobs, zero failed)
+// sat SEVEN steps back, one row past the cap. The baseline existed and the
+// engine could not see it, which reads identically to "no baseline exists".
+const DEFAULT_CANDIDATE_LIMIT = 20;
 
 // Walk candidates newest-first, returning the first usable baseline and the
 // complete rejection trail. The trail is the load-bearing part: when a round
