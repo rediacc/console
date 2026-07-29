@@ -338,7 +338,9 @@ def pending_tasks(session_id):
             except (OSError, ValueError):
                 continue
             if t.get("status") in ("pending", "in_progress"):
-                out.append((str(t.get("id", "?")), str(t.get("subject", ""))[:70]))
+                out.append(
+                    (str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status"))
+                )
     except OSError:
         return []
     out.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 1 << 30)
@@ -1124,7 +1126,7 @@ def main():
 
     remaining_lines = (
         ["[ ] " + i for i in open_items]
-        + ["task #%s %s" % (i, s) for i, s in tasks]
+        + ["task #%s [%s] %s" % (i, st, sub) for i, sub, st in tasks]
         + ["[?] " + d for d in deferred]
         + ["[>] " + f for f in in_flight]
     )
@@ -1247,7 +1249,7 @@ def main():
     # confirmed form carries the operator's own words back.
     unconfirmed = [
         i
-        for i, _ in tasks
+        for i, _, _ in tasks
         if re.search(r"#%s\b[^\n]*\bYou\b" % re.escape(i), last_msg or "")
         and not re.search(
             r"#%s\b[^\n]*You \(User Thinks So\)" % re.escape(i), last_msg or ""
@@ -1264,7 +1266,51 @@ def main():
     # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)"
     # in the app, so a Remaining section that omits one of those six is out of
     # sync with what they are looking at. Every open task id must appear.
-    missing_ids = [i for i, _ in tasks if not re.search(r"#%s\b" % re.escape(i), last_msg or "")]
+    missing_ids = [i for i, _, _ in tasks if not re.search(r"#%s\b" % re.escape(i), last_msg or "")]
+    # EVERY REMAINING ITEM MUST DECLARE ITS STATE. "who it is blocked on" is not
+    # the same question as "is anyone working it": a list where six items all look
+    # alike cannot tell the operator what is moving and what is parked. The word
+    # must also AGREE with the harness, which is the list they see in their app.
+    state_re = re.compile(r"\b(ongoing|in progress|in-progress|pending|blocked|parked)\b", re.I)
+    ONGOING = {"ongoing", "in progress", "in-progress"}
+    unstated, mislabelled = [], []
+    if REMAINING_HEADING.search(last_msg or ""):
+        section = (last_msg or "")[REMAINING_HEADING.search(last_msg).start():]
+        for tid, _sub, status in tasks:
+            line = next(
+                (ln for ln in section.splitlines() if re.search(r"#%s\b" % re.escape(tid), ln)),
+                "",
+            )
+            if not line:
+                continue  # the missing-id check below already covers this
+            found = state_re.search(line)
+            if not found:
+                unstated.append(tid)
+                continue
+            word = found.group(1).lower()
+            if status == "in_progress" and word not in ONGOING:
+                mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
+            elif status == "pending" and word in ONGOING:
+                mislabelled.append("#%s is pending but reads '%s'" % (tid, word))
+    if unstated:
+        violations.append(
+            "%s listed without a STATE. Every remaining item must say whether it is "
+            "ongoing, pending or blocked, because 'who it is blocked on' does not tell "
+            "the operator what is actually moving. Add the word to each line."
+            % ", ".join("#" + i for i in unstated)
+        )
+    if mislabelled:
+        violations.append(
+            "your Remaining section DISAGREES with the task list the operator sees: %s. "
+            "Either fix the wording or move the task with TaskUpdate, so the two match."
+            % "; ".join(mislabelled)
+        )
+    # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything
+    # is honestly parked is a legitimate state, and blocking on it would nag a
+    # session that is correctly waiting. The case that actually matters -- driving
+    # something while the operator's list still shows it pending -- is caught by
+    # the agreement check above, which fires when the message says "ongoing" and
+    # the harness disagrees.
     if tasks and REMAINING_HEADING.search(last_msg or "") and missing_ids:
         violations.append(
             "your Remaining section is OUT OF SYNC with the task list the operator sees. "

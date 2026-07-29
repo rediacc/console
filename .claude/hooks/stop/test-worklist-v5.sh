@@ -130,7 +130,7 @@ setup
 say "Here is the answer.
 
 ## Remaining
-| #7 | merge the chain | you |"
+| #7 | merge the chain | pending, you |"
 brief_now
 hand_now
 task 7 pending "merge the chain"
@@ -179,7 +179,7 @@ setup
 say "waiting on CI.
 
 ## Remaining
-- #7 merge the chain"
+- #7 merge the chain (pending)"
 brief_now
 hand_now
 task 7 pending "merge the chain"
@@ -211,7 +211,7 @@ setup
 say "answer
 
 ## Remaining
-| #7 | thing | me |"
+| #7 | thing | pending, me |"
 brief_now
 hand_now
 task 7 pending "thing"
@@ -223,8 +223,8 @@ setup
 say "answer
 
 ## Remaining
-| #7 | thing | me |
-| #8 | the forgotten one | you |"
+| #7 | thing | pending, me |
+| #8 | the forgotten one | pending, you |"
 brief_now
 hand_now
 task 7 pending "thing"
@@ -236,7 +236,7 @@ setup
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 brief_now
 task 7 pending "thing"
 check "a missing compact-handover blocks" block "handover is missing"
@@ -246,7 +246,7 @@ setup
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 brief_now
 task 7 pending "thing"
 printf 'wip\n' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
@@ -304,7 +304,7 @@ say "answer with no section yet"
     say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 ) &
 check "a heading written mid-check is picked up by the retry" allow ""
 wait
@@ -320,7 +320,7 @@ task 7 pending "thing"
 say "Here is the answer.
 
 ## Remaining
-| #7 | thing | me |"
+| #7 | thing | pending, me |"
 say "Checking one more thing."
 say "And another."
 check "a Remaining section survives later narration blocks" allow ""
@@ -332,7 +332,7 @@ hand_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[{"id":"aaa","schedule":"*/23 * * * *"},{"id":"bbb","schedule":"17 * * * *"}]'
 check "two live crons block" block "2 crons are live"
@@ -345,7 +345,7 @@ hand_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
 check "one live cron is fine" allow ""
@@ -358,7 +358,7 @@ hand_now
 say "answer
 
 ## Remaining
-| #7 | thing | You |"
+| #7 | thing | pending, You |"
 task 7 pending "thing"
 check "an unconfirmed operator-block is rejected" block "WITHOUT their confirmation"
 
@@ -369,7 +369,7 @@ hand_now
 say "answer
 
 ## Remaining
-| #7 | thing | You (User Thinks So) |"
+| #7 | thing | pending, You (User Thinks So) |"
 task 7 pending "thing"
 check "the confirmed operator-block is accepted" allow ""
 
@@ -379,7 +379,7 @@ brief_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 python3 -c "print('x'*900)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
 check "an over-long handover blocks" block "handover is bloated"
@@ -390,7 +390,7 @@ brief_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.\n\nSecond paragraph, which is exactly what makes this handover invalid.\n' |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
@@ -403,7 +403,7 @@ hand_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 mkdir -p "$BASE/proj/docs/ci-overhaul"
 echo "# design" >"$BASE/proj/docs/ci-overhaul/README.md"
@@ -450,7 +450,7 @@ hand_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
 run >/dev/null
@@ -464,7 +464,7 @@ hand_now
 say "answer
 
 ## Remaining
-- #7 thing"
+- #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[]'
 check "no cron ever means no complaint" allow ""
@@ -488,7 +488,7 @@ task 7 pending "thing"
     git commit -qm newer
     git update-ref refs/remotes/origin/pub "$(git rev-parse HEAD)"
 ) >/dev/null 2>&1
-out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
         WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off python3 "$HOOK" 2>/dev/null)"
 if grep -qF "is a trap for whoever checks it out" <<<"$out"; then
@@ -522,7 +522,7 @@ cat >"$BASE/binonly/gh" <<'SHIM'
 echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":9,"lastEditedAt":"1970-01-01T00:00:00Z","updatedAt":"1970-01-01T00:00:00Z"}]}}}}'
 SHIM
 chmod +x "$BASE/binonly/gh"
-out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
         WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
         python3 "$HOOK" 2>/dev/null)"
@@ -540,7 +540,7 @@ cat >"$BASE/binonly/gh" <<'SHIM'
 echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":9,"lastEditedAt":"2999-01-01T00:00:00Z","updatedAt":"2999-01-01T00:00:00Z"}]}}}}'
 SHIM
 chmod +x "$BASE/binonly/gh"
-out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
         WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
         python3 "$HOOK" 2>/dev/null)"
@@ -552,6 +552,39 @@ else
     PASS=$((PASS + 1))
 fi
 rm -f "$BASE/binonly/gh"
+
+echo "== 39. an item listed with NO state word blocks =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | me |"
+task 7 pending "thing"
+check "a stateless remaining item blocks" block "listed without a STATE"
+
+echo "== 40. saying 'ongoing' while the app says pending blocks =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | ongoing, me |"
+task 7 pending "thing"
+check "message and task list must agree" block "DISAGREES with the task list"
+
+echo "== 41. 'ongoing' matches an in_progress task =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | ongoing, me |"
+task 7 in_progress "thing"
+check "an in_progress task labelled ongoing is fine" allow ""
 
 echo
 echo "  passed=$PASS failed=$FAIL"
