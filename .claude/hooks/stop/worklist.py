@@ -415,7 +415,8 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
 
 
 HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "120"))
-HANDOVER_MIN_CHARS = 200
+HANDOVER_MIN_CHARS = 250
+HANDOVER_MAX_CHARS = 600
 
 
 def handover_path(worklist, session_id):
@@ -439,8 +440,13 @@ def handover_state(worklist, session_id):
         age = (time.time() - p.stat().st_mtime) / 60.0
     except OSError:
         return "missing", None, ""
-    if len(text.strip()) < HANDOVER_MIN_CHARS:
+    body = text.strip()
+    if len(body) < HANDOVER_MIN_CHARS:
         return "thin", int(age), text
+    if len(body) > HANDOVER_MAX_CHARS:
+        return "bloated", int(age), text
+    if "\n\n" in body:
+        return "multi-paragraph", int(age), text
     if age > HANDOVER_STALE_MIN:
         return "stale", int(age), text
     return "ok", int(age), text
@@ -597,11 +603,20 @@ Remaining work the harness is tracking:
 Fresh background leases (work genuinely in flight): %(leases)d
 Declared loop: %(loop)s
 
-Two things to check specifically, because they are how this session drifts:
-  - Does the last message list EVERY open task by id? The operator sees the same
-    list in their app, so an omission is a report that disagrees with their view.
+Check these specifically, because they are how this session drifts:
+  - Does the message list EVERY open task by id? The operator sees the same list
+    in their app, so an omission is a report that disagrees with their view.
   - Does it state the loop schedule, so the operator knows when work resumes?
-Answer "continue" if either is missing.
+  - Is anything marked blocked on the operator that they never confirmed? Only
+    "You (User Thinks So)" counts; anything else is the session guessing at
+    someone else's intent, and it must become an AskUserQuestion instead.
+  - Are any remaining items COMPLICATED (multi-file design, an unknown root
+    cause, or work that needs its own verification loop)? If so the message must
+    say which ones, and say that a Plan agent will design it and a separate
+    sub-agent will implement it. This session leads and reviews; it does not do
+    complicated work inline. Sub-agents are kept OPEN and given feedback rather
+    than re-spawned, so they fix their own mistakes in their own context.
+Answer "continue" if any of these is missing.
 
 The session's last message:
 <<<
@@ -722,9 +737,10 @@ def main():
             )
         else:
             msg = (
-                "CONTEXT WAS JUST COMPACTED. Resume from this handover (%s, %d min old). "
-                "Trust it over your summarised memory, and re-verify anything it marks "
-                "as decided before calling it blocked:\n\n%s" % (state, age or 0, text)
+                "You are picking up an in-progress session and your context was just "
+                "compacted, so treat the briefing below as the truth and your own "
+                "recollection as unreliable. Re-verify anything it calls decided before "
+                "you report it as blocked.\n\n%s" % text.strip()
             )
         emit(
             {
@@ -829,9 +845,20 @@ def main():
     # pre-flight, one block, every violation named at once.
     judged_ok = None
     tasks = pending_tasks(session_id)
-    last_msg, tools_this_turn, msg_readable = transcript_tail(
-        event.get("transcript_path", ""), want=REMAINING_HEADING
-    )
+    # THE EVENT ALREADY CARRIES ALL OF THIS. I built transcript parsing, a flush
+    # retry and a whole-turn accumulator before reading a captured Stop payload
+    # and finding `last_assistant_message`, `session_crons` and `background_tasks`
+    # sitting in it. The transcript path stays as a FALLBACK for older payloads,
+    # but the event is authoritative: it is exact, unraced, and immune to the
+    # narration-block bug that made this check fire on its own author.
+    last_msg = event.get("last_assistant_message") or ""
+    msg_readable = bool(last_msg)
+    if not msg_readable:
+        last_msg, _tools, msg_readable = transcript_tail(
+            event.get("transcript_path", ""), want=REMAINING_HEADING
+        )
+    live_crons = event.get("session_crons") or []
+    live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     # Keep the raw event: when a check fires wrongly the first question is always
     # "what did the hook actually receive", and that is unanswerable afterwards.
     try:
@@ -895,21 +922,49 @@ def main():
             "project one operator decision (the autopilot App was reported blocked "
             "AFTER the operator had created it), and the transcript cannot be the "
             "recovery mechanism because the transcript is what gets summarised. "
-            "Refresh it, >=%d chars, covering where to continue and the latest status:\n"
+            "Rewrite it as ONE PARAGRAPH of %d-%d characters, addressed to a session "
+            "that knows NOTHING: what this work is, where it stands, what to do next, "
+            "and any fact that must not be re-litigated. No headings, no bullet lists, "
+            "no blank lines. It is a handoff prompt, not a status report:\n"
             "    .claude/hooks/stop/worklist.py --handover %s <<'EOF'\n    ...\n    EOF"
             % (
                 hstate,
                 "" if hage is None else " (%d min old, limit %d)" % (hage, HANDOVER_STALE_MIN),
                 HANDOVER_MIN_CHARS,
+                HANDOVER_MAX_CHARS,
                 (session_id or "unknown")[:8],
             )
         )
-    if lcrons > 1:
+    if len(live_crons) > 1:
         violations.append(
-            "you declared %d crons. ONE is almost always enough: a second schedule fires "
-            "the same review twice at different phases and each firing costs a turn. "
-            "Delete the redundant one with CronDelete, then re-declare with the real "
-            "count." % lcrons
+            "%d crons are live on this session: %s. ONE is almost always enough, because a "
+            "second schedule fires the same review twice at different phases and each "
+            "firing costs a turn. Delete the redundant one with CronDelete."
+            % (
+                len(live_crons),
+                ", ".join(
+                    "%s (%s)" % (c.get("id", "?"), c.get("schedule", "?")) for c in live_crons
+                ),
+            )
+        )
+    # A "blocked on you" claim the operator never confirmed is a guess about
+    # someone else's intent, and it is how work parks itself indefinitely. The
+    # confirmed form carries the operator's own words back.
+    unconfirmed = [
+        i
+        for i, _ in tasks
+        if re.search(r"#%s\b[^\n]*\bYou\b" % re.escape(i), last_msg or "")
+        and not re.search(
+            r"#%s\b[^\n]*You \(User Thinks So\)" % re.escape(i), last_msg or ""
+        )
+    ]
+    if unconfirmed:
+        violations.append(
+            "%s marked blocked on the operator WITHOUT their confirmation. You cannot "
+            "declare someone else blocked: ask with AskUserQuestion, giving concrete "
+            "options plus the do-it-anyway option, and only then write it as "
+            "'You (User Thinks So)'. Until they answer, it is blocked on YOU."
+            % ", ".join("#" + i for i in unconfirmed)
         )
     # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)"
     # in the app, so a Remaining section that omits one of those six is out of
