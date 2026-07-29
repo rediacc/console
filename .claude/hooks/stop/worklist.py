@@ -452,6 +452,48 @@ def handover_state(worklist, session_id):
     return "ok", int(age), text
 
 
+DESIGN_DOCS = os.environ.get("WORKLIST_DESIGN_DOCS", "docs/ci-overhaul")
+DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
+# What counts as "the program surface": changing these is changing the thing the
+# design docs describe.
+PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claude").split()
+
+
+def _git(root, *args):
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def docs_drift(root):
+    """(state, drift_commits, docs_dir) -- how far the code has moved past the docs.
+
+    THE FAILURE THIS CATCHES, measured on the session that asked for it: 44
+    commits touching .ci/.github/.claude since the design docs were last updated.
+    Those documents are how a NEW or freshly-compacted session understands what
+    is being built and why, so code moving without them does not merely leave
+    stale prose behind, it deletes the next session's starting context.
+
+    'absent' when there is no such directory, so the check scopes itself to
+    projects that actually keep design docs and says so rather than passing
+    quietly.
+    """
+    docs = pathlib.Path(root) / DESIGN_DOCS
+    if not docs.is_dir():
+        return "absent", 0, str(docs)
+    last_docs = _git(root, "log", "-1", "--format=%H", "--", DESIGN_DOCS)
+    base = last_docs or _git(root, "merge-base", "HEAD", "origin/main")
+    if not base:
+        return "absent", 0, str(docs)
+    n = _git(root, "rev-list", "--count", "%s..HEAD" % base, "--", *PROGRAM_SURFACE)
+    drift = int(n) if n.isdigit() else 0
+    return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
+
+
 def loop_path(worklist):
     return worklist.with_suffix(".loop")
 
@@ -715,6 +757,51 @@ def main():
         handover_path(wl, sys.argv[2]).write_text(body, encoding="utf-8")
         print("handover written for %s (%d chars)" % (sys.argv[2], len(body)))
         return
+    if sys.argv[1:2] == ["--session-start"]:
+        try:
+            ev = json.load(sys.stdin)
+        except (json.JSONDecodeError, ValueError):
+            ev = {}
+        root = project_root(os.environ.get("CLAUDE_PROJECT_DIR") or ev.get("cwd") or os.getcwd())
+        docs = pathlib.Path(root) / DESIGN_DOCS
+        if not docs.is_dir():
+            sys.exit(0)
+        files = sorted(f for f in docs.iterdir() if f.is_file() and f.suffix == ".md")
+        listing = "\n".join(
+            "  %s (%d lines)"
+            % (f.relative_to(root), len(f.read_text(errors="replace").splitlines()))
+            for f in files
+        )
+        state, drift, _ = docs_drift(root)
+        stale = (
+            ""
+            if state != "drifted"
+            else "\n\nRIGHT NOW THEY ARE STALE: %d commits have touched %s since the docs "
+            "were last updated. Reconcile them early, not at the end."
+            % (drift, " ".join(PROGRAM_SURFACE))
+        )
+        emit(
+            {
+                "systemMessage": "SessionStart: %d design doc(s) in %s%s"
+                % (
+                    len(files),
+                    DESIGN_DOCS,
+                    "" if state != "drifted" else " (DRIFTED by %d commits)" % drift,
+                ),
+                "hookSpecificOutput": {
+                    "hookEventName": "SessionStart",
+                    "additionalContext": (
+                        "This project keeps its design in %s, and those documents are the "
+                        "starting context for the work. READ ALL OF THEM before acting: "
+                        "they carry decisions you must not re-litigate and constraints "
+                        "that are invisible in the code.\n%s\n\n"
+                        "They are also YOURS TO MAINTAIN. When you change what the program "
+                        "does, update the document describing it in the SAME turn.%s"
+                        % (DESIGN_DOCS, listing, stale)
+                    ),
+                },
+            }
+        )
     if sys.argv[1:2] == ["--post-compact"]:
         # PostCompact hook: the model has just lost its context. Hand the
         # document straight back as additionalContext so continuity does not
@@ -740,7 +827,9 @@ def main():
                 "You are picking up an in-progress session and your context was just "
                 "compacted, so treat the briefing below as the truth and your own "
                 "recollection as unreliable. Re-verify anything it calls decided before "
-                "you report it as blocked.\n\n%s" % text.strip()
+                "you report it as blocked. Re-read %s before acting, and update whichever "
+                "of those documents your work has invalidated.\n\n%s"
+                % (DESIGN_DOCS, text.strip())
             )
         emit(
             {
@@ -934,6 +1023,15 @@ def main():
                 HANDOVER_MAX_CHARS,
                 (session_id or "unknown")[:8],
             )
+        )
+    dstate, ddrift, ddir = docs_drift(project_root(event.get("cwd") or os.getcwd()))
+    if dstate == "drifted":
+        violations.append(
+            "the design docs have DRIFTED: %d commits have touched %s since %s was last "
+            "updated. Those documents are how a new or compacted session understands this "
+            "work, so code moving without them deletes the next session's starting "
+            "context. Update the ones your changes invalidated, in this turn."
+            % (ddrift, " ".join(PROGRAM_SURFACE), ddir)
         )
     if len(live_crons) > 1:
         violations.append(

@@ -425,6 +425,53 @@ printf 'You are picking up the ci-overhaul session driving PR #543 to green on b
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
 check "a multi-paragraph handover blocks" block "handover is multi-paragraph"
 
+echo "== 31. design-doc DRIFT blocks =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+mkdir -p "$BASE/proj/docs/ci-overhaul"
+echo "# design" >"$BASE/proj/docs/ci-overhaul/README.md"
+(
+    cd "$BASE/proj" || exit
+    git init -q 2>/dev/null
+    git config user.email t@t
+    git config user.name t
+    mkdir -p .ci
+    git add -A >/dev/null 2>&1
+    git commit -qm docs 2>/dev/null
+    for i in $(seq 1 12); do
+        echo "$i" >".ci/f$i.sh"
+        git add -A >/dev/null 2>&1
+        git commit -qm "code $i" 2>/dev/null
+    done
+) >/dev/null 2>&1
+check "12 code commits with untouched docs block" block "design docs have DRIFTED"
+
+echo "== 32. no drift once the docs move with the code =="
+(
+    cd "$BASE/proj" || exit
+    echo "# updated" >>docs/ci-overhaul/README.md
+    git add -A >/dev/null 2>&1
+    git commit -qm "docs refresh" 2>/dev/null
+) >/dev/null 2>&1
+check "docs updated after the code clears the drift" allow ""
+
+echo "== 33. SessionStart hands the design docs to a new session =="
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --session-start 2>/dev/null)"
+if grep -qF "READ ALL OF THEM" <<<"$out" && grep -qF "docs/ci-overhaul/README.md" <<<"$out"; then
+    echo "  PASS: SessionStart lists the docs and demands they be read"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: SessionStart did not surface the docs: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
