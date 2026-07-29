@@ -1296,7 +1296,13 @@ def main():
     # the "found, not fixed" list is meant as a last resort, not a parking bay. A
     # session that ends every turn with one has converted a fixing rule into a
     # reporting habit, which is exactly what the operator objected to.
-    if re.search(r"found,?\s+not\s+fixed", last_msg or "", re.I):
+    # ANCHORED TO A LINE START, because the first version matched the phrase
+    # ANYWHERE and promptly fired on a message that was DESCRIBING this very
+    # check ("2. \"Found, not fixed\" is now a blocking phrase"). A gate that
+    # cannot survive being written about is too broad. A real list leads a line,
+    # optionally behind markdown emphasis or a heading marker; a mention sits
+    # mid-sentence or inside quotes or backticks, none of which match here.
+    if re.search(r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b", last_msg or "", re.I | re.M):
         violations.append(
             "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
             "what you find: reporting it is the fallback, not the default. For each item, "

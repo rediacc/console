@@ -599,6 +599,20 @@ Found, not fixed: CLAUDE.md points at a dead endpoint.
 task 7 pending "thing"
 check "reporting instead of fixing blocks" block "CLAUDE.md's rule is to FIX"
 
+echo "== 43b. MENTIONING the phrase mid-sentence must NOT block =="
+setup
+brief_now
+hand_now
+say "answer
+
+The hook now blocks on a found, not fixed list, and I described that as
+\"Found, not fixed\" is now a blocking phrase.
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "describing the check does not trip it" allow ""
+
 echo "== 43. the same message without that phrase passes =="
 setup
 brief_now
