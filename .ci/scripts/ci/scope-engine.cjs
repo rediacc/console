@@ -159,9 +159,100 @@ function evaluateBaselineCandidate(candidate) {
     return { usable: false, reason: 'reduced-baseline' };
   }
   if (candidate.plan.reconciled !== true) {
-    return { usable: false, reason: 'unreconciled-outcome' };
+    // The leading token stays exactly 'unreconciled-outcome' whether or not a
+    // reason is available: the trail is read by eye and by string match, and
+    // an unconditional suffix would change the verdict's identity rather than
+    // annotate it. attestPlan's refusal reason is appended when there is one.
+    const why = candidate.plan.attest_reason;
+    return { usable: false, reason: why ? `unreconciled-outcome:${why}` : 'unreconciled-outcome' };
   }
   return { usable: true, reason: 'full-green-attested' };
+}
+
+// ---------------------------------------------------------------------------
+// Attestation, VERIFY-AT-READ. Pure, and exported for unit tests.
+//
+// NOBODY WRITES `reconciled`, the READER derives it. The alternative design,
+// where the run that produced the plan marks its own artifact once its
+// reconciler passes, mints a trust token that then travels forward in time:
+// every later reader has to believe a claim it cannot check, and the check
+// would have to live in `ci-complete` (the pipeline's single required check,
+// on ubuntu-slim with timeout-minutes: 5) where a slow artifact write costs
+// every PR. Here the consumer already holds the plan, can fetch that run's
+// per-job outcomes, and can run the EXISTING pure reconcile() itself. Nothing
+// is carried forward, and the verdict lands on the FAIL-OPEN side: a wrong
+// refusal costs one full CI round, not a red required check.
+//
+// SELF-DECLARATION IS DELETED, NOT BLACKLISTED. The downloaded bytes come from
+// a different run and `reconciled` is now load-bearing, so whatever the
+// artifact says about itself is dropped before anything reads it; only the
+// recomputation below may put it back. A blacklist would have to enumerate the
+// ways a writer could vouch for itself; deleting the field enumerates nothing.
+//
+// `jobs` may be an ARRAY or a zero-argument function returning one. The
+// function form is what makes the cheap-first ordering real rather than
+// stylistic: a candidate that is reduced, or carries another run's id, is
+// refused without ever paying for a Jobs API round trip, and there is one such
+// round trip per candidate walked.
+//
+// It never throws. Every refusal is a plan WITHOUT `reconciled`, carrying
+// `attest_reason`, which evaluateBaselineCandidate then reads as unusable.
+// ---------------------------------------------------------------------------
+function attestPlan({ plan, jobs, runId, sha, reconcile }) {
+  if (!plan || typeof plan !== 'object') return plan;
+  delete plan.reconciled;
+  delete plan.attest_reason;
+
+  const refuse = (reason) => {
+    plan.attest_reason = reason;
+    return plan;
+  };
+  const msg = (e) => (e && e.message ? e.message : String(e));
+
+  try {
+    // Cheapest first, and the order is a cost decision, not a style one.
+    // A non-full plan can never be a baseline whatever the reconciler says
+    // (case 1: evidence does not chain across reduced rounds), so asking the
+    // Jobs API about it would be a round trip spent on a foregone conclusion.
+    if (plan.mode !== 'full') return refuse('not-full-plan');
+    // Case 30 again, but at READ time: a plan that does not name the run we
+    // downloaded it from is stale or substituted evidence.
+    // The `!plan.run_id` half is load-bearing: without it a plan carrying NO
+    // run_id, read for a runId that is itself missing, would compare
+    // String(undefined) to String(undefined) and pass a check it should fail.
+    if (!plan.run_id || String(plan.run_id) !== String(runId)) return refuse('run-id-mismatch');
+    // The plan describes one commit's delta. If it names a different head than
+    // the candidate we are considering, it is not that candidate's proof.
+    if (plan.head_sha && plan.head_sha !== sha) return refuse('head-sha-mismatch');
+    // The reconciler is lazily required by the caller and may be unavailable
+    // (its name table throws at load on drift). No verifier, no attestation.
+    if (typeof reconcile !== 'function') return refuse('reconciler-unavailable');
+
+    let payload;
+    try {
+      payload = typeof jobs === 'function' ? jobs() : jobs;
+    } catch (e) {
+      return refuse(`jobs-unreadable:${msg(e)}`);
+    }
+    const observed = Array.isArray(payload) ? payload : payload && payload.jobs;
+    const list = Array.isArray(observed) ? observed.filter((j) => j && typeof j.name === 'string') : null;
+    // An EMPTY job list is unusable evidence, not a clean bill of health: it
+    // is what an unreadable payload and a run that never materialised both
+    // look like, and reconcile() would happily report ok on it.
+    if (!list || list.length === 0) return refuse('jobs-unreadable');
+
+    const r = reconcile(plan, list, { runId });
+    if (r && r.ok === true) {
+      plan.reconciled = true; // THE one and only assignment.
+      return plan;
+    }
+    return refuse(`reconcile:${(r && r.failures && r.failures[0]) || 'refused-without-a-reason'}`);
+  } catch (e) {
+    // An unexpected throw must degrade to "not attested", never to a crash and
+    // never to an attestation: the engine runs inside `initialize`, which
+    // every other job depends on.
+    return refuse(`attest-threw:${msg(e)}`);
+  }
 }
 
 // Case 5: CI validates the MERGE commit, so the proof requires the base to be
@@ -189,11 +280,18 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 // everything and say which of them happened. The only direction this
 // mechanism can be wrong in is running MORE CI than needed.
 //
-// Like --classify, this mode lands INERT. Nothing in CI produces an attested
-// skip-plan artifact yet, so every candidate today resolves to 'no-skip-plan'
-// and the answer is full CI with that reason. It cannot change CI behaviour
-// until the attestation side is wired, which is deliberate: it means this can
-// be landed and observed before it is trusted.
+// Like --classify, this mode lands INERT, and it stays inert even now that
+// baselines can become usable: NOTHING consumes the engine's output. No job
+// `if:` in any workflow references a scope value, so a resolved baseline
+// changes a shadow artifact and nothing else. It cannot change CI behaviour
+// until someone wires the vector to a job condition, which is deliberate: it
+// means this can be landed and observed before it is trusted.
+//
+// Candidates USED to resolve to 'no-skip-plan' unconditionally, because
+// nothing wrote the artifact. The shadow step in `initialize` now uploads
+// `ci-skip-plan` on every PR run, so the artifact exists and the question has
+// moved from "is there a plan" to "does that plan describe what that run
+// actually did". That is attestPlan's job, at READ time, per candidate.
 //
 // WIRING PRECONDITION, and it is not optional. `initialize` checks out with
 // `fetch-tags: true` and NO `fetch-depth` (ci.yml:128-131), which is a depth-1
@@ -351,29 +449,106 @@ function defaultRun(cmd, args) {
   return execFileSync(cmd, args, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 }
 
+// `gh api --paginate` on an OBJECT-shaped endpoint (the Jobs API returns
+// { total_count, jobs: [...] }) concatenates ONE JSON OBJECT PER PAGE. A plain
+// JSON.parse succeeds on the single-page case and throws the moment a run has
+// more than per_page jobs, which is the shape a growing pipeline drifts into
+// silently. Parse the stream properly and merge the pages instead.
+function parseJsonStream(text) {
+  const values = [];
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (start === -1) {
+      if (c !== '{' && c !== '[') continue;
+      start = i;
+      depth = 0;
+    }
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') inStr = true;
+    else if (c === '{' || c === '[') depth++;
+    else if (c === '}' || c === ']') {
+      depth--;
+      if (depth === 0) {
+        values.push(JSON.parse(text.slice(start, i + 1)));
+        start = -1;
+      }
+    }
+  }
+  return values;
+}
+
 function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
   const git = (...args) => run('git', ['-C', repoRoot, ...args]);
   const gh = (...args) => run('gh', args);
 
-  const readPlanForRun = (runId) => {
+  // The per-job outcomes for one run. THROWS on anything unusable, and the
+  // throw is the interface: attestPlan turns it into 'jobs-unreadable', which
+  // refuses the baseline. Returning an empty list instead would read as "that
+  // run skipped nothing", which is the one answer this must never fabricate.
+  const readJobsForRun = (runId) => {
+    const text = gh('api', `repos/${repo}/actions/runs/${runId}/jobs?per_page=100`, '--paginate');
+    const pages = parseJsonStream(text);
+    if (pages.length === 0) throw new Error('jobs payload carried no JSON');
+    if (pages.length === 1) return pages[0];
+    return { jobs: pages.flatMap((p) => (Array.isArray(p) ? p : (p && p.jobs) || [])) };
+  };
+
+  const downloadPlan = (runId) => {
     const os = require('os');
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'scope-plan-'));
     try {
-      gh('run', 'download', String(runId), '--repo', repo, '-n', artifactName, '-D', dir);
-    } catch {
-      // Absent or expired reads exactly like never-attested (case 3), which is
-      // the correct conflation: neither can prove what that run executed.
-      return null;
-    }
-    const candidatePaths = ['plan.json', 'skip-plan.json'].map((f) => path.join(dir, f));
-    for (const p of candidatePaths) {
       try {
-        return JSON.parse(fs.readFileSync(p, 'utf8'));
+        gh('run', 'download', String(runId), '--repo', repo, '-n', artifactName, '-D', dir);
       } catch {
-        continue;
+        // Absent or expired reads exactly like never-attested (case 3), which
+        // is the correct conflation: neither can prove what that run executed.
+        return null;
+      }
+      for (const f of ['plan.json', 'skip-plan.json']) {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        } catch {
+          continue;
+        }
+      }
+      return null;
+    } finally {
+      // The walk downloads up to `limit` plans per invocation and this used to
+      // leak every one of them into the runner's tmpdir.
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* a tmpdir we cannot remove is not worth failing a CI round over */
       }
     }
-    return null;
+  };
+
+  // Download the plan, then PROVE it against what that run actually did.
+  // Returns an attested plan, an un-attested plan carrying attest_reason, or
+  // null when there is no plan at all.
+  const readAttestedPlanForRun = (runId, sha) => {
+    const plan = downloadPlan(runId);
+    if (!plan) return null;
+    // LAZY, and inside a try. skip-plan-reconcile.cjs runs validateNameTable at
+    // module load and THROWS on table drift; required at the top of this file,
+    // that throw would take down the whole engine (including --classify, which
+    // has nothing to do with attestation) instead of degrading to full CI.
+    let reconcile = null;
+    try {
+      ({ reconcile } = require('./skip-plan-reconcile.cjs'));
+    } catch {
+      reconcile = null; // becomes 'reconciler-unavailable' below
+    }
+    return attestPlan({ plan, jobs: () => readJobsForRun(runId), runId, sha, reconcile });
   };
 
   return {
@@ -404,13 +579,24 @@ function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 
         }
         const done = runs.filter((r) => r.status === 'completed');
         if (done.length === 0) return { sha, conclusion: null, plan: null };
-        const green = done.find((r) => r.conclusion === 'success') || done[0];
-        return {
-          sha,
-          conclusion: green.conclusion,
-          runId: green.databaseId,
-          plan: green.conclusion === 'success' ? readPlanForRun(green.databaseId) : null,
-        };
+        // ONE sha can carry SEVERAL green runs of the same workflow: the
+        // pull_request run and the push run for the same commit are distinct
+        // runs, and only the pull_request one uploads a ci-skip-plan. Picking
+        // a single green run and asking it for a plan therefore lost the
+        // baseline whenever the wrong one happened to sort first, and reported
+        // 'no-skip-plan' for a commit that had a perfectly good plan.
+        const greens = done.filter((r) => r.conclusion === 'success');
+        for (const g of greens) {
+          const plan = readAttestedPlanForRun(g.databaseId, sha);
+          if (plan) return { sha, conclusion: 'success', runId: g.databaseId, plan };
+        }
+        if (greens.length > 0) {
+          return { sha, conclusion: 'success', runId: greens[0].databaseId, plan: null };
+        }
+        // No green run at all: report the red one and download nothing. A run
+        // that failed cannot be a baseline whatever its plan says, so paying
+        // for the artifact would buy an answer nobody reads.
+        return { sha, conclusion: done[0].conclusion, runId: done[0].databaseId, plan: null };
       });
     },
   };
@@ -430,7 +616,8 @@ function usage() {
     'stdin and prints the plan JSON. It performs no I/O beyond that read.',
     '',
     '--resolve-baseline finds the newest ancestor of --head whose run was green,',
-    'ran a full suite and left a reconciled skip-plan, then classifies the NET',
+    'ran a full suite and whose skip-plan reconciles against the per-job outcomes',
+    'that run actually produced (verified here, at read time), then classifies the NET',
     'delta from there. It needs git and gh. Every failure mode resolves to full',
     'CI with a stated reason; it never resolves to a smaller run on bad input.',
   ].join('\n');
@@ -529,6 +716,8 @@ module.exports = {
   parseFileList,
   computeWorkflowClosure,
   evaluateBaselineCandidate,
+  attestPlan,
+  parseJsonStream,
   isBaseUnchanged,
   selectBaseline,
   decideBaseMove,
