@@ -120,6 +120,7 @@ What still allows a stop:
 import datetime
 import fcntl
 import glob
+import hashlib
 import json
 import os
 import pathlib
@@ -423,6 +424,9 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
 # 560-character write against losing an operator decision, which has already
 # happened once (the autopilot App reported blocked AFTER it was created).
 HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "10"))
+# Consecutive stops that may move nothing before the hook demands a planning or
+# investigation agent. Three is the operator's number, not a guess.
+STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
 HANDOVER_MIN_CHARS = 250
 HANDOVER_MAX_CHARS = 600
 
@@ -611,6 +615,48 @@ def pr_body_freshness(root):
     return "ok", ""
 
 
+def stuck_rounds(worklist, session_id, tasks, head):
+    """(count, fired) -- how many consecutive stops have moved NOTHING?
+
+    THE OPERATOR'S RULE, IN THEIR WORDS: "I'd go with employing a
+    planning/investigation agent if we cannot solve in last 3 round." Three
+    identical stops means the APPROACH is wrong, not that it deserves a fourth
+    attempt. The remedy is prescribed rather than left open, because "try
+    harder" is what a stuck session already believes it is doing.
+
+    It generalises past any single failure. It covers the eleven consecutive
+    self-cancelled CI runs (three rounds of pushing with nothing learned), and
+    it covers the Wave C sit (three stops reporting the same blocker nobody had
+    verified), without needing a separate detector for either.
+
+    The signature is deliberately COARSE: the harness task list plus HEAD. A
+    commit moves it, ticking a task moves it, changing a task's status moves
+    it. Talking does not. That is the point, since every one of the failures
+    this catches involved a session that was producing text and no artifacts.
+
+    It fires at 3 and then RESETS, so it nags at 3, 6, 9 rather than every stop
+    once stuck. A session needs room to actually run the agent it was told to
+    run, and a check that fires forever is one the session learns to route
+    around.
+    """
+    # tasks are (id, subject, status); the STATUS is what has to move.
+    sig = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks)) + "#" + (head or "")
+    digest = hashlib.sha1(sig.encode("utf-8", "replace")).hexdigest()[:12]
+    p = worklist.with_suffix(".stuck-%s" % (session_id or "unknown")[:8])
+    try:
+        prev, count = p.read_text().strip().split(None, 1)
+        count = int(count)
+    except (OSError, ValueError):
+        prev, count = "", 0
+    count = count + 1 if digest == prev else 1
+    fired = count >= STUCK_ROUNDS
+    try:
+        p.write_text("%s %d" % (digest, 0 if fired else count))
+    except OSError:
+        pass
+    return count, fired
+
+
 def cron_memory(worklist, session_id, live_count):
     """(died, remembered_max) -- was a loop running before that is gone now?
 
@@ -788,10 +834,17 @@ You are a stop-gate for an autonomous coding session. Decide ONE thing: is
 ending the turn right now legitimate, or is the session idling with work it
 could be doing?
 
-Answer "stop" when the session is genuinely blocked: waiting on a CI run or a
-background task it has already started, or waiting on a decision only the human
-can make. Waiting is legitimate; announcing that it is waiting, repeatedly,
-while tracked work sits undone is not.
+Answer "stop" when the session is genuinely blocked, and hold that word to a
+high bar. Waiting counts ONLY when the thing waited on is NAMED and real: a run
+id, a task id, a live lease, or a question actually put to the human. "Waiting
+on <a phase of this project>" is not a blocker, it is a sentence.
+
+Challenge every blocker that is not about the human. Ask: could the session
+unblock this ITSELF? Landing code and enabling a feature are DIFFERENT events,
+so "blocked on X landing" is valid only if the source says the CODE cannot be
+written or merged, never merely that a FLAG cannot flip yet. If the work could
+be built now and left switched off, it is not blocked, and answering "stop"
+endorses an idle session.
 
 Answer "continue" when tracked work remains that the session could advance
 without the human, or when the last message is a status report that moves
@@ -1149,7 +1202,28 @@ def main():
     )
     something_remains = bool(remaining_lines)
 
+    # STUCK DETECTION. Runs before the others so the count advances on every
+    # stop, including the ones where something else already fired: a session
+    # blocked three times running on the same check has also moved nothing.
+    stuck_n, stuck_fired = stuck_rounds(
+        worklist, session_id, tasks, _git(project_root(str(worklist.parent)), "rev-parse", "HEAD")
+    )
+
     violations = []
+    if stuck_fired and something_remains and not live_bg:
+        violations.append(
+            "NOTHING HAS MOVED IN %d CONSECUTIVE STOPS. Not one task changed status and "
+            "HEAD did not advance, so whatever you are doing is not working and a fourth "
+            "attempt of the same shape will not fix it. EMPLOY A PLANNING OR "
+            "INVESTIGATION AGENT NOW (Agent tool, subagent_type Plan or Explore, or "
+            "general-purpose), give it the problem and the evidence you already have, and "
+            "let it come back with an approach you have not tried. This is the operator's "
+            "standing rule: if it cannot be solved in three rounds, delegate it rather "
+            "than repeating yourself. If you genuinely disagree, say WHY in one sentence "
+            "and what will be different next round.\n"
+            "    (no agent is currently running; starting one clears this)"
+            % stuck_n
+        )
     if not event_ok:
         violations.append(
             "THIS IS A HOOK BUG: the Stop event on stdin was not parseable JSON, so every "
