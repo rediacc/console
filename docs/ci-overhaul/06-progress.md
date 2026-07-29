@@ -106,6 +106,45 @@ which no current app token grants and which would collide with
 `check-no-app-admin-perm.sh`. Unverified: the App's `repository_selection` list
 is unreadable from a session, so "it can mint a token for console" is untested.
 
+**Landing Wave C is NOT gated on Wave B.** `05-execution-guide.md:108` says it
+"Lands with **every stage flag off**", and only *enabling* a stage waits for
+Wave B's two live observations. These were collapsed into one blocker in an
+earlier status report, which is why Wave C sat still with nothing blocking it.
+
+**Two S0 prerequisites recorded as "moved into PR-B" (`03-v2-autonomy.md:332-334`
+and `:377`) were never done. Both are fixed here**, found by the Wave C planning
+agent and verified before acting:
+
+- `check-resolved-threads.sh` asked for `reviewThreads(first: 100)` with no
+  cursor. Because the gate only ever reports UNRESOLVED threads, an unresolved
+  thread at position 101 read as "all threads resolved": a silent green on a
+  merge-blocking check, the same failure class as the `|| echo "[]"` bug already
+  fixed in that file. It now paginates, fails closed on a non-advancing cursor,
+  checks for GraphQL errors per page, and re-wraps into the original response
+  shape so every consumer is unchanged. Proven live on PR #543 (2 threads) and
+  #541 (1 thread), so it still SEES rather than merely not crashing. The
+  now-unreachable duplicate error check after the loop was deleted rather than
+  left looking like a safety net.
+- `worklist.py` had no CI branch (zero `GITHUB_ACTIONS` references). `CLAUDE.md`
+  tells a session to append `- [ ]` items and this hook refuses to end a turn
+  while any remain, so an unattended model in Actions burns its turn budget
+  against a gate no human will answer. It now exits 0 when
+  `GITHUB_ACTIONS=true`, placed **after** the read-only query modes so `--path`
+  and `--handover` keep working on a runner. Three cases added (46-48) including
+  a control that the same worklist state still blocks off a runner, and that a
+  value other than `true` is not a runner. 46/46.
+
+**S-2 is UNPROVEN and was wrongly marked done.** S-1 is genuinely resolved
+(issue #539: the haiku label was a `jq 'keys | first'` alphabetical artifact, not
+an ignored `--model` flag; fix live at `claude-review-gate.sh:280-300`). But no
+live `--max-budget-usd 0.01` run is recorded anywhere: not in these docs, the
+commit messages, PR #543, issue #539, or the worklist. **So no dollar stop is
+known to exist**, `03-v2-autonomy.md:359-360` stands unchanged, and Wave C's cost
+floor is structural instead: zero model cost on every no-go, dedup, superseded,
+ready-flip, review-rerun and done path, plus per-round `--max-turns`, a 30-minute
+job timeout, and the round cap. Run the spike during the S4 canary and record the
+answer either way.
+
 ## The Stop hook (`.claude/hooks/stop/worklist.py` v5)
 
 Not in the original plan; added 2026-07-29 because the old gate watched the wrong

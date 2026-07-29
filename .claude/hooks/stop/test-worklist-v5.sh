@@ -642,6 +642,26 @@ echo "== 45. and one just inside it does not =="
 touch -d '5 minutes ago' "$HAND"
 check "a 5-minute-old handover is fine" allow ""
 
+echo "== 46. CONTROL: an open item still blocks off a runner =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+printf -- '- [ ] (deadbeef) an item nobody will ever answer\n' >>"$WL"
+check "an open item blocks in a normal session" block "OPEN worklist item"
+
+echo "== 47. and the SAME state no-ops under GITHUB_ACTIONS =="
+# Same worklist, same open item, one env var different. Without the control
+# above this would pass even if the hook had stopped blocking entirely.
+GITHUB_ACTIONS=true check "GITHUB_ACTIONS=true never blocks a runner" allow ""
+
+echo "== 48. a value other than 'true' is NOT a runner =="
+GITHUB_ACTIONS=false check "GITHUB_ACTIONS=false still blocks" block "OPEN worklist item"
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

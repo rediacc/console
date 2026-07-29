@@ -1032,6 +1032,17 @@ def main():
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
         return
 
+    # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard
+    # on purpose. Everything above this line is a read-only query mode that a
+    # runner may legitimately want (`--path`, `--handover`); exiting at the top of
+    # main() would break those silently. The thing that must not happen on a
+    # runner is the BLOCK below: CLAUDE.md tells a session to append `- [ ]` items
+    # and this hook refuses to end a turn while any remain, so an unattended model
+    # in Actions burns its turn budget against a gate no human will ever answer.
+    # Required by the autopilot design (docs/ci-overhaul/03-v2-autonomy.md:375-377).
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        sys.exit(0)
+
     try:
         event = json.load(sys.stdin)
         event_ok = isinstance(event, dict)
