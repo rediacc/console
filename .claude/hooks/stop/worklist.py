@@ -532,6 +532,77 @@ def publish_divergence(root):
     return "ok", 0, ref
 
 
+def pr_body_freshness(root):
+    """(state, detail) -- did we push after the last PR-description edit?
+
+    FAIL FAST TO SAVE A CI ROUND. `Quality / Static` runs a PR-description
+    freshness gate, and the cost of failing it is a full ~55-minute round for a
+    mistake that takes ten seconds to fix. This session has made it twice, both
+    times by treating the body refresh as a separate step instead of part of the
+    push, which its own memory says not to do.
+
+    Scoped to WORKLIST_PUBLISH_REF, so a session that has not opted in pays
+    nothing. When it IS set and the lookup fails, that is reported as a hook-side
+    inability rather than passing quietly.
+    """
+    target = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    if not target:
+        return "unset", ""
+    tip = _git(root, "log", "-1", "--format=%cI", "origin/%s" % target)
+    if not tip:
+        return "no-ref", "origin/%s" % target
+    # GRAPHQL, NOT `gh pr list --json lastEditedAt`. That field does not exist on
+    # `pr list` OR on `pr view` -- both error out and print the valid-field list.
+    # This check found that itself on its first run, by reporting the failure as
+    # a blind read instead of passing quietly, which is the whole argument for
+    # making blindness its own verdict.
+    slug = _git(root, "config", "--get", "remote.origin.url")
+    m = re.search(r"[:/]([^/:]+)/([^/]+?)(?:\.git)?$", slug or "")
+    if not m:
+        return "unreadable", "could not derive owner/name from %r" % slug
+    query = (
+        '{repository(owner:"%s",name:"%s"){pullRequests('
+        'headRefName:"%s",states:OPEN,first:1){nodes{number lastEditedAt updatedAt}}}}'
+        % (m.group(1), m.group(2), target)
+    )
+    try:
+        out = subprocess.run(
+            ["gh", "api", "graphql", "-f", "query=" + query],
+            capture_output=True, text=True, timeout=25, cwd=str(root),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "unreadable", str(exc)[:120]
+    if out.returncode != 0:
+        return "unreadable", (out.stderr or "")[-120:]
+    try:
+        rows = json.loads(out.stdout)["data"]["repository"]["pullRequests"]["nodes"]
+    except (ValueError, KeyError, TypeError):
+        return "unreadable", "graphql response had no pullRequests.nodes"
+    if not rows:
+        return "no-pr", target
+    pr = rows[0]
+    edited = pr.get("lastEditedAt") or pr.get("updatedAt") or ""
+    if not edited:
+        return "unreadable", "PR carries neither lastEditedAt nor updatedAt"
+
+    def parse(ts):
+        try:
+            return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    t_commit, t_edit = parse(tip), parse(edited)
+    if t_commit is None or t_edit is None:
+        return "unreadable", "could not parse %r / %r" % (tip, edited)
+    if t_commit > t_edit:
+        return "stale", "PR #%s body edited %s, tip pushed %s" % (
+            pr.get("number", "?"),
+            t_edit.strftime("%H:%M:%SZ"),
+            t_commit.strftime("%H:%M:%SZ"),
+        )
+    return "ok", ""
+
+
 def cron_memory(worklist, session_id, live_count):
     """(died, remembered_max) -- was a loop running before that is gone now?
 
@@ -1108,6 +1179,20 @@ def main():
             "your next push, because pushing now either fails or publishes over work nobody "
             "has looked at:\n    git fetch origin && git log --oneline HEAD..%s"
             % (pref, pahead, pref)
+        )
+    fstate, fdetail = pr_body_freshness(project_root(event.get("cwd") or os.getcwd()))
+    if fstate == "stale":
+        violations.append(
+            "YOU PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT (%s). CI's freshness gate will "
+            "fail on this, and that red costs a full round for a ten-second fix. The body "
+            "refresh is part of the push, not a step after it. Refresh it now, and verify "
+            "with the GraphQL read because `gh pr view --json lastEditedAt` is not a valid "
+            "field." % fdetail
+        )
+    elif fstate == "unreadable":
+        violations.append(
+            "THIS IS A HOOK BUG: the PR-freshness lookup failed (%s), so that check is "
+            "blind. It blocks rather than passing quietly, per no-escape-hatch." % fdetail
         )
     loop_died, had_crons = cron_memory(worklist, session_id, len(live_crons))
     if loop_died:
