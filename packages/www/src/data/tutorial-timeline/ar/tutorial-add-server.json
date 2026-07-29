@@ -32,6 +32,12 @@
           "endChar": 11
         },
         {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
           "startSec": 1.6,
           "endSec": 2.0,
           "startChar": 16,
@@ -80,12 +86,6 @@
           "endChar": 71
         },
         {
-          "startSec": 9.36,
-          "endSec": 10.0,
-          "startChar": 72,
-          "endChar": 80
-        },
-        {
           "startSec": 10.0,
           "endSec": 10.56,
           "startChar": 81,
@@ -98,7 +98,7 @@
           "endChar": 95
         },
         {
-          "startSec": 12.0,
+          "startSec": 11.36,
           "endSec": 12.16,
           "startChar": 96,
           "endChar": 99
@@ -176,7 +176,7 @@
         },
         {
           "startSec": 2.64,
-          "endSec": 3.12,
+          "endSec": 2.72,
           "startChar": 23,
           "endChar": 26
         },
@@ -254,21 +254,9 @@
         },
         {
           "startSec": 1.84,
-          "endSec": 1.92,
+          "endSec": 2.08,
           "startChar": 21,
           "endChar": 27
-        },
-        {
-          "startSec": 1.96,
-          "endSec": 2.0,
-          "startChar": 29,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.04,
-          "endSec": 2.08,
-          "startChar": 32,
-          "endChar": 37
         },
         {
           "startSec": 2.08,
@@ -354,7 +342,7 @@
           "endChar": 8
         },
         {
-          "startSec": 2.32,
+          "startSec": 2.24,
           "endSec": 3.28,
           "startChar": 23,
           "endChar": 29
@@ -396,7 +384,7 @@
           "endChar": 7
         },
         {
-          "startSec": 1.36,
+          "startSec": 1.28,
           "endSec": 1.84,
           "startChar": 8,
           "endChar": 14
@@ -431,8 +419,8 @@
       "afterTextHash": "07ef2185e18710dccc6d1b8eab863d8bb236f3c7bc47c896ac15e08d11cb2044",
       "afterWordTimings": [
         {
-          "startSec": 0.24,
-          "endSec": 0.48,
+          "startSec": 0.16,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
         },
@@ -614,20 +602,32 @@
         },
         {
           "startSec": 10.88,
-          "endSec": 11.44,
+          "endSec": 11.04,
           "startChar": 94,
-          "endChar": 97
+          "endChar": 95
         },
         {
-          "startSec": 11.52,
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 11.44,
           "endSec": 11.76,
           "startChar": 98,
           "endChar": 101
         },
         {
-          "startSec": 11.84,
-          "endSec": 12.48,
+          "startSec": 11.76,
+          "endSec": 12.16,
           "startChar": 102,
+          "endChar": 103
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.48,
+          "startChar": 104,
           "endChar": 105
         },
         {
@@ -650,7 +650,7 @@
         },
         {
           "startSec": 14.32,
-          "endSec": 14.72,
+          "endSec": 14.8,
           "startChar": 127,
           "endChar": 132
         },
@@ -662,7 +662,7 @@
         },
         {
           "startSec": 15.2,
-          "endSec": 15.44,
+          "endSec": 15.6,
           "startChar": 140,
           "endChar": 143
         },
@@ -689,7 +689,7 @@
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.56,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 5
         },
@@ -710,12 +710,6 @@
           "endSec": 1.6,
           "startChar": 17,
           "endChar": 22
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.76,
-          "startChar": 23,
-          "endChar": 27
         },
         {
           "startSec": 2.0,
