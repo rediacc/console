@@ -135,7 +135,7 @@
         },
         {
           "startSec": 10.64,
-          "endSec": 10.96,
+          "endSec": 11.04,
           "startChar": 149,
           "endChar": 152
         },
@@ -159,7 +159,7 @@
         },
         {
           "startSec": 12.64,
-          "endSec": 12.8,
+          "endSec": 12.88,
           "startChar": 171,
           "endChar": 175
         }
@@ -359,12 +359,6 @@
       "afterAudioDurationSec": 2.76,
       "afterTextHash": "be9bda39201eb72ea6c49ad686da951affcea7faa8996251b92548fc2050ff12",
       "afterWordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.24,
-          "startChar": 0,
-          "endChar": 3
-        },
         {
           "startSec": 0.24,
           "endSec": 0.88,
@@ -1050,7 +1044,7 @@
         },
         {
           "startSec": 8.64,
-          "endSec": 9.28,
+          "endSec": 9.2,
           "startChar": 112,
           "endChar": 122
         },
@@ -1068,7 +1062,7 @@
         },
         {
           "startSec": 9.84,
-          "endSec": 10.4,
+          "endSec": 10.48,
           "startChar": 130,
           "endChar": 141
         }
@@ -1160,7 +1154,7 @@
           "endChar": 132
         },
         {
-          "startSec": 8.24,
+          "startSec": 8.32,
           "endSec": 8.4,
           "startChar": 133,
           "endChar": 134
