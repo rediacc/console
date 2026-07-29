@@ -206,35 +206,6 @@ brief_now
 hand_now
 check "an empty world allows the stop" allow ""
 
-loop_at() { # loop_at <offset-minutes> <cron-count>
-    printf '%s %s %s %s\n' deadbeef "$(date -u -d "$1 minutes" +%Y-%m-%dT%H:%M:%SZ)" "$2" "hourly loop" \
-        >>"${WL%.md}.loop"
-}
-
-echo "== 13. an OVERDUE declared loop blocks (the loop died and nobody restarted it) =="
-setup
-say "answer
-
-## Remaining
-- #7 thing"
-brief_now
-hand_now
-task 7 pending "thing"
-loop_at -30 1
-check "an overdue loop declaration blocks" block "loop is OVERDUE"
-
-echo "== 14. a FUTURE loop declaration does not block =="
-setup
-say "answer
-
-## Remaining
-- #7 thing"
-brief_now
-hand_now
-task 7 pending "thing"
-loop_at +30 1
-check "a future loop declaration is fine" allow ""
-
 echo "== 16. a Remaining section that OMITS an open task blocks =="
 setup
 say "answer
@@ -469,6 +440,62 @@ if grep -qF "READ ALL OF THEM" <<<"$out" && grep -qF "docs/ci-overhaul/README.md
     PASS=$((PASS + 1))
 else
     echo "  FAIL: SessionStart did not surface the docs: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 34. a LOOP THAT DIED blocks (had crons, now none) =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
+run >/dev/null
+CRONS='[]'
+check "losing the last cron blocks" block "YOUR LOOP DIED"
+
+echo "== 35. a session that NEVER had a cron is not nagged =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+CRONS='[]'
+check "no cron ever means no complaint" allow ""
+
+echo "== 36. a STALE LOCAL branch sharing the publish name blocks =="
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+(
+    cd "$BASE/proj" || exit
+    git init -q 2>/dev/null
+    git config user.email t@t
+    git config user.name t
+    echo a >a.txt
+    git add -A
+    git commit -qm base
+    git branch -f pub HEAD
+    echo b >b.txt
+    git add -A
+    git commit -qm newer
+    git update-ref refs/remotes/origin/pub "$(git rev-parse HEAD)"
+) >/dev/null 2>&1
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+        WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off python3 "$HOOK" 2>/dev/null)"
+if grep -qF "is a trap for whoever checks it out" <<<"$out"; then
+    echo "  PASS: a stale local branch sharing the publish name blocks"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: stale local branch not detected: ${out:0:220}"
     FAIL=$((FAIL + 1))
 fi
 
