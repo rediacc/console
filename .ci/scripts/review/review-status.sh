@@ -83,13 +83,18 @@ fi
 
 MARKER_PREFIX="$(sed -n "s/^MARKER_PREFIX='\(.*\)'[[:space:]]*$/\1/p" "$GATE_SCRIPT")"
 MARKER_PREFIX="${MARKER_PREFIX%%$'\n'*}"
-MAX_REVIEWS_PER_PR="$(sed -n 's/^MAX_REVIEWS_PER_PR=\([0-9][0-9]*\).*$/\1/p' "$GATE_SCRIPT")"
-MAX_REVIEWS_PER_PR="${MAX_REVIEWS_PER_PR%%$'\n'*}"
-
-if [[ -z "$MARKER_PREFIX" || -z "$MAX_REVIEWS_PER_PR" ]]; then
-    log_error "could not parse MARKER_PREFIX / MAX_REVIEWS_PER_PR out of $GATE_SCRIPT"
-    log_error "  marker='$MARKER_PREFIX' cap='$MAX_REVIEWS_PER_PR'"
-    log_error "  Fix: keep both as plain top-level assignments there, or update this parser."
+# The cap is no longer a constant in the gate script: it is sized to the diff by
+# review_cap_for() in ../lib/common.sh, which BOTH scripts source. That is the
+# whole point -- sed-parsing a number out of the other file was always one edit
+# away from the two disagreeing, which is the deadlock this file exists to stop.
+if [[ -z "$MARKER_PREFIX" ]]; then
+    log_error "could not parse MARKER_PREFIX out of $GATE_SCRIPT"
+    log_error "  Fix: keep it as a plain top-level assignment there, or update this parser."
+    exit 1
+fi
+if ! declare -F review_cap_for >/dev/null; then
+    log_error "review_cap_for() is missing from ../lib/common.sh"
+    log_error "  Fix: restore it there; both review scripts depend on one shared table."
     exit 1
 fi
 
@@ -261,8 +266,11 @@ fi
 
 review_count="$(review_report_count "$pr")"
 review_count="${review_count//[[:space:]]/}"
+# Y in "X/Y" is sized to THIS PR's diff, via the shared table in ../lib/common.sh.
+pr_loc="$(pr_diff_loc "$pr")"
+MAX_REVIEWS_PER_PR="$(review_cap_for "$pr_loc")"
 notes+=("Currency: ${currency_detail}.")
-notes+=("Review reports posted: ${review_count:-0}/${MAX_REVIEWS_PER_PR}.")
+notes+=("Review reports posted: ${review_count:-0}/${MAX_REVIEWS_PER_PR} (cap ${MAX_REVIEWS_PER_PR} for a ${pr_loc}-line diff).")
 
 if [[ "$currency_ok" == true ]]; then
     log_info "CURRENCY ok: $currency_detail"

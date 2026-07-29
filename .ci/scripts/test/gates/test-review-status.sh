@@ -95,6 +95,11 @@ fi
 
 key=""
 case "$path" in
+    # `gh pr view --json additions,deletions` -- how the review budget learns the
+    # diff size. Without this the call falls through to "unrouted" and every test
+    # silently gets a 0-line diff, i.e. the smallest cap, which would make the
+    # size-tiered budget untestable.
+    pr) key="pr-size" ;;
     */commits/*/pulls) key="commit-pulls" ;;
     */commits/*/check-runs) key="check-runs" ;;
     */issues/*/comments) key="comments" ;;
@@ -177,6 +182,13 @@ setup() {
     marker_comment "$NEW_SHA" | jq -s '.' >"$t/fixtures/comments.json"
     echo '{"files": []}' >"$t/fixtures/compare.json"
     echo '{"check_runs": []}' >"$t/fixtures/check-runs.json"
+    # Default: a small PR, so the default review budget is the smallest tier.
+    echo '{"additions": 100, "deletions": 40}' >"$t/fixtures/pr-size.json"
+}
+
+# pr_size <dir> <additions> <deletions> -- resize the PR the fake gh reports.
+pr_size() {
+    printf '{"additions": %s, "deletions": %s}\n' "$2" "$3" >"$1/fixtures/pr-size.json"
 }
 
 # run_status <TEMP> [KEY=VALUE ...] -- runs the script under the fake world.
@@ -209,19 +221,40 @@ captured_method() {
 }
 
 # ---------------------------------------------------------------------------
-# Anti-vacuity: the real gate script must still expose the two constants in the
-# form review-status.sh parses. If it stops doing so the script hard-fails
-# (test_unparseable_constants_hard_fail), but that must never be how we find out.
+# Anti-vacuity: the marker prefix must still be parseable out of the real gate
+# script, and the review cap must come from ONE shared table.
+#
+# The cap used to be a constant sed-parsed out of the gate script. It is now
+# sized to the diff by review_cap_for() in ../lib/common.sh, which both review
+# scripts source. That is a stronger contract, not a weaker one: sed-parsing a
+# number out of a sibling file was always one edit away from the two scripts
+# disagreeing, and disagreement is precisely the deadlock this suite exists to
+# prevent. So this asserts the SHARED function exists and that both scripts see
+# identical values for it.
 # ---------------------------------------------------------------------------
 test_real_gate_constants_parseable() {
-    local marker cap
+    local marker
     marker="$(sed -n "s/^MARKER_PREFIX='\(.*\)'[[:space:]]*$/\1/p" "$REAL_GATE")"
-    cap="$(sed -n 's/^MAX_REVIEWS_PER_PR=\([0-9][0-9]*\).*$/\1/p' "$REAL_GATE")"
     assert_eq "$marker" '<!-- claude-reviewed:' "marker prefix parsed from the real gate script"
-    if [[ ! "$cap" =~ ^[0-9]+$ ]] || [[ "$cap" -lt 1 ]]; then
-        log_fail "MAX_REVIEWS_PER_PR in $REAL_GATE did not parse as a positive integer: '$cap'"
+
+    # shellcheck source=../../lib/common.sh
+    # BLOCKER: the shared review-budget table both review scripts depend on
+    source "$REPO_ROOT/.ci/scripts/lib/common.sh"
+    if ! declare -F review_cap_for >/dev/null; then
+        log_fail "review_cap_for() is missing from .ci/scripts/lib/common.sh"
+        return
     fi
-    log_pass "constants are parseable out of the real claude-review-gate.sh (marker='$marker' cap=$cap)"
+    # The operator's tiers, asserted at their boundaries so an off-by-one in the
+    # comparison cannot pass. A cap that only ever returns its default would
+    # satisfy a single-value check.
+    assert_eq "$(review_cap_for 0)" "3" "an empty diff gets the smallest budget"
+    assert_eq "$(review_cap_for 10000)" "3" "10k lines is still 3 reviews"
+    assert_eq "$(review_cap_for 10001)" "5" "just over 10k moves to 5"
+    assert_eq "$(review_cap_for 50000)" "5" "50k lines is still 5 reviews"
+    assert_eq "$(review_cap_for 50001)" "7" "just over 50k moves to 7"
+    assert_eq "$(review_cap_for 250000)" "7" "a huge diff stays at 7, it does not keep growing"
+    assert_eq "$(review_cap_for abc)" "3" "an unreadable size falls to the SMALLEST budget, never a larger one"
+    log_pass "review budget comes from one shared table and honours every tier boundary"
 }
 
 # ---------------------------------------------------------------------------
@@ -372,12 +405,15 @@ test_missing_hygiene_dir_hard_fails() {
 test_unparseable_constants_hard_fail() {
     local t="$1"
     setup "$t"
-    # The constant renamed, as a drifting refactor would leave it.
-    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" "REVIEW_CAP=3" >"$t/fake-gate.sh"
+    # The MARKER renamed, as a drifting refactor would leave it. The cap is no
+    # longer parsed from this file (it comes from the shared review_cap_for()),
+    # but the marker still is, and a silent default there would make the gate
+    # compare against a prefix nothing ever posts.
+    printf '%s\n' "MARKER='<!-- claude-reviewed:'" >"$t/fake-gate.sh"
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
         REVIEW_STATUS_GATE_SCRIPT="$t/fake-gate.sh"
     if [[ "$LAST_RC" -eq 0 ]]; then
-        log_fail "an unparseable cap must abort, never fall back to a hard-coded default"
+        log_fail "an unparseable marker must abort, never fall back to a hard-coded default"
     fi
     assert_contains "$LAST_OUT" "could not parse" "the abort names the parse it could not do"
     log_pass "PLANTED renamed constant => hard exit $LAST_RC instead of a silent default"
@@ -395,7 +431,8 @@ test_cap_reached_warns_instead_of_deadlocking() {
     jq -s 'add' "$t/comments-marker.json" "$t/comments-reports.json" >"$t/fixtures/comments.json"
     echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
         >"$t/fixtures/compare.json"
-    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" "MAX_REVIEWS_PER_PR=3" >"$t/gate-cap3.sh"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap3.sh"
+    pr_size "$t" 900 100 # 1,000 lines -> smallest tier, cap 3
 
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
         REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap3.sh"
@@ -416,7 +453,10 @@ test_below_cap_the_same_state_fails() {
         >"$t/fixtures/compare.json"
     # Identical world, cap raised: the warning must become a failure. If it does
     # not, the cap value is not actually being read.
-    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" "MAX_REVIEWS_PER_PR=9" >"$t/gate-cap9.sh"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap9.sh"
+    # THE POINT OF THE TIERS: identical review count, different verdict, purely
+    # because the diff is large enough to earn a bigger budget.
+    pr_size "$t" 60000 10000 # 70,000 lines -> top tier, cap 7
 
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
         REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap9.sh"
