@@ -15,7 +15,11 @@ setup() {
     # Reset EVERY knob run() reads. A plain `BG=...` in one case leaked into the
     # next two and silently suppressed a check, which cost a debugging round.
     BG='[]'
-    CRONS='[]'
+    # ONE live cron by default, since v8: a session with pending tasks and NO
+    # wake-up (no cron, no bg, no lease) is now the I6 idle block, and that is
+    # the right default to model -- a real session parks work behind its loop.
+    # Cases that test cron behavior (25, 26, 34, 35) or I6 itself pin their own.
+    CRONS='[{"id":"w","schedule":"17 * * * *"}]'
     JUDGE_MODE=off
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
@@ -277,7 +281,9 @@ brief_now
 hand_now
 task 7 pending "merge the chain"
 JUDGE_MODE=on
-out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+# A live cron in the event, else the v8 idle check fires statically and the
+# stop never reaches the judge path this case exists to pin.
+out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":[{"id":"w","schedule":"17 * * * *"}]}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
         PATH="$BASE/binonly" HOME="$BASE/nohome" GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>"$BASE/err.txt")"
 got="$(python3 -c 'import json,sys
@@ -559,7 +565,10 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
+# No cron ever, but a running background agent, so the v8 idle check stays
+# quiet and this case keeps pinning ONLY the loop-died non-fire.
 CRONS='[]'
+BG='[{"status":"running","description":"agent"}]'
 check "no cron ever means no complaint" allow ""
 
 echo "== 36. a STALE LOCAL branch sharing the publish name blocks =="
@@ -1464,8 +1473,112 @@ else
     echo "  FAIL: init asked about an old tick: $(cat "$MARKER")"
     FAIL=$((FAIL + 1))
 fi
-echo '- [x] (deadbeef) fixed the parser crash on empty input' >>"$WL"
+# Evidence in the line (a real sha), else I7 blocks before the reggate settle.
+echo "- [x] (deadbeef) fixed the parser crash on empty input, $(git -C "$BASE/proj" rev-parse --short HEAD)" >>"$WL"
 checkj "a NEWLY ticked [x] is a fix signal even with no commit" allow "settled as one-off"
+
+echo "== 91. I6: a stop with NOTHING inbound blocks on the first stop =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+CRONS='[]'
+check "pending task + no cron + no bg + no lease blocks immediately" block "NOTHING WILL WAKE THIS SESSION"
+
+echo "== 92. I6 CONTROLS: each wake-up source suppresses it =="
+# Fresh fixture per control: chaining them on one fixture walks the stuck
+# counter to its threshold and a later control fails for the wrong reason.
+i6_fixture() {
+    setup
+    brief_now
+    hand_now
+    say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+    task 7 pending "thing"
+    CRONS='[]'
+}
+i6_fixture
+CRONS='[{"id":"w","schedule":"17 * * * *"}]'
+check "a live cron is a wake-up" allow ""
+i6_fixture
+BG='[{"status":"running","description":"agent"}]'
+check "a running background task is a wake-up" allow ""
+i6_fixture
+echo "- [>] (deadbeef) until:$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ) delegated to agent" >>"$WL"
+check "a fresh [>] lease is a wake-up" allow ""
+
+echo "== 93. I6: a CONFIRMED operator-blocked task is a legitimate idle =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | blocked, You (User Thinks So) |"
+task 7 pending "thing"
+CRONS='[]'
+check "confirmed 'You (User Thinks So)' waits without a wake-up" allow ""
+
+echo "== 94. I7: a tick without evidence blocks; a REAL pointer clears it =="
+setup
+say "done for now"
+brief_now
+reg_repo
+run >/dev/null # marker init
+echo '- [x] (deadbeef) fixed the flaky teardown' >>"$WL"
+check "an evidence-free tick blocks" block "COMPLETION WITHOUT EVIDENCE"
+# A fabricated hex pointer must NOT count: it names no real object.
+python3 - "$WL" <<'PYEOF'
+import sys
+p = sys.argv[1]
+s = open(p).read().replace(
+    "fixed the flaky teardown",
+    "fixed the flaky teardown, see 0123abc4567",
+)
+open(p, "w").write(s)
+PYEOF
+check "a fabricated sha is not evidence" block "COMPLETION WITHOUT EVIDENCE"
+python3 - "$WL" "$(git -C "$BASE/proj" rev-parse --short HEAD)" <<'PYEOF'
+import sys
+p, sha = sys.argv[1], sys.argv[2]
+s = open(p).read().replace("see 0123abc4567", "proof " + sha)
+open(p, "w").write(s)
+PYEOF
+check "a REAL git object in the line is evidence" allow ""
+
+echo "== 95. I7: a task flipping to completed needs evidence near its #id =="
+setup
+brief_now
+hand_now
+reg_repo
+task 7 pending "prove the budget flag binds"
+say "working on it
+
+## Remaining
+| #7 | prove the budget flag binds | pending, me |"
+run >/dev/null # marker init snapshots task 7 as pending
+task 7 completed "prove the budget flag binds"
+newturn
+say "All done."
+check "S-2 REPLAY: completed with no evidence anywhere blocks" block "COMPLETION WITHOUT EVIDENCE"
+newturn
+say "Done: #7 verified, exit 0 from the budget run."
+check "evidence on the #id line clears it" allow ""
+
+echo "== 96. I7 CONTROL: completions that predate the marker never nag =="
+setup
+brief_now
+reg_repo
+task 9 completed "long-finished thing"
+say "nothing new"
+check "an init-stop snapshot asks nothing about old completions" allow ""
+check "and the next stop sees no transition" allow ""
 
 echo
 echo "  passed=$PASS failed=$FAIL"

@@ -179,6 +179,34 @@ operator-visible `- [?] ... reggate:<sig> ... DEFAULT: ...`, or rebut in the
 message the judge re-reads next stop. Verdicts: not-applicable | covered |
 one-off | proven | deferred.
 
+WHY v8 (2026-07-30, operator request, the last two bundle items):
+
+I7, COMPLETION EVIDENCE. Spike S-2 was marked completed on the strength of a
+DIFFERENT spike's evidence; nothing recorded a result anywhere, and a
+planning agent found the hole hours later. So a completion claim must leave
+a RECORD: a newly ticked `- [x]` must carry evidence in the LINE ITSELF
+(file:line that resolves, a hex id naming a real git object, a run id, an
+exit code, or a URL), and a harness task flipping to completed must carry
+the same near its #id in the message. Deliberately static and shape-based,
+NOT a second judge surface: the line is durable where a judge opinion is
+not, and every new tick already flows into the v7 regression question for
+model-level scrutiny. The known pressure: the stuck detector made an
+evidence-free tick the cheapest way to clear a counter, and this check
+raises the price of ticking. The honest cost is one paste (at completion
+time the sha/run/path is in hand); the routes around it are fabricating a
+pointer (must name a REAL object, so it at least points somewhere the
+reggate judge can look) or not tracking work at all (the residual risk,
+watched by the judge, not solvable statically).
+
+I6, STATIC IDLE DETECTION. Fires on the FIRST stop where nothing can wake
+the session: tasks wait, no fresh [>] lease, no running background task, no
+cron, and the waiting tasks are not confirmed operator-blocked ('You (User
+Thinks So)'). Disjoint from the stuck detector by geometry: stuck is
+active-but-futile and needs three stops; idle-with-nothing-inbound may
+produce NO further stops, so the counter never reaches its threshold. That
+is the Wave C shape, where the operator had to ping because no third stop
+was coming. Every static catch also skips a paid judge call.
+
 NO ESCAPE HATCH (operator, explicit). v1-v4 had MAX_BLOCKS: N blocks then give
 up. That is the hatch that let a session stop with six pending tasks, so it is
 gone. Judge failure, timeout, or malformed output BLOCKS. If that wedges the
@@ -1511,7 +1539,10 @@ def fix_signals(root, lines, session_id, state):
                 new_ticks.append((tid, line.strip()))
     descriptions = [d for _, d in commits] + ["tick: " + t[:120] for _, t in new_ticks]
     ids = sorted([s for s, _ in commits] + [t for t, _ in new_ticks])
-    return descriptions, ids, [t for t, _ in new_ticks], head
+    # new_ticks stays (id, line) pairs: I7 needs the LINE to check evidence,
+    # the absorb/settle sites need the id. Returning ids only here once made
+    # the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
+    return descriptions, ids, new_ticks, head
 
 
 def package_scripts(root):
@@ -1705,6 +1736,59 @@ already covers it, or empty string), recurring, gate_needed, gate_proven
 (true only if a new gate is already written and wired), instruction (the
 concrete next step for the session).
 """
+
+
+# ---- v8: completion evidence (I7) ------------------------------------------
+RUN_ID_RE = re.compile(r"\b\d{9,}\b")
+EXIT_RE = re.compile(r"\bexit(?:\s+code)?\s*[:=]?\s*\d+\b", re.I)
+URL_RE = re.compile(r"https?://\S+")
+SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
+
+
+def completion_evidence(root, text):
+    """Does `text` carry something evidence-shaped for a completion claim?
+
+    Shapes, cheapest first: a run-id-sized number, an exit code, a URL, a
+    file:line that RESOLVES (citation_state, so a fabricated path or line
+    fails), or a hex string naming a REAL git object (verified, so a
+    decorative 'deadbee' cannot pass; at most five candidates checked to
+    bound the git calls). Deliberately shape-based: whether the evidence
+    SUPPORTS the claim is the reggate judge's question, since every new tick
+    already flows into it. This check only guarantees a completion leaves a
+    RECORD, which is exactly what S-2 lacked."""
+    if RUN_ID_RE.search(text) or EXIT_RE.search(text) or URL_RE.search(text):
+        return True
+    if citation_state(root, text)[0]:
+        return True
+    for m in list(SHA_RE.finditer(text))[:5]:
+        if _git(root, "rev-parse", "--verify", "--quiet", m.group(0) + "^{object}"):
+            return True
+    return False
+
+
+def task_statuses(session_id):
+    """{id: (status, subject)} for ALL harness tasks, completed included.
+    pending_tasks() serves the queue; this serves the completion-evidence
+    check, which needs the TRANSITION into completed, not the queue."""
+    if not session_id:
+        return {}
+    home = os.environ.get("WORKLIST_TASKS_DIR") or os.path.join(
+        os.path.expanduser("~"), ".claude", "tasks"
+    )
+    d = os.path.join(home, "session-" + session_id[:8])
+    out = {}
+    try:
+        for f in glob.glob(os.path.join(d, "*.json")):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    t = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if t.get("id") is not None:
+                out[str(t["id"])] = (str(t.get("status", "")), str(t.get("subject", ""))[:70])
+    except OSError:
+        return {}
+    return out
 
 
 JUDGE_SCHEMA = {
@@ -2107,18 +2191,31 @@ def main():
     reg_marker = reggate_path(worklist, session_id)
     reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head = [], [], [], "", ""
     reg_state, reg_forgot, reg_settled = None, False, None
+    reg_done_tasks = []
     try:
         reg_state, reg_forgot = load_reggate(reg_marker)
+        reg_cur_tasks = task_statuses(session_id)
         if not reg_state["head"]:
             # FAIL SAFE: first sight (or a corrupt marker just discarded)
             # initialises to the present and asks nothing this stop. Seeding
             # the check-script hashes here is what keeps prove_new_gate from
-            # ever treating the ~90 pre-existing gates as candidates.
+            # ever treating the ~90 pre-existing gates as candidates, and
+            # seeding task statuses is what keeps I7 from demanding evidence
+            # for completions that predate the marker.
             reg_state["head"] = _git(reg_root, "rev-parse", "HEAD")
             reg_state["seen_ticks"] = mine_tick_ids(lines, session_id)
             reg_state["gate_runs"] = seed_gate_hashes(reg_root)
+            reg_state["task_status"] = {i: st for i, (st, _s) in reg_cur_tasks.items()}
             save_reggate(reg_marker, reg_state)
         else:
+            # I7: a task that FLIPPED to completed since the last stop must
+            # carry evidence (checked in the violations pass below).
+            prev_ts = reg_state.get("task_status") or {}
+            reg_done_tasks = [
+                (i, sub)
+                for i, (st, sub) in sorted(reg_cur_tasks.items())
+                if st == "completed" and prev_ts.get(i) in ("pending", "in_progress")
+            ]
             reg_signals, reg_ids, reg_new_ticks, reg_head = fix_signals(
                 reg_root, lines, session_id, reg_state
             )
@@ -2128,7 +2225,7 @@ def main():
                 # Already settled: absorb and never re-ask. The whole cost story.
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | set(reg_new_ticks)
+                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
                 )
                 save_reggate(reg_marker, reg_state)
                 reg_signals, reg_ids = [], []
@@ -2138,7 +2235,7 @@ def main():
                 reg_state["head"] = reg_head
                 save_reggate(reg_marker, reg_state)
     except Exception:  # noqa: BLE001 -- detection must never break gating
-        reg_signals, reg_ids, reg_sig = [], [], ""
+        reg_signals, reg_ids, reg_sig, reg_done_tasks = [], [], "", []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
 
@@ -2307,6 +2404,79 @@ def main():
             "operator -- then acknowledge so it never blocks you again:\n%s\n"
             "    .claude/hooks/stop/worklist.py --ack %s <id>"
             % ("\n".join(rows), me8)
+        )
+    # ---- I7: a completion claim must leave a RECORD (see WHY v8) -----------
+    ev_ticks = [
+        line[:150]
+        for _tid, line in reg_new_ticks
+        if not completion_evidence(reg_root, line)
+    ]
+    ev_tasks = []
+    for i, sub in reg_done_tasks:
+        row = next(
+            (ln for ln in (last_msg or "").splitlines() if re.search(r"#%s\b" % re.escape(i), ln)),
+            "",
+        )
+        if not (row and completion_evidence(reg_root, row)):
+            ev_tasks.append("#%s %s" % (i, sub))
+    if ev_ticks or ev_tasks:
+        violations.append(
+            "COMPLETION WITHOUT EVIDENCE. S-2 was marked completed on another spike's "
+            "evidence, nothing recorded a result anywhere, and the hole surfaced hours "
+            "later. A completion must leave a record: a sha, a run id, a file:line, an "
+            "exit code, or a URL. You have it in hand at completion time, so this costs "
+            "one paste; if you do NOT have it, the item is not done.\n%s%s"
+            "    For ticks, put the evidence IN THE LINE (it is the durable record). "
+            "For tasks, put it on the line mentioning the #id in your message."
+            % (
+                ""
+                if not ev_ticks
+                else "  tick(s) with no evidence in the line:\n%s\n"
+                % "\n".join("    " + t for t in ev_ticks),
+                ""
+                if not ev_tasks
+                else "  task(s) flipped to completed with no evidence near their #id:\n%s\n"
+                % "\n".join("    " + t for t in ev_tasks),
+            )
+        )
+    # Persist ONLY the transitions that passed: an unevidenced completion
+    # keeps its previous status in the marker, so it is re-detected and
+    # re-checked next stop rather than slipping through on a later block.
+    if reg_state is not None and reg_state.get("head"):
+        try:
+            held = {t.split()[0].lstrip("#") for t in ev_tasks}
+            prev_ts = reg_state.get("task_status") or {}
+            new_ts = {i: st for i, (st, _s) in task_statuses(session_id).items()}
+            for i in held:
+                if i in prev_ts:
+                    new_ts[i] = prev_ts[i]
+            if new_ts != prev_ts:
+                reg_state["task_status"] = new_ts
+                save_reggate(reg_marker, reg_state)
+        except Exception:  # noqa: BLE001 -- bookkeeping must never break gating
+            pass
+    # ---- I6: static idle detection (see WHY v8) ----------------------------
+    # Disjoint from the stuck detector by geometry: stuck is active-but-futile
+    # and needs three stops; this is inactive-with-nothing-inbound, whose
+    # deadliest form produces NO further stops, so the counter never fires.
+    # Scoped to tasks: open [ ] items and undefaulted [?] already block above,
+    # and a worklist of defaulted [?] is time-boxed autonomy, which may stop.
+    idle_tasks = [
+        i
+        for i, _, _ in tasks
+        if not re.search(r"#%s\b[^\n]*You \(User Thinks So\)" % re.escape(i), last_msg or "")
+    ]
+    if idle_tasks and not in_flight and not live_bg and not live_crons and not open_items:
+        violations.append(
+            "NOTHING WILL WAKE THIS SESSION. Task(s) %s wait, yet no background task is "
+            "running, no [>] lease is fresh, and no cron is scheduled, so after this "
+            "stop the work sits until the operator notices -- the Wave C shape, where "
+            "no third stop ever came and the stuck counter never had a chance to fire. "
+            "Give the work a wake-up before stopping: start it now, delegate it (a "
+            "background agent plus a [>] lease), schedule the loop (CronCreate, then "
+            "declare it with --loop), or if a task truly waits on the operator, ask "
+            "with AskUserQuestion and record it as 'You (User Thinks So)'."
+            % ", ".join("#" + i for i in idle_tasks[:8])
         )
     if bstate != "ok":
         violations.append(
@@ -2643,7 +2813,7 @@ def main():
                 }
                 reg_state["head"] = reg_head or reg_state["head"]
                 reg_state["seen_ticks"] = sorted(
-                    set(reg_state["seen_ticks"]) | set(reg_new_ticks)
+                    set(reg_state["seen_ticks"]) | {t for t, _ln in reg_new_ticks}
                 )
                 save_reggate(reg_marker, reg_state)
                 reg_settled = (payload, detail)
