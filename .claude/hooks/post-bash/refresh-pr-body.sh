@@ -63,11 +63,18 @@ for br in $(echo "$BRANCHES" | tr ' ' '\n' | sort -u); do
     # worklist.
     stripped=$(printf '%s\n' "$body" | awk -v b="$BEGIN" -v e="$END" '
         $0 == b { skip = 1 } !skip { print } $0 == e { skip = 0 }')
+    # mktemp, NOT "$ROOT/.git/...". This repo uses git WORKTREES, where `.git` is
+    # a FILE containing a gitdir pointer, so writing under it fails with
+    # "Not a directory" -- which is exactly how the first version of this hook
+    # silently did nothing while still exiting 0.
+    tmp=$(mktemp) || continue
     printf '%s\n\n%s\n**Last pushed:** `%s`\n\n%s\n%s\n' \
-        "$stripped" "$BEGIN" "$sha" "$log" "$END" >"$ROOT/.git/pr-body-$pr.tmp"
-    if gh pr edit "$pr" --body-file "$ROOT/.git/pr-body-$pr.tmp" >/dev/null 2>&1; then
+        "$stripped" "$BEGIN" "$sha" "$log" "$END" >"$tmp"
+    if gh pr edit "$pr" --body-file "$tmp" >/dev/null 2>&1; then
         echo "refresh-pr-body: PR #$pr description updated for $sha (freshness gate satisfied)" >&2
+    else
+        echo "refresh-pr-body: PR #$pr edit FAILED for $sha" >&2
     fi
-    rm -f "$ROOT/.git/pr-body-$pr.tmp"
+    rm -f "$tmp"
 done
 exit 0
