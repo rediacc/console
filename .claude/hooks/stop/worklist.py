@@ -802,7 +802,13 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt):
 
 
 CITE_RE = re.compile(
-    r"\b([\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml))"
+    # LEADING DOT ALLOWED. `\b[\w]` cannot start on a dot, so `.ci/x.sh:9`
+    # matched but CAPTURED `ci/x.sh`, which resolves to nothing on disk. That
+    # silently excluded `.ci/`, `.github/` and `.claude/`, which is most of this
+    # program's surface: a citation check that looked strict was unsatisfiable
+    # for exactly the paths it most needed to accept. Caught by the check firing
+    # on a tick of mine that cited .ci/scripts/autopilot/autopilot-gate.sh.
+    r"(?<![\w./-])(\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml))"
     r":(\d+)(?:-\d+)?\b"
 )
 
