@@ -18,7 +18,18 @@
 //     rerun workflow: that split only existed because the old in-run
 //     watchdog died with the run it monitored, and the chain does not.
 //   - Code-change: force-cancels immediately (no point waiting for other jobs).
-//   - AI unavailable: retries ONLY jobs on WATCHDOG_RETRY_ALLOWLIST_PATTERNS
+//   - AI unavailable: retries ONLY when a failing job matches
+//     WATCHDOG_RETRY_ALLOWLIST_PATTERNS.
+//
+//     READ THAT PRECISELY: the allowlist decides whether a rerun FIRES, not
+//     which jobs come back. GitHub's rerun re-runs EVERY non-successful job in
+//     the run, so once the trigger is met the blast radius is the whole run.
+//     Observed live on run 30402596980: `Build (Docker) / Devcontainer (amd64)`
+//     is on neither the retry allowlist nor the no-retry list, hit its own
+//     30-minute timeout, and came back on attempt 2 anyway -- succeeding in
+//     5m35s against a 5m29s norm. That was the outcome we wanted, but it is not
+//     the outcome the allowlist promised, and the two layers should not be
+//     confused when tuning either.
 //     (the ones that boot VMs or pull images); everything else fails fast.
 //     See evaluateRetryEligibility -- this used to be "retry everything", which
 //     meant every failure in the repo was retried on a judgment nobody made.

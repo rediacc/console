@@ -6,7 +6,14 @@ on:
   pull_request:
     types: [opened, synchronize]
   schedule:
-    - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
+    # DECLARED 01:00 UTC, ACTUALLY DISPATCHED just after 04:00. Measured across
+    # all 12 available scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
+    # never once below +2h53m. That is GitHub deferring scheduled workflows on
+    # the free plan, not jitter, and it is stated here because someone checking
+    # at 01:05 finds no run and reasonably concludes the schedule is broken.
+    # The window to look in is 04:00-04:40 UTC; after that, a missing run IS a
+    # finding.
+    - cron: '0 1 * * *'
   # workflow_dispatch is the NIGHTLY REHEARSAL, guarded to main by the first
   # step of `initialize`.
   #
