@@ -89,6 +89,7 @@ REGISTRY=(
     # so it reported OK on a planted fabrication. Only a control caught that.
     "check-locale-only-edits.ts|Refusing to run"
     "check-gate-reachability.ts|Refusing to run"
+    "check-jq-boolean-default.ts|Refusing to run"
     # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1
     # verbatim: point it at a tree without packages/www/src/content/docs and
     # the glob returns zero files, every loop iterates zero times, and it
