@@ -58,7 +58,10 @@ flag is the entire remaining distance, and D-1 forbids closing it until the
 reconciler is trusted.
 
 **The reconcile shadow's "WOULD HAVE PASSED" is vacuous and must not be banked.**
-It runs on `ubuntu-slim` in ~8-11s against the hard 15-minute cap, node present,
+It runs on `ubuntu-slim` in ~8-11s against `ci-complete`'s `timeout-minutes: 5`
+(ci.yml:1197 -- an earlier draft of this file said 15, which was wrong and matters,
+because a slim job that runs out of time is marked cancelled with no failed step
+and that reads as neither pass nor fail), node present,
 and reports 17 planned keys against 93-94 jobs. But all 17 entries are
 `{"run": true, "reason": "full"}`, so it reconciles trivially. It proves the
 reconciler does not crash, not that it can detect anything. **#543 can never
