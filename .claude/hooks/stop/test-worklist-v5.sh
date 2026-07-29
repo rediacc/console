@@ -1580,6 +1580,33 @@ say "nothing new"
 check "an init-stop snapshot asks nothing about old completions" allow ""
 check "and the next stop sees no transition" allow ""
 
+echo "== 97. a DOT-LEADING path is a valid citation (.ci, .github, .claude) =="
+# `\b[\w]` cannot start on a dot, so `.ci/x.sh:9` matched but CAPTURED `ci/x.sh`,
+# which resolves to nothing. That made most of this repo uncitable while the
+# check looked strict. Caught by I7 firing on a real tick of mine.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/proj/.ci/scripts"
+printf 'a\nb\nc\nd\ne\nf\ng\nh\ni\nj\n' >"$BASE/proj/.ci/scripts/thing.sh"
+say "answer
+
+## Remaining
+| #7 | thing | blocked, .ci/scripts/thing.sh:3 |"
+task 7 pending "thing"
+check "a .ci path resolves as a citation" allow ""
+
+echo "== 98. CONTROL: a dot-leading path that does NOT exist is still rejected =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | blocked, .ci/scripts/nope.sh:3 |"
+task 7 pending "thing"
+check "an invented .ci path is caught" block "which does not exist"
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
