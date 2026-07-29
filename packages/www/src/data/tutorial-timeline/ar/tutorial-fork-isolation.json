@@ -32,7 +32,7 @@
           "endChar": 9
         },
         {
-          "startSec": 0.88,
+          "startSec": 0.8,
           "endSec": 2.4,
           "startChar": 10,
           "endChar": 17
@@ -54,12 +54,6 @@
           "endSec": 6.88,
           "startChar": 57,
           "endChar": 63
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 9.76,
-          "startChar": 80,
-          "endChar": 85
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-fork-isolation/tutorial-fork-isolation-01-after.03a568dc.mp3",
@@ -86,7 +80,7 @@
         },
         {
           "startSec": 2.8,
-          "endSec": 3.52,
+          "endSec": 2.88,
           "startChar": 17,
           "endChar": 25
         }
@@ -103,7 +97,7 @@
       "audioDurationSec": 12.84,
       "wordTimings": [
         {
-          "startSec": 0.24,
+          "startSec": 0.16,
           "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
@@ -113,12 +107,6 @@
           "endSec": 0.72,
           "startChar": 3,
           "endChar": 7
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.2,
-          "startChar": 13,
-          "endChar": 15
         },
         {
           "startSec": 2.72,
@@ -133,7 +121,7 @@
           "endChar": 35
         },
         {
-          "startSec": 4.0,
+          "startSec": 3.92,
           "endSec": 4.08,
           "startChar": 36,
           "endChar": 38
@@ -175,7 +163,7 @@
           "endChar": 85
         },
         {
-          "startSec": 8.56,
+          "startSec": 8.48,
           "endSec": 8.8,
           "startChar": 86,
           "endChar": 89
@@ -235,7 +223,7 @@
         },
         {
           "startSec": 3.36,
-          "endSec": 3.84,
+          "endSec": 3.92,
           "startChar": 24,
           "endChar": 32
         },
@@ -289,13 +277,13 @@
         },
         {
           "startSec": 2.32,
-          "endSec": 2.48,
+          "endSec": 2.88,
           "startChar": 15,
           "endChar": 20
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.6,
+          "startSec": 2.88,
+          "endSec": 3.68,
           "startChar": 22,
           "endChar": 30
         },
@@ -307,9 +295,9 @@
         },
         {
           "startSec": 4.96,
-          "endSec": 6.4,
-          "startChar": 46,
-          "endChar": 52
+          "endSec": 5.28,
+          "startChar": 65,
+          "endChar": 70
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-fork-isolation/tutorial-fork-isolation-03-after.421f887e.mp3",
@@ -371,28 +359,16 @@
           "endChar": 23
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.52,
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.464,
+          "endSec": 2.752,
           "startChar": 49,
           "endChar": 54
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 4.88,
-          "startChar": 56,
-          "endChar": 62
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 7.44,
-          "startChar": 68,
-          "endChar": 74
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 11.84,
-          "startChar": 89,
-          "endChar": 95
         }
       ],
       "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-fork-isolation/tutorial-fork-isolation-04-after.7bc69b57.mp3",
@@ -436,19 +412,25 @@
       "wordTimings": [
         {
           "startSec": 0.24,
-          "endSec": 0.64,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.64,
+          "startSec": 0.4,
           "endSec": 1.2,
           "startChar": 7,
           "endChar": 13
         },
         {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
           "startSec": 2.72,
-          "endSec": 3.04,
+          "endSec": 3.2,
           "startChar": 18,
           "endChar": 23
         },
@@ -495,7 +477,7 @@
           "endChar": 73
         },
         {
-          "startSec": 8.4,
+          "startSec": 8.48,
           "endSec": 8.96,
           "startChar": 74,
           "endChar": 78
@@ -514,12 +496,6 @@
         },
         {
           "startSec": 14.96,
-          "endSec": 17.36,
-          "startChar": 142,
-          "endChar": 148
-        },
-        {
-          "startSec": 17.36,
           "endSec": 17.84,
           "startChar": 149,
           "endChar": 156
@@ -532,7 +508,7 @@
         },
         {
           "startSec": 18.16,
-          "endSec": 18.4,
+          "endSec": 18.56,
           "startChar": 160,
           "endChar": 165
         },
@@ -571,7 +547,7 @@
         },
         {
           "startSec": 2.24,
-          "endSec": 3.36,
+          "endSec": 3.44,
           "startChar": 22,
           "endChar": 28
         },
@@ -583,24 +559,30 @@
         },
         {
           "startSec": 4.88,
-          "endSec": 5.04,
+          "endSec": 5.12,
           "startChar": 40,
           "endChar": 46
         },
         {
-          "startSec": 5.04,
-          "endSec": 6.4,
+          "startSec": 7.04,
+          "endSec": 7.2,
           "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 50,
           "endChar": 55
         },
         {
-          "startSec": 6.4,
+          "startSec": 7.84,
           "endSec": 8.56,
           "startChar": 56,
           "endChar": 63
         },
         {
-          "startSec": 8.56,
+          "startSec": 8.64,
           "endSec": 8.96,
           "startChar": 64,
           "endChar": 69
@@ -624,12 +606,6 @@
           "endChar": 104
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.6,
-          "startChar": 105,
-          "endChar": 109
-        },
-        {
           "startSec": 13.6,
           "endSec": 14.0,
           "startChar": 110,
@@ -643,7 +619,7 @@
         },
         {
           "startSec": 16.8,
-          "endSec": 17.2,
+          "endSec": 17.28,
           "startChar": 143,
           "endChar": 146
         },
@@ -754,19 +730,19 @@
         },
         {
           "startSec": 6.72,
-          "endSec": 8.56,
+          "endSec": 7.04,
           "startChar": 59,
           "endChar": 64
         },
         {
-          "startSec": 8.56,
+          "startSec": 8.08,
           "endSec": 8.96,
           "startChar": 65,
           "endChar": 69
         },
         {
           "startSec": 8.96,
-          "endSec": 9.52,
+          "endSec": 10.4,
           "startChar": 70,
           "endChar": 77
         },
@@ -777,7 +753,7 @@
           "endChar": 87
         },
         {
-          "startSec": 11.04,
+          "startSec": 11.36,
           "endSec": 11.44,
           "startChar": 88,
           "endChar": 92
@@ -805,15 +781,15 @@
         },
         {
           "startSec": 0.8,
-          "endSec": 1.28,
+          "endSec": 0.96,
           "startChar": 5,
-          "endChar": 7
+          "endChar": 6
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.76,
-          "startChar": 7,
-          "endChar": 12
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 7
         },
         {
           "startSec": 2.32,
@@ -828,7 +804,7 @@
           "endChar": 32
         },
         {
-          "startSec": 4.88,
+          "startSec": 4.96,
           "endSec": 5.44,
           "startChar": 33,
           "endChar": 38
@@ -858,12 +834,6 @@
           "endChar": 67
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.6,
-          "startChar": 72,
-          "endChar": 77
-        },
-        {
           "startSec": 10.0,
           "endSec": 10.48,
           "startChar": 78,
@@ -871,24 +841,18 @@
         },
         {
           "startSec": 10.48,
-          "endSec": 10.88,
+          "endSec": 10.96,
           "startChar": 83,
           "endChar": 89
         },
         {
-          "startSec": 10.88,
-          "endSec": 11.44,
+          "startSec": 10.96,
+          "endSec": 11.52,
           "startChar": 90,
           "endChar": 94
         },
         {
           "startSec": 12.16,
-          "endSec": 12.96,
-          "startChar": 96,
-          "endChar": 104
-        },
-        {
-          "startSec": 12.96,
           "endSec": 13.28,
           "startChar": 105,
           "endChar": 110
@@ -901,12 +865,12 @@
         },
         {
           "startSec": 15.04,
-          "endSec": 15.92,
+          "endSec": 15.84,
           "startChar": 123,
           "endChar": 130
         },
         {
-          "startSec": 15.92,
+          "startSec": 15.84,
           "endSec": 16.72,
           "startChar": 132,
           "endChar": 135
@@ -918,19 +882,19 @@
           "endChar": 142
         },
         {
-          "startSec": 18.12,
+          "startSec": 17.92,
           "endSec": 18.32,
           "startChar": 144,
           "endChar": 147
         },
         {
-          "startSec": 18.52,
-          "endSec": 18.72,
+          "startSec": 18.32,
+          "endSec": 18.8,
           "startChar": 148,
           "endChar": 153
         },
         {
-          "startSec": 18.72,
+          "startSec": 18.8,
           "endSec": 19.2,
           "startChar": 154,
           "endChar": 159
@@ -988,13 +952,13 @@
         },
         {
           "startSec": 8.48,
-          "endSec": 8.64,
+          "endSec": 8.72,
           "startChar": 67,
           "endChar": 69
         },
         {
           "startSec": 9.36,
-          "endSec": 9.76,
+          "endSec": 9.68,
           "startChar": 86,
           "endChar": 89
         },
@@ -1035,10 +999,10 @@
           "endChar": 123
         },
         {
-          "startSec": 14.72,
+          "startSec": 14.8,
           "endSec": 14.88,
-          "startChar": 126,
-          "endChar": 129
+          "startChar": 130,
+          "endChar": 132
         },
         {
           "startSec": 14.88,
@@ -1146,7 +1110,7 @@
           "endChar": 83
         },
         {
-          "startSec": 8.96,
+          "startSec": 8.8,
           "endSec": 9.28,
           "startChar": 84,
           "endChar": 87
@@ -1177,13 +1141,13 @@
         },
         {
           "startSec": 11.92,
-          "endSec": 12.32,
+          "endSec": 12.08,
           "startChar": 122,
           "endChar": 126
         },
         {
           "startSec": 14.16,
-          "endSec": 14.96,
+          "endSec": 15.2,
           "startChar": 149,
           "endChar": 153
         }
