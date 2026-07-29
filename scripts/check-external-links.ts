@@ -1,16 +1,20 @@
 /**
  * External link validator for documentation.
  *
- * Extracts all external URLs from markdown files in packages/www/src/content/docs/
- * and verifies each one returns a successful HTTP status.
+ * Extracts all external URLs from every markdown tree listed in SCAN_ROOTS and
+ * verifies each one returns a successful HTTP status.
  *
  * Run: npx tsx scripts/check-external-links.ts
  *
  * Features:
  * - Extracts URLs from markdown links [text](url) and bare https:// references
+ * - Drops placeholder URLs (angle brackets, braces, shell vars, ellipses) BEFORE
+ *   they are cleaned, so a truncated template is never mistaken for a real link
  * - Deduplicates URLs across all files
  * - Concurrent validation with rate limiting
  * - Allowlist for known-flaky URLs (e.g., sites that block bots)
+ * - Liveness audit of the allowlist itself, so an exemption cannot outlive its
+ *   reason unnoticed (see "ALLOWLIST LIVENESS" below)
  * - Reports broken links with file location
  * - Exit code 1 on any broken link (CI-friendly)
  */
@@ -19,10 +23,33 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { globSync } from 'glob';
 
-const DOCS_DIR = 'packages/www/src/content/docs';
+// Every markdown tree whose external links are load-bearing. Each root is
+// guarded independently below: a root that matches zero files is a moved or
+// renamed path, never a legitimate state, and it fails the run rather than
+// silently shrinking the corpus (root pattern 1 in
+// .ci/scripts/test/gates/test-gate-anti-vacuity.sh).
+//
+// packages/www/src/content/{docs,blog} are published to the website; docs/,
+// .ci/docs/ and .github/ are the operator-facing runbooks whose links get
+// followed under time pressure; packages/cli/README.md ships in the npm
+// tarball. Measured at the time of writing: 781 + 66 + 66 + 2 + 2 + 3 files.
+const SCAN_ROOTS = [
+  'packages/www/src/content/docs',
+  'packages/www/src/content/blog',
+  'docs',
+  '.ci/docs',
+  '.github',
+  'packages/cli',
+];
+
 const CONCURRENCY = 5;
 const TIMEOUT_MS = 15_000;
 const MAX_RETRIES = 2;
+
+// The liveness re-probe is a hint for a human, not a build verdict, so it gets
+// a tighter budget and no retries: we only want to know whether the host
+// answers cleanly right now.
+const LIVENESS_TIMEOUT_MS = 8_000;
 
 // Sites that aggressively block all automated requests (403 even with browser UA + curl).
 // Verified manually with a real browser. Keep this list minimal.
@@ -48,7 +75,62 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.planalto.gov.br',
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
+  // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured
+  // 2026-07-29 with this file's own headers: BOTH the deep resource page and
+  // the bare domain root answer 403, so it is a whole-domain WAF block on the
+  // client rather than a dead page; it renders in a browser.
+  'signmycode.com',
 ]);
+
+// Links that are KNOWN DEAD and cannot be fixed from this file, keyed by the
+// exact URL rather than by domain so the exemption cannot spread. Each entry
+// is a work order, not an exemption: auditAllowlist() FAILS the build when the
+// URL stops appearing in the docs (the doc got fixed, so delete the entry) and
+// WARNS when the URL starts answering 200 again (fixed upstream).
+const KNOWN_BROKEN = new Map<string, string>([
+  // electron-builder rewrote its docs site and dropped the `.html` suffixed
+  // pages. Measured 2026-07-29 with this file's own headers:
+  //   /code-signing-mac.html     404  ->  https://www.electron.build/mac (200)
+  //   /code-signing-windows.html 404  ->  https://www.electron.build/win (200)
+  //   /hooks.html                404  ->  no live equivalent found; /hooks is
+  //                                       also 404, the section was folded into
+  //                                       the configuration reference
+  // The fix belongs in docs/code-signing-guide.md:422, :252 and :601, which
+  // this file does not own. Delete these three entries in the same change.
+  ['https://www.electron.build/code-signing-mac.html', 'electron-builder docs rewrite; replace with https://www.electron.build/mac in docs/code-signing-guide.md:422'],
+  ['https://www.electron.build/code-signing-windows.html', 'electron-builder docs rewrite; replace with https://www.electron.build/win in docs/code-signing-guide.md:252'],
+  ['https://www.electron.build/hooks.html', 'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601'],
+  // A DEAD COMMAND, not just a dead link, and the widened scan is what found
+  // it. docs/dev-environments.md:95 (and CLAUDE.md:371, same snippet) tell the
+  // operator to run:
+  //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
+  // Measured 2026-07-29: that path is 404 on www, edge, eu, us and asia, and
+  // the string "account-key" appears nowhere in private/account/src, so the
+  // route does not exist rather than having moved. www.rediacc.com no longer
+  // serves the account API at all -- /account/api/v1/** answers 410 with
+  // "Account API is served by regional workers (eu/us/asia.rediacc.com)".
+  // Because of `-f`, the documented command exits non-zero and the variable
+  // ends up empty, which is precisely the RDC_RENET_LICENSE=1 repro that
+  // CLAUDE.md sells as the way to reproduce license bugs. There is no
+  // drop-in replacement: the live regional endpoint
+  // https://eu.rediacc.com/account/api/v1/.well-known/server-info (200)
+  // publishes the X25519 config key, not the Ed25519 signing key. The docs
+  // owner has to decide what to publish. Neither file is owned here.
+  ['https://www.rediacc.com/api/public/account-key', 'route does not exist on any host (404 on www/edge/eu/us/asia); docs/dev-environments.md:95 and CLAUDE.md:371 document a curl -fsS that always fails'],
+]);
+
+// Patterns matched against the RAW regex capture, before any punctuation
+// cleaning. A template that the URL regex truncated mid-token (it stops at `>`
+// and whitespace) still carries its opening delimiter here, and the cleaning
+// step would otherwise destroy the evidence: `https://media.rediacc.com/...`
+// becomes `https://media.rediacc.com/` once trailing dots are stripped, which
+// looks like a perfectly real link and 404s.
+const PLACEHOLDER_PATTERNS = [
+  /[<>]/,              // <node-ip>, <some-path>.mp4, <port>
+  /[{}]/,              // {service}.{repo}, ${SERVICE_IP}
+  /\$\{?[A-Za-z_]/,    // BARE shell vars too: $CLOUDFLARE_ACCOUNT_ID, $ZONE
+  /\.\.\./,            // https://media.rediacc.com/...  (elided path)
+];
 
 // URL patterns that are not real links (examples, templates, localhost).
 // These appear in documentation code blocks and should never be fetched.
@@ -57,9 +139,16 @@ const SKIP_PATTERNS = [
   /^https?:\/\/[^/]*\.example\.com/,
   /^https?:\/\/127\.\d+\.\d+\.\d+/,
   /^https?:\/\/localhost/,
-  /\{[^}]+\}/,           // URL templates like {service}.{repo}
-  /\$\{[^}]+\}/,         // Shell variables like ${SERVICE_IP}
-  /^https?:\/\/[^/]*`/,  // URLs with trailing backtick (inline code artifacts)
+  // Inline-code artifact. A URL captured with a backtick anywhere in it came
+  // out of `...` in prose, which in these docs always means an API base, a
+  // host to configure, or an endpoint template -- never a navigable page.
+  // Measured, not assumed: the two such URLs that resolve at all,
+  // https://media.rediacc.com and https://eu.rediacc.com/account/api/v1, both
+  // answer 404 by design (object-store root and API root, no index document).
+  // The previous form of this pattern was `^https?://[^/]*\`` and so only
+  // caught a backtick before the first slash, which is why the deeper ones
+  // were being reported as broken.
+  /`/,
   // GitHub placeholder URLs used in API examples (org/repo, OAuth endpoints)
   /^https:\/\/github\.com\/org\//,
   /^https:\/\/github\.com\/login\/oauth\//,
@@ -78,6 +167,14 @@ const SKIP_PATTERNS = [
   // that only exist after the PR merges, so verifying them in pre-merge CI
   // produces a false 404. GitHub's repo is ours; treat as trusted.
   /^https?:\/\/github\.com\/rediacc\/console/,
+  // Authenticated API endpoints quoted verbatim from runbooks. These are not
+  // pages and cannot answer 200 to an anonymous GET by construction:
+  //   api.cloudflare.com/client/v4/**      -> 400 without a bearer token
+  //   <account>.r2.cloudflarestorage.com   -> 400, S3 API needs a SigV4 signature
+  // Both measured 2026-07-29. Fetching them would only ever assert that
+  // Cloudflare still rejects unauthenticated callers.
+  /^https:\/\/api\.cloudflare\.com\/client\/v4\//,
+  /^https:\/\/[a-f0-9]{32}\.r2\.cloudflarestorage\.com/,
 ];
 
 interface LinkLocation {
@@ -90,11 +187,16 @@ interface LinkEntry {
   locations: LinkLocation[];
 }
 
-function extractLinks(filePath: string): Map<string, LinkLocation[]> {
+function isPlaceholder(raw: string): boolean {
+  return PLACEHOLDER_PATTERNS.some((p) => p.test(raw));
+}
+
+function extractLinks(filePath: string): { links: Map<string, LinkLocation[]>; placeholders: number } {
   const content = fs.readFileSync(filePath, 'utf-8');
   const lines = content.split('\n');
   const links = new Map<string, LinkLocation[]>();
   const relPath = path.relative(process.cwd(), filePath);
+  let placeholders = 0;
 
   // Match markdown links [text](https://...) and bare URLs https://...
   const urlRegex = /https?:\/\/[^\s)\]>"',]+/g;
@@ -102,6 +204,12 @@ function extractLinks(filePath: string): Map<string, LinkLocation[]> {
   for (let i = 0; i < lines.length; i++) {
     const matches = lines[i].matchAll(urlRegex);
     for (const match of matches) {
+      // Placeholder detection runs on the RAW capture. Cleaning below is
+      // lossy and would hide the very characters that mark a template.
+      if (isPlaceholder(match[0])) {
+        placeholders++;
+        continue;
+      }
       // Clean trailing punctuation that's not part of the URL
       let url = match[0].replace(/[.),:;]+$/, '');
       // Remove trailing markdown artifacts
@@ -114,7 +222,7 @@ function extractLinks(filePath: string): Map<string, LinkLocation[]> {
     }
   }
 
-  return links;
+  return { links, placeholders };
 }
 
 function shouldSkip(url: string): boolean {
@@ -125,13 +233,17 @@ function shouldSkip(url: string): boolean {
   return false;
 }
 
-function isAllowlisted(url: string): boolean {
+function hostnameOf(url: string): string | null {
   try {
-    const hostname = new URL(url).hostname;
-    return ALLOWLISTED_DOMAINS.has(hostname);
+    return new URL(url).hostname;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function isAllowlisted(url: string): boolean {
+  const hostname = hostnameOf(url);
+  return hostname !== null && ALLOWLISTED_DOMAINS.has(hostname);
 }
 
 /**
@@ -241,10 +353,181 @@ async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status
   }
 }
 
-async function processQueue(entries: LinkEntry[]): Promise<{ broken: LinkEntry[]; skipped: LinkEntry[]; excluded: number; checked: number }> {
+// ---------------------------------------------------------------------------
+// ALLOWLIST LIVENESS
+// ---------------------------------------------------------------------------
+// ALLOWLISTED_DOMAINS is thirteen hand-written claims of the form "verified
+// manually in a real browser". Nothing re-checked them, so two failure modes
+// were invisible: an entry whose site stopped blocking bots (dead weight that
+// hides real 404s behind it forever), and a domain that stopped existing
+// altogether (the link is dead, and the allowlist is what makes it look fine).
+//
+// TIERING -- deliberate, and the two halves are split on determinism:
+//
+//   FAIL  (offline, deterministic): an allowlist entry that no URL in the
+//         corpus references any more, and a KNOWN_BROKEN url that has left the
+//         docs. These are pure set arithmetic over the tree, they cannot flap,
+//         and a stale entry is exactly the dead weight this section exists to
+//         catch. Same policy as check-suppression-liveness.ts.
+//
+//   WARN  (network, non-deterministic): the re-probe result. It must NOT fail
+//         the build. Every entry in the list documents an IP- and
+//         fingerprint-dependent block -- www.planalto.gov.br's own comment
+//         records 200 six times out of six from a residential IP and ECONNRESET
+//         from GitHub runners. So "answered 200 here, now" is not proof the
+//         entry is dead weight; it is proof of where the probe ran from. Wiring
+//         that to exit 1 would turn a link checker into a red/green oracle for
+//         the runner's egress IP, i.e. exactly the flaky hard failure that gets
+//         a gate suppressed. It prints, loudly, and a human decides.
+
+type ProbeOutcome =
+  | { kind: 'ok'; status: number }
+  | { kind: 'blocked'; status: number }
+  | { kind: 'gone'; detail: string }
+  | { kind: 'unreachable'; detail: string };
+
+/** Single-shot probe: no retries, tighter timeout, error class preserved. */
+async function probeOnce(url: string): Promise<ProbeOutcome> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LIVENESS_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      signal: controller.signal,
+      redirect: 'follow',
+      headers: buildHeaders(url),
+    });
+    await res.text().catch(() => {});
+    return res.ok ? { kind: 'ok', status: res.status } : { kind: 'blocked', status: res.status };
+  } catch (err) {
+    const cause = (err as { cause?: { code?: string } })?.cause;
+    const code = cause?.code ?? '';
+    // A name that no longer resolves is categorically different from a name
+    // that resolves and refuses us. The allowlist claims "reachable from a
+    // browser"; NXDOMAIN says nothing is reachable from anywhere.
+    if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+      return { kind: 'gone', detail: code };
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return { kind: 'unreachable', detail: code || (message.includes('abort') ? 'TIMEOUT' : message.slice(0, 60)) };
+  } finally {
+    // Without this the abort timer stays armed after a fast response and keeps
+    // the event loop alive for up to LIVENESS_TIMEOUT_MS per probe. Caught by
+    // eslint no-unused-vars on the handle, which is the only symptom it has.
+    clearTimeout(timeout);
+  }
+}
+
+interface LivenessReport {
+  /** FAIL tier: allowlisted domain no URL in the corpus references any more. */
+  unreferencedDomains: string[];
+  /** FAIL tier: KNOWN_BROKEN url that has left the docs. */
+  unreferencedKnownBroken: string[];
+  /** WARN tier: domain answered ok for every URL behind it. */
+  noLongerBlocking: { domain: string; samples: string[] }[];
+  /** WARN tier: domain stopped resolving. */
+  vanished: { domain: string; detail: string }[];
+  /** WARN tier: a KNOWN_BROKEN url now answers 200. */
+  healed: string[];
+  /** Number of network probes actually performed (all workloads). */
+  probed: number;
+  /**
+   * Probes performed against ALLOWLISTED_DOMAINS specifically.
+   *
+   * Tracked apart from `probed` on purpose. The first version of the vacuity
+   * guard keyed on the total, and a planted slice(0, 0) on the domain sample
+   * did NOT trip it, because the KNOWN_BROKEN probes kept the total non-zero.
+   * A guard that another workload can satisfy on your behalf is not a guard.
+   */
+  domainProbes: number;
+  /** Allowlisted domains that ARE still referenced, i.e. the probe workload. */
+  referencedDomains: number;
+}
+
+async function auditAllowlist(
+  allUrls: Map<string, LinkLocation[]>,
+  allowlisted: LinkEntry[],
+): Promise<LivenessReport> {
+  const report: LivenessReport = {
+    unreferencedDomains: [],
+    unreferencedKnownBroken: [],
+    noLongerBlocking: [],
+    vanished: [],
+    healed: [],
+    probed: 0,
+    domainProbes: 0,
+    referencedDomains: 0,
+  };
+
+  // --- FAIL tier: pure set arithmetic, no network involved. ---------------
+  const byDomain = new Map<string, string[]>();
+  for (const entry of allowlisted) {
+    const host = hostnameOf(entry.url);
+    if (!host) continue;
+    if (!byDomain.has(host)) byDomain.set(host, []);
+    byDomain.get(host)!.push(entry.url);
+  }
+  for (const domain of ALLOWLISTED_DOMAINS) {
+    if (!byDomain.has(domain)) report.unreferencedDomains.push(domain);
+  }
+  report.referencedDomains = byDomain.size;
+  for (const url of KNOWN_BROKEN.keys()) {
+    if (!allUrls.has(url)) report.unreferencedKnownBroken.push(url);
+  }
+
+  // --- WARN tier: re-probe. ----------------------------------------------
+  const jobs: (() => Promise<void>)[] = [];
+
+  for (const [domain, urls] of byDomain) {
+    jobs.push(async () => {
+      // Probe every distinct URL behind the domain, capped so a domain with
+      // dozens of references does not dominate the run. The entry is only
+      // reported as dead weight when the WHOLE sample answers ok: one green
+      // deep link on a site that 403s the rest proves nothing.
+      const sample = urls.slice(0, 3);
+      const outcomes = await Promise.all(sample.map(probeOnce));
+      report.probed += sample.length;
+      report.domainProbes += sample.length;
+      // `[].every(...)` is true for BOTH branches below, so an empty sample
+      // would report a domain as vanished AND crash on outcomes[0]. Found by
+      // planting slice(0, 0) here; the vacuity guard in main() is what makes
+      // an empty sample a failure rather than a silent all-clear.
+      if (sample.length === 0) return;
+      if (outcomes.every((o) => o.kind === 'gone')) {
+        report.vanished.push({ domain, detail: (outcomes[0] as { detail: string }).detail });
+      } else if (outcomes.every((o) => o.kind === 'ok')) {
+        report.noLongerBlocking.push({ domain, samples: sample });
+      }
+    });
+  }
+
+  for (const [url] of KNOWN_BROKEN) {
+    if (!allUrls.has(url)) continue;
+    jobs.push(async () => {
+      const outcome = await probeOnce(url);
+      report.probed++;
+      if (outcome.kind === 'ok') report.healed.push(url);
+    });
+  }
+
+  let idx = 0;
+  async function worker() {
+    while (idx < jobs.length) {
+      const job = jobs[idx++];
+      if (!job) break;
+      await job();
+    }
+  }
+  await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
+
+  return report;
+}
+
+async function processQueue(entries: LinkEntry[]): Promise<{ broken: LinkEntry[]; skipped: LinkEntry[]; excluded: number; knownBroken: number; checked: number }> {
   const broken: LinkEntry[] = [];
   const skipped: LinkEntry[] = [];
   let excluded = 0;
+  let knownBroken = 0;
   let checked = 0;
   let idx = 0;
 
@@ -255,6 +538,11 @@ async function processQueue(entries: LinkEntry[]): Promise<{ broken: LinkEntry[]
 
       if (shouldSkip(entry.url)) {
         excluded++;
+        continue;
+      }
+
+      if (KNOWN_BROKEN.has(entry.url)) {
+        knownBroken++;
         continue;
       }
 
@@ -279,42 +567,68 @@ async function processQueue(entries: LinkEntry[]): Promise<{ broken: LinkEntry[]
   const workers = Array.from({ length: CONCURRENCY }, () => worker());
   await Promise.all(workers);
 
-  return { broken, skipped, excluded, checked };
+  return { broken, skipped, excluded, knownBroken, checked };
+}
+
+/**
+ * Collect markdown files per root.
+ *
+ * ANTI-VACUITY GUARD. Every entry in SCAN_ROOTS is a hardcoded path constant,
+ * which is root pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh:
+ * move or rename a tree and its glob returns zero files, every loop below
+ * iterates zero times, and the gate prints "All external links are valid"
+ * while checking less than it claims. Measured, not assumed: before this guard
+ * the whole script exited 0 against an empty tree.
+ *
+ * The guard is PER ROOT, not on the total. A total-only guard would let four
+ * of the five trees disappear while the fifth kept the run green — the exact
+ * silent-shrink failure that widening the scan makes possible.
+ */
+function collectFiles(): { files: string[]; perRoot: Map<string, number> } | null {
+  const files: string[] = [];
+  const perRoot = new Map<string, number>();
+  const empty: string[] = [];
+
+  for (const root of SCAN_ROOTS) {
+    const found = globSync(`${root}/**/*.md`, {
+      ignore: ['**/node_modules/**', '**/dist/**'],
+    });
+    perRoot.set(root, found.length);
+    if (found.length === 0) empty.push(root);
+    files.push(...found);
+  }
+
+  if (empty.length > 0) {
+    console.error(
+      `\n  Refusing to run: no markdown files under ${empty.join(', ')}.\n` +
+      `  A link checker with nothing to scan reports success while asserting\n` +
+      `  nothing. Fix SCAN_ROOTS, or fix the checkout that left the tree empty.`
+    );
+    return null;
+  }
+
+  return { files, perRoot };
 }
 
 async function main() {
   console.log('External Link Checker');
   console.log('='.repeat(60));
 
-  // Find all markdown files
-  const files = globSync(`${DOCS_DIR}/**/*.md`);
+  const collected = collectFiles();
+  if (!collected) process.exit(1);
+  const { files, perRoot } = collected;
 
-  // ANTI-VACUITY GUARD. DOCS_DIR is a hardcoded path constant, which is root
-  // pattern 1 in .ci/scripts/test/gates/test-gate-anti-vacuity.sh: move or
-  // rename the docs tree and this glob returns zero files, every loop below
-  // iterates zero times, and the gate prints "All external links are valid"
-  // while checking nothing. Measured, not assumed: before this guard the whole
-  // script exited 0 against an empty tree.
-  //
-  // Zero files is never a legitimate state here. The tree carries 781 markdown
-  // files across 13 locales, and the locale set itself is asserted by
-  // check-translation-completeness.ts, so "no docs" means the path is wrong,
-  // not that the docs went away.
-  if (files.length === 0) {
-    console.error(
-      `\n  Refusing to run: no markdown files under ${DOCS_DIR}.\n` +
-      `  A link checker with nothing to scan reports success while asserting\n` +
-      `  nothing. Fix DOCS_DIR, or fix the checkout that left the tree empty.`
-    );
-    process.exit(1);
+  for (const [root, n] of perRoot) {
+    console.log(`  ${root}: ${n} file(s)`);
   }
-
-  console.log(`Scanning ${files.length} markdown files...\n`);
+  console.log(`\nScanning ${files.length} markdown files...\n`);
 
   // Extract and deduplicate links
   const allLinks = new Map<string, LinkLocation[]>();
+  let placeholders = 0;
   for (const file of files) {
-    const fileLinks = extractLinks(file);
+    const { links: fileLinks, placeholders: p } = extractLinks(file);
+    placeholders += p;
     for (const [url, locations] of fileLinks) {
       if (!allLinks.has(url)) {
         allLinks.set(url, []);
@@ -331,10 +645,13 @@ async function main() {
     }
   }
 
-  console.log(`Found ${entries.length} unique external URLs\n`);
+  console.log(`Found ${entries.length} unique external URLs (${placeholders} placeholder occurrence(s) dropped)\n`);
   console.log('Checking links...\n');
 
-  const { broken, skipped, excluded, checked } = await processQueue(entries);
+  const { broken, skipped, excluded, knownBroken, checked } = await processQueue(entries);
+
+  console.log('Auditing allowlist liveness...\n');
+  const liveness = await auditAllowlist(allLinks, skipped);
 
   // Summary
   console.log('\n' + '='.repeat(60));
@@ -344,7 +661,9 @@ async function main() {
   console.log(`  Checked:           ${checked}`);
   console.log(`  Excluded (patterns):${excluded}`);
   console.log(`  Skipped (allowlist):${skipped.length}`);
+  console.log(`  Known-broken (tracked):${knownBroken}`);
   console.log(`  Broken:            ${broken.length}`);
+  console.log(`  Liveness probes:   ${liveness.probed}`);
 
   if (skipped.length > 0) {
     console.log(`\n  Allowlisted domains (verified manually):`);
@@ -354,8 +673,91 @@ async function main() {
     }
   }
 
+  // --- Liveness verdicts --------------------------------------------------
+  if (liveness.noLongerBlocking.length > 0) {
+    console.log(`\n  WARNING: allowlist entries that answered normally from this runner:`);
+    for (const { domain, samples } of liveness.noLongerBlocking) {
+      console.log(`    - ${domain}  (${samples.length} sampled URL(s) all returned 2xx)`);
+    }
+    console.log(
+      `    These may be dead weight. They are NOT failed here: every entry in\n` +
+      `    the allowlist documents an IP-dependent block, so a green probe from\n` +
+      `    one location is not proof the block is gone. Re-check from a CI\n` +
+      `    runner before deleting the entry.`
+    );
+  }
+
+  if (liveness.vanished.length > 0) {
+    console.log(`\n  WARNING: allowlisted domains that no longer resolve:`);
+    for (const { domain, detail } of liveness.vanished) {
+      console.log(`    - ${domain}  (${detail})`);
+    }
+    console.log(
+      `    The allowlist claims these are reachable from a browser. A name that\n` +
+      `    does not resolve is not reachable from anywhere, so the links behind\n` +
+      `    them are probably dead and the allowlist is hiding it.`
+    );
+  }
+
+  if (liveness.healed.length > 0) {
+    console.log(`\n  WARNING: KNOWN_BROKEN links that now answer 2xx:`);
+    for (const url of liveness.healed) console.log(`    - ${url}`);
+    console.log(`    Fixed upstream. Delete the KNOWN_BROKEN entry.`);
+  }
+
+  if (knownBroken > 0) {
+    console.log(`\n  Tracked broken links (documented, not fixable from this file):`);
+    for (const entry of entries) {
+      const reason = KNOWN_BROKEN.get(entry.url);
+      if (!reason) continue;
+      console.log(`    - ${entry.url}`);
+      console.log(`      ${reason}`);
+    }
+  }
+
+  // --- FAIL tier ----------------------------------------------------------
+  const failures: string[] = [];
+
+  if (liveness.unreferencedDomains.length > 0) {
+    failures.push(
+      `  Allowlisted domain(s) no longer referenced by any scanned markdown:\n` +
+      liveness.unreferencedDomains.map((d) => `    - ${d}`).join('\n') +
+      `\n  The exemption outlived the link it excused. Delete it from ALLOWLISTED_DOMAINS.`
+    );
+  }
+
+  if (liveness.unreferencedKnownBroken.length > 0) {
+    failures.push(
+      `  KNOWN_BROKEN url(s) that no longer appear in any scanned markdown:\n` +
+      liveness.unreferencedKnownBroken.map((u) => `    - ${u}`).join('\n') +
+      `\n  The doc was fixed. Delete the entry from KNOWN_BROKEN.`
+    );
+  }
+
+  // A liveness audit that probed nothing while it had work to do is vacuous:
+  // it prints no warnings, which reads as "every entry is still load-bearing".
+  //
+  // Deliberately keyed on referencedDomains, not on ALLOWLISTED_DOMAINS.size.
+  // The latter would be unreachable dead code: if no allowlisted domain is
+  // referenced, the unreferencedDomains failure above has already fired. Keyed
+  // on the actual probe workload it stays live, and it fires on the regression
+  // that matters -- someone making the probe conditional, capped to zero, or
+  // wrapped in a try/catch that swallows it.
+  if (liveness.referencedDomains > 0 && liveness.domainProbes === 0) {
+    failures.push(
+      `  Liveness audit ran ZERO probes while ${liveness.referencedDomains} allowlisted domain(s)\n` +
+      `  were still referenced by the docs. Silence from an instrument that never\n` +
+      `  fired is not a clean bill of health.`
+    );
+  }
+
   if (broken.length > 0) {
-    console.error(`\n  FAILED: ${broken.length} broken external link(s) found.`);
+    failures.push(`  ${broken.length} broken external link(s) found.`);
+  }
+
+  if (failures.length > 0) {
+    console.error(`\n  FAILED:`);
+    for (const f of failures) console.error(f);
     process.exit(1);
   }
 
