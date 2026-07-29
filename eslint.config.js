@@ -107,10 +107,9 @@ function i18nLocaleConfigs({
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
         ...(cliSyntax ? { 'i18n/no-positional-cli-syntax': ['error', cliSyntax] } : {}),
-        // Runs on EVERY language file (this block globs all of them, not just the
-        // curated I18N_LANGUAGES set) so flag-name mangling is caught even in
-        // locales like et/it/ko/pt that the heavier non-English block skips. The
-        // rule self-guards the en source.
+        // Runs on EVERY language file, including the `en` source that the non-English
+        // block below excludes, so flag-name mangling is caught everywhere. The rule
+        // self-guards the en source where that matters.
         ...(cliFlags ? { 'i18n/cli-flag-consistency': ['error', { localesDir }] } : {}),
       },
     },

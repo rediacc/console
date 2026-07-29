@@ -8,9 +8,9 @@
  *   mp4, vertical, poster
  *   (bucket keys: videos/solutions/<lang>/<slug>[.vertical|.poster.jpg])
  *
- * The site's 3 remaining locales (ar/et/tr) intentionally fall back to the English
- * video at render time (see src/utils/solution-video.ts), so they are NOT required
- * here — and we never duplicate the English files for them.
+ * ALL 13 locales now have their own solution videos. ar/et/tr used to fall back to the
+ * English video because Qwen3-TTS could not voice them; VoxCPM2 narrates every locale
+ * natively and all three are published, so none is exempt here any more.
  *
  * The bound video element is in SPSolutionVideo.astro via resolveSolutionVideo(slug,
  * lang); a missing manifest entry = a 404 / black player on a shipped page. The gate
@@ -132,7 +132,7 @@ function main(): number {
   if (misses.length === 0) {
     console.log(
       `✓ Solution videos OK: ${required.length} slugs × ${VIDEO_LANGS.length} langs ` +
-        `(${checked} sets present; ar/et/tr fall back to en by design` +
+        `(${checked} sets present` +
         (videoless.length ? `; ${videoless.length} videoless slug(s) skipped` : '') +
         `)`
     );
@@ -176,9 +176,6 @@ function main(): number {
   );
   console.error('  ./run.sh --publish-www');
   console.error('  # 3) Re-run this check.');
-  console.error(
-    '\n  Note: ar/et/tr are intentional English fallbacks (src/utils/solution-video.ts) and are NOT generated.'
-  );
   return 1;
 }
 
