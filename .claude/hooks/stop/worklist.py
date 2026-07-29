@@ -615,8 +615,8 @@ def pr_body_freshness(root):
     return "ok", ""
 
 
-def stuck_rounds(worklist, session_id, tasks, head):
-    """(count, fired) -- how many consecutive stops have moved NOTHING?
+def stuck_rounds(worklist, session_id, tasks, head, exempt):
+    """(count, fired, why) -- how many consecutive stops have moved NOTHING?
 
     THE OPERATOR'S RULE, IN THEIR WORDS: "I'd go with employing a
     planning/investigation agent if we cannot solve in last 3 round." Three
@@ -634,27 +634,63 @@ def stuck_rounds(worklist, session_id, tasks, head):
     it. Talking does not. That is the point, since every one of the failures
     this catches involved a session that was producing text and no artifacts.
 
-    It fires at 3 and then RESETS, so it nags at 3, 6, 9 rather than every stop
-    once stuck. A session needs room to actually run the agent it was told to
-    run, and a check that fires forever is one the session learns to route
-    around.
+    It fires and then RESETS, so it nags at 3, 6, 9 rather than every stop once
+    stuck. A session needs room to actually run the agent it was told to run,
+    and a check that fires forever is one the session learns to route around.
+
+    TWO TIERS, because a single signature can be bought off. The first version
+    of this shipped with a DEAD head leg (it resolved the repo from the
+    worklist's own tmp directory, so git returned nothing and the docstring's
+    "a commit moves it" was false for every real stop). Fixing that naively
+    would have been worse than the bug: any commit, including a one-line doc
+    tweak, would reset the counter, so the commit-trivia treadmill and the
+    eleven-push storm would both escape. So:
+
+      * TASKS-ONLY signature, threshold 2x. Commits cannot touch it. This is
+        what catches a session committing noise while the real problem sits.
+      * TASKS+HEAD signature, threshold 1x. Real progress resets this sooner.
+
+    Commits buy slack, never immunity.
+
+    `exempt` (a live background task) suppresses the ordinary fire, because the
+    remedy is already running. It does NOT stop the counting: a watch left
+    running forever would otherwise silence this permanently, so at 3x the
+    threshold it fires anyway to say the remedy itself has stalled.
     """
     # tasks are (id, subject, status); the STATUS is what has to move.
-    sig = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks)) + "#" + (head or "")
-    digest = hashlib.sha1(sig.encode("utf-8", "replace")).hexdigest()[:12]
+    base = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks))
+
+    def dig(s):
+        return hashlib.sha1(s.encode("utf-8", "replace")).hexdigest()[:12]
+
+    sigs = (dig(base), dig(base + "#" + (head or "")))
     p = worklist.with_suffix(".stuck-%s" % (session_id or "unknown")[:8])
     try:
-        prev, count = p.read_text().strip().split(None, 1)
-        count = int(count)
-    except (OSError, ValueError):
-        prev, count = "", 0
-    count = count + 1 if digest == prev else 1
-    fired = count >= STUCK_ROUNDS
+        parts = p.read_text().strip().split()
+        prev, counts = (parts[0], parts[1]), [int(parts[2]), int(parts[3])]
+    except (OSError, ValueError, IndexError):
+        prev, counts = ("", ""), [0, 0]
+    counts = [c + 1 if sigs[i] == prev[i] else 1 for i, c in enumerate(counts)]
+
+    # thresholds: tasks-only is slower to fire, tasks+HEAD is the normal one
+    limits = (STUCK_ROUNDS * 2, STUCK_ROUNDS)
+    hit = [i for i in (0, 1) if counts[i] >= limits[i]]
+    why = ""
+    if hit and exempt:
+        # A running agent excuses the ordinary fire, but not forever.
+        hit = [i for i in hit if counts[i] >= limits[i] * 3]
+        why = "exempt-overrun" if hit else ""
+    elif hit:
+        why = "tasks-only" if 0 in hit else "tasks+head"
+    fired = bool(hit)
     try:
-        p.write_text("%s %d" % (digest, 0 if fired else count))
+        p.write_text(
+            "%s %s %d %d"
+            % (sigs[0], sigs[1], *[0 if i in hit else counts[i] for i in (0, 1)])
+        )
     except OSError:
         pass
-    return count, fired
+    return max(counts), fired, why
 
 
 def cron_memory(worklist, session_id, live_count):
@@ -1205,12 +1241,18 @@ def main():
     # STUCK DETECTION. Runs before the others so the count advances on every
     # stop, including the ones where something else already fired: a session
     # blocked three times running on the same check has also moved nothing.
-    stuck_n, stuck_fired = stuck_rounds(
-        worklist, session_id, tasks, _git(project_root(str(worklist.parent)), "rev-parse", "HEAD")
+    # Derive the repo from the EVENT, exactly like docs_drift below. Resolving
+    # it from worklist.parent (a tmp dir) is what made the HEAD leg dead.
+    stuck_n, stuck_fired, stuck_why = stuck_rounds(
+        worklist,
+        session_id,
+        tasks,
+        _git(project_root(event.get("cwd") or os.getcwd()), "rev-parse", "HEAD"),
+        bool(live_bg),
     )
 
     violations = []
-    if stuck_fired and something_remains and not live_bg:
+    if stuck_fired and something_remains:
         violations.append(
             "NOTHING HAS MOVED IN %d CONSECUTIVE STOPS. Not one task changed status and "
             "HEAD did not advance, so whatever you are doing is not working and a fourth "
@@ -1220,9 +1262,20 @@ def main():
             "let it come back with an approach you have not tried. This is the operator's "
             "standing rule: if it cannot be solved in three rounds, delegate it rather "
             "than repeating yourself. If you genuinely disagree, say WHY in one sentence "
-            "and what will be different next round.\n"
-            "    (no agent is currently running; starting one clears this)"
-            % stuck_n
+            "and what will be different next round.\n    %s"
+            % (
+                stuck_n,
+                {
+                    "tasks-only": "(no task has changed status in that time. Commits do "
+                    "not count as movement here, deliberately: committing trivia while "
+                    "the real problem sits untouched is the pattern this catches.)",
+                    "tasks+head": "(no task changed status and HEAD did not advance. "
+                    "Starting a background agent clears this.)",
+                    "exempt-overrun": "(a background task IS running and has been for "
+                    "many stops, so the remedy itself has stalled. Check what it is "
+                    "doing, or stop it and take a different approach.)",
+                }.get(stuck_why, ""),
+            )
         )
     if not event_ok:
         violations.append(

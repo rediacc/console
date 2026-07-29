@@ -12,6 +12,11 @@ PASS=0
 FAIL=0
 
 setup() {
+    # Reset EVERY knob run() reads. A plain `BG=...` in one case leaked into the
+    # next two and silently suppressed a check, which cost a debugging round.
+    BG='[]'
+    CRONS='[]'
+    JUDGE_MODE=off
     rm -rf "$BASE"
     mkdir -p "$BASE/proj/.git" "$BASE/tmp/claude-worklist" "$BASE/tasks/session-deadbeef"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
@@ -22,6 +27,10 @@ setup() {
 }
 
 # say <text-of-last-assistant-message>
+# Does NOT imply a turn boundary, and must not: case 24 depends on two say()
+# calls landing in ONE turn, because multiple assistant text blocks per turn is
+# exactly the shape that once hid a '## Remaining' section from this hook. Use
+# the explicit newturn helper when a fixture wants a fresh window.
 say() {
     python3 -c '
 import json,sys
@@ -717,6 +726,55 @@ BG='[{"status":"running","description":"plan agent"}]'
 BG="$BG" check "stop 1" allow ""
 BG="$BG" check "stop 2" allow ""
 BG="$BG" check "a live agent means the remedy is already running" allow ""
+
+echo "== 54. THE MISSING CONTROL: a COMMIT must move the signature =="
+# Its absence is why a dead HEAD leg shipped. The hook resolved the repo from
+# the worklist tmp dir, git returned nothing, and every commit was invisible.
+setup
+git -C "$BASE/proj" init -q 2>/dev/null
+git -C "$BASE/proj" config user.email t@t; git -C "$BASE/proj" config user.name t
+echo one >"$BASE/proj/f"; git -C "$BASE/proj" add f
+git -C "$BASE/proj" commit -qm one
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "stop 1" allow ""
+check "stop 2" allow ""
+# A real commit between stops. If HEAD is wired, this resets tasks+head.
+echo two >>"$BASE/proj/f"; git -C "$BASE/proj" commit -qam two
+newturn
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+check "a commit resets the tasks+head counter" allow ""
+
+echo "== 55. but a commit buys SLACK, not immunity: tasks-only still fires =="
+# Commit every round; the tasks-only signature never moves, so at 2x it fires.
+# case 54 already spent 3 stops; tasks-only fires at 2x STUCK_ROUNDS = 6, so
+# exactly 3 more land ON the fire rather than past its reset.
+for i in 4 5 6; do
+    echo "c$i" >>"$BASE/proj/f"; git -C "$BASE/proj" commit -qam "c$i"
+    newturn
+    say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+    LAST="$(run)"
+done
+if grep -qF "EMPLOY A PLANNING OR INVESTIGATION AGENT" <<<"$LAST" &&
+    grep -qF "Commits do not count as movement here" <<<"$LAST"; then
+    echo "  PASS: the commit-trivia treadmill still trips the tasks-only tier"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: committing every round escaped the stuck check"
+    echo "        out: ${LAST:0:220}"
+    FAIL=$((FAIL + 1))
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
