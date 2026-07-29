@@ -730,6 +730,44 @@ def citation_state(root, text):
     return True, "%s:%d" % (rel, line)
 
 
+def cited_excerpts(root, message, limit=3, span=4):
+    """Quote what the session cited, so the judge can check it rather than guess.
+
+    The citation check (citation_state) only proves a source EXISTS. That is the
+    cheap half, and on its own it is gameable: any real file and any in-range
+    line satisfies it, including one that says the opposite of the claim. This
+    supplies the text so the expensive half can happen in the judge, which is
+    already being paid for on quiet stops.
+
+    Bounded on purpose. At most `limit` citations, +/- `span` lines each, so the
+    prompt grows by a few hundred tokens rather than with the size of the
+    program. Whole-document injection was considered and rejected: docs/ alone
+    is thousands of lines and the cost would scale with the repo.
+    """
+    out, seen = [], set()
+    for m in CITE_RE.finditer(message or ""):
+        rel, line = m.group(1), int(m.group(2))
+        if (rel, line) in seen:
+            continue
+        seen.add((rel, line))
+        p = pathlib.Path(root) / rel
+        try:
+            lines = p.read_text(errors="replace").splitlines()
+        except OSError:
+            continue
+        if line > len(lines):
+            continue
+        lo, hi = max(0, line - 1 - span), min(len(lines), line + span)
+        body = "\n".join(
+            "    %s%d| %s" % (">" if n == line else " ", n, lines[n - 1])
+            for n in range(lo + 1, hi + 1)
+        )
+        out.append("  %s:%d\n%s" % (rel, line, body))
+        if len(out) >= limit:
+            break
+    return "\n".join(out)
+
+
 def cron_memory(worklist, session_id, live_count):
     """(died, remembered_max) -- was a loop running before that is gone now?
 
@@ -950,6 +988,15 @@ Check these specifically, because they are how this session drifts:
     than re-spawned, so they fix their own mistakes in their own context.
 Answer "continue" if any of these is missing.
 
+Sources the session CITED for its blockers, quoted from the tree:
+%(citations)s
+
+If a citation is present, READ IT. The question is not whether the file exists,
+it is whether that text SAYS the work cannot proceed. A source that describes
+how the work is done, or that says it can be built and left switched off, is
+EVIDENCE AGAINST the blocker, not for it. Answer "continue" when the quoted text
+does not support the claim it was cited for.
+
 The session's last message:
 <<<
 %(message)s
@@ -964,7 +1011,7 @@ def resolve_claude():
     return shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
 
 
-def run_judge(remaining_lines, leases, message, streak, loop_desc):
+def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None):
     """(verdict_dict, error_string). Exactly one is non-None.
 
     Fail CLOSED by contract: every error path returns an error string, and the
@@ -984,6 +1031,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc):
         "leases": leases,
         "loop": loop_desc,
         "message": (message or "(the session produced no text)")[-6000:],
+        "citations": citations or "  (none cited)",
     }
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not
@@ -1588,6 +1636,7 @@ def main():
             else "%s, next fire %s (%d cron%s)"
             % (llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
                "" if lcrons == 1 else "s"),
+            cited_excerpts(project_root(event.get("cwd") or os.getcwd()), last_msg),
         )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
@@ -1674,4 +1723,9 @@ def main():
         return
 
 
-main()
+# GUARDED, so the module can be imported and its pure helpers tested directly.
+# A bare main() call meant `import worklist` ran the whole Stop path against
+# whatever happened to be on stdin, which is why the citation excerpter had no
+# unit-level control until now.
+if __name__ == "__main__":
+    main()
