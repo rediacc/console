@@ -51,6 +51,24 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
       return;
     }
 
+    // Exit 11 means renet RECORDED a provisioning failure: the cluster was never
+    // built, so no amount of polling will make it healthy. Retrying to the full
+    // budget here is what turned a 3-second diagnosis into a 20-minute one, and
+    // it is why the nightly reported a generic "Ceph health check failed"
+    // instead of the real cause.
+    //
+    // renet's stderr on this path carries the ORIGINAL provisioning error, e.g.
+    // "failed to install prerequisites on node 22: ssh command failed:
+    // signal: killed" (an OOM kill during apt), so surface it verbatim.
+    //
+    // ProvisionUnavailableExitCode, private/renet/pkg/infra/ceph/provisionstate.go.
+    // 10 is taken by LicenseRequiredExitCode; those are the only two.
+    if (healthResult.code === 11) {
+      throw new Error(
+        `Ceph was never provisioned, so waiting cannot help. renet reported:\n${healthResult.stderr}`
+      );
+    }
+
     if (Date.now() - startedAt >= healthTimeoutMs) {
       throw new Error(`Ceph health check failed: ${healthResult.stderr}`);
     }
