@@ -1339,9 +1339,8 @@ def main():
     violations = []
     if stuck_fired and something_remains:
         violations.append(
-            "NOTHING HAS MOVED IN %d CONSECUTIVE STOPS. Not one task changed status and "
-            "HEAD did not advance, so whatever you are doing is not working and a fourth "
-            "attempt of the same shape will not fix it. EMPLOY A PLANNING OR "
+            "%s IN %d CONSECUTIVE STOPS, so whatever you are doing is not working and a "
+            "fourth attempt of the same shape will not fix it. EMPLOY A PLANNING OR "
             "INVESTIGATION AGENT NOW (Agent tool, subagent_type Plan or Explore, or "
             "general-purpose), give it the problem and the evidence you already have, and "
             "let it come back with an approach you have not tried. This is the operator's "
@@ -1349,6 +1348,16 @@ def main():
             "than repeating yourself. If you genuinely disagree, say WHY in one sentence "
             "and what will be different next round.\n    %s"
             % (
+                # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
+                # status AND HEAD did not advance" for every tier, which is FALSE for
+                # the tasks-only tier: that one fires precisely BECAUSE commits do not
+                # count, so it fires while HEAD is moving. A blocker that overstates
+                # its own evidence teaches the session to distrust it.
+                {
+                    "tasks-only": "NO TASK HAS CHANGED STATUS",
+                    "tasks+head": "NOTHING HAS MOVED",
+                    "exempt-overrun": "NO TASK HAS CHANGED STATUS",
+                }.get(stuck_why, "NOTHING HAS MOVED"),
                 stuck_n,
                 {
                     "tasks-only": "(no task has changed status in that time. Commits do "
