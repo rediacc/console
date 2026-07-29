@@ -368,25 +368,34 @@ By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/l
 To reproduce license-enforcement issues locally, set:
 
 ```bash
-ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)" \
+ACCOUNT_ED25519_PUBLIC_KEY="<the production ed25519 public key>" \
 RDC_RENET_LICENSE=1 \
 ./rdc.sh --config <prod-config> repo push <repo> --to <fresh-machine>
 ./rdc.sh --config <prod-config> backup restore <repo> --as <repo> -m <fresh-machine> --up
 ```
 
-**THIS ENDPOINT CURRENTLY RETURNS 404, verified 2026-07-29.** It is left here
-because the shape of the command is right and only the URL is wrong; the account
-API is not served from `www.rediacc.com` at all (its other routes answer `410
-Gone` there, while the same paths answer `200` on a PR preview worker). Get the
-production ed25519 public key another way until the URL is corrected.
+**Where the key comes from, corrected 2026-07-29.** This block used to fetch it
+with `curl -fsS https://www.rediacc.com/api/public/account-key`. That endpoint
+returns **404** and the account API is not served from `www.rediacc.com` at all
+(its other routes answer `410 Gone` there, while the same paths answer `200` on a
+PR preview worker). There is no public URL for the key today.
 
-Note the `-fsS`, which is load-bearing rather than style. With plain `curl -s`
-the 404 is SILENT and its HTML body becomes the value of
-`ACCOUNT_ED25519_PUBLIC_KEY`, which is then baked into
-`keys.ProductionPublicKey` via ldflags. The build succeeds and every
-prod-signed licence then fails as `invalid_signature` -- which is exactly the
-symptom the next paragraph tells you this variable exists to prevent. The
-documented cure was producing the disease.
+CI does not need one: `ACCOUNT_ED25519_PUBLIC_KEY` already exists as an
+**organisation secret** (alongside `ACCOUNT_ED25519_PRIVATE_KEY` and both X25519
+halves), so any workflow can reference it directly. Verify with
+`gh api orgs/rediacc/actions/secrets`.
+
+Locally you must paste the value. GitHub secrets are **write-only** -- `gh` can
+list their names and never their contents -- so there is no command that fetches
+it, and the old one-liner was not merely pointing at a dead URL, it was pointing
+at a shape of solution that cannot exist for a secret.
+
+Whatever you substitute, do NOT pipe an unchecked HTTP response into this
+variable. That was the original bug and it is worth stating plainly: with plain
+`curl -s` a 404 is SILENT, its HTML body becomes the value, and that HTML is
+baked into `keys.ProductionPublicKey` via ldflags. The build succeeds and every
+prod-signed licence then fails as `invalid_signature` -- exactly the symptom this
+variable exists to prevent. The documented cure was producing the disease.
 
 `RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.
 
