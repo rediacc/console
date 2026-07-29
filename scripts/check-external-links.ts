@@ -73,6 +73,16 @@ const ALLOWLISTED_DOMAINS = new Set([
   // host times out, and the domain root answers 200 either way. So the deep
   // path is filtered by source IP and by client fingerprint, not dead.
   'www.planalto.gov.br',
+  // Microsoft Azure marketing/pricing pages - TIMEOUT from GitHub-hosted
+  // runners, twice in a row (runs 30445030549 and 30445586347), including after
+  // the last-chance GET fallback was added. Measured from a non-datacenter IP:
+  // the host root answers 200 in 6.3s and the page itself 200 in 4.2s, and the
+  // page answers 404 to HEAD three times out of three while serving GET fine.
+  // So two separate things are true and only one of them is fixable here: the
+  // page does not implement HEAD (fixed generally by the GET fallback), and the
+  // host is unreachable from runner IPs (not fixable, hence this entry).
+  // Same class as www.planalto.gov.br above.
+  'azure.microsoft.com',
   // Own infrastructure -- only available after releases, not during CI
   'releases.rediacc.com',
   // SSL.com's reseller site. Surfaced by widening the scan to docs/. Measured
