@@ -16,6 +16,9 @@
         "scripts/**/*.ts"
       ]
     },
+    "packages/locales": {
+      "project": ["*.js"]
+    },
     "packages/shared": {
       "project": [
         "src/**/*.ts"

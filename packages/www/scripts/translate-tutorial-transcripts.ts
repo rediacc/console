@@ -22,11 +22,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');
 const transcriptDir = path.join(wwwRoot, 'src', 'data', 'tutorial-transcripts');
 
-const TARGET_LANGS = ['de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
+const TARGET_LANGS = NON_ENGLISH_LOCALES;
 
 const LANG_NAMES: Record<string, string> = {
   de: 'German',

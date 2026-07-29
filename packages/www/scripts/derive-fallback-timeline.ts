@@ -1,11 +1,16 @@
 #!/usr/bin/env node
 /**
- * Derives per-locale tutorial-timeline JSON for languages that fall back to
- * English audio (ar, et, tr — see FALLBACK_LANGUAGES in
- * private/generative/src/tutorial_tts/cli.py). These locales translate their
- * transcripts but cannot run Qwen3-TTS, so generate-tutorial-video.ts needs a
- * timeline manifest pointing at the English audio MP3s with on-screen text
- * swapped to the locale's translation.
+ * DORMANT BY DESIGN — FALLBACK_LANGUAGES below is empty and nothing falls back.
+ *
+ * This derived a tutorial-timeline for locales that could not be narrated: it points
+ * audioSrc at the ENGLISH mp3s and swaps on-screen text to the locale's translation.
+ * ar/et/tr were the last three, because Qwen3-TTS could not voice them.
+ *
+ * VoxCPM2 replaced that engine and voices all 13 site locales natively from committed
+ * per-locale voice references, so every locale now has real audio and real word timings
+ * and NONE of them should be derived. The script is kept, not deleted, only for a future
+ * locale that genuinely has no narration yet — and deriveOne() hard-refuses any locale
+ * that already has its own audio, so it cannot destroy real work even if misused.
  *
  * Per (locale, tutorial):
  *   in:  src/data/tutorial-timeline/en/<slug>.json     (EN audio refs + timings)
@@ -25,8 +30,20 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-const FALLBACK_LANGUAGES = ['ar', 'et', 'tr'] as const;
-type FallbackLang = (typeof FALLBACK_LANGUAGES)[number];
+// EMPTY, and that is the correct value: no locale falls back to English audio any more.
+// VoxCPM2 voices all 13 site locales natively, each from its own committed voice
+// reference, so ar/et/tr — the last three that used to be derived from English — now have
+// real narration, real per-locale mp3s and real word timings.
+//
+// Leaving ['ar','et','tr'] here was a loaded gun: running this script would have
+// overwritten those genuine timelines with English-derived ones, replacing native
+// narration with English audio and stripping the word timings. The guard in deriveOne()
+// below is the real protection; this list being empty is the first line of it.
+//
+// If a genuinely new locale is ever added WITHOUT narration, add it here — the guard will
+// still refuse to touch any locale that has its own audio.
+const FALLBACK_LANGUAGES: readonly string[] = [];
+type FallbackLang = string;
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');
@@ -88,7 +105,14 @@ function parseArgs(argv: string[]): { lang?: FallbackLang } {
     if (argv[i] === '--lang') {
       const v = argv[++i];
       if (!FALLBACK_LANGUAGES.includes(v as FallbackLang)) {
-        throw new Error(`--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`);
+        throw new Error(
+          FALLBACK_LANGUAGES.length === 0
+            ? `No locale falls back to English audio any more — all 13 are natively ` +
+                `narrated by VoxCPM2, so there is nothing for this script to derive ` +
+                `(got --lang "${v}"). To generate audio for a locale, run: ` +
+                `npm run tutorials:tts:generate -- --lang ${v}`
+            : `--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`
+        );
       }
       return { lang: v as FallbackLang };
     }
@@ -108,6 +132,35 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
   if (!fs.existsSync(enPath)) return { wrote: false, reason: `en timeline missing: ${enPath}` };
   if (!fs.existsSync(transcriptPath))
     return { wrote: false, reason: `transcript missing: ${transcriptPath}` };
+
+  // REFUSE to overwrite a locale that already has its own narration. This output points
+  // audioSrc at ENGLISH mp3s and deliberately strips wordTimings, so writing it over a
+  // natively-narrated timeline silently swaps that locale's audio to English and deletes
+  // its karaoke timings — a destructive, hard-to-notice regression, since the file stays
+  // valid JSON and every structural gate keeps passing.
+  //
+  // The test is the artifact, not a language list: a timeline that names a TTS provider
+  // and carries word timings was produced by a real synthesis run, and nothing derived
+  // ever has both.
+  if (fs.existsSync(outPath)) {
+    const existing = readJson<Timeline & { provider?: string }>(outPath);
+    const hasOwnAudio = typeof existing.provider === 'string' && existing.provider.length > 0;
+    const hasWordTimings = (existing.steps ?? []).some(
+      (s) =>
+        Array.isArray((s as { wordTimings?: unknown[] }).wordTimings) &&
+        ((s as { wordTimings?: unknown[] }).wordTimings as unknown[]).length > 0
+    );
+    if (hasOwnAudio || hasWordTimings) {
+      return {
+        wrote: false,
+        reason:
+          `REFUSING to overwrite ${lang}/${slug}: it has its own narration ` +
+          `(provider=${existing.provider ?? 'none'}, wordTimings=${hasWordTimings}). ` +
+          `Deriving from English would replace native audio and strip word timings. ` +
+          `Delete the timeline first if you truly intend to fall back to English.`,
+      };
+    }
+  }
 
   const en = readJson<Timeline>(enPath);
   const transcript = readJson<Transcript>(transcriptPath);

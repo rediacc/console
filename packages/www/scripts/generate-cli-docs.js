@@ -18,10 +18,11 @@ import { fileURLToPath } from 'node:url';
 import { LOCAL_GROUPS, toAnchorId, toGroupAnchorId } from './lib/cli-reference-catalog.js';
 import { computeSourceHash } from './validate-translation-freshness.js';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // All supported languages
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
+const LANGUAGES = SITE_LOCALES;
 
 // Path helpers
 function getCliJsonPath(lang) {

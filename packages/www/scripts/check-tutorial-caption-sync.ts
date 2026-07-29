@@ -28,7 +28,12 @@
  * carries <= 1 word entry has no intra-cue timing (the pre-fix data shape)
  * and fails, in addition to the flat-spread check that applies everywhere.
  *
- * ar/et/tr are out of scope entirely: they intentionally reuse English
+ * ar/et/tr have real VoxCPM2 narration generated locally but NOT YET PUBLISHED, so they
+ * stay out of scope here until that publish lands (see the note on AUDIO_LANGUAGES).
+ * Estonian will remain a caveat even then: no forced aligner in the stack supports it, so
+ * its timings come from an English-hinted alignment and are approximate. They are NOT the
+ * flat estimator output this script flags (measured: 0.20s median per-word duration
+ * spread, zero flat cues). Historically ar/et/tr reused English
  * audio with translated captions and deliberately strip wordTimings (real
  * per-word timing against translated text would render as scrambled
  * karaoke highlighting) -- see derive-fallback-timeline.ts. Flat timing
@@ -42,6 +47,12 @@ const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
 // Cross-reference: AUDIO_LANGUAGES in
 // private/generative/src/tutorial_tts/cli.py. Keep in sync -- this is the
 // TypeScript side of that list and can't import the Python source directly.
+// NOTE: tr/ar/et are intentionally NOT in this list YET. They now have real VoxCPM2
+// narration generated locally, but this gate fetches the PUBLISHED words.json from
+// media.rediacc.com, where they still carry the old flat fallback timings. Widening the
+// list before publishing turns this gate red on 54 combos (18 casts x 3 locales) for a
+// reason nobody can fix without publishing. Add them in the SAME change that publishes
+// the regenerated tutorial audio.
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'] as const;
 
 // 4, not 3: ASR timestamps sit on an 0.08s quantization grid, so a REAL

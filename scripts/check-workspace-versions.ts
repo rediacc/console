@@ -47,9 +47,15 @@ interface CheckResult {
   version?: string;
 }
 
+// Must list EVERY workspace in the root package.json. This is a hand-maintained list, so
+// a new package is invisible to the gate until it is added here — `packages/provisioning`
+// had been missing since it was created, which is exactly the drift this gate exists to
+// catch, so it is added alongside `packages/locales` rather than left for later.
 const PACKAGES: PackageConfig[] = [
   { path: '', name: 'rediacc-console (root)' },
+  { path: 'packages/locales', name: '@rediacc/locales' },
   { path: 'packages/shared', name: '@rediacc/shared' },
+  { path: 'packages/provisioning', name: '@rediacc/provisioning' },
   { path: 'packages/cli', name: '@rediacc/cli' },
   { path: 'packages/e2e-tests', name: '@rediacc/e2e-tests' },
   { path: 'packages/www', name: '@rediacc/www' },

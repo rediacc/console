@@ -43,14 +43,83 @@ const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
 const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
+// The DEFAULT set, and deliberately still ten rather than the thirteen that
+// tutorial_tts/cli.py::AUDIO_LANGUAGES now narrates. This gate runs in CI *after*
+// `sync-media-from-r2.sh --audio-only` (ci-quality.yml), so it validates PUBLISHED
+// audio. ar/et/tr have real locally-generated narration that has not been published
+// yet, so adding them here would turn a blocking gate red for a reason that can only
+// be cleared by publishing. Widen this list in the same change that publishes them;
+// until then use `--lang <code>`, which validates any locale on demand.
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'];
-// ar/et/tr reuse English audio with translated on-screen text: their timeline
-// files are DERIVED from the en timelines + locale transcripts by
-// derive-fallback-timeline.ts (FALLBACK_LANGUAGES there) and committed like
-// et's always were. They're excluded from the per-file audio checks below
-// (their audioSrc points at en mp3s) but no longer rejected outright --
-// rejecting ar/tr while accepting et was a leftover from before those two
-// migrated to the derived-timeline convention.
+
+// --lang/--cast/--quiet exist so an orchestrator can ask "is locale X finished and
+// consistent?" between a narration run and dispatching its renders. Everything this
+// file already checks -- transcriptHash vs a recomputed hash, step count vs transcript
+// events, per-step id/markerIndex/narrationText equality, replay monotonicity, audioSrc
+// existence, wordTimings structure and ordering -- is exactly that readiness question,
+// so the alternative (a done-marker file written by the producer) would be a weaker
+// claim about the same thing.
+function parseCliArgs(argv) {
+  const opts = { langs: null, casts: null, quiet: false };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    const take = (name) => {
+      const inline = arg.startsWith(`${name}=`) ? arg.slice(name.length + 1) : null;
+      if (inline !== null) return inline;
+      if (arg === name) {
+        i += 1;
+        return argv[i];
+      }
+      return null;
+    };
+    if (arg === '--quiet' || arg === '-q') {
+      opts.quiet = true;
+      continue;
+    }
+    const lang = take('--lang');
+    if (lang) {
+      opts.langs = new Set((opts.langs ? [...opts.langs] : []).concat(lang.split(',')));
+      continue;
+    }
+    const cast = take('--cast');
+    if (cast) {
+      opts.casts = new Set((opts.casts ? [...opts.casts] : []).concat(cast.split(',')));
+      continue;
+    }
+    if (arg === '--help' || arg === '-h') {
+      console.log(
+        'Usage: validate-tutorial-audio.js [--lang a,b] [--cast key,key] [--quiet]\n' +
+          '  --lang   validate these locales instead of the published default set\n' +
+          '  --cast   restrict to these tutorial cast keys\n' +
+          '  --quiet  print nothing on success (exit code is the result)'
+      );
+      process.exit(0);
+    }
+    console.error(`validate-tutorial-audio: unknown argument ${arg}`);
+    process.exit(2);
+  }
+  return opts;
+}
+
+const CLI = parseCliArgs(process.argv.slice(2));
+
+function shouldValidateLang(lang) {
+  return CLI.langs ? CLI.langs.has(lang) : AUDIO_LANGUAGES.includes(lang);
+}
+
+// Engines allowed to have produced a timeline. A set rather than one string because the
+// migration to voxcpm2 re-narrates 180 timelines and cannot land atomically, so both
+// values are legitimately present mid-flight. Keep this in sync with
+// tutorial_tts/audio.py::get_engine: the point is to reject an UNKNOWN provider (a typo,
+// or an engine nobody reviewed), not to pin one.
+const KNOWN_TTS_PROVIDERS = new Set(['qwen3-tts', 'voxcpm2']);
+// NO locale reuses English audio any more. ar/et/tr used to have timelines DERIVED from
+// the en timelines by derive-fallback-timeline.ts, because Qwen3-TTS could not voice
+// them; VoxCPM2 now narrates all 13 natively, so those three have their own mp3s and
+// their own word timings like every other locale. derive-fallback-timeline.ts is dormant
+// (its FALLBACK_LANGUAGES is empty) and refuses to overwrite a locale that has real
+// narration. They are excluded from the DEFAULT run above only because their audio is
+// not published to R2 yet, which is a publishing state, not a fallback.
 
 // The audio tree is synced to R2, not committed to git (see
 // .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally,
@@ -129,7 +198,7 @@ function listTranscriptPairs() {
 }
 
 function validatePair({ lang, transcriptPath, timelinePath, errors }) {
-  if (!AUDIO_LANGUAGES.includes(lang)) return;
+  if (!shouldValidateLang(lang)) return;
 
   const transcript = loadJson(transcriptPath);
   const relativeTimeline = path.relative(ROOT, timelinePath);
@@ -149,8 +218,13 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
 
   if (timeline.version !== 1)
     pushError(errors, relativeTimeline, 'version must be 1.', 'Regenerate timeline');
-  if (timeline.provider !== 'qwen3-tts')
-    pushError(errors, relativeTimeline, 'provider must be qwen3-tts.', 'Regenerate timeline');
+  if (!KNOWN_TTS_PROVIDERS.has(timeline.provider))
+    pushError(
+      errors,
+      relativeTimeline,
+      `provider must be one of: ${[...KNOWN_TTS_PROVIDERS].join(', ')}.`,
+      'Regenerate timeline'
+    );
   if (timeline.cast !== transcript.cast)
     pushError(errors, relativeTimeline, 'cast must match transcript.cast.', 'Regenerate timeline');
   if (timeline.language !== lang)
@@ -301,10 +375,41 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
 
 function main() {
   const errors = [];
-  const pairs = listTranscriptPairs();
+  const pairs = listTranscriptPairs().filter(
+    (p) => (!CLI.casts || CLI.casts.has(p.castKey)) && shouldValidateLang(p.lang)
+  );
 
-  console.log(colors.bold('Tutorial Timeline Validation'));
-  console.log('='.repeat(60));
+  if (!CLI.quiet) {
+    console.log(colors.bold('Tutorial Timeline Validation'));
+    console.log('='.repeat(60));
+  }
+
+  // A selective run that matches nothing must FAIL, not pass. As a readiness gate this
+  // is the whole point: "validate locale et" silently checking zero files and exiting 0
+  // would tell an orchestrator that an unnarrated locale is ready to render.
+  if ((CLI.langs || CLI.casts) && pairs.length === 0) {
+    console.error(
+      colors.red(
+        `✗ No transcript/timeline pairs matched ${CLI.langs ? `--lang ${[...CLI.langs].join(',')}` : ''}` +
+          `${CLI.casts ? ` --cast ${[...CLI.casts].join(',')}` : ''}. Nothing was validated.`
+      )
+    );
+    process.exit(1);
+  }
+
+  // Likewise fail-closed on a selective run with no audio on disk. The default run
+  // tolerates a missing tree (a clean checkout legitimately has none), but an explicit
+  // --lang is asking whether real files are ready, and "skipped the file checks" is not
+  // an answer to that.
+  if ((CLI.langs || CLI.casts) && !AUDIO_TREE_PRESENT) {
+    console.error(
+      colors.red(
+        `✗ Audio tree ${AUDIO_DIR} is absent, so per-file checks cannot run. A selective ` +
+          'run must not report success on structure alone.'
+      )
+    );
+    process.exit(1);
+  }
 
   if (!fs.existsSync(TIMELINE_DIR)) {
     console.log(
@@ -316,7 +421,7 @@ function main() {
     process.exit(0);
   }
 
-  if (!AUDIO_TREE_PRESENT) {
+  if (!AUDIO_TREE_PRESENT && !CLI.quiet) {
     console.log(
       colors.yellow(
         'Audio tree not present locally (synced to R2, not committed to git -- see ' +
@@ -332,8 +437,12 @@ function main() {
   }
 
   if (errors.length === 0) {
-    console.log(colors.green('✓ Tutorial timelines and assets are valid.'));
-    console.log('='.repeat(60));
+    if (!CLI.quiet) {
+      console.log(
+        colors.green(`✓ Tutorial timelines and assets are valid (${pairs.length} pair(s) checked).`)
+      );
+      console.log('='.repeat(60));
+    }
     process.exit(0);
   }
 

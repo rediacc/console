@@ -29,14 +29,15 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { NIS2_SNAPSHOT_LANGS, type Nis2SnapshotLang } from './lib/nis2-langs.js';
 const CELEX = '32022L2555';
 const NORMALISATION_VERSION = 1;
 
 // EU languages where the directive is officially published AND that we
 // translate the surrounding content into. ISO 639-1 codes; EUR-Lex uses
 // the uppercase form in URLs (EN, DE, ES, FR, ET, IT, PT).
-const SUPPORTED_LANGS = ['en', 'de', 'es', 'fr', 'et', 'it', 'pt'] as const;
-type SupportedLang = (typeof SUPPORTED_LANGS)[number];
+const SUPPORTED_LANGS = NIS2_SNAPSHOT_LANGS;
+type SupportedLang = Nis2SnapshotLang;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

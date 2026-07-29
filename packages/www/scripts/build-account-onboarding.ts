@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const ACCOUNT_WEB_DIR = path.resolve(ROOT, '..', '..', 'private', 'account', 'web');
@@ -23,21 +24,7 @@ const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const OUTPUT_PATH = path.join(ACCOUNT_WEB_DIR, 'src', 'data', 'onboarding-content.json');
 
 // Keep in sync with private/account/web/src/i18n/language.ts
-const SUPPORTED_LANGUAGES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-] as const;
+const SUPPORTED_LANGUAGES = SITE_LOCALES;
 
 interface ManifestStep {
   id: string;

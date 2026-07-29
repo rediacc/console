@@ -632,7 +632,7 @@
         "virtualization": "Virtualiseerimine"
       },
       "subscriptionUnreachable": "ei saa ühendust tellimusserveriga",
-      "title": "Rediacc CLI Doctor"
+      "title": "Rediacc CLI diagnostika"
     },
     "machine": {
       "deprovision": {

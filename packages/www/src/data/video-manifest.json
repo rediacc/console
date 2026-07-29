@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T15:54:18.989Z",
+  "generatedAt": "2026-07-28T17:27:59.586Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -6528,6 +6528,23 @@
           "size": 58891,
           "sha256": "4e3aa51d057ae77b3e3f39d43f801982c7651253ced58d1ab2775fa144328d75"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/ai-pentesting.mp4",
+          "size": 9652164,
+          "sha256": "23eca37095412cb7b4a9e42431b61d0d3cc6427a7a4eb6d28a2a998a8a32be62"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/ai-pentesting.vertical.mp4",
+          "size": 9554567,
+          "sha256": "e7ac360bfe6aee15f8c8283495893dc57d38ff4b802c1826220ee3bb84d2f795"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/ai-pentesting.poster.jpg",
+          "size": 59898,
+          "sha256": "2cb2f14dcc479ad91e5b151b0f4d7f7624f5b234f5deeacb4380627d069c1c68"
+        }
       }
     },
     "audit-trail": {
@@ -6699,6 +6716,23 @@
           "path": "videos/solutions/zh/audit-trail.poster.jpg",
           "size": 47226,
           "sha256": "f5372fcb629729948eb7053876e524bd50ea46e531134096aa7e8ebe33fe894d"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/audit-trail.mp4",
+          "size": 10917805,
+          "sha256": "6d46dba6f407593a2c3d4a165af2b16cb57aeba5fe38e9f6e95e1610c26e7297"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/audit-trail.vertical.mp4",
+          "size": 10889066,
+          "sha256": "446b0e2d17369dac60bdf4e3c552764f003a2b729431c0226ede5670b172a2e2"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/audit-trail.poster.jpg",
+          "size": 84212,
+          "sha256": "1ce5bc89dfae545814f71de3d587df4a9fb17106b343b21e0c37b817bd3536cd"
         }
       }
     },
@@ -6872,6 +6906,23 @@
           "size": 72493,
           "sha256": "a06d2fd2cb295a50f3d66057bed88f93ef4e42a092316db3a16563df3aac509d"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/backup-verification.mp4",
+          "size": 8054411,
+          "sha256": "6b280d6679171ce2f07caf1814652be2ec5007990229ba63e73bd1800f093ffb"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/backup-verification.vertical.mp4",
+          "size": 7627457,
+          "sha256": "d9429fecc029ff4d19ca5937f414e946011369b60c06413483e19939a83c22d9"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/backup-verification.poster.jpg",
+          "size": 76139,
+          "sha256": "2d5aca44e8e2c24ec3f10e44ba7c946862644ee3e6b2bf5a2bf337773f9ef9d8"
+        }
       }
     },
     "cloud-outage-protection": {
@@ -7043,6 +7094,23 @@
           "path": "videos/solutions/zh/cloud-outage-protection.poster.jpg",
           "size": 64040,
           "sha256": "a71e70510c4c8c846ba8a8ea8b86355fe20abd94735480bea8fcbf463d136383"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/cloud-outage-protection.mp4",
+          "size": 9686975,
+          "sha256": "e98166455e792e4b95d53e8cf3ec186c24cc1fbde7f95512d91aa967c807ec58"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/cloud-outage-protection.vertical.mp4",
+          "size": 9129903,
+          "sha256": "62c9826226358bfe4d686cfa8074ae01b36e27ffd4fbd30b64e840aa6d5c0c32"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/cloud-outage-protection.poster.jpg",
+          "size": 43416,
+          "sha256": "4ac1f98f1ef9d6b89c6c587f0f2d2b0abb6d3d3d3a4c2404de8ded490e1cd29b"
         }
       }
     },
@@ -7216,6 +7284,23 @@
           "size": 55350,
           "sha256": "e429b4ac7a16929ff7bba724cb66cd429416e61502fa4b3369e8b84eb981bb09"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/continuous-security-testing.mp4",
+          "size": 8898295,
+          "sha256": "2feb32e5e060a140e7e2519bdd4a1f4070ff625140ea183466b57cb8807e0e49"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/continuous-security-testing.vertical.mp4",
+          "size": 8503443,
+          "sha256": "d4f90bf2473aa81ca67d671a71b82361a70a0075eb7b26ef65a0b2865e85d27a"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/continuous-security-testing.poster.jpg",
+          "size": 54525,
+          "sha256": "37f454dfc935dc7042815c8869fdf94e2a4896259229e15578bf3d473d902c66"
+        }
       }
     },
     "data-sovereignty": {
@@ -7387,6 +7472,23 @@
           "path": "videos/solutions/zh/data-sovereignty.poster.jpg",
           "size": 57610,
           "sha256": "ac79bc22ea0ac5d15544bf2de33f1c07a1245b5019c5b6f9ad8740b8cac180cc"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/data-sovereignty.mp4",
+          "size": 8190099,
+          "sha256": "2296be37fc901b7ce69e446fe8f552eb47a9cfce29fe92f3ee2da549e9203538"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/data-sovereignty.vertical.mp4",
+          "size": 7999076,
+          "sha256": "62e201a5ccf957f303abb9caaea9e532fef95089212c83ceb9dd4e20ee0e4414"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/data-sovereignty.poster.jpg",
+          "size": 60516,
+          "sha256": "4a8d1f07f8d4edc48de815f9d9c9e70ef9836d7eee7d0f56ac8e0747193d2158"
         }
       }
     },
@@ -7560,6 +7662,23 @@
           "size": 45721,
           "sha256": "48be4659d72cb38f6abc91f02d47bf136c24aafdfed0a34ce5341cbac2efad5a"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/encryption.mp4",
+          "size": 10921875,
+          "sha256": "c2e1ec6934050b4d0a6e4dd20e0e5d36c020fb05499d503fea20747473a300fe"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/encryption.vertical.mp4",
+          "size": 11334386,
+          "sha256": "a53cdcc4133e35cf2be283df8d59d0387c10b4f8c087cf11262ad712fc1b3bf3"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/encryption.poster.jpg",
+          "size": 41205,
+          "sha256": "35bc7c716b48a5ca7d33b2590be581c634cb260f703cb544331043243d26fec4"
+        }
       }
     },
     "environment-cloning": {
@@ -7731,6 +7850,23 @@
           "path": "videos/solutions/zh/environment-cloning.poster.jpg",
           "size": 50643,
           "sha256": "e85461b48b5056e2469b58536594802f3ab9dcbae8aa3aea656d1f4808be551b"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/environment-cloning.mp4",
+          "size": 8332473,
+          "sha256": "594073846cb22a682598a272f902b2cb9277ec294616785a0e7fb6cb01d72e53"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/environment-cloning.vertical.mp4",
+          "size": 7997390,
+          "sha256": "76982e15727111b22f8f8fffdaf34e8568b9abeb0b3e28f6edd5d31cdca4542a"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/environment-cloning.poster.jpg",
+          "size": 32559,
+          "sha256": "0fcde1365243aa14cad6a2d3a2c6bfd9468c3777376ee1e591742922460fa258"
         }
       }
     },
@@ -7904,6 +8040,23 @@
           "size": 51237,
           "sha256": "0e6d6d48f66dbcce719b39213898ee7af4c6380cad376030fecdabb54a7a376d"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/failover-testing.mp4",
+          "size": 9262341,
+          "sha256": "4ce638ef13894ddcdfec51f331a6658afff835c22263a00f9db6a5a62da48589"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/failover-testing.vertical.mp4",
+          "size": 9129608,
+          "sha256": "a5d73a6600e2637b6847c1aeb4c8fe2ac3281ae6512d3be2d6e0529ec1722b37"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/failover-testing.poster.jpg",
+          "size": 43608,
+          "sha256": "b0ae8a4decd4bbb4b8d0229fedbe519b5ce14eb5a767689b332feaf23e3dd81c"
+        }
       }
     },
     "immutable-backups": {
@@ -8076,6 +8229,23 @@
           "size": 57018,
           "sha256": "3a2b743cc650701459433b4b06cc16f66e5c51b8bc372428b33b362c12d97a84"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/immutable-backups.mp4",
+          "size": 9216023,
+          "sha256": "c421a64f9557693e075c951c6f80361af08e9363e0391b2f0a2e5af2f3daff8a"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/immutable-backups.vertical.mp4",
+          "size": 8535284,
+          "sha256": "8b5b7bfd3f6d0b133c4bd09a5352d0b5db5f55f8d13328bd3f0c888aea17d184"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/immutable-backups.poster.jpg",
+          "size": 34236,
+          "sha256": "68be76e9d501759f10df3017ef63a0627b047a8eaba5e4aa8856ec1562ff78cc"
+        }
       }
     },
     "infrastructure-costs": {
@@ -8099,18 +8269,18 @@
       "en": {
         "mp4": {
           "path": "videos/solutions/en/infrastructure-costs.mp4",
-          "size": 5990751,
-          "sha256": "851a91a1d1af6d44ca66c0d24a92f8a58ff8a7db30ad6295503cc64a8dcef2b0"
+          "size": 8039898,
+          "sha256": "e50b45156d8588cec2e4853a654c477e519eecdff322fd042e147462d47c25d3"
         },
         "vertical": {
           "path": "videos/solutions/en/infrastructure-costs.vertical.mp4",
-          "size": 5798547,
-          "sha256": "6b953830697877ffce502c59bc85c2f671f1f3d659fcd511c9f00f871666a9db"
+          "size": 7718744,
+          "sha256": "f4cb7b3dfa9aa1f725bf80639cb546d01aefc6d325715d1fff8da8becfdc807f"
         },
         "poster": {
           "path": "videos/solutions/en/infrastructure-costs.poster.jpg",
-          "size": 59393,
-          "sha256": "de38a6cbe8c495d6923162b6c7c4a312fdb0e4408a150990094b2f7d84903112"
+          "size": 73045,
+          "sha256": "3526604830d374ed85f6f6e8f809cf9258c51145d3958091295278bc97647452"
         }
       },
       "es": {
@@ -8247,6 +8417,23 @@
           "path": "videos/solutions/zh/infrastructure-costs.poster.jpg",
           "size": 74536,
           "sha256": "765e7a2b60eb6678fd9f58587f07098b55e738f0d273954c0b447dc914a54c1c"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/infrastructure-costs.mp4",
+          "size": 7950629,
+          "sha256": "168541af3562d3848788500f8a0e1cb0e8cd99a7c4ca1508dc8a2db7706b2f07"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/infrastructure-costs.vertical.mp4",
+          "size": 7639495,
+          "sha256": "4cf310e0c1d3d872fe1855e547155645c2791810e318e5b239f88b207b6f794b"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/infrastructure-costs.poster.jpg",
+          "size": 46368,
+          "sha256": "2ea45d45ae37286c0eec4a965a27a7484b77c39b7b525103bb2e0309c32082f2"
         }
       }
     },
@@ -8420,6 +8607,23 @@
           "size": 46219,
           "sha256": "8b47c9a1b5b1184a9f6786d6eecb789f845563743464875c8995670f83fd43cd"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/instant-recovery.mp4",
+          "size": 9428373,
+          "sha256": "f606a5b989f458dae096db4a2978ed7389227ee6bce8e1500e0997bb07b7acf6"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/instant-recovery.vertical.mp4",
+          "size": 9304247,
+          "sha256": "2298e98a394b03c98eccfccb557404faacf4ca6ab537376facd49af4d9b17137"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/instant-recovery.poster.jpg",
+          "size": 43591,
+          "sha256": "c1310a9be9e274d0bc6533b0216dbe42aee394881cc0860628787a5db6166cd1"
+        }
       }
     },
     "integrations": {
@@ -8591,6 +8795,23 @@
           "path": "videos/solutions/zh/integrations.poster.jpg",
           "size": 39823,
           "sha256": "fdcb5cfcbe8d1da925ef44ee70dda6f4bbe7969683175fcd03f12df7f331270d"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/integrations.mp4",
+          "size": 8712642,
+          "sha256": "ccaaae8b67cf5c6bcad55bde399d186fd8bd262736a9e3a56ca50f36f4d36d3a"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/integrations.vertical.mp4",
+          "size": 8300881,
+          "sha256": "d2a58c4fd12398199aaad61d61deb4609d0edaaac42776b355c62beb58135fe0"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/integrations.poster.jpg",
+          "size": 43132,
+          "sha256": "270e12c9671dfd63fca58c6e3c1ea42c5911597dbb4916698de370d068d51c2e"
         }
       }
     },
@@ -8764,6 +8985,23 @@
           "size": 59486,
           "sha256": "e522571db24148560e158d26e91a7c3e4cda7e91c409a9065c313a80f797db68"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/migration-safety.mp4",
+          "size": 8113314,
+          "sha256": "341114334f45673a7b865f016a648f35cd5c2a7f48768534e52ebf5c8cc1cd45"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/migration-safety.vertical.mp4",
+          "size": 7673410,
+          "sha256": "349e2011323add27a7abcd8de96a1db87042052b31c8cac0c24871ec014157e6"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/migration-safety.poster.jpg",
+          "size": 52203,
+          "sha256": "6d345d35a161a045836dbf99bf6d8ea22e60232f98e079ca04cae74e5cd56c57"
+        }
       }
     },
     "production-parity": {
@@ -8935,6 +9173,23 @@
           "path": "videos/solutions/zh/production-parity.poster.jpg",
           "size": 50553,
           "sha256": "048e5f969691e77f4c211cd468ea55a89722c43cf8b63ed7ebfc4fa157a6f087"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/production-parity.mp4",
+          "size": 9272449,
+          "sha256": "184f04c9853f93685cb4bcbe441726c640a313a51955591f2d86075ce29f4448"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/production-parity.vertical.mp4",
+          "size": 9104386,
+          "sha256": "3b9fdae44e698722816ef735d76f8ae08a52c19f4175dcf612ccb169760659e2"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/production-parity.poster.jpg",
+          "size": 47740,
+          "sha256": "1c59505cbee86a46c85c1247933a30b2ff885b25a6141a9d0d9ffa1b91ac9942"
         }
       }
     },
@@ -9108,6 +9363,23 @@
           "size": 44881,
           "sha256": "08a2f3b02557a39f002da86d3896fbb1e75b3d9c16e486cd82879638bdfcc352"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/rapid-recovery.mp4",
+          "size": 8505579,
+          "sha256": "d784627ac73c94d881151ad7ab90f661b0776e02b31e650fd66af4edea1d7005"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/rapid-recovery.vertical.mp4",
+          "size": 8630722,
+          "sha256": "fbb6843f2b346ea65d3dc94acd88a4072084824068c3f0831009c4a2706b99db"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/rapid-recovery.poster.jpg",
+          "size": 42443,
+          "sha256": "530cc2ca4aff4cc4809ad62e5fb8a3111b8c1fffcb8365f39825de1509f41f90"
+        }
       }
     },
     "retention-compliance": {
@@ -9279,6 +9551,23 @@
           "path": "videos/solutions/zh/retention-compliance.poster.jpg",
           "size": 55128,
           "sha256": "57d9ecbcf05839e6e718e91c8313c80f795ecc79b2d892c2d3d253cc900bb11a"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/retention-compliance.mp4",
+          "size": 9596590,
+          "sha256": "ff9e98b8cbfb9314539038db64d97a2276241dc33c4ef68d11a51f3fd6fdd95d"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/retention-compliance.vertical.mp4",
+          "size": 9838164,
+          "sha256": "9b5d9d941afe3131753bc7db7e20adb9922915bc4ee77361c5e94644940a1d0e"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/retention-compliance.poster.jpg",
+          "size": 53666,
+          "sha256": "e51dc1a6447b3e0cd5a1c2f955c51724d9fd84387c74acafa61f14097413f104"
         }
       }
     },
@@ -9452,6 +9741,23 @@
           "size": 56398,
           "sha256": "362d9c9fd7a7d2ef8a2974f2a51ecf4d1ffba751d54d43c3c28ed7b1f0aa8fe9"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/safe-os-testing.mp4",
+          "size": 7891570,
+          "sha256": "a7d2404bd4cc829b161eeb1c4b5330e4ecf07fedb24ffdc645f17d088d7d155e"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/safe-os-testing.vertical.mp4",
+          "size": 7788086,
+          "sha256": "12fe77443f646923fff44533c80baab5f6750a520259c7e64b6a1ebc8dbf2b7b"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/safe-os-testing.poster.jpg",
+          "size": 38386,
+          "sha256": "86d93f714ea4d3b637225358b04921d54ffa1d243d27882904cf746a1eda69fc"
+        }
       }
     },
     "vendor-lock-in": {
@@ -9623,6 +9929,23 @@
           "path": "videos/solutions/zh/vendor-lock-in.poster.jpg",
           "size": 55170,
           "sha256": "4e35b1ef5836fcd3c8db435659b0b06eeeba85268efa4a80cebd0a03d6a3cad8"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/vendor-lock-in.mp4",
+          "size": 9368326,
+          "sha256": "f728be1f7829513c81036af9ffaad2116a5e532ed9948d5c12d249244f5276f6"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/vendor-lock-in.vertical.mp4",
+          "size": 9097008,
+          "sha256": "24eb5a67944834d1601b378dfafd21ae7bd43f5e9791c52358f35f1fe08ec2d8"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/vendor-lock-in.poster.jpg",
+          "size": 24289,
+          "sha256": "5f54b111ee8fc2a588a9cee786695a063528260429a2e4ba739491686ef44c29"
         }
       }
     },
@@ -9796,6 +10119,23 @@
           "size": 91233,
           "sha256": "02d0e7f4ee1dcf7ea3bda3d2c078f7864a496fee5ea32cc0197e311b634e604e"
         }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/vulnerability-management.mp4",
+          "size": 5065869,
+          "sha256": "a4f6d061edec395e72ab1af7b9ca436ea004787fb0455cab63ce64cab8f4f0d9"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/vulnerability-management.vertical.mp4",
+          "size": 4875146,
+          "sha256": "83caa16ae2911e95e9dd165b137b974ff4681fa334d821677740bd0419c8921e"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/vulnerability-management.poster.jpg",
+          "size": 23167,
+          "sha256": "34e3a8799acd3b4ca488bac1b878e4348f8cca6dd03c5913765154db48050434"
+        }
       }
     },
     "kubernetes-cluster-mobility": {
@@ -9967,6 +10307,23 @@
           "path": "videos/solutions/zh/kubernetes-cluster-mobility.poster.jpg",
           "size": 53595,
           "sha256": "5529fe0d01da48238f208bcf51e00b60df459f31408edfdf636516f674cf55a0"
+        }
+      },
+      "tr": {
+        "mp4": {
+          "path": "videos/solutions/tr/kubernetes-cluster-mobility.mp4",
+          "size": 8949635,
+          "sha256": "a9c80a1148d4164295b7a1a63d40c566b1cef3181ffcabb9b14f90dbe5442720"
+        },
+        "vertical": {
+          "path": "videos/solutions/tr/kubernetes-cluster-mobility.vertical.mp4",
+          "size": 8562318,
+          "sha256": "eb929ac681838bccda48167c58613f1ee0415393654fbf2c0f4228930c9dc8a0"
+        },
+        "poster": {
+          "path": "videos/solutions/tr/kubernetes-cluster-mobility.poster.jpg",
+          "size": 51181,
+          "sha256": "c02c89af55a4e00a0d63f02be87c49023a3c25d61622d960f1f393171cb29907"
         }
       }
     }
