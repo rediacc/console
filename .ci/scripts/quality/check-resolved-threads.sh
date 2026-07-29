@@ -32,10 +32,14 @@ log_step "Checking review threads and review status..."
 
 # GraphQL query to get all review threads
 QUERY='
-query($owner: String!, $repo: String!, $pr: Int!) {
+query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           isResolved
@@ -64,27 +68,55 @@ log_step "Fetching review threads via GraphQL..."
 # its three attempts, which is what the hand-rolled loop that used to live here
 # did. It moved to lib/common.sh because eight other call sites across the review
 # and attribution gates needed exactly this and had none of it.
-if ! RESULT=$(gh_json "review threads for PR #${PR_NUMBER}" -- \
-    api graphql \
-    -f query="$QUERY" \
-    -f owner="$OWNER" \
-    -f repo="$REPO" \
-    -F pr="$PR_NUMBER"); then
-    log_error "Cannot determine whether review threads are resolved. Failing closed."
-    exit 1
-fi
-
-# A GraphQL error response is valid JSON and exits 0, so it survives gh_json and
-# still has to be caught here. RESULT is guaranteed parseable at this point
-# (gh_json returned success), so this jq call cannot itself fail to parse -- it
-# previously could, and a parse-error exit from `jq -e` looks identical to "no
-# .errors field" once stderr is suppressed, silently falling through to a hard,
-# confusing crash further down instead of this clear exit.
-if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-    ERROR_MSG=$(echo "$RESULT" | jq -r '.errors[0].message // "Unknown error"')
-    log_error "GraphQL query failed: $ERROR_MSG"
-    exit 1
-fi
+# PAGINATE. `reviewThreads(first: 100)` with no cursor silently truncates at 100,
+# and because the gate only ever reports UNRESOLVED threads, thread 101 being
+# unresolved read as "all threads resolved" -- a silent green on a merge-blocking
+# check, which is the same failure class as the `|| echo "[]"` bug fixed below.
+# $after is a nullable GraphQL variable, so omitting it on the first request is
+# how you ask for page one; there is no valid empty-string cursor.
+ALL_NODES='[]'
+AFTER=''
+PAGE=0
+while :; do
+    PAGE=$((PAGE + 1))
+    # 50 pages is 5000 threads. A real PR never approaches it, so hitting this
+    # means the cursor stopped advancing; fail closed rather than spin forever.
+    if [[ "$PAGE" -gt 50 ]]; then
+        log_error "Review-thread pagination did not terminate after $PAGE pages. Failing closed."
+        exit 1
+    fi
+    if [[ -z "$AFTER" ]]; then
+        set -- -f query="$QUERY" -f owner="$OWNER" -f repo="$REPO" -F pr="$PR_NUMBER"
+    else
+        set -- -f query="$QUERY" -f owner="$OWNER" -f repo="$REPO" -F pr="$PR_NUMBER" -f after="$AFTER"
+    fi
+    if ! PAGE_JSON=$(gh_json "review threads for PR #${PR_NUMBER} (page ${PAGE})" -- api graphql "$@"); then
+        log_error "Cannot determine whether review threads are resolved. Failing closed."
+        exit 1
+    fi
+    # A GraphQL error response is valid JSON and exits 0, so catch it per page
+    # rather than only on the last one.
+    if echo "$PAGE_JSON" | jq -e '.errors' >/dev/null 2>&1; then
+        ERROR_MSG=$(echo "$PAGE_JSON" | jq -r '.errors[0].message // "Unknown error"')
+        log_error "GraphQL query failed: $ERROR_MSG"
+        exit 1
+    fi
+    ALL_NODES=$(jq -n --argjson acc "$ALL_NODES" --argjson page "$PAGE_JSON" \
+        '$acc + ($page.data.repository.pullRequest.reviewThreads.nodes // [])')
+    if [[ "$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')" != "true" ]]; then
+        break
+    fi
+    AFTER=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
+    if [[ -z "$AFTER" || "$AFTER" == "null" ]]; then
+        log_error "hasNextPage was true but the cursor was empty. Failing closed."
+        exit 1
+    fi
+done
+[[ "$PAGE" -gt 1 ]] && log_step "Fetched $(echo "$ALL_NODES" | jq 'length') review threads across $PAGE pages"
+# Re-wrap into the original single-response shape so every consumer below is
+# unchanged.
+RESULT=$(jq -n --argjson n "$ALL_NODES" \
+    '{data: {repository: {pullRequest: {reviewThreads: {nodes: $n}}}}}')
 
 # Extract unresolved threads (excluding outdated ones)
 UNRESOLVED=$(echo "$RESULT" | jq '[
