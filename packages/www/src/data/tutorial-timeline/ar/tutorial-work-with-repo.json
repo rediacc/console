@@ -27,15 +27,15 @@
         },
         {
           "startSec": 1.28,
-          "endSec": 1.92,
-          "startChar": 11,
-          "endChar": 18
+          "endSec": 1.6,
+          "startChar": 7,
+          "endChar": 10
         },
         {
-          "startSec": 1.92,
+          "startSec": 1.6,
           "endSec": 2.0,
-          "startChar": 20,
-          "endChar": 27
+          "startChar": 11,
+          "endChar": 18
         },
         {
           "startSec": 2.0,
@@ -57,7 +57,7 @@
         },
         {
           "startSec": 5.28,
-          "endSec": 5.68,
+          "endSec": 5.6,
           "startChar": 44,
           "endChar": 48
         },
@@ -74,7 +74,7 @@
           "endChar": 59
         },
         {
-          "startSec": 7.76,
+          "startSec": 6.4,
           "endSec": 8.08,
           "startChar": 61,
           "endChar": 66
@@ -92,7 +92,7 @@
           "endChar": 76
         },
         {
-          "startSec": 8.8,
+          "startSec": 9.04,
           "endSec": 9.28,
           "startChar": 77,
           "endChar": 81
@@ -114,6 +114,12 @@
           "endSec": 11.04,
           "startChar": 94,
           "endChar": 97
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 98,
+          "endChar": 101
         },
         {
           "startSec": 11.28,
@@ -153,7 +159,7 @@
         },
         {
           "startSec": 13.6,
-          "endSec": 14.4,
+          "endSec": 14.24,
           "startChar": 133,
           "endChar": 139
         }
@@ -163,13 +169,13 @@
       "afterTextHash": "19947432862a6cc027d1c1b14f955603132ad94f9a31e350ece46e988d23ef1f",
       "afterWordTimings": [
         {
-          "startSec": 0.24,
-          "endSec": 0.48,
+          "startSec": 0.16,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.8,
+          "startSec": 0.4,
           "endSec": 1.12,
           "startChar": 3,
           "endChar": 8
@@ -179,12 +185,6 @@
           "endSec": 1.76,
           "startChar": 9,
           "endChar": 15
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 37,
-          "endChar": 40
         }
       ]
     },
@@ -205,22 +205,28 @@
           "endChar": 7
         },
         {
-          "startSec": 2.0,
+          "startSec": 1.68,
+          "endSec": 2.24,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.98,
+          "endSec": 3.72,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.46,
           "endSec": 5.2,
-          "startChar": 12,
-          "endChar": 19
+          "startChar": 38,
+          "endChar": 45
         },
         {
-          "startSec": 7.04,
-          "endSec": 8.48,
-          "startChar": 61,
-          "endChar": 69
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.8,
-          "startChar": 71,
-          "endChar": 74
+          "startSec": 6.0,
+          "endSec": 6.64,
+          "startChar": 51,
+          "endChar": 56
         },
         {
           "startSec": 8.8,
@@ -242,7 +248,7 @@
         },
         {
           "startSec": 13.68,
-          "endSec": 14.56,
+          "endSec": 14.48,
           "startChar": 125,
           "endChar": 129
         },
@@ -282,16 +288,10 @@
           "endChar": 8
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.0,
+          "startSec": 1.12,
+          "endSec": 2.08,
           "startChar": 17,
           "endChar": 25
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 3.92,
-          "startChar": 32,
-          "endChar": 34
         },
         {
           "startSec": 3.92,
@@ -301,12 +301,12 @@
         },
         {
           "startSec": 4.96,
-          "endSec": 5.2,
+          "endSec": 5.28,
           "startChar": 39,
           "endChar": 42
         },
         {
-          "startSec": 5.2,
+          "startSec": 5.28,
           "endSec": 5.36,
           "startChar": 43,
           "endChar": 45
@@ -337,7 +337,7 @@
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.4,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 3
         },
@@ -366,7 +366,7 @@
           "endChar": 56
         },
         {
-          "startSec": 8.16,
+          "startSec": 8.24,
           "endSec": 8.4,
           "startChar": 57,
           "endChar": 59
@@ -379,12 +379,6 @@
         },
         {
           "startSec": 9.6,
-          "endSec": 9.84,
-          "startChar": 67,
-          "endChar": 70
-        },
-        {
-          "startSec": 9.84,
           "endSec": 10.24,
           "startChar": 71,
           "endChar": 74
@@ -409,18 +403,18 @@
         },
         {
           "startSec": 12.48,
-          "endSec": 12.96,
+          "endSec": 13.04,
           "startChar": 90,
           "endChar": 96
         },
         {
           "startSec": 13.6,
-          "endSec": 14.0,
+          "endSec": 13.92,
           "startChar": 97,
           "endChar": 102
         },
         {
-          "startSec": 14.0,
+          "startSec": 13.92,
           "endSec": 14.08,
           "startChar": 103,
           "endChar": 105
@@ -497,25 +491,25 @@
           "endChar": 11
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.6,
-          "startChar": 26,
-          "endChar": 30
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 17
         },
         {
           "startSec": 1.6,
-          "endSec": 4.64,
+          "endSec": 4.8,
           "startChar": 39,
           "endChar": 47
         },
         {
-          "startSec": 4.72,
+          "startSec": 4.8,
           "endSec": 5.44,
           "startChar": 48,
           "endChar": 55
         },
         {
-          "startSec": 5.44,
+          "startSec": 5.52,
           "endSec": 5.6,
           "startChar": 56,
           "endChar": 58
@@ -564,7 +558,7 @@
         },
         {
           "startSec": 9.36,
-          "endSec": 9.84,
+          "endSec": 9.92,
           "startChar": 94,
           "endChar": 99
         },
@@ -575,7 +569,7 @@
           "endChar": 116
         },
         {
-          "startSec": 12.48,
+          "startSec": 12.32,
           "endSec": 13.28,
           "startChar": 117,
           "endChar": 125
@@ -641,13 +635,7 @@
         },
         {
           "startSec": 2.72,
-          "endSec": 4.0,
-          "startChar": 20,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.72,
+          "endSec": 3.04,
           "startChar": 26,
           "endChar": 32
         },
@@ -670,7 +658,7 @@
       "wordTimings": [
         {
           "startSec": 0.16,
-          "endSec": 0.72,
+          "endSec": 0.8,
           "startChar": 0,
           "endChar": 6
         },
@@ -700,24 +688,24 @@
         },
         {
           "startSec": 4.64,
-          "endSec": 5.2,
+          "endSec": 5.28,
           "startChar": 37,
           "endChar": 44
         },
         {
           "startSec": 6.4,
-          "endSec": 6.88,
+          "endSec": 6.8,
           "startChar": 45,
           "endChar": 50
         },
         {
-          "startSec": 6.88,
+          "startSec": 6.8,
           "endSec": 7.36,
           "startChar": 51,
           "endChar": 56
         },
         {
-          "startSec": 8.32,
+          "startSec": 8.72,
           "endSec": 8.8,
           "startChar": 62,
           "endChar": 68
@@ -762,7 +750,7 @@
           "endChar": 29
         },
         {
-          "startSec": 3.76,
+          "startSec": 2.32,
           "endSec": 4.16,
           "startChar": 31,
           "endChar": 36
@@ -774,7 +762,7 @@
           "endChar": 43
         },
         {
-          "startSec": 4.96,
+          "startSec": 4.88,
           "endSec": 5.44,
           "startChar": 44,
           "endChar": 51
@@ -804,7 +792,7 @@
           "endChar": 76
         },
         {
-          "startSec": 8.88,
+          "startSec": 8.8,
           "endSec": 9.68,
           "startChar": 77,
           "endChar": 84
@@ -849,7 +837,7 @@
       "audioDurationSec": 15.864,
       "wordTimings": [
         {
-          "startSec": 0.24,
+          "startSec": 0.16,
           "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
@@ -889,12 +877,6 @@
           "endSec": 5.12,
           "startChar": 41,
           "endChar": 47
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 6.56,
-          "startChar": 49,
-          "endChar": 51
         },
         {
           "startSec": 6.56,

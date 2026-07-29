@@ -216,6 +216,53 @@ Steps 1000→8000; `run.sh --slug X --until N`, `--batch`, `--localize --langs a
   Text alone means a re-cast narrator invalidates nothing.
 - Narration is **baked into the mp4**, so new audio requires a re-render.
 
+## Publishing: the four-step order, and the two traps that break it
+
+Publishing is not "run the sync script". It is four steps, and skipping any one produces a
+silent partial publish that every gate reports as fine.
+
+1. **Stage** — `video_pipeline/run.sh --publish-www --langs a,b` copies rendered solution
+   videos into `packages/www/public/assets/videos/solutions/<lang>/`. The sync script reads
+   that directory and nothing else. **Trap:** a locale rendered but not staged uploads
+   nothing and the sync still exits 0. Verified: ar/et had 63 files each sitting only in the
+   pipeline's `processing/` dir, and a bare sync would have published neither.
+2. **Upload** — `.ci/scripts/deploy/sync-media-to-r2.sh [--audio-only|--tutorials-only|--solutions-only]`.
+   Always `--dry-run` first and count; verify afterwards by re-running the dry run, which
+   must report zero pending. Do not trust the exit code alone.
+3. **Manifest** — `packages/www/scripts/generate-video-manifest.ts`.
+   **⚠ It is a SCAN, not a merge.** It rebuilds the manifest from whatever media is on disk,
+   and media is gitignored, so on a normal checkout most locales are absent. Running it
+   blind DROPPED ten locales from 21 slugs to 2-3 each (-5361 lines). Always
+   `sync-media-from-r2.sh` first so the tree is complete, then regenerate.
+4. **Purge** — `.ci/scripts/deploy/purge-media-cache.sh` (needs `CLOUDFLARE_API_TOKEN`, or
+   `CF_GLOBAL_API_KEY` + `CF_EMAIL`). Without it the CDN keeps serving pre-publish copies,
+   and `check-tutorial-caption-sync` — which fetches from `media.rediacc.com` — reports a
+   large, entirely false failure set. This produced a bogus 53-combo report. **After a
+   publish, purge before believing any mass failure.** Prove the cache is fresh by fetching
+   one `words.json` and diffing it against the local file.
+
+Only then flip `VIDEO_LANGS` / widen gate language lists. The manifest must be a superset
+first; the reverse order fails `check:ci-solution-videos` across all 21 slugs.
+
+## Flat caption timings: what is a defect and what is physics
+
+`check-tutorial-caption-sync` flags cues whose words all share one duration — the
+`vtt-emit.ts::estimateRelativeWordTimings` fallback rather than real alignment. Measured
+across the published fleet: **501 flat cues of 11,836 (4.2%)**, and the split matters.
+
+- **Estonian: 394, and permanently unfixable.** No forced aligner in the stack supports
+  `et`, so the estimator is the only thing that can time it. The gate exempts it via
+  `FLAT_TIMING_EXEMPT` — an exemption, not a removal, so `et` still counts everywhere else.
+  Do not "fix" these.
+- **The other ~107 are real** — `_align_into` caught a `RuntimeError` and left the record
+  unset. Fix with `--subtitle --resubtitle`. **`--resubtitle` is load-bearing**:
+  `has_valid_word_timings()` is STRUCTURAL only, so sparse-but-well-formed timings are
+  otherwise reused as-is and a plain re-run changes nothing.
+
+A failure that survives a fresh cache is real, and the remedy is **re-align**, never
+re-publish the same files: published and local were proven byte-identical while both still
+carried the same 4 flat cues.
+
 ## The eight tutorial CI gates, and the failure each one exists to catch
 
 Every one was written after something shipped broken. Read the gate's own header before
