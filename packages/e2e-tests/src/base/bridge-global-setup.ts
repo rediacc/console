@@ -44,7 +44,25 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
 
   while (Date.now() - startedAt < healthTimeoutMs) {
     attempt += 1;
-    const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], 120000);
+
+    // NEVER KILL RENET BEFORE OUR OWN DEADLINE. This call used to pass a hard
+    // 120000, while renet's internal wait is CephHealthTimeout, 600s by default
+    // (opsconfig/config.go:262, overridable via CEPH_HEALTH_TIMEOUT, which
+    // nothing in this repo sets). So every single invocation was SIGTERM'd at
+    // 120s, one fifth of the way through renet's own poll.
+    //
+    // OpsCommandRunner's timeout path returns `code: -1` and appends
+    // "Timeout exceeded" to whatever stderr had arrived so far
+    // (OpsCommandRunner.ts:59-62), and -1 is not 0, so the loop below read it as
+    // "not healthy yet" and retried. The 1200s budget was therefore spent on
+    // nine truncated attempts, and the error the nightly finally surfaced was
+    // our own timeout marker rather than renet's diagnosis.
+    //
+    // Giving the call the whole remaining budget lets renet's wait run to its
+    // own conclusion and return the real reason. The outer loop stays as a thin
+    // retry for the case where budget remains after renet gives up.
+    const remainingMs = healthTimeoutMs - (Date.now() - startedAt);
+    const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], remainingMs);
     if (healthResult.code === 0) {
       // eslint-disable-next-line no-console
       console.log(`  ✓ Ceph cluster is healthy (attempt ${attempt})`);
