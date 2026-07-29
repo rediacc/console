@@ -494,6 +494,91 @@ def docs_drift(root):
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
 
 
+def publish_divergence(root):
+    """(state, count, ref) -- has the branch we publish to moved without us?
+
+    OPERATOR'S RULE, "do not trust, verify". This session commits on a LOCAL
+    branch and publishes with `git push origin HEAD:<other-branch>`, so the two
+    names can diverge silently: another session, or a merge on the remote, puts
+    commits on the published ref that local HEAD does not contain, and the next
+    push either fails confusingly or publishes over work nobody looked at.
+
+    The dangerous direction is remote-ahead. Local-ahead is just unpushed work.
+    """
+    branch = _git(root, "rev-parse", "--abbrev-ref", "HEAD")
+    if not branch or branch == "HEAD":
+        return "unknown", 0, ""
+    # The published ref is whatever the PR is on; default to the sibling name the
+    # session pushes to, overridable for other setups.
+    target = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    if not target:
+        return "unset", 0, ""
+    ref = "origin/%s" % target
+    if not _git(root, "rev-parse", "--verify", "--quiet", ref):
+        return "missing", 0, ref
+    n = _git(root, "rev-list", "--count", "%s" % ref, "^HEAD")
+    ahead = int(n) if n.isdigit() else 0
+    if ahead:
+        return "diverged", ahead, ref
+    # THE SECOND TRAP, found by a verification agent rather than by reasoning: a
+    # LOCAL branch sharing the publish target's name, left behind by an earlier
+    # rename. Nothing in the publish flow touches it, so it rots invisibly; the
+    # cost lands on whoever checks it out next and pushes from a stale base.
+    if _git(root, "rev-parse", "--verify", "--quiet", target):
+        behind = _git(root, "rev-list", "--count", ref, "^%s" % target)
+        unique = _git(root, "rev-list", "--count", target, "^%s" % ref)
+        if behind.isdigit() and int(behind) > 0:
+            return "stale-local", int(behind), "%s (local, %s unique)" % (target, unique or "?")
+    return "ok", 0, ref
+
+
+def cron_memory(worklist, session_id, live_count):
+    """(died, remembered_max) -- was a loop running before that is gone now?
+
+    WHY THIS REPLACED A DECLARATION. v5 first made the session declare its next
+    cron fire and blocked when that timestamp went stale. That check fired on its
+    author twice: once on genuinely bad date arithmetic, and once simply because
+    the loop had fired and the declaration had not been renewed yet. The second
+    is not a defect, it is the design demanding maintenance of a fact the harness
+    already reports.
+
+    `session_crons` in the Stop event is authoritative, so the only thing worth
+    remembering is the HIGH-WATER count. A session that once had a cron and now
+    has none has lost its loop, which is the failure the operator actually cares
+    about ("sometimes you stop the hourly loop and never start it again"). A
+    session that never had one is not doing anything wrong.
+    """
+    p = worklist.with_suffix(".croncount-%s" % (session_id or "unknown")[:8])
+    try:
+        remembered = int(p.read_text().strip())
+    except (OSError, ValueError):
+        remembered = 0
+    if live_count > remembered:
+        try:
+            p.write_text(str(live_count))
+        except OSError:
+            pass
+        remembered = live_count
+    return (remembered >= 1 and live_count == 0), remembered
+
+
+def next_fire(expr):
+    """Best-effort next UTC fire for the simple 'M H|* * * *' shapes we use.
+
+    Deliberately not a cron parser. Anything it does not recognise is returned as
+    the raw expression, because a wrong timestamp is worse than an honest one.
+    """
+    parts = (expr or "").split()
+    if len(parts) != 5 or not parts[0].isdigit() or parts[1] != "*":
+        return expr or "?"
+    minute = int(parts[0])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    nxt = now.replace(minute=minute, second=0, microsecond=0)
+    if nxt <= now:
+        nxt += datetime.timedelta(hours=1)
+    return nxt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def loop_path(worklist):
     return worklist.with_suffix(".loop")
 
@@ -870,8 +955,13 @@ def main():
 
     try:
         event = json.load(sys.stdin)
+        event_ok = isinstance(event, dict)
     except (json.JSONDecodeError, ValueError):
-        event = {}
+        # A malformed event used to degrade to {} silently, which quietly turns
+        # EVERY check into "session_id is empty, nothing is configured" and
+        # produces confusing advice (it told a test to run `--brief unknown`).
+        # Fail loudly instead: a Stop payload this hook cannot parse is a bug.
+        event, event_ok = {}, False
     worklist = worklist_for(
         os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd()
     )
@@ -970,6 +1060,12 @@ def main():
     something_remains = bool(remaining_lines)
 
     violations = []
+    if not event_ok:
+        violations.append(
+            "THIS IS A HOOK BUG: the Stop event on stdin was not parseable JSON, so every "
+            "check below ran against an EMPTY event and its advice is meaningless. Fix the "
+            "caller or %s rather than acting on anything else this block says." % __file__
+        )
     if open_items:
         violations.append(
             "%d OPEN worklist item(s). Do the next one, or move it to [?]/[>] with the "
@@ -996,14 +1092,30 @@ def main():
                 (session_id or "unknown")[:8],
             )
         )
-    if lstate == "overdue":
+    pstate, pahead, pref = publish_divergence(project_root(event.get("cwd") or os.getcwd()))
+    if pstate == "stale-local":
         violations.append(
-            "your declared loop is OVERDUE: next fire was %s (%s). Either it fired and "
-            "you did not re-declare, or it died and nobody restarted it -- which is the "
-            "exact failure this check exists to catch. Re-declare after you confirm the "
-            "cron is alive (CronList):\n"
-            "    .claude/hooks/stop/worklist.py --loop %s <next-ISO8601Z> '<label>'"
-            % (lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), llabel or "no label", (session_id or "")[:8])
+            "a LOCAL branch %s is %d commits behind the ref you publish to, and nothing in "
+            "your workflow touches it. It is a trap for whoever checks it out next: they "
+            "would work from a stale base and could push over live work. Delete it if it "
+            "carries no unique commits, or say why it is being kept."
+            % (pref, pahead)
+        )
+    if pstate == "diverged":
+        violations.append(
+            "%s HAS %d COMMIT(S) YOU DO NOT HAVE. You commit on a local branch and publish "
+            "to a different one, so that ref can move without you. Fetch and inspect before "
+            "your next push, because pushing now either fails or publishes over work nobody "
+            "has looked at:\n    git fetch origin && git log --oneline HEAD..%s"
+            % (pref, pahead, pref)
+        )
+    loop_died, had_crons = cron_memory(worklist, session_id, len(live_crons))
+    if loop_died:
+        violations.append(
+            "YOUR LOOP DIED. This session had %d cron(s) and now has none, so nothing will "
+            "wake it up again. That is the failure this check exists for. Recreate it with "
+            "CronCreate, or say out loud in your message that the loop is deliberately "
+            "finished." % had_crons
         )
     if something_remains and hstate != "ok":
         violations.append(
