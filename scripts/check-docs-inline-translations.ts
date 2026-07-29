@@ -26,12 +26,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 const CLI_LOCALES = path.join(__dirname, '../packages/cli/src/i18n/locales');
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
+const LANGUAGES = SITE_LOCALES;
 const KEY_PATTERN = /\{\{t:([a-zA-Z]+)\.([a-zA-Z0-9_.]+)\}\}/g;
 
 type Language = (typeof LANGUAGES)[number];

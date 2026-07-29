@@ -1,0 +1,4 @@
+{
+  "siteLocales": ["en", "de", "es", "fr", "ja", "ar", "ru", "tr", "zh", "et", "ko", "pt", "it"],
+  "defaultLocale": "en"
+}

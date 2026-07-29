@@ -20,6 +20,21 @@ export interface TranslationOptions {
 
 /**
  * Supported languages in the application.
+ *
+ * THE ONE DELIBERATE COPY of the site locale set. Everything else in the repo imports
+ * `SITE_LOCALES` from `@rediacc/locales`; this file cannot, and the reason is a build, not
+ * a preference.
+ *
+ * `private/account/Dockerfile` compiles this package in genuine isolation: it copies only
+ * `packages/shared/package.json`, `tsconfig.json` and `src/`, then runs `npm install`
+ * inside that directory with no workspace context and no root lockfile. A dependency on
+ * `@rediacc/locales` — a private workspace package that is not published to npm — would be
+ * unresolvable there and would break the account image. See the memory note that this
+ * package must carry its own compile deps.
+ *
+ * Drift is prevented by `check:ci-locale-sources`, which asserts this array equals
+ * `SITE_LOCALES` exactly. Keep them in sync by fixing the gate failure, never by widening
+ * the gate. If this list and `packages/locales/index.js` ever disagree, the gate is right.
  */
 export const SUPPORTED_LANGUAGES = [
   'en',

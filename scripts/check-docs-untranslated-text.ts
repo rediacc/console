@@ -21,13 +21,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Configuration
 const DOCS_DIR = path.join(__dirname, '../packages/www/src/content/docs');
 
 // Languages to check (excluding English)
-const NON_ENGLISH_LANGS = ['ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
+const NON_ENGLISH_LANGS = NON_ENGLISH_LOCALES;
 
 // =============================================================================
 // PATTERN-BASED DETECTION (Layer 1)

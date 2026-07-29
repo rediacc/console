@@ -643,6 +643,99 @@ www_tutorials_generate() {
     fi
 }
 
+# Emit the (tutorial, lang) work list on STDOUT, one "tutorial<TAB>lang" per line.
+# Diagnostics go to stderr, which every log_* helper already does
+# (.ci/scripts/lib/common.sh:36-54), so this is safe to consume as a pipe.
+#
+# Emission is LANG-MAJOR, not tutorial-major as the inline loop used to be. That is a
+# correctness fix, not a preference: generate-tutorial-video.ts caches recorded browser
+# segments under public/assets/tutorials/browser-segments/ keyed
+# "${tutorial}.${scene.id}.${hash}.mp4" with NO language in the key, because the browser
+# footage is language-independent. Tutorial-major ordering therefore puts N languages of
+# the SAME tutorial in flight at --jobs N, and on a cold cache all N record the same
+# scene and copyFileSync to the same path. Lang-major puts N DISTINCT tutorials in
+# flight, so the shared key is never contended and the per-tutorial lock below never
+# has to block. It also matches how the orchestrator streams work: one language at a
+# time, as its narration finishes.
+_tutorial_video_pairs() {
+    local name="$1"
+    local lang="$2"
+
+    local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
+    local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
+
+    local tutorials=()
+    if [[ -n "$name" ]]; then
+        local base="$name"
+        [[ "$base" != tutorial-* ]] && base="tutorial-$base"
+        [[ -f "$tutorials_root/${base}.cast" ]] || {
+            log_error "Cast not found: $tutorials_root/${base}.cast"
+            return 1
+        }
+        tutorials+=("$base")
+    else
+        for cast in "$tutorials_root"/*.cast; do
+            [[ -f "$cast" ]] || continue
+            tutorials+=("$(basename "$cast" .cast)")
+        done
+    fi
+
+    local langs=()
+    if [[ -n "$lang" ]]; then
+        # Accept a comma-separated list so the orchestrator can ask for one language
+        # per batch without re-deriving this logic.
+        IFS=',' read -r -a langs <<<"$lang"
+    else
+        for d in "$timeline_root"/*/; do
+            [[ -d "$d" ]] || continue
+            langs+=("$(basename "$d")")
+        done
+    fi
+
+    local l t
+    for l in "${langs[@]}"; do
+        for t in "${tutorials[@]}"; do
+            if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
+                log_debug "skip $t × $l (no timeline)"
+                continue
+            fi
+            if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
+                log_debug "skip $t × $l (no audio)"
+                continue
+            fi
+            printf '%s\t%s\n' "$t" "$l"
+        done
+    done
+}
+
+# Render exactly one (tutorial, lang) pair. Writes its OWN failure file rather than
+# appending to a shared one, so nothing depends on single-line-append atomicity.
+_tutorial_video_render_one() {
+    local t="$1"
+    local l="$2"
+    local failure_file="$3"
+    shift 3
+
+    # Guards the language-independent browser-segments cache described above. With
+    # lang-major emission this lock is essentially never contended; it exists so that a
+    # hand-run invocation, or two orchestrator languages straddling a batch boundary,
+    # cannot both record the same scene and copyFileSync over each other.
+    local seg_lock="/tmp/rediacc-tut-seg.${t}.lock"
+
+    log_step "  → $t × $l"
+    (
+        cd "$ROOT_DIR/packages/www" || exit 1
+        # nice: renders must never starve the GPU job's own CPU work (the audio VAE, the
+        # ffmpeg mastering chain, ASR). Narration is deliberately NOT niced.
+        flock "$seg_lock" nice -n 10 \
+            npx tsx scripts/generate-tutorial-video.ts --cast "$t" --lang "$l" "$@"
+    ) || {
+        log_error "  ✗ failed: $t × $l"
+        echo "$t × $l" >"$failure_file"
+        return 1
+    }
+}
+
 www_tutorials_video() {
     check_node_version
     ensure_deps
@@ -687,88 +780,17 @@ www_tutorials_video() {
         exit 1
     fi
 
-    local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
-    local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
-
-    local tutorials=()
-    if [[ -n "$name" ]]; then
-        local base="$name"
-        [[ "$base" != tutorial-* ]] && base="tutorial-$base"
-        [[ -f "$tutorials_root/${base}.cast" ]] || {
-            log_error "Cast not found: $tutorials_root/${base}.cast"
-            exit 1
-        }
-        tutorials+=("$base")
-    else
-        for cast in "$tutorials_root"/*.cast; do
-            [[ -f "$cast" ]] || continue
-            tutorials+=("$(basename "$cast" .cast)")
-        done
-    fi
-
-    local langs=()
-    if [[ -n "$lang" ]]; then
-        langs+=("$lang")
-    else
-        for d in "$timeline_root"/*/; do
-            [[ -d "$d" ]] || continue
-            langs+=("$(basename "$d")")
-        done
-    fi
-
-    # Build the candidate (tutorial, lang) pair list up front -- same
-    # timeline/audio existence pre-checks as before, just split out so the
-    # dispatch loop below doesn't need to re-check per job.
     local pairs=()
-    for t in "${tutorials[@]}"; do
-        for l in "${langs[@]}"; do
-            if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
-                log_debug "skip $t × $l (no timeline)"
-                continue
-            fi
-            if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
-                log_debug "skip $t × $l (no audio)"
-                continue
-            fi
-            pairs+=("$t"$'\t'"$l")
-        done
-    done
+    local pair
+    while IFS= read -r pair; do
+        pairs+=("$pair")
+    done < <(_tutorial_video_pairs "$name" "$lang")
 
     log_step "Compiling tutorial videos (${#pairs[@]} pair(s), --jobs $jobs)..."
     local failure_prefix="/tmp/_tut_video_failures.$$"
     rm -f "${failure_prefix}".*
 
-    # Bounded job pool: each (t, l) pair runs as its own ffmpeg-heavy
-    # compile (generate-tutorial-video.ts), independent of every other
-    # pair -- no shared temp dirs, no shared output files -- so this is
-    # safe to run with --jobs > 1. --jobs 1 (default) runs one at a time,
-    # identical order/behavior to before this flag existed. Each job
-    # writes its own failure file (not one shared file with concurrent
-    # appends) to avoid depending on single-line-append atomicity.
-    (
-        cd "$ROOT_DIR/packages/www"
-        running=0
-        idx=0
-        for pair in "${pairs[@]}"; do
-            t="${pair%%$'\t'*}"
-            l="${pair##*$'\t'}"
-            idx=$((idx + 1))
-            (
-                log_step "  → $t × $l"
-                if ! npx tsx scripts/generate-tutorial-video.ts \
-                    --cast "$t" --lang "$l" "${passthrough[@]}"; then
-                    log_error "  ✗ failed: $t × $l"
-                    echo "$t × $l" >>"${failure_prefix}.${idx}"
-                fi
-            ) &
-            running=$((running + 1))
-            if [[ "$running" -ge "$jobs" ]]; then
-                wait -n
-                running=$((running - 1))
-            fi
-        done
-        wait
-    )
+    _tutorial_video_pool "$jobs" "$failure_prefix" "${passthrough[@]}" < <(printf '%s\n' "${pairs[@]}")
 
     if compgen -G "${failure_prefix}.*" >/dev/null; then
         log_error "Failed tutorials:"
@@ -776,6 +798,197 @@ www_tutorials_video() {
         rm -f "${failure_prefix}".*
         return 1
     fi
+}
+
+# Bounded, STREAMING, globally-bounded render pool. Reads "tutorial<TAB>lang" lines from
+# stdin and keeps at most $jobs renders in flight.
+#
+# It reads from a pipe rather than taking an array because that is what makes the
+# orchestrator's overlap possible: work is dispatched as each line ARRIVES, so renders
+# for a finished language start while the next language is still being narrated on the
+# GPU. A per-language `( ... ) & wait` would instead force a barrier at every language
+# boundary -- which either stalls the producer (starving the GPU, defeating the point) or
+# multiplies concurrency to jobs×languages.
+_tutorial_video_pool() {
+    local jobs="$1"
+    local failure_prefix="$2"
+    shift 2
+    local passthrough=("$@")
+
+    local running=0
+    local idx=0
+    local t l
+    while IFS=$'\t' read -r t l; do
+        [[ -n "$t" && -n "$l" ]] || continue
+        idx=$((idx + 1))
+        _tutorial_video_render_one "$t" "$l" "${failure_prefix}.${idx}" "${passthrough[@]}" &
+        running=$((running + 1))
+        if [[ "$running" -ge "$jobs" ]]; then
+            wait -n
+            running=$((running - 1))
+        fi
+    done
+    wait
+}
+
+# Narrate one language at a time on the GPU, and emit each language's render work to
+# STDOUT the moment that language is finished and validated. Everything else goes to
+# stderr, including all TTS output, so a stray Python print() can never be mistaken for
+# a work item.
+_tutorial_media_producer() {
+    local name="$1"
+    local tts_flags="$2"
+    local failure_prefix="$3"
+    shift 3
+    local langs=("$@")
+
+    local gen_dir="$ROOT_DIR/private/generative"
+    local idx=0
+    local l
+    for l in "${langs[@]}"; do
+        idx=$((idx + 1))
+        log_step "narrating [$idx/${#langs[@]}] $l (GPU)" >&2
+
+        # Invoked directly rather than through www_tutorials_generate ON PURPOSE. That
+        # function calls www_tutorial_audio_restore first, which pulls PUBLISHED audio
+        # from R2 and would overwrite narration we just generated, and
+        # www_tutorial_audio_upload last, which publishes. This orchestrator generates
+        # and renders only; publishing stays an explicit, separate operator decision.
+        if ! (
+            cd "$gen_dir" &&
+                PYTHONPATH=src .venv/bin/python -m tutorial_tts.cli \
+                    --repo-root "$ROOT_DIR" --lang "$l" \
+                    ${name:+--cast "$name"} $tts_flags
+        ) >&2; then
+            log_error "narration failed for $l — skipping its renders, continuing to the next language"
+            echo "narration: $l" >"${failure_prefix}.tts.${idx}"
+            continue
+        fi
+
+        # Readiness gate. Not a done-marker written by the producer: this re-derives
+        # every transcript hash, step count, replay range and wordTimings ordering from
+        # the artifacts, and fails closed when nothing matched. Dispatching renders only
+        # AFTER the narration process has exited is also what makes any intermediate
+        # state of its timeline writes unobservable.
+        if ! node "$ROOT_DIR/packages/www/scripts/validate-tutorial-audio.js" \
+            --lang "$l" ${name:+--cast "$name"} --quiet >&2; then
+            log_error "validation failed for $l — skipping its renders, continuing to the next language"
+            echo "validation: $l" >"${failure_prefix}.val.${idx}"
+            continue
+        fi
+
+        log_info "$l narrated and validated — dispatching its renders (CPU)" >&2
+        _tutorial_video_pairs "$name" "$l"
+    done
+}
+
+# Narrate on the GPU and render on the CPU AT THE SAME TIME.
+#
+# The two halves of tutorial media production use disjoint hardware: narration is a
+# VoxCPM2 job that saturates the GPU, rendering is headless Chrome plus a software
+# x264 encode. Running them in sequence leaves one of the two idle throughout, so the
+# wall clock is sum(narrate) + sum(render). Overlapping makes it
+# sum(narrate) + render(last language) -- roughly 45% off across 13 languages when the
+# two halves cost about the same.
+#
+# Correctness rests on three things that are enforced elsewhere, not on scheduling luck:
+# the GPU lease in tutorial_tts/gpu_lock.py means a second narration can never co-reside
+# with the first; timelines are written with os.replace, so a render reading one while
+# another language is being narrated sees whole JSON or nothing; and the per-language
+# validation gate refuses to dispatch renders for narration that did not finish clean.
+www_tutorials_media() {
+    check_node_version
+    ensure_generative_repo
+    ensure_python_installed
+    ensure_audio_system_deps
+
+    local name=""
+    local langs_csv=""
+    local jobs=""
+    local clean_venv=false
+    local tts_flags=""
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --langs) langs_csv="$2" && shift 2 ;;
+            --langs=*) langs_csv="${1#*=}" && shift ;;
+            --jobs) jobs="$2" && shift 2 ;;
+            --jobs=*) jobs="${1#*=}" && shift ;;
+            --clean-venv) clean_venv=true && shift ;;
+            --subtitle | --force | --resubtitle | --keep-wav)
+                tts_flags="$tts_flags $1"
+                shift
+                ;;
+            --keep-temp | --captions-only | --debug | --refresh-browser-cache | --no-browser-cache)
+                passthrough+=("$1")
+                shift
+                ;;
+            *) name="$1" && shift ;;
+        esac
+    done
+
+    ensure_generative_venv "$clean_venv"
+    ensure_deps
+
+    local langs=()
+    if [[ -n "$langs_csv" ]]; then
+        IFS=',' read -r -a langs <<<"$langs_csv"
+    else
+        local d
+        for d in "$ROOT_DIR/packages/www/src/data/tutorial-timeline"/*/; do
+            [[ -d "$d" ]] || continue
+            langs+=("$(basename "$d")")
+        done
+    fi
+    if [[ ${#langs[@]} -eq 0 ]]; then
+        log_error "No languages to process."
+        return 1
+    fi
+
+    # Default concurrency from the machine, not a constant. Renders are RAM-heavy
+    # (headless Chrome ~3 GB each) and must leave room for the narration process, which
+    # is ~11.8 GB RSS on its own, so both CPU and memory bound the answer.
+    if [[ -z "$jobs" ]]; then
+        local cores mem_gb by_cpu by_mem
+        cores="$(nproc)"
+        mem_gb="$(awk '/MemAvailable/ {print int($2/1024/1024)}' /proc/meminfo)"
+        by_cpu=$(((cores - 4) / 4))
+        by_mem=$(((mem_gb - 16) / 4))
+        jobs=$((by_cpu < by_mem ? by_cpu : by_mem))
+        [[ "$jobs" -lt 1 ]] && jobs=1
+        [[ "$jobs" -gt 6 ]] && jobs=6
+        log_step "auto --jobs $jobs (${cores} cores, ${mem_gb} GB available)"
+    fi
+    if ! [[ "$jobs" =~ ^[0-9]+$ ]] || [[ "$jobs" -lt 1 ]]; then
+        log_error "--jobs must be a positive integer, got: $jobs"
+        return 1
+    fi
+
+    # Hardware encoding stays OFF. h264_nvenc would put the render back on the very
+    # device the narration job needs, which is the entire premise of overlapping them.
+    if [[ "${RDC_TUTORIAL_HWENC:-0}" == "1" ]]; then
+        log_warn "RDC_TUTORIAL_HWENC=1 was set; forcing it to 0 so renders stay off the GPU"
+    fi
+    export RDC_TUTORIAL_HWENC=0
+
+    # Deliberately NOT calling www_tutorial_audio_restore. It pulls published narration
+    # from R2 and would overwrite exactly what this run is about to generate.
+    log_step "Tutorial media: narrating ${#langs[@]} language(s) on GPU, rendering on CPU with --jobs $jobs"
+
+    local failure_prefix="/tmp/_tut_media_failures.$$"
+    rm -f "${failure_prefix}".*
+
+    _tutorial_media_producer "$name" "$tts_flags" "$failure_prefix" "${langs[@]}" |
+        _tutorial_video_pool "$jobs" "$failure_prefix" "${passthrough[@]}"
+
+    if compgen -G "${failure_prefix}.*" >/dev/null; then
+        log_error "Failures:"
+        cat "${failure_prefix}".* >&2
+        rm -f "${failure_prefix}".*
+        return 1
+    fi
+    log_info "Tutorial media complete for: ${langs[*]}"
 }
 
 www_tutorials_validate() {
@@ -852,101 +1065,6 @@ www_tutorials_all() {
 # TEAM VIDEO COMMANDS
 # =============================================================================
 
-www_team_video_extract() {
-    check_node_version
-    ensure_generative_repo
-    ensure_python_installed
-    ensure_audio_system_deps
-
-    local passthrough=()
-    local clean_venv=false
-
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --clean-venv)
-                clean_venv=true
-                shift
-                ;;
-            *)
-                passthrough+=("$1")
-                shift
-                ;;
-        esac
-    done
-
-    ensure_generative_venv "$clean_venv"
-    ensure_deps
-
-    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
-
-    log_step "Extracting team video transcripts via ASR..."
-    npm run team-video:extract -w @rediacc/www -- "${passthrough[@]}"
-}
-
-www_team_video_scaffold_locales() {
-    check_node_version
-    ensure_deps
-    log_step "Scaffolding team video locale transcript files..."
-    npm run team-video:scaffold-locales -w @rediacc/www
-}
-
-www_team_video_generate() {
-    check_node_version
-    ensure_generative_repo
-    ensure_python_installed
-    ensure_audio_system_deps
-
-    local clean_venv=false
-    local destroy_venv=false
-    local passthrough=()
-
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --clean-venv)
-                clean_venv=true
-                shift
-                ;;
-            --destroy-venv)
-                destroy_venv=true
-                shift
-                ;;
-            *)
-                passthrough+=("$1")
-                shift
-                ;;
-        esac
-    done
-
-    ensure_generative_venv "$clean_venv"
-    ensure_deps
-
-    export QWEN_TTS_PYTHON_BIN="$ROOT_DIR/private/generative/.venv/bin/python"
-
-    log_step "Generating team video audio assets..."
-    npm run team-video:tts:generate -w @rediacc/www -- "${passthrough[@]}"
-
-    if [[ "$destroy_venv" == "true" ]]; then
-        log_step "Destroying generative Python environment..."
-        rm -rf "$ROOT_DIR/private/generative/.venv"
-    fi
-}
-
-www_team_video_validate() {
-    check_node_version
-    ensure_deps
-    log_step "Validating team video transcripts..."
-    npm run validate:team-video-transcripts -w @rediacc/www
-}
-
-www_team_video_all() {
-    log_step "Running full team video pipeline..."
-    www_team_video_extract "$@"
-    www_team_video_scaffold_locales
-    www_team_video_generate "$@"
-    www_team_video_validate
-    log_info "Team video pipeline complete!"
-}
-
 # =============================================================================
 # WWW ALL
 # =============================================================================
@@ -954,7 +1072,6 @@ www_team_video_all() {
 www_all() {
     log_step "Running full www asset pipeline..."
     www_tutorials_all "$@"
-    www_team_video_all "$@"
     log_info "All www assets generated!"
 }
 
@@ -1417,14 +1534,15 @@ WWW COMMANDS:
                                      re-encode entirely -- use after a --subtitle realignment when the
                                      mp4 itself hasn't changed. Falls back to a full render per-tutorial
                                      if a browser scene's silent-segment cache is cold.)
+  www tutorials media [name] [--langs a,b] [--jobs N] [--subtitle] [--force]
+                                    Narrate on the GPU and render on the CPU CONCURRENTLY:
+                                    each language's videos start rendering as soon as its
+                                    narration passes validation, while the next language is
+                                    still being narrated. Generates and renders only; never
+                                    restores from or uploads to R2.
   www tutorials validate            Validate transcripts + audio integrity
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
-  www team-video extract [opts]     ASR: extract English transcripts from video audio
-  www team-video scaffold-locales   Sync locale transcripts with English
-  www team-video generate [opts]    Generate dubbed audio + captions
-  www team-video validate           Validate transcripts + audio integrity
-  www team-video all [opts]         Full team video pipeline
 
 TEST COMMANDS:
   test unit           Run unit tests
@@ -1602,6 +1720,10 @@ main() {
                             shift
                             www_tutorials_video "$@"
                             ;;
+                        media)
+                            shift
+                            www_tutorials_media "$@"
+                            ;;
                         validate) www_tutorials_validate ;;
                         all)
                             shift
@@ -1610,32 +1732,7 @@ main() {
                         *)
                             log_error "Unknown tutorials command: ${1:-}"
                             echo ""
-                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|video|validate|all]"
-                            exit 1
-                            ;;
-                    esac
-                    ;;
-                team-video)
-                    shift
-                    case "${1:-}" in
-                        extract)
-                            shift
-                            www_team_video_extract "$@"
-                            ;;
-                        scaffold-locales) www_team_video_scaffold_locales ;;
-                        generate)
-                            shift
-                            www_team_video_generate "$@"
-                            ;;
-                        validate) www_team_video_validate ;;
-                        all)
-                            shift
-                            www_team_video_all "$@"
-                            ;;
-                        *)
-                            log_error "Unknown team-video command: ${1:-}"
-                            echo ""
-                            echo "Usage: ./run.sh www team-video [extract|scaffold-locales|generate|validate|all]"
+                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|media|video|validate|all]"
                             exit 1
                             ;;
                     esac
@@ -1647,7 +1744,7 @@ main() {
                 *)
                     log_error "Unknown www command: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh www [all|tutorials|team-video] ..."
+                    echo "Usage: ./run.sh www [all|tutorials] ..."
                     exit 1
                     ;;
             esac

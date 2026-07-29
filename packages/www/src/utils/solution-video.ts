@@ -15,10 +15,11 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  *
  * Localized videos are published to Cloudflare R2 (`videos/solutions/<lang>/<slug>.mp4`
  * + `.vertical.mp4`, `.poster.jpg`) by the pipeline's `--publish-www` command, for the
- * 10 languages Qwen3-TTS can voice. Bucket keys and hashes are tracked in
- * `src/data/video-manifest.json`. The 3 remaining site locales (ar/et/tr) have no
- * localized video and fall back to `en` here at render time, so we never duplicate the
- * English files.
+ * 11 languages the TTS pipeline can voice with a native narrator. Bucket keys and hashes
+ * are tracked in `src/data/video-manifest.json`. The 2 remaining site locales (ar/et) have
+ * no localized video and fall back to `en` here at render time, so we never duplicate the
+ * English files. Estonian is PERMANENT fallback: it appears in no supported-language list
+ * of any model in the stack. Arabic is pending a narrator a fluent speaker has approved.
  *
  * WHY a constant lang-set (not derived from the manifest):
  *   Completeness (every slug × every VIDEO_LANG present in the manifest) is GUARANTEED
@@ -29,7 +30,19 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  * Empty (unset) falls back to the local `/assets/videos/solutions/...` path so a
  * developer previewing a freshly-generated-but-not-yet-published local file still works.
  */
-export const VIDEO_LANGS = ['en', 'de', 'es', 'fr', 'it', 'pt', 'ru', 'ja', 'ko', 'zh'] as const;
+export const VIDEO_LANGS = [
+  'en',
+  'de',
+  'es',
+  'fr',
+  'it',
+  'pt',
+  'ru',
+  'ja',
+  'ko',
+  'tr',
+  'zh',
+] as const;
 
 type VideoLang = (typeof VIDEO_LANGS)[number];
 

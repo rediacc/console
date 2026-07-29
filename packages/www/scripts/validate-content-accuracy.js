@@ -22,12 +22,13 @@ import { fileURLToPath } from 'node:url';
 import { parseRdcCommand } from './lib/cli-reference-catalog.js';
 import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT_DIR, 'src', 'content', 'docs');
 const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 
-const LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'];
+const LANGUAGES = SITE_LOCALES;
 
 // Auto-generated docs validated separately by validate-cli-docs.js
 const EXCLUDED_DOC_SLUGS = new Set(['cli-application.md']);

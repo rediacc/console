@@ -632,7 +632,7 @@
         "virtualization": "Virtualizzazione"
       },
       "subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
-      "title": "Rediacc CLI Doctor"
+      "title": "Diagnostica CLI Rediacc"
     },
     "machine": {
       "deprovision": {

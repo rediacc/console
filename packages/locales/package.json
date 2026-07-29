@@ -1,0 +1,21 @@
+{
+  "name": "@rediacc/locales",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "The single declaration of the site's locale set. Buildless on purpose: eslint.config.js and eleven node-run .js scripts consume it before any build step exists.",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./site-locales.json": "./site-locales.json"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "site-locales.json"
+  ]
+}
