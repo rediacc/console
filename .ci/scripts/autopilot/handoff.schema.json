@@ -1,0 +1,80 @@
+{
+  "$comment": "The model-to-harness contract for one autopilot round (docs/ci-overhaul/03-v2-autonomy.md section 0). The model NEVER holds a write token: it exits leaving handoff.json in the workspace, and the deterministic harness (validate-handoff.cjs, then autopilot-push.sh) is the only thing that stages, commits or pushes. validate-handoff.cjs interprets this file directly, so the schema here is load-bearing, not documentation. Conditional rules that JSON Schema's subset here cannot express (push requires files+commit_message, escalate requires escalation.reason) are enforced by validate-handoff.cjs as semantic checks.",
+  "$id": "rediacc-autopilot-handoff/1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "base_head", "outcome", "ledger_line"],
+  "properties": {
+    "schema": {
+      "$comment": "Version pin. Anything else is schema-unknown: an old or improvised handoff must never be half-understood.",
+      "const": "rediacc-autopilot-handoff/1"
+    },
+    "base_head": {
+      "$comment": "The sha the model believes it worked on. Must equal the sha the harness checked out, or the handoff describes a different tree and nothing in it can be trusted.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "outcome": {
+      "$comment": "push: stage files[] and commit/push. escalate: no push; the harness posts the escalation. no-change: the model concluded nothing to do (a dirty tree then fails as undeclared-dirty).",
+      "enum": ["push", "escalate", "no-change"]
+    },
+    "files": {
+      "$comment": "The exact set of repo-relative paths this round changed. The harness stages exactly these and nothing else; any other dirty path escalates as undeclared-dirty.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "commit_message": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "ledger_line": {
+      "$comment": "One line for the round ledger in the state comment. Hard cap mirrors the state-comment growth bound (03-v2-autonomy.md section 3).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 400
+    },
+    "ruled_out": {
+      "$comment": "Approaches tried and disproven this round; the anti-thrash memory.",
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "decisions": {
+      "$comment": "Tier-2 judgment calls made this round, for post-hoc operator veto.",
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 400
+      }
+    },
+    "escalation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reason"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "patch": {
+          "$comment": "A proposed diff attached AS DATA to the escalation comment (e.g. a .github/** fix the harness must never push).",
+          "type": "string",
+          "maxLength": 20000
+        }
+      }
+    }
+  }
+}
