@@ -392,6 +392,93 @@ def transcript_tail(path):
     return last_text, tools
 
 
+HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "120"))
+HANDOVER_MIN_CHARS = 200
+
+
+def handover_path(worklist, session_id):
+    return worklist.with_suffix(".handover-%s.md" % (session_id or "unknown")[:8])
+
+
+def handover_state(worklist, session_id):
+    """('missing'|'thin'|'stale'|'ok', minutes_old_or_None, text).
+
+    WHY THIS EXISTS. Compaction silently drops context, and this session lost a
+    real operator decision that way: the rediacc-autopilot App had already been
+    created, the operator had said so, and after a compact I reported it as
+    blocked-on-operator. The transcript is not the recovery mechanism, because
+    the thing that failed IS the transcript being summarised.
+    """
+    p = handover_path(worklist, session_id)
+    if not p.exists():
+        return "missing", None, ""
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        age = (time.time() - p.stat().st_mtime) / 60.0
+    except OSError:
+        return "missing", None, ""
+    if len(text.strip()) < HANDOVER_MIN_CHARS:
+        return "thin", int(age), text
+    if age > HANDOVER_STALE_MIN:
+        return "stale", int(age), text
+    return "ok", int(age), text
+
+
+def loop_path(worklist):
+    return worklist.with_suffix(".loop")
+
+
+def loop_state(worklist, session_id):
+    """('none'|'ok'|'overdue', next_fire_or_None, label, others_text).
+
+    WHY DECLARED AND NOT DISCOVERED. Measured: cron state lives nowhere on disk.
+    `CronList` shows the two live crons for this session, but grepping ~/.claude
+    for their ids hits ONLY the transcript, and scanning a 4 MB transcript tail
+    for `CronCreate` tool_use records returns ZERO because the calls scrolled out
+    long ago. So the hook cannot see the loop, and v3 already settled what to do
+    about state the hook cannot see: the session DECLARES it and the hook holds
+    it to the declaration.
+
+    That is what catches "the loop stopped and nobody restarted it": a
+    declaration whose next fire is in the past is a dead loop, and it blocks.
+    """
+    p = loop_path(worklist)
+    if not p.exists():
+        return "none", None, "", "", 0
+    try:
+        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return "none", None, "", "", 0
+    entries = {}
+    for line in lines:
+        parts = line.strip().split(None, 2)
+        if len(parts) < 2:
+            continue
+        try:
+            when = datetime.datetime.strptime(parts[1], "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=datetime.timezone.utc
+            )
+        except ValueError:
+            continue
+        rest = parts[2].split(None, 1) if len(parts) > 2 else []
+        count = int(rest[0]) if rest and rest[0].isdigit() else 1
+        entries[parts[0]] = (when, rest[1] if len(rest) > 1 else "", count)
+    mine = None
+    for prefix, val in entries.items():
+        if session_id and session_id.startswith(prefix):
+            mine = val
+            break
+    others = "\n".join(
+        "  %s  next %s  %s" % (k, v[0].strftime("%H:%MZ"), v[1])  # noqa: E501
+        for k, v in sorted(entries.items())
+        if not (session_id and session_id.startswith(k))
+    )
+    if mine is None:
+        return "none", None, "", others, 0
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return ("overdue" if mine[0] <= now else "ok"), mine[0], mine[1], others, mine[2]
+
+
 def briefs_path(worklist):
     return worklist.with_suffix(".sessions")
 
@@ -486,6 +573,13 @@ Remaining work the harness is tracking:
 %(remaining)s
 
 Fresh background leases (work genuinely in flight): %(leases)d
+Declared loop: %(loop)s
+
+Two things to check specifically, because they are how this session drifts:
+  - Does the last message list EVERY open task by id? The operator sees the same
+    list in their app, so an omission is a report that disagrees with their view.
+  - Does it state the loop schedule, so the operator knows when work resumes?
+Answer "continue" if either is missing.
 
 The session's last message:
 <<<
@@ -501,7 +595,7 @@ def resolve_claude():
     return shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
 
 
-def run_judge(remaining_lines, leases, message, streak):
+def run_judge(remaining_lines, leases, message, streak, loop_desc):
     """(verdict_dict, error_string). Exactly one is non-None.
 
     Fail CLOSED by contract: every error path returns an error string, and the
@@ -519,6 +613,7 @@ def run_judge(remaining_lines, leases, message, streak):
         "streak": streak,
         "remaining": "\n".join("  " + r for r in remaining_lines[:20]) or "  (none tracked)",
         "leases": leases,
+        "loop": loop_desc,
         "message": (message or "(the session produced no text)")[-6000:],
     }
     env = dict(os.environ)
@@ -573,6 +668,66 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1] == "--compact":
         compact(worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
+        return
+    if len(sys.argv) > 2 and sys.argv[1] == "--handover":
+        # `... --handover <prefix>` with the document on stdin. Whole-file
+        # rewrite is correct here: unlike the worklist this file is per-session,
+        # so there is no other writer to race.
+        wl = worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        body = sys.stdin.read()
+        handover_path(wl, sys.argv[2]).write_text(body, encoding="utf-8")
+        print("handover written for %s (%d chars)" % (sys.argv[2], len(body)))
+        return
+    if sys.argv[1:2] == ["--post-compact"]:
+        # PostCompact hook: the model has just lost its context. Hand the
+        # document straight back as additionalContext so continuity does not
+        # depend on it remembering to go looking.
+        try:
+            ev = json.load(sys.stdin)
+        except (json.JSONDecodeError, ValueError):
+            ev = {}
+        wl = worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or ev.get("cwd") or os.getcwd())
+        sid = ev.get("session_id", "")
+        state, age, text = handover_state(wl, sid)
+        if state == "missing":
+            msg = (
+                "CONTEXT WAS JUST COMPACTED and there is NO handover document at %s.\n"
+                "Reconstruct one from what survived, write it with\n"
+                "    .claude/hooks/stop/worklist.py --handover %s <<'EOF' ... EOF\n"
+                "and do NOT report anything as blocked-on-operator until you have "
+                "re-checked it: that is exactly the error compaction caused last time."
+                % (handover_path(wl, sid), (sid or "unknown")[:8])
+            )
+        else:
+            msg = (
+                "CONTEXT WAS JUST COMPACTED. Resume from this handover (%s, %d min old). "
+                "Trust it over your summarised memory, and re-verify anything it marks "
+                "as decided before calling it blocked:\n\n%s" % (state, age or 0, text)
+            )
+        emit(
+            {
+                "systemMessage": "PostCompact: handover %s (%s)" % (state, handover_path(wl, sid).name),
+                "hookSpecificOutput": {
+                    "hookEventName": "PostCompact",
+                    "additionalContext": msg,
+                },
+            }
+        )
+    if len(sys.argv) > 3 and sys.argv[1] == "--loop":
+        # `worklist.py --loop <prefix> <next-ISO8601Z> <label...>`
+        wl = worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        # sys.argv[4] is the CRON COUNT the session observed via CronList.
+        with open(loop_path(wl), "a", encoding="utf-8") as fh:
+            fh.write(
+                "%s %s %s %s\n"
+                % (
+                    sys.argv[2],
+                    sys.argv[3],
+                    sys.argv[4] if len(sys.argv) > 4 else "1",
+                    " ".join(sys.argv[5:]).replace("\n", " ")[:120],
+                )
+            )
+        print("loop declared for %s, next fire %s" % (sys.argv[2], sys.argv[3]))
         return
     if len(sys.argv) > 2 and sys.argv[1] == "--brief":
         # `worklist.py --brief <session-prefix> <text...>` -- append, never
@@ -654,6 +809,8 @@ def main():
     tasks = pending_tasks(session_id)
     last_msg, tools_this_turn = transcript_tail(event.get("transcript_path", ""))
     bstate, bage, others_briefs = brief_state(worklist, session_id)
+    lstate, lnext, llabel, others_loops, lcrons = loop_state(worklist, session_id)
+    hstate, hage, _htext = handover_state(worklist, session_id)
 
     remaining_lines = (
         ["[ ] " + i for i in open_items]
@@ -690,6 +847,48 @@ def main():
                 (session_id or "unknown")[:8],
             )
         )
+    if lstate == "overdue":
+        violations.append(
+            "your declared loop is OVERDUE: next fire was %s (%s). Either it fired and "
+            "you did not re-declare, or it died and nobody restarted it -- which is the "
+            "exact failure this check exists to catch. Re-declare after you confirm the "
+            "cron is alive (CronList):\n"
+            "    .claude/hooks/stop/worklist.py --loop %s <next-ISO8601Z> '<label>'"
+            % (lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), llabel or "no label", (session_id or "")[:8])
+        )
+    if something_remains and hstate != "ok":
+        violations.append(
+            "the compact-recovery handover is %s%s. Compaction has already cost this "
+            "project one operator decision (the autopilot App was reported blocked "
+            "AFTER the operator had created it), and the transcript cannot be the "
+            "recovery mechanism because the transcript is what gets summarised. "
+            "Refresh it, >=%d chars, covering where to continue and the latest status:\n"
+            "    .claude/hooks/stop/worklist.py --handover %s <<'EOF'\n    ...\n    EOF"
+            % (
+                hstate,
+                "" if hage is None else " (%d min old, limit %d)" % (hage, HANDOVER_STALE_MIN),
+                HANDOVER_MIN_CHARS,
+                (session_id or "unknown")[:8],
+            )
+        )
+    if lcrons > 1:
+        violations.append(
+            "you declared %d crons. ONE is almost always enough: a second schedule fires "
+            "the same review twice at different phases and each firing costs a turn. "
+            "Delete the redundant one with CronDelete, then re-declare with the real "
+            "count." % lcrons
+        )
+    # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)"
+    # in the app, so a Remaining section that omits one of those six is out of
+    # sync with what they are looking at. Every open task id must appear.
+    missing_ids = [i for i, _ in tasks if not re.search(r"#%s\b" % re.escape(i), last_msg or "")]
+    if tasks and REMAINING_HEADING.search(last_msg or "") and missing_ids:
+        violations.append(
+            "your Remaining section is OUT OF SYNC with the task list the operator sees. "
+            "%d open task(s) are not mentioned by id: %s. List every open task, or close "
+            "the ones that are done."
+            % (len(missing_ids), ", ".join("#" + i for i in missing_ids))
+        )
     if something_remains and not REMAINING_HEADING.search(last_msg or ""):
         violations.append(
             "work remains and your last message has no '## Remaining' section. The "
@@ -717,7 +916,13 @@ def main():
     # ---- v5: static checks clean. Ask a model whether stopping is honest. ----
     if something_remains and not JUDGE_DISABLED:
         streak = int(counter.read_text()) if counter.exists() else 0
-        verdict, err = run_judge(remaining_lines, len(in_flight), last_msg, streak)
+        verdict, err = run_judge(
+            remaining_lines, len(in_flight), last_msg, streak,
+            "none declared" if lstate == "none"
+            else "%s, next fire %s (%d cron%s)"
+            % (llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
+               "" if lcrons == 1 else "s"),
+        )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
             # must not become the way out.

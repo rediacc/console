@@ -141,6 +141,28 @@ check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressio
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
 
+# The Stop gate carries its own suite, because its cases need fixtures (a fake
+# task dir, a planted transcript, a gh shim) rather than the single-JSON-on-stdin
+# shape every case above uses. Delegating keeps both readable, and running it
+# from here is what makes it reachable: a test nothing invokes is dead code, and
+# the dead-bash gate is right to say so.
+STOP_SUITE="$DIR/stop/test-worklist-v5.sh"
+if [[ -x "$STOP_SUITE" ]]; then
+    echo
+    if out="$(bash "$STOP_SUITE" 2>&1)"; then
+        n=$(grep -c "^  PASS:" <<<"$out")
+        PASS=$((PASS + n))
+        echo "ok   [0] stop/test-worklist-v5.sh: $n case(s) passed"
+    else
+        FAIL=$((FAIL + 1))
+        echo "FAIL [1] stop/test-worklist-v5.sh"
+        sed 's/^/       /' <<<"$out" | tail -20
+    fi
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL [1] stop/test-worklist-v5.sh missing or not executable"
+fi
+
 echo
 echo "PASS=$PASS FAIL=$FAIL"
 [[ "$FAIL" == 0 ]]

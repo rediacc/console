@@ -34,6 +34,11 @@ task() { # task <id> <status> <subject>
     printf '{"id":"%s","status":"%s","subject":"%s"}\n' "$1" "$2" "$3" >"$BASE/tasks/session-deadbeef/$1.json"
 }
 
+hand_now() { # a handover fresh enough and long enough to satisfy the gate
+    printf 'Resume point: round 23 diagnosis.\nStatus: two Quality jobs red on a dead-shell finding, fixed by wiring the stop suite into test-hooks.sh.\nNext: push and watch. Do not report the autopilot App as blocked, it exists.\n' |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+}
+
 brief_now() {
     printf '%s %s %s\n' "deadbeef" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "doing the thing" >>"${WL%.md}.sessions"
 }
@@ -66,6 +71,7 @@ echo "== 1. open [ ] blocks =="
 setup
 say "done for now"
 brief_now
+hand_now
 echo '- [ ] (deadbeef) do the thing' >>"$WL"
 check "an open [ ] item blocks" block "OPEN worklist item"
 
@@ -76,6 +82,7 @@ say "here is my answer
 ## Remaining
 nothing"
 brief_now
+hand_now
 echo '- [?] (deadbeef) should we do X' >>"$WL"
 check "a deferral with no DEFAULT: blocks" block "no DEFAULT:"
 
@@ -86,6 +93,7 @@ say "answer
 ## Remaining
 - the X decision"
 brief_now
+hand_now
 echo '- [?] (deadbeef) should we do X DEFAULT: do X on Monday' >>"$WL"
 check "a deferral WITH DEFAULT: does not block" allow "deferred rather than done"
 
@@ -112,6 +120,7 @@ echo "== 6. THE HEADLINE: a pending TASK with no ## Remaining blocks =="
 setup
 say "All done, nothing to report."
 brief_now
+hand_now
 task 7 pending "merge the chain"
 check "pending task + no ## Remaining blocks" block "no '## Remaining' section"
 
@@ -122,6 +131,7 @@ say "Here is the answer.
 ## Remaining
 | #7 | merge the chain | you |"
 brief_now
+hand_now
 task 7 pending "merge the chain"
 check "pending task + ## Remaining allowed (judge off)" allow ""
 
@@ -129,6 +139,7 @@ echo "== 8. completed tasks are not remaining work =="
 setup
 say "All done."
 brief_now
+hand_now
 task 7 completed "merge the chain"
 check "a completed task does not demand a Remaining section" allow ""
 
@@ -167,8 +178,9 @@ setup
 say "waiting on CI.
 
 ## Remaining
-- task 7"
+- #7 merge the chain"
 brief_now
+hand_now
 task 7 pending "merge the chain"
 JUDGE_MODE=on
 out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
@@ -190,7 +202,120 @@ echo "== 12. nothing tracked anywhere = clean stop, no judge, no block =="
 setup
 say "All finished."
 brief_now
+hand_now
 check "an empty world allows the stop" allow ""
+
+loop_at() { # loop_at <offset-minutes> <cron-count>
+    printf '%s %s %s %s\n' deadbeef "$(date -u -d "$1 minutes" +%Y-%m-%dT%H:%M:%SZ)" "$2" "hourly loop" \
+        >>"${WL%.md}.loop"
+}
+
+echo "== 13. an OVERDUE declared loop blocks (the loop died and nobody restarted it) =="
+setup
+say "answer
+
+## Remaining
+- #7 thing"
+brief_now
+hand_now
+task 7 pending "thing"
+loop_at -30 1
+check "an overdue loop declaration blocks" block "loop is OVERDUE"
+
+echo "== 14. a FUTURE loop declaration does not block =="
+setup
+say "answer
+
+## Remaining
+- #7 thing"
+brief_now
+hand_now
+task 7 pending "thing"
+loop_at +30 1
+check "a future loop declaration is fine" allow ""
+
+echo "== 15. MORE THAN ONE cron blocks (one is almost always enough) =="
+setup
+say "answer
+
+## Remaining
+- #7 thing"
+brief_now
+hand_now
+task 7 pending "thing"
+loop_at +30 2
+check "two declared crons block" block "declared 2 crons"
+
+echo "== 16. a Remaining section that OMITS an open task blocks =="
+setup
+say "answer
+
+## Remaining
+| #7 | thing | me |"
+brief_now
+hand_now
+task 7 pending "thing"
+task 8 pending "the forgotten one"
+check "an omitted task id blocks" block "OUT OF SYNC"
+
+echo "== 17. naming every open task passes =="
+setup
+say "answer
+
+## Remaining
+| #7 | thing | me |
+| #8 | the forgotten one | you |"
+brief_now
+hand_now
+task 7 pending "thing"
+task 8 pending "the forgotten one"
+check "all task ids named is fine" allow ""
+
+echo "== 18. a MISSING handover blocks when work remains =="
+setup
+say "answer
+
+## Remaining
+- #7 thing"
+brief_now
+task 7 pending "thing"
+check "a missing compact-handover blocks" block "handover is missing"
+
+echo "== 19. a THIN handover blocks (a stub is not a handover) =="
+setup
+say "answer
+
+## Remaining
+- #7 thing"
+brief_now
+task 7 pending "thing"
+printf 'wip\n' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+check "a too-short handover blocks" block "handover is thin"
+
+echo "== 20. PostCompact hands the document back as additionalContext =="
+setup
+hand_now
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "CONTEXT WAS JUST COMPACTED" <<<"$out" && grep -qF "Resume point" <<<"$out"; then
+    echo "  PASS: PostCompact returns the handover body as additionalContext"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: PostCompact did not return the handover: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 21. PostCompact with NO handover still tells the session what to do =="
+setup
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "NO handover document" <<<"$out"; then
+    echo "  PASS: a missing handover after compaction is reported, not silent"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: missing-handover PostCompact was silent: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
