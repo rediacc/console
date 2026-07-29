@@ -345,6 +345,36 @@ async function checkUrl(url: string, retries = 0): Promise<{ ok: boolean; status
       await new Promise((r) => setTimeout(r, 1000 * (retries + 1)));
       return checkUrl(url, retries + 1);
     }
+
+    // LAST-CHANCE GET, and it is not belt-and-braces. The status-based fallback
+    // above only fires when HEAD *answers*; a HEAD that hangs or is refused
+    // throws, lands here, and never tries GET at all -- so a host that simply
+    // does not serve HEAD is reported as a broken link.
+    //
+    // Measured on https://azure.microsoft.com/pricing/calculator/, which failed
+    // this checker in CI with TIMEOUT: from a residential IP the same URL
+    // answers 404 to HEAD three times out of three and 200 to GET, with and
+    // without a browser UA. On the runner the HEAD hung instead of 404ing, so
+    // even the status fallback could not save it. The page is live either way.
+    //
+    // A URL only counts as broken once GET has also failed.
+    try {
+      const controller3 = new AbortController();
+      const timeout3 = setTimeout(() => controller3.abort(), TIMEOUT_MS);
+      const getResponse = await fetch(url, {
+        method: 'GET',
+        signal: controller3.signal,
+        redirect: 'follow',
+        headers: buildHeaders(url),
+      });
+      clearTimeout(timeout3);
+      await getResponse.text().catch(() => {});
+      if (getResponse.ok) return { ok: true, status: getResponse.status };
+    } catch {
+      // Fall through to the original diagnosis below; a failed rescue must not
+      // replace the real error with its own.
+    }
+
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('abort')) {
       return { ok: false, status: 'TIMEOUT' };
