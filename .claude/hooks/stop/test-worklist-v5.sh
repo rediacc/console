@@ -17,6 +17,10 @@ setup() {
     BG='[]'
     CRONS='[]'
     JUDGE_MODE=off
+    # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
+    # that inherits the ambient value passes locally and silently no-ops in CI,
+    # where 30 cases came back with empty output and read as failures.
+    GHA=''
     rm -rf "$BASE"
     mkdir -p "$BASE/proj/.git" "$BASE/tmp/claude-worklist" "$BASE/tasks/session-deadbeef"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
@@ -60,7 +64,8 @@ run() { # feed the hook a Stop event and print its raw JSON verdict
     printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
         "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-            WORKLIST_JUDGE="${JUDGE_MODE:-off}" python3 "$HOOK" 2>"$BASE/err.txt"
+            WORKLIST_JUDGE="${JUDGE_MODE:-off}" GITHUB_ACTIONS="${GHA:-}" \
+            python3 "$HOOK" 2>"$BASE/err.txt"
 }
 
 check() { # check <label> <expect-decision> <must-contain>
@@ -199,7 +204,7 @@ task 7 pending "merge the chain"
 JUDGE_MODE=on
 out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-        PATH="$BASE/binonly" HOME="$BASE/nohome" python3 "$HOOK" 2>"$BASE/err.txt")"
+        PATH="$BASE/binonly" HOME="$BASE/nohome" GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>"$BASE/err.txt")"
 got="$(python3 -c 'import json,sys
 raw=sys.stdin.read().strip()
 print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
@@ -297,7 +302,7 @@ hand_now
 task 7 pending "thing"
 out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/does-not-exist.jsonl" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-        WORKLIST_JUDGE=off python3 "$HOOK" 2>/dev/null)"
+        WORKLIST_JUDGE=off GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>/dev/null)"
 if grep -qF "THIS IS A HOOK BUG" <<<"$out" && grep -qF '"decision": "block"' <<<"$out"; then
     echo "  PASS: a blind read blocks AND says it is the hook's fault"
     PASS=$((PASS + 1))
@@ -503,7 +508,7 @@ task 7 pending "thing"
 ) >/dev/null 2>&1
 out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-        WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off python3 "$HOOK" 2>/dev/null)"
+        WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>/dev/null)"
 if grep -qF "is a trap for whoever checks it out" <<<"$out"; then
     echo "  PASS: a stale local branch sharing the publish name blocks"
     PASS=$((PASS + 1))
@@ -538,7 +543,7 @@ chmod +x "$BASE/binonly/gh"
 out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
         WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
-        python3 "$HOOK" 2>/dev/null)"
+        GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>/dev/null)"
 if grep -qF "PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT" <<<"$out"; then
     echo "  PASS: pushing after the body edit blocks before CI can waste a round"
     PASS=$((PASS + 1))
@@ -556,7 +561,7 @@ chmod +x "$BASE/binonly/gh"
 out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing (pending)","session_crons":[]}' "$SID" "$BASE/proj" |
     PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
         WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
-        python3 "$HOOK" 2>/dev/null)"
+        GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>/dev/null)"
 if grep -qF "PUSHED AFTER" <<<"$out"; then
     echo "  FAIL: a fresh body must not block: ${out:0:200}"
     FAIL=$((FAIL + 1))
@@ -670,10 +675,10 @@ check "an open item blocks in a normal session" block "OPEN worklist item"
 echo "== 47. and the SAME state no-ops under GITHUB_ACTIONS =="
 # Same worklist, same open item, one env var different. Without the control
 # above this would pass even if the hook had stopped blocking entirely.
-GITHUB_ACTIONS=true check "GITHUB_ACTIONS=true never blocks a runner" allow ""
+GHA=true check "GITHUB_ACTIONS=true never blocks a runner" allow ""
 
 echo "== 48. a value other than 'true' is NOT a runner =="
-GITHUB_ACTIONS=false check "GITHUB_ACTIONS=false still blocks" block "OPEN worklist item"
+GHA=false check "GITHUB_ACTIONS=false still blocks" block "OPEN worklist item"
 
 echo "== 49. CONTROL: two identical stops do NOT trip the stuck check =="
 setup
