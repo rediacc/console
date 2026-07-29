@@ -1,0 +1,82 @@
+name: Review Status
+
+# Posts the `Review Complete` check-run against the PR's CURRENT head SHA.
+#
+# WHY IT LIVES OUTSIDE CONSOLE CI. `Review Gate` inside ci.yml runs on
+# `pull_request`, i.e. before the review it is named after can have happened,
+# and the three scripts it runs are SHA-agnostic (PR_NUMBER + repo, no SHA), so
+# it cannot gate on the review it names. The assertion cannot move into CI
+# either: the review only starts once CI is green, so a CI job that waits on
+# the review would deadlock the pipeline that produces it.
+#
+# ACYCLIC BY CONSTRUCTION -- KEEP IT THAT WAY. No job in ci.yml (or any other
+# workflow) may `needs:` this workflow or wait for the `Review Complete`
+# context. It observes the review; nothing in CI observes it back.
+#
+# TRIGGERS. Deliberately NOT `pull_request`. All four triggers below run the
+# DEFAULT-BRANCH copy of this workflow, so a PR can never edit the logic that
+# judges it; `pull_request` would run the PR's own copy. NOTE that the review
+# pipeline posts its marker/report comments with GITHUB_TOKEN, and comments
+# posted by GITHUB_TOKEN do not raise `issue_comment` events -- so the
+# `workflow_run` trigger is the load-bearing one for currency after a review,
+# and the three human-activity triggers refresh hygiene.
+on:
+  workflow_run:
+    workflows: ["Claude Review"]
+    types: [completed]
+  pull_request_review:
+    types: [submitted, dismissed]
+  pull_request_review_comment:
+    types: [created, edited, deleted]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: read
+  issues: read
+
+# Latest event wins: every run recomputes the verdict from live API state, so
+# superseding an in-flight run loses nothing.
+concurrency:
+  group: >-
+    review-status-${{ github.event.workflow_run.head_branch
+      || github.event.pull_request.number
+      || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  # NOT named "Review Complete". For the workflow_run entry point GitHub
+  # attaches THIS job's own check-run to the same head SHA, and two check-runs
+  # sharing a name on one SHA is how a ruleset ends up gating on the wrong one.
+  review-status:
+    name: Review Status
+    runs-on: ubuntu-slim
+    timeout-minutes: 10 # CHECK 3: slim jobs must declare <= 14
+    # issue_comment fires for plain issues too; those have no head SHA to
+    # anchor a check-run to.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      github.event.issue.pull_request != null
+    steps:
+      # Pinned to the default branch: this job holds checks:write and must
+      # never execute PR-authored code. Cone-mode sparse-checkout still
+      # materialises root files, which is where .gitmodules (needed for the
+      # gitlink-only currency case) comes from.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch || 'main' }}
+          persist-credentials: false
+          sparse-checkout: .ci/scripts
+
+      - name: Post Review Complete check-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          WR_HTML_URL: ${{ github.event.workflow_run.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: .ci/scripts/review/review-status.sh
