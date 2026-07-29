@@ -25,9 +25,9 @@ BRANCHES="$BRANCH"
 # `src:dst` refspec, and any bare ref that is not a flag or the remote name.
 for tok in $(echo "$CMD" | sed -n 's/.*git push//p' | tr ' ' '\n'); do
     case "$tok" in
-        -*|origin|gitlab|"") continue ;;
+        -* | origin | gitlab | "") continue ;;
         *:*) BRANCHES="$BRANCHES ${tok##*:}" ;;
-        *)   BRANCHES="$BRANCHES $tok" ;;
+        *) BRANCHES="$BRANCHES $tok" ;;
     esac
 done
 BRANCHES=$(echo "$BRANCHES" | tr ' ' '\n' | grep -v '^$' | grep -v '^main$' | sort -u | tr '\n' ' ')
@@ -46,17 +46,17 @@ BRANCHES=$(echo "$BRANCHES" | tr ' ' '\n' | grep -v '^$' | grep -v '^main$' | so
 # tip is current (do not touch it); a run whose headSha is not is superseded (cancel it).
 COUNT=0
 for BRANCH in $BRANCHES; do
-git -C "${CLAUDE_PROJECT_DIR:-.}" fetch origin "$BRANCH" --quiet 2>/dev/null || true
-TIP=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse "origin/$BRANCH" 2>/dev/null)
-if [[ -z "$TIP" ]]; then continue; fi
-# NOTE: `gh ... --jq` does NOT accept jq's `--arg`, so the tip is interpolated into the
-# filter. $TIP is a hex sha from rev-parse, so there is nothing to quote-escape.
-RUNS=$(gh run list --repo rediacc/console --branch "$BRANCH" --json databaseId,status,headSha \
-    --jq ".[] | select(.status == \"in_progress\" or .status == \"queued\") | select(.headSha != \"$TIP\") | .databaseId" 2>/dev/null)
-if [[ -z "$RUNS" ]]; then continue; fi
-for rid in $RUNS; do
-    gh api repos/rediacc/console/actions/runs/$rid/force-cancel -X POST 2>/dev/null && COUNT=$((COUNT + 1))
-done
+    git -C "${CLAUDE_PROJECT_DIR:-.}" fetch origin "$BRANCH" --quiet 2>/dev/null || true
+    TIP=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse "origin/$BRANCH" 2>/dev/null)
+    if [[ -z "$TIP" ]]; then continue; fi
+    # NOTE: `gh ... --jq` does NOT accept jq's `--arg`, so the tip is interpolated into the
+    # filter. $TIP is a hex sha from rev-parse, so there is nothing to quote-escape.
+    RUNS=$(gh run list --repo rediacc/console --branch "$BRANCH" --json databaseId,status,headSha \
+        --jq ".[] | select(.status == \"in_progress\" or .status == \"queued\") | select(.headSha != \"$TIP\") | .databaseId" 2>/dev/null)
+    if [[ -z "$RUNS" ]]; then continue; fi
+    for rid in $RUNS; do
+        gh api repos/rediacc/console/actions/runs/$rid/force-cancel -X POST 2>/dev/null && COUNT=$((COUNT + 1))
+    done
 done
 if [[ $COUNT -gt 0 ]]; then
     echo "⚡ Auto-cancelled $COUNT old CI run(s) across: $BRANCHES. The new push triggers a fresh CI run. Watch it with: gh run watch <new-run-id> --repo rediacc/console --exit-status --interval 100 (run_in_background: true). Remember: watch the Console CI run, not the Watchdog Monitor chain runs; auto-retries land as attempt 2 of the same Console CI run."
