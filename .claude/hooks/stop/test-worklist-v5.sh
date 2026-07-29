@@ -43,9 +43,13 @@ brief_now() {
     printf '%s %s %s\n' "deadbeef" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "doing the thing" >>"${WL%.md}.sessions"
 }
 
+newturn() { # a fresh user record; transcript_tail only reads back to the last one
+    printf '%s\n' '{"type":"user","message":{"content":"go"}}' >>"$BASE/t.jsonl"
+}
+
 run() { # feed the hook a Stop event and print its raw JSON verdict
-    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s}' \
-        "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" |
+    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
+        "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
             WORKLIST_JUDGE="${JUDGE_MODE:-off}" python3 "$HOOK" 2>"$BASE/err.txt"
 }
@@ -661,6 +665,58 @@ GITHUB_ACTIONS=true check "GITHUB_ACTIONS=true never blocks a runner" allow ""
 
 echo "== 48. a value other than 'true' is NOT a runner =="
 GITHUB_ACTIONS=false check "GITHUB_ACTIONS=false still blocks" block "OPEN worklist item"
+
+echo "== 49. CONTROL: two identical stops do NOT trip the stuck check =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "stop 1 of 3 is quiet" allow ""
+check "stop 2 of 3 is still quiet" allow ""
+
+echo "== 50. the THIRD identical stop demands an agent =="
+check "3 stops with nothing moved blocks" block "EMPLOY A PLANNING OR INVESTIGATION AGENT"
+
+echo "== 51. and it RESETS, so stop 4 is quiet again =="
+check "the nag is rate-limited, not every-stop" allow ""
+
+echo "== 52. a task changing status counts as movement =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+check "fresh signature, stop 1" allow ""
+check "fresh signature, stop 2" allow ""
+# Same session, but the task moved. The counter must restart, not fire.
+task 7 in_progress "thing"
+newturn
+say "answer
+
+## Remaining
+| #7 | thing | ongoing, me |"
+check "moving a task resets the stuck counter" allow ""
+
+echo "== 53. a running background task exempts it (an agent IS the remedy) =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+BG='[{"status":"running","description":"plan agent"}]'
+BG="$BG" check "stop 1" allow ""
+BG="$BG" check "stop 2" allow ""
+BG="$BG" check "a live agent means the remedy is already running" allow ""
 
 echo
 echo "  passed=$PASS failed=$FAIL"
