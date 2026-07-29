@@ -35,7 +35,7 @@ task() { # task <id> <status> <subject>
 }
 
 hand_now() { # a handover fresh enough and long enough to satisfy the gate
-    printf 'Resume point: round 23 diagnosis.\nStatus: two Quality jobs red on a dead-shell finding, fixed by wiring the stop suite into test-hooks.sh.\nNext: push and watch. Do not report the autopilot App as blocked, it exists.\n' |
+    printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. Next: push and watch the run, then bump the submodule pointers to the squash commits before the merge chain. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.\n' |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
 }
 
@@ -44,7 +44,8 @@ brief_now() {
 }
 
 run() { # feed the hook a Stop event and print its raw JSON verdict
-    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s}' \
+        "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
             WORKLIST_JUDGE="${JUDGE_MODE:-off}" python3 "$HOOK" 2>"$BASE/err.txt"
 }
@@ -234,18 +235,6 @@ task 7 pending "thing"
 loop_at +30 1
 check "a future loop declaration is fine" allow ""
 
-echo "== 15. MORE THAN ONE cron blocks (one is almost always enough) =="
-setup
-say "answer
-
-## Remaining
-- #7 thing"
-brief_now
-hand_now
-task 7 pending "thing"
-loop_at +30 2
-check "two declared crons block" block "declared 2 crons"
-
 echo "== 16. a Remaining section that OMITS an open task blocks =="
 setup
 say "answer
@@ -297,7 +286,7 @@ setup
 hand_now
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --post-compact 2>/dev/null)"
-if grep -qF "CONTEXT WAS JUST COMPACTED" <<<"$out" && grep -qF "Resume point" <<<"$out"; then
+if grep -qF "picking up an in-progress session" <<<"$out" && grep -qF "ci-overhaul session" <<<"$out"; then
     echo "  PASS: PostCompact returns the handover body as additionalContext"
     PASS=$((PASS + 1))
 else
@@ -364,6 +353,77 @@ say "Here is the answer.
 say "Checking one more thing."
 say "And another."
 check "a Remaining section survives later narration blocks" allow ""
+
+echo "== 25. TWO LIVE crons block, read from the event not a declaration =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+CRONS='[{"id":"aaa","schedule":"*/23 * * * *"},{"id":"bbb","schedule":"17 * * * *"}]'
+check "two live crons block" block "2 crons are live"
+CRONS='[]'
+
+echo "== 26. ONE live cron does not block =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
+check "one live cron is fine" allow ""
+CRONS='[]'
+
+echo "== 27. 'blocked on You' WITHOUT confirmation blocks =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | You |"
+task 7 pending "thing"
+check "an unconfirmed operator-block is rejected" block "WITHOUT their confirmation"
+
+echo "== 28. the confirmed form passes =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | You (User Thinks So) |"
+task 7 pending "thing"
+check "the confirmed operator-block is accepted" allow ""
+
+echo "== 29. a BLOATED handover is rejected (it is a prompt, not a report) =="
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+python3 -c "print('x'*900)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+check "an over-long handover blocks" block "handover is bloated"
+
+echo "== 30. a MULTI-PARAGRAPH handover is rejected =="
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing"
+task 7 pending "thing"
+printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.\n\nSecond paragraph, which is exactly what makes this handover invalid.\n' |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+check "a multi-paragraph handover blocks" block "handover is multi-paragraph"
 
 echo
 echo "  passed=$PASS failed=$FAIL"
