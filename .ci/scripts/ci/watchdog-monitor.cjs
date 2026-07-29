@@ -364,6 +364,10 @@ const monitor = async ({ github, context, core }) => {
   const targetRunId = Number(process.env.WATCHDOG_TARGET_RUN_ID || 0) || context.runId;
   const prNumber = Number(process.env.WATCHDOG_PR_NUMBER || 0) || context.payload.pull_request?.number || null;
   const deadlineMs = Number(process.env.WATCHDOG_DEADLINE_SECONDS || 0) * 1000;
+  // How long a quality force-cancel may be held while its siblings drain.
+  // 90s catches a near-simultaneous second failure (the roster the drain
+  // exists for) without waiting out a lane that runs for minutes.
+  const HELD_CANCEL_MAX_SECONDS = Number(process.env.WATCHDOG_HELD_CANCEL_MAX_SECONDS || 90);
   let pendingRerun = process.env.WATCHDOG_PENDING_RERUN === 'true';
   const skipRerun = process.env.WATCHDOG_SKIP_RERUN === 'true';
 
@@ -412,6 +416,15 @@ const monitor = async ({ github, context, core }) => {
   // held until the sibling no-retry jobs finish, so one round reports every
   // failing lane. See pendingNoRetryJobs for why.
   let pendingQualityCancel = false;
+  // The drain has a DEADLINE. Waiting for every sibling no-retry lane to settle
+  // buys a full roster, but only when a sibling is actually about to fail; when
+  // nothing else does it is dead time on a run already known to be red.
+  //
+  // Measured on run 30470189106: Quality/Go failed at 16:25:10 and the cancel was
+  // held on Quality/Security. Every OTHER Quality lane had finished by 16:25;
+  // Security alone was still running two minutes later. The hold was waiting on
+  // the single long pole, and it gained nothing because nothing else failed.
+  let heldSince = 0;
   let heldQualityFailureMsg = '';
 
   // The TARGET run's event, re-read from the API every poll. Not
@@ -1008,12 +1021,23 @@ const monitor = async ({ github, context, core }) => {
     // cancellation annotation naming the failures at all.
     if (pendingQualityCancel) {
       const stillRunning = pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
-      if (stillRunning.length === 0) {
-        console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+      const heldSec = heldSince ? Math.round((Date.now() - heldSince) / 1000) : 0;
+      const expired = heldSec >= HELD_CANCEL_MAX_SECONDS;
+      if (stillRunning.length === 0 || expired) {
+        if (expired) {
+          console.log(
+            `Held force-cancel EXPIRED after ${heldSec}s with ${stillRunning.length} sibling(s) still running. ` +
+            'The drain collects a full roster; it does not keep a known-red run alive behind one slow lane.'
+          );
+        } else {
+          console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+        }
         if (await forceCancel(heldQualityFailureMsg)) return;
         pendingQualityCancel = false; // exempt run: recorded, not cancelled; keep monitoring
+      } else {
+        console.log(`[${elapsedMin}m] Force-cancel held ${heldSec}s/${HELD_CANCEL_MAX_SECONDS}s: ` +
+          `waiting on ${stillRunning.length} no-retry job(s)`);
       }
-      console.log(`[${elapsedMin}m] Force-cancel held: waiting on ${stillRunning.length} no-retry job(s)`);
     }
 
     // Check if workflow was externally cancelled (mass cancellation)
@@ -1170,6 +1194,7 @@ const monitor = async ({ github, context, core }) => {
           : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
         if (stillRunning.length > 0) {
           pendingQualityCancel = true;
+          heldSince = heldSince || Date.now();
           // Keep the FIRST held message: forceCancel re-fetches the job list and
           // builds the full roster itself, so this is only the fallback text for
           // the case where that refetch fails.
