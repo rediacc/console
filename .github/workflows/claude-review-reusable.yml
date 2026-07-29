@@ -46,7 +46,25 @@ jobs:
       # (src/modes/detector.ts). workflow_run is an automation context, so the
       # flag has to follow the trigger; "Post review report" below covers the
       # events where the action cannot post for us.
-      TRACK_PROGRESS: ${{ contains(fromJSON('["pull_request", "issues", "issue_comment", "pull_request_review_comment", "pull_request_review"]'), github.event_name) }}
+      # FORCED OFF, and this is a security control rather than a preference.
+      #
+      # With track_progress true the action takes its "tag" path, which runs its
+      # own `git fetch origin --depth=20 <branch>` inside the workspace. That
+      # fetch is what fails on a PRIVATE repo (renet #95: "could not read
+      # Username for 'https://github.com'"), and the tempting fix -- persisting
+      # credentials on the PR-head checkout -- is the one thing this job must not
+      # do. See the Checkout PR head step for why.
+      #
+      # With it false the action never fetches, so no credential is needed at
+      # all. This is not an untested path: it is the ONLY path that has worked.
+      # TRACK_PROGRESS was already false for `workflow_run`, and every review
+      # that has actually succeeded on this repo ran that way.
+      #
+      # Cost, stated plainly: no live "Claude is working..." comment on the two
+      # pull_request entry points. The `Post review report` step below already
+      # covers that case; it is gated on TRACK_PROGRESS != 'true', which now
+      # always holds.
+      TRACK_PROGRESS: 'false'
     permissions:
       contents: read
       pull-requests: write # inline review comments + summary comment
@@ -148,30 +166,46 @@ jobs:
           # read a PR diff was pure waste.
           filter: blob:none
           clean: false
-          # persist-credentials MUST stay true here, and the `false` that used to
-          # sit on this line is why review never worked on a private repo.
+          # persist-credentials MUST stay false here. This checkout takes
+          # PR-AUTHORED content (`ref: head_sha`), and the model then runs over
+          # it with Read enabled and `Bash(gh pr comment:*)` / `Bash(gh api:*)`
+          # allowlisted, under `pull-requests: write` + `issues: write`.
           #
-          # claude-code-action runs its own `git fetch origin --depth=20 <branch>`
-          # internally. Without persisted credentials that fetch is anonymous.
-          # Anonymous works fine against console, which is PUBLIC, so the review
-          # pipeline looked healthy. Against renet, account and elite, which are
-          # private, the fetch is denied and the action dies with
-          # "Command failed: git fetch origin --depth=20 <branch>".
+          # An earlier fix set this true to unblock the private-repo fetch. The
+          # justification was that the credential is this job's GITHUB_TOKEN,
+          # already present in the environment, so persisting it does not widen
+          # exposure. That conflates two different things. The token's
+          # CAPABILITIES are already exposed; persisting additionally writes the
+          # RAW BEARER STRING into $GITHUB_WORKSPACE/.git/config as
+          # `http.https://github.com/.extraheader`, in a directory the model can
+          # read, with two egress tools available. Capability-bounded-by-job
+          # becomes exfiltratable-credential. That is a genuine widening, on the
+          # one job whose entire purpose is to read attacker-authored text.
           #
-          # That is the second of two independent breaks that both happened to
-          # land only on private repos, which is why they masked each other: the
-          # first was CLAUDE_CODE_OAUTH_TOKEN arriving empty, because on the Free
-          # plan an ORGANISATION secret is not available to a private repo. Fixing
-          # the token alone still left this, and the log moved from an empty
-          # credential to a failed fetch.
-          #
-          # The credential written into .git/config is this job's GITHUB_TOKEN,
-          # which is already present in the job environment, so persisting it for
-          # a SHA-pinned action does not widen exposure.
+          # The private-repo fetch is fixed at the source instead: TRACK_PROGRESS
+          # is forced false above, so the action never fetches and needs no
+          # credential. The assertion step below makes a silent re-introduction
+          # of this fail loudly.
+          persist-credentials: false
 
       # github_token is passed explicitly: comments post as github-actions,
       # whose events never trigger workflows (anti-recursion), and the run
       # does not depend on the Claude GitHub App's repo selection.
+      # TRIPWIRE. The comment above is an argument; this is a test. If anyone
+      # re-introduces persisted credentials on the PR-head checkout, the job dies
+      # here instead of quietly handing a bearer token to a model that is reading
+      # attacker-authored files.
+      - name: Assert no credential was persisted into the workspace
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          if git config --local --get-regexp '^http\..*\.extraheader' >/dev/null 2>&1; then
+            echo "::error::The PR-head checkout persisted a credential into .git/config."
+            echo "::error::This job reads PR-authored content with egress tools available."
+            echo "::error::Fix the fetch at its source (TRACK_PROGRESS) instead."
+            exit 1
+          fi
+          echo "No persisted credential in the workspace."
+
       - name: Claude review
         id: claude
         if: steps.gate.outputs.go == 'true'
