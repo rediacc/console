@@ -249,6 +249,24 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
     # --extra folds in an opaque upstream key. Used for RENET_TAG: renet binaries
     # reach BOTH images as artifacts, never as source, so no path can cover them.
     CLOSURE_HASH+="$EXTRA_KEY"
+
+    # WEEKLY TIME BUCKET, and it is a safety bound rather than cache tuning.
+    #
+    # A commit-hash key is always correct and merely wasteful: it cannot outlive
+    # the commit. A closure key can, and there are inputs it provably does not
+    # cover: ACCOUNT_ED25519_PUBLIC_KEY is passed as a build arg, the base images
+    # (node:22-alpine, alpine:3.20) float, and private/account is installed with
+    # an UNPINNED `npm install` -- so "same tag implies same bytes" is not true
+    # today in either direction.
+    #
+    # Without a bucket, a key survives until the closure changes, which could be
+    # months, and cd-stage.yml retags these straight onto a release channel.
+    # With it, any staleness is capped at one week. Cost: one rebuild per image
+    # per week. That is the trade the design was explicitly unwilling to skip.
+    #
+    # %G%V, not %Y%W: ISO year-and-week, so the last days of December cannot
+    # collide with the first days of January.
+    CLOSURE_HASH+="week:$(date -u +%G%V)"
     CI_TAG="${CLOSURE_NAME}-$(printf '%s' "$CLOSURE_HASH" | sha256sum | cut -c1-12)"
     log_info "Generated closure tag ($CLOSURE_NAME): $CI_TAG" >&2
 

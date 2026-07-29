@@ -219,8 +219,11 @@ test_every_declared_input_is_individually_load_bearing_for_the_failure() {
 
 test_other_modes_are_untouched() {
     # The guard lives in the --submodule branch. --self and the default
-    # time-based mode must keep working: initialize.sh:142 uses --self for
-    # WEB_TAG, and a shared regression there would be silent until a release.
+    # --self and the time-based mode must keep working even though initialize.sh
+    # no longer uses --self for WEB_TAG (it moved to `--closure web` when D5
+    # landed). Both modes are still reachable and still pinned here, because
+    # nothing else guards them and a silent regression in either would only
+    # surface as a mystery tag.
     build_fixture_tree
     local self_tag rc=0
     git -C "$ROOT" init -q .
