@@ -109,7 +109,15 @@ jobs:
           # judgment nobody made -- see issue #537 and evaluateRetryEligibility.
           # The 07-27 nightly is why: a deterministic Stage Artifacts bug bought
           # a full second attempt before being cancelled anyway.
-          WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation'
+          # Migration Test joins these because its failures are upstream by
+          # construction: it drives six live D1 clones against the Cloudflare
+          # API, and run 30443624545 died on Cloudflare's own internal error
+          # ("internal error; reference = e_61GNS0_... [code: 7500]") on the
+          # SIXTH clone after five succeeded, taking 23 jobs down with it.
+          # Note what this list does and does not do: it decides whether a rerun
+          # FIRES, not which jobs come back -- GitHub reruns every non-successful
+          # job once triggered.
+          WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation,Migration Test'
           WATCHDOG_WAIT_PATTERNS: 'Migration Test'
           # Where the monitor writes failed jobs' COMPLETE logs before anything
           # reruns them. A rerun makes attempt 1's logs unreachable, so without
