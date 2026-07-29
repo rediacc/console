@@ -857,6 +857,53 @@ say "answer
 task 12 pending "Wave C autopilot"
 check "an operator blocker is not asked for a file citation" allow ""
 
+echo "== 62. the judge is HANDED the cited text, not just told a path =="
+# citation_state only proves a source EXISTS, which any real file satisfies.
+# This is the half that lets the judge check whether the source says what the
+# session claimed. Tested directly now that the module is importable.
+setup
+mkdir -p "$BASE/proj/docs"
+printf 'alpha\nbravo\nLands with every stage flag off\ndelta\necho\n' >"$BASE/proj/docs/g.md"
+OUT=$(cd "$BASE/proj" && python3 -c '
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("wl", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+print(m.cited_excerpts(".", "blocked on Wave B landing, docs/g.md:3"))
+' "$HOOK" 2>&1)
+if grep -qF "Lands with every stage flag off" <<<"$OUT" && grep -qF ">3|" <<<"$OUT"; then
+    echo "  PASS: the cited line is quoted and marked"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: excerpt missing or unmarked: ${OUT:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 63. CONTROL: importing the hook must NOT run the Stop path =="
+# The bare main() call meant any import executed the whole hook. If that
+# regresses, case 62 silently tests a hook run instead of a function.
+if grep -qF "no such option" <<<"$OUT" || grep -qF '"decision"' <<<"$OUT"; then
+    echo "  FAIL: import executed main(); the module is not importable"
+    FAIL=$((FAIL + 1))
+else
+    echo "  PASS: import is side-effect free"
+    PASS=$((PASS + 1))
+fi
+
+echo "== 64. CONTROL: a citation past EOF yields no excerpt, never a crash =="
+OUT2=$(cd "$BASE/proj" && python3 -c '
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("wl", sys.argv[1])
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+print("EXCERPT[" + m.cited_excerpts(".", "blocked, docs/g.md:900 and docs/nope.md:2") + "]")
+' "$HOOK" 2>&1)
+if grep -qF "EXCERPT[]" <<<"$OUT2"; then
+    echo "  PASS: out-of-range and missing files quote nothing"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: expected an empty excerpt, got: ${OUT2:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
