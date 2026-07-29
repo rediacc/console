@@ -1195,6 +1195,44 @@ else
 fi
 check "an open request still blocks after --compact" block "waiting on you"
 
+echo "== 79. requests survive the worklist file being deleted entirely =="
+# Deleting the worklist is the hook's documented allow-a-stop residual, but it
+# must not delete cross-session obligations: the sidecar is a separate file
+# and the request checks run unconditionally, not under worklist.exists().
+setup
+say "done for now"
+brief_now
+RID=$(askid cafe1234 deadbeef "still here after the worklist dies")
+rm -f "$WL"
+check "deleting the worklist does not delete the obligation" block "waiting on you"
+reqcli --answer deadbeef "$RID" "done regardless of the worklist" >/dev/null
+check "and the lifecycle still completes without a worklist file" allow ""
+
+echo "== 80. RACE: concurrent escalators write the [?] exactly once =="
+# The double-write question: two sessions escalating the same request in the
+# same second. By construction both appends happen INSIDE the non-blocking
+# flock and every escalator re-reads AFTER acquiring it, so a racer either
+# fails the acquire (skips) or sees the winner's escalate event. This drives
+# 8 hook processes at one dead-recipient request to prove it empirically.
+setup
+say "done for now"
+brief_now
+printf '{"ev":"ask","id":"feedc0de","from":"cafe1234","to":"beef9999","at":"%s","body":"race the escalators"}\n' \
+    "$(date -u -d '-120 minutes' +%Y-%m-%dT%H:%M:%SZ)" >>"${WL%.md}.requests"
+for i in $(seq 1 8); do
+    (run >/dev/null 2>&1) &
+done
+wait
+NESC=$(grep -c 'request #feedc0de' "$WL")
+NEVT=$(grep -c '"ev":"escalate","id":"feedc0de"' "${WL%.md}.requests")
+if [[ "$NESC" == "1" && "$NEVT" == "1" ]]; then
+    echo "  PASS: 8 concurrent stops produced exactly one [?] line and one escalate event"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: expected 1 [?] line and 1 escalate event, got $NESC and $NEVT"
+    FAIL=$((FAIL + 1))
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
