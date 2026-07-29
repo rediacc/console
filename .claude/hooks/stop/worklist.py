@@ -141,6 +141,44 @@ anything unanswered past WORKLIST_REQUEST_STALE_MIN -- is ESCALATED exactly
 once, under a flock, into an operator-visible `- [?]` item owned by the
 asker, carrying the ask's own DEFAULT: (or a generic proceed-without-it one).
 
+WHY v7 (regression gates, 2026-07-30, operator request): "you fixed but we
+didn't have a mechanism for future regressions." A fix without a gate is a
+defect scheduled to return, and the i18n cross-locale bug proved it: fixed by
+hand, then invisible to every existing check by construction. v7 makes the
+judge ask, on every stop where a fix landed, whether a gate protects it.
+
+Detection is from ARTIFACTS, never prose (prose regexes have fired on
+messages describing themselves): commit subjects matching ^(fix|revert)[(!:]
+between a per-session marker's last-seen HEAD and current HEAD, plus newly
+ticked `- [x]` items owned by this session (the uncommitted-tree default).
+A fix-set touching only docs/** and **/*.md never asks. Rejected signals:
+"check scripts changed" (that is the REMEDY appearing, not the defect) and
+"CI red diagnosed" (no cheap unraced view, and reds are often flakes).
+
+Marker: <worklist>.reggate-<prefix8>, single-writer JSON {head, seen_ticks,
+fixsets, gate_runs}. A settled fix-set is NEVER re-asked -- the whole cost
+story. FAIL SAFE: a missing marker initialises to current HEAD and asks
+nothing that stop; a corrupt one does the same plus ONE systemMessage line
+saying settled verdicts were forgotten. Never a block, never silent. No
+field-wise salvage: any invalid shape discards the file, because half-parsed
+fixsets silently resurrect a blocked question as settled.
+
+Every model claim is VERIFIED against artifacts: a named existing gate must
+be a real check:* key (a name that is not is hallucinated coverage and counts
+as none); a new gate counts as proven only when it is WIRED (a check:ci-* key
+reachable from `npm run ci` TRANSITIVELY -- substring matching produced real
+false positives) and its bounded run is green (cached by content hash, so a
+red gate is not re-run every stop). A green run of a control-first gate IS
+the planted-defect proof, because such a gate self-fails when its control
+cannot fire; check-i18n-cross-locale.ts once shipped with a --selftest that
+NOTHING invoked, which is the failure this proof rule exists for.
+
+Block ONLY on recurring AND ungated AND unproven AND undeferred, naming three
+exits: write the gate control-first (next stop proves it), defer as an
+operator-visible `- [?] ... reggate:<sig> ... DEFAULT: ...`, or rebut in the
+message the judge re-reads next stop. Verdicts: not-applicable | covered |
+one-off | proven | deferred.
+
 NO ESCAPE HATCH (operator, explicit). v1-v4 had MAX_BLOCKS: N blocks then give
 up. That is the hatch that let a session stop with six pending tasks, so it is
 gone. Judge failure, timeout, or malformed output BLOCKS. If that wedges the
@@ -1353,12 +1391,350 @@ def request_cli(argv, worklist):
     die("unknown request mode %s" % mode)
 
 
+# ---- v7: regression-gate enforcement ---------------------------------------
+FIX_SUBJECT = re.compile(r"^(fix|revert)[(!:]")
+REGGATE_TIMEOUT_S = int(os.environ.get("WORKLIST_REGGATE_TIMEOUT_S", "120"))
+REGGATE_VERDICTS = ("not-applicable", "covered", "one-off", "proven", "deferred")
+# Where a freshly written gate leaves its artifact. Both shapes exist in this
+# repo; anything else is not a gate the ci chain can run.
+CHECK_SCRIPT_GLOBS = ("scripts/check-*.ts", ".ci/scripts/quality/check-*.sh")
+
+
+def reggate_path(worklist, session_id):
+    return worklist.with_suffix(".reggate-%s" % (session_id or "unknown")[:8])
+
+
+def load_reggate(path):
+    """(state, forgot). FAIL SAFE by contract: a missing marker returns the
+    empty default (the caller fills head and asks nothing that stop); a
+    corrupt one does the same PLUS forgot=True, which the caller surfaces as
+    one systemMessage line. No field-wise salvage: any invalid shape discards
+    the whole file, because half-parsed fixsets silently resurrect a blocked
+    question as settled. Never a block, never silent."""
+    default = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
+    if not path.exists():
+        return default, False
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+        ok = (
+            isinstance(d, dict)
+            and isinstance(d.get("head"), str)
+            and isinstance(d.get("seen_ticks"), list)
+            and all(isinstance(t, str) for t in d.get("seen_ticks", []))
+            and isinstance(d.get("fixsets"), dict)
+            and all(
+                isinstance(v, dict) and v.get("verdict") in REGGATE_VERDICTS
+                for v in d.get("fixsets", {}).values()
+            )
+            and isinstance(d.get("gate_runs"), dict)
+        )
+    except (OSError, ValueError):
+        ok, d = False, None
+    if not ok:
+        return default, True
+    return d, False
+
+
+def save_reggate(path, state):
+    # Whole-file rewrite is correct here for the same reason as the handover:
+    # the marker is per-session, so there is no second writer to race.
+    try:
+        path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _tick_id(line):
+    return hashlib.sha1(line.strip().encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def mine_tick_ids(lines, session_id):
+    out = []
+    for line in lines:
+        m = ITEM.match(line)
+        if m and m.group("state") == "x" and owned_by_me(m.group("owner"), session_id):
+            out.append(_tick_id(line))
+    return out
+
+
+def _hash_file(path):
+    try:
+        return hashlib.sha1(pathlib.Path(path).read_bytes()).hexdigest()[:16]
+    except OSError:
+        return ""
+
+
+def seed_gate_hashes(root):
+    """Hashes of every existing check script, recorded at marker init so only
+    scripts that are NEW or CHANGED after that point ever count as candidate
+    proof (or get run). Without this seed, the first fix-signal stop in a real
+    repo would treat ~all 90 existing gates as candidates and try to run them."""
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    out = {}
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in glob.glob(os.path.join(str(root), pat)):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if digest:
+                out[rel] = {"hash": digest, "exit": -3, "at": stamp}  # -3 = seeded, never run
+    return out
+
+
+def fix_signals(root, lines, session_id, state):
+    """(descriptions, ids, new_tick_ids, current_head).
+
+    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in
+    marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this
+    session, covering the uncommitted-tree default. The skip filter is
+    deliberately narrow: a fix commit touching only docs/** and **/*.md never
+    asks; everything else does, and the judge's four questions sort the
+    one-offs out. A rewound or unreachable old head yields an empty log,
+    which reads as no signals and lets head self-heal by advancing."""
+    head = _git(root, "rev-parse", "HEAD")
+    commits, new_ticks = [], []
+    if state["head"] and head and state["head"] != head:
+        for row in _git(
+            root, "log", "--format=%H%x09%s", "%s..%s" % (state["head"], head)
+        ).splitlines():
+            sha, _, subj = row.partition("\t")
+            if not FIX_SUBJECT.match(subj):
+                continue
+            files = _git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
+            if files and all(f.startswith("docs/") or f.endswith(".md") for f in files):
+                continue
+            commits.append((sha, "%s %s" % (sha[:7], subj)))
+    for line in lines:
+        m = ITEM.match(line)
+        if m and m.group("state") == "x" and owned_by_me(m.group("owner"), session_id):
+            tid = _tick_id(line)
+            if tid not in state["seen_ticks"]:
+                new_ticks.append((tid, line.strip()))
+    descriptions = [d for _, d in commits] + ["tick: " + t[:120] for _, t in new_ticks]
+    ids = sorted([s for s, _ in commits] + [t for t, _ in new_ticks])
+    return descriptions, ids, [t for t, _ in new_ticks], head
+
+
+def package_scripts(root):
+    try:
+        d = json.loads((pathlib.Path(root) / "package.json").read_text(encoding="utf-8"))
+        s = d.get("scripts")
+        return s if isinstance(s, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def gate_reachable(scripts, target):
+    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
+    references? Transitive, because ci reaches most gates through batch keys.
+    NOT a substring test: a gate's name inside an `echo` is not reachability,
+    and the substring version produced real false positives on this repo."""
+    seen, todo = set(), ["ci"]
+    while todo:
+        k = todo.pop()
+        if k in seen or k not in scripts:
+            continue
+        seen.add(k)
+        todo.extend(re.findall(r"npm run\s+(?:--silent\s+)?([A-Za-z0-9:._-]+)", scripts[k]))
+    return target in seen
+
+
+def prove_new_gate(root, scripts, state):
+    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
+    a NEW or CHANGED check script (content hash vs the marker), a check:* key
+    whose command runs it, reachability from `npm run ci` (transitive, see
+    gate_reachable), and a bounded green run. Runs are cached by content hash
+    so a red gate is not re-run every stop and a green one is not re-paid.
+    A green run of a control-first gate IS the planted-defect proof, because
+    such a gate self-fails when its own control cannot fire -- the
+    check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact
+    failure this rule exists for, and check-gate-reachability.ts exists
+    because a gate can be defined yet never run."""
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    notes, proven = [], False
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in sorted(glob.glob(os.path.join(str(root), pat))):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if not digest:
+                continue
+            prev = state["gate_runs"].get(rel)
+            if prev and prev.get("hash") == digest:
+                continue  # neither new nor changed: proves nothing for THIS fix
+            key = next(
+                (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
+                "",
+            )
+            if not key:
+                state["gate_runs"][rel] = {"hash": digest, "exit": -1, "at": stamp}
+                notes.append("%s: no check:* key runs it" % rel)
+                continue
+            if not gate_reachable(scripts, key):
+                state["gate_runs"][rel] = {"hash": digest, "exit": -2, "at": stamp}
+                notes.append(
+                    "%s: %s is defined but NOT reachable from `npm run ci` "
+                    "(defined-but-never-run is the check-gate-reachability failure)"
+                    % (rel, key)
+                )
+                continue
+            try:
+                pr = subprocess.run(
+                    ["npm", "run", "--silent", key],
+                    cwd=str(root),
+                    capture_output=True,
+                    text=True,
+                    timeout=REGGATE_TIMEOUT_S,
+                )
+                code = pr.returncode
+            except subprocess.TimeoutExpired:
+                code = 124
+            except (OSError, subprocess.SubprocessError):
+                code = 127
+            state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
+            notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
+            if code == 0:
+                proven = True
+    if not notes:
+        notes.append("no new or changed check script found; a claimed gate must leave one")
+    return proven, "; ".join(notes)
+
+
+def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
+    """('malformed'|'settle'|'block', payload, detail).
+
+    Deterministic mapping from the judge's regression_gate object to an
+    action, with every model claim VERIFIED against artifacts:
+      applicable false                      -> settle 'not-applicable'
+      existing_gate is a REAL check:* key   -> settle 'covered'
+      existing_gate names a key that is not -> hallucinated coverage, counts
+                                               as none, falls through
+      recurring false                       -> settle 'one-off'
+      a `- [?]` line carrying reggate:<sig> -> settle 'deferred' (the deferral
+                                               machinery prints it every stop)
+      a new/changed gate, wired + green     -> settle 'proven'
+      otherwise: recurring AND ungated AND unproven AND undeferred -> block,
+      naming the three exits. gate_needed=false with recurring=true and no
+      real coverage is incoherent and blocks too; the REBUT exit lets the
+      judge re-answer coherently next stop."""
+    fields = (
+        "applicable", "blind_spot", "existing_gate", "recurring",
+        "gate_needed", "gate_proven", "instruction",
+    )
+    if not isinstance(rg, dict) or any(k not in rg for k in fields):
+        return "malformed", "regression_gate missing or incomplete: %r" % (rg,), ""
+    if rg["applicable"] is False:
+        return "settle", "not-applicable", str(rg["blind_spot"])[:160]
+    keys = [k for k in scripts if k.startswith("check:")]
+    hall, eg = "", str(rg["existing_gate"] or "").strip()
+    if eg:
+        if eg in keys:
+            return "settle", "covered", eg
+        hall = eg
+    if rg["recurring"] is False and not hall:
+        return "settle", "one-off", str(rg["blind_spot"])[:160]
+    token = "reggate:%s" % sig[:8]
+    for ln in lines:
+        m = ITEM.match(ln)
+        if m and m.group("state") == "?" and token in ln:
+            return "settle", "deferred", token
+    proven, notes = prove_new_gate(root, scripts, state)
+    if proven:
+        return "settle", "proven", notes[:300]
+    reason = (
+        "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. This is the i18n "
+        "lesson: the defect was fixed by hand and nothing prevented its "
+        "return, because every existing gate was blind to it by construction.\n\n"
+        "  judge's blind spot:  %s\n"
+        "  judge's instruction: %s\n%s%s\n"
+        "Three exits, pick one THIS turn:\n"
+        "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
+        ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
+        "from `npm run ci` (transitively; defined-but-never-run does not "
+        "count). The next stop runs it bounded, and a green run IS the "
+        "planted-defect proof, because a control-first gate self-fails when "
+        "its own control cannot fire.\n"
+        "  2. DEFER to the operator: append to the worklist\n"
+        "     - [?] (%s) %s <should this be gated?> DEFAULT: <what you do if "
+        "unanswered>\n"
+        "     and the deferral machinery prints it to them every stop.\n"
+        "  3. REBUT in your message: say why it is not applicable, already "
+        "covered (name the REAL key), or a one-off; the judge re-reads your "
+        "message next stop."
+        % (
+            str(rg["blind_spot"])[:300],
+            str(rg["instruction"])[:300],
+            ""
+            if not hall
+            else "  you cited %r as existing coverage but no such check:* key "
+            "exists, so that coverage is HALLUCINATED and counts as none.\n" % hall,
+            "" if not notes else "  gate probe: %s\n" % notes[:400],
+            me8,
+            token,
+        )
+    )
+    return "block", reason, ""
+
+
+REGGATE_PROMPT = """
+
+A FIX LANDED THIS TURN, so ALSO fill the `regression_gate` object. The fix-set:
+%(fixset)s
+
+Answer FOUR questions about it:
+
+(1) BLIND SPOT: state the property of this defect that made every existing
+check blind to it. This repo's own example: every i18n gate compared a locale
+against English, so text copied from one non-English locale into another
+differed from English and passed every gate; no check ever compared two
+non-English locales, so the defect was invisible BY CONSTRUCTION.
+
+(2) EXISTING COVERAGE: would any gate in the list below have FAILED against
+the tree BEFORE the fix? Naming a gate that catches a different symptom does
+not count. These are the real check:* keys; do not invent others:
+%(keys)s
+
+(3) RECURRENCE: could a future edit reintroduce this defect while `npm run ci`
+stays green, and is that edit one a reasonable change could make? A one-off
+mistake with no invariant behind it does not warrant a gate.
+
+(4) If a gate IS warranted, name the invariant and the cheapest artifact it
+can be asserted on.
+
+Fill regression_gate accordingly: applicable (false only if this fix-set
+contains no defect fix at all), blind_spot, existing_gate (the EXACT key that
+already covers it, or empty string), recurring, gate_needed, gate_proven
+(true only if a new gate is already written and wired), instruction (the
+concrete next step for the session).
+"""
+
+
 JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
         "verdict": {"type": "string", "enum": ["stop", "continue"]},
         "reason": {"type": "string", "maxLength": 300},
         "next_action": {"type": "string", "maxLength": 200},
+        # v7: OPTIONAL at the top level (verified: --json-schema accepts a
+        # conditionally-required object and returns cleanly with it omitted,
+        # so ONE schema, no variants), but its own properties are all
+        # required. On a fix-signal stop a missing or malformed object is a
+        # judge error and fails closed, same as an invalid verdict.
+        "regression_gate": {
+            "type": "object",
+            "properties": {
+                "applicable": {"type": "boolean"},
+                "blind_spot": {"type": "string", "maxLength": 300},
+                "existing_gate": {"type": "string", "maxLength": 100},
+                "recurring": {"type": "boolean"},
+                "gate_needed": {"type": "boolean"},
+                "gate_proven": {"type": "boolean"},
+                "instruction": {"type": "string", "maxLength": 300},
+            },
+            "required": [
+                "applicable", "blind_spot", "existing_gate", "recurring",
+                "gate_needed", "gate_proven", "instruction",
+            ],
+            "additionalProperties": False,
+        },
     },
     "required": ["verdict", "reason", "next_action"],
     "additionalProperties": False,
@@ -1435,7 +1811,7 @@ def resolve_claude():
     return shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
 
 
-def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None):
+def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None, extra=""):
     """(verdict_dict, error_string). Exactly one is non-None.
 
     Fail CLOSED by contract: every error path returns an error string, and the
@@ -1456,7 +1832,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
         "loop": loop_desc,
         "message": (message or "(the session produced no text)")[-6000:],
         "citations": citations or "  (none cited)",
-    }
+    } + (extra or "")
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not
     # suppress it. Without this line the hook forks itself forever.
@@ -1725,6 +2101,46 @@ def main():
         return "\n".join(
             "  %d open item(s) owned by session %s" % (len(v), k) for k, v in sorted(others.items())
         )
+
+    # ---- v7: regression-gate detection (see WHY v7). Never breaks gating. ---
+    reg_root = project_root(event.get("cwd") or os.getcwd())
+    reg_marker = reggate_path(worklist, session_id)
+    reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head = [], [], [], "", ""
+    reg_state, reg_forgot, reg_settled = None, False, None
+    try:
+        reg_state, reg_forgot = load_reggate(reg_marker)
+        if not reg_state["head"]:
+            # FAIL SAFE: first sight (or a corrupt marker just discarded)
+            # initialises to the present and asks nothing this stop. Seeding
+            # the check-script hashes here is what keeps prove_new_gate from
+            # ever treating the ~90 pre-existing gates as candidates.
+            reg_state["head"] = _git(reg_root, "rev-parse", "HEAD")
+            reg_state["seen_ticks"] = mine_tick_ids(lines, session_id)
+            reg_state["gate_runs"] = seed_gate_hashes(reg_root)
+            save_reggate(reg_marker, reg_state)
+        else:
+            reg_signals, reg_ids, reg_new_ticks, reg_head = fix_signals(
+                reg_root, lines, session_id, reg_state
+            )
+            if reg_ids:
+                reg_sig = hashlib.sha1("|".join(reg_ids).encode("utf-8")).hexdigest()[:12]
+            if reg_ids and reg_sig in reg_state["fixsets"]:
+                # Already settled: absorb and never re-ask. The whole cost story.
+                reg_state["head"] = reg_head or reg_state["head"]
+                reg_state["seen_ticks"] = sorted(
+                    set(reg_state["seen_ticks"]) | set(reg_new_ticks)
+                )
+                save_reggate(reg_marker, reg_state)
+                reg_signals, reg_ids = [], []
+            elif not reg_ids and reg_head and reg_head != reg_state["head"]:
+                # Only non-fix or doc-only-fix commits landed: nothing to ask,
+                # ever, so the marker just advances.
+                reg_state["head"] = reg_head
+                save_reggate(reg_marker, reg_state)
+    except Exception:  # noqa: BLE001 -- detection must never break gating
+        reg_signals, reg_ids, reg_sig = [], [], ""
+        if reg_state is None:
+            reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
 
     # ---- v5: gather EVERY static violation, then emit ONE block -------------
     # Five independent blocking checks would cost five turns to clear, which is
@@ -2126,8 +2542,16 @@ def main():
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
         emit(
             {
-                "systemMessage": "Stop hook: %d check(s) failed, continuing. %s"
-                % (len(violations), violations[0].split("\n")[0][:110]),
+                "systemMessage": "Stop hook: %d check(s) failed, continuing. %s%s"
+                % (
+                    len(violations),
+                    violations[0].split("\n")[0][:110],
+                    # The reggate fail-safe promises ONE line, never silence,
+                    # even on a stop that blocks for other reasons.
+                    ""
+                    if not reg_forgot
+                    else " [reggate marker was corrupt; settled verdicts forgotten]",
+                ),
                 "decision": "block",
                 "reason": "Do not stop yet. %d check(s) failed:\n\n%s\n\n"
                 "Fix all of them in this turn, then stop. There is no block cap: a "
@@ -2138,8 +2562,21 @@ def main():
         )
 
     # ---- v5: static checks clean. Ask a model whether stopping is honest. ----
-    if something_remains and not JUDGE_DISABLED:
+    # v7: a fix-signal stop consults the judge even with an empty queue,
+    # because "I fixed it, all done" is exactly the stop the regression
+    # question exists for.
+    if (something_remains or reg_signals) and not JUDGE_DISABLED:
         streak = int(counter.read_text()) if counter.exists() else 0
+        reg_scripts = package_scripts(reg_root) if reg_signals else {}
+        reg_extra = ""
+        if reg_signals:
+            reg_extra = REGGATE_PROMPT % {
+                "fixset": "\n".join("  " + s for s in reg_signals[:12]),
+                "keys": "\n".join(
+                    "  " + k for k in sorted(k for k in reg_scripts if k.startswith("check:"))
+                )
+                or "  (none)",
+            }
         verdict, err = run_judge(
             remaining_lines, len(in_flight), last_msg, streak,
             "none declared" if lstate == "none"
@@ -2147,6 +2584,7 @@ def main():
             % (llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
                "" if lcrons == 1 else "s"),
             cited_excerpts(project_root(event.get("cwd") or os.getcwd()), last_msg),
+            extra=reg_extra,
         )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
@@ -2168,6 +2606,57 @@ def main():
                     "summary, so a disabled gate is never silent." % (err, __file__, JUDGE_MODEL),
                 }
             )
+        # v7: the regression verdict is processed BEFORE the stop/continue
+        # verdict, so a settle persists (and a regression block fires) even
+        # when the judge would also say continue for other reasons.
+        if reg_signals:
+            kind, payload, detail = apply_regression_verdict(
+                verdict.get("regression_gate"), reg_scripts, reg_root,
+                reg_state, reg_sig, lines, (session_id or "unknown")[:8],
+            )
+            save_reggate(reg_marker, reg_state)  # persist gate_runs regardless
+            if kind == "malformed":
+                counter.write_text(str(streak + 1))
+                emit(
+                    {
+                        "systemMessage": "Stop hook: fix landed but the judge "
+                        "returned no usable regression_gate. Blocking, per "
+                        "no-escape-hatch.",
+                        "decision": "block",
+                        "reason": "A fix landed this turn and the judge's answer "
+                        "carried no usable regression_gate object (%s). This is a "
+                        "judge error and it FAILS CLOSED, same as an invalid "
+                        "verdict: a gate that cannot ask its question must not "
+                        "become the way past it. Fix the judge path in %s, or set "
+                        "WORKLIST_JUDGE=off and say so out loud." % (payload, __file__),
+                    }
+                )
+            if kind == "settle":
+                rg = verdict.get("regression_gate") or {}
+                reg_state["fixsets"][reg_sig] = {
+                    "verdict": payload,
+                    "existing_gate": str(rg.get("existing_gate", ""))[:100],
+                    "blind_spot": str(rg.get("blind_spot", ""))[:300],
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    ),
+                }
+                reg_state["head"] = reg_head or reg_state["head"]
+                reg_state["seen_ticks"] = sorted(
+                    set(reg_state["seen_ticks"]) | set(reg_new_ticks)
+                )
+                save_reggate(reg_marker, reg_state)
+                reg_settled = (payload, detail)
+            if kind == "block":
+                counter.write_text(str(streak + 1))
+                emit(
+                    {
+                        "systemMessage": "Stop hook: a fix landed with no "
+                        "regression gate (fix-set %s). Blocking." % reg_sig[:8],
+                        "decision": "block",
+                        "reason": payload,
+                    }
+                )
         judged_ok = verdict["verdict"] == "stop"
         if verdict["verdict"] == "continue":
             counter.write_text(str(streak + 1))
@@ -2242,6 +2731,16 @@ def main():
             parts.append(
                 "Requests ESCALATED to operator-visible [?] items (nobody left to block):\n"
                 + "\n".join("  " + e for e in req_escalated)
+            )
+        if reg_settled:
+            parts.append(
+                "Regression gate: fix-set %s settled as %s (%s); it will not be asked again."
+                % (reg_sig[:8], reg_settled[0], (reg_settled[1] or "")[:160])
+            )
+        if reg_forgot:
+            parts.append(
+                "Regression marker was corrupt and has been re-initialised; previously "
+                "settled verdicts were forgotten, so an old fix-set may be asked once more."
             )
         if others:
             # Reported, never blocked on. Blocking one session on another's
