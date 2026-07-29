@@ -693,6 +693,43 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt):
     return max(counts), fired, why
 
 
+CITE_RE = re.compile(
+    r"\b([\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|md|ya?ml|go|toml))"
+    r":(\d+)(?:-\d+)?\b"
+)
+
+
+def citation_state(root, text):
+    """(ok, detail) -- does this line cite a source that REALLY says so?
+
+    The Wave C failure was a blocker nobody had verified: "blocked on Wave B
+    landing", when 05-execution-guide.md:108 says the opposite in plain words.
+    Nothing in the hook challenged it, because the shape of the report was
+    valid and only its content was wrong.
+
+    Requiring a <path>:<line> is not bureaucracy, it is a FORCING FUNCTION:
+    producing the citation means opening the file, and opening that file is the
+    exact moment the claim collapses. So the check is deliberately cheap and
+    deliberately not clever. It proves the file exists and the line is real,
+    nothing more. Whether the cited text actually SUPPORTS the claim is the
+    judge's question, and the citation is what lets the judge read it.
+    """
+    m = CITE_RE.search(text or "")
+    if not m:
+        return False, "carries no <path>:<line> citation"
+    rel, line = m.group(1), int(m.group(2))
+    p = pathlib.Path(root) / rel
+    if not p.is_file():
+        return False, "cites %s, which does not exist" % rel
+    try:
+        n = len(p.read_text(errors="replace").splitlines())
+    except OSError:
+        return False, "cites %s, which cannot be read" % rel
+    if line > n:
+        return False, "cites %s:%d but that file has only %d lines" % (rel, line, n)
+    return True, "%s:%d" % (rel, line)
+
+
 def cron_memory(worklist, session_id, live_count):
     """(died, remembered_max) -- was a loop running before that is gone now?
 
@@ -1417,7 +1454,7 @@ def main():
     # must also AGREE with the harness, which is the list they see in their app.
     state_re = re.compile(r"\b(ongoing|in progress|in-progress|pending|blocked|parked)\b", re.I)
     ONGOING = {"ongoing", "in progress", "in-progress"}
-    unstated, mislabelled = [], []
+    unstated, mislabelled, uncited = [], [], []
     if REMAINING_HEADING.search(last_msg or ""):
         section = (last_msg or "")[REMAINING_HEADING.search(last_msg).start():]
         for tid, _sub, status in tasks:
@@ -1432,6 +1469,20 @@ def main():
                 unstated.append(tid)
                 continue
             word = found.group(1).lower()
+            # A BLOCKER IS A CLAIM ABOUT REALITY, SO IT NEEDS A SOURCE.
+            # Scoped deliberately narrow. Exempt anything already backed by
+            # machinery this hook can SEE: a running background task or a live
+            # lease means there is a real, named object being waited on, and
+            # "blocked on the operator" has its own check above. What survives
+            # the filter is exactly the Wave C class: a prose blocker naming a
+            # phase of this project, which is the one shape nobody can check.
+            if word in ("blocked", "parked") and not live_bg and not in_flight:
+                if not re.search(r"\byou\b", line, re.I):
+                    ok, detail = citation_state(
+                        project_root(event.get("cwd") or os.getcwd()), line
+                    )
+                    if not ok:
+                        uncited.append("#%s %s" % (tid, detail))
             if status == "in_progress" and word not in ONGOING:
                 mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
             elif status == "pending" and word in ONGOING:
@@ -1446,6 +1497,18 @@ def main():
     # cannot survive being written about is too broad. A real list leads a line,
     # optionally behind markdown emphasis or a heading marker; a mention sits
     # mid-sentence or inside quotes or backticks, none of which match here.
+    if uncited:
+        violations.append(
+            "a blocker is a CLAIM ABOUT REALITY and these carry no source:\n%s\n"
+            "This is the Wave C failure exactly: the report said 'blocked on Wave B "
+            "landing' while 05-execution-guide.md:108 said it lands with every stage "
+            "flag off, and nothing challenged it because the SHAPE was valid and only "
+            "the CONTENT was wrong. Cite the line that blocks you as <path>:<line>, or "
+            "if you cannot find one, that is your answer: it is not blocked, so go do "
+            "it. Waiting on something real (a run, an agent) belongs in a [>] lease or "
+            "a background task instead, which this check already exempts."
+            % "\n".join("    " + u for u in uncited)
+        )
     if re.search(r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b", last_msg or "", re.I | re.M):
         violations.append(
             "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
