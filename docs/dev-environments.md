@@ -92,7 +92,7 @@ Dev builds of renet are compiled with the `nolicense` tag by default (no enforce
 To reproduce license-flow bugs locally, rebuild with enforcement:
 
 ```bash
-ACCOUNT_ED25519_PUBLIC_KEY="$(curl -s https://www.rediacc.com/api/public/account-key)" \
+ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)" \
 RDC_RENET_LICENSE=1 ./rdc.sh --config <name> ...
 ```
 
