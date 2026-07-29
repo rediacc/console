@@ -156,7 +156,80 @@ be: that script builds a dev binary for jobs that never receive this tag
 45-minute rebuild on every harmless edit. The exclusion and its reason are now
 recorded at `generate-tag.sh:105-112`.
 
-## Wave C: unblocked, not started
+## Wave C: LANDED, dark
+
+Both halves are on `0728-2` and the workflow is **inert**: all six stage flags
+are repo variables (`AUTOPILOT_ENABLED`, `ALLOW_STATE`, `ALLOW_FINISH`, `MODEL`,
+`ALLOW_PUSH`, `ALLOW_SUBMODULES`) and none of them exist, so absent means off.
+Enabling a stage still waits for Wave B on real traffic; that was always a
+separate event from landing, and conflating the two parked this wave for a day.
+
+**Harness** `b5c2e8f90`, `.ci/scripts/autopilot/`, 1509 lines plus 972 of test.
+**Workflow** `ad058d085`, `.github/workflows/autopilot.yml` (486 lines), its
+invariants gate (172) and that gate's test (146).
+
+Both non-negotiables are STRUCTURAL, not documented:
+
+- **The model never holds a write token.** In the file: the first app-token mint
+  is at `autopilot.yml:360`, after `claude-code-action` at `:318`. The gate job
+  can never mint one at all, and both facts are mutation-tested.
+- **Wall 4.** Every checkout carries `persist-credentials: false` (five sites),
+  the first checkout of every job is pinned to `rediacc/console@main`, and the
+  restore/assert pair runs live around the PR-head checkout. Its control fires
+  in the direction that matters: it detects the tampered config when restore is
+  NOT run.
+
+**The invariants gate mutates the LIVE workflow, not a frozen fixture**, so its
+proofs cannot rot as the workflow changes. Eight failure-direction cases, each
+with an `assert_mutated` guard so a drifted workflow fails loudly instead of
+silently testing nothing.
+
+**Both defects found while landing this were in the CHECKING side and in the
+cry-wolf direction**, which is the dangerous one: the gate judged a checkout's
+`with:` block by the `uses:` indent and so fired on a correct `- name:` step,
+and the test asserted a success line on stdout while `log_info` writes to
+stderr. A gate that cries wolf on a correct tree is worse than an absent one,
+because it teaches everyone to ignore it.
+
+Not verified, and only S1 shadow can: `workflow_run` delivery, artifact handoff
+between jobs, app-token minting, and the action's behaviour under this prompt
+shape. The workflow cannot be tested pre-merge (`03-v2-autonomy.md` section 8).
+
+## Three regression gates added, from defects found this session
+
+The operator's standing rule is that a fix without a mechanism is how the same
+bug returns. Each of these came from a real defect found tonight:
+
+- **`check-gate-reachability.ts`** (`e91cfad58`): fails when a `check:ci-*` gate
+  is defined but never run. `check-ci-chain-parity.ts` cannot catch it, by
+  design: it enforces only that gates a WORKFLOW names are reachable, never the
+  reverse. Reachability is TRANSITIVE and a substring test over `scripts.ci` is
+  wrong; that error produced two false dead-gate reports before the walk
+  replaced it, and is now a control assertion.
+- **`check-jq-boolean-default.ts`** (`9a7e7edf8`): jq's `//` treats false as
+  empty, so `.draft // true` is true whenever draft is absent OR false. The live
+  instance made a NON-draft PR read as a draft, so the autopilot could never
+  conclude a PR was done. `// false` is deliberately not flagged, because that
+  direction cannot invert and flagging it would make the gate noise.
+- **The cross-locale gate's dead fire-proof** (`b424900ff`): it shipped with a
+  planted-defect selftest behind a `--selftest` flag that NOTHING invoked, so
+  the gate sat in the `ci` chain with its only proof dead. The control now runs
+  inline, which turns "did the control fire" into "did the gate exit 0".
+
+The anti-vacuity registry earned its keep twice here: it caught the jq gate
+CRASHING on an empty tree instead of refusing, and it caught a registry entry of
+mine using a basename where `.sh` entries are repo-root-relative.
+
+## The Stop hook now enforces the regression rule itself
+
+`1a45b061a`. On a stop where a fix landed, the judge is asked what property of
+the defect made every existing check blind to it, and is handed the REAL
+`check:ci-*` key list so a claimed gate name is verifiable and a hallucinated
+one fails closed. It blocks only on recurring AND ungated AND unproven AND
+undeferred. Also `0a84216a9`: cross-session requests, because a finding written
+into a commit message reached nobody and the operator had to relay it by hand.
+
+## Wave C: the App, validated earlier
 
 **The `rediacc-autopilot` App EXISTS and is validated.** app_id `4409539`,
 installation `149445627`. It holds **no bypass** on console ruleset `12344707`
