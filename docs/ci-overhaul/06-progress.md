@@ -95,6 +95,30 @@ Shadow evidence from that run, recorded verbatim rather than summarised:
   touches `.ci/`, so it is fail-closed to full mode and can never produce a
   non-vacuous reconcile; that prediction is now live-verified, not inferred.
 
+**THE BASELINE WAS NEVER ONE FLAG AWAY. It was one NUMBER away.** Round 23's
+reading, that only `plan.reconciled` was missing, was true of that run and
+became the wrong thing to chase. On run `30478917957` the walk rejected all five
+candidates with `not-green`, and the genuinely green commit `2469e5d72` (run
+`30472960194`, 95 jobs, zero failed) sat **seven** steps back, one row past
+`DEFAULT_CANDIDATE_LIMIT = 5`. A baseline that exists but cannot be reached
+reads identically to one that does not exist.
+
+The old value's stated reason was that "the headline case is satisfied by the
+FIRST candidate (the commit immediately before this push)". That is false on the
+branch this engine was built to serve: a babysat PR accumulates a run of red and
+superseded commits between greens, so the nearest green ancestor is never the
+first candidate. The limit is now 20. Walking further can only find an OLDER
+baseline, hence a BIGGER net delta and MORE jobs, so overshooting is safe and
+undershooting is not.
+
+**And no test could have caught it, which is the more important finding.** The
+fixture's `rev-list` mock returned every candidate regardless of `--max-count`,
+so walk depth was invisible to the whole suite. The mock now truncates like the
+real command, and case (m) pins the behaviour with a control: a chain whose only
+green ancestor sits at depth 7 must be UNREACHABLE at limit 5 and REACHED at the
+engine default. Without the control half, the case would pass on a fixture that
+proves nothing.
+
 **D5 has a live receipt.** `web-27a7cd16729b` and `rdc-334c6306793e` are now
 distinct where `RDC_TAG` was literally assigned `"$WEB_TAG"`. Changing
 `--extra` (the renet tag) changes the web tag, which closes the most likely

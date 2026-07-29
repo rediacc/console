@@ -148,7 +148,15 @@ function makeRun(f, calls) {
       }
       if (a[0] === 'rev-list') {
         calls.push('git rev-list');
-        return `${[f.head, ...f.candidates].join('\n')}\n`;
+        // HONOUR --max-count. This mock used to return every candidate whatever
+        // the caller asked for, so the walk depth was invisible to the entire
+        // suite and a too-small DEFAULT_CANDIDATE_LIMIT could never be caught.
+        // Real rev-list truncates; a fixture that does not is not a model of it.
+        const cap = a.map((x) => /^--max-count=(\d+)$/.exec(String(x)))
+          .filter(Boolean)
+          .map((m) => Number(m[1]))[0];
+        const all = [f.head, ...f.candidates];
+        return `${(cap ? all.slice(0, cap) : all).join('\n')}\n`;
       }
       if (a[0] === 'rev-parse') {
         calls.push('git first-parent');
@@ -211,7 +219,14 @@ const io = engine.createRepoIo({
   run: makeRun(f, calls),
 });
 const result = engine.resolveBaseline(
-  { head: f.head, mergeSha: f.mergeSha, limit: 5, workflowClosure: new Set() },
+  {
+    head: f.head,
+    mergeSha: f.mergeSha,
+    // Default 5 unless the case asks for the ENGINE's default, which is what the
+    // walk-depth control needs to exercise.
+    limit: process.env.USE_ENGINE_DEFAULT_LIMIT ? undefined : 5,
+    workflowClosure: new Set(),
+  },
   io,
 );
 process.stdout.write(
@@ -506,6 +521,27 @@ process.stdout.write(String(s.planned));
     log_pass "(l) the fixture's shape is asserted: the silences above are over real coverage"
 }
 
+test_walk_depth_reaches_a_realistic_green() {
+    # (m) THE WALK DEPTH IS PART OF CORRECTNESS, not just latency. Measured on
+    # run 30478917957: five candidates all answered `not-green` while the real
+    # green commit 2469e5d72 sat SEVEN steps back, one row past the old cap of
+    # 5. A baseline that exists but cannot be reached reads exactly like a
+    # baseline that does not exist, so this pins the depth with a fixture whose
+    # only green ancestor is deliberately out of reach of the old value.
+    local chain='f.candidates = ["C1","C2","C3","C4","C5","C6","C7"];
+        ["C1","C2","C3","C4","C5","C6"].forEach(function (c) {
+            f.runs[c] = [{ databaseId: 900, status: "completed", conclusion: "failure" }];
+        });
+        f.runs.C7 = [{ databaseId: 1001, status: "completed", conclusion: "success" }];'
+    # CONTROL FIRST: with the OLD cap of 5, this fixture must NOT find it. If it
+    # did, the case would prove nothing about depth.
+    assert_eq "$(drive "$chain")" "0" "a seven-deep chain answers under the old cap"
+    assert_eq "$(rget 'r.baselineRunId')" "null" "CONTROL: at limit 5 the green ancestor at depth 7 is unreachable"
+    # Now the engine's own default, which is the thing under test.
+    assert_eq "$(USE_ENGINE_DEFAULT_LIMIT=1 drive "$chain")" "0" "the same chain answers at the engine default"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" "and the default walk REACHES the green ancestor at depth 7"
+}
+
 log_test "test-scope-baseline-attest"
 test_control_green_full_attested_baseline
 test_planted_invisible_cell_refuses_baseline
@@ -520,6 +556,7 @@ test_red_run_costs_nothing
 test_second_green_run_on_the_same_sha_is_found
 test_multi_page_jobs_payload_is_merged
 test_fixture_shape_is_asserted_not_assumed
+test_walk_depth_reaches_a_realistic_green
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"
