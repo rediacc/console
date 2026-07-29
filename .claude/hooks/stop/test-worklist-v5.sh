@@ -776,6 +776,77 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 56. THE WAVE C REPLAY: an uncited prose blocker blocks =="
+setup
+brief_now
+hand_now
+# The exact line that started this, verbatim in shape.
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked on Wave B landing |"
+task 12 pending "Wave C autopilot"
+check "an uncited blocker blocks" block "carries no <path>:<line> citation"
+
+echo "== 57. citing a REAL line clears it =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/proj/docs"
+printf 'a\nb\nc\nd\ne\n' >"$BASE/proj/docs/guide.md"
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked, docs/guide.md:3 |"
+task 12 pending "Wave C autopilot"
+check "a citation that resolves is accepted" allow ""
+
+echo "== 58. CONTROL: a citation past end-of-file is NOT accepted =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/proj/docs"
+printf 'a\nb\nc\nd\ne\n' >"$BASE/proj/docs/guide.md"
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked, docs/guide.md:900 |"
+task 12 pending "Wave C autopilot"
+check "a fabricated line number is caught" block "has only 5 lines"
+
+echo "== 59. CONTROL: a citation to a file that does not exist is NOT accepted =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked, docs/nope.md:3 |"
+task 12 pending "Wave C autopilot"
+check "an invented path is caught" block "which does not exist"
+
+echo "== 60. a live background task exempts the citation requirement =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked on the agent |"
+task 12 pending "Wave C autopilot"
+BG='"'"'[{"status":"running","description":"agent"}]'"'"' check "real machinery needs no prose citation" allow ""
+
+echo "== 61. 'blocked on you' keeps its own check, not this one =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #12 | Wave C autopilot | blocked, You (User Thinks So) |"
+task 12 pending "Wave C autopilot"
+check "an operator blocker is not asked for a file citation" allow ""
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
