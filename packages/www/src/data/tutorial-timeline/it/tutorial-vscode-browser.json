@@ -2,11 +2,11 @@
   "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
   "language": "it",
   "version": 1,
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
   "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "cebc3398c951",
   "transcriptHash": "31786d928b4c8655b20d5e4240892152780b9568f43abbc9580c11d1d4504817",
   "steps": [
     {
@@ -15,9 +15,9 @@
       "replayStartSec": 2.418779,
       "replayEndSec": 10.10448,
       "narrationText": "Un solo comando. La CLI installa il server dell'editor sulla macchina una volta sola, lo avvia dentro il sandbox del repo, apre un tunnel e ti consegna un link. Niente VS Code locale, niente estensioni da configurare.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-01.91bd0a1a.mp3",
-      "textHash": "91bd0a1a3543f7b453a7efc43bd148c8750b50fc70f4eff5738911973fc518f5",
-      "audioDurationSec": 13.714286,
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-01.03ae13f1.mp3",
+      "textHash": "03ae13f12196a0429c0d9d71b6f49765a82e078c6f0845421730b31a3827d96d",
+      "audioDurationSec": 12.024,
       "wordTimings": [
         {
           "startSec": 0.0,
@@ -27,282 +27,264 @@
         },
         {
           "startSec": 0.16,
-          "endSec": 0.48,
+          "endSec": 0.4,
           "startChar": 3,
           "endChar": 7
         },
         {
-          "startSec": 0.48,
-          "endSec": 1.12,
+          "startSec": 0.4,
+          "endSec": 1.2,
           "startChar": 8,
           "endChar": 15
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.28,
-          "startChar": 17,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.68,
-          "startChar": 30,
+          "startSec": 2.0,
+          "endSec": 2.32,
+          "startChar": 24,
           "endChar": 32
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.8,
+          "startSec": 2.32,
+          "endSec": 2.4,
           "startChar": 33,
           "endChar": 35
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.12,
+          "startSec": 2.4,
+          "endSec": 2.72,
           "startChar": 36,
           "endChar": 42
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.68,
+          "startSec": 2.72,
+          "endSec": 3.2,
           "startChar": 43,
           "endChar": 54
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.0,
+          "startSec": 3.2,
+          "endSec": 3.44,
           "startChar": 55,
           "endChar": 60
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.48,
+          "startSec": 3.44,
+          "endSec": 3.84,
           "startChar": 61,
           "endChar": 69
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.28,
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 70,
+          "endChar": 73
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
           "startChar": 74,
           "endChar": 79
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.52,
+          "startSec": 4.24,
+          "endSec": 4.48,
           "startChar": 80,
           "endChar": 84
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.92,
+          "startSec": 4.48,
+          "endSec": 4.88,
           "startChar": 86,
           "endChar": 88
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.4,
+          "startSec": 4.88,
+          "endSec": 5.04,
           "startChar": 89,
           "endChar": 94
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.64,
+          "startSec": 5.04,
+          "endSec": 5.36,
           "startChar": 95,
           "endChar": 101
         },
         {
-          "startSec": 6.64,
-          "endSec": 6.72,
-          "startChar": 102,
-          "endChar": 104
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.2,
+          "startSec": 5.36,
+          "endSec": 5.84,
           "startChar": 105,
           "endChar": 112
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.36,
+          "startSec": 5.84,
+          "endSec": 5.92,
           "startChar": 113,
           "endChar": 116
         },
         {
-          "startSec": 7.36,
-          "endSec": 8.08,
+          "startSec": 6.0,
+          "endSec": 6.48,
           "startChar": 117,
           "endChar": 121
         },
         {
-          "startSec": 8.16,
-          "endSec": 8.4,
+          "startSec": 6.56,
+          "endSec": 6.8,
           "startChar": 123,
           "endChar": 127
         },
         {
-          "startSec": 8.4,
-          "endSec": 8.48,
+          "startSec": 6.8,
+          "endSec": 6.88,
           "startChar": 128,
           "endChar": 130
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.88,
+          "startSec": 6.88,
+          "endSec": 7.28,
           "startChar": 131,
           "endChar": 137
         },
         {
-          "startSec": 8.88,
-          "endSec": 8.96,
+          "startSec": 7.44,
+          "endSec": 7.6,
           "startChar": 138,
           "endChar": 139
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.28,
+          "startSec": 7.6,
+          "endSec": 7.68,
+          "startChar": 140,
+          "endChar": 142
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
           "startChar": 143,
           "endChar": 151
         },
         {
-          "startSec": 9.28,
-          "endSec": 9.44,
+          "startSec": 8.08,
+          "endSec": 8.16,
           "startChar": 152,
           "endChar": 154
         },
         {
-          "startSec": 9.44,
-          "endSec": 10.16,
+          "startSec": 8.16,
+          "endSec": 8.96,
           "startChar": 155,
           "endChar": 159
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.48,
+          "startSec": 8.96,
+          "endSec": 9.2,
           "startChar": 161,
           "endChar": 167
         },
         {
-          "startSec": 10.48,
-          "endSec": 10.96,
-          "startChar": 168,
-          "endChar": 170
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.2,
-          "startChar": 171,
-          "endChar": 175
-        },
-        {
-          "startSec": 11.28,
-          "endSec": 12.08,
+          "startSec": 9.68,
+          "endSec": 10.32,
           "startChar": 176,
           "endChar": 182
         },
         {
-          "startSec": 12.16,
-          "endSec": 12.4,
+          "startSec": 10.4,
+          "endSec": 10.64,
           "startChar": 184,
           "endChar": 190
         },
         {
-          "startSec": 12.4,
-          "endSec": 12.88,
+          "startSec": 10.64,
+          "endSec": 11.12,
           "startChar": 191,
           "endChar": 201
         },
         {
-          "startSec": 12.88,
-          "endSec": 12.96,
+          "startSec": 11.12,
+          "endSec": 11.2,
           "startChar": 202,
           "endChar": 204
         },
         {
-          "startSec": 12.96,
-          "endSec": 13.6,
+          "startSec": 11.2,
+          "endSec": 11.92,
           "startChar": 205,
           "endChar": 216
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-01-after.536aadb3.mp3",
-      "afterAudioDurationSec": 7.079184,
-      "afterTextHash": "536aadb36a1685311e0447a981247cea9c53b20ab90487c9a203700a1e6b0569",
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-01-after.1c6fd864.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "1c6fd864a3da181e0a7b9978305b1b47d94b38d79ba4915dfef149dc93e3d493",
       "afterWordTimings": [
         {
-          "startSec": 0.24,
-          "endSec": 0.32,
+          "startSec": 0.8,
+          "endSec": 0.96,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.4,
+          "startSec": 0.96,
+          "endSec": 1.04,
           "startChar": 12,
           "endChar": 14
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.76,
+          "startSec": 1.04,
+          "endSec": 1.12,
           "startChar": 15,
           "endChar": 18
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.32,
+          "startSec": 1.12,
+          "endSec": 1.52,
           "startChar": 19,
           "endChar": 25
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.28,
+          "startSec": 2.08,
+          "endSec": 2.56,
           "startChar": 27,
           "endChar": 35
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.44,
-          "startChar": 36,
-          "endChar": 38
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 4.16,
+          "startSec": 2.56,
+          "endSec": 2.96,
           "startChar": 39,
           "endChar": 48
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.56,
+          "startSec": 2.96,
+          "endSec": 3.36,
           "startChar": 49,
           "endChar": 51
         },
         {
-          "startSec": 4.88,
-          "endSec": 5.28,
+          "startSec": 3.6,
+          "endSec": 3.84,
           "startChar": 53,
           "endChar": 60
         },
         {
-          "startSec": 5.28,
-          "endSec": 6.08,
+          "startSec": 3.84,
+          "endSec": 4.56,
           "startChar": 61,
           "endChar": 70
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.24,
+          "startSec": 4.64,
+          "endSec": 4.72,
           "startChar": 71,
           "endChar": 72
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.48,
+          "startSec": 4.72,
+          "endSec": 4.8,
           "startChar": 73,
           "endChar": 75
         },
         {
-          "startSec": 6.48,
-          "endSec": 6.96,
+          "startSec": 4.8,
+          "endSec": 5.2,
           "startChar": 76,
           "endChar": 83
         }
@@ -314,18 +296,24 @@
       "replayStartSec": 10.10448,
       "replayEndSec": 14.856043,
       "narrationText": "Stesso repo dal terminal semplice: la directory di lavoro è il repo, i file sono i file del repo.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-02.dc951128.mp3",
-      "textHash": "dc9511287ec1048b2d936251ba10f1090b079fe0cd9a8fa1c798c8e334dedd09",
-      "audioDurationSec": 7.967347,
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-02.68e0bc3e.mp3",
+      "textHash": "68e0bc3ea224112f34fd541c7d7fe0e7e0d3db536c73c74212a71d358f82342f",
+      "audioDurationSec": 6.264,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.4,
+          "startSec": 0.56,
+          "endSec": 0.88,
           "startChar": 0,
           "endChar": 6
         },
         {
-          "startSec": 0.96,
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
           "endSec": 1.28,
           "startChar": 12,
           "endChar": 15
@@ -338,96 +326,144 @@
         },
         {
           "startSec": 1.68,
-          "endSec": 2.16,
+          "endSec": 2.64,
           "startChar": 25,
           "endChar": 33
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.72,
+          "startSec": 2.72,
+          "endSec": 2.8,
           "startChar": 35,
           "endChar": 37
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.28,
+          "startSec": 2.8,
+          "endSec": 3.2,
           "startChar": 38,
           "endChar": 47
         },
         {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
           "startSec": 3.36,
-          "endSec": 3.92,
+          "endSec": 3.76,
           "startChar": 51,
           "endChar": 57
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.48,
-          "startChar": 64,
-          "endChar": 65
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 58,
+          "endChar": 59
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.64,
-          "startChar": 72,
-          "endChar": 74
+          "startSec": 3.84,
+          "endSec": 3.92,
+          "startChar": 60,
+          "endChar": 62
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.12,
+          "startSec": 3.92,
+          "endSec": 4.56,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.8,
+          "startChar": 69,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.44,
+          "startChar": 81,
+          "endChar": 82
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 83,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.84,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.16,
           "startChar": 92,
           "endChar": 96
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-02-after.e17d4b35.mp3",
-      "afterAudioDurationSec": 4.989388,
-      "afterTextHash": "e17d4b3511155eb79d8a66df39b0527f0a784fd781825ff6542ba28de21e1c97",
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-02-after.e8a44250.mp3",
+      "afterAudioDurationSec": 3.552,
+      "afterTextHash": "e8a44250a8e8c5560bfc28d154592f4d7d39a009e2287d16d0262c6914327956",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.32,
+          "startSec": 0.0,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.88,
+          "startSec": 0.16,
+          "endSec": 0.8,
           "startChar": 3,
           "endChar": 11
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.68,
-          "startChar": 16,
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 14,
           "endChar": 22
         },
         {
-          "startSec": 1.68,
-          "endSec": 3.12,
+          "startSec": 1.2,
+          "endSec": 2.0,
           "startChar": 23,
           "endChar": 33
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.36,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 35,
           "endChar": 36
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.52,
+          "startSec": 2.24,
+          "endSec": 2.4,
           "startChar": 37,
           "endChar": 39
         },
         {
-          "startSec": 3.52,
-          "endSec": 4.08,
+          "startSec": 2.4,
+          "endSec": 2.72,
           "startChar": 40,
           "endChar": 46
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.88,
+          "startSec": 2.72,
+          "endSec": 3.44,
           "startChar": 47,
           "endChar": 54
         }
@@ -439,156 +475,162 @@
       "replayStartSec": 14.856043,
       "replayEndSec": 19.933198,
       "narrationText": "E il file che abbiamo creato nell'editor del browser? Eccolo qui. I file creati in VS Code sono veri file del repo, all'istante.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-03.c28ee9d9.mp3",
-      "textHash": "c28ee9d99f3c25766f24177eb5c8e587f83993949c7cf0b3a7cf7f6a78fdbbd3",
-      "audioDurationSec": 10.109388,
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-03.91b9525c.mp3",
+      "textHash": "91b9525c4ef43fb970b23a514b0e2f7cb5e1e4dc844c6fd26af6df5a85ca6770",
+      "audioDurationSec": 7.56,
       "wordTimings": [
         {
-          "startSec": 0.0,
-          "endSec": 0.32,
+          "startSec": 0.08,
+          "endSec": 0.16,
           "startChar": 2,
           "endChar": 4
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.72,
+          "startSec": 0.16,
+          "endSec": 0.4,
           "startChar": 5,
           "endChar": 9
         },
         {
-          "startSec": 0.72,
-          "endSec": 0.8,
+          "startSec": 0.4,
+          "endSec": 0.48,
           "startChar": 10,
           "endChar": 13
         },
         {
-          "startSec": 0.8,
-          "endSec": 1.2,
+          "startSec": 0.48,
+          "endSec": 0.8,
           "startChar": 14,
           "endChar": 21
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.68,
+          "startSec": 0.8,
+          "endSec": 1.12,
           "startChar": 22,
           "endChar": 28
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.92,
+          "startSec": 1.12,
+          "endSec": 1.68,
           "startChar": 29,
-          "endChar": 32
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.56,
-          "startChar": 34,
           "endChar": 40
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.88,
+          "startSec": 1.68,
+          "endSec": 1.84,
           "startChar": 41,
           "endChar": 44
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.36,
+          "startSec": 1.84,
+          "endSec": 2.24,
           "startChar": 45,
           "endChar": 52
         },
         {
-          "startSec": 3.76,
-          "endSec": 4.08,
+          "startSec": 2.64,
+          "endSec": 2.96,
           "startChar": 54,
           "endChar": 60
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.24,
+          "startSec": 2.96,
+          "endSec": 3.12,
           "startChar": 61,
           "endChar": 64
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.32,
+          "startSec": 3.12,
+          "endSec": 3.84,
           "startChar": 66,
           "endChar": 67
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.68,
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
           "startChar": 73,
           "endChar": 79
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.08,
+          "startSec": 4.48,
+          "endSec": 4.56,
           "startChar": 80,
           "endChar": 82
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.72,
+          "startSec": 4.56,
+          "endSec": 4.88,
           "startChar": 83,
           "endChar": 85
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.36,
+          "startSec": 4.88,
+          "endSec": 5.12,
           "startChar": 86,
           "endChar": 90
         },
         {
-          "startSec": 7.36,
-          "endSec": 7.76,
+          "startSec": 5.12,
+          "endSec": 5.44,
           "startChar": 91,
           "endChar": 95
         },
         {
-          "startSec": 7.76,
-          "endSec": 7.92,
+          "startSec": 5.44,
+          "endSec": 5.6,
           "startChar": 96,
           "endChar": 100
         },
         {
-          "startSec": 7.92,
-          "endSec": 8.24,
+          "startSec": 5.76,
+          "endSec": 6.0,
           "startChar": 101,
           "endChar": 105
         },
         {
-          "startSec": 8.48,
-          "endSec": 9.28,
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 106,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.72,
           "startChar": 110,
           "endChar": 114
         },
         {
-          "startSec": 9.44,
-          "endSec": 10.0,
+          "startSec": 6.88,
+          "endSec": 7.52,
           "startChar": 116,
           "endChar": 127
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-03-after.b1332012.mp3",
-      "afterAudioDurationSec": 5.146122,
-      "afterTextHash": "b13320124a8de6b121f5f066f83d15139012505cde32d329a1e01f621bccf810",
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-03-after.db6bfc39.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "db6bfc39921874c2cb7da2ba1b35e1f8f23a788aa162ca07caf96e5adbd649fd",
       "afterWordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.32,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 6
         },
         {
-          "startSec": 0.4,
+          "startSec": 0.48,
           "endSec": 0.64,
           "startChar": 7,
           "endChar": 10
         },
         {
           "startSec": 0.64,
-          "endSec": 1.2,
+          "endSec": 1.12,
           "startChar": 11,
           "endChar": 18
         },
@@ -599,46 +641,46 @@
           "endChar": 29
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.24,
+          "startSec": 1.84,
+          "endSec": 2.0,
           "startChar": 30,
           "endChar": 33
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.72,
+          "startSec": 2.0,
+          "endSec": 2.4,
           "startChar": 34,
           "endChar": 42
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.44,
+          "startSec": 2.72,
+          "endSec": 2.8,
           "startChar": 44,
           "endChar": 46
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.68,
+          "startSec": 2.8,
+          "endSec": 3.12,
           "startChar": 47,
           "endChar": 51
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.08,
+          "startSec": 3.12,
+          "endSec": 3.6,
           "startChar": 52,
           "endChar": 56
         },
         {
-          "startSec": 4.64,
-          "endSec": 4.72,
+          "startSec": 3.68,
+          "endSec": 3.84,
           "startChar": 58,
           "endChar": 61
         },
         {
-          "startSec": 4.72,
-          "endSec": 5.04,
+          "startSec": 3.84,
+          "endSec": 4.4,
           "startChar": 62,
-          "endChar": 66
+          "endChar": 67
         }
       ]
     },
@@ -648,180 +690,192 @@
       "replayStartSec": 19.933198,
       "replayEndSec": 23.377274,
       "narrationText": "Ora prova a uscire. Elenca la root del server: permission denied. Il kernel confina l'editor, il suo terminal e ogni processo figlio dentro questo repo.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-04.0f5f67a0.mp3",
-      "textHash": "0f5f67a097545b489d48ea229a3d1da33e3dba9207cc753883cf33d948e8d166",
-      "audioDurationSec": 11.72898,
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-04.8dfa0916.mp3",
+      "textHash": "8dfa0916bce040a7a7ff2c26e4513cebdbb79698c8b54b0213217a64c89f1d80",
+      "audioDurationSec": 9.792,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.32,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.88,
+          "startSec": 0.24,
+          "endSec": 0.56,
           "startChar": 4,
           "endChar": 9
         },
         {
-          "startSec": 0.88,
-          "endSec": 1.04,
-          "startChar": 10,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.68,
+          "startSec": 0.56,
+          "endSec": 1.36,
           "startChar": 12,
           "endChar": 18
         },
         {
-          "startSec": 2.16,
-          "endSec": 2.56,
+          "startSec": 1.44,
+          "endSec": 1.76,
           "startChar": 20,
           "endChar": 26
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.8,
+          "startSec": 1.76,
+          "endSec": 1.92,
           "startChar": 27,
           "endChar": 29
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.28,
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.24,
           "startChar": 35,
           "endChar": 38
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.84,
+          "startSec": 2.24,
+          "endSec": 3.12,
           "startChar": 39,
           "endChar": 45
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.64,
+          "startSec": 3.2,
+          "endSec": 3.68,
           "startChar": 47,
           "endChar": 57
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.12,
+          "startSec": 3.68,
+          "endSec": 3.84,
           "startChar": 58,
           "endChar": 64
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.6,
+          "startSec": 5.04,
+          "endSec": 5.12,
           "startChar": 66,
           "endChar": 68
         },
         {
-          "startSec": 5.6,
-          "endSec": 6.08,
+          "startSec": 5.12,
+          "endSec": 5.6,
           "startChar": 69,
           "endChar": 75
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.64,
+          "startSec": 5.6,
+          "endSec": 5.92,
           "startChar": 76,
           "endChar": 83
         },
         {
-          "startSec": 6.64,
-          "endSec": 7.2,
+          "startSec": 5.92,
+          "endSec": 6.32,
           "startChar": 84,
           "endChar": 92
         },
         {
-          "startSec": 7.52,
-          "endSec": 7.6,
+          "startSec": 6.72,
+          "endSec": 6.8,
           "startChar": 94,
           "endChar": 96
         },
         {
-          "startSec": 7.6,
-          "endSec": 7.84,
+          "startSec": 6.8,
+          "endSec": 6.96,
           "startChar": 97,
           "endChar": 100
         },
         {
-          "startSec": 7.92,
-          "endSec": 8.4,
+          "startSec": 6.96,
+          "endSec": 7.36,
           "startChar": 101,
           "endChar": 109
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.68,
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 110,
+          "endChar": 111
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.92,
+          "startChar": 112,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
           "startChar": 117,
           "endChar": 125
         },
         {
-          "startSec": 9.68,
-          "endSec": 10.16,
+          "startSec": 8.4,
+          "endSec": 8.72,
           "startChar": 126,
           "endChar": 132
         },
         {
-          "startSec": 10.16,
-          "endSec": 10.72,
+          "startSec": 8.72,
+          "endSec": 8.96,
           "startChar": 133,
           "endChar": 139
         },
         {
-          "startSec": 10.72,
-          "endSec": 11.12,
+          "startSec": 8.96,
+          "endSec": 9.28,
           "startChar": 140,
           "endChar": 146
         },
         {
-          "startSec": 11.12,
-          "endSec": 11.6,
+          "startSec": 9.28,
+          "endSec": 9.6,
           "startChar": 147,
           "endChar": 151
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-04-after.49aa962d.mp3",
-      "afterAudioDurationSec": 3.082449,
-      "afterTextHash": "49aa962de3d52189a69f337c5493a460ff5c97b9a9140ed9431ac983f55040f1",
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-04-after.dedf0006.mp3",
+      "afterAudioDurationSec": 2.592,
+      "afterTextHash": "dedf00069ed2afc5728bdcbf8c43378afa794fe3b8861b9ad15b4b7152253bde",
       "afterWordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.56,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 6
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.8,
+          "startSec": 0.32,
+          "endSec": 0.56,
           "startChar": 7,
           "endChar": 10
         },
         {
-          "startSec": 0.8,
-          "endSec": 1.28,
+          "startSec": 0.56,
+          "endSec": 0.88,
           "startChar": 11,
           "endChar": 17
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.76,
+          "startSec": 1.28,
+          "endSec": 1.44,
           "startChar": 19,
           "endChar": 22
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.0,
+          "startSec": 1.44,
+          "endSec": 1.6,
           "startChar": 23,
           "endChar": 28
         },
         {
-          "startSec": 2.0,
-          "endSec": 3.04,
+          "startSec": 1.6,
+          "endSec": 2.48,
           "startChar": 29,
           "endChar": 43
         }
@@ -833,161 +887,167 @@
       "replayStartSec": 23.377274,
       "replayEndSec": 26.980129,
       "narrationText": "Le home degli altri utenti? Negate anche quelle. Qualsiasi cosa giri dentro questo sandbox, editor, terminal, strumenti di build, si ferma ai confini del repo.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-05.f07058c1.mp3",
-      "textHash": "f07058c137f1606c8be59404836005685039e4f54f40e42ed6e44c7a2d510509",
-      "audioDurationSec": 11.650612,
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-05.3089b1a1.mp3",
+      "textHash": "3089b1a1928f67899d56491f031cf5d9dad608775d3bdbad1bb51012f61850e4",
+      "audioDurationSec": 9.96,
       "wordTimings": [
         {
-          "startSec": 1.36,
-          "endSec": 1.52,
-          "startChar": 8,
-          "endChar": 13
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.84,
-          "startChar": 14,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.32,
-          "startChar": 20,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 3.04,
-          "startChar": 28,
-          "endChar": 34
-        },
-        {
-          "startSec": 3.12,
-          "endSec": 3.36,
-          "startChar": 35,
-          "endChar": 40
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.76,
-          "startChar": 41,
-          "endChar": 47
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.56,
-          "startChar": 49,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.96,
-          "startChar": 59,
-          "endChar": 63
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.28,
-          "startChar": 64,
-          "endChar": 68
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.6,
-          "startChar": 69,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 5.92,
-          "startChar": 76,
-          "endChar": 82
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.72,
-          "startChar": 83,
-          "endChar": 90
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.36,
-          "startChar": 92,
-          "endChar": 98
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.24,
-          "startChar": 100,
-          "endChar": 108
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.2,
-          "startChar": 110,
-          "endChar": 119
-        },
-        {
-          "startSec": 9.2,
-          "endSec": 9.28,
-          "startChar": 120,
-          "endChar": 122
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.6,
-          "startChar": 123,
-          "endChar": 128
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.0,
-          "startChar": 130,
-          "endChar": 132
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.4,
-          "startChar": 133,
-          "endChar": 138
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.48,
-          "startChar": 139,
-          "endChar": 141
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 11.04,
-          "startChar": 142,
-          "endChar": 149
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.2,
-          "startChar": 150,
-          "endChar": 153
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 11.52,
-          "startChar": 154,
-          "endChar": 158
-        }
-      ],
-      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-05-after.23dd7bfe.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "23dd7bfe958e21ed2e428a3a9b0a258cb50a608cf86782f78aedc4f7a5374389",
-      "afterWordTimings": [
-        {
           "startSec": 0.0,
-          "endSec": 0.24,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.24,
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 28,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 49,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 64,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 69,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 76,
+          "endChar": 82
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.76,
+          "startChar": 83,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 92,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.04,
+          "startChar": 100,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.76,
+          "startChar": 110,
+          "endChar": 119
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 120,
+          "endChar": 122
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 123,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 130,
+          "endChar": 132
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.04,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 142,
+          "endChar": 149
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.52,
+          "startChar": 150,
+          "endChar": 153
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 154,
+          "endChar": 158
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/tutorial-vscode-browser-05-after.b238b45d.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "b238b45d9e6b5d337d712c29b2f7f36e0f4c38c4235687fecca805c143465e1f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
           "endSec": 0.88,
           "startChar": 3,
           "endChar": 10
@@ -1006,31 +1066,25 @@
         },
         {
           "startSec": 1.12,
-          "endSec": 1.76,
+          "endSec": 1.68,
           "startChar": 18,
           "endChar": 27
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.72,
+          "startSec": 2.08,
+          "endSec": 2.4,
           "startChar": 29,
           "endChar": 35
         },
         {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 36,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.04,
+          "startSec": 2.4,
+          "endSec": 2.48,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.52,
+          "startSec": 2.48,
+          "endSec": 3.04,
           "startChar": 41,
           "endChar": 46
         }
@@ -1040,182 +1094,194 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "ebbea26d1be97bd32721cf0b1c8335a2ac2c7f87d2c6d439db77f2bbdd1929cc",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/intro.ebbea26d.mp3",
+      "textHash": "4707ebe076dd3750b3c3b3ca628ad4371c69f27ab2461c91b51f3e3f14397b80",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/intro.4707ebe0.mp3",
       "narrationText": "Buone notizie: per questo non serve il terminal! Apriremo un VS Code completo direttamente nel browser, creeremo alcuni file, eseguiremo qualche comando e vedremo il kernel tenere tutto dentro il repo.",
-      "audioDurationSec": 14.367347,
+      "audioDurationSec": 11.232,
       "wordTimings": [
         {
-          "startSec": 0.56,
-          "endSec": 1.12,
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.2,
           "startChar": 6,
           "endChar": 13
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.52,
+          "startSec": 1.2,
+          "endSec": 1.36,
           "startChar": 15,
           "endChar": 18
         },
         {
-          "startSec": 1.52,
-          "endSec": 2.08,
+          "startSec": 1.36,
+          "endSec": 1.68,
           "startChar": 19,
           "endChar": 25
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.32,
+          "startSec": 1.68,
+          "endSec": 1.84,
           "startChar": 26,
           "endChar": 29
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.72,
+          "startSec": 1.84,
+          "endSec": 2.16,
           "startChar": 30,
           "endChar": 35
         },
         {
-          "startSec": 2.8,
-          "endSec": 2.96,
+          "startSec": 2.16,
+          "endSec": 2.24,
           "startChar": 36,
           "endChar": 38
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.52,
+          "startSec": 2.24,
+          "endSec": 2.72,
           "startChar": 39,
           "endChar": 47
         },
         {
-          "startSec": 4.56,
-          "endSec": 4.72,
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 49,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
           "startChar": 58,
           "endChar": 60
         },
         {
-          "startSec": 4.72,
-          "endSec": 4.96,
+          "startSec": 3.6,
+          "endSec": 3.68,
           "startChar": 61,
           "endChar": 63
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.28,
+          "startSec": 4.08,
+          "endSec": 4.32,
           "startChar": 64,
           "endChar": 68
         },
         {
-          "startSec": 5.28,
-          "endSec": 6.08,
+          "startSec": 4.32,
+          "endSec": 4.8,
           "startChar": 69,
           "endChar": 77
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.88,
+          "startSec": 4.8,
+          "endSec": 5.44,
           "startChar": 78,
           "endChar": 90
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.04,
+          "startSec": 5.44,
+          "endSec": 5.6,
           "startChar": 91,
           "endChar": 94
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.6,
+          "startSec": 5.6,
+          "endSec": 6.0,
           "startChar": 95,
           "endChar": 102
         },
         {
-          "startSec": 7.6,
-          "endSec": 8.72,
+          "startSec": 6.0,
+          "endSec": 6.72,
           "startChar": 104,
           "endChar": 112
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.04,
+          "startSec": 6.72,
+          "endSec": 7.04,
           "startChar": 113,
           "endChar": 119
         },
         {
-          "startSec": 9.04,
-          "endSec": 10.0,
+          "startSec": 7.04,
+          "endSec": 7.52,
           "startChar": 120,
           "endChar": 124
         },
         {
-          "startSec": 10.08,
-          "endSec": 10.72,
+          "startSec": 7.52,
+          "endSec": 8.08,
           "startChar": 126,
           "endChar": 136
         },
         {
-          "startSec": 10.72,
-          "endSec": 11.04,
+          "startSec": 8.08,
+          "endSec": 8.4,
           "startChar": 137,
           "endChar": 144
         },
         {
-          "startSec": 11.04,
-          "endSec": 11.68,
+          "startSec": 8.4,
+          "endSec": 8.88,
           "startChar": 145,
           "endChar": 152
         },
         {
-          "startSec": 11.68,
-          "endSec": 11.84,
+          "startSec": 8.88,
+          "endSec": 9.04,
           "startChar": 153,
           "endChar": 154
         },
         {
-          "startSec": 11.84,
-          "endSec": 12.24,
+          "startSec": 9.04,
+          "endSec": 9.36,
           "startChar": 155,
           "endChar": 162
         },
         {
-          "startSec": 12.24,
-          "endSec": 12.32,
+          "startSec": 9.36,
+          "endSec": 9.44,
           "startChar": 163,
           "endChar": 165
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.8,
+          "startSec": 9.44,
+          "endSec": 9.76,
           "startChar": 166,
           "endChar": 172
         },
         {
-          "startSec": 12.8,
-          "endSec": 13.2,
+          "startSec": 9.84,
+          "endSec": 10.16,
           "startChar": 173,
           "endChar": 179
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.52,
+          "startSec": 10.16,
+          "endSec": 10.48,
           "startChar": 180,
           "endChar": 185
         },
         {
-          "startSec": 13.52,
-          "endSec": 13.84,
+          "startSec": 10.48,
+          "endSec": 10.8,
           "startChar": 186,
           "endChar": 192
         },
         {
-          "startSec": 13.84,
-          "endSec": 13.92,
+          "startSec": 10.8,
+          "endSec": 10.88,
           "startChar": 193,
           "endChar": 195
         },
         {
-          "startSec": 13.92,
-          "endSec": 14.24,
+          "startSec": 10.88,
+          "endSec": 11.2,
           "startChar": 196,
           "endChar": 200
         }
@@ -1223,302 +1289,290 @@
     },
     {
       "id": "sandbox-concept",
-      "textHash": "753e4696c3537dba43bf5da1130dd72cbfb63a36b4ddc1d6695f2c4548540419",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/sandbox-concept.753e4696.mp3",
+      "textHash": "9b49e06dc510fa66244954412620bdfaaa7c14c76caa3ae98d5aab80e1e0a628",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/sandbox-concept.9b49e06d.mp3",
       "narrationText": "Ecco l'idea. L'editor non gira sul tuo laptop. Gira dentro il sandbox del repo sul server, e il tuo browser ci accede tramite un tunnel SSH. Quindi l'albero dei file, il terminal integrato e qualsiasi cosa tu avvii da lì vedono esattamente quello che vede il repo, e nient'altro.",
-      "audioDurationSec": 21.237551,
+      "audioDurationSec": 18.6,
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.56,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 4
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.96,
+          "startSec": 0.32,
+          "endSec": 0.56,
           "startChar": 5,
           "endChar": 11
         },
         {
-          "startSec": 0.96,
-          "endSec": 2.24,
+          "startSec": 1.12,
+          "endSec": 1.76,
           "startChar": 13,
           "endChar": 21
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.56,
+          "startSec": 1.76,
+          "endSec": 2.0,
           "startChar": 22,
           "endChar": 25
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.88,
+          "startSec": 2.0,
+          "endSec": 2.24,
           "startChar": 26,
           "endChar": 30
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.12,
+          "startSec": 2.24,
+          "endSec": 2.4,
           "startChar": 31,
           "endChar": 34
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.2,
+          "startSec": 2.4,
+          "endSec": 2.56,
           "startChar": 35,
           "endChar": 38
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.84,
+          "startSec": 2.56,
+          "endSec": 3.04,
           "startChar": 39,
           "endChar": 45
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.32,
+          "startSec": 3.68,
+          "endSec": 4.0,
           "startChar": 47,
           "endChar": 51
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.64,
+          "startSec": 4.0,
+          "endSec": 4.32,
           "startChar": 52,
           "endChar": 58
         },
         {
-          "startSec": 4.64,
-          "endSec": 4.8,
+          "startSec": 4.32,
+          "endSec": 4.4,
           "startChar": 59,
           "endChar": 61
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.52,
+          "startSec": 4.4,
+          "endSec": 4.88,
           "startChar": 62,
           "endChar": 69
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.76,
+          "startSec": 4.88,
+          "endSec": 5.04,
           "startChar": 70,
           "endChar": 73
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.16,
+          "startSec": 5.04,
+          "endSec": 5.28,
           "startChar": 74,
           "endChar": 78
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.4,
+          "startSec": 5.28,
+          "endSec": 5.44,
           "startChar": 79,
           "endChar": 82
         },
         {
-          "startSec": 6.4,
-          "endSec": 7.2,
+          "startSec": 5.44,
+          "endSec": 5.92,
           "startChar": 83,
           "endChar": 89
         },
         {
-          "startSec": 7.36,
-          "endSec": 7.44,
+          "startSec": 6.32,
+          "endSec": 6.4,
           "startChar": 91,
           "endChar": 92
         },
         {
-          "startSec": 7.44,
-          "endSec": 7.68,
+          "startSec": 6.4,
+          "endSec": 6.56,
           "startChar": 93,
           "endChar": 95
         },
         {
-          "startSec": 7.68,
-          "endSec": 7.84,
+          "startSec": 6.56,
+          "endSec": 6.64,
           "startChar": 96,
           "endChar": 99
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.4,
+          "startSec": 6.64,
+          "endSec": 7.04,
           "startChar": 100,
           "endChar": 107
         },
         {
-          "startSec": 8.4,
-          "endSec": 8.8,
+          "startSec": 7.2,
+          "endSec": 7.36,
           "startChar": 108,
           "endChar": 110
         },
         {
-          "startSec": 8.8,
-          "endSec": 9.12,
+          "startSec": 7.36,
+          "endSec": 7.76,
           "startChar": 111,
           "endChar": 117
         },
         {
-          "startSec": 9.12,
-          "endSec": 9.52,
+          "startSec": 7.76,
+          "endSec": 8.16,
           "startChar": 118,
           "endChar": 125
         },
         {
-          "startSec": 9.52,
-          "endSec": 9.6,
+          "startSec": 8.16,
+          "endSec": 8.32,
           "startChar": 126,
           "endChar": 128
         },
         {
-          "startSec": 9.6,
-          "endSec": 10.08,
+          "startSec": 8.32,
+          "endSec": 8.64,
           "startChar": 129,
           "endChar": 135
         },
         {
-          "startSec": 10.08,
-          "endSec": 11.2,
+          "startSec": 8.8,
+          "endSec": 10.32,
           "startChar": 136,
           "endChar": 139
         },
         {
-          "startSec": 11.2,
-          "endSec": 11.68,
+          "startSec": 10.32,
+          "endSec": 10.64,
           "startChar": 141,
           "endChar": 147
         },
         {
-          "startSec": 11.76,
-          "endSec": 12.16,
+          "startSec": 10.64,
+          "endSec": 11.04,
           "startChar": 148,
           "endChar": 156
         },
         {
-          "startSec": 12.24,
-          "endSec": 12.32,
+          "startSec": 11.04,
+          "endSec": 11.12,
           "startChar": 157,
           "endChar": 160
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.96,
+          "startSec": 11.12,
+          "endSec": 11.52,
           "startChar": 161,
           "endChar": 165
         },
         {
-          "startSec": 13.04,
-          "endSec": 13.36,
+          "startSec": 11.84,
+          "endSec": 12.0,
           "startChar": 167,
           "endChar": 169
         },
         {
-          "startSec": 13.36,
-          "endSec": 13.84,
+          "startSec": 12.0,
+          "endSec": 12.4,
           "startChar": 170,
           "endChar": 178
         },
         {
-          "startSec": 13.84,
-          "endSec": 14.48,
+          "startSec": 12.4,
+          "endSec": 13.12,
           "startChar": 179,
           "endChar": 188
         },
         {
-          "startSec": 14.48,
-          "endSec": 14.56,
+          "startSec": 13.44,
+          "endSec": 13.6,
           "startChar": 189,
           "endChar": 190
         },
         {
-          "startSec": 14.56,
-          "endSec": 15.12,
+          "startSec": 13.6,
+          "endSec": 14.0,
           "startChar": 191,
           "endChar": 200
         },
         {
-          "startSec": 15.12,
-          "endSec": 15.6,
+          "startSec": 14.0,
+          "endSec": 14.4,
           "startChar": 201,
           "endChar": 205
         },
         {
-          "startSec": 15.6,
-          "endSec": 16.16,
+          "startSec": 14.4,
+          "endSec": 14.48,
           "startChar": 206,
           "endChar": 208
         },
         {
-          "startSec": 16.16,
-          "endSec": 16.64,
-          "startChar": 209,
-          "endChar": 213
-        },
-        {
-          "startSec": 16.64,
-          "endSec": 16.8,
+          "startSec": 14.8,
+          "endSec": 14.88,
           "startChar": 215,
           "endChar": 217
         },
         {
-          "startSec": 16.8,
-          "endSec": 17.12,
+          "startSec": 14.88,
+          "endSec": 15.04,
           "startChar": 218,
           "endChar": 220
         },
         {
-          "startSec": 17.12,
-          "endSec": 17.68,
+          "startSec": 15.36,
+          "endSec": 15.6,
           "startChar": 221,
           "endChar": 227
         },
         {
-          "startSec": 17.76,
-          "endSec": 18.56,
+          "startSec": 15.6,
+          "endSec": 16.4,
           "startChar": 228,
           "endChar": 239
         },
         {
-          "startSec": 18.56,
-          "endSec": 18.8,
+          "startSec": 16.4,
+          "endSec": 16.64,
           "startChar": 240,
           "endChar": 246
         },
         {
-          "startSec": 18.8,
-          "endSec": 18.96,
+          "startSec": 16.64,
+          "endSec": 16.8,
           "startChar": 247,
           "endChar": 250
         },
         {
-          "startSec": 18.96,
-          "endSec": 19.12,
+          "startSec": 16.8,
+          "endSec": 17.04,
           "startChar": 251,
           "endChar": 255
         },
         {
-          "startSec": 19.12,
-          "endSec": 19.28,
-          "startChar": 256,
-          "endChar": 258
-        },
-        {
-          "startSec": 19.28,
-          "endSec": 20.0,
+          "startSec": 17.12,
+          "endSec": 17.6,
           "startChar": 259,
           "endChar": 263
         },
         {
-          "startSec": 20.08,
-          "endSec": 20.32,
+          "startSec": 17.6,
+          "endSec": 17.76,
           "startChar": 265,
           "endChar": 266
         },
         {
-          "startSec": 20.32,
-          "endSec": 21.2,
+          "startSec": 17.76,
+          "endSec": 18.48,
           "startChar": 267,
           "endChar": 278
         }
@@ -1526,43 +1580,49 @@
     },
     {
       "id": "workbench-tour",
-      "textHash": "241ec7ee8eafb4247669478635d873f897124c30eb08e62c20c338a5600f52b1",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/workbench-tour.241ec7ee.mp3",
+      "textHash": "ae8be9e060090822e72280d28f1a576273697bb612a3579149a5b863ad449261",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/workbench-tour.ae8be9e0.mp3",
       "narrationText": "Ed eccolo: VS Code, in una scheda del browser. L'albero dei file a sinistra mostra il repo, e solo il repo.",
-      "audioDurationSec": 8.202449,
+      "audioDurationSec": 7.704,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
           "startChar": 3,
-          "endChar": 7
+          "endChar": 9
         },
         {
           "startSec": 1.28,
-          "endSec": 1.76,
-          "startChar": 14,
-          "endChar": 18
+          "endSec": 1.68,
+          "startChar": 12,
+          "endChar": 17
         },
         {
-          "startSec": 1.84,
-          "endSec": 1.92,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 20,
           "endChar": 22
         },
         {
-          "startSec": 1.92,
-          "endSec": 2.08,
+          "startSec": 2.24,
+          "endSec": 2.32,
           "startChar": 23,
           "endChar": 26
         },
         {
-          "startSec": 2.16,
-          "endSec": 2.48,
+          "startSec": 2.32,
+          "endSec": 2.56,
           "startChar": 27,
           "endChar": 33
         },
         {
-          "startSec": 2.48,
+          "startSec": 2.56,
           "endSec": 2.72,
           "startChar": 34,
           "endChar": 37
@@ -1574,62 +1634,74 @@
           "endChar": 45
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.24,
+          "startSec": 4.0,
+          "endSec": 4.32,
           "startChar": 47,
           "endChar": 55
         },
         {
-          "startSec": 4.24,
+          "startSec": 4.32,
           "endSec": 4.4,
           "startChar": 56,
           "endChar": 59
         },
         {
           "startSec": 4.4,
-          "endSec": 4.8,
+          "endSec": 4.64,
           "startChar": 60,
           "endChar": 64
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.36,
+          "startSec": 4.96,
+          "endSec": 5.04,
+          "startChar": 65,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
           "startChar": 67,
           "endChar": 75
         },
         {
-          "startSec": 5.36,
-          "endSec": 6.24,
+          "startSec": 5.84,
+          "endSec": 6.16,
           "startChar": 76,
           "endChar": 82
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.32,
+          "startSec": 6.16,
+          "endSec": 6.24,
           "startChar": 83,
           "endChar": 85
         },
         {
-          "startSec": 6.32,
+          "startSec": 6.24,
           "endSec": 6.72,
           "startChar": 86,
           "endChar": 90
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.6,
+          "startSec": 6.8,
+          "endSec": 6.88,
+          "startChar": 92,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
           "startChar": 94,
           "endChar": 98
         },
         {
-          "startSec": 7.6,
-          "endSec": 7.68,
+          "startSec": 7.12,
+          "endSec": 7.2,
           "startChar": 99,
           "endChar": 101
         },
         {
-          "startSec": 7.68,
-          "endSec": 8.08,
+          "startSec": 7.2,
+          "endSec": 7.6,
           "startChar": 102,
           "endChar": 106
         }
@@ -1637,10 +1709,10 @@
     },
     {
       "id": "create-file",
-      "textHash": "1f542a049ac37ee4c84e653a94ac0034d662463e28c634c8421a37c574bef220",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/create-file.1f542a04.mp3",
+      "textHash": "5b1deae9dbdedff66e718c2f6e9f06ad21f0dc87d239876e5a908d9050711d39",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/create-file.5b1deae9.mp3",
       "narrationText": "Creiamo un file vero, senza usare il terminal. Un nuovo editor, un paio di righe, e salviamo come notes slash todo punto md. La cartella appare a sinistra non appena arriva nel repo.",
-      "audioDurationSec": 12.355918,
+      "audioDurationSec": 11.544,
       "wordTimings": [
         {
           "startSec": 0.0,
@@ -1650,280 +1722,304 @@
         },
         {
           "startSec": 0.32,
-          "endSec": 0.56,
+          "endSec": 0.4,
           "startChar": 8,
           "endChar": 10
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.6,
+          "startSec": 0.4,
+          "endSec": 0.64,
           "startChar": 11,
           "endChar": 15
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.0,
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
           "startChar": 22,
           "endChar": 27
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.24,
+          "startSec": 1.6,
+          "endSec": 1.76,
           "startChar": 28,
           "endChar": 33
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.4,
+          "startSec": 1.76,
+          "endSec": 1.92,
           "startChar": 34,
           "endChar": 36
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.88,
+          "startSec": 1.92,
+          "endSec": 2.32,
           "startChar": 37,
           "endChar": 45
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.84,
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.12,
           "startChar": 50,
           "endChar": 55
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.24,
+          "startSec": 3.12,
+          "endSec": 3.52,
           "startChar": 56,
           "endChar": 62
         },
         {
-          "startSec": 4.72,
-          "endSec": 4.88,
+          "startSec": 3.84,
+          "endSec": 3.92,
           "startChar": 64,
           "endChar": 66
         },
         {
-          "startSec": 4.88,
-          "endSec": 5.12,
+          "startSec": 3.92,
+          "endSec": 4.16,
           "startChar": 67,
           "endChar": 71
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.28,
+          "startSec": 4.16,
+          "endSec": 4.32,
           "startChar": 72,
           "endChar": 74
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.76,
+          "startSec": 4.32,
+          "endSec": 4.88,
           "startChar": 75,
           "endChar": 80
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.4,
+          "startSec": 4.88,
+          "endSec": 5.04,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.44,
           "startChar": 84,
           "endChar": 92
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.56,
+          "startSec": 5.44,
+          "endSec": 5.68,
           "startChar": 93,
           "endChar": 97
         },
         {
-          "startSec": 7.44,
-          "endSec": 7.52,
+          "startSec": 7.04,
+          "endSec": 8.96,
           "startChar": 105,
           "endChar": 107
         },
         {
-          "startSec": 9.6,
-          "endSec": 10.0,
+          "startSec": 8.96,
+          "endSec": 9.52,
           "startChar": 128,
           "endChar": 136
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.72,
+          "startSec": 9.52,
+          "endSec": 9.84,
+          "startChar": 137,
+          "endChar": 143
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.24,
           "startChar": 146,
           "endChar": 154
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.12,
+          "startSec": 10.4,
+          "endSec": 10.56,
           "startChar": 155,
           "endChar": 158
         },
         {
-          "startSec": 11.12,
-          "endSec": 11.52,
+          "startSec": 10.56,
+          "endSec": 10.88,
           "startChar": 159,
           "endChar": 165
         },
         {
-          "startSec": 11.52,
-          "endSec": 11.76,
+          "startSec": 10.88,
+          "endSec": 11.04,
           "startChar": 166,
           "endChar": 172
         },
         {
-          "startSec": 11.76,
-          "endSec": 11.92,
+          "startSec": 11.04,
+          "endSec": 11.2,
           "startChar": 173,
           "endChar": 176
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 177,
+          "endChar": 181
         }
       ]
     },
     {
       "id": "editor-terminal",
-      "textHash": "77401cf18e7fcdc3c819521c046c874490627311f65e587eb67e09cb57b9da6b",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/editor-terminal.77401cf1.mp3",
+      "textHash": "fc7cd8d2da59d10d1f38c8f7fe5f854b6adb177c6d3bac8d0e83cb8d931fbf28",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/editor-terminal.fc7cd8d2.mp3",
       "narrationText": "Anche il terminal integrato funziona, ed ecco il nostro file. Ora proviamo a guardare fuori dal repo: permission denied. Non è un'impostazione, è il kernel.",
-      "audioDurationSec": 11.467755,
+      "audioDurationSec": 10.44,
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.4,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.56,
+          "startSec": 0.24,
+          "endSec": 0.4,
           "startChar": 6,
           "endChar": 8
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.04,
+          "startSec": 0.4,
+          "endSec": 0.8,
           "startChar": 9,
           "endChar": 17
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.84,
+          "startSec": 0.8,
+          "endSec": 1.28,
           "startChar": 18,
           "endChar": 27
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.56,
+          "startSec": 1.28,
+          "endSec": 1.84,
           "startChar": 28,
           "endChar": 36
         },
         {
-          "startSec": 2.8,
-          "endSec": 2.96,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.2,
+          "startSec": 2.32,
+          "endSec": 2.48,
           "startChar": 41,
           "endChar": 45
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.36,
+          "startSec": 2.48,
+          "endSec": 2.56,
           "startChar": 46,
           "endChar": 48
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.68,
+          "startSec": 2.56,
+          "endSec": 2.8,
           "startChar": 49,
           "endChar": 55
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.56,
+          "startSec": 2.8,
+          "endSec": 3.92,
           "startChar": 56,
           "endChar": 60
         },
         {
-          "startSec": 4.88,
-          "endSec": 5.04,
+          "startSec": 4.0,
+          "endSec": 4.16,
           "startChar": 62,
           "endChar": 65
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.52,
+          "startSec": 4.16,
+          "endSec": 4.56,
           "startChar": 66,
           "endChar": 74
         },
         {
-          "startSec": 5.6,
-          "endSec": 6.08,
+          "startSec": 4.56,
+          "endSec": 4.96,
           "startChar": 77,
           "endChar": 85
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.4,
+          "startSec": 4.96,
+          "endSec": 5.2,
           "startChar": 86,
           "endChar": 91
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.56,
+          "startSec": 5.2,
+          "endSec": 5.36,
           "startChar": 92,
           "endChar": 95
         },
         {
-          "startSec": 6.56,
-          "endSec": 7.68,
+          "startSec": 5.36,
+          "endSec": 5.76,
           "startChar": 96,
           "endChar": 100
         },
         {
-          "startSec": 7.76,
-          "endSec": 8.24,
+          "startSec": 6.32,
+          "endSec": 7.04,
           "startChar": 102,
           "endChar": 112
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.72,
+          "startSec": 7.04,
+          "endSec": 7.36,
           "startChar": 113,
           "endChar": 119
         },
         {
-          "startSec": 9.28,
-          "endSec": 9.36,
+          "startSec": 8.16,
+          "endSec": 8.32,
           "startChar": 121,
           "endChar": 124
         },
         {
-          "startSec": 9.36,
+          "startSec": 8.32,
           "endSec": 9.44,
-          "startChar": 125,
-          "endChar": 126
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 10.64,
           "startChar": 127,
           "endChar": 142
         },
         {
-          "startSec": 10.64,
-          "endSec": 10.8,
+          "startSec": 9.44,
+          "endSec": 9.6,
           "startChar": 144,
           "endChar": 145
         },
         {
-          "startSec": 10.8,
-          "endSec": 10.96,
+          "startSec": 9.6,
+          "endSec": 9.76,
           "startChar": 146,
           "endChar": 148
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.44,
+          "startSec": 9.76,
+          "endSec": 10.16,
           "startChar": 149,
           "endChar": 155
         }
@@ -1931,140 +2027,140 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "24ac8f26af13e519fdbd31780152f43eb292783325126613b1a7e111e0a7ad3a",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/next-tutorial.24ac8f26.mp3",
+      "textHash": "914a38377464af44efdd51883567f73c6513f171c685f00382e6fe99ccaad414",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-vscode-browser/next-tutorial.914a3837.mp3",
       "narrationText": "Browser, editor, terminal: stesso sandbox, stesse regole. Prossimamente arriva la funzionalità su cui si basa tutto questo, il forking. Questa ti piacerà.",
-      "audioDurationSec": 13.714286,
+      "audioDurationSec": 10.44,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.0,
+          "endSec": 0.56,
           "startChar": 0,
-          "endChar": 7
+          "endChar": 8
         },
         {
           "startSec": 0.88,
-          "endSec": 1.36,
+          "endSec": 1.28,
           "startChar": 9,
           "endChar": 15
         },
         {
-          "startSec": 1.6,
+          "startSec": 1.76,
           "endSec": 2.16,
           "startChar": 17,
           "endChar": 25
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.2,
+          "startSec": 2.72,
+          "endSec": 3.04,
           "startChar": 27,
           "endChar": 33
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.84,
+          "startSec": 3.04,
+          "endSec": 3.76,
           "startChar": 34,
           "endChar": 41
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.56,
+          "startSec": 3.76,
+          "endSec": 4.16,
           "startChar": 43,
           "endChar": 49
         },
         {
-          "startSec": 4.56,
-          "endSec": 4.96,
+          "startSec": 4.16,
+          "endSec": 5.04,
           "startChar": 50,
           "endChar": 56
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.56,
+          "startSec": 5.04,
+          "endSec": 5.68,
           "startChar": 58,
           "endChar": 71
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.44,
+          "startSec": 5.68,
+          "endSec": 5.92,
           "startChar": 72,
           "endChar": 78
         },
         {
-          "startSec": 7.44,
-          "endSec": 7.52,
+          "startSec": 5.92,
+          "endSec": 6.0,
           "startChar": 79,
           "endChar": 81
         },
         {
-          "startSec": 7.52,
-          "endSec": 8.48,
+          "startSec": 6.0,
+          "endSec": 6.56,
           "startChar": 82,
           "endChar": 94
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.64,
+          "startSec": 6.56,
+          "endSec": 6.8,
           "startChar": 95,
           "endChar": 97
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.88,
+          "startSec": 6.8,
+          "endSec": 6.88,
           "startChar": 98,
           "endChar": 101
         },
         {
-          "startSec": 8.88,
-          "endSec": 8.96,
+          "startSec": 6.88,
+          "endSec": 7.04,
           "startChar": 102,
           "endChar": 104
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.44,
+          "startSec": 7.04,
+          "endSec": 7.28,
           "startChar": 105,
           "endChar": 109
         },
         {
-          "startSec": 9.52,
-          "endSec": 9.76,
+          "startSec": 7.28,
+          "endSec": 7.52,
           "startChar": 110,
           "endChar": 115
         },
         {
-          "startSec": 9.76,
-          "endSec": 10.88,
+          "startSec": 7.52,
+          "endSec": 8.08,
           "startChar": 116,
           "endChar": 122
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.04,
+          "startSec": 8.16,
+          "endSec": 8.24,
           "startChar": 124,
           "endChar": 126
         },
         {
-          "startSec": 11.04,
-          "endSec": 12.64,
+          "startSec": 8.24,
+          "endSec": 9.36,
           "startChar": 127,
           "endChar": 134
         },
         {
-          "startSec": 12.64,
-          "endSec": 13.04,
+          "startSec": 9.36,
+          "endSec": 9.68,
           "startChar": 136,
           "endChar": 142
         },
         {
-          "startSec": 13.04,
-          "endSec": 13.12,
+          "startSec": 9.68,
+          "endSec": 9.84,
           "startChar": 143,
           "endChar": 145
         },
         {
-          "startSec": 13.12,
-          "endSec": 13.68,
+          "startSec": 9.84,
+          "endSec": 10.16,
           "startChar": 146,
           "endChar": 153
         }

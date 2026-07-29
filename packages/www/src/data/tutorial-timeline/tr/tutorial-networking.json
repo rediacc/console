@@ -2,120 +2,1394 @@
   "cast": "/assets/tutorials/tutorial-networking.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "712ffc17c3da770311c7092b2544551f0195794edd0b11aaff9875f3d9b0d35a",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.410714,
-      "replayEndSec": 12.419888,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.f87bf913.mp3",
-      "audioDurationSec": 14.445714,
-      "textHash": "f87bf913f6e6ad781ac79d21062605b4840407b127b835f7c49165175d4be20d",
+      "replayStartSec": 2.427234,
+      "replayEndSec": 12.223183,
       "narrationText": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01-after.abefe6e7.mp3",
-      "afterAudioDurationSec": 2.35102,
-      "afterTextHash": "abefe6e7f74d4a7d342e158c83b2a3968742b77d88a3e233579dece72b6f3943"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-01.a3025ac0.mp3",
+      "textHash": "a3025ac0f346d12d5cbb81f265788e19ee763a6eb7dc8c368886dc7a3b426c7c",
+      "audioDurationSec": 13.32,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.28,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 62,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.84,
+          "startChar": 71,
+          "endChar": 82
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.48,
+          "startChar": 87,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.96,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.6,
+          "startChar": 101,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.24,
+          "startChar": 112,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.72,
+          "startChar": 123,
+          "endChar": 132
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.36,
+          "startChar": 132,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 146,
+          "endChar": 151
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.24,
+          "startChar": 152,
+          "endChar": 155
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.8,
+          "startChar": 156,
+          "endChar": 171
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.84,
+          "startChar": 171,
+          "endChar": 182
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 201,
+          "endChar": 213
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-01-after.42c233f7.mp3",
+      "afterAudioDurationSec": 2.28,
+      "afterTextHash": "42c233f7a85cff142fa828690be852202d274ea5608bb088cc1731d78ae304c7",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 8,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 34
+        }
+      ]
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 12.419888,
-      "replayEndSec": 16.924002,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02.56cdbdad.mp3",
-      "audioDurationSec": 7.88898,
-      "textHash": "56cdbdad057e31d7a4e0e37842415e6e99064c80f11b18570b9ce06a891b3bb4",
+      "replayStartSec": 12.223183,
+      "replayEndSec": 16.437274,
       "narrationText": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02-after.5e6ddb10.mp3",
-      "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "5e6ddb10f0fdbdcf65b8f94fa0d7ef6b80e5aea2a61d303b0d8cbe135b1e3c3a"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-02.92f29e1c.mp3",
+      "textHash": "92f29e1cd8565f1f78029b72cf6d7a3ee089d42e62dcd3af0a34a9abc72a2f53",
+      "audioDurationSec": 7.872,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.52,
+          "startChar": 20,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 35,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 75,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 85,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 96,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.28,
+          "startChar": 102,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 117,
+          "endChar": 126
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-02-after.88f84187.mp3",
+      "afterAudioDurationSec": 3.384,
+      "afterTextHash": "88f84187f28ad71912a313b2cb7a145c4b2ca9335c271608215fd563b7dacad2",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 29,
+          "endChar": 41
+        }
+      ]
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 16.924002,
-      "replayEndSec": 20.590881,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.0d57bc64.mp3",
-      "audioDurationSec": 10.762449,
-      "textHash": "0d57bc64e126ad1817fad34f4de3432f3c53957728c451faa8cd28840e3d7c91",
+      "replayStartSec": 16.437274,
+      "replayEndSec": 19.770637,
       "narrationText": "Üçüncü adım: yapılandırmayı sunucuya gönderin. Gerçek bir token ile bu, Cloudflare'deki DNS kayıtlarınızı otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03-after.4bd17331.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "4bd17331d0dd4dfe5271ee834e343fd6ce823a8c3bb72fa58f62f1bf728c06ef"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-03.0134a0b7.mp3",
+      "textHash": "0134a0b722ea8c1a0e77f3f3de5de810923fdfa230a0762d160958d86687fba6",
+      "audioDurationSec": 10.584,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.68,
+          "startChar": 13,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.16,
+          "startChar": 28,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 47,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 58,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 6.0,
+          "startChar": 72,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.12,
+          "startChar": 92,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.6,
+          "startChar": 106,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 115,
+          "endChar": 121
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 122,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.28,
+          "startChar": 135,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.92,
+          "startChar": 141,
+          "endChar": 157
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.32,
+          "startChar": 158,
+          "endChar": 166
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-03-after.ce5da5b8.mp3",
+      "afterAudioDurationSec": 3.24,
+      "afterTextHash": "ce5da5b844448f710e61b52a4e315ed3906fd09a799febac46ec33d8e4a80c7b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 3.04,
+          "startChar": 30,
+          "endChar": 39
+        }
+      ]
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 20.590881,
-      "replayEndSec": 28.48077,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.ca25ddd2.mp3",
-      "audioDurationSec": 13.244082,
-      "textHash": "ca25ddd2f8e4ff5cb725879926e909d3cb711ea9265b4bf3eaa07034546cdfd5",
+      "replayStartSec": 19.770637,
+      "replayEndSec": 26.52638,
       "narrationText": "Dördüncü adım: infra adında küçük bir repo oluşturun. Neden kendi repo'su? proxy, bu sunucudaki her uygulama için trafiği yönlendirir. Altyapı, uygulama kodunuzdan uzakta, kendi izole kutusunu hak ediyor.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04-after.05d1b8b5.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "05d1b8b5fb4f3ccb7012e340634370ecd6c03d1c3adf7f4fbfdb95ce88cade5a"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-04.ab8521ff.mp3",
+      "textHash": "ab8521ffb7dd5f1bbb28677eec0481f15c30898cffaaef6fc319d37157a5f22b",
+      "audioDurationSec": 13.152,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.16,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 43,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 66,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.16,
+          "startChar": 85,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.48,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.8,
+          "startChar": 100,
+          "endChar": 108
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 109,
+          "endChar": 113
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.52,
+          "startChar": 114,
+          "endChar": 121
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 122,
+          "endChar": 133
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 135,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 138,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.24,
+          "startChar": 144,
+          "endChar": 152
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 153,
+          "endChar": 163
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.2,
+          "startChar": 164,
+          "endChar": 170
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.92,
+          "startChar": 172,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.16,
+          "startChar": 178,
+          "endChar": 183
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.56,
+          "startChar": 184,
+          "endChar": 192
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.8,
+          "startChar": 193,
+          "endChar": 196
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.04,
+          "startChar": 197,
+          "endChar": 203
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-04-after.37456675.mp3",
+      "afterAudioDurationSec": 4.344,
+      "afterTextHash": "3745667535bb4dd3be6382668d6beb9cc353931556003ac0e1b5d26efcfd5a03",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.68,
+          "startChar": 13,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.52,
+          "startChar": 35,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 50,
+          "endChar": 55
+        }
+      ]
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 28.48077,
-      "replayEndSec": 35.97937,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05.240c2356.mp3",
-      "audioDurationSec": 7.810612,
-      "textHash": "240c2356a9245938aef978a4cb807a21d8f4d7cd4f61fb84e592e6b5e7e01172",
+      "replayStartSec": 26.52638,
+      "replayEndSec": 31.688233,
       "narrationText": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05-after.3144f366.mp3",
-      "afterAudioDurationSec": 1.802449,
-      "afterTextHash": "3144f36669a4dc7439ef5c27dfe2ffc54aa2980d6110b325d16c31ba2bc50824"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-05.a4540abb.mp3",
+      "textHash": "a4540abb7bc264bc6cb4971c48cd6bd504208c61886dafb72fdceeb4e4530729",
+      "audioDurationSec": 7.872,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.04,
+          "startChar": 50,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 65,
+          "endChar": 72
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.4,
+          "startChar": 76,
+          "endChar": 86
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.24,
+          "startChar": 94,
+          "endChar": 105
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 124,
+          "endChar": 129
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 130,
+          "endChar": 136
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 137,
+          "endChar": 144
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-05-after.58897fd4.mp3",
+      "afterAudioDurationSec": 1.8,
+      "afterTextHash": "58897fd4d924767a98079a0b8fcdfe8460be228b5304216dbee7a29e20638d50",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.6,
+          "startChar": 8,
+          "endChar": 22
+        }
+      ]
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 35.97937,
-      "replayEndSec": 42.626799,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06.58fd4f50.mp3",
-      "audioDurationSec": 12.042449,
-      "textHash": "58fd4f501fb8cbc53896281c60777e0d68cd9b761d555b9d3b790ca73313ba9e",
+      "replayStartSec": 31.688233,
+      "replayEndSec": 36.581385,
       "narrationText": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06-after.5a482bc4.mp3",
-      "afterAudioDurationSec": 4.04898,
-      "afterTextHash": "5a482bc4de9bee3e5c0080db1e382850501d9272f1f55f4fe74adaa65d9b2f31"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-06.e617aba2.mp3",
+      "textHash": "e617aba2ac35962c76cfe545aea6b96ee6b77ca7763f3cf4abdd5f97a73a5d2d",
+      "audioDurationSec": 14.904,
+      "wordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.56,
+          "startChar": 15,
+          "endChar": 27
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 65,
+          "endChar": 73
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.08,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.56,
+          "startChar": 78,
+          "endChar": 86
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.32,
+          "startChar": 92,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 106,
+          "endChar": 109
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 124,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 133,
+          "endChar": 139
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.56,
+          "startChar": 140,
+          "endChar": 145
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.08,
+          "startChar": 147,
+          "endChar": 158
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.48,
+          "startChar": 159,
+          "endChar": 164
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 13.12,
+          "startChar": 165,
+          "endChar": 170
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.52,
+          "startChar": 171,
+          "endChar": 180
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 14.08,
+          "startChar": 181,
+          "endChar": 192
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.64,
+          "startChar": 193,
+          "endChar": 205
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-networking/tutorial-networking-06-after.2e0bc98a.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "2e0bc98a53cd559bd13d45da3f494e9809e65e2f00b4c751b50ef103c03469db",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 19,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 33,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 42,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 49,
+          "endChar": 56
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.ad517ac9.mp3",
-      "textHash": "ad517ac93ee84fe2c8d2a49f5c85b69e5c961f7e1e26b2d92b7b3c22834a774e",
-      "audioDurationSec": 8.672653,
-      "narrationText": "Uygulamanız çalışıyor ama yalnızca sunucu onu görebiliyor. Ona otomatik TLS ile gerçek bir domain verelim. Dört kısa adım ve internet üzerinde."
+      "textHash": "c7c44c739a7b583dd97bfaf698b5e61e8b18f53b225399f1ce498ad049cc79c6",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/intro.c7c44c73.mp3",
+      "narrationText": "Uygulamanız çalışıyor ama yalnızca sunucu onu görebiliyor. Ona otomatik TLS ile gerçek bir domain verelim. Dört kısa adım ve internet üzerinde.",
+      "audioDurationSec": 8.664,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 35,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 46,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.6,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.08,
+          "startChar": 63,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.8,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 80,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.6,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 91,
+          "endChar": 97
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 98,
+          "endChar": 105
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.72,
+          "startChar": 107,
+          "endChar": 111
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
+          "startChar": 112,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 117,
+          "endChar": 121
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 122,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.48,
+          "startChar": 125,
+          "endChar": 133
+        }
+      ]
     },
     {
       "id": "four-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.428734ac.mp3",
-      "textHash": "428734acbdb09f19b6fdf3a249459b30c4bebf491c394800d74e83fa42282510",
-      "audioDurationSec": 14.367347,
-      "narrationText": "İşte yol: bir Cloudflare API token alın, altyapıyı CLI üzerinde bir kez yapılandırın, sunucuya gönderin, ardından DNS ve sertifikaları sizin için yöneten küçük bir proxy repo'su dağıtın."
+      "textHash": "397c254b06bcec709dc6b1d50b6bedc7a0f3f53f676335effedd8cf13789f997",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/four-steps.397c254b.mp3",
+      "narrationText": "İşte yol: bir Cloudflare API token alın, altyapıyı CLI üzerinde bir kez yapılandırın, sunucuya gönderin, ardından DNS ve sertifikaları sizin için yöneten küçük bir proxy repo'su dağıtın.",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 42,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.92,
+          "startChar": 56,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.08,
+          "startChar": 65,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.24,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.88,
+          "startChar": 73,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 87,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 96,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.8,
+          "startChar": 106,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 8.24,
+          "startChar": 122,
+          "endChar": 135
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 136,
+          "endChar": 141
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 147,
+          "endChar": 154
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.68,
+          "startChar": 155,
+          "endChar": 160
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.84,
+          "startChar": 161,
+          "endChar": 164
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.16,
+          "startChar": 165,
+          "endChar": 170
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.48,
+          "startChar": 170,
+          "endChar": 177
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.72,
+          "startChar": 179,
+          "endChar": 186
+        }
+      ]
     },
     {
       "id": "open-cloudflare",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.ce50a187.mp3",
-      "textHash": "ce50a187e2f2a660b04c9d9f5b5924207557bb94127474e4c7b42b6d104903e2",
-      "audioDurationSec": 18.364082,
-      "narrationText": "İlk olarak, tek manuel adım. Cloudflare dashboard'unu açın, My Profile'a gidin, ardından API Tokens'a geçin ve Zone DNS Edit iznine sahip bir token oluşturun. Bu tek token, CLI'ın DNS kayıtlarınızı yönetmesini sağlar, böylece bir daha dashboard'larda tıklamak zorunda kalmazsınız."
+      "textHash": "7769926fd40fb93f85966caf7c692cb5b4b5de76ad35e6dabc946f48ac7a42e6",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/open-cloudflare.7769926f.mp3",
+      "narrationText": "İlk olarak, tek manuel adım. Cloudflare dashboard'unu açın, My Profile'a gidin, ardından API Tokens'a geçin ve Zone DNS Edit iznine sahip bir token oluşturun. Bu tek token, CLI'ın DNS kayıtlarınızı yönetmesini sağlar, böylece bir daha dashboard'larda tıklamak zorunda kalmazsınız.",
+      "audioDurationSec": 16.992,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.68,
+          "startChar": 40,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.96,
+          "startChar": 63,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 81,
+          "endChar": 89
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.48,
+          "startChar": 93,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.96,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.28,
+          "startChar": 109,
+          "endChar": 111
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 112,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.88,
+          "startChar": 126,
+          "endChar": 132
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.2,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.28,
+          "startChar": 139,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 143,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.08,
+          "startChar": 149,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 160,
+          "endChar": 162
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 163,
+          "endChar": 166
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 167,
+          "endChar": 172
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 181,
+          "endChar": 184
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 13.44,
+          "startChar": 185,
+          "endChar": 198
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.76,
+          "startChar": 211,
+          "endChar": 217
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.4,
+          "startChar": 219,
+          "endChar": 226
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.8,
+          "startChar": 231,
+          "endChar": 235
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.44,
+          "startChar": 235,
+          "endChar": 250
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 15.92,
+          "startChar": 252,
+          "endChar": 260
+        },
+        {
+          "startSec": 15.92,
+          "endSec": 16.16,
+          "startChar": 261,
+          "endChar": 268
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.88,
+          "startChar": 269,
+          "endChar": 280
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/next-tutorial.d36ccf0a.mp3",
-      "textHash": "d36ccf0a69f0c997a62ab454046ead523310138490394eead8307431846b551d",
-      "audioDurationSec": 3.866122,
-      "narrationText": "Ağ tarafı halloldu! Bir sonraki bölümde görüşmek üzere."
+      "textHash": "911c15e7571cb8e0329813cbf861799fc23f2aa591c95a8922841f541e825c81",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-networking/next-tutorial.911c15e7.mp3",
+      "narrationText": "Ağ tarafı halloldu! Bir sonraki bölümde görüşmek üzere.",
+      "audioDurationSec": 3.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 3,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 40,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 49,
+          "endChar": 54
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "bee98d9fa84b4ea8b328ba04d4dea44bce8d2fa4f19b4d0d63344ed7a20481cf"
+  ]
 }

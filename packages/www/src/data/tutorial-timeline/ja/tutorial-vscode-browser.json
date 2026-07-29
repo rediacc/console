@@ -2,11 +2,11 @@
   "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
   "language": "ja",
   "version": 1,
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
   "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "1359e9dc99d9",
   "transcriptHash": "8abe06aa9f7ee7e757f4e4d80fde7f95b3f12ae1ff343d4248b9016912c15d9d",
   "steps": [
     {
@@ -15,372 +15,360 @@
       "replayStartSec": 2.418779,
       "replayEndSec": 10.10448,
       "narrationText": "コマンドは1つです。CLI はエディターサーバーをマシンに一度だけインストールし、repo の sandbox 内で起動して、トンネルを開き、リンクを渡してくれます。ローカルの VS Code も、セットアップする拡張機能も要りません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-01.7bfd02a6.mp3",
-      "textHash": "7bfd02a617c341141d3f8ff78f4a7d252786a54021ce0c123ceb0c0cc0b7f78f",
-      "audioDurationSec": 15.882449,
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-01.85ff4b8f.mp3",
+      "textHash": "85ff4b8f8c57aabbd51dc560ac212d8354787e616b3a9af757a513056f741e1a",
+      "audioDurationSec": 16.824,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.4,
+          "startSec": 0.16,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 4
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.48,
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 5
         },
         {
-          "startSec": 0.72,
-          "endSec": 0.8,
+          "startSec": 1.12,
+          "endSec": 1.2,
           "startChar": 6,
           "endChar": 7
         },
         {
-          "startSec": 0.8,
-          "endSec": 1.12,
+          "startSec": 1.2,
+          "endSec": 1.6,
           "startChar": 7,
           "endChar": 9
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.24,
+          "startSec": 2.64,
+          "endSec": 3.28,
           "startChar": 10,
           "endChar": 13
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.48,
+          "startSec": 3.28,
+          "endSec": 3.44,
           "startChar": 14,
           "endChar": 15
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.64,
+          "startSec": 3.44,
+          "endSec": 3.68,
           "startChar": 15,
           "endChar": 18
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.36,
-          "startChar": 24,
-          "endChar": 25
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.84,
+          "startSec": 4.32,
+          "endSec": 4.72,
           "startChar": 25,
           "endChar": 28
         },
         {
-          "startSec": 3.84,
-          "endSec": 3.92,
-          "startChar": 28,
-          "endChar": 29
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.08,
-          "startChar": 29,
-          "endChar": 30
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.16,
-          "startChar": 30,
-          "endChar": 31
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.4,
-          "startChar": 31,
-          "endChar": 33
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.96,
-          "startChar": 33,
-          "endChar": 39
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.28,
-          "startChar": 39,
-          "endChar": 40
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.24,
-          "startChar": 46,
-          "endChar": 47
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.12,
-          "startChar": 56,
-          "endChar": 57
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.2,
-          "startChar": 57,
-          "endChar": 58
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.52,
-          "startChar": 58,
-          "endChar": 60
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 7.6,
-          "startChar": 60,
-          "endChar": 61
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.84,
-          "startChar": 61,
-          "endChar": 62
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.64,
-          "startChar": 63,
-          "endChar": 67
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 8.8,
-          "startChar": 67,
-          "endChar": 68
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.28,
-          "startChar": 68,
-          "endChar": 70
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 9.92,
-          "startChar": 71,
-          "endChar": 74
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.08,
-          "startChar": 74,
-          "endChar": 75
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.4,
-          "startChar": 75,
-          "endChar": 77
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.48,
-          "startChar": 77,
-          "endChar": 78
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.72,
-          "startChar": 78,
-          "endChar": 80
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 11.04,
-          "startChar": 80,
-          "endChar": 82
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.16,
-          "startChar": 83,
-          "endChar": 87
-        },
-        {
-          "startSec": 12.16,
-          "endSec": 12.32,
-          "startChar": 87,
-          "endChar": 88
-        },
-        {
-          "startSec": 12.32,
-          "endSec": 12.72,
-          "startChar": 89,
-          "endChar": 91
-        },
-        {
-          "startSec": 13.04,
-          "endSec": 13.36,
-          "startChar": 97,
-          "endChar": 98
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 14.0,
-          "startChar": 99,
-          "endChar": 105
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.32,
-          "startChar": 105,
-          "endChar": 107
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.8,
-          "startChar": 107,
-          "endChar": 109
-        },
-        {
-          "startSec": 14.8,
-          "endSec": 15.12,
-          "startChar": 109,
-          "endChar": 111
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.2,
-          "startChar": 111,
-          "endChar": 112
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 15.68,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 15.68,
-          "endSec": 15.76,
-          "startChar": 116,
-          "endChar": 117
-        }
-      ],
-      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-01-after.85a6bccb.mp3",
-      "afterAudioDurationSec": 6.112653,
-      "afterTextHash": "85a6bccb7649cf0fd93643b3ef8650953b400ea56d03978f9771358a7c5af6f7",
-      "afterWordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.88,
-          "startChar": 2,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.04,
-          "startChar": 5,
-          "endChar": 6
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.44,
-          "startChar": 6,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.76,
-          "startChar": 11,
-          "endChar": 13
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.56,
-          "startChar": 14,
-          "endChar": 16
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.72,
-          "startChar": 16,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 18,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 2.96,
-          "startChar": 19,
-          "endChar": 20
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.28,
-          "startChar": 20,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.36,
-          "startChar": 22,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.68,
-          "startChar": 23,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.64,
-          "startChar": 26,
-          "endChar": 28
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.72,
-          "startChar": 28,
-          "endChar": 29
-        },
-        {
           "startSec": 4.72,
           "endSec": 4.88,
-          "startChar": 29,
-          "endChar": 30
+          "startChar": 28,
+          "endChar": 29
         },
         {
           "startSec": 4.88,
+          "endSec": 5.04,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 5.04,
           "endSec": 5.12,
           "startChar": 30,
           "endChar": 31
         },
         {
           "startSec": 5.12,
-          "endSec": 5.6,
+          "endSec": 5.36,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.84,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 39,
+          "endChar": 40
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.44,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.08,
+          "startChar": 56,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.16,
+          "startChar": 57,
+          "endChar": 58
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.48,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 60,
+          "endChar": 61
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 61,
+          "endChar": 62
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.32,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 10.88,
+          "startChar": 74,
+          "endChar": 75
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 75,
+          "endChar": 77
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.28,
+          "startChar": 77,
+          "endChar": 78
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.52,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 80,
+          "endChar": 82
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.96,
+          "startChar": 83,
+          "endChar": 87
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.12,
+          "startChar": 87,
+          "endChar": 88
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.44,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 13.92,
+          "startChar": 97,
+          "endChar": 98
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 15.04,
+          "startChar": 99,
+          "endChar": 105
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.2,
+          "startChar": 105,
+          "endChar": 107
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.68,
+          "startChar": 107,
+          "endChar": 109
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 15.92,
+          "startChar": 109,
+          "endChar": 111
+        },
+        {
+          "startSec": 15.92,
+          "endSec": 16.0,
+          "startChar": 111,
+          "endChar": 112
+        },
+        {
+          "startSec": 16.24,
+          "endSec": 16.48,
+          "startChar": 114,
+          "endChar": 116
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 16.56,
+          "startChar": 116,
+          "endChar": 117
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-01-after.c062c81a.mp3",
+      "afterAudioDurationSec": 7.704,
+      "afterTextHash": "c062c81a9a6d1ed1a5b86e4c4fbec3fa805b969118e4f0e78df97992bcc5bdc0",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 2,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 5,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.16,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.4,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.32,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.4,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 30,
+          "endChar": 31
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
           "startChar": 31,
           "endChar": 35
         },
         {
-          "startSec": 5.6,
-          "endSec": 5.76,
+          "startSec": 7.12,
+          "endSec": 7.36,
           "startChar": 35,
           "endChar": 37
         },
         {
-          "startSec": 5.76,
-          "endSec": 5.92,
+          "startSec": 7.36,
+          "endSec": 7.6,
           "startChar": 37,
           "endChar": 39
         }
@@ -392,192 +380,192 @@
       "replayStartSec": 10.10448,
       "replayEndSec": 14.856043,
       "narrationText": "通常のターミナルから同じ repo を見てみます。作業ディレクトリは repo で、ファイルは repo のファイルです。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-02.cb520ada.mp3",
-      "textHash": "cb520ada005c7f855fc7e7673f131439a4d3b69a6323431ac5b13bc86e35b34a",
-      "audioDurationSec": 7.392653,
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-02.216d02b9.mp3",
+      "textHash": "216d02b91f0e6e5f6854461ae8a89c4cee9f40b80c11293a027c4559637e0631",
+      "audioDurationSec": 8.184,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
+          "startSec": 0.16,
+          "endSec": 0.64,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.48,
-          "endSec": 0.64,
+          "startSec": 0.64,
+          "endSec": 0.72,
           "startChar": 2,
           "endChar": 3
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.12,
+          "startSec": 0.72,
+          "endSec": 1.2,
           "startChar": 3,
           "endChar": 8
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.44,
+          "startSec": 1.2,
+          "endSec": 1.52,
           "startChar": 8,
           "endChar": 10
         },
         {
           "startSec": 1.52,
-          "endSec": 1.84,
+          "endSec": 1.76,
           "startChar": 10,
           "endChar": 12
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.32,
+          "startSec": 2.16,
+          "endSec": 2.24,
           "startChar": 18,
           "endChar": 19
         },
         {
-          "startSec": 2.32,
+          "startSec": 2.24,
           "endSec": 2.4,
           "startChar": 19,
           "endChar": 20
         },
         {
           "startSec": 2.4,
-          "endSec": 2.56,
+          "endSec": 2.48,
           "startChar": 20,
           "endChar": 21
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.64,
+          "startSec": 2.48,
+          "endSec": 2.56,
           "startChar": 21,
           "endChar": 22
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.96,
+          "startSec": 2.56,
+          "endSec": 2.88,
           "startChar": 22,
           "endChar": 24
         },
         {
-          "startSec": 3.52,
-          "endSec": 4.0,
+          "startSec": 4.0,
+          "endSec": 4.4,
           "startChar": 25,
           "endChar": 27
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.48,
+          "startSec": 4.4,
+          "endSec": 4.88,
           "startChar": 27,
           "endChar": 33
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.72,
+          "startSec": 4.88,
+          "endSec": 5.04,
           "startChar": 33,
           "endChar": 34
         },
         {
-          "startSec": 5.2,
-          "endSec": 5.44,
+          "startSec": 5.44,
+          "endSec": 5.6,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 5.68,
-          "endSec": 6.0,
+          "startSec": 6.48,
+          "endSec": 6.8,
           "startChar": 42,
           "endChar": 46
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.24,
+          "startSec": 6.8,
+          "endSec": 6.88,
           "startChar": 46,
           "endChar": 47
         },
         {
-          "startSec": 6.72,
-          "endSec": 6.8,
+          "startSec": 7.28,
+          "endSec": 7.36,
           "startChar": 53,
           "endChar": 54
         },
         {
-          "startSec": 6.8,
-          "endSec": 7.12,
+          "startSec": 7.36,
+          "endSec": 7.68,
           "startChar": 54,
           "endChar": 58
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.36,
+          "startSec": 7.68,
+          "endSec": 8.0,
           "startChar": 58,
           "endChar": 60
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-02-after.ad69c706.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "ad69c70639490edcede17fee1e23ee3216af0e19bd08a1f9f4e02f90e1846c4d",
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-02-after.1f11efe5.mp3",
+      "afterAudioDurationSec": 4.824,
+      "afterTextHash": "1f11efe56269a219c704f959a7f93013bc830d8e24c7ed70044adc18a08df49a",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.56,
+          "startSec": 0.24,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.64,
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 5,
           "endChar": 6
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.12,
+          "startSec": 0.8,
+          "endSec": 1.28,
           "startChar": 6,
-          "endChar": 11
+          "endChar": 10
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.28,
+          "startSec": 1.28,
+          "endSec": 1.36,
           "startChar": 11,
           "endChar": 12
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.52,
+          "startSec": 1.36,
+          "endSec": 1.76,
           "startChar": 12,
           "endChar": 14
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.6,
+          "startSec": 1.76,
+          "endSec": 1.84,
           "startChar": 14,
           "endChar": 15
         },
         {
-          "startSec": 1.6,
-          "endSec": 1.68,
+          "startSec": 1.84,
+          "endSec": 1.92,
           "startChar": 15,
           "endChar": 16
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.76,
+          "startSec": 1.92,
+          "endSec": 2.0,
           "startChar": 16,
           "endChar": 17
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.16,
+          "startSec": 2.0,
+          "endSec": 2.4,
           "startChar": 17,
           "endChar": 19
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.04,
+          "startSec": 3.36,
+          "endSec": 3.76,
           "startChar": 20,
           "endChar": 22
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.84,
+          "startSec": 4.32,
+          "endSec": 4.64,
           "startChar": 29,
           "endChar": 31
         }
@@ -589,39 +577,39 @@
       "replayStartSec": 14.856043,
       "replayEndSec": 19.933198,
       "narrationText": "ブラウザのエディターで作成したファイルは？ちゃんとここにあります。VS Code で作ったファイルは、すぐに本物の repo ファイルになります。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-03.c6ff77f7.mp3",
-      "textHash": "c6ff77f712e1158af5616e8c070747ae4547e601b51eb7b1573331e00697e4b7",
-      "audioDurationSec": 9.090612,
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-03.2ea4899a.mp3",
+      "textHash": "2ea4899a622d9d94ef347e8aef14655d268474a1ffa19f202626787472e36774",
+      "audioDurationSec": 9.312,
       "wordTimings": [
         {
-          "startSec": 0.56,
+          "startSec": 0.16,
           "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 5
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.12,
+          "startSec": 0.8,
+          "endSec": 1.2,
           "startChar": 5,
           "endChar": 10
         },
         {
-          "startSec": 1.12,
+          "startSec": 1.2,
           "endSec": 1.28,
           "startChar": 10,
           "endChar": 11
         },
         {
           "startSec": 1.28,
-          "endSec": 1.68,
+          "endSec": 1.76,
           "startChar": 11,
           "endChar": 13
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 1.76,
-          "startChar": 13,
-          "endChar": 14
         },
         {
           "startSec": 1.76,
@@ -631,198 +619,210 @@
         },
         {
           "startSec": 1.92,
-          "endSec": 2.16,
+          "endSec": 2.24,
           "startChar": 15,
           "endChar": 19
         },
         {
-          "startSec": 2.16,
+          "startSec": 2.24,
           "endSec": 2.4,
           "startChar": 19,
           "endChar": 20
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.2,
+          "startSec": 3.44,
+          "endSec": 3.76,
           "startChar": 21,
           "endChar": 25
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.44,
+          "startSec": 3.76,
+          "endSec": 4.0,
           "startChar": 25,
           "endChar": 27
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.52,
+          "startSec": 4.0,
+          "endSec": 4.08,
           "startChar": 27,
           "endChar": 28
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.68,
+          "startSec": 4.08,
+          "endSec": 4.24,
           "startChar": 28,
           "endChar": 30
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.0,
+          "startSec": 4.24,
+          "endSec": 4.56,
           "startChar": 30,
           "endChar": 32
         },
         {
-          "startSec": 4.4,
-          "endSec": 4.8,
+          "startSec": 5.12,
+          "endSec": 5.6,
           "startChar": 33,
           "endChar": 35
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.28,
+          "startSec": 5.84,
+          "endSec": 5.92,
           "startChar": 41,
           "endChar": 42
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.52,
+          "startSec": 5.92,
+          "endSec": 6.16,
           "startChar": 42,
           "endChar": 44
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.76,
+          "startSec": 6.16,
+          "endSec": 6.32,
           "startChar": 44,
           "endChar": 45
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.0,
+          "startSec": 6.32,
+          "endSec": 6.64,
           "startChar": 45,
           "endChar": 49
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.24,
+          "startSec": 6.64,
+          "endSec": 6.72,
           "startChar": 49,
           "endChar": 50
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.88,
+          "startSec": 6.72,
+          "endSec": 7.04,
           "startChar": 51,
           "endChar": 53
         },
         {
-          "startSec": 6.88,
-          "endSec": 6.96,
+          "startSec": 7.04,
+          "endSec": 7.2,
           "startChar": 53,
           "endChar": 54
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.52,
+          "startSec": 7.2,
+          "endSec": 7.68,
           "startChar": 54,
           "endChar": 56
         },
         {
-          "startSec": 7.52,
-          "endSec": 7.6,
+          "startSec": 7.68,
+          "endSec": 7.84,
           "startChar": 56,
           "endChar": 57
         },
         {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
           "startSec": 8.56,
-          "endSec": 8.72,
+          "endSec": 8.64,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
           "startChar": 68,
           "endChar": 70
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.04,
+          "startSec": 8.88,
+          "endSec": 9.12,
           "startChar": 70,
           "endChar": 72
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-03-after.aecf7584.mp3",
-      "afterAudioDurationSec": 5.720816,
-      "afterTextHash": "aecf75845335e907f77efb4afecc6a8898232764fb3557b0529aadf75944c995",
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-03-after.3f380521.mp3",
+      "afterAudioDurationSec": 7.704,
+      "afterTextHash": "3f38052172e090eb06cf06b9d6aebabfa50291c48f67fd2a69c891dee98e2d31",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.16,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 4
         },
         {
-          "startSec": 0.64,
-          "endSec": 0.72,
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 5
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.2,
+          "startSec": 0.8,
+          "endSec": 1.28,
           "startChar": 5,
           "endChar": 7
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.44,
+          "startSec": 1.28,
+          "endSec": 1.52,
           "startChar": 7,
           "endChar": 8
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.16,
+          "startSec": 2.16,
+          "endSec": 2.72,
           "startChar": 9,
           "endChar": 14
         },
         {
-          "startSec": 2.16,
-          "endSec": 2.4,
+          "startSec": 2.72,
+          "endSec": 2.88,
           "startChar": 14,
           "endChar": 16
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.88,
+          "startSec": 2.88,
+          "endSec": 3.36,
           "startChar": 16,
           "endChar": 20
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.28,
+          "startSec": 3.36,
+          "endSec": 3.68,
           "startChar": 20,
           "endChar": 22
         },
         {
-          "startSec": 3.92,
-          "endSec": 4.08,
+          "startSec": 4.88,
+          "endSec": 5.04,
           "startChar": 24,
           "endChar": 25
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.24,
+          "startSec": 5.04,
+          "endSec": 5.12,
           "startChar": 25,
           "endChar": 26
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.2,
+          "startSec": 6.72,
+          "endSec": 6.88,
           "startChar": 32,
           "endChar": 33
         },
         {
-          "startSec": 5.2,
-          "endSec": 5.28,
+          "startSec": 6.88,
+          "endSec": 6.96,
           "startChar": 33,
           "endChar": 34
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.68,
+          "startSec": 6.96,
+          "endSec": 7.28,
           "startChar": 34,
           "endChar": 35
         }
@@ -834,312 +834,330 @@
       "replayStartSec": 19.933198,
       "replayEndSec": 23.377274,
       "narrationText": "では外に出ようとしてみます。サーバーのルートを一覧表示すると、権限が拒否されます。カーネルは、エディター、そのターミナル、そしてすべての子プロセスをこの repo に閉じ込めます。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-04.69b6f805.mp3",
-      "textHash": "69b6f8050760a1ed8fff8b0bd31f737f9d99afe83a4c5b00387800d5338a0376",
-      "audioDurationSec": 14.210612,
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-04.dc4f1fa8.mp3",
+      "textHash": "dc4f1fa89f380ba75b0255a756235d0274f578c27ba0e5309d383c73296e7e61",
+      "audioDurationSec": 15.552,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.24,
+          "startSec": 0.24,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 1
         },
         {
-          "startSec": 0.24,
-          "endSec": 0.48,
+          "startSec": 0.4,
+          "endSec": 0.64,
           "startChar": 1,
           "endChar": 2
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.04,
+          "startSec": 0.64,
+          "endSec": 0.88,
           "startChar": 2,
           "endChar": 3
         },
         {
-          "startSec": 1.04,
+          "startSec": 0.88,
           "endSec": 1.12,
           "startChar": 3,
           "endChar": 4
         },
         {
           "startSec": 1.12,
-          "endSec": 1.44,
+          "endSec": 1.52,
           "startChar": 4,
           "endChar": 7
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.52,
+          "startSec": 1.52,
+          "endSec": 1.6,
           "startChar": 7,
           "endChar": 8
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.6,
+          "startSec": 1.6,
+          "endSec": 1.76,
           "startChar": 8,
           "endChar": 9
         },
         {
-          "startSec": 1.6,
-          "endSec": 1.68,
+          "startSec": 1.76,
+          "endSec": 1.84,
           "startChar": 9,
           "endChar": 10
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.76,
+          "startSec": 1.84,
+          "endSec": 2.0,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.08,
+          "startSec": 2.0,
+          "endSec": 2.4,
           "startChar": 11,
           "endChar": 13
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.28,
+          "startSec": 3.36,
+          "endSec": 3.84,
           "startChar": 14,
           "endChar": 18
         },
         {
-          "startSec": 3.28,
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 18,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 22,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 29,
+          "endChar": 30
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.8,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.96,
+          "startChar": 33,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.28,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 36,
+          "endChar": 37
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.32,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.64,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.28,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.08,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.72,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.8,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.96,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.52,
+          "startChar": 69,
+          "endChar": 73
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.6,
+          "startChar": 73,
+          "endChar": 74
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.08,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.72,
+          "startChar": 82,
+          "endChar": 83
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.2,
+          "startChar": 83,
+          "endChar": 87
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.52,
+          "startChar": 87,
+          "endChar": 89
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-04-after.28662932.mp3",
+      "afterAudioDurationSec": 4.2,
+      "afterTextHash": "28662932604662f7414a56e0a6c8f1b7d5e114ed507fa1a05a43a207dfc1702e",
+      "afterWordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 3,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 4,
+          "endChar": 6
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 11,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.96,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 17,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.36,
           "endSec": 3.44,
           "startChar": 18,
           "endChar": 19
         },
         {
           "startSec": 3.44,
-          "endSec": 3.76,
-          "startChar": 19,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 3.84,
-          "startChar": 22,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.24,
-          "startChar": 23,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.56,
-          "startChar": 25,
-          "endChar": 27
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.88,
-          "startChar": 27,
-          "endChar": 29
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.12,
-          "startChar": 29,
-          "endChar": 30
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 6.0,
-          "startChar": 31,
-          "endChar": 33
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.08,
-          "startChar": 33,
-          "endChar": 34
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.4,
-          "startChar": 34,
-          "endChar": 36
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.48,
-          "startChar": 36,
-          "endChar": 37
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 6.56,
-          "startChar": 37,
-          "endChar": 38
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.88,
-          "startChar": 38,
-          "endChar": 40
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 8.0,
-          "startChar": 41,
-          "endChar": 45
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.24,
-          "startChar": 45,
-          "endChar": 46
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.12,
-          "startChar": 47,
-          "endChar": 51
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.6,
-          "startChar": 53,
-          "endChar": 55
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.24,
-          "startChar": 55,
-          "endChar": 60
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 11.04,
-          "startChar": 61,
-          "endChar": 64
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.44,
-          "startChar": 64,
-          "endChar": 67
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.6,
-          "startChar": 67,
-          "endChar": 68
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 12.4,
-          "startChar": 68,
-          "endChar": 76
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.36,
-          "startChar": 82,
-          "endChar": 83
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 13.92,
-          "startChar": 83,
-          "endChar": 87
-        },
-        {
-          "startSec": 13.92,
-          "endSec": 14.08,
-          "startChar": 87,
-          "endChar": 89
-        }
-      ],
-      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-04-after.b3f0c0b9.mp3",
-      "afterAudioDurationSec": 3.395918,
-      "afterTextHash": "b3f0c0b9c6582f51e8ad0e9d97f8d5ae306d5903a66cb2b5254274f761d63a6a",
-      "afterWordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.56,
-          "startChar": 2,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 0.72,
-          "startChar": 3,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 1.04,
-          "startChar": 4,
-          "endChar": 6
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.76,
-          "startChar": 7,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 1.84,
-          "startChar": 11,
-          "endChar": 12
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.0,
-          "startChar": 12,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.24,
-          "startChar": 14,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.56,
-          "startChar": 15,
-          "endChar": 17
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.64,
-          "startChar": 17,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 2.72,
-          "startChar": 18,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.88,
+          "endSec": 3.52,
           "startChar": 19,
           "endChar": 20
         },
         {
-          "startSec": 2.88,
-          "endSec": 2.96,
+          "startSec": 3.52,
+          "endSec": 3.6,
           "startChar": 20,
           "endChar": 21
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.28,
+          "startSec": 3.6,
+          "endSec": 3.92,
           "startChar": 21,
           "endChar": 23
         }
@@ -1151,282 +1169,282 @@
       "replayStartSec": 23.377274,
       "replayEndSec": 26.980129,
       "narrationText": "他のユーザーのホームは？これも拒否されます。この sandbox の中で動くものは、エディターでもターミナルでもビルドツールでも、すべて repo の壁で行き止まりです。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-05.f5005b1f.mp3",
-      "textHash": "f5005b1f9e58cfa0dfa517f2820a0286b72c49d03fd722c82aaf0a9083e2a657",
-      "audioDurationSec": 11.389388,
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-05.87f3c86d.mp3",
+      "textHash": "87f3c86daccc9035f10af204bc467cdce33138eefe1dee9c6eb6fa0a7db34583",
+      "audioDurationSec": 13.944,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.24,
+          "startSec": 0.24,
+          "endSec": 0.56,
           "startChar": 0,
           "endChar": 1
         },
         {
-          "startSec": 0.24,
-          "endSec": 0.4,
+          "startSec": 0.56,
+          "endSec": 0.72,
           "startChar": 1,
           "endChar": 2
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.8,
+          "startSec": 0.72,
+          "endSec": 1.12,
           "startChar": 2,
           "endChar": 6
         },
         {
-          "startSec": 0.8,
-          "endSec": 0.96,
+          "startSec": 1.12,
+          "endSec": 1.28,
           "startChar": 6,
           "endChar": 7
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.28,
+          "startSec": 1.28,
+          "endSec": 1.6,
           "startChar": 7,
           "endChar": 10
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.6,
+          "startSec": 1.6,
+          "endSec": 1.84,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.0,
+          "startSec": 2.88,
+          "endSec": 3.2,
           "startChar": 12,
           "endChar": 14
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.24,
+          "startSec": 3.2,
+          "endSec": 3.28,
           "startChar": 14,
           "endChar": 15
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.48,
+          "startSec": 3.28,
+          "endSec": 3.52,
           "startChar": 15,
           "endChar": 17
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.64,
+          "startSec": 3.52,
+          "endSec": 3.68,
           "startChar": 17,
           "endChar": 18
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.72,
+          "startSec": 3.68,
+          "endSec": 3.76,
           "startChar": 18,
           "endChar": 19
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.12,
+          "startSec": 3.76,
+          "endSec": 4.08,
           "startChar": 19,
           "endChar": 21
         },
         {
-          "startSec": 3.76,
-          "endSec": 4.0,
+          "startSec": 5.12,
+          "endSec": 5.36,
           "startChar": 22,
           "endChar": 24
         },
         {
-          "startSec": 4.64,
-          "endSec": 4.72,
+          "startSec": 5.84,
+          "endSec": 5.92,
           "startChar": 33,
           "endChar": 34
         },
         {
-          "startSec": 4.72,
-          "endSec": 4.96,
+          "startSec": 5.92,
+          "endSec": 6.16,
           "startChar": 34,
           "endChar": 35
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.04,
+          "startSec": 6.16,
+          "endSec": 6.24,
           "startChar": 35,
           "endChar": 36
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.36,
+          "startSec": 6.24,
+          "endSec": 6.56,
           "startChar": 36,
           "endChar": 38
         },
         {
-          "startSec": 5.36,
-          "endSec": 5.6,
+          "startSec": 6.56,
+          "endSec": 6.8,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 5.6,
-          "endSec": 5.92,
+          "startSec": 6.8,
+          "endSec": 6.96,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.72,
+          "startSec": 7.68,
+          "endSec": 8.08,
           "startChar": 42,
           "endChar": 47
         },
         {
-          "startSec": 6.72,
-          "endSec": 6.8,
+          "startSec": 8.08,
+          "endSec": 8.24,
           "startChar": 47,
           "endChar": 48
         },
         {
-          "startSec": 6.8,
-          "endSec": 6.96,
+          "startSec": 8.24,
+          "endSec": 8.32,
           "startChar": 48,
           "endChar": 49
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.52,
+          "startSec": 8.32,
+          "endSec": 8.88,
           "startChar": 49,
           "endChar": 54
         },
         {
-          "startSec": 7.52,
-          "endSec": 7.6,
+          "startSec": 8.88,
+          "endSec": 8.96,
           "startChar": 54,
           "endChar": 55
         },
         {
-          "startSec": 7.6,
-          "endSec": 7.84,
+          "startSec": 8.96,
+          "endSec": 9.12,
           "startChar": 55,
           "endChar": 56
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.16,
+          "startSec": 9.76,
+          "endSec": 10.08,
           "startChar": 56,
           "endChar": 59
         },
         {
-          "startSec": 8.16,
-          "endSec": 8.56,
+          "startSec": 10.08,
+          "endSec": 10.4,
           "startChar": 59,
           "endChar": 62
         },
         {
-          "startSec": 8.56,
-          "endSec": 8.64,
+          "startSec": 10.4,
+          "endSec": 10.48,
           "startChar": 62,
           "endChar": 63
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.88,
+          "startSec": 10.48,
+          "endSec": 10.64,
           "startChar": 63,
           "endChar": 64
         },
         {
-          "startSec": 9.12,
-          "endSec": 9.52,
+          "startSec": 11.52,
+          "endSec": 11.92,
           "startChar": 65,
           "endChar": 68
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.0,
+          "startSec": 12.24,
+          "endSec": 12.32,
           "startChar": 74,
           "endChar": 75
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.24,
+          "startSec": 12.32,
+          "endSec": 12.56,
           "startChar": 75,
           "endChar": 76
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.56,
+          "startSec": 12.56,
+          "endSec": 12.72,
           "startChar": 76,
           "endChar": 77
         },
         {
-          "startSec": 10.56,
-          "endSec": 11.04,
+          "startSec": 12.72,
+          "endSec": 13.2,
           "startChar": 77,
           "endChar": 82
         },
         {
-          "startSec": 11.04,
-          "endSec": 11.36,
+          "startSec": 13.2,
+          "endSec": 13.52,
           "startChar": 82,
           "endChar": 84
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-05-after.1344a906.mp3",
-      "afterAudioDurationSec": 3.239184,
-      "afterTextHash": "1344a90691e028c7b1d0816e88f67c96528f9e79ce5f81dc1674af9ab760b894",
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/tutorial-vscode-browser-05-after.5a0778a2.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "5a0778a2394561dd8447515795571e6cc27910ef093df6c5b3cabe306d428801",
       "afterWordTimings": [
         {
           "startSec": 0.8,
-          "endSec": 1.04,
+          "endSec": 0.96,
           "startChar": 7,
           "endChar": 8
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.44,
+          "startSec": 0.96,
+          "endSec": 1.28,
           "startChar": 8,
           "endChar": 10
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.52,
+          "startSec": 1.28,
+          "endSec": 1.44,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.68,
+          "startSec": 1.44,
+          "endSec": 1.6,
           "startChar": 11,
           "endChar": 13
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.92,
+          "startSec": 1.6,
+          "endSec": 1.84,
           "startChar": 13,
           "endChar": 15
         },
         {
-          "startSec": 1.92,
-          "endSec": 2.08,
+          "startSec": 1.84,
+          "endSec": 1.92,
           "startChar": 15,
           "endChar": 16
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.4,
+          "startSec": 3.12,
+          "endSec": 3.44,
           "startChar": 17,
           "endChar": 19
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.56,
+          "startSec": 3.44,
+          "endSec": 3.6,
           "startChar": 19,
           "endChar": 20
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.96,
+          "startSec": 3.6,
+          "endSec": 4.08,
           "startChar": 20,
           "endChar": 24
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.2,
+          "startSec": 4.08,
+          "endSec": 4.32,
           "startChar": 24,
           "endChar": 26
         }
@@ -1436,296 +1454,296 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "d073ed61fde23af96b2eff73f8b9b4cd3ba6af16373be5ed8a44fafbb4af4d05",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/intro.d073ed61.mp3",
+      "textHash": "752073a5508fc21c1635f0dcaeb2ff51c9e2f6f857ec3157642f9b4bce03312d",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/intro.752073a5.mp3",
       "narrationText": "いいお知らせです。今回はターミナルは不要です！ブラウザ上でVS Codeをフルで開いて、ファイルをいくつか作り、コマンドをいくつか実行して、カーネルがすべてをrepo内に収めておく様子を確認していきましょう。",
-      "audioDurationSec": 14.027755,
+      "audioDurationSec": 17.784,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.32,
+          "startSec": 0.24,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.4,
-          "startChar": 2,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.64,
+          "startSec": 0.64,
+          "endSec": 0.8,
           "startChar": 3,
           "endChar": 5
         },
         {
-          "startSec": 0.64,
-          "endSec": 0.72,
+          "startSec": 0.8,
+          "endSec": 0.96,
           "startChar": 5,
           "endChar": 6
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.04,
+          "startSec": 0.96,
+          "endSec": 1.2,
           "startChar": 6,
           "endChar": 8
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.76,
+          "startSec": 2.16,
+          "endSec": 2.48,
           "startChar": 9,
           "endChar": 11
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.0,
+          "startSec": 2.48,
+          "endSec": 2.72,
           "startChar": 11,
           "endChar": 12
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.48,
+          "startSec": 3.44,
+          "endSec": 3.92,
           "startChar": 12,
           "endChar": 17
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.64,
+          "startSec": 3.92,
+          "endSec": 4.08,
           "startChar": 17,
           "endChar": 18
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.88,
+          "startSec": 4.08,
+          "endSec": 4.4,
           "startChar": 18,
           "endChar": 20
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.2,
+          "startSec": 4.4,
+          "endSec": 4.72,
           "startChar": 20,
           "endChar": 22
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.92,
+          "startSec": 6.08,
+          "endSec": 6.48,
           "startChar": 23,
           "endChar": 27
         },
         {
-          "startSec": 3.92,
-          "endSec": 4.08,
+          "startSec": 6.48,
+          "endSec": 6.64,
           "startChar": 27,
           "endChar": 28
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.32,
+          "startSec": 6.64,
+          "endSec": 6.88,
           "startChar": 28,
           "endChar": 29
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.04,
+          "startSec": 7.2,
+          "endSec": 7.52,
           "startChar": 29,
           "endChar": 31
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.44,
-          "startChar": 32,
-          "endChar": 36
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 36,
+          "endChar": 37
         },
         {
-          "startSec": 5.44,
-          "endSec": 5.68,
+          "startSec": 7.92,
+          "endSec": 8.16,
           "startChar": 37,
           "endChar": 39
         },
         {
-          "startSec": 5.68,
-          "endSec": 5.76,
+          "startSec": 8.16,
+          "endSec": 8.24,
           "startChar": 39,
           "endChar": 40
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.08,
+          "startSec": 8.24,
+          "endSec": 8.56,
           "startChar": 40,
           "endChar": 42
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.32,
+          "startSec": 8.56,
+          "endSec": 8.64,
           "startChar": 42,
           "endChar": 43
         },
         {
-          "startSec": 6.64,
-          "endSec": 7.04,
+          "startSec": 9.44,
+          "endSec": 9.76,
           "startChar": 44,
           "endChar": 48
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.12,
+          "startSec": 9.76,
+          "endSec": 9.84,
           "startChar": 48,
           "endChar": 49
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.28,
+          "startSec": 9.84,
+          "endSec": 10.08,
           "startChar": 49,
           "endChar": 51
         },
         {
-          "startSec": 7.28,
-          "endSec": 7.36,
+          "startSec": 10.08,
+          "endSec": 10.16,
           "startChar": 51,
           "endChar": 52
         },
         {
-          "startSec": 7.36,
-          "endSec": 7.52,
+          "startSec": 10.16,
+          "endSec": 10.24,
           "startChar": 52,
           "endChar": 53
         },
         {
-          "startSec": 7.52,
-          "endSec": 7.84,
+          "startSec": 10.24,
+          "endSec": 10.56,
           "startChar": 53,
           "endChar": 55
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.64,
+          "startSec": 11.52,
+          "endSec": 11.84,
           "startChar": 56,
           "endChar": 60
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.72,
+          "startSec": 11.84,
+          "endSec": 11.92,
           "startChar": 60,
           "endChar": 61
         },
         {
-          "startSec": 8.72,
-          "endSec": 8.8,
+          "startSec": 11.92,
+          "endSec": 12.16,
           "startChar": 61,
           "endChar": 63
         },
         {
-          "startSec": 8.8,
-          "endSec": 8.96,
+          "startSec": 12.16,
+          "endSec": 12.32,
           "startChar": 63,
           "endChar": 64
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.04,
+          "startSec": 12.32,
+          "endSec": 12.4,
           "startChar": 64,
           "endChar": 65
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.44,
+          "startSec": 12.4,
+          "endSec": 12.8,
           "startChar": 65,
           "endChar": 67
         },
         {
-          "startSec": 9.44,
-          "endSec": 9.68,
+          "startSec": 12.8,
+          "endSec": 12.88,
+          "startChar": 67,
+          "endChar": 68
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.04,
           "startChar": 68,
           "endChar": 69
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.4,
+          "startSec": 13.68,
+          "endSec": 14.08,
           "startChar": 70,
           "endChar": 74
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.56,
+          "startSec": 14.08,
+          "endSec": 14.24,
           "startChar": 74,
           "endChar": 75
         },
         {
-          "startSec": 10.56,
-          "endSec": 10.96,
+          "startSec": 14.24,
+          "endSec": 14.56,
           "startChar": 75,
           "endChar": 78
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.12,
+          "startSec": 14.56,
+          "endSec": 14.64,
           "startChar": 78,
           "endChar": 79
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.68,
+          "startSec": 15.12,
+          "endSec": 15.28,
           "startChar": 83,
           "endChar": 84
         },
         {
-          "startSec": 11.68,
-          "endSec": 11.76,
+          "startSec": 15.28,
+          "endSec": 15.36,
           "startChar": 84,
           "endChar": 85
         },
         {
-          "startSec": 11.76,
-          "endSec": 12.08,
+          "startSec": 15.36,
+          "endSec": 15.68,
           "startChar": 85,
           "endChar": 87
         },
         {
-          "startSec": 12.08,
-          "endSec": 12.16,
+          "startSec": 15.68,
+          "endSec": 15.76,
           "startChar": 87,
           "endChar": 88
         },
         {
-          "startSec": 12.16,
-          "endSec": 12.4,
+          "startSec": 15.76,
+          "endSec": 15.92,
           "startChar": 88,
           "endChar": 90
         },
         {
-          "startSec": 12.4,
-          "endSec": 12.72,
+          "startSec": 15.92,
+          "endSec": 16.24,
           "startChar": 90,
           "endChar": 92
         },
         {
-          "startSec": 12.72,
-          "endSec": 12.8,
-          "startChar": 92,
-          "endChar": 93
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 13.28,
+          "startSec": 16.32,
+          "endSec": 16.72,
           "startChar": 93,
           "endChar": 95
         },
         {
-          "startSec": 13.28,
-          "endSec": 13.44,
+          "startSec": 16.72,
+          "endSec": 16.8,
+          "startChar": 95,
+          "endChar": 96
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 16.88,
           "startChar": 96,
           "endChar": 97
         },
         {
-          "startSec": 13.44,
-          "endSec": 13.6,
+          "startSec": 16.88,
+          "endSec": 17.04,
           "startChar": 97,
           "endChar": 99
         },
         {
-          "startSec": 13.6,
-          "endSec": 14.0,
+          "startSec": 17.04,
+          "endSec": 17.36,
           "startChar": 99,
           "endChar": 103
         }
@@ -1733,145 +1751,145 @@
     },
     {
       "id": "sandbox-concept",
-      "textHash": "f0e1295e58181561a8d3d1b465ce3a22584905d2d6a08f1723c3db04f5c84464",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/sandbox-concept.f0e1295e.mp3",
+      "textHash": "a09741b1c21c4a966ce52daf1f97653eb0735ab29ee8db57ba04e54483cac9eb",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/sandbox-concept.a09741b1.mp3",
       "narrationText": "仕組みはこうです。エディタはあなたのノートパソコン上では動きません。サーバー上のrepoのsandbox内で動いていて、ブラウザはSSHトンネルを通じてそこにアクセスします。つまり、ファイルツリーも、組み込みのターミナルも、そこから起動するものも、repoが見えているものだけが見えて、それ以外は何も見えません。",
-      "audioDurationSec": 23.797551,
+      "audioDurationSec": 22.104,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.4,
+          "startSec": 0.24,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.56,
+          "startSec": 0.72,
+          "endSec": 0.8,
           "startChar": 3,
           "endChar": 4
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.8,
+          "startSec": 0.8,
+          "endSec": 1.04,
           "startChar": 4,
           "endChar": 6
         },
         {
-          "startSec": 0.8,
-          "endSec": 1.12,
+          "startSec": 1.04,
+          "endSec": 1.36,
           "startChar": 6,
           "endChar": 8
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.24,
+          "startSec": 2.16,
+          "endSec": 2.56,
           "startChar": 9,
           "endChar": 13
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.48,
+          "startSec": 2.56,
+          "endSec": 2.72,
           "startChar": 13,
           "endChar": 14
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.72,
+          "startSec": 2.72,
+          "endSec": 3.04,
           "startChar": 14,
           "endChar": 17
         },
         {
-          "startSec": 2.72,
-          "endSec": 2.88,
+          "startSec": 3.04,
+          "endSec": 3.12,
           "startChar": 17,
           "endChar": 18
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.2,
+          "startSec": 3.12,
+          "endSec": 3.44,
           "startChar": 18,
           "endChar": 21
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.68,
+          "startSec": 3.44,
+          "endSec": 3.84,
           "startChar": 21,
           "endChar": 25
         },
         {
-          "startSec": 3.68,
-          "endSec": 3.84,
+          "startSec": 3.84,
+          "endSec": 4.0,
           "startChar": 25,
           "endChar": 26
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.0,
+          "startSec": 4.0,
+          "endSec": 4.16,
           "startChar": 26,
           "endChar": 27
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.16,
+          "startSec": 4.16,
+          "endSec": 4.32,
           "startChar": 27,
           "endChar": 28
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.48,
+          "startSec": 4.32,
+          "endSec": 4.64,
           "startChar": 28,
           "endChar": 30
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.72,
+          "startSec": 4.64,
+          "endSec": 4.88,
           "startChar": 30,
           "endChar": 32
         },
         {
-          "startSec": 4.72,
-          "endSec": 4.88,
+          "startSec": 4.88,
+          "endSec": 4.96,
           "startChar": 32,
           "endChar": 33
         },
         {
-          "startSec": 5.68,
-          "endSec": 6.16,
+          "startSec": 5.92,
+          "endSec": 6.4,
           "startChar": 34,
           "endChar": 38
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.4,
+          "startSec": 6.4,
+          "endSec": 6.56,
           "startChar": 38,
           "endChar": 39
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.48,
+          "startSec": 6.56,
+          "endSec": 6.72,
           "startChar": 39,
           "endChar": 40
         },
         {
-          "startSec": 6.8,
-          "endSec": 6.88,
+          "startSec": 7.28,
+          "endSec": 7.36,
           "startChar": 44,
           "endChar": 45
         },
         {
-          "startSec": 7.68,
-          "endSec": 7.84,
+          "startSec": 7.76,
+          "endSec": 7.92,
           "startChar": 52,
           "endChar": 53
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.0,
+          "startSec": 7.92,
+          "endSec": 8.08,
           "startChar": 53,
           "endChar": 54
         },
         {
-          "startSec": 8.0,
+          "startSec": 8.08,
           "endSec": 8.32,
           "startChar": 54,
           "endChar": 56
@@ -1890,271 +1908,265 @@
         },
         {
           "startSec": 8.48,
-          "endSec": 8.8,
+          "endSec": 8.64,
           "startChar": 58,
           "endChar": 59
         },
         {
-          "startSec": 9.12,
+          "startSec": 9.28,
           "endSec": 9.6,
           "startChar": 60,
           "endChar": 64
         },
         {
           "startSec": 9.6,
-          "endSec": 9.84,
+          "endSec": 9.76,
           "startChar": 64,
           "endChar": 65
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.72,
+          "startSec": 9.76,
+          "endSec": 10.08,
           "startChar": 65,
           "endChar": 66
         },
         {
-          "startSec": 10.72,
-          "endSec": 10.96,
+          "startSec": 10.08,
+          "endSec": 10.32,
           "startChar": 66,
           "endChar": 67
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.12,
+          "startSec": 10.32,
+          "endSec": 10.4,
           "startChar": 67,
           "endChar": 68
         },
         {
-          "startSec": 11.2,
-          "endSec": 11.68,
+          "startSec": 10.4,
+          "endSec": 10.8,
           "startChar": 68,
           "endChar": 72
         },
         {
-          "startSec": 11.68,
-          "endSec": 11.76,
-          "startChar": 72,
-          "endChar": 73
-        },
-        {
-          "startSec": 11.76,
-          "endSec": 12.16,
+          "startSec": 10.8,
+          "endSec": 11.2,
           "startChar": 73,
           "endChar": 75
         },
         {
-          "startSec": 12.16,
-          "endSec": 12.32,
+          "startSec": 11.2,
+          "endSec": 11.36,
           "startChar": 75,
           "endChar": 76
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.56,
+          "startSec": 11.36,
+          "endSec": 11.6,
           "startChar": 76,
           "endChar": 78
         },
         {
-          "startSec": 12.56,
-          "endSec": 12.72,
+          "startSec": 11.6,
+          "endSec": 11.76,
           "startChar": 78,
           "endChar": 79
         },
         {
-          "startSec": 12.72,
-          "endSec": 13.2,
+          "startSec": 11.84,
+          "endSec": 12.16,
           "startChar": 79,
           "endChar": 83
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.36,
+          "startSec": 12.16,
+          "endSec": 12.32,
           "startChar": 83,
           "endChar": 84
         },
         {
-          "startSec": 13.36,
-          "endSec": 13.68,
+          "startSec": 12.32,
+          "endSec": 12.64,
           "startChar": 84,
           "endChar": 86
         },
         {
-          "startSec": 14.16,
-          "endSec": 14.64,
+          "startSec": 13.36,
+          "endSec": 13.68,
           "startChar": 87,
           "endChar": 90
         },
         {
-          "startSec": 15.04,
-          "endSec": 15.68,
+          "startSec": 13.92,
+          "endSec": 14.48,
           "startChar": 91,
           "endChar": 98
         },
         {
-          "startSec": 15.68,
-          "endSec": 16.08,
+          "startSec": 14.48,
+          "endSec": 14.64,
           "startChar": 98,
           "endChar": 99
         },
         {
-          "startSec": 16.08,
-          "endSec": 16.56,
+          "startSec": 14.72,
+          "endSec": 15.12,
           "startChar": 100,
           "endChar": 104
         },
         {
-          "startSec": 16.56,
-          "endSec": 16.64,
+          "startSec": 15.12,
+          "endSec": 15.2,
           "startChar": 104,
           "endChar": 105
         },
         {
-          "startSec": 16.64,
-          "endSec": 17.12,
+          "startSec": 15.2,
+          "endSec": 15.68,
           "startChar": 105,
           "endChar": 110
         },
         {
-          "startSec": 17.12,
-          "endSec": 17.36,
+          "startSec": 15.68,
+          "endSec": 15.84,
           "startChar": 110,
           "endChar": 111
         },
         {
-          "startSec": 17.84,
-          "endSec": 18.08,
+          "startSec": 16.24,
+          "endSec": 16.48,
           "startChar": 112,
           "endChar": 114
         },
         {
-          "startSec": 18.08,
-          "endSec": 18.32,
+          "startSec": 16.48,
+          "endSec": 16.72,
           "startChar": 114,
           "endChar": 116
         },
         {
-          "startSec": 18.32,
-          "endSec": 18.64,
+          "startSec": 16.72,
+          "endSec": 17.04,
           "startChar": 116,
           "endChar": 118
         },
         {
-          "startSec": 18.64,
-          "endSec": 18.88,
+          "startSec": 17.04,
+          "endSec": 17.28,
           "startChar": 118,
           "endChar": 120
         },
         {
-          "startSec": 18.88,
-          "endSec": 19.12,
+          "startSec": 17.28,
+          "endSec": 17.44,
           "startChar": 120,
           "endChar": 122
         },
         {
-          "startSec": 19.12,
-          "endSec": 19.36,
+          "startSec": 17.44,
+          "endSec": 17.6,
           "startChar": 122,
           "endChar": 123
         },
         {
-          "startSec": 19.76,
-          "endSec": 19.92,
+          "startSec": 18.4,
+          "endSec": 18.56,
           "startChar": 128,
           "endChar": 129
         },
         {
-          "startSec": 19.92,
-          "endSec": 20.16,
+          "startSec": 18.56,
+          "endSec": 18.8,
           "startChar": 129,
           "endChar": 131
         },
         {
-          "startSec": 20.16,
-          "endSec": 20.24,
+          "startSec": 18.8,
+          "endSec": 18.88,
           "startChar": 131,
           "endChar": 132
         },
         {
-          "startSec": 20.24,
-          "endSec": 20.4,
+          "startSec": 18.88,
+          "endSec": 19.04,
           "startChar": 132,
           "endChar": 134
         },
         {
-          "startSec": 20.4,
-          "endSec": 20.64,
+          "startSec": 19.04,
+          "endSec": 19.2,
           "startChar": 134,
           "endChar": 136
         },
         {
-          "startSec": 20.64,
-          "endSec": 20.88,
+          "startSec": 19.2,
+          "endSec": 19.44,
           "startChar": 136,
           "endChar": 138
         },
         {
-          "startSec": 20.88,
-          "endSec": 21.04,
+          "startSec": 19.44,
+          "endSec": 19.52,
           "startChar": 138,
           "endChar": 139
         },
         {
-          "startSec": 21.04,
-          "endSec": 21.2,
+          "startSec": 19.52,
+          "endSec": 19.76,
           "startChar": 139,
           "endChar": 141
         },
         {
-          "startSec": 21.2,
-          "endSec": 21.44,
+          "startSec": 19.76,
+          "endSec": 19.92,
           "startChar": 141,
           "endChar": 142
         },
         {
-          "startSec": 21.84,
-          "endSec": 22.16,
+          "startSec": 20.4,
+          "endSec": 20.72,
           "startChar": 143,
           "endChar": 145
         },
         {
-          "startSec": 22.16,
-          "endSec": 22.4,
+          "startSec": 20.72,
+          "endSec": 20.88,
           "startChar": 145,
           "endChar": 147
         },
         {
-          "startSec": 22.4,
-          "endSec": 22.64,
+          "startSec": 20.88,
+          "endSec": 21.04,
           "startChar": 147,
           "endChar": 148
         },
         {
-          "startSec": 22.64,
-          "endSec": 22.88,
+          "startSec": 21.04,
+          "endSec": 21.28,
           "startChar": 148,
           "endChar": 149
         },
         {
-          "startSec": 22.88,
-          "endSec": 23.04,
+          "startSec": 21.28,
+          "endSec": 21.36,
           "startChar": 149,
           "endChar": 150
         },
         {
-          "startSec": 23.04,
-          "endSec": 23.2,
+          "startSec": 21.36,
+          "endSec": 21.6,
           "startChar": 150,
           "endChar": 152
         },
         {
-          "startSec": 23.2,
-          "endSec": 23.52,
+          "startSec": 21.6,
+          "endSec": 21.76,
           "startChar": 152,
           "endChar": 154
         },
         {
-          "startSec": 23.52,
-          "endSec": 23.68,
+          "startSec": 21.76,
+          "endSec": 21.84,
           "startChar": 154,
           "endChar": 155
         }
@@ -2162,140 +2174,152 @@
     },
     {
       "id": "workbench-tour",
-      "textHash": "8633f271fb17a5dc86783c23c743d89ab4b9e58f5854b8b3a0c81a52a628bb94",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/workbench-tour.8633f271.mp3",
+      "textHash": "bf3c5c61b327d7b555ffa0cf4d442898b7f1ab5e624ce58a90c87251c06bc4bd",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/workbench-tour.bf3c5c61.mp3",
       "narrationText": "これです。ブラウザのタブの中のVS Codeです。左のファイルツリーにはrepoが表示されています。repoだけです。",
-      "audioDurationSec": 8.515918,
+      "audioDurationSec": 9.144,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.24,
+          "startSec": 0.16,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.24,
-          "endSec": 0.72,
+          "startSec": 0.4,
+          "endSec": 0.8,
           "startChar": 2,
           "endChar": 4
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.6,
+          "startSec": 1.76,
+          "endSec": 2.16,
           "startChar": 5,
           "endChar": 9
         },
         {
-          "startSec": 1.6,
-          "endSec": 1.68,
+          "startSec": 2.16,
+          "endSec": 2.24,
           "startChar": 9,
           "endChar": 10
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.84,
+          "startSec": 2.24,
+          "endSec": 2.48,
           "startChar": 10,
           "endChar": 12
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.0,
+          "startSec": 2.48,
+          "endSec": 2.56,
           "startChar": 12,
           "endChar": 13
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.24,
+          "startSec": 2.56,
+          "endSec": 2.8,
           "startChar": 13,
           "endChar": 14
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.32,
+          "startSec": 2.8,
+          "endSec": 2.88,
           "startChar": 14,
           "endChar": 15
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.8,
+          "startSec": 2.88,
+          "endSec": 3.28,
           "startChar": 15,
           "endChar": 17
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.36,
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
           "startChar": 22,
           "endChar": 24
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.16,
+          "startSec": 4.64,
+          "endSec": 4.96,
           "startChar": 25,
           "endChar": 26
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.24,
+          "startSec": 4.96,
+          "endSec": 5.12,
           "startChar": 26,
           "endChar": 27
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.96,
+          "startSec": 5.12,
+          "endSec": 5.6,
           "startChar": 27,
           "endChar": 34
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.04,
+          "startSec": 5.6,
+          "endSec": 5.68,
           "startChar": 34,
           "endChar": 35
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.28,
+          "startSec": 5.68,
+          "endSec": 5.84,
           "startChar": 35,
           "endChar": 36
         },
         {
-          "startSec": 5.84,
-          "endSec": 5.92,
+          "startSec": 6.48,
+          "endSec": 6.64,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.32,
+          "startSec": 6.64,
+          "endSec": 6.88,
           "startChar": 41,
           "endChar": 43
         },
         {
-          "startSec": 6.48,
-          "endSec": 6.56,
+          "startSec": 6.88,
+          "endSec": 7.04,
           "startChar": 43,
           "endChar": 44
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.72,
+          "startSec": 7.04,
+          "endSec": 7.12,
           "startChar": 44,
           "endChar": 45
         },
         {
-          "startSec": 6.72,
-          "endSec": 6.8,
-          "startChar": 46,
-          "endChar": 47
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 45,
+          "endChar": 46
         },
         {
-          "startSec": 6.8,
-          "endSec": 7.12,
+          "startSec": 7.2,
+          "endSec": 7.52,
           "startChar": 47,
           "endChar": 49
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.32,
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
           "startChar": 56,
           "endChar": 58
         }
@@ -2303,242 +2327,242 @@
     },
     {
       "id": "create-file",
-      "textHash": "25edb9cdaaaa8c333021bf460acd444c5b26de8645ed7e2519b2ebbda1a3547d",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/create-file.25edb9cd.mp3",
+      "textHash": "95e003b68853202c02ed40726f414c24e06a2b9a4fc8df9bd5cd2aea5869b46e",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/create-file.95e003b6.mp3",
       "narrationText": "実際にファイルを作ってみましょう。ターミナルは使いません。新しいエディターで数行入力して、notes/todo.mdとして保存します。repoに届いたらすぐ左にフォルダーが表示されます。",
-      "audioDurationSec": 15.072653,
+      "audioDurationSec": 15.552,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
+          "startSec": 0.0,
+          "endSec": 0.4,
           "startChar": 0,
           "endChar": 2
         },
         {
-          "startSec": 0.48,
-          "endSec": 0.56,
+          "startSec": 0.4,
+          "endSec": 0.48,
           "startChar": 2,
           "endChar": 3
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.96,
+          "startSec": 0.88,
+          "endSec": 1.2,
           "startChar": 3,
           "endChar": 7
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.04,
+          "startSec": 1.2,
+          "endSec": 1.28,
           "startChar": 7,
           "endChar": 8
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.28,
+          "startSec": 1.28,
+          "endSec": 1.52,
           "startChar": 8,
           "endChar": 10
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.36,
+          "startSec": 1.52,
+          "endSec": 1.6,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.44,
+          "startSec": 1.6,
+          "endSec": 1.68,
           "startChar": 11,
           "endChar": 12
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.92,
+          "startSec": 1.68,
+          "endSec": 2.0,
           "startChar": 12,
           "endChar": 16
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.8,
+          "startSec": 3.44,
+          "endSec": 3.92,
           "startChar": 17,
           "endChar": 22
         },
         {
-          "startSec": 2.8,
-          "endSec": 2.88,
+          "startSec": 3.92,
+          "endSec": 4.16,
           "startChar": 22,
           "endChar": 23
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.2,
+          "startSec": 4.16,
+          "endSec": 4.48,
           "startChar": 23,
           "endChar": 25
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.52,
+          "startSec": 4.48,
+          "endSec": 4.72,
           "startChar": 25,
           "endChar": 27
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.68,
+          "startSec": 4.72,
+          "endSec": 4.8,
           "startChar": 27,
           "endChar": 28
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.72,
+          "startSec": 5.84,
+          "endSec": 6.32,
           "startChar": 29,
           "endChar": 32
         },
         {
-          "startSec": 4.72,
-          "endSec": 5.12,
+          "startSec": 6.4,
+          "endSec": 6.8,
           "startChar": 32,
           "endChar": 37
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.36,
+          "startSec": 6.8,
+          "endSec": 6.88,
           "startChar": 37,
           "endChar": 38
         },
         {
-          "startSec": 5.36,
-          "endSec": 5.92,
+          "startSec": 6.88,
+          "endSec": 7.28,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.32,
+          "startSec": 7.28,
+          "endSec": 7.68,
           "startChar": 40,
           "endChar": 42
         },
         {
-          "startSec": 6.32,
-          "endSec": 6.4,
+          "startSec": 7.68,
+          "endSec": 7.76,
           "startChar": 42,
           "endChar": 43
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.64,
+          "startSec": 7.76,
+          "endSec": 7.92,
           "startChar": 43,
           "endChar": 44
         },
         {
-          "startSec": 8.8,
-          "endSec": 9.36,
-          "startChar": 56,
-          "endChar": 58
+          "startSec": 8.32,
+          "endSec": 8.8,
+          "startChar": 45,
+          "endChar": 50
         },
         {
-          "startSec": 9.36,
-          "endSec": 9.52,
+          "startSec": 9.04,
+          "endSec": 9.12,
           "startChar": 58,
           "endChar": 59
         },
         {
-          "startSec": 9.52,
-          "endSec": 9.6,
+          "startSec": 10.0,
+          "endSec": 10.16,
           "startChar": 59,
           "endChar": 60
         },
         {
-          "startSec": 9.6,
-          "endSec": 9.84,
+          "startSec": 10.16,
+          "endSec": 10.24,
           "startChar": 60,
           "endChar": 61
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.32,
+          "startSec": 10.24,
+          "endSec": 10.64,
           "startChar": 61,
           "endChar": 63
         },
         {
-          "startSec": 10.32,
-          "endSec": 10.4,
+          "startSec": 10.64,
+          "endSec": 10.72,
           "startChar": 63,
           "endChar": 64
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.64,
+          "startSec": 10.72,
+          "endSec": 10.96,
           "startChar": 64,
           "endChar": 66
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.6,
+          "startSec": 12.24,
+          "endSec": 12.32,
           "startChar": 71,
           "endChar": 72
         },
         {
-          "startSec": 11.6,
-          "endSec": 11.92,
+          "startSec": 12.32,
+          "endSec": 12.64,
           "startChar": 72,
           "endChar": 74
         },
         {
-          "startSec": 11.92,
-          "endSec": 12.32,
+          "startSec": 12.64,
+          "endSec": 12.88,
           "startChar": 74,
           "endChar": 76
         },
         {
-          "startSec": 12.48,
-          "endSec": 12.88,
+          "startSec": 13.28,
+          "endSec": 13.52,
           "startChar": 76,
           "endChar": 78
         },
         {
-          "startSec": 12.88,
-          "endSec": 13.2,
+          "startSec": 13.52,
+          "endSec": 13.84,
           "startChar": 78,
           "endChar": 79
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.44,
+          "startSec": 13.84,
+          "endSec": 14.0,
           "startChar": 79,
           "endChar": 80
         },
         {
-          "startSec": 13.6,
-          "endSec": 14.08,
+          "startSec": 14.08,
+          "endSec": 14.48,
           "startChar": 80,
           "endChar": 85
         },
         {
-          "startSec": 14.08,
-          "endSec": 14.24,
+          "startSec": 14.48,
+          "endSec": 14.56,
           "startChar": 85,
           "endChar": 86
         },
         {
-          "startSec": 14.24,
-          "endSec": 14.56,
+          "startSec": 14.56,
+          "endSec": 14.96,
           "startChar": 86,
           "endChar": 88
         },
         {
-          "startSec": 14.56,
-          "endSec": 14.64,
+          "startSec": 14.96,
+          "endSec": 15.12,
           "startChar": 88,
           "endChar": 89
         },
         {
-          "startSec": 14.64,
-          "endSec": 14.72,
+          "startSec": 15.12,
+          "endSec": 15.2,
           "startChar": 89,
           "endChar": 90
         },
         {
-          "startSec": 14.72,
-          "endSec": 15.04,
+          "startSec": 15.2,
+          "endSec": 15.44,
           "startChar": 90,
           "endChar": 92
         }
@@ -2546,242 +2570,236 @@
     },
     {
       "id": "editor-terminal",
-      "textHash": "2b791f9418765e2ab300740352a24cc81fd89710fa8b2a05a588fbf2293b30c4",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/editor-terminal.2b791f94.mp3",
+      "textHash": "68a1449d95bc8ed2bbbcaca98a14948890533234a48161ff98c7032d6da249ea",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/editor-terminal.68a1449d.mp3",
       "narrationText": "組み込みのターミナルも動きます。ファイルもここにありますね。では、repoの外を見てみましょう。パーミッションが拒否されました。これは設定ではなく、カーネルの仕様です。",
-      "audioDurationSec": 12.355918,
+      "audioDurationSec": 15.72,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.56,
+          "startSec": 1.76,
+          "endSec": 1.84,
           "startChar": 4,
           "endChar": 5
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.04,
+          "startSec": 1.84,
+          "endSec": 2.4,
           "startChar": 5,
           "endChar": 10
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.2,
+          "startSec": 2.4,
+          "endSec": 2.48,
           "startChar": 10,
           "endChar": 11
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.44,
+          "startSec": 2.48,
+          "endSec": 2.8,
           "startChar": 11,
           "endChar": 13
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.76,
+          "startSec": 2.8,
+          "endSec": 3.12,
           "startChar": 13,
           "endChar": 15
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.56,
+          "startSec": 4.0,
+          "endSec": 4.48,
           "startChar": 16,
           "endChar": 20
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.72,
+          "startSec": 4.48,
+          "endSec": 4.56,
           "startChar": 20,
           "endChar": 21
         },
         {
-          "startSec": 2.72,
-          "endSec": 2.96,
+          "startSec": 4.64,
+          "endSec": 4.88,
           "startChar": 21,
           "endChar": 23
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.12,
+          "startSec": 4.88,
+          "endSec": 5.12,
           "startChar": 23,
           "endChar": 24
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.2,
+          "startSec": 5.12,
+          "endSec": 5.28,
           "startChar": 24,
           "endChar": 26
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.52,
+          "startSec": 5.28,
+          "endSec": 5.52,
           "startChar": 26,
           "endChar": 28
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.68,
+          "startSec": 5.52,
+          "endSec": 5.68,
           "startChar": 28,
           "endChar": 29
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.48,
+          "startSec": 6.88,
+          "endSec": 7.12,
           "startChar": 30,
           "endChar": 31
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.72,
+          "startSec": 7.12,
+          "endSec": 7.28,
           "startChar": 31,
           "endChar": 32
         },
         {
-          "startSec": 5.44,
-          "endSec": 5.68,
+          "startSec": 8.24,
+          "endSec": 8.32,
           "startChar": 37,
           "endChar": 38
         },
         {
-          "startSec": 5.68,
-          "endSec": 6.0,
+          "startSec": 8.32,
+          "endSec": 8.72,
           "startChar": 38,
           "endChar": 39
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.08,
+          "startSec": 8.72,
+          "endSec": 8.8,
           "startChar": 39,
           "endChar": 40
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.16,
+          "startSec": 8.8,
+          "endSec": 8.88,
           "startChar": 40,
           "endChar": 41
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.32,
+          "startSec": 8.96,
+          "endSec": 9.04,
           "startChar": 41,
           "endChar": 42
         },
         {
-          "startSec": 6.32,
-          "endSec": 6.4,
+          "startSec": 9.04,
+          "endSec": 9.12,
           "startChar": 42,
           "endChar": 43
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.8,
+          "startSec": 9.12,
+          "endSec": 9.44,
           "startChar": 43,
           "endChar": 47
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.92,
+          "startSec": 10.48,
+          "endSec": 11.12,
           "startChar": 48,
           "endChar": 55
         },
         {
-          "startSec": 7.92,
-          "endSec": 8.0,
+          "startSec": 11.12,
+          "endSec": 11.2,
           "startChar": 55,
           "endChar": 56
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.32,
+          "startSec": 11.2,
+          "endSec": 11.44,
           "startChar": 56,
           "endChar": 58
         },
         {
-          "startSec": 8.32,
-          "endSec": 8.48,
+          "startSec": 11.44,
+          "endSec": 11.6,
           "startChar": 58,
           "endChar": 59
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.56,
+          "startSec": 11.6,
+          "endSec": 11.68,
           "startChar": 59,
           "endChar": 60
         },
         {
-          "startSec": 8.56,
-          "endSec": 8.72,
+          "startSec": 11.68,
+          "endSec": 11.84,
           "startChar": 60,
           "endChar": 62
         },
         {
-          "startSec": 8.72,
-          "endSec": 8.96,
+          "startSec": 11.84,
+          "endSec": 12.0,
           "startChar": 62,
           "endChar": 63
         },
         {
-          "startSec": 9.44,
-          "endSec": 9.68,
+          "startSec": 12.8,
+          "endSec": 13.04,
           "startChar": 64,
           "endChar": 66
         },
         {
-          "startSec": 9.68,
-          "endSec": 9.84,
+          "startSec": 13.04,
+          "endSec": 13.2,
           "startChar": 66,
           "endChar": 67
         },
         {
-          "startSec": 9.84,
-          "endSec": 10.24,
+          "startSec": 13.2,
+          "endSec": 13.6,
           "startChar": 67,
           "endChar": 69
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.32,
+          "startSec": 13.6,
+          "endSec": 13.68,
           "startChar": 69,
           "endChar": 70
         },
         {
-          "startSec": 10.32,
-          "endSec": 10.4,
+          "startSec": 13.68,
+          "endSec": 13.84,
           "startChar": 70,
           "endChar": 71
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.8,
+          "startSec": 13.84,
+          "endSec": 14.08,
           "startChar": 71,
           "endChar": 73
         },
         {
-          "startSec": 11.12,
-          "endSec": 11.52,
+          "startSec": 14.4,
+          "endSec": 14.88,
           "startChar": 74,
           "endChar": 78
         },
         {
-          "startSec": 11.52,
-          "endSec": 11.68,
+          "startSec": 14.88,
+          "endSec": 14.96,
           "startChar": 78,
           "endChar": 79
         },
         {
-          "startSec": 11.68,
-          "endSec": 12.0,
+          "startSec": 14.96,
+          "endSec": 15.36,
           "startChar": 79,
           "endChar": 81
         },
         {
-          "startSec": 12.0,
-          "endSec": 12.16,
+          "startSec": 15.36,
+          "endSec": 15.6,
           "startChar": 81,
           "endChar": 83
         }
@@ -2789,182 +2807,182 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "7a374b3af9df9e2f67f6b24dc3f010ae42ff82383d50423eb451386d320ff887",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/next-tutorial.7a374b3a.mp3",
+      "textHash": "573206cf69b80fe6a32e37e3154284746c07cb35fc8ba3031e1054989447b224",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-vscode-browser/next-tutorial.573206cf.mp3",
       "narrationText": "ブラウザ、エディタ、ターミナル、すべて同じsandbox、同じルールです。次は、ここにあるすべての土台となる機能、forkingです。きっと気に入ってもらえると思いますよ。",
-      "audioDurationSec": 16.117551,
+      "audioDurationSec": 15.552,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.88,
+          "startSec": 0.24,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 4
         },
         {
           "startSec": 1.28,
-          "endSec": 2.16,
+          "endSec": 1.6,
           "startChar": 5,
           "endChar": 9
         },
         {
-          "startSec": 2.56,
-          "endSec": 3.28,
+          "startSec": 2.16,
+          "endSec": 2.64,
           "startChar": 10,
           "endChar": 15
         },
         {
-          "startSec": 3.68,
+          "startSec": 3.76,
           "endSec": 4.16,
           "startChar": 16,
           "endChar": 19
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.56,
+          "startSec": 4.32,
+          "endSec": 4.72,
           "startChar": 19,
           "endChar": 21
         },
         {
-          "startSec": 5.68,
-          "endSec": 6.08,
+          "startSec": 5.92,
+          "endSec": 6.32,
           "startChar": 29,
           "endChar": 31
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.32,
+          "startSec": 6.32,
+          "endSec": 6.56,
           "startChar": 31,
           "endChar": 34
         },
         {
-          "startSec": 6.32,
-          "endSec": 6.72,
+          "startSec": 6.56,
+          "endSec": 6.88,
           "startChar": 34,
           "endChar": 36
         },
         {
-          "startSec": 7.68,
-          "endSec": 8.0,
+          "startSec": 7.84,
+          "endSec": 8.08,
           "startChar": 37,
           "endChar": 38
         },
         {
-          "startSec": 8.0,
+          "startSec": 8.08,
           "endSec": 8.24,
           "startChar": 38,
           "endChar": 39
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.88,
+          "startSec": 8.88,
+          "endSec": 9.12,
           "startChar": 40,
           "endChar": 42
         },
         {
-          "startSec": 8.88,
-          "endSec": 9.04,
+          "startSec": 9.12,
+          "endSec": 9.28,
           "startChar": 42,
           "endChar": 43
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.36,
+          "startSec": 9.28,
+          "endSec": 9.52,
           "startChar": 43,
           "endChar": 45
         },
         {
-          "startSec": 9.36,
-          "endSec": 9.76,
+          "startSec": 9.68,
+          "endSec": 10.16,
           "startChar": 45,
           "endChar": 48
         },
         {
-          "startSec": 9.76,
-          "endSec": 9.92,
+          "startSec": 10.16,
+          "endSec": 10.24,
           "startChar": 48,
           "endChar": 49
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.32,
+          "startSec": 10.24,
+          "endSec": 10.64,
           "startChar": 49,
           "endChar": 51
         },
         {
-          "startSec": 10.32,
-          "endSec": 10.4,
+          "startSec": 10.64,
+          "endSec": 10.72,
           "startChar": 51,
           "endChar": 52
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.72,
+          "startSec": 10.72,
+          "endSec": 10.96,
           "startChar": 52,
           "endChar": 54
         },
         {
-          "startSec": 10.72,
+          "startSec": 10.96,
           "endSec": 11.2,
           "startChar": 54,
           "endChar": 56
         },
         {
-          "startSec": 12.4,
-          "endSec": 12.72,
+          "startSec": 12.32,
+          "endSec": 12.64,
           "startChar": 64,
           "endChar": 66
         },
         {
-          "startSec": 13.44,
-          "endSec": 13.92,
+          "startSec": 13.36,
+          "endSec": 13.6,
           "startChar": 67,
           "endChar": 70
         },
         {
-          "startSec": 13.92,
-          "endSec": 14.08,
+          "startSec": 13.68,
+          "endSec": 13.84,
           "startChar": 70,
           "endChar": 71
         },
         {
-          "startSec": 14.08,
-          "endSec": 14.24,
+          "startSec": 13.84,
+          "endSec": 13.92,
           "startChar": 71,
           "endChar": 72
         },
         {
-          "startSec": 14.32,
-          "endSec": 14.48,
+          "startSec": 14.0,
+          "endSec": 14.16,
           "startChar": 74,
           "endChar": 75
         },
         {
-          "startSec": 14.48,
-          "endSec": 14.96,
+          "startSec": 14.16,
+          "endSec": 14.48,
           "startChar": 75,
           "endChar": 79
         },
         {
-          "startSec": 14.96,
-          "endSec": 15.28,
+          "startSec": 14.48,
+          "endSec": 14.56,
           "startChar": 79,
           "endChar": 80
         },
         {
-          "startSec": 15.28,
-          "endSec": 15.6,
+          "startSec": 14.56,
+          "endSec": 14.88,
           "startChar": 80,
           "endChar": 82
         },
         {
-          "startSec": 15.6,
-          "endSec": 15.84,
+          "startSec": 14.88,
+          "endSec": 15.12,
           "startChar": 82,
           "endChar": 84
         },
         {
-          "startSec": 15.84,
-          "endSec": 16.08,
+          "startSec": 15.12,
+          "endSec": 15.2,
           "startChar": 84,
           "endChar": 85
         }

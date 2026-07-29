@@ -2,87 +2,1021 @@
   "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "2c0d8118d693d8b43eabb8272b72d12915f6de42de7b599a34473bb4749faf85",
   "steps": [
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "replayStartSec": 2.413668,
-      "replayEndSec": 10.922135,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01.b1e3ffda.mp3",
-      "audioDurationSec": 9.16898,
-      "textHash": "b1e3ffda7f30e2047701123a6a0861a5c05f50f44f0253bc9fe29d0cfd1a6f50",
+      "replayStartSec": 2.414842,
+      "replayEndSec": 8.165229,
       "narrationText": "الدفع الأول إلى جهاز آخر ينقل الصورة بأكملها، والمخرجات تقول ذلك بوضوح: غيغابايتان مُنقَلان، مُصنَّفان بـ full. هذا هو الخط الأساسي.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01-after.6c8f8077.mp3",
-      "afterAudioDurationSec": 8.124082,
-      "afterTextHash": "6c8f80770204eff00bf6deb6ddbdf37ccd3905d2de562ceda02f31a4dc4ce0af"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-01.c72b9ff2.mp3",
+      "textHash": "c72b9ff26dac7ba4884192d19288e849d8aa7a833920a5faf7a5e65761b52dbe",
+      "audioDurationSec": 14.28,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 5.12,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.76,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.32,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 13.6,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.08,
+          "startChar": 124,
+          "endChar": 131
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-01-after.ee3e1f2d.mp3",
+      "afterAudioDurationSec": 13.152,
+      "afterTextHash": "ee3e1f2dcdb934f968908eee3daa5f17a55e23c7a44c78f26e0330effc542e0a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 1.12,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.8,
+          "startChar": 20,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.8,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 70,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.44,
+          "startChar": 77,
+          "endChar": 84
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.92,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 11.2,
+          "startChar": 89,
+          "endChar": 97
+        },
+        {
+          "startSec": 11.38,
+          "endSec": 11.56,
+          "startChar": 99,
+          "endChar": 103
+        },
+        {
+          "startSec": 11.74,
+          "endSec": 11.92,
+          "startChar": 104,
+          "endChar": 106
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.48,
+          "startChar": 107,
+          "endChar": 114
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 115,
+          "endChar": 120
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "replayStartSec": 10.922135,
-      "replayEndSec": 21.404869,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02.f8f0c124.mp3",
-      "audioDurationSec": 3.709388,
-      "textHash": "f8f0c124328d4c4e86bbfac3e444e83d4f57e22b8111d972787458f0237584f8",
+      "replayStartSec": 8.165229,
+      "replayEndSec": 16.388163,
       "narrationText": "غيِّر القليل من البيانات: خمسون ميغابايت من أصل غيغابايتين.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02-after.206f0f90.mp3",
-      "afterAudioDurationSec": 2.194286,
-      "afterTextHash": "206f0f90af6edd6dcb5445967c277e730c4cef8020c73c1a717f3d5a05bdfd4a"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-02.0f36a871.mp3",
+      "textHash": "0f36a87118cac69ae2ae2b6aaf5f4d1c0220b974fa036728574cec82ed59ffb4",
+      "audioDurationSec": 6.264,
+      "wordTimings": [
+        {
+          "startSec": 0.56,
+          "endSec": 1.28,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 16,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.88,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.16,
+          "startChar": 48,
+          "endChar": 59
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-02-after.cc691352.mp3",
+      "afterAudioDurationSec": 3.72,
+      "afterTextHash": "cc69135226db8d1b1a9607412e44ad1a43118d8de6d3a086f8d37b2f4a2738a1",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 2.24,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 19,
+          "endChar": 24
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "replayStartSec": 21.404869,
-      "replayEndSec": 29.764702,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03.e89df5f5.mp3",
-      "audioDurationSec": 11.807347,
-      "textHash": "e89df5f506b303b031bcde705ffea523294713340d519c1249ce7be2c2f200e5",
+      "replayStartSec": 16.388163,
+      "replayEndSec": 22.149817,
       "narrationText": "ادفع مرة أخرى. نفس الأمر، لكن اقرأ المخرجات هذه المرة: نحو خمسين ميغابايت مُنقَلة، مُصنَّفة delta، مقابل صورة بحجم غيغابايتين. فقط الكتل التي تغيرت تنقّلت.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03-after.7c4e1337.mp3",
-      "afterAudioDurationSec": 6.112653,
-      "afterTextHash": "7c4e133797f0a24c290de9e2fed2f7d8aeb6706ba0580b75747852e9aa4a7859"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-03.36bad3a3.mp3",
+      "textHash": "36bad3a374e07fad0861d167ffca68870d5f87e0fe5cbb4d9d61560b42e659f5",
+      "audioDurationSec": 17.64,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.52,
+          "startChar": 35,
+          "endChar": 43
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 7.36,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.16,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 13.44,
+          "startChar": 110,
+          "endChar": 114
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 14.16,
+          "startChar": 115,
+          "endChar": 126
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.44,
+          "startChar": 127,
+          "endChar": 130
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.92,
+          "startChar": 131,
+          "endChar": 136
+        },
+        {
+          "startSec": 15.92,
+          "endSec": 16.48,
+          "startChar": 137,
+          "endChar": 141
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 17.36,
+          "startChar": 142,
+          "endChar": 147
+        },
+        {
+          "startSec": 17.36,
+          "endSec": 17.44,
+          "startChar": 148,
+          "endChar": 155
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-03-after.752c2b2e.mp3",
+      "afterAudioDurationSec": 9.96,
+      "afterTextHash": "752c2b2e1492faa6ccc28d93df101d3eaa5a287765b2732589c511f332d8351c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 2.32,
+          "startChar": 6,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.84,
+          "startChar": 28,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 43,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.16,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.72,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 9.76,
+          "startChar": 71,
+          "endChar": 77
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "replayStartSec": 29.764702,
-      "replayEndSec": 34.159829,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04.d62b797c.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "d62b797c63e6c24eca4bc5c2862eca89c164c1b33fb87db8eeabce64965faaa9",
+      "replayStartSec": 22.149817,
+      "replayEndSec": 26.398447,
       "narrationText": "يحمل كلا الجهازين الآن نفس repository، مُحدَّثاً في ثوانٍ. شغّله كل ساعة إن شئت، التكلفة هي التغيير لا الحجم.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04-after.4ddf6d7a.mp3",
-      "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "4ddf6d7a89d56ab490fb1653bcc4bd0d63b68ad95060d12038f6117d3b9ce079"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-04.f90d935e.mp3",
+      "textHash": "f90d935e5c01d9e5811331f4dc8a5fb41c0c4a8f90c57abe0efe27f04488f3e0",
+      "audioDurationSec": 13.632,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.68,
+          "startChar": 9,
+          "endChar": 17
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 11.04,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.84,
+          "startChar": 81,
+          "endChar": 88
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.08,
+          "startChar": 89,
+          "endChar": 91
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.72,
+          "startChar": 92,
+          "endChar": 99
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.04,
+          "startChar": 100,
+          "endChar": 102
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.44,
+          "startChar": 103,
+          "endChar": 108
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/tutorial-delta-transfer-04-after.5eb2dfc7.mp3",
+      "afterAudioDurationSec": 4.992,
+      "afterTextHash": "5eb2dfc79ab389b98944b277304e5d089dcb52db3fc9cf4e04045e5e3ccf18ea",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 4.32,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 41,
+          "endChar": 46
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/intro.bebfbd10.mp3",
-      "textHash": "bebfbd10707a2c64508e4f6af8f99247bd8efa6943838d79a1c24016d17ebc3f",
-      "audioDurationSec": 15.804082,
-      "narrationText": "إليك تجربة ممتعة. سندفع repository يحوي غيغابايت من البيانات إلى جهاز آخر مرتين. الدفعة الأولى تحمل كل شيء، والثانية تحمل فقط ما تغيّر. راقب الأرقام، يطبع أمر الدفع تحديداً كم نقل."
+      "textHash": "3db631be3353bde2176a637a044414d92dbc9b09fee0e5fa9907d3c29bbc556b",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/intro.3db631be.mp3",
+      "narrationText": "إليك تجربة ممتعة. سندفع repository يحوي غيغابايت من البيانات إلى جهاز آخر مرتين. الدفعة الأولى تحمل كل شيء، والثانية تحمل فقط ما تغيّر. راقب الأرقام، يطبع أمر الدفع تحديداً كم نقل.",
+      "audioDurationSec": 20.52,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.36,
+          "startChar": 40,
+          "endChar": 48
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 7.52,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 65,
+          "endChar": 69
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.96,
+          "startChar": 74,
+          "endChar": 79
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 10.0,
+          "startChar": 81,
+          "endChar": 87
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.96,
+          "startChar": 100,
+          "endChar": 102
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 12.08,
+          "startChar": 103,
+          "endChar": 106
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.52,
+          "startChar": 108,
+          "endChar": 116
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.76,
+          "startChar": 117,
+          "endChar": 121
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.48,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.64,
+          "startChar": 126,
+          "endChar": 128
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 15.12,
+          "startChar": 129,
+          "endChar": 135
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.48,
+          "startChar": 136,
+          "endChar": 140
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 18.8,
+          "startChar": 159,
+          "endChar": 164
+        },
+        {
+          "startSec": 18.8,
+          "endSec": 19.84,
+          "startChar": 165,
+          "endChar": 171
+        },
+        {
+          "startSec": 19.84,
+          "endSec": 20.16,
+          "startChar": 173,
+          "endChar": 175
+        }
+      ]
     },
     {
       "id": "blocks-not-bytes",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/blocks-not-bytes.a509c9d5.mp3",
-      "textHash": "a509c9d54b57d5151e2a002aab8c4d697b1b980844032030c18799bfdc08d9d8",
-      "audioDurationSec": 19.226122,
-      "narrationText": "السر يكمن في الإعداد. بعد الدفعة الأولى، يحتفظ CLI بصورة أساسية متطابقة وغير قابلة للتعديل على كلا الجهازين. الدفعة التالية تقارن الكتل بتلك القاعدة وترسل الفرق فقط. لا خيارات إضافية، لا إدارة سجلات، إنه نفس أمر الدفع."
+      "textHash": "04678d02075b289fab40969782234b75d6c996d5ac66745c2ebf1d32e7c0c531",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/blocks-not-bytes.04678d02.mp3",
+      "narrationText": "السر يكمن في الإعداد. بعد الدفعة الأولى، يحتفظ CLI بصورة أساسية متطابقة وغير قابلة للتعديل على كلا الجهازين. الدفعة التالية تقارن الكتل بتلك القاعدة وترسل الفرق فقط. لا خيارات إضافية، لا إدارة سجلات، إنه نفس أمر الدفع.",
+      "audioDurationSec": 25.152,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.88,
+          "startChar": 41,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 57,
+          "endChar": 63
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 64,
+          "endChar": 71
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.08,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.88,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 12.72,
+          "startChar": 99,
+          "endChar": 107
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 109,
+          "endChar": 115
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.52,
+          "startChar": 116,
+          "endChar": 123
+        },
+        {
+          "startSec": 13.82,
+          "endSec": 14.12,
+          "startChar": 124,
+          "endChar": 129
+        },
+        {
+          "startSec": 14.42,
+          "endSec": 14.72,
+          "startChar": 130,
+          "endChar": 135
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.84,
+          "startChar": 136,
+          "endChar": 140
+        },
+        {
+          "startSec": 15.84,
+          "endSec": 16.48,
+          "startChar": 149,
+          "endChar": 154
+        },
+        {
+          "startSec": 19.36,
+          "endSec": 19.52,
+          "startChar": 166,
+          "endChar": 168
+        },
+        {
+          "startSec": 19.52,
+          "endSec": 20.88,
+          "startChar": 169,
+          "endChar": 175
+        },
+        {
+          "startSec": 21.36,
+          "endSec": 21.44,
+          "startChar": 176,
+          "endChar": 182
+        },
+        {
+          "startSec": 21.44,
+          "endSec": 21.6,
+          "startChar": 184,
+          "endChar": 186
+        },
+        {
+          "startSec": 21.6,
+          "endSec": 22.72,
+          "startChar": 187,
+          "endChar": 192
+        },
+        {
+          "startSec": 23.44,
+          "endSec": 24.0,
+          "startChar": 200,
+          "endChar": 203
+        },
+        {
+          "startSec": 24.0,
+          "endSec": 24.24,
+          "startChar": 204,
+          "endChar": 207
+        },
+        {
+          "startSec": 24.24,
+          "endSec": 24.64,
+          "startChar": 208,
+          "endChar": 211
+        },
+        {
+          "startSec": 24.64,
+          "endSec": 24.8,
+          "startChar": 212,
+          "endChar": 217
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/next-tutorial.490b1642.mp3",
-      "textHash": "490b164291deb19ceae9538d88d343aad879af56186b32139a465ea3a1762749",
-      "audioDurationSec": 11.31102,
-      "narrationText": "التغييرات الصغيرة تعني عمليات نقل صغيرة، في كل مرة بعد الأولى. تبقّى درس واحد فقط الآن: التأكد من أنك لن تنفد مساحة القرص أبداً. أراك في الأخير!"
+      "textHash": "b447f9da14ba4bad935aefee1e20cbdd50ae488436ab673398554788ef380466",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-delta-transfer/next-tutorial.b447f9da.mp3",
+      "narrationText": "التغييرات الصغيرة تعني عمليات نقل صغيرة، في كل مرة بعد الأولى. تبقّى درس واحد فقط الآن: التأكد من أنك لن تنفد مساحة القرص أبداً. أراك في الأخير!",
+      "audioDurationSec": 14.904,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.32,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.88,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.52,
+          "startChar": 55,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.96,
+          "startChar": 63,
+          "endChar": 68
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.2,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 73,
+          "endChar": 77
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.08,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 82,
+          "endChar": 86
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.6,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.16,
+          "startChar": 95,
+          "endChar": 97
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.88,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.36,
+          "startChar": 105,
+          "endChar": 109
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.76,
+          "startChar": 110,
+          "endChar": 115
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.16,
+          "startChar": 122,
+          "endChar": 126
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.08,
+          "startChar": 134,
+          "endChar": 136
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.64,
+          "startChar": 137,
+          "endChar": 143
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "6f1269c008cd82fa258fb3bd7f613a3086d840ac0d874264c05bd458ea12821a"
+  ]
 }

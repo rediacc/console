@@ -2,11 +2,11 @@
   "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
   "language": "es",
   "version": 1,
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
   "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "0721bbd27dad",
   "transcriptHash": "6dd4052f25eb7912a6be5ca949ae817dcb517d4a10e94b5eeadae75e72e22a83",
   "steps": [
     {
@@ -15,248 +15,33 @@
       "replayStartSec": 2.412087,
       "replayEndSec": 7.70388,
       "narrationText": "Primero, el comando tunnel. La app se ejecuta en el servidor, no en tu laptop. El comando repo tunnel del CLI reenvía el puerto de un contenedor por SSH para que puedas abrirlo en localhost en tu navegador.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-01.85316c4c.mp3",
-      "textHash": "85316c4c5f84cd9c1535ebf8d9a63293a6f15ef6c6e6b747e6c21f235be8f2f7",
-      "audioDurationSec": 15.804082,
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-01.108ec10f.mp3",
+      "textHash": "108ec10f00e4a58d7372158c55e2a5f871412fc1509491bbad0dc1715b1730e7",
+      "audioDurationSec": 13.464,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.0,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 7
         },
         {
-          "startSec": 0.72,
+          "startSec": 0.88,
           "endSec": 1.04,
           "startChar": 9,
           "endChar": 11
         },
         {
           "startSec": 1.04,
-          "endSec": 1.6,
+          "endSec": 1.52,
           "startChar": 12,
           "endChar": 19
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.16,
+          "startSec": 1.52,
+          "endSec": 1.84,
           "startChar": 20,
           "endChar": 26
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.8,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 2.88,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.2,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.6,
-          "startChar": 38,
-          "endChar": 45
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.68,
-          "startChar": 46,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 3.84,
-          "startChar": 49,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.48,
-          "startChar": 52,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.2,
-          "startChar": 62,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.28,
-          "startChar": 65,
-          "endChar": 67
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 68,
-          "endChar": 70
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 6.0,
-          "startChar": 71,
-          "endChar": 77
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 6.64,
-          "startChar": 79,
-          "endChar": 81
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.12,
-          "startChar": 82,
-          "endChar": 89
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.52,
-          "startChar": 90,
-          "endChar": 94
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 8.16,
-          "startChar": 95,
-          "endChar": 101
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 9.04,
-          "startChar": 106,
-          "endChar": 109
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.4,
-          "startChar": 121,
-          "endChar": 127
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.64,
-          "startChar": 131,
-          "endChar": 133
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.04,
-          "startChar": 134,
-          "endChar": 144
-        },
-        {
-          "startSec": 11.36,
-          "endSec": 11.68,
-          "startChar": 145,
-          "endChar": 148
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.48,
-          "startChar": 149,
-          "endChar": 152
-        },
-        {
-          "startSec": 12.48,
-          "endSec": 12.72,
-          "startChar": 153,
-          "endChar": 157
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 12.88,
-          "startChar": 158,
-          "endChar": 161
-        },
-        {
-          "startSec": 12.88,
-          "endSec": 13.28,
-          "startChar": 162,
-          "endChar": 168
-        },
-        {
-          "startSec": 13.28,
-          "endSec": 13.84,
-          "startChar": 169,
-          "endChar": 176
-        },
-        {
-          "startSec": 13.84,
-          "endSec": 14.0,
-          "startChar": 177,
-          "endChar": 179
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.72,
-          "startChar": 180,
-          "endChar": 189
-        },
-        {
-          "startSec": 14.72,
-          "endSec": 14.96,
-          "startChar": 190,
-          "endChar": 192
-        },
-        {
-          "startSec": 14.96,
-          "endSec": 15.12,
-          "startChar": 193,
-          "endChar": 195
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.68,
-          "startChar": 196,
-          "endChar": 205
-        }
-      ],
-      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-01-after.10f44c1a.mp3",
-      "afterAudioDurationSec": 3.970612,
-      "afterTextHash": "10f44c1aed234169a0bc7ab04e84956a8022ac23e63a91be84d95d98f0d99ce7",
-      "afterWordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.96,
-          "startChar": 7,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.52,
-          "startChar": 18,
-          "endChar": 20
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.84,
-          "startChar": 21,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.16,
-          "startChar": 25,
-          "endChar": 27
         },
         {
           "startSec": 2.16,
@@ -265,22 +50,237 @@
           "endChar": 30
         },
         {
-          "startSec": 2.4,
-          "endSec": 3.04,
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 38,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.08,
+          "startChar": 52,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.4,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 79,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 90,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 95,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.8,
+          "startChar": 102,
+          "endChar": 105
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.36,
+          "startChar": 106,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 118,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 121,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 128,
+          "endChar": 130
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.56,
+          "startChar": 131,
+          "endChar": 133
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.2,
+          "startChar": 134,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 145,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.32,
+          "startChar": 149,
+          "endChar": 152
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.56,
+          "startChar": 153,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.64,
+          "startChar": 158,
+          "endChar": 161
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.04,
+          "startChar": 162,
+          "endChar": 168
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.52,
+          "startChar": 169,
+          "endChar": 176
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.84,
+          "startChar": 177,
+          "endChar": 179
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.32,
+          "startChar": 180,
+          "endChar": 189
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.64,
+          "startChar": 190,
+          "endChar": 192
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 193,
+          "endChar": 195
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.2,
+          "startChar": 196,
+          "endChar": 205
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-01-after.4e777cd3.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "4e777cd30a6ba8425913d443722b29a9b2ae071c7085e4daf80ed143749a9b67",
+      "afterWordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.28,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
           "startChar": 31,
           "endChar": 40
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.2,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 41,
           "endChar": 43
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.84,
+          "startSec": 2.24,
+          "endSec": 2.32,
           "startChar": 44,
-          "endChar": 53
+          "endChar": 46
         }
       ]
     },
@@ -290,344 +290,332 @@
       "replayStartSec": 7.70388,
       "replayEndSec": 12.470166,
       "narrationText": "Segundo, el comando term. El comando term connect del CLI te lleva dentro del sandbox del repo, la misma vista aislada que te daría VS Code. Ejecuta cualquier comando contra el Docker daemon de este repo sin salir de tu terminal.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-02.68bde102.mp3",
-      "textHash": "68bde102ad449d220153e712437296221e9114dc6230e9ee73481444c79b6e18",
-      "audioDurationSec": 20.68898,
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-02.0fd88221.mp3",
+      "textHash": "0fd8822144929b33e00dc2a83b19a3114eb5042866de6e9d1eba1aeb0e34b304",
+      "audioDurationSec": 13.152,
       "wordTimings": [
         {
           "startSec": 0.0,
-          "endSec": 0.64,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 7
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.52,
+          "startSec": 0.88,
+          "endSec": 1.04,
           "startChar": 9,
           "endChar": 11
         },
         {
-          "startSec": 1.52,
-          "endSec": 2.0,
+          "startSec": 1.04,
+          "endSec": 1.36,
           "startChar": 12,
           "endChar": 19
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.56,
+          "startSec": 1.36,
+          "endSec": 1.6,
           "startChar": 20,
-          "endChar": 24
+          "endChar": 23
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.28,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 26,
           "endChar": 28
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.76,
+          "startSec": 2.32,
+          "endSec": 2.72,
           "startChar": 29,
           "endChar": 36
         },
         {
-          "startSec": 3.76,
-          "endSec": 4.24,
+          "startSec": 2.72,
+          "endSec": 2.88,
           "startChar": 37,
-          "endChar": 41
+          "endChar": 40
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.8,
-          "startChar": 42,
-          "endChar": 49
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.12,
-          "startChar": 50,
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 51,
           "endChar": 53
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.52,
-          "startChar": 54,
-          "endChar": 57
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 6.32,
+          "startSec": 3.76,
+          "endSec": 3.84,
           "startChar": 58,
           "endChar": 60
         },
         {
-          "startSec": 6.8,
-          "endSec": 7.12,
+          "startSec": 3.84,
+          "endSec": 4.16,
           "startChar": 61,
           "endChar": 66
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.44,
+          "startSec": 4.16,
+          "endSec": 4.4,
           "startChar": 67,
           "endChar": 73
         },
         {
-          "startSec": 7.44,
-          "endSec": 7.6,
+          "startSec": 4.4,
+          "endSec": 4.56,
           "startChar": 74,
           "endChar": 77
         },
         {
-          "startSec": 7.6,
-          "endSec": 8.32,
+          "startSec": 4.56,
+          "endSec": 5.04,
           "startChar": 78,
           "endChar": 85
         },
         {
-          "startSec": 8.32,
-          "endSec": 8.48,
+          "startSec": 5.04,
+          "endSec": 5.2,
           "startChar": 86,
           "endChar": 89
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.96,
+          "startSec": 5.2,
+          "endSec": 5.52,
           "startChar": 90,
           "endChar": 94
         },
         {
-          "startSec": 9.52,
-          "endSec": 9.6,
+          "startSec": 6.0,
+          "endSec": 6.08,
           "startChar": 96,
           "endChar": 98
         },
         {
-          "startSec": 9.6,
-          "endSec": 9.92,
+          "startSec": 6.08,
+          "endSec": 6.48,
           "startChar": 99,
           "endChar": 104
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.4,
+          "startSec": 6.48,
+          "endSec": 6.72,
           "startChar": 105,
           "endChar": 110
         },
         {
-          "startSec": 10.64,
-          "endSec": 11.44,
+          "startSec": 6.72,
+          "endSec": 7.04,
           "startChar": 111,
           "endChar": 118
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.6,
+          "startSec": 7.12,
+          "endSec": 7.2,
           "startChar": 119,
           "endChar": 122
         },
         {
-          "startSec": 11.6,
-          "endSec": 11.68,
+          "startSec": 7.2,
+          "endSec": 7.36,
           "startChar": 123,
           "endChar": 125
         },
         {
-          "startSec": 11.68,
-          "endSec": 12.16,
+          "startSec": 7.36,
+          "endSec": 7.68,
           "startChar": 126,
           "endChar": 131
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.6,
-          "startChar": 135,
-          "endChar": 139
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.96,
+          "startSec": 8.72,
+          "endSec": 9.2,
           "startChar": 141,
           "endChar": 148
         },
         {
-          "startSec": 14.96,
-          "endSec": 15.44,
+          "startSec": 9.2,
+          "endSec": 9.68,
           "startChar": 149,
           "endChar": 158
         },
         {
-          "startSec": 15.44,
-          "endSec": 16.0,
+          "startSec": 9.68,
+          "endSec": 10.08,
           "startChar": 159,
           "endChar": 166
         },
         {
-          "startSec": 16.0,
-          "endSec": 16.48,
+          "startSec": 10.08,
+          "endSec": 10.32,
           "startChar": 167,
           "endChar": 173
         },
         {
-          "startSec": 16.48,
-          "endSec": 16.64,
+          "startSec": 10.32,
+          "endSec": 10.4,
           "startChar": 174,
           "endChar": 176
         },
         {
-          "startSec": 16.64,
-          "endSec": 17.04,
+          "startSec": 10.4,
+          "endSec": 10.72,
           "startChar": 177,
           "endChar": 183
         },
         {
-          "startSec": 17.04,
-          "endSec": 17.76,
+          "startSec": 10.72,
+          "endSec": 11.04,
           "startChar": 184,
           "endChar": 190
         },
         {
-          "startSec": 17.76,
-          "endSec": 18.0,
+          "startSec": 11.04,
+          "endSec": 11.12,
           "startChar": 191,
           "endChar": 193
         },
         {
-          "startSec": 18.0,
-          "endSec": 18.24,
+          "startSec": 11.12,
+          "endSec": 11.36,
           "startChar": 194,
           "endChar": 198
         },
         {
-          "startSec": 18.24,
-          "endSec": 18.64,
+          "startSec": 11.36,
+          "endSec": 11.68,
           "startChar": 199,
           "endChar": 203
         },
         {
-          "startSec": 19.04,
-          "endSec": 19.28,
+          "startSec": 11.84,
+          "endSec": 12.08,
           "startChar": 204,
           "endChar": 207
         },
         {
-          "startSec": 19.28,
-          "endSec": 19.68,
+          "startSec": 12.08,
+          "endSec": 12.4,
           "startChar": 208,
           "endChar": 213
         },
         {
-          "startSec": 19.68,
-          "endSec": 19.92,
+          "startSec": 12.4,
+          "endSec": 12.48,
           "startChar": 214,
           "endChar": 216
         },
         {
-          "startSec": 19.92,
-          "endSec": 20.08,
+          "startSec": 12.48,
+          "endSec": 12.56,
           "startChar": 217,
           "endChar": 219
         },
         {
-          "startSec": 20.08,
-          "endSec": 20.56,
+          "startSec": 12.56,
+          "endSec": 12.96,
           "startChar": 220,
           "endChar": 228
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-02-after.ba2d5b99.mp3",
-      "afterAudioDurationSec": 6.112653,
-      "afterTextHash": "ba2d5b992fa362fbe9b4dec438f441e2174cb31db8054d99fcc3ed7f183b4bcd",
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-02-after.5d779e70.mp3",
+      "afterAudioDurationSec": 5.16,
+      "afterTextHash": "5d779e707b7b154ba51528aa21633071ac093147c4a590a3900b8c90ec30c283",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
+          "startSec": 0.0,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 6
         },
         {
-          "startSec": 0.48,
-          "endSec": 0.64,
+          "startSec": 0.32,
+          "endSec": 0.48,
           "startChar": 7,
           "endChar": 10
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.28,
+          "startSec": 0.48,
+          "endSec": 0.88,
           "startChar": 11,
           "endChar": 18
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.36,
+          "startSec": 0.88,
+          "endSec": 1.04,
           "startChar": 19,
           "endChar": 22
         },
         {
-          "startSec": 1.52,
-          "endSec": 1.84,
+          "startSec": 1.04,
+          "endSec": 1.28,
           "startChar": 23,
-          "endChar": 28
+          "endChar": 27
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.88,
+          "startSec": 2.16,
+          "endSec": 2.64,
           "startChar": 29,
           "endChar": 36
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.04,
+          "startSec": 2.72,
+          "endSec": 2.8,
           "startChar": 37,
           "endChar": 39
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.12,
+          "startSec": 2.8,
+          "endSec": 2.88,
           "startChar": 40,
           "endChar": 43
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.44,
+          "startSec": 2.88,
+          "endSec": 3.04,
           "startChar": 44,
           "endChar": 47
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.6,
+          "startSec": 3.2,
+          "endSec": 3.36,
           "startChar": 48,
           "endChar": 52
         },
         {
-          "startSec": 3.6,
-          "endSec": 3.76,
+          "startSec": 3.36,
+          "endSec": 3.52,
           "startChar": 53,
           "endChar": 55
         },
         {
-          "startSec": 3.76,
-          "endSec": 4.32,
+          "startSec": 3.52,
+          "endSec": 3.92,
           "startChar": 56,
           "endChar": 66
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.96,
+          "startSec": 3.92,
+          "endSec": 4.32,
           "startChar": 67,
           "endChar": 76
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.36,
+          "startSec": 4.32,
+          "endSec": 4.48,
           "startChar": 77,
           "endChar": 80
         },
         {
-          "startSec": 5.36,
-          "endSec": 6.0,
+          "startSec": 4.48,
+          "endSec": 4.8,
           "startChar": 81,
-          "endChar": 84
+          "endChar": 82
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.88,
+          "startChar": 82,
+          "endChar": 83
         }
       ]
     },
@@ -637,179 +625,197 @@
       "replayStartSec": 12.470166,
       "replayEndSec": 17.752905,
       "narrationText": "Antes de subir archivos, usamos la previsualización con guion guion dry guion run. Muestra exactamente qué cambiaría sin copiar nada. Siempre previsualiza cuando no estés seguro.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-03.0fccd601.mp3",
-      "textHash": "0fccd601df5045d9c98d784f9dce77facb3e9208cbe2b5eb1ff3931e9c484dc2",
-      "audioDurationSec": 13.949388,
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-03.20a4dfce.mp3",
+      "textHash": "20a4dfcec654c7e575e918b5537bc59195e989ec3e2219ec88dfb5b9f1a57fc4",
+      "audioDurationSec": 8.52,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.4,
+          "startSec": 0.0,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.56,
+          "startSec": 0.32,
+          "endSec": 0.4,
           "startChar": 6,
           "endChar": 8
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.88,
+          "startSec": 0.4,
+          "endSec": 0.64,
           "startChar": 9,
           "endChar": 14
         },
         {
-          "startSec": 0.88,
-          "endSec": 1.6,
+          "startSec": 0.64,
+          "endSec": 1.2,
           "startChar": 15,
           "endChar": 23
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.48,
+          "startSec": 1.28,
+          "endSec": 1.6,
           "startChar": 25,
           "endChar": 31
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.64,
+          "startSec": 1.6,
+          "endSec": 1.68,
           "startChar": 32,
           "endChar": 34
         },
         {
-          "startSec": 2.64,
-          "endSec": 4.08,
+          "startSec": 1.68,
+          "endSec": 2.48,
           "startChar": 35,
           "endChar": 51
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.56,
+          "startSec": 2.48,
+          "endSec": 2.64,
           "startChar": 52,
           "endChar": 55
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.68,
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 62,
+          "endChar": 67
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
           "startChar": 83,
           "endChar": 90
         },
         {
-          "startSec": 7.76,
-          "endSec": 8.72,
+          "startSec": 4.24,
+          "endSec": 4.88,
           "startChar": 91,
           "endChar": 102
         },
         {
-          "startSec": 8.72,
-          "endSec": 8.8,
+          "startSec": 4.88,
+          "endSec": 5.04,
           "startChar": 103,
           "endChar": 106
         },
         {
-          "startSec": 8.8,
-          "endSec": 9.44,
+          "startSec": 5.04,
+          "endSec": 5.52,
           "startChar": 107,
           "endChar": 116
         },
         {
-          "startSec": 9.44,
-          "endSec": 9.76,
+          "startSec": 5.52,
+          "endSec": 5.76,
           "startChar": 117,
           "endChar": 120
         },
         {
-          "startSec": 9.76,
-          "endSec": 10.08,
+          "startSec": 5.76,
+          "endSec": 6.08,
           "startChar": 121,
           "endChar": 127
         },
         {
-          "startSec": 10.08,
-          "endSec": 10.4,
+          "startSec": 6.08,
+          "endSec": 6.24,
           "startChar": 128,
           "endChar": 132
         },
         {
-          "startSec": 10.96,
-          "endSec": 11.52,
+          "startSec": 6.48,
+          "endSec": 6.88,
           "startChar": 134,
           "endChar": 141
         },
         {
-          "startSec": 11.52,
-          "endSec": 12.64,
+          "startSec": 6.88,
+          "endSec": 7.44,
           "startChar": 142,
           "endChar": 154
         },
         {
-          "startSec": 12.64,
-          "endSec": 13.04,
+          "startSec": 7.44,
+          "endSec": 7.76,
           "startChar": 155,
           "endChar": 161
         },
         {
-          "startSec": 13.04,
-          "endSec": 13.12,
+          "startSec": 7.76,
+          "endSec": 7.84,
           "startChar": 162,
           "endChar": 164
         },
         {
-          "startSec": 13.12,
-          "endSec": 13.44,
+          "startSec": 7.84,
+          "endSec": 8.0,
           "startChar": 165,
-          "endChar": 170
+          "endChar": 169
         },
         {
-          "startSec": 13.44,
-          "endSec": 13.84,
+          "startSec": 8.0,
+          "endSec": 8.4,
           "startChar": 171,
           "endChar": 177
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-03-after.04d13305.mp3",
-      "afterAudioDurationSec": 4.205714,
-      "afterTextHash": "04d13305d7fd5fe74e937ac923a1895aa8bcfd59bd1531d26f4d8a7d8738112d",
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-03-after.5db3a20a.mp3",
+      "afterAudioDurationSec": 4.344,
+      "afterTextHash": "5db3a20adb3157853c1aaebb4f93c88e0c8fe99f75921cb5308359c4b03df74f",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
+          "startSec": 0.0,
           "endSec": 0.4,
           "startChar": 0,
           "endChar": 4
         },
         {
           "startSec": 0.4,
-          "endSec": 1.68,
+          "endSec": 1.28,
           "startChar": 5,
           "endChar": 21
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.4,
+          "startSec": 2.16,
+          "endSec": 2.56,
           "startChar": 23,
           "endChar": 29
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.96,
+          "startSec": 2.56,
+          "endSec": 3.12,
           "startChar": 30,
           "endChar": 37
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.12,
+          "startSec": 3.12,
+          "endSec": 3.36,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.44,
+          "startSec": 3.36,
+          "endSec": 3.68,
           "startChar": 41,
           "endChar": 46
         },
         {
-          "startSec": 3.44,
+          "startSec": 3.68,
           "endSec": 4.08,
           "startChar": 47,
           "endChar": 54
@@ -822,288 +828,288 @@
       "replayStartSec": 17.752905,
       "replayEndSec": 22.568523,
       "narrationText": "Ahora ejecutamos la subida real. El comando repo sync upload del CLI mueve archivos desde tu laptop al repo por SSH con compresión delta de rsync. Tunnel, term, sync: tres comandos cubren el ciclo diario.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-04.a7c4c72b.mp3",
-      "textHash": "a7c4c72be008cff8aaf5a88f967dde9a5ca5df33f3dfd7c3d99158dda226575b",
-      "audioDurationSec": 19.147755,
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-04.b4aaebaf.mp3",
+      "textHash": "b4aaebafa6f17674a79846586f3186adaad2ee15cd4cf5e81b52c81a6cc26c3b",
+      "audioDurationSec": 12.84,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
+          "startSec": 0.0,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 5
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.28,
+          "startSec": 0.24,
+          "endSec": 0.8,
           "startChar": 6,
           "endChar": 16
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.44,
+          "startSec": 0.8,
+          "endSec": 0.88,
           "startChar": 17,
           "endChar": 19
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.84,
+          "startSec": 0.88,
+          "endSec": 1.28,
           "startChar": 20,
           "endChar": 26
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.32,
+          "startSec": 1.28,
+          "endSec": 1.44,
           "startChar": 27,
           "endChar": 31
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.12,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 33,
           "endChar": 35
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.6,
+          "startSec": 2.32,
+          "endSec": 2.72,
           "startChar": 36,
           "endChar": 43
         },
         {
-          "startSec": 3.6,
-          "endSec": 4.0,
+          "startSec": 2.72,
+          "endSec": 3.04,
           "startChar": 44,
           "endChar": 48
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.32,
+          "startSec": 3.04,
+          "endSec": 3.36,
           "startChar": 49,
           "endChar": 53
         },
         {
-          "startSec": 4.4,
-          "endSec": 4.8,
+          "startSec": 3.44,
+          "endSec": 3.76,
           "startChar": 54,
           "endChar": 60
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.12,
+          "startSec": 3.84,
+          "endSec": 4.0,
           "startChar": 61,
           "endChar": 64
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.36,
+          "startSec": 4.0,
+          "endSec": 4.56,
           "startChar": 65,
           "endChar": 68
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.4,
+          "startSec": 4.64,
+          "endSec": 4.96,
           "startChar": 69,
           "endChar": 74
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.96,
+          "startSec": 4.96,
+          "endSec": 5.44,
           "startChar": 75,
           "endChar": 83
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.28,
+          "startSec": 5.44,
+          "endSec": 5.68,
           "startChar": 84,
           "endChar": 89
         },
         {
-          "startSec": 7.28,
-          "endSec": 7.36,
+          "startSec": 5.68,
+          "endSec": 5.84,
           "startChar": 90,
           "endChar": 92
         },
         {
-          "startSec": 7.36,
-          "endSec": 7.92,
+          "startSec": 5.84,
+          "endSec": 6.16,
           "startChar": 93,
           "endChar": 99
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.72,
+          "startSec": 6.16,
+          "endSec": 6.24,
           "startChar": 100,
           "endChar": 102
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.04,
+          "startSec": 6.24,
+          "endSec": 6.64,
           "startChar": 103,
           "endChar": 107
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.36,
+          "startSec": 6.64,
+          "endSec": 6.8,
           "startChar": 108,
           "endChar": 111
         },
         {
-          "startSec": 9.36,
-          "endSec": 10.32,
+          "startSec": 6.8,
+          "endSec": 7.28,
           "startChar": 112,
           "endChar": 115
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.64,
+          "startSec": 7.52,
+          "endSec": 7.76,
           "startChar": 116,
           "endChar": 119
         },
         {
-          "startSec": 10.64,
-          "endSec": 11.36,
+          "startSec": 7.76,
+          "endSec": 8.24,
           "startChar": 120,
           "endChar": 130
         },
         {
-          "startSec": 11.36,
-          "endSec": 11.84,
+          "startSec": 8.24,
+          "endSec": 8.56,
           "startChar": 131,
           "endChar": 136
         },
         {
-          "startSec": 11.84,
-          "endSec": 12.16,
+          "startSec": 8.56,
+          "endSec": 8.72,
           "startChar": 137,
           "endChar": 139
         },
         {
-          "startSec": 12.16,
-          "endSec": 12.88,
+          "startSec": 8.72,
+          "endSec": 9.12,
           "startChar": 140,
           "endChar": 145
         },
         {
-          "startSec": 13.76,
-          "endSec": 14.16,
+          "startSec": 9.44,
+          "endSec": 9.76,
           "startChar": 147,
           "endChar": 153
         },
         {
-          "startSec": 14.72,
-          "endSec": 15.2,
+          "startSec": 9.92,
+          "endSec": 10.24,
           "startChar": 155,
           "endChar": 159
         },
         {
-          "startSec": 15.2,
-          "endSec": 15.84,
+          "startSec": 10.32,
+          "endSec": 10.72,
           "startChar": 161,
           "endChar": 165
         },
         {
-          "startSec": 16.48,
-          "endSec": 16.8,
+          "startSec": 10.96,
+          "endSec": 11.2,
           "startChar": 167,
           "endChar": 171
         },
         {
-          "startSec": 16.8,
-          "endSec": 17.44,
+          "startSec": 11.2,
+          "endSec": 11.68,
           "startChar": 172,
           "endChar": 180
         },
         {
-          "startSec": 17.6,
-          "endSec": 18.0,
+          "startSec": 11.68,
+          "endSec": 12.0,
           "startChar": 181,
           "endChar": 187
         },
         {
-          "startSec": 18.0,
-          "endSec": 18.16,
+          "startSec": 12.0,
+          "endSec": 12.08,
           "startChar": 188,
           "endChar": 190
         },
         {
-          "startSec": 18.16,
-          "endSec": 18.56,
+          "startSec": 12.08,
+          "endSec": 12.4,
           "startChar": 191,
           "endChar": 196
         },
         {
-          "startSec": 18.56,
-          "endSec": 19.04,
+          "startSec": 12.4,
+          "endSec": 12.64,
           "startChar": 197,
           "endChar": 203
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-04-after.0635dac8.mp3",
-      "afterAudioDurationSec": 5.407347,
-      "afterTextHash": "0635dac811407c11bddf59b4bfb8c95bdd98b35dd36cb19935cf228b768756d8",
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/tutorial-work-with-repo-04-after.7a7bcacc.mp3",
+      "afterAudioDurationSec": 4.824,
+      "afterTextHash": "7a7bcaccf1b36070518f509cd9ff44e7431683b5583ecc1473cfdd881194e00d",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.0,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 8
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.28,
+          "startSec": 0.48,
+          "endSec": 1.12,
           "startChar": 9,
           "endChar": 16
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.0,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 18,
           "endChar": 20
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.72,
+          "startSec": 2.32,
+          "endSec": 2.8,
           "startChar": 21,
           "endChar": 31
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.12,
+          "startSec": 2.8,
+          "endSec": 3.04,
           "startChar": 32,
           "endChar": 37
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.36,
+          "startSec": 3.04,
+          "endSec": 3.12,
           "startChar": 38,
           "endChar": 40
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.92,
+          "startSec": 3.12,
+          "endSec": 3.52,
           "startChar": 41,
           "endChar": 48
         },
         {
-          "startSec": 3.92,
-          "endSec": 4.0,
+          "startSec": 3.52,
+          "endSec": 3.6,
           "startChar": 49,
           "endChar": 51
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.16,
+          "startSec": 3.6,
+          "endSec": 3.76,
           "startChar": 52,
           "endChar": 55
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.64,
+          "startSec": 3.76,
+          "endSec": 4.08,
           "startChar": 56,
           "endChar": 63
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.36,
+          "startSec": 4.08,
+          "endSec": 4.64,
           "startChar": 64,
           "endChar": 71
         }
@@ -1113,62 +1119,56 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "1185fb336308f425f4532e9736a49cdd0f63970f1be3a443c1a9fbc41aca0b93",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/intro.1185fb33.mp3",
+      "textHash": "216cd0b99c3440d206bc2988c11609cd841ccf4f1d766f45a3d39e8f77463b3a",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/intro.216cd0b9.mp3",
       "narrationText": "¡Muy bien! Tu app está corriendo, así que vamos a trabajar con ella de verdad. Tres comandos cubren el ciclo diario.",
-      "audioDurationSec": 7.079184,
+      "audioDurationSec": 6.432,
       "wordTimings": [
         {
-          "startSec": 0.08,
+          "startSec": 0.16,
           "endSec": 0.24,
-          "startChar": 1,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.24,
-          "endSec": 0.56,
           "startChar": 5,
           "endChar": 9
         },
         {
-          "startSec": 0.8,
-          "endSec": 0.96,
+          "startSec": 1.04,
+          "endSec": 1.12,
           "startChar": 11,
           "endChar": 13
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.12,
+          "startSec": 1.12,
+          "endSec": 1.28,
           "startChar": 14,
           "endChar": 17
         },
         {
-          "startSec": 1.12,
-          "endSec": 1.44,
+          "startSec": 1.44,
+          "endSec": 1.68,
           "startChar": 18,
           "endChar": 22
         },
         {
-          "startSec": 1.44,
-          "endSec": 2.24,
+          "startSec": 1.76,
+          "endSec": 2.16,
           "startChar": 23,
           "endChar": 32
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.56,
+          "startSec": 2.16,
+          "endSec": 2.4,
           "startChar": 34,
           "endChar": 37
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.64,
+          "startSec": 2.4,
+          "endSec": 2.56,
           "startChar": 38,
           "endChar": 41
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.88,
+          "startSec": 2.56,
+          "endSec": 2.72,
           "startChar": 42,
           "endChar": 47
         },
@@ -1191,56 +1191,56 @@
           "endChar": 62
         },
         {
-          "startSec": 3.6,
+          "startSec": 3.68,
           "endSec": 3.84,
           "startChar": 63,
           "endChar": 67
         },
         {
           "startSec": 3.84,
-          "endSec": 4.0,
+          "endSec": 3.92,
           "startChar": 68,
           "endChar": 70
         },
         {
           "startSec": 4.0,
-          "endSec": 4.4,
+          "endSec": 4.16,
           "startChar": 71,
           "endChar": 77
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.12,
+          "startSec": 4.4,
+          "endSec": 4.56,
           "startChar": 79,
           "endChar": 83
         },
         {
-          "startSec": 5.12,
-          "endSec": 5.6,
+          "startSec": 4.56,
+          "endSec": 4.96,
           "startChar": 84,
           "endChar": 92
         },
         {
-          "startSec": 5.6,
-          "endSec": 6.0,
+          "startSec": 5.12,
+          "endSec": 5.44,
           "startChar": 93,
           "endChar": 99
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.24,
+          "startSec": 5.44,
+          "endSec": 5.52,
           "startChar": 100,
           "endChar": 102
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.56,
+          "startSec": 5.6,
+          "endSec": 5.92,
           "startChar": 103,
           "endChar": 108
         },
         {
-          "startSec": 6.56,
-          "endSec": 7.04,
+          "startSec": 5.92,
+          "endSec": 6.24,
           "startChar": 109,
           "endChar": 115
         }
@@ -1248,152 +1248,182 @@
     },
     {
       "id": "daily-three",
-      "textHash": "940b2eda7482fb6b189ab88178f9668d1377bff7a06e9068f3b77a283cf2dbb2",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/daily-three.940b2eda.mp3",
+      "textHash": "129331fafed77b52e947c77eb23ed803cae57a5c5c3cb92e6b151dc9e1c605ee",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/daily-three.129331fa.mp3",
       "narrationText": "Tunnel abre tu app en un navegador, term ejecuta comandos dentro del sandbox y sync mueve archivos de entrada y salida. Ese es el flujo de trabajo diario completo.",
-      "audioDurationSec": 13.244082,
+      "audioDurationSec": 8.52,
       "wordTimings": [
         {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
           "startSec": 0.32,
-          "endSec": 0.88,
+          "endSec": 0.56,
           "startChar": 7,
           "endChar": 11
         },
         {
-          "startSec": 2.0,
-          "endSec": 2.24,
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
           "startChar": 22,
           "endChar": 24
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.96,
+          "startSec": 1.12,
+          "endSec": 1.68,
           "startChar": 25,
           "endChar": 34
         },
         {
-          "startSec": 3.2,
-          "endSec": 3.52,
+          "startSec": 2.08,
+          "endSec": 2.32,
           "startChar": 36,
           "endChar": 40
         },
         {
-          "startSec": 3.52,
-          "endSec": 4.16,
+          "startSec": 2.48,
+          "endSec": 2.96,
           "startChar": 41,
           "endChar": 48
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.8,
+          "startSec": 2.96,
+          "endSec": 3.36,
           "startChar": 49,
           "endChar": 57
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.2,
+          "startSec": 3.36,
+          "endSec": 3.68,
           "startChar": 58,
           "endChar": 64
         },
         {
-          "startSec": 5.2,
-          "endSec": 5.44,
+          "startSec": 3.68,
+          "endSec": 3.84,
           "startChar": 65,
           "endChar": 68
         },
         {
-          "startSec": 5.44,
-          "endSec": 6.08,
+          "startSec": 3.84,
+          "endSec": 4.32,
           "startChar": 69,
           "endChar": 76
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.32,
+          "startSec": 4.32,
+          "endSec": 4.48,
           "startChar": 77,
           "endChar": 78
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.36,
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 79,
+          "endChar": 83
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
           "startChar": 84,
           "endChar": 89
         },
         {
-          "startSec": 7.36,
-          "endSec": 8.0,
+          "startSec": 4.96,
+          "endSec": 5.36,
           "startChar": 90,
           "endChar": 98
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.08,
+          "startSec": 5.36,
+          "endSec": 5.44,
           "startChar": 99,
           "endChar": 101
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.72,
+          "startSec": 5.44,
+          "endSec": 5.76,
           "startChar": 102,
           "endChar": 109
         },
         {
-          "startSec": 8.8,
-          "endSec": 8.96,
+          "startSec": 5.76,
+          "endSec": 5.84,
           "startChar": 110,
           "endChar": 111
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.6,
+          "startSec": 5.84,
+          "endSec": 6.16,
           "startChar": 112,
           "endChar": 118
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.4,
+          "startSec": 6.56,
+          "endSec": 6.8,
           "startChar": 120,
           "endChar": 123
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.56,
+          "startSec": 6.8,
+          "endSec": 6.88,
           "startChar": 124,
           "endChar": 126
         },
         {
-          "startSec": 10.56,
-          "endSec": 10.72,
+          "startSec": 6.88,
+          "endSec": 6.96,
           "startChar": 127,
           "endChar": 129
         },
         {
-          "startSec": 10.72,
-          "endSec": 11.2,
+          "startSec": 6.96,
+          "endSec": 7.2,
           "startChar": 130,
           "endChar": 135
         },
         {
-          "startSec": 11.2,
-          "endSec": 11.28,
+          "startSec": 7.2,
+          "endSec": 7.28,
           "startChar": 136,
           "endChar": 138
         },
         {
-          "startSec": 11.36,
-          "endSec": 11.92,
+          "startSec": 7.28,
+          "endSec": 7.6,
           "startChar": 139,
           "endChar": 146
         },
         {
-          "startSec": 11.92,
-          "endSec": 12.48,
+          "startSec": 7.6,
+          "endSec": 7.92,
           "startChar": 147,
           "endChar": 153
         },
         {
-          "startSec": 12.48,
-          "endSec": 13.12,
+          "startSec": 7.92,
+          "endSec": 8.4,
           "startChar": 154,
           "endChar": 162
         }
@@ -1401,206 +1431,188 @@
     },
     {
       "id": "open-tunnel",
-      "textHash": "4c64ab717ad5efcabd28807c82894a83d1431449d842a6cfcf68c1ff8075d3b5",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/open-tunnel.4c64ab71.mp3",
+      "textHash": "a84821cc19168c8b58b1b81fa4e705883baf7a5a7c917d99e39ba8a6fe43279d",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/open-tunnel.a84821cc.mp3",
       "narrationText": "Con el túnel en funcionamiento, la app se abre directamente en tu navegador. En esta demo cargamos rediacc.com, de la misma forma en que accederías a tu propia app servida directamente desde el container.",
-      "audioDurationSec": 14.837551,
+      "audioDurationSec": 10.584,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.24,
+          "startSec": 0.0,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.24,
+          "startSec": 0.16,
           "endSec": 0.32,
           "startChar": 4,
           "endChar": 6
         },
         {
           "startSec": 0.32,
-          "endSec": 0.64,
+          "endSec": 0.56,
           "startChar": 7,
           "endChar": 12
         },
         {
           "startSec": 0.64,
-          "endSec": 0.8,
-          "startChar": 13,
-          "endChar": 15
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.76,
+          "endSec": 1.36,
           "startChar": 16,
           "endChar": 30
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.48,
+          "startSec": 1.68,
+          "endSec": 2.0,
           "startChar": 32,
           "endChar": 34
         },
         {
-          "startSec": 2.48,
-          "endSec": 2.72,
+          "startSec": 2.0,
+          "endSec": 2.08,
           "startChar": 35,
           "endChar": 38
         },
         {
-          "startSec": 2.72,
-          "endSec": 2.88,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 39,
           "endChar": 41
         },
         {
-          "startSec": 2.88,
-          "endSec": 3.12,
+          "startSec": 2.24,
+          "endSec": 2.4,
           "startChar": 42,
           "endChar": 46
         },
         {
-          "startSec": 3.12,
-          "endSec": 4.08,
+          "startSec": 2.4,
+          "endSec": 3.04,
           "startChar": 47,
           "endChar": 59
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.24,
+          "startSec": 3.04,
+          "endSec": 3.12,
           "startChar": 60,
           "endChar": 62
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.4,
+          "startSec": 3.12,
+          "endSec": 3.28,
           "startChar": 63,
           "endChar": 65
         },
         {
-          "startSec": 4.4,
-          "endSec": 4.96,
+          "startSec": 3.28,
+          "endSec": 3.84,
           "startChar": 66,
           "endChar": 75
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.08,
+          "startSec": 4.0,
+          "endSec": 4.16,
           "startChar": 77,
           "endChar": 79
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.24,
+          "startSec": 4.16,
+          "endSec": 4.32,
           "startChar": 80,
           "endChar": 84
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.56,
+          "startSec": 4.32,
+          "endSec": 4.56,
           "startChar": 85,
           "endChar": 89
         },
         {
-          "startSec": 6.56,
-          "endSec": 7.2,
+          "startSec": 4.56,
+          "endSec": 5.04,
           "startChar": 90,
           "endChar": 98
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.4,
-          "startChar": 107,
-          "endChar": 110
+          "startSec": 5.04,
+          "endSec": 5.76,
+          "startChar": 99,
+          "endChar": 111
         },
         {
-          "startSec": 8.88,
-          "endSec": 8.96,
+          "startSec": 6.4,
+          "endSec": 6.56,
           "startChar": 115,
           "endChar": 117
         },
         {
-          "startSec": 8.96,
-          "endSec": 9.28,
+          "startSec": 6.56,
+          "endSec": 6.8,
           "startChar": 118,
           "endChar": 123
         },
         {
-          "startSec": 9.28,
-          "endSec": 9.68,
+          "startSec": 6.8,
+          "endSec": 7.12,
           "startChar": 124,
           "endChar": 129
         },
         {
-          "startSec": 9.68,
-          "endSec": 9.84,
+          "startSec": 7.12,
+          "endSec": 7.2,
           "startChar": 130,
           "endChar": 132
         },
         {
-          "startSec": 9.84,
-          "endSec": 10.0,
+          "startSec": 7.2,
+          "endSec": 7.28,
           "startChar": 133,
           "endChar": 136
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.8,
+          "startSec": 7.28,
+          "endSec": 7.84,
           "startChar": 137,
           "endChar": 147
         },
         {
-          "startSec": 10.8,
-          "endSec": 10.88,
-          "startChar": 148,
-          "endChar": 149
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.04,
+          "startSec": 7.84,
+          "endSec": 8.0,
           "startChar": 150,
           "endChar": 152
         },
         {
-          "startSec": 11.04,
-          "endSec": 11.44,
+          "startSec": 8.0,
+          "endSec": 8.48,
           "startChar": 153,
           "endChar": 159
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.76,
-          "startChar": 160,
-          "endChar": 163
-        },
-        {
-          "startSec": 12.16,
-          "endSec": 12.72,
+          "startSec": 8.56,
+          "endSec": 9.04,
           "startChar": 164,
           "endChar": 171
         },
         {
-          "startSec": 12.72,
-          "endSec": 13.68,
+          "startSec": 9.04,
+          "endSec": 9.68,
           "startChar": 172,
           "endChar": 184
         },
         {
-          "startSec": 13.68,
-          "endSec": 14.0,
+          "startSec": 9.68,
+          "endSec": 9.92,
           "startChar": 185,
           "endChar": 190
         },
         {
-          "startSec": 14.0,
-          "endSec": 14.16,
+          "startSec": 9.92,
+          "endSec": 10.0,
           "startChar": 191,
           "endChar": 193
         },
         {
-          "startSec": 14.16,
-          "endSec": 14.72,
+          "startSec": 10.0,
+          "endSec": 10.4,
           "startChar": 194,
           "endChar": 203
         }
@@ -1608,98 +1620,80 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "3fbe99ebcb1178e33f1a0a00ded250a56b7f797490b4694614925301eadd05a2",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/next-tutorial.3fbe99eb.mp3",
+      "textHash": "3591425648e48b4b13e3119556b540529f57cb1a38dbcd601400efa8a6d6bbed",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-work-with-repo/next-tutorial.35914256.mp3",
       "narrationText": "¡Y esos son los tres comandos del día a día. Nos vemos en el siguiente!",
-      "audioDurationSec": 6.765714,
+      "audioDurationSec": 3.24,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.24,
+          "startSec": 0.0,
+          "endSec": 0.16,
           "startChar": 1,
           "endChar": 2
         },
         {
-          "startSec": 0.24,
-          "endSec": 0.64,
+          "startSec": 0.16,
+          "endSec": 0.32,
           "startChar": 3,
           "endChar": 7
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.04,
+          "startSec": 0.32,
+          "endSec": 0.4,
           "startChar": 8,
           "endChar": 11
         },
         {
-          "startSec": 1.04,
-          "endSec": 1.28,
+          "startSec": 0.4,
+          "endSec": 0.56,
           "startChar": 12,
           "endChar": 15
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.52,
+          "startSec": 0.56,
+          "endSec": 0.8,
           "startChar": 16,
           "endChar": 20
         },
         {
-          "startSec": 1.52,
-          "endSec": 2.24,
+          "startSec": 0.8,
+          "endSec": 1.2,
           "startChar": 21,
           "endChar": 29
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.64,
+          "startSec": 1.2,
+          "endSec": 1.28,
           "startChar": 30,
           "endChar": 33
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.12,
+          "startSec": 1.28,
+          "endSec": 1.68,
           "startChar": 34,
           "endChar": 37
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.28,
-          "startChar": 38,
-          "endChar": 39
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.68,
-          "startChar": 40,
-          "endChar": 43
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.48,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 45,
           "endChar": 48
         },
         {
-          "startSec": 4.48,
-          "endSec": 5.2,
+          "startSec": 2.24,
+          "endSec": 2.56,
           "startChar": 49,
           "endChar": 54
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.52,
-          "startChar": 55,
-          "endChar": 57
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.76,
+          "startSec": 2.56,
+          "endSec": 2.64,
           "startChar": 58,
           "endChar": 60
         },
         {
-          "startSec": 5.76,
-          "endSec": 6.64,
+          "startSec": 2.64,
+          "endSec": 3.04,
           "startChar": 61,
           "endChar": 70
         }

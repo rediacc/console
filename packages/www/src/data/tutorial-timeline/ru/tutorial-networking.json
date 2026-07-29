@@ -2,11 +2,11 @@
   "cast": "/assets/tutorials/tutorial-networking.cast",
   "language": "ru",
   "version": 1,
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
   "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "3735aa4aaf13",
   "transcriptHash": "37d43c1efecabc9f06d74259cf9d993acf80eb9716610e3346523d4dd31f08f7",
   "steps": [
     {
@@ -15,180 +15,192 @@
       "replayStartSec": 2.427234,
       "replayEndSec": 12.223183,
       "narrationText": "Шаг второй. Сообщаем CLI публичный IP, базовый домен, email для сертификата и токен API Cloudflare. Email и токен используются для всех машин, поэтому устанавливаются один раз.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-01.86ed2d9d.mp3",
-      "textHash": "86ed2d9dc04218d3b09a8568e6e3fe4eb7f0bd68c5ad932971608118c5cb5266",
-      "audioDurationSec": 13.00898,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-01.c8f0cff7.mp3",
+      "textHash": "c8f0cff78adc270b02c52f0093c8c93961a905dddac5f307303895b88122f353",
+      "audioDurationSec": 13.632,
       "wordTimings": [
         {
-          "startSec": 0.08,
+          "startSec": 0.0,
           "endSec": 0.32,
           "startChar": 0,
           "endChar": 3
         },
         {
           "startSec": 0.32,
-          "endSec": 0.64,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 10
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.76,
+          "startSec": 0.88,
+          "endSec": 1.6,
           "startChar": 12,
           "endChar": 20
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.8,
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
           "startChar": 25,
           "endChar": 34
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.12,
+          "startSec": 3.36,
+          "endSec": 3.68,
           "startChar": 35,
           "endChar": 37
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.76,
+          "startSec": 3.84,
+          "endSec": 4.32,
           "startChar": 39,
           "endChar": 46
         },
         {
-          "startSec": 3.76,
-          "endSec": 4.16,
+          "startSec": 4.32,
+          "endSec": 4.72,
           "startChar": 47,
           "endChar": 52
         },
         {
-          "startSec": 4.56,
-          "endSec": 4.88,
+          "startSec": 5.12,
+          "endSec": 5.6,
           "startChar": 54,
           "endChar": 59
         },
         {
-          "startSec": 4.88,
-          "endSec": 5.04,
+          "startSec": 5.68,
+          "endSec": 5.92,
           "startChar": 60,
           "endChar": 63
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.84,
+          "startSec": 5.92,
+          "endSec": 6.8,
           "startChar": 64,
           "endChar": 75
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.16,
+          "startSec": 6.88,
+          "endSec": 6.96,
           "startChar": 76,
           "endChar": 77
         },
         {
-          "startSec": 6.16,
-          "endSec": 6.56,
+          "startSec": 6.96,
+          "endSec": 7.36,
           "startChar": 78,
           "endChar": 83
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.96,
+          "startSec": 7.36,
+          "endSec": 7.76,
           "startChar": 84,
           "endChar": 87
         },
         {
-          "startSec": 6.96,
-          "endSec": 7.6,
+          "startSec": 7.76,
+          "endSec": 8.32,
           "startChar": 88,
           "endChar": 98
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.64,
+          "startSec": 8.96,
+          "endSec": 9.28,
           "startChar": 100,
           "endChar": 105
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.8,
+          "startSec": 9.28,
+          "endSec": 9.36,
           "startChar": 106,
           "endChar": 107
         },
         {
-          "startSec": 8.8,
-          "endSec": 9.28,
+          "startSec": 9.36,
+          "endSec": 9.84,
           "startChar": 108,
           "endChar": 113
         },
         {
-          "startSec": 9.36,
-          "endSec": 10.0,
+          "startSec": 9.84,
+          "endSec": 10.56,
           "startChar": 114,
           "endChar": 126
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.16,
+          "startSec": 10.56,
+          "endSec": 10.64,
           "startChar": 127,
           "endChar": 130
         },
         {
-          "startSec": 10.16,
-          "endSec": 10.4,
+          "startSec": 10.64,
+          "endSec": 10.96,
           "startChar": 131,
           "endChar": 135
         },
         {
-          "startSec": 10.4,
-          "endSec": 10.8,
+          "startSec": 10.96,
+          "endSec": 11.28,
           "startChar": 136,
           "endChar": 141
         },
         {
-          "startSec": 11.2,
-          "endSec": 11.52,
+          "startSec": 11.52,
+          "endSec": 11.92,
           "startChar": 143,
           "endChar": 150
         },
         {
-          "startSec": 11.52,
-          "endSec": 12.32,
+          "startSec": 11.92,
+          "endSec": 12.72,
           "startChar": 151,
           "endChar": 166
         },
         {
-          "startSec": 12.32,
-          "endSec": 12.64,
+          "startSec": 12.8,
+          "endSec": 13.2,
           "startChar": 167,
           "endChar": 171
         },
         {
-          "startSec": 12.64,
-          "endSec": 12.88,
+          "startSec": 13.2,
+          "endSec": 13.52,
           "startChar": 172,
           "endChar": 175
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-01-after.7fc8cdea.mp3",
-      "afterAudioDurationSec": 2.037551,
-      "afterTextHash": "7fc8cdea174378d3380f0303bbf0e7bee84cf9d78c39409769bcea3c60925716",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-01-after.50659f50.mp3",
+      "afterAudioDurationSec": 2.28,
+      "afterTextHash": "50659f50236a1ec1492050c543bb5c00975d85fa7686be5af29e2ec0530aa29d",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.88,
+          "startSec": 0.0,
+          "endSec": 0.96,
           "startChar": 0,
           "endChar": 14
         },
         {
-          "startSec": 0.88,
-          "endSec": 1.44,
+          "startSec": 0.96,
+          "endSec": 1.6,
           "startChar": 15,
           "endChar": 23
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.92,
+          "startSec": 1.6,
+          "endSec": 1.68,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.16,
           "startChar": 26,
           "endChar": 32
         }
@@ -200,116 +212,122 @@
       "replayStartSec": 12.223183,
       "replayEndSec": 16.437274,
       "narrationText": "Подтверждаем, что настройки инфраструктуры сохранены. Публичный IP, базовый домен, email для сертификата — всё видно в конфигурации.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-02.b1da1243.mp3",
-      "textHash": "b1da12430215d0c3f62896c820cb555f569b8ec7a72ff4b94abb1b47633e3778",
-      "audioDurationSec": 9.639184,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-02.48920fb7.mp3",
+      "textHash": "48920fb7ab782081f170b420b4e634a7bc935cbcb14cd2480fd14cf8d16eebed",
+      "audioDurationSec": 7.56,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.72,
+          "startSec": 0.0,
+          "endSec": 0.64,
           "startChar": 0,
           "endChar": 12
         },
         {
-          "startSec": 0.72,
+          "startSec": 0.64,
           "endSec": 0.88,
           "startChar": 14,
           "endChar": 17
         },
         {
           "startSec": 0.88,
-          "endSec": 1.6,
+          "endSec": 1.36,
           "startChar": 18,
           "endChar": 27
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.48,
+          "startSec": 1.36,
+          "endSec": 2.0,
           "startChar": 28,
           "endChar": 42
         },
         {
-          "startSec": 2.48,
-          "endSec": 3.12,
+          "startSec": 2.0,
+          "endSec": 2.64,
           "startChar": 43,
           "endChar": 52
         },
         {
-          "startSec": 4.16,
-          "endSec": 4.56,
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 54,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
           "startChar": 64,
           "endChar": 66
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.04,
+          "startSec": 3.68,
+          "endSec": 4.08,
           "startChar": 68,
           "endChar": 75
         },
         {
-          "startSec": 5.04,
-          "endSec": 5.52,
+          "startSec": 4.08,
+          "endSec": 4.4,
           "startChar": 76,
           "endChar": 81
         },
         {
-          "startSec": 5.92,
-          "endSec": 6.32,
+          "startSec": 4.64,
+          "endSec": 5.04,
           "startChar": 83,
           "endChar": 88
         },
         {
-          "startSec": 6.32,
-          "endSec": 6.8,
+          "startSec": 5.04,
+          "endSec": 5.12,
           "startChar": 89,
           "endChar": 92
         },
         {
-          "startSec": 6.8,
-          "endSec": 7.6,
+          "startSec": 5.12,
+          "endSec": 5.92,
           "startChar": 93,
           "endChar": 104
         },
         {
-          "startSec": 8.32,
-          "endSec": 8.64,
+          "startSec": 6.4,
+          "endSec": 6.64,
           "startChar": 111,
           "endChar": 116
         },
         {
-          "startSec": 8.64,
-          "endSec": 9.52,
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 117,
+          "endChar": 118
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.44,
           "startChar": 119,
           "endChar": 131
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-02-after.f1618e70.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "f1618e7020d06320cf915e58710fd364e17be2614933af244ae2c25fda59bdc4",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-02-after.e42fc781.mp3",
+      "afterAudioDurationSec": 3.384,
+      "afterTextHash": "e42fc781814a58ec66007fabbb3fb926344262f34a6397ec3fe1c20264fcd200",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.56,
+          "startSec": 0.0,
+          "endSec": 0.64,
           "startChar": 0,
           "endChar": 9
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.2,
+          "startSec": 0.64,
+          "endSec": 1.28,
           "startChar": 10,
           "endChar": 19
         },
         {
-          "startSec": 1.6,
-          "endSec": 2.08,
+          "startSec": 1.76,
+          "endSec": 2.24,
           "startChar": 21,
           "endChar": 27
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.16,
-          "startChar": 28,
-          "endChar": 29
         },
         {
           "startSec": 2.24,
@@ -325,7 +343,7 @@
         },
         {
           "startSec": 2.88,
-          "endSec": 3.36,
+          "endSec": 3.2,
           "startChar": 42,
           "endChar": 48
         }
@@ -337,30 +355,30 @@
       "replayStartSec": 16.437274,
       "replayEndSec": 19.770637,
       "narrationText": "Шаг третий: отправьте конфигурацию на сервер. С настоящим токеном это автоматически создаёт ваши DNS-записи в Cloudflare и подготавливает конфигурацию прокси.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-03.5d623404.mp3",
-      "textHash": "5d62340425075658946f8899cd04eb0da1d97ccc03e506aec5c8cc2319656410",
-      "audioDurationSec": 11.232653,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-03.688fe96e.mp3",
+      "textHash": "688fe96e0148567bef34e0a43191676590dc7be3c24387f7d669cff5df52547d",
+      "audioDurationSec": 10.92,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.4,
+          "startSec": 0.0,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.96,
+          "startSec": 0.32,
+          "endSec": 0.8,
           "startChar": 4,
           "endChar": 10
         },
         {
-          "startSec": 1.28,
-          "endSec": 1.76,
+          "startSec": 1.12,
+          "endSec": 1.68,
           "startChar": 12,
           "endChar": 21
         },
         {
-          "startSec": 1.76,
+          "startSec": 1.68,
           "endSec": 2.56,
           "startChar": 22,
           "endChar": 34
@@ -373,132 +391,126 @@
         },
         {
           "startSec": 2.64,
-          "endSec": 3.04,
+          "endSec": 3.12,
           "startChar": 38,
           "endChar": 44
         },
         {
-          "startSec": 3.52,
+          "startSec": 3.44,
           "endSec": 3.6,
           "startChar": 46,
           "endChar": 47
         },
         {
           "startSec": 3.6,
-          "endSec": 4.24,
+          "endSec": 4.16,
           "startChar": 48,
           "endChar": 57
         },
         {
-          "startSec": 4.24,
-          "endSec": 4.72,
+          "startSec": 4.16,
+          "endSec": 4.64,
           "startChar": 58,
           "endChar": 65
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.28,
+          "startSec": 4.64,
+          "endSec": 4.88,
           "startChar": 66,
           "endChar": 69
         },
         {
-          "startSec": 5.28,
-          "endSec": 6.08,
+          "startSec": 4.88,
+          "endSec": 5.76,
           "startChar": 70,
           "endChar": 83
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.56,
+          "startSec": 5.76,
+          "endSec": 6.64,
           "startChar": 84,
           "endChar": 91
         },
         {
-          "startSec": 6.56,
-          "endSec": 6.88,
-          "startChar": 92,
-          "endChar": 96
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.2,
+          "startSec": 6.64,
+          "endSec": 7.04,
           "startChar": 97,
           "endChar": 100
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.76,
+          "startSec": 7.04,
+          "endSec": 7.6,
           "startChar": 101,
           "endChar": 107
         },
         {
-          "startSec": 7.76,
-          "endSec": 7.84,
+          "startSec": 7.68,
+          "endSec": 7.76,
           "startChar": 108,
           "endChar": 109
         },
         {
-          "startSec": 7.84,
+          "startSec": 7.76,
           "endSec": 8.48,
           "startChar": 110,
           "endChar": 120
         },
         {
           "startSec": 8.8,
-          "endSec": 9.04,
+          "endSec": 8.88,
           "startChar": 121,
           "endChar": 122
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.92,
+          "startSec": 8.88,
+          "endSec": 9.68,
           "startChar": 123,
           "endChar": 137
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.72,
+          "startSec": 9.68,
+          "endSec": 10.48,
           "startChar": 138,
           "endChar": 150
         },
         {
-          "startSec": 10.72,
-          "endSec": 11.2,
+          "startSec": 10.48,
+          "endSec": 10.88,
           "startChar": 151,
           "endChar": 157
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-03-after.cda4d3f3.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "cda4d3f3c38167ce36bc898033119d07a41f98fa97b16149be01586909a6309a",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-03-after.b434229e.mp3",
+      "afterAudioDurationSec": 3.384,
+      "afterTextHash": "b434229e35b565ed8eece512dd4aa53d747d63876fb524167d78d30696653f9c",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.8,
+          "startSec": 0.0,
+          "endSec": 0.72,
           "startChar": 0,
           "endChar": 10
         },
         {
-          "startSec": 1.52,
+          "startSec": 1.12,
           "endSec": 2.0,
-          "startChar": 16,
+          "startChar": 12,
           "endChar": 22
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.64,
+          "startSec": 2.0,
+          "endSec": 2.56,
           "startChar": 23,
           "endChar": 32
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.8,
+          "startSec": 2.56,
+          "endSec": 2.72,
           "startChar": 33,
           "endChar": 35
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.52,
+          "startSec": 2.72,
+          "endSec": 3.28,
           "startChar": 36,
           "endChar": 46
         }
@@ -510,204 +522,204 @@
       "replayStartSec": 19.770637,
       "replayEndSec": 26.52638,
       "narrationText": "Шаг четвёртый: создайте небольшой repo с именем infra. Зачем отдельный repo? Прокси маршрутизирует трафик для каждого приложения на этом сервере. Инфраструктура заслуживает собственного изолированного пространства, отдельно от кода приложения.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-04.e447e3cf.mp3",
-      "textHash": "e447e3cf9ddff21d401ef8510309c4c01c5da3ea4cdc872b46d39f641ba23790",
-      "audioDurationSec": 16.274286,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-04.d4ddbb3b.mp3",
+      "textHash": "d4ddbb3b34f5fb8311bbe8d5119908766357da011cd44f4a425062bce1161eec",
+      "audioDurationSec": 14.592,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.48,
+          "startSec": 0.0,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.48,
-          "endSec": 1.12,
+          "startSec": 0.32,
+          "endSec": 0.88,
           "startChar": 4,
           "endChar": 14
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.84,
+          "startSec": 1.04,
+          "endSec": 1.52,
           "startChar": 15,
           "endChar": 23
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.32,
+          "startSec": 1.52,
+          "endSec": 2.08,
           "startChar": 24,
           "endChar": 33
         },
         {
-          "startSec": 2.64,
-          "endSec": 2.72,
+          "startSec": 2.4,
+          "endSec": 2.56,
           "startChar": 39,
           "endChar": 40
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.12,
+          "startSec": 2.56,
+          "endSec": 2.88,
           "startChar": 41,
           "endChar": 47
         },
         {
-          "startSec": 3.92,
-          "endSec": 4.32,
+          "startSec": 3.68,
+          "endSec": 4.08,
           "startChar": 55,
           "endChar": 60
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.72,
+          "startSec": 4.16,
+          "endSec": 4.56,
           "startChar": 61,
           "endChar": 70
         },
         {
-          "startSec": 5.6,
-          "endSec": 5.92,
+          "startSec": 5.36,
+          "endSec": 5.68,
           "startChar": 77,
           "endChar": 83
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.88,
+          "startSec": 5.68,
+          "endSec": 6.48,
           "startChar": 84,
           "endChar": 98
         },
         {
-          "startSec": 6.88,
-          "endSec": 7.28,
+          "startSec": 6.48,
+          "endSec": 6.8,
           "startChar": 99,
           "endChar": 105
         },
         {
-          "startSec": 7.28,
-          "endSec": 7.44,
+          "startSec": 6.8,
+          "endSec": 6.96,
           "startChar": 106,
           "endChar": 109
         },
         {
-          "startSec": 7.44,
-          "endSec": 7.84,
+          "startSec": 6.96,
+          "endSec": 7.36,
           "startChar": 110,
           "endChar": 117
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.48,
+          "startSec": 7.36,
+          "endSec": 8.0,
           "startChar": 118,
           "endChar": 128
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.64,
+          "startSec": 8.0,
+          "endSec": 8.16,
           "startChar": 129,
           "endChar": 131
         },
         {
-          "startSec": 8.64,
-          "endSec": 8.88,
+          "startSec": 8.16,
+          "endSec": 8.4,
           "startChar": 132,
           "endChar": 136
         },
         {
-          "startSec": 8.88,
-          "endSec": 9.36,
+          "startSec": 8.4,
+          "endSec": 8.88,
           "startChar": 137,
           "endChar": 144
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.88,
+          "startSec": 8.96,
+          "endSec": 9.76,
           "startChar": 146,
           "endChar": 160
         },
         {
-          "startSec": 10.88,
-          "endSec": 11.52,
+          "startSec": 9.76,
+          "endSec": 10.48,
           "startChar": 161,
           "endChar": 172
         },
         {
-          "startSec": 11.52,
-          "endSec": 12.32,
+          "startSec": 10.48,
+          "endSec": 11.12,
           "startChar": 173,
           "endChar": 185
         },
         {
-          "startSec": 12.32,
-          "endSec": 13.12,
+          "startSec": 11.2,
+          "endSec": 11.84,
           "startChar": 186,
           "endChar": 200
         },
         {
-          "startSec": 13.12,
-          "endSec": 13.92,
+          "startSec": 11.84,
+          "endSec": 12.56,
           "startChar": 201,
           "endChar": 213
         },
         {
-          "startSec": 14.32,
-          "endSec": 14.96,
+          "startSec": 12.88,
+          "endSec": 13.44,
           "startChar": 215,
           "endChar": 223
         },
         {
-          "startSec": 15.04,
-          "endSec": 15.2,
+          "startSec": 13.44,
+          "endSec": 13.6,
           "startChar": 224,
           "endChar": 226
         },
         {
-          "startSec": 15.2,
-          "endSec": 15.44,
+          "startSec": 13.6,
+          "endSec": 13.84,
           "startChar": 227,
           "endChar": 231
         },
         {
-          "startSec": 15.44,
-          "endSec": 16.16,
+          "startSec": 13.84,
+          "endSec": 14.4,
           "startChar": 232,
           "endChar": 242
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-04-after.84c2cd56.mp3",
-      "afterAudioDurationSec": 5.485714,
-      "afterTextHash": "84c2cd5692f72755f76bf1bf497b112deea5f5c486db754b553d61f210a92400",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-04-after.dc6a6f00.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "dc6a6f00105e66a67a5e4f040a99756aa2c4195081c42619fee5a9cbe808851c",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.72,
+          "startSec": 0.0,
+          "endSec": 0.8,
           "startChar": 0,
           "endChar": 11
         },
         {
-          "startSec": 1.12,
+          "startSec": 1.2,
           "endSec": 1.68,
           "startChar": 18,
           "endChar": 24
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.68,
+          "startSec": 2.32,
+          "endSec": 2.88,
           "startChar": 26,
           "endChar": 36
         },
         {
-          "startSec": 3.68,
-          "endSec": 3.84,
+          "startSec": 2.96,
+          "endSec": 3.04,
           "startChar": 37,
           "endChar": 39
         },
         {
-          "startSec": 3.92,
-          "endSec": 4.64,
+          "startSec": 3.04,
+          "endSec": 3.76,
           "startChar": 40,
           "endChar": 52
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.36,
+          "startSec": 3.76,
+          "endSec": 4.32,
           "startChar": 53,
           "endChar": 63
         }
@@ -719,144 +731,144 @@
       "replayStartSec": 26.52638,
       "replayEndSec": 31.688233,
       "narrationText": "Применяем встроенный шаблон proxy. Он содержит Traefik и конфигурацию для Let's Encrypt и DNS-01-проверок через Cloudflare — готово к работе.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-05.eb601af5.mp3",
-      "textHash": "eb601af5694186769f807b57e53952d5ca9a68097faf88b1bf95ee9dcd5a973f",
-      "audioDurationSec": 12.512653,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-05.907d8e6a.mp3",
+      "textHash": "907d8e6a3fc4af4dfd31eb9bbcf56d5fa10afb912c5013d740f545dc22d17696",
+      "audioDurationSec": 9.0,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.64,
+          "startSec": 0.0,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 9
         },
         {
-          "startSec": 0.64,
-          "endSec": 1.2,
+          "startSec": 0.48,
+          "endSec": 0.96,
           "startChar": 10,
           "endChar": 20
         },
         {
-          "startSec": 1.2,
-          "endSec": 1.68,
+          "startSec": 0.96,
+          "endSec": 1.44,
           "startChar": 21,
           "endChar": 27
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.72,
+          "startSec": 2.16,
+          "endSec": 2.32,
           "startChar": 35,
           "endChar": 37
         },
         {
-          "startSec": 2.72,
-          "endSec": 3.2,
+          "startSec": 2.32,
+          "endSec": 2.8,
           "startChar": 38,
           "endChar": 46
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.16,
+          "startSec": 3.28,
+          "endSec": 3.36,
           "startChar": 55,
           "endChar": 56
         },
         {
-          "startSec": 4.16,
-          "endSec": 5.28,
+          "startSec": 3.36,
+          "endSec": 4.16,
           "startChar": 57,
           "endChar": 69
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.52,
+          "startSec": 4.16,
+          "endSec": 4.32,
           "startChar": 70,
           "endChar": 73
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.92,
+          "startSec": 4.32,
+          "endSec": 4.56,
           "startChar": 74,
           "endChar": 79
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.72,
+          "startSec": 4.64,
+          "endSec": 5.12,
           "startChar": 80,
           "endChar": 87
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.2,
+          "startSec": 5.12,
+          "endSec": 5.28,
           "startChar": 88,
           "endChar": 89
         },
         {
-          "startSec": 7.2,
-          "endSec": 8.0,
+          "startSec": 5.28,
+          "endSec": 5.68,
           "startChar": 90,
           "endChar": 93
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.4,
+          "startSec": 5.68,
+          "endSec": 6.48,
           "startChar": 94,
           "endChar": 96
         },
         {
-          "startSec": 9.36,
-          "endSec": 9.92,
+          "startSec": 6.48,
+          "endSec": 6.88,
           "startChar": 97,
           "endChar": 105
         },
         {
-          "startSec": 9.92,
-          "endSec": 10.24,
+          "startSec": 6.88,
+          "endSec": 7.2,
           "startChar": 106,
           "endChar": 111
         },
         {
-          "startSec": 10.32,
-          "endSec": 11.2,
+          "startSec": 7.2,
+          "endSec": 7.84,
           "startChar": 112,
           "endChar": 122
         },
         {
-          "startSec": 11.28,
-          "endSec": 11.84,
+          "startSec": 7.92,
+          "endSec": 8.32,
           "startChar": 125,
           "endChar": 130
         },
         {
-          "startSec": 11.84,
-          "endSec": 11.92,
+          "startSec": 8.32,
+          "endSec": 8.4,
           "startChar": 132,
           "endChar": 133
         },
         {
-          "startSec": 11.92,
-          "endSec": 12.4,
+          "startSec": 8.4,
+          "endSec": 8.8,
           "startChar": 134,
           "endChar": 140
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-05-after.17b9d37d.mp3",
-      "afterAudioDurationSec": 1.880816,
-      "afterTextHash": "17b9d37dbfe655ddab3659ecf080355bd546188e7a09483083d67e72288b3ed6",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-05-after.1d31b80e.mp3",
+      "afterAudioDurationSec": 1.944,
+      "afterTextHash": "1d31b80e305508703712a962e009ce991440048d891de9513134adba77ce9bdb",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
+          "startSec": 0.0,
           "endSec": 0.8,
           "startChar": 0,
           "endChar": 12
         },
         {
           "startSec": 1.28,
-          "endSec": 1.44,
+          "endSec": 1.36,
           "startChar": 21,
           "endChar": 23
         },
         {
-          "startSec": 1.44,
-          "endSec": 1.84,
+          "startSec": 1.36,
+          "endSec": 1.76,
           "startChar": 24,
           "endChar": 29
         }
@@ -868,162 +880,138 @@
       "replayStartSec": 31.688233,
       "replayEndSec": 36.581385,
       "narrationText": "Запускаем прокси. Traefik обнаруживает контейнеры каждые пять секунд. TLS-сертификаты от Let's Encrypt получаются автоматически. Ваше приложение теперь доступно в интернете по HTTPS.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-06.c3f36dd8.mp3",
-      "textHash": "c3f36dd839e6664253e7f4e1ccc82108ae9e5b0003ff858bd0e517f57a517210",
-      "audioDurationSec": 12.512653,
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-06.fe64a156.mp3",
+      "textHash": "fe64a156afa7bef84cf4e121418b53e0cc31ff0131084f3ecc7dd88631cdf3b3",
+      "audioDurationSec": 11.4,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.56,
+          "startSec": 0.0,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 9
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.96,
+          "startSec": 0.48,
+          "endSec": 0.8,
           "startChar": 10,
           "endChar": 16
         },
         {
-          "startSec": 1.52,
-          "endSec": 2.08,
+          "startSec": 1.68,
+          "endSec": 2.24,
           "startChar": 26,
           "endChar": 38
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.64,
+          "startSec": 2.24,
+          "endSec": 2.72,
           "startChar": 39,
           "endChar": 49
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.12,
+          "startSec": 2.72,
+          "endSec": 3.28,
           "startChar": 50,
           "endChar": 56
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.28,
+          "startSec": 3.28,
+          "endSec": 3.52,
           "startChar": 57,
           "endChar": 61
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.76,
+          "startSec": 3.52,
+          "endSec": 3.92,
           "startChar": 62,
           "endChar": 68
         },
         {
-          "startSec": 4.0,
-          "endSec": 4.48,
-          "startChar": 70,
-          "endChar": 73
-        },
-        {
-          "startSec": 4.48,
+          "startSec": 4.32,
           "endSec": 5.36,
-          "startChar": 74,
+          "startChar": 70,
           "endChar": 85
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.32,
-          "startChar": 97,
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 95,
           "endChar": 102
         },
         {
-          "startSec": 6.64,
-          "endSec": 7.2,
+          "startSec": 6.48,
+          "endSec": 7.04,
           "startChar": 103,
           "endChar": 113
         },
         {
-          "startSec": 7.2,
-          "endSec": 8.0,
+          "startSec": 7.04,
+          "endSec": 7.84,
           "startChar": 114,
           "endChar": 127
         },
         {
-          "startSec": 8.4,
-          "endSec": 8.72,
+          "startSec": 8.16,
+          "endSec": 8.48,
           "startChar": 129,
           "endChar": 133
         },
         {
-          "startSec": 8.72,
-          "endSec": 9.44,
+          "startSec": 8.48,
+          "endSec": 9.04,
           "startChar": 134,
           "endChar": 144
         },
         {
-          "startSec": 9.44,
-          "endSec": 9.76,
+          "startSec": 9.04,
+          "endSec": 9.36,
           "startChar": 145,
           "endChar": 151
         },
         {
-          "startSec": 9.76,
-          "endSec": 10.24,
+          "startSec": 9.36,
+          "endSec": 9.84,
           "startChar": 152,
           "endChar": 160
         },
         {
-          "startSec": 10.24,
-          "endSec": 10.88,
+          "startSec": 9.84,
+          "endSec": 9.92,
+          "startChar": 161,
+          "endChar": 162
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.4,
           "startChar": 163,
           "endChar": 172
         },
         {
-          "startSec": 11.2,
-          "endSec": 11.36,
+          "startSec": 10.56,
+          "endSec": 10.64,
           "startChar": 173,
           "endChar": 175
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 12.4,
-          "startChar": 176,
-          "endChar": 181
         }
       ],
-      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-06-after.8f90f66a.mp3",
-      "afterAudioDurationSec": 5.146122,
-      "afterTextHash": "8f90f66ae180a1c2deca6b8aab2ec6938e40258c17d723b06d23bb376cb16a5f",
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-networking/tutorial-networking-06-after.09c484a0.mp3",
+      "afterAudioDurationSec": 3.72,
+      "afterTextHash": "09c484a06430d615b380e7dc5c2d34182a78c02a12cd45a72ee0efc75a9445c0",
       "afterWordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.28,
-          "startChar": 7,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.4,
-          "startChar": 17,
-          "endChar": 20
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 3.44,
+          "startSec": 1.44,
+          "endSec": 2.16,
           "startChar": 21,
           "endChar": 32
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.24,
+          "startSec": 2.16,
+          "endSec": 2.56,
           "startChar": 33,
           "endChar": 39
         },
         {
-          "startSec": 4.24,
-          "endSec": 5.12,
+          "startSec": 2.64,
+          "endSec": 3.52,
           "startChar": 40,
           "endChar": 53
         }
@@ -1033,91 +1021,91 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "b36fd87ce054165331f464e1ab7e0d6675c45bc2a0bfcae32aae5f83601d6e09",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/intro.b36fd87c.mp3",
+      "textHash": "a6163de83db3d3314d064ed9b250a009ebef2ff75e4932c928e421b6a0743e41",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/intro.a6163de8.mp3",
       "narrationText": "Ваше приложение работает, но видит его только сервер. Давайте дадим ему настоящий домен с автоматическим TLS. Четыре коротких шага, и оно окажется в интернете.",
-      "audioDurationSec": 10.187755,
+      "audioDurationSec": 10.272,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.32,
+          "startSec": 0.0,
+          "endSec": 0.48,
           "startChar": 0,
           "endChar": 4
         },
         {
-          "startSec": 0.32,
-          "endSec": 0.96,
+          "startSec": 0.48,
+          "endSec": 1.04,
           "startChar": 5,
           "endChar": 15
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.6,
+          "startSec": 1.04,
+          "endSec": 1.52,
           "startChar": 16,
           "endChar": 24
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.92,
+          "startSec": 1.52,
+          "endSec": 1.76,
           "startChar": 26,
           "endChar": 28
         },
         {
-          "startSec": 1.92,
-          "endSec": 2.24,
+          "startSec": 1.76,
+          "endSec": 2.08,
           "startChar": 29,
           "endChar": 34
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.4,
+          "startSec": 2.08,
+          "endSec": 2.24,
           "startChar": 35,
           "endChar": 38
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.64,
+          "startSec": 2.24,
+          "endSec": 2.56,
           "startChar": 39,
           "endChar": 45
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.12,
+          "startSec": 2.56,
+          "endSec": 3.04,
           "startChar": 46,
           "endChar": 52
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.08,
+          "startSec": 3.52,
+          "endSec": 3.84,
           "startChar": 54,
           "endChar": 61
         },
         {
-          "startSec": 4.08,
-          "endSec": 4.32,
+          "startSec": 3.84,
+          "endSec": 4.16,
           "startChar": 62,
           "endChar": 67
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.48,
+          "startSec": 4.16,
+          "endSec": 4.32,
           "startChar": 68,
           "endChar": 71
         },
         {
-          "startSec": 4.48,
+          "startSec": 4.32,
           "endSec": 5.04,
           "startChar": 72,
           "endChar": 81
         },
         {
           "startSec": 5.04,
-          "endSec": 5.44,
+          "endSec": 5.36,
           "startChar": 82,
           "endChar": 87
         },
         {
-          "startSec": 5.44,
+          "startSec": 5.36,
           "endSec": 5.52,
           "startChar": 88,
           "endChar": 89
@@ -1135,31 +1123,31 @@
           "endChar": 108
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.52,
+          "startSec": 7.28,
+          "endSec": 7.68,
           "startChar": 110,
           "endChar": 116
         },
         {
-          "startSec": 7.52,
-          "endSec": 8.0,
+          "startSec": 7.68,
+          "endSec": 8.16,
           "startChar": 117,
           "endChar": 125
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.4,
+          "startSec": 8.16,
+          "endSec": 8.56,
           "startChar": 126,
           "endChar": 130
         },
         {
           "startSec": 8.64,
-          "endSec": 8.72,
+          "endSec": 8.8,
           "startChar": 132,
           "endChar": 133
         },
         {
-          "startSec": 8.72,
+          "startSec": 8.8,
           "endSec": 9.04,
           "startChar": 134,
           "endChar": 137
@@ -1186,152 +1174,158 @@
     },
     {
       "id": "four-steps",
-      "textHash": "1c29410a75b6fa7f9505a30d607bd14155343dcb054b6bbf7779893ebe46e2db",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/four-steps.1c29410a.mp3",
+      "textHash": "48980bfa2e83a8336084276cee35abdfaf49ec7a52af9c90f58bd50b996bcd37",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/four-steps.48980bfa.mp3",
       "narrationText": "Вот план: получите API-токен Cloudflare, один раз настройте инфраструктуру через CLI, отправьте её на сервер, затем задеплойте небольшой proxy repo, который будет управлять DNS и сертификатами за вас.",
-      "audioDurationSec": 18.755918,
+      "audioDurationSec": 13.944,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.8,
+          "startSec": 0.0,
+          "endSec": 0.16,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.6,
+          "startSec": 0.16,
+          "endSec": 0.48,
           "startChar": 4,
           "endChar": 8
         },
         {
-          "startSec": 2.32,
-          "endSec": 3.04,
+          "startSec": 1.04,
+          "endSec": 1.6,
           "startChar": 10,
           "endChar": 18
         },
         {
-          "startSec": 3.04,
-          "endSec": 3.6,
+          "startSec": 1.68,
+          "endSec": 2.64,
           "startChar": 19,
           "endChar": 28
         },
         {
-          "startSec": 3.6,
-          "endSec": 4.32,
+          "startSec": 2.64,
+          "endSec": 3.28,
           "startChar": 29,
           "endChar": 39
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.28,
+          "startSec": 3.68,
+          "endSec": 4.0,
           "startChar": 41,
           "endChar": 45
         },
         {
-          "startSec": 5.28,
-          "endSec": 5.52,
+          "startSec": 4.0,
+          "endSec": 4.24,
           "startChar": 46,
           "endChar": 49
         },
         {
-          "startSec": 5.52,
-          "endSec": 6.24,
+          "startSec": 4.24,
+          "endSec": 4.72,
           "startChar": 50,
           "endChar": 59
         },
         {
-          "startSec": 6.24,
-          "endSec": 7.04,
+          "startSec": 4.72,
+          "endSec": 5.44,
           "startChar": 60,
           "endChar": 74
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.36,
+          "startSec": 5.44,
+          "endSec": 5.68,
           "startChar": 75,
           "endChar": 80
         },
         {
-          "startSec": 9.36,
-          "endSec": 10.08,
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 81,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
           "startChar": 86,
           "endChar": 95
         },
         {
-          "startSec": 10.16,
-          "endSec": 10.32,
+          "startSec": 7.04,
+          "endSec": 7.12,
           "startChar": 99,
           "endChar": 101
         },
         {
-          "startSec": 10.32,
-          "endSec": 10.88,
+          "startSec": 7.12,
+          "endSec": 7.52,
           "startChar": 102,
           "endChar": 108
         },
         {
-          "startSec": 11.76,
-          "endSec": 12.32,
+          "startSec": 8.0,
+          "endSec": 8.4,
           "startChar": 110,
           "endChar": 115
         },
         {
-          "startSec": 12.32,
-          "endSec": 13.2,
+          "startSec": 8.48,
+          "endSec": 9.2,
           "startChar": 116,
           "endChar": 126
         },
         {
-          "startSec": 13.2,
-          "endSec": 13.76,
+          "startSec": 9.2,
+          "endSec": 9.6,
           "startChar": 127,
           "endChar": 136
         },
         {
-          "startSec": 15.6,
-          "endSec": 15.92,
+          "startSec": 10.72,
+          "endSec": 11.04,
           "startChar": 149,
           "endChar": 156
         },
         {
-          "startSec": 15.92,
-          "endSec": 16.24,
+          "startSec": 11.04,
+          "endSec": 11.36,
           "startChar": 157,
           "endChar": 162
         },
         {
-          "startSec": 16.24,
-          "endSec": 16.8,
+          "startSec": 11.36,
+          "endSec": 11.84,
           "startChar": 163,
           "endChar": 172
         },
         {
-          "startSec": 16.8,
-          "endSec": 17.2,
+          "startSec": 11.84,
+          "endSec": 12.24,
           "startChar": 173,
           "endChar": 176
         },
         {
-          "startSec": 17.36,
-          "endSec": 17.44,
+          "startSec": 12.24,
+          "endSec": 12.64,
           "startChar": 177,
           "endChar": 178
         },
         {
-          "startSec": 17.44,
-          "endSec": 18.32,
+          "startSec": 12.64,
+          "endSec": 13.44,
           "startChar": 179,
           "endChar": 192
         },
         {
-          "startSec": 18.32,
-          "endSec": 18.48,
+          "startSec": 13.44,
+          "endSec": 13.6,
           "startChar": 193,
           "endChar": 195
         },
         {
-          "startSec": 18.48,
-          "endSec": 18.64,
+          "startSec": 13.6,
+          "endSec": 13.92,
           "startChar": 196,
           "endChar": 199
         }
@@ -1339,254 +1333,146 @@
     },
     {
       "id": "open-cloudflare",
-      "textHash": "637ba53b36ae95940637bd7dfd10449915bf8f6a969128e5419c26218c3310c2",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/open-cloudflare.637ba53b.mp3",
+      "textHash": "020491d031c5be3365365b13a4d5da8a969369aefbd8755328ebd980843ffb39",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/open-cloudflare.020491d0.mp3",
       "narrationText": "Сначала единственный ручной шаг. Откройте панель управления Cloudflare, перейдите в My Profile, затем в API Tokens и создайте токен с правом Zone DNS Edit. Этот единственный токен позволяет CLI управлять вашими DNS-записями, так что вам больше никогда не придётся кликать по панелям управления.",
-      "audioDurationSec": 21.629388,
+      "audioDurationSec": 20.64,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.2,
-          "startChar": 8,
-          "endChar": 20
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.52,
-          "startChar": 21,
-          "endChar": 27
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.84,
-          "startChar": 28,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.56,
-          "startChar": 33,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.88,
-          "startChar": 42,
-          "endChar": 48
-        },
-        {
           "startSec": 2.88,
-          "endSec": 3.44,
-          "startChar": 49,
-          "endChar": 59
+          "endSec": 3.04,
+          "startChar": 1,
+          "endChar": 3
         },
         {
-          "startSec": 3.44,
-          "endSec": 4.16,
+          "startSec": 4.32,
+          "endSec": 4.88,
           "startChar": 60,
           "endChar": 70
         },
         {
-          "startSec": 4.48,
-          "endSec": 4.96,
-          "startChar": 72,
-          "endChar": 81
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 78,
+          "endChar": 79
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.2,
-          "startChar": 84,
-          "endChar": 86
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.76,
-          "startChar": 87,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.64,
-          "startChar": 96,
-          "endChar": 101
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.76,
-          "startChar": 104,
-          "endChar": 107
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.64,
-          "startChar": 108,
-          "endChar": 114
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.44,
-          "startChar": 115,
-          "endChar": 116
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 10.0,
-          "startChar": 117,
-          "endChar": 125
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.4,
-          "startChar": 126,
-          "endChar": 131
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.48,
-          "startChar": 132,
-          "endChar": 133
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.88,
-          "startChar": 134,
-          "endChar": 140
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.12,
-          "startChar": 141,
-          "endChar": 145
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.68,
-          "startChar": 146,
-          "endChar": 149
-        },
-        {
-          "startSec": 11.68,
+          "startSec": 11.84,
           "endSec": 12.16,
-          "startChar": 150,
-          "endChar": 155
-        },
-        {
-          "startSec": 12.56,
-          "endSec": 12.8,
           "startChar": 156,
           "endChar": 160
         },
         {
-          "startSec": 12.8,
-          "endSec": 13.44,
+          "startSec": 12.16,
+          "endSec": 12.72,
           "startChar": 161,
           "endChar": 173
         },
         {
-          "startSec": 13.44,
-          "endSec": 13.84,
+          "startSec": 12.8,
+          "endSec": 13.2,
           "startChar": 174,
           "endChar": 179
         },
         {
-          "startSec": 14.08,
-          "endSec": 14.64,
+          "startSec": 13.44,
+          "endSec": 13.92,
           "startChar": 180,
           "endChar": 189
         },
         {
-          "startSec": 15.2,
-          "endSec": 15.76,
+          "startSec": 13.92,
+          "endSec": 14.4,
+          "startChar": 190,
+          "endChar": 193
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.96,
           "startChar": 194,
           "endChar": 203
         },
         {
-          "startSec": 15.76,
-          "endSec": 16.16,
+          "startSec": 14.96,
+          "endSec": 15.36,
           "startChar": 204,
           "endChar": 210
         },
         {
-          "startSec": 16.16,
-          "endSec": 16.48,
+          "startSec": 15.36,
+          "endSec": 15.84,
           "startChar": 211,
           "endChar": 214
         },
         {
-          "startSec": 16.48,
-          "endSec": 17.2,
+          "startSec": 15.84,
+          "endSec": 16.48,
           "startChar": 215,
           "endChar": 223
         },
         {
-          "startSec": 17.84,
-          "endSec": 18.08,
+          "startSec": 16.88,
+          "endSec": 17.04,
           "startChar": 225,
           "endChar": 228
         },
         {
-          "startSec": 18.08,
-          "endSec": 18.24,
+          "startSec": 17.04,
+          "endSec": 17.2,
           "startChar": 229,
           "endChar": 232
         },
         {
-          "startSec": 18.24,
-          "endSec": 18.48,
+          "startSec": 17.2,
+          "endSec": 17.44,
           "startChar": 233,
           "endChar": 236
         },
         {
-          "startSec": 18.48,
-          "endSec": 18.8,
+          "startSec": 17.44,
+          "endSec": 17.68,
           "startChar": 237,
           "endChar": 243
         },
         {
-          "startSec": 18.8,
-          "endSec": 19.28,
+          "startSec": 17.68,
+          "endSec": 18.16,
           "startChar": 244,
           "endChar": 251
         },
         {
-          "startSec": 19.28,
-          "endSec": 19.44,
+          "startSec": 18.16,
+          "endSec": 18.32,
           "startChar": 252,
           "endChar": 254
         },
         {
-          "startSec": 19.44,
-          "endSec": 19.84,
+          "startSec": 18.32,
+          "endSec": 18.8,
           "startChar": 255,
           "endChar": 263
         },
         {
-          "startSec": 19.84,
-          "endSec": 20.32,
+          "startSec": 18.8,
+          "endSec": 19.28,
           "startChar": 264,
           "endChar": 271
         },
         {
-          "startSec": 20.32,
-          "endSec": 20.48,
+          "startSec": 19.28,
+          "endSec": 19.44,
           "startChar": 272,
           "endChar": 274
         },
         {
-          "startSec": 20.48,
-          "endSec": 20.88,
+          "startSec": 19.44,
+          "endSec": 19.84,
           "startChar": 275,
           "endChar": 282
         },
         {
-          "startSec": 20.88,
-          "endSec": 21.52,
+          "startSec": 19.92,
+          "endSec": 20.56,
           "startChar": 283,
           "endChar": 293
         }
@@ -1594,38 +1480,38 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "60b47c3528c897f32972a10016a55f7aad0b5a5a92550d968d069ae36a66b86a",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/next-tutorial.60b47c35.mp3",
+      "textHash": "340369c80b4b0109ddabfb833a8ecbcd28376d64bbe8ef650700693bb66acc0f",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-networking/next-tutorial.340369c8.mp3",
       "narrationText": "С сетью разобрались! Увидимся в следующем уроке.",
-      "audioDurationSec": 3.970612,
+      "audioDurationSec": 2.904,
       "wordTimings": [
         {
-          "startSec": 0.08,
-          "endSec": 0.72,
+          "startSec": 0.0,
+          "endSec": 0.32,
           "startChar": 2,
-          "endChar": 7
+          "endChar": 6
         },
         {
-          "startSec": 0.72,
-          "endSec": 1.44,
+          "startSec": 0.4,
+          "endSec": 1.12,
           "startChar": 8,
           "endChar": 19
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.64,
+          "startSec": 1.36,
+          "endSec": 1.92,
           "startChar": 21,
           "endChar": 29
         },
         {
-          "startSec": 2.8,
-          "endSec": 3.44,
+          "startSec": 1.92,
+          "endSec": 2.48,
           "startChar": 32,
           "endChar": 41
         },
         {
-          "startSec": 3.44,
-          "endSec": 3.84,
+          "startSec": 2.48,
+          "endSec": 2.8,
           "startChar": 42,
           "endChar": 47
         }

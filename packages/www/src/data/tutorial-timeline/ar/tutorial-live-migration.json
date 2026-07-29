@@ -2,100 +2,1374 @@
   "cast": "/assets/tutorials/tutorial-live-migration.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "8a795506746c8385360e2ce04a05e0c6f02c3d50614e38a10931ce2439ba1ea6",
   "steps": [
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "replayStartSec": 2.413171,
-      "replayEndSec": 10.379022,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01.1e0684e6.mp3",
-      "audioDurationSec": 14.28898,
-      "textHash": "1e0684e69558f2c3f0b05d7ea787a94b26a23d3da36a58ccd7c784d8e59a36a7",
+      "replayStartSec": 2.420835,
+      "replayEndSec": 8.294774,
       "narrationText": "تعرّف على pulse. يحتفظ بعدّاد في ذاكرة العملية ويطبع نبضة كل خمس ثوانٍ. العدّاد عند ستة ويتصاعد، ويعيش في RAM فقط. أعد تشغيل العملية وسيبدأ من جديد عند واحد.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01-after.85cbad9a.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "85cbad9a1765de38ce71d7164b0f052252716b22e1123faaf21645e95194324d"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-01.d6c49db4.mp3",
+      "textHash": "d6c49db456b542616adf0936b912a6146f43931f8b623d47a59cc43c9ec94625",
+      "audioDurationSec": 19.56,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 17,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.2,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.12,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.32,
+          "startChar": 65,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.24,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.08,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 103,
+          "endChar": 105
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 13.92,
+          "startChar": 106,
+          "endChar": 109
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.76,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.32,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 16.32,
+          "endSec": 16.88,
+          "startChar": 125,
+          "endChar": 132
+        },
+        {
+          "startSec": 17.52,
+          "endSec": 18.08,
+          "startChar": 133,
+          "endChar": 139
+        },
+        {
+          "startSec": 18.08,
+          "endSec": 18.32,
+          "startChar": 140,
+          "endChar": 142
+        },
+        {
+          "startSec": 18.32,
+          "endSec": 18.72,
+          "startChar": 143,
+          "endChar": 147
+        },
+        {
+          "startSec": 18.88,
+          "endSec": 19.36,
+          "startChar": 152,
+          "endChar": 156
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-01-after.3c6c9fc7.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "3c6c9fc70922fa8b89deca4e690b5afd67f6643af3c02e0d7be2ebf84255c844",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.84,
+          "startChar": 17,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 3.52,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 33,
+          "endChar": 39
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "replayStartSec": 10.379022,
-      "replayEndSec": 101.149024,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02.52a7ef5c.mp3",
-      "audioDurationSec": 20.27102,
-      "textHash": "52a7ef5c01174e40fb0bf0cd9ff54f752e146909d044200ce5a028c70154ccd4",
+      "replayStartSec": 8.294774,
+      "replayEndSec": 94.394579,
       "narrationText": "أمر واحد ينقله وهو يعمل. المرحلة الأولى تنقل الجزء الأكبر، غيغابايتان في نحو نصف دقيقة، بينما يظل المصدر يعمل. ثم التحويل: تُحجز نقطة تفتيش للعمليات الجارية، وتُنقل آخر بضعة ميغابايت، ويُطبع وقت التوقف مباشرة. نحو عشرين ثانية لنقل غيغابايتين.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02-after.88c8d60a.mp3",
-      "afterAudioDurationSec": 5.720816,
-      "afterTextHash": "88c8d60a7541e868e220cc7ef514a241b9fd702cd8822e69a35212cae4314614"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-02.91de479f.mp3",
+      "textHash": "91de479f1d0b3f34edf4dd6ba57837bdbce0f4e2b8fb6d7d5ae9047fa89a8197",
+      "audioDurationSec": 27.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.16,
+          "startChar": 51,
+          "endChar": 57
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 81,
+          "endChar": 86
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.4,
+          "startChar": 88,
+          "endChar": 93
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.36,
+          "startChar": 98,
+          "endChar": 104
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.68,
+          "startChar": 105,
+          "endChar": 109
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.04,
+          "startChar": 111,
+          "endChar": 113
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.68,
+          "startChar": 114,
+          "endChar": 121
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.88,
+          "startChar": 123,
+          "endChar": 128
+        },
+        {
+          "startSec": 19.84,
+          "endSec": 20.0,
+          "startChar": 202,
+          "endChar": 208
+        },
+        {
+          "startSec": 21.2,
+          "endSec": 21.28,
+          "startChar": 210,
+          "endChar": 213
+        },
+        {
+          "startSec": 21.6,
+          "endSec": 23.36,
+          "startChar": 214,
+          "endChar": 219
+        },
+        {
+          "startSec": 23.36,
+          "endSec": 24.48,
+          "startChar": 220,
+          "endChar": 225
+        },
+        {
+          "startSec": 24.48,
+          "endSec": 25.36,
+          "startChar": 231,
+          "endChar": 241
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-02-after.abff21fe.mp3",
+      "afterAudioDurationSec": 9.792,
+      "afterTextHash": "abff21fef71fb82384c215d14de9c8f1ee4b4e832b996c959d3c6545c0978e94",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.768,
+          "endSec": 1.152,
+          "startChar": 6,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.4,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 4.4,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 6.24,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.72,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 50,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.92,
+          "startChar": 54,
+          "endChar": 60
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.32,
+          "startChar": 61,
+          "endChar": 68
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.96,
+          "startChar": 69,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 77,
+          "endChar": 82
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "replayStartSec": 101.149024,
-      "replayEndSec": 106.859481,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03.1243e660.mp3",
-      "audioDurationSec": 4.754286,
-      "textHash": "1243e66069579be027591f6367718723d6fb398d6cdbad9f83f09de6a31e48be",
+      "replayStartSec": 94.394579,
+      "replayEndSec": 99.812481,
       "narrationText": "تحقق من الجهاز الجديد: ها هو. مثبّت، Docker يعمل، حاويتان تعملان.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03-after.64b6817e.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "64b6817e1788e13779c18b378706d799396f78eef32e19dae613ef2ba1a4a036"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-03.ed38f258.mp3",
+      "textHash": "ed38f25838ac337b634252e64437cdd2b0bf920c35afd0e41c209b4848d549c0",
+      "audioDurationSec": 9.312,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 3.2,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 44,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 50,
+          "endChar": 54
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.2,
+          "startChar": 58,
+          "endChar": 64
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-03-after.11bb1b4e.mp3",
+      "afterAudioDurationSec": 3.72,
+      "afterTextHash": "11bb1b4e1d13b322c04fe3786233526f9c5fea3d0ac45ad2361f85adee675d0b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.72,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 30,
+          "endChar": 36
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "replayStartSec": 106.859481,
-      "replayEndSec": 112.346008,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04.700fa830.mp3",
-      "audioDurationSec": 14.445714,
-      "textHash": "700fa830e50e27895a3a3e703ade48cd9862c1d9cf5a200cf3cb16f116838e47",
+      "replayStartSec": 99.812481,
+      "replayEndSec": 105.151877,
       "narrationText": "وماذا عن المصدر؟ المستودع لا يزال مدرجاً، لكن انظر إلى الصف: غير مثبّت، لا Docker، صفر حاويات. لا شيء يعمل هنا بعد الآن. تبقى الصورة متعمداً كأساس لنقل الفارق التالي.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04-after.7ac1a7ee.mp3",
-      "afterAudioDurationSec": 5.067755,
-      "afterTextHash": "7ac1a7eeb63fc166befb1ba392b983f97ceca307040a5da50549a62c1ec384c1"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-04.5377c2dd.mp3",
+      "textHash": "5377c2dd841d8161884a5d46fa93fba8ecc34fc83d6e0923dd8486e64ca6deeb",
+      "audioDurationSec": 20.832,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 9,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.72,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.8,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.28,
+          "startChar": 72,
+          "endChar": 74
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.52,
+          "startChar": 102,
+          "endChar": 106
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.84,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.24,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.56,
+          "startChar": 115,
+          "endChar": 119
+        },
+        {
+          "startSec": 15.84,
+          "endSec": 16.4,
+          "startChar": 126,
+          "endChar": 132
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 17.36,
+          "startChar": 133,
+          "endChar": 139
+        },
+        {
+          "startSec": 17.36,
+          "endSec": 18.0,
+          "startChar": 141,
+          "endChar": 146
+        },
+        {
+          "startSec": 19.04,
+          "endSec": 20.0,
+          "startChar": 159,
+          "endChar": 165
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-04-after.d7e703ae.mp3",
+      "afterAudioDurationSec": 8.664,
+      "afterTextHash": "d7e703aef4e9b6fcb3cbbb479286e5c24280ae25c39a002e0d949296fccfbb79",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 64,
+          "endChar": 68
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "replayStartSec": 112.346008,
-      "replayEndSec": 119.168595,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05.731e7efe.mp3",
-      "audioDurationSec": 16.352653,
-      "textHash": "731e7efe288bc9e66fa9c452dff2e130fd2283ff2e19c0b5cc5b7acc21b43146",
+      "replayStartSec": 105.151877,
+      "replayEndSec": 109.812644,
       "narrationText": "الآن النتيجة المفاجئة. العدّاد يقرأ سبعة عشر، ثمانية عشر، تسعة عشر، لا يزال يتصاعد. استأنف من حيث جمّدته نقطة التفتيش بدلاً من البدء من واحد. لم تلاحظ العملية قط أنها غيّرت الجهاز.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05-after.9c477c22.mp3",
-      "afterAudioDurationSec": 3.160816,
-      "afterTextHash": "9c477c220929a3c34000abc17bf2551d5967aca4c97d6d19c5c82160b4bd7007"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-05.85b5501a.mp3",
+      "textHash": "85b5501aac4cbe441a45d7526836b800c3779cb3c70e8f6687ee17bceb8836b8",
+      "audioDurationSec": 21.0,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.76,
+          "startChar": 13,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.76,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.08,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.0,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.52,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.6,
+          "startChar": 76,
+          "endChar": 82
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 11.52,
+          "startChar": 84,
+          "endChar": 90
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.68,
+          "startChar": 91,
+          "endChar": 93
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.48,
+          "startChar": 98,
+          "endChar": 104
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.44,
+          "startChar": 105,
+          "endChar": 109
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 14.0,
+          "startChar": 110,
+          "endChar": 117
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.88,
+          "startChar": 118,
+          "endChar": 122
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.2,
+          "startChar": 124,
+          "endChar": 126
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.52,
+          "startChar": 127,
+          "endChar": 132
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 15.68,
+          "startChar": 142,
+          "endChar": 144
+        },
+        {
+          "startSec": 17.28,
+          "endSec": 17.68,
+          "startChar": 145,
+          "endChar": 150
+        },
+        {
+          "startSec": 17.68,
+          "endSec": 18.32,
+          "startChar": 151,
+          "endChar": 158
+        },
+        {
+          "startSec": 18.32,
+          "endSec": 18.48,
+          "startChar": 159,
+          "endChar": 161
+        },
+        {
+          "startSec": 19.28,
+          "endSec": 19.68,
+          "startChar": 162,
+          "endChar": 166
+        },
+        {
+          "startSec": 19.84,
+          "endSec": 20.0,
+          "startChar": 167,
+          "endChar": 172
+        },
+        {
+          "startSec": 20.0,
+          "endSec": 20.8,
+          "startChar": 173,
+          "endChar": 179
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/tutorial-live-migration-05-after.2f45ef83.mp3",
+      "afterAudioDurationSec": 6.6,
+      "afterTextHash": "2f45ef8361d726e30ab8cf159c138c8aceb19bd1da7773c47958d9d885ea8b8e",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.76,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.48,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.48,
+          "startChar": 39,
+          "endChar": 45
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/intro.c3219e34.mp3",
-      "textHash": "c3219e34c18bba123a7f171be3eea73a21cbe583f14565929fd0b6c9c681e32a",
-      "audioDurationSec": 14.680816,
-      "narrationText": "حان وقت المهمة الكبيرة: نقل تطبيق يعمل إلى جهاز آخر، بينما يعمل. سنراقب عدّاداً حياً ينبض في ذاكرة التطبيق، وننقل كل شيء بأمر واحد، ونرى العدّاد يواصل العدّ على الجهاز الجديد."
+      "textHash": "06b23319ef62c01cd5b0e75dc3f9a7a6547c09433822cc342281f5e28bcdc382",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/intro.06b23319.mp3",
+      "narrationText": "حان وقت المهمة الكبيرة: نقل تطبيق يعمل إلى جهاز آخر، بينما يعمل. سنراقب عدّاداً حياً ينبض في ذاكرة التطبيق، وننقل كل شيء بأمر واحد، ونرى العدّاد يواصل العدّ على الجهاز الجديد.",
+      "audioDurationSec": 19.08,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 43,
+          "endChar": 47
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.6,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 72,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.76,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.96,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.28,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.76,
+          "startChar": 99,
+          "endChar": 106
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.12,
+          "startChar": 108,
+          "endChar": 113
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.0,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.56,
+          "startChar": 121,
+          "endChar": 125
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 17.6,
+          "startChar": 137,
+          "endChar": 141
+        },
+        {
+          "startSec": 17.92,
+          "endSec": 18.4,
+          "startChar": 161,
+          "endChar": 167
+        },
+        {
+          "startSec": 18.4,
+          "endSec": 18.88,
+          "startChar": 168,
+          "endChar": 174
+        }
+      ]
     },
     {
       "id": "how-it-moves",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/how-it-moves.5edb6d24.mp3",
-      "textHash": "5edb6d24ba5530a753f3f4c028f7e4988a2ec5f01086712dc5116e2677088d28",
-      "audioDurationSec": 22.360816,
-      "narrationText": "يعمل في مرحلتين. المرحلة الأولى تنسخ الجزء الأكبر بينما يظل التطبيق يعمل. المرحلة الثانية تُحجز نقطة تفتيش للعمليات الحية، وتنقل الفارق الأخير مع حالة العملية، وتستأنف كل شيء على الجهاز الجديد. إذن وقت التوقف هو الفارق، وليس البيانات. والتطبيق لا يعلم قط أنه انتقل."
+      "textHash": "7526ca9bf1b0d4dfd1590c3805d337176a20870212d1763940fd27913a0a2645",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/how-it-moves.7526ca9b.mp3",
+      "narrationText": "يعمل في مرحلتين. المرحلة الأولى تنسخ الجزء الأكبر بينما يظل التطبيق يعمل. المرحلة الثانية تُحجز نقطة تفتيش للعمليات الحية، وتنقل الفارق الأخير مع حالة العملية، وتستأنف كل شيء على الجهاز الجديد. إذن وقت التوقف هو الفارق، وليس البيانات. والتطبيق لا يعلم قط أنه انتقل.",
+      "audioDurationSec": 27.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 25,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 4.24,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.4,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.88,
+          "startChar": 43,
+          "endChar": 49
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 6.24,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 56,
+          "endChar": 59
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.28,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 9.12,
+          "startChar": 74,
+          "endChar": 81
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.68,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.64,
+          "startChar": 90,
+          "endChar": 95
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 12.48,
+          "startChar": 107,
+          "endChar": 115
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.96,
+          "startChar": 116,
+          "endChar": 121
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.92,
+          "startChar": 123,
+          "endChar": 128
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.8,
+          "startChar": 129,
+          "endChar": 135
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.2,
+          "startChar": 136,
+          "endChar": 142
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.36,
+          "startChar": 143,
+          "endChar": 145
+        },
+        {
+          "startSec": 15.36,
+          "endSec": 15.76,
+          "startChar": 146,
+          "endChar": 150
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.4,
+          "startChar": 151,
+          "endChar": 158
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 17.68,
+          "startChar": 160,
+          "endChar": 167
+        },
+        {
+          "startSec": 17.84,
+          "endSec": 18.0,
+          "startChar": 168,
+          "endChar": 170
+        },
+        {
+          "startSec": 18.08,
+          "endSec": 18.4,
+          "startChar": 171,
+          "endChar": 174
+        },
+        {
+          "startSec": 18.48,
+          "endSec": 18.72,
+          "startChar": 175,
+          "endChar": 178
+        },
+        {
+          "startSec": 18.72,
+          "endSec": 19.2,
+          "startChar": 179,
+          "endChar": 185
+        },
+        {
+          "startSec": 19.2,
+          "endSec": 19.68,
+          "startChar": 186,
+          "endChar": 192
+        },
+        {
+          "startSec": 20.64,
+          "endSec": 21.12,
+          "startChar": 198,
+          "endChar": 201
+        },
+        {
+          "startSec": 21.12,
+          "endSec": 21.6,
+          "startChar": 202,
+          "endChar": 208
+        },
+        {
+          "startSec": 22.0,
+          "endSec": 22.32,
+          "startChar": 212,
+          "endChar": 218
+        },
+        {
+          "startSec": 22.32,
+          "endSec": 23.52,
+          "startChar": 220,
+          "endChar": 224
+        },
+        {
+          "startSec": 23.52,
+          "endSec": 24.08,
+          "startChar": 225,
+          "endChar": 233
+        },
+        {
+          "startSec": 25.12,
+          "endSec": 25.36,
+          "startChar": 235,
+          "endChar": 243
+        },
+        {
+          "startSec": 25.84,
+          "endSec": 26.24,
+          "startChar": 247,
+          "endChar": 251
+        },
+        {
+          "startSec": 26.24,
+          "endSec": 26.56,
+          "startChar": 252,
+          "endChar": 254
+        },
+        {
+          "startSec": 26.56,
+          "endSec": 26.72,
+          "startChar": 255,
+          "endChar": 258
+        },
+        {
+          "startSec": 26.72,
+          "endSec": 26.96,
+          "startChar": 259,
+          "endChar": 265
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/next-tutorial.f40a25d9.mp3",
-      "textHash": "f40a25d9b5e0da36566e530f6d6f9f3068295e2e786855fe1efbc5d9c855313b",
-      "audioDurationSec": 13.322449,
-      "narrationText": "لم يُعد ضبط العدّاد قط. الذاكرة وقاعدة البيانات والملفات، كل ذلك غيّر الجهاز فحسب. التالي، سنرى لماذا يكون النقل الثاني دائماً الأسرع."
+      "textHash": "1907733a60a328f860d1cf499c0dbb2f6afe6d5562a8dbfc8775ef412911f9be",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-live-migration/next-tutorial.1907733a.mp3",
+      "narrationText": "لم يُعد ضبط العدّاد قط. الذاكرة وقاعدة البيانات والملفات، كل ذلك غيّر الجهاز فحسب. التالي، سنرى لماذا يكون النقل الثاني دائماً الأسرع.",
+      "audioDurationSec": 15.072,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 32,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.36,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.4,
+          "endSec": 5.44,
+          "startChar": 48,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.48,
+          "endSec": 5.52,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 7.44,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 9.36,
+          "startChar": 70,
+          "endChar": 76
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.04,
+          "startChar": 83,
+          "endChar": 89
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 12.48,
+          "startChar": 96,
+          "endChar": 101
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.96,
+          "startChar": 102,
+          "endChar": 106
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.44,
+          "startChar": 107,
+          "endChar": 112
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 13.92,
+          "startChar": 113,
+          "endChar": 119
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.4,
+          "startChar": 120,
+          "endChar": 125
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.88,
+          "startChar": 127,
+          "endChar": 133
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "3d86bc4c6235443d6a09b9956ab2b07164d0b1bf2192e2aa5200ae8c5bffae6c"
+  ]
 }

@@ -2,100 +2,1170 @@
   "cast": "/assets/tutorials/tutorial-monitoring.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "2da22b615a808fea883be976c99d28cb2ccfda008332c38ed28227ac55d1bdaf",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.416158,
-      "replayEndSec": 8.503611,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.abea5009.mp3",
-      "audioDurationSec": 8.124082,
-      "textHash": "abea50098c72703c86e5da08b28b0ecb0e662c1ca294947c18a07686cb710065",
+      "replayStartSec": 2.425818,
+      "replayEndSec": 7.947473,
       "narrationText": "نبدأ بعرض النظام. يُظهر أمر استعلام الجهاز مع مرشح النظام وقت التشغيل واستخدام القرص وحالة التخزين. إذا كان هناك خطأ، يُخبرنا التقرير.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01-after.196f738d.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "196f738dbcb20287d4b7b6affed163e092c438e437466aa6781feb3da0a5c55a"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-01.48cae55e.mp3",
+      "textHash": "48cae55eed876a728825b2548316c75b69c6588e3da4e927de925063db18a730",
+      "audioDurationSec": 14.904,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 24,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.52,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 36,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.8,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.2,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 51,
+          "endChar": 57
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.28,
+          "startChar": 62,
+          "endChar": 69
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.24,
+          "startChar": 70,
+          "endChar": 78
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.44,
+          "startChar": 79,
+          "endChar": 84
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.48,
+          "startChar": 91,
+          "endChar": 98
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.84,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 104,
+          "endChar": 107
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 108,
+          "endChar": 112
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.8,
+          "startChar": 113,
+          "endChar": 116
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.72,
+          "startChar": 126,
+          "endChar": 133
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-01-after.2206c753.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "2206c753432906f539c5734bd78f797b697b0a48291feaf1c661f876eeb1b312",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.72,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.52,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 35,
+          "endChar": 41
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.68,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.0,
+          "startChar": 45,
+          "endChar": 50
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.503611,
-      "replayEndSec": 14.799411,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.fc135b6e.mp3",
-      "audioDurationSec": 12.042449,
-      "textHash": "fc135b6ed9c522d336e24ffb3bc5606ce60e036792956bdab8858a726239d793",
+      "replayStartSec": 7.947473,
+      "replayEndSec": 13.691193,
       "narrationText": "الآن الحاويات. يُدرج هذا العرض كل حاوية جارية عبر كل مستودع على الجهاز، الاسم والحالة والصحة ووحدة المعالجة المركزية والذاكرة، بالإضافة إلى المستودع الذي تنتمي إليه كل حاوية.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02-after.a56bb4c5.mp3",
-      "afterAudioDurationSec": 3.787755,
-      "afterTextHash": "a56bb4c5bd73e61263f27aa3efaaa2cc133966d0251581760589afc7238b4207"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-02.cb62f911.mp3",
+      "textHash": "cb62f91119e350c3aae0448a66b4b70f8b0d4cf75f44d5abb8c7940630911ec1",
+      "audioDurationSec": 17.304,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.12,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 46,
+          "endChar": 49
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.56,
+          "startChar": 53,
+          "endChar": 59
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.04,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 8.24,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.64,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.28,
+          "startChar": 78,
+          "endChar": 85
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 10.0,
+          "startChar": 86,
+          "endChar": 92
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.56,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.2,
+          "startChar": 99,
+          "endChar": 107
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 12.0,
+          "startChar": 108,
+          "endChar": 116
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.16,
+          "startChar": 117,
+          "endChar": 125
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 14.24,
+          "startChar": 127,
+          "endChar": 135
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.48,
+          "startChar": 136,
+          "endChar": 139
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 15.12,
+          "startChar": 140,
+          "endChar": 148
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.08,
+          "startChar": 154,
+          "endChar": 159
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.48,
+          "startChar": 160,
+          "endChar": 164
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 16.72,
+          "startChar": 165,
+          "endChar": 167
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 17.28,
+          "startChar": 168,
+          "endChar": 173
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-02-after.e19c9314.mp3",
+      "afterAudioDurationSec": 5.16,
+      "afterTextHash": "e19c93142d56481d1f302802e889a771e2b32100d0e73d033429ee8d718e9c41",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 3.84,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 31,
+          "endChar": 35
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 14.799411,
-      "replayEndSec": 21.195367,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.def5e9f5.mp3",
-      "audioDurationSec": 9.717551,
-      "textHash": "def5e9f5b23e62344d7e69259899fd4fc407243da9de783e5f02fed9b3b63611",
+      "replayStartSec": 13.691193,
+      "replayEndSec": 19.532776,
       "narrationText": "والمستودعات نفسها. الحجم وحالة التحميل وحالة محرك Docker واستخدام القرص. كل ما تحتاج معرفته عن كل بيئة معزولة على الجهاز.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03-after.495fc923.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "495fc9236361795074beeb04ff0991efe3b7e385b53187e6f7dfc1bcb7625c1a"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-03.a27e95ba.mp3",
+      "textHash": "a27e95ba595240ca198940783e8437ebee139100804de99285464390e64813dd",
+      "audioDurationSec": 15.384,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 1.28,
+          "startChar": 1,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.68,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.76,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.96,
+          "startChar": 31,
+          "endChar": 38
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.2,
+          "startChar": 57,
+          "endChar": 65
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 11.04,
+          "startChar": 66,
+          "endChar": 71
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 12.16,
+          "startChar": 76,
+          "endChar": 78
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.64,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.96,
+          "startChar": 92,
+          "endChar": 94
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.52,
+          "startChar": 95,
+          "endChar": 97
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.6,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.32,
+          "startChar": 103,
+          "endChar": 109
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.72,
+          "startChar": 110,
+          "endChar": 113
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.36,
+          "startChar": 114,
+          "endChar": 120
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-03-after.330e18e3.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "330e18e3c85cadce854a40b2b85049d8572fe639ffe29ab6fe7faf01d8321a6f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.44,
+          "startChar": 3,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 3.04,
+          "startChar": 14,
+          "endChar": 23
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 21.195367,
-      "replayEndSec": 26.969407,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.952a05b4.mp3",
-      "audioDurationSec": 8.672653,
-      "textHash": "952a05b4536e2ed98fa434c4bc86a30d8f56990967826944609b708635adf8ba",
+      "replayStartSec": 19.532776,
+      "replayEndSec": 24.783224,
       "narrationText": "يمنحك أمر استعلام الجهاز كل شيء في لقطة واحدة. معلومات النظام والحاويات والمستودعات، كلها معًا. شغّله مرة واحدة وستحصل على الصورة الكاملة.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04-after.f98de3e9.mp3",
-      "afterAudioDurationSec": 2.690612,
-      "afterTextHash": "f98de3e93233ea29ee2af4c032c5ac70274ba207dab7258d00d79c0b4d83a92c"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-04.3216155a.mp3",
+      "textHash": "3216155ae0f43d0003b82f12dd2e3b979b1634e719a8bf0dc5c0feac5486c881",
+      "audioDurationSec": 15.72,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.48,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.4,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.4,
+          "startChar": 62,
+          "endChar": 71
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 8.8,
+          "startChar": 72,
+          "endChar": 83
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.84,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.16,
+          "startChar": 102,
+          "endChar": 105
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.96,
+          "startChar": 106,
+          "endChar": 111
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.6,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.56,
+          "startChar": 119,
+          "endChar": 122
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.96,
+          "startChar": 123,
+          "endChar": 129
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.68,
+          "startChar": 130,
+          "endChar": 137
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-04-after.381dfa9f.mp3",
+      "afterAudioDurationSec": 4.2,
+      "afterTextHash": "381dfa9fadfcafb8ef81628919a858aa8dfc56d5d3fe529f588165dcf2f899a1",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 26,
+          "endChar": 30
+        }
+      ]
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 26.969407,
-      "replayEndSec": 29.019779,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.ac6cfcac.mp3",
-      "audioDurationSec": 15.229388,
-      "textHash": "ac6cfcace593e6a47aa0c353d7a2f1c11883a8e2aa235c5e162eca03a7513af5",
+      "replayStartSec": 24.783224,
+      "replayEndSec": 26.8461,
       "narrationText": "وأخيرًا الفحص التشخيصي لمراجعة سريعة محلية على حاسوبك. Node ومفتاح SSH ورenet وDocker، كل ما تعتمد عليه الأداة. هذه هي السلسلة الكاملة. من التثبيت إلى المراقبة، كل شيء من طرفيتك.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05-after.516ff012.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "516ff012736daf0ef3bcd343ed3f83128902d33bc58650d39bbad0047def4cc2"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-05.cc881754.mp3",
+      "textHash": "cc88175461a6e9b6884bb74867ca441deef522eb206a33bc58fcf6a61d384921",
+      "audioDurationSec": 19.08,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.96,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.48,
+          "startChar": 14,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.32,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 6.48,
+          "startChar": 47,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.52,
+          "startChar": 60,
+          "endChar": 66
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.32,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.36,
+          "startChar": 87,
+          "endChar": 89
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.72,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.04,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 11.92,
+          "startChar": 104,
+          "endChar": 110
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.84,
+          "startChar": 119,
+          "endChar": 126
+        },
+        {
+          "startSec": 14.0,
+          "endSec": 14.4,
+          "startChar": 127,
+          "endChar": 134
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 16.08,
+          "startChar": 139,
+          "endChar": 146
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.24,
+          "startChar": 147,
+          "endChar": 150
+        },
+        {
+          "startSec": 16.24,
+          "endSec": 16.8,
+          "startChar": 151,
+          "endChar": 159
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 17.92,
+          "startChar": 164,
+          "endChar": 167
+        },
+        {
+          "startSec": 18.0,
+          "endSec": 18.16,
+          "startChar": 168,
+          "endChar": 170
+        },
+        {
+          "startSec": 18.24,
+          "endSec": 18.8,
+          "startChar": 171,
+          "endChar": 178
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/tutorial-monitoring-05-after.af817a52.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "af817a529904438e1f016409323c3d07e74c28bf1003df7fae84f7489ea42473",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.24,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.88,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 39,
+          "endChar": 43
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/intro.bdefb9f3.mp3",
-      "textHash": "bdefb9f318f511db0543e5eb8eb06c460aed4a5f574aa7f474782d0031788ad3",
-      "audioDurationSec": 3.970612,
-      "narrationText": "حسنًا! تطبيقك يعمل ومُحتفظ به احتياطيًا، فلنتأكد الآن من بقائه بصحة جيدة."
+      "textHash": "af065648c69b14de579c7af82120015d6f3bfdaa6a78eaec4fe6f32cf771b297",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/intro.af065648.mp3",
+      "narrationText": "حسنًا! تطبيقك يعمل ومُحتفظ به احتياطيًا، فلنتأكد الآن من بقائه بصحة جيدة.",
+      "audioDurationSec": 9.0,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 6.56,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.6,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.68,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.8,
+          "startChar": 68,
+          "endChar": 72
+        }
+      ]
     },
     {
       "id": "three-checks",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/three-checks.4c46c78b.mp3",
-      "textHash": "4c46c78b9219f10728b61cb9bf4b8e8fca24289521f87964ee48948f3e76b72e",
-      "audioDurationSec": 10.762449,
-      "narrationText": "تمنحك الأداة صورة كاملة عن أي خادم من حاسوبك. ثلاث زوايا للفحص: صحة النظام والحاويات الجارية والمستودعات نفسها."
+      "textHash": "702bdb7d4bb62f6eea04a595e4c3f761a9863fbddece2f7c0a77a23c02a38fb1",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/three-checks.702bdb7d.mp3",
+      "narrationText": "تمنحك الأداة صورة كاملة عن أي خادم من حاسوبك. ثلاث زوايا للفحص: صحة النظام والحاويات الجارية والمستودعات نفسها.",
+      "audioDurationSec": 13.32,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.4,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.96,
+          "startChar": 38,
+          "endChar": 44
+        },
+        {
+          "startSec": 5.54,
+          "endSec": 6.12,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.7,
+          "endSec": 7.28,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.96,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.68,
+          "startChar": 68,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 11.04,
+          "startChar": 75,
+          "endChar": 84
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.6,
+          "startChar": 85,
+          "endChar": 92
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.8,
+          "startChar": 93,
+          "endChar": 104
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.28,
+          "startChar": 105,
+          "endChar": 110
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.25da519a.mp3",
-      "textHash": "25da519a8f2beb86d6f7ed6a441b2310841503b003453e2a38335f03254137dd",
-      "audioDurationSec": 12.826122,
-      "narrationText": "يمكنك الآن التثبيت والإعداد والنشر والـ fork والإطلاق الفعلي والـ autostart والنسخ الاحتياطي والمراقبة. المسار المتقدم يبدأ بعد ذلك: نسّق إصدارات الـ repos الخاصة بك مثل الكود، مع commits وrollbacks."
+      "textHash": "c0a133c6d0764a535dd1b23e62ff96b4ce9917453c1a4ce5e8a2f5b1056ee1e3",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-monitoring/next-tutorial.c0a133c6.mp3",
+      "narrationText": "يمكنك الآن التثبيت والإعداد والنشر والـ fork والإطلاق الفعلي والـ autostart والنسخ الاحتياطي والمراقبة. المسار المتقدم يبدأ بعد ذلك: نسّق إصدارات الـ repos الخاصة بك مثل الكود، مع commits وrollbacks.",
+      "audioDurationSec": 15.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 11,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 28,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4.0,
+          "startChar": 54,
+          "endChar": 60
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 8.08,
+          "startChar": 111,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.12,
+          "startChar": 124,
+          "endChar": 127
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 128,
+          "endChar": 131
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.36,
+          "startChar": 138,
+          "endChar": 145
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.16,
+          "startChar": 156,
+          "endChar": 162
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.32,
+          "startChar": 163,
+          "endChar": 165
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 12.56,
+          "startChar": 166,
+          "endChar": 169
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.2,
+          "startChar": 170,
+          "endChar": 175
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "74e6f261ab9f9b6b0dd55494a4ba7d13377d910492e44688b459f8f9b0cd4231"
+  ]
 }

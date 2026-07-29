@@ -2,211 +2,2053 @@
   "cast": "/assets/tutorials/tutorial-branching.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "212b9f21dfb830707e7aa085a7a2f04827682dfaee14f656ef9ae4cbffca1ab8",
   "steps": [
     {
       "id": "tutorial-branching-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418102,
-      "replayEndSec": 10.876025,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01.3fc17800.mp3",
-      "audioDurationSec": 5.250612,
-      "textHash": "3fc1780074420c883a8f0ed9b9a351a56aa72e8bc5e4727883cd4e4956c3920e",
+      "replayStartSec": 2.423373,
+      "replayEndSec": 8.659919,
       "narrationText": "الـ fork العامل لدينا يحتوي على الإصدار الأول من حالة التطبيق، وملف علامة بسيط يجعله مرئياً.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-01-after.1765faff.mp3",
-      "afterAudioDurationSec": 2.115918,
-      "afterTextHash": "1765faff5e2baf1af721c94bbf94ed299c8a3ec8ffb2c1cb994f29d840b71d39"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-01.85b91402.mp3",
+      "textHash": "85b91402e9d73a0803d7391abb43ce5c7412e35f5ca6daf9f6177064ce0d1caf",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 3.2,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.8,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 54,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.44,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.76,
+          "startChar": 68,
+          "endChar": 73
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.8,
+          "startChar": 79,
+          "endChar": 84
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-01-after.30836bd0.mp3",
+      "afterAudioDurationSec": 3.24,
+      "afterTextHash": "30836bd085fac6b7438106093cdc9d2f8bfe6acbba59a58caca59fbacc873148",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.12,
+          "startChar": 19,
+          "endChar": 24
+        }
+      ]
     },
     {
       "id": "tutorial-branching-02",
       "markerIndex": 1,
-      "replayStartSec": 10.876025,
-      "replayEndSec": 20.708803,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-02.e43d6b75.mp3",
-      "audioDurationSec": 9.325714,
-      "textHash": "e43d6b7592d5943a8c2c8d52db8f6b39b0398f414800a75581f0ed5cf85e4994",
+      "replayStartSec": 8.659919,
+      "replayEndSec": 16.216982,
       "narrationText": "الأمر لا يقتصر على الملفات. قاعدة بيانات PostgreSQL حقيقية تعيش في هذا الـ fork أيضاً، وجدول customers يحتوي على ثلاثة صفوف. تذكّر هذا الرقم.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-02-after.1916c8b0.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "1916c8b046e293302ff85047023a86ace87e23103016f03bb9e31ee9217eb86d"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-02.62e0937b.mp3",
+      "textHash": "62e0937b1e6f4fba8ec19f836c0a04a77035c0dcc1150e6b4c94b262def0e2b1",
+      "audioDurationSec": 13.944,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 19,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.56,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 6.24,
+          "startChar": 41,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.2,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.4,
+          "startChar": 80,
+          "endChar": 84
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 87,
+          "endChar": 92
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.56,
+          "startChar": 93,
+          "endChar": 102
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.04,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 109,
+          "endChar": 112
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.52,
+          "startChar": 113,
+          "endChar": 118
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.96,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.2,
+          "startChar": 125,
+          "endChar": 130
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.6,
+          "startChar": 131,
+          "endChar": 134
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-02-after.89288af8.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "89288af871395c435637f55a47be773d8faef49170daac7c95c18f5ef84c9d0a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 16,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.24,
+          "startChar": 19,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.52,
+          "startChar": 40,
+          "endChar": 42
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 43,
+          "endChar": 46
+        }
+      ]
     },
     {
       "id": "tutorial-branching-03",
       "markerIndex": 2,
-      "replayStartSec": 20.708803,
-      "replayEndSec": 29.448478,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-03.5335a6e5.mp3",
-      "audioDurationSec": 11.154286,
-      "textHash": "5335a6e5389f8780970017cd815fa4775b613f9599d210ee423ac1f767bf16fd",
+      "replayStartSec": 16.216982,
+      "replayEndSec": 21.875788,
       "narrationText": "جمّده. الـ commit يلتقط الـ repository بأكمله كصورة غير قابلة للتغيير، مع رسالة ومؤلف وأصل. تماماً كـ git، لكن لكل شيء، قاعدة البيانات مشمولة.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-03-after.d2947271.mp3",
-      "afterAudioDurationSec": 5.067755,
-      "afterTextHash": "d29472719dbd1b3ea34a0b61870c479ef9ae77ad6343be8198d5c0350217b250"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-03.4e4578f0.mp3",
+      "textHash": "4e4578f00be0557cd82c7d72b515029cff367d9a003ba401cd08d7f91dba4b1a",
+      "audioDurationSec": 14.28,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.24,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.12,
+          "startChar": 74,
+          "endChar": 79
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 8.08,
+          "startChar": 80,
+          "endChar": 85
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 10.0,
+          "startChar": 86,
+          "endChar": 90
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.32,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.76,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.16,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.96,
+          "startChar": 120,
+          "endChar": 125
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.68,
+          "startChar": 126,
+          "endChar": 134
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 14.16,
+          "startChar": 135,
+          "endChar": 141
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-03-after.af6825ec.mp3",
+      "afterAudioDurationSec": 7.08,
+      "afterTextHash": "af6825ec401131999a3f246c5201c30b65e404da1d39b228e2132628f70ba53e",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.88,
+          "startChar": 19,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 54,
+          "endChar": 57
+        }
+      ]
     },
     {
       "id": "tutorial-branching-04",
       "markerIndex": 3,
-      "replayStartSec": 29.448478,
-      "replayEndSec": 34.241982,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-04.87dc8a64.mp3",
-      "audioDurationSec": 3.787755,
-      "textHash": "87dc8a6495d9009da49620a797cfd6b4864e3ecd210c5bb39c921e9b0646e57d",
+      "replayStartSec": 21.875788,
+      "replayEndSec": 26.408746,
       "narrationText": "أعطِ الـ commit اسماً. الـ branch الثابت يشير الآن إلى الإصدار الأول.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-04-after.59f6f0d7.mp3",
-      "afterAudioDurationSec": 2.115918,
-      "afterTextHash": "59f6f0d7b44658205cb1f55819551a1123fba8889e260287358d02b6268c8f80"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-04.3211680e.mp3",
+      "textHash": "3211680e51648cb537c1863cbcfaf0d5c7c1f0b284b5443debd68022a76919c7",
+      "audioDurationSec": 6.12,
+      "wordTimings": [
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.56,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.52,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 63,
+          "endChar": 68
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-04-after.a79f3317.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "a79f3317d7ad137b52e5384e9f6b21cb51c68f0dd1f5aacf119814c2d45189b4",
+      "afterWordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.8,
+          "startChar": 31,
+          "endChar": 35
+        }
+      ]
     },
     {
       "id": "tutorial-branching-05",
       "markerIndex": 4,
-      "replayStartSec": 34.241982,
-      "replayEndSec": 42.690283,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-05.b5b96bfa.mp3",
-      "audioDurationSec": 6.269388,
-      "textHash": "b5b96bfa945cb2d0ebfadccba29d5aa25299d905822a152354ee1408320c61ff",
+      "replayStartSec": 26.408746,
+      "replayEndSec": 32.630295,
       "narrationText": "واصل العمل. الإصدار الثاني يحل محل الإصدار الأول في الـ fork العامل. الـ commit لا يتأثر.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-05-after.f27f7e45.mp3",
-      "afterAudioDurationSec": 2.76898,
-      "afterTextHash": "f27f7e4556f50c79482d4ffa6949d863280e62cfce709d51cb33cc60004105cc"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-05.613389f0.mp3",
+      "textHash": "613389f099be3ed4e614a92dd68f3d4f4df59262ce2b3699e491b0ccc3c295c2",
+      "audioDurationSec": 10.44,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.6,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.96,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 61,
+          "endChar": 67
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.6,
+          "startChar": 80,
+          "endChar": 82
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.24,
+          "startChar": 83,
+          "endChar": 88
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-05-after.064a899f.mp3",
+      "afterAudioDurationSec": 4.032,
+      "afterTextHash": "064a899fee1f249cd16014ba6839c88c721a19dd4287ff1f89cb160f42b433f7",
+      "afterWordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 9,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.92,
+          "startChar": 32,
+          "endChar": 37
+        }
+      ]
     },
     {
       "id": "tutorial-branching-06",
       "markerIndex": 5,
-      "replayStartSec": 42.690283,
-      "replayEndSec": 51.047933,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-06.e23cccd5.mp3",
-      "audioDurationSec": 8.124082,
-      "textHash": "e23cccd5c4e5ac3689592849ee05c516af306426fbd89729443eedaf5487e369",
+      "replayStartSec": 32.630295,
+      "replayEndSec": 38.597418,
       "narrationText": "الآن الكارثة. التغيير المحفوف بالمخاطر يحذف جدول customers. في الحياة الواقعية هذه هي اللحظة التي يغرق فيها قلبك.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-06-after.2e16c151.mp3",
-      "afterAudioDurationSec": 3.239184,
-      "afterTextHash": "2e16c1512b9c686e24f3fcc17847b1f3a79fa4f0c61a0b18334db3b382641ad0"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-06.e1fb156f.mp3",
+      "textHash": "e1fb156f89462334fb533e85d9829c6f647197c9bb05d480c11615edd3691a8c",
+      "audioDurationSec": 11.712,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 30,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.72,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 44,
+          "endChar": 48
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.08,
+          "startChar": 70,
+          "endChar": 78
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.56,
+          "startChar": 79,
+          "endChar": 82
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 86,
+          "endChar": 92
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.72,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.12,
+          "startChar": 103,
+          "endChar": 107
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.44,
+          "startChar": 108,
+          "endChar": 112
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-06-after.01a4a984.mp3",
+      "afterAudioDurationSec": 4.824,
+      "afterTextHash": "01a4a98446da3765b1e8479638f78dbc7fa8e78a222f9598418733ab1fe651dd",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 3,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.76,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 48,
+          "endChar": 54
+        }
+      ]
     },
     {
       "id": "tutorial-branching-07",
       "markerIndex": 6,
-      "replayStartSec": 51.047933,
-      "replayEndSec": 59.69522,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-07.1582e9f0.mp3",
-      "audioDurationSec": 8.594286,
-      "textHash": "1582e9f071a8f62e6d52387ad191052acd4f83ab39933abb24d61d69c28c33f5",
+      "replayStartSec": 38.597418,
+      "replayEndSec": 45.023533,
       "narrationText": "اطلب الصفوف مجدداً وقاعدة البيانات تقول بصراحة: relation customers غير موجودة. الكارثة حقيقية. كل صف اختفى.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-07-after.f73055f4.mp3",
-      "afterAudioDurationSec": 4.440816,
-      "afterTextHash": "f73055f4e8840e88aa29bf8fa08283991a4eeff373dd3cc313db67a73f3ea522"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-07.3b7e163f.mp3",
+      "textHash": "3b7e163f555d2de931ac2520a595a4a677c5a2d4130e4b2619376b8493bf132d",
+      "audioDurationSec": 8.664,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 19,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.6,
+          "startChar": 40,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 48,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.88,
+          "startChar": 57,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.64,
+          "startChar": 79,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 87,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 95,
+          "endChar": 97
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 98,
+          "endChar": 100
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-07-after.5d000c23.mp3",
+      "afterAudioDurationSec": 5.784,
+      "afterTextHash": "5d000c230634581da22a8045877d8d853817f6f1433ca16a7fe07d3aacb6e22b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 37,
+          "endChar": 42
+        }
+      ]
     },
     {
       "id": "tutorial-branching-08",
       "markerIndex": 7,
-      "replayStartSec": 59.69522,
-      "replayEndSec": 68.35661,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-08.cc7be270.mp3",
-      "audioDurationSec": 8.280816,
-      "textHash": "cc7be2705fcd6abb0c293575519a37ae82488cd2a7c6e0f29252945ed92a1cae",
+      "replayStartSec": 45.023533,
+      "replayEndSec": 50.876553,
       "narrationText": "نفّذ commit للتغيير المحفوف بالمخاطر أيضاً، بما في ذلك الجدول المحذوف. السجل يوثّق ما حدث فعلاً. الآن لدينا commit-ان: أب وابن.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-08-after.125bc255.mp3",
-      "afterAudioDurationSec": 1.645714,
-      "afterTextHash": "125bc2555bd73605717eacd3382e2b74b529fabf1b947d6308685f2e8be9d69a"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-08.1464dee9.mp3",
+      "textHash": "1464dee9428e77f43c28360a856326c40892f8516fb12f42d13b58a053edc466",
+      "audioDurationSec": 12.192,
+      "wordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 20,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.56,
+          "startChar": 28,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.4,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.8,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 55,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 62,
+          "endChar": 70
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 8.0,
+          "startChar": 77,
+          "endChar": 82
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 86,
+          "endChar": 89
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.8,
+          "startChar": 90,
+          "endChar": 94
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.92,
+          "startChar": 97,
+          "endChar": 101
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 12.0,
+          "startChar": 119,
+          "endChar": 121
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-08-after.9b8ed71c.mp3",
+      "afterAudioDurationSec": 1.8,
+      "afterTextHash": "9b8ed71cb1e805a5a10699ce6dae293622549a4d690a1363cf85e9915c324d91",
+      "afterWordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.68,
+          "startChar": 10,
+          "endChar": 17
+        }
+      ]
     },
     {
       "id": "tutorial-branching-09",
       "markerIndex": 8,
-      "replayStartSec": 68.35661,
-      "replayEndSec": 75.614559,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-09.6d7835e0.mp3",
-      "audioDurationSec": 8.986122,
-      "textHash": "6d7835e05cbad3ec77d4a7e5a608e35d27f11907353dc513ac10d7d811c3c626",
+      "replayStartSec": 50.876553,
+      "replayEndSec": 55.851239,
       "narrationText": "وهذا هو السجل: الإصدار الثاني في الأعلى، والإصدار الأول تحته، مع الرسائل والمؤلفين، دون فتح أي صورة.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-09-after.ba03c64f.mp3",
-      "afterAudioDurationSec": 3.160816,
-      "afterTextHash": "ba03c64f24cce2bd5a5121cbcc0a09e91f9301384697941f3cabe007c890503b"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-09.76c022a0.mp3",
+      "textHash": "76c022a0e1e76d38e1d38875b906163228bf298820a999fe1e33ea89ef49f162",
+      "audioDurationSec": 11.88,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.52,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.76,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
+          "startChar": 65,
+          "endChar": 72
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 9.44,
+          "startChar": 73,
+          "endChar": 82
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.56,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 92,
+          "endChar": 94
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.68,
+          "startChar": 95,
+          "endChar": 99
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-09-after.69acde90.mp3",
+      "afterAudioDurationSec": 4.032,
+      "afterTextHash": "69acde9062f4865b5830645eb1d61995132e46556eb89ba526fd16d092cb4ea6",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 21,
+          "endChar": 24
+        }
+      ]
     },
     {
       "id": "tutorial-branching-10",
       "markerIndex": 9,
-      "replayStartSec": 75.614559,
-      "replayEndSec": 83.292425,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-10.2b356f1a.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "2b356f1a1d991468b1e81cddb8d2ff0abbe2c1e4c070722fad04471e033b9379",
+      "replayStartSec": 55.851239,
+      "replayEndSec": 60.773115,
       "narrationText": "الآن الثمرة. استخرج الـ branch الثابت في fork قابل للكتابة جديد تماماً. نسخ reflink: شبه فوري، بأي حجم.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-10-after.90d42e06.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "90d42e069fafa0e45775e0c3eef70031bb5dc282767c58667122d411528eb526"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-10.4ed49b63.mp3",
+      "textHash": "4ed49b630d3626edf56f0753b511f3c7a2f367939030e55c7a8f1c4f2d46c9c2",
+      "audioDurationSec": 12.672,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.48,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.2,
+          "startChar": 89,
+          "endChar": 93
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.16,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.56,
+          "startChar": 99,
+          "endChar": 102
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-10-after.360131f9.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "360131f92066c7381f9656ae9c07f1571d96fbf065e81620e81d68ceb8a5c798",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 11,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.84,
+          "startChar": 54,
+          "endChar": 60
+        }
+      ]
     },
     {
       "id": "tutorial-branching-11",
       "markerIndex": 10,
-      "replayStartSec": 83.292425,
-      "replayEndSec": 91.555233,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-11.2c14ae7c.mp3",
-      "audioDurationSec": 2.35102,
-      "textHash": "2c14ae7c9d0715d04ad0924857f2d284718817488601ac77174f1ff2c1c5e169",
+      "replayStartSec": 60.773115,
+      "replayEndSec": 67.070568,
       "narrationText": "شغّل الـ fork الخاص بالاسترجاع كأي repo آخر.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-11-after.2d1e79d1.mp3",
-      "afterAudioDurationSec": 2.925714,
-      "afterTextHash": "2d1e79d15404c1f2b4cf41bba167eea72dc9964ef4667048eb3fa09fcd9e7025"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-11.6704d2ac.mp3",
+      "textHash": "6704d2accde71a29b537ae8317fb1de537619aef4129eb1be8679cc6777814ee",
+      "audioDurationSec": 4.2,
+      "wordTimings": [
+        {
+          "startSec": 0.96,
+          "endSec": 1.52,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 3.04,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 40,
+          "endChar": 43
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-11-after.ad41079f.mp3",
+      "afterAudioDurationSec": 4.992,
+      "afterTextHash": "ad41079fbdc242f64b3ff88d289e1b9eb83af6932572cd6c5a640cb3a49ac47a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 4.0,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.64,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 34,
+          "endChar": 41
+        }
+      ]
     },
     {
       "id": "tutorial-branching-12",
       "markerIndex": 11,
-      "replayStartSec": 91.555233,
-      "replayEndSec": 98.952411,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-12.0003cb69.mp3",
-      "audioDurationSec": 8.124082,
-      "textHash": "0003cb6987f9b5c7732dc029a36d4d81f3828dc2678f7a77f9374930bd12c32c",
+      "replayStartSec": 67.070568,
+      "replayEndSec": 72.350149,
       "narrationText": "والدليل: الـ fork الخاص بالاسترجاع يقرأ الإصدار الأول. الـ fork العامل لا يزال يحتوي على الإصدار الثاني. سجل يمكنك تشغيله.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-12-after.5ab8e450.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "5ab8e450ef52642702550f34a33d1e50ecfa80c5d3193c80da43c12794cb2d36"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-12.b3ec081e.mp3",
+      "textHash": "b3ec081e8144ef7652206ed2d3fa43e3bb301476257f953a3b7302803d599aff",
+      "audioDurationSec": 13.632,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.2,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 40,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.6,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.88,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 79,
+          "endChar": 84
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.68,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.56,
+          "startChar": 89,
+          "endChar": 96
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 12.32,
+          "startChar": 97,
+          "endChar": 103
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.72,
+          "startChar": 109,
+          "endChar": 114
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.36,
+          "startChar": 115,
+          "endChar": 121
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-12-after.d506d6f3.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "d506d6f396b0cb347b051b13e84d8803068d86297c37d709163c6e317dda1ae8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 2.4,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.36,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 48,
+          "endChar": 51
+        }
+      ]
     },
     {
       "id": "tutorial-branching-13",
       "markerIndex": 12,
-      "replayStartSec": 98.952411,
-      "replayEndSec": 107.653008,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-13.d83f15ed.mp3",
-      "audioDurationSec": 8.124082,
-      "textHash": "d83f15ed1028c16f7fa5cb8b74d46d3a85c74b42ba77fc907e88f3db9e6bcb8f",
+      "replayStartSec": 72.350149,
+      "replayEndSec": 78.953688,
       "narrationText": "والجزء الأهم: الجدول المحذوف عاد، بثلاثة صفوفه كاملة. الاسترجاع أعاد قاعدة البيانات، ليس الملفات وحدها.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-branching/tutorial-branching-13-after.ef87d83c.mp3",
-      "afterAudioDurationSec": 3.004082,
-      "afterTextHash": "ef87d83ce62d6b319665c9d3be669add8ca0faf5accbebbc1b087f34e1d30b1d"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-13.b916a73a.mp3",
+      "textHash": "b916a73af2ab0d3e1ce504383aea20fdd21964c3d8e28c0d2259ef396746d06a",
+      "audioDurationSec": 12.024,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.72,
+          "startChar": 14,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.68,
+          "startChar": 41,
+          "endChar": 46
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.44,
+          "startChar": 54,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.96,
+          "startChar": 69,
+          "endChar": 74
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.72,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.36,
+          "startChar": 89,
+          "endChar": 96
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 12.0,
+          "startChar": 97,
+          "endChar": 102
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-branching/tutorial-branching-13-after.80e95b51.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "80e95b516030d8f23e11c55082838cf1982a977a83933d649853f84bca2f6f00",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.24,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.92,
+          "startChar": 38,
+          "endChar": 42
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/intro.e3ac8c50.mp3",
-      "textHash": "e3ac8c50e13d5e455ba8fa384c3bf893acaf41f18a3e1b6c12c928679a92db41",
-      "audioDurationSec": 12.59102,
-      "narrationText": "لنُدير repositories-ك مثل الكود! سنجمّد نقطة تفتيش ونعطيها اسماً، ثم نحذف جدول قاعدة بيانات حقيقي. الاسترجاع يُعيد الحالة المجمّدة تماماً، بكل صف فيها، في ثوانٍ."
+      "textHash": "0178ac2090c5831795b4956f1226547f23eb72b2f86af59e7830906fe5584a8d",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/intro.0178ac20.mp3",
+      "narrationText": "لنُدير repositories-ك مثل الكود! سنجمّد نقطة تفتيش ونعطيها اسماً، ثم نحذف جدول قاعدة بيانات حقيقي. الاسترجاع يُعيد الحالة المجمّدة تماماً، بكل صف فيها، في ثوانٍ.",
+      "audioDurationSec": 19.224,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.72,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 69,
+          "endChar": 73
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.12,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.68,
+          "startChar": 79,
+          "endChar": 84
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.4,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.12,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 13.44,
+          "startChar": 99,
+          "endChar": 108
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.68,
+          "startChar": 109,
+          "endChar": 114
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 15.52,
+          "startChar": 131,
+          "endChar": 136
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 16.8,
+          "startChar": 139,
+          "endChar": 142
+        },
+        {
+          "startSec": 16.8,
+          "endSec": 16.96,
+          "startChar": 143,
+          "endChar": 145
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.52,
+          "startChar": 146,
+          "endChar": 150
+        },
+        {
+          "startSec": 18.56,
+          "endSec": 18.72,
+          "startChar": 152,
+          "endChar": 154
+        },
+        {
+          "startSec": 18.72,
+          "endSec": 19.12,
+          "startChar": 155,
+          "endChar": 159
+        }
+      ]
     },
     {
       "id": "commit-model",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/commit-model.55d63a67.mp3",
-      "textHash": "55d63a679031fd8f526faca7f202375d3ef13ce075e2e7fa7a22e709c900d20f",
-      "audioDurationSec": 18.285714,
-      "narrationText": "النموذج هو git، لكن للـ repositories بأكملها. الـ commit هو صورة مجمّدة غير قابلة للتغيير. يرفض حتى الـ mount، لذا لا شيء يمكنه تغييره. الـ branch هو مجرد اسم يشير إلى commit. والـ checkout يحوّل أي commit إلى fork قابل للكتابة جديد."
+      "textHash": "7ab819b8ea277079c73194f0906b3263dda53dbafc03d3652b607e7e870654a6",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/commit-model.7ab819b8.mp3",
+      "narrationText": "النموذج هو git، لكن للـ repositories بأكملها. الـ commit هو صورة مجمّدة غير قابلة للتغيير. يرفض حتى الـ mount، لذا لا شيء يمكنه تغييره. الـ branch هو مجرد اسم يشير إلى commit. والـ checkout يحوّل أي commit إلى fork قابل للكتابة جديد.",
+      "audioDurationSec": 23.88,
+      "wordTimings": [
+        {
+          "startSec": 0.64,
+          "endSec": 3.04,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.52,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.48,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.36,
+          "startChar": 115,
+          "endChar": 117
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.6,
+          "startChar": 118,
+          "endChar": 121
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.72,
+          "startChar": 128,
+          "endChar": 134
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 14.8,
+          "startChar": 147,
+          "endChar": 149
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.76,
+          "startChar": 150,
+          "endChar": 154
+        },
+        {
+          "startSec": 16.0,
+          "endSec": 16.48,
+          "startChar": 159,
+          "endChar": 163
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 18.32,
+          "startChar": 164,
+          "endChar": 167
+        },
+        {
+          "startSec": 22.32,
+          "endSec": 22.56,
+          "startChar": 215,
+          "endChar": 219
+        },
+        {
+          "startSec": 22.56,
+          "endSec": 23.2,
+          "startChar": 220,
+          "endChar": 227
+        },
+        {
+          "startSec": 23.2,
+          "endSec": 23.76,
+          "startChar": 228,
+          "endChar": 232
+        }
+      ]
     },
     {
       "id": "vscode-versions",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/vscode-versions.4c291cd0.mp3",
-      "textHash": "4c291cd0ce041752469416e6c7396e69790e69a6b02639394099963a423ff83a",
-      "audioDurationSec": 12.434286,
-      "narrationText": "الرؤية تُقنع. الـ fork الخاص بالاسترجاع على اليسار يحتوي على الإصدار الأول، بينما الـ fork العامل على اليمين انتقل إلى الإصدار الثاني. كلاهما يعمل، كلاهما قابل للكتابة، وكلاهما من نفس السجل."
+      "textHash": "115f8b6addfbb3bd2f48c15980c76b166e97d0ded59fe3755637a321ab1a8d79",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/vscode-versions.115f8b6a.mp3",
+      "narrationText": "الرؤية تُقنع. الـ fork الخاص بالاسترجاع على اليسار يحتوي على الإصدار الأول، بينما الـ fork العامل على اليمين انتقل إلى الإصدار الثاني. كلاهما يعمل، كلاهما قابل للكتابة، وكلاهما من نفس السجل.",
+      "audioDurationSec": 18.6,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2.72,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 4.24,
+          "startChar": 29,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.56,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.76,
+          "startChar": 57,
+          "endChar": 60
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.4,
+          "startChar": 61,
+          "endChar": 68
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 69,
+          "endChar": 74
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 8.08,
+          "startChar": 76,
+          "endChar": 81
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.36,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 102,
+          "endChar": 108
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.32,
+          "startChar": 109,
+          "endChar": 114
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.36,
+          "startChar": 119,
+          "endChar": 126
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 13.44,
+          "startChar": 135,
+          "endChar": 141
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.52,
+          "startChar": 142,
+          "endChar": 146
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.96,
+          "startChar": 148,
+          "endChar": 154
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.44,
+          "startChar": 155,
+          "endChar": 159
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.0,
+          "startChar": 160,
+          "endChar": 167
+        },
+        {
+          "startSec": 16.0,
+          "endSec": 17.52,
+          "startChar": 169,
+          "endChar": 176
+        },
+        {
+          "startSec": 17.52,
+          "endSec": 17.76,
+          "startChar": 177,
+          "endChar": 179
+        },
+        {
+          "startSec": 17.76,
+          "endSec": 17.92,
+          "startChar": 180,
+          "endChar": 183
+        },
+        {
+          "startSec": 17.92,
+          "endSec": 18.4,
+          "startChar": 184,
+          "endChar": 189
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-branching/next-tutorial.4203830e.mp3",
-      "textHash": "4203830ebcefa86f7885923affdce1f3aa165dd3aad6426c67006e8257011c32",
-      "audioDurationSec": 9.952653,
-      "narrationText": "الـ commits لا تتغير أبداً، والـ forks لا تنتظر. في الجزء التالي، ننقل repository بأكمله وهو يعمل إلى جهاز آخر، مباشرةً. أراك في الجزء القادم!"
+      "textHash": "f9e7169570685ff011a8c21d2a425fb47836f924d80e4c7838b12b8efaed0d94",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-branching/next-tutorial.f9e71695.mp3",
+      "narrationText": "الـ commits لا تتغير أبداً، والـ forks لا تنتظر. في الجزء التالي، ننقل repository بأكمله وهو يعمل إلى جهاز آخر، مباشرةً. أراك في الجزء القادم!",
+      "audioDurationSec": 15.24,
+      "wordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 4.64,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 52,
+          "endChar": 57
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 58,
+          "endChar": 64
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 66,
+          "endChar": 70
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.24,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.4,
+          "startChar": 98,
+          "endChar": 101
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.96,
+          "startChar": 102,
+          "endChar": 106
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.24,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.32,
+          "startChar": 121,
+          "endChar": 125
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.48,
+          "startChar": 129,
+          "endChar": 134
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.04,
+          "startChar": 135,
+          "endChar": 141
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "41f0c0922db5c61d38ec58d331691a79e750f7c4e530180bd57371b4bda34867"
+  ]
 }
