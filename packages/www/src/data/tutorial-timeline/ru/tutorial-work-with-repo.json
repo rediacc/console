@@ -153,6 +153,12 @@
         },
         {
           "startSec": 11.76,
+          "endSec": 11.84,
+          "startChar": 165,
+          "endChar": 166
+        },
+        {
+          "startSec": 11.84,
           "endSec": 12.32,
           "startChar": 167,
           "endChar": 175
@@ -212,15 +218,33 @@
         },
         {
           "startSec": 0.4,
-          "endSec": 0.88,
+          "endSec": 0.96,
           "startChar": 7,
           "endChar": 14
         },
         {
           "startSec": 1.12,
           "endSec": 1.36,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 30,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
           "startChar": 44,
-          "endChar": 48
+          "endChar": 53
         },
         {
           "startSec": 3.84,
@@ -689,7 +713,7 @@
           "endChar": 67
         },
         {
-          "startSec": 4.0,
+          "startSec": 3.92,
           "endSec": 4.32,
           "startChar": 68,
           "endChar": 73
@@ -955,7 +979,7 @@
         },
         {
           "startSec": 0.8,
-          "endSec": 1.36,
+          "endSec": 1.44,
           "startChar": 17,
           "endChar": 27
         },
@@ -967,7 +991,7 @@
         },
         {
           "startSec": 2.56,
-          "endSec": 3.12,
+          "endSec": 3.2,
           "startChar": 45,
           "endChar": 54
         },
@@ -1021,7 +1045,7 @@
         },
         {
           "startSec": 6.96,
-          "endSec": 7.44,
+          "endSec": 7.52,
           "startChar": 111,
           "endChar": 118
         },
@@ -1075,6 +1099,12 @@
           "endSec": 7.36,
           "startChar": 122,
           "endChar": 125
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.44,
+          "startChar": 132,
+          "endChar": 133
         },
         {
           "startSec": 11.84,
