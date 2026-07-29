@@ -499,6 +499,60 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 37. PR-freshness: a push after the last body edit blocks =="
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+(
+    cd "$BASE/proj" || exit
+    git init -q 2>/dev/null
+    git config user.email t@t
+    git config user.name t
+    git remote add origin https://github.com/fake/repo.git 2>/dev/null
+    echo a >a.txt
+    git add -A
+    git commit -qm base
+    git update-ref refs/remotes/origin/pub "$(git rev-parse HEAD)"
+) >/dev/null 2>&1
+# A gh shim that answers the GraphQL read with a body edited in 1970, i.e. long
+# before any commit. The gate under test is the real one.
+cat >"$BASE/binonly/gh" <<'SHIM'
+#!/bin/bash
+echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":9,"lastEditedAt":"1970-01-01T00:00:00Z","updatedAt":"1970-01-01T00:00:00Z"}]}}}}'
+SHIM
+chmod +x "$BASE/binonly/gh"
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+    PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+        WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
+        python3 "$HOOK" 2>/dev/null)"
+if grep -qF "PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT" <<<"$out"; then
+    echo "  PASS: pushing after the body edit blocks before CI can waste a round"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: stale PR body not detected: ${out:0:220}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 38. PR-freshness: a body edited AFTER the tip passes =="
+cat >"$BASE/binonly/gh" <<'SHIM'
+#!/bin/bash
+echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":9,"lastEditedAt":"2999-01-01T00:00:00Z","updatedAt":"2999-01-01T00:00:00Z"}]}}}}'
+SHIM
+chmod +x "$BASE/binonly/gh"
+out="$(printf '{"session_id":"%s","cwd":"%s","last_assistant_message":"x\\n\\n## Remaining\\n- #7 thing","session_crons":[]}' "$SID" "$BASE/proj" |
+    PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+        WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_PUBLISH_REF=pub WORKLIST_JUDGE=off \
+        python3 "$HOOK" 2>/dev/null)"
+if grep -qF "PUSHED AFTER" <<<"$out"; then
+    echo "  FAIL: a fresh body must not block: ${out:0:200}"
+    FAIL=$((FAIL + 1))
+else
+    echo "  PASS: a body newer than the tip does not block"
+    PASS=$((PASS + 1))
+fi
+rm -f "$BASE/binonly/gh"
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
