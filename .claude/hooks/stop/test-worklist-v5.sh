@@ -732,8 +732,10 @@ echo "== 54. THE MISSING CONTROL: a COMMIT must move the signature =="
 # the worklist tmp dir, git returned nothing, and every commit was invisible.
 setup
 git -C "$BASE/proj" init -q 2>/dev/null
-git -C "$BASE/proj" config user.email t@t; git -C "$BASE/proj" config user.name t
-echo one >"$BASE/proj/f"; git -C "$BASE/proj" add f
+git -C "$BASE/proj" config user.email t@t
+git -C "$BASE/proj" config user.name t
+echo one >"$BASE/proj/f"
+git -C "$BASE/proj" add f
 git -C "$BASE/proj" commit -qm one
 brief_now
 hand_now
@@ -745,7 +747,8 @@ task 7 pending "thing"
 check "stop 1" allow ""
 check "stop 2" allow ""
 # A real commit between stops. If HEAD is wired, this resets tasks+head.
-echo two >>"$BASE/proj/f"; git -C "$BASE/proj" commit -qam two
+echo two >>"$BASE/proj/f"
+git -C "$BASE/proj" commit -qam two
 newturn
 say "answer
 
@@ -758,7 +761,8 @@ echo "== 55. but a commit buys SLACK, not immunity: tasks-only still fires =="
 # case 54 already spent 3 stops; tasks-only fires at 2x STUCK_ROUNDS = 6, so
 # exactly 3 more land ON the fire rather than past its reset.
 for i in 4 5 6; do
-    echo "c$i" >>"$BASE/proj/f"; git -C "$BASE/proj" commit -qam "c$i"
+    echo "c$i" >>"$BASE/proj/f"
+    git -C "$BASE/proj" commit -qam "c$i"
     newturn
     say "answer
 
@@ -834,7 +838,8 @@ say "answer
 ## Remaining
 | #12 | Wave C autopilot | blocked on the agent |"
 task 12 pending "Wave C autopilot"
-BG='"'"'[{"status":"running","description":"agent"}]'"'"' check "real machinery needs no prose citation" allow ""
+BG='[{"status":"running","description":"agent"}]'
+check "real machinery needs no prose citation" allow ""
 
 echo "== 61. 'blocked on you' keeps its own check, not this one =="
 setup
