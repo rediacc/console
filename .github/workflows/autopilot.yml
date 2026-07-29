@@ -1,0 +1,537 @@
+name: Autopilot
+
+# The v2 GitHub-side autonomy loop (docs/ci-overhaul/03-v2-autonomy.md).
+# Apply the arming label and this workflow babysits the PR across CI rounds:
+# gate -> (model fix/review-response round -> harness push) -> finish, with
+# every write performed by the deterministic harness in .ci/scripts/autopilot/
+# AFTER the model step exits. THE MODEL NEVER HOLDS A WRITE TOKEN: the only
+# app-token mint in the model job sits after the model step, and the
+# invariants gate (.ci/scripts/security/check-autopilot-workflow-invariants.sh)
+# pins that ordering statically.
+#
+# STAGE FLAGS, all repo VARIABLES, all fail closed (ABSENT MEANS OFF).
+# None of them exist yet, so this workflow lands INERT; enabling a stage is a
+# variable flip, never a commit (03-v2-autonomy.md section 8):
+#   AUTOPILOT_ENABLED           master switch: gate runs and logs (S1+)
+#   AUTOPILOT_ALLOW_STATE       state-comment writes (S2+)
+#   AUTOPILOT_ALLOW_FINISH      deterministic ready-flip / done (S3+)
+#   AUTOPILOT_MODEL             model rounds run; pushes stay dry-run (S4+)
+#   AUTOPILOT_ALLOW_PUSH        real pushes (S5+)
+#   AUTOPILOT_ALLOW_SUBMODULES  reserved for increment 2 (S6); unread today
+# Plus configuration variables: AUTOPILOT_AUTHOR_ALLOWLIST (empty allows
+# NOBODY), AUTOPILOT_APPLIER_ALLOWLIST, AUTOPILOT_LABEL, AUTOPILOT_MAX_ROUNDS,
+# AUTOPILOT_BOT_LOGIN, AUTOPILOT_GIT_NAME, AUTOPILOT_GIT_EMAIL.
+#
+# Secrets: AUTOPILOT_APP_ID / AUTOPILOT_PRIVATE_KEY (the rediacc-autopilot
+# app, NO bypass on the console ruleset) and CLAUDE_CODE_OAUTH_TOKEN.
+
+on:
+  workflow_run:
+    workflows: ["Console CI", "Claude Review"]
+    types: [completed]
+  schedule:
+    # Sweeper for missed events; dispatch-only, zero model cost (section 9).
+    - cron: '17 */2 * * *'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to arm, resume, or stage-test'
+        required: false
+        type: string
+
+# Never kill a round mid-push: a queued duplicate exits at the gate's
+# (run_id, attempt) dedup instead (03-v2-autonomy.md section 2).
+concurrency:
+  group: autopilot-${{ github.event.workflow_run.head_branch || inputs.pr_number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: Autopilot Gate
+    # Fork guard at the workflow if:, before any code runs; the gate script
+    # re-checks both records. AUTOPILOT_ENABLED absent means '' != 'true':
+    # off, fail closed, zero cost.
+    if: >-
+      github.event_name != 'schedule' &&
+      vars.AUTOPILOT_ENABLED == 'true' &&
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      checks: read
+      actions: read
+    outputs:
+      decision: ${{ steps.decide.outputs.decision }}
+      mode: ${{ steps.decide.outputs.mode }}
+      reason: ${{ steps.decide.outputs.reason }}
+      round: ${{ steps.decide.outputs.round }}
+      pr_number: ${{ steps.pr.outputs.number }}
+      head_branch: ${{ steps.prcore.outputs.head_branch }}
+      head_sha: ${{ steps.prcore.outputs.head_sha }}
+      comment_id: ${{ steps.state.outputs.comment_id }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      LABEL: ${{ vars.AUTOPILOT_LABEL || 'autopilot' }}
+    steps:
+      # WALL 4 (03-v2-autonomy.md:112-138): workflow_run is an automation
+      # event, so the action's .claude/ restore never fires while
+      # .claude/hooks/** still execute. The gate therefore checks out ONLY the
+      # trusted ref and never PR head; the scripts below all come from main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rediacc/console
+          ref: main
+          persist-credentials: false
+
+      - name: Locate the armed PR
+        id: pr
+        env:
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          DISPATCH_PR: ${{ inputs.pr_number }}
+        run: |
+          if [ -n "$DISPATCH_PR" ]; then
+            n="$DISPATCH_PR"
+          else
+            n="$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // empty')"
+          fi
+          echo "number=$n" >>"$GITHUB_OUTPUT"
+          [ -n "$n" ] || echo "::notice::autopilot gate: no open PR located; no-go"
+
+      - name: Build PR fixture core
+        id: prcore
+        if: steps.pr.outputs.number != ''
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/fx"
+          gh api "repos/$REPO/pulls/$PR" --jq '{number, author: .user.login, draft, labels: [.labels[].name], head_repo: .head.repo.full_name, base_repo: .base.repo.full_name, head_sha: .head.sha, head_branch: .head.ref}' >"$RUNNER_TEMP/fx/pr-core.json"
+          echo "head_sha=$(jq -r '.head_sha' "$RUNNER_TEMP/fx/pr-core.json")" >>"$GITHUB_OUTPUT"
+          echo "head_branch=$(jq -r '.head_branch' "$RUNNER_TEMP/fx/pr-core.json")" >>"$GITHUB_OUTPUT"
+
+      - name: Build event fixture
+        if: steps.pr.outputs.number != ''
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ steps.prcore.outputs.head_sha }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            cp "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/fx/event.json"
+          else
+            gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&status=completed&per_page=1" --jq '{workflow_run: (.workflow_runs[0] | {conclusion, id, run_attempt, head_sha, head_repository: {full_name: .head_repository.full_name}}), repository: {full_name: env.REPO}}' >"$RUNNER_TEMP/fx/event.json"
+          fi
+          jq -e '.workflow_run.id' "$RUNNER_TEMP/fx/event.json" >/dev/null
+
+      - name: Build PR fixture signals
+        if: steps.pr.outputs.number != ''
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.prcore.outputs.head_sha }}
+        run: |
+          applier="$(gh api "repos/$REPO/issues/$PR/timeline" --paginate --jq '[.[] | select(.event=="labeled" and .label.name==env.LABEL)] | (last.actor.login // "")')"
+          rc=0
+          PR_NUMBER="$PR" .ci/scripts/quality/check-resolved-threads.sh >/dev/null 2>&1 || rc=$?
+          threads="$([ "$rc" -eq 0 ] && echo 0 || echo 1)"
+          red="$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs?check_name=Review%20Complete" --jq '([.check_runs[] | select(.conclusion == "failure")] | length) > 0')"
+          jq --arg a "$applier" --argjson t "$threads" --argjson r "$red" '. + {label_applier: $a, unresolved_threads: $t, review_gate_red: $r}' "$RUNNER_TEMP/fx/pr-core.json" >"$RUNNER_TEMP/fx/pr.json"
+
+      - name: Build failed-jobs and watchdog fixtures
+        if: steps.pr.outputs.number != ''
+        run: |
+          run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
+          gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" --paginate --jq '.jobs[] | select(.conclusion == "failure") | .name' >"$RUNNER_TEMP/fx/failed-jobs.txt"
+          for s in in_progress queued; do
+            gh api "repos/$REPO/actions/workflows/watchdog-monitor.yml/runs?status=$s&per_page=50" --jq '.workflow_runs[] | .display_title // ""'
+          done | grep -F "run $run_id " | grep -F 'rerun pending' >"$RUNNER_TEMP/fx/watchdog.txt" || true
+
+      - name: Select the trusted state comment
+        id: state
+        if: steps.pr.outputs.number != ''
+        env:
+          PR: ${{ steps.pr.outputs.number }}
+          BOT: ${{ vars.AUTOPILOT_BOT_LOGIN || 'rediacc-autopilot[bot]' }}
+        run: |
+          gh api "repos/$REPO/issues/$PR/comments" --paginate --jq '[.[] | {id, author: .user.login, body}]' >"$RUNNER_TEMP/fx/comments.json"
+          sel="$(.ci/scripts/autopilot/state-comment.sh select --comments "$RUNNER_TEMP/fx/comments.json" --bot "$BOT")"
+          jq -r '.body // ""' <<<"$sel" >"$RUNNER_TEMP/fx/state.txt"
+          echo "comment_id=$(jq -r '.id // ""' <<<"$sel")" >>"$GITHUB_OUTPUT"
+
+      # Every no-go below costs zero model tokens: the model job only starts
+      # on a go decision (03-v2-autonomy.md section 2).
+      - name: Gate decision
+        id: decide
+        if: steps.pr.outputs.number != ''
+        env:
+          AUTOPILOT_ENABLED: ${{ vars.AUTOPILOT_ENABLED }}
+          AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_PUSH }}
+          AUTOPILOT_AUTHOR_ALLOWLIST: ${{ vars.AUTOPILOT_AUTHOR_ALLOWLIST }}
+          AUTOPILOT_APPLIER_ALLOWLIST: ${{ vars.AUTOPILOT_APPLIER_ALLOWLIST }}
+          AUTOPILOT_LABEL: ${{ vars.AUTOPILOT_LABEL }}
+          AUTOPILOT_MAX_ROUNDS: ${{ vars.AUTOPILOT_MAX_ROUNDS }}
+        run: |
+          .ci/scripts/autopilot/autopilot-gate.sh --classify --event "$RUNNER_TEMP/fx/event.json" --pr "$RUNNER_TEMP/fx/pr.json" --state "$RUNNER_TEMP/fx/state.txt" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt" --watchdog "$RUNNER_TEMP/fx/watchdog.txt" >"$RUNNER_TEMP/fx/decision.json"
+          cat "$RUNNER_TEMP/fx/decision.json"
+          cat "$RUNNER_TEMP/fx/decision.json" >>"$GITHUB_STEP_SUMMARY"
+          for k in decision mode reason round; do
+            echo "$k=$(jq -r ".$k" "$RUNNER_TEMP/fx/decision.json")" >>"$GITHUB_OUTPUT"
+          done
+
+      - name: Upload fixtures
+        if: steps.pr.outputs.number != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: autopilot-fixtures-${{ github.run_id }}
+          path: ${{ runner.temp }}/fx
+          retention-days: 7
+
+  model:
+    name: Autopilot Round
+    needs: gate
+    # The model runs only on a go decision for a model mode, and only when the
+    # model stage is armed. Ready-flip and done are deterministic and go to
+    # the finish job instead.
+    if: >-
+      needs.gate.outputs.decision == 'go' &&
+      (needs.gate.outputs.mode == 'fix' || needs.gate.outputs.mode == 'review-response') &&
+      vars.AUTOPILOT_MODEL == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # contents:read is the WHOLE grant while the model runs. The push, the
+    # state comment and the escalation label all use the app token minted
+    # AFTER the model step below.
+    permissions:
+      contents: read
+      actions: read
+    env:
+      REPO: ${{ github.repository }}
+    steps:
+      # WALL 4 (03-v2-autonomy.md:112-138): the trusted ref lands FIRST, so
+      # the harness scripts and the protected-config snapshot both predate any
+      # PR-authored byte reaching this workspace.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rediacc/console
+          ref: main
+          persist-credentials: false
+
+      # $RUNNER_TEMP survives both the PR-head checkout (which empties the
+      # workspace) and the action's untracked-file reset; proven the hard way
+      # by the review pipeline (claude-review-reusable.yml).
+      - name: Stage harness outside the workspace
+        run: |
+          rm -rf "$RUNNER_TEMP/harness"
+          mkdir -p "$RUNNER_TEMP/harness"
+          cp -r .ci "$RUNNER_TEMP/harness/.ci"
+
+      - name: Snapshot trusted agent config
+        run: |
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" snapshot --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
+
+      # PR-AUTHORED CONTENT enters here, and only here. persist-credentials
+      # MUST stay false: the model reads attacker-influenceable text with
+      # egress tools available, and a bearer string in .git/config would turn
+      # capability-bounded-by-job into an exfiltratable credential (same
+      # analysis as claude-review-reusable.yml's PR-head checkout).
+      - name: Checkout PR head branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.head_branch }}
+          fetch-depth: 0
+          filter: blob:none
+          persist-credentials: false
+
+      - name: Download fixtures
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: autopilot-fixtures-${{ github.run_id }}
+          path: ${{ runner.temp }}/fx
+
+      # WALL 4 mitigation, active half: overwrite the protected set from the
+      # pre-checkout snapshot and quarantine the branch's copies as data, so
+      # the hooks that execute during the model step are main's hooks.
+      - name: Restore trusted agent config over the PR checkout
+        run: |
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" restore --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config" --quarantine "$RUNNER_TEMP/quarantine"
+
+      # The control, live in production: if the restore above ever stops
+      # holding, this dies before the model gets a shell.
+      - name: Assert the protected set matches the trusted snapshot
+        run: |
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/restore-trusted-config.sh" assert --checkout "$GITHUB_WORKSPACE" --snapshot "$RUNNER_TEMP/trusted-config"
+
+      # TRIPWIRE, copied from claude-review-reusable.yml: if anyone
+      # re-introduces persisted credentials on the PR-head checkout, die here
+      # instead of handing a bearer token to the model.
+      - name: Assert no credential was persisted into the workspace
+        run: |
+          if git config --local --get-regexp '^http\..*\.extraheader' >/dev/null 2>&1; then
+            echo "::error::The PR-head checkout persisted a credential into .git/config."
+            exit 1
+          fi
+          echo "No persisted credential in the workspace."
+
+      - name: Record pre-model HEAD
+        id: premodel
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Select prompt template
+        id: template
+        env:
+          MODE: ${{ needs.gate.outputs.mode }}
+        run: |
+          case "$MODE" in
+            fix) echo "file=fix-round.md" >>"$GITHUB_OUTPUT" ;;
+            review-response) echo "file=review-response.md" >>"$GITHUB_OUTPUT" ;;
+            *) echo "::error::no prompt template for mode '$MODE'" && exit 1 ;;
+          esac
+
+      # The injected <autopilot_state> block is the model's ONLY state
+      # channel: agent mode inlines no PR text at all (03-v2-autonomy.md
+      # wall 1), so everything the round needs rides in the prompt.
+      - name: Compose prompt
+        id: prompt
+        env:
+          TEMPLATE: ${{ steps.template.outputs.file }}
+        run: |
+          {
+            cat "$RUNNER_TEMP/harness/.ci/scripts/autopilot/prompts/$TEMPLATE"
+            printf '\n<autopilot_state>\n' && cat "$RUNNER_TEMP/fx/decision.json" && cat "$RUNNER_TEMP/fx/state.txt" && printf '</autopilot_state>\n'
+            printf '\n<failed_jobs>\n' && cat "$RUNNER_TEMP/fx/failed-jobs.txt" && printf '</failed_jobs>\n'
+          } >"$RUNNER_TEMP/prompt.md"
+          { echo 'prompt<<AUTOPILOT_PROMPT_EOF'; cat "$RUNNER_TEMP/prompt.md"; echo 'AUTOPILOT_PROMPT_EOF'; } >>"$GITHUB_OUTPUT"
+
+      # NO WRITE TOKEN: github_token carries this job's contents:read grant,
+      # comments and pushes are impossible from inside the model, and the app
+      # token does not exist yet. track_progress stays 'false': it hard-errors
+      # on workflow_run, and its tag-mode fetch is the credentialed path this
+      # job must never take (see claude-review-reusable.yml's TRACK_PROGRESS).
+      - name: Model round
+        id: claude
+        uses: anthropics/claude-code-action@fa7e2f0a29a126f0b81cdcf360561b36e44cf608 # v1.0.180
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.prompt.outputs.prompt }}
+          track_progress: 'false'
+          settings: |
+            {
+              "permissions": {
+                "allow": [
+                  "Bash(npm run:*)",
+                  "Bash(npx tsc:*)",
+                  "Bash(git status:*)",
+                  "Bash(git diff:*)",
+                  "Bash(git log:*)",
+                  "Bash(gh run view:*)",
+                  "Bash(gh api repos/rediacc/console/actions/*)"
+                ]
+              }
+            }
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns ${{ needs.gate.outputs.mode == 'fix' && '80' || '60' }}
+            --disallowed-tools Task,Agent
+
+      # The handoff contract says the model edits files and never commits;
+      # a moved HEAD means it minted commits anyway, and nothing it did can
+      # be trusted mechanically. Escalate loudly.
+      - name: Assert the model left HEAD alone
+        env:
+          PRE_SHA: ${{ steps.premodel.outputs.sha }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$PRE_SHA" ]; then
+            echo "::error::HEAD moved during the model step; refusing to touch the result"
+            exit 1
+          fi
+
+      # INVARIANT 1 (03-v2-autonomy.md section 0): the FIRST app-token mint in
+      # this job sits AFTER the model step, so no write token ever exists in
+      # the model's process environment. The invariants gate pins this order.
+      - name: Mint post-model app token
+        id: app_token
+        uses: ./.github/actions/app-token
+        with:
+          client-id: ${{ secrets.AUTOPILOT_APP_ID }}
+          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          preset: cd
+          repositories: console
+
+      - name: Wire push authentication
+        env:
+          APP_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${REPO}.git"
+
+      # The security boundary: validate-handoff -> stage exactly files[] ->
+      # exfil-tripwire -> commit -F -> push by explicit SHA. Push stays a
+      # dry-run until AUTOPILOT_ALLOW_PUSH is 'true' (S4 vs S5).
+      - name: Run the harness boundary
+        env:
+          AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_PUSH }}
+          AUTOPILOT_GIT_NAME: ${{ vars.AUTOPILOT_GIT_NAME }}
+          AUTOPILOT_GIT_EMAIL: ${{ vars.AUTOPILOT_GIT_EMAIL }}
+          HEAD_BRANCH: ${{ needs.gate.outputs.head_branch }}
+        run: |
+          args=(--root "$GITHUB_WORKSPACE" --handoff "$GITHUB_WORKSPACE/handoff.json" --branch "$HEAD_BRANCH" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt")
+          if [ "$AUTOPILOT_ALLOW_PUSH" != "true" ]; then
+            args+=(--dry-run)
+          fi
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/autopilot-push.sh" "${args[@]}"
+
+      # S4 evidence: the would-be commit, uploaded only when the tripwire
+      # stayed quiet (a TRIPPED diff is never uploaded; console artifacts are
+      # public and uploading it would complete the exfiltration).
+      - name: Capture dry-run diff
+        if: success() && vars.AUTOPILOT_ALLOW_PUSH != 'true'
+        run: |
+          git show HEAD >"$RUNNER_TEMP/would-push.patch"
+
+      - name: Upload dry-run diff
+        if: success() && vars.AUTOPILOT_ALLOW_PUSH != 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: autopilot-would-push-${{ github.run_id }}
+          path: ${{ runner.temp }}/would-push.patch
+          retention-days: 7
+
+      # THE LEDGER IS NEVER OPTIONAL (03-v2-autonomy.md section 0): autopilot
+      # commits are attributed to the operator, and this comment is the audit
+      # trail recording every round's run and commit.
+      - name: Update state comment
+        if: success() && vars.AUTOPILOT_ALLOW_STATE == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          PR: ${{ needs.gate.outputs.pr_number }}
+          COMMENT_ID: ${{ needs.gate.outputs.comment_id }}
+          ROUND: ${{ needs.gate.outputs.round }}
+          MAX_ROUNDS: ${{ vars.AUTOPILOT_MAX_ROUNDS || '25' }}
+        run: |
+          run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
+          attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
+          ledger="$(jq -r '.ledger_line' "$GITHUB_WORKSPACE/handoff.json")"
+          body="$("$RUNNER_TEMP/harness/.ci/scripts/autopilot/state-comment.sh" render --body "$RUNNER_TEMP/fx/state.txt" --state waiting-ci --round "$ROUND/$MAX_ROUNDS" --head "$(git rev-parse HEAD)" --last-run "$run_id/$attempt handled" --ledger "$ledger")"
+          endpoint="repos/$REPO/issues/$PR/comments" && method=POST
+          [ -n "$COMMENT_ID" ] && endpoint="repos/$REPO/issues/comments/$COMMENT_ID" && method=PATCH
+          gh api --method "$method" "$endpoint" -f body="$body" >/dev/null
+
+      # Escalation latch: any red above (validator, tripwire, restore assert)
+      # applies autopilot-blocked so the gate refuses further rounds until a
+      # human clears it. Best-effort: the job is already red either way, and
+      # before the app token exists no write is possible at all.
+      - name: Apply autopilot-blocked on failure
+        if: failure() && steps.app_token.conclusion == 'success' && vars.AUTOPILOT_ALLOW_STATE == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          PR: ${{ needs.gate.outputs.pr_number }}
+        run: |
+          gh api --method POST "repos/$REPO/issues/$PR/labels" -f 'labels[]=autopilot-blocked' >/dev/null || true
+          echo "::error::autopilot round failed; escalation label applied"
+
+  finish:
+    name: Autopilot Finish
+    needs: gate
+    if: >-
+      needs.gate.outputs.decision == 'go' &&
+      (needs.gate.outputs.mode == 'ready-flip' || needs.gate.outputs.mode == 'done') &&
+      vars.AUTOPILOT_ALLOW_FINISH == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    permissions:
+      contents: read
+      actions: read
+    env:
+      REPO: ${{ github.repository }}
+    steps:
+      # WALL 4: trusted ref only; this job never touches PR-authored content.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rediacc/console
+          ref: main
+          persist-credentials: false
+
+      - name: Download fixtures
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: autopilot-fixtures-${{ github.run_id }}
+          path: ${{ runner.temp }}/fx
+
+      # Deterministic finish steps run with no model in this job at all, so
+      # the post-model invariant is trivially satisfied; the token still binds
+      # to the bypass-less autopilot app, scoped to console.
+      - name: Mint app token
+        id: app_token
+        uses: ./.github/actions/app-token
+        with:
+          client-id: ${{ secrets.AUTOPILOT_APP_ID }}
+          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          preset: cd
+          repositories: console
+
+      # finish.sh gates its writes on AUTOPILOT_ALLOW_PUSH; the finish STAGE
+      # is armed by AUTOPILOT_ALLOW_FINISH (S3 precedes S5), so the flag is
+      # mapped here, deliberately and visibly.
+      - name: Ready-flip
+        if: needs.gate.outputs.mode == 'ready-flip'
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_FINISH }}
+          PR: ${{ needs.gate.outputs.pr_number }}
+        run: |
+          .ci/scripts/autopilot/finish.sh ready-flip --pr "$PR" --repo "$REPO"
+
+      - name: Done detection
+        if: needs.gate.outputs.mode == 'done'
+        env:
+          PR: ${{ needs.gate.outputs.pr_number }}
+        run: |
+          jq '{ci_green: true, draft, unresolved_threads, reviewed: (.review_gate_red | not)}' "$RUNNER_TEMP/fx/pr.json" >"$RUNNER_TEMP/done.json"
+          .ci/scripts/autopilot/finish.sh check-done --pr "$RUNNER_TEMP/done.json"
+          echo "::notice::autopilot: done-conditions hold for PR #$PR"
+
+  sweeper:
+    name: Autopilot Sweeper
+    if: github.event_name == 'schedule' && vars.AUTOPILOT_ENABLED == 'true'
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    permissions:
+      contents: read
+    env:
+      REPO: ${{ github.repository }}
+      LABEL: ${{ vars.AUTOPILOT_LABEL || 'autopilot' }}
+    steps:
+      # WALL 4: trusted ref only.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: rediacc/console
+          ref: main
+          persist-credentials: false
+
+      - name: Mint dispatch token
+        id: app_token
+        uses: ./.github/actions/app-token
+        with:
+          client-id: ${{ secrets.AUTOPILOT_APP_ID }}
+          private-key: ${{ secrets.AUTOPILOT_PRIVATE_KEY }}
+          preset: cd
+          repositories: console
+
+      # Dispatch every armed PR unconditionally: the dispatched gate run
+      # dedups against the ledger at zero model cost, so a naive sweep is
+      # cheap and the sweeper stays 4 lines instead of re-implementing the
+      # gate (03-v2-autonomy.md section 9).
+      - name: Dispatch armed PRs
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+        run: |
+          gh pr list --repo "$REPO" --label "$LABEL" --state open --json number --jq '.[].number' |
+            while read -r n; do
+              gh workflow run Autopilot --repo "$REPO" -f pr_number="$n"
+            done
