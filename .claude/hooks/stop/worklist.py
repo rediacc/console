@@ -2934,4 +2934,33 @@ def main():
 # whatever happened to be on stdin, which is why the citation excerpter had no
 # unit-level control until now.
 if __name__ == "__main__":
-    main()
+    # FAIL CLOSED ON CRASH. This was the hook's global escape hatch and nobody
+    # put it there on purpose: an unhandled exception prints a traceback to
+    # stderr and NOTHING to stdout, the harness sees no decision, and the stop is
+    # ALLOWED. So any bug anywhere in this file silently disabled EVERY check at
+    # once, which is the exact opposite of the no-escape-hatch rule the rest of
+    # it is built on. It is not hypothetical: a v8 cut crashed on a tuple unpack
+    # and the stop sailed through; only a suite needle assertion caught it.
+    #
+    # A crash is now a BLOCK carrying the traceback, because a hook that cannot
+    # decide must not be the way out, and the session that hits it is the one
+    # positioned to fix it. Deliberately outside main() so it covers every mode.
+    try:
+        main()
+    except SystemExit:
+        raise
+    except BaseException:  # noqa: BLE001 - a bare crash must not become an allow
+        import traceback
+
+        emit(
+            {
+                "systemMessage": "Stop hook CRASHED; blocking rather than waving the stop "
+                "through. Fix %s." % __file__,
+                "decision": "block",
+                "reason": "THIS IS A HOOK BUG: %s crashed, so none of its checks ran.\n\n%s\n"
+                "A crash used to print to stderr and nothing to stdout, which the harness "
+                "reads as ALLOW, so one bug disabled every check silently. It now blocks. "
+                "Fix the traceback above, then stop again."
+                % (__file__, traceback.format_exc()[-1800:]),
+            }
+        )

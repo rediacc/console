@@ -1607,6 +1607,38 @@ say "answer
 task 7 pending "thing"
 check "an invented .ci path is caught" block "which does not exist"
 
+echo "== 99. A CRASHING HOOK BLOCKS, it does not wave the stop through =="
+# The hook's global escape hatch, and nobody put it there on purpose: an
+# unhandled exception writes a traceback to stderr and NOTHING to stdout, the
+# harness sees no decision, and the stop is ALLOWED. One bug anywhere silently
+# disabled every check. A v8 cut really did crash on a tuple unpack and sail
+# through; only a needle assertion caught it.
+setup
+CRASHED="$BASE/crashy.py"
+sed "s/^def main():/def main():\n    raise RuntimeError('planted crash')/" "$HOOK" >"$CRASHED"
+OUT=$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+        GITHUB_ACTIONS="" python3 "$CRASHED" 2>/dev/null)
+GOT=$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)
+if [[ "$GOT" == "block" ]] && grep -qF 'planted crash' <<<"$OUT"; then
+    echo "  PASS: a crash blocks and carries its traceback"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: a crash produced decision=$GOT (a crash must never allow)"
+    echo "        out: ${OUT:0:200}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 100. CONTROL: the UNMODIFIED hook still allows a clean stop =="
+# Without this, case 99 would pass on a hook that blocks unconditionally.
+setup
+brief_now
+hand_now
+say "all done"
+CRONS='[{"id":"c","schedule":"17 * * * *"}]' check "a clean stop is still allowed" allow ""
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
