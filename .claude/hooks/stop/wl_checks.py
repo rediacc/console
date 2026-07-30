@@ -50,7 +50,39 @@ PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claud
 # The poll cron is recognised by SCHEDULE SHAPE, not by id or prompt text:
 # schedules are structural, survive restarts, and a work cron cannot claim the
 # shape without also BECOMING a 5-minute loop.
-POLL_SCHEDULE_RE = re.compile(r"^\*/5( \*){4}$")
+# A BACKOFF LADDER, not a single cadence: 5 -> 10 -> 20 -> 40 -> 60 minutes.
+#
+# The cadence was a bare literal while its two immediate neighbours below are both env-backed,
+# which made it the one knob in this block nobody could turn -- and it is the expensive one. A
+# quiet session at `*/5` pays 12 poll firings an hour forever, and this session ran ~25
+# consecutive empty polls before anyone noticed the cost.
+#
+# Each rung DOUBLES, so a session that keeps finding an empty inbox keeps halving its own
+# overhead: 12/hr -> 6 -> 3 -> 1.5 -> 1. The ladder is capped at 60 minutes because the
+# fast-path horizon is 70 (POLL_FULL_MAX_MIN below) -- a poll slower than that could never
+# take the silent path, so every firing would pay the full battery and the backoff would
+# start costing more than it saves. `0 * * * *` is the hourly top rung; `*/60` is not valid
+# cron for it.
+#
+# Escalation is not automatic: the Stop hook TELLS the session when a doubling is due (see
+# poll_backoff_tip) and the session performs the CronDelete/CronCreate itself, so the change
+# is visible in the transcript rather than happening behind the operator's back. A session
+# that receives a real request should drop back to `*/5` by the same mechanism.
+#
+# Deliberately an allowlist of the ladder rungs, not an open dial: an arbitrary `*/7` would
+# silently desynchronise from the windows that assume this shape.
+POLL_SCHEDULE_RE = re.compile(
+    os.environ.get("WORKLIST_POLL_SCHEDULE_RE", r"^(\*/(5|10|20|40)( \*){4}|0( \*){4})$")
+)
+
+#: The rungs, in order, for poll_backoff_tip. Minutes -> the cron schedule that expresses it.
+POLL_BACKOFF_LADDER = [
+    (5, "*/5 * * * *"),
+    (10, "*/10 * * * *"),
+    (20, "*/20 * * * *"),
+    (40, "*/40 * * * *"),
+    (60, "0 * * * *"),
+]
 # A poll marker older than this cannot vouch for THIS stop. The marker is
 # single-use (consumed on first sight), so the window only needs to cover one
 # poll turn; too small merely costs one full battery, the safe direction.
@@ -64,6 +96,40 @@ POLL_FULL_MAX_MIN = int(os.environ.get("WORKLIST_POLL_FULL_MAX_MIN", "70"))
 # accepted if it also resolves in the .requests log, so a task id that happens
 # to be 8 digits cannot satisfy the state by shape alone.
 XSESSION_ID_RE = re.compile(r"#([0-9a-f]{8})\b")
+
+
+def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
+    """One line telling the session to move a rung on POLL_BACKOFF_LADDER, or "".
+
+    ADVISORY, never blocking. The session performs the CronDelete/CronCreate itself, so a
+    cadence change is visible in the transcript instead of happening behind the operator's
+    back -- and a session that disagrees can simply not act on it.
+
+    Escalates after `quiet_min` exceeds 4x the current rung (at */5 that is 20 minutes of an
+    empty inbox), which is slow enough that one straggling request does not immediately
+    double the latency for the next one. De-escalates straight back to the bottom rung the
+    moment a real request is waiting, because latency matters again exactly then.
+    """
+    polls = [c for c in live_crons if is_poll_cron(c)]
+    if len(polls) != 1:
+        return ""  # the shape checks own this case; do not pile on
+    sched = " ".join(str(polls[0].get("schedule", "")).split())
+    rungs = [s for _, s in POLL_BACKOFF_LADDER]
+    if sched not in rungs:
+        return ""
+    i = rungs.index(sched)
+    cur_min = POLL_BACKOFF_LADDER[i][0]
+
+    if has_open_requests:
+        if i == 0:
+            return ""
+        return M.N_POLL_BACKOFF_RESET % (sched, POLL_BACKOFF_LADDER[0][1])
+    if i + 1 >= len(POLL_BACKOFF_LADDER):
+        return ""  # already at the 60-minute cap
+    if quiet_min < cur_min * 4:
+        return ""
+    nxt_min, nxt = POLL_BACKOFF_LADDER[i + 1]
+    return M.N_POLL_BACKOFF % (int(quiet_min), cur_min, sched, nxt, nxt_min)
 
 
 def is_poll_cron(c):
@@ -1623,6 +1689,19 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.N_LADDER_PING
             % ("\n".join("  " + p for p in ladder_pings), me8)
         )
+    # Advisory, and deliberately on the FULL-stop path only: a silent poll exits long before
+    # here, so the tip lands on the ~hourly stop the session is already reading rather than
+    # interrupting the quiet it is telling us to buy more of.
+    # Quiet = age of the NEWEST request of any kind. An inbox that has never received
+    # anything is the quietest case there is, so it escalates rather than being exempt.
+    try:
+        _req_ages = [C.stamp_age_min(r["at"]) for r in all_reqs.values() if r.get("at")]
+        _quiet_min = min(_req_ages) if _req_ages else 10**6
+    except Exception:  # noqa: BLE001 -- an advisory note must never wedge a stop
+        _quiet_min = 0
+    backoff_tip = poll_backoff_tip(live_crons, _quiet_min, bool(req_to_me))
+    if backoff_tip:
+        parts.append(backoff_tip)
     if others_briefs:
         parts.append("Other sessions in this worktree:\n" + others_briefs)
     if archived:
