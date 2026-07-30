@@ -37,10 +37,26 @@ PREVIEW_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev"
 # So both must answer, and server-info must answer with a USABLE body: a 200
 # carrying no keys would satisfy `curl -f` and fail the smoke test one line
 # later, which is the same defect wearing a different status code.
+# THE USABLE-BODY CHECK GREPPED FOR THE WRONG STRING AND PROVED NOTHING.
+#
+# It matched '"keys"', but private/account/src/app.ts:154-173 declares
+# `const keys: {...}[] = []` and unconditionally returns
+# `c.json({ e2e: { keys }, ... })`. So the literal `"keys"` is in the body even
+# when X25519_PUBLIC_KEY is unset and the array is empty -- which is exactly the
+# body the comment above says must be rejected. The gate passed on its own
+# counterexample.
+#
+# `publicKeySpki` is only ever emitted from inside a populated entry
+# (app.ts:158), so it is present if and only if at least one key exists. That is
+# the property this wait is for.
+#
+# The health half was never wrong, and the 200-at-all improvement this script
+# was written for still stands: it addresses the cold-start case from run
+# 30400413239. Only the usable-body half was decorative.
 ready() {
     curl -fsSL "${PREVIEW_URL}/account/api/v1/health" -o /dev/null 2>/dev/null || return 1
     curl -fsSL "${PREVIEW_URL}/account/api/v1/.well-known/server-info" 2>/dev/null |
-        grep -q '"keys"' || return 1
+        grep -q '"publicKeySpki"' || return 1
 }
 
 for i in $(seq 1 30); do

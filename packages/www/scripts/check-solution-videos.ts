@@ -101,7 +101,11 @@ export function reverseFindings(
   return { badKeys: badKeys.sort(), readyToFlip, orphanSlugs: orphanSlugs.sort() };
 }
 
-function listSlugs(): string[] {
+// Exported so check-solution-video-engine.ts asks the SAME question about which slugs
+// require video. Duplicating this would let the two gates disagree about scope, and the
+// fail-safe branches below (an unparseable config counts as required) are exactly the
+// subtlety a second copy would get wrong.
+export function listSlugs(): string[] {
   if (!fs.existsSync(solutionsPagesDir)) return [];
   return (
     fs
@@ -126,7 +130,7 @@ function listSlugs(): string[] {
  * page, or an unparseable block) is treated as video-bearing, so drift can
  * only ever FAIL the gate, never silently skip a shipped player.
  */
-function slugRendersVideo(slug: string): boolean {
+export function slugRendersVideo(slug: string): boolean {
   const configPath = path.join(wwwRoot, 'src', 'config', 'solution-pages.ts');
   if (!fs.existsSync(configPath)) return true;
   const text = fs.readFileSync(configPath, 'utf8');
