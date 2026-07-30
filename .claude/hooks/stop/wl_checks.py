@@ -30,10 +30,16 @@ REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.M | re.
 # investigation agent. Three is the operator's number, not a guess.
 STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
 # How recently the in-flight item must have been refreshed for the session to count as
-# SUPERVISING a long background job rather than having forgotten it. Deliberately
-# generous: the campaign this was written for reports roughly every 30 minutes, and a
-# threshold tighter than the reporting cadence would just re-create the false fire.
-STUCK_SUPERVISED_MAX_MIN = int(os.environ.get("WORKLIST_STUCK_SUPERVISED_MAX_MIN", "45"))
+# SUPERVISING a long background job rather than having forgotten it.
+#
+# 70, matching POLL_FULL_MAX_MIN below and for the same reason: JUST OVER the hourly
+# work loop. A session on an hourly cron refreshes its item once an hour, so any
+# threshold under 60 leaves a window every hour where a perfectly healthy campaign
+# reads as unsupervised. It was 45 for exactly one evening and fired twice that way --
+# at 46 and 48 minutes, both times on a batch that was running fine and reported again
+# minutes later. A threshold tighter than the reporting cadence does not detect
+# neglect, it just re-times the false alarm.
+STUCK_SUPERVISED_MAX_MIN = int(os.environ.get("WORKLIST_STUCK_SUPERVISED_MAX_MIN", "70"))
 
 # v12 CI-WAITING FORCE (operator, 2026-07-30: "is current session sitting for
 # CI pipeline? If so, it should FORCE current session to work on waiting
