@@ -259,12 +259,39 @@ test_provider_order_is_declared_not_incidental() {
     local src
     src="$(cat "$WATCHDOG")"
     assert_contains "$src" "CLASSIFIER_PROVIDERS" "the chain is an explicit ordered list"
+    # Anchored on the CALL, not on the model name. This assertion used to grep
+    # for the literal 'cloudflare/deepseek-v4-pro', which coupled an ordering
+    # test to a display string and is exactly why the label could go stale
+    # unnoticed: the model moved to @cf/meta/llama-3.3-70b-instruct-fp8-fast
+    # and this test kept passing on the old name. The call target is the tier's
+    # real identity and cannot drift with the model.
     local cf_idx claude_idx
-    cf_idx="$(grep -n "name: 'cloudflare/deepseek-v4-pro'" "$WATCHDOG" | head -1 | cut -d: -f1)"
-    claude_idx="$(grep -n "name: 'anthropic/claude'" "$WATCHDOG" | head -1 | cut -d: -f1)"
+    cf_idx="$(grep -n "call: callCloudflareClassifier" "$WATCHDOG" | head -1 | cut -d: -f1)"
+    claude_idx="$(grep -n "call: callClaudeClassifier" "$WATCHDOG" | head -1 | cut -d: -f1)"
     assert_eq "$([ -n "$cf_idx" ] && [ -n "$claude_idx" ] && [ "$cf_idx" -lt "$claude_idx" ] && echo ordered)" "ordered" \
         "Cloudflare is declared before Claude in the provider list"
     log_pass "the provider order is declared explicitly, cheapest capable first"
+}
+
+test_tier1_label_is_derived_from_the_model_it_calls() {
+    # THE ROT THIS PREVENTS, observed on watchdog run 30541558539: the log said
+    # "[AI] verdict from cloudflare/deepseek-v4-pro" while the request actually
+    # went to /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast. The label is the
+    # only record of which model produced a verdict that decides whether to
+    # spend ~500 machine-minutes on a retry, and the 402 that broke this tier
+    # was diagnosed BY MODEL IDENTITY, so a label that lies sends the next
+    # investigation to the wrong provider.
+    #
+    # Asserting the SHAPE (interpolated from AI_MODEL) rather than the current
+    # model string, because pinning the string would rebuild the same trap.
+    local entry
+    entry="$(grep -n 'call: callCloudflareClassifier' "$WATCHDOG" | head -1 | cut -d: -f2-)"
+    assert_contains "$entry" 'AI_MODEL' \
+        "the tier-1 label must interpolate AI_MODEL, never hardcode a model name"
+    # And the constant it interpolates has to exist, or the label renders empty.
+    assert_contains "$(cat "$WATCHDOG")" "const AI_MODEL" \
+        "AI_MODEL must be declared for the tier-1 label to derive from it"
+    log_pass "the tier-1 provider label is derived from AI_MODEL, so it cannot go stale"
 }
 
 test_declining_tier_reports_why_not_just_the_status() {
@@ -302,6 +329,7 @@ test_both_tiers_down_reaches_the_allowlist
 test_absent_credentials_skip_a_tier_without_breaking
 test_tier1_absent_still_reaches_tier2
 test_provider_order_is_declared_not_incidental
+test_tier1_label_is_derived_from_the_model_it_calls
 test_declining_tier_reports_why_not_just_the_status
 
 log_pass "all tests passed"
