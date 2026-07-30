@@ -55,6 +55,40 @@ LADDER_INVESTIGATE_MIN = int(os.environ.get("WORKLIST_LADDER_INVESTIGATE_MIN", "
 LADDER_RESOLVE_MIN = int(os.environ.get("WORKLIST_LADDER_RESOLVE_MIN", "120"))
 
 
+def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False):
+    """Would the ladder actually FIRE a blocking rung for this subject?
+
+    WHY THIS EXISTS. The ladder is latched: `fire_once` records each rung
+    against the subject's stamp, so "investigate" fires ONCE and then stays
+    quiet until the stamp moves. `poll_fast_path` forfeited on raw age
+    instead, never consulting that latch, so the two disagreed: the report
+    went silent while the forfeit kept firing.
+
+    Measured 2026-07-30. Task #20 sat in_progress for 298 minutes, legitimately,
+    waiting on an operator decision and a running agent. Its rung had long since
+    fired, yet EVERY five-minute inbox poll forfeited the silent path and
+    demanded the full battery and a full report. There was no way to discharge
+    it short of finishing or abandoning a task that was not the session's to
+    finish. That is precisely the "a gate that cannot be satisfied deadlocks
+    the session" trap the v10 brief warned any new time-based check to avoid,
+    and it was reintroduced by a threshold comparison that looked harmless.
+
+    The 45-minute ping is deliberately NOT a blocking rung: it is report-only,
+    the horizon bounds how long it can be deferred, and forfeiting a silent
+    poll for it would reinstate the same noise at a lower threshold.
+    """
+    if age_min is None:
+        return False
+    fired = (state_doc.get("ladder") or {}).get(key) or {}
+    if gone:
+        return fired.get("gone") != stampkey
+    if age_min >= LADDER_RESOLVE_MIN:
+        return fired.get("resolve") != stampkey
+    if age_min >= LADDER_INVESTIGATE_MIN:
+        return fired.get("investigate") != stampkey
+    return False
+
+
 # ---- process inspection -----------------------------------------------------
 
 def _proc_table_linux():
@@ -296,6 +330,7 @@ def ladder(fold, session_id, event, state_doc):
                 ("task:" + tid, "task #%s %s" % (tid, subject), _age_min(prev.get("since", "")), prev.get("since", ""), False, "")
             )
 
+    _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below
     pings, investigates, resolves = [], [], []
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}

@@ -16,10 +16,28 @@
 # variants, unexpanded matrix legs, one push-gated job. That exact shape is a
 # fixture here and must NOT fire; only jobs the plan marked `run` may.
 #
+# PRE-EXISTING SKIPS ARE THE SECOND HALF. ci.yml skipped whole columns long
+# before the scope engine existed: `full_suite` is false on every push-to-main,
+# `pointer_bump_only` cuts the entire expensive pipeline on a submodule-pointer
+# PR, `is_bot` cuts the staging chain. Against an unannotated plan a pointer
+# bump reports SEVENTEEN failures on a run where nothing went wrong, which is
+# why the gate could not be wired. The cases below pin the exemption AND its
+# edges: full_suite must never excuse `install_methods` (which really does run
+# on push-to-main), is_bot must excuse nothing but it, and the strict module
+# default must still refuse such a run as a baseline. Each is a pair: a fixture
+# where the new logic must FIRE and a twin where it must stay SILENT.
+#
 # Every failure case is paired with the passing control so nothing passes
 # vacuously, and the fixture's shape (the eleven skips actually being there)
 # is itself asserted, per the house doctrine: a validator that passes when
 # given nothing is broken by definition.
+#
+# The five mutants run by hand during authoring, each caught by a DIFFERENT
+# assertion: force honorPreexisting true (strict-default case), make
+# preexistingSkip return null (pointer-bump case), add install_methods to
+# full_suite's keys (the full_suite/install_methods pair), delete the
+# claim-mismatch check (the anti-tamper case), and compare conditions as
+# strings instead of booleans (the real-boolean case).
 
 set -euo pipefail
 
@@ -126,6 +144,46 @@ run_reconcile() {
 }
 out() { cat "$WORK/out.txt"; }
 err() { cat "$WORK/err.txt"; }
+
+# annotate <in-plan> <out-plan> <conditions-json> -- run a plan through the REAL
+# annotatePlan, the same entry point .ci/scripts/ci/scope-shadow.sh calls. Going
+# through the production function rather than hand-writing the annotation is
+# what makes these cases test the shipped writer instead of a paraphrase of it.
+annotate() {
+    node -e '
+const fs = require("fs");
+const { annotatePlan } = require(process.argv[1]);
+const plan = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+annotatePlan(plan, JSON.parse(process.argv[4]));
+fs.writeFileSync(process.argv[3], JSON.stringify(plan, null, 2));
+' "$RECONCILE" "$1" "$2" "$3"
+}
+
+# reconcile_module <plan> <jobs> <honorPreexisting:true|false> -> "<ok>|<first
+# failure>". The CLI always honors, so the strict default is only reachable
+# through the module API, which is exactly how scope-engine's attestPlan calls
+# it. Without this helper the default could never be tested.
+reconcile_module() {
+    node -e '
+const fs = require("fs");
+const r = require(process.argv[1]);
+const plan = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const jobs = r.parseJobsPayload(JSON.parse(fs.readFileSync(process.argv[3], "utf8")));
+const ctx = { runId: process.argv[5] };
+if (process.argv[4] === "true") ctx.honorPreexisting = true;
+const res = r.reconcile(plan, jobs, ctx);
+process.stdout.write(`${res.ok}|${res.failures[0] || ""}|exempt=${res.exempt.length}`);
+' "$RECONCILE" "$1" "$2" "$3" "$RUN_ID"
+}
+
+# skipped_count <jobs> -- fixture SHAPE, asserted before any silence is trusted.
+skipped_count() {
+    node -e '
+const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+const jobs = Array.isArray(d) ? d : d.jobs;
+process.stdout.write(String(jobs.filter((j) => j.conclusion === "skipped").length));
+' "$1"
+}
 
 # ---------------------------------------------------------------------------
 
@@ -428,6 +486,283 @@ test_warnings_never_mask_failures() {
     log_pass "warnings never mask failures, and the streams stay separate"
 }
 
+test_pointer_bump_exempts_every_key() {
+    # THE case this whole extension exists for. On a pointer-bump PR
+    # `build-renet` skips (ci.yml:493) and the entire expensive pipeline goes
+    # with it, so all seventeen planned keys skip while nothing is wrong. The
+    # plan predicted `run: true` for every one of them, so an unannotated plan
+    # reports seventeen failures on a perfectly healthy run.
+    mutate "$WORK/jobs.json" "$WORK/jobs-pointer-bump.json" \
+        'data.jobs.forEach((j) => { j.conclusion = "skipped"; })'
+    # SHAPE first: the silence below is only meaningful if the skips are real.
+    local total skips
+    total="$(node -e 'const d=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));process.stdout.write(String(d.jobs.length))' "$WORK/jobs-pointer-bump.json")"
+    skips="$(skipped_count "$WORK/jobs-pointer-bump.json")"
+    assert_eq "$skips" "$total" "the pointer-bump fixture skips every job it carries"
+
+    # FIRE: the plan as it was written before this change (no conditions).
+    assert_eq "$(run_reconcile "$WORK/plan.json" "$WORK/jobs-pointer-bump.json")" "1" \
+        "an unannotated plan reds a pointer-bump run: the false-fire this fixes"
+    assert_contains "$(err)" "planned-run-but-skipped: 'unit'" "blaming scope for a non-scope skip"
+    assert_contains "$(err)" "planned-run-but-skipped: 'install_methods'" \
+        "including install_methods, which pointer_bump_only really does cut"
+
+    # SILENT: the same jobs against a plan that records the condition.
+    annotate "$WORK/plan.json" "$WORK/plan-pointer-bump.json" \
+        '{"pointer_bump_only":true,"full_suite":true,"is_bot":false}'
+    assert_eq "$(run_reconcile "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json")" "0" \
+        "recording pointer_bump_only makes the identical run reconcile clean"
+    assert_not_contains "$(err)" "planned-run-but-skipped" "with no failure at all"
+    assert_contains "$(out)" "pre-existing skips (not scope decisions, not verified by this run)" \
+        "and the excused keys are printed, so a vacuous pass is visible"
+    assert_contains "$(out)" "unit (pointer_bump_only)" "naming the key and the condition"
+    assert_contains "$(out)" "0 of 17 planned keys verified" \
+        "and the headline counts VERIFIED keys, not planned ones: this pass proves nothing"
+    log_pass "pointer_bump_only exempts all 17 keys; the same run reds without the annotation"
+}
+
+test_full_suite_exempts_sixteen_but_never_install_methods() {
+    # The condition sets are NOT interchangeable, and this is the pair that
+    # proves it. `validate-install` (ci.yml:1081-1083) hangs off
+    # `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the
+    # install matrix genuinely DOES run on push-to-main. Exempting it under
+    # full_suite would excuse a real skip for ever.
+    annotate "$WORK/plan.json" "$WORK/plan-push.json" \
+        '{"pointer_bump_only":false,"full_suite":false,"is_bot":false}'
+
+    # SILENT: the push-to-main shape. Everything full_suite gates skipped, the
+    # install matrix still green.
+    mutate "$WORK/jobs.json" "$WORK/jobs-push.json" \
+        'data.jobs.forEach((j) => {
+           if (!j.name.startsWith("Validate Install Methods")) j.conclusion = "skipped";
+         })'
+    assert_eq "$(skipped_count "$WORK/jobs-push.json")" "32" \
+        "the push fixture skips all 32 non-install jobs and leaves the four install legs"
+    assert_eq "$(run_reconcile "$WORK/plan-push.json" "$WORK/jobs-push.json")" "0" \
+        "a push-to-main shape reconciles clean once full_suite is recorded"
+    assert_contains "$(out)" "unit (full_suite)" "excusing unit under full_suite"
+    assert_not_contains "$(out)" "install_methods (full_suite)" \
+        "and never excusing install_methods, which full_suite does not gate"
+
+    # FIRE, the paired twin: the ONE key full_suite must not cover goes missing
+    # and the same annotated plan must still red.
+    mutate "$WORK/jobs-push.json" "$WORK/jobs-push-install-skipped.json" \
+        'data.jobs.filter((j) => j.name.startsWith("Validate Install Methods"))
+           .forEach((j) => { j.conclusion = "skipped"; })'
+    assert_eq "$(run_reconcile "$WORK/plan-push.json" "$WORK/jobs-push-install-skipped.json")" "1" \
+        "a skipped install matrix on push-to-main is a REAL finding and must fire"
+    assert_contains "$(err)" "planned-run-but-skipped: 'install_methods'" "naming install_methods"
+    assert_not_contains "$(err)" "planned-run-but-skipped: 'unit'" \
+        "while the sixteen full_suite really gates stay excused"
+
+    # And pointer_bump_only DOES cover it, on the identical payload. Two
+    # conditions, two different key sets, same jobs: the table discriminates
+    # rather than handing out one blanket exemption.
+    annotate "$WORK/plan.json" "$WORK/plan-pb2.json" \
+        '{"pointer_bump_only":true,"full_suite":true,"is_bot":false}'
+    assert_eq "$(run_reconcile "$WORK/plan-pb2.json" "$WORK/jobs-push-install-skipped.json")" "0" \
+        "the same skipped install matrix is excused under pointer_bump_only"
+    log_pass "full_suite exempts 16 keys and never install_methods; pointer_bump_only exempts all 17"
+}
+
+test_is_bot_exempts_exactly_one_key() {
+    # is_bot (ci.yml:105) reaches only install_methods, via stage-artifacts
+    # (ci.yml:658). It needs no entry for the other sixteen because it can only
+    # be true on a `push`, where full_suite already covers them. A narrow
+    # exemption must stay narrow, so plant a skip OUTSIDE it.
+    annotate "$WORK/plan.json" "$WORK/plan-bot.json" \
+        '{"pointer_bump_only":false,"full_suite":true,"is_bot":true}'
+
+    # SILENT half: only the install matrix skipped.
+    mutate "$WORK/jobs.json" "$WORK/jobs-bot.json" \
+        'data.jobs.filter((j) => j.name.startsWith("Validate Install Methods"))
+           .forEach((j) => { j.conclusion = "skipped"; })'
+    assert_eq "$(run_reconcile "$WORK/plan-bot.json" "$WORK/jobs-bot.json")" "0" \
+        "is_bot excuses the install matrix"
+    assert_contains "$(out)" "install_methods (is_bot)" "naming is_bot as the reason"
+
+    # FIRE half: one more key skips, and is_bot must not stretch to cover it.
+    mutate "$WORK/jobs-bot.json" "$WORK/jobs-bot-plus-unit.json" \
+        'data.jobs.find((j) => j.name === "Tests + Infra / Unit").conclusion = "skipped"'
+    assert_eq "$(run_reconcile "$WORK/plan-bot.json" "$WORK/jobs-bot-plus-unit.json")" "1" \
+        "a skipped unit leg is still a hard failure under is_bot"
+    assert_contains "$(err)" "planned-run-but-skipped: 'unit'" "naming unit"
+    assert_not_contains "$(err)" "'install_methods'" "while install_methods stays excused"
+    log_pass "is_bot exempts install_methods alone; every other key still fires"
+}
+
+test_exemption_needs_a_real_boolean() {
+    # Missing information must never WIDEN an exemption, so the condition test
+    # is a strict boolean compare. A plan whose conditions came through as
+    # strings (a shell variable passed unparsed) gets nothing.
+    mutate "$WORK/plan.json" "$WORK/plan-stringy.json" \
+        'data.conditions = { pointer_bump_only: "true", full_suite: "false", is_bot: "false" }'
+    assert_eq "$(run_reconcile "$WORK/plan-stringy.json" "$WORK/jobs-pointer-bump.json")" "1" \
+        "string 'true' is not true: no exemption, and the run reds"
+    assert_contains "$(err)" "planned-run-but-skipped: 'unit'" "exactly as if nothing were recorded"
+
+    # And an omitted condition is likewise inactive, which is what the writer
+    # produces when the environment variable is unset.
+    annotate "$WORK/plan.json" "$WORK/plan-omitted.json" '{}'
+    assert_eq "$(run_reconcile "$WORK/plan-omitted.json" "$WORK/jobs-pointer-bump.json")" "1" \
+        "an omitted condition grants nothing either"
+
+    # CONTROL: the real booleans, same fixture, silent. Without this the two
+    # assertions above would pass just as well if exemptions were dead code.
+    assert_eq "$(run_reconcile "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json")" "0" \
+        "and real booleans on the identical payload reconcile clean"
+    log_pass "only a real boolean activates a condition; strings and omissions grant nothing"
+}
+
+test_annotation_must_agree_with_the_conditions() {
+    # Anti-tamper. The exemption is DERIVED from plan.conditions; the per-job
+    # field is only ever cross-checked. A hand-edited artifact claiming an
+    # exemption its own conditions do not support must not buy a free pass on
+    # the one check that can see an invisible cell.
+    mutate "$WORK/plan.json" "$WORK/plan-forged.json" \
+        'data.conditions = { pointer_bump_only: false, full_suite: true, is_bot: false };
+         data.jobs.unit.preexisting_skip = "pointer_bump_only"'
+    assert_eq "$(run_reconcile "$WORK/plan-forged.json" "$WORK/jobs-unit-skipped.json")" "1" \
+        "a forged per-job exemption must hard-fail"
+    assert_contains "$(err)" "preexisting-claim-mismatch: 'unit' claims 'pointer_bump_only'" \
+        "named as a claim mismatch, not silently ignored"
+
+    # Drift in the other direction: conditions say the key is exempt, the
+    # annotation is missing. That is a stale writer, and it must be as loud.
+    mutate "$WORK/plan-pointer-bump.json" "$WORK/plan-dropped-annot.json" \
+        'delete data.jobs.unit.preexisting_skip'
+    assert_eq "$(run_reconcile "$WORK/plan-dropped-annot.json" "$WORK/jobs-pointer-bump.json")" "1" \
+        "a dropped annotation the conditions imply must hard-fail too"
+    assert_contains "$(err)" "the plan's conditions yield 'pointer_bump_only'" \
+        "stating what the conditions actually imply"
+
+    # A condition name that does not exist cannot be smuggled in either.
+    mutate "$WORK/plan.json" "$WORK/plan-invented.json" \
+        'data.conditions = {}; data.jobs.e2e_ceph.preexisting_skip = "the_weather"'
+    assert_eq "$(run_reconcile "$WORK/plan-invented.json" "$WORK/jobs-ceph-skipped.json")" "1" \
+        "an invented condition name must hard-fail"
+    assert_contains "$(err)" "preexisting-claim-mismatch: 'e2e_ceph' claims 'the_weather'" \
+        "naming the invention"
+
+    # CONTROL: a plan annotated by the real writer agrees with itself.
+    assert_eq "$(run_reconcile "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json")" "0" \
+        "an annotatePlan-written plan reconciles clean"
+    log_pass "the per-job annotation is cross-checked against the conditions, both directions"
+}
+
+test_strict_mode_is_the_module_default() {
+    # The two consumers want opposite things. The GATE must not red a
+    # pointer-bump run; the BASELINE READER (scope-engine's attestPlan, which
+    # calls reconcile() over a plan downloaded from an earlier run) must not
+    # accept that run as proof, because it validated nothing. Same plan, same
+    # jobs, opposite verdict, decided by the flag alone.
+    local strict lenient
+    strict="$(reconcile_module "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json" "false")"
+    lenient="$(reconcile_module "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json" "true")"
+    assert_contains "$strict" "false|planned-run-but-skipped" \
+        "the module default refuses a pointer-bump run as a baseline"
+    assert_contains "$strict" "pre-existing condition pointer_bump_only was active" \
+        "and says WHY, since attestPlan only ever surfaces the first failure string"
+    assert_contains "$strict" "this run is not proof that it ran" "in those words"
+    assert_contains "$lenient" "true|" "while the gate, which opts in, passes the same input"
+    assert_contains "$lenient" "exempt=17" "having excused all seventeen keys"
+
+    # CONTROL: the flag is not a blanket mute. On the healthy fixture, where no
+    # condition is active, both modes agree and both pass.
+    local strict_healthy lenient_healthy
+    strict_healthy="$(reconcile_module "$WORK/plan.json" "$WORK/jobs.json" "false")"
+    lenient_healthy="$(reconcile_module "$WORK/plan.json" "$WORK/jobs.json" "true")"
+    assert_contains "$strict_healthy" "true||exempt=0" "no conditions, strict mode passes"
+    assert_contains "$lenient_healthy" "true||exempt=0" "and lenient mode passes identically"
+    log_pass "honorPreexisting defaults to false, so a baseline reader still refuses an unproven run"
+}
+
+test_exempt_key_that_ran_warns_only() {
+    # An exemption handed out where the job ran anyway means the condition
+    # table over-claims. Worth saying, never worth blocking: there is no
+    # failure to mask when a planned-run job actually ran.
+    assert_eq "$(run_reconcile "$WORK/plan-pointer-bump.json" "$WORK/jobs.json")" "0" \
+        "a fully-exempt plan against a fully-green run must not fail"
+    assert_contains "$(out)" "::warning::preexisting-exempt-but-ran: 'unit'" \
+        "but the over-broad exemption is warned about, on stdout"
+    assert_contains "$(out)" "the condition table may be over-broad" "with the diagnosis"
+    assert_not_contains "$(err)" "FAIL" "and nothing lands on stderr"
+
+    # CONTROL: the warning is earned. When the exempt keys really skipped,
+    # silence.
+    assert_eq "$(run_reconcile "$WORK/plan-pointer-bump.json" "$WORK/jobs-pointer-bump.json")" "0" \
+        "the same plan against the skipped run is clean"
+    assert_not_contains "$(out)" "::warning::" "with no warning at all"
+    log_pass "an exemption that was not needed warns; one that was is silent"
+}
+
+test_exemptions_never_mask_a_failure() {
+    # The house invariant, restated for the new path: warnings never mask
+    # failures, and neither do exemptions. Mix all three in one run.
+    mutate "$WORK/plan-push.json" "$WORK/plan-push-mixed.json" \
+        'data.jobs.package_tests = { run: false, reason: "out-of-scope",
+                                     preexisting_skip: data.jobs.package_tests.preexisting_skip }'
+    mutate "$WORK/jobs-push.json" "$WORK/jobs-push-mixed.json" \
+        'data.jobs.find((j) => j.name === "Tests + Infra / Linux Packages").conclusion = "success";
+         data.jobs.filter((j) => j.name.startsWith("Validate Install Methods"))
+           .forEach((j) => { j.conclusion = "skipped"; })'
+    assert_eq "$(run_reconcile "$WORK/plan-push-mixed.json" "$WORK/jobs-push-mixed.json")" "1" \
+        "an exemption alongside a warning still exits non-zero on a real failure"
+    assert_contains "$(err)" "planned-run-but-skipped: 'install_methods'" "the failure is on stderr"
+    assert_contains "$(out)" "::warning::planned-skip-but-ran: 'package_tests'" \
+        "the warning is on stdout"
+    assert_contains "$(out)" "unit (full_suite)" "and the exempt list is still printed on failure"
+    log_pass "exemptions and warnings both fail to mask a real failure"
+}
+
+test_condition_table_cannot_rot_silently() {
+    # Same discipline as the name-table parity check: an entry naming a key
+    # that no longer exists is an exemption that can never apply, and a
+    # condition missing from CONDITION_ORDER would be evaluated by nothing.
+    # Both are silent, both are rot. Prove the validator fires in every
+    # direction, then that the real tables pass.
+    local verdicts
+    verdicts="$(node -e '
+const r = require(process.argv[1]);
+const out = [];
+const T = () => JSON.parse(JSON.stringify(r.PREEXISTING_CONDITIONS));
+const run = (label, conds, order) => {
+  try { r.validateConditionTable(conds, order, r.EXPECTED_JOB_NAMES); out.push(label + ":no-throw"); }
+  catch (e) { out.push(label + ":" + e.message); }
+};
+const badKey = T(); badKey.full_suite.keys.push("no_such_job");
+run("badkey", badKey, r.CONDITION_ORDER);
+run("unordered", T(), r.CONDITION_ORDER.filter((c) => c !== "is_bot"));
+const orphan = T(); delete orphan.is_bot;
+run("orphan", orphan, r.CONDITION_ORDER);
+const bad = T(); bad.is_bot.activeWhen = "true";
+run("nonbool", bad, r.CONDITION_ORDER);
+run("real", r.PREEXISTING_CONDITIONS, r.CONDITION_ORDER);
+process.stdout.write(out.join("\n"));
+' "$RECONCILE")"
+    assert_contains "$verdicts" "badkey:PREEXISTING_CONDITIONS.full_suite names unknown plan key 'no_such_job'" \
+        "a condition naming a dead plan key throws"
+    assert_contains "$verdicts" "unordered:CONDITION_ORDER omits 'is_bot'" \
+        "a condition absent from the evaluation order throws"
+    assert_contains "$verdicts" "orphan:CONDITION_ORDER has orphan condition 'is_bot'" \
+        "an order entry with no condition behind it throws"
+    assert_contains "$verdicts" "nonbool:PREEXISTING_CONDITIONS.is_bot has a non-boolean activeWhen" \
+        "a non-boolean activeWhen throws, since the compare is strict"
+    assert_contains "$verdicts" "real:no-throw" "and the real tables pass"
+
+    # Behavioural counterpart to the table: the key sets are the ones the
+    # workflow evidence supports, asserted by size so a silent widening shows.
+    local sizes
+    sizes="$(node -e '
+const r = require(process.argv[1]);
+const n = (c) => r.PREEXISTING_CONDITIONS[c].keys.length;
+process.stdout.write(`pb=${n("pointer_bump_only")} fs=${n("full_suite")} bot=${n("is_bot")}`);
+' "$RECONCILE")"
+    assert_eq "$sizes" "pb=17 fs=16 bot=1" \
+        "pointer_bump_only cuts all 17, full_suite 16 (not install_methods), is_bot 1"
+    log_pass "the condition table cannot rot or widen silently"
+}
+
 test_usage_errors_are_loud() {
     # Forgetting a flag is a wiring bug and must be non-zero, not a default.
     local rc=0
@@ -452,6 +787,15 @@ test_unknown_plan_key_fails_closed
 test_name_table_parity_with_scope_map
 test_jobs_payload_forms_and_absence
 test_warnings_never_mask_failures
+test_pointer_bump_exempts_every_key
+test_full_suite_exempts_sixteen_but_never_install_methods
+test_is_bot_exempts_exactly_one_key
+test_exemption_needs_a_real_boolean
+test_annotation_must_agree_with_the_conditions
+test_strict_mode_is_the_module_default
+test_exempt_key_that_ran_warns_only
+test_exemptions_never_mask_a_failure
+test_condition_table_cannot_rot_silently
 test_usage_errors_are_loud
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"

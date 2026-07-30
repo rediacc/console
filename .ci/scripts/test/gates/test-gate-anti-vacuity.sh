@@ -129,6 +129,20 @@ REGISTRY=(
     # defect, plus three engine mutants run by hand during authoring (drop the
     # `delete plan.reconciled`, drop the cheap-first mode gate, restore the
     # one-green-run-per-sha pick) each of which flips a different case red.
+    #
+    # NOT registered here either: .ci/scripts/test/gates/test-watchdog-supersession.sh,
+    # and the same measurement was taken rather than reasoned: all 9 assertions
+    # pass against the empty tree (exit 0). Its only repo dependency is
+    # .ci/scripts/ci/watchdog-monitor.cjs, which this harness copies in, and
+    # every input to the decision under test is a literal in the test itself.
+    # Passing with the source tree absent is CORRECT for it, so an entry here
+    # could never fail. Its controls are inline and were proven by hand during
+    # authoring: relaxing the predicate to drop `noFailures` flips
+    # "a real failure is never laundered as supersession" red, and relaxing
+    # `newerRunExists === true` to `Boolean(newerRunExists)` flips
+    # "newerRunExists is compared strictly" red. Both directions were run, not
+    # assumed. Its sibling test-watchdog-schedule-exemption.sh is unregistered
+    # on the same grounds.
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into

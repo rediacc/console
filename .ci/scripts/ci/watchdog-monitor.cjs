@@ -152,6 +152,82 @@ function evaluateCancelExemption({ runEvent }) {
 }
 
 /**
+ * Is this run merely SUPERSEDED by a newer push, rather than actually failing?
+ *
+ * WHY THIS EXISTS. Measured on real traffic 2026-07-30, watchdog run
+ * 30534675663 monitoring run 30530991847:
+ *
+ *   [0m] Run: in_progress | Jobs: 10 done, 7 running, 0 queued, 0 failed, 2 cancelled
+ *   Retrying: classifier returned transient at confidence 0.8
+ *   ##[error]Job cancelled (likely manual / supersession): "Quality / Content"
+ *   [1m] Run: in_progress | Jobs: 19 done, 1 running, 0 queued, 0 failed, 11 cancelled
+ *   Workflow externally cancelled (11/19 jobs cancelled) - exiting
+ *
+ * A push created run 30534726467 fifteen seconds before that first poll, which
+ * cancelled 30530991847 by concurrency group. That is the most ordinary event in
+ * the repo. The watchdog nonetheless treated a superseded job as a failure: it
+ * paid for a billed Workers AI classification and called `core.setFailed`, so
+ * the watchdog job concluded `failure` for a run nobody broke.
+ *
+ * WHY THE EXISTING GUARD CANNOT COVER IT. The mass-cancellation check further
+ * down only fires once `cancelled >= completed / 2`. During a supersession the
+ * jobs flip a few at a time, so on the first poll that ratio is nowhere near
+ * met -- here it was 2 of 10 -- and by the time it is met, `setFailed` has
+ * already stuck to the step. A ratio cannot express "something newer replaced
+ * me"; only the existence of a newer run can.
+ *
+ * This is the same class as the defect above: a conclusion that reads wrong.
+ * Its cost is the mirror image. Laundering `failure` into `cancelled` hid twelve
+ * red nightlies; reporting `failure` for a routine supersession trains the
+ * operator to ignore watchdog reds, which would eventually hide a real one.
+ *
+ * FAIL-CLOSED DIRECTION, and it matters more here than anywhere else in this
+ * file. A false positive means silently swallowing a genuine failure, so the
+ * verdict needs all three of: no job actually failed, at least one was
+ * cancelled, and a newer run demonstrably exists. An unreadable or failed
+ * lookup passes `newerRunExists: false` and the run reports exactly as it does
+ * today.
+ *
+ * Pure, so the policy is testable without a network round trip.
+ */
+function evaluateSupersession({ failedCount, normalCancelledCount, newerRunExists }) {
+  const noFailures = Number(failedCount) === 0;
+  const hasCancellations = Number(normalCancelledCount) > 0;
+  const superseded = noFailures && hasCancellations && newerRunExists === true;
+  return {
+    superseded,
+    noFailures,
+    hasCancellations,
+    reason: superseded
+      ? 'a newer run exists for this workflow and branch, and no job in this run failed: these cancellations are a concurrency-group supersession, not a defect'
+      : '',
+  };
+}
+
+/**
+ * Ask GitHub whether a newer run exists for the same workflow and branch.
+ *
+ * Only ever called once the cheap local half of evaluateSupersession already
+ * holds, so a healthy run pays nothing. Any error resolves to `false`, which is
+ * the fail-closed answer: the run then reports exactly as it would have.
+ */
+async function hasNewerRun({ github, context, run }) {
+  try {
+    const { data } = await github.rest.actions.listWorkflowRuns({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      workflow_id: run.workflow_id,
+      branch: run.head_branch,
+      per_page: 20,
+    });
+    return (data.workflow_runs || []).some(r => r.id !== run.id && r.run_number > run.run_number);
+  } catch (e) {
+    console.log(`[supersession] newer-run lookup failed, assuming NOT superseded: ${e.message}`);
+    return false;
+  }
+}
+
+/**
  * Should a failed job force-cancel the run immediately, before any label or
  * retry handling downstream?
  *
@@ -1097,6 +1173,37 @@ const monitor = async ({ github, context, core }) => {
     const stuckCancellations = cancelled.filter(j => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
     const normalCancellations = cancelled.filter(j => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
 
+    // Supersession check, and it must come BEFORE the classification below.
+    // Once a cancelled job reaches classifyFailure the damage is already done:
+    // a billed Workers AI request is spent and core.setFailed marks the step
+    // red, and nothing downstream un-marks it. See evaluateSupersession.
+    //
+    // The cheap local half is evaluated first so a healthy run never pays for
+    // the API call, and the answer is re-derived per poll rather than cached
+    // because a real failure can land at any time and must flip the verdict
+    // back immediately.
+    const cheapSupersession = evaluateSupersession({
+      failedCount: failed.length,
+      normalCancelledCount: normalCancellations.length,
+      newerRunExists: false,
+    });
+    if (cheapSupersession.noFailures && cheapSupersession.hasCancellations) {
+      const newerRunExists = await hasNewerRun({ github, context, run });
+      const verdict = evaluateSupersession({
+        failedCount: failed.length,
+        normalCancelledCount: normalCancellations.length,
+        newerRunExists,
+      });
+      if (verdict.superseded) {
+        console.log(`[supersession] ${verdict.reason} - exiting without classifying or failing`);
+        core.notice(
+          `Run ${targetRunId} was superseded by a newer run on "${run.head_branch}". ` +
+          `${normalCancellations.length} job(s) cancelled, 0 failed. This is not a pipeline failure.`
+        );
+        return;
+      }
+    }
+
     // Unified failure + cancellation handling.
     // AI classifies the failure and decides: transient (retry + keep monitoring) or
     // code-change (force-cancel everything). Stuck cancellations bypass AI
@@ -1395,3 +1502,4 @@ module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;
 module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
+module.exports.evaluateSupersession = evaluateSupersession;

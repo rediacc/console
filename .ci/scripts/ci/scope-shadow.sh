@@ -121,15 +121,68 @@ fi
 #     what is missing.
 #
 # Writing `reconciled` here would be attesting to an outcome nobody verified.
+#
+# IT ALSO RECORDS THE PRE-EXISTING SKIP CONDITIONS, which is what makes the
+# reconcile non-vacuous. The scope verdict alone is an incomplete prediction:
+# ci.yml skips whole columns for reasons that predate the engine (`full_suite`
+# is false on push-to-main, `pointer_bump_only` cuts the entire expensive
+# pipeline, `is_bot` cuts the staging chain), so a plan saying "unit runs" is
+# wrong on every pointer-bump PR and the gate would red seventeen keys on a run
+# where nothing went wrong. annotatePlan() writes the observed values and the
+# per-job condition; the reconciler re-derives from the same table and
+# hard-fails on disagreement, so writer and reader cannot drift.
+#
+# TRI-STATE ON PURPOSE. Each value is passed through as the literal string and
+# annotatePlan records it only when it is exactly "true" or "false". An unset
+# variable is OMITTED rather than defaulted, because both defaults are wrong:
+# defaulting full_suite to false would exempt sixteen keys on no evidence.
+# Omitted means no exemption, which leaves the reconciler at its strict
+# reading. Missing information must never widen an exemption.
 if [[ -s "$OUT_DIR/scope-classify.json" ]]; then
-    bounded node -e '
+    # No `2>/dev/null || true` here, and its removal is a fix rather than a
+    # style change. Swallowing this writer's stderr made a crash indistinguish-
+    # able from "no plan was due": the upload step carries
+    # `if-no-files-found: ignore`, so a broken writer produced no artifact and
+    # the reconcile shadow then reported the benign-sounding "no attested plan
+    # for this run", one run after another, with the actual exception thrown
+    # away. The script still cannot fail the job (it ends in exit 0); the
+    # difference is that the failure is now READABLE.
+    if ! bounded node -e '
 const fs = require("fs");
-const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const { annotatePlan } = require(process.argv[1]);
+const plan = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 plan.run_id = Number(process.env.GITHUB_RUN_ID || 0);
-plan.base_sha = process.argv[2] || null;
-plan.head_sha = process.argv[3] || null;
-fs.writeFileSync(process.argv[4], JSON.stringify(plan, null, 2));
-' "$OUT_DIR/scope-classify.json" "$base" "$head" "$OUT_DIR/plan.json" 2>/dev/null || true
+plan.base_sha = process.argv[3] || null;
+plan.head_sha = process.argv[4] || null;
+const tri = (v) => (v === "true" ? true : v === "false" ? false : undefined);
+annotatePlan(plan, {
+  full_suite: tri(process.env.FULL_SUITE),
+  pointer_bump_only: tri(process.env.POINTER_BUMP_ONLY),
+  is_bot: tri(process.env.IS_BOT),
+});
+fs.writeFileSync(process.argv[5], JSON.stringify(plan, null, 2));
+' "$SCRIPT_DIR/skip-plan-reconcile.cjs" "$OUT_DIR/scope-classify.json" \
+        "$base" "$head" "$OUT_DIR/plan.json" 2>"$OUT_DIR/plan-write.err"; then
+        emit "_**the plan writer FAILED**: no attested plan will be uploaded for this" \
+            "run, so ci-complete's reconcile will report 'no attested plan' and that" \
+            "will be a GAP IN THE EVIDENCE, not a clean result._" '```'
+        head -c 1000 "$OUT_DIR/plan-write.err" | tee -a "$SUMMARY"
+        emit '```' ""
+    else
+        emit "**pre-existing skip conditions recorded in the plan**" "" '```json'
+        bounded node -e '
+const p = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+const exempt = Object.entries(p.jobs || {})
+  .filter(([, v]) => v && v.preexisting_skip)
+  .map(([k, v]) => `${k}:${v.preexisting_skip}`);
+process.stdout.write(JSON.stringify({
+  conditions: p.conditions,
+  exempt_keys: exempt,
+  planned_keys: Object.keys(p.jobs || {}).length,
+}, null, 2) + "\n");
+' "$OUT_DIR/plan.json" | tee -a "$SUMMARY"
+        emit '```' ""
+    fi
 fi
 
 if [[ -n "$head" ]]; then

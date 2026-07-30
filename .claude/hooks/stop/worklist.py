@@ -315,6 +315,20 @@ def main():
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         prefix = sys.argv[2]
         body = sys.stdin.read()
+        # Refuse a document the Stop check would reject, using the SAME rule.
+        # Accepting it here and rejecting it on the next stop told the session
+        # the handover was fine while leaving the compaction-recovery artifact
+        # broken. Refuse loudly and exit non-zero instead: the old file is left
+        # untouched, so a bad rewrite cannot destroy a good handover.
+        verdict, detail = S.handover_shape(body)
+        if verdict != "ok":
+            sys.stderr.write(
+                "handover REFUSED (%s: %s). Limits: %d-%d chars, at most %d paragraphs. "
+                "Nothing was written; the previous handover is untouched.\n"
+                % (verdict, detail, S.HANDOVER_MIN_CHARS, S.HANDOVER_MAX_CHARS,
+                   S.HANDOVER_MAX_PARAGRAPHS)
+            )
+            sys.exit(2)
         wl.with_suffix(".handover-%s.md" % prefix[:8]).write_text(body, encoding="utf-8")
         try:
             root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())

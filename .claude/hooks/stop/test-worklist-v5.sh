@@ -51,6 +51,18 @@ task() { # task <id> <status> <subject>
     printf '{"id":"%s","status":"%s","subject":"%s"}\n' "$1" "$2" "$3" >"$BASE/tasks/session-deadbeef/$1.json"
 }
 
+# Plant a handover document DIRECTLY on disk, bypassing `--handover`.
+#
+# Since the CLI learned to refuse a badly-shaped body at write time, piping one
+# through it no longer produces a bad file -- it produces no file, and the
+# previous handover survives. The Stop check's shape detection must still work
+# regardless, because a document can reach that path without the CLI: written by
+# an older flow, hand-edited, or truncated by a full disk. So the shape cases
+# plant the file and the refusal gets its own case.
+plant_handover() { # plant_handover <body>
+    printf '%s' "$1" >"${WL%.md}.handover-deadbeef.md"
+}
+
 hand_now() { # a handover fresh enough and long enough to satisfy the gate
     printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. Next: push and watch the run, then bump the submodule pointers to the squash commits before the merge chain. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.\n' |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
@@ -145,6 +157,21 @@ run() { # feed the hook a Stop event and print its raw JSON verdict
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
             WORKLIST_JUDGE="${JUDGE_MODE:-off}" GITHUB_ACTIONS="${GHA:-}" \
             python3 "$HOOK" 2>"$BASE/err.txt"
+}
+
+# Defined HERE, beside check(), not near the cases that first used them.
+# They lived at the bottom of this file until 2026-07-30, which meant any case
+# above that point calling them got `pass: command not found` on stderr while
+# the suite still reported "0 failed" -- the assertions were silent no-ops. That
+# is exactly the vacuity this suite exists to catch, and it caught itself only
+# because stderr was read separately from stdout. Keep them at the top.
+pass() {
+    echo "  PASS: $1"
+    PASS=$((PASS + 1))
+}
+fail() {
+    echo "  FAIL: $1"
+    FAIL=$((FAIL + 1))
 }
 
 check() { # check <label> <expect-decision> <must-contain>
@@ -348,7 +375,7 @@ say "answer
 - #7 thing (pending)"
 brief_now
 task 7 pending "thing"
-printf 'wip\n' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+plant_handover 'wip'
 check "a too-short handover blocks" block "handover is thin"
 
 echo "== 20. PostCompact hands the document back as additionalContext =="
@@ -482,9 +509,9 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-python3 -c "print('x'*1600)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+plant_handover "$(python3 -c "print('x'*1600)")"
 check "an over-long handover blocks" block "handover is bloated"
-python3 -c "print('x'*1490)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+plant_handover "$(python3 -c "print('x'*1490)")"
 check "1490 chars sits inside the new 1500 budget" allow ""
 
 echo "== 30. paragraphs are ALLOWED now; FRAGMENTATION (>3) still blocks =="
@@ -499,12 +526,58 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.\n\nSecond paragraph, which since v10 is allowed: the limit is fragmentation, not breathing.\n' |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+plant_handover 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.
+
+Second paragraph, which since v10 is allowed: the limit is fragmentation, not breathing.'
 check "a two-paragraph handover is fine at the 1500 budget" allow ""
-printf 'Paragraph one carries the mission statement for this handover fixture, padded well past the thin threshold so the fragmentation guard is the check under test.\n\nParagraph two adds a second thought.\n\nParagraph three keeps going.\n\nParagraph four is where it stops being prose.\n\nParagraph five is a bullet list wearing blank lines.\n' |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+plant_handover 'Paragraph one carries the mission statement for this handover fixture, padded well past the thin threshold so the fragmentation guard is the check under test.
+
+Paragraph two adds a second thought.
+
+Paragraph three keeps going.
+
+Paragraph four is where it stops being prose.
+
+Paragraph five is a bullet list wearing blank lines.'
 check "five paragraphs is fragmentation and blocks" block "handover is fragmented"
+
+echo "== 29b. --handover REFUSES a bad body instead of accepting then blocking =="
+# The write path used to accept ANY body, print "handover written", and let the
+# Stop check reject it on the next stop. Measured 2026-07-30: a 1931-char
+# document was accepted with rc=0 against a 1500-char limit, costing a full
+# round trip and leaving the compaction-recovery artifact broken while the
+# session believed it was fine. Each rejection below is paired with the ALLOW
+# control immediately after, so the guard cannot pass by refusing everything.
+setup
+brief_now
+hand_now   # a GOOD handover is already on disk; a refused write must not destroy it
+refuse() { # refuse <label> <body-producing-command...>
+    local label="$1"
+    shift
+    local out rc
+    out="$("$@" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef 2>&1)"
+    rc=$?
+    if [[ "$rc" -ne 0 ]] && grep -qF "handover REFUSED" <<<"$out"; then
+        pass "--handover refuses $label (rc=$rc)"
+    else
+        fail "--handover accepted $label: rc=$rc '${out:0:160}'"
+    fi
+}
+refuse "an over-long body" python3 -c "print('x'*1600)"
+refuse "a stub body" printf 'wip'
+refuse "a fragmented body" python3 -c "print(('y'*80+chr(10)+chr(10))*5)"
+# CONTROL: a well-shaped body must still be written, or the guard is just a
+# blanket refusal wearing three assertions.
+if printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. The immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.\n' |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null 2>&1; then
+    pass "CONTROL: a well-shaped handover is still written"
+else
+    fail "the refusal guard rejected a valid handover"
+fi
+# A refused write must leave the PREVIOUS document intact: destroying a good
+# handover on a bad rewrite is worse than the bug being fixed.
+python3 -c "print('x'*1600)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null 2>&1 || true
+check "a refused rewrite leaves the good handover in place" allow ""
 
 echo "== 31. design-doc DRIFT blocks =="
 setup
@@ -747,13 +820,17 @@ say "answer
 | #7 | thing | pending, me |"
 task 7 pending "thing"
 # Age it past the default without touching the clock: the check reads mtime.
+# The limit is 15 minutes (operator directive 2026-07-30, raised from 10), so
+# the pair below BRACKETS it: 16 must block, 14 must not. Bracketing rather
+# than picking one comfortable age is the point -- a single far-past fixture
+# would keep passing if the constant were raised to an hour by accident.
 HAND="$(dirname "$WL")/$(basename "${WL%.md}").handover-deadbeef.md"
-touch -d '11 minutes ago' "$HAND"
-check "an 11-minute-old handover blocks at the 10-minute limit" block "handover is stale"
+touch -d '16 minutes ago' "$HAND"
+check "a 16-minute-old handover blocks at the 15-minute limit" block "handover is stale"
 
 echo "== 45. and one just inside it does not =="
-touch -d '5 minutes ago' "$HAND"
-check "a 5-minute-old handover is fine" allow ""
+touch -d '14 minutes ago' "$HAND"
+check "a 14-minute-old handover is inside the 15-minute limit" allow ""
 
 echo "== 46. CONTROL: an open item still blocks off a runner =="
 setup
@@ -2401,15 +2478,6 @@ rm -f "$BASE/binonly/gh"
 # case-119 note above).
 # ---------------------------------------------------------------------------
 
-pass() {
-    echo "  PASS: $1"
-    PASS=$((PASS + 1))
-}
-fail() {
-    echo "  FAIL: $1"
-    FAIL=$((FAIL + 1))
-}
-
 echo "== 132. THE STORE: markdown items fold into the event log (migration) =="
 setup
 FUT=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
@@ -3294,6 +3362,86 @@ if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
     pass "CONTROL: the same age WITH a justification keeps the silent poll"
 else
     fail "a justified deferral forfeited the fast path: rc=$RC '${OUT:0:160}'"
+fi
+
+echo "== 153. a LATCHED ladder rung must not forfeit the silent poll forever =="
+# WHAT BROKE. The ladder is latched (fire_once records each rung against the
+# subject's stamp), but poll_fast_path forfeited on RAW AGE and never consulted
+# that latch. So the two disagreed: the report went silent after firing once
+# while the forfeit kept firing on every poll.
+#
+# Measured 2026-07-30: task #20 sat in_progress for 298 minutes, legitimately,
+# waiting on an operator decision and a running agent. Its rung had long since
+# fired, yet every five-minute inbox poll paid the full battery and demanded a
+# full report, with no way to discharge it short of finishing or abandoning a
+# task that was not this session's to finish. That is the "a gate that cannot be
+# satisfied deadlocks the session" trap the v10 brief warned about, reintroduced
+# by a threshold comparison that looked harmless.
+#
+# Both directions are asserted, because the cure must not silence a rung that
+# has NOT yet been reported.
+setup
+brief_now
+hand_now
+# The task must exist BEFORE the baseline stop banks the poll baseline: task
+# statuses are part of the world signature, so creating it afterwards moves the
+# signature and a DIFFERENT check fires. That fixture bug cost a round here, and
+# it is worth stating because it makes a real fix look broken.
+task 20 in_progress "wave B acceptance, blocked on the operator"
+say "answer
+
+## Remaining
+| #20 | wave B acceptance | ongoing, the operator |"
+check "baseline stop allows" allow ""
+# Its rung ALREADY fired against this exact stamp. Written straight into the
+# state doc (which is NOT part of the world signature, so this is safe after the
+# baseline) because the point is the latch, not how it got set.
+python3 - "$WL" <<'PY'
+import json, pathlib, sys
+wl = pathlib.Path(sys.argv[1])
+p = wl.with_suffix(".state-deadbeef.json")
+doc = json.loads(p.read_text()) if p.exists() else {}
+stamp = "2026-07-30T06:29:37Z"
+doc.setdefault("tasks_seen", {})["20"] = {"status": "in_progress", "since": stamp}
+doc.setdefault("ladder", {})["task:20"] = {"investigate": stamp, "resolve": stamp}
+p.write_text(json.dumps(doc))
+PY
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    pass "a latched rung on a 298m task keeps the silent poll"
+else
+    fail "a latched rung still forfeited the fast path: rc=$RC '${OUT:0:200}'"
+fi
+
+# CONTROL, and it is the one that matters: the SAME task at the SAME age with
+# the rung NOT yet fired must still forfeit. Without this the fix could be a
+# blanket "never forfeit on tasks" and the suite would not notice.
+setup
+brief_now
+hand_now
+task 20 in_progress "wave B acceptance, blocked on the operator"
+say "answer
+
+## Remaining
+| #20 | wave B acceptance | ongoing, the operator |"
+check "baseline stop allows" allow ""
+python3 - "$WL" <<'PY'
+import json, pathlib, sys
+wl = pathlib.Path(sys.argv[1])
+p = wl.with_suffix(".state-deadbeef.json")
+doc = json.loads(p.read_text()) if p.exists() else {}
+doc.setdefault("tasks_seen", {})["20"] = {"status": "in_progress", "since": "2026-07-30T06:29:37Z"}
+doc["ladder"] = {}  # never fired
+p.write_text(json.dumps(doc))
+PY
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]]; then
+    pass "CONTROL: an UNFIRED rung at the same age still forfeits the silent poll"
+else
+    fail "an unfired blocking rung was swallowed by the fast path"
 fi
 
 echo

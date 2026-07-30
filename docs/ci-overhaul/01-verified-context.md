@@ -410,8 +410,18 @@ is **empty**, so no pin-versus-main caveat applies.
   `rediacc-ci-cd` does not; the `claude` app **does**. No `app-token` preset requests it.
 - `ssh_signing_key` takes precedence over `use_commit_signing` and **does** call
   `configureGitAuth`, so it is the one path that preserves identity control while signing.
-- `--max-budget-usd` is **not in the action** and is CLI-print-mode only. **Do not claim it
-  binds under OAuth** until a live `--max-budget-usd 0.01` test proves it.
+- `--max-budget-usd` is **not in the action** (no such input in `action.yml` at the pin), which
+  is why it has to ride in through `claude_args`. The "do not claim it binds" warning that
+  stood here is **superseded**: spike S-2 ran the live `--max-budget-usd 0.01` test on
+  2026-07-30 and **it binds under OAuth**. It is a post-hoc stop rather than a ceiling
+  (measured cap $0.01, actual spend $0.2340351, halted between turns), so a dollar stop exists
+  and a hard cap does not. See `spike-s1-s2.md` and the cost section of `03-v2-autonomy.md`.
+  The CLI-print-mode caveat reconciles with the action never passing `--print`: print mode is
+  simply "not interactive", and a spawned child with piped stdin qualifies.
+- `--model claude-sonnet-5` **is honoured**; spike S-1 settled #539 as a cosmetic label bug,
+  not a review-quality one. Every finding received so far came from the requested model. The
+  two haiku sightings both predate `f95533298` (2026-07-28), which replaced `keys | first`
+  with a join across every `modelUsage` key.
 
 ### The submodule review pipeline is doubly broken
 - `CLAUDE_CODE_OAUTH_TOKEN` is an org secret scoped to **`rediacc/console` only**. Neither

@@ -254,6 +254,43 @@ jobs:
             --max-turns ${{ steps.gate.outputs.review_turns }}
             --disallowed-tools Task,Agent
 
+      # `always()` on both steps below, and that is the point of them: what was
+      # asked for, and what it cost, are most interesting on the round that
+      # FAILED, which is exactly when an implicit success() would skip them.
+      - name: Record the review invocation
+        if: always() && steps.gate.outputs.go == 'true'
+        env:
+          CLAUDE_ARGS_SENT: |
+            --model claude-sonnet-5
+            --max-turns ${{ steps.gate.outputs.review_turns }}
+            --disallowed-tools Task,Agent
+        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --record-invocation
+
+      # Persist the execution file. It carries total_cost_usd, num_turns and the
+      # per-model `modelUsage` breakdown, and until now it was written to
+      # RUNNER_TEMP, read inline by the steps below, then thrown away with the
+      # runner. Every question about a past review's cost or model had to be
+      # answered from one formatted comment line, which is how spike S-1 came to
+      # hinge on parsing "(claude-sonnet-5)" out of a comment rather than
+      # reading the JSON that produced it.
+      #
+      # It also left a finding undiagnosable: on run 30527484990 the per-model
+      # token count rendered empty, so modelUsage[].outputTokens was 0 or absent
+      # while usage.output_tokens was 30313 on the same result object. Retained,
+      # the next occurrence is readable instead of re-derived.
+      #
+      # 7 days because this is a debugging aid, not a record.
+      # `if-no-files-found: ignore` keeps a skipped or crashed review from
+      # failing the job over a missing artifact.
+      - name: Preserve the review execution file
+        if: always() && steps.gate.outputs.go == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: claude-review-execution-${{ steps.gate.outputs.head_sha }}
+          path: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+          if-no-files-found: ignore
+          retention-days: 7
+
       # Without track_progress the action ran in AGENT mode, which creates no
       # tracking comment at all -- the report exists only as the model's final
       # text in the execution file. Post it here so the workflow_run entry
