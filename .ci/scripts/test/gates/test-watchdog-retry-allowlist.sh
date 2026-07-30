@@ -58,9 +58,31 @@ const v = w.evaluateRetryEligibility({
   isFailure: process.argv[7] !== "0",
   threshold: 0.8,
   retryAllowlistPatterns: process.argv[6].split(",").map(s => s.trim()).filter(Boolean),
+  guardForced: process.argv[8] === "1",
 });
 process.stdout.write(v.retry ? "retry" : "no-retry");
-' "$WATCHDOG" "$1" "$2" "$3" "$4" "$ALLOWLIST" "${5:-1}"
+' "$WATCHDOG" "$1" "$2" "$3" "$4" "$ALLOWLIST" "${5:-1}" "${6:-0}"
+}
+
+# Same call, but reports whether the ALLOWLIST OVERRIDE specifically fired,
+# rather than merely whether a retry happened. Without this a test cannot tell
+# "retried because the allowlist beat the verdict" from "retried because the
+# verdict was sub-threshold anyway", and those are different policies.
+override_fired() {
+    node -e '
+const w = require(process.argv[1]);
+const v = w.evaluateRetryEligibility({
+  jobName: process.argv[2],
+  classification: "code-change",
+  confidence: 0.9,
+  classifierAvailable: true,
+  isFailure: true,
+  threshold: 0.8,
+  retryAllowlistPatterns: process.argv[3].split(",").map(s => s.trim()).filter(Boolean),
+  guardForced: process.argv[4] === "1",
+});
+process.stdout.write(v.allowlistOverride === true ? "override" : "no-override");
+' "$WATCHDOG" "$1" "$ALLOWLIST" "${2:-0}"
 }
 
 # down <job-name> -> a FAILED job with the classifier UNAVAILABLE (the live situation)
@@ -139,14 +161,58 @@ test_a_cancellation_is_retried_not_used_to_kill_the_run() {
     log_pass "the allowlist governs failures only; cancellations are still retried"
 }
 
-test_confident_code_change_never_retries() {
-    # Unchanged behaviour, and it must stay unchanged whether or not the
-    # classifier is reachable for other jobs.
-    assert_eq "$(verdict 'Tests + Infra / E2E Workers (fedora-43)' code-change 0.9 1)" "no-retry" \
-        "a confident code-change verdict wins even for an allowlisted job"
-    assert_eq "$(verdict 'Tests + Infra / E2E Workers (fedora-43)' code-change 1 1)" "no-retry" \
-        "the binary-exec guard's override (confidence 1) must not be retried"
-    log_pass "a confident code-change verdict never retries, allowlist or not"
+test_allowlist_overrides_a_confident_code_change_verdict() {
+    # POLICY REVERSED BY OPERATOR DECISION 2026-07-30. This case previously
+    # asserted the opposite ("a confident code-change verdict wins even for an
+    # allowlisted job"), so the reasoning is recorded rather than silently
+    # swapped.
+    #
+    # What forced it: run 30540751569 job 90867219911. `Tests + Infra / E2E Ceph`
+    # failed on "failed to install Docker on node 21: ssh command failed: exit
+    # status 6" -- infrastructure -- and the classifier answered code-change at
+    # 0.9 reasoning that "a setup error and E2E tests failed suggests a problem
+    # with the code under test". That is a tautology over the words "Setup
+    # failed", and because 0.9 cleared the threshold it suppressed the retry and
+    # cost a full red round.
+    #
+    # The trade was made with its cost stated: this re-opens part of #537, whose
+    # complaint was that everything retried on a judgment nobody made. What
+    # keeps it bounded is that MAX_ATTEMPTS caps it at ONE extra attempt, and
+    # that allowlist membership is a claim about the JOB (it boots VMs, it pulls
+    # images) which cannot be wrong about a particular failure the way a model's
+    # reading of a log can.
+    assert_eq "$(verdict 'Tests + Infra / E2E Ceph' code-change 0.9 1)" "retry" \
+        "an allowlisted provisioning leg retries despite a confident code-change verdict"
+    assert_eq "$(override_fired 'Tests + Infra / E2E Ceph')" "override" \
+        "and it retries BECAUSE the allowlist overrode the verdict, not incidentally"
+    log_pass "the allowlist overrides a confident code-change verdict for provisioning legs"
+}
+
+test_a_non_allowlisted_job_still_fails_fast() {
+    # THE CONTROL, and the one that keeps the reversal from becoming "always
+    # retry". A deterministic gate failure must still cost one attempt, which is
+    # the entire point of #537.
+    assert_eq "$(verdict 'Quality / Security' code-change 0.9 1)" "no-retry" \
+        "a confident code-change verdict still wins for a job OFF the allowlist"
+    assert_eq "$(override_fired 'Quality / Security')" "no-override" \
+        "and no override is claimed for it"
+    log_pass "a non-allowlisted confident code-change verdict still fails fast"
+}
+
+test_the_binary_exec_guard_still_beats_the_allowlist() {
+    # The guard SYNTHESISES code-change at confidence 1 precisely to block a
+    # retry of a job that downloads and executes a released binary. The
+    # allowlist must never undo a deliberate safety check.
+    #
+    # This case used to stand on `confidence == 1` as a proxy for "the guard did
+    # it", which is why the distinction now travels explicitly as guardForced: a
+    # real classifier can also answer 1.0, and the proxy would have silently
+    # handed the guard's authority to any confident model.
+    assert_eq "$(verdict 'Tests + Infra / E2E Ceph' code-change 1 1 1 1)" "no-retry" \
+        "a guard-forced verdict is never overridden, even for an allowlisted job"
+    assert_eq "$(override_fired 'Tests + Infra / E2E Ceph' 1)" "no-override" \
+        "and the override does not even claim to have fired"
+    log_pass "the binary-exec guard's forced verdict outranks the retry allowlist"
 }
 
 test_low_confidence_code_change_still_retries() {
@@ -233,7 +299,9 @@ test_allowlist_is_real
 test_classifier_down_fails_fast_for_deterministic_jobs
 test_classifier_down_still_retries_known_flaky_jobs
 test_a_cancellation_is_retried_not_used_to_kill_the_run
-test_confident_code_change_never_retries
+test_allowlist_overrides_a_confident_code_change_verdict
+test_a_non_allowlisted_job_still_fails_fast
+test_the_binary_exec_guard_still_beats_the_allowlist
 test_low_confidence_code_change_still_retries
 test_available_classifier_governs_non_allowlisted_jobs
 test_confidence_zero_is_not_the_signal

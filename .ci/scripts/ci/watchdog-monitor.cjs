@@ -286,8 +286,51 @@ function evaluateRetryEligibility({
   classifierAvailable,
   threshold,
   retryAllowlistPatterns,
+  guardForced = false,
 }) {
+  // OPERATOR DECISION 2026-07-30: for provisioning legs the ALLOWLIST BEATS a
+  // confident code-change verdict. This deliberately re-opens part of #537 and
+  // the trade was made with that stated, so it is recorded here rather than
+  // buried.
+  //
+  // What forced it: run 30540751569 job 90867219911. `Tests + Infra / E2E Ceph`
+  // failed on "failed to install Docker on node 21: ssh command failed: exit
+  // status 6" -- infrastructure -- and the classifier answered code-change at
+  // 0.9 with the reasoning "the error message indicates a setup error and E2E
+  // tests failed, which suggests a problem with the code under test". That is a
+  // tautology over the words "Setup failed", not an analysis, and because 0.9
+  // clears the threshold it suppressed the retry and cost a full red round on
+  // an allowlisted leg.
+  //
+  // Why the allowlist is the safer authority HERE specifically: membership is a
+  // hand-curated statement that a leg boots VMs or pulls images across the
+  // network, which is a claim about the JOB and cannot be wrong about a given
+  // failure the way a model's reading of a log can. The cost is bounded and
+  // small: MAX_ATTEMPTS caps this at ONE extra attempt.
+  //
+  // guardForced is the one thing that still wins, and it must. The binary-exec
+  // guard synthesises `code-change` at confidence 1 precisely to BLOCK a retry
+  // of a job that downloads and executes a released binary; letting a pattern
+  // match override that would silently defeat a deliberate safety check. No
+  // install-validation job matches the current allowlist, so this is defence in
+  // depth rather than a live conflict, and it stays correct if either list moves.
+  const allowlistOverridesVerdict =
+    Boolean(isFailure) &&
+    !guardForced &&
+    matchesPatterns(jobName, retryAllowlistPatterns || []);
+
   if (classification === 'code-change' && confidence >= threshold) {
+    if (allowlistOverridesVerdict) {
+      return {
+        retry: true,
+        allowlistOverride: true,
+        reason:
+          `classifier returned code-change at confidence ${confidence}, but "${jobName}" is on the ` +
+          `provisioning retry allowlist, which OVERRIDES the verdict (operator decision 2026-07-30): ` +
+          `these legs boot VMs and pull images, so a model reading of the log is less reliable than the ` +
+          `curated list. Bounded to one extra attempt by MAX_ATTEMPTS`,
+      };
+    }
     return {
       retry: false,
       reason: `classifier returned code-change at confidence ${confidence} (>= ${threshold}) -- a retry would re-prove a deterministic failure`,
@@ -901,7 +944,13 @@ const monitor = async ({ github, context, core }) => {
         console.log(`[guard] Overriding "${result.classification}" (${result.confidence}) with code-change -- no retry`);
         // The guard is a deterministic cross-job check, not a model call, so it
         // counts as an available verdict even when the classifier was down.
-        return { classification: 'code-change', confidence: 1, reason: guard.reason, classifierAvailable: true };
+        // guardForced marks this verdict as SYNTHESISED by a deterministic
+        // cross-job check rather than read off a log. The retry allowlist may
+        // override a model's code-change verdict (operator decision
+        // 2026-07-30) but must never override this one, so the distinction has
+        // to travel with the verdict rather than be inferred from confidence:
+        // a real classifier can also answer 1.0.
+        return { classification: 'code-change', confidence: 1, reason: guard.reason, classifierAvailable: true, guardForced: true };
       }
     }
     return result;
@@ -1413,6 +1462,9 @@ const monitor = async ({ github, context, core }) => {
           classifierAvailable: ai.classifierAvailable !== false,
           threshold: AI_CONFIDENCE_THRESHOLD,
           retryAllowlistPatterns,
+          // The binary-exec guard SYNTHESISES a code-change verdict to block a
+          // retry deliberately; the allowlist override must never undo that.
+          guardForced: ai.guardForced === true,
         });
 
         // Make a classifier outage visible at run level rather than letting it

@@ -50,9 +50,21 @@ A red nightly becomes impossible to ignore, with no new notification infrastruct
 
 ### A3. #537, the watchdog classifier (same subsystem, same PR)
 
-The classifier returns HTTP 402, so every failure is labelled `transient` with **confidence
-0** and retried blind. Doing this in a separate PR would mean touching the watchdog twice and
-shipping a half-repaired judgment layer.
+The classifier returned HTTP 402, so every failure was labelled `transient` with
+**confidence 0** and retried blind. Doing this in a separate PR would mean touching the
+watchdog twice and shipping a half-repaired judgment layer.
+
+**RESOLVED 2026-07-30, and the root cause was not a broken subscription.** The 402 came from
+using a partner-served model (`deepseek/deepseek-v4-pro`) through
+`/ai/v1/chat/completions`, which bills from a prepaid AI Gateway balance that was never
+funded, rather than from Workers Paid. Probed live on the same credentials: the partner route
+returns 402 while `/ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast` returns 200. The tier now
+calls the native route and answers on real traffic.
+
+Two follow-ups came out of watching it work, both recorded in `06-progress.md`: the tier-1
+log label was hardcoded to the old model name and had to be derived from `AI_MODEL`, and the
+classifier can answer with HIGH confidence on a SHALLOW reading, which is what prompted the
+retry-policy change below.
 
 1. **Capture the failed-step log before re-running.** Highest value-per-line item in the
    whole program. Attempt-1 logs become `BlobNotFound` once a retry starts, so a blind retry
