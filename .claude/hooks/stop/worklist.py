@@ -299,6 +299,32 @@ import sys
 import tempfile
 import time
 
+# THE MESSAGE CATALOGUE (operator request, 2026-07-30): user-facing prose
+# lives in worklist_messages.py so this file stays loadable as LOGIC. The
+# import is guarded DELIBERATELY: a top-level ImportError would crash before
+# the __main__ fail-closed wrapper exists, print nothing to stdout, and the
+# harness would read that as ALLOW -- the exact hole the wrapper closed. So a
+# missing or broken catalogue installs a shim whose every attribute access
+# raises: query modes that use no messages (--path, --brief, an empty --poll)
+# keep working, and the first message USE on the Stop path raises into the
+# crash handler, which BLOCKS carrying the real traceback. Fails closed,
+# names itself, never wedges the plumbing.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    import worklist_messages as M
+except Exception as _catalogue_exc:  # noqa: BLE001 -- must not become an allow
+
+    class _BrokenCatalogue:
+        err = "%s: %s" % (type(_catalogue_exc).__name__, _catalogue_exc)
+
+        def __getattr__(self, name):
+            raise RuntimeError(
+                "message catalogue worklist_messages.py is unusable (%s); "
+                "wanted %s" % (self.err, name)
+            )
+
+    M = _BrokenCatalogue()
+
 # v5: no cap. See "NO ESCAPE HATCH" above. Kept as a name so the counter file
 # (used only to TELL the judge it is repeating itself) reads clearly.
 JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001")
@@ -957,6 +983,11 @@ def cron_memory(worklist, session_id, live_count):
     has none has lost its loop, which is the failure the operator actually cares
     about ("sometimes you stop the hourly loop and never start it again"). A
     session that never had one is not doing anything wrong.
+
+    v9: the caller passes the WORK-cron count, not the total. With the
+    5-minute poll enforced, a total-count high-water mark would read a dead
+    work loop behind a surviving poll as "still has a cron" -- exactly the
+    loss this check exists to catch.
     """
     p = worklist.with_suffix(".croncount-%s" % (session_id or "unknown")[:8])
     try:
@@ -1369,12 +1400,7 @@ def request_cli(argv, worklist):
         crucial part) while telling the sender it was delivered."""
         body = " ".join(argv[3:]).replace("\n", " ").strip()
         if len(body) > REQUEST_BODY_MAX:
-            die(
-                "%s is %d chars, limit %d. REFUSED rather than silently truncated: "
-                "the tail is often the crucial part, and a clipped payload that "
-                "reports success is how findings get lost. Shorten it, or put the "
-                "detail in a file and cite the path." % (what, len(body), REQUEST_BODY_MAX)
-            )
+            die(M.CLI_BODY_REFUSED % (what, len(body), REQUEST_BODY_MAX))
         return body
 
     mode = argv[0]
@@ -1400,12 +1426,7 @@ def request_cli(argv, worklist):
                 print("    escalated: %s" % r["escalated"])
         return
     if len(argv) < 3:
-        die(
-            "usage: --ask <my-prefix> <to-prefix|*> <text...>\n"
-            "       --answer <my-prefix> <id> <text...>\n"
-            "       --decline <my-prefix> <id> <reason...>\n"
-            "       --ack <my-prefix> <id>"
-        )
+        die(M.CLI_REQUEST_USAGE)
     me = argv[1]
     if not PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
@@ -1744,72 +1765,18 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
     proven, notes = prove_new_gate(root, scripts, state)
     if proven:
         return "settle", "proven", notes[:300]
-    reason = (
-        "A FIX LANDED AND NO REGRESSION GATE PROTECTS IT. This is the i18n "
-        "lesson: the defect was fixed by hand and nothing prevented its "
-        "return, because every existing gate was blind to it by construction.\n\n"
-        "  judge's blind spot:  %s\n"
-        "  judge's instruction: %s\n%s%s\n"
-        "Three exits, pick one THIS turn:\n"
-        "  1. WRITE THE GATE control-first: a new scripts/check-*.ts or "
-        ".ci/scripts/quality/check-*.sh, wired as a check:ci-* key REACHABLE "
-        "from `npm run ci` (transitively; defined-but-never-run does not "
-        "count). The next stop runs it bounded, and a green run IS the "
-        "planted-defect proof, because a control-first gate self-fails when "
-        "its own control cannot fire.\n"
-        "  2. DEFER to the operator: append to the worklist\n"
-        "     - [?] (%s) %s <should this be gated?> DEFAULT: <what you do if "
-        "unanswered>\n"
-        "     and the deferral machinery prints it to them every stop.\n"
-        "  3. REBUT in your message: say why it is not applicable, already "
-        "covered (name the REAL key), or a one-off; the judge re-reads your "
-        "message next stop."
-        % (
-            str(rg["blind_spot"])[:300],
-            str(rg["instruction"])[:300],
-            ""
-            if not hall
-            else "  you cited %r as existing coverage but no such check:* key "
-            "exists, so that coverage is HALLUCINATED and counts as none.\n" % hall,
-            "" if not notes else "  gate probe: %s\n" % notes[:400],
-            me8,
-            token,
-        )
+    reason = M.R_REGGATE_BLOCK % (
+        str(rg["blind_spot"])[:300],
+        str(rg["instruction"])[:300],
+        "" if not hall else M.R_REGGATE_HALLUCINATED % hall,
+        "" if not notes else "  gate probe: %s\n" % notes[:400],
+        me8,
+        token,
     )
     return "block", reason, ""
 
 
-REGGATE_PROMPT = """
-
-A FIX LANDED THIS TURN, so ALSO fill the `regression_gate` object. The fix-set:
-%(fixset)s
-
-Answer FOUR questions about it:
-
-(1) BLIND SPOT: state the property of this defect that made every existing
-check blind to it. This repo's own example: every i18n gate compared a locale
-against English, so text copied from one non-English locale into another
-differed from English and passed every gate; no check ever compared two
-non-English locales, so the defect was invisible BY CONSTRUCTION.
-
-(2) EXISTING COVERAGE: would any gate in the list below have FAILED against
-the tree BEFORE the fix? Naming a gate that catches a different symptom does
-not count. These are the real check:* keys; do not invent others:
-%(keys)s
-
-(3) RECURRENCE: could a future edit reintroduce this defect while `npm run ci`
-stays green, and is that edit one a reasonable change could make? A one-off
-mistake with no invariant behind it does not warrant a gate.
-
-(4) If a gate IS warranted, name the invariant and the cheapest artifact it
-can be asserted on.
-
-Fill regression_gate accordingly: applicable (false only if this fix-set
-contains no defect fix at all), blind_spot, existing_gate (the EXACT key that
-already covers it, or empty string), recurring, gate_needed, gate_proven
-(true only if a new gate is already written and wired), instruction (the
-concrete next step for the session).
-"""
+# The four-question regression prompt lives in worklist_messages.REGGATE_PROMPT.
 
 
 # ---- v8: completion evidence (I7) ------------------------------------------
@@ -2060,71 +2027,7 @@ JUDGE_SCHEMA = {
     "additionalProperties": False,
 }
 
-JUDGE_PROMPT = """\
-You are a stop-gate for an autonomous coding session. Decide ONE thing: is
-ending the turn right now legitimate, or is the session idling with work it
-could be doing?
-
-Answer "stop" when the session is genuinely blocked, and hold that word to a
-high bar. Waiting counts ONLY when the thing waited on is NAMED and real: a run
-id, a task id, a live lease, or a question actually put to the human. "Waiting
-on <a phase of this project>" is not a blocker, it is a sentence.
-
-Challenge every blocker that is not about the human. Ask: could the session
-unblock this ITSELF? Landing code and enabling a feature are DIFFERENT events,
-so "blocked on X landing" is valid only if the source says the CODE cannot be
-written or merged, never merely that a FLAG cannot flip yet. If the work could
-be built now and left switched off, it is not blocked, and answering "stop"
-endorses an idle session.
-
-Answer "continue" when tracked work remains that the session could advance
-without the human, or when the last message is a status report that moves
-nothing forward.
-
-Be strict about one specific failure: reporting a problem instead of fixing it.
-This project's rules say defects found on the way get FIXED, not filed.
-
-Consecutive times this gate has already said continue: %(streak)d. If that number
-is above 3, weigh heavily whether your advice is actually actionable.
-
-Remaining work the harness is tracking:
-%(remaining)s
-
-Fresh background leases (work genuinely in flight): %(leases)d
-Declared loop: %(loop)s
-
-Check these specifically, because they are how this session drifts:
-  - Does the message list EVERY open task by id? The operator sees the same list
-    in their app, so an omission is a report that disagrees with their view.
-  - Does it state the loop schedule, so the operator knows when work resumes?
-  - Is anything marked blocked on the operator that they never confirmed? Only
-    "You (User Thinks So)" counts; anything else is the session guessing at
-    someone else's intent, and it must become an AskUserQuestion instead.
-  - Are any remaining items COMPLICATED (multi-file design, an unknown root
-    cause, or work that needs its own verification loop)? If so the message must
-    say which ones, and say that a Plan agent will design it and a separate
-    sub-agent will implement it. This session leads and reviews; it does not do
-    complicated work inline. Sub-agents are kept OPEN and given feedback rather
-    than re-spawned, so they fix their own mistakes in their own context.
-Answer "continue" if any of these is missing.
-
-Sources the session CITED for its blockers, quoted from the tree:
-%(citations)s
-
-If a citation is present, READ IT. The question is not whether the file exists,
-it is whether that text SAYS the work cannot proceed. A source that describes
-how the work is done, or that says it can be built and left switched off, is
-EVIDENCE AGAINST the blocker, not for it. Answer "continue" when the quoted text
-does not support the claim it was cited for.
-
-The session's last message:
-<<<
-%(message)s
->>>
-
-Write `reason` and `next_action` as instructions addressed TO the session.
-Never use em dashes. Keep next_action concrete and small enough to do now.
-"""
+# The stop-legitimacy prompt lives in worklist_messages.JUDGE_PROMPT.
 
 
 def resolve_claude():
@@ -2145,7 +2048,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
         workdir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         return None, "judge workdir unusable: %s" % exc
-    prompt = JUDGE_PROMPT % {
+    prompt = M.JUDGE_PROMPT % {
         "streak": streak,
         "remaining": "\n".join("  " + r for r in remaining_lines[:20]) or "  (none tracked)",
         "leases": leases,
@@ -2234,9 +2137,7 @@ def main():
         stale = (
             ""
             if state != "drifted"
-            else "\n\nRIGHT NOW THEY ARE STALE: %d commits have touched %s since the docs "
-            "were last updated. Reconcile them early, not at the end."
-            % (drift, " ".join(PROGRAM_SURFACE))
+            else M.CTX_SESSION_START_STALE % (drift, " ".join(PROGRAM_SURFACE))
         )
         emit(
             {
@@ -2248,15 +2149,7 @@ def main():
                 ),
                 "hookSpecificOutput": {
                     "hookEventName": "SessionStart",
-                    "additionalContext": (
-                        "This project keeps its design in %s, and those documents are the "
-                        "starting context for the work. READ ALL OF THEM before acting: "
-                        "they carry decisions you must not re-litigate and constraints "
-                        "that are invisible in the code.\n%s\n\n"
-                        "They are also YOURS TO MAINTAIN. When you change what the program "
-                        "does, update the document describing it in the SAME turn.%s"
-                        % (DESIGN_DOCS, listing, stale)
-                    ),
+                    "additionalContext": M.CTX_SESSION_START % (DESIGN_DOCS, listing, stale),
                 },
             }
         )
@@ -2272,23 +2165,9 @@ def main():
         sid = ev.get("session_id", "")
         state, age, text = handover_state(wl, sid)
         if state == "missing":
-            msg = (
-                "CONTEXT WAS JUST COMPACTED and there is NO handover document at %s.\n"
-                "Reconstruct one from what survived, write it with\n"
-                "    .claude/hooks/stop/worklist.py --handover %s <<'EOF' ... EOF\n"
-                "and do NOT report anything as blocked-on-operator until you have "
-                "re-checked it: that is exactly the error compaction caused last time."
-                % (handover_path(wl, sid), (sid or "unknown")[:8])
-            )
+            msg = M.CTX_POSTCOMPACT_MISSING % (handover_path(wl, sid), (sid or "unknown")[:8])
         else:
-            msg = (
-                "You are picking up an in-progress session and your context was just "
-                "compacted, so treat the briefing below as the truth and your own "
-                "recollection as unreliable. Re-verify anything it calls decided before "
-                "you report it as blocked. Re-read %s before acting, and update whichever "
-                "of those documents your work has invalidated.\n\n%s"
-                % (DESIGN_DOCS, text.strip())
-            )
+            msg = M.CTX_POSTCOMPACT_BRIEFING % (DESIGN_DOCS, text.strip())
         emit(
             {
                 "systemMessage": "PostCompact: handover %s (%s)" % (state, handover_path(wl, sid).name),
@@ -2603,57 +2482,29 @@ def main():
 
     violations = []
     if stuck_fired and something_remains:
+        # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
+        # status AND HEAD did not advance" for every tier, which is FALSE for
+        # the tasks-only tier: that one fires precisely BECAUSE commits do not
+        # count, so it fires while HEAD is moving. A blocker that overstates
+        # its own evidence teaches the session to distrust it.
         violations.append(
-            "%s IN %d CONSECUTIVE STOPS, so whatever you are doing is not working and a "
-            "fourth attempt of the same shape will not fix it. EMPLOY A PLANNING OR "
-            "INVESTIGATION AGENT NOW (Agent tool, subagent_type Plan or Explore, or "
-            "general-purpose), give it the problem and the evidence you already have, and "
-            "let it come back with an approach you have not tried. This is the operator's "
-            "standing rule: if it cannot be solved in three rounds, delegate it rather "
-            "than repeating yourself. If you genuinely disagree, say WHY in one sentence "
-            "and what will be different next round.\n    %s"
+            M.V_STUCK
             % (
-                # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
-                # status AND HEAD did not advance" for every tier, which is FALSE for
-                # the tasks-only tier: that one fires precisely BECAUSE commits do not
-                # count, so it fires while HEAD is moving. A blocker that overstates
-                # its own evidence teaches the session to distrust it.
-                {
-                    "tasks-only": "NO TASK HAS CHANGED STATUS",
-                    "tasks+head": "NOTHING HAS MOVED",
-                    "exempt-overrun": "NO TASK HAS CHANGED STATUS",
-                }.get(stuck_why, "NOTHING HAS MOVED"),
+                M.STUCK_HEADLINES.get(stuck_why, "NOTHING HAS MOVED"),
                 stuck_n,
-                {
-                    "tasks-only": "(no task has changed status in that time. Commits do "
-                    "not count as movement here, deliberately: committing trivia while "
-                    "the real problem sits untouched is the pattern this catches.)",
-                    "tasks+head": "(no task changed status and HEAD did not advance. "
-                    "Starting a background agent clears this.)",
-                    "exempt-overrun": "(a background task IS running and has been for "
-                    "many stops, so the remedy itself has stalled. Check what it is "
-                    "doing, or stop it and take a different approach.)",
-                }.get(stuck_why, ""),
+                M.STUCK_DETAILS.get(stuck_why, ""),
             )
         )
     if not event_ok:
-        violations.append(
-            "THIS IS A HOOK BUG: the Stop event on stdin was not parseable JSON, so every "
-            "check below ran against an EMPTY event and its advice is meaningless. Fix the "
-            "caller or %s rather than acting on anything else this block says." % __file__
-        )
+        violations.append(M.V_EVENT_UNPARSEABLE % __file__)
     if open_items:
         violations.append(
-            "%d OPEN worklist item(s). Do the next one, or move it to [?]/[>] with the "
-            "state that actually applies:\n%s"
-            % (len(open_items), "\n".join("    " + i for i in open_items))
+            M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items))
         )
     undefaulted = [d for d in deferred if not DEFAULT_TOKEN.search(d)]
     if undefaulted:
         violations.append(
-            "%d deferred item(s) carry no DEFAULT:. A '- [?]' without a default is a "
-            "note, not a decision. Append 'DEFAULT: <what you will do if the operator "
-            "does not answer>' to each, then execute the default next turn:\n%s"
+            M.V_UNDEFAULTED
             % (len(undefaulted), "\n".join("    " + d[:150] for d in undefaulted))
         )
     me8 = (session_id or "unknown")[:8]
@@ -2679,13 +2530,7 @@ def main():
                 )
             )
         violations.append(
-            "%d cross-session REQUEST(S) are waiting on you. The asker cannot see your "
-            "context, so silence is a black hole: do it or answer with what you know, or "
-            "decline with a real reason. A broadcast wants whoever owns the area; if that "
-            "is not you, declining 'not my area: <why>' releases you:\n%s\n"
-            "    .claude/hooks/stop/worklist.py --answer %s <id> '<what you did or know>'\n"
-            "    .claude/hooks/stop/worklist.py --decline %s <id> '<why not>'"
-            % (len(req_to_me) + len(req_bcast), "\n".join(rows), me8, me8)
+            M.V_REQUESTS_WAITING % (len(req_to_me) + len(req_bcast), "\n".join(rows), me8, me8)
         )
     if req_answered:
         rows = []
@@ -2705,14 +2550,7 @@ def main():
                     "      DECLINED by %s at %s: %s"
                     % (d.get("by", "?"), d.get("at", "?"), str(d.get("reason", "")))
                 )
-        violations.append(
-            "your request(s) were ANSWERED and the answer is unacknowledged. This block IS "
-            "the delivery (the block reason is the only channel you actually read): act on "
-            "each answer now -- a decline means route around it or raise a [?] to the "
-            "operator -- then acknowledge so it never blocks you again:\n%s\n"
-            "    .claude/hooks/stop/worklist.py --ack %s <id>"
-            % ("\n".join(rows), me8)
-        )
+        violations.append(M.V_ANSWERS_UNACKED % ("\n".join(rows), me8))
     # ---- I7: a completion claim must leave a RECORD (see WHY v8) -----------
     ev_ticks = [
         line[:150]
@@ -2729,22 +2567,14 @@ def main():
             ev_tasks.append("#%s %s" % (i, sub))
     if ev_ticks or ev_tasks:
         violations.append(
-            "COMPLETION WITHOUT EVIDENCE. S-2 was marked completed on another spike's "
-            "evidence, nothing recorded a result anywhere, and the hole surfaced hours "
-            "later. A completion must leave a record: a sha, a run id, a file:line, an "
-            "exit code, or a URL. You have it in hand at completion time, so this costs "
-            "one paste; if you do NOT have it, the item is not done.\n%s%s"
-            "    For ticks, put the evidence IN THE LINE (it is the durable record). "
-            "For tasks, put it on the line mentioning the #id in your message."
+            M.V_COMPLETION_EVIDENCE
             % (
                 ""
                 if not ev_ticks
-                else "  tick(s) with no evidence in the line:\n%s\n"
-                % "\n".join("    " + t for t in ev_ticks),
+                else M.V_COMPLETION_TICKS % "\n".join("    " + t for t in ev_ticks),
                 ""
                 if not ev_tasks
-                else "  task(s) flipped to completed with no evidence near their #id:\n%s\n"
-                % "\n".join("    " + t for t in ev_tasks),
+                else M.V_COMPLETION_TASKS % "\n".join("    " + t for t in ev_tasks),
             )
         )
     # Persist ONLY the transitions that passed: an unevidenced completion
@@ -2763,35 +2593,13 @@ def main():
                 save_reggate(reg_marker, reg_state)
         except Exception:  # noqa: BLE001 -- bookkeeping must never break gating
             pass
-    # ---- I6: static idle detection (see WHY v8) ----------------------------
-    # Disjoint from the stuck detector by geometry: stuck is active-but-futile
-    # and needs three stops; this is inactive-with-nothing-inbound, whose
-    # deadliest form produces NO further stops, so the counter never fires.
-    # Scoped to tasks: open [ ] items and undefaulted [?] already block above,
-    # and a worklist of defaulted [?] is time-boxed autonomy, which may stop.
-    idle_tasks = [
-        i
-        for i, _, _ in tasks
-        if not re.search(r"#%s\b[^\n]*You \(User Thinks So\)" % re.escape(i), last_msg or "")
-    ]
-    if idle_tasks and not in_flight and not live_bg and not live_crons and not open_items:
-        violations.append(
-            "NOTHING WILL WAKE THIS SESSION. Task(s) %s wait, yet no background task is "
-            "running, no [>] lease is fresh, and no cron is scheduled, so after this "
-            "stop the work sits until the operator notices -- the Wave C shape, where "
-            "no third stop ever came and the stuck counter never had a chance to fire. "
-            "Give the work a wake-up before stopping: start it now, delegate it (a "
-            "background agent plus a [>] lease), schedule the loop (CronCreate, then "
-            "declare it with --loop), or if a task truly waits on the operator, ask "
-            "with AskUserQuestion and record it as 'You (User Thinks So)'."
-            % ", ".join("#" + i for i in idle_tasks[:8])
-        )
+    # ---- I6: static idle detection (see WHY v8) is BELOW the Remaining scan
+    # since v9, because a VERIFIED waiting-cross-session task counts as having
+    # a wake-up (the enforced poll delivers the answer that unblocks it), and
+    # that verification happens in the scan.
     if bstate != "ok":
         violations.append(
-            "session brief is %s%s. Other sessions share this worktree and cannot see "
-            "what you are doing. Run:\n"
-            "    .claude/hooks/stop/worklist.py --brief %s '<=200 chars: what you are "
-            "changing right now>'"
+            M.V_BRIEF
             % (
                 bstate,
                 "" if bage is None else " (%d min old, limit %d)" % (bage, SESSION_BRIEF_STALE_MIN),
@@ -2800,54 +2608,23 @@ def main():
         )
     pstate, pahead, pref = publish_divergence(project_root(event.get("cwd") or os.getcwd()))
     if pstate == "stale-local":
-        violations.append(
-            "a LOCAL branch %s is %d commits behind the ref you publish to, and nothing in "
-            "your workflow touches it. It is a trap for whoever checks it out next: they "
-            "would work from a stale base and could push over live work. Delete it if it "
-            "carries no unique commits, or say why it is being kept."
-            % (pref, pahead)
-        )
+        violations.append(M.V_STALE_LOCAL % (pref, pahead))
     if pstate == "diverged":
-        violations.append(
-            "%s HAS %d COMMIT(S) YOU DO NOT HAVE. You commit on a local branch and publish "
-            "to a different one, so that ref can move without you. Fetch and inspect before "
-            "your next push, because pushing now either fails or publishes over work nobody "
-            "has looked at:\n    git fetch origin && git log --oneline HEAD..%s"
-            % (pref, pahead, pref)
-        )
+        violations.append(M.V_DIVERGED % (pref, pahead, pref))
     fstate, fdetail = pr_body_freshness(project_root(event.get("cwd") or os.getcwd()))
     if fstate == "stale":
-        violations.append(
-            "YOU PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT (%s). CI's freshness gate will "
-            "fail on this, and that red costs a full round for a ten-second fix. The body "
-            "refresh is part of the push, not a step after it. Refresh it now, and verify "
-            "with the GraphQL read because `gh pr view --json lastEditedAt` is not a valid "
-            "field." % fdetail
-        )
+        violations.append(M.V_PR_STALE % fdetail)
     elif fstate == "unreadable":
-        violations.append(
-            "THIS IS A HOOK BUG: the PR-freshness lookup failed (%s), so that check is "
-            "blind. It blocks rather than passing quietly, per no-escape-hatch." % fdetail
-        )
-    loop_died, had_crons = cron_memory(worklist, session_id, len(live_crons))
+        violations.append(M.V_PR_UNREADABLE % fdetail)
+    # v9: count WORK crons only. With two crons, a dead work loop behind a
+    # surviving 5-minute poll was invisible to a total-count high-water mark,
+    # and the work loop dying quietly is the exact failure the operator named.
+    loop_died, had_crons = cron_memory(worklist, session_id, len(live_work_crons))
     if loop_died:
-        violations.append(
-            "YOUR LOOP DIED. This session had %d cron(s) and now has none, so nothing will "
-            "wake it up again. That is the failure this check exists for. Recreate it with "
-            "CronCreate, or say out loud in your message that the loop is deliberately "
-            "finished." % had_crons
-        )
+        violations.append(M.V_LOOP_DIED % had_crons)
     if something_remains and hstate != "ok":
         violations.append(
-            "the compact-recovery handover is %s%s. Compaction has already cost this "
-            "project one operator decision (the autopilot App was reported blocked "
-            "AFTER the operator had created it), and the transcript cannot be the "
-            "recovery mechanism because the transcript is what gets summarised. "
-            "Rewrite it as ONE PARAGRAPH of %d-%d characters, addressed to a session "
-            "that knows NOTHING: what this work is, where it stands, what to do next, "
-            "and any fact that must not be re-litigated. No headings, no bullet lists, "
-            "no blank lines. It is a handoff prompt, not a status report:\n"
-            "    .claude/hooks/stop/worklist.py --handover %s <<'EOF'\n    ...\n    EOF"
+            M.V_HANDOVER
             % (
                 hstate,
                 "" if hage is None else " (%d min old, limit %d)" % (hage, HANDOVER_STALE_MIN),
@@ -2858,25 +2635,24 @@ def main():
         )
     dstate, ddrift, ddir = docs_drift(project_root(event.get("cwd") or os.getcwd()))
     if dstate == "drifted":
+        violations.append(M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
+    # v9: the two-cron shape (operator directive). A looped session carries
+    # exactly one 5-minute inbox poll beside at most one work loop.
+    if live_crons and not live_poll_crons:
+        violations.append(M.V_NO_POLL_CRON % me8)
+    if len(live_work_crons) > 1:
         violations.append(
-            "the design docs have DRIFTED: %d commits have touched %s since %s was last "
-            "updated. Those documents are how a new or compacted session understands this "
-            "work, so code moving without them deletes the next session's starting "
-            "context. Update the ones your changes invalidated, in this turn."
-            % (ddrift, " ".join(PROGRAM_SURFACE), ddir)
-        )
-    if len(live_crons) > 1:
-        violations.append(
-            "%d crons are live on this session: %s. ONE is almost always enough, because a "
-            "second schedule fires the same review twice at different phases and each "
-            "firing costs a turn. Delete the redundant one with CronDelete."
+            M.V_MANY_WORK_CRONS
             % (
-                len(live_crons),
+                len(live_work_crons),
                 ", ".join(
-                    "%s (%s)" % (c.get("id", "?"), c.get("schedule", "?")) for c in live_crons
+                    "%s (%s)" % (c.get("id", "?"), c.get("schedule", "?"))
+                    for c in live_work_crons
                 ),
             )
         )
+    if len(live_poll_crons) > 1:
+        violations.append(M.V_MANY_POLL_CRONS % len(live_poll_crons))
     # A "blocked on you" claim the operator never confirmed is a guess about
     # someone else's intent, and it is how work parks itself indefinitely. The
     # confirmed form carries the operator's own words back.
@@ -2889,13 +2665,7 @@ def main():
         )
     ]
     if unconfirmed:
-        violations.append(
-            "%s marked blocked on the operator WITHOUT their confirmation. You cannot "
-            "declare someone else blocked: ask with AskUserQuestion, giving concrete "
-            "options plus the do-it-anyway option, and only then write it as "
-            "'You (User Thinks So)'. Until they answer, it is blocked on YOU."
-            % ", ".join("#" + i for i in unconfirmed)
-        )
+        violations.append(M.V_UNCONFIRMED % ", ".join("#" + i for i in unconfirmed))
     # THE TASK LIST IS THE OPERATOR'S VIEW. They see "23 tasks (17 done, 6 open)"
     # in the app, so a Remaining section that omits one of those six is out of
     # sync with what they are looking at. Every open task id must appear.
@@ -2904,9 +2674,12 @@ def main():
     # the same question as "is anyone working it": a list where six items all look
     # alike cannot tell the operator what is moving and what is parked. The word
     # must also AGREE with the harness, which is the list they see in their app.
-    state_re = re.compile(r"\b(ongoing|in progress|in-progress|pending|blocked|parked)\b", re.I)
+    state_re = re.compile(
+        r"\b(ongoing|in progress|in-progress|pending|blocked|parked|waiting-cross-session)\b",
+        re.I,
+    )
     ONGOING = {"ongoing", "in progress", "in-progress"}
-    unstated, mislabelled, uncited = [], [], []
+    unstated, mislabelled, uncited, xw_bad, xw_ok = [], [], [], [], []
     if REMAINING_HEADING.search(last_msg or ""):
         section = (last_msg or "")[REMAINING_HEADING.search(last_msg).start():]
         for tid, _sub, status in tasks:
@@ -2928,7 +2701,16 @@ def main():
             # "blocked on the operator" has its own check above. What survives
             # the filter is exactly the Wave C class: a prose blocker naming a
             # phase of this project, which is the one shape nobody can check.
-            if word in ("blocked", "parked") and not live_bg and not in_flight:
+            # v9: waiting-cross-session is exempt from the file citation
+            # because its request id IS the citation, verified in xsession_ok
+            # across the request's whole lifecycle.
+            if word == "waiting-cross-session":
+                ok, detail = xsession_ok(line, all_reqs, session_id)
+                if ok:
+                    xw_ok.append(tid)
+                else:
+                    xw_bad.append("#%s: %s" % (tid, detail))
+            elif word in ("blocked", "parked") and not live_bg and not in_flight:
                 if not re.search(r"\byou\b", line, re.I):
                     ok, detail = citation_state(
                         project_root(event.get("cwd") or os.getcwd()), line
@@ -2939,6 +2721,25 @@ def main():
                 mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
             elif status == "pending" and word in ONGOING:
                 mislabelled.append("#%s is pending but reads '%s'" % (tid, word))
+    # ---- I6: static idle detection (see WHY v8; moved below the scan in v9) -
+    # Disjoint from the stuck detector by geometry: stuck is active-but-futile
+    # and needs three stops; this is inactive-with-nothing-inbound, whose
+    # deadliest form produces NO further stops, so the counter never fires.
+    # Scoped to tasks: open [ ] items and undefaulted [?] already block above,
+    # and a worklist of defaulted [?] is time-boxed autonomy, which may stop.
+    # v9: only WORK crons count as a wake-up (a poll fires but advances
+    # nothing by itself), and a VERIFIED waiting-cross-session task is exempt,
+    # because the enforced poll delivers the answer that unblocks it.
+    idle_tasks = [
+        i
+        for i, _, _ in tasks
+        if i not in xw_ok
+        and not re.search(r"#%s\b[^\n]*You \(User Thinks So\)" % re.escape(i), last_msg or "")
+    ]
+    if idle_tasks and not in_flight and not live_bg and not live_work_crons and not open_items:
+        violations.append(M.V_IDLE % ", ".join("#" + i for i in idle_tasks[:8]))
+    if xw_bad:
+        violations.append(M.V_XSESSION_BAD % ("\n".join("    " + b for b in xw_bad), me8))
     # CLAUDE.md rule 2 says discovery is always in scope and FIXING is the default;
     # the "found, not fixed" list is meant as a last resort, not a parking bay. A
     # session that ends every turn with one has converted a fixing rule into a
@@ -2950,38 +2751,13 @@ def main():
     # optionally behind markdown emphasis or a heading marker; a mention sits
     # mid-sentence or inside quotes or backticks, none of which match here.
     if uncited:
-        violations.append(
-            "a blocker is a CLAIM ABOUT REALITY and these carry no source:\n%s\n"
-            "This is the Wave C failure exactly: the report said 'blocked on Wave B "
-            "landing' while 05-execution-guide.md:108 said it lands with every stage "
-            "flag off, and nothing challenged it because the SHAPE was valid and only "
-            "the CONTENT was wrong. Cite the line that blocks you as <path>:<line>, or "
-            "if you cannot find one, that is your answer: it is not blocked, so go do "
-            "it. Waiting on something real (a run, an agent) belongs in a [>] lease or "
-            "a background task instead, which this check already exempts."
-            % "\n".join("    " + u for u in uncited)
-        )
+        violations.append(M.V_UNCITED % "\n".join("    " + u for u in uncited))
     if re.search(r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b", last_msg or "", re.I | re.M):
-        violations.append(
-            "your message carries a 'found, not fixed' list. CLAUDE.md's rule is to FIX "
-            "what you find: reporting it is the fallback, not the default. For each item, "
-            "either fix it now and say you did, or record it as '- [?] ... DEFAULT: <what "
-            "you will do if unanswered>' so it is tracked and time-boxed rather than "
-            "restated every turn. Then drop the phrase."
-        )
+        violations.append(M.V_FOUND_NOT_FIXED)
     if unstated:
-        violations.append(
-            "%s listed without a STATE. Every remaining item must say whether it is "
-            "ongoing, pending or blocked, because 'who it is blocked on' does not tell "
-            "the operator what is actually moving. Add the word to each line."
-            % ", ".join("#" + i for i in unstated)
-        )
+        violations.append(M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:
-        violations.append(
-            "your Remaining section DISAGREES with the task list the operator sees: %s. "
-            "Either fix the wording or move the task with TaskUpdate, so the two match."
-            % "; ".join(mislabelled)
-        )
+        violations.append(M.V_MISLABELLED % "; ".join(mislabelled))
     # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything
     # is honestly parked is a legitimate state, and blocking on it would nag a
     # session that is correctly waiting. The case that actually matters -- driving
@@ -2990,17 +2766,11 @@ def main():
     # the harness disagrees.
     if tasks and REMAINING_HEADING.search(last_msg or "") and missing_ids:
         violations.append(
-            "your Remaining section is OUT OF SYNC with the task list the operator sees. "
-            "%d open task(s) are not mentioned by id: %s. List every open task, or close "
-            "the ones that are done."
-            % (len(missing_ids), ", ".join("#" + i for i in missing_ids))
+            M.V_OUT_OF_SYNC % (len(missing_ids), ", ".join("#" + i for i in missing_ids))
         )
     if something_remains and not msg_readable:
         violations.append(
-            "THIS IS A HOOK BUG, not something you did wrong: no assistant text could be "
-            "read from the transcript (path=%r), so the '## Remaining' check is BLIND. "
-            "It blocks rather than waving you through, per no-escape-hatch. Inspect the "
-            "captured event at %s and fix transcript_tail in %s."
+            M.V_HOOK_BLIND
             % (
                 event.get("transcript_path", ""),
                 worklist.with_suffix(".lastevent-%s.json" % (session_id or "unknown")[:8]),
@@ -3008,13 +2778,7 @@ def main():
             )
         )
     elif something_remains and not REMAINING_HEADING.search(last_msg or ""):
-        violations.append(
-            "work remains and your last message has no '## Remaining' section. The "
-            "operator reads YOUR message, not this hook's output, so a report that "
-            "lives only here does not exist. Re-state the answer and end it with a "
-            "'## Remaining' section listing what is left and who it is blocked on:\n%s"
-            % "\n".join("    " + r for r in remaining_lines[:12])
-        )
+        violations.append(M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]))
 
     if violations:
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
@@ -3031,10 +2795,7 @@ def main():
                     else " [reggate marker was corrupt; settled verdicts forgotten]",
                 ),
                 "decision": "block",
-                "reason": "Do not stop yet. %d check(s) failed:\n\n%s\n\n"
-                "Fix all of them in this turn, then stop. There is no block cap: a "
-                "check that fires wrongly is a bug in %s and you are the session that "
-                "fixes it."
+                "reason": M.R_BLOCK
                 % (len(violations), "\n\n".join("  " + v for v in violations), __file__),
             }
         )
@@ -3048,7 +2809,7 @@ def main():
         reg_scripts = package_scripts(reg_root) if reg_signals else {}
         reg_extra = ""
         if reg_signals:
-            reg_extra = REGGATE_PROMPT % {
+            reg_extra = M.REGGATE_PROMPT % {
                 "fixset": "\n".join("  " + s for s in reg_signals[:12]),
                 "keys": "\n".join(
                     "  " + k for k in sorted(k for k in reg_scripts if k.startswith("check:"))
@@ -3073,15 +2834,7 @@ def main():
                     "systemMessage": "Stop hook: judge unavailable (%s). Blocking, per "
                     "no-escape-hatch." % err[:110],
                     "decision": "block",
-                    "reason": "The stop-gate judge could not answer: %s\n\n"
-                    "This is a BUG in the gate, and blocking is deliberate: a judge that "
-                    "fails open is an escape hatch. You are the primary session, so fix "
-                    "it now in %s. Diagnose with:\n"
-                    "    STOPHOOK_CHILD= claude -p 'reply OK' --output-format json "
-                    "--model %s\n"
-                    "If the model is simply unreachable and you have verified that, set "
-                    "WORKLIST_JUDGE=off in the hook env and say so out loud in your "
-                    "summary, so a disabled gate is never silent." % (err, __file__, JUDGE_MODEL),
+                    "reason": M.R_JUDGE_UNAVAILABLE % (err, __file__, JUDGE_MODEL),
                 }
             )
         # v7: the regression verdict is processed BEFORE the stop/continue
@@ -3101,12 +2854,7 @@ def main():
                         "returned no usable regression_gate. Blocking, per "
                         "no-escape-hatch.",
                         "decision": "block",
-                        "reason": "A fix landed this turn and the judge's answer "
-                        "carried no usable regression_gate object (%s). This is a "
-                        "judge error and it FAILS CLOSED, same as an invalid "
-                        "verdict: a gate that cannot ask its question must not "
-                        "become the way past it. Fix the judge path in %s, or set "
-                        "WORKLIST_JUDGE=off and say so out loud." % (payload, __file__),
+                        "reason": M.R_REGGATE_MALFORMED % (payload, __file__),
                     }
                 )
             if kind == "settle":
@@ -3143,9 +2891,7 @@ def main():
                     "systemMessage": "Stop hook: judge says continue (%d in a row). %s"
                     % (streak + 1, verdict["reason"][:110]),
                     "decision": "block",
-                    "reason": "The stop-gate judge says this stop is not legitimate.\n\n"
-                    "  reason:      %s\n  next action: %s\n\n"
-                    "Tracked work:\n%s\n\nDo the next action, then stop."
+                    "reason": M.R_JUDGE_CONTINUE
                     % (
                         verdict["reason"],
                         verdict["next_action"],
@@ -3156,6 +2902,28 @@ def main():
 
     if True:
         counter.unlink(missing_ok=True)
+        # v9: an ALLOWED full-battery stop is the poll fast path's baseline.
+        # Written ONLY here: a blocked stop proves nothing, and a fast-path
+        # stop must not extend its own horizon (that bound is what keeps the
+        # silent path from becoming a way to live on polls alone).
+        try:
+            pollbase_path(worklist, session_id).write_text(
+                json.dumps(
+                    {
+                        "sig": world_sig(
+                            project_root(event.get("cwd") or os.getcwd()),
+                            worklist,
+                            session_id,
+                        ),
+                        "at": datetime.datetime.now(datetime.timezone.utc).strftime(
+                            "%Y-%m-%dT%H:%M:%SZ"
+                        ),
+                    }
+                ),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
         parts = []
         if judged_ok:
             # Never let a paid model call be invisible. A gate that spends money

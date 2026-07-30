@@ -15,11 +15,11 @@ setup() {
     # Reset EVERY knob run() reads. A plain `BG=...` in one case leaked into the
     # next two and silently suppressed a check, which cost a debugging round.
     BG='[]'
-    # ONE live cron by default, since v8: a session with pending tasks and NO
-    # wake-up (no cron, no bg, no lease) is now the I6 idle block, and that is
-    # the right default to model -- a real session parks work behind its loop.
-    # Cases that test cron behavior (25, 26, 34, 35) or I6 itself pin their own.
-    CRONS='[{"id":"w","schedule":"17 * * * *"}]'
+    # TWO live crons by default, since v9: the enforced shape is one work loop
+    # plus the 5-minute inbox poll, and a session missing the poll now blocks.
+    # A real looped session carries both, so that is the default to model.
+    # Cases that test cron behavior (25, 26, 34, 35, 101+) or I6 pin their own.
+    CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
     JUDGE_MODE=off
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
@@ -283,7 +283,7 @@ task 7 pending "merge the chain"
 JUDGE_MODE=on
 # A live cron in the event, else the v8 idle check fires statically and the
 # stop never reaches the judge path this case exists to pin.
-out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":[{"id":"w","schedule":"17 * * * *"}]}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
+out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
         PATH="$BASE/binonly" HOME="$BASE/nohome" GITHUB_ACTIONS="${GHA:-}" python3 "$HOOK" 2>"$BASE/err.txt")"
 got="$(python3 -c 'import json,sys
@@ -424,7 +424,7 @@ say "Checking one more thing."
 say "And another."
 check "a Remaining section survives later narration blocks" allow ""
 
-echo "== 25. TWO LIVE crons block, read from the event not a declaration =="
+echo "== 25. TWO LIVE work crons block, read from the event not a declaration =="
 setup
 brief_now
 hand_now
@@ -433,11 +433,11 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-CRONS='[{"id":"aaa","schedule":"*/23 * * * *"},{"id":"bbb","schedule":"17 * * * *"}]'
-check "two live crons block" block "2 crons are live"
+CRONS='[{"id":"aaa","schedule":"*/23 * * * *"},{"id":"bbb","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+check "two live work crons block" block "2 work crons are live"
 CRONS='[]'
 
-echo "== 26. ONE live cron does not block =="
+echo "== 26. the canonical shape (one work cron + the poll) does not block =="
 setup
 brief_now
 hand_now
@@ -446,8 +446,8 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
-check "one live cron is fine" allow ""
+CRONS='[{"id":"bbb","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+check "work cron + poll cron is fine" allow ""
 CRONS='[]'
 
 echo "== 27. 'blocked on You' WITHOUT confirmation blocks =="
@@ -551,10 +551,10 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-CRONS='[{"id":"bbb","schedule":"17 * * * *"}]'
+CRONS='[{"id":"bbb","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
 run >/dev/null
 CRONS='[]'
-check "losing the last cron blocks" block "YOUR LOOP DIED"
+check "losing the last cron blocks" block "WORK LOOP DIED"
 
 echo "== 35. a session that NEVER had a cron is not nagged =="
 setup
@@ -1504,8 +1504,11 @@ i6_fixture() {
     CRONS='[]'
 }
 i6_fixture
-CRONS='[{"id":"w","schedule":"17 * * * *"}]'
-check "a live cron is a wake-up" allow ""
+CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+check "a live work cron is a wake-up" allow ""
+i6_fixture
+CRONS='[{"id":"p","schedule":"*/5 * * * *"}]'
+check "v9: a poll cron ALONE is not a wake-up (it only reacts to others)" block "NOTHING WILL WAKE THIS SESSION"
 i6_fixture
 BG='[{"status":"running","description":"agent"}]'
 check "a running background task is a wake-up" allow ""
@@ -1637,7 +1640,294 @@ setup
 brief_now
 hand_now
 say "all done"
-CRONS='[{"id":"c","schedule":"17 * * * *"}]' check "a clean stop is still allowed" allow ""
+CRONS='[{"id":"c","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]' check "a clean stop is still allowed" allow ""
+
+echo "== 101. v9: a loop with NO 5-minute poll blocks (the enforced shape) =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+CRONS='[{"id":"w","schedule":"17 * * * *"}]'
+check "a work cron without the poll cron blocks" block "5-MINUTE INBOX POLL"
+
+echo "== 102. two poll crons block (one is the shape) =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p1","schedule":"*/5 * * * *"},{"id":"p2","schedule":"*/5 * * * *"}]'
+check "a redundant poll cron blocks" block "poll crons"
+
+echo "== 103. the work loop dying BEHIND a surviving poll still fires =="
+# The reason cron_memory is work-scoped in v9: a total-count high-water mark
+# reads "1 cron live" and misses that the one driving work is gone.
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+run >/dev/null
+CRONS='[{"id":"p","schedule":"*/5 * * * *"}]'
+check "work loop gone, poll surviving, still fires" block "WORK LOOP DIED"
+
+echo "== 104. CONTROL: poll-only from the START never trips loop-death =="
+setup
+brief_now
+say "all done"
+CRONS='[{"id":"p","schedule":"*/5 * * * *"}]'
+check "a session that never had a work cron is not nagged" allow ""
+
+echo "== 105. v9: waiting-cross-session with a VERIFIED open ask passes =="
+setup
+brief_now
+hand_now
+brief_other cafe1234
+XRID=$(askid deadbeef cafe1234 "who owns caption regen? DEFAULT: I take it")
+task 7 pending "caption regen"
+say "answer
+
+## Remaining
+| #7 | caption regen | waiting-cross-session #$XRID |"
+check "a verified open request IS the citation" allow "still OPEN"
+
+echo "== 106. and it exempts the task from I6 under a poll-only cron =="
+# The pair for case 92's poll-only block: same crons, but the wait is real
+# and verified, and the poll is exactly what delivers the answer. Fresh
+# fixture, so cron_memory never saw a work cron here.
+setup
+brief_now
+hand_now
+brief_other cafe1234
+XRID=$(askid deadbeef cafe1234 "who owns caption regen? DEFAULT: I take it")
+task 7 pending "caption regen"
+say "answer
+
+## Remaining
+| #7 | caption regen | waiting-cross-session #$XRID |"
+CRONS='[{"id":"p","schedule":"*/5 * * * *"}]'
+check "verified waiting-cross-session + poll cron is a legitimate idle" allow ""
+
+echo "== 107. FIRE: waiting-cross-session with NO request id blocks =="
+setup
+brief_now
+hand_now
+task 7 pending "caption regen"
+say "answer
+
+## Remaining
+| #7 | caption regen | waiting-cross-session on the media session |"
+check "the state without a request id is a synonym for blocked" block "names no request id"
+
+echo "== 108. FIRE: someone ELSE'S request does not make it your wait =="
+setup
+brief_now
+hand_now
+brief_other cafe1234
+XRID=$(askid cafe1234 beef9999 "between two other sessions")
+task 7 pending "thing"
+say "answer
+
+## Remaining
+| #7 | thing | waiting-cross-session #$XRID |"
+check "citing a request you did not ask blocks" block "not by you"
+
+echo "== 109. FIRE: an ANSWERED request is a stale wait =="
+setup
+brief_now
+hand_now
+brief_other cafe1234
+XRID=$(askid deadbeef cafe1234 "please confirm the regen path")
+reqcli --answer cafe1234 "$XRID" "confirmed: regen goes via the media session" >/dev/null
+task 7 pending "thing"
+say "answer
+
+## Remaining
+| #7 | thing | waiting-cross-session #$XRID |"
+check "an answered id means the wait is over" block "already ANSWERED"
+
+echo "== 110. FIRE: an ESCALATED request is the operator's now =="
+setup
+brief_now
+hand_now
+printf '{"ev":"ask","id":"feedc0de","from":"deadbeef","to":"beef9999","at":"%s","body":"republish the caption media"}\n' \
+    "$(date -u -d '-120 minutes' +%Y-%m-%dT%H:%M:%SZ)" >>"${WL%.md}.requests"
+say "answer
+
+## Remaining
+- the republish ask, escalated to the operator as a [?]"
+run >/dev/null # this stop escalates feedc0de into an operator [?]
+task 7 pending "thing"
+newturn
+say "answer
+
+## Remaining
+| #7 | thing | waiting-cross-session #feedc0de |"
+check "an escalated id can no longer justify waiting" block "already ESCALATED"
+
+echo "== 111. THE HEADLINE: a no-op poll stop is SILENT (zero output, exit 0) =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "the full stop allows and reports (writes the poll baseline)" allow "deferred rather than done"
+if [[ -f "${WL%.md}.pollbase-deadbeef" ]]; then
+    echo "  PASS: the allowed full stop wrote the poll baseline"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: no pollbase file after an allowed stop"
+    FAIL=$((FAIL + 1))
+fi
+POLLOUT="$(reqcli --poll deadbeef 2>"$BASE/poll.err")"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$POLLOUT" && ! -s "$BASE/poll.err" ]]; then
+    echo "  PASS: --poll on an empty inbox prints NOTHING and exits 0"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --poll rc=$RC out='${POLLOUT:0:120}' err='$(head -c 120 "$BASE/poll.err")'"
+    FAIL=$((FAIL + 1))
+fi
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    echo "  PASS: the poll stop is SILENT: exit 0, zero bytes of output"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: poll stop rc=$RC out='${OUT:0:160}'"
+    FAIL=$((FAIL + 1))
+fi
+if [[ ! -f "${WL%.md}.pollmark-deadbeef" ]]; then
+    echo "  PASS: the marker was CONSUMED (one poll vouches for one stop)"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: the poll marker survived the stop"
+    FAIL=$((FAIL + 1))
+fi
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "deferred rather than done" <<<"$OUT"; then
+    echo "  PASS: CONTROL: without a fresh marker the same world is NOT silent"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: an ordinary stop went silent without a poll marker: '${OUT:0:120}'"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 112. the poll DELIVERS: a waiting request forfeits the silence =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "baseline stop" allow ""
+XRID=$(askid cafe1234 deadbeef "please rebuild the docs index")
+POLLOUT="$(reqcli --poll deadbeef)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "INBOX #$XRID" <<<"$POLLOUT" &&
+    grep -qF "please rebuild the docs index" <<<"$POLLOUT"; then
+    echo "  PASS: --poll prints the full pending payload"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --poll rc=$RC out='${POLLOUT:0:160}'"
+    FAIL=$((FAIL + 1))
+fi
+check "and the stop after it blocks with the delivery, never silently" block "waiting on you"
+
+echo "== 113. ABUSE CONTROL: tracked work forfeits the fast path =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "baseline stop" allow ""
+task 9 pending "the new thing I quietly started"
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "OUT OF SYNC" <<<"$OUT"; then
+    echo "  PASS: a changed world signature pays the full battery despite the poll"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: work slipped through the poll fast path: '${OUT:0:160}'"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 114. the fast path EXPIRES: an old baseline pays the battery again =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "baseline stop" allow ""
+touch -d '80 minutes ago' "${WL%.md}.pollbase-deadbeef"
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "deferred rather than done" <<<"$OUT"; then
+    echo "  PASS: past the horizon a poll stop runs the full battery (and re-arms)"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: the horizon did not expire the fast path: '${OUT:0:120}'"
+    FAIL=$((FAIL + 1))
+fi
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    echo "  PASS: the full stop re-armed the baseline, so the next poll is silent"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: the baseline did not re-arm: rc=$RC out='${OUT:0:120}'"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 115. an EXPIRING lease forfeits the silence (the poll notices in 5min) =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "baseline stop" allow ""
+echo "- [>] (deadbeef) until:$(date -u -d '-5 minutes' +%Y-%m-%dT%H:%MZ) delegated thing" >>"$WL"
+reqcli --poll deadbeef >/dev/null
+check "an expired lease is a wake-up the poll stop must not sleep through" block "lease expired"
+
+echo "== 116. --poll misuse is refused loudly (a short prefix half-works) =="
+setup
+if reqcli --poll dead >/dev/null 2>"$BASE/pollmis.err"; then
+    echo "  FAIL: a 4-char prefix was accepted (its marker would never match)"
+    FAIL=$((FAIL + 1))
+elif grep -qF "8-char" "$BASE/pollmis.err"; then
+    echo "  PASS: a short prefix is refused with the reason (exit nonzero)"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: refusal was silent: $(head -c 120 "$BASE/pollmis.err")"
+    FAIL=$((FAIL + 1))
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
