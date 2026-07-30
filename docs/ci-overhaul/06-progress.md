@@ -789,3 +789,48 @@ demonstration is the artifact, which is exactly what shadow mode is for.
 
 Remaining for full Wave B acceptance: (b) `pointer_bump_only` observed TRUE,
 which is also the only way to exercise the plan's exemption path.
+
+### `Review Complete` is NOT self-healing: `claude-review.yml`'s `workflow_run` stopped firing (2026-07-30)
+
+Previously assumed self-healing ("a green current head triggers a fresh
+review"). Disproven on live traffic: `claude-review.yml`'s `workflow_run`
+listener (`workflows: ["Console CI"], types: [completed]`) fired exactly ONCE
+for branch `0730-2` -- run `30552035566` on head `732fb7e9c`, 2026-07-30
+14:30:29Z, which itself FAILED (the review-cost leak `4e38553c1` fixed) --
+and then never again. Confirmed against the real endpoint
+(`gh api repos/rediacc/console/actions/workflows/claude-review.yml/runs`,
+NOT the ambiguous `/actions/runs?workflow_id=` form, which silently ignores
+the filter and returns every workflow): zero runs of any conclusion for any
+later `0730-2` head, including the head whose own "Console CI" pull_request
+run (`30572143752`) completed green at attempt 2, `19:45:54Z` -- still
+nothing 25+ minutes later. `claude-review.yml` itself is byte-identical to
+`origin/main` (`git diff origin/main -- .github/workflows/claude-review.yml`
+empty), so this is not the usual "default-branch-runs-a-stale-copy" trap.
+Root cause of the non-delivery is still open (GitHub Actions `workflow_run`
+delivery semantics, or a platform-side issue); not chased further this round.
+
+**Fix landed (`32d26034`, small and local): a `workflow_dispatch` escape
+hatch on console's caller.** The gate script and the reusable already had a
+complete `workflow_dispatch`/`pr_number` code path (see `claude-review-gate.sh`'s
+`pull_request | workflow_dispatch` case) -- both submodule callers
+(`private/renet`, `private/account`) already wire it. Console's caller was the
+one missing the trigger declaration; this closes that one gap rather than
+adding new logic, and keeps the same safety invariant (the gate re-checks
+`required_check` is green on the CURRENT head before reviewing anything).
+Manual escape hatch, not a fix for the delivery gap itself: `gh workflow run
+claude-review.yml -f pr_number=<n>` when `workflow_run` fails to fire again.
+
+### `main` has been red for real, 3 nights running (2026-07-28/29/30)
+
+All three nightly runs (`30327872124`, `30421536380`, `30512465488`) failed
+with `conclusion: failure` (not the old `cancelled`-laundering bug -- A2's fix
+is holding) on the SAME head `b549047790` (#541, the last merge to main).
+Two live, unrelated-to-this-program defects block task #9's real-scheduled-run
+acceptance criterion: `Quality / Content` -- 15 tutorial x language combos
+with flat/estimated word timing (caption-sync gate, see the caption-sync
+pipeline); `Quality / Packages` -- 13 knip unused-import errors plus a
+`local-executor.test.ts` failure (`Signature verification failed:
+DOMException InvalidCharacterError`). Neither is small/local to this branch
+(main needs its own fix branch/PR); deferred rather than fixed inline --
+see the worklist for the operator decision on scope (fix both together, or
+split the audio-regeneration cost out as its own call).
