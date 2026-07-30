@@ -23,6 +23,16 @@ on:
   # this trigger declaration was missing. Same safety invariant applies: the
   # gate script re-checks required_check (CI Complete) is green on the
   # CURRENT head before reviewing anything.
+  #
+  # `gh workflow run` MUST carry `--ref <branch>` while this trigger is
+  # unmerged: GitHub resolves whether a workflow accepts workflow_dispatch,
+  # and which YAML defines the job, from the DEFAULT BRANCH's copy of this
+  # file. Without --ref, `gh workflow run claude-review.yml -f pr_number=N`
+  # fails closed with a 422 ("Workflow does not have 'workflow_dispatch'
+  # trigger") because main does not have this block yet. Observed live: PR
+  # #546 run 30588087212. Once this trigger merges to main the flag becomes
+  # optional (defaults to main, which is then correct), but --ref remains
+  # the safe form for dispatching against a branch's OWN in-flight review.
   workflow_dispatch:
     inputs:
       pr_number:
