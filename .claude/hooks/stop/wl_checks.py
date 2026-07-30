@@ -29,6 +29,11 @@ REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.M | re.
 # Consecutive stops that may move nothing before the hook demands a planning or
 # investigation agent. Three is the operator's number, not a guess.
 STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
+# How recently the in-flight item must have been refreshed for the session to count as
+# SUPERVISING a long background job rather than having forgotten it. Deliberately
+# generous: the campaign this was written for reports roughly every 30 minutes, and a
+# threshold tighter than the reporting cadence would just re-create the false fire.
+STUCK_SUPERVISED_MAX_MIN = int(os.environ.get("WORKLIST_STUCK_SUPERVISED_MAX_MIN", "45"))
 
 # v12 CI-WAITING FORCE (operator, 2026-07-30: "is current session sitting for
 # CI pipeline? If so, it should FORCE current session to work on waiting
@@ -207,7 +212,7 @@ def bank_pollbase(worklist, session_id, sig):
 
 # ---- stuck detection --------------------------------------------------------
 
-def stuck_rounds(worklist, session_id, tasks, head, exempt):
+def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False):
     """(count, fired, why) -- how many consecutive stops have moved NOTHING?
 
     THE OPERATOR'S RULE, IN THEIR WORDS: "I'd go with employing a
@@ -243,6 +248,21 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt):
     remedy is already running. It does NOT stop the counting: a watch left
     running forever would otherwise silence this permanently, so at 3x the
     threshold it fires anyway to say the remedy itself has stalled.
+
+    `supervised` is the ONE case where that 3x overrun is wrong. The overrun
+    exists to catch a FORGOTTEN watch -- the deadlocked-poller failure, where a
+    background task is alive but nobody is reading it. It cannot, on its own,
+    tell that apart from a long job the session is actively supervising: a
+    multi-hour render or migration legitimately changes no task status for
+    hours, and firing at it every stop teaches the session to argue with this
+    check rather than act on it, which is how a check stops being believed.
+
+    So the caller passes supervised=True only when BOTH hold: a background task
+    is live AND the session's in-flight worklist item was refreshed recently.
+    That second half is what a forgotten watch can never satisfy, because
+    refreshing the item is exactly the thing nobody is doing. Counting still
+    continues, and the moment the session stops reporting, the item goes quiet
+    and this fires as designed.
     """
     # tasks are (id, subject, status); the STATUS is what has to move.
     base = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks))
@@ -266,6 +286,10 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt):
     if hit and exempt:
         # A running agent excuses the ordinary fire, but not forever.
         hit = [i for i in hit if counts[i] >= limits[i] * 3]
+        # ...unless the session is demonstrably watching it. See the docstring:
+        # the overrun targets a forgotten watch, not a supervised long job.
+        if supervised:
+            hit = []
         why = "exempt-overrun" if hit else ""
     elif hit:
         why = "tasks-only" if 0 in hit else "tasks+head"
@@ -962,8 +986,23 @@ def run_stop(event, event_ok, worklist, hook_file):
     # STUCK DETECTION. Runs before the others so the count advances on every
     # stop, including the ones where something else already fired: a session
     # blocked three times running on the same check has also moved nothing.
+    # SUPERVISED = a live background task AND an in-flight item the session is still
+    # refreshing. Only that pair distinguishes "watching a long job" from "left a watch
+    # running and wandered off"; a forgotten watch cannot refresh the item, because
+    # refreshing it is precisely what nobody is doing.
+    _supervised = False
+    if live_bg and in_flight_recs:
+        try:
+            _freshest = min(
+                wl_liveness._age_min(r.get("upd", "")) for r in in_flight_recs
+            )
+            _supervised = _freshest is not None and _freshest <= STUCK_SUPERVISED_MAX_MIN
+        except Exception:  # noqa: BLE001 -- never let a suppression heuristic wedge a stop
+            _supervised = False
+
     stuck_n, stuck_fired, stuck_why = stuck_rounds(
-        worklist, session_id, tasks, C._git(root, "rev-parse", "HEAD"), bool(live_bg)
+        worklist, session_id, tasks, C._git(root, "rev-parse", "HEAD"), bool(live_bg),
+        supervised=_supervised,
     )
 
     # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked
