@@ -156,6 +156,11 @@ warning line if the operator had it set.
 clock**. A finer per-pair signal would only shave the first language's render tail, so the
 plan stops at per-language.
 
+> **This 45% is an ESTIMATE and was never measured** — see §10, which has the numbers that
+> *were* measured and explains why this one was not. Do not quote it as an observation. §10
+> also revises the per-pair conclusion: the fine-grained signal was built after all, for a
+> reason other than the tail.
+
 ---
 
 ## 6. Step 5 — pipeline A, minimal change
@@ -248,3 +253,63 @@ The tree is dirty with an in-flight VoxCPM2 migration. Every change above is add
 - `packages/www/scripts/validate-tutorial-audio.js` (`listTranscriptPairs` :118,
   `validatePair` :138, `main` :314, `AUDIO_LANGUAGES` :46)
 - `private/growth/video_pipeline/steps/step6000_render.py` (`run()` :412, remotion :628, :670)
+
+---
+
+## 10. Measured outcome (2026-07-30, after the 13-locale migration)
+
+The migration ran to completion, so the estimates in §5 can be replaced with numbers. Where
+something was **not** measured this section says so rather than reprinting the estimate as
+though it had been confirmed.
+
+### What the plan got right
+
+**Per-pair render cost.** 115 pair renders were logged across the three daemon generations
+(`/tmp/b5-render-daemon.log` 36 `[ok]` lines, `daemon2` 55, `daemon3` 24). Inter-dispatch
+delta with `--jobs 2`:
+
+| | seconds |
+|---|---|
+| p10 | 0 |
+| median | 141 |
+| p90 | 303 |
+
+Two full render generations, end to end: `daemon2` 55 pairs in 2 h 58 m 22 s (18:32:24 →
+21:30:46), `daemon3` 24 pairs in 43 m 19 s (00:41:48 → 01:25:07). So a pair costs roughly
+**2 to 3 minutes of CPU wall clock**, and a full 13-locale sweep of 234 pairs is a
+**~5 hour render bill** — the same order as narration, which is the premise §5 rests on.
+
+**The pool really is concurrent.** 8 of the 78 deltas are exactly 0 s: both `--jobs 2` slots
+filling within one second. That is the cheapest available proof that the pool is dispatching
+in parallel rather than serialising, and it is worth re-checking after any pool change,
+because a pool that has silently become serial still produces correct video and a green gate.
+
+**`RDC_TUTORIAL_HWENC=0` was necessary, not defensive.** With it unset the render contends
+for the same 12 GiB card VoxCPM is holding at ~6 GiB.
+
+### What was NOT measured, and why
+
+**The ~45% wall-clock saving in §5 is still an estimate.** It was never observed, because the
+migration did not run the two stages against each other in a controlled way: narration ran far
+ahead of the render daemon for most of the fleet, so the render was frequently draining a
+backlog rather than tracking the GPU. The daemon logs show renders grouped **lang-major** — 18
+consecutive `ja` pairs, then 18 `ko`, then 19 `zh` — which is the queue being consumed in
+emission order, not evidence of a fine-grained interleave.
+
+To measure it properly you would need one run with the producer and one with `--once` batching,
+on the same pair set, which nobody has a reason to pay for now that the fleet is rendered.
+**Do not quote 45% as a measurement.** The defensible claim is the one above: render cost and
+narration cost are the same order of magnitude, therefore overlapping them is worth doing.
+
+**Per-language versus per-pair granularity.** §5 stops at per-language on the reasoning that a
+finer signal "would only shave the first language's render tail". The measured per-pair cost
+makes that tail concrete: ~18 pairs x ~141 s / 2 jobs ~= **21 minutes**, once. That is a real
+but small number, and it is why `www tutorials watch` (§4, `docs/tutorial-render-watch.md`)
+went to pair-level readiness anyway — not for the 21 minutes, but because a pair-level
+predicate is what lets the render start before a language is *finished*, which matters when a
+language fails partway and would otherwise render nothing at all.
+
+### Fleet totals, for calibration
+
+234 videos across 13 locales; 269 mp3 clips per locale; 30,102 word timings, all monotonic;
+every timeline reporting provider `voxcpm2`; 4,793 objects published to R2.
