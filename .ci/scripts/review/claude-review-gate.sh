@@ -21,8 +21,13 @@
 # Post-findings mode (--post-findings): turn the report's machine-readable
 #   findings block into line-anchored review comments.
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA
-# Mark mode (--mark): upsert the marker comment AFTER a successful review.
+# Mark mode (--mark): upsert the marker comment after a review.
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
+#        REVIEW_OUTCOME (the review step's outcome; anything other than
+#        "success" records a SPENT ATTEMPT instead of marking the SHA reviewed).
+#   A spent attempt consumes review budget without claiming the code was read,
+#   so a pass that burned its turns and posted nothing cannot be repeated for
+#   free on every later green push.
 #
 # Local dry-run (read-only):
 #   GH_TOKEN=$(gh auth token) GITHUB_REPOSITORY=rediacc/console \
@@ -38,6 +43,10 @@ require_cmd gh
 require_cmd jq
 
 MARKER_PREFIX='<!-- claude-reviewed:'
+# Deliberately a DIFFERENT prefix from MARKER_PREFIX. A spent attempt consumes
+# review budget but must never satisfy `last_marker_sha`, or a review that read
+# nothing would suppress a later real one for the same SHA.
+ATTEMPT_PREFIX='<!-- claude-review-attempt:'
 
 # Operator directive (2026-07-24): each review pass costs real turns/tokens,
 # and a security-critical hook file went through 5 consecutive passes each
@@ -66,6 +75,14 @@ review_report_count() {
                   | select(.body | startswith(\"**Claude finished\"))
                   | select((.body | contains(\"json:review-findings\")) or (.body | contains(\"### Review\")))
                   | .id" 2>/dev/null | wc -l || true
+}
+
+# Spent review passes that produced no report. Counted against the same cap as
+# posted reports, because the cost is identical; see the --mark spent-attempt
+# path for why they exist at all.
+spent_attempt_count() {
+    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"$ATTEMPT_PREFIX\")) | .id" 2>/dev/null | wc -l || true
 }
 
 last_marker_sha() {
@@ -246,6 +263,45 @@ fi
 if [[ "${1:-}" == "--mark" ]]; then
     require_var PR_NUMBER
     require_var HEAD_SHA
+
+    # SPENT-ATTEMPT PATH (operator decision 2026-07-30). A review that burned
+    # its budget and produced nothing still COST money, and until now it cost it
+    # for free: the step failed, every following step was skipped by implicit
+    # success(), no marker was written, and review_report_count -- which counts
+    # POSTED reports -- stayed at zero. So the cap never advanced and the same
+    # SHA was re-reviewed at full price on every subsequent green push, able to
+    # fail identically forever.
+    #
+    # Measured on PR #546, run 30552035566: `"subtype": "error_max_turns"`,
+    # zero github-actions comments on the PR, no marker. The S-2 spike predicted
+    # exactly this shape for a budget halt ("red job, no report, no findings, no
+    # marker SHA, and the next run re-reviews the same SHA and pays again"); it
+    # arrived via max_turns instead.
+    #
+    # An attempt marker is deliberately NOT a reviewed marker. It carries its own
+    # prefix so `last_marker_sha` still cannot see it -- a spent attempt must
+    # never suppress a later genuine review of the same SHA by pretending the
+    # code was read -- but `spent_attempt_count` does, so it consumes budget.
+    # It records WHY, because "we stopped reviewing this PR" is only a
+    # defensible message if it says what was spent on.
+    if [[ "${REVIEW_OUTCOME:-}" != "success" ]]; then
+        why="review step did not succeed"
+        if [[ -n "${EXECUTION_FILE:-}" && -f "${EXECUTION_FILE:-}" ]]; then
+            subtype=$(jq -r '
+                (if type == "array" then [.[] | select(.type == "result")][-1] else . end) as $r
+                | select($r != null) | $r.subtype // empty
+            ' "$EXECUTION_FILE" 2>/dev/null) || subtype=""
+            [[ -n "$subtype" ]] && why="$subtype"
+        fi
+        gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            -f body="${ATTEMPT_PREFIX} ${HEAD_SHA} -->
+A review pass was attempted on \`${HEAD_SHA:0:7}\` and produced no report (\`${why}\`).
+It counts against this PR's review budget because it spent real turns and tokens.
+Push a change to earn another pass." >/dev/null 2>&1 ||
+            log_warn "could not record the spent attempt for ${HEAD_SHA:0:7}"
+        log_info "recorded a SPENT ATTEMPT for ${HEAD_SHA:0:7} (${why}); it consumes budget but does not mark the SHA reviewed"
+        exit 0
+    fi
     # A marker is a CLAIM that a review happened. Step success alone proved
     # false once: the reviewer "succeeded" with 36 permission denials and
     # posted nothing, and the marker then suppressed the retry. Only mark if
@@ -376,14 +432,19 @@ case "${EVENT_NAME:-}" in
         ;;
 esac
 
-review_count=$(review_report_count "$pr")
+reports_posted=$(review_report_count "$pr")
+attempts_spent=$(spent_attempt_count "$pr")
+# Budget is what was SPENT, not what was delivered. A pass that burned its turns
+# and posted nothing cost the same as one that posted a full report, and
+# charging only for successes is what let a failing SHA be re-reviewed forever.
+review_count=$((${reports_posted:-0} + ${attempts_spent:-0}))
 pr_loc=$(pr_diff_loc "$pr")
 MAX_REVIEWS_PER_PR=$(review_cap_for "$pr_loc")
 if [[ "${review_count:-0}" -ge "$MAX_REVIEWS_PER_PR" ]]; then
     emit false "$pr" "$head_sha" "" \
-        "review cap reached ($review_count/$MAX_REVIEWS_PER_PR reports already posted; cap is $MAX_REVIEWS_PER_PR for a ${pr_loc}-line diff)"
+        "review cap reached ($review_count/$MAX_REVIEWS_PER_PR spent: ${reports_posted:-0} report(s) posted, ${attempts_spent:-0} attempt(s) that produced none; cap is $MAX_REVIEWS_PER_PR for a ${pr_loc}-line diff)"
 fi
-log_info "review budget: $review_count/$MAX_REVIEWS_PER_PR used (${pr_loc} changed lines)"
+log_info "review budget: $review_count/$MAX_REVIEWS_PER_PR spent (${reports_posted:-0} posted, ${attempts_spent:-0} produced nothing; ${pr_loc} changed lines)"
 
 last_sha=$(last_marker_sha "$pr")
 if [[ -n "$last_sha" ]]; then
