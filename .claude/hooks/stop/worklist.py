@@ -207,6 +207,64 @@ produce NO further stops, so the counter never reaches its threshold. That
 is the Wave C shape, where the operator had to ping because no third stop
 was coming. Every static catch also skips a paid judge call.
 
+WHY v9 (2026-07-30, operator request): the cross-session machinery gets a
+STATE and a CADENCE.
+
+1. `waiting-cross-session` joins the Remaining-section vocabulary. It means
+"blocked on ANOTHER AI SESSION, with a request outstanding", and it must
+EARN its place rather than be a synonym for blocked: the line must carry the
+#id of an OPEN request THIS session posted via --ask, and the hook verifies
+that id against the .requests log (exists, asked by me, not answered, not
+escalated). A verified id substitutes for the <path>:<line> citation the
+blocked/parked states require, because the request IS the citation -- and it
+is a stronger one, since the hook can check its whole lifecycle. An answered
+or escalated id fails loudly: the wait is over and the line is stale.
+
+2. A SECOND cron, and a fast path that makes it affordable. The operator
+wants a 5-minute inbox poll beside the hourly work loop, so cross-session
+requests are answered in minutes, not hours. A cron firing costs a turn and
+a turn costs context, so the poll must be near-free when the inbox is empty:
+
+    worklist.py --poll <8-char-prefix>   # empty inbox: prints NOTHING,
+                                         # exits 0. Otherwise: the full
+                                         # payloads plus the exact commands.
+
+and the STOP of a no-op poll turn is SILENT: no JSON, no systemMessage,
+nothing. Recognition is structural, never prose (this file has been burned
+by prose regexes): --poll drops a single-use marker file, and the Stop hook
+takes the silent exit only when ALL of these hold, each recomputed by the
+hook itself and never trusted from the poll:
+  - the marker is fresh (POLL_WINDOW_S) -- and it is CONSUMED either way,
+    so one poll cannot vouch for two stops, and a marker lingering into an
+    operator-facing turn cannot silence that turn's report;
+  - the world signature (task statuses + HEAD + worklist bytes + requests
+    bytes) equals the one recorded at the last ALLOWED full-battery stop,
+    so any tracked work since then forfeits the fast path;
+  - that baseline is younger than POLL_FULL_MAX_MIN (default 70): the fast
+    path never rewrites the baseline (only a full allowed stop does), so a
+    session can be silent for at most ~70 minutes before a poll stop pays
+    the full battery again. Polling harder buys nothing.
+  - recomputed live: no open [ ] item of mine, no undefaulted [?], no
+    expired [>] lease, an EMPTY inbox, nothing pending escalation, and the
+    two-cron shape below.
+Why this is not the escape hatch the no-escape-hatch rule forbids: every
+condition is an artifact the hook reads itself, the failure mode of every
+condition is the FULL battery (never a silent allow), and the residual --
+a session that truly changed nothing tracked and owes nothing -- is a stop
+the full battery would also have allowed, minus checks that are pure
+maintenance of unchanged facts (handover mtime, brief mtime, the judge's
+same question about the same world). Skipping THOSE on a proven no-op is
+the entire point; anything else re-runs.
+
+The cron SHAPE is enforced: a session with any live cron must carry exactly
+one poll cron (schedule */5 * * * *, recognised by shape) and at most one
+work cron. The poll cron is NOT a wake-up for the I6 idle check -- it wakes
+you only when ANOTHER session acts -- except for tasks in a VERIFIED
+waiting-cross-session state, where the answer arriving through the poll is
+exactly the wake-up. And cron_memory now counts WORK crons only, because
+with two crons a dead work loop behind a surviving poll was invisible to
+the old high-water count.
+
 NO ESCAPE HATCH (operator, explicit). v1-v4 had MAX_BLOCKS: N blocks then give
 up. That is the hatch that let a session stop with six pending tasks, so it is
 gone. Judge failure, timeout, or malformed output BLOCKS. If that wedges the
@@ -223,6 +281,8 @@ statement of main(). Remove it and the hook recurses until the machine dies.
 What still allows a stop:
   1. Deleting or emptying the worklist AND having no pending tasks.
   2. Removing the hook from .claude/settings.json.
+  3. A VERIFIED no-op inbox-poll stop (WHY v9), silent by design and bounded
+     by POLL_FULL_MAX_MIN.
 """
 
 import datetime
@@ -1156,8 +1216,14 @@ def brief_age_min(worklist, prefix):
     return min(ages) if ages else None
 
 
-def escalate_requests(worklist, session_id):
+def escalate_requests(worklist, session_id, dry_run=False):
     """Promote unanswerable requests to operator-visible `- [?]` items.
+
+    `dry_run` (v9): report what WOULD escalate without appending anything.
+    The poll fast path uses it to forfeit the silent exit when an escalation
+    is due, so escalation always happens on a FULL stop that reports it --
+    an escalation performed silently would be an operator-visible event that
+    nobody surfaced.
 
     THE DEAD-RECIPIENT PROBLEM. A request nobody will ever be blocked on is a
     silent black hole, and blocking the SENDER instead would punish the one
@@ -1220,6 +1286,8 @@ def escalate_requests(worklist, session_id):
     candidates = [(r, why) for r, why in candidates if why]
     if not candidates:
         return []
+    if dry_run:
+        return ["#%s to %s: %s" % (r["id"], r["to"], why) for r, why in candidates]
     escalated = []
     with open(str(requests_path(worklist)) + ".lock", "w") as lock:
         try:
@@ -1797,6 +1865,168 @@ def task_statuses(session_id):
     return out
 
 
+# ---- v9: waiting-cross-session + the 5-minute inbox poll --------------------
+# The poll cron is recognised by SCHEDULE SHAPE, not by id or prompt text:
+# schedules are structural, survive restarts, and a work cron cannot claim the
+# shape without also BECOMING a 5-minute loop. By definition, the 5-minute
+# schedule IS the poll.
+POLL_SCHEDULE_RE = re.compile(r"^\*/5( \*){4}$")
+# A poll marker older than this cannot vouch for THIS stop. The marker is
+# single-use (consumed on first sight), so the window only needs to cover one
+# poll turn; too small merely costs one full battery, the safe direction.
+POLL_WINDOW_S = int(os.environ.get("WORKLIST_POLL_WINDOW_S", "600"))
+# The fast path expires: at most this many minutes since the last ALLOWED
+# full-battery stop before a poll stop pays the battery again. Just over the
+# hourly work loop, so the shape is one full report per hour with free polls
+# between, and a session cannot live on polls alone.
+POLL_FULL_MAX_MIN = int(os.environ.get("WORKLIST_POLL_FULL_MAX_MIN", "70"))
+# Request ids are sha1[:8], so 8 hex chars; a #id on a Remaining line is only
+# accepted if it also resolves in the .requests log, so a task id that happens
+# to be 8 digits cannot satisfy the state by shape alone.
+XSESSION_ID_RE = re.compile(r"#([0-9a-f]{8})\b")
+
+
+def is_poll_cron(c):
+    if not isinstance(c, dict):
+        return False
+    sched = " ".join(str(c.get("schedule", "")).split())
+    return bool(POLL_SCHEDULE_RE.match(sched))
+
+
+def xsession_ok(line, reqs, session_id):
+    """(ok, why) for a 'waiting-cross-session' Remaining line.
+
+    The state must EARN its place or it is a synonym for 'blocked': the line
+    must name an OPEN request id from the .requests log that THIS session
+    asked. That id is checkable across its whole lifecycle, so it substitutes
+    for the <path>:<line> citation the blocked/parked states require -- the
+    request IS the citation. Fails loudly on a stale id: an answered request
+    means the wait is over, an escalated one means the operator holds it now.
+    """
+    known = [i for i in XSESSION_ID_RE.findall(line) if i in reqs]
+    if not known:
+        return False, (
+            "names no request id from the log; post the ask with --ask and put "
+            "its #id on the line"
+        )
+    why = ""
+    for rid in known:
+        r = reqs[rid]
+        if not same_session(r["from"], session_id):
+            why = (
+                "#%s was asked by %s, not by you; only your own outstanding "
+                "request is your waiting state" % (rid, r["from"] or "unknown")
+            )
+        elif r["escalated"]:
+            why = (
+                "#%s already ESCALATED to the operator; the [?] item carries it "
+                "now, so update this line" % rid
+            )
+        elif request_resolved(r):
+            why = (
+                "#%s is already ANSWERED; the wait is over, act on the answer "
+                "and --ack it" % rid
+            )
+        else:
+            return True, rid
+    return False, why
+
+
+def pollmark_path(worklist, prefix):
+    return worklist.with_suffix(".pollmark-%s" % (prefix or "unknown")[:8])
+
+
+def pollbase_path(worklist, session_id):
+    return worklist.with_suffix(".pollbase-%s" % (session_id or "unknown")[:8])
+
+
+def world_sig(root, worklist, session_id):
+    """Coarse world signature: task statuses + HEAD + worklist bytes +
+    requests bytes. Deliberately the same altitude as the stuck detector's
+    signature (tasks + HEAD), plus the two shared files, because those four
+    are the artifacts every other check reads. Known residual, shared with
+    the stuck detector and documented rather than papered over: uncommitted
+    source edits with no task/tick/commit are invisible. A dirty-tree hash
+    was considered and rejected -- other sessions edit this tree
+    continuously, so it would break the signature on every poll and turn the
+    fast path off in exactly the environment it was built for."""
+
+    def digest(p):
+        try:
+            return hashlib.sha1(pathlib.Path(p).read_bytes()).hexdigest()
+        except OSError:
+            return "absent"
+
+    ts = task_statuses(session_id)
+    blob = "|".join(
+        [
+            ",".join("%s:%s" % (i, st) for i, (st, _s) in sorted(ts.items())),
+            _git(root, "rev-parse", "HEAD"),
+            digest(worklist),
+            digest(requests_path(worklist)),
+        ]
+    )
+    return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def poll_fast_path(worklist, session_id, event):
+    """True iff this stop is a PROVEN no-op inbox poll (see WHY v9).
+
+    Every condition is recomputed here from artifacts; nothing is trusted
+    from the poll command, whose only contributions are the single-use
+    marker (the structural declaration that this turn WAS a poll) and the
+    printed inbox. Every failure path returns False, which means the FULL
+    battery -- the fast path can never fail into a silent allow.
+    """
+    mark = pollmark_path(worklist, (session_id or "unknown")[:8])
+    try:
+        fresh = time.time() - mark.stat().st_mtime <= POLL_WINDOW_S
+        # CONSUMED either way, before any other verdict: one poll vouches for
+        # at most one stop, and a marker lingering into an operator-facing
+        # turn must not silence that turn's report.
+        mark.unlink()
+    except OSError:
+        return False
+    if not fresh:
+        return False
+    base_p = pollbase_path(worklist, session_id)
+    try:
+        base_sig = json.loads(base_p.read_text(encoding="utf-8"))["sig"]
+        if time.time() - base_p.stat().st_mtime > POLL_FULL_MAX_MIN * 60:
+            return False  # the horizon: a poll stop now pays the battery
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    root = project_root(event.get("cwd") or os.getcwd())
+    if world_sig(root, worklist, session_id) != base_sig:
+        return False  # tracked work happened since the last full stop
+    crons = event.get("session_crons") or []
+    if len([c for c in crons if is_poll_cron(c)]) != 1:
+        return False
+    if len([c for c in crons if not is_poll_cron(c)]) > 1:
+        return False
+    try:
+        lines = worklist.read_text().splitlines() if worklist.exists() else []
+    except OSError:
+        return False
+    for line in lines:
+        m = ITEM.match(line)
+        if not m or not owned_by_me(m.group("owner"), session_id):
+            continue
+        state = m.group("state")
+        if state == " ":
+            return False
+        if state == "?" and not DEFAULT_TOKEN.search(line):
+            return False
+        if state == ">" and lease_state(line) != "fresh":
+            return False  # an expiring lease is a wake-up; the battery says so
+    to_me, bcast, answered, _mine = classify_requests(read_requests(worklist), session_id)
+    if to_me or bcast or answered:
+        return False  # the inbox is the poll's whole subject; deliver it loudly
+    if escalate_requests(worklist, session_id, dry_run=True):
+        return False  # due escalations happen on a full stop that reports them
+    return True
+
+
 JUDGE_SCHEMA = {
     "type": "object",
     "properties": {
@@ -2100,6 +2330,54 @@ def main():
             sys.argv[1:], worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         )
         return
+    if sys.argv[1:2] == ["--poll"]:
+        # `worklist.py --poll <8-char-prefix>`: the 5-minute inbox poll (WHY
+        # v9). EMPTY inbox: print NOTHING, exit 0, so the poll turn costs the
+        # session almost no context. Non-empty: the full payloads plus the
+        # exact commands. Either way it drops the single-use poll marker that
+        # lets the Stop hook recognise this turn structurally.
+        wl = worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        me = sys.argv[2] if len(sys.argv) > 2 else ""
+        if not PREFIX_RE.match(me) or len(me) < 8:
+            # A short prefix would name a DIFFERENT marker than the Stop hook
+            # derives from the full session id, silently disabling the fast
+            # path, so misuse is refused rather than half-working.
+            print(
+                "usage: --poll <your-8-char-session-id-prefix> (got %r)" % me,
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        try:
+            pollmark_path(wl, me).write_text(
+                datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass  # no marker means no fast path: the safe direction
+        to_me, bcast, answered, _mine = classify_requests(read_requests(wl), me)
+        if not (to_me or bcast or answered):
+            sys.exit(0)  # print NOTHING: the operator's contract for this mode
+        for r in to_me + bcast:
+            print(
+                "INBOX #%s from %s (%s, asked %s): %s"
+                % (
+                    r["id"],
+                    r["from"],
+                    "to you" if r["to"] != "*" else "broadcast",
+                    r["at"],
+                    r["body"],
+                )
+            )
+            print("    answer:  %s --answer %s %s '<what you did or know>'" % (__file__, me, r["id"]))
+            print("    decline: %s --decline %s %s '<why not>'" % (__file__, me, r["id"]))
+        for r in answered:
+            print("ANSWERED #%s (you asked: %s)" % (r["id"], r["body"][:120]))
+            for a in r["answers"]:
+                print("    answer by %s at %s: %s" % (a.get("by", "?"), a.get("at", "?"), a.get("body", "")))
+            for d in r["declines"]:
+                print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
+            print("    ack when acted on: %s --ack %s %s" % (__file__, me, r["id"]))
+        sys.exit(0)
 
     # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard
     # on purpose. Everything above this line is a read-only query mode that a
@@ -2128,6 +2406,22 @@ def main():
 
     session_id = event.get("session_id", "")
 
+    # ---- v9: the no-op inbox-poll fast path (see WHY v9) --------------------
+    # SILENT by design: a verified no-op poll stop exits 0 with NO output at
+    # all, because at a 5-minute cadence even a one-line systemMessage is a
+    # context fire-hose. Every condition inside is recomputed from artifacts;
+    # any exception falls through to the full battery, never into an allow.
+    # (A silent stop deliberately skips the .lastevent capture below, so the
+    # last FULL stop's event stays available for debugging.)
+    if event_ok:
+        try:
+            if poll_fast_path(worklist, session_id, event):
+                sys.exit(0)
+        except SystemExit:
+            raise
+        except Exception:  # noqa: BLE001 -- a broken fast path must cost, not excuse
+            pass
+
     archived, orphaned = [], []
     if worklist.exists():
         # Dead-session cleanup runs before classification so a tombstoned
@@ -2148,11 +2442,14 @@ def main():
         req_escalated = escalate_requests(worklist, session_id)
     except Exception:  # noqa: BLE001 -- escalation must never break gating
         req_escalated = []
+    all_reqs = {}
     try:
+        all_reqs = read_requests(worklist)
         req_to_me, req_bcast, req_answered, req_open_mine = classify_requests(
-            read_requests(worklist), session_id
+            all_reqs, session_id
         )
     except Exception:  # noqa: BLE001 -- a corrupt log must not wedge every stop
+        all_reqs = {}
         req_to_me, req_bcast, req_answered, req_open_mine = [], [], [], []
 
     lines = worklist.read_text().splitlines() if worklist.exists() else []
@@ -2264,6 +2561,11 @@ def main():
             event.get("transcript_path", ""), want=REMAINING_HEADING
         )
     live_crons = event.get("session_crons") or []
+    # v9: the two-cron shape. The poll cron is identified by schedule shape
+    # and is deliberately NOT a work wake-up: it wakes the session only when
+    # another session acts.
+    live_poll_crons = [c for c in live_crons if is_poll_cron(c)]
+    live_work_crons = [c for c in live_crons if not is_poll_cron(c)]
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     # Keep the raw event: when a check fires wrongly the first question is always
     # "what did the hook actually receive", and that is unanswerable afterwards.
