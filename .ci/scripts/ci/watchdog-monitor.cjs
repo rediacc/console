@@ -831,8 +831,21 @@ const monitor = async ({ github, context, core }) => {
   // thing to the caller and must be, because the only safe reading of "no
   // answer" is to ask the next tier rather than to invent a verdict. Only the
   // exhaustion of tiers 1 and 2 reaches the allowlist.
+  // The tier-1 label is DERIVED from AI_MODEL, never written out by hand.
+  // It was hardcoded to 'cloudflare/deepseek-v4-pro' and stayed that way after
+  // the model moved to @cf/meta/llama-3.3-70b-instruct-fp8-fast, so every log
+  // line and every stored `provider` field named a model that was no longer
+  // being called. Observed on watchdog run 30541558539:
+  // "[AI] verdict from cloudflare/deepseek-v4-pro" while the request went to
+  // /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast.
+  //
+  // Cosmetic only until it is not. This label is the ONLY record of which model
+  // produced a verdict that decides whether to spend ~500 machine-minutes on a
+  // retry, and the 402 that broke this tier was diagnosed BY MODEL IDENTITY. A
+  // label that lies about that sends the next investigation to the wrong
+  // provider, which is worse than having no label at all.
   const CLASSIFIER_PROVIDERS = [
-    { name: 'cloudflare/deepseek-v4-pro', call: callCloudflareClassifier },
+    { name: `cloudflare/${AI_MODEL}`, call: callCloudflareClassifier },
     { name: 'anthropic/claude', call: callClaudeClassifier }
   ];
 
