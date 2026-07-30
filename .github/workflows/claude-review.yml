@@ -14,14 +14,31 @@ on:
     types: [completed]
   pull_request:
     types: [ready_for_review]
+  # Manual escape hatch (found 2026-07-30, PR #546 run 30572143752): the
+  # workflow_run delivery above has been observed to silently not fire for a
+  # green PR-branch "Console CI" completion, with no run of any conclusion
+  # recorded, leaving "Review Complete" red with no path to recover. The gate
+  # script and reusable already had a workflow_dispatch/pr_number code path
+  # (`claude-review-gate.sh`'s `pull_request | workflow_dispatch` case); only
+  # this trigger declaration was missing. Same safety invariant applies: the
+  # gate script re-checks required_check (CI Complete) is green on the
+  # CURRENT head before reviewing anything.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to manually re-review (use when workflow_run does not fire)'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 # One review pipeline per head branch; a newer green push supersedes an
-# in-flight review of the old head.
+# in-flight review of the old head. workflow_dispatch has no branch/ref in
+# its event payload, so it gets its own group keyed by the PR number instead
+# of colliding with (and cancelling) the automatic pipeline for that branch.
 concurrency:
-  group: claude-review-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref }}
+  group: claude-review-${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref || format('dispatch-{0}', inputs.pr_number) }}
   cancel-in-progress: true
 
 jobs:
@@ -35,7 +52,8 @@ jobs:
        github.event.workflow_run.head_repository.full_name == github.repository) ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.draft == false &&
-       github.event.pull_request.head.repo.full_name == github.repository)
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      github.event_name == 'workflow_dispatch'
     # A called workflow cannot exceed the CALLER's grant, and this workflow's
     # top-level default is contents:read — so without restating them here the
     # reusable's pull-requests/issues/checks requests exceed the caller and
@@ -50,5 +68,6 @@ jobs:
     uses: ./.github/workflows/claude-review-reusable.yml
     with:
       required_check: CI Complete
+      pr_number: ${{ inputs.pr_number || '' }}
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
