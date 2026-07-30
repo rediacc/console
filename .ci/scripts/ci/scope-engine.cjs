@@ -310,21 +310,42 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 // limit.
 const DIFF_FILE_CAP = 300;
 
-// How many ancestors to interrogate before giving up. Each candidate costs at
-// least one API round trip, so this is a latency budget, not a correctness
-// knob: walking further can only find an OLDER baseline, which yields a BIGGER
-// net delta and therefore MORE jobs. Overshooting is safe; undershooting is not.
+// THE WALK IS FENCED AT THE MERGE BOUNDARY, NOT AT A COUNT. Any fixed count
+// eventually loses to a long enough red streak, and lost twice in one night:
+// at limit 5 the only green sat SEVEN back (run 30478917957, green 2469e5d72
+// one row past the cap), and after the raise to 20 a twelve-run red streak
+// pushed the green to 23 back (681443ad3, `git rev-list --count` = 23) and it
+// was gone again. Both times "no baseline" was manufactured by the bound while
+// a perfectly good baseline existed, and that verdict is indistinguishable
+// from a considered one. So the walk's domain is now the commits this PR OWNS
+// (`rev-list --first-parent head ^mergeParent`): it grows only when the
+// operator grows the branch, and candidates past the boundary were dead weight
+// anyway, since only PR runs upload a ci-skip-plan and a main commit's
+// push-run green downloads to no-plan every time.
 //
-// MEASURED, 2026-07-29, and it is why this is 20 and not 5. The original value
-// assumed "the headline case is satisfied by the FIRST candidate (the commit
-// immediately before this push)". That is false on the branch this engine was
-// built to serve. A babysat PR accumulates a run of red and superseded commits
-// between greens, so the nearest green ancestor is far from the first candidate.
-// On run 30478917957 the walk rejected all five candidates as `not-green` while
-// the genuinely green commit 2469e5d72 (run 30472960194, 95 jobs, zero failed)
-// sat SEVEN steps back, one row past the cap. The baseline existed and the
-// engine could not see it, which reads identically to "no baseline exists".
-const DEFAULT_CANDIDATE_LIMIT = 20;
+// What keeps the fenced walk affordable is that candidates are now CHEAP: one
+// paginated run listing per resolve (RUNS_LIST_MAX_PAGES pages of 100) is
+// joined locally against the walked shas, so a red candidate costs ZERO API
+// calls and the streak length drops out of the cost function entirely. The
+// expensive class, green candidates whose plans must be downloaded and
+// attested, is bounded separately by GREEN_ATTEST_BUDGET: attestation
+// failures are systematic (artifact retention, plan-format drift, reconciler
+// drift), so after three green candidates in a row fail to attest a fourth
+// try is not going to differ, and artifact retention already bounds how far
+// back an attestable green can exist at all.
+//
+// DEFAULT_CANDIDATE_LIMIT is therefore a SAFETY VALVE, not the bound: it only
+// exists so a wrong or unrelated fence cannot turn rev-list into all of
+// history, and `--limit` remains the explicit override for it.
+const DEFAULT_CANDIDATE_LIMIT = 200;
+
+// Distinct green candidates whose runs may be attestation-attempted per walk.
+const GREEN_ATTEST_BUDGET = 3;
+
+// Pages of the branch run listing (100 runs each). A green older than 300
+// runs is almost certainly past artifact retention too, so paging further
+// buys candidates that cannot attest.
+const RUNS_LIST_MAX_PAGES = 3;
 
 // Walk candidates newest-first, returning the first usable baseline and the
 // complete rejection trail. The trail is the load-bearing part: when a round
@@ -401,23 +422,82 @@ function resolveBaseline(opts, io) {
     return fail(`baseline:shallow-probe-failed:${msg(e)}`);
   }
 
-  let candidates;
-  try {
-    candidates = io.listCandidates(head, limit);
-  } catch (e) {
-    return fail(`baseline:candidate-walk-failed:${msg(e)}`);
-  }
-  if (!candidates || candidates.length === 0) return fail('baseline:no-candidates');
-
-  const { baseline, trail } = selectBaseline(candidates);
-  if (!baseline) return fail('baseline:none-usable', null, trail);
-
+  // Two walk shapes, capability-detected. The MODERN one (createRepoIo) is
+  // candidate C: fenced at the merge boundary, one-shot run listing, lazy
+  // per-candidate attestation under GREEN_ATTEST_BUDGET. The LEGACY one keeps
+  // the eager listCandidates(head, limit) contract byte-for-byte, because
+  // injected-io consumers (test-scope-engine.sh's fail-open matrix) hold that
+  // interface and its reason strings.
+  const modern = typeof io.walkShas === 'function' && typeof io.candidateFor === 'function';
+  let baseline = null;
+  let trail = [];
   let mergeParentSha = null;
-  if (mergeSha) {
+
+  if (modern) {
+    // THE FENCE IS OBTAINED BEFORE THE WALK, and an unreadable merge parent
+    // DEGRADES TO A VALVE-ONLY WALK WITH A NOTE, never to full: a bad
+    // mergeSha must not turn every round full while the walk itself is fine.
+    // (The baseline it finds will still fail decideBaseMove as
+    // base-sha-unknown, which is the correct, correctly-attributed verdict.)
+    if (mergeSha) {
+      try {
+        mergeParentSha = io.firstParent(mergeSha);
+      } catch (e) {
+        notes.push(`merge-parent-unreadable:${msg(e)}`);
+      }
+    }
+    let walk;
     try {
-      mergeParentSha = io.firstParent(mergeSha);
+      walk = io.walkShas(head, { fence: mergeParentSha, valve: limit });
     } catch (e) {
-      notes.push(`merge-parent-unreadable:${msg(e)}`);
+      return fail(`baseline:candidate-walk-failed:${msg(e)}`);
+    }
+    const shas = (walk && walk.shas) || [];
+    if (shas.length === 0) return fail('baseline:no-candidates');
+
+    let budgetSpent = 0;
+    for (const sha of shas) {
+      const candidate = io.candidateFor(sha);
+      const verdict = evaluateBaselineCandidate(candidate);
+      trail.push({ sha, usable: verdict.usable, reason: verdict.reason });
+      if (verdict.usable) {
+        baseline = candidate;
+        break;
+      }
+      // Only candidates that actually paid for attestation attempts consume
+      // budget; red candidates are free and the streak can be any length.
+      if (candidate && candidate.attestsTried > 0) {
+        budgetSpent += 1;
+        if (budgetSpent >= GREEN_ATTEST_BUDGET) {
+          return fail('baseline:attest-budget-exhausted', null, trail);
+        }
+      }
+    }
+    if (!baseline) {
+      // The exhausted reason states WHICH bound ended the walk, because a
+      // permanently full pipeline is only diagnosable from that distinction.
+      if (walk.truncated) return fail('baseline:walk-valve', null, trail);
+      if (mergeParentSha) return fail('baseline:merge-base-reached', null, trail);
+      return fail('baseline:none-usable', null, trail);
+    }
+  } else {
+    let candidates;
+    try {
+      candidates = io.listCandidates(head, limit);
+    } catch (e) {
+      return fail(`baseline:candidate-walk-failed:${msg(e)}`);
+    }
+    if (!candidates || candidates.length === 0) return fail('baseline:no-candidates');
+
+    ({ baseline, trail } = selectBaseline(candidates));
+    if (!baseline) return fail('baseline:none-usable', null, trail);
+
+    if (mergeSha) {
+      try {
+        mergeParentSha = io.firstParent(mergeSha);
+      } catch (e) {
+        notes.push(`merge-parent-unreadable:${msg(e)}`);
+      }
     }
   }
 
@@ -495,7 +575,7 @@ function parseJsonStream(text) {
   return values;
 }
 
-function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
+function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
   const git = (...args) => run('git', ['-C', repoRoot, ...args]);
   const gh = (...args) => run('gh', args);
 
@@ -560,6 +640,90 @@ function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 
     return attestPlan({ plan, jobs: () => readJobsForRun(runId), runId, sha, reconcile });
   };
 
+  // Per-commit run lookup, the FALLBACK cost model: one gh process per
+  // candidate. Kept for the no-branch case only; the walk normally joins
+  // against the one-shot listing below, where a candidate costs zero calls.
+  const runsForShaViaGh = (sha) =>
+    JSON.parse(
+      gh('run', 'list', '--repo', repo, '--workflow', workflow, '--commit', sha,
+        '--json', 'databaseId,conclusion,status', '-L', '5'),
+    );
+
+  // One paginated listing of the branch's runs, joined locally. This is what
+  // makes the fenced walk affordable: run-listing cost scales with PAGES
+  // (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any
+  // length adds nothing. `null` until loaded; `false` when the listing failed
+  // or no branch is known, which degrades to the per-commit fallback above.
+  let runsBySha = null;
+  const loadRunsBySha = () => {
+    if (runsBySha !== null) return;
+    if (!branch) {
+      runsBySha = false;
+      return;
+    }
+    try {
+      const map = new Map();
+      for (let page = 1; page <= RUNS_LIST_MAX_PAGES; page++) {
+        const text = gh(
+          'api',
+          `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`,
+        );
+        const payload = JSON.parse(text);
+        const runs = (payload && payload.workflow_runs) || [];
+        for (const r of runs) {
+          if (r.name !== workflow) continue;
+          const list = map.get(r.head_sha) || [];
+          list.push({ databaseId: r.id, status: r.status, conclusion: r.conclusion });
+          map.set(r.head_sha, list);
+        }
+        if (runs.length < 100) break;
+      }
+      runsBySha = map;
+    } catch {
+      runsBySha = false; // correctness over cost: fall back to per-commit
+    }
+  };
+
+  const runsForSha = (sha) => {
+    loadRunsBySha();
+    if (runsBySha instanceof Map) return runsBySha.get(sha) || [];
+    return runsForShaViaGh(sha);
+  };
+
+  // One walked sha -> one candidate, lazily and never throwing. attestsTried
+  // counts the plan downloads paid for this sha; resolveBaseline's
+  // GREEN_ATTEST_BUDGET consumes it.
+  const candidateFor = (sha) => {
+    let runs = [];
+    try {
+      runs = runsForSha(sha);
+    } catch {
+      return { sha, conclusion: null, plan: null, attestsTried: 0 };
+    }
+    const done = (runs || []).filter((r) => r && r.status === 'completed');
+    if (done.length === 0) return { sha, conclusion: null, plan: null, attestsTried: 0 };
+    // ONE sha can carry SEVERAL green runs of the same workflow: the
+    // pull_request run and the push run for the same commit are distinct
+    // runs, and only the pull_request one uploads a ci-skip-plan. Picking
+    // a single green run and asking it for a plan therefore lost the
+    // baseline whenever the wrong one happened to sort first, and reported
+    // 'no-skip-plan' for a commit that had a perfectly good plan.
+    const greens = done.filter((r) => r.conclusion === 'success');
+    let attestsTried = 0;
+    for (const g of greens) {
+      attestsTried += 1;
+      const plan = readAttestedPlanForRun(g.databaseId, sha);
+      if (plan) return { sha, conclusion: 'success', runId: g.databaseId, plan, attestsTried };
+    }
+    if (greens.length > 0) {
+      return { sha, conclusion: 'success', runId: greens[0].databaseId, plan: null, attestsTried };
+    }
+    // No green run at all: report the red one and download nothing. A run
+    // that failed cannot be a baseline whatever its plan says, so paying
+    // for the artifact would buy an answer nobody reads.
+    return { sha, conclusion: done[0].conclusion, runId: done[0].databaseId, plan: null, attestsTried: 0 };
+  };
+
   return {
     isShallow: () => git('rev-parse', '--is-shallow-repository').trim() === 'true',
 
@@ -570,42 +734,37 @@ function createRepoIo({ repoRoot, repo, workflow = 'Console CI', artifactName = 
     diffPaths: (from, to) =>
       parseFileList(git('diff-tree', '-r', '--raw', '--no-commit-id', from, to)),
 
+    // The fenced sha walk (candidate C). `^fence` scopes the domain to the
+    // commits this PR owns; the valve only guards against a wrong fence.
+    // `truncated` is conservative: a branch exactly valve-long reads as
+    // truncated, which costs a pinned walk-valve reason instead of a wrong
+    // merge-base-reached one.
+    walkShas: (head, { fence, valve }) => {
+      const args = ['rev-list', '--first-parent', `--max-count=${Number(valve) + 1}`, head];
+      if (fence) args.push(`^${fence}`);
+      const shas = git(...args)
+        .split('\n')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .filter((s) => s !== head); // head is not its own baseline
+      return { shas, truncated: shas.length >= Number(valve) };
+    },
+
+    candidateFor,
+
+    // Legacy eager walk, unchanged: per-commit lookups with inline
+    // attestation. resolveBaseline no longer calls it when walkShas is
+    // available, but the contract stays for injected-io consumers.
     listCandidates: (head, limit) => {
       const shas = git('rev-list', '--first-parent', `--max-count=${Number(limit) + 1}`, head)
         .split('\n')
         .map((s) => s.trim())
         .filter(Boolean)
-        .filter((s) => s !== head); // head is not its own baseline
+        .filter((s) => s !== head);
       return shas.map((sha) => {
-        let runs = [];
-        try {
-          runs = JSON.parse(
-            gh('run', 'list', '--repo', repo, '--workflow', workflow, '--commit', sha,
-              '--json', 'databaseId,conclusion,status', '-L', '5'),
-          );
-        } catch {
-          return { sha, conclusion: null, plan: null };
-        }
-        const done = runs.filter((r) => r.status === 'completed');
-        if (done.length === 0) return { sha, conclusion: null, plan: null };
-        // ONE sha can carry SEVERAL green runs of the same workflow: the
-        // pull_request run and the push run for the same commit are distinct
-        // runs, and only the pull_request one uploads a ci-skip-plan. Picking
-        // a single green run and asking it for a plan therefore lost the
-        // baseline whenever the wrong one happened to sort first, and reported
-        // 'no-skip-plan' for a commit that had a perfectly good plan.
-        const greens = done.filter((r) => r.conclusion === 'success');
-        for (const g of greens) {
-          const plan = readAttestedPlanForRun(g.databaseId, sha);
-          if (plan) return { sha, conclusion: 'success', runId: g.databaseId, plan };
-        }
-        if (greens.length > 0) {
-          return { sha, conclusion: 'success', runId: greens[0].databaseId, plan: null };
-        }
-        // No green run at all: report the red one and download nothing. A run
-        // that failed cannot be a baseline whatever its plan says, so paying
-        // for the artifact would buy an answer nobody reads.
-        return { sha, conclusion: done[0].conclusion, runId: done[0].databaseId, plan: null };
+        const c = candidateFor(sha);
+        delete c.attestsTried;
+        return c;
       });
     },
   };
@@ -619,7 +778,8 @@ function usage() {
   return [
     'usage: scope-engine.cjs --classify [--files <path>]',
     '       scope-engine.cjs --resolve-baseline --head <sha> [--merge-sha <sha>]',
-    '                        [--repo <owner/name>] [--limit <n>] [--workflow <name>]',
+    '                        [--repo <owner/name>] [--branch <head-branch>]',
+    '                        [--limit <valve>] [--workflow <name>]',
     '',
     '--classify reads a newline-delimited changed-file list from --files or',
     'stdin and prints the plan JSON. It performs no I/O beyond that read.',
@@ -644,6 +804,7 @@ function main(argv) {
     else if (args[i] === '--head') opts.head = args[++i];
     else if (args[i] === '--merge-sha') opts.mergeSha = args[++i];
     else if (args[i] === '--repo') opts.repo = args[++i];
+    else if (args[i] === '--branch') opts.branch = args[++i];
     else if (args[i] === '--workflow') opts.workflow = args[++i];
     else if (args[i] === '--limit') opts.limit = Number(args[++i]);
     else {
@@ -665,9 +826,15 @@ function main(argv) {
       process.stderr.write(`scope-engine: --resolve-baseline needs --repo\n${usage()}\n`);
       return 2;
     }
+    // The branch powers the one-shot run listing (candidate C's cost model).
+    // GITHUB_HEAD_REF is the PR head branch on pull_request-family events, so
+    // existing callers (scope-shadow.sh) get the cheap path with no flag; when
+    // neither is present the io degrades to per-commit lookups, which is a
+    // cost regression only, never a correctness one.
     const io = createRepoIo({
       repoRoot,
       repo: opts.repo,
+      branch: opts.branch || process.env.GITHUB_HEAD_REF || null,
       ...(opts.workflow ? { workflow: opts.workflow } : {}),
     });
     const result = resolveBaseline(
@@ -735,6 +902,8 @@ module.exports = {
   createRepoIo,
   DIFF_FILE_CAP,
   DEFAULT_CANDIDATE_LIMIT,
+  GREEN_ATTEST_BUDGET,
+  RUNS_LIST_MAX_PAGES,
   classify: scopeMap.classify,
   buildPlan: scopeMap.buildPlan,
   main,

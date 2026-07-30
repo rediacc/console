@@ -1,6 +1,6 @@
 #!/bin/bash
 # Unit test for VERIFY-AT-READ baseline attestation in the CI scope engine:
-# .ci/scripts/ci/scope-engine.cjs (attestPlan + createRepoIo).
+# .ci/scripts/ci/scope-engine.cjs (attestPlan + createRepoIo + the fenced walk).
 #
 # WHAT THIS GUARDS. A baseline is the claim "this ancestor already ran the
 # whole suite green, so the delta since is all that needs running". Everything
@@ -15,6 +15,18 @@
 # reads it, which is why case (c) below plants `"reconciled": true` in the
 # artifact and still expects a refusal.
 #
+# THE WALK IS FENCED, NOT COUNTED (candidate C). A fixed candidate count lost
+# twice in one night (limit 5 vs a green 7 back on run 30478917957, limit 20
+# vs a green 23 back after a twelve-run red streak), each time manufacturing
+# a "no baseline" verdict indistinguishable from a considered one. The walk's
+# domain is now the commits the PR owns (rev-list head ^mergeParent), run
+# lookups ride ONE paginated branch listing so a red candidate costs zero API
+# calls, green attestation attempts are bounded by GREEN_ATTEST_BUDGET, and
+# DEFAULT_CANDIDATE_LIMIT survives only as a safety valve. Cases (n) through
+# (t) prove each bound in BOTH directions, and (r) is the cost lock: run
+# listing must scale with PAGES, never with candidates, or candidate C
+# silently degrades back into the per-commit walk it replaced.
+#
 # POLARITY: fail-open. Every refusal here costs one full CI round, never a red
 # check. That is the opposite of the reconciler's polarity and is the reason
 # the reconciler's verdict is safe to consume from this side.
@@ -22,8 +34,6 @@
 # Every planted defect is PAIRED with the control that proves the mechanism
 # can still say yes, because a gate stuck at "refuse" would pass every failure
 # case in this file while being exactly as broken as one stuck at "accept".
-# The control in case (a) is the strongest available: the whole pipeline, from
-# `gh run list` to a REDUCED plan, over faked I/O only.
 
 set -euo pipefail
 
@@ -43,10 +53,16 @@ trap 'rm -rf "$WORK"' EXIT
 # ---------------------------------------------------------------------------
 # The harness. It drives the REAL createRepoIo with an injected `run`, so every
 # git and gh call is a fake that dispatches on argv, serves fixtures, and
-# RECORDS the call in order. The recording is not decoration: cases (i) and (j)
-# assert on the ABSENCE of a Jobs API call, and an absence is only evidence
-# when the log that would have contained it is proven to work (case (a) shows
-# the same log carrying one).
+# RECORDS the call in order. The recording is not decoration: several cases
+# assert on the ABSENCE of a call class, and an absence is only evidence when
+# the log that would have contained it is proven to work (case (a) shows the
+# same log carrying every class).
+#
+# The mock models the real tools' semantics where the engine depends on them:
+# rev-list HONOURS --max-count and `^fence` exclusion (a fixture that returns
+# everything regardless is not a model of rev-list, and walk depth was
+# invisible to this entire suite until it did), and the branch run listing
+# paginates at 100 per page exactly as the Actions API does.
 #
 # Fixtures are built in-test from scope-map's JOB_SURFACES (plan side) and a
 # literal job list taken from run 30307775327 (outcome side), the same pairing
@@ -126,6 +142,10 @@ const baseFixture = () => ({
   head: HEAD,
   mergeSha: MERGE,
   firstParent: BASE,
+  firstParentThrow: false,
+  // branch powers the one-shot run listing; null exercises the per-commit
+  // fallback path.
+  branch: 'wave-branch',
   diff: 'docs/ci-overhaul/notes.md\n',
   candidates: [CAND],
   runs: { [CAND]: [{ databaseId: Number(RUN_A), status: 'completed', conclusion: 'success' }] },
@@ -148,18 +168,27 @@ function makeRun(f, calls) {
       }
       if (a[0] === 'rev-list') {
         calls.push('git rev-list');
-        // HONOUR --max-count. This mock used to return every candidate whatever
-        // the caller asked for, so the walk depth was invisible to the entire
-        // suite and a too-small DEFAULT_CANDIDATE_LIMIT could never be caught.
-        // Real rev-list truncates; a fixture that does not is not a model of it.
+        // HONOUR --max-count AND `^fence`. This mock used to return every
+        // candidate whatever the caller asked for, so the walk depth was
+        // invisible to the entire suite and a too-small limit could never be
+        // caught. Real rev-list truncates and excludes; a fixture that does
+        // not is not a model of it. The fence is modelled positionally: a
+        // fixture places the fence sha INSIDE candidates and everything from
+        // it onward is beyond the boundary.
         const cap = a.map((x) => /^--max-count=(\d+)$/.exec(String(x)))
           .filter(Boolean)
           .map((m) => Number(m[1]))[0];
-        const all = [f.head, ...f.candidates];
+        const fence = a.filter((x) => String(x).startsWith('^')).map((x) => String(x).slice(1))[0];
+        let all = [f.head, ...f.candidates];
+        if (fence) {
+          const i = all.indexOf(fence);
+          if (i >= 0) all = all.slice(0, i);
+        }
         return `${(cap ? all.slice(0, cap) : all).join('\n')}\n`;
       }
       if (a[0] === 'rev-parse') {
         calls.push('git first-parent');
+        if (f.firstParentThrow) throw new Error('bad mergeSha');
         return `${f.firstParent}\n`;
       }
       if (a[0] === 'diff-tree') {
@@ -167,6 +196,18 @@ function makeRun(f, calls) {
         return f.diff;
       }
       throw new Error(`unexpected git call: ${a.join(' ')}`);
+    }
+    if (cmd === 'gh' && args[0] === 'api' && /actions\/runs\?/.test(args[1])) {
+      // The one-shot branch run listing, paginated at 100 like the real API.
+      const page = Number((/[?&]page=(\d+)/.exec(args[1]) || [])[1] || 1);
+      calls.push(`gh api runs-list p${page}`);
+      const flat = [];
+      for (const [sha, runs] of Object.entries(f.runs)) {
+        for (const r of runs) {
+          flat.push({ id: r.databaseId, name: 'Console CI', head_sha: sha, status: r.status, conclusion: r.conclusion });
+        }
+      }
+      return JSON.stringify({ workflow_runs: flat.slice((page - 1) * 100, page * 100) });
     }
     if (cmd === 'gh' && args[0] === 'run' && args[1] === 'list') {
       const sha = args[args.indexOf('--commit') + 1];
@@ -216,14 +257,15 @@ const calls = [];
 const io = engine.createRepoIo({
   repoRoot: '/nonexistent-by-design',
   repo: 'rediacc/console',
+  branch: f.branch,
   run: makeRun(f, calls),
 });
 const result = engine.resolveBaseline(
   {
     head: f.head,
     mergeSha: f.mergeSha,
-    // Default 5 unless the case asks for the ENGINE's default, which is what the
-    // walk-depth control needs to exercise.
+    // Valve 5 unless the case asks for the ENGINE's default, which is what the
+    // walk-depth and cost-lock cases need to exercise.
     limit: process.env.USE_ENGINE_DEFAULT_LIMIT ? undefined : 5,
     workflowClosure: new Set(),
   },
@@ -238,9 +280,13 @@ process.stdout.write(
       reconciled: result.baseline && result.baseline.plan ? result.baseline.plan.reconciled : null,
       mode: result.plan.mode,
       full_reasons: result.plan.full_reasons || [],
+      notes: result.notes || [],
+      trailLen: result.trail.length,
       calls,
       jobsCalls: calls.filter((c) => c.startsWith('gh api jobs')).length,
       downloadCalls: calls.filter((c) => c.startsWith('gh run download')).length,
+      runsListCalls: calls.filter((c) => c.startsWith('gh api runs-list')).length,
+      perCommitCalls: calls.filter((c) => c.startsWith('gh run list')).length,
     },
     null,
     2,
@@ -289,6 +335,8 @@ test_control_green_full_attested_baseline() {
     assert_eq "$(rget 'r.mode')" "reduced" "and the round reduces off that baseline"
     assert_eq "$(rget 'r.jobsCalls')" "1" "the Jobs API was consulted exactly once"
     assert_eq "$(rget 'r.downloadCalls')" "1" "and the plan downloaded exactly once"
+    assert_eq "$(rget 'r.perCommitCalls')" "0" \
+        "run lookups rode the one-shot listing, not per-commit queries"
     log_pass "(a) control: a green, full, reconcilable run attests and reduces the round"
 }
 
@@ -303,7 +351,9 @@ test_planted_invisible_cell_refuses_baseline() {
         "and is refused as a baseline, naming the reconciler's finding"
     assert_contains "$(rget 'r.reason0')" "'unit'" "with the offending plan key"
     assert_eq "$(rget 'r.mode')" "full" "so the round goes full"
-    assert_contains "$(rget 'r.full_reasons')" "baseline:none-usable" "with the reason stated"
+    # The walk exhausted every PR-owned commit against a known fence, and the
+    # exhausted reason says WHICH bound ended it (candidate C's pinned reason).
+    assert_contains "$(rget 'r.full_reasons')" "baseline:merge-base-reached" "with the bound stated"
     # CONTROL: flip the same leaf back and the same fixture is usable again.
     assert_eq "$(drive)" "0" "control runs"
     assert_eq "$(rget 'r.reason0')" "full-green-attested" \
@@ -417,8 +467,7 @@ test_reduced_baseline_refused_before_any_jobs_call() {
     # (i) Case 1: evidence does not chain across reduced rounds. A reduced plan
     # can never be a baseline however perfectly it reconciles, so asking the
     # Jobs API about it would be a round trip spent on a foregone conclusion.
-    # This asserts the ORDERING, which is the only thing that makes the walk's
-    # cost bounded: one such call per candidate, times `limit` candidates.
+    # This asserts the ORDERING, which bounds the cost of every attestation.
     assert_eq "$(drive 'f.plans["1001"].mode = "reduced"')" "0" "a reduced plan answers"
     assert_eq "$(rget 'r.reason0')" "reduced-baseline" "and is refused as reduced-baseline"
     assert_eq "$(rget 'r.jobsCalls')" "0" \
@@ -433,14 +482,16 @@ test_reduced_baseline_refused_before_any_jobs_call() {
 
 test_red_run_costs_nothing() {
     # (j) A failed run cannot be a baseline whatever its plan says, so neither
-    # the artifact nor the Jobs API should be touched for it.
+    # the artifact nor the Jobs API should be touched for it. Under the
+    # one-shot listing a red candidate costs zero API calls of its own.
     assert_eq "$(drive 'f.runs.CAND1[0].conclusion = "failure"')" "0" "a red candidate answers"
     assert_eq "$(rget 'r.reason0')" "not-green" "as not-green"
     assert_eq "$(rget 'r.downloadCalls')" "0" "with no artifact download"
     assert_eq "$(rget 'r.jobsCalls')" "0" "and no Jobs API call"
-    assert_contains "$(rget 'r.calls')" "gh run list CAND1" \
-        "though the run lookup itself did happen (the log is not simply empty)"
-    # CONTROL: green pays for both calls, so the two zeros above are decisions.
+    assert_eq "$(rget 'r.perCommitCalls')" "0" "and no per-commit run lookup either"
+    assert_contains "$(rget 'r.calls')" "gh api runs-list p1" \
+        "though the branch listing itself did happen (the log is not simply empty)"
+    # CONTROL: green pays for both calls, so the zeros above are decisions.
     assert_eq "$(drive)" "0" "control runs"
     assert_eq "$(rget 'r.downloadCalls')" "1" "a green candidate does download"
     log_pass "(j) a red candidate is rejected without downloading or querying anything"
@@ -521,25 +572,168 @@ process.stdout.write(String(s.planned));
     log_pass "(l) the fixture's shape is asserted: the silences above are over real coverage"
 }
 
-test_walk_depth_reaches_a_realistic_green() {
-    # (m) THE WALK DEPTH IS PART OF CORRECTNESS, not just latency. Measured on
-    # run 30478917957: five candidates all answered `not-green` while the real
-    # green commit 2469e5d72 sat SEVEN steps back, one row past the old cap of
-    # 5. A baseline that exists but cannot be reached reads exactly like a
-    # baseline that does not exist, so this pins the depth with a fixture whose
-    # only green ancestor is deliberately out of reach of the old value.
+test_walk_depth_honours_the_explicit_valve() {
+    # (m) `--limit` survives as the explicit valve override, and the mock
+    # honours --max-count, so a deliberately small valve still truncates: at
+    # valve 5 a green at depth 7 is unreachable and the exhausted reason says
+    # the VALVE ended the walk, not the fence.
     local chain='f.candidates = ["C1","C2","C3","C4","C5","C6","C7"];
         ["C1","C2","C3","C4","C5","C6"].forEach(function (c) {
             f.runs[c] = [{ databaseId: 900, status: "completed", conclusion: "failure" }];
         });
+        delete f.runs.CAND1;
         f.runs.C7 = [{ databaseId: 1001, status: "completed", conclusion: "success" }];'
-    # CONTROL FIRST: with the OLD cap of 5, this fixture must NOT find it. If it
-    # did, the case would prove nothing about depth.
-    assert_eq "$(drive "$chain")" "0" "a seven-deep chain answers under the old cap"
-    assert_eq "$(rget 'r.baselineRunId')" "null" "CONTROL: at limit 5 the green ancestor at depth 7 is unreachable"
-    # Now the engine's own default, which is the thing under test.
+    assert_eq "$(drive "$chain")" "0" "a seven-deep chain answers under valve 5"
+    assert_eq "$(rget 'r.baselineRunId')" "null" "CONTROL: at valve 5 the green ancestor at depth 7 is unreachable"
+    assert_contains "$(rget 'r.full_reasons')" "baseline:walk-valve" \
+        "and the reason names the valve, so the truncation is diagnosable"
+    # The engine's own default valve is what the thing under test rides on.
     assert_eq "$(USE_ENGINE_DEFAULT_LIMIT=1 drive "$chain")" "0" "the same chain answers at the engine default"
     assert_eq "$(rget 'r.baselineRunId')" "1001" "and the default walk REACHES the green ancestor at depth 7"
+    log_pass "(m) the explicit valve truncates with a pinned reason; the default does not"
+}
+
+test_deep_green_regression_no_fixed_count() {
+    # (n) THE REGRESSION FOR THE TWO INCIDENTS, and the fire-proof was run
+    # against the PRE-CHANGE engine before this landed: with 29 red ancestors
+    # and the only attested green at depth 30, the old DEFAULT_CANDIDATE_LIMIT
+    # of 20 answered {candidates_seen: 20, baseline: null, mode: "full",
+    # reason: "baseline:none-usable"} (measured 2026-07-30, matching runs
+    # 30478917957 at limit 5 and the 23-back recession at limit 20). A fenced
+    # walk must reach it: the streak length is not a bound any more.
+    local deep='f.candidates = [];
+        delete f.runs.CAND1;
+        for (let i = 1; i <= 29; i++) {
+            const sha = "RED" + i;
+            f.candidates.push(sha);
+            f.runs[sha] = [{ databaseId: 8000 + i, status: "completed", conclusion: "failure" }];
+        }
+        f.candidates.push("GREEN30");
+        f.runs.GREEN30 = [{ databaseId: 1001, status: "completed", conclusion: "success" }];'
+    assert_eq "$(USE_ENGINE_DEFAULT_LIMIT=1 drive "$deep")" "0" "a thirty-deep chain answers"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" \
+        "the green at depth 30 IS reached: no fixed count manufactured a no-baseline verdict"
+    assert_eq "$(rget 'r.mode')" "reduced" "and the round reduces off it"
+    assert_eq "$(rget 'r.trailLen')" "30" "having walked every PR-owned commit before it"
+    assert_eq "$(rget 'r.perCommitCalls')" "0" "at zero per-candidate API cost"
+    log_pass "(n) the green past every historical fixed limit is reached (regression for both incidents)"
+}
+
+test_fence_stops_the_walk_at_the_merge_boundary() {
+    # (o) Candidates past the merge boundary are main-history commits whose
+    # runs never carry a ci-skip-plan, so the walk must not consider them: the
+    # fence sha and everything beyond is excluded, the exhausted reason names
+    # the fence, and the beyond-fence green costs NOTHING.
+    local fenced='f.candidates = ["C1", "BASE1", "PASTGREEN"];
+        delete f.runs.CAND1;
+        f.runs.C1 = [{ databaseId: 900, status: "completed", conclusion: "failure" }];
+        f.runs.PASTGREEN = [{ databaseId: 1001, status: "completed", conclusion: "success" }];'
+    assert_eq "$(drive "$fenced")" "0" "a fenced chain answers"
+    assert_eq "$(rget 'r.baselineRunId')" "null" "the green PAST the merge boundary is never considered"
+    assert_eq "$(rget 'r.trailLen')" "1" "the walk saw only the PR-owned commit"
+    assert_eq "$(rget 'r.downloadCalls')" "0" "and paid nothing for the out-of-domain green"
+    assert_contains "$(rget 'r.full_reasons')" "baseline:merge-base-reached" \
+        "with the fence named as what ended the walk"
+    # CONTROL, the other direction: the same green INSIDE the fence resolves,
+    # so the exclusion above is the fence working and not a dead walk.
+    local inside='f.candidates = ["C1", "NEARGREEN", "BASE1"];
+        delete f.runs.CAND1;
+        f.runs.C1 = [{ databaseId: 900, status: "completed", conclusion: "failure" }];
+        f.runs.NEARGREEN = [{ databaseId: 1001, status: "completed", conclusion: "success" }];'
+    assert_eq "$(drive "$inside")" "0" "control runs"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" "a green inside the boundary still resolves"
+    log_pass "(o) the walk is fenced at the merge boundary, in both directions"
+}
+
+test_green_attestation_budget_binds_both_ways() {
+    # (p) Attestation is the expensive class (a download plus a jobs read per
+    # green), and its failures are systematic: retention, format drift,
+    # reconciler drift. After GREEN_ATTEST_BUDGET green candidates fail to
+    # attest, the walk stops with a pinned reason instead of paying for a
+    # fourth identical failure.
+    local exhausted='f.candidates = ["G1", "G2", "G3", "G4"];
+        delete f.runs.CAND1;
+        [["G1", 9001], ["G2", 9002], ["G3", 9003]].forEach(function (g) {
+            f.runs[g[0]] = [{ databaseId: g[1], status: "completed", conclusion: "success" }];
+        });
+        f.runs.G4 = [{ databaseId: 1004, status: "completed", conclusion: "success" }];
+        f.plans["1004"] = basePlan("1004");
+        f.jobs["1004"] = { jobs: healthyJobs() };'
+    assert_eq "$(drive "$exhausted")" "0" "a chain of planless greens answers"
+    assert_contains "$(rget 'r.full_reasons')" "baseline:attest-budget-exhausted" \
+        "three failed attestations exhaust the budget, with the pinned reason"
+    assert_eq "$(rget 'r.downloadCalls')" "3" "exactly three downloads were paid for"
+    assert_eq "$(rget 'r.baselineRunId')" "null" "and the fourth green was never tried"
+    # CONTROL, the other direction: two failures then an attestable third must
+    # RESOLVE, so the budget is not merely a smaller fixed count in disguise.
+    local within='f.candidates = ["G1", "G2", "G3"];
+        delete f.runs.CAND1;
+        [["G1", 9001], ["G2", 9002]].forEach(function (g) {
+            f.runs[g[0]] = [{ databaseId: g[1], status: "completed", conclusion: "success" }];
+        });
+        f.runs.G3 = [{ databaseId: 1003, status: "completed", conclusion: "success" }];
+        f.plans["1003"] = basePlan("1003");
+        f.jobs["1003"] = { jobs: healthyJobs() };'
+    assert_eq "$(drive "$within")" "0" "control runs"
+    assert_eq "$(rget 'r.baselineRunId')" "1003" "the third green attests within the budget"
+    log_pass "(p) the attestation budget stops the fourth failure and admits the third success"
+}
+
+test_cost_lock_pages_not_candidates() {
+    # (r) THE COST LOCK, the control that keeps candidate C true over time. A
+    # 112-commit all-red streak (the real branch shape the night this was
+    # designed: rev-list --count 681443ad3..HEAD = 23 and merge base 112 back)
+    # must cost run-listing calls that scale with PAGES of the branch listing
+    # (112 runs = 2 pages of 100), NEVER one call per candidate. Without this
+    # assertion a refactor can quietly reintroduce per-commit queries and
+    # nothing else in the suite would notice until a sick branch times out
+    # inside initialize.
+    local streak='f.candidates = [];
+        delete f.runs.CAND1;
+        for (let i = 1; i <= 112; i++) {
+            const sha = "R" + i;
+            f.candidates.push(sha);
+            f.runs[sha] = [{ databaseId: 7000 + i, status: "completed", conclusion: "failure" }];
+        }'
+    assert_eq "$(USE_ENGINE_DEFAULT_LIMIT=1 drive "$streak")" "0" "a 112-commit all-red streak answers"
+    assert_eq "$(rget 'r.trailLen')" "112" "every PR-owned commit was walked"
+    assert_eq "$(rget 'r.runsListCalls')" "2" \
+        "at exactly two listing pages (112 runs / 100 per page)"
+    assert_eq "$(rget 'r.perCommitCalls')" "0" "and ZERO per-commit run lookups"
+    assert_eq "$(rget 'r.downloadCalls')" "0" "and zero artifact downloads"
+    assert_contains "$(rget 'r.full_reasons')" "baseline:merge-base-reached" \
+        "ending honestly at the fence"
+    log_pass "(r) cost lock: run listing scales with pages, never with candidates"
+}
+
+test_per_commit_fallback_still_works_without_a_branch() {
+    # (s) With no branch to list, the io degrades to the per-commit lookup: a
+    # cost regression, never a correctness one. This is the pair to (r): it
+    # proves the fallback exists, so the zeros in (r) are the cheap path being
+    # chosen rather than run lookups not happening at all.
+    assert_eq "$(drive 'f.branch = null')" "0" "the branchless fixture answers"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" "and still resolves the baseline"
+    assert_eq "$(rget 'r.perCommitCalls')" "1" "via exactly one per-commit lookup"
+    assert_eq "$(rget 'r.runsListCalls')" "0" "with no branch listing attempted"
+    log_pass "(s) the per-commit fallback resolves correctly when no branch is known"
+}
+
+test_unreadable_merge_parent_degrades_to_valve_only_walk() {
+    # (t) THE DEGRADATION DIRECTION. An unreadable merge parent must fall back
+    # to a valve-only walk WITH a note, never kill the walk: a bad mergeSha
+    # turning every round full while the walk itself was fine is the cry-wolf
+    # shape this whole redesign exists to end. The baseline is still found;
+    # the round still goes full, but for the TRUE reason (the base cannot be
+    # proven unchanged), attributed to decideBaseMove and not to the walk.
+    assert_eq "$(drive 'f.firstParentThrow = true')" "0" "a throwing merge-parent probe answers"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" \
+        "the walk still found the baseline (valve-only, not dead)"
+    assert_eq "$(rget 'r.mode')" "full" "the round is full"
+    assert_contains "$(rget 'r.full_reasons')" "baseline:base-sha-unknown" \
+        "because the base cannot be proven unchanged, not because the walk failed"
+    assert_contains "$(rget 'r.notes')" "merge-parent-unreadable" \
+        "and the notes say why the fence was unavailable"
+    log_pass "(t) an unreadable merge parent degrades to a valve-only walk with a note"
 }
 
 log_test "test-scope-baseline-attest"
@@ -556,7 +750,13 @@ test_red_run_costs_nothing
 test_second_green_run_on_the_same_sha_is_found
 test_multi_page_jobs_payload_is_merged
 test_fixture_shape_is_asserted_not_assumed
-test_walk_depth_reaches_a_realistic_green
+test_walk_depth_honours_the_explicit_valve
+test_deep_green_regression_no_fixed_count
+test_fence_stops_the_walk_at_the_merge_boundary
+test_green_attestation_budget_binds_both_ways
+test_cost_lock_pages_not_candidates
+test_per_commit_fallback_still_works_without_a_branch
+test_unreadable_merge_parent_degrades_to_valve_only_walk
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"
