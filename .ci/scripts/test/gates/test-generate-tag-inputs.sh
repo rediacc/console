@@ -257,6 +257,69 @@ test_real_tree_still_produces_a_tag() {
     log_pass "the real private/renet tag still generates ($out)"
 }
 
+test_closure_tag_moves_when_the_released_version_moves() {
+    # THE BUG THIS PINS, reproduced twice on real traffic before the fix.
+    #
+    # Both closure images BAKE a version in, and that version comes from the
+    # latest git TAG -- not from a path -- so no CLOSURE_PATHS entry can cover
+    # it. The OID-at-HEAD hashing is even documented as being "immune to the
+    # in-job version bump", which is right for a dirty working file and exactly
+    # wrong for this: the key went insensitive to the one input the image is
+    # stamped with.
+    #
+    # Release v1.2.12 landed 2026-07-30T10:16:14Z mid-PR. Runs 30534726467 and
+    # 30542942037 both failed `Validate Install Methods / Linux` with
+    # "Version mismatch: expected '1.2.13', got '1.2.12'", because
+    # `Build (Docker) / CLI Docker` was SKIPPED while its cached twin succeeded
+    # and the mutable pr-546 tag kept serving a pre-release image. Deterministic
+    # and self-perpetuating, not a race: nothing on the branch could move the key.
+    #
+    # Driven by swapping the RESOLVER rather than by cutting a git tag, so the
+    # test needs no write access to the real tag namespace and cannot disturb a
+    # shared tree.
+    local real="$REPO_ROOT/.ci/scripts/version/resolve-version.sh"
+    local backup="$FIXTURE/resolve-version.real"
+    mkdir -p "$FIXTURE"
+    cp "$real" "$backup"
+
+    local before after restored
+    before="$(cd "$REPO_ROOT" && .ci/scripts/ci/generate-tag.sh --closure rdc --extra fixed 2>/dev/null)"
+    printf '#!/bin/bash\n[ "$1" = "--current" ] && echo "v9.9.9" || echo "9.9.10"\n' >"$real"
+    chmod +x "$real"
+    after="$(cd "$REPO_ROOT" && .ci/scripts/ci/generate-tag.sh --closure rdc --extra fixed 2>/dev/null)"
+    cp "$backup" "$real"
+    restored="$(cd "$REPO_ROOT" && .ci/scripts/ci/generate-tag.sh --closure rdc --extra fixed 2>/dev/null)"
+
+    if [[ "$before" == "$after" ]]; then
+        log_fail "the rdc closure tag did NOT move when the released version moved ($before): a cached pre-release image would be served under the new version"
+    fi
+    # CONTROL: without this the assertion above is satisfied by ANY nondeterminism,
+    # including a tag that changes on every invocation, which would be a different
+    # and worse bug.
+    assert_eq "$restored" "$before" \
+        "restoring the resolver must reproduce the ORIGINAL tag, so the key is version-sensitive rather than merely unstable"
+    log_pass "the closure tag tracks the released version ($before -> $after -> $restored)"
+}
+
+test_closure_tag_survives_an_unresolvable_version() {
+    # This script also runs where no tag is reachable (a shallow clone, a fresh
+    # fork). Failing to resolve must degrade to a well-defined key, never break
+    # the build, so the marker is added even when empty.
+    local real="$REPO_ROOT/.ci/scripts/version/resolve-version.sh"
+    local backup="$FIXTURE/resolve-version.real2"
+    mkdir -p "$FIXTURE"
+    cp "$real" "$backup"
+    printf '#!/bin/bash\nexit 1\n' >"$real"
+    local out rc=0
+    out="$(cd "$REPO_ROOT" && .ci/scripts/ci/generate-tag.sh --closure rdc --extra fixed 2>/dev/null)" || rc=$?
+    cp "$backup" "$real"
+    assert_eq "$rc" "0" "an unresolvable version must not fail tag generation"
+    if [[ ! "$out" =~ ^rdc-[0-9a-f]{12}$ ]]; then
+        log_fail "an unresolvable version produced a malformed tag: '$out'"
+    fi
+    log_pass "an unresolvable version degrades to a well-formed tag ($out)"
+}
+
 log_test "test-generate-tag-inputs"
 test_declared_inputs_match_the_script
 test_tag_is_deterministic
@@ -267,5 +330,7 @@ test_missing_input_does_not_emit_a_tag
 test_every_declared_input_is_individually_load_bearing_for_the_failure
 test_other_modes_are_untouched
 test_real_tree_still_produces_a_tag
+test_closure_tag_moves_when_the_released_version_moves
+test_closure_tag_survives_an_unresolvable_version
 echo ""
 log_pass "all tests passed"

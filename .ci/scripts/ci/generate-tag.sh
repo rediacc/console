@@ -182,12 +182,22 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
     # its recorded commit); and HEAD-based hashing is immune to the in-job
     # version bump that dirties package.json after initialize.sh has run.
     #
-    # NOT WIRED INTO initialize.sh YET, deliberately. Switching the live tags is
-    # release-affecting -- cd-stage.yml:195-196 retags these straight onto a
-    # release channel -- and two open issues must be settled first: an unbounded
-    # staleness window once the key stops moving every commit, and the fact that
-    # "same tag => same bytes" is not true today because private/account is
-    # installed with an unpinned `npm install`.
+    # THIS IS WIRED AND LIVE. `initialize.sh:159-160` calls both closures and
+    # publishes them as `web_tag` / `rdc_tag`, and `cd-stage.yml:195-196` retags
+    # them straight onto a release channel, so a wrong key here ships bytes.
+    #
+    # The comment that stood here said the opposite ("NOT WIRED INTO
+    # initialize.sh YET, deliberately") and was left behind when the wiring
+    # landed. Corrected 2026-07-30, because a reader who believes this mode is
+    # inert will not think hard about a key that is release-affecting -- which
+    # is roughly how the missing-version bug below survived.
+    #
+    # Of the two issues it said had to be settled first: the unbounded staleness
+    # window IS handled, by the weekly bucket below. The second is NOT, and it
+    # stands as a known limitation: "same tag implies same bytes" is still false
+    # because private/account is installed with an unpinned `npm install`, the
+    # base images float, and ACCOUNT_ED25519_PUBLIC_KEY arrives as a build arg.
+    # The bucket bounds the blast radius; it does not make the claim true.
     case "$CLOSURE_NAME" in
         web)
             CLOSURE_PATHS=(
@@ -267,6 +277,43 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
     # %G%V, not %Y%W: ISO year-and-week, so the last days of December cannot
     # collide with the first days of January.
     CLOSURE_HASH+="week:$(date -u +%G%V)"
+
+    # THE RELEASED VERSION, and leaving it out was a real, reproduced bug.
+    #
+    # Both images BAKE a version in (the rdc SEA reports it from `rdc --version`,
+    # the www footer from APP_VERSION), and that version is derived from the
+    # latest git tag -- which is NOT a path, so no CLOSURE_PATHS entry can ever
+    # cover it. Worse, the OID-at-HEAD hashing above is documented as being
+    # "immune to the in-job version bump that dirties package.json". That
+    # immunity is correct for a dirty working file and exactly wrong here: the
+    # key ended up insensitive to the one input the image is stamped with.
+    #
+    # MEASURED, twice, not theorised. Release v1.2.12 landed 2026-07-30T10:16:14Z
+    # mid-PR. On runs 30534726467 and 30542942037 `Validate Install Methods /
+    # Linux` failed with "Version mismatch: expected '1.2.13', got '1.2.12'":
+    # `Build (Docker) / CLI Docker` was SKIPPED while its cached twin succeeded,
+    # so the mutable `pr-546` tag kept serving an image built before the release
+    # while every run computed the next version afresh. Nothing on the branch
+    # could break the tie, because the closure does not move when a tag is cut.
+    # It was deterministic and self-perpetuating, not a race.
+    #
+    # `--current` (the latest tag) rather than the computed next version,
+    # because the next version depends on a bump type that initialize.sh does
+    # not detect until AFTER it calls this script, and reordering that is
+    # release-affecting. Cutting a tag moves `--current`, which invalidates both
+    # images exactly when their baked version changes.
+    #
+    # RESIDUAL, stated rather than hidden: two runs on the SAME base tag that
+    # resolve different bump types (patch vs minor) would bake different
+    # versions behind one key. That cannot produce the failure above, which
+    # needed the base tag to move, and the weekly bucket bounds it regardless.
+    #
+    # Failure to resolve is NOT fatal: this script also runs where no tag is
+    # reachable (a shallow clone, a fresh fork). An empty marker keeps the key
+    # well-defined and degrades to today's behaviour rather than breaking the
+    # build.
+    CLOSURE_VERSION="$("$SCRIPT_DIR/../version/resolve-version.sh" --current 2>/dev/null || echo "")"
+    CLOSURE_HASH+="version:${CLOSURE_VERSION}"
     CI_TAG="${CLOSURE_NAME}-$(printf '%s' "$CLOSURE_HASH" | sha256sum | cut -c1-12)"
     log_info "Generated closure tag ($CLOSURE_NAME): $CI_TAG" >&2
 

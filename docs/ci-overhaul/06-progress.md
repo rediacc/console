@@ -631,3 +631,60 @@ rather than a live conflict, and it stays correct if either list moves.
 Proven by mutation, not by reading: deleting the `!guardForced` term makes
 `test-watchdog-retry-allowlist.sh` exit 1, and the file was restored and verified
 by sha256 checksum. Battery 56 gates / 601 assertions green.
+
+### D5, the remaining half: the closure key ignored the released version
+
+**The D5 tag split was already done and the plan's description of it is stale.**
+`05-execution-guide.md` still describes `RDC_TAG="$WEB_TAG"` with one tag serving
+two images; `initialize.sh:159-160` has computed separate `--closure web` and
+`--closure rdc` tags for some time. The remaining defect was narrower and had
+nothing to do with the split.
+
+**What was actually broken.** Both closure images BAKE a version in (the rdc SEA
+reports it from `rdc --version`, the www footer from `APP_VERSION`), and that
+version derives from the latest git TAG. A tag is not a path, so no
+`CLOSURE_PATHS` entry could ever cover it. The irony is exact:
+`generate-tag.sh` documented its OID-at-HEAD hashing as being *"immune to the
+in-job version bump that dirties package.json"*. That immunity is right for a
+dirty working file and precisely wrong here, so the key went insensitive to the
+one input the image is stamped with.
+
+**Reproduced twice on real traffic, and it was not a race.** Release `v1.2.12`
+landed 2026-07-30T10:16:14Z mid-PR. Runs `30534726467` and `30542942037` both
+failed `Validate Install Methods / Linux` with
+`Version mismatch: expected '1.2.13', got '1.2.12'`. In both,
+`Build (Docker) / CLI Docker` was **skipped** while `CLI Docker (cached)`
+succeeded, so the mutable `pr-546` tag kept serving a pre-release image while
+every run computed the next version afresh. Nothing on the branch could break the
+tie, because cutting a tag does not move the closure. **Deterministic and
+self-perpetuating: PR #546 could not have gone green without this fix.** An
+earlier note in this session called it a one-off release race; that was wrong and
+is corrected here.
+
+**Fix**: closure mode now folds `resolve-version.sh --current` into the key.
+Resolved inside `generate-tag.sh` rather than passed by the caller, so no call
+site can forget it, and `--current` rather than the computed next version because
+the bump type is not known until after `initialize.sh` has already called this
+script, and reordering that is release-affecting. An unresolvable version (a
+shallow clone, a fresh fork) degrades to an empty marker rather than failing the
+build. Residual, stated rather than hidden: two runs on the same base tag that
+resolve different bump types would bake different versions behind one key; that
+cannot produce the failure above, which required the base tag to move, and the
+weekly bucket bounds it anyway.
+
+**Also corrected: a comment claiming this mode was inert.** `generate-tag.sh`
+said *"NOT WIRED INTO initialize.sh YET, deliberately"* while `initialize.sh`
+calls it and `cd-stage.yml:195-196` retags the result straight onto a release
+channel. A reader who believes a key is inert will not scrutinise it, which is
+roughly how the missing version survived. Of the two blockers that comment said
+had to be settled first, the unbounded staleness window IS handled by the weekly
+bucket; "same tag implies same bytes" is still FALSE (unpinned `npm install` for
+private/account, floating base images, a build-arg public key) and remains a
+known limitation rather than a solved one.
+
+Proven by mutation, not by reading: deleting the version line makes
+`test-generate-tag-inputs.sh` exit 1 with "the rdc closure tag did NOT move when
+the released version moved", and both the script and `resolve-version.sh` were
+restored and verified byte-identical by sha256 (the test swaps a real tracked
+file in a shared tree, so that check is not optional). Battery 56 gates / 603
+assertions.
