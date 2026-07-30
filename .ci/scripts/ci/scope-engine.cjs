@@ -402,6 +402,13 @@ function forcedFullPlan(reason) {
 function resolveBaseline(opts, io) {
   const { head, mergeSha, limit = DEFAULT_CANDIDATE_LIMIT, workflowClosure } = opts || {};
   const notes = [];
+  // io-side degradations (the one-shot run listing falling back to per-commit
+  // lookups) surface through this sink into `notes`, which main() emits as
+  // baseline_notes and scope-shadow.sh writes into the shadow artifact: the
+  // place someone actually looks. Without it, "the cheap path silently
+  // stopped being cheap" shows up only in API-call patterns nobody watches.
+  // An io without a sink (injected test doubles) simply stays silent.
+  if (typeof io.setNoteSink === 'function') io.setNoteSink((m) => notes.push(m));
   const fail = (reason, baseline = null, trail = []) => ({
     baseline,
     trail,
@@ -654,11 +661,16 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
   // (RUNS_LIST_MAX_PAGES max), never with candidates, so a red streak of any
   // length adds nothing. `null` until loaded; `false` when the listing failed
   // or no branch is known, which degrades to the per-commit fallback above.
+  // Filled by resolveBaseline via setNoteSink; a no-op until then, so calling
+  // io functions outside a resolve stays silent rather than crashing.
+  let noteSink = () => {};
+
   let runsBySha = null;
   const loadRunsBySha = () => {
     if (runsBySha !== null) return;
     if (!branch) {
       runsBySha = false;
+      noteSink('runs-listing:per-commit-fallback:no-branch');
       return;
     }
     try {
@@ -679,8 +691,9 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
         if (runs.length < 100) break;
       }
       runsBySha = map;
-    } catch {
+    } catch (e) {
       runsBySha = false; // correctness over cost: fall back to per-commit
+      noteSink(`runs-listing-degraded:per-commit:${e && e.message ? e.message : String(e)}`);
     }
   };
 
@@ -725,6 +738,10 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
   };
 
   return {
+    setNoteSink: (fn) => {
+      noteSink = typeof fn === 'function' ? fn : () => {};
+    },
+
     isShallow: () => git('rev-parse', '--is-shallow-repository').trim() === 'true',
 
     firstParent: (sha) => git('rev-parse', `${sha}^1`).trim(),
