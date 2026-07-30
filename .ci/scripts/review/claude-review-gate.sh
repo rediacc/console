@@ -15,9 +15,6 @@
 #   Emits to $GITHUB_OUTPUT: go, pr_number, head_sha, last_reviewed_sha,
 #   and (when go=true) a heredoc `prompt` assembled from prompts/initial.md
 #   or prompts/followup.md.
-# Record-invocation mode (--record-invocation): echo the claude_args the
-#   workflow sent, because the action itself never logs them.
-#   Env: CLAUDE_ARGS_SENT (optional GITHUB_STEP_SUMMARY)
 # Post-report mode (--post-report): post the model's final report as a PR
 #   comment on the entry points where the action cannot (see the mode itself).
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
@@ -126,37 +123,6 @@ emit_prompt() {
         echo "CLAUDE_REVIEW_PROMPT_EOF"
     } >>"$GITHUB_OUTPUT"
 }
-
-if [[ "${1:-}" == "--record-invocation" ]]; then
-    # The action's own log DELIBERATELY hides what it was invoked with:
-    # run-claude-sdk.ts destructures `extraArgs` out before printing the SDK
-    # options. That is upstream and not ours to change, but the consequence is:
-    # anything passed through `claude_args` leaves NO trace that it was applied,
-    # and only its firing would ever reveal it.
-    #
-    # Spike S-2 hit exactly this while settling `--max-budget-usd`, and it is
-    # about to matter more. That flag binds, but as a between-turns post-hoc
-    # stop rather than a ceiling (measured overshooting a $0.01 cap to $0.234;
-    # see docs/ci-overhaul/spike-s1-s2.md), so "was it even on?" has to be
-    # answerable from the log rather than from a halt.
-    #
-    # Deliberately dumb: it echoes what the workflow says it sent. It cannot
-    # prove the action forwarded it, and claiming otherwise would be worse than
-    # saying nothing. What it does give is the invoked-vs-observed pair needed
-    # to tell "the flag was never set" from "the flag was set and ignored".
-    printf '%s\n' "${CLAUDE_ARGS_SENT:-(none recorded)}"
-    if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-        {
-            echo "### Review invocation"
-            echo ''
-            echo 'claude_args as sent to the action (the action does not log these itself):'
-            echo '```'
-            printf '%s\n' "${CLAUDE_ARGS_SENT:-(none recorded)}"
-            echo '```'
-        } >>"$GITHUB_STEP_SUMMARY"
-    fi
-    exit 0
-fi
 
 if [[ "${1:-}" == "--post-report" ]]; then
     # Post the review report when the ACTION could not. track_progress (which

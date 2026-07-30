@@ -688,3 +688,33 @@ the released version moved", and both the script and `resolve-version.sh` were
 restored and verified byte-identical by sha256 (the test swaps a real tracked
 file in a shared tree, so that check is not optional). Battery 56 gates / 603
 assertions.
+
+### The pre-existing conditions are RECORDED on live traffic (2026-07-30)
+
+First live confirmation, read out of the artifact rather than inferred from the
+diff. `ci-skip-plan` from run `30547421380` on `732fb7e9c`:
+
+    mode: full   keys: 17   run=true: 17   run=false: 0
+    conditions: {pointer_bump_only: false, full_suite: true, is_bot: false}
+    preexisting_skip entries: []
+    reconciled: null
+
+Every value is the correct one for this run, and each says something different:
+
+- **`conditions` is populated at all**, which is the whole point. Before this
+  change the plan recorded no non-scope conditions, so the reconciler could not
+  tell a scope skip from one `ci.yml` always makes, and a live gate would have
+  redded seventeen keys on a pointer-bump PR.
+- `mode: full` is HONEST, not a failure: this push touches `.ci/`, so the engine
+  is fail-closed to full. It is why #546 itself can never produce a non-vacuous
+  reconcile, which was predicted and is now observed again.
+- `preexisting_skip` is empty and MUST be, because `full_suite` is true and
+  `pointer_bump_only` is false, so nothing is exempt. An entry here would have
+  been the bug, not the feature.
+- `reconciled: null` is correct in shadow mode; only the live gate sets it, and
+  D-1 keeps the engine in shadow until `pointer_bump_only` is seen true.
+
+What this does NOT yet show, stated so nobody banks it: the exemption path is
+still unexercised, because exempting anything requires `pointer_bump_only: true`
+or a plan authored on `push`, and today plans are authored only on
+`pull_request` (ci.yml:230, 241, 257).

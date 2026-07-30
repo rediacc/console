@@ -264,7 +264,25 @@ jobs:
             --model claude-sonnet-5
             --max-turns ${{ steps.gate.outputs.review_turns }}
             --disallowed-tools Task,Agent
-        run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --record-invocation
+        # INLINE ON PURPOSE, and this is the trap it fell into. The review
+        # tooling is checked out from rediacc/console@main (`ref: main` above),
+        # deliberately, so PR-authored review scripts can never execute. The
+        # workflow, however, comes from the PR. So a workflow step may call only
+        # script arms that ALREADY EXIST ON MAIN.
+        #
+        # The first version of this step called
+        # `claude-review-gate.sh --record-invocation`, an arm added on this
+        # branch. `git show origin/main:...claude-review-gate.sh | grep -c
+        # record-invocation` returns 0, so on run 30552035566 the step failed
+        # instantly (started and completed at 14:35:57) and took the job red.
+        # The arm cannot work until it is on main, which is a chicken-and-egg
+        # this step must not be caught by.
+        #
+        # Two lines of shell is under check-workflows.sh's 8-logic-line cap, so
+        # inlining is legitimate here rather than an evasion.
+        run: |
+          printf '%s\n' "$CLAUDE_ARGS_SENT"
+          { echo '### Review invocation (the action does not log claude_args itself)'; echo '```'; printf '%s\n' "$CLAUDE_ARGS_SENT"; echo '```'; } >>"$GITHUB_STEP_SUMMARY"
 
       # Persist the execution file. It carries total_cost_usd, num_turns and the
       # per-model `modelUsage` breakdown, and until now it was written to
