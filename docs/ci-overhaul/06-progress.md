@@ -718,3 +718,45 @@ What this does NOT yet show, stated so nobody banks it: the exemption path is
 still unexercised, because exempting anything requires `pointer_bump_only: true`
 or a plan authored on `push`, and today plans are authored only on
 `pull_request` (ci.yml:230, 241, 257).
+
+### The review cost model: a pass that produced nothing now costs budget
+
+Measured, not designed from theory. PR #546's first review (run `30552035566`)
+ended `"subtype": "error_max_turns"` after **51 turns and $2.8468**, posted
+nothing, and left ZERO github-actions comments on the PR.
+
+Every step after the model call carried no status function, so implicit
+`success()` skipped all three, including the marker. Since the cap counts POSTED
+reports, that pass counted as **zero**, the budget never advanced, and the same
+SHA would have been re-reviewed at full price on every later green push, able to
+fail identically forever.
+
+The S-2 spike predicted exactly this shape for a budget halt: "red job, no
+report, no findings, no marker SHA, and the next run re-reviews the same SHA and
+pays again". It arrived via `max_turns` rather than `max_budget`, which is a
+useful confirmation that the spike's reasoning generalised.
+
+**A spent attempt is not a reviewed marker**, and that distinction is the whole
+safety property. It carries its own `ATTEMPT_PREFIX` so `last_marker_sha` cannot
+see it (a pass that read nothing must never suppress a later genuine review of
+the same SHA), while `spent_attempt_count` does, so it consumes budget. It
+records the failure subtype, because "we stopped reviewing this PR" is only
+defensible if it says what the budget was spent on. `always()` went on the marker
+step and nowhere else: post-report and post-findings have nothing to post when
+the model produced nothing, so running them would only add two ways to fail.
+
+### `modelUsage` is sound; the earlier empty render was a one-off
+
+Closed from the FIRST preserved execution artifact, which exists only because the
+upload step is `always()`-guarded and therefore survived the review's own
+failure. Artifact `claude-review-execution-732fb7e9c...` (id 8763349532, 806969
+bytes, 285 records):
+
+    modelUsage keys : ['claude-sonnet-5']
+    outputTokens    : 17040
+    usage.output_tokens : 17040
+
+The field is populated and the two agree exactly, so run `30527484990`'s empty
+render was a one-off in a since-superseded run rather than a live defect. Third
+independent confirmation of spike S-1 along the way: one model key, sonnet, no
+haiku.
