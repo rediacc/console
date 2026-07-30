@@ -69,7 +69,37 @@ if [[ -f "$(git rev-parse --git-dir)/shallow" ]]; then
 fi
 
 # --- Step 1: find the baseline ------------------------------------------------
-current=$(git rev-parse HEAD)
+#
+# RESOLVE HEAD FROM THE EVENT, NOT FROM `git rev-parse HEAD`. This is D9's
+# entire root cause and it is why pointer_bump_only has NEVER once been true.
+#
+# On a `pull_request` event actions/checkout hands over the synthetic two-parent
+# `refs/pull/N/merge` commit. `git rev-parse HEAD` therefore names a MERGE
+# commit, `${current}^2` resolves on the very first iteration, and the walk
+# aborts before it has looked at anything. Every run emits the identical
+# reason, `merge commit <x> in the walk` -- 13 for 13 as of 2026-07-29,
+# including run 30402596980.
+#
+# github.event.pull_request.head.sha is the real branch tip, which is what the
+# walk is meant to start from. It is read out of the event payload rather than
+# passed in, so no caller has to change.
+#
+# Falls back to `git rev-parse HEAD` when the payload is unreadable or the field
+# is absent: that is the old behaviour, which fails closed to
+# pointer_bump_only=false rather than fast-pathing something unverified.
+current=""
+if [[ -n "${GITHUB_EVENT_PATH:-}" && -r "${GITHUB_EVENT_PATH:-}" ]] && command -v jq >/dev/null 2>&1; then
+    current=$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+    # The tip must actually be present in this clone; a shallow fetch that never
+    # got it would make every subsequent rev-parse fail for the wrong reason.
+    if [[ -n "$current" ]] && ! git rev-parse --verify --quiet "${current}^{commit}" >/dev/null 2>&1; then
+        git fetch --quiet --depth=50 origin "$current" 2>/dev/null || true
+    fi
+    if [[ -n "$current" ]] && ! git rev-parse --verify --quiet "${current}^{commit}" >/dev/null 2>&1; then
+        current=""
+    fi
+fi
+[[ -n "$current" ]] || current=$(git rev-parse HEAD)
 baseline=""
 for _ in $(seq 1 "$WALK_CAP"); do
     if git rev-parse --verify --quiet "${current}^2" >/dev/null; then

@@ -61,6 +61,18 @@ REGISTRY=(
     # which is precisely the false signal the REGISTRY POLICY above warns about.
     # Its missing-manifest behaviour is proven in test-breakpoint-portability.sh
     # instead, where an isolated copy of the folder genuinely exists.
+    # NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh.
+    # Its sibling check-autopilot-workflow-invariants.sh IS registered below, and
+    # the asymmetry is deliberate rather than an oversight. That one reads the
+    # workflow tree, so an empty fixture makes it vacuous and it must say so.
+    # This one never touches the tree at all: it is three `gh api` calls against
+    # the live ruleset (:52, :71). An empty-tree run would exit non-zero on the
+    # absent AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity
+    # failure's exit code, and pinning it would assert nothing about the gate.
+    # Verified live instead, 2026-07-30: with AUTOPILOT_APP_ID=4409539 it exits 0
+    # and reports ruleset 12344707 bypass actors [RepositoryRole:5,
+    # Integration:2772000] with autopilot absent, which is the property it exists
+    # to defend.
     # The harness fixture copies scripts/ and .ci/scripts/ but nothing that
     # REFERENCES them (no workflows, no docs, no allowlist), so the gate must
     # report the resulting orphans loudly rather than pass. The "ZERO shell
@@ -75,6 +87,48 @@ REGISTRY=(
     # compare against the chain. It used to die with a raw ENOENT stack trace,
     # which reads as a crash rather than a verdict.
     "check-ci-chain-parity.ts|blind"
+    # The scope engine's workflow closure is computed by ITERATING
+    # `uses: ./.github/workflows/*` at runtime, never by matching names, so the
+    # test asserts a real closure over the real tree. On the empty fixture that
+    # closure is {} and the assertion must fail: registering it pins the fact
+    # that moving or renaming the workflow tree cannot silently turn the
+    # closure test into a tautology over an empty set.
+    ".ci/scripts/test/gates/test-scope-engine.sh|closure"
+    # A DIFF gate with no baseline and no ledger measures nothing, and
+    # "measured nothing" must never read as "found nothing". Against the empty
+    # fixture both its inputs are gone, so it must refuse to run. Its first
+    # draft did the opposite: a wrong ledger path made the protected set empty,
+    # so it reported OK on a planted fabrication. Only a control caught that.
+    "check-locale-only-edits.ts|Refusing to run"
+    "check-gate-reachability.ts|Refusing to run"
+    "check-jq-boolean-default.ts|Refusing to run"
+    ".ci/scripts/security/check-autopilot-workflow-invariants.sh|INVARIANT-FAIL"
+    # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1
+    # verbatim: point it at a tree without packages/www/src/content/docs and
+    # the glob returns zero files, every loop iterates zero times, and it
+    # printed "All external links are valid". Measured on the empty fixture
+    # before the guard was added, not inferred from reading it.
+    "check-external-links.ts|Refusing to run"
+    # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
+    # Measured, not assumed: it passes all 55 assertions against the empty tree,
+    # because it is a pure unit test that builds every fixture it needs (its
+    # plans and job lists are constructed in-test, and it reads scope-map only
+    # for the job-key list, which .ci/scripts carries into the fixture). Passing
+    # with the repo absent is CORRECT for it rather than vacuous, so an entry
+    # here could never fail and would be exactly the dead assertion this
+    # harness exists to catch. Its anti-vacuity controls are inline instead.
+    #
+    # NOT registered here either: .ci/scripts/test/gates/test-scope-baseline-attest.sh,
+    # for the same reason and measured the same way: all 75 assertions pass
+    # against the empty tree (exit 0), because it too builds every fixture it
+    # needs. It drives the real createRepoIo with an INJECTED `run`, so it makes
+    # no git call, no gh call and no network call; the only repo files it reads
+    # are the three .ci/scripts/ci/*.cjs modules this harness copies in anyway.
+    # Passing with the source tree absent is CORRECT for it, so an entry here
+    # would assert nothing. Its controls are inline instead, one per planted
+    # defect, plus three engine mutants run by hand during authoring (drop the
+    # `delete plan.reconciled`, drop the cheap-first mode gate, restore the
+    # one-green-run-per-sha pick) each of which flips a different case red.
 )
 
 # run_against_empty_tree <script> -- execute <script> with scripts/ copied into

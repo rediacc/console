@@ -2,75 +2,711 @@
   "cast": "/assets/tutorials/tutorial-installation.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "e3413ad3fa83ed78694d9e8fd6e15b879bb580dcbe806889c17db916daf22a33",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.614947,
-      "replayEndSec": 8.543153,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01.259d62a6.mp3",
-      "audioDurationSec": 19.565714,
-      "textHash": "259d62a6337ffd068912f1851d4b7f2c830494dfc8093acaab5f7b4e0613a8a3",
+      "replayStartSec": 1.624699,
+      "replayEndSec": 8.885041,
       "narrationText": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01-after.9358f2b7.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "9358f2b793833ef9623f4d2367c6cef4d028559be0594f2f02d22aa3cf4fdcbb"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-01.9aa28d01.mp3",
+      "textHash": "9aa28d01e85b6d225d5b9c01dcf55cb27f540a02f903f0ca49925dcc4b142eae",
+      "audioDurationSec": 7.08,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.08,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.8,
+          "startChar": 43,
+          "endChar": 51
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.36,
+          "startChar": 52,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 60,
+          "endChar": 66
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 67,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 77,
+          "endChar": 85
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.04,
+          "startChar": 87,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 95,
+          "endChar": 104
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.08,
+          "startChar": 105,
+          "endChar": 119
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.88,
+          "startChar": 120,
+          "endChar": 133
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-01-after.f6f3d58c.mp3",
+      "afterAudioDurationSec": 3.72,
+      "afterTextHash": "f6f3d58cb30851e5a8b51962e5d98939f112fe9c385ed4ab6dca932529cb498e",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.72,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.32,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 33,
+          "endChar": 38
+        }
+      ]
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 8.543153,
-      "replayEndSec": 10.766661,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02.b3ec043b.mp3",
-      "audioDurationSec": 6.347755,
-      "textHash": "b3ec043bddee40e09a9c7ae8ba7b8ee800901d4a9cc795a9922c8ad1fb5b68db",
+      "replayStartSec": 8.885041,
+      "replayEndSec": 10.904926,
       "narrationText": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02-after.ba4b38e7.mp3",
-      "afterAudioDurationSec": 1.880816,
-      "afterTextHash": "ba4b38e751086e310a48c5ccf1475f848a0a1e5c6b983900cf9ff8cbba6934e4"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-02.834baad6.mp3",
+      "textHash": "834baad6a39f1f0a5b7bcbe2f50ae66a7e4c980a85bbf4d1f28bbcb972853ff4",
+      "audioDurationSec": 12.984,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 22,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 52,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.56,
+          "startChar": 64,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.96,
+          "startChar": 108,
+          "endChar": 115
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.2,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 121,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 125,
+          "endChar": 132
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 133,
+          "endChar": 137
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 138,
+          "endChar": 140
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 141,
+          "endChar": 150
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.28,
+          "startChar": 151,
+          "endChar": 159
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.64,
+          "startChar": 161,
+          "endChar": 166
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.12,
+          "startChar": 167,
+          "endChar": 170
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.84,
+          "startChar": 178,
+          "endChar": 183
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.16,
+          "startChar": 184,
+          "endChar": 193
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.72,
+          "startChar": 194,
+          "endChar": 202
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 12.8,
+          "startChar": 203,
+          "endChar": 208
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-installation/tutorial-installation-02-after.94ef2128.mp3",
+      "afterAudioDurationSec": 2.112,
+      "afterTextHash": "94ef2128de9cf9c185bce75cb68de05c08fe588ccd80efbd72dd6f90afc300ec",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 9,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.0,
+          "startChar": 21,
+          "endChar": 31
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/intro.622bab70.mp3",
-      "textHash": "622bab701622b2f408ab73ae313a4bd1e0ad7f3fc2610fbe9310c0ab414bfe36",
-      "audioDurationSec": 3.787755,
-      "narrationText": "Pekâlâ! Komut satırı aracını dizüstü bilgisayarınıza kuralım."
+      "textHash": "79236b2ed752bf0d3027fac2cdac683be85239339f7d628d029f7fc2fd7cd62f",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/intro.79236b2e.mp3",
+      "narrationText": "Pekâlâ! Komut satırı aracını dizüstü bilgisayarınıza kuralım.",
+      "audioDurationSec": 3.72,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.72,
+          "startChar": 29,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 37,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 53,
+          "endChar": 60
+        }
+      ]
     },
     {
       "id": "three-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/three-steps.1e03c43c.mp3",
-      "textHash": "1e03c43cfdc5f9a4e55595ff1ebc78a01febe8a2c2968fa07c69cb7232cb2b8b",
-      "audioDurationSec": 7.000816,
-      "narrationText": "Üç adım. Kurulum sayfasını açın, işletim sisteminizi seçin ve ardından komutu terminalinize yapıştırın."
+      "textHash": "108c98adcc4343e3e561399e91a03e19ccfb1458696f21c204a0d857e447ec7d",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/three-steps.108c98ad.mp3",
+      "narrationText": "Üç adım. Kurulum sayfasını açın, işletim sisteminizi seçin ve ardından komutu terminalinize yapıştırın.",
+      "audioDurationSec": 5.304,
+      "wordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.92,
+          "startChar": 17,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 59,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 62,
+          "endChar": 70
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 78,
+          "endChar": 91
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.2,
+          "startChar": 92,
+          "endChar": 102
+        }
+      ]
     },
     {
       "id": "open-install-page",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/open-install-page.d928832f.mp3",
-      "textHash": "d928832f598206f6b018ced77b4f3b13b28243bd633272a9f61cf5ebddd9f80b",
-      "audioDurationSec": 7.235918,
-      "narrationText": "Kurulum sayfasına gidin ve hızlı kurulum bölümüne kaydırın. Hangi platformda olursanız olun size uygun tek satırlık komutu üretir."
+      "textHash": "ad7b5af5f2c4c1e2c42da820d98d28640d573711c337a90e00588fa3bd1e9f84",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/open-install-page.ad7b5af5.mp3",
+      "narrationText": "Kurulum sayfasına gidin ve hızlı kurulum bölümüne kaydırın. Hangi platformda olursanız olun size uygun tek satırlık komutu üretir.",
+      "audioDurationSec": 7.872,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 18,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 27,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 33,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 41,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 50,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 66,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 77,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 92,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 103,
+          "endChar": 106
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 107,
+          "endChar": 115
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 116,
+          "endChar": 122
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 123,
+          "endChar": 129
+        }
+      ]
     },
     {
       "id": "laptop-vs-server",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/laptop-vs-server.d8722404.mp3",
-      "textHash": "d8722404dd854e6f045e400f54ce6c3b560ae8bf69a245a9ceabe3276ad0ccd6",
-      "audioDurationSec": 11.72898,
-      "narrationText": "Komut satırı aracı dizüstü bilgisayarınızda yaşar. Sunucuda renet adlı ayrı bir bileşen çalışır; CLI onu SSH üzerinden sağlar ve sürer, böylece sunucuya elle giriş yapmanıza hiç gerek kalmaz."
+      "textHash": "60dfda32ac7705edf09f93007e606c4df3c3003fef94607eaa5fe73a366b3c33",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/laptop-vs-server.60dfda32.mp3",
+      "narrationText": "Komut satırı aracı dizüstü bilgisayarınızda yaşar. Sunucuda renet adlı ayrı bir bileşen çalışır; CLI onu SSH üzerinden sağlar ve sürer, böylece sunucuya elle giriş yapmanıza hiç gerek kalmaz.",
+      "audioDurationSec": 12.504,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 13,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 19,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 27,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 51,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 66,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.48,
+          "startChar": 71,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.56,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 80,
+          "endChar": 87
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 88,
+          "endChar": 95
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 109,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.56,
+          "startChar": 119,
+          "endChar": 125
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.2,
+          "startChar": 129,
+          "endChar": 134
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 136,
+          "endChar": 143
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.88,
+          "startChar": 144,
+          "endChar": 152
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 158,
+          "endChar": 163
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.6,
+          "startChar": 164,
+          "endChar": 173
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.76,
+          "startChar": 174,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 178,
+          "endChar": 183
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 184,
+          "endChar": 190
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/next-tutorial.65708b9b.mp3",
-      "textHash": "65708b9b3733b4c02ceff79eb8529f02aa371d67e7feadeee02ea9b30a463503",
-      "audioDurationSec": 7.000816,
-      "narrationText": "Kurulum tamam! Sırada, CLI'nin sunucularınıza ulaşabilmesi için SSH anahtarınızı ayarlayacağız."
+      "textHash": "be3c84176c938ab09ec13cdcd2f8c15d5bcd31493f952ba55715e750729f4d02",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-installation/next-tutorial.be3c8417.mp3",
+      "narrationText": "Kurulum tamam! Sırada, CLI'nin sunucularınıza ulaşabilmesi için SSH anahtarınızı ayarlayacağız.",
+      "audioDurationSec": 6.6,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 59,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.4,
+          "startChar": 68,
+          "endChar": 80
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "fecd13e678ecda99a050c54fb7a93e19db3ae05db3667c2e41556029445213b7"
+  ]
 }

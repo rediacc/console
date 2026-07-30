@@ -123,8 +123,22 @@ check_go_dir() {
         fi
 
         # Defer a just-published update until the next UTC day after it ages 24h.
+        #
+        # An unparseable timestamp used to vanish into `|| echo ""`. The
+        # direction is safe (no deferral is applied, so the module is still
+        # reported as outdated and the gate stays red rather than going quiet),
+        # but silence still hides a real breakage: if the upstream timestamp
+        # format ever changed, EVERY module would silently lose its
+        # minimum-release-age deferral and the gate would start demanding bumps
+        # it should be holding back. Warn on stderr, which does not disturb the
+        # machine-readable records this function writes to stdout.
         epoch=""
-        [[ -n "$uptime" ]] && epoch=$(date -u -d "$uptime" +%s 2>/dev/null || echo "")
+        if [[ -n "$uptime" ]]; then
+            if ! epoch=$(date -u -d "$uptime" +%s 2>/dev/null); then
+                log_warn "could not parse update timestamp '$uptime' for $path; freshness deferral not applied"
+                epoch=""
+            fi
+        fi
         if [[ -n "$epoch" ]] && is_release_deferred "$epoch"; then
             echo "$path $current $latest toofresh"
         elif [[ "$lat_major" -gt "$cur_major" ]]; then

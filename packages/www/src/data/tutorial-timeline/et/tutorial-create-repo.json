@@ -2,74 +2,432 @@
   "cast": "/assets/tutorials/tutorial-create-repo.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "79da82ae11572405e57d11fcaa6fd4b51cb52ab3fa98bcab6254301a19060aa4",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.412347,
-      "replayEndSec": 11.676359,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.2981de92.mp3",
-      "audioDurationSec": 17.867755,
-      "textHash": "2981de9249d22aa26ebf5f07c6e88e6307db9d1a52cf2c90055c648486847339",
+      "replayStartSec": 2.41017,
+      "replayEndSec": 10.688129,
       "narrationText": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01-after.7d567e11.mp3",
-      "afterAudioDurationSec": 4.205714,
-      "afterTextHash": "7d567e117985d070b0263db997d5ba1439207fa08fa91430e3261206240ad0c8"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-01.59e24597.mp3",
+      "textHash": "59e24597d654e47f10c8fc23e1411c1e1cb1f9e2fb46bb01fe58d14112466d7e",
+      "audioDurationSec": 15.384,
+      "wordTimings": [
+        {
+          "startSec": 5.12,
+          "endSec": 5.2,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.92,
+          "startChar": 76,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 88,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 107,
+          "endChar": 111
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.48,
+          "startChar": 153,
+          "endChar": 155
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 156,
+          "endChar": 159
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.04,
+          "startChar": 160,
+          "endChar": 167
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.28,
+          "startChar": 168,
+          "endChar": 174
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.68,
+          "startChar": 175,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 11.84,
+          "startChar": 178,
+          "endChar": 181
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.24,
+          "startChar": 182,
+          "endChar": 191
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.56,
+          "startChar": 192,
+          "endChar": 199
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.28,
+          "startChar": 200,
+          "endChar": 210
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.6,
+          "startChar": 211,
+          "endChar": 216
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.08,
+          "startChar": 216,
+          "endChar": 222
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.56,
+          "startChar": 223,
+          "endChar": 230
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 14.72,
+          "startChar": 231,
+          "endChar": 236
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 15.36,
+          "startChar": 237,
+          "endChar": 245
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-01-after.ccb87d76.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "ccb87d7669c0b2f6f3c271eda9277ff0b4d68a6d27bcfa61efacb82b7bfe53ed",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 2.24,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.44,
+          "startChar": 63,
+          "endChar": 76
+        }
+      ]
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.676359,
-      "replayEndSec": 17.041073,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.a21498fe.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "a21498fe88baf469e5e87a5fdacc5421eca968119651732c7f497b3afbfeabd9",
+      "replayStartSec": 10.688129,
+      "replayEndSec": 16.425103,
       "narrationText": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02-after.c9114639.mp3",
-      "afterAudioDurationSec": 2.586122,
-      "afterTextHash": "c91146398b47482722e6685a418d948d2e70bbdca5fc85df81f34760fa7aa30b"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-02.917d75a7.mp3",
+      "textHash": "917d75a7b0ec96b68a25efe6a07d5748c7376d21586c3a9a1687ecf90cfd00f8",
+      "audioDurationSec": 11.4,
+      "wordTimings": [
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 67,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 76,
+          "endChar": 79
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-02-after.0da80aef.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "0da80aef80f4c90db9f01cd1eb5a562128092ed74b273698478ec853bfe586f4",
+      "afterWordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.72,
+          "startChar": 31,
+          "endChar": 44
+        }
+      ]
     },
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.041073,
-      "replayEndSec": 20.377596,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3cd1fc9a.mp3",
-      "audioDurationSec": 12.355918,
-      "textHash": "3cd1fc9aa3cf2e6cb372327b5c4eaec86b990e38b349dca1b70aea04e2410f22",
+      "replayStartSec": 16.425103,
+      "replayEndSec": 18.266995,
       "narrationText": "Üks kasulik võimalus: avada repo otse VS Code'is selle käsuga. Me ei käivita siin redaktorit, kuid see alustab SSH kaudu repo'sse kaugseanssi, et saaksite selle faile muuta.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03-after.fe26f5cd.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "fe26f5cdfb45cb2f35cdd216b0dcdbe0ed7b157299333ea00b48079d58afa5f0"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-03.60f61744.mp3",
+      "textHash": "60f61744f9a0682f3add41194bc335771334c675b2684b50a4d258df67b8edd0",
+      "audioDurationSec": 10.44,
+      "wordTimings": [
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 28,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.32,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.76,
+          "startChar": 82,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 94,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.32,
+          "startChar": 99,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.44,
+          "startChar": 111,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 146,
+          "endChar": 153
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 155,
+          "endChar": 160
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.92,
+          "startChar": 161,
+          "endChar": 166
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 167,
+          "endChar": 172
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/tutorial-create-repo-03-after.b6bfeecf.mp3",
+      "afterAudioDurationSec": 4.2,
+      "afterTextHash": "b6bfeecf8eff5da5a794042ddbf2b9b80e4c6ca662ac2d158d6a265222023db9"
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/intro.d4921d84.mp3",
-      "textHash": "d4921d84022408545d2681c718d8d84a3c77dae8d3adc9c769419d656ab070a9",
-      "audioDurationSec": 8.907755,
-      "narrationText": "Loome su esimese repositooriumi! See on puhkeolekus krüpteeritud fail, mis ühendamisel muutub täielikult isoleeritud keskkonnaks."
+      "textHash": "3867b4c7e820d0ba378e9dcb03fe67bfad09290078cdf119629a7df8bad27931",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/intro.3867b4c7.mp3",
+      "narrationText": "Loome su esimese repositooriumi! See on puhkeolekus krüpteeritud fail, mis ühendamisel muutub täielikult isoleeritud keskkonnaks.",
+      "audioDurationSec": 8.04,
+      "wordTimings": [
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 97,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.2,
+          "startChar": 105,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.92,
+          "startChar": 117,
+          "endChar": 129
+        }
+      ]
     },
     {
       "id": "file-on-disk",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/file-on-disk.5083fa24.mp3",
-      "textHash": "5083fa2473639e24068e94fe8890f45aafd8cde7de1b11ded47ff40b012a8c43",
-      "audioDurationSec": 13.714286,
-      "narrationText": "Kettal on see üksik krüpteeritud kujutis. Ühendamisel saad pühendatud Dockeri deemoni, rakenduse andmed krüpteeritud mahu sees ja loopback IP-d, mis ei kattu millegi muuga serveris."
+      "textHash": "09ec727fe3bc301cdc8d5ae1d9326f5487dbef09eed0600541831d7796a2824e",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/file-on-disk.09ec727f.mp3",
+      "narrationText": "Kettal on see üksik krüpteeritud kujutis. Ühendamisel saad pühendatud Dockeri deemoni, rakenduse andmed krüpteeritud mahu sees ja loopback IP-d, mis ei kattu millegi muuga serveris.",
+      "audioDurationSec": 12.672,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 33,
+          "endChar": 40
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 83,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 7.44,
+          "startChar": 87,
+          "endChar": 96
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/next-tutorial.d5cd8215.mp3",
-      "textHash": "d5cd821513cf45ff5e7cd66fbed1374b6b9da3fd9159498a99822933f6968a2f",
-      "audioDurationSec": 5.407347,
-      "narrationText": "See on su esimene repositoorium, kasutusvalmis. Järgmisena juurutame selle sisse rakenduse!"
+      "textHash": "5f9f50bbdd8c5a839a87e92ba3319e39ca82f7be6ae5f60b9d523194efc643b8",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-create-repo/next-tutorial.5f9f50bb.mp3",
+      "narrationText": "See on su esimene repositoorium, kasutusvalmis. Järgmisena juurutame selle sisse rakenduse!",
+      "audioDurationSec": 5.952,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 4,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.76,
+          "startChar": 18,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 3.36,
+          "startChar": 33,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 4.0,
+          "startChar": 48,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 69,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.84,
+          "startChar": 81,
+          "endChar": 91
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d8f5a0975f36151d6c851bcedf98d273171f0170b8dee4e6047bbfa6c41d0a6b"
+  ]
 }

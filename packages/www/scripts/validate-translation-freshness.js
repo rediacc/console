@@ -7,23 +7,11 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import matter from 'gray-matter';
 
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
-export const SUPPORTED_LANGUAGES = [
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-];
+export const SUPPORTED_LANGUAGES = NON_ENGLISH_LOCALES;
 const COLLECTIONS = ['docs', 'blog'];
 const SOURCE_PREFIX_RE = /^packages\/www\/src\/content\/(docs|blog)\/en\/.+\.mdx?$/;
 // The cli/ directory is auto-generated from CLI --help output and cannot be

@@ -2,87 +2,1165 @@
   "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "b5d27126dd1f22b499b03e4daf2baa5d2cd0c494371c4377dc0cccfd5ac4cd3f",
   "steps": [
     {
       "id": "tutorial-delta-transfer-01",
       "markerIndex": 0,
-      "replayStartSec": 2.413668,
-      "replayEndSec": 10.922135,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01.b1e3ffda.mp3",
-      "audioDurationSec": 9.16898,
-      "textHash": "b1e3ffda7f30e2047701123a6a0861a5c05f50f44f0253bc9fe29d0cfd1a6f50",
+      "replayStartSec": 2.414842,
+      "replayEndSec": 8.165229,
       "narrationText": "İlk push başka bir makineye tam imajı taşır ve çıktı bunu açıkça söyler: iki gigabayt aktarıldı, full olarak işaretlendi. Bu taban noktasıdır.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-01-after.6c8f8077.mp3",
-      "afterAudioDurationSec": 8.124082,
-      "afterTextHash": "6c8f80770204eff00bf6deb6ddbdf37ccd3905d2de562ceda02f31a4dc4ce0af"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-01.1b644582.mp3",
+      "textHash": "1b644582a94144907e18761af9976e5b6f222db249dcfd88e6f7883d5e9d4743",
+      "audioDurationSec": 8.832,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.68,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 39,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 66,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.44,
+          "startChar": 78,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 87,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.48,
+          "startChar": 103,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.28,
+          "startChar": 110,
+          "endChar": 121
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.76,
+          "startChar": 123,
+          "endChar": 125
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.08,
+          "startChar": 126,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.56,
+          "startChar": 132,
+          "endChar": 142
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-01-after.393ded66.mp3",
+      "afterAudioDurationSec": 8.04,
+      "afterTextHash": "393ded6676902038bbc15c1d179d5f6371a053789e73f1f0c9365db7325264d7",
+      "afterWordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 10,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 23,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 38,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.88,
+          "startChar": 62,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.12,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.16,
+          "endSec": 5.2,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.24,
+          "endSec": 5.28,
+          "startChar": 77,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.44,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.4,
+          "startChar": 104,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 111,
+          "endChar": 113
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.88,
+          "startChar": 114,
+          "endChar": 116
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 117,
+          "endChar": 123
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 124,
+          "endChar": 136
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-02",
       "markerIndex": 1,
-      "replayStartSec": 10.922135,
-      "replayEndSec": 21.404869,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02.f8f0c124.mp3",
-      "audioDurationSec": 3.709388,
-      "textHash": "f8f0c124328d4c4e86bbfac3e444e83d4f57e22b8111d972787458f0237584f8",
+      "replayStartSec": 8.165229,
+      "replayEndSec": 16.388163,
       "narrationText": "Biraz veri değiştirin: iki gigabayttan elli megabayt.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-02-after.206f0f90.mp3",
-      "afterAudioDurationSec": 2.194286,
-      "afterTextHash": "206f0f90af6edd6dcb5445967c277e730c4cef8020c73c1a717f3d5a05bdfd4a"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-02.5d81c613.mp3",
+      "textHash": "5d81c61382c52b79151b8b133a4c82f3a7f77f4a57713cceb8c0d24dfe936040",
+      "audioDurationSec": 3.72,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 6,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.24,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.44,
+          "startChar": 31,
+          "endChar": 38
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-02-after.615b119c.mp3",
+      "afterAudioDurationSec": 3.072,
+      "afterTextHash": "615b119cab649d6208c620fa36b4b318eab1a6b3b5a48da7628a562561006c8f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 27,
+          "endChar": 37
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-03",
       "markerIndex": 2,
-      "replayStartSec": 21.404869,
-      "replayEndSec": 29.764702,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03.e89df5f5.mp3",
-      "audioDurationSec": 11.807347,
-      "textHash": "e89df5f506b303b031bcde705ffea523294713340d519c1249ce7be2c2f200e5",
+      "replayStartSec": 16.388163,
+      "replayEndSec": 22.149817,
       "narrationText": "Tekrar push edin. Aynı komut, ama bu sefer çıktıyı okuyun: iki gigabaytlık bir imaja karşı yaklaşık elli megabayt aktarıldı, delta olarak işaretlendi. Yalnızca değişen bloklar iletildi.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-03-after.7c4e1337.mp3",
-      "afterAudioDurationSec": 6.112653,
-      "afterTextHash": "7c4e133797f0a24c290de9e2fed2f7d8aeb6706ba0580b75747852e9aa4a7859"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-03.82720c17.mp3",
+      "textHash": "82720c178a034c1125ed0dbe13d3d6677c5898232117250ee9cc6945a57c48ea",
+      "audioDurationSec": 11.4,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.6,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 43,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 51,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 63,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 79,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 91,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 105,
+          "endChar": 113
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.6,
+          "startChar": 114,
+          "endChar": 123
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 125,
+          "endChar": 130
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 131,
+          "endChar": 137
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 9.04,
+          "startChar": 138,
+          "endChar": 149
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.24,
+          "startChar": 151,
+          "endChar": 159
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 168,
+          "endChar": 175
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.2,
+          "startChar": 176,
+          "endChar": 184
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-03-after.0d3378b8.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "0d3378b8e87c6345741e999507016a12ba2f061827c9587b97c8c12d8d50aecc",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 5,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 57,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 67,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 81,
+          "endChar": 90
+        }
+      ]
     },
     {
       "id": "tutorial-delta-transfer-04",
       "markerIndex": 3,
-      "replayStartSec": 29.764702,
-      "replayEndSec": 34.159829,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04.d62b797c.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "d62b797c63e6c24eca4bc5c2862eca89c164c1b33fb87db8eeabce64965faaa9",
+      "replayStartSec": 22.149817,
+      "replayEndSec": 26.398447,
       "narrationText": "Her iki makine de aynı repository'yi tutar, saniyeler içinde güncellenir. İsterseniz saatlik çalıştırın, maliyet boyut değil değişiklik kadardır.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/tutorial-delta-transfer-04-after.4ddf6d7a.mp3",
-      "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "4ddf6d7a89d56ab490fb1653bcc4bd0d63b68ad95060d12038f6117d3b9ce079"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-04.4404e06a.mp3",
+      "textHash": "4404e06af4229a425faa19f9bb5ec5683c1333e4b8c62bfad419ac10dafff208",
+      "audioDurationSec": 7.56,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 37,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 44,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 54,
+          "endChar": 60
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 61,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.8,
+          "startChar": 86,
+          "endChar": 93
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 94,
+          "endChar": 104
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 106,
+          "endChar": 113
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.32,
+          "startChar": 114,
+          "endChar": 119
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 120,
+          "endChar": 125
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.36,
+          "startChar": 126,
+          "endChar": 136
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/tutorial-delta-transfer-04-after.ac5b75b5.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "ac5b75b5c0d13fd7c84f2a6c8b1129e714399080e3bb26ed267e16b818d35e33",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.96,
+          "startChar": 4,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 17,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 30,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 39,
+          "endChar": 44
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/intro.bebfbd10.mp3",
-      "textHash": "bebfbd10707a2c64508e4f6af8f99247bd8efa6943838d79a1c24016d17ebc3f",
-      "audioDurationSec": 15.804082,
-      "narrationText": "İşte eğlenceli bir deney. Bir gigabayt veri içeren bir repository'yi başka bir makineye iki kez push edeceğiz. İlk push her şeyi taşır, ikincisi yalnızca değişenleri taşır. Sayılara bakın, push komutu tam olarak ne kadar taşındığını yazdırır."
+      "textHash": "3ed24e59f16595c3948d81be3e49e72220bf32dcc1fff0b948042ef2aa6081c0",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/intro.3ed24e59.mp3",
+      "narrationText": "İşte eğlenceli bir deney. Bir gigabayt veri içeren bir repository'yi başka bir makineye iki kez push edeceğiz. İlk push her şeyi taşır, ikincisi yalnızca değişenleri taşır. Sayılara bakın, push komutu tam olarak ne kadar taşındığını yazdırır.",
+      "audioDurationSec": 13.944,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 52,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 80,
+          "endChar": 86
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 89,
+          "endChar": 92
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 93,
+          "endChar": 96
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 97,
+          "endChar": 101
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 102,
+          "endChar": 110
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.48,
+          "startChar": 112,
+          "endChar": 115
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 117,
+          "endChar": 121
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 122,
+          "endChar": 125
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 126,
+          "endChar": 130
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 131,
+          "endChar": 136
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.16,
+          "startChar": 138,
+          "endChar": 146
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 147,
+          "endChar": 155
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 9.12,
+          "startChar": 156,
+          "endChar": 167
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.36,
+          "startChar": 168,
+          "endChar": 173
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.64,
+          "startChar": 175,
+          "endChar": 183
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 11.04,
+          "startChar": 184,
+          "endChar": 189
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.68,
+          "startChar": 191,
+          "endChar": 195
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.0,
+          "startChar": 196,
+          "endChar": 202
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.24,
+          "startChar": 203,
+          "endChar": 206
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 12.48,
+          "startChar": 207,
+          "endChar": 213
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.64,
+          "startChar": 214,
+          "endChar": 216
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.96,
+          "startChar": 217,
+          "endChar": 222
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.84,
+          "startChar": 223,
+          "endChar": 234
+        }
+      ]
     },
     {
       "id": "blocks-not-bytes",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/blocks-not-bytes.a509c9d5.mp3",
-      "textHash": "a509c9d54b57d5151e2a002aab8c4d697b1b980844032030c18799bfdc08d9d8",
-      "audioDurationSec": 19.226122,
-      "narrationText": "Püf nokta kurulumda. İlk push'tan sonra CLI, her iki makinede de özdeş değiştirilemez bir taban imajı tutar. Sonraki push, blokları bu tabana göre karşılaştırır ve yalnızca farkı gönderir. Bayrak yok, kayıt tutma yok, aynı push komutu."
+      "textHash": "64bc0c172f3dd3d370179b1590fc1530a23c3440fe004daabc49292f18031da6",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/blocks-not-bytes.64bc0c17.mp3",
+      "narrationText": "Püf nokta kurulumda. İlk push'tan sonra CLI, her iki makinede de özdeş değiştirilemez bir taban imajı tutar. Sonraki push, blokları bu tabana göre karşılaştırır ve yalnızca farkı gönderir. Bayrak yok, kayıt tutma yok, aynı push komutu.",
+      "audioDurationSec": 15.552,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 50,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.24,
+          "startChar": 54,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.88,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.76,
+          "startChar": 110,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 118,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 124,
+          "endChar": 132
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 133,
+          "endChar": 135
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.36,
+          "startChar": 136,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 143,
+          "endChar": 147
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.72,
+          "startChar": 148,
+          "endChar": 161
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.8,
+          "startChar": 165,
+          "endChar": 173
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.12,
+          "startChar": 174,
+          "endChar": 179
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 11.52,
+          "startChar": 180,
+          "endChar": 188
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.96,
+          "startChar": 190,
+          "endChar": 196
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.12,
+          "startChar": 197,
+          "endChar": 200
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 202,
+          "endChar": 206
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.08,
+          "startChar": 208,
+          "endChar": 213
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 14.96,
+          "startChar": 224,
+          "endChar": 228
+        },
+        {
+          "startSec": 14.96,
+          "endSec": 15.36,
+          "startChar": 229,
+          "endChar": 235
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-delta-transfer/next-tutorial.490b1642.mp3",
-      "textHash": "490b164291deb19ceae9538d88d343aad879af56186b32139a465ea3a1762749",
-      "audioDurationSec": 11.31102,
-      "narrationText": "Küçük değişiklikler, ilkinden sonraki her seferinde küçük aktarımlar demektir. Şimdi sadece bir tutorial kaldı: hiçbir zaman disk alanınızın bitmemesini sağlamak. Son tutorial'da görüşürüz!"
+      "textHash": "d5183bdb97f94c5b6af63e1c0447435a4d623a428cf328ef8c706df898f6141a",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-delta-transfer/next-tutorial.d5183bdb.mp3",
+      "narrationText": "Küçük değişiklikler, ilkinden sonraki her seferinde küçük aktarımlar demektir. Şimdi sadece bir tutorial kaldı: hiçbir zaman disk alanınızın bitmemesini sağlamak. Son tutorial'da görüşürüz!",
+      "audioDurationSec": 10.272,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 30,
+          "endChar": 37
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.0,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.56,
+          "startChar": 42,
+          "endChar": 51
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 52,
+          "endChar": 57
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 58,
+          "endChar": 68
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 69,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.96,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.2,
+          "startChar": 92,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 96,
+          "endChar": 104
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 105,
+          "endChar": 110
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 112,
+          "endChar": 118
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.04,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 8.0,
+          "startChar": 130,
+          "endChar": 140
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 153,
+          "endChar": 161
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.88,
+          "startChar": 163,
+          "endChar": 166
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.44,
+          "startChar": 167,
+          "endChar": 178
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.16,
+          "startChar": 179,
+          "endChar": 188
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "6f1269c008cd82fa258fb3bd7f613a3086d840ac0d874264c05bd458ea12821a"
+  ]
 }

@@ -3,7 +3,12 @@
 This suite is the durable handoff from the 2026-07-27 discovery session that started as
 "make CI shorter" and turned into a measurement exercise. It carries everything found,
 including nine defects and twelve findings, the scored options, the operator's locked
-decisions, and a full design for both halves of the work. Nothing in it has been built.
+decisions, and a full design for both halves of the work.
+
+**STATUS, 2026-07-29: this is no longer a plan-only suite.** Wave A has MERGED,
+Wave B is built and awaiting two acceptance criteria, and Wave C is unblocked.
+Read **[06-progress.md](06-progress.md)** FIRST for what actually landed and
+which claims below are now stale.
 
 Memory pointer: `project_ci_overhaul.md` in the auto-memory index.
 Program state: `~/.claude/projects/-home-muhammed-monorepo-console/programs/ci-overhaul/`
@@ -23,7 +28,9 @@ run, and only then hand the keys to an agent.
 
 ## Read order
 
-1. **[01-verified-context.md](01-verified-context.md)** first, always. Every measurement and
+0. **[06-progress.md](06-progress.md)** before anything else: what is built, what
+   is proven, and which statements in the documents below have been corrected.
+1. **[01-verified-context.md](01-verified-context.md)** next. Every measurement and
    every defect, with `file:line` and run ids. Section 8b corrects earlier sections; trust 8b.
 2. **[02-v1-economics.md](02-v1-economics.md)** for PR-A and PR-B.
 3. **[03-v2-autonomy.md](03-v2-autonomy.md)** for PR-C. Read walls 1 to 5 before designing

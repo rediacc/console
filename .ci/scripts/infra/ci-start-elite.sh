@@ -45,12 +45,27 @@ echo "Writing .env to $ELITE_DIR..."
 } >"$ELITE_DIR/.env"
 
 # =============================================================================
-# START ELITE SERVICES
+# START ELITE SERVICES THROUGH THE ENTRY POINT AN OPERATOR ACTUALLY USES
 # =============================================================================
-echo "Starting Elite Docker Compose services..."
+# This used to call `docker compose -f ... -f ... up -d` directly, which meant
+# the header's claim just above ("Tests the same image customers deploy before
+# changes ship") was only half true: it tested the IMAGE, never the PATH.
+#
+# Everything run.sh does around compose was therefore unverified by CI:
+#   - overlay selection (standalone is inferred from an EMPTY INSTANCE_NAME,
+#     run.sh:11-15; hardcoding both -f flags bypassed that inference entirely)
+#   - bridge-container cleanup before start
+#   - certificate auto-generation when ENABLE_HTTPS is on
+#   - the image-existence check and pull
+# A change breaking any of them would have shipped with this job green.
+#
+# `.env` is written above, and run.sh only bootstraps one when it is ABSENT
+# (run.sh:68), so the concrete TAG/WEB_TAG set here survive and no registry
+# version lookup happens.
+echo "Starting Elite services via ./run.sh up (the operator entry point)..."
 cd "$ELITE_DIR"
 
-docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d
+./run.sh up
 
 # =============================================================================
 # WAIT FOR HEALTH CHECK
@@ -77,7 +92,9 @@ wait_for_web() {
 
 wait_for_web || {
     echo "Elite startup failed: Web"
-    docker compose -f docker-compose.yml -f docker-compose.standalone.yml logs web
+    # Through run.sh too, so the diagnostic path is the same one an operator
+    # would reach for, and so its own compose-file selection is exercised.
+    ./run.sh logs web
     exit 1
 }
 

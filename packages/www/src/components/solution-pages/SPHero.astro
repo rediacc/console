@@ -2,7 +2,6 @@
 import type { Language } from '../../i18n/types';
 import { createTranslator } from '../../i18n/utils';
 import SPTerminalMockup from './SPTerminalMockup.astro';
-import TeamVideoPlayer from '../TeamVideoPlayer';
 import YouTubeEmbed from '../YouTubeEmbed.astro';
 
 interface Props {
@@ -20,17 +19,12 @@ interface Props {
   terminal?: {
     lines: any[];
   };
-  teamVideo?: {
-    member: string;
-    videoKey: string;
-    durationLabel: string;
-  };
   youtubeVideoId?: string;
 }
 
-const { lang, hero, ctaHref, secondaryCtaHref, terminal, teamVideo, youtubeVideoId } = Astro.props;
+const { lang, hero, ctaHref, secondaryCtaHref, terminal, youtubeVideoId } = Astro.props;
 const { t } = createTranslator(lang);
-const hasSplit = !!teamVideo || !!youtubeVideoId;
+const hasSplit = !!youtubeVideoId;
 ---
 
 <section class:list={['sp-hero', { 'sp-hero--split': hasSplit }]}>
@@ -60,18 +54,7 @@ const hasSplit = !!teamVideo || !!youtubeVideoId;
         <YouTubeEmbed videoId={youtubeVideoId} title={t('video.youtubeTitle')} playLabel={t('video.playVideo')} lang={lang} />
       </div>
     )}
-    {!youtubeVideoId && teamVideo && (
-      <div class="sp-hero-video">
-        <TeamVideoPlayer
-          client:visible
-          member={teamVideo.member}
-          videoKey={teamVideo.videoKey}
-          lang={lang}
-          size="compact"
-        />
-      </div>
-    )}
-    {!youtubeVideoId && !teamVideo && terminal && <SPTerminalMockup lines={terminal.lines} lang={lang} />}
+    {!youtubeVideoId && terminal && <SPTerminalMockup lines={terminal.lines} lang={lang} />}
   </div>
 </section>
 

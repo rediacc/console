@@ -8,9 +8,9 @@
  *   mp4, vertical, poster
  *   (bucket keys: videos/solutions/<lang>/<slug>[.vertical|.poster.jpg])
  *
- * The site's 3 remaining locales (ar/et/tr) intentionally fall back to the English
- * video at render time (see src/utils/solution-video.ts), so they are NOT required
- * here — and we never duplicate the English files for them.
+ * ALL 13 locales now have their own solution videos. ar/et/tr used to fall back to the
+ * English video because Qwen3-TTS could not voice them; VoxCPM2 narrates every locale
+ * natively and all three are published, so none is exempt here any more.
  *
  * The bound video element is in SPSolutionVideo.astro via resolveSolutionVideo(slug,
  * lang); a missing manifest entry = a 404 / black player on a shipped page. The gate
@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { isSiteLocale } from '@rediacc/locales';
 import { VIDEO_LANGS } from '../src/utils/solution-video.ts';
 import type { VideoManifest } from './lib/update-video-manifest.js';
 
@@ -44,6 +45,60 @@ function loadManifest(): VideoManifest {
     return { generatedAt: '', baseUrl: '', tutorials: {}, solutions: {} };
   }
   return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as VideoManifest;
+}
+
+/**
+ * The REVERSE direction: what the manifest holds that VIDEO_LANGS does not ask for.
+ *
+ * The forward loop below iterates VIDEO_LANGS, so it is structurally blind to every
+ * manifest key outside that list. Three things hide in that blind spot:
+ *
+ *  - A **typo'd locale key** (`pt-BR`, `zh_CN`, `jp`). Fatal. The publish wrote real objects
+ *    to R2 under a key no page will ever request, so the video is unreachable and the gate
+ *    says "OK" — the exact silent-fallback shape this repo has shipped before.
+ *  - A locale **complete for every required slug but absent from VIDEO_LANGS**. Not fatal:
+ *    this is the deliberate, documented mid-flip state (publish the manifest first, flip
+ *    VIDEO_LANGS in a separate commit). Reported, because it is precisely the signal that
+ *    the second commit is now safe, and nothing else in the repo surfaces it.
+ *  - An **orphaned slug** the manifest carries but no page renders. Not fatal, but it is
+ *    paid-for R2 storage nobody serves.
+ */
+// `declaredLangs` is injectable ONLY so the self-test can exercise the readyToFlip branch:
+// it cannot fire in production while VIDEO_LANGS === SITE_LOCALES, and an untestable branch
+// is one that silently rots until the day a 14th locale needs it.
+export function reverseFindings(
+  manifest: VideoManifest,
+  required: string[],
+  allSlugs: string[],
+  declaredLangs: readonly string[] = VIDEO_LANGS
+): { badKeys: string[]; readyToFlip: string[]; orphanSlugs: string[] } {
+  const declared = new Set<string>(declaredLangs);
+  const pages = new Set(allSlugs);
+  const badKeys: string[] = [];
+  const orphanSlugs: string[] = [];
+  const langsSeen = new Map<string, number>();
+
+  for (const [slug, byLang] of Object.entries(manifest.solutions ?? {})) {
+    if (!pages.has(slug)) orphanSlugs.push(slug);
+    for (const lang of Object.keys(byLang ?? {})) {
+      if (!isSiteLocale(lang)) {
+        badKeys.push(`${slug}.${lang}`);
+        continue;
+      }
+      // Count only COMPLETE sets, and only for slugs the gate actually requires --
+      // a half-published locale is not ready to flip and must not be reported as such.
+      if (required.includes(slug) && missingManifestFields(manifest, slug, lang).length === 0) {
+        langsSeen.set(lang, (langsSeen.get(lang) ?? 0) + 1);
+      }
+    }
+  }
+
+  const readyToFlip = [...langsSeen.entries()]
+    .filter(([lang, n]) => !declared.has(lang) && n === required.length)
+    .map(([lang]) => lang)
+    .sort();
+
+  return { badKeys: badKeys.sort(), readyToFlip, orphanSlugs: orphanSlugs.sort() };
 }
 
 function listSlugs(): string[] {
@@ -129,14 +184,38 @@ function main(): number {
     }
   }
 
-  if (misses.length === 0) {
+  const { badKeys, readyToFlip, orphanSlugs } = reverseFindings(manifest, required, slugs);
+  for (const lang of readyToFlip) {
+    console.log(
+      `→ ${lang}: complete in the manifest for all ${required.length} required slugs but NOT in ` +
+        `VIDEO_LANGS. This is the safe point to add it (solution-video.ts:34).`
+    );
+  }
+  for (const slug of orphanSlugs) {
+    console.log(`↷ ${slug}: in the manifest but no solution page renders it (orphaned R2 objects)`);
+  }
+
+  if (misses.length === 0 && badKeys.length === 0) {
     console.log(
       `✓ Solution videos OK: ${required.length} slugs × ${VIDEO_LANGS.length} langs ` +
-        `(${checked} sets present; ar/et/tr fall back to en by design` +
+        `(${checked} sets present` +
         (videoless.length ? `; ${videoless.length} videoless slug(s) skipped` : '') +
         `)`
     );
     return 0;
+  }
+
+  if (badKeys.length) {
+    console.error(
+      `✗ ${badKeys.length} manifest entr${badKeys.length === 1 ? 'y' : 'ies'} keyed by a ` +
+        `non-site locale. No page can ever request these, so the video is unreachable:\n`
+    );
+    for (const k of badKeys) console.error(`  ${k}`);
+    console.error(
+      '\nFix the locale key at its source (the publish step that wrote it), then regenerate\n' +
+        'the manifest. Do not add the key to SITE_LOCALES to silence this.\n'
+    );
+    if (misses.length === 0) return 1;
   }
 
   console.error(
@@ -176,10 +255,91 @@ function main(): number {
   );
   console.error('  ./run.sh --publish-www');
   console.error('  # 3) Re-run this check.');
-  console.error(
-    '\n  Note: ar/et/tr are intentional English fallbacks (src/utils/solution-video.ts) and are NOT generated.'
-  );
   return 1;
 }
 
-process.exit(main());
+/**
+ * `--selftest` exercises reverseFindings, including the readyToFlip branch that CANNOT fire
+ * in production while VIDEO_LANGS === SITE_LOCALES. Without this the branch would sit
+ * unexercised until a 14th locale needed it, which is when a latent bug in it would surface.
+ * Four of the seven cases are controls that must NOT report.
+ */
+function selftest(): number {
+  const F = ['mp4', 'vertical', 'poster'] as const;
+  const full = () => Object.fromEntries(F.map((f) => [f, { path: `x.${f}` }]));
+  const mk = (solutions: unknown) =>
+    ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as VideoManifest;
+  let fails = 0;
+  const chk = (name: string, got: unknown, want: unknown) => {
+    if (JSON.stringify(got) === JSON.stringify(want)) console.log(`  PASS  ${name}`);
+    else {
+      console.error(
+        `  FAIL  ${name}\n        want ${JSON.stringify(want)}\n        got  ${JSON.stringify(got)}`
+      );
+      fails++;
+    }
+  };
+
+  chk(
+    'typo locale key is reported',
+    reverseFindings(mk({ a: { en: full(), 'pt-BR': full() } }), ['a'], ['a']).badKeys,
+    ['a.pt-BR']
+  );
+  chk(
+    'all-valid keys report nothing (control)',
+    reverseFindings(mk({ a: { en: full(), de: full() } }), ['a'], ['a']).badKeys,
+    []
+  );
+  chk(
+    'manifest slug with no page is reported',
+    reverseFindings(mk({ a: { en: full() }, ghost: { en: full() } }), ['a'], ['a']).orphanSlugs,
+    ['ghost']
+  );
+  chk(
+    'complete-but-undeclared locale is ready to flip',
+    reverseFindings(
+      mk({ a: { en: full(), de: full() }, b: { en: full(), de: full() } }),
+      ['a', 'b'],
+      ['a', 'b'],
+      ['en']
+    ).readyToFlip,
+    ['de']
+  );
+  chk(
+    'partially-published locale is NOT ready to flip (control)',
+    reverseFindings(
+      mk({ a: { en: full(), de: full() }, b: { en: full() } }),
+      ['a', 'b'],
+      ['a', 'b'],
+      ['en']
+    ).readyToFlip,
+    []
+  );
+  // The fixture shape matters here: fields are objects carrying `.path`, not strings. With
+  // string fields this control passed vacuously, because EVERY field looked absent.
+  chk(
+    'locale missing one field is NOT ready to flip (control)',
+    reverseFindings(mk({ a: { en: full(), de: { mp4: { path: 'x' } } } }), ['a'], ['a'], ['en'])
+      .readyToFlip,
+    []
+  );
+  chk(
+    'declared locale is NOT announced (control)',
+    reverseFindings(mk({ a: { en: full(), de: full() } }), ['a'], ['a'], ['en', 'de']).readyToFlip,
+    []
+  );
+
+  if (fails) {
+    console.error(`\n✗ ${fails} self-test failure(s)`);
+    return 1;
+  }
+  console.log('\n✓ check-solution-videos self-test passed');
+  return 0;
+}
+
+// Run only as the entry point. Bare `process.exit(main())` at module scope meant any
+// `import` of this file ran the whole gate and exited the importer, which is why
+// reverseFindings could not be unit-tested until now.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exit(process.argv.includes('--selftest') ? selftest() : main());
+}

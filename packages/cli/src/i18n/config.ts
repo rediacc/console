@@ -1,3 +1,4 @@
+import { SITE_LOCALES, type SiteLocale } from '@rediacc/locales';
 // Import all locale files directly - they get bundled by esbuild
 
 import { getAllTranslations, SHARED_NAMESPACE } from '@rediacc/shared/i18n';
@@ -18,22 +19,8 @@ import zhCli from './locales/zh/cli.json' with { type: 'json' };
 
 // Import shared translations from @rediacc/shared
 
-export const SUPPORTED_LANGUAGES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-] as const;
-type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+export const SUPPORTED_LANGUAGES = SITE_LOCALES;
+type SupportedLanguage = SiteLocale;
 
 // Get all shared translations
 const sharedTranslations = getAllTranslations();

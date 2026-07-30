@@ -2,126 +2,1228 @@
   "cast": "/assets/tutorials/tutorial-backup-restore.cast",
   "language": "ar",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "2e1d6ed48abe",
+  "transcriptHash": "c4b325fc4111c75f58eb14c456993e0e6c6e9c168f03aada8ab40f55984a5459",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409089,
-      "replayEndSec": 6.555802,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01.96283916.mp3",
-      "audioDurationSec": 14.106122,
-      "textHash": "962839166a20ad3f71b480b720dad61320969416a772cf7364e7c7f2dc6a1374",
+      "replayStartSec": 2.40238,
+      "replayEndSec": 5.948859,
       "narrationText": "الخطوة الأولى. نستورد إعداد rclone موجودًا. يدعم rclone S3 وBackblaze وGoogle Drive وDropbox وأكثر بكثير. إذا كنت تستخدمه بالفعل، يمكنك استيراد نفس الإعداد مباشرةً.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01-after.56b948b9.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "56b948b90c846e08ed748c46dcca8ed6601c82923c09c0bde277dd5619a72560"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-01.ecf1a36e.mp3",
+      "textHash": "ecf1a36ef28a5b05d140819a53fc32dbc7ce6de44a466d344d4098f62cc6e722",
+      "audioDurationSec": 20.04,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.64,
+          "startChar": 35,
+          "endChar": 40
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 12.96,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 12.96,
+          "endSec": 13.52,
+          "startChar": 99,
+          "endChar": 104
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 14.8,
+          "startChar": 106,
+          "endChar": 109
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.2,
+          "startChar": 110,
+          "endChar": 113
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.52,
+          "startChar": 114,
+          "endChar": 121
+        },
+        {
+          "startSec": 15.52,
+          "endSec": 16.32,
+          "startChar": 122,
+          "endChar": 128
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.6,
+          "startChar": 130,
+          "endChar": 135
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 18.24,
+          "startChar": 136,
+          "endChar": 143
+        },
+        {
+          "startSec": 18.24,
+          "endSec": 18.48,
+          "startChar": 144,
+          "endChar": 147
+        },
+        {
+          "startSec": 18.48,
+          "endSec": 18.96,
+          "startChar": 148,
+          "endChar": 155
+        },
+        {
+          "startSec": 19.04,
+          "endSec": 19.52,
+          "startChar": 156,
+          "endChar": 162
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-01-after.40882b8c.mp3",
+      "afterAudioDurationSec": 5.952,
+      "afterTextHash": "40882b8cfa0117245ceb1d86fbb3167f4d30999ada71631ab4093a03f6636f29",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 11,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.96,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 52,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.0,
+          "startChar": 63,
+          "endChar": 68
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.555802,
-      "replayEndSec": 10.251839,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02.b535c5a9.mp3",
-      "audioDurationSec": 6.269388,
-      "textHash": "b535c5a97755de8f98a6efc4974be3c38c0b4502c98c092dcf04edaef0b5a47e",
+      "replayStartSec": 5.948859,
+      "replayEndSec": 9.401196,
       "narrationText": "ندرج وحدات التخزين التي تعرفها الأداة الآن. كل وحدة تخزين هي وجهة يمكننا دفع النسخ الاحتياطية إليها.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02-after.29592aab.mp3",
-      "afterAudioDurationSec": 2.507755,
-      "afterTextHash": "29592aab4a9db187110d68c26016c873a6026e79b7e1b326be0177770bc73da0"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-02.cccaa721.mp3",
+      "textHash": "cccaa721e5e69c61dad048a7355d8c4b2ca5ada475ce2b7b8c9bdc9b6cafc3d4",
+      "audioDurationSec": 10.752,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.84,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 61,
+          "endChar": 65
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.56,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.2,
+          "startChar": 77,
+          "endChar": 82
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 10.0,
+          "startChar": 83,
+          "endChar": 93
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.64,
+          "startChar": 94,
+          "endChar": 99
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-02-after.6a71e674.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "6a71e6749362c887a54403becac5468ec7e2dae68535dfee05dc00ab56e05853",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 3,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 21
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.32,
+          "startChar": 28,
+          "endChar": 38
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.251839,
-      "replayEndSec": 24.484571,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03.22e5440c.mp3",
-      "audioDurationSec": 14.759184,
-      "textHash": "22e5440c87a66cbaf7345cdcfaab93f9816108284ef8aafc445f88776c180c6a",
+      "replayStartSec": 9.401196,
+      "replayEndSec": 15.183859,
       "narrationText": "الخطوة الثانية. ندفع نسخة احتياطية كاملة. يُرفع المستودع بالكامل، التطبيق وقاعدة البيانات والملفات والإعداد. لأن المستودع مشفر في حالة السكون، النسخة الاحتياطية مشفرة أيضًا. لا إدارة مفاتيح إضافية.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03-after.e404cb74.mp3",
-      "afterAudioDurationSec": 4.989388,
-      "afterTextHash": "e404cb746cb585ed4b97a75875f54dc07bbb4035d183629251322d62fa02cbf4"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-03.79ad320d.mp3",
+      "textHash": "79ad320d71746219764e113351dfe7851504ee5416ec3d1ac75674677261e24e",
+      "audioDurationSec": 21.312,
+      "wordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 66,
+          "endChar": 73
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 74,
+          "endChar": 80
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 12.8,
+          "startChar": 130,
+          "endChar": 134
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 12.88,
+          "startChar": 150,
+          "endChar": 160
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 14.8,
+          "startChar": 161,
+          "endChar": 166
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 16.48,
+          "startChar": 174,
+          "endChar": 176
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 16.96,
+          "startChar": 177,
+          "endChar": 182
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.44,
+          "startChar": 184,
+          "endChar": 189
+        },
+        {
+          "startSec": 17.44,
+          "endSec": 17.84,
+          "startChar": 190,
+          "endChar": 196
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-03-after.ad28da76.mp3",
+      "afterAudioDurationSec": 8.04,
+      "afterTextHash": "ad28da76a60f7d6f492a519a193f0bf16eb8faeb9453bf4d2e4f523341608200",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.56,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 5.12,
+          "startChar": 40,
+          "endChar": 48
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 49,
+          "endChar": 53
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 58,
+          "endChar": 65
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 66,
+          "endChar": 72
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 24.484571,
-      "replayEndSec": 31.133919,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04.fa462f64.mp3",
-      "audioDurationSec": 8.045714,
-      "textHash": "fa462f6411e41c5947ad664161ad83be00028bcba611bad1bf6edca098b0f893",
+      "replayStartSec": 15.183859,
+      "replayEndSec": 20.72372,
       "narrationText": "ندرج النسخ الاحتياطية المتاحة على وحدة التخزين. من هنا، الاستعادة على خادم جديد هي أمر واحد، أمر سحب المستودع. نفس البيانات، نفس الحاويات، جهاز مختلف.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04-after.254ba819.mp3",
-      "afterAudioDurationSec": 4.597551,
-      "afterTextHash": "254ba8197c7a576c588cd74f04d620469d68c771a7c46a989517fc9b065c1299"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-04.2a4b2dec.mp3",
+      "textHash": "2a4b2dec971b7533f5a5f342778322f2739961a9766bc0d90a579275860eca2f",
+      "audioDurationSec": 15.864,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.32,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.92,
+          "startChar": 56,
+          "endChar": 65
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 70,
+          "endChar": 74
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 83,
+          "endChar": 86
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 93,
+          "endChar": 96
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.64,
+          "startChar": 101,
+          "endChar": 109
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 11.92,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.64,
+          "startChar": 115,
+          "endChar": 123
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 125,
+          "endChar": 128
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.28,
+          "startChar": 139,
+          "endChar": 143
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-04-after.f2783268.mp3",
+      "afterAudioDurationSec": 5.472,
+      "afterTextHash": "f2783268a70d8b1ead8db67a1bb03bc96a22826f3d4e8c87a1088ce4761d4270",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.2,
+          "startChar": 3,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 10,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.76,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 34,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.04,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.44,
+          "startChar": 44,
+          "endChar": 48
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "replayStartSec": 31.133919,
-      "replayEndSec": 39.135694,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05.07efe4fe.mp3",
-      "audioDurationSec": 9.16898,
-      "textHash": "07efe4fe6e13027f63d4d9fcbb8ecb4c06aefc29373ecc853d4669a82099b65f",
+      "replayStartSec": 20.72372,
+      "replayEndSec": 26.052361,
       "narrationText": "الآن دليل الاستعادة. أولاً أوقف الـ repository عن الشبكة: أوقف الخدمات وافصل الـ volume المشفّر. التطبيق اختفى من هذه الآلة.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05-after.39a09453.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "39a09453e5d43a927cfaa5eea2841bb86a2c80222a861fc391a4cafdcc117d33"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-05.2203f9e6.mp3",
+      "textHash": "2203f9e67b850f90da636d8ead6a8c91de253fe02e1b5db43dd0a415f8ee7f30",
+      "audioDurationSec": 12.504,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.52,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 6.4,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 63,
+          "endChar": 70
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 77,
+          "endChar": 79
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.36,
+          "startChar": 97,
+          "endChar": 104
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 12.16,
+          "startChar": 105,
+          "endChar": 110
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.4,
+          "startChar": 111,
+          "endChar": 113
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-05-after.3d548227.mp3",
+      "afterAudioDurationSec": 7.08,
+      "afterTextHash": "3d54822766af4ff5b124285de8bf36c95a9829fa034e11bfa6c58d8da6627c88",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 6.4,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.96,
+          "startChar": 42,
+          "endChar": 46
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "replayStartSec": 39.135694,
-      "replayEndSec": 48.126162,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06.a2eb07bf.mp3",
-      "audioDurationSec": 8.515918,
-      "textHash": "a2eb07bfdb282b5f323134db7f4e725e8b95fa10f327eab80489f634a03950b0",
+      "replayStartSec": 26.052361,
+      "replayEndSec": 32.749903,
       "narrationText": "والآن استرجع النسخة الاحتياطية مباشرة من التخزين. أمر repo pull يجلب الـ image ويتحقق من سلامتها ويضعها في مكانها بالضبط.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06-after.568e143c.mp3",
-      "afterAudioDurationSec": 4.597551,
-      "afterTextHash": "568e143cd7c720ed15abf1dfa832209c0006c7e3ff46de9d81809a5d53fdefab"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-06.4dd979c8.mp3",
+      "textHash": "4dd979c816b0f529f3c3e659364366d31631a38da9716674e164587fa019cbc4",
+      "audioDurationSec": 10.752,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 13,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.56,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.64,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.88,
+          "startChar": 97,
+          "endChar": 103
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.52,
+          "startChar": 104,
+          "endChar": 106
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.24,
+          "startChar": 107,
+          "endChar": 113
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.56,
+          "startChar": 114,
+          "endChar": 120
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-06-after.14315c39.mp3",
+      "afterAudioDurationSec": 5.784,
+      "afterTextHash": "14315c399920e8625a8d32e97493667df5b2088a2fb5cdb2925094ee927c9f47",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 50,
+          "endChar": 53
+        }
+      ]
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "replayStartSec": 48.126162,
-      "replayEndSec": 54.070366,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07.66a28bad.mp3",
-      "audioDurationSec": 7.810612,
-      "textHash": "66a28bad256b1579461240f574d6850bf847c212f6b7be4774ab8e5056396e3a",
+      "replayStartSec": 32.749903,
+      "replayEndSec": 37.020579,
       "narrationText": "ثبّته مرة أخرى وسيكون الـ repository قد استُعيد. Push وlist وpull، هذه هي قصة النسخ الاحتياطي كاملةً.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07-after.91a561e6.mp3",
-      "afterAudioDurationSec": 4.127347,
-      "afterTextHash": "91a561e6f5145a8fad630d31563162356613c13fb928d0d2829c10d09064b32f"
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-07.35441e09.mp3",
+      "textHash": "35441e09a278d46fb11155b1b36cc3b7983dcb2eb82736de76cea179669afe4c",
+      "audioDurationSec": 10.104,
+      "wordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 4.8,
+          "startChar": 40,
+          "endChar": 48
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.68,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.44,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.16,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.64,
+          "startChar": 78,
+          "endChar": 83
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.36,
+          "startChar": 84,
+          "endChar": 93
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.0,
+          "startChar": 94,
+          "endChar": 99
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/tutorial-backup-restore-07-after.0d8b652b.mp3",
+      "afterAudioDurationSec": 6.12,
+      "afterTextHash": "0d8b652b6514dad8d824550ee8aa1b6fe76308142474aca9d73882533370ea76",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.88,
+          "startChar": 3,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.04,
+          "startChar": 18,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.6,
+          "startChar": 26,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 39,
+          "endChar": 44
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.6,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 52,
+          "endChar": 56
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/intro.503c9ebf.mp3",
-      "textHash": "503c9ebff9e3836287d03b899f7adcd72d2f1ccb197876ae43d727ed3b6f9a56",
-      "audioDurationSec": 10.684082,
-      "narrationText": "تطبيقك يعمل، فلنتأكد من أنك لن تفقده أبدًا! في هذا الدرس، ندفع المستودع بالكامل إلى تخزين خارجي ونسحبه عند الطلب."
+      "textHash": "f65aa2c9c7e44f96931ed78c04cc12367cb66cf2c4b3f26c92cc82739378697a",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/intro.f65aa2c9.mp3",
+      "narrationText": "تطبيقك يعمل، فلنتأكد من أنك لن تفقده أبدًا! في هذا الدرس، ندفع المستودع بالكامل إلى تخزين خارجي ونسحبه عند الطلب.",
+      "audioDurationSec": 13.32,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 3.04,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 24,
+          "endChar": 27
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 28,
+          "endChar": 30
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 6.24,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 8.24,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.8,
+          "startChar": 63,
+          "endChar": 71
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.52,
+          "startChar": 72,
+          "endChar": 79
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.84,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.4,
+          "startChar": 84,
+          "endChar": 89
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 11.12,
+          "startChar": 90,
+          "endChar": 95
+        },
+        {
+          "startSec": 11.12,
+          "endSec": 12.16,
+          "startChar": 96,
+          "endChar": 102
+        },
+        {
+          "startSec": 12.8,
+          "endSec": 13.12,
+          "startChar": 103,
+          "endChar": 106
+        }
+      ]
     },
     {
       "id": "three-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/three-steps.162fbbc2.mp3",
-      "textHash": "162fbbc26755b4cf70c29a0ac51c08d4f68d58181b2c702ff03439afdad953bd",
-      "audioDurationSec": 8.045714,
-      "narrationText": "يتلخص النسخ الاحتياطي والاستعادة في ثلاث خطوات. اضبط مزود تخزين، ادفع نسخة احتياطية، واستعدها عند الحاجة."
+      "textHash": "043143d13327836568113c5eb4dfa9e7507f465a9a177da82e6beaf073431a9e",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/three-steps.043143d1.mp3",
+      "narrationText": "يتلخص النسخ الاحتياطي والاستعادة في ثلاث خطوات. اضبط مزود تخزين، ادفع نسخة احتياطية، واستعدها عند الحاجة.",
+      "audioDurationSec": 12.672,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 2.72,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 22,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.64,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.28,
+          "startChar": 58,
+          "endChar": 63
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 75,
+          "endChar": 83
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 11.04,
+          "startChar": 85,
+          "endChar": 93
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 12.0,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.56,
+          "startChar": 98,
+          "endChar": 104
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/next-tutorial.20e5f875.mp3",
-      "textHash": "20e5f875c6f72890c60e38d35874035356ff0ed2005b44cd2f34eddef80714bd",
-      "audioDurationSec": 5.146122,
-      "narrationText": "بياناتك آمنة وقابلة للنقل عبر الأجهزة. نراكم في الدرس التالي!"
+      "textHash": "d3c2823b6afd1937055b070fcd8b6b72172ba1fe51f66cab017f847017729840",
+      "audioSrc": "/assets/tutorials/audio/ar/tutorial-backup-restore/next-tutorial.d3c2823b.mp3",
+      "narrationText": "بياناتك آمنة وقابلة للنقل عبر الأجهزة. نراكم في الدرس التالي!",
+      "audioDurationSec": 6.744,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.88,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 48,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 54,
+          "endChar": 60
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "8e4da959574e05a9d4a62c6ea837febeed7c3fb576f0882d8d240b1941f41754"
+  ]
 }

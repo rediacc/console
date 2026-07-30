@@ -2,100 +2,774 @@
   "cast": "/assets/tutorials/tutorial-live-migration.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "ca762d3c89a3b6b44e4dc33370f351c6d05ae4fd177741b3163eb0b433cfe883",
   "steps": [
     {
       "id": "tutorial-live-migration-01",
       "markerIndex": 0,
-      "replayStartSec": 2.413171,
-      "replayEndSec": 10.379022,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01.1e0684e6.mp3",
-      "audioDurationSec": 14.28898,
-      "textHash": "1e0684e69558f2c3f0b05d7ea787a94b26a23d3da36a58ccd7c784d8e59a36a7",
+      "replayStartSec": 2.420835,
+      "replayEndSec": 8.294774,
       "narrationText": "Tutvuge pulse'iga. See hoiab protsessimälus loendurit ja prindib löögi iga viie sekundi järel. Loendur on kuuel ja tõuseb ning see elab ainult RAM-is. Taaskäivitage protsess ja see alustab uuesti ühest.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01-after.85cbad9a.mp3",
-      "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "85cbad9a1765de38ce71d7164b0f052252716b22e1123faaf21645e95194324d"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-01.072411ce.mp3",
+      "textHash": "072411ce779e67a527f7b0b85e43dc77de52c06f9a20e054f90b3e40a51e0251",
+      "audioDurationSec": 12.504,
+      "wordTimings": [
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.92,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 11.04,
+          "startChar": 33,
+          "endChar": 35
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-01-after.e00dcdc1.mp3",
+      "afterAudioDurationSec": 4.824,
+      "afterTextHash": "e00dcdc16b69d7f344ecc0fa283767b77772e7fc353b137b4d2185b6ce0eab0c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 34,
+          "endChar": 36
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-02",
       "markerIndex": 1,
-      "replayStartSec": 10.379022,
-      "replayEndSec": 101.149024,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02.52a7ef5c.mp3",
-      "audioDurationSec": 20.27102,
-      "textHash": "52a7ef5c01174e40fb0bf0cd9ff54f752e146909d044200ce5a028c70154ccd4",
+      "replayStartSec": 8.294774,
+      "replayEndSec": 94.394579,
       "narrationText": "Üks käsk liigutab seda, reaalajas. Esimene faas edastab põhiosa, kaks gigabaiti umbes poole minutiga, samal ajal kui allikas jätkab töötamist. Seejärel üleminek: see salvestab töötavate protsesside kontrollpunkti, kannab viimased mõned megabaidid üle ja prindib seisakuaja kohe sealsamas. Umbes kakskümmend sekundit kahe gigabaidi liigutamiseks.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02-after.88c8d60a.mp3",
-      "afterAudioDurationSec": 5.720816,
-      "afterTextHash": "88c8d60a7541e868e220cc7ef514a241b9fd702cd8822e69a35212cae4314614"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-02.4a5b8853.mp3",
+      "textHash": "4a5b885341d9104462f21506992a898985d3ceff92173ea436668c42bc71779a",
+      "audioDurationSec": 23.352,
+      "wordTimings": [
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 80,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 86,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.24,
+          "startChar": 92,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 102,
+          "endChar": 107
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 143,
+          "endChar": 145
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 16.64,
+          "startChar": 251,
+          "endChar": 253
+        },
+        {
+          "startSec": 16.72,
+          "endSec": 17.04,
+          "startChar": 254,
+          "endChar": 261
+        },
+        {
+          "startSec": 17.12,
+          "endSec": 17.52,
+          "startChar": 262,
+          "endChar": 267
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 18.08,
+          "startChar": 267,
+          "endChar": 277
+        },
+        {
+          "startSec": 18.08,
+          "endSec": 18.8,
+          "startChar": 278,
+          "endChar": 288
+        },
+        {
+          "startSec": 19.36,
+          "endSec": 19.68,
+          "startChar": 289,
+          "endChar": 294
+        },
+        {
+          "startSec": 19.76,
+          "endSec": 20.08,
+          "startChar": 295,
+          "endChar": 299
+        },
+        {
+          "startSec": 20.08,
+          "endSec": 20.4,
+          "startChar": 299,
+          "endChar": 306
+        },
+        {
+          "startSec": 20.4,
+          "endSec": 20.96,
+          "startChar": 307,
+          "endChar": 315
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-02-after.8d85352e.mp3",
+      "afterAudioDurationSec": 7.704,
+      "afterTextHash": "8d85352e7b9e881f8cad1591c7b6550b3f65ab1f2a6a9f04f4239e511d91a8fd",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.36,
+          "startChar": 71,
+          "endChar": 78
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-03",
       "markerIndex": 2,
-      "replayStartSec": 101.149024,
-      "replayEndSec": 106.859481,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03.1243e660.mp3",
-      "audioDurationSec": 4.754286,
-      "textHash": "1243e66069579be027591f6367718723d6fb398d6cdbad9f83f09de6a31e48be",
+      "replayStartSec": 94.394579,
+      "replayEndSec": 99.812481,
       "narrationText": "Kontrollige uut masinat: seal see on. Ühendatud, Docker töötab, kaks containerit üleval.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03-after.64b6817e.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "64b6817e1788e13779c18b378706d799396f78eef32e19dae613ef2ba1a4a036"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-03.c1662a02.mp3",
+      "textHash": "c1662a028b076e43af964d9634bc6b4ae060f796d75cc6b74567a394ed87d6d2",
+      "audioDurationSec": 5.304,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 11
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-03-after.69a74ba6.mp3",
+      "afterAudioDurationSec": 3.24,
+      "afterTextHash": "69a74ba6a4d8109344f065121459f628a6c956be2d304c0f4a5c9839a8b4fa58",
+      "afterWordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 21,
+          "endChar": 25
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-04",
       "markerIndex": 3,
-      "replayStartSec": 106.859481,
-      "replayEndSec": 112.346008,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04.700fa830.mp3",
-      "audioDurationSec": 14.445714,
-      "textHash": "700fa830e50e27895a3a3e703ade48cd9862c1d9cf5a200cf3cb16f116838e47",
+      "replayStartSec": 99.812481,
+      "replayEndSec": 105.151877,
       "narrationText": "Aga allikas? Repository on endiselt loetletud, kuid vaadake rida: pole ühendatud, Docker puudub, null containerit. Siin ei tööta enam midagi. Pilt jääb tahtlikult maha, järgmise delta-ülekande alusena.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04-after.7ac1a7ee.mp3",
-      "afterAudioDurationSec": 5.067755,
-      "afterTextHash": "7ac1a7eeb63fc166befb1ba392b983f97ceca307040a5da50549a62c1ec384c1"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-04.9eb9f159.mp3",
+      "textHash": "9eb9f1593e8ab9ca07816fe991762e49401aad220e9fa001384580439bc90615",
+      "audioDurationSec": 13.464,
+      "wordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 13,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.56,
+          "startChar": 27,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.32,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.48,
+          "startChar": 120,
+          "endChar": 122
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-04-after.32a7ea6e.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "32a7ea6ecd04f9e8ce05e745a16731e24265aff0e3040c2a0270373c42af5c09",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 9,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 12,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 18,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 47,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.76,
+          "startChar": 62,
+          "endChar": 67
+        }
+      ]
     },
     {
       "id": "tutorial-live-migration-05",
       "markerIndex": 4,
-      "replayStartSec": 112.346008,
-      "replayEndSec": 119.168595,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05.731e7efe.mp3",
-      "audioDurationSec": 16.352653,
-      "textHash": "731e7efe288bc9e66fa9c452dff2e130fd2283ff2e19c0b5cc5b7acc21b43146",
+      "replayStartSec": 105.151877,
+      "replayEndSec": 109.812644,
       "narrationText": "Nüüd lõpptulemus. Loendur näitab seitsetteist, kaheksateist, üheksateist, ikka tõuseb. See jätkas täpselt sealt, kust kontrollpunkt selle külmutas, selle asemel et uuesti ühest alustada. Protsess ei märganud kunagi, et see vahetas masinaid.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05-after.9c477c22.mp3",
-      "afterAudioDurationSec": 3.160816,
-      "afterTextHash": "9c477c220929a3c34000abc17bf2551d5967aca4c97d6d19c5c82160b4bd7007"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-05.225c3ae1.mp3",
+      "textHash": "225c3ae1ab96ad58a676ae3494445817ca525687b4a07c06b287e2712cafb659",
+      "audioDurationSec": 15.072,
+      "wordTimings": [
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.84,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.72,
+          "startChar": 178,
+          "endChar": 185
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 12.48,
+          "startChar": 187,
+          "endChar": 195
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 216,
+          "endChar": 218
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.84,
+          "startChar": 219,
+          "endChar": 221
+        },
+        {
+          "startSec": 13.84,
+          "endSec": 14.32,
+          "startChar": 223,
+          "endChar": 230
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.72,
+          "startChar": 231,
+          "endChar": 240
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/tutorial-live-migration-05-after.e1875902.mp3",
+      "afterAudioDurationSec": 2.904,
+      "afterTextHash": "e1875902834062d76fde9a80ec409fdd74fe332e5fffa5cccd079118044eb17a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 15,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.32,
+          "startChar": 25,
+          "endChar": 38
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/intro.c3219e34.mp3",
-      "textHash": "c3219e34c18bba123a7f171be3eea73a21cbe583f14565929fd0b6c9c681e32a",
-      "audioDurationSec": 14.680816,
-      "narrationText": "Aeg suureks asjaks: töötava rakenduse teisaldamine teisele masinale, samal ajal kui see töötab. Vaatame elavat loendurit, mis lööb rakenduse mälus, teisaldame kõik ühe käsuga ja näeme, kuidas loendur lihtsalt jätkab lugemist uuel masinal."
+      "textHash": "07b162a0e6f84744d306a3386a0dcdec4b5190c7ccca4859ae63bb0b30f04104",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/intro.07b162a0.mp3",
+      "narrationText": "Aeg suureks asjaks: töötava rakenduse teisaldamine teisele masinale, samal ajal kui see töötab. Vaatame elavat loendurit, mis lööb rakenduse mälus, teisaldame kõik ühe käsuga ja näeme, kuidas loendur lihtsalt jätkab lugemist uuel masinal.",
+      "audioDurationSec": 16.2,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 1,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 20,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 28,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 38,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 51,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 59,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.36,
+          "startChar": 69,
+          "endChar": 74
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 96,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.24,
+          "startChar": 104,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.96,
+          "startChar": 111,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 126,
+          "endChar": 130
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.6,
+          "startChar": 131,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.08,
+          "startChar": 141,
+          "endChar": 147
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.88,
+          "startChar": 148,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 159,
+          "endChar": 163
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.6,
+          "startChar": 164,
+          "endChar": 167
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.16,
+          "startChar": 168,
+          "endChar": 174
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.48,
+          "startChar": 175,
+          "endChar": 177
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.88,
+          "startChar": 178,
+          "endChar": 183
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.52,
+          "startChar": 185,
+          "endChar": 191
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.92,
+          "startChar": 192,
+          "endChar": 199
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.32,
+          "startChar": 200,
+          "endChar": 208
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.64,
+          "startChar": 209,
+          "endChar": 214
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.52,
+          "startChar": 225,
+          "endChar": 229
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.08,
+          "startChar": 230,
+          "endChar": 238
+        }
+      ]
     },
     {
       "id": "how-it-moves",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/how-it-moves.5edb6d24.mp3",
-      "textHash": "5edb6d24ba5530a753f3f4c028f7e4988a2ec5f01086712dc5116e2677088d28",
-      "audioDurationSec": 22.360816,
-      "narrationText": "See töötab kahes faasis. Esimene faas kopeerib põhiosa, samal ajal kui rakendus töötab edasi. Teine faas salvestab elavate protsesside kontrollpunkti, kannab üle lõpliku delta koos protsessi olekuga ja jätkab kõike uuel masinal. Seega on seisak delta, mitte andmed. Ja rakendus ei tea kunagi, et see liikus."
+      "textHash": "af5e1b7474db4d3cde7f03e098aa785495b527aa81fc7afa21029f6d5dee5ffc",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/how-it-moves.af5e1b74.mp3",
+      "narrationText": "See töötab kahes faasis. Esimene faas kopeerib põhiosa, samal ajal kui rakendus töötab edasi. Teine faas salvestab elavate protsesside kontrollpunkti, kannab üle lõpliku delta koos protsessi olekuga ja jätkab kõike uuel masinal. Seega on seisak delta, mitte andmed. Ja rakendus ei tea kunagi, et see liikus.",
+      "audioDurationSec": 20.304,
+      "wordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 17,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 47,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.0,
+          "startChar": 87,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 100,
+          "endChar": 104
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.24,
+          "startChar": 151,
+          "endChar": 157
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.2,
+          "startChar": 170,
+          "endChar": 175
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.8,
+          "startChar": 199,
+          "endChar": 201
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 15.76,
+          "startChar": 235,
+          "endChar": 237
+        },
+        {
+          "startSec": 15.76,
+          "endSec": 16.08,
+          "startChar": 238,
+          "endChar": 244
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.48,
+          "startChar": 245,
+          "endChar": 250
+        },
+        {
+          "startSec": 16.64,
+          "endSec": 16.8,
+          "startChar": 252,
+          "endChar": 257
+        },
+        {
+          "startSec": 16.96,
+          "endSec": 17.36,
+          "startChar": 258,
+          "endChar": 265
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 17.68,
+          "startChar": 266,
+          "endChar": 268
+        },
+        {
+          "startSec": 19.6,
+          "endSec": 19.84,
+          "startChar": 296,
+          "endChar": 298
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/next-tutorial.f40a25d9.mp3",
-      "textHash": "f40a25d9b5e0da36566e530f6d6f9f3068295e2e786855fe1efbc5d9c855313b",
-      "audioDurationSec": 13.322449,
-      "narrationText": "Loendur ei lähtestunud kunagi. Mälu, andmebaas, failid, kõik see lihtsalt vahetas masinaid. Järgmisena vaatame, miks teine ülekanne on alati kiire."
+      "textHash": "13f2560593623f7056c6d22c3bc1d24998a1997330956361fba29c520dbfe9a9",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-live-migration/next-tutorial.13f25605.mp3",
+      "narrationText": "Loendur ei lähtestunud kunagi. Mälu, andmebaas, failid, kõik see lihtsalt vahetas masinaid. Järgmisena vaatame, miks teine ülekanne on alati kiire.",
+      "audioDurationSec": 10.104,
+      "wordTimings": [
+        {
+          "startSec": 1.76,
+          "endSec": 2.0,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.8,
+          "startChar": 65,
+          "endChar": 73
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 103,
+          "endChar": 110
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.36,
+          "startChar": 132,
+          "endChar": 136
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 136,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.92,
+          "startChar": 141,
+          "endChar": 146
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "3d86bc4c6235443d6a09b9956ab2b07164d0b1bf2192e2aa5200ae8c5bffae6c"
+  ]
 }

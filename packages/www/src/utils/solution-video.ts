@@ -1,3 +1,4 @@
+import { SITE_LOCALES } from '@rediacc/locales';
 import process from 'node:process';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
 import type { Language } from '../i18n/types';
@@ -15,10 +16,11 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  *
  * Localized videos are published to Cloudflare R2 (`videos/solutions/<lang>/<slug>.mp4`
  * + `.vertical.mp4`, `.poster.jpg`) by the pipeline's `--publish-www` command, for the
- * 10 languages Qwen3-TTS can voice. Bucket keys and hashes are tracked in
- * `src/data/video-manifest.json`. The 3 remaining site locales (ar/et/tr) have no
- * localized video and fall back to `en` here at render time, so we never duplicate the
- * English files.
+ * all 13 site locales, each with its own native narrator. Bucket keys and hashes are
+ * tracked in `src/data/video-manifest.json`. Nothing falls back to English any more:
+ * VoxCPM2 voices every locale including Estonian, which no other model in the stack
+ * supports. Estonian's CAPTIONS remain estimated rather than force-aligned — that is a
+ * caption-precision caveat, not an audio one.
  *
  * WHY a constant lang-set (not derived from the manifest):
  *   Completeness (every slug × every VIDEO_LANG present in the manifest) is GUARANTEED
@@ -29,7 +31,7 @@ const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
  * Empty (unset) falls back to the local `/assets/videos/solutions/...` path so a
  * developer previewing a freshly-generated-but-not-yet-published local file still works.
  */
-export const VIDEO_LANGS = ['en', 'de', 'es', 'fr', 'it', 'pt', 'ru', 'ja', 'ko', 'zh'] as const;
+export const VIDEO_LANGS = SITE_LOCALES;
 
 type VideoLang = (typeof VIDEO_LANGS)[number];
 
@@ -37,7 +39,7 @@ export interface SolutionVideo {
   landscape: string;
   vertical: string;
   poster: string;
-  /** The language actually used (the request, or 'en' for ar/et/tr fallback). */
+  /** The language actually used. Falls back to 'en' only if a locale is missing entirely. */
   lang: VideoLang;
 }
 
@@ -73,9 +75,12 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
 }
 
 export function resolveSolutionVideo(slug: string, lang: Language): SolutionVideo {
-  const used: VideoLang = (VIDEO_LANGS as readonly string[]).includes(lang)
-    ? (lang as VideoLang)
-    : 'en'; // ar / et / tr -> English video
+  // No fallback any more: VIDEO_LANGS is SITE_LOCALES (see :34), so VideoLang
+  // and Language are the same set and every locale has its own video. The old
+  // ternary narrowed ar/et/tr to English and became dead the moment the list was
+  // unified; eslint caught it as an unnecessary assertion, which is what an
+  // always-true guard looks like from the type system's side.
+  const used: VideoLang = lang;
   return {
     landscape: resolveUrl(slug, used, 'mp4'),
     vertical: resolveUrl(slug, used, 'vertical'),

@@ -49,6 +49,8 @@ import { globSync } from 'glob';
 
 import { parseBlockeredList, verifyAllBlockers } from './lib/blocker-validator.ts';
 
+import { SITE_LOCALES } from '@rediacc/locales';
+import { NIS2_SNAPSHOT_LANGS, type Nis2SnapshotLang } from './lib/nis2-langs.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
@@ -59,15 +61,13 @@ const repoRoot = path.resolve(__dirname, '..');
 
 // Languages that have an official Directive (EU) 2022/2555 translation we
 // vendor a snapshot for. Sourced from scripts/data/nis2-directive-2022-2555-<lang>.txt.
-const SNAPSHOT_LANGS = ['en', 'de', 'es', 'fr', 'et', 'it', 'pt'] as const;
-type SnapshotLang = (typeof SNAPSHOT_LANGS)[number];
+const SNAPSHOT_LANGS = NIS2_SNAPSHOT_LANGS;
+type SnapshotLang = Nis2SnapshotLang;
 
 // All locales the www site ships content in. Locales not in SNAPSHOT_LANGS
 // fall back to the English snapshot for the directive-quote check (no official
 // EU directive translation exists in those languages).
-const ALL_CONTENT_LANGS = [
-  'en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it',
-] as const;
+const ALL_CONTENT_LANGS = SITE_LOCALES;
 type ContentLang = (typeof ALL_CONTENT_LANGS)[number];
 
 function snapshotForLang(lang: ContentLang): SnapshotLang {

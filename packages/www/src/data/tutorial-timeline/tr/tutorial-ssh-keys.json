@@ -2,74 +2,698 @@
   "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "66eae2d403f9f068acca1c2cc971069a8577b405422a0c1d4f7ae331a0bdb108",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.617466,
-      "replayEndSec": 6.370674,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.d9e3eb30.mp3",
-      "audioDurationSec": 16.927347,
-      "textHash": "d9e3eb3031398f29505093133a919c00fc82417b87626d1bc574efd86046a593",
+      "replayStartSec": 1.625253,
+      "replayEndSec": 6.458857,
       "narrationText": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01-after.35e2a62c.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "35e2a62c80dce929f07bb86575c2755ab1ca3e4c7fc130ca2418834e171866ee"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-01.f85f4376.mp3",
+      "textHash": "f85f43762e83f387a530e490ead3b6b30e8957b6ba1e67777e2354c940a94671",
+      "audioDurationSec": 14.28,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.76,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.24,
+          "startChar": 35,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 5.12,
+          "startChar": 44,
+          "endChar": 57
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.6,
+          "startChar": 74,
+          "endChar": 85
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 87,
+          "endChar": 92
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.04,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.12,
+          "startChar": 100,
+          "endChar": 102
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 109,
+          "endChar": 117
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 12.08,
+          "startChar": 124,
+          "endChar": 137
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.6,
+          "startChar": 171,
+          "endChar": 179
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.0,
+          "startChar": 180,
+          "endChar": 190
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-01-after.bc0a9a6d.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "bc0a9a6de137fb3a7df9a777ae811c14a4b83ad5596f1b9b943095bbf997bd42",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.56,
+          "startChar": 30,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.28,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 60,
+          "endChar": 67
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.370674,
-      "replayEndSec": 13.176828,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.1290a416.mp3",
-      "audioDurationSec": 10.762449,
-      "textHash": "1290a4169f720cf49ab3dbb01ad781337534ebf7be0f1bbf3afc3aa4873ce986",
+      "replayStartSec": 6.458857,
+      "replayEndSec": 13.298492,
       "narrationText": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02-after.7acc6fe5.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "7acc6fe541a4697c14eeb95a1728982645fdc02cb6c5350d285cfdfbbf89cdf3"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-02.c1d47fce.mp3",
+      "textHash": "c1d47fcee727ecb9c0b4ffc40f9fe624e4387cde426f292299d0afe2d5bbf50a",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 1.12,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.92,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 45,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.24,
+          "startChar": 54,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 68,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 75,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 92,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.72,
+          "startChar": 103,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 110,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.12,
+          "startChar": 116,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.6,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.0,
+          "startChar": 130,
+          "endChar": 136
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 141,
+          "endChar": 147
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 148,
+          "endChar": 157
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.2,
+          "startChar": 158,
+          "endChar": 166
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-02-after.38386881.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "383868818e92d6e13fd77061b74fd4b537921e31699acf44bb10221c65eb0d21",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.12,
+          "startChar": 10,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.16,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.96,
+          "startChar": 32,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.0,
+          "startChar": 67,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 72,
+          "endChar": 77
+        }
+      ]
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.176828,
-      "replayEndSec": 19.095233,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.31167cec.mp3",
-      "audioDurationSec": 8.672653,
-      "textHash": "31167cec061931d5a906821feda37668ab6bdccf63f10e0b9923b326670b8646",
+      "replayStartSec": 13.298492,
+      "replayEndSec": 19.181151,
       "narrationText": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03-after.aab5eaf4.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "aab5eaf4cc5f2ab1c0f01588cf3741c1c7611f7bf1953a3f00f432e0eff0cefa"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-03.13435d2e.mp3",
+      "textHash": "13435d2ec213c339323f61e96743b46c53cafae3b20d316d204ade9c26ab6325",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.44,
+          "startChar": 29,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.68,
+          "startChar": 43,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 50,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 63,
+          "endChar": 68
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 69,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 72,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.72,
+          "startChar": 89,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 101,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 108,
+          "endChar": 113
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.16,
+          "startChar": 114,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.8,
+          "startChar": 121,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.6,
+          "startChar": 131,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.16,
+          "startChar": 143,
+          "endChar": 151
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.72,
+          "startChar": 155,
+          "endChar": 160
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/tutorial-ssh-keys-03-after.3bfdd81e.mp3",
+      "afterAudioDurationSec": 1.632,
+      "afterTextHash": "3bfdd81e52163eae063f6d9a6ac03d4665d03e6e926cd92c60c5273fb53a6de9",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 15,
+          "endChar": 25
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/intro.81ac38a9.mp3",
-      "textHash": "81ac38a9650ac8e79d9c844ba6f5fa737e33c91eaaf57e93d16d3fe7e64b476c",
-      "audioDurationSec": 8.437551,
-      "narrationText": "Pekâlâ! CLI'nin sunucularınıza parolasız ulaşabilmesi için SSH anahtarlarını ayarlayalım."
+      "textHash": "84b007b3d7df77f91f7f0bb63ba2a3d90f5d07d3aa1e98118653a1eebe02c920",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/intro.84b007b3.mp3",
+      "narrationText": "Pekâlâ! CLI'nin sunucularınıza parolasız ulaşabilmesi için SSH anahtarlarını ayarlayalım.",
+      "audioDurationSec": 5.952,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.24,
+          "startChar": 16,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.2,
+          "startChar": 31,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 41,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.2,
+          "startChar": 63,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.84,
+          "startChar": 77,
+          "endChar": 88
+        }
+      ]
     },
     {
       "id": "three-steps-generate-copy-register",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/three-steps-generate-copy-register.a1b96f22.mp3",
-      "textHash": "a1b96f221c5f062461b2362c843ada618e4d5715b9befcfb2d9f4142c0911699",
-      "audioDurationSec": 10.44898,
-      "narrationText": "Toplam üç adım. Dizüstü bilgisayarınızda bir anahtar oluşturun, sunucuya kopyalayın, ardından komut satırı aracına kaydedin. Bunlardan ikisini yalnızca bir kez yaparsınız."
+      "textHash": "52bbc8224eaef6d29bd1c5059e713c9acf1ef07d14bd340b1fc6f53f782c868f",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/three-steps-generate-copy-register.52bbc822.mp3",
+      "narrationText": "Toplam üç adım. Dizüstü bilgisayarınızda bir anahtar oluşturun, sunucuya kopyalayın, ardından komut satırı aracına kaydedin. Bunlardan ikisini yalnızca bir kez yaparsınız.",
+      "audioDurationSec": 8.832,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 45,
+          "endChar": 52
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 53,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 64,
+          "endChar": 72
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 73,
+          "endChar": 83
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 85,
+          "endChar": 93
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 94,
+          "endChar": 99
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 100,
+          "endChar": 106
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.76,
+          "startChar": 107,
+          "endChar": 114
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 115,
+          "endChar": 123
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.96,
+          "startChar": 125,
+          "endChar": 134
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.36,
+          "startChar": 135,
+          "endChar": 142
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.92,
+          "startChar": 143,
+          "endChar": 151
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.0,
+          "startChar": 152,
+          "endChar": 155
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.64,
+          "startChar": 160,
+          "endChar": 170
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/next-tutorial.fb33610e.mp3",
-      "textHash": "fb33610ec7ff47b1fd6aa3a49928a3154448169026997a85b3271b9f79a68f98",
-      "audioDurationSec": 6.765714,
-      "narrationText": "Anahtar kaydedildi ve CLI hazır. Sırada, ilk sunucunuzu ekleyeceğiz."
+      "textHash": "5659ffbd9a7754b5bf47dffac6d3a20feb91a5acd8b47cfa46112a168f939043",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-ssh-keys/next-tutorial.5659ffbd.mp3",
+      "narrationText": "Anahtar kaydedildi ve CLI hazır. Sırada, ilk sunucunuzu ekleyeceğiz.",
+      "audioDurationSec": 3.864,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.76,
+          "startChar": 56,
+          "endChar": 67
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "7c59d78cc7181b2b47de4a8d2c0ff9450a35ca08e2e8a9764fd8ef07f9811b73"
+  ]
 }

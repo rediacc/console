@@ -3,21 +3,9 @@
  * Extracted from ContextServiceBase to keep file under max-lines.
  */
 
-const SUPPORTED_LANGUAGES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-] as const;
+import { SITE_LOCALES } from '@rediacc/locales';
+
+const SUPPORTED_LANGUAGES = SITE_LOCALES;
 
 export function normalizeLanguage(lang: string): string {
   const base = lang.split('-')[0].split('_')[0].toLowerCase();

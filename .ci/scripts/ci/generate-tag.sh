@@ -20,6 +20,8 @@ OUTPUT_FILE=""
 GITHUB_OUTPUT_MODE=false
 SUBMODULE_PATH=""
 SELF_MODE=false
+CLOSURE_NAME=""
+EXTRA_KEY=""
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -39,6 +41,14 @@ while [[ $# -gt 0 ]]; do
         --self)
             SELF_MODE=true
             shift
+            ;;
+        --closure)
+            CLOSURE_NAME="$2"
+            shift 2
+            ;;
+        --extra)
+            EXTRA_KEY+="$2"
+            shift 2
             ;;
         -h | --help)
             echo "Usage: $0 [OPTIONS]"
@@ -84,6 +94,26 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     SUBMODULE_COMMIT=$(git -C "$SUBMODULE_PATH" rev-parse --short HEAD)
 
     # Include build config files in tag hash (Dockerfiles, CI build workflow)
+    #
+    # MEMBERSHIP RULE: a file belongs here when its content determines the
+    # CONTENT OF THE PUBLISHED IMAGE this tag names. The tag is what
+    # initialize.sh checks against GHCR to decide `renet_exists`, so an input
+    # missing from this list means a changed build produces an existing tag and
+    # a stale image is reused; an input that does NOT affect the image means a
+    # harmless edit costs a 45-minute rebuild.
+    #
+    # NOT IN THE LIST, DELIBERATELY: .ci/scripts/infra/build-renet.sh. It looks
+    # like it belongs (nine CI steps run it: eight in ct-tests.yml, one in
+    # ci-ops-test.yml, against one step here for the build/ script). It does not.
+    # It compiles a dev binary from source into private/renet/bin for those test
+    # jobs, which never pull ghcr.io/rediacc/renet and are never handed this tag
+    # -- ct-tests.yml takes only full_suite and pointer_bump_only, and its own
+    # cache is keyed on private/renet/embed-assets.lock.json. Its edits take
+    # effect immediately in all nine, so there is nothing here to invalidate.
+    #
+    # The first three entries are already covered by SUBMODULE_COMMIT above
+    # (they live inside the submodule). They are kept because they cost nothing
+    # and make the intent readable.
     BUILD_CONFIG_HASH=""
     BUILD_CONFIG_FILES=(
         "$SUBMODULE_PATH/Dockerfile"
@@ -93,10 +123,22 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
         ".github/workflows/ci-build-docker.yml"
         ".ci/scripts/build/build-renet.sh"
     )
+    # A missing entry used to be skipped in silence. That is the failure mode
+    # this list is most exposed to: rename or move one of these files and the
+    # hash quietly stops covering it, while STILL minting a brand-new tag (the
+    # remaining digests concatenate differently), so the one visible symptom --
+    # a cache miss -- looks like normal behaviour. Renames happen: there are two
+    # build-renet.sh scripts in this repo, in .ci/scripts/build/ and
+    # .ci/scripts/infra/. Fail loudly instead.
     for f in "${BUILD_CONFIG_FILES[@]}"; do
-        if [[ -f "$f" ]]; then
-            BUILD_CONFIG_HASH+=$(sha256sum "$f" 2>/dev/null | cut -c1-8)
+        if [[ ! -f "$f" ]]; then
+            log_error "Build-config input not found: $f"
+            log_error "This file is hashed into the renet image tag. A missing entry silently"
+            log_error "narrows what the tag covers, so a changed build can reuse a stale image."
+            log_error "Fix the path in BUILD_CONFIG_FILES, or delete the entry if the file is gone."
+            exit 1
         fi
+        BUILD_CONFIG_HASH+=$(sha256sum "$f" | cut -c1-8)
     done
 
     # Combine the submodule commit with a hash of the build config. Keep 12 hex
@@ -112,6 +154,121 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     fi
     # Log to stderr so it doesn't interfere with captured stdout
     log_info "Generated submodule tag ($SUBMODULE_PATH): $CI_TAG" >&2
+
+elif [[ -n "$CLOSURE_NAME" ]]; then
+    # PRODUCER-CLOSURE MODE. Hash the inputs that actually determine the bytes of
+    # a published image, instead of the console commit.
+    #
+    # WHY THIS EXISTS. `--self` is the console commit, so ANY commit invalidates
+    # BOTH the server and rdc images. Measured: commit 8b7840ed4 changed exactly
+    # one file, .ci/scripts/deploy/wait-for-preview-worker.sh, which is
+    # .dockerignore'd (.dockerignore:20) and which no image consumes -- and both
+    # images rebuilt, while renet's content-hashed tag was correctly reused.
+    #
+    # WHY NOT HASH THE BUILD CONTEXT. It is both smaller AND larger than the
+    # COPY list. Smaller: .ci/scripts is excluded. Larger: .ci/docker/web is NOT
+    # excluded (.dockerignore:18-19 name only .ci/docker/ci and /service), so
+    # nginx.conf and entrypoint.sh do enter it. And the biggest inputs are not in
+    # the context at all -- www-assets, account-web-assets, cli-npm and the renet
+    # binaries all arrive as DOWNLOADED ARTIFACTS. So the key must cover each
+    # artifact PRODUCER, not the Dockerfile'"'"'s own COPY list.
+    #
+    # MEMBERSHIP RULE, same contract as BUILD_CONFIG_FILES above: a path belongs
+    # when its content determines the content of the published image.
+    #
+    # Hashed as git object ids at HEAD rather than sha256sum of files, for three
+    # reasons: an entry may be a directory (the tree oid covers every file under
+    # it, including files added later), or a gitlink (private/account resolves to
+    # its recorded commit); and HEAD-based hashing is immune to the in-job
+    # version bump that dirties package.json after initialize.sh has run.
+    #
+    # NOT WIRED INTO initialize.sh YET, deliberately. Switching the live tags is
+    # release-affecting -- cd-stage.yml:195-196 retags these straight onto a
+    # release channel -- and two open issues must be settled first: an unbounded
+    # staleness window once the key stops moving every commit, and the fact that
+    # "same tag => same bytes" is not true today because private/account is
+    # installed with an unpinned `npm install`.
+    case "$CLOSURE_NAME" in
+        web)
+            CLOSURE_PATHS=(
+                Dockerfile
+                .ci/docker/web
+                package.json
+                package-lock.json
+                tsconfig.json
+                packages/shared
+                packages/www
+                packages/json
+                packages/cli
+                packages/provisioning
+                private/account
+                .ci/scripts/build/build-www.sh
+                .ci/scripts/build/build-cli.sh
+                .ci/scripts/build/pack-cli-npm.sh
+                .ci/scripts/build/buildx-push-web.sh
+                .github/workflows/ci-build-docker.yml
+                .github/actions/setup-workspace
+            )
+            ;;
+        rdc)
+            CLOSURE_PATHS=(
+                packages/cli
+                packages/shared
+                packages/provisioning
+                package.json
+                package-lock.json
+                tsconfig.json
+                .ci/scripts/build/build-cli-musl.sh
+                .ci/scripts/build/build-cli-executables.sh
+                .ci/scripts/build/prepare-cli-assets.sh
+                scripts/generate-third-party-licenses.ts
+                .github/workflows/ci-build-cli.yml
+                .github/workflows/ci-build-docker.yml
+            )
+            ;;
+        *)
+            log_error "Unknown closure: $CLOSURE_NAME (expected: web, rdc)"
+            exit 1
+            ;;
+    esac
+
+    CLOSURE_HASH=""
+    for closure_path in "${CLOSURE_PATHS[@]}"; do
+        if ! path_oid=$(git rev-parse "HEAD:$closure_path" 2>/dev/null); then
+            # Same fail-loud contract as BUILD_CONFIG_FILES: a silently skipped
+            # entry still mints a PLAUSIBLE tag, so the only symptom would be an
+            # uninvestigatable cache miss -- or a stale image reused.
+            log_error "Closure input not found at HEAD: $closure_path"
+            log_error "It is hashed into the $CLOSURE_NAME image tag. A missing entry"
+            log_error "narrows what the tag covers, so a changed build can reuse a"
+            log_error "stale image. Fix the path, or delete the entry if it is gone."
+            exit 1
+        fi
+        CLOSURE_HASH+="$path_oid"
+    done
+    # --extra folds in an opaque upstream key. Used for RENET_TAG: renet binaries
+    # reach BOTH images as artifacts, never as source, so no path can cover them.
+    CLOSURE_HASH+="$EXTRA_KEY"
+
+    # WEEKLY TIME BUCKET, and it is a safety bound rather than cache tuning.
+    #
+    # A commit-hash key is always correct and merely wasteful: it cannot outlive
+    # the commit. A closure key can, and there are inputs it provably does not
+    # cover: ACCOUNT_ED25519_PUBLIC_KEY is passed as a build arg, the base images
+    # (node:22-alpine, alpine:3.20) float, and private/account is installed with
+    # an UNPINNED `npm install` -- so "same tag implies same bytes" is not true
+    # today in either direction.
+    #
+    # Without a bucket, a key survives until the closure changes, which could be
+    # months, and cd-stage.yml retags these straight onto a release channel.
+    # With it, any staleness is capped at one week. Cost: one rebuild per image
+    # per week. That is the trade the design was explicitly unwilling to skip.
+    #
+    # %G%V, not %Y%W: ISO year-and-week, so the last days of December cannot
+    # collide with the first days of January.
+    CLOSURE_HASH+="week:$(date -u +%G%V)"
+    CI_TAG="${CLOSURE_NAME}-$(printf '%s' "$CLOSURE_HASH" | sha256sum | cut -c1-12)"
+    log_info "Generated closure tag ($CLOSURE_NAME): $CI_TAG" >&2
 
 elif [[ "$SELF_MODE" == "true" ]]; then
     # Current repo commit hash mode

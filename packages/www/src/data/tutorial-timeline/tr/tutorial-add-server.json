@@ -2,74 +2,782 @@
   "cast": "/assets/tutorials/tutorial-add-server.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "7cd27db49c70f308129fceb937e5487e6e00cbe8bf401a7a69be9dd865fc7ba1",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.629299,
-      "replayEndSec": 8.575098,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-01.bc84d482.mp3",
-      "audioDurationSec": 23.484082,
-      "textHash": "bc84d4826f274bc7d58637ed51ef779b508bbafde734bd3dab6c5df041b6291a",
+      "replayStartSec": 1.627855,
+      "replayEndSec": 7.25092,
       "narrationText": "SSH anahtarını, makine listesini ve altyapı ayarlarını barındıracak bir yapılandırma profili oluşturarak başlıyoruz. Bu profil, buradan itibaren yapacağımız her işlem için temel oluşturuyor.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-01-after.a9c445a7.mp3",
-      "afterAudioDurationSec": 3.395918,
-      "afterTextHash": "a9c445a7ca9c63b5af3741f163384f2d5117e9c16fede770589acd8d811d26e8"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-01.ecf414c2.mp3",
+      "textHash": "ecf414c2cb31a56d16bb0646bbd2af0c8537b0b4e48c29077613c335de5a0134",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 23,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 55,
+          "endChar": 67
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.0,
+          "startChar": 68,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 72,
+          "endChar": 84
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 93,
+          "endChar": 104
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.62,
+          "startChar": 105,
+          "endChar": 115
+        },
+        {
+          "startSec": 5.96,
+          "endSec": 6.3,
+          "startChar": 117,
+          "endChar": 119
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.44,
+          "startChar": 128,
+          "endChar": 135
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.92,
+          "startChar": 136,
+          "endChar": 144
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
+          "startChar": 145,
+          "endChar": 156
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.56,
+          "startChar": 157,
+          "endChar": 160
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.88,
+          "startChar": 161,
+          "endChar": 166
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.04,
+          "startChar": 167,
+          "endChar": 171
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 172,
+          "endChar": 177
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 178,
+          "endChar": 189
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-01-after.3c32c667.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "3c32c6670f14ee7e51ff230b3670b5b23a6e8f2b3162d0e0cc56ed9ab38b0b8f",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 7,
+          "endChar": 18
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 50,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 54,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 62,
+          "endChar": 68
+        }
+      ]
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 8.575098,
-      "replayEndSec": 19.204906,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02.f46381ee.mp3",
-      "audioDurationSec": 4.989388,
-      "textHash": "f46381ee93a41c0af307819769a24cec82dd4658c8a87ac16ca60e113dc9fcb3",
+      "replayStartSec": 7.25092,
+      "replayEndSec": 13.396171,
       "narrationText": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02-after.e61cf6bb.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "e61cf6bb3d2db75c4cb2376c7c743732859c17695ec4cc5d9136380ee6561188"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-02.d4bf5282.mp3",
+      "textHash": "d4bf5282ba32110b5ccbe8eafe96133472a77ac99c36d8cd88c35626fa220ced",
+      "audioDurationSec": 8.352,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 6,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.84,
+          "startChar": 30,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 54,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 84,
+          "endChar": 96
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 125,
+          "endChar": 131
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.96,
+          "startChar": 132,
+          "endChar": 136
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 137,
+          "endChar": 145
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.76,
+          "startChar": 146,
+          "endChar": 152
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.16,
+          "startChar": 153,
+          "endChar": 162
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-02-after.d10f73ff.mp3",
+      "afterAudioDurationSec": 4.2,
+      "afterTextHash": "d10f73fffa849ef88bf876bc7569277c797653ae0d22b5138bd4375cf139cbde",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 36,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.08,
+          "startChar": 52,
+          "endChar": 59
+        }
+      ]
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 19.204906,
-      "replayEndSec": 21.464422,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-03.5b592319.mp3",
-      "audioDurationSec": 19.565714,
-      "textHash": "5b592319a41bb6a3cf71ace99fcef1d5dcbb0cb1ee11ecac6d7782ed0e27ffb8",
+      "replayStartSec": 13.396171,
+      "replayEndSec": 15.698213,
       "narrationText": "Sırada sunucunun yapılandırılması var. Bu adım renet'i yüklüyor ve şifreli veri deposunu oluşturuyor. Tamamlandığında sunucu depo barındırmaya hazır.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-03-after.25e2c3cd.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "25e2c3cde50a4cd8a3be22567c1731dd2ba3893dc686f407fcdad5f720a106d6"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-03.c3c353ca.mp3",
+      "textHash": "c3c353cadb1bdbb5197a201a2166de292593e97f063dba68b96f4fe77f03c8cd",
+      "audioDurationSec": 8.832,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.88,
+          "startChar": 7,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.6,
+          "startChar": 17,
+          "endChar": 33
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 39,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.64,
+          "startChar": 42,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 47,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 55,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.08,
+          "startChar": 67,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.64,
+          "startChar": 80,
+          "endChar": 88
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 89,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 7.04,
+          "startChar": 102,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.44,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.76,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.32,
+          "startChar": 130,
+          "endChar": 142
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 143,
+          "endChar": 148
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/tutorial-add-server-03-after.61a9e2dc.mp3",
+      "afterAudioDurationSec": 3.24,
+      "afterTextHash": "61a9e2dc06b5acf2f4e6917119a4255e4f6a89ac6e76db2c870af0cab40947d2",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 29,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 36,
+          "endChar": 41
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/intro.dd1a0d33.mp3",
-      "textHash": "dd1a0d3391c2e74ca7e7451e1be4b2293d498e1dd6104ba9f9bc3d8cbecfad9d",
-      "audioDurationSec": 4.04898,
-      "narrationText": "Pekâlâ! İlk sunucunuzu ekleyelim. İki komut ve yaklaşık bir dakika sürüyor."
+      "textHash": "bb62d8b4d87232980a097d3b77cc5f98175391915fafe6ae4e37d75d1cd60ae6",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/intro.bb62d8b4.mp3",
+      "narrationText": "Pekâlâ! İlk sunucunuzu ekleyelim. İki komut ve yaklaşık bir dakika sürüyor.",
+      "audioDurationSec": 4.032,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 1.04,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 24,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 46,
+          "endChar": 48
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 49,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.52,
+          "startChar": 62,
+          "endChar": 68
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 69,
+          "endChar": 76
+        }
+      ]
     },
     {
       "id": "two-tool-architecture",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/two-tool-architecture.7535b7bf.mp3",
-      "textHash": "7535b7bf53183e9bde26899f54fc2995280949bc045701cedfaaea21a51f6fa8",
-      "audioDurationSec": 14.210612,
-      "narrationText": "İki parça var. Komut satırı aracı dizüstü bilgisayarınızda, renet adlı orkestratör ise sunucuda çalışır. CLI sunucuya SSH üzerinden bağlanır; yani sunucuya elle giriş yapmanıza hiç gerek kalmaz."
+      "textHash": "c01ec717907385306f221fd07d68ffe63b33c124619bfaeff1691a30d44f1f38",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/two-tool-architecture.c01ec717.mp3",
+      "narrationText": "İki parça var. Komut satırı aracı dizüstü bilgisayarınızda, renet adlı orkestratör ise sunucuda çalışır. CLI sunucuya SSH üzerinden bağlanır; yani sunucuya elle giriş yapmanıza hiç gerek kalmaz.",
+      "audioDurationSec": 12.84,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.48,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.56,
+          "startChar": 61,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 94,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.88,
+          "startChar": 97,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 106,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 107,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.24,
+          "startChar": 110,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 119,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 120,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 121,
+          "endChar": 122
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 123,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.92,
+          "startChar": 133,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.24,
+          "startChar": 143,
+          "endChar": 147
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 148,
+          "endChar": 156
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 157,
+          "endChar": 161
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.52,
+          "startChar": 162,
+          "endChar": 167
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.92,
+          "startChar": 168,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.08,
+          "startChar": 178,
+          "endChar": 181
+        },
+        {
+          "startSec": 12.08,
+          "endSec": 12.32,
+          "startChar": 182,
+          "endChar": 187
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.72,
+          "startChar": 188,
+          "endChar": 194
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/next-tutorial.caba796d.mp3",
-      "textHash": "caba796d99d6fa41b74d4d4ec22a1564ac4f8c8b79197fb92e1c7076ef6d6d2d",
-      "audioDurationSec": 3.317551,
-      "narrationText": "Sunucu ekleme işlemi böylece tamamlandı! Bir sonraki bölümde görüşmek üzere."
+      "textHash": "b7cf2d9e1048ff6b73a572d3335f3fe3d3c8630d3be6b0312bf925713d9a2d58",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-add-server/next-tutorial.b7cf2d9e.mp3",
+      "narrationText": "Sunucu ekleme işlemi böylece tamamlandı! Bir sonraki bölümde görüşmek üzere.",
+      "audioDurationSec": 4.992,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 7,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 14,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.8,
+          "startChar": 29,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 45,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 53,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.56,
+          "startChar": 61,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.88,
+          "startChar": 70,
+          "endChar": 75
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ccb4f9d12853629087b65a19feefd83ddec855495730c268f19b1f7f3ca4ab0d"
+  ]
 }

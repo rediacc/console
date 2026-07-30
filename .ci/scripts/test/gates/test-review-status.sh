@@ -1,0 +1,561 @@
+#!/bin/bash
+# Both-ways test for .ci/scripts/review/review-status.sh -- the script behind
+# the `Review Complete` check-run.
+#
+# WHY THIS CLASS NEEDS A GATE. The thing being replaced (`Review Gate` inside
+# Console CI) was green for months while asserting nothing about the review it
+# is named after: it runs on `pull_request`, before any review can have
+# happened, and its three scripts never look at a SHA. A successor that is
+# merely *shaped* like a check is worthless -- so every conclusion this script
+# can reach is driven here against planted state, in BOTH directions:
+#
+#   - Too quiet: a stale marker, an unreviewed head, a failed review run, or a
+#     failing hygiene script must produce conclusion=failure. If any of those
+#     silently pass, the check is decoration.
+#   - Too loud: an empty diff, a submodule-pointer-only diff, and a cancelled
+#     (superseded) review run must NOT fail, and a draft PR must be neutral.
+#   - The deadlock case: once MAX_REVIEWS_PER_PR is reached the review pipeline
+#     refuses to run again, so the marker can NEVER advance. Failing there would
+#     make the PR permanently unmergeable. It must pass, with a warning.
+#
+# GitHub is stubbed with a routing fake `gh` that applies the script's own
+# --jq expressions to fixture JSON, so the real jq/sed extraction is exercised
+# rather than reimplemented. Every write (check-run POST/PATCH) is captured and
+# asserted on, including WHICH SHA it was anchored to.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# shellcheck source=../lib/test-helpers.sh
+# BLOCKER: shared assertion helpers used by every .ci/scripts/test gate
+source "$SCRIPT_DIR/../lib/test-helpers.sh"
+
+UNDER_TEST="$REPO_ROOT/.ci/scripts/review/review-status.sh"
+REAL_GATE="$REPO_ROOT/.ci/scripts/review/claude-review-gate.sh"
+
+OLD_SHA="1111111111111111111111111111111111111111"
+NEW_SHA="2222222222222222222222222222222222222222"
+
+LAST_OUT=""
+LAST_RC=0
+
+# ---------------------------------------------------------------------------
+# Fixture scaffolding
+# ---------------------------------------------------------------------------
+
+write_fake_gh() {
+    local dir="$1"
+    mkdir -p "$dir/bin"
+    cat >"$dir/bin/gh" <<'FAKE'
+#!/bin/bash
+# Routing fake for `gh api`. Serves fixture JSON per endpoint and applies the
+# caller's own --jq expression to it (gh applies --jq per page; the fixtures are
+# single-page, so this is faithful). Non-GET calls are captured, never served.
+set -uo pipefail
+method="GET"
+path=""
+jqexpr=""
+args=("$@")
+n=${#args[@]}
+i=0
+while [ "$i" -lt "$n" ]; do
+    a="${args[$i]}"
+    case "$a" in
+        api) ;;
+        -X | --method)
+            i=$((i + 1))
+            method="${args[$i]}"
+            ;;
+        --jq)
+            i=$((i + 1))
+            jqexpr="${args[$i]}"
+            ;;
+        --input | -f | -F | --field | --raw-field)
+            i=$((i + 1))
+            ;;
+        --paginate | --silent) ;;
+        -*) ;;
+        *)
+            if [ -z "$path" ]; then path="$a"; fi
+            ;;
+    esac
+    i=$((i + 1))
+done
+
+if [ "$method" != "GET" ]; then
+    {
+        echo "METHOD=$method PATH=$path"
+        cat
+        echo
+    } >>"$GH_CAPTURE"
+    echo '{"id": 999}'
+    exit 0
+fi
+
+key=""
+case "$path" in
+    # `gh pr view --json additions,deletions` -- how the review budget learns the
+    # diff size. Without this the call falls through to "unrouted" and every test
+    # silently gets a 0-line diff, i.e. the smallest cap, which would make the
+    # size-tiered budget untestable.
+    pr) key="pr-size" ;;
+    */commits/*/pulls) key="commit-pulls" ;;
+    */commits/*/check-runs) key="check-runs" ;;
+    */issues/*/comments) key="comments" ;;
+    */compare/*) key="compare" ;;
+    */pulls/*) key="pull" ;;
+    *)
+        echo "fake gh: unrouted path: $path" >&2
+        exit 3
+        ;;
+esac
+
+file="$GH_FIXTURES/$key.json"
+if [ ! -f "$file" ]; then
+    echo "fake gh: missing fixture $file" >&2
+    exit 4
+fi
+if [ -n "$jqexpr" ]; then
+    jq -r "$jqexpr" "$file"
+else
+    cat "$file"
+fi
+FAKE
+    chmod +x "$dir/bin/gh"
+}
+
+# write_hygiene <dir> <rc-threads> <rc-comments> <rc-reports>
+write_hygiene() {
+    local dir="$1" a="$2" b="$3" c="$4"
+    mkdir -p "$dir/hygiene"
+    local names=(check-resolved-threads.sh check-review-comments.sh check-review-report-replies.sh)
+    local rcs=("$a" "$b" "$c")
+    local i
+    for i in 0 1 2; do
+        cat >"$dir/hygiene/${names[$i]}" <<EOF
+#!/bin/bash
+echo "stub ${names[$i]} for PR \${PR_NUMBER:-?}"
+exit ${rcs[$i]}
+EOF
+        chmod +x "$dir/hygiene/${names[$i]}"
+    done
+}
+
+marker_comment() {
+    local sha="$1"
+    jq -n --arg sha "$sha" \
+        '{id: 1, user: {login: "github-actions[bot]"},
+          body: ("<!-- claude-reviewed: " + $sha + " -->\nAutomated Claude review completed.")}'
+}
+
+# report_comments <n>  -- n finished review reports, in the shape both this
+# script and claude-review-gate.sh count against the cap.
+report_comments() {
+    local n="$1" i out="[]"
+    for ((i = 1; i <= n; i++)); do
+        out="$(jq --argjson id "$((100 + i))" \
+            '. + [{id: $id, user: {login: "github-actions[bot]"},
+                   body: "**Claude finished** the review.\n### Review\nlooks fine"}]' <<<"$out")"
+    done
+    echo "$out"
+}
+
+# setup <TEMP> -- default world: open non-draft PR #42, head NEW_SHA, marker on
+# NEW_SHA, no reports, all hygiene green.
+setup() {
+    local t="$1"
+    mkdir -p "$t/fixtures"
+    write_fake_gh "$t"
+    write_hygiene "$t" 0 0 0
+    printf '%s\n' \
+        '[submodule "private/renet"]' \
+        '	path = private/renet' \
+        '	url = git@github.com:rediacc/renet.git' \
+        '[submodule "private/account"]' \
+        '	path = private/account' \
+        '	url = git@github.com:rediacc/account.git' >"$t/.gitmodules"
+
+    echo '[{"number": 42, "state": "open"}]' >"$t/fixtures/commit-pulls.json"
+    jq -n --arg sha "$NEW_SHA" '{state: "open", draft: false, head: {sha: $sha}}' \
+        >"$t/fixtures/pull.json"
+    marker_comment "$NEW_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    echo '{"files": []}' >"$t/fixtures/compare.json"
+    echo '{"check_runs": []}' >"$t/fixtures/check-runs.json"
+    # Default: a small PR, so the default review budget is the smallest tier.
+    echo '{"additions": 100, "deletions": 40}' >"$t/fixtures/pr-size.json"
+}
+
+# pr_size <dir> <additions> <deletions> -- resize the PR the fake gh reports.
+pr_size() {
+    printf '{"additions": %s, "deletions": %s}\n' "$2" "$3" >"$1/fixtures/pr-size.json"
+}
+
+# run_status <TEMP> [KEY=VALUE ...] -- runs the script under the fake world.
+run_status() {
+    local t="$1"
+    shift
+    local rc=0
+    LAST_OUT="$(cd "$t" && env \
+        PATH="$t/bin:$PATH" \
+        GH_FIXTURES="$t/fixtures" \
+        GH_CAPTURE="$t/capture.txt" \
+        GH_TOKEN=fake \
+        GITHUB_REPOSITORY=rediacc/console \
+        REVIEW_STATUS_HYGIENE_DIR="$t/hygiene" \
+        NO_COLOR=1 \
+        "$@" \
+        bash "$UNDER_TEST" 2>&1)" || rc=$?
+    LAST_RC="$rc"
+    return 0
+}
+
+# posted <TEMP> <jq-path> -- field of the captured check-run payload.
+posted() {
+    local t="$1" expr="$2"
+    sed -n '/^METHOD=/,$p' "$t/capture.txt" | sed '1d' | jq -r "$expr"
+}
+
+captured_method() {
+    sed -n 's/^METHOD=\([A-Z]*\) .*/\1/p' "$1/capture.txt" | tail -n 1
+}
+
+# ---------------------------------------------------------------------------
+# Anti-vacuity: the marker prefix must still be parseable out of the real gate
+# script, and the review cap must come from ONE shared table.
+#
+# The cap used to be a constant sed-parsed out of the gate script. It is now
+# sized to the diff by review_cap_for() in ../lib/common.sh, which both review
+# scripts source. That is a stronger contract, not a weaker one: sed-parsing a
+# number out of a sibling file was always one edit away from the two scripts
+# disagreeing, and disagreement is precisely the deadlock this suite exists to
+# prevent. So this asserts the SHARED function exists and that both scripts see
+# identical values for it.
+# ---------------------------------------------------------------------------
+test_real_gate_constants_parseable() {
+    local marker
+    marker="$(sed -n "s/^MARKER_PREFIX='\(.*\)'[[:space:]]*$/\1/p" "$REAL_GATE")"
+    assert_eq "$marker" '<!-- claude-reviewed:' "marker prefix parsed from the real gate script"
+
+    # shellcheck source=../../lib/common.sh
+    # BLOCKER: the shared review-budget table both review scripts depend on
+    source "$REPO_ROOT/.ci/scripts/lib/common.sh"
+    if ! declare -F review_cap_for >/dev/null; then
+        log_fail "review_cap_for() is missing from .ci/scripts/lib/common.sh"
+        return
+    fi
+    # The operator's tiers, asserted at their boundaries so an off-by-one in the
+    # comparison cannot pass. A cap that only ever returns its default would
+    # satisfy a single-value check.
+    assert_eq "$(review_cap_for 0)" "3" "an empty diff gets the smallest budget"
+    assert_eq "$(review_cap_for 10000)" "3" "10k lines is still 3 reviews"
+    assert_eq "$(review_cap_for 10001)" "5" "just over 10k moves to 5"
+    assert_eq "$(review_cap_for 50000)" "5" "50k lines is still 5 reviews"
+    assert_eq "$(review_cap_for 50001)" "7" "just over 50k moves to 7"
+    assert_eq "$(review_cap_for 250000)" "7" "a huge diff stays at 7, it does not keep growing"
+    assert_eq "$(review_cap_for abc)" "3" "an unreadable size falls to the SMALLEST budget, never a larger one"
+    log_pass "review budget comes from one shared table and honours every tier boundary"
+}
+
+# ---------------------------------------------------------------------------
+# Too loud: healthy states must not fail
+# ---------------------------------------------------------------------------
+test_current_head_succeeds() {
+    local t="$1"
+    setup "$t"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_exit_code 0 "$LAST_RC" "healthy PR must not error"
+    assert_eq "$(posted "$t" '.conclusion')" success "current marker + clean hygiene"
+    assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" "check-run anchored to the PR head"
+    assert_eq "$(captured_method "$t")" POST "no existing check-run means create"
+    log_pass "current head + clean hygiene => success on the head SHA"
+}
+
+test_empty_diff_succeeds() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    echo '{"files": []}' >"$t/fixtures/compare.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" success "empty diff since the reviewed SHA is equivalent"
+    log_pass "stale marker with an EMPTY diff => success"
+}
+
+test_gitlink_only_succeeds() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "private/renet"}, {"filename": "private/account"}]}' \
+        >"$t/fixtures/compare.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" success "submodule pointer bumps are not reviewable code"
+    assert_contains "$(posted "$t" '.output.summary')" "only submodule pointer bumps" \
+        "summary says why it passed"
+    log_pass "stale marker with a GITLINK-ONLY diff => success"
+}
+
+test_cancelled_review_run_is_not_a_failure() {
+    local t="$1"
+    setup "$t"
+    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=cancelled \
+        WR_HTML_URL=https://example.invalid/run/1
+    assert_eq "$(posted "$t" '.conclusion')" success \
+        "a superseded (cancelled) review run must not fail the head"
+    log_pass "cancelled Claude Review run => success (cancel-in-progress is by design)"
+}
+
+test_draft_is_neutral() {
+    local t="$1"
+    setup "$t"
+    jq -n --arg sha "$NEW_SHA" '{state: "open", draft: true, head: {sha: $sha}}' \
+        >"$t/fixtures/pull.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" neutral "a draft PR is not expected to be reviewed"
+    log_pass "draft PR => neutral"
+}
+
+# ---------------------------------------------------------------------------
+# Too quiet: PLANTED DEFECTS that must FIRE
+# ---------------------------------------------------------------------------
+test_stale_head_fails() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_exit_code 0 "$LAST_RC" "a failing verdict is still a successful report"
+    assert_eq "$(posted "$t" '.conclusion')" failure "real code changed since the reviewed SHA"
+    local summary
+    summary="$(posted "$t" '.output.summary')"
+    assert_contains "$summary" "$NEW_SHA" "failure names the head SHA"
+    assert_contains "$summary" "$OLD_SHA" "failure names the reviewed SHA"
+    log_pass "PLANTED stale marker => FAILURE naming both SHAs"
+}
+
+test_unreviewed_head_fails() {
+    local t="$1"
+    setup "$t"
+    echo '[]' >"$t/fixtures/comments.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "no marker at all means nothing was reviewed"
+    assert_contains "$(posted "$t" '.output.summary')" "no reviewed-SHA marker" "failure says why"
+    log_pass "PLANTED missing marker => FAILURE"
+}
+
+test_wrong_marker_prefix_is_seen_as_unreviewed() {
+    local t="$1"
+    setup "$t"
+    # A marker written under a DIFFERENT prefix must not be honoured -- this is
+    # the shape a drifted MARKER_PREFIX would take.
+    jq -n --arg sha "$NEW_SHA" \
+        '[{id: 1, user: {login: "github-actions[bot]"},
+           body: ("<!-- reviewed-by-somebody: " + $sha + " -->")}]' \
+        >"$t/fixtures/comments.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "a foreign marker prefix proves nothing"
+    log_pass "PLANTED foreign marker prefix => FAILURE"
+}
+
+test_failed_review_run_fails() {
+    local t="$1"
+    setup "$t"
+    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=failure \
+        WR_HTML_URL=https://example.invalid/run/7
+    assert_eq "$(posted "$t" '.conclusion')" failure "the review produced no verdict"
+    assert_contains "$(posted "$t" '.output.summary')" "https://example.invalid/run/7" \
+        "failure links the run that failed"
+    log_pass "PLANTED failed Claude Review run => FAILURE with a link"
+}
+
+test_hygiene_failure_fails() {
+    local t="$1"
+    setup "$t"
+    write_hygiene "$t" 0 1 0
+    run_status "$t" EVENT_NAME=issue_comment PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "an unreplied review comment must block"
+    assert_contains "$(posted "$t" '.output.summary')" "check-review-comments.sh" \
+        "failure names the script that failed"
+    log_pass "PLANTED hygiene failure => FAILURE naming the script"
+}
+
+test_compare_failure_fails_closed() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    rm -f "$t/fixtures/compare.json" # compare API unavailable
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "unproven equivalence is not equivalence"
+    assert_contains "$(posted "$t" '.output.summary')" "compare API failed" "failure says why"
+    log_pass "PLANTED compare-API failure => FAILURE (fails closed)"
+}
+
+test_missing_hygiene_dir_hard_fails() {
+    local t="$1"
+    setup "$t"
+    rm -f "$t/hygiene/check-review-report-replies.sh"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    if [[ "$LAST_RC" -eq 0 ]]; then
+        log_fail "a missing hygiene script must abort, not silently reduce the check to currency only"
+    fi
+    assert_contains "$LAST_OUT" "hygiene script missing" "the abort says what is missing"
+    log_pass "PLANTED missing hygiene script => hard exit $LAST_RC (anti-vacuity)"
+}
+
+test_unparseable_constants_hard_fail() {
+    local t="$1"
+    setup "$t"
+    # The MARKER renamed, as a drifting refactor would leave it. The cap is no
+    # longer parsed from this file (it comes from the shared review_cap_for()),
+    # but the marker still is, and a silent default there would make the gate
+    # compare against a prefix nothing ever posts.
+    printf '%s\n' "MARKER='<!-- claude-reviewed:'" >"$t/fake-gate.sh"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/fake-gate.sh"
+    if [[ "$LAST_RC" -eq 0 ]]; then
+        log_fail "an unparseable marker must abort, never fall back to a hard-coded default"
+    fi
+    assert_contains "$LAST_OUT" "could not parse" "the abort names the parse it could not do"
+    log_pass "PLANTED renamed constant => hard exit $LAST_RC instead of a silent default"
+}
+
+# ---------------------------------------------------------------------------
+# The deadlock guard, driven in BOTH directions so the cap number is proven
+# load-bearing rather than incidental.
+# ---------------------------------------------------------------------------
+test_cap_reached_warns_instead_of_deadlocking() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/comments-marker.json"
+    report_comments 3 >"$t/comments-reports.json"
+    jq -s 'add' "$t/comments-marker.json" "$t/comments-reports.json" >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap3.sh"
+    pr_size "$t" 900 100 # 1,000 lines -> smallest tier, cap 3
+
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap3.sh"
+    assert_eq "$(posted "$t" '.conclusion')" success \
+        "cap reached + stale marker must stay mergeable"
+    assert_contains "$(posted "$t" '.output.summary')" "REVIEW CAP REACHED" \
+        "the pass is loud, not silent"
+    log_pass "cap reached + stale marker => success WITH A WARNING (no permanent block)"
+}
+
+test_below_cap_the_same_state_fails() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/comments-marker.json"
+    report_comments 3 >"$t/comments-reports.json"
+    jq -s 'add' "$t/comments-marker.json" "$t/comments-reports.json" >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    # Identical world, cap raised: the warning must become a failure. If it does
+    # not, the cap value is not actually being read.
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap9.sh"
+    # THE POINT OF THE TIERS: identical review count, different verdict, purely
+    # because the diff is large enough to earn a bigger budget.
+    pr_size "$t" 60000 10000 # 70,000 lines -> top tier, cap 7
+
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap9.sh"
+    assert_eq "$(posted "$t" '.conclusion')" failure \
+        "below the cap the same stale state must fail"
+    assert_not_contains "$(posted "$t" '.output.summary')" "REVIEW CAP REACHED" \
+        "no cap warning below the cap"
+    log_pass "same state with the cap raised => FAILURE (the parsed cap is load-bearing)"
+}
+
+# ---------------------------------------------------------------------------
+# SHA-awareness -- the property `Review Gate` structurally cannot have
+# ---------------------------------------------------------------------------
+test_anchors_to_current_head_not_event_sha() {
+    local t="$1"
+    setup "$t"
+    # The event carries the OLD sha (a late-finishing run for a superseded
+    # push); the PR has moved on. The verdict must be posted against the PR's
+    # CURRENT head, and must report that head as unreviewed.
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$OLD_SHA" WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9
+    assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" \
+        "the check-run is anchored to the PR head, not the event's SHA"
+    assert_eq "$(posted "$t" '.conclusion')" failure "the current head is unreviewed"
+    log_pass "check-run anchors to the PR's CURRENT head, not the triggering event's SHA"
+}
+
+test_existing_check_run_is_patched() {
+    local t="$1"
+    setup "$t"
+    jq -n '{check_runs: [{id: 555, app: {slug: "github-actions"}}]}' >"$t/fixtures/check-runs.json"
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(captured_method "$t")" PATCH "an existing check-run is updated, not duplicated"
+    assert_contains "$(sed -n 's/^METHOD=[A-Z]* PATH=//p' "$t/capture.txt")" \
+        "check-runs/555" "the PATCH targets the existing run"
+    assert_eq "$(posted "$t" '.head_sha // "absent"')" absent \
+        "head_sha is not a PATCH field and must be stripped"
+    log_pass "existing check-run => PATCH without head_sha (no per-comment duplicates)"
+}
+
+# ---------------------------------------------------------------------------
+# ACYCLICITY -- the invariant that keeps this out of CI's dependency graph.
+# ---------------------------------------------------------------------------
+test_no_ci_job_references_review_complete() {
+    local hits
+    hits="$(grep -rn "Review Complete" "$REPO_ROOT/.github/workflows" \
+        --include='*.yml' | grep -v '^.*review-status.yml' || true)"
+    if [[ -n "$hits" ]]; then
+        log_fail "a workflow other than review-status.yml references 'Review Complete' -- that is a cycle:
+$hits"
+    fi
+    if ! grep -q 'Review Complete' "$REPO_ROOT/.ci/scripts/review/review-status.sh"; then
+        log_fail "review-status.sh no longer names the check it posts; this acyclicity check went blind"
+    fi
+    log_pass "no workflow but review-status.yml mentions the 'Review Complete' context"
+}
+
+test_workflow_does_not_trigger_on_pull_request() {
+    local wf="$REPO_ROOT/.github/workflows/review-status.yml"
+    # `pull_request` would run the PR's OWN copy of this workflow, letting a PR
+    # edit the logic that judges it. All four real triggers run the default
+    # branch copy.
+    if grep -qE '^  pull_request:[[:space:]]*$' "$wf"; then
+        log_fail "review-status.yml triggers on pull_request; a PR could then edit its own judge"
+    fi
+    local ev
+    for ev in "workflow_run:" "pull_request_review:" "pull_request_review_comment:" "issue_comment:"; do
+        grep -q "^  $ev" "$wf" || log_fail "review-status.yml lost its '$ev' trigger"
+    done
+    grep -q 'checks: write' "$wf" || log_fail "review-status.yml cannot post a check-run without checks: write"
+    log_pass "workflow keeps its four default-branch triggers and never uses pull_request"
+}
+
+# ---------------------------------------------------------------------------
+
+test_real_gate_constants_parseable
+test_no_ci_job_references_review_complete
+test_workflow_does_not_trigger_on_pull_request
+
+with_temp_dir test_current_head_succeeds
+with_temp_dir test_empty_diff_succeeds
+with_temp_dir test_gitlink_only_succeeds
+with_temp_dir test_cancelled_review_run_is_not_a_failure
+with_temp_dir test_draft_is_neutral
+
+with_temp_dir test_stale_head_fails
+with_temp_dir test_unreviewed_head_fails
+with_temp_dir test_wrong_marker_prefix_is_seen_as_unreviewed
+with_temp_dir test_failed_review_run_fails
+with_temp_dir test_hygiene_failure_fails
+with_temp_dir test_compare_failure_fails_closed
+with_temp_dir test_missing_hygiene_dir_hard_fails
+with_temp_dir test_unparseable_constants_hard_fail
+
+with_temp_dir test_cap_reached_warns_instead_of_deadlocking
+with_temp_dir test_below_cap_the_same_state_fails
+
+with_temp_dir test_anchors_to_current_head_not_event_sha
+with_temp_dir test_existing_check_run_is_patched

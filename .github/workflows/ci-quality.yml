@@ -261,7 +261,14 @@ jobs:
     name: Submodule Branches
     runs-on: ubuntu-slim
     timeout-minutes: 12
-    if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
+    # Runs on PRs (the coordinated-branch rules) AND on main (the stronger rule
+    # that every gitlink is reachable from the submodule's own origin/main). The
+    # script's header claimed push-to-main coverage for a long time while this
+    # condition granted only `pull_request`, so the invariant it advertised was
+    # enforced nowhere. On a pull_request `github.ref` is refs/pull/N/merge, so
+    # the first clause covers PRs and the second picks up push, schedule and the
+    # nightly rehearsal on main.
+    if: inputs.is_bot != 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/app-token

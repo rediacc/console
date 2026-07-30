@@ -437,7 +437,7 @@
   "commands.doctor.sections.subscription": "Abbonamento",
   "commands.doctor.sections.virtualization": "Virtualizzazione",
   "commands.doctor.subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
-  "commands.doctor.title": "Rediacc CLI Doctor",
+  "commands.doctor.title": "Diagnostica CLI Rediacc",
   "commands.job.cancel.alreadyFinished": "Il job {{jobId}} è già {{state}}; niente da annullare.",
   "commands.job.cancel.confirm": "Annullare il job {{jobId}} ({{function}}) su {{machine}}? L'operazione verrà interrotta.",
   "commands.job.cancel.description": "Annulla un job in background in esecuzione",

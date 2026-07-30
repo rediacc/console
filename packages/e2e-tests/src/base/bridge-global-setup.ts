@@ -44,11 +44,47 @@ async function waitForCephHealth(opsManager: ReturnType<typeof getOpsManager>) {
 
   while (Date.now() - startedAt < healthTimeoutMs) {
     attempt += 1;
-    const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], 120000);
+
+    // NEVER KILL RENET BEFORE OUR OWN DEADLINE. This call used to pass a hard
+    // 120000, while renet's internal wait is CephHealthTimeout, 600s by default
+    // (opsconfig/config.go:262, overridable via CEPH_HEALTH_TIMEOUT, which
+    // nothing in this repo sets). So every single invocation was SIGTERM'd at
+    // 120s, one fifth of the way through renet's own poll.
+    //
+    // OpsCommandRunner's timeout path returns `code: -1` and appends
+    // "Timeout exceeded" to whatever stderr had arrived so far
+    // (OpsCommandRunner.ts:59-62), and -1 is not 0, so the loop below read it as
+    // "not healthy yet" and retried. The 1200s budget was therefore spent on
+    // nine truncated attempts, and the error the nightly finally surfaced was
+    // our own timeout marker rather than renet's diagnosis.
+    //
+    // Giving the call the whole remaining budget lets renet's wait run to its
+    // own conclusion and return the real reason. The outer loop stays as a thin
+    // retry for the case where budget remains after renet gives up.
+    const remainingMs = healthTimeoutMs - (Date.now() - startedAt);
+    const healthResult = await opsManager.runOpsCommand(['ceph', 'health'], [], remainingMs);
     if (healthResult.code === 0) {
       // eslint-disable-next-line no-console
       console.log(`  ✓ Ceph cluster is healthy (attempt ${attempt})`);
       return;
+    }
+
+    // Exit 11 means renet RECORDED a provisioning failure: the cluster was never
+    // built, so no amount of polling will make it healthy. Retrying to the full
+    // budget here is what turned a 3-second diagnosis into a 20-minute one, and
+    // it is why the nightly reported a generic "Ceph health check failed"
+    // instead of the real cause.
+    //
+    // renet's stderr on this path carries the ORIGINAL provisioning error, e.g.
+    // "failed to install prerequisites on node 22: ssh command failed:
+    // signal: killed" (an OOM kill during apt), so surface it verbatim.
+    //
+    // ProvisionUnavailableExitCode, private/renet/pkg/infra/ceph/provisionstate.go.
+    // 10 is taken by LicenseRequiredExitCode; those are the only two.
+    if (healthResult.code === 11) {
+      throw new Error(
+        `Ceph was never provisioned, so waiting cannot help. renet reported:\n${healthResult.stderr}`
+      );
     }
 
     if (Date.now() - startedAt >= healthTimeoutMs) {

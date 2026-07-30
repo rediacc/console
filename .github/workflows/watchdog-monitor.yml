@@ -109,15 +109,38 @@ jobs:
           # judgment nobody made -- see issue #537 and evaluateRetryEligibility.
           # The 07-27 nightly is why: a deterministic Stage Artifacts bug bought
           # a full second attempt before being cancelled anyway.
-          WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation'
+          # Migration Test joins these because its failures are upstream by
+          # construction: it drives six live D1 clones against the Cloudflare
+          # API, and run 30443624545 died on Cloudflare's own internal error
+          # ("internal error; reference = e_61GNS0_... [code: 7500]") on the
+          # SIXTH clone after five succeeded, taking 23 jobs down with it.
+          # Note what this list does and does not do: it decides whether a rerun
+          # FIRES, not which jobs come back -- GitHub reruns every non-successful
+          # job once triggered.
+          WATCHDOG_RETRY_ALLOWLIST_PATTERNS: 'E2E,OPS,Fork Isolation,Migration Test'
           WATCHDOG_WAIT_PATTERNS: 'Migration Test'
           # Where the monitor writes failed jobs' COMPLETE logs before anything
           # reruns them. A rerun makes attempt 1's logs unreachable, so without
           # this the evidence for "real break or flake?" is destroyed by the
           # very action taken in response to it.
           WATCHDOG_LOG_CAPTURE_DIR: ${{ runner.temp }}/watchdog-logs
+          # Classifier tier 1: Cloudflare / DeepSeek V4 Pro.
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          # Classifier tier 2: Anthropic. Tier 1 has been returning HTTP 402
+          # (billing) continuously, which is an UNAVAILABLE tier rather than a
+          # blip, so without a second provider every failure fell through to the
+          # allowlist and a judgment nobody made decided whether to spend a
+          # ~500-machine-minute retry.
+          #
+          # ANTHROPIC_API_KEY is the documented x-api-key path and is preferred
+          # if it ever exists; CLAUDE_CODE_OAUTH_TOKEN is the credential this org
+          # actually has today. An undefined secret interpolates to an empty
+          # string, and the script treats "no credential" as "this tier is
+          # absent", so the chain simply falls through to the allowlist exactly
+          # as it does now. Adding the key later needs no code change.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         with:
           script: return await require('./.ci/scripts/ci/watchdog-monitor.cjs')({github, context, core})
 

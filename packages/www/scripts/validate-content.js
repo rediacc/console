@@ -16,25 +16,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const CONTENT_DIR = path.join(ROOT_DIR, 'src', 'content');
 
-const SUPPORTED_LANGUAGES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-];
+const SUPPORTED_LANGUAGES = SITE_LOCALES;
 const SOURCE_LANGUAGE = 'en';
 const COLLECTIONS = ['blog', 'docs'];
 

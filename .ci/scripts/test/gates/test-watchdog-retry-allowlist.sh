@@ -76,6 +76,7 @@ test_allowlist_is_real() {
     # still retry" cases below would pass for the wrong reason.
     assert_contains "$ALLOWLIST" "E2E" "watchdog-monitor.yml still allowlists the E2E legs"
     assert_contains "$ALLOWLIST" "OPS" "watchdog-monitor.yml still allowlists the OPS legs"
+    assert_contains "$ALLOWLIST" "Migration Test" "watchdog-monitor.yml still allowlists Migration Test"
     log_pass "reading the real WATCHDOG_RETRY_ALLOWLIST_PATTERNS from watchdog-monitor.yml ($ALLOWLIST)"
 }
 
@@ -86,7 +87,6 @@ test_classifier_down_fails_fast_for_deterministic_jobs() {
         "the exact 07-27 nightly job must fail fast, not buy a second attempt"
     assert_eq "$(down 'Build (Docker) / Server (amd64)')" "no-retry" "a docker build failure must fail fast"
     assert_eq "$(down 'Build (CLI) / Linux (x64)')" "no-retry" "a CLI build failure must fail fast"
-    assert_eq "$(down 'Migration Test')" "no-retry" "a migration failure must fail fast"
     log_pass "with the classifier down, deterministic jobs fail fast instead of retrying blind"
 }
 
@@ -98,7 +98,23 @@ test_classifier_down_still_retries_known_flaky_jobs() {
     assert_eq "$(down 'OPS Tests / OPS Provision (linux-amd64)')" "retry" "OPS provisioning still retries"
     assert_eq "$(down 'Tests + Infra / Concurrent Fork Isolation')" "retry" \
         "Fork Isolation still retries (observed: a live Docker Hub AUTH TIMEOUT)"
-    log_pass "with the classifier down, known-flaky VM and image-pull jobs still retry"
+    # MOVED HERE FROM THE DETERMINISTIC SET, and the move is the finding rather
+    # than a concession to a failing test. `Migration Test` was listed above as
+    # an example of a deterministic job. It is not one: it drives SIX live D1
+    # clones against Cloudflare's API, so its failure mode is the same family as
+    # the VM and image-pull legs beside it here.
+    #
+    # Observed, not theorised: a Cloudflare error 7500 (internal) on the sixth of
+    # six clones failed the job, and because it was on NEITHER watchdog list it
+    # took 23 green jobs down with it. That is precisely the waste the allowlist
+    # exists to prevent.
+    #
+    # Asserting `retry` rather than deleting the case keeps the behaviour pinned
+    # in BOTH directions: the entry cannot silently fall out of
+    # WATCHDOG_RETRY_ALLOWLIST_PATTERNS without this failing.
+    assert_eq "$(down 'Migration Test')" "retry" \
+        "Migration Test retries: six live D1 clones against a third-party API, not a deterministic build"
+    log_pass "with the classifier down, known-flaky VM, image-pull and third-party-API jobs still retry"
 }
 
 test_a_cancellation_is_retried_not_used_to_kill_the_run() {

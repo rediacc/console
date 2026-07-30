@@ -9,6 +9,11 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+# BLOCKER: gh_retry is needed so a failed API call cannot be mistaken for a PR that carries no attribution
+source "$SCRIPT_DIR/../lib/common.sh"
+
 # Validate required environment variables
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then
     echo "GITHUB_TOKEN is required"
@@ -30,9 +35,22 @@ echo "Checking for Claude attribution in PR #${PR_NUMBER}..."
 # Note: We specifically match attribution markers, not general mentions of Claude as a tool
 CLAUDE_PATTERN="(Co-Authored-By[[:space:]]*:[[:space:]]*Claude|Generated with[[:space:]]+\[?Claude|🤖[[:space:]]*Generated|noreply@anthropic\.com)"
 
+# FAIL CLOSED throughout. Every one of these five calls used to end in
+# `|| echo ""`, so a rate limit or an expired token produced an empty PR body
+# and an empty commit list: the `for SHA in $COMMITS` loops ran zero times,
+# ISSUES stayed empty, and the gate printed "No Claude attribution found - OK"
+# and exited 0 having inspected nothing. An unreadable PR is not a clean PR.
+probe_failed() {
+    echo "" >&2
+    echo "Cannot certify that this PR is free of Claude attribution, because the" >&2
+    echo "GitHub API could not be read. Failing closed rather than reporting clean." >&2
+    exit 1
+}
+
 # Check PR description
 echo "  Checking PR description..."
-PR_BODY=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.body // ""' 2>/dev/null || echo "")
+PR_BODY=$(gh_retry "PR body for #${PR_NUMBER}" -- \
+    api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.body // ""') || probe_failed
 
 if echo "$PR_BODY" | grep -qiE "$CLAUDE_PATTERN"; then
     MATCH=$(echo "$PR_BODY" | grep -iE "$CLAUDE_PATTERN" | head -1)
@@ -41,10 +59,20 @@ fi
 
 # Check commit messages
 echo "  Checking commit messages..."
-COMMITS=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/commits" --paginate --jq '.[].sha' 2>/dev/null || echo "")
+COMMITS=$(gh_retry "commit list for PR #${PR_NUMBER}" -- \
+    api "repos/${REPO}/pulls/${PR_NUMBER}/commits" --paginate --jq '.[].sha') || probe_failed
+
+# A PR always has at least one commit. An empty list here means the call
+# succeeded but returned nothing usable, which is not a PR this gate can clear.
+if [[ -z "${COMMITS//[[:space:]]/}" ]]; then
+    echo "  ERROR: the commit list for PR #${PR_NUMBER} came back empty." >&2
+    echo "  Every PR has at least one commit, so this is a failed read, not a clean PR." >&2
+    probe_failed
+fi
 
 for SHA in $COMMITS; do
-    COMMIT_MSG=$(gh api "repos/${REPO}/commits/${SHA}" --jq '.commit.message' 2>/dev/null || echo "")
+    COMMIT_MSG=$(gh_retry "commit message for ${SHA}" -- \
+        api "repos/${REPO}/commits/${SHA}" --jq '.commit.message') || probe_failed
 
     if echo "$COMMIT_MSG" | grep -qiE "$CLAUDE_PATTERN"; then
         SHORT_SHA="${SHA:0:7}"
@@ -56,8 +84,10 @@ done
 # Check commit authors
 echo "  Checking commit authors..."
 for SHA in $COMMITS; do
-    AUTHOR_NAME=$(gh api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.name' 2>/dev/null || echo "")
-    AUTHOR_EMAIL=$(gh api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.email' 2>/dev/null || echo "")
+    AUTHOR_NAME=$(gh_retry "commit author name for ${SHA}" -- \
+        api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.name') || probe_failed
+    AUTHOR_EMAIL=$(gh_retry "commit author email for ${SHA}" -- \
+        api "repos/${REPO}/commits/${SHA}" --jq '.commit.author.email') || probe_failed
 
     if echo "$AUTHOR_NAME $AUTHOR_EMAIL" | grep -qiE "(claude|anthropic)"; then
         SHORT_SHA="${SHA:0:7}"

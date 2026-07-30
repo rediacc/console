@@ -18,9 +18,10 @@
  * update together), use publish-tutorial-video-to-r2.ts /
  * .ci/scripts/deploy/upload-media-to-r2.sh instead.
  *
- * videos/user-guide/ is deliberately excluded — those are E2E recordings
- * injected post-build by .ci/scripts/docs/inject-e2e-videos.sh from a CI
- * artifact, not part of this migration (see remark-video-embed.ts).
+ * videos/user-guide/ is deliberately excluded. Those were meant to be E2E
+ * recordings injected post-build from a CI artifact, but no workflow has ever
+ * produced an `e2e-videos-*` artifact, so the inject step and its script were
+ * removed. Nothing populates this directory today (see remark-video-embed.ts).
  */
 
 import { createHash } from 'node:crypto';

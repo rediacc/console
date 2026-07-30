@@ -2915,11 +2915,11 @@
             "title": "Acesso total às suas ferramentas."
           },
           {
-            "description": "Criar novos servidores, copiar existentes ou transferir backups precisa de uma assinatura ativa. Redimensionar e expandir continuam funcionando por 60 dias após a expiração. Manter seus servidores em execução é permanente.",
+            "description": "Você precisa de um plano ativo para criar novos servidores ou copiar os já existentes. Redimensionar e expandir continuam funcionando por 60 dias após o plano vencer. Manter seus servidores em execução é permanente.",
             "title": "Só servidores novos precisam de assinatura."
           },
           {
-            "description": "Quando a assinatura termina, redimensionar e expandir continuam funcionando por mais 60 dias. Iniciar, parar e excluir não são afetados: funcionam para sempre. A transferência de backup exige uma assinatura ativa.",
+            "description": "Quando sua assinatura terminar, redimensionar e expandir continuam funcionando por mais 60 dias. Iniciar, parar e excluir não são afetados: funcionam para sempre.",
             "title": "60 dias para expandir."
           },
           {

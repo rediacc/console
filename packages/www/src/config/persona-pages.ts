@@ -12,7 +12,7 @@ import { ACCOUNT_PATH } from './constants';
 import type { SectionType, TechItem } from './solution-pages';
 
 /** Persona-specific section types (extends base SectionType) */
-type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam' | 'teamVideo';
+type PersonaSectionType = SectionType | 'relatedSolutions' | 'shareWithTeam';
 
 export type PersonaType = 'devops' | 'cto' | 'ceo' | 'ai-agent';
 
@@ -39,8 +39,6 @@ export interface PersonaPageConfig {
   relatedSolutions?: string[];
   /** Primary CTA destination (overrides persona default). Relative to /{lang}. Use 'CONSULTATION' for external booking link. */
   ctaHref?: string;
-  /** Team member video for the teamVideo section */
-  teamVideo?: { member: string; videoKey: string };
 }
 
 /** Default CTA destinations by persona. 'CONSULTATION' is resolved to EXTERNAL_LINKS.SCHEDULE_CONSULTATION at render time.
