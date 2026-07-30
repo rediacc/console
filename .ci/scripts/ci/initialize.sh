@@ -139,9 +139,25 @@ fi
 log_step "Generating CI tags..."
 
 RENET_TAG=$(.ci/scripts/ci/generate-tag.sh --submodule private/renet)
-WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --self)
-
-RDC_TAG="$WEB_TAG" # Same console commit hash
+# WEB and RDC are hashed over their PRODUCERS' closure, not the console commit.
+#
+# `--self` made every commit invalidate BOTH images. Measured: 8b7840ed4 changed
+# exactly one file, .ci/scripts/deploy/wait-for-preview-worker.sh, which is
+# .dockerignore'd and which no image consumes -- and both images rebuilt, while
+# renet's content-hashed tag was correctly reused.
+#
+# Hashing the build CONTEXT would not work: it is both smaller than the COPY
+# list (.ci/scripts is excluded) and larger (.ci/docker/web is NOT excluded),
+# and the biggest inputs -- www-assets, account-web-assets, cli-npm, the renet
+# binaries -- arrive as downloaded artifacts and are never in the context. So
+# each tag covers its artifact PRODUCERS.
+#
+# $RENET_TAG is folded into both because renet reaches both images as an
+# artifact, never as source, so no path can cover it. RDC is NOT renet-free:
+# Dockerfile.native COPYs one file, and that file is the musl SEA, which embeds
+# renet for both arches.
+WEB_TAG=$(.ci/scripts/ci/generate-tag.sh --closure web --extra "$RENET_TAG")
+RDC_TAG=$(.ci/scripts/ci/generate-tag.sh --closure rdc --extra "$RENET_TAG")
 
 write_output "renet_tag" "$RENET_TAG"
 write_output "web_tag" "$WEB_TAG"

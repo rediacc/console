@@ -32,10 +32,14 @@ log_step "Checking review threads and review status..."
 
 # GraphQL query to get all review threads
 QUERY='
-query($owner: String!, $repo: String!, $pr: Int!) {
+query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           isResolved
@@ -58,40 +62,61 @@ query($owner: String!, $repo: String!, $pr: Int!) {
 
 log_step "Fetching review threads via GraphQL..."
 
-# Execute GraphQL query, retrying on a transient failure. `gh api graphql` can
-# exit 0 while returning a truncated/malformed body (an upstream hiccup), so
-# a command-exit-code fallback alone misses it -- validate the body is
-# PARSEABLE JSON on each attempt, not just that the command returned.
-RESULT=""
-attempt=1
-while [[ $attempt -le 3 ]]; do
-    CANDIDATE=$(gh api graphql \
-        -f query="$QUERY" \
-        -f owner="$OWNER" \
-        -f repo="$REPO" \
-        -F pr="$PR_NUMBER" 2>/dev/null || true)
-    if [[ -n "$CANDIDATE" ]] && echo "$CANDIDATE" | jq -e . >/dev/null 2>&1; then
-        RESULT="$CANDIDATE"
+# Execute the GraphQL query. `gh api graphql` can exit 0 while returning a
+# truncated or malformed body (an upstream hiccup), so a command-exit-code check
+# alone misses it -- gh_json validates that the body is PARSEABLE JSON on each of
+# its three attempts, which is what the hand-rolled loop that used to live here
+# did. It moved to lib/common.sh because eight other call sites across the review
+# and attribution gates needed exactly this and had none of it.
+# PAGINATE. `reviewThreads(first: 100)` with no cursor silently truncates at 100,
+# and because the gate only ever reports UNRESOLVED threads, thread 101 being
+# unresolved read as "all threads resolved" -- a silent green on a merge-blocking
+# check, which is the same failure class as the `|| echo "[]"` bug fixed below.
+# $after is a nullable GraphQL variable, so omitting it on the first request is
+# how you ask for page one; there is no valid empty-string cursor.
+ALL_NODES='[]'
+AFTER=''
+PAGE=0
+while :; do
+    PAGE=$((PAGE + 1))
+    # 50 pages is 5000 threads. A real PR never approaches it, so hitting this
+    # means the cursor stopped advancing; fail closed rather than spin forever.
+    if [[ "$PAGE" -gt 50 ]]; then
+        log_error "Review-thread pagination did not terminate after $PAGE pages. Failing closed."
+        exit 1
+    fi
+    if [[ -z "$AFTER" ]]; then
+        set -- -f query="$QUERY" -f owner="$OWNER" -f repo="$REPO" -F pr="$PR_NUMBER"
+    else
+        set -- -f query="$QUERY" -f owner="$OWNER" -f repo="$REPO" -F pr="$PR_NUMBER" -f after="$AFTER"
+    fi
+    if ! PAGE_JSON=$(gh_json "review threads for PR #${PR_NUMBER} (page ${PAGE})" -- api graphql "$@"); then
+        log_error "Cannot determine whether review threads are resolved. Failing closed."
+        exit 1
+    fi
+    # A GraphQL error response is valid JSON and exits 0, so catch it per page
+    # rather than only on the last one.
+    if echo "$PAGE_JSON" | jq -e '.errors' >/dev/null 2>&1; then
+        ERROR_MSG=$(echo "$PAGE_JSON" | jq -r '.errors[0].message // "Unknown error"')
+        log_error "GraphQL query failed: $ERROR_MSG"
+        exit 1
+    fi
+    ALL_NODES=$(jq -n --argjson acc "$ALL_NODES" --argjson page "$PAGE_JSON" \
+        '$acc + ($page.data.repository.pullRequest.reviewThreads.nodes // [])')
+    if [[ "$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')" != "true" ]]; then
         break
     fi
-    if [[ $attempt -lt 3 ]]; then
-        log_warn "GraphQL response invalid or empty (attempt $attempt/3), retrying..."
-        sleep $((attempt * 3))
+    AFTER=$(echo "$PAGE_JSON" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.endCursor')
+    if [[ -z "$AFTER" || "$AFTER" == "null" ]]; then
+        log_error "hasNextPage was true but the cursor was empty. Failing closed."
+        exit 1
     fi
-    attempt=$((attempt + 1))
 done
-[[ -z "$RESULT" ]] && RESULT='{"errors": [{"message": "GraphQL query failed or returned invalid JSON after 3 attempts"}]}'
-
-# Check for errors. RESULT is guaranteed valid JSON at this point (either a
-# real response or the sentinel above), so this jq call cannot itself fail to
-# parse -- it previously could, and a parse-error exit from `jq -e` looks
-# identical to "no .errors field" once stderr is suppressed, silently falling
-# through to a hard, confusing crash further down instead of this clear exit.
-if echo "$RESULT" | jq -e '.errors' >/dev/null 2>&1; then
-    ERROR_MSG=$(echo "$RESULT" | jq -r '.errors[0].message // "Unknown error"')
-    log_error "GraphQL query failed: $ERROR_MSG"
-    exit 1
-fi
+[[ "$PAGE" -gt 1 ]] && log_step "Fetched $(echo "$ALL_NODES" | jq 'length') review threads across $PAGE pages"
+# Re-wrap into the original single-response shape so every consumer below is
+# unchanged.
+RESULT=$(jq -n --argjson n "$ALL_NODES" \
+    '{data: {repository: {pullRequest: {reviewThreads: {nodes: $n}}}}}')
 
 # Extract unresolved threads (excluding outdated ones)
 UNRESOLVED=$(echo "$RESULT" | jq '[
@@ -104,7 +129,14 @@ UNRESOLVED_COUNT=$(echo "$UNRESOLVED" | jq 'length')
 # Check for "Changes Requested" reviews
 log_step "Checking review status..."
 
-REVIEWS=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" 2>/dev/null || echo "[]")
+# FAIL CLOSED. `|| echo "[]"` here meant a gh failure produced an empty review
+# list, so CHANGES_REQUESTED came out 0 and the gate reported that nobody had
+# requested changes. That is a silent green on a merge-blocking check.
+if ! REVIEWS=$(gh_json "review status for PR #${PR_NUMBER}" -- \
+    api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews"); then
+    log_error "Cannot determine whether a reviewer requested changes. Failing closed."
+    exit 1
+fi
 
 # Get the latest review state per reviewer (reviewers can change their review)
 CHANGES_REQUESTED=$(echo "$REVIEWS" | jq '[

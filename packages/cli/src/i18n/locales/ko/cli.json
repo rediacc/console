@@ -632,7 +632,7 @@
         "virtualization": "가상화"
       },
       "subscriptionUnreachable": "구독 서버에 연결할 수 없음",
-      "title": "Rediacc CLI Doctor"
+      "title": "Rediacc CLI 진단"
     },
     "machine": {
       "deprovision": {

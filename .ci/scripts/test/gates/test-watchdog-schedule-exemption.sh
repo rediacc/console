@@ -105,16 +105,34 @@ test_push_still_cancels() {
     log_pass "push runs still force-cancel"
 }
 
-test_workflow_dispatch_still_cancels() {
-    # DELIBERATE, not an oversight. The nightly REHEARSAL is a workflow_dispatch
-    # on main, and it is tempting to exempt it too "for symmetry". It is not
-    # exempt, because a dispatch is by definition something a human just asked
-    # for and is watching, so a cancelled rehearsal is read correctly, whereas a
-    # cancelled 04:00 nightly is not. Cancelling also stops the rehearsal from
-    # burning the full fleet on a failure the first red already proved.
-    assert_eq "$(exempt workflow_dispatch)" "cancel" \
-        "workflow_dispatch (the rehearsal) stays cancellable, deliberately"
-    log_pass "workflow_dispatch is deliberately NOT exempt"
+test_workflow_dispatch_is_exempt() {
+    # THIS REVERSES AN EARLIER DECISION IN THIS SAME FILE, so the reasoning is
+    # recorded rather than silently swapped.
+    #
+    # The first version asserted the opposite, on two grounds: that a dispatch is
+    # something a human just asked for and is watching, so a `cancelled`
+    # rehearsal would be read correctly; and that cancelling saves the fleet from
+    # burning on a failure the first red already proved.
+    #
+    # Both are wrong for this pipeline.
+    #
+    # The second is wrong on its own measured terms: machine-minutes are flat at
+    # roughly 500 per run and FREE on a public repo, which the program's own
+    # baseline states. They are not the scarce resource. INFORMATION PER ROUND
+    # is: the nightly stayed broken for twelve nights partly because each round
+    # surfaced one gate at a time. A force-cancel stops the run at the FIRST
+    # failure, so a rehearsal would report one broken gate per 70-minute round
+    # and re-impose exactly the serialisation the rehearsal exists to remove.
+    # Running the full fleet to completion enumerates every nightly breakage in
+    # ONE round, and that is the whole point of having a rehearsal at all.
+    #
+    # The first is wrong because it makes the rehearsal's conclusion mean
+    # something different from the nightly's. `ci.yml` calls the dispatch path
+    # "schedule-equivalent BY CONSTRUCTION"; a tool built to prove the nightly's
+    # conclusion is honest must not launder its own.
+    assert_eq "$(exempt workflow_dispatch)" "exempt" \
+        "the dispatch rehearsal must report failure as failure, like the nightly it stands in for"
+    log_pass "workflow_dispatch (the nightly rehearsal) is exempt from force-cancel"
 }
 
 test_unknown_event_fails_closed() {
@@ -180,7 +198,7 @@ test_ci_still_has_a_schedule_trigger
 test_schedule_is_exempt
 test_pull_request_still_cancels
 test_push_still_cancels
-test_workflow_dispatch_still_cancels
+test_workflow_dispatch_is_exempt
 test_unknown_event_fails_closed
 test_matching_is_exact_not_fuzzy
 test_exemption_is_checked_before_the_cancel_api_call

@@ -18,6 +18,10 @@ WORKDIR /build
 # package tsconfig extends it; without it the compiler reports a cascade of
 # missing-type errors that all trace back to one missing file.
 COPY package.json package-lock.json .npmrc tsconfig.json ./
+# @rediacc/locales is the single declaration of the site locale set. It is buildless
+# (no dist, no scripts), but the CLI imports it, so both its manifest and its source
+# have to be present or `npm ci` leaves the workspace unlinked and the bundle fails.
+COPY packages/locales/package.json packages/locales/
 COPY packages/shared/package.json packages/shared/
 COPY packages/cli/package.json packages/cli/
 # The CLI compiles against @rediacc/provisioning for the local-VM types. Those
@@ -29,6 +33,7 @@ COPY packages/provisioning/package.json packages/provisioning/
 # packages that genuinely need to compile are rebuilt explicitly afterwards.
 RUN npm ci --ignore-scripts && npm rebuild --ignore-scripts=false ssh2 cpu-features esbuild || true
 
+COPY packages/locales packages/locales
 COPY packages/shared packages/shared
 COPY packages/provisioning packages/provisioning
 COPY packages/cli packages/cli

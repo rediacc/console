@@ -953,9 +953,15 @@ class LocalExecutorService {
     remoteRenetPath: string,
     sftp: SFTPClient
   ): Promise<LicenseIssuanceOutcome> {
-    // NOTE: we intentionally do NOT gate on isLicensedRenetFunction here.
-    // That deny-list (repository_up/down/delete) governs PRE-FLIGHT issuance —
-    // those operate-tier ops don't issue a license before running. But this
+    // NOTE: recovery is deliberately NOT gated on any "is this function
+    // licensed" predicate. There used to be one (isLicensedRenetFunction, with
+    // a repository_up/down/delete deny-list); it is deleted, because it was a
+    // hand-maintained second source of truth that had already drifted from
+    // renet's tier map, and nothing consumed it but this comment.
+    //
+    // The reasoning it encoded still holds and is why nothing like it belongs
+    // here: such a deny-list governs PRE-FLIGHT issuance, since operate-tier
+    // ops do not issue a license before running. But this
     // method runs during RECOVERY, after renet has already reported
     // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
     // The repo image exists on disk there, so refreshRepoLicensesBatch can

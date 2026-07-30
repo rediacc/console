@@ -12,6 +12,11 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/common.sh
+# BLOCKER: gh_json and log_error are needed so an API failure cannot be mistaken for a PR with no review comments
+source "$SCRIPT_DIR/../lib/common.sh"
+
 # Patterns for low-effort replies that don't count as real responses
 # These are case-insensitive and match the entire reply (with optional punctuation)
 LOW_EFFORT_PATTERNS=(
@@ -83,8 +88,20 @@ REPO="${GITHUB_REPOSITORY:-rediacc/console}"
 
 echo "Checking review comments for PR #${PR_NUMBER}..."
 
-# Fetch all review comments
-COMMENTS=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/comments" --paginate 2>/dev/null || echo "[]")
+# Fetch all review comments.
+#
+# FAIL CLOSED. This used to be `|| echo "[]"`, so a rate limit, an expired token
+# or a network blip produced the same value as a PR with no review comments: the
+# gate printed "No review comments found - OK" and exited 0. This is a
+# merge-blocking gate, so a probe failure must block the merge, not wave it
+# through. gh_json retries twice before giving up.
+if ! COMMENTS=$(gh_json "review comments for PR #${PR_NUMBER}" -- \
+    api "repos/${REPO}/pulls/${PR_NUMBER}/comments" --paginate); then
+    echo "" >&2
+    echo "Cannot certify that review comments were addressed, because the comments" >&2
+    echo "could not be fetched. Failing closed rather than reporting a clean PR." >&2
+    exit 1
+fi
 
 if [[ "$COMMENTS" == "[]" ]]; then
     echo "No review comments found - OK"

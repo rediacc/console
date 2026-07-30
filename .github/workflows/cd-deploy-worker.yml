@@ -111,13 +111,13 @@ jobs:
           mkdir -p workers/www/dist
           cp -r packages/www/dist/* workers/www/dist/
 
-      - name: Inject E2E videos
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          .ci/scripts/docs/inject-e2e-videos.sh
-          --search-latest
-          --output workers/www/dist/assets/videos/user-guide/
+      # REMOVED: "Inject E2E videos". Unlike the two copies in ci.yml this one
+      # used --search-latest, which scans the repository's artifacts rather than
+      # one run's, so it could in principle have found something the per-run
+      # lookups missed. It could not: no workflow produces an `e2e-videos-*`
+      # artifact, and zero of the 1335 artifacts retained at removal time
+      # matched that prefix. Videos reach the site through
+      # PUBLIC_VIDEO_CDN_BASE_URL (media.rediacc.com) instead.
 
       - name: Build account portal
         run: npm install && npx vite build --outDir ../../../workers/www/dist/account

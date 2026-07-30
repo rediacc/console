@@ -71,7 +71,14 @@ cleanup() {
         if npx wrangler d1 delete "$db" --skip-confirmation >/dev/null 2>&1; then
             echo "  Deleted $db"
         else
-            echo "  ::warning::FAILED to delete test database $db -- it is still in the Cloudflare account and needs manual removal"
+            # NOT "needs manual removal". A pre-reap step runs
+            # .ci/scripts/housekeeping/cleanup-stale-d1.sh --max-age 60 before
+            # every migration-test job (ct-tests.yml), so an orphan left here is
+            # swept by the next run. Saying otherwise sends someone to the
+            # Cloudflare dashboard for work that already happens on its own --
+            # which is exactly what it did after run 30443624545, where a
+            # Cloudflare 7500 stranded one database.
+            echo "  ::warning::FAILED to delete test database $db. It is orphaned in the Cloudflare account; the pre-reap step on the next migration-test run deletes anything older than 60 minutes, so no manual action is needed unless it survives that."
         fi
     done
     echo "::endgroup::"

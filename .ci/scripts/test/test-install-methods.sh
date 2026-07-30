@@ -173,9 +173,23 @@ get_binary_url() {
 
     if [[ -n "$REPO_CHANNEL" ]]; then
         echo "${RELEASES_BASE_URL}/cli/${REPO_CHANNEL}/${filename}"
-    else
-        echo "${RELEASES_BASE_URL}/cli/v${version}/${filename}"
+        return 0
     fi
+
+    # There is no channel-less layout in R2. The bucket is
+    # `rediacc-releases/cli/{edge,stable}/...`, so the previous fallback here,
+    # `cli/v${version}/${filename}`, named a path that has never existed:
+    # probed live 2026-07-28, /cli/v1.2.12/rdc-linux-arm64 returns 404 while
+    # /cli/stable/ and /cli/edge/ both return 200. It therefore produced a URL
+    # guaranteed to 404, which is how the nightly failed at "Test Binary
+    # Download" while looking like a network problem.
+    #
+    # Both callers now skip before reaching this, so an empty channel here is a
+    # programming error rather than a runtime condition. Say so instead of
+    # handing back a broken URL for someone to debug as a download failure.
+    log_error "get_binary_url called with an empty REPO_CHANNEL."
+    log_error "  There is no channel-less path in R2; callers must skip when the channel is empty."
+    return 1
 }
 
 # Verify version output
@@ -234,6 +248,33 @@ test_binary_download() {
             return 1
         fi
         return 0
+    fi
+
+    # No channel means nothing was staged for this run to validate, so there is
+    # no binary to download and this test has no subject. SKIP, loudly.
+    #
+    # This is what broke the nightly. `ci.yml` sets the channel from the event:
+    # `edge` on push, `pr-N` on pull_request, and EMPTY for everything else,
+    # which is schedule and the dispatch rehearsal. The R2 layout is
+    # `cli/{edge,stable}/...`, so with an empty channel get_binary_url fell
+    # through to `cli/v${VERSION}/...`, a path shape that does not exist and
+    # never has. Measured 2026-07-28 against the live bucket:
+    #
+    #   /cli/v1.2.12/rdc-linux-arm64 -> 404
+    #   /cli/stable/rdc-linux-arm64  -> 200
+    #   /cli/edge/rdc-linux-arm64    -> 200
+    #
+    # so the fallback 404s on every channel-less run, by construction.
+    #
+    # Skipping rather than pointing the nightly at `stable` is deliberate: this
+    # job validates the artifacts THIS run staged, before they are published. A
+    # nightly that downloaded `stable` instead would be a useful check, but a
+    # DIFFERENT one, and it would turn main's nightly red when a past RELEASE
+    # broke rather than when main broke. Those two signals must not be conflated.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: this run staged no artifacts, so there is no binary to validate."
+        log_warn "  Skipping Binary Download (${platform} ${arch}). Expected on schedule and workflow_dispatch."
+        return 77
     fi
 
     local url
@@ -386,6 +427,14 @@ test_channel_verify() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would verify channel configuration"
         return 0
+    fi
+
+    # Same channel-less case as test_binary_download: with no channel there is
+    # no staged artifact, and get_binary_url's fallback names a path that does
+    # not exist. A channel-verification test with no channel has no subject.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping channel verification (expected on schedule and workflow_dispatch)."
+        return 77
     fi
 
     # Download binary from channel

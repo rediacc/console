@@ -116,7 +116,7 @@ test_console_script_tree_is_optional() {
     log_pass "no new script reaches into console's .ci/scripts/ tree"
 
     # ...and in each of them the reference is guarded by an existence test, so a
-    # repo without ci-start.sh / ci-stop.sh takes an explicit branch rather than
+    # repo without those console scripts takes an explicit branch rather than
     # dying obscurely.
     #
     # BOTH idioms count, and that is a fix rather than a relaxation. This used

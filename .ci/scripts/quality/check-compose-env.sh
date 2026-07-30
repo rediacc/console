@@ -76,7 +76,7 @@ for var in "${COMPOSE_VARS[@]}"; do
         log_error "docker-compose references \${$var} (no safe default) but ci-env.sh does not persist it"
         echo "  This variable will be empty in workflow steps that don't source ci-env.sh"
         echo "  Fix: Add it to the .env file AND GITHUB_ENV blocks in ci-env.sh"
-        ((ERRORS++))
+        ERRORS=$((ERRORS + 1))
     fi
 done
 

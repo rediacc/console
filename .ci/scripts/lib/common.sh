@@ -275,6 +275,22 @@ to_upper() {
 # Parse --key=value or --key value style arguments
 # Usage: parse_args "$@"
 # Sets variables like: ARG_KEY=value
+#
+# ASSIGNMENT USES `printf -v`, NOT `eval`, and that is a security fix rather
+# than a style preference. `eval` re-parses its argument as a fresh command
+# line, so a value containing backticks, $(...) or a `;` is EXECUTED rather
+# than stored. Proven, not argued: with value='a"; PROOF=INJECTED; :"' the old
+# `eval "$key=\"$value\""` ran the injected assignment, while `printf -v`
+# left it untouched and stored the literal bytes.
+#
+# The vendored copy at .ci/breakpoint/lib/breakpoint-common.sh:83-95 already
+# made this change and called itself "the single place the vendored copy is not
+# verbatim". That is now false in the right direction: the two agree, and the
+# vendored file no longer diverges from its origin on this point.
+#
+# Behavioural delta, stated so nobody is surprised: `--foo '$HOME'` now stores
+# the literal string `$HOME` instead of the expanded path. Nothing in this repo
+# wants the expansion; every caller passes a path, a channel enum, or a flag.
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -284,7 +300,7 @@ parse_args() {
                 key="${key#--}"
                 key="${key//-/_}"
                 key="ARG_$(to_upper "$key")"
-                eval "$key=\"$value\""
+                printf -v "$key" '%s' "$value"
                 shift
                 ;;
             --*)
@@ -292,10 +308,10 @@ parse_args() {
                 key="${key//-/_}"
                 key="ARG_$(to_upper "$key")"
                 if [[ $# -gt 1 ]] && [[ ! "$2" =~ ^-- ]]; then
-                    eval "$key=\"$2\""
+                    printf -v "$key" '%s' "$2"
                     shift 2
                 else
-                    eval "$key=true"
+                    printf -v "$key" '%s' "true"
                     shift
                 fi
                 ;;
@@ -312,8 +328,9 @@ parse_args() {
 
 # r2_count_objects <bucket> <prefix> [<endpoint>]
 #
-# Emit the number of objects under s3://<bucket>/<prefix>/ to stdout.
-# Always exits 0 — empty prefix returns "0" rather than erroring out.
+# Emit the number of objects under s3://<bucket>/<prefix>/ to stdout, and
+# return 0. An UNREACHABLE bucket returns 1 with a diagnostic and emits
+# nothing.
 #
 # Rationale: `aws s3 ls --recursive` returns exit code 1 when the prefix
 # is empty, which under `set -eo pipefail` aborts the calling script
@@ -322,26 +339,105 @@ parse_args() {
 # `length(Contents || `[]`)` returns 0 cleanly for empty prefixes, which
 # is what callers actually want.
 #
+# WHY THE FAILURE PATH IS SEPARATE FROM THE EMPTY PATH. This used to end in
+# `|| echo 0`, which made an expired credential, a DNS failure and a genuinely
+# empty prefix produce the same "0". Callers use this count to decide whether a
+# release prefix holds bytes, so a swallowed failure reads as "the bytes are
+# gone" and the caller acts on it. An empty prefix is data; an unreachable
+# bucket is an absence of data, and the two must not share a return value.
+#
 # Requires AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY exported, or callers
 # may set them inline from R2_* before invocation.
 r2_count_objects() {
     local bucket="${1:?bucket required}"
     local prefix="${2:?prefix required}"
     local endpoint="${3:-${R2_ENDPOINT:-}}"
-    local count
+    local count err rc=0
+    err="$(mktemp)"
     count="$(aws s3api list-objects-v2 \
         --bucket "$bucket" \
         --prefix "$prefix" \
         ${endpoint:+--endpoint-url "$endpoint"} \
         --query 'length(Contents || `[]`)' \
-        --output text 2>/dev/null || echo 0)"
-    # Defensive: list-objects-v2 emits "None" instead of an integer when
-    # the prefix is missing in some edge cases. Normalise to 0.
-    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        --output text 2>"$err")" || rc=$?
+    if ((rc != 0)); then
+        log_error "r2_count_objects: list-objects-v2 failed for s3://${bucket}/${prefix} (exit $rc)"
+        [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+        rm -f "$err"
+        return 1
+    fi
+    rm -f "$err"
+    # list-objects-v2 emits "None" instead of an integer when the prefix is
+    # missing. That is a genuine "no objects", unlike the failure above.
+    if [[ "$count" == "None" ]]; then
         count=0
+    fi
+    if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+        log_error "r2_count_objects: unparseable count '$count' for s3://${bucket}/${prefix}"
+        return 1
     fi
     printf '%s\n' "$count"
 }
+
+# =============================================================================
+# GITHUB CLI HELPERS
+# =============================================================================
+
+# _gh_probe <require-json:true|false> <what> -- <gh args...>
+#
+# Run `gh <args>`, echo its stdout, and return non-zero when the call did not
+# actually succeed. Retries twice on a transient failure.
+#
+# WHY THIS EXISTS. Nine call sites across the review, attribution and
+# submodule-branch gates were spelled `X=$(gh api ... 2>/dev/null || echo "[]")`.
+# A rate limit, an expired token or a network blip produced the same value as
+# "this PR has no review comments", so the gate printed its success message and
+# exited 0. Those are merge-blocking gates: a swallowed failure there is a
+# silent green on the check that is supposed to stop the merge.
+#
+# `gh api --jq` emits plain text rather than JSON, and an empty result can be
+# legitimate (a PR with an empty body), so JSON validation is opt-in. The exit
+# status is always checked, because that is the part that was being thrown away.
+_gh_probe() {
+    local require_json="$1" what="$2"
+    shift 2
+    [[ "${1:-}" == "--" ]] && shift
+    local err out attempt=1 rc=0
+    err="$(mktemp)"
+    while ((attempt <= 3)); do
+        rc=0
+        out="$(gh "$@" 2>"$err")" || rc=$?
+        if ((rc == 0)); then
+            if [[ "$require_json" != "true" ]]; then
+                rm -f "$err"
+                printf '%s' "$out"
+                return 0
+            fi
+            # `gh api graphql` can exit 0 while returning a truncated or
+            # malformed body, so an exit-code check alone misses it.
+            if [[ -n "$out" ]] && jq -e . >/dev/null 2>&1 <<<"$out"; then
+                rm -f "$err"
+                printf '%s' "$out"
+                return 0
+            fi
+        fi
+        if ((attempt < 3)); then
+            log_warn "$what: gh call failed or returned unusable output (attempt $attempt/3), retrying..."
+            sleep $((attempt * 3))
+        fi
+        attempt=$((attempt + 1))
+    done
+    log_error "$what: gh failed after 3 attempts (last exit $rc)."
+    [[ -s "$err" ]] && sed 's/^/    /' "$err" >&2
+    rm -f "$err"
+    return 1
+}
+
+# gh_retry <what> -- <gh args...>   exit status checked; output may be anything
+gh_retry() { _gh_probe false "$@"; }
+
+# gh_json <what> -- <gh args...>    exit status checked AND body must parse as JSON
+gh_json() { _gh_probe true "$@"; }
 
 # =============================================================================
 # SUBMODULE GUARDS
@@ -383,3 +479,50 @@ CI_TEMP="$(get_temp_dir)"
 
 # Export for subprocesses
 export CI_OS CI_ARCH CI_TEMP
+
+# --- Review budget, sized to the diff -----------------------------------------
+#
+# Operator directive (2026-07-29): a flat cap of 3 is right for a small PR and
+# wrong for a consolidation. Big diffs need more passes because each pass can
+# only hold so much of them at once.
+#
+#   up to  10,000 changed lines -> 3 reviews
+#   up to  50,000               -> 5 reviews
+#   above  50,000               -> 7 reviews
+#
+# The 50k-100k band lands in the TOP bucket deliberately: a 60,000-line diff is
+# not meaningfully easier to review than a 100,000-line one, and the alternative
+# is an arbitrary fourth tier nobody asked for.
+#
+# THIS LIVES IN THE SHARED LIB ON PURPOSE. claude-review-gate.sh decides whether
+# to run a review and review-status.sh reports whether the cap is reached; the
+# two disagreeing about the cap resurrects exactly the deadlock review-status.sh
+# was written to prevent. One table, one function, both callers.
+REVIEW_CAP_TIERS='10000:3 50000:5 :7'
+
+# review_cap_for <changed-lines> -> the number of review passes allowed.
+review_cap_for() {
+    local loc="${1:-0}" tier limit bound
+    [[ "$loc" =~ ^[0-9]+$ ]] || loc=0
+    for tier in $REVIEW_CAP_TIERS; do
+        bound="${tier%%:*}"
+        limit="${tier##*:}"
+        # An empty bound is the catch-all top tier.
+        if [[ -z "$bound" || "$loc" -le "$bound" ]]; then
+            echo "$limit"
+            return 0
+        fi
+    done
+    echo 3
+}
+
+# pr_diff_loc <pr> -> additions + deletions, or 0 when it cannot be read.
+# Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the
+# conservative direction: it spends fewer review passes, never more.
+pr_diff_loc() {
+    local n
+    n=$(gh pr view "$1" --repo "$GITHUB_REPOSITORY" \
+        --json additions,deletions --jq '.additions + .deletions' 2>/dev/null) || n=0
+    [[ "$n" =~ ^[0-9]+$ ]] || n=0
+    echo "$n"
+}

@@ -1,3 +1,4 @@
+import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 import js from '@eslint/js';
 import json from '@eslint/json';
 import tseslint from 'typescript-eslint';
@@ -40,7 +41,7 @@ import { i18nJsonPlugin, i18nSourcePlugin } from './eslint-rules/i18n/index.js';
 //   2. English cross-language validation: consistency, coverage, staleness, unused keys
 //   3. Non-English validation: untranslated values, interpolation consistency
 
-const I18N_LANGUAGES = ['ar', 'de', 'es', 'fr', 'ja', 'ru', 'tr', 'zh'];
+const I18N_LANGUAGES = NON_ENGLISH_LOCALES;
 
 const UNTRANSLATED_BASE_PATTERNS = [
   '^[A-Z]{2,}$',
@@ -56,6 +57,27 @@ const UNTRANSLATED_BASE_PATTERNS = [
   '^\\d{2,5}$',
   '\\.(json|xml|txt|log|pem|key|crt)$',
   '^Edge$',
+  // BORROWED TERMS. These are the correct word in at least one locale we ship, so
+  // demanding a "translation" would make the UI worse, not better: Italian genuinely uses
+  // "Password", and "Token"/"Flag" are the standard technical terms in it/pt/et. Locales
+  // that DO have a native word (de "Passwort", fr "Mot de passe", es "Contraseña",
+  // tr "Parola") already use it and are unaffected — this only stops the rule demanding a
+  // change where the identical value is already right.
+  '^Token$',
+  '^Flag$',
+  '^Password$',
+  // Product name plus a word that is identical across our locales.
+  '^Rediacc logo$',
+  // Infrastructure nouns French (and several other locales) borrow verbatim. Both
+  // translation agents independently kept these bare after checking sibling keys, and
+  // "Communications" is simply the same word in French. Demanding a translation here
+  // would replace correct UI text with an invented one.
+  '^Clusters?$',
+  '^Datastores?$',
+  '^Communications$',
+  // Acronym-only values, including pairs like "RPO / RTO". The plain ^[A-Z]{2,}$ above
+  // misses these because of the separator, and an acronym has no translation.
+  '^[A-Z]{2,}([ /|,+-]+[A-Z]{2,})+$',
 ];
 
 function i18nLocaleConfigs({
@@ -85,10 +107,9 @@ function i18nLocaleConfigs({
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
         ...(cliSyntax ? { 'i18n/no-positional-cli-syntax': ['error', cliSyntax] } : {}),
-        // Runs on EVERY language file (this block globs all of them, not just the
-        // curated I18N_LANGUAGES set) so flag-name mangling is caught even in
-        // locales like et/it/ko/pt that the heavier non-English block skips. The
-        // rule self-guards the en source.
+        // Runs on EVERY language file, including the `en` source that the non-English
+        // block below excludes, so flag-name mangling is caught everywhere. The rule
+        // self-guards the en source where that matters.
         ...(cliFlags ? { 'i18n/cli-flag-consistency': ['error', { localesDir }] } : {}),
       },
     },
@@ -265,6 +286,11 @@ export default tseslint.config(
           allowDefaultProject: [
             'scripts/*.ts',
             'scripts/utils/*.ts',
+            // @rediacc/locales is deliberately buildless plain ESM with a hand-written
+            // .d.ts, so it has no tsconfig of its own to be included by. It exists in
+            // that shape because eslint itself — this file — is one of its consumers and
+            // runs before any build could produce a dist/.
+            'packages/locales/*.js',
           ],
           maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 12,
         },
@@ -1187,6 +1213,25 @@ export default tseslint.config(
       'prefer-template': 'off',
       'no-regex-spaces': 'off',
       // Custom rules not applicable to utility scripts
+      'custom/prefer-const-arrays': 'off',
+    },
+  },
+
+  // ── prefer-const-arrays is a TYPESCRIPT rule; it cannot apply to plain JS ──
+  // The rule is registered for '**/*.{js,jsx,ts,tsx}', but the only thing that satisfies
+  // it is an `as const` assertion, which is a TSAsExpression — TypeScript-only syntax that
+  // is a hard SyntaxError in a .js file (verified: node rejects
+  // `export const FOO = ['a'] as const;` in ESM .js). So on any plain-JS file the rule
+  // demands something that cannot be written, and the only ways out are a blanket disable
+  // comment or converting the file to TypeScript.
+  //
+  // That is a defect in the rule's scope, not a property of any one file, so it is fixed
+  // here for the whole class rather than suppressed at the call site. Plain-JS files that
+  // want narrow literal types should ship a hand-written .d.ts, which is exactly what
+  // packages/locales does.
+  {
+    files: ['**/*.js', '**/*.jsx', '**/*.mjs', '**/*.cjs'],
+    rules: {
       'custom/prefer-const-arrays': 'off',
     },
   },

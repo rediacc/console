@@ -65,7 +65,7 @@ check_pattern() {
                 echo "  Line: $local_content"
                 echo "  Fix:  $fix_hint"
                 echo ""
-                ((ERRORS++))
+                ERRORS=$((ERRORS + 1))
             done <<<"$matches"
         fi
     done
@@ -128,7 +128,7 @@ for file in "${GITHUB_YAMLS[@]}"; do
             echo "  Line: $local_content"
             echo "  Fix:  Move secret to env: block and reference as \$VAR_NAME in run:"
             echo ""
-            ((ERRORS++))
+            ERRORS=$((ERRORS + 1))
         done <<<"$matches"
     fi
 done
@@ -162,7 +162,7 @@ for file in "${GITHUB_YAMLS[@]}"; do
                 echo "  Line: $local_content"
                 echo "  Fix:  Pin action to SHA commit hash (e.g. uses: actions/checkout@abc123...def  # v4)"
                 echo ""
-                ((ERRORS++))
+                ERRORS=$((ERRORS + 1))
             fi
         done <<<"$matches"
     fi

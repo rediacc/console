@@ -1,0 +1,267 @@
+"""wl_core: shared primitives for the worklist Stop hook.
+
+Stdlib-only, no sibling imports, no I/O beyond what each helper documents.
+Everything here is used by at least two sibling modules; single-consumer
+logic lives with its consumer. WHY comments for each check stay with the
+check, not here.
+"""
+
+import datetime
+import glob
+import json
+import os
+import pathlib
+import re
+import subprocess
+import sys
+import time
+
+# `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
+# Owner accepts any word-ish label, not just hex: a named agent tagged items
+# "(perf6-daemon)", the old hex-only charset failed to parse it, the item read
+# as UNTAGGED, and untagged defaults to mine -- so every OTHER session was
+# blocked on that agent's work. Non-prefix labels now parse as owners and are
+# reported-never-blocking for everyone (including the labeler: only a tag that
+# is a PREFIX of your session id binds you).
+ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+# Same shape but INCLUDING tombstones, for the md-sync pass which must see a
+# `[~]` flip as a deletion rather than as an unparseable line.
+ITEM_ANY = re.compile(r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
+# worker:<background-task-id> on a lease line names the OS-checkable delegate.
+WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
+DEFAULT_TOKEN = re.compile(r"\bDEFAULT:[ \t]*\S")
+# Same charset the worklist owner tag accepts, so a request's from/to can be
+# written into a `- [?]` line on escalation without re-validation.
+PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
+
+# Leases beyond this horizon are invalid: a `- [>]` marked "until next year"
+# would be a bypass, not a delegation. 120 also aligns the lease horizon with
+# the top rung of the v10 liveness ladder.
+MAX_LEASE_MIN = 120
+
+
+def utcnow():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def stamp_now():
+    return utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_stamp(stamp):
+    """datetime or None from an ISO8601Z stamp (seconds optional)."""
+    for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ"):
+        try:
+            return datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def stamp_age_min(stamp):
+    when = parse_stamp(stamp)
+    if when is None:
+        return None
+    return (utcnow() - when).total_seconds() / 60.0
+
+
+def lease_state(line):
+    """'fresh' | 'expired' | 'invalid' for a `- [>]` line's until: token."""
+    m = LEASE.search(line)
+    if not m:
+        return "invalid"
+    stamp = m.group(1)
+    fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
+    try:
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+    except ValueError:
+        return "invalid"
+    now = utcnow()
+    if until <= now:
+        return "expired"
+    if until > now + datetime.timedelta(minutes=MAX_LEASE_MIN):
+        return "invalid"
+    return "fresh"
+
+
+def owned_by_me(owner, session_id):
+    """An UNTAGGED item is mine: that is the safe default, since the cost of
+    wrongly claiming one is doing a little extra work, while the cost of wrongly
+    disowning one is silently dropping it. A tag is a PREFIX of the session id
+    (CLAUDE.md asks for a short prefix, not the whole uuid)."""
+    if owner is None:
+        return True
+    return bool(session_id) and session_id.startswith(owner)
+
+
+def same_session(a, b):
+    """Two prefixes/ids denote one session when either is a prefix of the
+    other. Symmetric, because CLI callers pass short prefixes while the Stop
+    event carries the full id, and either side of a comparison can be either."""
+    return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
+
+
+def project_root(start):
+    """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
+    FILE, not a directory, so test existence rather than is_dir()."""
+    p = pathlib.Path(start).resolve()
+    for candidate in [p, *p.parents]:
+        if (candidate / ".git").exists():
+            return candidate
+    return p
+
+
+def worklist_for(start):
+    d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
+    d.mkdir(parents=True, exist_ok=True)
+    root = project_root(start)
+    slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(root)).strip("_")
+    return d / (slug + ".md")
+
+
+def emit(obj):
+    print(json.dumps(obj))
+    sys.exit(0)
+
+
+def _git(root, *args):
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20
+        )
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def tasks_dir(session_id):
+    home = os.environ.get("WORKLIST_TASKS_DIR") or os.path.join(
+        os.path.expanduser("~"), ".claude", "tasks"
+    )
+    return os.path.join(home, "session-" + session_id[:8])
+
+
+def pending_tasks(session_id):
+    """Harness Task-list items that are not done, as [(id, subject, status)].
+
+    THE POINT OF v5. The hook used to see only the markdown worklist, and a
+    session kept that at zero open items while six tasks sat pending in the
+    harness. Two queues, one supervisor, watching the empty one.
+
+    Never raises: a missing or malformed task dir means "no evidence of pending
+    work", which cannot manufacture a block out of nothing.
+    """
+    if not session_id:
+        return []
+    d = tasks_dir(session_id)
+    out = []
+    try:
+        for f in sorted(glob.glob(os.path.join(d, "*.json"))):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    t = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if t.get("status") in ("pending", "in_progress"):
+                out.append(
+                    (str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status"))
+                )
+    except OSError:
+        return []
+    out.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 1 << 30)
+    return out
+
+
+def task_statuses(session_id):
+    """{id: (status, subject)} for ALL harness tasks, completed included.
+    pending_tasks() serves the queue; this serves the completion-evidence
+    check and the liveness ladder, which need TRANSITIONS, not the queue."""
+    if not session_id:
+        return {}
+    d = tasks_dir(session_id)
+    out = {}
+    try:
+        for f in glob.glob(os.path.join(d, "*.json")):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    t = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if t.get("id") is not None:
+                out[str(t["id"])] = (str(t.get("status", "")), str(t.get("subject", ""))[:70])
+    except OSError:
+        return {}
+    return out
+
+
+TRANSCRIPT_TAIL_BYTES = int(os.environ.get("WORKLIST_TAIL_BYTES", "2000000"))
+
+
+def transcript_tail(path, want=None, tries=6, delay=0.25):
+    """(last_assistant_text, tool_names_since_last_user, readable) from the tail.
+
+    THE RACE THIS RIDES OUT, found the hard way: the gate blocked a message that
+    DID carry its `## Remaining` heading. Re-reading the transcript afterwards
+    showed the heading present in a single text block, so the extraction was
+    fine and the file simply had not been flushed when the hook ran. A check that
+    reads the transcript to judge the message that just ended is racing the
+    writer, so when `want` is absent it retries briefly before believing it.
+
+    `readable` distinguishes "I read the message and the heading is absent" from
+    "I could not read any assistant text at all". Those need different verdicts:
+    the first is the session's fault, the second is this hook's.
+
+    Tail-read, because the transcript is tens of MB and the hook runs on every
+    stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so
+    this is not the expensive part of anything.
+    """
+    if not path or not os.path.exists(path):
+        return "", [], False
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            size = f.tell()
+            f.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
+            chunk = f.read()
+    except OSError:
+        return "", [], False
+    # Drop the first (probably partial) line unless we read from byte 0.
+    lines = chunk.split(b"\n")
+    if size > TRANSCRIPT_TAIL_BYTES:
+        lines = lines[1:]
+    turn_texts, since_user = [], []
+    for raw in lines:
+        if not raw.strip():
+            continue
+        try:
+            rec = json.loads(raw)
+        except ValueError:
+            continue
+        rtype = rec.get("type")
+        if rtype == "user":
+            # A new operator turn resets what "this turn" means.
+            since_user = []
+            turn_texts = []
+            continue
+        if rtype != "assistant":
+            continue
+        for block in rec.get("message", {}).get("content") or []:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "text" and block.get("text", "").strip():
+                # EVERY narration line before a tool call is its own text block,
+                # so the LAST block mid-turn is a one-liner, not the answer. That
+                # is what made this check fire on a message that did carry its
+                # heading. Judge the whole turn's output instead.
+                turn_texts.append(block["text"])
+            elif block.get("type") == "tool_use" and block.get("name"):
+                since_user.append(block["name"])
+    last_text = "\n\n".join(turn_texts)
+    readable = bool(last_text)
+    if want is not None and readable and want.search(last_text) is None and tries > 1:
+        # Not there yet. Give the writer a moment rather than calling the session
+        # a liar about a message it actually wrote.
+        time.sleep(delay)
+        return transcript_tail(path, want, tries - 1, delay)
+    return last_text, since_user, readable

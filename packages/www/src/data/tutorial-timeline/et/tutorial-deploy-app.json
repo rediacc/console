@@ -2,107 +2,777 @@
   "cast": "/assets/tutorials/tutorial-deploy-app.cast",
   "language": "et",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "32e0e7274a33",
+  "transcriptHash": "9a06741d097945428959e3421db4787c402b279bfb99d8277c861838cd47d8f9",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.408078,
-      "replayEndSec": 6.077084,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.66b97f87.mp3",
-      "audioDurationSec": 9.482449,
-      "textHash": "66b97f87da3c7c93ead12faf1319d5373779bc86d718110d5a5c23b2e8ce36fa",
+      "replayStartSec": 2.420634,
+      "replayEndSec": 6.399014,
       "narrationText": "Esimene samm: loetle saadaolevad mallid. Rediacc pakub valmis seadistusi levinud rakenduste jaoks, seega pole docker-compose'i vaja nullist kirjutada.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01-after.49ea345b.mp3",
-      "afterAudioDurationSec": 5.485714,
-      "afterTextHash": "49ea345b8e03b37388004425f3a7c9ea0229105747e82d5ac8a82ac20e390d9b"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-01.5bf272fd.mp3",
+      "textHash": "5bf272fd098771d0506e0b32b18be140dbb2d1a4e7e9466a2d1b56b5cec4daa3",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.76,
+          "startChar": 62,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 73,
+          "endChar": 80
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.64,
+          "startChar": 81,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 92,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 99,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 105,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.08,
+          "startChar": 110,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.88,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.36,
+          "startChar": 132,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.76,
+          "startChar": 140,
+          "endChar": 149
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-01-after.7ce9ef0b.mp3",
+      "afterAudioDurationSec": 4.68,
+      "afterTextHash": "7ce9ef0bec6932b807f8e535ce70e7f9bb653d4a539f7eddc4a74abccfa78146",
+      "afterWordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 16,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 56
+        }
+      ]
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.077084,
-      "replayEndSec": 14.72542,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.b7d635e9.mp3",
-      "audioDurationSec": 6.034286,
-      "textHash": "b7d635e95a8c70aae647882690bdf56a21edf1c8a82e027ea42548c6ac6abbcc",
+      "replayStartSec": 6.399014,
+      "replayEndSec": 12.523372,
       "narrationText": "Teine samm: lisa app-postgres mall reposse. Testitud failikomplekt, otse sisse kopeeritud.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02-after.ee176ab2.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "ee176ab26afd1159c5713df5d731121af0ae089bb5e56996a9e14a8296c856cc"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-02.41ed226e.mp3",
+      "textHash": "41ed226e0422169a1ffe759dba059042aef36bc560cc9b57137e185d5744b4ce",
+      "audioDurationSec": 6.6,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.52,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.76,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 73,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.48,
+          "startChar": 79,
+          "endChar": 90
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-02-after.85cbc1f3.mp3",
+      "afterAudioDurationSec": 7.392,
+      "afterTextHash": "85cbc1f3a2d8fd7243081f31941505bdf9de6eb244d0ecab651a84da5e5e1c9b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 8,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 2.32,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.28,
+          "startChar": 38,
+          "endChar": 50
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 54,
+          "endChar": 66
+        }
+      ]
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 14.72542,
-      "replayEndSec": 21.699752,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.2070cfb2.mp3",
-      "audioDurationSec": 8.907755,
-      "textHash": "2070cfb258dc6be53e30313208666ccbdaac862e1dcfff7ece94122f9f5072a0",
+      "replayStartSec": 12.523372,
+      "replayEndSec": 17.108804,
       "narrationText": "Vaata reposse ja loetle, mis sinna jõudis: Rediaccfile käivitus- ja peatamise hook'idega ning docker-compose fail, mis kirjeldab konteinereid.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03-after.e6b5d919.mp3",
-      "afterAudioDurationSec": 6.347755,
-      "afterTextHash": "e6b5d91909508ef9f51ef81c94e32547c9e9073a3d19915a85990e92eadeee30"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-03.ab8df3be.mp3",
+      "textHash": "ab8df3be793400f31887c6f94d4cbbf18a79f76df7ca5b0ba5e27a429c61c1f3",
+      "audioDurationSec": 7.392,
+      "wordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 68,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.8,
+          "startChar": 89,
+          "endChar": 93
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 109,
+          "endChar": 113
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 119,
+          "endChar": 128
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.28,
+          "startChar": 129,
+          "endChar": 142
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-03-after.25e65a4b.mp3",
+      "afterAudioDurationSec": 4.992,
+      "afterTextHash": "25e65a4b0497a9110fb6229b72b26ccfe64f682309c7d4b02d7c9b11df90ca0b",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.88,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 27,
+          "endChar": 29
+        }
+      ]
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 21.699752,
-      "replayEndSec": 28.8781,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.ad01c833.mp3",
-      "audioDurationSec": 9.639184,
-      "textHash": "ad01c833362aa47f97af66a62fa554af1d90a978dc3915d48ce2a3b947f26859",
+      "replayStartSec": 17.108804,
+      "replayEndSec": 22.317819,
       "narrationText": "Kolmas samm: käivita repo. Üks käsk ja CLI ühendab krüpteeritud köite, käivitab isoleeritud Docker daemon'i ning laseb konteinerid käima.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04-after.cbbedc43.mp3",
-      "afterAudioDurationSec": 4.205714,
-      "afterTextHash": "cbbedc43643cab1c8d18b0cea121223b61b885b9396f39e22b369aca3927480d"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-04.e9f86569.mp3",
+      "textHash": "e9f86569ed5aacc6a89f69c0a50dae61dcd14c9b867e626cff3a11e47b2a4d4e",
+      "audioDurationSec": 9.0,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 13,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.0,
+          "startChar": 71,
+          "endChar": 78
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 108,
+          "endChar": 112
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 131,
+          "endChar": 134
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-04-after.5635a824.mp3",
+      "afterAudioDurationSec": 5.304,
+      "afterTextHash": "5635a824846a55f7012ae876f9a5942f69c4a05bbb55cb973bc71ee970634ad0",
+      "afterWordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 18,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 3.2,
+          "startChar": 31,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 55,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 61,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.28,
+          "startChar": 68,
+          "endChar": 84
+        }
+      ]
     },
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 28.8781,
-      "replayEndSec": 34.846304,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.f7dbd278.mp3",
-      "audioDurationSec": 10.44898,
-      "textHash": "f7dbd27820f5874f0b4d6ec0801f67048936a89f51353035df5d6608f590d5f6",
+      "replayStartSec": 22.317819,
+      "replayEndSec": 25.935582,
       "narrationText": "Kontrolli, mis töötab. Docker ps kuvab siin ainult selle repo konteinereid. Igal teisel repol sellel serveril on oma daemon, siit vaatest täiesti nähtamatu.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05-after.df57dc44.mp3",
-      "afterAudioDurationSec": 4.91102,
-      "afterTextHash": "df57dc44ec60d28407863429c60f98fe46de072311613c3abf23c4c6fa853a96"
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-05.0ff8a0ed.mp3",
+      "textHash": "0ff8a0ed20c1c38c4ed50f62659ec3e1cf829f21b5b7f3b46b2d5e65699b4f89",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.92,
+          "startChar": 57,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 5.84,
+          "startChar": 62,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.0,
+          "startChar": 82,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.16,
+          "startChar": 94,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 101,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.44,
+          "startChar": 110,
+          "endChar": 112
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.68,
+          "startChar": 113,
+          "endChar": 116
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 138,
+          "endChar": 145
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.28,
+          "startChar": 146,
+          "endChar": 156
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/tutorial-deploy-app-05-after.7f19ac71.mp3",
+      "afterAudioDurationSec": 5.304,
+      "afterTextHash": "7f19ac71cb9a2ccec385d72f35360fad6de30ffbce757828add0ace567c365a7",
+      "afterWordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 18,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 31,
+          "endChar": 42
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/intro.394f775e.mp3",
-      "textHash": "394f775e2cbc0b0dfc55fca530acc978bdde5c70ab1ae4789fb53380ba017525",
-      "audioDurationSec": 8.045714,
-      "narrationText": "Aeg päris rakendus käivitada! Tühjast repost töötavate konteineriteni kolme sammuga: vali, rakenda, käivita."
+      "textHash": "ef003a4eeba28765bcdb786cd3b9d830c7eb67ce439fcfff826f514654c25c36",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/intro.ef003a4e.mp3",
+      "narrationText": "Aeg päris rakendus käivitada! Tühjast repost töötavate konteineriteni kolme sammuga: vali, rakenda, käivita.",
+      "audioDurationSec": 7.56,
+      "wordTimings": [
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 10,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 2.32,
+          "startChar": 19,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 30,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 38,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 45,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.72,
+          "startChar": 55,
+          "endChar": 67
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.88,
+          "startChar": 91,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 100,
+          "endChar": 106
+        }
+      ]
     },
     {
       "id": "pick-apply-run",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/pick-apply-run.5e57841c.mp3",
-      "textHash": "5e57841c8c03c7720425d52a93571a693f527cd89a077242ec3eb8107d75d588",
-      "audioDurationSec": 9.482449,
-      "narrationText": "Voog on lihtne: vali mall, rakenda see repositooriumisse ja käivita. CLI-l on kaasas sisseehitatud mallid, nii et docker-compose'i pole vaja nullist kirjutada."
+      "textHash": "75f838789fbffa28ae93f87badfd805ac338ff6b485256eec8f44f674f94ec92",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/pick-apply-run.75f83878.mp3",
+      "narrationText": "Voog on lihtne: vali mall, rakenda see repositooriumisse ja käivita. CLI-l on kaasas sisseehitatud mallid, nii et docker-compose'i pole vaja nullist kirjutada.",
+      "audioDurationSec": 9.624,
+      "wordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 27,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 88,
+          "endChar": 90
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.96,
+          "startChar": 141,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 149,
+          "endChar": 159
+        }
+      ]
     },
     {
       "id": "vscode-file-tour",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/vscode-file-tour.55f3f8e6.mp3",
-      "textHash": "55f3f8e623917c1bb236fa9b56fdb39eeb6fa8287b93af231c00aed81aa18331",
-      "audioDurationSec": 12.826122,
-      "narrationText": "Eelistad redaktorit cat-i asemel? Samad failid avanevad VS Code'is, otse brauserist. Siin on Rediaccfile ja kõrval compose fail. Tutvume selle seadistusega korralikult hilisemas õpetuses."
+      "textHash": "64b03bdd3f3b5d115f43d6e02090013e64c60d5d25a3743452a0e4c02a1c080b",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/vscode-file-tour.64b03bdd.mp3",
+      "narrationText": "Eelistad redaktorit cat-i asemel? Samad failid avanevad VS Code'is, otse brauserist. Siin on Rediaccfile ja kõrval compose fail. Tutvume selle seadistusega korralikult hilisemas õpetuses.",
+      "audioDurationSec": 11.064,
+      "wordTimings": [
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.2,
+          "startChar": 73,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.84,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.0,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.72,
+          "startChar": 93,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 105,
+          "endChar": 107
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 156,
+          "endChar": 163
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.76,
+          "startChar": 163,
+          "endChar": 167
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.32,
+          "startChar": 168,
+          "endChar": 177
+        },
+        {
+          "startSec": 10.32,
+          "endSec": 10.96,
+          "startChar": 178,
+          "endChar": 187
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/next-tutorial.b444003f.mp3",
-      "textHash": "b444003fd2eb1b6d4161a755c252f481ce982b3cb7811249fa4e29a58be814e2",
-      "audioDurationSec": 7.706122,
-      "narrationText": "Ja sellega on su esimene juurutus tehtud. Kohtumiseni järgmises, kus süveneme repositooriumiga töötamisse."
+      "textHash": "fdad0847970d81462c772b0e2c5bf0d2edc1ba27dc39c74df037bea620f15229",
+      "audioSrc": "/assets/tutorials/audio/et/tutorial-deploy-app/next-tutorial.fdad0847.mp3",
+      "narrationText": "Ja sellega on su esimene juurutus tehtud. Kohtumiseni järgmises, kus süveneme repositooriumiga töötamisse.",
+      "audioDurationSec": 5.952,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.08,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.4,
+          "startChar": 3,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.72,
+          "startChar": 42,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 54,
+          "endChar": 64
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 65,
+          "endChar": 67
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d9f28413fe082b20fad75a663539122a85aae6b9823668e35d76fc1afd369c56"
+  ]
 }

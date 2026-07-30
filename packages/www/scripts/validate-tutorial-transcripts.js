@@ -4,25 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { SITE_LOCALES } from '@rediacc/locales';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const CAST_DIR = path.join(ROOT, 'public', 'assets', 'tutorials');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
-const TRANSCRIPT_LANGUAGES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-];
+const TRANSCRIPT_LANGUAGES = SITE_LOCALES;
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,

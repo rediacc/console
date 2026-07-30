@@ -34,6 +34,12 @@ declare -A BASELINE_RESULTS=(
     [RESULT_REVIEW_GATE]=success
     [RESULT_STRIPE_SANDBOX]=success
     [RESULT_PACKAGE_TESTS]=success
+    # Added when check-release-state joined ci-complete's needs/env and the soft
+    # tier. It was a live FALSE-GREEN path: stage-artifacts requires that job's
+    # result to be `success` or `skipped`, so a FAILURE made stage-artifacts
+    # SKIP, and the soft tier reads a skip as green. CI Complete could therefore
+    # pass while a release-state assertion failed on main.
+    [RESULT_CHECK_RELEASE_STATE]=success
     [RESULT_STAGE_ARTIFACTS]=success
     [RESULT_VALIDATE_INSTALL]=success
     [RESULT_VALIDATE_PROMOTE]=success

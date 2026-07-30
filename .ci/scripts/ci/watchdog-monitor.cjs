@@ -18,7 +18,18 @@
 //     rerun workflow: that split only existed because the old in-run
 //     watchdog died with the run it monitored, and the chain does not.
 //   - Code-change: force-cancels immediately (no point waiting for other jobs).
-//   - AI unavailable: retries ONLY jobs on WATCHDOG_RETRY_ALLOWLIST_PATTERNS
+//   - AI unavailable: retries ONLY when a failing job matches
+//     WATCHDOG_RETRY_ALLOWLIST_PATTERNS.
+//
+//     READ THAT PRECISELY: the allowlist decides whether a rerun FIRES, not
+//     which jobs come back. GitHub's rerun re-runs EVERY non-successful job in
+//     the run, so once the trigger is met the blast radius is the whole run.
+//     Observed live on run 30402596980: `Build (Docker) / Devcontainer (amd64)`
+//     is on neither the retry allowlist nor the no-retry list, hit its own
+//     30-minute timeout, and came back on attempt 2 anyway -- succeeding in
+//     5m35s against a 5m29s norm. That was the outcome we wanted, but it is not
+//     the outcome the allowlist promised, and the two layers should not be
+//     confused when tuning either.
 //     (the ones that boot VMs or pull images); everything else fails fast.
 //     See evaluateRetryEligibility -- this used to be "retry everything", which
 //     meant every failure in the repo was retried on a judgment nobody made.
@@ -82,7 +93,23 @@ const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p))
 const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
 
 // Run events the watchdog must never cancel.
-const CANCEL_EXEMPT_EVENTS = ['schedule'];
+//
+// `workflow_dispatch` is here for a reason that is easy to miss. `ci.yml`'s
+// dispatch path IS the nightly rehearsal, and its own header calls it
+// "schedule-equivalent BY CONSTRUCTION". That claim was false on the single
+// dimension that matters most: with only `schedule` exempt, a rehearsal whose
+// gate failed got force-cancelled and reported `cancelled`, so the rehearsal
+// reproduced the laundering bug instead of proving its absence. A tool built to
+// prove the nightly is honest cannot itself be dishonest in the same way.
+//
+// It is also the right answer independent of the rehearsal. Force-cancelling
+// exists to stop burning runners on a run that a newer push has already
+// superseded. Nothing supersedes a dispatch: a human asked for it deliberately,
+// there is no later commit implying they stopped caring, and the conclusion is
+// the entire product of the run. Cancelling it destroys the only thing it was
+// for. Retry handling is separate and unaffected, so a flaky leg in a dispatched
+// run is still re-run; only the conclusion-rewriting cancel is withheld.
+const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
 
 /**
  * May the watchdog cancel this run at all?
@@ -337,6 +364,10 @@ const monitor = async ({ github, context, core }) => {
   const targetRunId = Number(process.env.WATCHDOG_TARGET_RUN_ID || 0) || context.runId;
   const prNumber = Number(process.env.WATCHDOG_PR_NUMBER || 0) || context.payload.pull_request?.number || null;
   const deadlineMs = Number(process.env.WATCHDOG_DEADLINE_SECONDS || 0) * 1000;
+  // How long a quality force-cancel may be held while its siblings drain.
+  // 90s catches a near-simultaneous second failure (the roster the drain
+  // exists for) without waiting out a lane that runs for minutes.
+  const HELD_CANCEL_MAX_SECONDS = Number(process.env.WATCHDOG_HELD_CANCEL_MAX_SECONDS || 90);
   let pendingRerun = process.env.WATCHDOG_PENDING_RERUN === 'true';
   const skipRerun = process.env.WATCHDOG_SKIP_RERUN === 'true';
 
@@ -385,6 +416,15 @@ const monitor = async ({ github, context, core }) => {
   // held until the sibling no-retry jobs finish, so one round reports every
   // failing lane. See pendingNoRetryJobs for why.
   let pendingQualityCancel = false;
+  // The drain has a DEADLINE. Waiting for every sibling no-retry lane to settle
+  // buys a full roster, but only when a sibling is actually about to fail; when
+  // nothing else does it is dead time on a run already known to be red.
+  //
+  // Measured on run 30470189106: Quality/Go failed at 16:25:10 and the cancel was
+  // held on Quality/Security. Every OTHER Quality lane had finished by 16:25;
+  // Security alone was still running two minutes later. The hold was waiting on
+  // the single long pole, and it gained nothing because nothing else failed.
+  let heldSince = 0;
   let heldQualityFailureMsg = '';
 
   // The TARGET run's event, re-read from the API every poll. Not
@@ -421,13 +461,48 @@ const monitor = async ({ github, context, core }) => {
   // reached through the OpenAI-compatible /ai/v1/chat/completions endpoint rather
   // than the native-Workers-AI /ai/run/<model> route the previous qwen model used.
   const AI_CONFIDENCE_THRESHOLD = 0.8;
-  const AI_MODEL = 'deepseek/deepseek-v4-pro';
+  // NATIVE Workers AI, not a partner-served catalog model, and that distinction
+  // is the whole point. This tier was moved to `deepseek/deepseek-v4-pro` on the
+  // OpenAI-compatible /ai/v1 route, which is partner-served (Fireworks) and
+  // billed from a PREPAID AI GATEWAY BALANCE rather than from the Workers Paid
+  // plan. That balance is empty, so tier 1 has been answering
+  //   HTTP 402 {"code":2021,"message":"Insufficient balance; add money to your
+  //   gateway or use BYOK"}
+  // continuously, and every allowlisted CI failure has been taking a blind retry
+  // (~500 machine-minutes) with no classification behind it. Verified live
+  // 2026-07-30 against the real account: the partner route returns 402 while
+  // /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast returns 200 on the SAME
+  // credentials, so the subscription is healthy and only the gateway is unfunded.
+  // To go back to a partner-served model, fund the gateway or configure BYOK
+  // first, and re-probe before trusting it.
+  const AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+  // Tier 2. Sonnet rather than Haiku deliberately: this verdict decides whether
+  // to spend a full retry (~500 machine-minutes), so the marginal token cost of
+  // the better model is irrelevant next to being wrong. Overridable for a cheap
+  // experiment without editing code.
+  const CLAUDE_MODEL = process.env.WATCHDOG_CLAUDE_MODEL || 'claude-sonnet-5';
   // Reasoning model: thinking happens before the answer, so give it a real
   // timeout and enough tokens that the reasoning phase cannot starve the
   // final JSON verdict. Budget-wise 25s still fits the generation deadline
   // (480s poll + ~25s AI + <=5min force-cancel wait < the 15-min slim cap).
   const AI_TIMEOUT = 25000; // 25 seconds
   const AI_MAX_TOKENS = 1024;
+
+  // A non-2xx from either provider used to log the STATUS ONLY, which is how the
+  // classifier chain went fully dark without anyone noticing what was wrong:
+  // "HTTP 402" and "HTTP 400" say a request failed, not why, and both tiers
+  // failing is indistinguishable from both tiers being absent. The body is where
+  // the API names the cause (a wrong model id, a quota, a missing beta header),
+  // and every one of those is a different fix. Truncated because a provider error
+  // page can be an entire HTML document, and this lands in a public run log.
+  async function errorBody(response) {
+    try {
+      const text = (await response.text()).trim().replace(/\s+/g, ' ');
+      return text ? text.slice(0, 300) : '(empty body)';
+    } catch {
+      return '(body unreadable)';
+    }
+  }
 
   // A completed job's log never changes, so a deferred job re-examined on the
   // next poll costs no extra API call.
@@ -512,76 +587,192 @@ const monitor = async ({ github, context, core }) => {
     }
   }
 
-  async function callClassifierModel(logTail) {
-    const token = process.env.CLOUDFLARE_API_TOKEN;
-    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-    if (!token || !accountId) return null;
-
-    const fs = require('fs');
-    let systemPrompt;
+  // The system prompt is shared by every provider: the verdict contract must not
+  // vary by who is answering, or the allowlist tier would be comparing verdicts
+  // produced under different rules.
+  function readClassifierPrompt() {
     try {
-      systemPrompt = fs.readFileSync('.ci/prompts/ci-failure-classifier.md', 'utf8').trim();
+      return require('fs').readFileSync('.ci/prompts/ci-failure-classifier.md', 'utf8').trim();
     } catch (e) {
       console.log(`[AI] Failed to read prompt file: ${e.message}`);
       return null;
     }
+  }
 
-    // OpenAI-compatible chat-completions route: partner-served catalog models
-    // (like deepseek/deepseek-v4-pro) are not addressable via /ai/run/<model>.
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
-    const body = JSON.stringify({
-      model: AI_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: logTail }
-      ],
-      max_tokens: AI_MAX_TOKENS,
-      temperature: 0.1
-    });
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
-
+  // One parser for every provider. Each returns text that must be the same JSON
+  // verdict; validation is deliberately strict, because an unparseable or
+  // out-of-contract answer must count as NO ANSWER (fall through to the next
+  // tier) rather than as a low-confidence one.
+  function parseClassifierVerdict(rawText) {
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body,
-        signal: controller.signal
-      });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        console.log(`[AI] Classifier endpoint returned HTTP ${response.status}`);
-        return null;
-      }
-
-      const data = await response.json();
-      // OpenAI response shape. Reasoning models put their thinking in
-      // message.reasoning_content; the verdict must come from content only.
-      const aiResponse = data.choices?.[0]?.message?.content;
-      if (!aiResponse) {
-        console.log(`[AI] Unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
-        return null;
-      }
-
-      const rawText = typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse);
-      const cleaned = rawText.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const cleaned = String(rawText).trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       const parsed = JSON.parse(cleaned);
-
       if (!['transient', 'code-change'].includes(parsed.classification)) return null;
       if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) return null;
-
       return {
         classification: parsed.classification,
         confidence: parsed.confidence,
         reason: String(parsed.reason || '').slice(0, 200)
       };
-    } catch (e) {
-      clearTimeout(timeout);
-      console.log(`[AI] ${e.name === 'AbortError' ? 'Request timed out' : e.message}`);
+    } catch {
       return null;
     }
+  }
+
+  // TIER 1: Cloudflare, DeepSeek V4 Pro.
+  //
+  // Partner-served (Fireworks) catalog model, so it is reached through the
+  // OpenAI-compatible /ai/v1/chat/completions route rather than the
+  // native-Workers-AI /ai/run/<model> route the previous qwen model used.
+  async function callCloudflareClassifier(logTail, systemPrompt) {
+    const token = process.env.CLOUDFLARE_API_TOKEN;
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    if (!token || !accountId) return null;
+
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${AI_MODEL}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        // No `model` field: the /ai/run route names the model in the URL, unlike
+        // the OpenAI-compatible /ai/v1 route this used to call.
+        body: JSON.stringify({
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: logTail }
+          ],
+          max_tokens: AI_MAX_TOKENS,
+          temperature: 0.1
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        console.log(`[AI] Cloudflare classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
+        return null;
+      }
+      const data = await response.json();
+      // Reasoning models put their thinking in message.reasoning_content; the
+      // verdict must come from content only.
+      //
+      // TWO SHAPES ON PURPOSE. The /ai/run route wraps everything in `result`,
+      // while the OpenAI-compatible /ai/v1 route does not. Accepting both means
+      // moving between routes (see AI_MODEL) cannot silently produce "no answer"
+      // from a perfectly good reply, which would fall through to the allowlist
+      // and look exactly like the outage this tier just came back from.
+      const envelope = data.result ?? data;
+      const aiResponse = envelope.choices?.[0]?.message?.content ?? envelope.response;
+      if (!aiResponse) {
+        console.log(`[AI] Cloudflare unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
+        return null;
+      }
+      return parseClassifierVerdict(typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse));
+    } catch (e) {
+      clearTimeout(timeout);
+      console.log(`[AI] Cloudflare ${e.name === 'AbortError' ? 'request timed out' : e.message}`);
+      return null;
+    }
+  }
+
+  // TIER 2: Anthropic direct.
+  //
+  // WHY A SECOND PROVIDER AT ALL. Tier 1 has been returning HTTP 402 (billing)
+  // continuously, which is not a transient outage: it is an unavailable tier.
+  // With only one model, every failure fell through to the allowlist, so a
+  // judgment nobody made decided whether to spend a ~500-machine-minute retry.
+  // The allowlist is a safety net, not a classifier, and it cannot tell a real
+  // break in an E2E job from a flake in one.
+  //
+  // AUTH. Prefers ANTHROPIC_API_KEY (the documented x-api-key path) and falls
+  // back to CLAUDE_CODE_OAUTH_TOKEN, which is the credential this org actually
+  // has. The OAuth path needs the oauth beta header; without it the API rejects
+  // a Bearer token. If neither is set this tier is simply absent and the chain
+  // moves on, which is why a missing secret degrades to today's behaviour
+  // instead of breaking the watchdog.
+  async function callClaudeClassifier(logTail, systemPrompt) {
+    const apiKey = process.env.ANTHROPIC_API_KEY || '';
+    const oauth = process.env.CLAUDE_CODE_OAUTH_TOKEN || '';
+    if (!apiKey && !oauth) return null;
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01'
+    };
+    if (apiKey) {
+      headers['x-api-key'] = apiKey;
+    } else {
+      headers['Authorization'] = `Bearer ${oauth}`;
+      headers['anthropic-beta'] = 'oauth-2025-04-20';
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: CLAUDE_MODEL,
+          max_tokens: AI_MAX_TOKENS,
+          temperature: 0.1,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: logTail }]
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        console.log(`[AI] Claude classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
+        return null;
+      }
+      const data = await response.json();
+      // Messages API shape: content is a list of blocks; take the text ones.
+      const text = Array.isArray(data.content)
+        ? data.content.filter(b => b && b.type === 'text').map(b => b.text).join('')
+        : '';
+      if (!text) {
+        console.log(`[AI] Claude unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
+        return null;
+      }
+      return parseClassifierVerdict(text);
+    } catch (e) {
+      clearTimeout(timeout);
+      console.log(`[AI] Claude ${e.name === 'AbortError' ? 'request timed out' : e.message}`);
+      return null;
+    }
+  }
+
+  // THE CHAIN. Ordered deliberately, cheapest-capable first:
+  //
+  //   1. Cloudflare / DeepSeek V4 Pro  (bulk-priced, currently HTTP 402)
+  //   2. Anthropic / Claude            (the credential this org actually has)
+  //   3. the known-flaky allowlist     (NOT a classifier; a safety net)
+  //
+  // A provider that returns null has NOT answered, whether it was unconfigured,
+  // billing-blocked, timed out, or replied off-contract. Those are all the same
+  // thing to the caller and must be, because the only safe reading of "no
+  // answer" is to ask the next tier rather than to invent a verdict. Only the
+  // exhaustion of tiers 1 and 2 reaches the allowlist.
+  const CLASSIFIER_PROVIDERS = [
+    { name: 'cloudflare/deepseek-v4-pro', call: callCloudflareClassifier },
+    { name: 'anthropic/claude', call: callClaudeClassifier }
+  ];
+
+  async function callClassifierModel(logTail) {
+    const systemPrompt = readClassifierPrompt();
+    if (!systemPrompt) return null;
+
+    for (const provider of CLASSIFIER_PROVIDERS) {
+      const verdict = await provider.call(logTail, systemPrompt);
+      if (verdict) {
+        console.log(`[AI] verdict from ${provider.name}: ${verdict.classification} (${verdict.confidence})`);
+        return { ...verdict, provider: provider.name };
+      }
+      console.log(`[AI] ${provider.name} did not answer; trying the next tier`);
+    }
+    return null;
   }
 
   // `jobs` is the full job list from this poll: the cross-job fact the guard
@@ -868,12 +1059,23 @@ const monitor = async ({ github, context, core }) => {
     // cancellation annotation naming the failures at all.
     if (pendingQualityCancel) {
       const stillRunning = pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
-      if (stillRunning.length === 0) {
-        console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+      const heldSec = heldSince ? Math.round((Date.now() - heldSince) / 1000) : 0;
+      const expired = heldSec >= HELD_CANCEL_MAX_SECONDS;
+      if (stillRunning.length === 0 || expired) {
+        if (expired) {
+          console.log(
+            `Held force-cancel EXPIRED after ${heldSec}s with ${stillRunning.length} sibling(s) still running. ` +
+            'The drain collects a full roster; it does not keep a known-red run alive behind one slow lane.'
+          );
+        } else {
+          console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+        }
         if (await forceCancel(heldQualityFailureMsg)) return;
         pendingQualityCancel = false; // exempt run: recorded, not cancelled; keep monitoring
+      } else {
+        console.log(`[${elapsedMin}m] Force-cancel held ${heldSec}s/${HELD_CANCEL_MAX_SECONDS}s: ` +
+          `waiting on ${stillRunning.length} no-retry job(s)`);
       }
-      console.log(`[${elapsedMin}m] Force-cancel held: waiting on ${stillRunning.length} no-retry job(s)`);
     }
 
     // Check if workflow was externally cancelled (mass cancellation)
@@ -1030,6 +1232,7 @@ const monitor = async ({ github, context, core }) => {
           : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
         if (stillRunning.length > 0) {
           pendingQualityCancel = true;
+          heldSince = heldSince || Date.now();
           // Keep the FIRST held message: forceCancel re-fetches the job list and
           // builds the full roster itself, so this is only the fallback text for
           // the case where that refetch fails.
@@ -1099,7 +1302,10 @@ const monitor = async ({ github, context, core }) => {
         if (ai.classifierAvailable === false) {
           core.warning(
             `Failure classifier unavailable for "${job.name}" (${ai.reason}). ` +
-            `Retry policy fell back to the known-flaky allowlist: ${eligibility.retry ? 'retrying' : 'failing fast'}. ` +
+            `EVERY provider in the chain declined to answer: ` +
+            `${CLASSIFIER_PROVIDERS.map(p => p.name).join(' then ')}. ` +
+            `Retry policy fell back to the known-flaky allowlist (a safety net, not a classifier): ` +
+            `${eligibility.retry ? 'retrying' : 'failing fast'}. ` +
             `See issue #537.`
           );
         }

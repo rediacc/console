@@ -2904,11 +2904,11 @@
             "title": "Accesso totale ai tuoi strumenti."
           },
           {
-            "description": "Ti serve un abbonamento attivo per creare nuovi repository, copiarne di esistenti o trasferire backup. Ridimensionamento ed espansione continuano a funzionare per 60 giorni dopo la scadenza. Far funzionare i tuoi repository resta permanente.",
+            "description": "Per creare nuovi server o clonarne di esistenti ti serve un piano attivo. Ridimensionamento ed espansione restano attivi per 60 giorni dopo la scadenza del piano. Far girare i tuoi server, invece, è per sempre.",
             "title": "Solo i nuovi repository hanno bisogno di un abbonamento."
           },
           {
-            "description": "Quando l'abbonamento finisce, ridimensionamento ed espansione continuano per altri 60 giorni. Avvio, stop e cancellazione non sono interessati. Funzionano per sempre. Il trasferimento dei backup richiede un abbonamento attivo.",
+            "description": "Quando l'abbonamento scade, ridimensionamento ed espansione continuano a funzionare per altri 60 giorni. Avvio, arresto ed eliminazione non vengono toccati: funzionano per sempre.",
             "title": "60 giorni di tolleranza nello scaling."
           },
           {

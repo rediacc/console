@@ -6,7 +6,14 @@ on:
   pull_request:
     types: [opened, synchronize]
   schedule:
-    - cron: '0 1 * * *'  # Nightly at 1:00 UTC (2:00 CET)
+    # DECLARED 01:00 UTC, ACTUALLY DISPATCHED just after 04:00. Measured across
+    # all 12 available scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
+    # never once below +2h53m. That is GitHub deferring scheduled workflows on
+    # the free plan, not jitter, and it is stated here because someone checking
+    # at 01:05 finds no run and reasonably concludes the schedule is broken.
+    # The window to look in is 04:00-04:40 UTC; after that, a missing run IS a
+    # finding.
+    - cron: '0 1 * * *'
   # workflow_dispatch is the NIGHTLY REHEARSAL, guarded to main by the first
   # step of `initialize`.
   #
@@ -35,9 +42,41 @@ permissions:
   contents: read
   packages: read    # Most jobs pull from GHCR
 
+# Supersede-cancellation, which was previously absent rather than disabled.
+#
+# The old group was:
+#   group: ${{ github.event_name == 'push' && 'ci-main' || format('ci-{0}', github.run_id) }}
+#   cancel-in-progress: false
+#
+# `github.run_id` is UNIQUE PER RUN, so every pull_request run got a group
+# containing only itself. A group of one can never collide, so it could never
+# cancel anything, and `cancel-in-progress: false` made it moot regardless.
+# Pushing twice to a PR therefore left BOTH runs going, each ~500 machine-minutes.
+# The only thing actually cancelling superseded runs was a LOCAL Claude hook
+# (.claude/hooks/post-bash/cancel-old-ci.sh) that fires after a git push from one
+# particular machine, so pushes from anywhere else were unprotected.
+#
+# The three arms are deliberately different, and the distinction is load-bearing:
+#
+#   pull_request -> keyed on the PR NUMBER, cancel-in-progress TRUE. A newer
+#     commit supersedes an older one, which is the intended saving.
+#
+#   push (main)  -> keyed on 'ci-main', cancel-in-progress FALSE. Main is the
+#     release path: finalize-release-sentinel dispatches cd-v2, so cancelling a
+#     main run mid-flight could interrupt a release. Queue instead.
+#
+#   everything else (schedule, workflow_dispatch) -> keyed on run_id, so they are
+#     never grouped and never cancelled. This is REQUIRED, not incidental: the
+#     nightly and its rehearsal both run on main's ref, so a shared ref-based key
+#     would let a rehearsal cancel the nightly, and a cancelled nightly reports
+#     `cancelled` rather than `failure`, which is exactly the laundering that hid
+#     twelve consecutive red nights.
 concurrency:
-  group: ${{ github.event_name == 'push' && 'ci-main' || format('ci-{0}', github.run_id) }}
-  cancel-in-progress: false
+  group: >-
+    ${{ github.event_name == 'push' && 'ci-main'
+     || github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number)
+     || format('ci-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # ============================================================================
@@ -57,6 +96,10 @@ jobs:
       contents: read
       packages: read
       checks: read
+      # For the scope-engine shadow step only: it calls `gh run list` and
+      # `gh run download` to look for an attested skip-plan on an ancestor
+      # commit. Read-only, and the step cannot fail the job.
+      actions: read
     if: github.event_name != 'push' || (github.actor != 'github-actions[bot]' && github.actor != 'dependabot[bot]' && !contains(github.event.head_commit.message, '[skip ci]'))
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
@@ -97,6 +140,19 @@ jobs:
         with:
           persist-credentials: false
           fetch-tags: true
+          # fetch-depth: 0 is REQUIRED by the scope-engine shadow step below,
+          # and it is not a nicety. With the default depth-1 clone
+          # `git rev-parse --is-shallow-repository` is true, so the engine
+          # answers `baseline:shallow-clone` on every single run and reports
+          # full CI forever while looking perfectly healthy from the outside.
+          # That is exactly how D9 stayed false for twelve consecutive runs,
+          # so the depth and the step have to land together or not at all.
+          #
+          # filter: blob:none keeps it cheap: commits and trees only, no
+          # historical file contents. Same pairing already used at ci.yml's
+          # tag-bijection checkout.
+          fetch-depth: 0
+          filter: blob:none
 
       # Fork PRs are not supported (see .github/CONTRIBUTING.md). They fail
       # here anyway: secrets are empty on a fork, so the app-token step below
@@ -161,6 +217,49 @@ jobs:
         # Guard against someone reintroducing a dryrun-<sha> fallthrough
         # for schedule events.
         run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
+
+      # SHADOW ONLY: publishes what the scope engine WOULD decide, gates
+      # nothing, and always exits 0. Evidence on real traffic before anything
+      # is allowed to skip work. Rationale and the deliberate absence of a
+      # `reconciled` flag are documented in the script header.
+      # No continue-on-error, and none is needed: scope-shadow.sh ends in an
+      # unconditional `exit 0` and every command inside it is `|| true`-guarded.
+      # The script owning its own success is stronger than the workflow
+      # forgiving its failure, because it keeps the guarantee where the logic is.
+      - name: Scope engine (shadow, decides nothing)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: .ci/scripts/ci/scope-shadow.sh
+
+      # if-no-files-found: ignore is what makes this succeed unconditionally:
+      # the shadow step may legitimately produce neither file (no base/head
+      # pair resolved), and that is data, not a failure.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          name: scope-shadow-${{ github.run_id }}
+          path: |
+            .ci/cache/scope-shadow/scope-classify.json
+            .ci/cache/scope-shadow/scope-baseline.json
+          retention-days: 7
+          if-no-files-found: ignore
+
+      # The attested-shaped plan, under the BARE name scope-engine's
+      # createRepoIo looks up. Artifact names are already run-scoped, so no
+      # suffix: a suffixed name would be undiscoverable by the later run that
+      # goes hunting for a baseline, which is the only consumer it has.
+      # It carries no `reconciled` flag, so it can be found and parsed but
+      # never used as a baseline. That is the point at this stage.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: github.event_name == 'pull_request'
+        with:
+          name: ci-skip-plan
+          path: .ci/cache/scope-shadow/plan.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       # Upload CI tags as artifact for debugging
       - name: Upload CI Tags
@@ -748,15 +847,26 @@ jobs:
   # ============================================================================
   deploy-preview:
     name: Deploy Preview
-    needs: [initialize, stage-artifacts, tests]
+    # `tests` was in `needs` and gated in the `if:`, and this job consumes
+    # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
+    # cd-stage.yml:223 through the `stage-artifacts` job, which is still
+    # required below. Waiting on `tests` meant the preview URL appeared only
+    # after the full E2E fleet finished, roughly 44 minutes for the slowest leg.
+    #
+    # BEHAVIOUR CHANGE, stated rather than buried: previews are now published
+    # for PRs whose tests are RED. That is the point. A preview is a debugging
+    # tool, and it was least available exactly when it was most useful. Nothing
+    # here promotes anything: the environment is `pr-N`, the URL is a
+    # workers.dev subdomain, and release promotion is gated separately on
+    # push-to-main plus a release channel.
+    needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
       needs.initialize.result == 'success' &&
-      needs.stage-artifacts.result == 'success' &&
-      needs.tests.result == 'success'
+      needs.stage-artifacts.result == 'success'
     environment:
       name: pr-${{ github.event.pull_request.number }}
       url: https://pr-${{ github.event.pull_request.number }}.rediacc.workers.dev
@@ -832,17 +942,22 @@ jobs:
           VITE_TURNSTILE_SITE_KEY: ${{ steps.create-widget.outputs.sitekey }}
           VITE_CI_MODE: 'false'
 
-      # Inject e2e test videos into pages for documentation embedding
-      - name: Inject E2E videos
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-e2e-videos.sh --run-id "${{ github.run_id }}" --artifact-name "e2e-videos-${{ github.sha }}" --output workers/www/dist/assets/videos/user-guide/ || true
-
-      # Inject tutorial recordings into pages for interactive player
-      - name: Inject tutorials
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: .ci/scripts/docs/inject-tutorials.sh --run-id "${{ github.run_id }}" --artifact-name "tutorial-recordings-${{ github.sha }}" --output workers/www/dist/assets/tutorials/ || true
+      # REMOVED: "Inject E2E videos" and "Inject tutorials".
+      #
+      # Both downloaded artifacts that NOTHING IN THIS REPOSITORY HAS EVER
+      # PRODUCED. Enumerating every `upload-artifact` name across
+      # .github/workflows/ yields no `e2e-videos-*` and no
+      # `tutorial-recordings-*`, and the live artifacts API agrees: of 1335
+      # artifacts retained at the time of removal, zero matched either prefix,
+      # while a dozen other prefixes matched normally, so the zero is a real
+      # absence rather than a query that saw nothing.
+      #
+      # Both steps ended in `|| true`, so they failed silently on every run
+      # since they were written and nobody could tell. The videos users actually
+      # see are served from media.rediacc.com via PUBLIC_VIDEO_CDN_BASE_URL,
+      # which is why nothing was visibly missing.
+      #
+      # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
       # Create Stripe webhook pointing to pr-N
       - name: Setup Stripe webhook
@@ -982,9 +1097,26 @@ jobs:
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
+    # from how cd-stage.yml already solved it (see its "Build package
+    # repositories" step). `initialize` derives channel="" for anything that is
+    # not push or pull_request, deliberately, so a nightly does not orphan ~5 GB
+    # of R2 bytes. This job then ran anyway and died at
+    # simulate-promotion.sh:41 with "CHANNEL is required (the source channel,
+    # e.g. pr-123)", observed on nightly 30327872124.
+    #
+    # Skipping is the honest outcome, not a workaround: promotion validation
+    # copies a STAGED channel and re-tests installs from the copy. With no
+    # channel there is nothing staged, so the job has no subject. VALIDATE_PROMOTE
+    # is soft-required in assert-ci-complete.sh, which forgives `skipped`.
+    #
+    # The other two instances of this class: Stage Artifacts (fixed in Wave A)
+    # and Validate Install Methods (fixed on this branch). All three shared one
+    # cause -- a job assuming a channel that schedule runs deliberately lack.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success'
+      needs.stage-artifacts.result == 'success' &&
+      needs.initialize.outputs.channel != ''
     env:
       CHANNEL: ${{ needs.initialize.outputs.channel }}
     steps:
@@ -1053,8 +1185,24 @@ jobs:
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-slim
-    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
+    # check-release-state is aggregated here because it was a live FALSE-GREEN
+    # path, found by .ci/scripts/quality/check-ci-job-aggregation.sh. It is not
+    # merely unobserved: stage-artifacts requires
+    # `check-release-state.result == 'success' || == 'skipped'`, so a FAILURE
+    # makes stage-artifacts SKIP, `skipped` is forgiven by the soft tier, and
+    # `CI Complete` reports success while a release-state assertion failed on
+    # main. It is soft-required, because it legitimately skips on every PR
+    # (it is gated on push-to-main plus a release channel).
+    needs: [initialize, quality, review-gate, stripe-sandbox, build-docker, build-docker-fast, build-cli, package-tests, check-release-state, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle]
     timeout-minutes: 5
+    # Job-level permissions REPLACE the workflow defaults, so contents and
+    # packages are restated. actions: read is for the shadow reconciliation
+    # step at the end, which downloads this run's attested plan and reads its
+    # own per-job outcomes. Read-only, and that step fails nothing.
+    permissions:
+      contents: read
+      packages: read
+      actions: read
     if: always() && !cancelled()
     steps:
       # The tier logic now lives in .ci/scripts/ci/assert-ci-complete.sh, so the
@@ -1075,6 +1223,7 @@ jobs:
           RESULT_REVIEW_GATE: ${{ needs.review-gate.result }}
           RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
+          RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}
@@ -1085,6 +1234,23 @@ jobs:
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}
           RESULT_BREAKPOINT_LIFECYCLE: ${{ needs.breakpoint-lifecycle.result }}
+
+      # SHADOW reconciliation, and it runs AFTER the real gate above on
+      # purpose: this must never influence the verdict, only observe it.
+      # always() so the evidence is collected even when the gate above failed,
+      # which is exactly the case worth understanding.
+      #
+      # It answers the one question that decides whether the reconciler can be
+      # turned on for real: would it have fired FALSELY? The reconciler
+      # hard-fails on any planned-run job that skipped, and today's shadow plan
+      # does not encode pre-existing skip conditions (full_suite, and
+      # pointer_bump_only). Wiring it before seeing a clean run of PRs would
+      # red a required check for reasons unrelated to scope.
+      - name: Skip-plan reconciliation (shadow, fails nothing)
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .ci/scripts/ci/scope-reconcile-shadow.sh
   # ============================================================================
   # FINALIZE RELEASE SENTINEL
   # Atomic commit point of the release pipeline. Writes `.released` sentinels

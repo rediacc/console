@@ -129,7 +129,12 @@ const accountApp = createApp(
 // and lang-prefixed paths. Normalize first, then look up in the curated
 // ./redirects.json table. See redirect-aliases.ts.
 
-const SUPPORTED_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ar', 'ru', 'tr', 'zh', 'et', 'ko', 'pt', 'it'] as const;
+// Relative, not a bare specifier: workers/www has its own package.json and is not a
+// root workspace, so `@rediacc/locales` would not resolve. wrangler/esbuild inlines
+// this the same way it already inlines ../../../private/account/src/app.js.
+import { SITE_LOCALES } from '../../../packages/locales/index.js';
+
+const SUPPORTED_LANGUAGES = SITE_LOCALES;
 const DEFAULT_LANG = 'en';
 
 /**

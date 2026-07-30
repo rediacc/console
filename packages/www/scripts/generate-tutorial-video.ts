@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -132,6 +133,13 @@ async function main(): Promise<void> {
   );
   const outDir = path.join(wwwPublicRoot, 'assets', 'tutorials', 'video', lang);
   const outPath = path.join(outDir, `${tutorial}.mp4`);
+  // The mp4 is rendered to a staging path and renamed into place LAST, after every
+  // sidecar exists. Without that, a killed or crashed render leaves a truncated file at
+  // the final path with a FRESH mtime — and the render-queue predicate
+  // (list-tutorial-render-pairs.js) treats "timeline older than mp4" as done, so that
+  // pair would never be re-rendered and would ship broken. rename(2) within one directory
+  // is atomic, so a reader sees the old video or the new one, never a half-written one.
+  const stagePath = `${outPath}.partial`;
   mkdirSync(outDir, { recursive: true });
 
   const storyboard = readStoryboard(storyboardPath);
@@ -349,9 +357,9 @@ async function main(): Promise<void> {
       // start/end abruptly. Held first/last frames mean the eye has a beat to
       // settle before audio begins and after it ends.
       console.log(`[video] adding 1s edge padding → ${outPath}`);
-      addEdgePad(concatOut, outPath, 1.0, 1.0);
+      addEdgePad(concatOut, stagePath, 1.0, 1.0);
 
-      finalDuration = probeDurationSec(outPath);
+      finalDuration = probeDurationSec(stagePath);
       console.log(`[video] done. duration=${finalDuration.toFixed(2)}s → ${outPath}`);
     }
 
@@ -403,7 +411,8 @@ async function main(): Promise<void> {
         ? (sceneTimingAbs[firstCastNarrated.id]?.start ?? 1.0) + 0.5
         : 1.0;
       const posterPath = path.join(outDir, `${tutorial}.${lang}.poster.jpg`);
-      extractPosterJpg(outPath, posterAtSec, posterPath);
+      // captions-only reuses the published mp4 in place; a full render reads its stage file.
+      extractPosterJpg(captionsOnly ? outPath : stagePath, posterAtSec, posterPath);
       console.log(`[video] poster    → ${posterPath} (at ${posterAtSec.toFixed(2)}s)`);
     }
 
@@ -447,7 +456,22 @@ async function main(): Promise<void> {
       console.log(`[video] debug sidecar → ${sidecarPath}`);
       console.log(`[video] debug frames  → ${debugFramesDir}`);
     }
+
+    // COMMIT POINT. Everything above can fail, crash or be killed and the published mp4
+    // stays exactly as it was — which is what keeps the render-queue predicate honest,
+    // since a fresh mtime on a truncated file would mark the pair permanently done.
+    // Last, so the mp4 only appears once its vtt/chapters/words/poster are all on disk.
+    if (!captionsOnly) {
+      renameSync(stagePath, outPath);
+    }
   } finally {
+    // A stage file surviving to here means the render did not reach its commit point.
+    // Leaving it would be harmless but confusing, and it would accumulate one per crash.
+    try {
+      if (existsSync(stagePath)) rmSync(stagePath, { force: true });
+    } catch {
+      /* best effort */
+    }
     // Sessions hold chromium instances and tunnel processes pointed at
     // resources teardownCommand may destroy — release them first.
     await sessions.closeAll().catch((err) => {

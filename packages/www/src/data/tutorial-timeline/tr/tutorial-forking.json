@@ -2,148 +2,1808 @@
   "cast": "/assets/tutorials/tutorial-forking.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "b7e3c144e3bdc00befa9ad4fca2e8f4533d6a036680d11d7dd71146b6e868134",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.422355,
-      "replayEndSec": 12.478171,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01.2f627b22.mp3",
-      "audioDurationSec": 15.15102,
-      "textHash": "2f627b22641ccde22e2d5e1dae446ff47645af491bf680782ac69cb5664c9769",
+      "replayStartSec": 2.424604,
+      "replayEndSec": 9.790706,
       "narrationText": "Depoyu tek bir komutla fork'lıyoruz. Her şeyi klonladı: uygulama, veritabanı, yapılandırma dosyaları. Ve bu saniyeler içinde oldu; deponun boyutundan bağımsız olarak. 1 gigabayt, 100 gigabayt, 1 terabayt: her seferinde aynı süre.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01-after.461471d1.mp3",
-      "afterAudioDurationSec": 3.552653,
-      "afterTextHash": "461471d1cd02998a3243cb26510bd3aadb1da2f404f061cfc34cd7ae8c4adb9f"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-01.ca6e9047.mp3",
+      "textHash": "ca6e9047d90d4c20355d627e2aaf1c1349e88cd21d25c977c36056ead095c383",
+      "audioDurationSec": 14.904,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.76,
+          "startChar": 23,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 46,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.08,
+          "startChar": 56,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.72,
+          "startChar": 66,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.36,
+          "startChar": 78,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.0,
+          "startChar": 91,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.12,
+          "startChar": 105,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 108,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.12,
+          "startChar": 131,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.6,
+          "startChar": 139,
+          "endChar": 149
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.92,
+          "startChar": 150,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.32,
+          "startChar": 159,
+          "endChar": 165
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.68,
+          "startChar": 167,
+          "endChar": 168
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 179,
+          "endChar": 182
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 183,
+          "endChar": 191
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.72,
+          "startChar": 193,
+          "endChar": 194
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 195,
+          "endChar": 203
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.24,
+          "startChar": 209,
+          "endChar": 218
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.72,
+          "startChar": 219,
+          "endChar": 223
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-01-after.cbd51e71.mp3",
+      "afterAudioDurationSec": 4.032,
+      "afterTextHash": "cbd51e718d7de1cd0c530ab53c2ced167ecaad61b5995c7a9aa1438c05cb403d",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.72,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.52,
+          "startChar": 14,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.72,
+          "startChar": 27,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 38,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 56,
+          "endChar": 62
+        }
+      ]
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 12.478171,
-      "replayEndSec": 18.050071,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02.f9334190.mp3",
-      "audioDurationSec": 7.88898,
-      "textHash": "f9334190b2f7c6803613df56763a9b4d48e742de07642c9936af00ce771f9402",
+      "replayStartSec": 9.790706,
+      "replayEndSec": 15.362139,
       "narrationText": "Her iki depo yan yana var. Aynı makine, aynı disk, iki tamamen bağımsız ortam. Fork'un kendi container'ları, kendi dosya sistemi ve kendi Docker daemon'ı var.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02-after.0db6276f.mp3",
-      "afterAudioDurationSec": 3.866122,
-      "afterTextHash": "0db6276f21b58e075539726da8a131f40cd65ddd59b36ca71fa440a23abb55ed"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-02.5297cad2.mp3",
+      "textHash": "5297cad253279a93b22ab36fd81ff055ffc1f3d04e84a88fe31ed03ee98ac5f3",
+      "audioDurationSec": 10.584,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.96,
+          "startChar": 32,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.32,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 63,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 72,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.8,
+          "startChar": 79,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 87,
+          "endChar": 92
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.4,
+          "startChar": 109,
+          "endChar": 114
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 115,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.2,
+          "startChar": 121,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.28,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.52,
+          "startChar": 132,
+          "endChar": 137
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.84,
+          "startChar": 138,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.4,
+          "startChar": 145,
+          "endChar": 153
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-02-after.b91c4ae9.mp3",
+      "afterAudioDurationSec": 3.864,
+      "afterTextHash": "b91c4ae9972f265412bf81cf0a027ba3fc8a516951c83ddf34efe23ec804c1a6",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.72,
+          "startChar": 21,
+          "endChar": 25
+        }
+      ]
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.050071,
-      "replayEndSec": 25.352583,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03.7d9d0a3a.mp3",
-      "audioDurationSec": 9.325714,
-      "textHash": "7d9d0a3af2f797109c5c88630d5990c32e11faf8d070fdd5da58d2f252f40986",
+      "replayStartSec": 15.362139,
+      "replayEndSec": 20.531281,
       "narrationText": "İzolasyonu kanıtlayalım. Orijinalde işaret dosyamız bıraktığımız yerde duruyor. Fork'un varlığı üst depoda hiçbir şeyi değiştirmedi.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03-after.6a012f89.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "6a012f895035005a7cf85510aab5258cd094c54b83e73e9fcc7d9e26742bd8e8"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-03.d42964aa.mp3",
+      "textHash": "d42964aa48e5d27a328ac10c4b4d5ab529cb6bb788f12ef02296631e0681c30c",
+      "audioDurationSec": 7.08,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 44,
+          "endChar": 52
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 53,
+          "endChar": 65
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 66,
+          "endChar": 71
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 72,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.72,
+          "startChar": 80,
+          "endChar": 87
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.12,
+          "startChar": 89,
+          "endChar": 96
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 97,
+          "endChar": 100
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 101,
+          "endChar": 107
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 108,
+          "endChar": 114
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.88,
+          "startChar": 120,
+          "endChar": 132
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-03-after.3eaa462e.mp3",
+      "afterAudioDurationSec": 3.24,
+      "afterTextHash": "3eaa462ea2474b5c85009fcabebfac53bfd4e1b18583fee6f960f7481a1743d1",
+      "afterWordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 36,
+          "endChar": 45
+        }
+      ]
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.352583,
-      "replayEndSec": 33.706234,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04.ce85c437.mp3",
-      "audioDurationSec": 5.877551,
-      "textHash": "ce85c4377c7c17a778906d10e858cfbaca6d2cbd7b798ef04774466821803c6a",
+      "replayStartSec": 20.531281,
+      "replayEndSec": 26.727498,
       "narrationText": "Şimdi o dosyayı siliyoruz; ama yalnızca fork içinde. Fork içinde silindi. Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde kaldı.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04-after.846d677e.mp3",
-      "afterAudioDurationSec": 3.082449,
-      "afterTextHash": "846d677eb0b4cbc764d2ee591d378d0003d09ebbb377805f042ebe172de921ce"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-04.522d64f7.mp3",
+      "textHash": "522d64f76ad95dba8dc249e571b8c93fe930f3845c51a8d7b18eebd42b00183f",
+      "audioDurationSec": 8.832,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 6,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 16,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.92,
+          "startChar": 74,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 81,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.22,
+          "endSec": 6.28,
+          "startChar": 85,
+          "endChar": 95
+        },
+        {
+          "startSec": 6.34,
+          "endSec": 6.4,
+          "startChar": 96,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.04,
+          "startChar": 103,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 106,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.76,
+          "startChar": 109,
+          "endChar": 119
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 120,
+          "endChar": 124
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 125,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 132,
+          "endChar": 137
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-04-after.3872e026.mp3",
+      "afterAudioDurationSec": 2.28,
+      "afterTextHash": "3872e026dc7f5c596a5fcb21941c97d8d6bf02c3dfcdc04b4105772190b2cc82",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 15,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 25,
+          "endChar": 36
+        }
+      ]
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.706234,
-      "replayEndSec": 41.0794,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05.a0d89b45.mp3",
-      "audioDurationSec": 8.437551,
-      "textHash": "a0d89b45c839af6f9f38d65d32b8422f026ae32f101c36440c68833f2d70c88e",
+      "replayStartSec": 26.727498,
+      "replayEndSec": 31.831236,
       "narrationText": "Orijinale geri döndük. İşaret dosyası hâlâ burada, dokunulmamış. Orijinal, hiçbir şeyin olduğunu fark etmedi. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05-after.5255fd6a.mp3",
-      "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "5255fd6a0838c1079ccd5f13bf3757ac9f9a0f5151dec8f629ad7a75a3d5f0da"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-05.a0f71c38.mp3",
+      "textHash": "a0f71c38c6445e71ab01db7452b6364dc4c888b0bd7c91fe50582adcdfe9396a",
+      "audioDurationSec": 11.712,
+      "wordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 23,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.16,
+          "startChar": 52,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 76,
+          "endChar": 82
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 89,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 103,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 111,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.48,
+          "startChar": 116,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.2,
+          "startChar": 128,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.44,
+          "startChar": 132,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.08,
+          "startChar": 139,
+          "endChar": 151
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.64,
+          "startChar": 153,
+          "endChar": 157
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-05-after.9eab9c0d.mp3",
+      "afterAudioDurationSec": 2.424,
+      "afterTextHash": "9eab9c0d5030f44b374589088c1fcb77ad90d9187bd87086ce63176dec4aaef8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 13,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 22,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.32,
+          "startChar": 28,
+          "endChar": 35
+        }
+      ]
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.0794,
-      "replayEndSec": 48.135359,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06.3480d69d.mp3",
-      "audioDurationSec": 10.03102,
-      "textHash": "3480d69d3d1c4105f8d065f38bc5111dbb1751b005842a06eb0e63b3ffcc0fb0",
+      "replayStartSec": 31.831236,
+      "replayEndSec": 37.012611,
       "narrationText": "İşiniz bittiğinde fork'u silin. Orijinal tam olarak olduğu gibi kalır. Fork alın, deneyin, bir şeyleri bozun, silin; hiçbir risk yok.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06-after.dc610654.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "dc6106548e42c093c327d461690d3f67a23aa41574af8d2e51512854a2ba39cf"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-06.998321a1.mp3",
+      "textHash": "998321a1567283a007bdf9364215378f002570da9a05ce9004b0776064b98fe6",
+      "audioDurationSec": 8.184,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 33,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.12,
+          "startChar": 53,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 65,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.56,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 83,
+          "endChar": 90
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.76,
+          "startChar": 92,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 96,
+          "endChar": 103
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 104,
+          "endChar": 109
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.12,
+          "startChar": 111,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.6,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.76,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.0,
+          "startChar": 130,
+          "endChar": 133
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-forking/tutorial-forking-06-after.d208d64e.mp3",
+      "afterAudioDurationSec": 3.384,
+      "afterTextHash": "d208d64ee158ce5f89924abc215c64286e9524c45f370b51b1e9766dcf76a8a4",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.8,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 43,
+          "endChar": 47
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/intro.52c78504.mp3",
-      "textHash": "52c78504c16cab19064aa718534c5c7ea5a90ed6ad63a1b91aa79e13a4eb34e8",
-      "audioDurationSec": 6.844082,
-      "narrationText": "Asıl özelliğe hoş geldiniz! Boyutu ne olursa olsun tüm bir üretim deposunu klonlayın ve hiçbir şeyi bozmayın."
+      "textHash": "5437e5084d75975c65a0b3e5da7bbe31152b7fcd924d6e5fa21ba87b6f69e6e0",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/intro.5437e508.mp3",
+      "narrationText": "Asıl özelliğe hoş geldiniz! Boyutu ne olursa olsun tüm bir üretim deposunu klonlayın ve hiçbir şeyi bozmayın.",
+      "audioDurationSec": 6.432,
+      "wordTimings": [
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 28,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 38,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 51,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.68,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.56,
+          "startChar": 66,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 5.12,
+          "startChar": 75,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.2,
+          "startChar": 85,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 100,
+          "endChar": 108
+        }
+      ]
     },
     {
       "id": "fan-out",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/fan-out.d6195195.mp3",
-      "textHash": "d61951959b64025bc25317d24dc0448393cc8efc4a1d599a13b53f5c5bfacebb",
-      "audioDurationSec": 9.874286,
-      "narrationText": "Bir üst depo, istediğiniz sayıda bağımsız klona dağılır. Her fork, orijinalle yan yana çalışan kendi izole ortamıdır."
+      "textHash": "97762c8d25ae6df130f94e473a41f469f38e9c115cd0ebb6f84474e8743d3900",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/fan-out.97762c8d.mp3",
+      "narrationText": "Bir üst depo, istediğiniz sayıda bağımsız klona dağılır. Her fork, orijinalle yan yana çalışan kendi izole ortamıdır.",
+      "audioDurationSec": 6.6,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.44,
+          "startChar": 14,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 33,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 82,
+          "endChar": 86
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 87,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 95,
+          "endChar": 100
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 101,
+          "endChar": 106
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.32,
+          "startChar": 107,
+          "endChar": 116
+        }
+      ]
     },
     {
       "id": "link-speed",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/link-speed.1418de94.mp3",
-      "textHash": "1418de940e96edd8372967a1aaff5f0ce75947d33f9b7b7611cf44e892b67690",
-      "audioDurationSec": 8.907755,
-      "narrationText": "Bir klasör bağlantısı paylaşmayı düşünün. Klasör küçük de olsa devasa da olsa bağlantı aynı hafif şeydir; fork da aynı prensiple çalışır."
+      "textHash": "6fe3b7f7d9f9d7df19f81b6fd7e2cb6fc6777eb074e395f501dba758855a0654",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/link-speed.6fe3b7f7.mp3",
+      "narrationText": "Bir klasör bağlantısı paylaşmayı düşünün. Klasör küçük de olsa devasa da olsa bağlantı aynı hafif şeydir; fork da aynı prensiple çalışır.",
+      "audioDurationSec": 8.52,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 33,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 42,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.8,
+          "startChar": 70,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 73,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 78,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 92,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.24,
+          "startChar": 98,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 106,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.28,
+          "startChar": 111,
+          "endChar": 113
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.36,
+          "startChar": 114,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.84,
+          "startChar": 119,
+          "endChar": 128
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 129,
+          "endChar": 136
+        }
+      ]
     },
     {
       "id": "scale-invariance",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/scale-invariance.7dda1e54.mp3",
-      "textHash": "7dda1e54aa5f757dafc83745b07dbfa7894e383f9213777fa5531f7a3f539a1c",
-      "audioDurationSec": 10.527347,
-      "narrationText": "1 gigabayt, 100 gigabayt, 1 terabayt: fork aynı şekilde davranır. Depo boyutu denkleme girmez."
+      "textHash": "54ca48e7aa35cc386d028fcf6911832fac15e56d9bdf98b05ade05366866cdd8",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/scale-invariance.54ca48e7.mp3",
+      "narrationText": "1 gigabayt, 100 gigabayt, 1 terabayt: fork aynı şekilde davranır. Depo boyutu denkleme girmez.",
+      "audioDurationSec": 6.6,
+      "wordTimings": [
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 43,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.08,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 56,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 66,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.0,
+          "startChar": 78,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 87,
+          "endChar": 93
+        }
+      ]
     },
     {
       "id": "sun-mirrors",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/sun-mirrors.1207afb5.mp3",
-      "textHash": "1207afb52238d7058dc8922459c141d46eea41044e6e6f8ff996b5af37d6ccbc",
-      "audioDurationSec": 10.605714,
-      "narrationText": "Üst depo güneş, fork'unuz ise onun ışığını yakalayan bir aynadır. Paylaşılan temel dokunulmadan kalırken aynaya boyadığınız her şey yalnızca size aittir."
+      "textHash": "a0215e3f56afed5661adc47fd0ca4393ccae1883e7a197a25bbcb0b953e64b02",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/sun-mirrors.a0215e3f.mp3",
+      "narrationText": "Üst depo güneş, fork'unuz ise onun ışığını yakalayan bir aynadır. Paylaşılan temel dokunulmadan kalırken aynaya boyadığınız her şey yalnızca size aittir.",
+      "audioDurationSec": 8.664,
+      "wordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.6,
+          "startChar": 16,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 30,
+          "endChar": 34
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 43,
+          "endChar": 52
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 57,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.48,
+          "startChar": 66,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 77,
+          "endChar": 82
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.44,
+          "startChar": 83,
+          "endChar": 95
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 96,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.64,
+          "startChar": 105,
+          "endChar": 111
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.2,
+          "startChar": 112,
+          "endChar": 123
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.28,
+          "startChar": 124,
+          "endChar": 127
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 128,
+          "endChar": 131
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 132,
+          "endChar": 140
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 146,
+          "endChar": 152
+        }
+      ]
     },
     {
       "id": "river-photo",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/river-photo.c385ec2d.mp3",
-      "textHash": "c385ec2d7cf03016cc2ff92f09c2a14d0a6573674a7c260b2b73ec01287b18fa",
-      "audioDurationSec": 9.639184,
-      "narrationText": "Fork, üst deponun bir andaki donmuş fotoğrafıdır. Üst depo bir nehir gibi akmaya devam eder; ama sizin fotoğrafınız tam olduğu yerde kalır."
+      "textHash": "731feac0c5a0364e32795d2973f8e9fc4f31c92133eed5c15a8b88f42d8ea915",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/river-photo.731feac0.mp3",
+      "narrationText": "Fork, üst deponun bir andaki donmuş fotoğrafıdır. Üst depo bir nehir gibi akmaya devam eder; ama sizin fotoğrafınız tam olduğu yerde kalır.",
+      "audioDurationSec": 8.832,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 10,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.16,
+          "startChar": 29,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 50,
+          "endChar": 53
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 55,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 63,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 69,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 74,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 81,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 93,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.88,
+          "startChar": 97,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.52,
+          "startChar": 103,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.76,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 8.0,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 127,
+          "endChar": 132
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 133,
+          "endChar": 138
+        }
+      ]
     },
     {
       "id": "flat-disk",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/flat-disk.959411f0.mp3",
-      "textHash": "959411f0a3c033f1a2e90cc1a91b6c1341964cd79fd4d6236d5988441253019a",
-      "audioDurationSec": 9.560816,
-      "narrationText": "100 gigabaytlık bir deponun beş fork'u, diskte hâlâ yaklaşık 100 gigabayt eder. Yalnızca her fork içinde gerçekten değiştirdiğiniz baytlar için bedel ödersiniz."
+      "textHash": "f75a4661bd908c86acaa48a3b8b6df2cdd3d401665ff24302ca2bc2b9c03d272",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/flat-disk.f75a4661.mp3",
+      "narrationText": "100 gigabaytlık bir deponun beş fork'u, diskte hâlâ yaklaşık 100 gigabayt eder. Yalnızca her fork içinde gerçekten değiştirdiğiniz baytlar için bedel ödersiniz.",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 0.72,
+          "endSec": 1.44,
+          "startChar": 4,
+          "endChar": 15
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 52,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.64,
+          "startChar": 61,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 65,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.28,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.48,
+          "startChar": 80,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.6,
+          "startChar": 98,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.32,
+          "startChar": 105,
+          "endChar": 114
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.76,
+          "startChar": 131,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.16,
+          "startChar": 144,
+          "endChar": 149
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.88,
+          "startChar": 150,
+          "endChar": 159
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.1c0080c0.mp3",
-      "textHash": "1c0080c0639e9ce66487d9c4cca3a7cd3b163654743706a9672a212652f4127d",
-      "audioDurationSec": 12.277551,
-      "narrationText": "Komutları az önce gördünüz. Şimdi görsel hale getirelim: gerçek bir veritabanı uygulaması, canlı olarak fork'lanıyor, yan yana düzenleniyor, orijinal ise hiç kıpırdamıyor."
+      "textHash": "133fd17d9b85cb5d0661ed44f6362b39ae604ef0b32161c22b0c82bb741a14ab",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-forking/next-tutorial.133fd17d.mp3",
+      "narrationText": "Komutları az önce gördünüz. Şimdi görsel hale getirelim: gerçek bir veritabanı uygulaması, canlı olarak fork'lanıyor, yan yana düzenleniyor, orijinal ise hiç kıpırdamıyor.",
+      "audioDurationSec": 10.92,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.56,
+          "startChar": 28,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 34,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.44,
+          "startChar": 46,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 57,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 68,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 72,
+          "endChar": 78
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.6,
+          "startChar": 79,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.64,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.0,
+          "startChar": 118,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.08,
+          "startChar": 122,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.8,
+          "startChar": 127,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.44,
+          "startChar": 141,
+          "endChar": 149
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 150,
+          "endChar": 153
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.72,
+          "startChar": 158,
+          "endChar": 170
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c625a1247b298194120645240e199c2899a839c8164322889142b27574d85a26"
+  ]
 }

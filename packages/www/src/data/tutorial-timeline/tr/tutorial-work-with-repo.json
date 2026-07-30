@@ -2,94 +2,1084 @@
   "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
   "language": "tr",
   "version": 1,
+  "provider": "voxcpm2",
+  "modelId": "openbmb/VoxCPM2",
+  "audioFormat": "mp3",
+  "sampleRateHz": 48000,
+  "voiceFingerprint": "f53f3b97493c",
+  "transcriptHash": "8b5a1b7c4b4b2aaa1e566e72de1b9bceb2018e4c77a62ed8fd1f6e38cc771c01",
   "steps": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.414306,
-      "replayEndSec": 10.610488,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01.27a11bdb.mp3",
-      "audioDurationSec": 11.075918,
-      "textHash": "27a11bdba2d0520778d21d95003d9a12f69a7895ff31a7703b9763359f4f1352",
+      "replayStartSec": 2.412087,
+      "replayEndSec": 7.70388,
       "narrationText": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. Tünel komutu, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-01-after.9d140616.mp3",
-      "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "9d140616e38a9d0ea0574f4b6fdaefe756cf3b949b44ad1f6814fc08f8a0f789"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-01.ce38b3d0.mp3",
+      "textHash": "ce38b3d04391a086e25af3e32b6f9f745aeea6a6b49c06ad3a224f2ceb05ff60",
+      "audioDurationSec": 10.104,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.68,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.56,
+          "startChar": 29,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 49,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 57,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 81,
+          "endChar": 86
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.96,
+          "startChar": 87,
+          "endChar": 93
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.04,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 112,
+          "endChar": 119
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.72,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.44,
+          "startChar": 124,
+          "endChar": 133
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.32,
+          "startChar": 147,
+          "endChar": 160
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 161,
+          "endChar": 170
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.84,
+          "startChar": 171,
+          "endChar": 180
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.0,
+          "startChar": 181,
+          "endChar": 194
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-01-after.3b36f8b8.mp3",
+      "afterAudioDurationSec": 4.344,
+      "afterTextHash": "3b36f8b89691cf5781476563d8a566f4aac4c5606d1c513df49da5c5d3ec369d",
+      "afterWordTimings": [
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.04,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 47,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.08,
+          "startChar": 57,
+          "endChar": 71
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 10.610488,
-      "replayEndSec": 17.555154,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02.aab6bbcf.mp3",
-      "audioDurationSec": 13.400816,
-      "textHash": "aab6bbcfd6deb10f891a8c6bb14b31ba759d4839102746ead62730800c8ad6bb",
+      "replayStartSec": 7.70388,
+      "replayEndSec": 12.470166,
       "narrationText": "İkinci olarak term komutu. Terminal bağlantı komutu sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-02-after.83b74d9b.mp3",
-      "afterAudioDurationSec": 4.362449,
-      "afterTextHash": "83b74d9b337e39917159361f463526846b42a06c282add5ddc2ca7f5bf6cb780"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-02.e10e3dd8.mp3",
+      "textHash": "e10e3dd82602b79579e93477148172a6cd5984bbc024f277b423b30321688581",
+      "audioDurationSec": 14.76,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.2,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.68,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.56,
+          "startChar": 28,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.24,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 66,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.44,
+          "startChar": 74,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.76,
+          "startChar": 87,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.28,
+          "startChar": 107,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 125,
+          "endChar": 134
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 135,
+          "endChar": 141
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.6,
+          "startChar": 143,
+          "endChar": 154
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.76,
+          "startChar": 155,
+          "endChar": 158
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.16,
+          "startChar": 159,
+          "endChar": 167
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.96,
+          "startChar": 171,
+          "endChar": 177
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.12,
+          "startChar": 178,
+          "endChar": 181
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 11.76,
+          "startChar": 182,
+          "endChar": 188
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.16,
+          "startChar": 189,
+          "endChar": 197
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.64,
+          "startChar": 198,
+          "endChar": 203
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.2,
+          "startChar": 204,
+          "endChar": 212
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.36,
+          "startChar": 213,
+          "endChar": 216
+        },
+        {
+          "startSec": 13.36,
+          "endSec": 13.6,
+          "startChar": 217,
+          "endChar": 222
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.64,
+          "startChar": 222,
+          "endChar": 242
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-02-after.bb261b28.mp3",
+      "afterAudioDurationSec": 4.2,
+      "afterTextHash": "bb261b283d64d2e4dbc0ad78724f41e0a326bf4b740453da8c6eee15e4df7f84",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 24,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.12,
+          "startChar": 39,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.36,
+          "startChar": 59,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.6,
+          "startChar": 63,
+          "endChar": 67
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.08,
+          "startChar": 68,
+          "endChar": 78
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.555154,
-      "replayEndSec": 24.76977,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03.bac87e7c.mp3",
-      "audioDurationSec": 9.247347,
-      "textHash": "bac87e7cc11b0179c9e91e5d0345fb35ef5656d980bf01e014df35000349068a",
+      "replayStartSec": 12.470166,
+      "replayEndSec": 17.752905,
       "narrationText": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-03-after.6e025361.mp3",
-      "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "6e025361972ec725111b3f2432be40986d347bb3c5dc18a09b88998a8feccab3"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-03.ce60a18c.mp3",
+      "textHash": "ce60a18cda09b720215bde8973d80d8387cfdebe5085b6639a33beaf589b5ad2",
+      "audioDurationSec": 9.96,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 6,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.2,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 5.12,
+          "startChar": 65,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 89,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.4,
+          "startChar": 95,
+          "endChar": 107
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.96,
+          "startChar": 108,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 118,
+          "endChar": 122
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.72,
+          "startChar": 123,
+          "endChar": 136
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 141,
+          "endChar": 146
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.6,
+          "startChar": 147,
+          "endChar": 155
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.76,
+          "startChar": 156,
+          "endChar": 161
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-03-after.9aea29c9.mp3",
+      "afterAudioDurationSec": 2.592,
+      "afterTextHash": "9aea29c9f82f42d0de0795918e4c4508aa62a2e328c41abfd5c42708bc239616",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 25,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.84,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 38,
+          "endChar": 47
+        }
+      ]
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "replayStartSec": 24.76977,
-      "replayEndSec": 31.479627,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04.5df2e073.mp3",
-      "audioDurationSec": 13.479184,
-      "textHash": "5df2e07358117742ea4a2892cc86ac37eb4e4d0c2559571414652bc0307b9ef0",
+      "replayStartSec": 17.752905,
+      "replayEndSec": 22.568523,
       "narrationText": "Şimdi gerçek yüklemeyi çalıştırıyoruz. Eşitleme yükleme komutu, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar.",
-      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/tutorial-work-with-repo-04-after.f227dfa2.mp3",
-      "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "f227dfa2fe0c2e685cd819748cd3633e7d9d973c66d2239bb504b416a464648e"
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-04.589670f9.mp3",
+      "textHash": "589670f9a275fe424605357221e3ab97f4b7d695e7059df8aae0e8882d861cdc",
+      "audioDurationSec": 13.32,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 13,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.24,
+          "startChar": 23,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 39,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 56,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.6,
+          "startChar": 76,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.08,
+          "startChar": 92,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 7.04,
+          "startChar": 100,
+          "endChar": 117
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 118,
+          "endChar": 124
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.08,
+          "startChar": 125,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 129,
+          "endChar": 138
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
+          "startChar": 139,
+          "endChar": 144
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.2,
+          "startChar": 145,
+          "endChar": 150
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.84,
+          "startChar": 172,
+          "endChar": 178
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.32,
+          "startChar": 179,
+          "endChar": 184
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.4,
+          "startChar": 187,
+          "endChar": 189
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.72,
+          "startChar": 190,
+          "endChar": 195
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 196,
+          "endChar": 204
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/tutorial-work-with-repo-04-after.df7f3588.mp3",
+      "afterAudioDurationSec": 4.512,
+      "afterTextHash": "df7f358867add8d93a5f82a57d3f44a30b6dfc19219774b603baf4036f0b67f4",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.96,
+          "startChar": 9,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.72,
+          "startChar": 25,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.04,
+          "startChar": 36,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.44,
+          "startChar": 42,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.24,
+          "startChar": 52,
+          "endChar": 62
+        }
+      ]
     }
   ],
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/intro.ebabbf1c.mp3",
-      "textHash": "ebabbf1c5261a57bcf3a2b35ac935a45a2f280e7e9eb84abb04ccca21d6c800b",
-      "audioDurationSec": 5.642449,
-      "narrationText": "Pekâlâ! Uygulamanız çalışıyor; şimdi gerçekten onunla çalışalım. Günlük döngüyü üç komut karşılar."
+      "textHash": "cab238467fd3badbe8fd9e665db55b11790b5067ad08c858ad26101d9996afcf",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/intro.cab23846.mp3",
+      "narrationText": "Pekâlâ! Uygulamanız çalışıyor; şimdi gerçekten onunla çalışalım. Günlük döngüyü üç komut karşılar.",
+      "audioDurationSec": 5.784,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 8,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 20,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 4.0,
+          "startChar": 54,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 65,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 72,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.88,
+          "startChar": 80,
+          "endChar": 82
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 83,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.6,
+          "startChar": 89,
+          "endChar": 97
+        }
+      ]
     },
     {
       "id": "daily-three",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/daily-three.0dbef833.mp3",
-      "textHash": "0dbef833f31a6265b2f5bb77d8a7414af7a433d92a9f7dbda936c35e2643ee3b",
-      "audioDurationSec": 9.717551,
-      "narrationText": "Tunnel uygulamanızı tarayıcıda açar, term sandbox içinde komut çalıştırır, sync ise dosyaları girip çıkarır. Günlük iş akışının tamamı bu."
+      "textHash": "e2b6effed6b146da079c8fb19ffed0c93ce5d6862cf6775feab33526eccc38e9",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/daily-three.e2b6effe.mp3",
+      "narrationText": "Tunnel uygulamanızı tarayıcıda açar, term sandbox içinde komut çalıştırır, sync ise dosyaları girip çıkarır. Günlük iş akışının tamamı bu.",
+      "audioDurationSec": 8.352,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 1.12,
+          "startChar": 7,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 20,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 42,
+          "endChar": 49
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 63,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.04,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.76,
+          "startChar": 84,
+          "endChar": 93
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.16,
+          "startChar": 100,
+          "endChar": 107
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 109,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.2,
+          "startChar": 116,
+          "endChar": 118
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.6,
+          "startChar": 119,
+          "endChar": 127
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.0,
+          "startChar": 128,
+          "endChar": 134
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.16,
+          "startChar": 135,
+          "endChar": 137
+        }
+      ]
     },
     {
       "id": "open-tunnel",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/open-tunnel.fef328da.mp3",
-      "textHash": "fef328dae60c718945fee32d466bd5a803be6510d80436bccf67325f80518ebc",
-      "audioDurationSec": 9.325714,
-      "narrationText": "Tünel çalışırken uygulama doğrudan tarayıcınızda açılır. Bu demoda rediacc.com'u yüklüyoruz; tıpkı container'dan doğrudan sunulan kendi uygulamanıza eriştiğiniz gibi."
+      "textHash": "ac697bad0be1e90f2ff773c31664b4086a99495f91f933e1613797be7f8730d3",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/open-tunnel.ac697bad.mp3",
+      "narrationText": "Tünel çalışırken uygulama doğrudan tarayıcınızda açılır. Bu demoda rediacc.com'u yüklüyoruz; tıpkı container'dan doğrudan sunulan kendi uygulamanıza eriştiğiniz gibi.",
+      "audioDurationSec": 10.584,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.52,
+          "startChar": 17,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.0,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.8,
+          "startChar": 35,
+          "endChar": 48
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 49,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.08,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.48,
+          "startChar": 60,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 67,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 6.96,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.24,
+          "startChar": 113,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.8,
+          "startChar": 122,
+          "endChar": 129
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 130,
+          "endChar": 135
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.76,
+          "startChar": 136,
+          "endChar": 148
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.4,
+          "startChar": 149,
+          "endChar": 160
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.48,
+          "startChar": 161,
+          "endChar": 165
+        }
+      ]
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-work-with-repo/next-tutorial.7e29d6c4.mp3",
-      "textHash": "7e29d6c4b871d9c8f1e41e16c644c879b0bc0551157243b799c72f1b69f8da66",
-      "audioDurationSec": 3.709388,
-      "narrationText": "Günlük üçlü bu kadar. Bir sonraki bölümde görüşmek üzere!"
+      "textHash": "a74d7a166a56c80b9ea6074e2b2d704390af37341e3d98721fd3933400ba12c8",
+      "audioSrc": "/assets/tutorials/audio/tr/tutorial-work-with-repo/next-tutorial.a74d7a16.mp3",
+      "narrationText": "Günlük üçlü bu kadar. Bir sonraki bölümde görüşmek üzere!",
+      "audioDurationSec": 3.384,
+      "wordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.72,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 26,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 42,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 51,
+          "endChar": 56
+        }
+      ]
     }
-  ],
-  "provider": "qwen3-tts",
-  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-  "audioFormat": "mp3",
-  "sampleRateHz": 44100,
-  "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "5d13caa087069b03259e05a3a085016b018de3e527a8b3a4b19466cf6bb33734"
+  ]
 }

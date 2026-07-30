@@ -437,7 +437,7 @@
   "commands.doctor.sections.subscription": "구독",
   "commands.doctor.sections.virtualization": "가상화",
   "commands.doctor.subscriptionUnreachable": "구독 서버에 연결할 수 없음",
-  "commands.doctor.title": "Rediacc CLI Doctor",
+  "commands.doctor.title": "Rediacc CLI 진단",
   "commands.job.cancel.alreadyFinished": "작업 {{jobId}}은(는) 이미 {{state}} 상태이므로 취소할 것이 없습니다.",
   "commands.job.cancel.confirm": "{{machine}}에서 작업 {{jobId}}({{function}})를 취소하시겠습니까? 작업이 중단됩니다.",
   "commands.job.cancel.description": "실행 중인 분리된 작업을 취소합니다",

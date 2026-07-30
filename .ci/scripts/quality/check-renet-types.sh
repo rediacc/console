@@ -38,6 +38,11 @@ FILES=(
     "vault.generated.ts"
     "vault.schema.ts"
     "list-types.generated.ts"
+    # Adding a generated file to the generator is NOT enough: this list is what
+    # the gate actually compares. license-tiers.generated.ts was generated into
+    # TEMP_DIR and silently ignored until it was added here, which would have
+    # let it go stale forever while the gate reported "up-to-date".
+    "license-tiers.generated.ts"
 )
 
 # Phase 1: Check types

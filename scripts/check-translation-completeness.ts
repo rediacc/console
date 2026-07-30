@@ -333,6 +333,35 @@ const ALLOWED_IDENTICAL = new Set([
   'Repositories were found on {{machine}} but none are tracked in your local config. Run: rdc config repository list and ensure the repo entries exist, then retry.',
   'The account server rejected license issuance for the repository. First error: {{error}}. Run: rdc subscription refresh repo --name <repo> -m {{machine}} for details.',
   'Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.',
+  // "Sandbox" is already an established loanword in es/fr/tr: each of those
+  // locales keeps it untranslated in admin.json's sandboxModeLabel/
+  // sandboxModeSubtitle ("Modo sandbox" / "Mode sandbox" / "Sandbox Modu").
+  // common.json's sandboxLabel is the same word, same locales, same choice.
+  'Sandbox',
+  // RPO / RTO is a disaster-recovery industry acronym pair. Most locales
+  // that translate this key keep the acronym itself untranslated
+  // (de/ja/zh/pt/ru/it all use "RPO/RTO" verbatim, only adding a translated
+  // descriptor for ko/et/ar). es/fr/tr keep the acronym pair exactly as
+  // written in English, spaces included.
+  'RPO / RTO',
+  // Plural forms of "Cluster"/"Datastore" (singular forms are already
+  // allowlisted above). fr/console.json's own body strings already treat
+  // both as untranslated loanwords in the singular
+  // (clustersEmpty: "Aucun cluster...", datastoresEmpty: "Aucun
+  // datastore...", columnLabel_cluster: "Cluster"), so the plural sidebar
+  // titles/nav labels follow the same established French convention.
+  'Clusters',
+  'Datastores',
+  // French cognate: "communication"/"communications" is spelled identically
+  // in French and English; settings.json's notificationsPageTitle uses the
+  // correct native French word, which happens to match.
+  'Communications',
+  // tr/admin.json already keeps "Lead Magnet" as an English loanword
+  // elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet
+  // İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so
+  // the short magnetLabel column header ("Magnet") follows the same
+  // established convention rather than introducing a different Turkish term.
+  'Magnet',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)

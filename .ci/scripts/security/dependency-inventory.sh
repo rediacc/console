@@ -192,9 +192,39 @@ build_go_package() {
     local dir="$REPO_ROOT/private/renet"
     local main_mod modules edges bfs deps
 
-    main_mod="$(cd "$dir" && go list -m 2>/dev/null)"
-    modules="$(cd "$dir" && go list -m -json all 2>/dev/null | jq -s -c '.')"
-    edges="$(cd "$dir" && go mod graph 2>/dev/null || true)"
+    # Each probe is checked. `edges` in particular used to end in `|| true`, so a
+    # `go mod graph` failure produced an empty edge list, the BFS below walked
+    # nothing, and every Go dependency silently dropped out of the inventory
+    # with a "transitive: 0" that looked like a real answer. This inventory is
+    # NIS2/CRA supply-chain evidence (see .dead-bash-allowlist), so a partial
+    # one is worse than none: it understates the attack surface in writing.
+    local probe_err
+    probe_err="$(mktemp)"
+    if ! main_mod="$(cd "$dir" && go list -m 2>"$probe_err")"; then
+        log_error "go list -m failed in $dir; cannot build the Go inventory"
+        [[ -s "$probe_err" ]] && sed 's/^/    /' "$probe_err" >&2
+        rm -f "$probe_err"
+        return 1
+    fi
+    if ! modules="$(cd "$dir" && go list -m -json all 2>"$probe_err" | jq -s -c '.')"; then
+        log_error "go list -m -json all failed in $dir; cannot build the Go inventory"
+        [[ -s "$probe_err" ]] && sed 's/^/    /' "$probe_err" >&2
+        rm -f "$probe_err"
+        return 1
+    fi
+    if ! edges="$(cd "$dir" && go mod graph 2>"$probe_err")"; then
+        log_error "go mod graph failed in $dir; the dependency graph would be empty"
+        [[ -s "$probe_err" ]] && sed 's/^/    /' "$probe_err" >&2
+        rm -f "$probe_err"
+        return 1
+    fi
+    rm -f "$probe_err"
+    # A module with dependencies always has edges. Zero means the probe returned
+    # nothing usable, which is not the same as a module with no dependencies.
+    if [[ -z "${edges//[[:space:]]/}" ]]; then
+        log_error "go mod graph returned no edges in $dir; refusing to emit an empty dependency graph"
+        return 1
+    fi
 
     # BFS from the main module: shortest depth + reconstructed chain per node.
     # Chain excludes the main module and starts at the direct dependency

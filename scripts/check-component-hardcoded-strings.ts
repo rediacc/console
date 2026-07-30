@@ -106,7 +106,6 @@ const SKIP_PATTERNS: RegExp[] = [
 // Files to skip entirely
 const SKIP_FILES = new Set([
   'config/constants.ts',
-  'config/team-videos.ts',
   'config/cli-reference.ts',
   'pages/llms.txt.ts',
   'pages/sitemap-index.xml.ts',

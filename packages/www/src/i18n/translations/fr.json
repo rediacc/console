@@ -2902,11 +2902,11 @@
             "title": "Accès complet à vos outils."
           },
           {
-            "description": "Un abonnement actif est nécessaire pour créer un nouveau serveur, en copier un existant ou transférer des sauvegardes. Le redimensionnement et l'extension continuent de fonctionner 60 jours après expiration. L'exécution de vos serveurs reste permanente.",
+            "description": "Pour créer un nouveau serveur ou en copier un existant, il vous faut un abonnement actif. Le redimensionnement et l'extension continuent de fonctionner pendant 60 jours après l'expiration de votre abonnement. Vos serveurs, eux, continuent de tourner indéfiniment.",
             "title": "Seuls les nouveaux serveurs demandent un abonnement."
           },
           {
-            "description": "Après expiration, redimensionner fonctionne 60 jours de plus. Démarrer, arrêter et supprimer ne sont pas affectés. Ça marche pour toujours. Le transfert de sauvegarde nécessite un abonnement actif.",
+            "description": "À la fin de votre abonnement, le redimensionnement et l'extension restent disponibles 60 jours de plus. Démarrer, arrêter et supprimer ne sont pas concernés : ces actions fonctionnent pour toujours.",
             "title": "60 jours de grâce pour la mise à l’échelle."
           },
           {
