@@ -997,13 +997,29 @@ def run_stop(event, event_ok, worklist, hook_file):
     # refreshing. Only that pair distinguishes "watching a long job" from "left a watch
     # running and wandered off"; a forgotten watch cannot refresh the item, because
     # refreshing it is precisely what nobody is doing.
+    # CORRELATED, not just "some [>] item is fresh": a session can hold two
+    # concurrent leases, one genuinely tracking the live background task and
+    # one unrelated and still being renewed for some other reason. Taking the
+    # freshest across ALL in-flight records let the unrelated one silence the
+    # exempt-overrun even while the item tracking the ACTUAL watched job had
+    # gone stale -- exactly the forgotten-watch case this exemption exists to
+    # exclude. Only records whose worker:<id> tag names a task in live_bg can
+    # supervise it (mirrors wl_liveness.ladder's wid-not-in-now_bg check).
     _supervised = False
-    if live_bg and in_flight_recs:
+    if live_bg:
         try:
-            _freshest = min(
-                wl_liveness._age_min(r.get("upd", "")) for r in in_flight_recs
-            )
-            _supervised = _freshest is not None and _freshest <= STUCK_SUPERVISED_MAX_MIN
+            _live_ids = {str(b.get("id") or "") for b in live_bg}
+            _correlated = []
+            for r in in_flight_recs:
+                wm = C.WORKER.search(r["line"])
+                wid = r.get("worker") or (wm.group(1) if wm else "")
+                if wid and wid in _live_ids:
+                    _correlated.append(r)
+            if _correlated:
+                _freshest = min(
+                    wl_liveness._age_min(r.get("upd", "")) for r in _correlated
+                )
+                _supervised = _freshest is not None and _freshest <= STUCK_SUPERVISED_MAX_MIN
         except Exception:  # noqa: BLE001 -- never let a suppression heuristic wedge a stop
             _supervised = False
 
