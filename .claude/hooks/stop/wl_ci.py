@@ -338,6 +338,43 @@ def ci_classify(info):
     return live, hard, soft
 
 
+# v12 (operator, 2026-07-30): "hook should detect that is current session
+# sitting for CI pipeline? If so, it should FORCE current session to work on
+# waiting items!!!" The shape of a CI watch, matched against a background
+# task's command + description. Deliberately CONSERVATIVE: `gh run watch`,
+# an Actions run URL/path, a run-id-sized number near "watch", or "CI" near
+# "watch". A dev file-watcher (`npm run watch`) matches none of these, and a
+# false positive here turns a working session's stop into an accusation.
+CI_WATCH_RE = re.compile(
+    r"gh\s+run\s+watch"
+    r"|actions/runs/\d+"
+    r"|\bci\b[^\n]{0,40}\bwatch|\bwatch\w*\b[^\n]{0,40}\bci\b"
+    r"|\bwatch\w*\b[^\n]{0,40}\b\d{9,}\b|\b\d{9,}\b[^\n]{0,40}\bwatch\w*\b",
+    re.I,
+)
+
+
+def ci_watch_only(live_bg):
+    """(watching, description) -- is watching CI the ONLY thing in flight?
+
+    True only when at least one RUNNING background task matches the CI-watch
+    shape and EVERY running background task does. One non-watch worker means
+    the session has real work delegated and is not merely sitting; no tasks
+    at all means there is nothing being waited on and the idle detector owns
+    that case. The description names the watches so the block can quote them.
+    """
+    names = []
+    for b in live_bg or []:
+        blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
+        if CI_WATCH_RE.search(blob):
+            names.append(
+                "%s: %s" % (b.get("id") or "?", (b.get("description") or b.get("command") or "")[:60])
+            )
+        else:
+            return False, ""
+    return bool(names), "; ".join(names)
+
+
 def ci_watch_armed(live_bg, rows, sha):
     """The id of a RUNNING background task watching THIS head, or "".
 

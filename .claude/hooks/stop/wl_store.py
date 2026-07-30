@@ -80,6 +80,19 @@ DEFER_WINDOW_MIN = int(os.environ.get("WORKLIST_DEFER_WINDOW_MIN", "120"))
 # bounded queue, not a wall.
 DEFER_EXEC_PER_STOP = int(os.environ.get("WORKLIST_DEFER_EXEC_PER_STOP", "3"))
 
+# v12 (operator, 2026-07-30): a [?] costs nothing to create and nothing to
+# hold, and 30+ of them sat 117 minutes untouched -- one requesting a feature
+# that had ALREADY been built. So a deferral must now EARN its seat: --defer
+# validates a WHY/HOW at creation, a deferral that has sat JUSTIFY_AGE_MIN
+# without one is demanded (bounded per stop, same drain shape as the expired
+# queue), and a justified one that has sat DEFER_AUDIT_MIN faces the judge's
+# audit (bounded batch, riding the existing judge call so a stop never pays
+# a second model invocation).
+JUSTIFY_AGE_MIN = int(os.environ.get("WORKLIST_JUSTIFY_AGE_MIN", "30"))
+JUSTIFY_PER_STOP = int(os.environ.get("WORKLIST_JUSTIFY_PER_STOP", "3"))
+DEFER_AUDIT_MIN = int(os.environ.get("WORKLIST_DEFER_AUDIT_MIN", "45"))
+DEFER_AUDIT_BATCH = int(os.environ.get("WORKLIST_DEFER_AUDIT_BATCH", "4"))
+
 
 # ---- paths ------------------------------------------------------------------
 
@@ -290,6 +303,13 @@ def _fold_events(events):
                 note = str(ev.get("note", "")).strip()
                 if note and note not in rec["text"]:
                     rec["text"] = (rec["text"] + "  " + note).strip()
+                # v12: --defer records its justification as a REAL field, so
+                # downstream consumers read data they wrote, not re-parsed
+                # prose. The text still carries the tokens (the note above),
+                # which is what survives compaction and the markdown inbox.
+                j = ev.get("j")
+                if isinstance(j, dict) and j:
+                    rec["just"] = j
             elif kind == "update":
                 pass  # the stamp bump below is the whole point
             elif kind == "lease":
@@ -425,12 +445,12 @@ def add_item(worklist, by, text, state=" ", owner=None):
     return rid
 
 
-def set_state(worklist, by, item_id, state, note=""):
-    append_events(
-        worklist,
-        [{"ev": "state", "id": item_id, "at": C.stamp_now(), "by": by,
-          "s": state, "note": note}],
-    )
+def set_state(worklist, by, item_id, state, note="", extra=None):
+    ev = {"ev": "state", "id": item_id, "at": C.stamp_now(), "by": by,
+          "s": state, "note": note}
+    if extra:
+        ev.update(extra)
+    append_events(worklist, [ev])
 
 
 def update_item(worklist, by, item_id, note):
@@ -453,6 +473,18 @@ def tomb_item(worklist, by, item_id, why):
         worklist,
         [{"ev": "tomb", "id": item_id, "at": C.stamp_now(), "by": by, "why": why}],
     )
+
+
+def deferral_justification(rec):
+    """The merged WHY/HOW/... record for a [?] item: the event's `j` field
+    where the CLI wrote one, overlaid on a token-parse of the text, which is
+    what a markdown-written deferral or a compacted log still carries. The
+    event field wins per key; the parse fills the gaps."""
+    parsed = C.parse_justification(rec.get("text", ""))
+    j = rec.get("just")
+    if isinstance(j, dict):
+        parsed.update({k: v for k, v in j.items() if isinstance(v, str) and v})
+    return parsed
 
 
 # ---- classification ---------------------------------------------------------

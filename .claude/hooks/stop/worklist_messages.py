@@ -187,7 +187,7 @@ THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per failure set
 (this is %d), then downgrades to a report for that set forever. To clear it now,
 push the fix, or name the failing job in your stop message, or -- if it is not
 yours to fix -- file
-    - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <what happens if nobody acts>"""
+    - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <what happens if nobody acts>  WHY: <why it is not yours>  HOW: <who or what resolves it>"""
 
 V_CI_UNREADABLE = (
     "THIS IS A HOOK BUG: the PR CI-status lookup failed (%s), so that check is "
@@ -344,6 +344,112 @@ GUIDE_TRUNCATED = (
     "for the full slice)"
 )
 
+# ---- v12: deferral justification, the audit, and the CI-waiting force -------
+
+V_UNJUSTIFIED = (
+    "%d deferred item(s) have sat %d+ minutes with NO justification on "
+    "record. A [?] that costs nothing to hold is an escape hatch: thirty "
+    "once piled up untouched, and one of them requested a feature that had "
+    "ALREADY been built. Each of these either gets done now or earns its "
+    "seat, this turn:\n%s\n%s"
+    "    do it:      .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'\n"
+    "    or justify: .claude/hooks/stop/worklist.py --defer %s <id> "
+    "'<question> DEFAULT: <action> WHY: <why this session cannot settle it> "
+    "HOW: <what concretely resolves it>'\n"
+    "    (the WHY is validated at creation and audited by the judge later, "
+    "so 'later' will not survive)"
+)
+
+V_CI_WAITING = (
+    "YOU ARE SITTING ON CI. Every running background task is a CI watch "
+    "(%s), so the only thing in flight is waiting for a pipeline, and "
+    "waiting is not work: %d deferred item(s) are actionable RIGHT NOW. The "
+    "watch wakes you when the run ends, so working the backlog costs the "
+    "wait nothing. \"The run is healthy, nothing to do\" is not an accepted "
+    "stop while these sit. Work them, oldest first, this turn:\n%s\n"
+    "Every one has an exit you complete alone: do it and tick it with "
+    "evidence, execute its DEFAULT early, or re-defer it with a WHY: naming "
+    "what CONCRETELY prevents doing it during this wait (validated, then "
+    "audited)."
+)
+
+V_DEFER_AUDIT = (
+    "THE DEFERRAL AUDIT REJECTED %d JUSTIFICATION(S). The judge read each "
+    "[?]'s WHY/HOW and found it expired, never valid, or answerable by this "
+    "session alone. Those items are REOPENED as [ ] and are ordinary open "
+    "work now:\n%s\n"
+    "Do each one and tick it with evidence. If the judge is factually wrong "
+    "about one, re-defer it with a WHY: carrying the fact that proves it; "
+    "the new justification is itself audited, so it must survive scrutiny:\n"
+    "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'"
+)
+
+N_DEFER_AUDIT_OK = (
+    "Deferral audit: %d justification(s) survived interrogation this stop "
+    "(banked; each is re-audited only if its item moves):\n%s"
+)
+
+R_AUDIT_MALFORMED = (
+    "A deferral audit was requested this stop and the judge's answer carried "
+    "no usable defer_audit array (%s). This is a judge error and it FAILS "
+    "CLOSED, same as an invalid verdict: an audit that cannot answer must not "
+    "become the way past it. Fix the judge path in %s, or set "
+    "WORKLIST_JUDGE=off and say so out loud."
+)
+
+CLI_DEFER_NO_JUSTIFICATION = (
+    "REFUSED: a [?] must carry its own justification. Append, in the same "
+    "line: 'WHY: <why THIS session cannot settle it right now>' and "
+    "'HOW: <the concrete action or evidence that would resolve it>' "
+    "(optionally TRIED: <what was attempted>, NEEDS: <the specific missing "
+    "thing>, BLOCKED_ON: <a person, external system, or run id>). A deferral "
+    "without a reason to sit is an escape hatch, and thirty of those once "
+    "buried the two that were real."
+)
+
+CLI_DEFER_VAGUE_WHY = (
+    "REFUSED: the WHY reads as avoidance (%r), not inability. 'I did not get "
+    "to it' means the item is OPEN work, not a decision for the operator: "
+    "leave it [ ] and do it. A valid WHY names what specifically prevents "
+    "this session settling it alone, in at least a sentence."
+)
+
+DEFER_AUDIT_PROMPT = """
+
+DEFERRAL AUDIT. ALSO fill the `defer_audit` array: exactly one entry per item
+below, using the same id. These are [?] deferrals this session parked on the
+operator, each with the justification it wrote for itself. Audit them as a
+HARD reviewer: the null hypothesis is that the session is avoiding work,
+because deferring costs nothing and holding a deferral costs nothing, and
+that is exactly how thirty of these once sat for two hours -- one of them
+requesting a feature that had ALREADY been built.
+
+Interrogate each record:
+  - WHY: is it a real inability, or a preference? Could the session settle
+    this ITSELF from the repo, the request, or a sensible default? "The
+    operator might want to choose" is not an inability.
+  - HOW: does it name a concrete resolving action or piece of evidence? If
+    the HOW is something the session could do right now, the deferral is
+    fake.
+  - Is the WHY still TRUE? A reason that has expired (the run finished, the
+    file landed, the answer is in the tree) is no reason.
+
+Verdict per item:
+  - "do_now": the session must do it this turn. Put the concrete first step
+    in `order`, imperative, addressed to the session. Use this whenever in
+    doubt.
+  - "valid": ONLY when the justification names something the session truly
+    cannot produce alone (an operator-only decision with real stakes, an
+    external system, a named person). Put what convinced you in `reason`,
+    and set `order` to an empty string.
+
+A "valid" verdict is banked and never re-asked while the item is untouched,
+so a soft pass silences this audit for that item: be harsh.
+
+Items under audit (%(n)d; each DEFAULT executes anyway at %(window)d min):
+%(items)s
+"""
+
 # ---- v10: autonomy window and the liveness ladder ---------------------------
 
 V_DEFER_EXPIRED = (
@@ -376,7 +482,8 @@ V_LADDER_RESOLVE = (
     "defer it to the operator as a [?] with a DEFAULT (always available, so "
     "this rung can never trap you):\n%s\n"
     "  What the OS could verify about your background workers:\n%s\n"
-    "    .claude/hooks/stop/worklist.py --defer %s <id> '<question> DEFAULT: <action>'"
+    "    .claude/hooks/stop/worklist.py --defer %s <id> '<question> DEFAULT: "
+    "<action> WHY: <why you cannot settle it> HOW: <what resolves it>'"
 )
 
 N_LADDER_PING = (
@@ -438,7 +545,7 @@ R_REGGATE_BLOCK = (
     "its own control cannot fire.\n"
     "  2. DEFER to the operator: append to the worklist\n"
     "     - [?] (%s) %s <should this be gated?> DEFAULT: <what you do if "
-    "unanswered>\n"
+    "unanswered> WHY: <why the call is not yours> HOW: <what settles it>\n"
     "     and the deferral machinery prints it to them every stop.\n"
     "  3. REBUT in your message: say why it is not applicable, already "
     "covered (name the REAL key), or a one-off; the judge re-reads your "
@@ -469,7 +576,8 @@ CLI_BODY_REFUSED = (
 CLI_ITEM_USAGE = (
     "usage: --add <my-prefix> <text...>\n"
     "       --tick <my-prefix> <id> <evidence...>   (a sha, run id, file:line, exit code or URL)\n"
-    "       --defer <my-prefix> <id> <question... DEFAULT: <action>>\n"
+    "       --defer <my-prefix> <id> <question... DEFAULT: <action> WHY: <why you cannot settle it> HOW: <what resolves it>>\n"
+    "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
     "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
     "       --update <my-prefix> <id> <what moved...>\n"
     "       --list"
@@ -625,8 +733,11 @@ inbox and is synced in, but the verbs are the first-class interface):
   --add <me> <text...>          track a new open item (prints its #id)
   --tick <me> <id> <evidence>   close it; the evidence (sha, run id,
                                 file:line, exit code, URL) is REQUIRED
-  --defer <me> <id> <q... DEFAULT: <action>>   hand it to the operator;
-                                the DEFAULT executes after the window
+  --defer <me> <id> <q... DEFAULT: <action> WHY: <reason> HOW: <resolution>>
+                                hand it to the operator; the WHY/HOW are
+                                validated now and audited later, and the
+                                DEFAULT executes after the window
+                                (optional: TRIED:, NEEDS:, BLOCKED_ON:)
   --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]   mark in-flight
                                 on a NAMED background worker
   --update <me> <id> <text...>  record progress (resets the liveness ladder)

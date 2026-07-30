@@ -61,10 +61,58 @@ JUDGE_SCHEMA = {
             ],
             "additionalProperties": False,
         },
+        # v12: OPTIONAL at the top level, same contract as regression_gate:
+        # one schema, and on a stop that REQUESTED an audit a missing or
+        # malformed array is a judge error that fails closed at the caller
+        # (apply_defer_audit + R_AUDIT_MALFORMED).
+        "defer_audit": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "maxLength": 16},
+                    "verdict": {"type": "string", "enum": ["valid", "do_now"]},
+                    "reason": {"type": "string", "maxLength": 200},
+                    "order": {"type": "string", "maxLength": 200},
+                },
+                "required": ["id", "verdict", "reason", "order"],
+                "additionalProperties": False,
+            },
+        },
     },
     "required": ["verdict", "reason", "next_action"],
     "additionalProperties": False,
 }
+
+
+def apply_defer_audit(rows, batch):
+    """(kind, valids, orders) from the judge's defer_audit answer.
+
+    kind is 'ok' or 'malformed'; valids is [(id, upd_stamp, reason)] to bank,
+    orders is [(id, order_text)] to enforce. STRICT by contract: every
+    audited item must come back with a usable verdict, and anything else --
+    no array, a non-dict entry, an invalid verdict, a batch id missing --
+    is 'malformed', which the caller turns into a fail-closed block. An id
+    the judge invented is ignored rather than acted on: reopening an item
+    nobody audited would let a hallucination edit the store.
+    """
+    if not isinstance(rows, list):
+        return "malformed", [], []
+    by_id = {}
+    for e in rows:
+        if not isinstance(e, dict) or e.get("verdict") not in ("valid", "do_now"):
+            return "malformed", [], []
+        by_id[str(e.get("id", ""))] = e
+    valids, orders = [], []
+    for rec in batch:
+        e = by_id.get(rec["id"])
+        if e is None:
+            return "malformed", [], []
+        if e["verdict"] == "valid":
+            valids.append((rec["id"], rec.get("upd", ""), str(e.get("reason", ""))))
+        else:
+            orders.append((rec["id"], str(e.get("order", "")) or str(e.get("reason", ""))))
+    return "ok", valids, orders
 
 
 def resolve_claude():
