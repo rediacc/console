@@ -489,3 +489,36 @@ The session's last message:
 Write `reason` and `next_action` as instructions addressed TO the session.
 Never use em dashes. Keep next_action concrete and small enough to do now.
 """
+
+
+# `--help` used to fall through to the Stop-hook path, where stdin is not JSON,
+# so asking this tool how to use it produced a BLOCK accusing the caller of a
+# hook bug. A tool whose help text is an error message teaches people to guess.
+USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
+
+Query:
+  --path                        print the worklist file path
+  --requests <me>               list cross-session requests addressed to you
+  --poll <me>                   inbox poll; prints NOTHING when empty (exit 0)
+
+Cross-session messaging:
+  --ask <me> <to> <text...>     ask another session (or 'all') a question
+  --answer <me> <id> <text...>  answer a request addressed to you
+  --decline <me> <id> <why...>  decline it, with a real reason
+  --ack <me> <id>               acknowledge without answering
+
+Session state:
+  --brief <me> <text...>        publish what you are changing right now
+  --handover <me>               write a compact-recovery handover (body on stdin)
+  --loop <me> <next> <count> <what...>   declare a scheduled loop
+
+Maintenance:
+  --compact                     fold resolved entries out of the worklist
+
+Item states in the file: `- [ ]` open, `- [x]` done, `- [?]` needs an operator
+decision, `- [>]` in-flight on background work (carries `until:<ISO8601>Z`).
+Tag every item you own with your 8-char session prefix, and APPEND with `>>`
+rather than rewriting the file: other sessions share it.
+
+With no arguments this runs as the Stop hook and expects a JSON event on stdin.
+"""

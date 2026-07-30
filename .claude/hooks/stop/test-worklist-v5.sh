@@ -1955,6 +1955,10 @@ ARITY = {
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
+    # Printed verbatim by `--help`; no interpolation, so None (skip the % check)
+    # rather than an arity. It still has to be REGISTERED, which is the point of
+    # the gap check below: a constant nobody mapped is a constant nobody rendered.
+    "USAGE": None,
     "V_HOOK_BLIND": ("p", "e", "f"), "V_NO_REMAINING": ("x",),
     "R_BLOCK": (1, "v", "f"), "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),

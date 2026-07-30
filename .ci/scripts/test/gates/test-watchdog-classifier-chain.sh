@@ -60,14 +60,24 @@ function jsonResponse(status, payload) {
     ok: status >= 200 && status < 300,
     status,
     json: async () => payload,
+    // A real Response exposes text(), and the non-2xx path reads it to report
+    // WHY a tier declined. A stub without text() makes that path log
+    // "(body unreadable)" and the assertion below vacuous, so it stays.
+    text: async () => JSON.stringify(payload),
   };
 }
+
+// Real provider error bodies, not {}. Both tiers went dark in production behind
+// a bare "HTTP 402" / "HTTP 400", and the whole point of reading the body is
+// that these two say completely different things about what to fix.
+const CF_402_BODY = { errors: [{ code: 10000, message: 'quota exceeded for account' }] };
+const CLAUDE_400_BODY = { type: 'error', error: { type: 'invalid_request_error', message: 'model: unknown model id' } };
 
 global.fetch = async (url) => {
   const u = String(url);
   if (u.includes('api.cloudflare.com')) {
     fetched.push('cloudflare');
-    if (cfMode === 'http402') return jsonResponse(402, {});
+    if (cfMode === 'http402') return jsonResponse(402, CF_402_BODY);
     if (cfMode === 'offcontract') {
       // Parses as JSON but violates the verdict contract: an unknown
       // classification. Must count as NO ANSWER, not as a weak answer.
@@ -79,7 +89,7 @@ global.fetch = async (url) => {
   }
   if (u.includes('api.anthropic.com')) {
     fetched.push('anthropic');
-    if (claudeMode === 'http402') return jsonResponse(402, {});
+    if (claudeMode === 'http402') return jsonResponse(400, CLAUDE_400_BODY);
     return jsonResponse(200, {
       content: [{ type: 'text', text: '{"classification":"code-change","confidence":0.93,"reason":"claude said so"}' }],
     });
@@ -153,6 +163,21 @@ run_chain() {
         WATCHDOG_INSTALL_VALIDATION_PATTERNS='Validate Install Methods / Linux' \
         WATCHDOG_DEADLINE_SECONDS=480 \
         node "$WORK/harness.cjs" "$WATCHDOG" "$cf" "$claude" 2>/dev/null | tail -1)
+}
+
+# Same run, but the WHOLE stdout instead of the last line. run_chain's `tail -1`
+# keeps only the FETCHED= trace, which is right for the ordering assertions and
+# useless for anything the chain reports on its way there.
+run_chain_full() {
+    local cf="$1" claude="$2"
+    (cd "$REPO_ROOT" && env CLOUDFLARE_API_TOKEN=t CLOUDFLARE_ACCOUNT_ID=a \
+        ANTHROPIC_API_KEY= CLAUDE_CODE_OAUTH_TOKEN=oauth-tok \
+        WATCHDOG_EXCLUDE_PATTERNS='Watchdog,CI Complete' \
+        WATCHDOG_NO_RETRY_PATTERNS='Quality,Review Gate' \
+        WATCHDOG_RETRY_ALLOWLIST_PATTERNS='E2E,OPS,Fork Isolation' \
+        WATCHDOG_INSTALL_VALIDATION_PATTERNS='Validate Install Methods / Linux' \
+        WATCHDOG_DEADLINE_SECONDS=480 \
+        node "$WORK/harness.cjs" "$WATCHDOG" "$cf" "$claude" 2>&1)
 }
 
 # ---------------------------------------------------------------------------
@@ -242,6 +267,31 @@ test_provider_order_is_declared_not_incidental() {
     log_pass "the provider order is declared explicitly, cheapest capable first"
 }
 
+test_declining_tier_reports_why_not_just_the_status() {
+    # REGRESSION. Both tiers went dark in production simultaneously and the run
+    # log said only "HTTP 402" and "HTTP 400". Those are different problems with
+    # different fixes (a quota versus a malformed request), and neither status
+    # alone says which. Worse, "both tiers declined" is indistinguishable from
+    # "both tiers are unconfigured" when the reason is missing, so the chain
+    # looks absent rather than broken and nobody goes looking.
+    local out
+    out="$(run_chain_full http402 http402)"
+
+    assert_contains "$out" "quota exceeded for account" \
+        "a declining tier 1 reports the provider's own explanation, not just 402"
+    assert_contains "$out" "invalid_request_error" \
+        "a declining tier 2 reports the provider's own explanation, not just 400"
+
+    # The control. The assertions above pass trivially if the body is echoed
+    # from somewhere other than the error path, and they pass VACUOUSLY if
+    # errorBody() silently falls back. Pin that neither happened.
+    assert_not_contains "$out" "(body unreadable)" \
+        "the response body is actually read, not swallowed by errorBody's catch"
+    assert_not_contains "$out" "(empty body)" \
+        "the stubbed error bodies are non-empty, so a fallback here means the read path is wrong"
+    log_pass "a tier that declines says WHY, so a dark chain is diagnosable from the run log"
+}
+
 log_test "test-watchdog-classifier-chain"
 
 test_prompt_file_exists
@@ -252,5 +302,6 @@ test_both_tiers_down_reaches_the_allowlist
 test_absent_credentials_skip_a_tier_without_breaking
 test_tier1_absent_still_reaches_tier2
 test_provider_order_is_declared_not_incidental
+test_declining_tier_reports_why_not_just_the_status
 
 log_pass "all tests passed"

@@ -474,6 +474,22 @@ const monitor = async ({ github, context, core }) => {
   const AI_TIMEOUT = 25000; // 25 seconds
   const AI_MAX_TOKENS = 1024;
 
+  // A non-2xx from either provider used to log the STATUS ONLY, which is how the
+  // classifier chain went fully dark without anyone noticing what was wrong:
+  // "HTTP 402" and "HTTP 400" say a request failed, not why, and both tiers
+  // failing is indistinguishable from both tiers being absent. The body is where
+  // the API names the cause (a wrong model id, a quota, a missing beta header),
+  // and every one of those is a different fix. Truncated because a provider error
+  // page can be an entire HTML document, and this lands in a public run log.
+  async function errorBody(response) {
+    try {
+      const text = (await response.text()).trim().replace(/\s+/g, ' ');
+      return text ? text.slice(0, 300) : '(empty body)';
+    } catch {
+      return '(body unreadable)';
+    }
+  }
+
   // A completed job's log never changes, so a deferred job re-examined on the
   // next poll costs no extra API call.
   const logTails = new Map();
@@ -619,7 +635,7 @@ const monitor = async ({ github, context, core }) => {
       });
       clearTimeout(timeout);
       if (!response.ok) {
-        console.log(`[AI] Cloudflare classifier returned HTTP ${response.status}`);
+        console.log(`[AI] Cloudflare classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
         return null;
       }
       const data = await response.json();
@@ -686,7 +702,7 @@ const monitor = async ({ github, context, core }) => {
       });
       clearTimeout(timeout);
       if (!response.ok) {
-        console.log(`[AI] Claude classifier returned HTTP ${response.status}`);
+        console.log(`[AI] Claude classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
         return null;
       }
       const data = await response.json();
