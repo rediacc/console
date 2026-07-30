@@ -214,6 +214,86 @@ def git_branch(root):
     return AGENT_BRANCH_RE.sub("-", (b or "").strip()).strip("-.")
 
 
+def _cron_field(spec, lo, hi):
+    """The sorted set of matching values for one cron field, or None on any
+    shape this parser does not understand (the caller treats None as
+    unparseable and skips the cron rather than guessing)."""
+    vals = set()
+    for part in spec.split(","):
+        part = part.strip()
+        step = 1
+        if "/" in part:
+            part, _, s = part.partition("/")
+            if not s.isdigit() or int(s) < 1:
+                return None
+            step = int(s)
+        if part == "*":
+            a, b = lo, hi
+        elif "-" in part:
+            a, _, b = part.partition("-")
+            if not (a.isdigit() and b.isdigit()):
+                return None
+            a, b = int(a), int(b)
+        elif part.isdigit():
+            a = b = int(part)
+        else:
+            return None
+        if a < lo or b > hi or a > b:
+            return None
+        vals.update(range(a, b + 1, step))
+    return sorted(vals)
+
+
+def cron_next(schedule, now=None):
+    """The next fire time (UTC datetime) of a 5-field cron expression after
+    `now`, or None when the expression is unparseable or never fires within
+    60 days.
+
+    WHY THIS EXISTS (operator, 2026-07-30): the Stop event's `session_crons`
+    carries the FULL expansion of every scheduled task -- id, schedule, and
+    the exact prompt that will fire -- but the hook was ignoring it and
+    reporting the loop from a hand-declared sidecar that goes stale. The
+    truthful answer to "when does work resume, and what happens then?" is
+    computable from the event; this is the computing half.
+
+    Standard cron semantics including the one everyone forgets: when BOTH
+    day-of-month and day-of-week are restricted, the entry fires when EITHER
+    matches. dow accepts 0-7 with both 0 and 7 meaning Sunday. Python's
+    weekday() has Monday=0, cron has Sunday=0; the +1 %% 7 below is that
+    conversion, worth naming because it reads like an off-by-one.
+    """
+    fields = (schedule or "").split()
+    if len(fields) != 5:
+        return None
+    mins = _cron_field(fields[0], 0, 59)
+    hours = _cron_field(fields[1], 0, 23)
+    doms = _cron_field(fields[2], 1, 31)
+    months = _cron_field(fields[3], 1, 12)
+    dows = _cron_field(fields[4], 0, 7)
+    if None in (mins, hours, doms, months, dows):
+        return None
+    dows = sorted({d % 7 for d in dows})  # 7 == 0 == Sunday
+    dom_star = fields[2] == "*"
+    dow_star = fields[4] == "*"
+    now = now or utcnow()
+    day = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    for _ in range(60):
+        if day.month in months:
+            dom_hit = day.day in doms
+            dow_hit = ((day.weekday() + 1) % 7) in dows
+            # Both restricted -> OR; otherwise the starred one is vacuous.
+            day_ok = (dom_hit or dow_hit) if (not dom_star and not dow_star) \
+                else (dom_hit if not dom_star else dow_hit if not dow_star else True)
+            if day_ok:
+                for h in hours:
+                    for m in mins:
+                        cand = day.replace(hour=h, minute=m)
+                        if cand > now:
+                            return cand
+        day += datetime.timedelta(days=1)
+    return None
+
+
 def tasks_dir(session_id):
     home = os.environ.get("WORKLIST_TASKS_DIR") or os.path.join(
         os.path.expanduser("~"), ".claude", "tasks"
