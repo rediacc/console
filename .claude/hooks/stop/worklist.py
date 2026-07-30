@@ -1907,6 +1907,45 @@ def pollbase_path(worklist, session_id):
     return worklist.with_suffix(".pollbase-%s" % (session_id or "unknown")[:8])
 
 
+def bank_pollbase(worklist, session_id, event):
+    """Record the world as the poll fast path's baseline.
+
+    OPERATOR DECISION, 2026-07-30, overriding the original v9 rule that only an
+    ALLOWED stop may bank. The original rule deadlocked in practice: a session
+    with any open task blocks on the Remaining check, a blocked stop never
+    reached the write, and with no baseline every five-minute poll paid the full
+    battery -- while each of those polls was itself another stop that moved
+    nothing, feeding the stuck detector. Measured on this session: pollbase was
+    never created once across an entire night.
+
+    Banking on a blocked stop is deliberately NOT an escape hatch, because the
+    baseline is only half the fast path. poll_fast_path still recomputes every
+    other condition from artifacts (single-use marker, horizon, unchanged world
+    signature, cron shape, no open or undefaulted or expired-lease items, empty
+    inbox). What banking buys is only this: a poll that changes nothing can
+    recognise that nothing changed. The moment real work lands, the signature
+    moves and the battery returns on its own.
+    """
+    try:
+        pollbase_path(worklist, session_id).write_text(
+            json.dumps(
+                {
+                    "sig": world_sig(
+                        project_root(event.get("cwd") or os.getcwd()),
+                        worklist,
+                        session_id,
+                    ),
+                    "at": datetime.datetime.now(datetime.timezone.utc).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    ),
+                }
+            ),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+
 def world_sig(root, worklist, session_id):
     """Coarse world signature: task statuses + HEAD + worklist bytes +
     requests bytes. Deliberately the same altitude as the stuck detector's
@@ -2790,6 +2829,9 @@ def main():
 
     if violations:
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
+        # Bank BEFORE emitting, because emit() exits the process (see :406) and
+        # this is the path a busy session actually takes. See bank_pollbase.
+        bank_pollbase(worklist, session_id, event)
         emit(
             {
                 "systemMessage": "Stop hook: %d check(s) failed, continuing. %s%s"
@@ -2910,28 +2952,11 @@ def main():
 
     if True:
         counter.unlink(missing_ok=True)
-        # v9: an ALLOWED full-battery stop is the poll fast path's baseline.
-        # Written ONLY here: a blocked stop proves nothing, and a fast-path
-        # stop must not extend its own horizon (that bound is what keeps the
-        # silent path from becoming a way to live on polls alone).
-        try:
-            pollbase_path(worklist, session_id).write_text(
-                json.dumps(
-                    {
-                        "sig": world_sig(
-                            project_root(event.get("cwd") or os.getcwd()),
-                            worklist,
-                            session_id,
-                        ),
-                        "at": datetime.datetime.now(datetime.timezone.utc).strftime(
-                            "%Y-%m-%dT%H:%M:%SZ"
-                        ),
-                    }
-                ),
-                encoding="utf-8",
-            )
-        except OSError:
-            pass
+        # An allowed stop banks the baseline too. A fast-path stop still must
+        # not extend its own horizon: that bound is what stops the silent path
+        # becoming a way to live on polls alone, and it survives this change
+        # because poll_fast_path returns before reaching here.
+        bank_pollbase(worklist, session_id, event)
         parts = []
         if judged_ok:
             # Never let a paid model call be invisible. A gate that spends money
