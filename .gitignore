@@ -136,3 +136,9 @@ audit-report.json
 
 # i18n naturalization-ledger flock sidecar (private/growth/i18n_pipeline ledger.update)
 packages/www/src/i18n/translations/*.lock
+
+# Agent working notes: per-branch state, shared trap log, archives.
+# Gitignored on purpose. These are working notes, not documentation: they must
+# never land in a PR diff, never be policed by the CI gates, and never become a
+# committed lie the way docs/ci-overhaul/ did when it drifted 44 commits behind.
+.agent/
