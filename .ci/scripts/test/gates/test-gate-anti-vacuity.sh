@@ -61,6 +61,18 @@ REGISTRY=(
     # which is precisely the false signal the REGISTRY POLICY above warns about.
     # Its missing-manifest behaviour is proven in test-breakpoint-portability.sh
     # instead, where an isolated copy of the folder genuinely exists.
+    # NOT registered here either: .ci/scripts/quality/check-autopilot-no-bypass.sh.
+    # Its sibling check-autopilot-workflow-invariants.sh IS registered below, and
+    # the asymmetry is deliberate rather than an oversight. That one reads the
+    # workflow tree, so an empty fixture makes it vacuous and it must say so.
+    # This one never touches the tree at all: it is three `gh api` calls against
+    # the live ruleset (:52, :71). An empty-tree run would exit non-zero on the
+    # absent AUTOPILOT_APP_ID, which is an ENVIRONMENT failure wearing a vacuity
+    # failure's exit code, and pinning it would assert nothing about the gate.
+    # Verified live instead, 2026-07-30: with AUTOPILOT_APP_ID=4409539 it exits 0
+    # and reports ruleset 12344707 bypass actors [RepositoryRole:5,
+    # Integration:2772000] with autopilot absent, which is the property it exists
+    # to defend.
     # The harness fixture copies scripts/ and .ci/scripts/ but nothing that
     # REFERENCES them (no workflows, no docs, no allowlist), so the gate must
     # report the resulting orphans loudly rather than pass. The "ZERO shell
