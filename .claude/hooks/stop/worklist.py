@@ -170,6 +170,13 @@ def _item_cli(argv, worklist):
     mode = argv[0]
     if mode == "--list":
         fold = S.load(worklist, sync=True)
+        if argv[1:2] == ["--open"]:
+            # The same actionable slice the Stop hook emits (v11), so a human
+            # and the hook are never looking at different views. An optional
+            # prefix scopes ownership and binds the printed verbs.
+            me = argv[2] if len(argv) > 2 else ""
+            print(CK.guided_slice(fold, me or None, None, me or None))
+            return
         for rec in fold.items:
             age = C.stamp_age_min(rec.get("first", ""))
             upd = C.stamp_age_min(rec.get("upd", ""))

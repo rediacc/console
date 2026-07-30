@@ -460,6 +460,83 @@ def poll_fast_path(worklist, session_id, event):
     return True
 
 
+# ---- v11: the store-derived stop guide --------------------------------------
+# WHY (operator, 2026-07-30): "--list should be used always on stop hook to
+# output enforced guided instructions." The defect this fixes is structural:
+# v10 stamped every item and the hand-authored Remaining prose never read the
+# store, so the tracing existed and the report ignored it. The guide is
+# emitted on EVERY full stop, allow and block alike, so the session bases its
+# report on the store instead of memory.
+#
+# BOUNDED HARD, because the live store folds 831 items (550 KB as a raw
+# --list) and this hook fires from a 5-minute poll cron: only the ACTIONABLE
+# slice is emitted (open, in-flight, deferrals and expired leases -- never
+# [x]), at most GUIDE_MAX lines, each capped, and a cap that drops anything
+# SAYS SO with the count, because a silent cap reads as "that is everything".
+
+GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
+GUIDE_TEXT_CHARS = 90
+
+
+def guided_slice(fold, session_id, verdicts=None, me=None):
+    """The bounded, guided, store-derived instruction block.
+
+    One line per actionable item: state, #id, age from the store's own
+    stamps, the capped text, and the EXACT verb that moves it -- an open
+    item gets --tick, a live lease gets --update, an undefaulted [?] gets
+    --defer, an expired-window [?] gets its default-execution order. Sorted
+    by priority (obligations first) so truncation drops the least urgent.
+    `verdicts` (from wl_liveness.verify_background) annotates lease workers
+    when the caller has an event to verify against; the CLI does not.
+    """
+    me_arg = (me or "<me>")[:8] if me else "<me>"
+    verdicts = verdicts or {}
+    rows = []  # (priority, line)
+    for rec in fold.items:
+        if session_id and not C.owned_by_me(rec["owner"], session_id):
+            continue
+        st = rec["state"]
+        if st == "x":
+            continue
+        txt = rec["text"][:GUIDE_TEXT_CHARS]
+        upd = C.stamp_age_min(rec.get("upd", ""))
+        age = "?" if upd is None else "%dm" % upd
+        rid = rec["id"]
+        if st == " ":
+            rows.append((0, "  - [ ] #%s (upd %s) %s\n        NEXT: do it, then --tick %s %s '<evidence>'"
+                         % (rid, age, txt, me_arg, rid)))
+        elif st == ">":
+            wm = C.WORKER.search(rec["line"])
+            wid = rec.get("worker") or (wm.group(1) if wm else "")
+            if C.lease_state(rec["line"]) == "fresh":
+                osw = verdicts.get(wid, "")
+                wtag = "worker:%s%s" % (wid or "?", " [%s]" % osw if osw else "")
+                rows.append((3, "  - [>] #%s (quiet %s, %s) %s\n        NEXT: --update %s %s '<one line of what moved>'"
+                             % (rid, age, wtag, txt, me_arg, rid)))
+            else:
+                rows.append((0, "  - [>] #%s LEASE DEAD (quiet %s) %s\n        NEXT: finish it and --tick %s %s '<evidence>', or re-lease: --lease %s %s +60 worker:<bg-id>"
+                             % (rid, age, txt, me_arg, rid, me_arg, rid)))
+        elif st == "?":
+            if not C.DEFAULT_TOKEN.search(rec["line"]):
+                rows.append((2, "  - [?] #%s (age %s, NO DEFAULT) %s\n        NEXT: --defer %s %s '<question> DEFAULT: <action>'"
+                             % (rid, age, txt, me_arg, rid)))
+            elif upd is not None and upd >= S.DEFER_WINDOW_MIN:
+                rows.append((1, "  - [?] #%s WINDOW CLOSED (waited %s) %s\n        NEXT: execute its DEFAULT now, then --tick %s %s '<evidence>'"
+                             % (rid, age, txt, me_arg, rid)))
+            else:
+                left = "?" if upd is None else "%dm" % max(0, S.DEFER_WINDOW_MIN - upd)
+                rows.append((4, "  - [?] #%s (age %s) %s\n        operator may answer; its DEFAULT executes in %s"
+                             % (rid, age, txt, left)))
+    if not rows:
+        return M.GUIDE_EMPTY
+    rows.sort(key=lambda r: r[0])
+    shown = rows[:GUIDE_MAX]
+    out = [M.GUIDE_HEADER] + [line for _p, line in shown]
+    if len(rows) > len(shown):
+        out.append(M.GUIDE_TRUNCATED % (len(rows) - len(shown), GUIDE_MAX))
+    return "\n".join(out)
+
+
 # ---- SessionStart / PostCompact ---------------------------------------------
 
 def handle_session_start(event):
@@ -723,15 +800,25 @@ def run_stop(event, event_ok, worklist, hook_file):
     # or allowed: the poll-baseline lesson), and the state doc is saved before
     # any emit below.
     ladder_pings, ladder_inv, ladder_res = [], [], []
-    worker_rows = []
+    worker_rows, worker_verdicts = [], {}
     try:
-        worker_rows, _verdicts = wl_liveness.worker_facts(event, session_id)
+        worker_rows, worker_verdicts = wl_liveness.worker_facts(event, session_id)
         ladder_pings, ladder_inv, ladder_res, _lchanged = wl_liveness.ladder(
             fold, session_id, event, state_doc
         )
     except Exception:  # noqa: BLE001 -- liveness must never break gating
         ladder_pings, ladder_inv, ladder_res = [], [], []
     S.save_state(worklist, session_id, state_doc)
+
+    # ---- v11: the store-derived guide, present on EVERY full stop (allow
+    # and block alike), so the session reports from the store, not memory.
+    # Never breaks gating, and a broken guide SAYS SO rather than vanishing.
+    try:
+        guide = guided_slice(fold, session_id, worker_verdicts, me8)
+    except Exception as exc:  # noqa: BLE001
+        guide = "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s" % (
+            str(exc)[:160]
+        )
 
     violations = []
     if stuck_fired and something_remains:
@@ -1164,7 +1251,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # that blocks for some unrelated reason.
                 "reason": M.R_BLOCK
                 % (len(violations), "\n\n".join("  " + v for v in violations), hook_file)
-                + ("\n\n" + ci_report if ci_report else ""),
+                + ("\n\n" + ci_report if ci_report else "")
+                + "\n\n" + guide,
             }
         )
 
@@ -1211,7 +1299,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "systemMessage": "Stop hook: judge unavailable (%s). Blocking, per "
                     "no-escape-hatch." % err[:110],
                     "decision": "block",
-                    "reason": M.R_JUDGE_UNAVAILABLE % (err, hook_file, wl_judge.JUDGE_MODEL),
+                    "reason": M.R_JUDGE_UNAVAILABLE % (err, hook_file, wl_judge.JUDGE_MODEL)
+                    + "\n\n" + guide,
                 }
             )
         # v7: the regression verdict is processed BEFORE the stop/continue
@@ -1231,7 +1320,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "returned no usable regression_gate. Blocking, per "
                         "no-escape-hatch.",
                         "decision": "block",
-                        "reason": M.R_REGGATE_MALFORMED % (payload, hook_file),
+                        "reason": M.R_REGGATE_MALFORMED % (payload, hook_file)
+                        + "\n\n" + guide,
                     }
                 )
             if kind == "settle":
@@ -1255,7 +1345,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "systemMessage": "Stop hook: a fix landed with no "
                         "regression gate (fix-set %s). Blocking." % reg_sig[:8],
                         "decision": "block",
-                        "reason": payload,
+                        "reason": payload + "\n\n" + guide,
                     }
                 )
         judged_ok = verdict["verdict"] == "stop"
@@ -1271,7 +1361,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                         verdict["reason"],
                         verdict["next_action"],
                         "\n".join("  " + r for r in remaining_lines[:12]),
-                    ),
+                    )
+                    + "\n\n" + guide,
                 }
             )
         if judged_ok and not judge_cached and not reg_signals:
@@ -1284,7 +1375,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # becoming a way to live on polls alone, and it survives this change
     # because poll_fast_path exits before reaching here.
     bank_pollbase(worklist, session_id, cur_sig)
-    parts = []
+    # The guide LEADS the allow report: it is the thing the session copies
+    # into its Remaining section, so it comes before everything else.
+    parts = [guide]
     if judged_ok:
         # Never let a paid model call be invisible. A gate that spends money
         # without saying so is indistinguishable from one that is not running.

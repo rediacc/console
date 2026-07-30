@@ -319,6 +319,31 @@ V_NO_REMAINING = (
     "'## Remaining' section listing what is left and who it is blocked on:\n%s"
 )
 
+# ---- v11: the store-derived stop guide --------------------------------------
+# WHY (operator, 2026-07-30): "--list should be used always on stop hook to
+# output enforced guided instructions." The v10 store stamped every item and
+# the hand-authored Remaining prose ignored all of it, so the report is now
+# derived from the store on EVERY stop, allow and block alike. The per-line
+# bodies are assembled in wl_checks.guided_slice (structural, one format per
+# item state); these three carry the surrounding prose.
+
+GUIDE_HEADER = (
+    "WORKLIST GUIDE (derived from the store, not from memory; base your "
+    "Remaining section on THIS):"
+)
+
+GUIDE_EMPTY = (
+    "WORKLIST GUIDE: no actionable items in the store (nothing open, "
+    "in flight, or awaiting a default). Harness tasks, if any, are tracked "
+    "separately above."
+)
+
+GUIDE_TRUNCATED = (
+    "  (+%d more actionable item(s) HELD BACK by the %d-line cap; this list "
+    "is NOT everything: run  .claude/hooks/stop/worklist.py --list --open  "
+    "for the full slice)"
+)
+
 # ---- v10: autonomy window and the liveness ladder ---------------------------
 
 V_DEFER_EXPIRED = (
@@ -606,6 +631,8 @@ inbox and is synced in, but the verbs are the first-class interface):
                                 on a NAMED background worker
   --update <me> <id> <text...>  record progress (resets the liveness ladder)
   --list                        render every item with ids and ages
+  --list --open [<me>]          only the ACTIONABLE slice, with the exact
+                                verb per item (what the Stop hook emits)
 
 Query:
   --path                        print the worklist file path
