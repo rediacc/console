@@ -117,6 +117,26 @@ async function loadManifest(): Promise<VideoManifest> {
  */
 const FLAT_TIMING_EXEMPT = new Set(['et']);
 
+/**
+ * Share of a file's cues that may be estimated before it FAILS.
+ *
+ * Zero was the right threshold when the only cause of a flat cue was "audio generated
+ * without --subtitle", which makes EVERY cue flat. It is the wrong threshold now that a
+ * second, partial cause exists: vtt-emit discards real alignment per-cue when coverage
+ * falls under MIN_WORD_TIMING_COVERAGE (0.5), which happens far more in ar/ru/zh because
+ * the aligner maps by character overlap and those scripts map fewer words per character.
+ *
+ * MEASURED to pick this number rather than guessed. Across the published fleet the worst
+ * partial-coverage file is 12.2% flat (ru/tutorial-work-with-repo, 5 of 41) and the median
+ * is 4.2%. A wholly unaligned file — the defect this gate exists for — is ~100%. 0.25
+ * therefore sits 2x above the worst real case and 4x below the failure it must catch.
+ *
+ * Cues under budget are still REPORTED, just not fatal: losing the signal entirely is how
+ * a slow slide from 4% to 40% would go unnoticed. Raise this only with a fresh measurement;
+ * the honest fix is to improve _reconcile_words' mapping so coverage clears 0.5 at all.
+ */
+const MAX_FLAT_CUE_SHARE = 0.25;
+
 function collectTargets(manifest: VideoManifest): Target[] {
   const targets: Target[] = [];
   for (const [slug, byLang] of Object.entries(manifest.tutorials)) {
@@ -151,7 +171,10 @@ async function runPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
 // Isolated short flat cues whose neighbors vary are real alignment.
 const DEFINITE_FLAT_WORDS = 6;
 
-function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatCue[] {
+/** `flat` are the fatal-candidate cues; `totalCues` is the denominator for the budget. */
+type FlatResult = { flat: FlatCue[]; totalCues: number };
+
+function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatResult {
   // NOTE: no special <=1-word rule for CJK. Slide/intro/outro cues carry a
   // single word entry spanning the cue BY DESIGN in every language (see
   // CueGroup in vtt-emit.ts), which is indistinguishable from the old
@@ -175,10 +198,10 @@ function findFlatCues(slug: string, lang: string, doc: WordsDoc): FlatCue[] {
       flat.push({ slug, lang, cueIndex: i, text: doc.cues[i].text });
     }
   });
-  return flat;
+  return { flat, totalCues: doc.cues.length };
 }
 
-async function checkTarget(target: Target): Promise<FlatCue[] | { error: string }> {
+async function checkTarget(target: Target): Promise<FlatResult | { error: string }> {
   // 180 single-attempt remote fetches make the gate flaky by construction
   // (one transient reset = red run). Retry network errors and 5xx with
   // backoff; 4xx is a deterministic missing/misplaced asset — fail fast.
@@ -233,15 +256,24 @@ async function main(): Promise<number> {
 
   const errors: string[] = [];
   const flatByTutorial = new Map<string, FlatCue[]>();
+  const underBudget: string[] = [];
   results.forEach((result, i) => {
     const target = targets[i];
     if ('error' in result) {
       errors.push(`${target.slug} [${target.lang}]: fetch failed (${result.error})`);
       return;
     }
-    if (result.length > 0) {
+    if (result.flat.length > 0) {
       const key = `${target.slug}\t${target.lang}`;
-      flatByTutorial.set(key, result);
+      const share = result.flat.length / Math.max(1, result.totalCues);
+      if (share > MAX_FLAT_CUE_SHARE) {
+        flatByTutorial.set(key, result.flat);
+      } else {
+        underBudget.push(
+          `${target.slug} [${target.lang}]: ${result.flat.length} of ${result.totalCues} cues ` +
+            `estimated (${(share * 100).toFixed(1)}%, budget ${MAX_FLAT_CUE_SHARE * 100}%)`
+        );
+      }
     }
   });
 
@@ -251,8 +283,16 @@ async function main(): Promise<number> {
   }
 
   if (flatByTutorial.size === 0 && errors.length === 0) {
+    if (underBudget.length > 0) {
+      console.log(
+        `\nNote: ${underBudget.length} file(s) carry some estimated cues, all under the ` +
+          `${MAX_FLAT_CUE_SHARE * 100}% budget. Cause is per-cue alignment coverage, not a ` +
+          `missing --subtitle run. Not fatal, but not nothing:\n`
+      );
+      for (const u of underBudget.sort()) console.log(`  ${u}`);
+    }
     console.log(
-      `✓ Caption sync OK: ${targets.length} combos checked, 0 flat/estimated timing found.`
+      `\n✓ Caption sync OK: ${targets.length} combos checked, none over the flat-cue budget.`
     );
     return 0;
   }
