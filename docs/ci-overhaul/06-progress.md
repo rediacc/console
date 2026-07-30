@@ -317,3 +317,53 @@ Two measured facts that constrain any future change:
 - `01-verified-context.md`: the nightly was red **12 of 12**, not four nights.
 - The plan's `generate-tag.sh` renet-input instruction is wrong; see above.
 - Wave C's App blocker is closed. The App exists and is validated.
+
+## The classifier chain is dark in production (A3 follow-up, 2026-07-30)
+
+A3 shipped the three-tier chain and the fail-closed allowlist. Live evidence from
+run `30509062386` (watchdog job `90767439738`, 03:04:40Z) is that **both AI tiers
+are declining and the chain is running on the safety net alone**:
+
+    [AI] Cloudflare classifier returned HTTP 402
+    [AI] Claude classifier returned HTTP 400
+
+402 on Cloudflare is quota. **400 on Anthropic is a malformed request, so it is
+most likely our bug rather than an outage** and is worth chasing. The A3 design
+behaved correctly here: it warned, fell back to the allowlist, and retried an
+allowlisted leg. But that means every allowlisted failure currently takes a blind
+retry, roughly 500 machine-minutes, with no classification behind it.
+
+Neither status was diagnosable, because both non-ok branches logged the status and
+threw the body away. Fixed in `6706399e2`: a shared `errorBody()` logs the
+provider's own explanation, truncated to 300 chars for a public run log. The
+classifier-chain test's stub gained `text()` (without it the new path logs
+`(body unreadable)` and any assertion is vacuous) plus real provider error bodies,
+and the new case pins both fallback strings as controls. Proven to fail with the
+fix reverted. **Root-cause the 400 once a live run prints it.**
+
+### The E2E flake this surfaced, still unfixed
+
+`E2E Workers (opensuse-16.0)` failed in 11 minutes against a ~44 minute normal
+duration, in Playwright global setup, before any test ran:
+
+    Error: failed to start RustFS: ssh command failed: exit status 125
+    docker: failed to copy: httpReadSeeker: ... read: connection reset by peer
+
+Docker Hub's CDN reset the same blob twice, 8 seconds apart, while the bridge VM
+pulled `rustfs/rustfs:latest`. The pull is an **unguarded single shot**:
+`private/renet/pkg/infra/docker/service.go:381-405` runs a bare `docker pull` with
+no retry, and `packages/e2e-tests/src/base/bridge-global-setup.ts:193-201` throws
+on the first failure. The image is not prepulled (`ct-tests.yml:235` covers only
+debian and ubuntu), so the VM pulls it anonymously and uncached every run. One
+reset kills the pipeline's slowest leg. Fix is a retry with backoff around the
+pull, or prepull on the runner and `docker save`/`load` into the VM. Deferred to
+a follow-up renet PR: the allowlist already retries this leg, so today it costs a
+retry rather than a red.
+
+### Tooling defect fixed in passing
+
+`gh run view --log-failed` is **run-scoped even when given `--job`**. It refuses
+while the run is in progress, exits 1, and writes the explanation to stderr, so a
+`2>/dev/null` capture looks like an empty log. Use
+`gh api repos/OWNER/REPO/actions/jobs/<id>/logs` for a completed job inside a live
+run. The watchdog already does exactly this.
