@@ -809,6 +809,421 @@ def pr_body_freshness(root):
     return "ok", ""
 
 
+# ---- v10: CI trouble on the open PR (operator request, 2026-07-30) ---------
+#
+# THE ASK: "if there is only one active session and if there is an open PR for
+# the current branch, then stop hook should check the PR green/red status and
+# give feedback to make it green ... if there is no gh cli watch in the
+# background."
+#
+# WHAT THIS IS NOT. It is deliberately NOT "block while conclusion != success".
+# That shape was tried in the head, against one night of real runs, and it nags
+# four times about nothing:
+#
+#   * CANCELLED IS NOT RED. Four runs that night ended `cancelled` with ZERO
+#     failed jobs, each superseded by this session's own next push. And the
+#     watchdog FORCE-CANCELS a run when a real gate fails, so `cancelled` also
+#     means "something genuinely failed". The run-level rollup cannot tell those
+#     apart, so nothing here ever reads it as a verdict: every judgement comes
+#     from PER-JOB conclusions (run 30514648812 was `cancelled` with
+#     `Quality / Static` = failure; run 30513152662 was `cancelled` with none).
+#   * A RUN THAT IS STILL GROWING IS NOT FINAL. Job count climbed 18 -> 37 -> 79
+#     -> 92 -> 95 inside one run. So nothing here ever concludes GREEN from a
+#     partial list. It only ever speaks about jobs that have ALREADY COMPLETED
+#     with a failing conclusion, which is a fact no later job can retract.
+#   * THE WATCHDOG MAY ALREADY BE FIXING IT. Jobs matching
+#     WATCHDOG_RETRY_ALLOWLIST_PATTERNS (.github/workflows/watchdog-monitor.yml)
+#     are auto-retried onto the SAME run as a later attempt. Telling the session
+#     to investigate a leg that is about to be rerun burns a whole round; that
+#     night an opensuse E2E leg failed on a Docker Hub CDN reset, was retried,
+#     and the run went green at 95 jobs. Those failures are REPORTED, never
+#     blocked on, until the run is final and they are still red.
+#
+# The output is a HANDOVER OF FACTS, in the shape submodule_pointer_moves() uses:
+# the failing job, its failing STEP, its run and attempt, and the exact command
+# that reads its log. "CI is red" alone is noise; a session cannot brief a
+# sub-agent with it.
+CI_RETRY_PATTERNS = [
+    p.strip()
+    for p in os.environ.get(
+        "WORKLIST_CI_RETRY_PATTERNS", "E2E,OPS,Fork Isolation,Migration Test"
+    ).split(",")
+    if p.strip()
+]
+# PER-JOB conclusions that mean "this genuinely failed". CANCELLED, SKIPPED,
+# NEUTRAL and STALE are deliberately absent: see the CANCELLED note above.
+CI_FAIL_CONCLUSIONS = {"FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "ACTION_REQUIRED"}
+CI_LIVE_ROLLUP = {"PENDING", "EXPECTED"}
+# Cost control (this hook runs on EVERY stop, including a 5-minute poll cron).
+# Keyed on the published tip SHA, so any push invalidates it immediately.
+CI_CACHE_LIVE_S = int(os.environ.get("WORKLIST_CI_CACHE_LIVE_S", "180"))
+CI_CACHE_FINAL_S = int(os.environ.get("WORKLIST_CI_CACHE_FINAL_S", "900"))
+# THE DEADLOCK CEILING. See ci_trouble()'s docstring.
+CI_MAX_BLOCKS = int(os.environ.get("WORKLIST_CI_MAX_BLOCKS", "2"))
+CI_MAX_PAGES = 3
+CI_STEP_LOOKUPS = 2
+
+
+def repo_slug(root):
+    """(owner, name) from remote.origin.url, or (None, None)."""
+    url = _git(root, "config", "--get", "remote.origin.url")
+    m = re.search(r"[:/]([^/:]+)/([^/]+?)(?:\.git)?$", url or "")
+    return (m.group(1), m.group(2)) if m else (None, None)
+
+
+def _gh_json(root, args, timeout=25):
+    """(data, error) from `gh <args>`. Never raises; an error is a STRING, so
+    every caller can report blindness instead of guessing."""
+    try:
+        out = subprocess.run(
+            ["gh", *args], capture_output=True, text=True, timeout=timeout, cwd=str(root)
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, str(exc)[:160]
+    if out.returncode != 0:
+        return None, (out.stderr or out.stdout or "gh exited %d" % out.returncode)[-160:]
+    try:
+        data = json.loads(out.stdout)
+    except ValueError:
+        return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), out.stdout[:80])
+    # GraphQL reports field errors with exit 0 and an `errors` array.
+    if isinstance(data, dict) and data.get("errors") and not (data.get("data") or {}).get(
+        "repository"
+    ):
+        return None, json.dumps(data["errors"])[:160]
+    return data, ""
+
+
+def ci_query(owner, name, ref, cursor):
+    """The ONE read. statusCheckRollup rather than checkSuites.checkRuns on
+    purpose: the rollup exposes the LATEST check run per context, so a watchdog
+    rerun replaces the failed attempt rather than appearing beside it. That is
+    what makes a rerun-in-flight read as IN_PROGRESS here, and this check go
+    quiet by itself while the watchdog works."""
+    after = ',after:"%s"' % cursor if cursor else ""
+    return (
+        '{repository(owner:"%s",name:"%s"){pullRequests(headRefName:"%s",states:OPEN,first:1)'
+        "{nodes{number url commits(last:1){nodes{commit{oid statusCheckRollup{state "
+        "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename "
+        "... on CheckRun{name status conclusion databaseId detailsUrl "
+        "checkSuite{workflowRun{databaseId}}} "
+        "... on StatusContext{context state targetUrl}}}}}}}}}}}"
+    ) % (owner, name, ref, after)
+
+
+def ci_rollup(root, ref):
+    """(state, info) -- one paged read of the open PR's check rollup.
+
+    state is ok | no-pr | unreadable. `unreadable` is a real verdict, in the
+    V_PR_UNREADABLE style: a check that cannot see must SAY SO.
+    """
+    owner, name = repo_slug(root)
+    if not owner:
+        return "unreadable", "could not derive owner/name from remote.origin.url"
+    contexts, cursor, pr, commit, roll = [], None, None, None, None
+    truncated = True
+    for _ in range(CI_MAX_PAGES):
+        data, err = _gh_json(
+            root, ["api", "graphql", "-f", "query=" + ci_query(owner, name, ref, cursor)]
+        )
+        if data is None:
+            return "unreadable", err
+        try:
+            nodes = data["data"]["repository"]["pullRequests"]["nodes"]
+        except (KeyError, TypeError):
+            return "unreadable", "graphql response had no pullRequests.nodes"
+        if not nodes:
+            return "no-pr", ref
+        pr = nodes[0]
+        try:
+            commit = pr["commits"]["nodes"][0]["commit"]
+        except (KeyError, IndexError, TypeError):
+            return "unreadable", "PR #%s carries no head commit" % pr.get("number", "?")
+        roll = commit.get("statusCheckRollup")
+        if not roll:
+            # No checks registered on this head yet. Not a verdict and not
+            # blindness: an empty context list simply produces silence below.
+            truncated = False
+            break
+        ctx = roll.get("contexts") or {}
+        contexts.extend(ctx.get("nodes") or [])
+        page = ctx.get("pageInfo") or {}
+        if not page.get("hasNextPage"):
+            truncated = False
+            break
+        cursor = page.get("endCursor")
+    return "ok", {
+        "owner": owner,
+        "name": name,
+        "pr": (pr or {}).get("number"),
+        "url": (pr or {}).get("url") or "",
+        "sha": (commit or {}).get("oid") or "",
+        "rollup": ((roll or {}).get("state") or "EXPECTED"),
+        "total": (((roll or {}).get("contexts") or {}).get("totalCount") or len(contexts)),
+        "contexts": contexts,
+        "truncated": truncated,
+    }
+
+
+def ci_classify(info):
+    """(live, hard, soft) from PER-JOB conclusions only.
+
+    `live` means the head still has work in flight, which is the ONLY thing the
+    run-level rollup is used for -- never as a pass/fail verdict.
+
+    A completed failing job whose name matches the watchdog's retry allowlist is
+    SOFT while the head is live, because a retry may be inbound. Once the head
+    is final and it is STILL failing, the watchdog is done with it and it is
+    hard, which is the difference between "wait" and "go read the log".
+    """
+    rows, pending = [], 0
+    for c in info.get("contexts") or []:
+        if c.get("__typename") == "StatusContext":
+            state = (c.get("state") or "").upper()
+            if state in ("PENDING", "EXPECTED"):
+                pending += 1
+                continue
+            if state not in ("FAILURE", "ERROR"):
+                continue
+            rows.append(
+                {
+                    "name": c.get("context") or "?",
+                    "job": None,
+                    "run": None,
+                    "url": c.get("targetUrl") or "",
+                    "conclusion": state,
+                }
+            )
+            continue
+        status = (c.get("status") or "").upper()
+        concl = (c.get("conclusion") or "").upper()
+        if status != "COMPLETED":
+            pending += 1
+            continue
+        if concl not in CI_FAIL_CONCLUSIONS:
+            continue
+        rows.append(
+            {
+                "name": c.get("name") or "?",
+                "job": c.get("databaseId"),
+                "run": ((c.get("checkSuite") or {}).get("workflowRun") or {}).get("databaseId"),
+                "url": c.get("detailsUrl") or "",
+                "conclusion": concl,
+            }
+        )
+    live = pending > 0 or str(info.get("rollup") or "").upper() in CI_LIVE_ROLLUP
+    hard, soft = [], []
+    for row in rows:
+        retryable = any(p.lower() in row["name"].lower() for p in CI_RETRY_PATTERNS)
+        (soft if (live and retryable) else hard).append(row)
+    return live, hard, soft
+
+
+def ci_watch_armed(live_bg, rows, sha):
+    """The id of a RUNNING background task watching THIS head, or "".
+
+    NOT "is some task running". A completed watch reported `completed/cancelled`
+    for a run that had since been superseded, and another reported a FALSE
+    failure because a watchdog rerun flipped a terminal run back to in_progress.
+    So the test is: still running (the caller passes only those) AND naming this
+    head's run id or SHA. A bare `gh run watch` with no id does not count -- it
+    cannot be shown to be about this run.
+    """
+    needles = [str(r["run"]) for r in rows if r.get("run")]
+    if sha:
+        needles.append(sha[:12])
+    for b in live_bg or []:
+        blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
+        if any(n and n in blob for n in needles):
+            return str(b.get("id") or (b.get("description") or "")[:60])
+    return ""
+
+
+def ci_steps(root, info, rows, cached):
+    """Fill in `step` and `attempt` for the first few failing jobs.
+
+    ONE bounded REST call per job, and only on the path that is about to speak.
+    `gh run view --log-failed` is deliberately not used anywhere here: it is
+    RUN-scoped even with --job, refuses while the run is in progress, and writes
+    the reason to stderr, so a 2>/dev/null capture reads as an empty log.
+    """
+    for row in rows[:CI_STEP_LOOKUPS]:
+        key = str(row.get("job") or "")
+        if not key:
+            continue
+        if key in cached:
+            row["step"], row["attempt"] = cached[key]
+            continue
+        data, _err = _gh_json(
+            root,
+            ["api", "repos/%s/%s/actions/jobs/%s" % (info["owner"], info["name"], key)],
+            timeout=20,
+        )
+        if data is None:
+            continue
+        steps = data.get("steps") or []
+        bad = [s.get("name") for s in steps if (s.get("conclusion") or "") in ("failure", "timed_out")]
+        if not bad:
+            bad = [s.get("name") for s in steps if (s.get("conclusion") or "") == "cancelled"]
+        row["step"] = bad[0] if bad else ""
+        row["attempt"] = data.get("run_attempt")
+        cached[key] = (row["step"], row["attempt"])
+
+
+def sole_live_session(worklist, session_id):
+    """True iff THIS session is the only one with a fresh .sessions brief.
+
+    Reuses the existing liveness oracle rather than inventing one: the brief
+    check forces every live session to refresh within SESSION_BRIEF_STALE_MIN,
+    so a stale or absent brief is real absence. No brief at all returns False --
+    solitude is unproven, and the brief violation is already firing anyway.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
+    live = [
+        prefix
+        for prefix, (when, _t) in read_briefs(worklist).items()
+        if when is not None and (now - when).total_seconds() / 60.0 <= SESSION_BRIEF_STALE_MIN
+    ]
+    return len(live) == 1 and bool(session_id) and session_id.startswith(live[0])
+
+
+def cistate_path(worklist, session_id):
+    return worklist.with_suffix(".cistate-%s" % (session_id or "unknown")[:8])
+
+
+def cimark_path(worklist, session_id):
+    return worklist.with_suffix(".cimark-%s" % (session_id or "unknown")[:8])
+
+
+def ci_trouble(root, worklist, session_id, live_bg, ack_text):
+    """(state, detail) -- is the open PR in trouble nobody is on?
+
+    state: unset | multi-session | no-pr | ok | watched | soft | trouble |
+           downgraded | unreadable
+
+    THE ESCAPE, and why this one. A check that demands what a session cannot
+    produce deadlocks it: one did exactly that for a whole night here, blocking
+    every stop until morning. So there are TWO exits, and the second is
+    unconditional:
+
+      1. ACKNOWLEDGEMENT. Naming the failing job in the stop message (or in a
+         `- [?] ... DEFAULT:` line) clears the block. You cannot type
+         "Quality / Static" without having seen that it failed, so this is
+         awareness, not a bypass -- and a `- [?]` is reported to the operator on
+         every single stop, so a deferral cannot hide.
+      2. A HARD CEILING of CI_MAX_BLOCKS consecutive blocks per failure set.
+         After that the same set can never block again; it downgrades to a loud
+         report on the allowed stop. A bounded-N ceiling was chosen over
+         "block until fixed" precisely because the failure may not be this
+         session's to fix (another session's push, an infrastructure flake, a
+         pre-existing red on a submodule harness), and over a silent bypass
+         because the facts still have to reach the operator every stop.
+
+    A NEW failure set (new head SHA, or a different set of failing jobs) re-arms
+    the budget: a new red is worth interrupting for exactly once more.
+    """
+    ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    if not ref:
+        return "unset", None  # not opted in: zero network cost, same as pr_body_freshness
+    if not sole_live_session(worklist, session_id):
+        # With a second live session, red may be their push, and nagging this
+        # session about someone else's work is the failure mode to avoid.
+        return "multi-session", None
+    tip = _git(root, "rev-parse", "origin/%s" % ref)
+    if not tip:
+        return "no-pr", "origin/%s" % ref
+    cache_p, marker_p = cistate_path(worklist, session_id), cimark_path(worklist, session_id)
+    cache = None
+    try:
+        c = json.loads(cache_p.read_text(encoding="utf-8"))
+        ttl = CI_CACHE_FINAL_S if c.get("final") else CI_CACHE_LIVE_S
+        if c.get("sha") == tip and time.time() - (c.get("at") or 0) <= ttl:
+            cache = c
+    except (OSError, ValueError, TypeError):
+        cache = None
+    if cache is not None:
+        state, info, steps = cache["state"], cache.get("info"), cache.get("steps") or {}
+    else:
+        state, info = ci_rollup(root, ref)
+        steps = {}
+    if state != "ok":
+        if cache is None:
+            _ci_cache_write(cache_p, tip, state, info, steps, final=(state == "no-pr"))
+        return state, info
+    live, hard, soft = ci_classify(info)
+    if not hard and not soft:
+        _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
+        return "ok", info
+    watcher = ci_watch_armed(live_bg, hard + soft, info.get("sha") or tip)
+    if watcher:
+        # The operator's own condition, and deliberately NOT gated on the run
+        # still being live. A watch keyed to this run is a wake-up whether the
+        # run is finishing or already finished; the window where a RUNNING watch
+        # coexists with a final run is the seconds before its last iteration
+        # prints, and firing into that window is a false alarm, not diligence.
+        _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
+        return "watched", {"info": info, "hard": hard, "soft": soft, "watcher": watcher}
+    ci_steps(root, info, hard or soft, steps)
+    _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
+    if not hard:
+        return "soft", {"info": info, "hard": hard, "soft": soft, "live": live}
+    low = (ack_text or "").lower()
+    acked = [r["name"] for r in hard if r["name"].lower() in low]
+    sig = hashlib.sha1(
+        ("%s|%s" % (tip, ",".join(sorted(r["name"] for r in hard)))).encode("utf-8", "replace")
+    ).hexdigest()[:12]
+    try:
+        mark = json.loads(marker_p.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        mark = {}
+    blocks = int(mark.get("blocks") or 0) if mark.get("sig") == sig else 0
+    detail = {"info": info, "hard": hard, "soft": soft, "live": live, "acked": acked, "n": blocks}
+    if acked or blocks >= CI_MAX_BLOCKS:
+        return "downgraded", detail
+    try:
+        marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
+    except OSError:
+        pass
+    detail["n"] = blocks + 1
+    return "trouble", detail
+
+
+def _ci_cache_write(path, sha, state, info, steps, final):
+    try:
+        path.write_text(
+            json.dumps(
+                {"sha": sha, "at": time.time(), "state": state, "info": info,
+                 "steps": steps, "final": bool(final)}
+            ),
+            encoding="utf-8",
+        )
+    except (OSError, TypeError):
+        pass
+
+
+def ci_rows_text(rows, info):
+    """One line per failing job, plus the log incantation that actually works
+    on a completed job inside a live run."""
+    out = []
+    for r in rows[:6]:
+        bits = ["    %s  %s" % (r["name"], r["conclusion"])]
+        if r.get("step"):
+            bits.append("(failing step: %s)" % r["step"])
+        if r.get("run"):
+            bits.append(
+                "run %s%s" % (r["run"], " attempt %s" % r["attempt"] if r.get("attempt") else "")
+            )
+        out.append("  ".join(bits))
+        if r.get("job"):
+            out.append(
+                "        gh api repos/%s/%s/actions/jobs/%s/logs"
+                % (info["owner"], info["name"], r["job"])
+            )
+        elif r.get("url"):
+            out.append("        %s" % r["url"])
+    return "\n".join(out)
+
+
 def stuck_rounds(worklist, session_id, tasks, head, exempt):
     """(count, fired, why) -- how many consecutive stops have moved NOTHING?
 
@@ -2721,6 +3136,69 @@ def main():
         violations.append(M.V_PR_STALE % fdetail)
     elif fstate == "unreadable":
         violations.append(M.V_PR_UNREADABLE % fdetail)
+    # v10: CI trouble on the open PR. Structurally BELOW the poll fast path
+    # (which exits the process at :2703), so a 5-minute no-op poll never pays
+    # for it. `live_bg` is already running-only, which ci_watch_armed relies on.
+    # ci_report is a non-blocking note; it rides the allow path AND is appended
+    # to the block body, so a downgraded CI failure cannot vanish behind an
+    # unrelated violation.
+    ci_report = ""
+    try:
+        cistate, cidetail = ci_trouble(
+            project_root(event.get("cwd") or os.getcwd()),
+            worklist,
+            session_id,
+            live_bg,
+            (last_msg or "") + "\n" + "\n".join(deferred),
+        )
+    except Exception as exc:  # noqa: BLE001 -- a broken CI check must SAY SO, not vanish
+        cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
+    if cistate == "unreadable":
+        violations.append(M.V_CI_UNREADABLE % cidetail)
+    elif cistate in ("trouble", "downgraded", "soft"):
+        _rows = cidetail["hard"] or cidetail["soft"]
+        _txt = ci_rows_text(_rows, cidetail["info"])
+        _pr = cidetail["info"].get("pr", "?")
+        if cistate == "trouble":
+            violations.append(
+                M.V_CI_RED
+                % (
+                    _pr,
+                    len(cidetail["hard"]),
+                    "(per-JOB conclusions, never the run rollup -- a cancelled run with no "
+                    "failed job is not counted here). The run is still %s.%s"
+                    % (
+                        "in progress, so more jobs may appear" if cidetail["live"] else "final",
+                        # Partial sight is still partial: say so rather than let
+                        # the list read as complete.
+                        ""
+                        if not cidetail["info"].get("truncated")
+                        else " NOTE: only the first %d of %s checks were read, so this list may be incomplete."
+                        % (len(cidetail["info"]["contexts"]), cidetail["info"].get("total", "?")),
+                    ),
+                    _txt,
+                    CI_MAX_BLOCKS,
+                    cidetail["n"],
+                    me8,
+                )
+            )
+        elif cistate == "soft":
+            ci_report = M.CI_NOTE_RETRYABLE % (
+                _pr,
+                len(cidetail["soft"]),
+                ", ".join(CI_RETRY_PATTERNS),
+                _txt,
+            )
+        else:
+            ci_report = M.CI_NOTE_DOWNGRADED % (
+                _pr,
+                len(cidetail["hard"]),
+                cidetail["n"],
+                " (you named %s, which counts as acknowledged)" % ", ".join(cidetail["acked"])
+                if cidetail["acked"]
+                else "",
+                _txt,
+            )
     # v9: count WORK crons only. With two crons, a dead work loop behind a
     # surviving 5-minute poll was invisible to a total-count high-water mark,
     # and the work loop dying quietly is the exact failure the operator named.
@@ -2903,8 +3381,12 @@ def main():
                     else " [reggate marker was corrupt; settled verdicts forgotten]",
                 ),
                 "decision": "block",
+                # ci_report rides along rather than blocking: a CI failure that
+                # has spent its block budget must still be visible on a stop
+                # that blocks for some unrelated reason.
                 "reason": M.R_BLOCK
-                % (len(violations), "\n\n".join("  " + v for v in violations), __file__),
+                % (len(violations), "\n\n".join("  " + v for v in violations), __file__)
+                + ("\n\n" + ci_report if ci_report else ""),
             }
         )
 
@@ -3023,6 +3505,8 @@ def main():
                 "Stop-gate judge (%s) approved this stop: %s"
                 % (JUDGE_MODEL, verdict.get("reason", "")[:200])
             )
+        if ci_report:
+            parts.append(ci_report)
         if others_briefs:
             parts.append("Other sessions in this worktree:\n" + others_briefs)
         if archived:
