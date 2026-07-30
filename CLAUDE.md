@@ -60,13 +60,33 @@ them silently is the failure this rule exists to prevent.
   is large (rule 4). Never quietly downgrade a piece to a stub, a TODO, or a "follow-up
   issue". If something genuinely cannot be done, say which piece and why, out loud.
 - **Track findings in the worklist, not in your head.** The Stop hook
-  (`.claude/hooks/stop/worklist.py`) refuses to end a turn while any `- [ ]` remains.
-  Get the path with `.claude/hooks/stop/worklist.py --path`. It is per-REPO, not
-  per-session, so open items survive a restart and a fresh session inherits them.
-  Read it at session start; append on discovery, tick on completion.
-- **The worklist is shared, so ADD with `>>` and never rewrite the whole file.** A
-  second session may be running in this worktree. Two read-modify-writes lose the
-  loser's items silently. Append single lines and re-read immediately before ticking.
+  (`.claude/hooks/stop/worklist.py`) refuses to end a turn while any open item
+  remains. It is per-REPO, not per-session, so open items survive a restart and a
+  fresh session inherits them.
+- **Use the VERBS, not the file.** Since v10 the store is an append-only JSONL
+  event log, and the hook prints a `WORKLIST GUIDE` on every full stop naming the
+  exact next command per item. Base your `## Remaining` section on that guide, not
+  on memory: it exists because hand-written status silently ignored the tracked
+  ages, and on its first stop it caught a watch still reported as "ongoing" that
+  had finished 51 minutes earlier.
+
+  ```
+  worklist.py --add <me> <text...>              track a new open item, prints its #id
+  worklist.py --tick <me> <id> <evidence>       close it; evidence is mandatory
+  worklist.py --defer <me> <id> <q... DEFAULT: <action>>
+  worklist.py --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]
+  worklist.py --update <me> <id> <text...>      progress; resets the liveness ladder
+  worklist.py --list --open [<me>]              the actionable slice (~2 KB)
+  worklist.py --list                            FULL history dump (~550 KB, avoid)
+  ```
+
+  Item ids are hex but NOT fixed width: items migrated from the old markdown
+  carry 12 characters, newly added ones 8. Never parse them assuming a length.
+- **The store is shared, so never hand-edit it.** A second session may be running
+  in this worktree, and two read-modify-writes lose the loser's items silently.
+  The verbs append one event under a lock, which is what makes concurrent use
+  safe. The legacy markdown file is still synced for compatibility, but writing to
+  it directly is not the interface any more.
 - **Tag every item `(<session-id-prefix>)`. The tag is load-bearing, not a label.**
   The hook blocks only on items tagged with YOUR session (an untagged item counts as
   yours, so forgetting the tag is safe but claims it). Other sessions' open items are
@@ -76,15 +96,19 @@ them silently is the failure this rule exists to prevent.
   that is not yours.
 - **Defer as a QUESTION, not a note.** Four states, and only four: `- [ ]` open,
   `- [x]` done, `- [?]` needs an operator decision, and `- [>]` in-flight on
-  BACKGROUND work. A `- [>]` carries a UTC lease (`until:<ISO8601>Z`, max 120 min
-  ahead): while fresh, ending the turn is allowed and the item is reported to the
-  operator every stop; an expired or missing lease blocks again (fail-closed).
-  Renew the lease when you wake; never use it for work no delegate is running.
-  A `- [?]` goes to AskUserQuestion,
-  and the hook prints every one of them back to the operator on stop, so a deferral
-  cannot hide in a paragraph. Reserve it for real decisions: anything you can settle
-  from the code, the request, or a sensible default is autonomous, and asking about it
-  wastes a round trip.
+  BACKGROUND work. A `- [>]` lease carries a UTC expiry (max 120 min ahead) AND a
+  `worker:<bg-id>`, because since v10 the hook VERIFIES that worker against the
+  operating system rather than believing the claim. A worker that cannot be
+  verified is reported as unverifiable, never accused of being dead; only a worker
+  the event itself has dropped counts as gone. An item with no live worker enters
+  the 45/90/120 minute ladder: ping, then investigate, then resolve.
+- **A `- [?]` must carry `DEFAULT:`, and the default EXECUTES.** Autonomy is
+  time-boxed, not indefinite: an unanswered deferral whose window closes becomes an
+  order to do the default and tick it with evidence, draining a few per stop.
+  Reserve `- [?]` for decisions that are genuinely the operator's: anything you can
+  settle from the code, the request, or a sensible default is yours to do, and
+  parking it as "blocked on you" wastes a round trip. Thirty open deferrals is a
+  symptom of over-asking, not a queue.
 - **End with what you did NOT fix**, as a short "found, not fixed" list, and offer it as
   the next big-bang so nothing discovered gets lost.
 
