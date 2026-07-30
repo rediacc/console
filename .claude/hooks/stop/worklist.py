@@ -1903,6 +1903,54 @@ def pollmark_path(worklist, prefix):
     return worklist.with_suffix(".pollmark-%s" % (prefix or "unknown")[:8])
 
 
+def submodule_pointer_moves(root):
+    """[(path, recorded_sha, worktree_sha, where)] for dirty gitlinks.
+
+    DELIBERATELY LOCAL. Every fact here comes from git in the working tree, so
+    this check cannot go "unreadable" on a network failure the way the PR
+    freshness check can. `where` is the containing-remote-branch summary, which
+    is the fact that actually decides the call: a pointer on the submodule's
+    default branch is an ordinary bump, while one that exists only on a feature
+    branch adds that branch's PR to this PR's merge chain.
+
+    `git submodule status` marks a checked-out commit that differs from the
+    index with a leading '+'. That is precisely the state a blind `git add -A`
+    would convert into a committed dependency change.
+    """
+    out = _git(root, "submodule", "status", "--cached")
+    if not out:
+        return []
+    moves = []
+    for line in out.splitlines():
+        if not line.startswith("+"):
+            continue
+        parts = line[1:].split()
+        if len(parts) < 2:
+            continue
+        recorded, path = parts[0], parts[1]
+        sub = pathlib.Path(root) / path
+        live = _git(sub, "rev-parse", "HEAD") or "?"
+        # --contains over REMOTE branches only: a local-only branch proves
+        # nothing about what CI can fetch.
+        refs = _git(sub, "branch", "-r", "--contains", live) or ""
+        names = [r.strip().lstrip("* ") for r in refs.splitlines() if r.strip()]
+        names = [n for n in names if "->" not in n]
+        head = _git(sub, "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD") or ""
+        default = head.rsplit("/", 1)[-1] if head else "main"
+        on_default = any(n == "origin/%s" % default for n in names)
+        if not names:
+            where = "NOT PUSHED to any remote branch, so CI cannot fetch it"
+        elif on_default:
+            where = "on origin/%s (an ordinary bump)" % default
+        else:
+            where = "only on %s, NOT on origin/%s, so this adds that branch's PR to the merge chain" % (
+                ", ".join(names[:3]),
+                default,
+            )
+        moves.append((path, recorded[:9], live[:9], where))
+    return moves
+
+
 def pollbase_path(worklist, session_id):
     return worklist.with_suffix(".pollbase-%s" % (session_id or "unknown")[:8])
 
@@ -2658,6 +2706,16 @@ def main():
         violations.append(M.V_STALE_LOCAL % (pref, pahead))
     if pstate == "diverged":
         violations.append(M.V_DIVERGED % (pref, pahead, pref))
+    # Before the PR checks, because a moved pointer changes what the PR IS.
+    moves = submodule_pointer_moves(project_root(event.get("cwd") or os.getcwd()))
+    if moves:
+        violations.append(
+            M.V_SUBMODULE_POINTER
+            % (
+                len(moves),
+                "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
+            )
+        )
     fstate, fdetail = pr_body_freshness(project_root(event.get("cwd") or os.getcwd()))
     if fstate == "stale":
         violations.append(M.V_PR_STALE % fdetail)
