@@ -246,10 +246,12 @@ V_HANDOVER = (
     "project one operator decision (the autopilot App was reported blocked "
     "AFTER the operator had created it), and the transcript cannot be the "
     "recovery mechanism because the transcript is what gets summarised. "
-    "Rewrite it as ONE PARAGRAPH of %d-%d characters, addressed to a session "
-    "that knows NOTHING: what this work is, where it stands, what to do next, "
-    "and any fact that must not be re-litigated. No headings, no bullet lists, "
-    "no blank lines. It is a handoff prompt, not a status report:\n"
+    "Rewrite it as %d-%d characters (at most 3 paragraphs), addressed to a "
+    "session that knows NOTHING: what this work is, where it stands, what to "
+    "do next, and any fact that must not be re-litigated. No headings, no "
+    "bullet lists. It is a handoff prompt, not a status report. Stale means "
+    "the WORLD has moved since it was written; an unchanged world never "
+    "stales it:\n"
     "    .claude/hooks/stop/worklist.py --handover %s <<'EOF'\n    ...\n    EOF"
 )
 
@@ -315,6 +317,49 @@ V_NO_REMAINING = (
     "operator reads YOUR message, not this hook's output, so a report that "
     "lives only here does not exist. Re-state the answer and end it with a "
     "'## Remaining' section listing what is left and who it is blocked on:\n%s"
+)
+
+# ---- v10: autonomy window and the liveness ladder ---------------------------
+
+V_DEFER_EXPIRED = (
+    "%d deferred item(s) have OUTLIVED their autonomy window (%d min). A "
+    "DEFAULT: is time-boxed autonomy, not a parking bay: the operator almost "
+    "always takes the recommended action, so once the window closes the "
+    "recommendation IS the decision. EXECUTE each default now and tick the "
+    "item with evidence; if the operator has since answered, act on their "
+    "answer instead; if executing is genuinely wrong now, ask with "
+    "AskUserQuestion and refresh the item so the window restarts:\n%s\n%s"
+    "    .claude/hooks/stop/worklist.py --tick %s <id> '<evidence>'"
+)
+
+V_LADDER_INVESTIGATE = (
+    "IN-FLIGHT WORK HAS GONE QUIET (90-minute rung, fires once per item until "
+    "it moves). An 'ongoing' that nothing has touched for this long is how "
+    "stale claims outlive their workers. INVESTIGATE each one now: read the "
+    "worker's output, then either refresh the item with one line of evidence "
+    "(--update <id> '<what moved>'), restart or replace the worker and "
+    "re-lease, or reclassify the item to the state that is actually true:\n%s\n"
+    "  What the OS could verify about your background workers:\n%s\n"
+    "    .claude/hooks/stop/worklist.py --update %s <id> '<what moved>'"
+)
+
+V_LADDER_RESOLVE = (
+    "IN-FLIGHT WORK HAS BEEN QUIET FOR TWO HOURS (top rung, fires once per "
+    "item until it moves). Waiting harder is not a plan; pick a TERMINAL "
+    "action for each, this turn: stop the worker and re-delegate (TaskStop, "
+    "then a fresh agent plus a new --lease), do the work inline now, or "
+    "defer it to the operator as a [?] with a DEFAULT (always available, so "
+    "this rung can never trap you):\n%s\n"
+    "  What the OS could verify about your background workers:\n%s\n"
+    "    .claude/hooks/stop/worklist.py --defer %s <id> '<question> DEFAULT: <action>'"
+)
+
+N_LADDER_PING = (
+    "Liveness ping (45-minute rung, report-only): these in-flight subjects "
+    "have not moved lately. Verify each worker is really progressing, and "
+    "when it is, refresh the item:\n%s\n"
+    "    .claude/hooks/stop/worklist.py --update %s <id> '<one line of what moved>'\n"
+    "(this becomes a block at 90 minutes; --update resets the clock)"
 )
 
 # ---- block-reason wrappers (the `reason` field of an emitted block) ---------
@@ -394,6 +439,22 @@ CLI_BODY_REFUSED = (
     "the tail is often the crucial part, and a clipped payload that "
     "reports success is how findings get lost. Shorten it, or put the "
     "detail in a file and cite the path."
+)
+
+CLI_ITEM_USAGE = (
+    "usage: --add <my-prefix> <text...>\n"
+    "       --tick <my-prefix> <id> <evidence...>   (a sha, run id, file:line, exit code or URL)\n"
+    "       --defer <my-prefix> <id> <question... DEFAULT: <action>>\n"
+    "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
+    "       --update <my-prefix> <id> <what moved...>\n"
+    "       --list"
+)
+
+CLI_TICK_NO_EVIDENCE = (
+    "REFUSED: ticking #%s needs evidence in the line (a real sha, a run id, "
+    "a file:line that resolves, an exit code, or a URL). You have it in hand "
+    "at completion time, so this costs one paste; if you do NOT have it, the "
+    "item is not done."
 )
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
@@ -534,13 +595,25 @@ Never use em dashes. Keep next_action concrete and small enough to do now.
 # hook bug. A tool whose help text is an error message teaches people to guess.
 USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
 
+Items (v10: a JSONL event store; the old markdown file still works as an
+inbox and is synced in, but the verbs are the first-class interface):
+  --add <me> <text...>          track a new open item (prints its #id)
+  --tick <me> <id> <evidence>   close it; the evidence (sha, run id,
+                                file:line, exit code, URL) is REQUIRED
+  --defer <me> <id> <q... DEFAULT: <action>>   hand it to the operator;
+                                the DEFAULT executes after the window
+  --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]   mark in-flight
+                                on a NAMED background worker
+  --update <me> <id> <text...>  record progress (resets the liveness ladder)
+  --list                        render every item with ids and ages
+
 Query:
   --path                        print the worklist file path
   --requests <me>               list cross-session requests addressed to you
   --poll <me>                   inbox poll; prints NOTHING when empty (exit 0)
 
 Cross-session messaging:
-  --ask <me> <to> <text...>     ask another session (or 'all') a question
+  --ask <me> <to> <text...>     ask another session (or '*') a question
   --answer <me> <id> <text...>  answer a request addressed to you
   --decline <me> <id> <why...>  decline it, with a real reason
   --ack <me> <id>               acknowledge without answering
@@ -551,12 +624,12 @@ Session state:
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
 Maintenance:
-  --compact                     fold resolved entries out of the worklist
+  --compact                     drop tombstones and fold the event log
 
-Item states in the file: `- [ ]` open, `- [x]` done, `- [?]` needs an operator
-decision, `- [>]` in-flight on background work (carries `until:<ISO8601>Z`).
-Tag every item you own with your 8-char session prefix, and APPEND with `>>`
-rather than rewriting the file: other sessions share it.
+Item states: `- [ ]` open, `- [x]` done, `- [?]` deferred with a DEFAULT,
+`- [>]` in-flight (carries `until:<ISO8601>Z` and `worker:<id>`). Lines
+appended to the markdown file by hand are synced into the store on the next
+invocation, so nothing written there is ever silently ignored.
 
 With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 """
