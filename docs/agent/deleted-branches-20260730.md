@@ -3,12 +3,28 @@
 Recorded BEFORE deletion so every branch stays recoverable by SHA
 (`git branch <name> <sha>`) until git gc prunes unreachable objects.
 
-WHY THIS FILE EXISTS. The obvious safety test is wrong here: this repo
-SQUASH-merges, so a merged branch keeps no ancestry link to main and
-`git branch --merged` reports it as unmerged. That test called all 75
-console branches unsafe. The authoritative signal is the PR state, which
-showed 59 of them fully merged. Anyone repeating this cleanup should use
-PR state, not ancestry.
+WHY THIS FILE EXISTS. The obvious safety test is wrong here, and it stays
+wrong. At the time of this cleanup the repos SQUASH-merged, so a merged
+branch kept no ancestry link to main and `git branch --merged` reported it
+as unmerged: that test called all 75 console branches unsafe when 59 had
+merged PRs. The authoritative signal is the PR state.
+
+This did NOT stop being true when the repos moved to REBASE-only merging on
+2026-07-30. Rebase replays each commit onto main under a NEW sha, so a
+merged branch still shares no commit with main and `--merged` still lies.
+Only a true merge commit would have preserved ancestry, and that option was
+considered and declined.
+
+So the rule is permanent: **to decide whether a branch is merged, ask the
+PR, never git ancestry.**
+
+    gh pr list --repo <owner>/<repo> --state merged --limit 300 \
+      --json headRefName --jq '.[].headRefName'
+
+`delete_branch_on_merge` is now true on all five repos, which should stop
+this backlog rebuilding. It was false on renet, account and homebrew-tap,
+and that is exactly why those three accumulated stale remote branches while
+console and elite stayed tidy.
 
 ## console, local branches (64)
 
