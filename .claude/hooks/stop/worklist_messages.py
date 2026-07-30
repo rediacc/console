@@ -242,18 +242,57 @@ V_MANY_POLL_CRONS = (
     "extra with CronDelete."
 )
 
-V_HANDOVER = (
-    "the compact-recovery handover is %s%s. Compaction has already cost this "
-    "project one operator decision (the autopilot App was reported blocked "
-    "AFTER the operator had created it), and the transcript cannot be the "
-    "recovery mechanism because the transcript is what gets summarised. "
-    "Rewrite it as %d-%d characters (at most 3 paragraphs), addressed to a "
-    "session that knows NOTHING: what this work is, where it stands, what to "
-    "do next, and any fact that must not be re-litigated. No headings, no "
-    "bullet lists. It is a handoff prompt, not a status report. Stale means "
-    "the WORLD has moved since it was written; an unchanged world never "
-    "stales it:\n"
-    "    .claude/hooks/stop/worklist.py --handover %s <<'EOF'\n    ...\n    EOF"
+V_AGENT_STATE = (
+    "the compact-recovery document .agent/%s/STATE.md is %s%s. Compaction has "
+    "already cost this project one operator decision (the autopilot App was "
+    "reported blocked AFTER the operator had created it), and the transcript "
+    "cannot be the recovery mechanism because the transcript is what gets "
+    "summarised. Rewrite it (%d-%d chars, with a '## Next action' section) for "
+    "a session that knows NOTHING: what is true right now and what happens "
+    "next. RULES.md and TRAPS.md are not freshness-gated, so do NOT restate "
+    "them here; STATE.md carries only what is volatile. Stale means the WORLD "
+    "has moved since it was written; an unchanged world never stales it:\n"
+    "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n    ...\n    EOF"
+)
+
+V_AGENT_BOOTSTRAP = (
+    "this branch has no .agent/%s/ folder, so there is nowhere for the "
+    "compact-recovery STATE.md to live. Bootstrap it now (NEVER auto-created: "
+    "the RULES.md copy-forward is a judgement call a hook must not make for "
+    "you):\n"
+    "    mkdir -p .agent/%s\n"
+    "    cp .agent/<previous-branch>/RULES.md .agent/%s/RULES.md   # then sharpen\n"
+    "then write a fresh STATE.md via worklist.py --state. See .agent/README.md."
+)
+
+V_AGENT_STILL_ABSENT = (
+    ".agent/%s/ is still absent; the bootstrap commands were shown on an "
+    "earlier stop. Create it, then write STATE.md via worklist.py --state."
+)
+
+N_AGENT_BLIND = (
+    "NOTE: no branch is resolvable at %s (detached HEAD?), so the STATE.md "
+    "freshness check is BLIND this stop. Report-only by operator decision "
+    "2026-07-30: HEAD detaches during every interactive rebase and blocking "
+    "each stop for the duration would be worse than one turn of unenforced "
+    "staleness. Set WORKLIST_AGENT_BRANCH to re-enable it mid-rebase."
+)
+
+CLI_STATE_REFUSED = (
+    "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
+    "section. Nothing was written; the previous STATE.md is untouched.\n"
+)
+
+CLI_STATE_NO_DIR = (
+    "STATE REFUSED: .agent/%s/ does not exist, and this tool NEVER creates it "
+    "(the RULES.md copy-forward is a judgement call). Bootstrap first:\n"
+    "    mkdir -p .agent/%s\n"
+    "    cp .agent/<previous-branch>/RULES.md .agent/%s/RULES.md   # then sharpen\n"
+)
+
+CLI_STATE_NO_BRANCH = (
+    "STATE REFUSED: no branch is resolvable at %s (detached HEAD?). Check out "
+    "a branch, or set WORKLIST_AGENT_BRANCH explicitly.\n"
 )
 
 V_DOCS_DRIFT = (
@@ -608,11 +647,19 @@ CTX_SESSION_START_STALE = (
 )
 
 CTX_POSTCOMPACT_MISSING = (
-    "CONTEXT WAS JUST COMPACTED and there is NO handover document at %s.\n"
-    "Reconstruct one from what survived, write it with\n"
-    "    .claude/hooks/stop/worklist.py --handover %s <<'EOF' ... EOF\n"
+    "CONTEXT WAS JUST COMPACTED and there is NO STATE.md at %s.\n"
+    "Read .agent/README.md, .agent/%s/RULES.md and .agent/TRAPS.md if they "
+    "exist, reconstruct the current state from what survived, write it with\n"
+    "    .claude/hooks/stop/worklist.py --state %s <<'EOF' ... EOF\n"
     "and do NOT report anything as blocked-on-operator until you have "
     "re-checked it: that is exactly the error compaction caused last time."
+)
+
+CTX_POSTCOMPACT_NO_BRANCH = (
+    "CONTEXT WAS JUST COMPACTED and no branch is resolvable (detached HEAD?), "
+    "so the per-branch STATE.md cannot be located. Check out a branch or set "
+    "WORKLIST_AGENT_BRANCH, then read .agent/<branch>/STATE.md and RULES.md. "
+    "Branch-independent hard-won facts, titles from .agent/TRAPS.md:\n%s"
 )
 
 CTX_POSTCOMPACT_BRIEFING = (
@@ -620,7 +667,12 @@ CTX_POSTCOMPACT_BRIEFING = (
     "compacted, so treat the briefing below as the truth and your own "
     "recollection as unreliable. Re-verify anything it calls decided before "
     "you report it as blocked. Re-read %s before acting, and update whichever "
-    "of those documents your work has invalidated.\n\n%s"
+    "of those documents your work has invalidated.\n\n"
+    "=== .agent/<branch>/STATE.md (what is true now; rewrite via worklist.py "
+    "--state) ===\n%s\n\n"
+    "=== .agent/<branch>/RULES.md (settled facts; sharpen in place) ===\n%s\n\n"
+    "=== .agent/TRAPS.md titles (hard-won repo facts; read the full entry for "
+    "any that looks relevant at %s) ===\n%s"
 )
 
 # ---- judge prompts -----------------------------------------------------------
@@ -705,6 +757,13 @@ Check these specifically, because they are how this session drifts:
     than re-spawned, so they fix their own mistakes in their own context.
 Answer "continue" if any of these is missing.
 
+Hard-won facts about THIS repository, one line each. They are the titles of
+entries in a shared trap log (.agent/TRAPS.md); each cost a real CI round or a
+wasted session to learn. Use them to tell a REAL constraint from an excuse: a
+blocker that matches one of these is credible, and a blocker that contradicts
+one is not. Do not treat the absence of a matching line as evidence either way.
+%(traps)s
+
 Sources the session CITED for its blockers, quoted from the tree:
 %(citations)s
 
@@ -759,7 +818,7 @@ Cross-session messaging:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
-  --handover <me>               write a compact-recovery handover (body on stdin)
+  --state <me>                  rewrite .agent/<branch>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
 Maintenance:

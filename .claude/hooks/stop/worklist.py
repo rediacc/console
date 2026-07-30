@@ -14,7 +14,7 @@ synced INBOX, so nothing written there is ever silently ignored); every item
 carries start and last-update stamps; in-flight claims are verified against
 the OS and walked up a 45/90/120-minute ladder (wl_liveness); deferrals
 execute their DEFAULT after an autonomy window instead of nagging forever
-(wl_checks); the handover budget grew to 250-1500 chars with world-keyed
+(wl_checks); the compact-recovery document is .agent/<branch>/STATE.md with world-keyed
 staleness; and the judge caches identical verdicts (wl_judge). The one
 3600-line file became nine modules; worklist_messages.py remains the
 catalogue of user-facing prose.
@@ -72,11 +72,14 @@ What still allows a stop:
      design and bounded by POLL_FULL_MAX_MIN.
 """
 
+import fcntl
 import json
 import os
 import pathlib
 import re
 import sys
+import tempfile
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -307,38 +310,62 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--compact":
         S.compact(C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
         return
-    if len(sys.argv) > 2 and sys.argv[1] == "--handover":
-        # `... --handover <prefix>` with the document on stdin. Whole-file
-        # rewrite is correct here: unlike the store this file is per-session,
-        # so there is no other writer to race. v10: the current world
-        # signature is recorded beside it, so staleness can be world-keyed.
+    if len(sys.argv) > 2 and sys.argv[1] == "--state":
+        # `... --state <prefix>` with the STATE.md body on stdin. The document
+        # is PER BRANCH now, not per session, so the old "no other writer to
+        # race" assumption is dead: two live sessions share one branch today.
+        # flock + tempfile + os.replace makes the write atomic (a reader never
+        # sees half a file); last-write-wins is deliberate, because a document
+        # whose contract is "rewrite every time" has no merge semantics. The
+        # success line names what was replaced, which is the only cheap
+        # defence against session B silently deleting session A's next action.
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         prefix = sys.argv[2]
+        root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        branch = C.git_branch(root)
+        if not branch:
+            sys.stderr.write(M.CLI_STATE_NO_BRANCH % root)
+            sys.exit(2)
+        if not S.agent_branch_dir(root, branch).is_dir():
+            # NEVER auto-created (operator decision 2026-07-30): the RULES.md
+            # copy-forward is a judgement call a tool must not make.
+            sys.stderr.write(M.CLI_STATE_NO_DIR % (branch, branch, branch))
+            sys.exit(2)
         body = sys.stdin.read()
-        # Refuse a document the Stop check would reject, using the SAME rule.
-        # Accepting it here and rejecting it on the next stop told the session
-        # the handover was fine while leaving the compaction-recovery artifact
-        # broken. Refuse loudly and exit non-zero instead: the old file is left
-        # untouched, so a bad rewrite cannot destroy a good handover.
-        verdict, detail = S.handover_shape(body)
+        # Refuse a document the Stop check would reject, with the SAME rule.
+        # Accept-then-reject leaves the one artifact designed to survive
+        # compaction broken while the session believes it is fine; refusing
+        # leaves the previous good document untouched.
+        verdict, detail = S.agent_state_shape(body)
         if verdict != "ok":
             sys.stderr.write(
-                "handover REFUSED (%s: %s). Limits: %d-%d chars, at most %d paragraphs. "
-                "Nothing was written; the previous handover is untouched.\n"
-                % (verdict, detail, S.HANDOVER_MIN_CHARS, S.HANDOVER_MAX_CHARS,
-                   S.HANDOVER_MAX_PARAGRAPHS)
+                M.CLI_STATE_REFUSED
+                % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
             sys.exit(2)
-        wl.with_suffix(".handover-%s.md" % prefix[:8]).write_text(body, encoding="utf-8")
+        target = S.agent_state_path(root, branch)
+        replaced = ""
         try:
-            root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+            prev_age = int((time.time() - target.stat().st_mtime) / 60.0)
+            prev_first = target.read_text(encoding="utf-8", errors="replace").strip().splitlines()[0][:100]
+            replaced = ", replacing a %d-minute-old document (first line: %r)" % (prev_age, prev_first)
+        except (OSError, IndexError):
+            pass
+        lock = S.agent_state_lock_path(wl)
+        with open(lock, "w", encoding="utf-8") as lf:
+            fcntl.flock(lf, fcntl.LOCK_EX)
+            fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                f.write(body)
+            os.replace(tmp, target)
+        try:
             S.load(wl, sync=True)  # sync first, so the signature covers the synced world
             doc = S.load_state(wl, prefix)
-            doc["handover_sig"] = S.world_sig(root, wl, prefix)
+            doc["state_sig"] = S.world_sig(root, wl, prefix)
             S.save_state(wl, prefix, doc)
         except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
             pass
-        print("handover written for %s (%d chars)" % (prefix, len(body)))
+        print("STATE.md written for branch %s (%d chars)%s" % (branch, len(body), replaced))
         return
     if sys.argv[1:2] == ["--session-start"]:
         ev, _ok = _read_event()
@@ -397,7 +424,7 @@ def main():
 
     # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard
     # on purpose. Everything above this line is a query or write mode that a
-    # runner may legitimately want (`--path`, `--handover`); exiting at the top of
+    # runner may legitimately want (`--path`, `--state`); exiting at the top of
     # main() would break those silently. The thing that must not happen on a
     # runner is the BLOCK below: CLAUDE.md tells a session to track items and
     # this hook refuses to end a turn while any remain, so an unattended model

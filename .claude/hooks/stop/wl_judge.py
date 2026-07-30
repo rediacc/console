@@ -150,7 +150,7 @@ def bank_stop_verdict(state_doc, sig, message, reason):
     }
 
 
-def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None, extra=""):
+def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None, extra="", traps=None):
     """(verdict_dict, error_string). Exactly one is non-None."""
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -167,6 +167,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
         "loop": loop_desc,
         "message": (message or "(the session produced no text)")[-6000:],
         "citations": citations or "  (none cited)",
+        "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
     env = dict(os.environ)
     # THE RECURSION GUARD. `claude -p` fires this very hook; --settings does not

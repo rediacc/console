@@ -27,6 +27,10 @@ edit_json() { printf '{"tool_input":{"new_string":%s}}' "$(jq -Rn --arg c "$1" '
 multiedit_json() { printf '{"tool_input":{"edits":[{"new_string":%s}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
 # wf_edit_json <file_path> <new_string> — Edit payload carrying a target file path.
 wf_edit_json() { printf '{"tool_input":{"file_path":%s,"new_string":%s}}' "$(jq -Rn --arg c "$1" '$c')" "$(jq -Rn --arg c "$2" '$c')"; }
+# tool_json <tool_name> <file_path> <content-or-new_string field> <value>
+tool_json() { printf '{"tool_name":%s,"tool_input":{"file_path":%s,%s:%s}}' "$(jq -Rn --arg c "$1" '$c')" "$(jq -Rn --arg c "$2" '$c')" "\"$3\"" "$(jq -Rn --arg c "$4" '$c')"; }
+STATE_GOOD="$(python3 -c "print('x'*300 + chr(10)*2 + '## Next action' + chr(10)*2 + 'go')")"
+STATE_AIMLESS="$(python3 -c "print('x'*300)")"
 
 # A fat (9 logic line) and a thin (2 logic line) inline `run:` block for the
 # workflow-inline guard.
@@ -85,6 +89,11 @@ check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft 
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
+# STATE.md shape guard: the CLI refusal alone is bypassed by a raw Write (the
+# document lives at a plain repo path), so the guard is the closing half.
+check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content tiny)" "agent-state: thin Write blocked"
+check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked"
+check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)"
 
 # --- should PASS (exit 0) ---
 # NOTE: block-premature-ready.sh and block-admin-merge.sh verify live CI/thread
@@ -138,6 +147,9 @@ check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-po
 check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
 check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressions: clean"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write passes"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/RULES.md new_string sharpen)" "agent-state: RULES.md edits untouched"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/packages/cli/src/foo.ts content tiny)" "agent-state: non-agent files untouched"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
 
