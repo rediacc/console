@@ -104,11 +104,22 @@ export function findStrayLocaleLists(root: string, files: string[]): Finding[] {
   return findings;
 }
 
-/** The .d.ts tuple must list exactly what index.js exports, or the types lie. */
-function checkDeclarationMatchesSource(root: string): string | null {
+/**
+ * All THREE declarations of the locale list must agree, in the same order.
+ *
+ * `index.js` holds the literal, `index.d.ts` restates it as a tuple for the type system, and
+ * `site-locales.json` is the copy that non-JS consumers read — `packages/locales/site_locales.py`
+ * loads it for the Python pipelines, which live in gitignored trees and cannot import the JS.
+ *
+ * The JSON was previously unchecked, so JS and Python could silently disagree about which
+ * languages the site ships. That is the same drift this whole gate exists to prevent, one
+ * level up: a consolidation that leaves its own sources unpoliced has just relocated the bug.
+ */
+function checkDeclarationMatchesSource(root: string): string[] {
   const js = path.join(root, 'packages/locales/index.js');
   const dts = path.join(root, 'packages/locales/index.d.ts');
-  if (!fs.existsSync(js) || !fs.existsSync(dts)) return null;
+  const json = path.join(root, 'packages/locales/site-locales.json');
+  if (!fs.existsSync(js) || !fs.existsSync(dts)) return [];
   const grab = (p: string) => {
     const t = fs.readFileSync(p, 'utf-8');
     const m = t.match(/SITE_LOCALES[^[]*\[([^\]]*)\]/);
@@ -116,10 +127,41 @@ function checkDeclarationMatchesSource(root: string): string | null {
   };
   const a = grab(js);
   const b = grab(dts);
-  if (a.length === 0 || b.length === 0) return null;
-  return a.join(',') === b.join(',')
-    ? null
-    : `packages/locales/index.d.ts tuple [${b}] does not match index.js [${a}]`;
+  if (a.length === 0 || b.length === 0) return [];
+
+  const problems: string[] = [];
+  if (a.join(',') !== b.join(',')) {
+    problems.push(`packages/locales/index.d.ts tuple [${b}] does not match index.js [${a}]`);
+  }
+  if (!fs.existsSync(json)) {
+    problems.push(
+      'packages/locales/site-locales.json is MISSING. site_locales.py reads it, so every ' +
+        'Python pipeline would fail at import.'
+    );
+    return problems;
+  }
+  let parsed: { siteLocales?: unknown; defaultLocale?: unknown };
+  try {
+    parsed = JSON.parse(fs.readFileSync(json, 'utf-8'));
+  } catch (e) {
+    problems.push(`packages/locales/site-locales.json is not valid JSON: ${String(e)}`);
+    return problems;
+  }
+  const c = Array.isArray(parsed.siteLocales) ? parsed.siteLocales.map(String) : [];
+  if (c.join(',') !== a.join(',')) {
+    problems.push(
+      `packages/locales/site-locales.json [${c}] does not match index.js [${a}]. ` +
+        'The Python pipelines read the JSON and the site reads index.js, so they now ship ' +
+        'different locale sets.'
+    );
+  }
+  if (parsed.defaultLocale !== 'en') {
+    problems.push(
+      `packages/locales/site-locales.json defaultLocale is ${JSON.stringify(parsed.defaultLocale)}, ` +
+        'expected "en" (NON_ENGLISH_LOCALES is derived by removing it).'
+    );
+  }
+  return problems;
 }
 
 function trackedFiles(root: string): string[] {
@@ -186,6 +228,92 @@ function selftest(): void {
     0
   );
 
+  // ---- the three-way source agreement (index.js / index.d.ts / site-locales.json) ----
+  // Each case writes a fresh locale package into its own temp root, so a perturbation cannot
+  // leak into the next case or into the real repo.
+  const threeWay = (
+    name: string,
+    jsCodes: string[],
+    dtsCodes: string[],
+    jsonBody: string | null,
+    expectMatch: RegExp | null
+  ) => {
+    const r = fs.mkdtempSync(path.join(os.tmpdir(), 'locale-3way-'));
+    fs.mkdirSync(path.join(r, 'packages/locales'), { recursive: true });
+    const lit = (c: string[]) => c.map((x) => `'${x}'`).join(', ');
+    fs.writeFileSync(
+      path.join(r, 'packages/locales/index.js'),
+      `export const SITE_LOCALES = [${lit(jsCodes)}];\n`
+    );
+    fs.writeFileSync(
+      path.join(r, 'packages/locales/index.d.ts'),
+      `export declare const SITE_LOCALES: readonly [${lit(dtsCodes)}];\n`
+    );
+    if (jsonBody !== null) {
+      fs.writeFileSync(path.join(r, 'packages/locales/site-locales.json'), jsonBody);
+    }
+    const got = checkDeclarationMatchesSource(r);
+    if (expectMatch === null) check(name, got, []);
+    else {
+      const hit = got.some((g) => expectMatch.test(g));
+      if (hit) console.log(`  PASS  ${name}`);
+      else {
+        console.error(`  FAIL  ${name}\n        expected /${expectMatch.source}/\n        got      ${JSON.stringify(got)}`);
+        failures.push(name);
+      }
+    }
+    fs.rmSync(r, { recursive: true, force: true });
+  };
+
+  const THREE = ['en', 'de', 'es'];
+  const okJson = JSON.stringify({ siteLocales: THREE, defaultLocale: 'en' });
+
+  // Control: all three agreeing must report NOTHING. If this ever fails, every other case
+  // below is meaningless because the check would be firing unconditionally.
+  threeWay('all three sources agreeing report nothing (control)', THREE, THREE, okJson, null);
+  threeWay(
+    'site-locales.json disagreeing with index.js is caught',
+    THREE,
+    THREE,
+    JSON.stringify({ siteLocales: ['en', 'de'], defaultLocale: 'en' }),
+    /site-locales\.json .* does not match index\.js/
+  );
+  threeWay(
+    'a mere ORDER difference in the JSON is caught',
+    THREE,
+    THREE,
+    JSON.stringify({ siteLocales: ['en', 'es', 'de'], defaultLocale: 'en' }),
+    /site-locales\.json .* does not match index\.js/
+  );
+  threeWay(
+    'index.d.ts disagreeing with index.js is caught',
+    THREE,
+    ['en', 'de'],
+    okJson,
+    /index\.d\.ts tuple .* does not match index\.js/
+  );
+  threeWay(
+    'a missing site-locales.json is caught',
+    THREE,
+    THREE,
+    null,
+    /site-locales\.json is MISSING/
+  );
+  threeWay(
+    'malformed JSON is caught, not thrown',
+    THREE,
+    THREE,
+    '{ this is not json',
+    /not valid JSON/
+  );
+  threeWay(
+    'a non-en defaultLocale is caught',
+    THREE,
+    THREE,
+    JSON.stringify({ siteLocales: THREE, defaultLocale: 'de' }),
+    /defaultLocale is "de"/
+  );
+
   fs.rmSync(root, { recursive: true, force: true });
   if (failures.length) {
     console.error(`\n✗ ${failures.length} self-test failure(s)`);
@@ -209,13 +337,16 @@ function main(): void {
   }
 
   const findings = findStrayLocaleLists(root, files);
-  const mismatch = checkDeclarationMatchesSource(root);
+  const mismatches = checkDeclarationMatchesSource(root);
 
-  if (findings.length === 0 && !mismatch) {
-    console.log(`✓ No stray locale lists across ${files.length} file(s); index.d.ts matches index.js.`);
+  if (findings.length === 0 && mismatches.length === 0) {
+    console.log(
+      `✓ No stray locale lists across ${files.length} file(s); index.js, index.d.ts and ` +
+        `site-locales.json all agree.`
+    );
     return;
   }
-  if (mismatch) console.error(`✗ ${mismatch}`);
+  for (const m of mismatches) console.error(`✗ ${m}`);
   if (findings.length) {
     console.error(`✗ ${findings.length} hardcoded locale list(s) outside packages/locales:\n`);
     for (const f of findings) console.error(`  ${f.file}:${f.line}  [${f.codes.join(',')}]`);

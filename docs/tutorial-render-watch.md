@@ -158,3 +158,63 @@ rendering and are safe to run concurrently with it.
 | S6 | converge `www_tutorials_media` | log timestamps show the first render starting before the last cast finishes narrating | capture the BEFORE delta first, or the justification is unmeasurable |
 | S7 | gates + docs | the four shell gates, knip, chain-parity | `shfmt -i 4 -ci -d run.sh` empty **and** `shfmt -i 4 -d run.sh` non-empty — that second run is the proof `-ci` was used |
 | S8 | `.ci` follow-ups for someone not barred | — | — |
+
+---
+
+## Status, 2026-07-30
+
+| # | state | evidence |
+|---|---|---|
+| S1 | **done** | `packages/www/scripts/list-tutorial-render-pairs.js`, `--selftest` green with 3 control cases, gated as `check:ci-tutorial-render-queue` in the `ci` chain |
+| S2 | **done** | `_tutorial_render_pairs` wraps the predicate; `_tutorial_video_pairs` deleted; `check:ci-dead-bash` exit 0 |
+| S3 | **done** | `generate-tutorial-video.ts` renders to `stagePath` (`:142`), one `renameSync` (`:465`), cleanup (`:471`) |
+| S4 | **done** | `_tutorial_watch_producer` (`run.sh:975`), `www_tutorials_watch` (`:1056`), dispatch (`:1919`), help (`:1727`); second instance exits non-zero naming the holder's pid |
+| S5 | **done** | one real pair rendered through the watch, see below |
+| S6 | **BLOCKED on a measurement that costs GPU time** | see below |
+| S7 | **done** | the four shell gates + `check:ci-tutorial-render-queue` all exit 0; `shfmt -i 4 -ci -d run.sh` empty while `shfmt -i 4 -d run.sh` is 819 lines, which is the proof `-ci` was used |
+| S8 | **done** | `.ci/scripts/test/gates/test-tutorial-render-queue.sh`, auto-discovered by `run-all.sh`'s `gates/test-*.sh` glob — no registration line needed |
+
+### S5: the live render, and a better result than the plan asked for
+
+The plan's S5 proof was "`--stale-only` reaches zero against 234 mp4s", which the fleet already
+satisfied without the watch having rendered anything. That is a vacuous pass, so S5 was instead
+proven by making exactly one pair stale (`touch` its timeline) and letting the watch render it:
+dispatched 1 of 1 stale, 5 render processes observed live, finished cleanly, no `.partial` left,
+`--stale-only` back to zero.
+
+**The re-rendered mp4 came out byte-identical** — sha256 `41f8a74f125fd94a…`, size 2593339 and
+duration 93.233333 all unchanged, with mtime advanced so the write demonstrably happened. The
+render is reproducible from unchanged narration. That is what makes the mtime-based staleness
+design safe: a spurious re-render is idempotent rather than a silent content change.
+
+### S6 is blocked, and this is why rather than an excuse
+
+S6's acceptance criterion is "log timestamps show the first render starting before the last cast
+finishes narrating". Nothing in the tree can produce that observation now: all 13 locales are
+fully narrated, so there is no narration for a render to overlap WITH. Producing it means
+re-narrating at least one locale — real GPU time on the card, and the VoxCPM lease would block
+any other narration work while it ran.
+
+The convergence itself is also smaller than it looks now: the delegate that built S4 extracted
+`_tutorial_auto_jobs()` (`run.sh:670`) so `www_tutorials_media` and `www_tutorials_watch` already
+share the job-count arithmetic instead of keeping two copies 400 lines apart. What remains is
+`media` narrating everything before rendering anything, rather than feeding the producer.
+
+**Do not fake this one.** A convergence justified by an unmeasured overlap claim is exactly the
+`~45%` mistake recorded in `docs/media-pipeline-parallelism.md` §10. Either pay for one locale's
+re-narration and measure it, or leave `media` alone — it works.
+
+### S8: why there is no anti-vacuity REGISTRY line
+
+The plan called for "one `REGISTRY` line in `test-gate-anti-vacuity.sh`". That would not work.
+That harness builds its fixture with `cp -r "$REPO_ROOT/scripts"` and `cp -r "$REPO_ROOT/.ci/scripts"`
+(`test-gate-anti-vacuity.sh:136,143`) and copies nothing from `packages/`. The predicate lives at
+`packages/www/scripts/`, so the entry would fail with *No such file or directory* — non-zero for a
+reason unrelated to vacuity, which is precisely the false signal that file's own REGISTRY POLICY
+warns about, and the same call already made for `check-breakpoint-drift.sh`.
+
+So the empty-tree case lives in a test carrying its own fixture, alongside checks a self-test
+cannot honestly make about itself: that the npm gate actually runs `--selftest`, that it chains
+with `&&` rather than `;` (which would discard a failing stage), and that the self-test contains
+controls. It was mutation-tested: pointed at a stub predicate that reports zero pairs on an empty
+tree, it fails with `empty tree must exit non-zero: expected 1, got 0`.

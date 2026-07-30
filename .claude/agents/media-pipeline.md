@@ -127,15 +127,24 @@ Traps this design had to close:
 - **`www_tutorials_generate` restores from R2 first and uploads last.** Both wrong
   mid-migration: the restore overwrites fresh narration, the upload publishes.
   `www_tutorials_media` invokes `tutorial_tts.cli` directly and does neither.
-- **⚠ The mp4 is NOT written atomically** (`generate-tutorial-video.ts` → `addEdgePad` writes
-  straight to the final path, sidecars after). A killed render leaves a truncated file with a
-  **fresh mtime**, which the staleness predicate calls done *forever*. Never `SIGKILL` a
-  render. Fix tracked in `docs/tutorial-render-watch.md` (S3).
+- **A truncated mp4 with a fresh mtime is "done" forever**, since staleness is mtime-based.
+  Fixed: `generate-tutorial-video.ts` renders to `stagePath` (`:142`) and does exactly one
+  `renameSync` to the final path (`:465`). Keep it that way — and note the staging file needs
+  an explicit `-f mp4` in `addEdgePad`, because a non-`.mp4` extension defeats ffmpeg's muxer
+  inference and it exits 234.
 
 Renders are `nice -n 10`; **narration is never niced** — the failure that matters is renders
 starving the GPU job's own CPU work (audio VAE, ffmpeg mastering, ASR). `--jobs` defaults
 from `nproc` **and** MemAvailable (Chrome ~3 GB/render, narration ~11.8 GB RSS). Judge a job
 count by **TTS seconds per clip**, never by load average.
+
+**Measured cost**, so you can budget instead of guessing: a pair renders in **2 to 3 minutes**
+(115 logged renders at `--jobs 2`: median inter-dispatch 141 s, p90 303 s), making a 234-pair
+13-locale sweep a **~5 hour render bill** — same order as narration, which is the entire
+reason overlapping them pays. The **~45% saving in `docs/media-pipeline-parallelism.md` §5 was
+never measured**; §10 has what was. Cheapest proof the pool is still parallel and has not
+silently gone serial: some inter-dispatch deltas should be **0 s** (both slots filling in one
+second). A serialised pool still emits correct video and a green gate, so nothing else catches it.
 
 ---
 

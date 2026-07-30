@@ -643,69 +643,41 @@ www_tutorials_generate() {
     fi
 }
 
-# Emit the (tutorial, lang) work list on STDOUT, one "tutorial<TAB>lang" per line.
-# Diagnostics go to stderr, which every log_* helper already does
-# (.ci/scripts/lib/common.sh:36-54), so this is safe to consume as a pipe.
+# Thin wrapper over the ONE readiness predicate. The bash enumeration this replaces
+# duplicated the same query and had already drifted from it (it silently dropped the
+# audio-directory precondition). Emitting "tutorial<TAB>lang" keeps the pool's stdin
+# contract unchanged.
 #
-# Emission is LANG-MAJOR, not tutorial-major as the inline loop used to be. That is a
-# correctness fix, not a preference: generate-tutorial-video.ts caches recorded browser
-# segments under public/assets/tutorials/browser-segments/ keyed
-# "${tutorial}.${scene.id}.${hash}.mp4" with NO language in the key, because the browser
-# footage is language-independent. Tutorial-major ordering therefore puts N languages of
-# the SAME tutorial in flight at --jobs N, and on a cold cache all N record the same
-# scene and copyFileSync to the same path. Lang-major puts N DISTINCT tutorials in
-# flight, so the shared key is never contended and the per-tutorial lock below never
-# has to block. It also matches how the orchestrator streams work: one language at a
-# time, as its narration finishes.
-_tutorial_video_pairs() {
-    local name="$1"
-    local lang="$2"
+# Anything after the first two arguments is forwarded to the predicate verbatim, so the
+# watch can ask the narrower question (--stale-only --require-provider voxcpm2) without a
+# second copy of the invocation existing anywhere.
+_tutorial_render_pairs() {
+    local name="$1" lang="$2"
+    shift 2
+    local args=()
+    [[ -n "$name" ]] && args+=(--cast "$name")
+    [[ -n "$lang" ]] && args+=(--lang "$lang")
+    node "$ROOT_DIR/packages/www/scripts/list-tutorial-render-pairs.js" "${args[@]}" "$@"
+}
 
-    local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
-    local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
-
-    local tutorials=()
-    if [[ -n "$name" ]]; then
-        local base="$name"
-        [[ "$base" != tutorial-* ]] && base="tutorial-$base"
-        [[ -f "$tutorials_root/${base}.cast" ]] || {
-            log_error "Cast not found: $tutorials_root/${base}.cast"
-            return 1
-        }
-        tutorials+=("$base")
-    else
-        for cast in "$tutorials_root"/*.cast; do
-            [[ -f "$cast" ]] || continue
-            tutorials+=("$(basename "$cast" .cast)")
-        done
-    fi
-
-    local langs=()
-    if [[ -n "$lang" ]]; then
-        # Accept a comma-separated list so the orchestrator can ask for one language
-        # per batch without re-deriving this logic.
-        IFS=',' read -r -a langs <<<"$lang"
-    else
-        for d in "$timeline_root"/*/; do
-            [[ -d "$d" ]] || continue
-            langs+=("$(basename "$d")")
-        done
-    fi
-
-    local l t
-    for l in "${langs[@]}"; do
-        for t in "${tutorials[@]}"; do
-            if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
-                log_debug "skip $t × $l (no timeline)"
-                continue
-            fi
-            if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
-                log_debug "skip $t × $l (no audio)"
-                continue
-            fi
-            printf '%s\t%s\n' "$t" "$l"
-        done
-    done
+# Default render concurrency from the machine, not a constant. Renders are RAM-heavy
+# (headless Chrome ~3 GB each) and must leave room for the narration process, which is
+# ~11.8 GB RSS on its own, so both CPU and memory bound the answer.
+#
+# Shared by `media` and `watch` because both render WHILE narration holds the GPU and so
+# face the identical constraint. A second copy of this arithmetic is exactly how the two
+# would drift apart. Prints the number on stdout; every log_* line goes to stderr.
+_tutorial_auto_jobs() {
+    local cores mem_gb by_cpu by_mem jobs
+    cores="$(nproc)"
+    mem_gb="$(awk '/MemAvailable/ {print int($2/1024/1024)}' /proc/meminfo)"
+    by_cpu=$(((cores - 4) / 4))
+    by_mem=$(((mem_gb - 16) / 4))
+    jobs=$((by_cpu < by_mem ? by_cpu : by_mem))
+    [[ "$jobs" -lt 1 ]] && jobs=1
+    [[ "$jobs" -gt 6 ]] && jobs=6
+    log_step "auto --jobs $jobs (${cores} cores, ${mem_gb} GB available)"
+    echo "$jobs"
 }
 
 # Render exactly one (tutorial, lang) pair. Writes its OWN failure file rather than
@@ -784,7 +756,7 @@ www_tutorials_video() {
     local pair
     while IFS= read -r pair; do
         pairs+=("$pair")
-    done < <(_tutorial_video_pairs "$name" "$lang")
+    done < <(_tutorial_render_pairs "$name" "$lang")
 
     log_step "Compiling tutorial videos (${#pairs[@]} pair(s), --jobs $jobs)..."
     local failure_prefix="/tmp/_tut_video_failures.$$"
@@ -878,7 +850,7 @@ _tutorial_media_producer() {
         fi
 
         log_info "$l narrated and validated — dispatching its renders (CPU)" >&2
-        _tutorial_video_pairs "$name" "$l"
+        _tutorial_render_pairs "$name" "$l"
     done
 }
 
@@ -946,19 +918,8 @@ www_tutorials_media() {
         return 1
     fi
 
-    # Default concurrency from the machine, not a constant. Renders are RAM-heavy
-    # (headless Chrome ~3 GB each) and must leave room for the narration process, which
-    # is ~11.8 GB RSS on its own, so both CPU and memory bound the answer.
     if [[ -z "$jobs" ]]; then
-        local cores mem_gb by_cpu by_mem
-        cores="$(nproc)"
-        mem_gb="$(awk '/MemAvailable/ {print int($2/1024/1024)}' /proc/meminfo)"
-        by_cpu=$(((cores - 4) / 4))
-        by_mem=$(((mem_gb - 16) / 4))
-        jobs=$((by_cpu < by_mem ? by_cpu : by_mem))
-        [[ "$jobs" -lt 1 ]] && jobs=1
-        [[ "$jobs" -gt 6 ]] && jobs=6
-        log_step "auto --jobs $jobs (${cores} cores, ${mem_gb} GB available)"
+        jobs="$(_tutorial_auto_jobs)"
     fi
     if ! [[ "$jobs" =~ ^[0-9]+$ ]] || [[ "$jobs" -lt 1 ]]; then
         log_error "--jobs must be a positive integer, got: $jobs"
@@ -989,6 +950,229 @@ www_tutorials_media() {
         return 1
     fi
     log_info "Tutorial media complete for: ${langs[*]}"
+}
+
+# Emit each (tutorial, lang) pair to STDOUT the moment THAT PAIR's narration is final.
+#
+# The unit of readiness is the PAIR, not the language: tutorial_tts/cli.py finishes one
+# (lang, cast) completely -- synthesis, the deferred alignment barrier, then an atomic
+# os.replace of the timeline -- before starting the next. A per-language trigger left the
+# CPU idle at load 2.4 for ~20 minutes while 13 already-narrated tutorials sat unrendered.
+#
+# STDOUT IS THE WORK QUEUE. Every diagnostic goes to stderr (log_step/log_info/log_error
+# already do); one stray echo here becomes a bogus render.
+#
+# The emit-once memo is keyed by the pair's TIMELINE MTIME, and that key choice is doing
+# two jobs at once:
+#   - no duplicate dispatch while a render is in flight (the pair is still stale, because
+#     its mp4 is not written yet, so it is still listed every round);
+#   - no hot spin on a pair that keeps failing to render (it stays stale forever, and
+#     without the memo it would be re-listed and re-dispatched as fast as the loop turns,
+#     never reaching the idle sleep).
+# Re-narration bumps the mtime, which changes the key, so a genuinely UPDATED pair IS
+# re-emitted. That self-correction is the whole reason readiness is read from artifacts
+# rather than from bookkeeping, and it must survive any change here.
+_tutorial_watch_producer() {
+    local poll="$1"
+    local once="$2"
+    local langs_csv="$3"
+    local queue_file="$4"
+
+    local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
+    declare -A emitted=()
+    local round=0
+
+    while :; do
+        round=$((round + 1))
+
+        # Sample narration liveness BEFORE listing, never after. A pair that lands
+        # between the two samples must be caught by the NEXT list rather than lost to a
+        # "nothing stale, nothing running" verdict reached on stale evidence.
+        #
+        # `ps -eo cmd` plus a bracketed pattern, never `pgrep -f`: pgrep -f matches THIS
+        # shell, whose own command line contains the pattern, and has already produced a
+        # false "alive" verdict in this pipeline. The output is captured into a variable
+        # first because `ps | grep -q` under `set -o pipefail` can come back 141 -- grep -q
+        # closes the pipe, ps takes SIGPIPE -- which reads as "not running".
+        local ps_out narrating=0
+        ps_out="$(ps -eo cmd 2>/dev/null || true)"
+        if grep -q '[t]utorial_tts\.cli' <<<"$ps_out"; then
+            narrating=1
+        fi
+
+        # The ONE readiness predicate, asked the narrow question. Failure stops the watch:
+        # it refuses on an empty tree on purpose, and a daemon that treated "the predicate
+        # broke" as "nothing to do" would idle forever looking healthy.
+        if ! _tutorial_render_pairs "" "$langs_csv" --stale-only --require-provider voxcpm2 >"$queue_file"; then
+            log_error "readiness predicate failed — stopping the watch instead of guessing"
+            return 1
+        fi
+
+        local emitted_now=0 stale_now=0
+        local t l key mtime timeline
+        while IFS=$'\t' read -r t l; do
+            [[ -n "$t" && -n "$l" ]] || continue
+            stale_now=$((stale_now + 1))
+            timeline="$timeline_root/$l/$t.json"
+            mtime="$(stat -c %Y "$timeline" 2>/dev/null || stat -f %m "$timeline" 2>/dev/null || echo 0)"
+            key="$l/$t@$mtime"
+            [[ -n "${emitted[$key]:-}" ]] && continue
+            emitted["$key"]=1
+            emitted_now=$((emitted_now + 1))
+            printf '%s\t%s\n' "$t" "$l"
+        done <"$queue_file"
+
+        if [[ "$emitted_now" -gt 0 ]]; then
+            log_info "round $round: dispatched $emitted_now newly-ready pair(s) of $stale_now stale"
+        fi
+
+        if [[ "$once" == "true" ]]; then
+            return 0
+        fi
+
+        # Done when there is nothing new to dispatch AND no narrator is left to produce
+        # any. Anything still stale at this point has already been emitted, so the pool's
+        # final `wait` drains it; stopping here rather than on stale_now == 0 is what keeps
+        # a permanently-failing pair from holding the daemon open forever.
+        if [[ "$emitted_now" -eq 0 && "$narrating" -eq 0 ]]; then
+            log_info "nothing new to render and no tutorial_tts.cli running — producer done after $round round(s)"
+            return 0
+        fi
+
+        sleep "$poll"
+    done
+}
+
+# Render each (tutorial, language) pair as soon as that pair's narration is final.
+#
+# Renders ONLY. It never narrates, and it deliberately does not go through
+# www_tutorials_video or www_tutorials_generate: both call www_tutorial_audio_restore,
+# which pulls PUBLISHED audio down from R2 and would overwrite exactly the fresh local
+# narration this watch exists to consume.
+#
+# It also never touches the GPU lease. That lease (tutorial_tts/gpu_lock.py) is taken
+# LAZILY by the TTS engine at its first real model load; wrapping a renderer in it
+# self-deadlocks, which has already happened once in tts_bridge.py.
+www_tutorials_watch() {
+    # Preflight output is forced onto stderr because stdout belongs to the work queue.
+    # ensure_deps shells out to `npm install`, whose "up to date, audited 1105 packages"
+    # chatter goes to stdout -- 12 lines of it landed in the --dry-run pair list before
+    # this redirect existed, which is exactly the shape of a bogus render.
+    {
+        check_node_version
+        ensure_deps
+        ensure_audio_system_deps
+    } >&2
+
+    local langs_csv=""
+    local jobs=""
+    local poll=30
+    local once=false
+    local dry_run=false
+    local passthrough=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --langs) langs_csv="$2" && shift 2 ;;
+            --langs=*) langs_csv="${1#*=}" && shift ;;
+            --jobs) jobs="$2" && shift 2 ;;
+            --jobs=*) jobs="${1#*=}" && shift ;;
+            --poll) poll="$2" && shift 2 ;;
+            --poll=*) poll="${1#*=}" && shift ;;
+            --once) once=true && shift ;;
+            --dry-run) dry_run=true && shift ;;
+            --keep-temp | --captions-only | --debug | --refresh-browser-cache | --no-browser-cache)
+                passthrough+=("$1")
+                shift
+                ;;
+            *)
+                log_error "Unknown watch option: $1"
+                log_info "Usage: ./run.sh www tutorials watch [--jobs N] [--langs a,b] [--poll N] [--once] [--dry-run]"
+                return 1
+                ;;
+        esac
+    done
+
+    if [[ -z "$jobs" ]]; then
+        jobs="$(_tutorial_auto_jobs)"
+    fi
+    if ! [[ "$jobs" =~ ^[0-9]+$ ]] || [[ "$jobs" -lt 1 ]]; then
+        log_error "--jobs must be a positive integer, got: $jobs"
+        return 1
+    fi
+    if ! [[ "$poll" =~ ^[0-9]+$ ]] || [[ "$poll" -lt 1 ]]; then
+        log_error "--poll must be a positive integer (seconds), got: $poll"
+        return 1
+    fi
+
+    # Repo-local and session-agnostic, so a watch started from one shell is inspectable
+    # from any other. artifacts/ is gitignored.
+    local watch_dir="$ROOT_DIR/artifacts/tutorial-render-watch"
+    mkdir -p "$watch_dir"
+    local lock_file="$watch_dir/watch.lock"
+    local pid_file="$watch_dir/watch.pid"
+    local queue_file="$watch_dir/queue.txt"
+    local log_file
+    log_file="$watch_dir/watch-$(date -u +%Y%m%dT%H%M%SZ).log"
+
+    # SINGLE INSTANCE, enforced by the kernel. The per-tutorial flock inside
+    # _tutorial_video_render_one serialises two renders of the SAME tutorial; it does
+    # nothing to stop two daemons from both deciding to rewrite the same mp4. The kernel
+    # lock is the truth and is released when the holder dies, so a killed watch leaves
+    # nothing to clean up. The pid file is observability only -- written after the lock is
+    # held, and only ever read to name the holder in this error.
+    exec 9>"$lock_file"
+    if ! flock -n 9; then
+        local holder=""
+        [[ -f "$pid_file" ]] && holder="$(cat "$pid_file" 2>/dev/null || true)"
+        log_error "another tutorial render watch already holds $lock_file (pid ${holder:-unknown})"
+        log_info "wait for it to drain, or stop it, before starting a second one"
+        return 1
+    fi
+    echo "$$" >"$pid_file"
+
+    # Everything diagnostic in this pipeline is on stderr (log_step/log_info/log_error
+    # all are), so tee'ing stderr once here captures the WHOLE run -- header included --
+    # while still showing it live in the foreground. stdout is untouched because it is the
+    # work queue: under --dry-run the pair list must stay clean enough to diff.
+    exec 2> >(tee -a "$log_file" >&2)
+
+    # Hardware encoding stays OFF: h264_nvenc would put the render back on the very
+    # device the narration needs, which is the entire premise of overlapping them.
+    if [[ "${RDC_TUTORIAL_HWENC:-0}" == "1" ]]; then
+        log_warn "RDC_TUTORIAL_HWENC=1 was set; forcing it to 0 so renders stay off the GPU"
+    fi
+    export RDC_TUTORIAL_HWENC=0
+
+    local failure_prefix="$watch_dir/failures.$$"
+    rm -f "${failure_prefix}".*
+
+    log_step "Tutorial render watch: --jobs $jobs, --poll ${poll}s${langs_csv:+, langs $langs_csv}"
+    log_info "pid $$, lock $lock_file, log $log_file"
+
+    local status=0
+    if [[ "$dry_run" == "true" ]]; then
+        # The producer's stdout IS the work queue, so printing it is the dry run: the pool
+        # is never started and not one render is dispatched.
+        _tutorial_watch_producer "$poll" "$once" "$langs_csv" "$queue_file" || status=$?
+    else
+        _tutorial_watch_producer "$poll" "$once" "$langs_csv" "$queue_file" |
+            _tutorial_video_pool "$jobs" "$failure_prefix" "${passthrough[@]}" || status=$?
+    fi
+
+    rm -f "$pid_file"
+
+    if compgen -G "${failure_prefix}.*" >/dev/null; then
+        log_error "Render failures (recorded and NOT retried — re-narrate the pair to make it eligible again):"
+        cat "${failure_prefix}".* >&2
+        rm -f "${failure_prefix}".*
+        status=1
+    fi
+
+    if [[ "$status" -ne 0 ]]; then
+        return "$status"
+    fi
+    log_info "Tutorial render watch finished cleanly"
 }
 
 www_tutorials_validate() {
@@ -1540,6 +1724,14 @@ WWW COMMANDS:
                                     narration passes validation, while the next language is
                                     still being narrated. Generates and renders only; never
                                     restores from or uploads to R2.
+  www tutorials watch [--jobs N] [--langs a,b] [--poll N] [--once] [--dry-run]
+                                    Render each (tutorial, LANGUAGE) PAIR the moment that
+                                    pair's narration is final, for narration running in
+                                    another shell. Exits once nothing new is ready and no
+                                    tutorial_tts.cli is left running. Single instance
+                                    (flock on artifacts/tutorial-render-watch/watch.lock);
+                                    logs to that same directory. Renders only: never
+                                    narrates, never restores from or uploads to R2.
   www tutorials validate            Validate transcripts + audio integrity
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
@@ -1724,6 +1916,10 @@ main() {
                             shift
                             www_tutorials_media "$@"
                             ;;
+                        watch)
+                            shift
+                            www_tutorials_watch "$@"
+                            ;;
                         validate) www_tutorials_validate ;;
                         all)
                             shift
@@ -1732,7 +1928,7 @@ main() {
                         *)
                             log_error "Unknown tutorials command: ${1:-}"
                             echo ""
-                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|media|video|validate|all]"
+                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|media|watch|video|validate|all]"
                             exit 1
                             ;;
                     esac
@@ -1872,5 +2068,13 @@ main() {
     esac
 }
 
-# Execute main if run directly
-[[ "${BASH_SOURCE[0]}" == "${0}" ]] && main "$@"
+# Execute main if run directly.
+#
+# An `if` block, not `[[ … ]] && main "$@"`. With the `&&` form the whole file's exit status is
+# the FAILED test when the file is SOURCED, so `source ./run.sh` returned 1 and killed any
+# caller running under `set -e` — silently, with no output, because nothing had failed. The
+# `if` form returns 0 when sourced while still propagating main's real exit code when run
+# directly.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
