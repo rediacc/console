@@ -144,8 +144,9 @@ const baseFixture = () => ({
   firstParent: BASE,
   firstParentThrow: false,
   // branch powers the one-shot run listing; null exercises the per-commit
-  // fallback path.
+  // fallback path, runsListThrow the degraded one.
   branch: 'wave-branch',
+  runsListThrow: false,
   diff: 'docs/ci-overhaul/notes.md\n',
   candidates: [CAND],
   runs: { [CAND]: [{ databaseId: Number(RUN_A), status: 'completed', conclusion: 'success' }] },
@@ -201,6 +202,7 @@ function makeRun(f, calls) {
       // The one-shot branch run listing, paginated at 100 like the real API.
       const page = Number((/[?&]page=(\d+)/.exec(args[1]) || [])[1] || 1);
       calls.push(`gh api runs-list p${page}`);
+      if (f.runsListThrow) throw new Error('listing unavailable');
       const flat = [];
       for (const [sha, runs] of Object.entries(f.runs)) {
         for (const r of runs) {
@@ -715,7 +717,43 @@ test_per_commit_fallback_still_works_without_a_branch() {
     assert_eq "$(rget 'r.baselineRunId')" "1001" "and still resolves the baseline"
     assert_eq "$(rget 'r.perCommitCalls')" "1" "via exactly one per-commit lookup"
     assert_eq "$(rget 'r.runsListCalls')" "0" "with no branch listing attempted"
+    assert_contains "$(rget 'r.notes')" "runs-listing:per-commit-fallback:no-branch" \
+        "and the cost mode is SAID in the notes, not left to API-call archaeology"
     log_pass "(s) the per-commit fallback resolves correctly when no branch is known"
+}
+
+test_degraded_listing_is_noted_not_silent() {
+    # (u) THE CAVEAT CLOSED. A mid-resolve listing failure degrades to
+    # per-commit lookups (correctness over cost), and that degradation used to
+    # be invisible outside API-call patterns nobody watches. Now it is a note,
+    # and notes reach the shadow artifact (see (v) for the listener chain).
+    assert_eq "$(drive 'f.runsListThrow = true')" "0" "a throwing branch listing answers"
+    assert_eq "$(rget 'r.baselineRunId')" "1001" \
+        "correctness is preserved: the baseline still resolves via per-commit"
+    assert_eq "$(rget 'r.perCommitCalls')" "1" "on the fallback cost model"
+    assert_contains "$(rget 'r.notes')" "runs-listing-degraded:per-commit" \
+        "and the degradation is SAID, with the pinned note"
+    assert_contains "$(rget 'r.notes')" "listing unavailable" "carrying the underlying error"
+    # CONTROL, the other direction: the clean path carries NO runs-listing
+    # note. A notes field that is always populated is not a signal.
+    assert_eq "$(drive)" "0" "control runs"
+    assert_eq "$(rget 'r.notes')" "[]" "the healthy path's notes are empty"
+    log_pass "(u) a degraded listing is noted; the clean path stays silent (both directions)"
+}
+
+test_notes_reach_the_shadow_artifact() {
+    # (v) A channel with no listener is the same defect class as a fire-proof
+    # behind an unused flag, so pin the emit chain: main() must put
+    # result.notes into the CLI output as baseline_notes, and scope-shadow.sh
+    # must write that stdout into the artifact file. These are structural
+    # greps, deliberately cheap: if either link is renamed away, this fails
+    # and the notes silently stop reaching the one place someone looks.
+    assert_eq "$(grep -c 'baseline_notes: result.notes' "$ENGINE")" "1" \
+        "the CLI emits result.notes as baseline_notes"
+    local shadow="$REPO_ROOT/.ci/scripts/ci/scope-shadow.sh"
+    assert_contains "$(grep -A2 -- '--resolve-baseline \\' "$shadow")" 'scope-baseline.json' \
+        "and scope-shadow.sh writes the engine stdout into the shadow artifact"
+    log_pass "(v) the notes channel has a live listener: CLI output into the shadow artifact"
 }
 
 test_unreadable_merge_parent_degrades_to_valve_only_walk() {
@@ -756,6 +794,8 @@ test_fence_stops_the_walk_at_the_merge_boundary
 test_green_attestation_budget_binds_both_ways
 test_cost_lock_pages_not_candidates
 test_per_commit_fallback_still_works_without_a_branch
+test_degraded_listing_is_noted_not_silent
+test_notes_reach_the_shadow_artifact
 test_unreadable_merge_parent_degrades_to_valve_only_walk
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
