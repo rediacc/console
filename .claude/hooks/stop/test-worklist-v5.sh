@@ -2047,12 +2047,12 @@ SUBW="$BASE/subptr"
 mkdir -p "$SUBW"
 git init -q --bare "$SUBW/remote.git"
 git init -q "$SUBW/sub" -b main
-(cd "$SUBW/sub" && echo one >f && git add f \
-    && git -c user.email=t@t -c user.name=t commit -qm one \
-    && git remote add origin "$SUBW/remote.git" && git push -q origin main) >/dev/null 2>&1
+(cd "$SUBW/sub" && echo one >f && git add f &&
+    git -c user.email=t@t -c user.name=t commit -qm one &&
+    git remote add origin "$SUBW/remote.git" && git push -q origin main) >/dev/null 2>&1
 git init -q "$SUBW/super" -b main
-(cd "$SUBW/super" && git -c protocol.file.allow=always submodule add -q "$SUBW/remote.git" sub \
-    && git add -A && git -c user.email=t@t -c user.name=t commit -qm super) >/dev/null 2>&1
+(cd "$SUBW/super" && git -c protocol.file.allow=always submodule add -q "$SUBW/remote.git" sub &&
+    git add -A && git -c user.email=t@t -c user.name=t commit -qm super) >/dev/null 2>&1
 
 probe_moves() {
     python3 -c "
@@ -2073,9 +2073,9 @@ else
     FAIL=$((FAIL + 1))
 fi
 
-(cd "$SUBW/super/sub" && git checkout -q -b feat && echo two >f2 && git add f2 \
-    && git -c user.email=t@t -c user.name=t commit -qm two \
-    && git push -q origin feat && git fetch -q origin) >/dev/null 2>&1
+(cd "$SUBW/super/sub" && git checkout -q -b feat && echo two >f2 && git add f2 &&
+    git -c user.email=t@t -c user.name=t commit -qm two &&
+    git push -q origin feat && git fetch -q origin) >/dev/null 2>&1
 
 OUT=$(probe_moves)
 if [[ "$OUT" == *"sub|"* && "$OUT" == *"origin/feat"* && "$OUT" == *"NOT on origin/main"* ]]; then
