@@ -385,6 +385,106 @@ Three controls confirm the classifier discriminates rather than always saying
 `harness:.ci/scripts/ci/watchdog-monitor.cjs`, a real 16-file delta returns
 `full`, and an unmapped path fails closed to `full` with `unclassified:`.
 
+### The skip plan now encodes pre-existing skips, so the reconcile stops being vacuous
+
+The reconcile shadow had never once produced a meaningful verdict, for two
+separate reasons, and only one of them was known. The first is recorded above:
+every PR in this program touches `.ci/`, so the plan is fail-closed to
+`mode: full` and reconciles trivially. **The second is worse and would have
+survived the fix to the first: the plan encoded only what SCOPE wants, while
+`ci.yml` has skipped whole columns since long before this engine existed.**
+
+Three conditions, all verified in the tree rather than assumed:
+
+- **`full_suite`** (`ci.yml:118`, `github.event_name != 'push'`) gates 16 of the
+  17 planned keys: the twelve `ct-tests` leaves by their own `if:`
+  (`ct-tests.yml:122, 134, 320, 454, 597, 733, 875, 1018, 1182, 1343, 1474,
+  1514`), plus `ops` (`ci.yml:717`), `elite_run` (`:739`), `update_flow`
+  (`:568`) and `package_tests` (`:584`).
+- **`pointer_bump_only`** (`ci.yml:123`) gates **all seventeen**, and ten of
+  them TRANSITIVELY, which is exactly why this could not be read off the leaves'
+  own `if:`: `build-renet` skips (`ci.yml:493`) and everything below inherits
+  through `build-docker-fast` (`:532`), `build-cli` (`:553`) and `build-docker`
+  (`:512`). The twelve `ct-tests` leaves never mention `pointer_bump_only` and
+  all twelve skip on one.
+- **`is_bot`** (`ci.yml:105`) reaches exactly one key, `install_methods`, via
+  `stage-artifacts` (`ci.yml:658`).
+
+**The edge that matters is `install_methods` under `full_suite`.**
+`validate-install` (`ci.yml:1081-1083`) hangs off `stage-artifacts`, which
+carries no `full_suite` clause, so the install matrix genuinely DOES run on
+push-to-main. Exempting it there would have excused a real skip permanently.
+That asymmetry is a test pair, not a comment.
+
+So a live gate today would report **seventeen** `planned-run-but-skipped`
+failures on any pointer-bump PR, a run where nothing is wrong. Measured, not
+predicted: the unannotated plan against an all-skipped jobs payload exits 1 and
+names `unit` and `install_methods` among them.
+
+`plan.conditions` now records the observed values and each job entry carries the
+condition that will skip it, written by the REAL `annotatePlan()` that
+`scope-shadow.sh` calls, so writer and reader share one table instead of two
+that can drift. The reader re-derives from `plan.conditions` and hard-fails on
+disagreement (`preexisting-claim-mismatch`), in both directions: a forged
+per-job exemption and a stale writer that dropped one are equally loud.
+
+**The sharpest decision is that `honorPreexisting` DEFAULTS TO FALSE.** The two
+consumers of `reconcile()` want opposite things. The GATE must not red a
+pointer-bump run. The BASELINE READER, `scope-engine.cjs`'s `attestPlan`, must
+not accept that run as proof: a baseline is "the last run where everything
+passed", and a run where all seventeen keys skipped passed nothing. Had the
+exemption been opt-out, this change would have silently widened what counts as a
+usable baseline and let the delta since a pointer bump go unvalidated. The CLI
+opts in; `attestPlan` never hears of the flag and keeps refusing.
+
+**Non-vacuity is now visible rather than assumed.** The CLI prints the excused
+keys and the headline counts VERIFIED keys, not planned ones:
+`0 of 17 planned keys verified` is what a pointer-bump run reports, which reads
+as the empty result it is instead of as a pass.
+
+Evidence, all run locally with stdout and stderr captured separately:
+
+- `test-skip-plan-reconcile.sh` exit 0, **118 assertion call sites** (was 62).
+  Nine new cases, each a FIRE/SILENT pair.
+- **Five mutants, each caught by a different assertion**, run in a sandbox copy
+  so the shared tree was never touched: force `honorPreexisting` true, make
+  `preexistingSkip` return null, widen `full_suite` to cover `install_methods`,
+  delete the claim-mismatch check, compare conditions as strings. Restored copy
+  back to exit 0.
+- `test-gate-anti-vacuity.sh` exit 0; `test-scope-engine.sh` exit 0 (84);
+  `test-scope-baseline-attest.sh` exit 0 (125), which is the `attestPlan`
+  consumer.
+- The real `scope-shadow.sh` driven against a real merge commit writes a plan
+  whose `conditions` and per-job `preexisting_skip` are correct, and an unset
+  variable is OMITTED rather than defaulted (defaulting `full_suite` to false
+  would have exempted sixteen keys on no evidence).
+- `actionlint .github/workflows/ci.yml` exit 0; `shfmt -i 4 -ci -d` clean on all
+  three shell files.
+
+**One defect fixed in passing, in the file being edited.** The plan writer ended
+in `2>/dev/null || true`, and the upload step carries
+`if-no-files-found: ignore`, so a crash in the writer produced no artifact and
+the reconcile shadow then reported the benign-sounding "no attested plan for
+this run" with the exception thrown away. A writer failure is now printed. Proven
+by making the write fail (`plan.json` as a directory): the script still exits 0,
+as a shadow observer must, but the exception is readable.
+
+**One workflow change, and it is the minimum.** `ci.yml`'s scope-shadow step
+gained three `env:` entries. Two of the three are `steps.init` outputs and
+cannot be derived inside the script; the third is derived from
+`github.event_name` for symmetry. Nothing else in `ci.yml` moved, and the engine
+is still in shadow: flipping it live remains decision D-1.
+
+**Still vacuous for a different reason, and this is the honest caveat.** The
+plan is authored only on `pull_request` (`ci.yml:230, 241, 257`), where
+`full_suite` is always true and `is_bot` always false, so only
+`pointer_bump_only` can fire on today's traffic. The other two become live the
+moment the plan is authored on push. A docs-only PR would now reconcile
+non-vacuously in the sense that matters most (a `reduced` plan whose `run: false`
+keys are checked against a run that really skipped them), but "non-vacuous" for
+the exemption path specifically needs a pointer-bump PR, which is Wave B
+acceptance criterion (b) and still unmet.
+
 ### Merge strategy changed, and it changes how you audit branches
 
 All five repos moved to **rebase-merge only** with `delete_branch_on_merge=true`
@@ -400,3 +500,62 @@ ancestry. Settings were also inconsistent before this: `delete_branch_on_merge`
 was false on renet, account and homebrew-tap and true on console and elite,
 which is exactly why those three accumulated stale remote branches and the other
 two stayed tidy.
+
+### The watchdog reported red for supersession, and the classifier is live
+
+Two findings from one artifact: watchdog run `30534675663`, monitoring console
+run `30530991847` on `0730-2`, 2026-07-30.
+
+**The good half, and it is the first real-traffic proof of Wave A's A3 work.**
+The log carries both halves of that item working on live traffic rather than on
+a hand-run probe:
+
+    [logs] captured the full log for "Quality / Content" (61415 bytes) before any retry
+    Retrying: classifier returned transient at confidence 0.8 -- treating as transient
+
+The pre-retry log capture persisted 61 KB, and the Workers AI classifier
+returned a real verdict at confidence 0.8. The classifier had been answering
+HTTP 402 on every failure and falling back to `confidence: 0`; the fix was the
+model and route change to `@cf/meta/llama-3.3-70b-instruct-fp8-fast` on the
+native `/ai/run/` endpoint, and this is it working outside a probe.
+
+**The defect.** A push created run `30534726467` fifteen seconds before the
+first poll, superseding `30530991847` by concurrency group. The watchdog polled:
+
+    [0m] Run: in_progress | Jobs: 10 done, 7 running, 0 queued, 0 failed, 2 cancelled
+    ##[error]Job cancelled (likely manual / supersession): "Quality / Content"
+
+**Zero failed, two cancelled**, an unambiguous supersession signature, and the
+watchdog nonetheless treated it as a failure: it spent a billed Workers AI
+classification and called `core.setFailed`, so the step concluded `failure` for
+a run nobody broke. The existing mass-cancellation guard could not help, because
+it only fires at `cancelled >= completed / 2`; during a supersession jobs flip a
+few at a time, so on the first poll the ratio is nowhere near met and by the
+time it is met `setFailed` has already stuck.
+
+This is the **mirror image** of the defect Wave A exists to fix. Laundering
+`failure` into `cancelled` hid twelve red nightlies. Reporting `failure` for the
+most ordinary event in the repo trains the operator to ignore watchdog reds,
+which eventually hides a real one just as effectively.
+
+**Fix**: `evaluateSupersession` plus `hasNewerRun` in `watchdog-monitor.cjs`,
+checked at the top of the poll and **before** anything can classify, since
+reaching `classifyFailure` is what spends the request and leads to `setFailed`.
+The verdict requires all three of: no job failed, at least one was cancelled,
+and a newer run demonstrably exists for the same workflow and branch. The API
+lookup runs only once the cheap local half already holds, so a healthy run pays
+nothing, and any error resolves to `false`.
+
+**The polarity is deliberately lopsided.** Too loud costs a spurious red; too
+quiet silently swallows a genuine failure, which is strictly worse. Pushing a
+fix while the old run is still red is the normal way this arises, so
+"a newer run exists" must never on its own excuse a failure. That case is the
+single most important assertion in `test-watchdog-supersession.sh`.
+
+Both controls were **run, not reasoned**: dropping `noFailures` from the
+predicate flips the real-failure case red, and relaxing `newerRunExists === true`
+to `Boolean(...)` flips the strict-comparison case red. The gate is deliberately
+not in the anti-vacuity registry, and that was measured too: it passes all nine
+assertions against the empty fixture, because its only repo dependency is the
+watchdog module the harness copies in, so an entry there could never fail. The
+exclusion is documented in `test-gate-anti-vacuity.sh` alongside the others.

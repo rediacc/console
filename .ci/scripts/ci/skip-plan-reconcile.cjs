@@ -29,10 +29,23 @@
 // plan would let the exact failure it exists to catch (a skip nobody
 // attested) read as green.
 //
+// PRE-EXISTING SKIPS ARE NOT SCOPE DECISIONS, and conflating them is what
+// would have made this gate unshippable. Long before the scope engine existed,
+// ci.yml skipped whole columns for reasons of its own: `full_suite` is false on
+// every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on
+// a submodule-pointer PR, and `is_bot` cuts the staging chain. A plan that says
+// only "scope wants unit to run" is therefore an incomplete prediction: on a
+// pointer-bump PR every one of the 17 keys is planned `run: true` and every one
+// of them skips, so a live gate would report seventeen `planned-run-but-skipped`
+// failures on a run where nothing whatsoever went wrong. The plan now carries
+// the observed condition values (`plan.conditions`) and the reconciler derives
+// the exemption itself, per PREEXISTING_CONDITIONS below.
+//
 // Usage:
 //   skip-plan-reconcile.cjs --plan <plan.json> --jobs <jobs.json> --run-id <id>
-//     plan.json: the attested skip-plan artifact (run_id, mode, jobs{key:
-//       {run, reason}}), as written by initialize in a later chunk.
+//     plan.json: the attested skip-plan artifact (run_id, mode, conditions,
+//       jobs{key: {run, reason, preexisting_skip}}), as written by
+//       scope-shadow.sh via annotatePlan().
 //     jobs.json: the Jobs API payload for the current run ({jobs:[...]} as
 //       `gh api repos/.../actions/runs/<id>/jobs` returns it, or a bare
 //       array). Fetching it is the caller's job; this script does no network.
@@ -106,6 +119,103 @@ const EXPECTED_JOB_NAMES = {
 // own name, and a job with that exact name would already have been matched.
 const FLAT_JOB_KEYS = new Set(['package_tests']);
 
+// ---------------------------------------------------------------------------
+// PRE-EXISTING (non-scope) SKIP CONDITIONS.
+//
+// `activeWhen` is the value of the condition that CAUSES the skip, so
+// `full_suite: false` skips and `pointer_bump_only: true` skips. Comparison is
+// strict against a real boolean: a condition the plan does not carry, or
+// carries as a string or null, is NOT active, so a plan that fails to record a
+// condition gets NO exemption and the reconciler stays at its strict default.
+// Missing information must never widen an exemption.
+//
+// Every entry is derived from the tree, with the gate that performs the skip
+// named. Ten of the seventeen keys are cut TRANSITIVELY, by a caller or a build
+// job going `skipped`, which is why this cannot be read off the leaf's own
+// `if:` (the twelve ct-tests leaves mention only `full_suite`, and never
+// `pointer_bump_only`, yet all twelve skip on a pointer bump).
+//
+//   full_suite   ci.yml:118, `github.event_name != 'push'`. FALSE only on
+//                push-to-main.
+//     - the 12 ct-tests leaves: their own `if: inputs.full_suite == 'true'`
+//       (ct-tests.yml:122, 134, 320, 454, 597, 733, 875, 1018, 1182, 1343,
+//       1474, 1514)
+//     - ops           ci.yml:717   elite_run    ci.yml:739
+//     - update_flow   ci.yml:568   package_tests ci.yml:584
+//     - install_methods is DELIBERATELY ABSENT: `validate-install`
+//       (ci.yml:1081-1083) is gated only on `stage-artifacts`, which has no
+//       full_suite clause (ci.yml:658), so the install matrix DOES run on
+//       push-to-main. Adding it here would exempt a genuine skip.
+//
+//   pointer_bump_only  ci.yml:123 <- initialize.sh:85/131-133 and
+//                detect-pointer-bump.sh:185. TRUE only on a pull_request whose
+//                every commit moves nothing but tree-identical gitlinks.
+//                Cuts ALL SEVENTEEN keys:
+//     - build-renet skips (ci.yml:493) and everything below it inherits:
+//       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 12 leaves;
+//       build-cli (ci.yml:553) -> update_flow (ci.yml:568);
+//       build-docker (ci.yml:512) -> stage-artifacts (ci.yml:658) ->
+//       install_methods (ci.yml:1083); build-docker-fast -> elite_run
+//       (ci.yml:741)
+//     - ops and package_tests carry their own explicit clause (ci.yml:719,
+//       ci.yml:584), which is load-bearing: neither `if:` references its
+//       build need, so under always() they would otherwise RUN and die
+//       fetching a missing artifact (the comment at ci.yml:712-714).
+//
+//   is_bot       ci.yml:105 <- initialize.sh:67-82. TRUE only for a push
+//                authored by github-actions[bot] or dependabot[bot].
+//     - install_methods ONLY, via stage-artifacts (ci.yml:658). The other
+//       sixteen need no entry: is_bot can only be true on a `push`, where
+//       full_suite is already false and already exempts them. Listing them
+//       would be a second, redundant reason for the same skip and would make
+//       the annotation order load-bearing for no gain.
+//
+// NOT MODELLED, and the omission is deliberate: a planned job can also skip
+// because an upstream job FAILED (quality failing skips package_tests,
+// ci.yml:584; build-renet failing skips the whole pipeline). Those are not
+// exempted, because such a run is ALREADY red at `ci-complete`'s tier check,
+// so the extra reconcile failure cannot turn a green run red. The dangerous
+// direction, a false red on an otherwise clean run, is only reachable through
+// the three conditions above; every other non-failure skip path was checked
+// and closed (`ci-build-renet.yml`'s cross-compile-smoke job carries no `if:`
+// at all, so that caller can never report `skipped` through all-inner-skipped).
+// ---------------------------------------------------------------------------
+const CT_TESTS_LEAF_KEYS = [
+  'unit',
+  'e2e_workers',
+  'e2e_ceph',
+  'e2e_ceph_workers',
+  'e2e_k8s',
+  'e2e_k8s_ceph',
+  'e2e_k8s_multinode',
+  'e2e_migrate',
+  'fork_isolation',
+  'renet',
+  'license_enforcement',
+  'account_e2e',
+];
+
+const PREEXISTING_CONDITIONS = {
+  pointer_bump_only: {
+    activeWhen: true,
+    keys: [...CT_TESTS_LEAF_KEYS, 'ops', 'elite_run', 'update_flow', 'package_tests', 'install_methods'],
+  },
+  full_suite: {
+    activeWhen: false,
+    keys: [...CT_TESTS_LEAF_KEYS, 'ops', 'elite_run', 'update_flow', 'package_tests'],
+  },
+  is_bot: {
+    activeWhen: true,
+    keys: ['install_methods'],
+  },
+};
+
+// Fixed evaluation order, so the reported condition is deterministic when two
+// are active at once. Most upstream cut first: `pointer_bump_only` is the only
+// one of the three that can be active on a pull_request, which is the only
+// event that authors a plan today.
+const CONDITION_ORDER = ['pointer_bump_only', 'full_suite', 'is_bot'];
+
 // The name table and scope-map's surface table must cover exactly the same
 // plan keys, or a job could be planned that the reconciler cannot verify (or
 // verified that can never be planned). Drift in either direction throws at
@@ -127,6 +237,69 @@ function validateNameTable(names, surfaces) {
 }
 validateNameTable(EXPECTED_JOB_NAMES, scopeMap.JOB_SURFACES);
 
+// Same discipline for the condition table, and for the same reason: an entry
+// naming a key that no longer exists is an exemption that can never apply, and
+// a condition missing from CONDITION_ORDER would be evaluated by nothing while
+// sitting there reading as deliberate. Both are silent, both are rot, both
+// throw at load rather than degrade quietly.
+function validateConditionTable(conditions, order, names) {
+  for (const [cond, spec] of Object.entries(conditions)) {
+    if (typeof spec.activeWhen !== 'boolean') {
+      throw new Error(`PREEXISTING_CONDITIONS.${cond} has a non-boolean activeWhen`);
+    }
+    if (!order.includes(cond)) {
+      throw new Error(`CONDITION_ORDER omits '${cond}', so it would never be evaluated`);
+    }
+    for (const key of spec.keys) {
+      if (!names[key]) throw new Error(`PREEXISTING_CONDITIONS.${cond} names unknown plan key '${key}'`);
+    }
+  }
+  for (const cond of order) {
+    if (!conditions[cond]) throw new Error(`CONDITION_ORDER has orphan condition '${cond}'`);
+  }
+}
+validateConditionTable(PREEXISTING_CONDITIONS, CONDITION_ORDER, EXPECTED_JOB_NAMES);
+
+// preexistingSkip(key, conditions) -> the name of the first ACTIVE condition
+// that skips this key, or null. `conditions` is the plan's observed values.
+// Strict boolean comparison: absent, null, or the string 'true' all count as
+// NOT active, so an incomplete plan gets no exemption.
+function preexistingSkip(key, conditions) {
+  if (!conditions || typeof conditions !== 'object') return null;
+  for (const cond of CONDITION_ORDER) {
+    const spec = PREEXISTING_CONDITIONS[cond];
+    if (conditions[cond] !== spec.activeWhen) continue;
+    if (spec.keys.includes(key)) return cond;
+  }
+  return null;
+}
+
+// annotatePlan(plan, conditions) -> the same plan, with the observed condition
+// values recorded at the top level and each job entry carrying the condition
+// that will skip it (or nothing). Called by the plan WRITER
+// (.ci/scripts/ci/scope-shadow.sh) so that writer and reader share one table
+// rather than two that can drift; the reader re-derives anyway and hard-fails
+// on disagreement, which is what catches a hand-edited artifact.
+//
+// Only real booleans are recorded. A condition the caller could not determine
+// is OMITTED rather than defaulted, because both defaults are wrong: defaulting
+// `full_suite` to false would exempt sixteen keys on no evidence at all.
+function annotatePlan(plan, conditions) {
+  if (!plan || typeof plan !== 'object') return plan;
+  const observed = {};
+  for (const cond of CONDITION_ORDER) {
+    if (conditions && typeof conditions[cond] === 'boolean') observed[cond] = conditions[cond];
+  }
+  plan.conditions = observed;
+  for (const [key, entry] of Object.entries(plan.jobs || {})) {
+    if (!entry || typeof entry !== 'object') continue;
+    const cond = preexistingSkip(key, observed);
+    if (cond) entry.preexisting_skip = cond;
+    else delete entry.preexisting_skip;
+  }
+  return plan;
+}
+
 // matchJobName(name, expected) -> equal, or expected followed by a matrix or
 // variant parenthesis. See the table comment for why never bare startsWith.
 function matchJobName(name, expected) {
@@ -142,19 +315,45 @@ function parseJobsPayload(payload) {
 }
 
 // ---------------------------------------------------------------------------
-// reconcile(plan, jobs, { runId }) -> { ok, failures, warnings }
+// reconcile(plan, jobs, { runId, honorPreexisting }) -> { ok, failures,
+//   warnings, exempt }
 //
 // Pure. failures are the hard-fail reasons (edge cases 25/27/29/30 plus the
-// malformed-input guards); warnings are the safe-direction findings (28).
+// malformed-input guards); warnings are the safe-direction findings (28);
+// exempt lists the keys a pre-existing condition accounts for.
+//
+// honorPreexisting DEFAULTS TO FALSE, and the default is the interesting half,
+// because the two consumers of this function want OPPOSITE things:
+//
+//   - THE GATE (the CLI, via scope-reconcile-shadow.sh) must not red a run for
+//     a skip the workflow performs on every run of that shape. It passes true.
+//   - THE BASELINE READER (scope-engine.cjs's attestPlan, which calls this
+//     module's reconcile() over a plan downloaded from an EARLIER run) must not
+//     accept such a run as proof. A baseline is "the last run where everything
+//     passed"; a pointer-bump run where all seventeen keys skipped passed
+//     nothing, and treating it as a baseline would let the delta since then go
+//     unvalidated. It passes nothing, so it gets the strict reading and refuses
+//     the candidate with `reconcile:planned-run-but-skipped` exactly as before.
+//
+// So the exemption is opt-in, and the caller that never heard of it keeps the
+// stricter behaviour. Adding it as an opt-OUT would have silently widened what
+// counts as a usable baseline.
 // ---------------------------------------------------------------------------
 function reconcile(plan, jobs, ctx = {}) {
   const failures = [];
   const warnings = [];
+  const exempt = [];
+  const honorPreexisting = ctx.honorPreexisting === true;
 
   // Case 29: no plan means no attestation means nothing can prove the skips
   // were intended. Red, the opposite of the engine's fail-open.
   if (!plan || typeof plan !== 'object') {
-    return { ok: false, failures: ['skip-plan-missing: no attested plan to reconcile against'], warnings };
+    return {
+      ok: false,
+      failures: ['skip-plan-missing: no attested plan to reconcile against'],
+      warnings,
+      exempt,
+    };
   }
 
   // Case 30, anti-tamper: the plan must name THIS run. A plan without a
@@ -172,7 +371,7 @@ function reconcile(plan, jobs, ctx = {}) {
 
   if (!jobs) {
     failures.push('jobs-payload-missing: no usable Jobs API payload');
-    return { ok: false, failures, warnings };
+    return { ok: false, failures, warnings, exempt };
   }
 
   for (const [key, planned] of planJobs) {
@@ -184,7 +383,53 @@ function reconcile(plan, jobs, ctx = {}) {
     }
     const matched = jobs.filter((j) => expected.some((e) => matchJobName(j.name, e)));
 
+    // The exemption is DERIVED from the plan's recorded condition values, never
+    // taken from the per-job field. The field is checked against the derivation
+    // and any disagreement is a hard failure, in BOTH modes: a hand-edited
+    // artifact claiming `preexisting_skip` on a key no active condition covers
+    // would otherwise buy itself a free pass on the one check that can see an
+    // invisible cell. Writer/reader drift lands here too, which is the point.
+    const derivedCond = preexistingSkip(key, plan.conditions);
+    const claimedCond =
+      planned && typeof planned.preexisting_skip === 'string' ? planned.preexisting_skip : null;
+    if (claimedCond !== derivedCond) {
+      failures.push(
+        `preexisting-claim-mismatch: '${key}' claims '${claimedCond || '<none>'}',` +
+          ` the plan's conditions yield '${derivedCond || '<none>'}'`
+      );
+      continue;
+    }
+
+    if (planned && planned.run === true && derivedCond && honorPreexisting) {
+      // Planned to run by SCOPE, but the workflow's own long-standing gate
+      // skips it regardless. Not a scope mismatch, so neither a failure nor a
+      // warning: the run behaved exactly as the plan predicted.
+      exempt.push(`${key} (${derivedCond})`);
+      // Running anyway IS worth a note, in the safe direction: it means this
+      // table over-claims and an exemption is being handed out that nothing
+      // needs. It can never mask a failure, because there is no failure to
+      // mask when a planned-run job ran.
+      for (const job of matched) {
+        if (job.conclusion !== 'skipped') {
+          warnings.push(
+            `preexisting-exempt-but-ran: '${key}' -> '${job.name}' (${job.conclusion})` +
+              ` despite ${derivedCond}; the condition table may be over-broad`
+          );
+        }
+      }
+      continue;
+    }
+
     if (planned && planned.run === true) {
+      // STRICT mode reaching here with an active condition is the baseline
+      // reader refusing a run that skipped work. The condition is no excuse,
+      // but it IS the explanation, and the reader only ever surfaces the FIRST
+      // failure string (`reconcile:<...>`, scope-engine.cjs:249). Naming it
+      // turns an opaque refusal into an actionable one. The leading token is
+      // deliberately unchanged: the trail is read by string match.
+      const strictNote = derivedCond
+        ? ` (pre-existing condition ${derivedCond} was active, so this run is not proof that it ran)`
+        : '';
       if (matched.length === 0) {
         // A SKIPPED REUSABLE CALLER is not a missing job. When the caller of a
         // reusable workflow is skipped, GitHub materialises only the caller
@@ -214,13 +459,15 @@ function reconcile(plan, jobs, ctx = {}) {
         );
         if (skippedCaller) {
           failures.push(
-            `planned-run-but-skipped: '${key}' -> reusable caller '${skippedCaller.name}' was skipped, so its inner jobs never ran`
+            `planned-run-but-skipped: '${key}' -> reusable caller '${skippedCaller.name}' was skipped, so its inner jobs never ran${strictNote}`
           );
           continue;
         }
         // Case 27: planned to run, absent from the Jobs API entirely (a
         // rename, a dropped call, a DAG break). Nothing validated the delta.
-        failures.push(`planned-job-missing: '${key}' matched no job (expected: ${expected.join(' | ')})`);
+        failures.push(
+          `planned-job-missing: '${key}' matched no job (expected: ${expected.join(' | ')})${strictNote}`
+        );
         continue;
       }
       for (const job of matched) {
@@ -231,7 +478,7 @@ function reconcile(plan, jobs, ctx = {}) {
         // failures are ci-complete's tiers' business, not a reconcile
         // violation.
         if (job.conclusion === 'skipped') {
-          failures.push(`planned-run-but-skipped: '${key}' -> '${job.name}'`);
+          failures.push(`planned-run-but-skipped: '${key}' -> '${job.name}'${strictNote}`);
         }
       }
     } else {
@@ -246,7 +493,7 @@ function reconcile(plan, jobs, ctx = {}) {
     }
   }
 
-  return { ok: failures.length === 0, failures, warnings };
+  return { ok: failures.length === 0, failures, warnings, exempt };
 }
 
 // ---------------------------------------------------------------------------
@@ -296,11 +543,24 @@ function main(argv) {
   }
 
   const jobs = parseJobsPayload(jobsRead.value);
-  const result = reconcile(planRead.value, jobs, { runId: opts.runId });
+  // honorPreexisting: the CLI IS the gate. See reconcile()'s header for why the
+  // module default is the opposite and must stay that way.
+  const result = reconcile(planRead.value, jobs, { runId: opts.runId, honorPreexisting: true });
 
   // ::warning:: renders as an Actions annotation and is harmless locally.
   for (const w of result.warnings) process.stdout.write(`::warning::${w}\n`);
   for (const f of result.failures) process.stderr.write(`FAIL: ${f}\n`);
+
+  // The exempt list goes to stdout unconditionally, including on failure. It is
+  // the difference between "this run verified sixteen keys" and "this run
+  // verified one and excused sixteen", and a reconcile whose exempt list is
+  // long is a VACUOUS pass however green it looks. Printing the count only on
+  // success would hide exactly the runs worth doubting.
+  if (result.exempt.length > 0) {
+    process.stdout.write(
+      `pre-existing skips (not scope decisions, not verified by this run): ${result.exempt.join(', ')}\n`
+    );
+  }
 
   if (!result.ok) {
     process.stderr.write('skip-plan reconciliation FAILED: the run skipped work the plan attested to.\n');
@@ -308,8 +568,9 @@ function main(argv) {
   }
   const planned = planRead.value.jobs ? Object.keys(planRead.value.jobs).length : 0;
   process.stdout.write(
-    `skip-plan reconciled: ${planned} planned keys verified against ${jobs ? jobs.length : 0} jobs` +
-      ` (${result.warnings.length} warning(s); unplanned jobs are not the reconciler's business).\n`
+    `skip-plan reconciled: ${planned - result.exempt.length} of ${planned} planned keys verified against` +
+      ` ${jobs ? jobs.length : 0} jobs (${result.exempt.length} exempt, ${result.warnings.length} warning(s);` +
+      ` unplanned jobs are not the reconciler's business).\n`
   );
   return 0;
 }
@@ -320,7 +581,12 @@ if (require.main === module) {
 
 module.exports = {
   EXPECTED_JOB_NAMES,
+  PREEXISTING_CONDITIONS,
+  CONDITION_ORDER,
   validateNameTable,
+  validateConditionTable,
+  preexistingSkip,
+  annotatePlan,
   matchJobName,
   parseJobsPayload,
   reconcile,

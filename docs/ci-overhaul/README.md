@@ -130,5 +130,9 @@ defaults:
 8. **D-8 Merge queue: dropped or live option?** RECOMMENDED: live option, documented design.
 9. **D-9 The two dead `deploy-preview` inject steps?** RECOMMENDED: delete them.
 
-There are also two **spikes** to run before committing to designs, listed in
-[05-execution-guide.md](05-execution-guide.md).
+There were also two **spikes** to run before committing to designs, listed in
+[05-execution-guide.md](05-execution-guide.md). **Both are now settled**; results and full
+evidence in [spike-s1-s2.md](spike-s1-s2.md). In short: `--model claude-sonnet-5` IS honoured,
+so #539 is a cosmetic label bug rather than a review-quality one; and `--max-budget-usd` DOES
+bind under OAuth, but as a between-turns post-hoc stop rather than a ceiling, measured
+overshooting a $0.01 cap to $0.234.

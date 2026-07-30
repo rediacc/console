@@ -232,6 +232,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MERGE_SHA: ${{ github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # The PRE-EXISTING (non-scope) skip conditions, recorded into the plan
+          # so the reconciler can tell "skipped because scope said so" from
+          # "skipped because this workflow has always skipped it here". Without
+          # them the plan is an incomplete prediction: on a pointer-bump PR all
+          # 17 planned keys skip and a live gate would red every one of them.
+          # These three cannot be derived inside the script (two are
+          # `steps.init` outputs, not environment), which is the only reason
+          # this step gained inputs.
+          FULL_SUITE: ${{ github.event_name != 'push' }}
+          POINTER_BUMP_ONLY: ${{ steps.init.outputs.pointer_bump_only }}
+          IS_BOT: ${{ steps.init.outputs.is_bot }}
         run: .ci/scripts/ci/scope-shadow.sh
 
       # if-no-files-found: ignore is what makes this succeed unconditionally:
