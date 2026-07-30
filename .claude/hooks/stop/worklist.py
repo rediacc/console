@@ -2103,6 +2103,14 @@ def main():
     if os.environ.get("STOPHOOK_CHILD"):
         sys.exit(0)
 
+    # BEFORE every other arm. Asking a tool how to use it must never reach the
+    # Stop-hook path, which reads stdin as JSON and, finding none, emits a block
+    # telling the caller they have a hook bug. That happened, and the answer to
+    # "how do I use this" was a wall of unrelated advice.
+    if sys.argv[1:2] and sys.argv[1] in ("--help", "-h", "help"):
+        print(M.USAGE)
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "--path":
         print(worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
         return
