@@ -818,19 +818,40 @@ one missing the trigger declaration; this closes that one gap rather than
 adding new logic, and keeps the same safety invariant (the gate re-checks
 `required_check` is green on the CURRENT head before reviewing anything).
 Manual escape hatch, not a fix for the delivery gap itself: `gh workflow run
-claude-review.yml -f pr_number=<n>` when `workflow_run` fails to fire again.
+claude-review.yml --ref <branch> -f pr_number=<n>` when `workflow_run` fails
+to fire again. **`--ref` is mandatory while this trigger is unmerged**: GitHub
+resolves whether a workflow accepts `workflow_dispatch` from the DEFAULT
+BRANCH's copy of the file, so the bare form fails closed with a 422 ("Workflow
+does not have 'workflow_dispatch' trigger") until main has this block too.
+Observed live and worked end-to-end once `--ref 0730-2` was added: dispatched
+run `30588312405`, `event: workflow_dispatch`, head `c09848cc0` (the current
+PR head at the time).
 
 ### `main` has been red for real, 3 nights running (2026-07-28/29/30)
 
 All three nightly runs (`30327872124`, `30421536380`, `30512465488`) failed
 with `conclusion: failure` (not the old `cancelled`-laundering bug -- A2's fix
-is holding) on the SAME head `b549047790` (#541, the last merge to main).
-Two live, unrelated-to-this-program defects block task #9's real-scheduled-run
-acceptance criterion: `Quality / Content` -- 15 tutorial x language combos
-with flat/estimated word timing (caption-sync gate, see the caption-sync
-pipeline); `Quality / Packages` -- 13 knip unused-import errors plus a
-`local-executor.test.ts` failure (`Signature verification failed:
-DOMException InvalidCharacterError`). Neither is small/local to this branch
-(main needs its own fix branch/PR); deferred rather than fixed inline --
-see the worklist for the operator decision on scope (fix both together, or
-split the audio-regeneration cost out as its own call).
+is holding) on the SAME head `b549047790` (#541, the last merge to main). Two
+live, unrelated-to-this-program defects block task #9's real-scheduled-run
+acceptance criterion:
+
+- `Quality / Content` -- 15 tutorial x language combos with flat/estimated
+  word timing (caption-sync gate, owned by the solution-video/VoxCPM2
+  campaign, not this program). Deliberately left untouched.
+- `Quality / Packages` -- **corrected from an earlier misdiagnosis in this
+  doc**, which blamed "13 knip unused-import errors." Re-verified against the
+  raw job log: those 13 Biome findings are explicitly marked non-blocking
+  ("Frontend lint issues found (non-blocking)") and are not what failed the
+  job. The actual failure is `src/adapters/__tests__/storage.test.ts` >
+  `ConfigFileStorage` > `stress tests` > `should not corrupt file under
+  concurrent writes`: `ENOENT` on `rename(tempPath, configPath)`.
+  `tempPath` was `${configPath}.tmp.${process.pid}.${Date.now()}` -- two
+  `saveUnlocked` calls for the same config name landing in the same
+  millisecond compute an identical path, and whichever renames second hits
+  `ENOENT` because the first already moved it away. Did not reproduce under
+  15 sequential local runs, 6 parallel processes, or 3 runs under synthetic
+  20-core CPU load, consistent with a CI-runner-load-dependent race. Fixed
+  in PR #547 (branch `0731-1`, off main, in a separate worktree) by appending
+  a `randomUUID()` to `tempPath`. Verified: `tsc --noEmit` clean, `biome
+  check` clean, `test:unit --workspace=@rediacc/cli` 159/159 files, 2132/2132
+  tests. PR #547 does not touch the caption-sync failure above.
