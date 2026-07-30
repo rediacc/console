@@ -55,14 +55,23 @@ import wl_core as C
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
 
-# TEN MINUTES, operator directive 2026-07-29, but since v10 the clock only
-# matters when the WORLD has moved: a handover is stale when it is old AND
-# the world signature has changed since it was written. The pure-age rule it
-# replaces was outpaced by the 5-minute poll cron (a quiet session went stale
-# every other poll and could never take the silent path), which was fixing
-# the constant when the KEY was wrong: staleness is about the document no
-# longer matching reality, and an unchanged world cannot invalidate it.
-HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "10"))
+# FIFTEEN MINUTES, operator directive 2026-07-30, raised from the ten set on
+# 2026-07-29. Since v10 the clock only matters when the WORLD has moved: a
+# handover is stale when it is old AND the world signature has changed since
+# it was written. The pure-age rule it replaces was outpaced by the 5-minute
+# poll cron (a quiet session went stale every other poll and could never take
+# the silent path), which was fixing the constant when the KEY was wrong:
+# staleness is about the document no longer matching reality, and an unchanged
+# world cannot invalidate it.
+#
+# Why ten was still too tight even world-keyed: a productive turn moves the
+# world several times, so the rewrite demand landed mid-task rather than at a
+# natural boundary, and each rewrite costs a full round trip against the
+# 1500-char budget. Fifteen spans a normal working turn without letting a
+# document drift far enough from reality to mislead the session that inherits
+# it. It stays an env override so a session with a different cadence can tune
+# it without editing code.
+HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "15"))
 HANDOVER_MIN_CHARS = 250
 # 1500, operator directive 2026-07-30: the 600 cap burned three rewrites in
 # one night (649, 620, 611 chars) before fitting. With the larger budget the
@@ -822,6 +831,34 @@ def loop_state(worklist, session_id):
         return "none", None, "", others, 0
     now = C.utcnow()
     return ("overdue" if mine[0] <= now else "ok"), mine[0], mine[1], others, mine[2]
+
+
+def handover_shape(body):
+    """The SHAPE half of handover_state, over a body that is not on disk yet.
+
+    Extracted so `--handover` can refuse a bad document AT WRITE TIME using the
+    identical rule the Stop check reads with. It used to accept any body, print
+    "handover written", and let the check reject it on the next stop. An
+    accept-then-reject asymmetry is worse than a plain bug here: the session is
+    told the document is fine, so the one artifact designed to survive
+    compaction sits there in a state nothing will fix until a stop happens to
+    notice. Measured 2026-07-30: a 1931-char handover was accepted with rc=0
+    against a 1500-char limit.
+
+    Shape only. Staleness stays in handover_state, because it needs the file's
+    mtime and the world signature, neither of which exists before the write.
+
+    Returns (verdict, detail) with verdict "ok" when the body may be written.
+    """
+    text = (body or "").strip()
+    if len(text) < HANDOVER_MIN_CHARS:
+        return "thin", "%d chars, minimum %d" % (len(text), HANDOVER_MIN_CHARS)
+    if len(text) > HANDOVER_MAX_CHARS:
+        return "bloated", "%d chars, maximum %d" % (len(text), HANDOVER_MAX_CHARS)
+    paras = len([b for b in text.split("\n\n") if b.strip()])
+    if paras > HANDOVER_MAX_PARAGRAPHS:
+        return "fragmented", "%d paragraphs, maximum %d" % (paras, HANDOVER_MAX_PARAGRAPHS)
+    return "ok", "%d chars, %d paragraph(s)" % (len(text), paras)
 
 
 def handover_state(worklist, session_id, cur_sig=None, saved_sig=None):

@@ -356,8 +356,32 @@ sweeper ticks. On a healthy PR that goes green first try, the autopilot costs ze
 invocations through to done.
 
 Billing is subscription via the OAuth token, so the constraint is plan rate limits rather than
-dollars. Concurrent PRs multiply it, so arm PRs serially where possible. **Do not claim
-`--max-budget-usd` is a hard stop until it is verified to bind under OAuth auth.**
+dollars. Concurrent PRs multiply it, so arm PRs serially where possible.
+
+**`--max-budget-usd` binds under OAuth. It is a post-hoc stop, NOT a ceiling, and the wording
+here has to keep that distinction.** Settled by spike S-2 on 2026-07-30 against the pinned
+CLI build itself; full evidence in `spike-s1-s2.md`. Measured: cap `0.01`, exit 1,
+`subtype: error_max_budget_usd`, `terminal_reason: budget_exhausted`, and
+`total_cost_usd: 0.2340351`. A 23x overshoot, because the check compares ACCUMULATED cost
+against the cap **between turns** and nothing bounds a single request. So the real guarantee
+is *total <= budget + one more turn*. At PR #543's measured $5.9255 over 61 turns that is
+about $0.097 a turn, but a first turn ingesting a large diff can overshoot by dollars. Say a
+dollar stop exists; never say a hard cap does.
+
+It binds under OAuth because there is no auth branch on the path: cost is token-times-price
+arithmetic, accumulated and compared with nothing between the credential and the comparison.
+The flag is not an action input, so it must ride in through `claude_args`, which
+`parse-sdk-options.ts` preserves as an unknown flag/value pair and forwards to the SDK's
+`extraArgs` (measured emitting `--max-budget-usd 0.01` verbatim into child argv).
+
+**Design consequence, and it must not be discovered in production.** `error_max_budget_usd`
+carries `is_error: true`, so the step FAILS. The three steps after it in
+`claude-review-reusable.yml` (post report, post inline findings, record reviewed SHA) carry
+only a `gate.outputs.go` condition with no status function, so implicit `success()` skips all
+three. A budget halt today therefore costs a red job, no report, no findings, and **no marker
+SHA**, so the next run re-reviews the same commit and pays again. If the flag is wired in,
+decide deliberately whether those steps get `always()`. Derived from the conditions plus
+documented `if:` semantics, never observed, since no budget halt has occurred here.
 
 ---
 

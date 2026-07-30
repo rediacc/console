@@ -445,6 +445,7 @@ def poll_fast_path(worklist, session_id, event):
     if len([c for c in crons if not is_poll_cron(c)]) > 1:
         return False
     fold = S.load(worklist, sync=False)
+    state_doc = S.load_state(worklist, session_id)
     live_bg = [
         b for b in (event.get("background_tasks") or []) if b.get("status") == "running"
     ]
@@ -471,14 +472,22 @@ def poll_fast_path(worklist, session_id, event):
         if state == ">":
             if C.lease_state(rec["line"]) != "fresh":
                 return False  # an expiring lease is a wake-up; the battery says so
-            age = C.stamp_age_min(rec.get("upd", ""))
-            if age is not None and age >= wl_liveness.LADDER_INVESTIGATE_MIN:
-                return False  # a blocking rung may be due
-    for tid, seen in (S.load_state(worklist, session_id).get("tasks_seen") or {}).items():
-        if seen.get("status") == "in_progress":
-            age = C.stamp_age_min(seen.get("since", ""))
-            if age is not None and age >= wl_liveness.LADDER_INVESTIGATE_MIN:
-                return False
+            if wl_liveness.blocking_rung_due(
+                state_doc, "item:" + rec["id"],
+                C.stamp_age_min(rec.get("upd", "")), rec.get("upd", ""),
+            ):
+                return False  # a blocking rung is DUE, not merely past its age
+    # Ask whether a rung would actually FIRE, never whether the age is past a
+    # threshold. The ladder is latched, so a long-lived subject fires once and
+    # then goes quiet; comparing raw age here made the forfeit outlive the
+    # report and pinned a 298-minute task's poll stops to the full battery
+    # forever. See wl_liveness.blocking_rung_due.
+    for tid, seen in (state_doc.get("tasks_seen") or {}).items():
+        if seen.get("status") == "in_progress" and wl_liveness.blocking_rung_due(
+            state_doc, "task:" + tid,
+            C.stamp_age_min(seen.get("since", "")), seen.get("since", ""),
+        ):
+            return False
     to_me, bcast, answered, _mine = wl_requests.classify_requests(
         wl_requests.read_requests(worklist), session_id
     )
