@@ -38,6 +38,20 @@ export interface ManifestAsset {
   path: string;
   size: number;
   sha256: string;
+  /**
+   * Which TTS engine narrated this, e.g. `voxcpm2`. Set only on the `mp4` field —
+   * the poster and the vertical inherit it by construction, and duplicating it
+   * three times would just create three chances to disagree.
+   *
+   * OPTIONAL, and it has to stay optional: every entry published before
+   * 2026-07-30 predates the field. A gate reading it must treat `undefined` as
+   * "unknown, therefore stale" rather than assuming current.
+   *
+   * This is the only engine provenance CI can see. The pipeline that produces
+   * these videos lives in gitignored `private/`, so the committed manifest is the
+   * sole place a check can ask "what actually spoke this?".
+   */
+  engine?: string;
 }
 
 export interface VideoManifest {
@@ -115,6 +129,10 @@ if (isMain) {
     path: args.path,
     size: Number(args.size),
     sha256: args.sha256,
+    // Omit the key entirely when not supplied, rather than writing `engine: undefined`:
+    // JSON.stringify drops undefined values, so both forms serialize identically, but
+    // only this one keeps the in-memory object honest for anything that checks `in`.
+    ...(args.engine ? { engine: args.engine } : {}),
   });
   console.log(
     `Updated manifest: ${args.kind}.${args.key}.${args.lang}.${args.field} -> ${args.path}`

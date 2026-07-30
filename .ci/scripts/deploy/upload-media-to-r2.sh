@@ -42,6 +42,7 @@ KEY=""
 LANG=""
 FIELD=""
 FILE=""
+ENGINE=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -63,6 +64,13 @@ while [[ $# -gt 0 ]]; do
             ;;
         --file)
             FILE="$2"
+            shift 2
+            ;;
+        # OPTIONAL. The TTS engine that narrated this asset, recorded into the
+        # manifest so CI can tell a current narration from a stale one. Callers
+        # that do not know it simply omit the flag.
+        --engine)
+            ENGINE="$2"
             shift 2
             ;;
         *)
