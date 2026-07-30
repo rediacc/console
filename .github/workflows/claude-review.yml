@@ -17,7 +17,7 @@ on:
   # Manual escape hatch (found 2026-07-30, PR #546 run 30572143752): the
   # workflow_run delivery above has been observed to silently not fire for a
   # green PR-branch "Console CI" completion, with no run of any conclusion
-  # recorded, leaving "Review Complete" red with no path to recover. The gate
+  # recorded, leaving the review-status check red with no path to recover. The gate
   # script and reusable already had a workflow_dispatch/pr_number code path
   # (`claude-review-gate.sh`'s `pull_request | workflow_dispatch` case); only
   # this trigger declaration was missing. Same safety invariant applies: the
