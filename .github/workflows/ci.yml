@@ -844,6 +844,26 @@ jobs:
       - name: Run tunnel lifecycle regression
         env:
           GITHUB_RUN_ID: ${{ github.run_id }}
+          # start-tunnel.sh's own diagnostic asks for exactly this: "Raise
+          # --connect-timeout if this recurs on a slow runner." It recurred.
+          # Runs 30544923735 and 30545891729, eleven minutes apart on
+          # 2026-07-30, both failed with "tunnel URL <...>.trycloudflare.com
+          # never answered in 90s / the URL was published, so cloudflared
+          # started: this is the EDGE not routing". The URL being published
+          # means cloudflared came up locally and the Cloudflare edge was slow
+          # to route it; neither commit under test touched breakpoint code and
+          # the five runs before them passed, so this is the third-party edge.
+          #
+          # Set HERE rather than in the script, because .ci/breakpoint/ is
+          # VENDORED into other repos and check-breakpoint-drift.sh fails on any
+          # local edit -- correctly. start-tunnel.sh reads
+          # ARG_CONNECT_TIMEOUT from the environment (start-tunnel.sh:44), so a
+          # repo-specific value belongs at the call site and costs zero drift.
+          # The interactive default stays 90s: a human at a shell wants to hear
+          # about a dead tunnel quickly, while this unattended regression would
+          # rather wait than go red on somebody else's edge. The job's
+          # timeout-minutes: 8 remains the real backstop.
+          ARG_CONNECT_TIMEOUT: "180"
         run: .ci/breakpoint/scripts/test-breakpoint-lifecycle.sh --port 18099
 
       - name: Teardown (belt and braces)
