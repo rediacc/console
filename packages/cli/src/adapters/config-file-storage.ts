@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import { basename, join } from 'node:path';
 import {
@@ -258,7 +259,14 @@ export class ConfigFileStorage {
     const versioned: RdcConfig = bumpVersion ? { ...config, version: config.version + 1 } : config;
     const encrypted = await this.encryptConfig(versioned);
 
-    const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}`;
+    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME
+    // name that land in the same millisecond compute the identical tempPath.
+    // Whichever renames second then hits ENOENT, because the first already
+    // moved that path away (observed live: run 30512465488, storage.test.ts's
+    // "should not corrupt file under concurrent writes", a lock-window race
+    // under CI-runner load that did not reproduce under local stress testing).
+    // The random suffix makes every tempPath unique regardless of timing.
+    const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}.${randomUUID()}`;
     const content = stringifyConfig(encrypted);
 
     await fs.writeFile(tempPath, content, { mode: 0o600 });
