@@ -30,6 +30,16 @@ REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.M | re.
 # investigation agent. Three is the operator's number, not a guess.
 STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
 
+# v12 CI-WAITING FORCE (operator, 2026-07-30: "is current session sitting for
+# CI pipeline? If so, it should FORCE current session to work on waiting
+# items!!! There is no valid reason to wait."). When every running background
+# task is a CI watch, deferrals that have sat at least CI_FORCE_MIN_AGE are
+# demanded, CI_FORCE_PER_STOP at a time. The age floor is itself an exit: a
+# deferral re-justified with a fresh WHY/HOW leaves the demand window, so an
+# honest answer -- not only doing the work -- always reaches an allowed stop.
+CI_FORCE_MIN_AGE = int(os.environ.get("WORKLIST_CI_FORCE_MIN_AGE", "15"))
+CI_FORCE_PER_STOP = int(os.environ.get("WORKLIST_CI_FORCE_PER_STOP", "3"))
+
 DESIGN_DOCS = os.environ.get("WORKLIST_DESIGN_DOCS", "docs/ci-overhaul")
 DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
 # What counts as "the program surface": changing these is changing the thing the
@@ -283,6 +293,14 @@ def completion_evidence(root, text):
     return False
 
 
+def deferral_is_justified(rec):
+    """Does this [?] carry a usable WHY and HOW (event field or inline
+    tokens)? The shape test only; whether the justification is TRUE is the
+    judge audit's question."""
+    j = S.deferral_justification(rec)
+    return bool(j.get("why") and j.get("how"))
+
+
 # ---- cron memory and docs drift --------------------------------------------
 
 def cron_memory(worklist, session_id, live_count):
@@ -427,6 +445,10 @@ def poll_fast_path(worklist, session_id, event):
     if len([c for c in crons if not is_poll_cron(c)]) > 1:
         return False
     fold = S.load(worklist, sync=False)
+    live_bg = [
+        b for b in (event.get("background_tasks") or []) if b.get("status") == "running"
+    ]
+    ci_watching, _watch_desc = wl_ci.ci_watch_only(live_bg)
     for rec in fold.items:
         if not C.owned_by_me(rec["owner"], session_id):
             continue
@@ -439,6 +461,13 @@ def poll_fast_path(worklist, session_id, event):
             age = C.stamp_age_min(rec.get("upd", ""))
             if age is not None and age >= S.DEFER_WINDOW_MIN:
                 return False  # the autonomy window closed; the battery says so
+            # v12 forfeits: anything that could BLOCK on the full battery
+            # (the justification demand, the CI-waiting force) forfeits the
+            # silent path; the report-only audit rides the hourly horizon.
+            if age is not None and age >= S.JUSTIFY_AGE_MIN and not deferral_is_justified(rec):
+                return False
+            if ci_watching and age is not None and age >= CI_FORCE_MIN_AGE:
+                return False
         if state == ">":
             if C.lease_state(rec["line"]) != "fresh":
                 return False  # an expiring lease is a wake-up; the battery says so
@@ -518,7 +547,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
                              % (rid, age, txt, me_arg, rid, me_arg, rid)))
         elif st == "?":
             if not C.DEFAULT_TOKEN.search(rec["line"]):
-                rows.append((2, "  - [?] #%s (age %s, NO DEFAULT) %s\n        NEXT: --defer %s %s '<question> DEFAULT: <action>'"
+                rows.append((2, "  - [?] #%s (age %s, NO DEFAULT) %s\n        NEXT: --defer %s %s '<question> DEFAULT: <action> WHY: <reason> HOW: <resolution>'"
                              % (rid, age, txt, me_arg, rid)))
             elif upd is not None and upd >= S.DEFER_WINDOW_MIN:
                 rows.append((1, "  - [?] #%s WINDOW CLOSED (waited %s) %s\n        NEXT: execute its DEFAULT now, then --tick %s %s '<evidence>'"
@@ -873,6 +902,34 @@ def run_stop(event, event_ok, worklist, hook_file):
                 me8,
             )
         )
+    # ---- v12 JUSTIFICATION: a [?] must earn its seat. New deferrals are
+    # gated at --defer; the markdown inbox and older sessions can still park
+    # one without a WHY/HOW, so those are demanded once aged -- bounded, the
+    # same drain shape as the expired queue. Expired items are excluded: they
+    # already carry the stronger execute-the-DEFAULT demand above.
+    expired_ids = {r["id"] for r in expired}
+    unjustified = [
+        r for r in deferred_recs
+        if r["id"] not in expired_ids
+        and C.DEFAULT_TOKEN.search(r["line"])
+        and (C.stamp_age_min(r.get("upd", "")) or 0) >= S.JUSTIFY_AGE_MIN
+        and not deferral_is_justified(r)
+    ]
+    if unjustified:
+        shown = unjustified[:S.JUSTIFY_PER_STOP]
+        violations.append(
+            M.V_UNJUSTIFIED
+            % (
+                len(unjustified),
+                S.JUSTIFY_AGE_MIN,
+                "\n".join("    #%s %s" % (r["id"], r["line"][:150]) for r in shown),
+                "" if len(unjustified) <= len(shown) else
+                "    (and %d more, held back so this drains %d per stop)\n"
+                % (len(unjustified) - len(shown), S.JUSTIFY_PER_STOP),
+                me8,
+                me8,
+            )
+        )
     if req_to_me or req_bcast:
         rows = []
         for r in req_to_me + req_bcast:
@@ -1188,6 +1245,42 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.V_LADDER_RESOLVE
             % ("\n".join("    " + s for s in ladder_res), facts, me8)
         )
+    # ---- v12 CI-WAITING FORCE. The observed failure, three times in one
+    # night: the only thing in flight is a CI watch, the run is healthy, and
+    # the stop is a Remaining table while 30+ aged [?] sit untouched. When
+    # watching CI is ALL the in-flight work, waiting is not a valid stop:
+    # the aged backlog is demanded, oldest first, bounded per stop. Every
+    # named item has a single-turn solo exit (do it and tick, execute its
+    # DEFAULT early, or re-justify with --defer, which resets its age below
+    # CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
+    ci_watching, watch_desc = wl_ci.ci_watch_only(live_bg)
+    if ci_watching:
+        backlog = [
+            r for r in deferred_recs
+            if (C.stamp_age_min(r.get("upd", "")) or 0) >= CI_FORCE_MIN_AGE
+        ]
+        if backlog:
+            backlog.sort(key=lambda r: -(C.stamp_age_min(r.get("upd", "")) or 0))
+            rows = []
+            for r in backlog[:CI_FORCE_PER_STOP]:
+                if not C.DEFAULT_TOKEN.search(r["line"]):
+                    verb = ("give it a DEFAULT and a WHY/HOW with --defer %s %s, "
+                            "or just do it and --tick" % (me8, r["id"]))
+                elif not deferral_is_justified(r):
+                    verb = ("do it now and --tick %s %s '<evidence>', or justify "
+                            "it with --defer (WHY/HOW)" % (me8, r["id"]))
+                else:
+                    verb = ("execute its DEFAULT now and --tick %s %s "
+                            "'<evidence>'; the wait was the only reason to hold it"
+                            % (me8, r["id"]))
+                rows.append(
+                    "    #%s (sat %dm) %s\n        NEXT: %s"
+                    % (r["id"], C.stamp_age_min(r.get("upd", "")) or 0,
+                       r["line"][:120], verb)
+                )
+            violations.append(
+                M.V_CI_WAITING % (watch_desc, len(backlog), "\n".join(rows))
+            )
     # CLAUDE.md rule 2 says discovery is always in scope and FIXING is the default;
     # the "found, not fixed" list is meant as a last resort, not a parking bay. A
     # session that ends every turn with one has converted a fixing rule into a
@@ -1262,6 +1355,38 @@ def run_stop(event, event_ok, worklist, hook_file):
     # question exists for. v10: an identical world and message within the
     # cache TTL reuses the last clean "stop" verdict instead of re-paying the
     # call; fix signals always miss (they change the world signature).
+    #
+    # v12 DEFERRAL AUDIT (operator: "Haiku should ask 'Why' and 'How'
+    # questions... there is no human rights with him"). Aged JUSTIFIED
+    # deferrals ride the same judge call as an extra section, so a stop never
+    # pays a second model invocation; unjustified ones were demanded
+    # statically above and never reach here. Bounded batch, oldest first, and
+    # a banked "valid" verdict is keyed to the item's upd stamp, so an
+    # untouched item is interrogated exactly once per generation.
+    audit_cache = state_doc.setdefault("defer_audit", {})
+    for k in [k for k in audit_cache if k not in fold.by_id]:
+        del audit_cache[k]  # its item is gone; a banked verdict for it is litter
+    audit_batch = []
+    if not wl_judge.JUDGE_DISABLED:
+        for r in sorted(
+            deferred_recs, key=lambda r: -(C.stamp_age_min(r.get("upd", "")) or 0)
+        ):
+            age = C.stamp_age_min(r.get("upd", "")) or 0
+            if age < S.DEFER_AUDIT_MIN:
+                break  # sorted oldest-first: everything after is younger
+            if not C.DEFAULT_TOKEN.search(r["line"]) or not deferral_is_justified(r):
+                continue
+            banked = audit_cache.get(r["id"])
+            if (
+                isinstance(banked, dict)
+                and banked.get("stamp") == r.get("upd")
+                and banked.get("verdict") == "valid"
+            ):
+                continue
+            audit_batch.append(r)
+            if len(audit_batch) >= S.DEFER_AUDIT_BATCH:
+                break
+    audit_note = ""
     judge_cached = False
     if (something_remains or reg_signals) and not wl_judge.JUDGE_DISABLED:
         streak = int(counter.read_text()) if counter.exists() else 0
@@ -1275,8 +1400,33 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 or "  (none)",
             }
+        audit_extra = ""
+        if audit_batch:
+            arows = []
+            for r in audit_batch:
+                j = S.deferral_justification(r)
+                arows.append(
+                    "  id=%s  sat %dm  %s\n    WHY: %s\n    HOW: %s%s"
+                    % (
+                        r["id"],
+                        C.stamp_age_min(r.get("upd", "")) or 0,
+                        r["text"][:160],
+                        j.get("why", "(none)")[:200],
+                        j.get("how", "(none)")[:200],
+                        "".join(
+                            "\n    %s: %s" % (k.upper(), j[k][:120])
+                            for k in ("tried", "needs", "blocked_on")
+                            if j.get(k)
+                        ),
+                    )
+                )
+            audit_extra = M.DEFER_AUDIT_PROMPT % {
+                "n": len(audit_batch),
+                "window": S.DEFER_WINDOW_MIN,
+                "items": "\n".join(arows),
+            }
         verdict = None
-        if not reg_signals:
+        if not reg_signals and not audit_batch:
             verdict = wl_judge.cached_stop_verdict(state_doc, cur_sig, last_msg)
             judge_cached = verdict is not None
         err = None
@@ -1288,7 +1438,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 % (llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
                    "" if lcrons == 1 else "s"),
                 cited_excerpts(root, last_msg),
-                extra=reg_extra,
+                extra=reg_extra + audit_extra,
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
@@ -1348,6 +1498,72 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "reason": payload + "\n\n" + guide,
                     }
                 )
+        # v12: the audit verdicts are processed BEFORE stop/continue, same
+        # precedence argument as the regression gate: a banked "valid" must
+        # persist, and a do_now must fire, whatever the judge said about the
+        # stop itself.
+        if audit_batch:
+            akind, avalids, aorders = wl_judge.apply_defer_audit(
+                verdict.get("defer_audit"), audit_batch
+            )
+            if akind == "malformed":
+                counter.write_text(str(streak + 1))
+                C.emit(
+                    {
+                        "systemMessage": "Stop hook: a deferral audit was "
+                        "requested but the judge returned no usable "
+                        "defer_audit. Blocking, per no-escape-hatch.",
+                        "decision": "block",
+                        "reason": M.R_AUDIT_MALFORMED
+                        % (repr(verdict.get("defer_audit"))[:200], hook_file)
+                        + "\n\n" + guide,
+                    }
+                )
+            for rid, stamp, reason in avalids:
+                audit_cache[rid] = {
+                    "stamp": stamp,
+                    "verdict": "valid",
+                    "reason": reason[:160],
+                    "at": C.stamp_now(),
+                }
+            S.save_state(worklist, session_id, state_doc)
+            if avalids:
+                audit_note = M.N_DEFER_AUDIT_OK % (
+                    len(avalids),
+                    "\n".join(
+                        "  #%s: %s" % (rid, reason[:160]) for rid, _st, reason in avalids
+                    ),
+                )
+            if aorders:
+                # The REOPEN is the enforcement: a rejected deferral becomes
+                # an ordinary open [ ] item, so the existing open-items
+                # machinery (and the tick evidence gate) owns it from here.
+                # The exits are the open item's exits: do it and tick with
+                # evidence, or re-defer with a justification that carries
+                # the fact the judge missed -- which is itself re-audited.
+                for rid, order in aorders:
+                    S.set_state(
+                        worklist, "judge", rid, " ",
+                        "REOPENED by the stop-gate judge: %s" % order[:160],
+                    )
+                counter.write_text(str(streak + 1))
+                C.emit(
+                    {
+                        "systemMessage": "Stop hook: the deferral audit "
+                        "rejected %d justification(s); those items are open "
+                        "work again." % len(aorders),
+                        "decision": "block",
+                        "reason": M.V_DEFER_AUDIT
+                        % (
+                            len(aorders),
+                            "\n".join(
+                                "  #%s  ORDER: %s" % (rid, order) for rid, order in aorders
+                            ),
+                            me8,
+                        )
+                        + "\n\n" + guide,
+                    }
+                )
         judged_ok = verdict["verdict"] == "stop"
         if verdict["verdict"] == "continue":
             counter.write_text(str(streak + 1))
@@ -1389,6 +1605,8 @@ def run_stop(event, event_ok, worklist, hook_file):
                 (verdict or {}).get("reason", "")[:200],
             )
         )
+    if audit_note:
+        parts.append(audit_note)
     if ci_report:
         parts.append(ci_report)
     if ladder_pings:

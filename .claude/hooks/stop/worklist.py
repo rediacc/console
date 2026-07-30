@@ -19,6 +19,17 @@ staleness; and the judge caches identical verdicts (wl_judge). The one
 3600-line file became nine modules; worklist_messages.py remains the
 catalogue of user-facing prose.
 
+v12 (2026-07-30, operator request: "Too many '[?]'. This is an escape
+hatch."): a deferral must EARN its seat. --defer validates WHY:/HOW: (plus
+optional TRIED:/NEEDS:/BLOCKED_ON:) at creation and stores them as real
+fields; an aged [?] without them is demanded, bounded per stop (wl_checks);
+a justified one faces the judge's audit riding the existing judge call, and
+a rejected justification REOPENS the item as [ ] (wl_judge.apply_defer_audit
+fails closed); and a session whose only in-flight work is a CI watch is
+FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every
+demand's exit is completable alone in one turn: do it and tick with
+evidence, execute the DEFAULT, or answer the WHY/HOW honestly.
+
 MODULE MAP:
     wl_core       shared primitives (paths, git, regexes, tasks, transcript)
     wl_store      event log, markdown sync, sidecars, session state doc
@@ -223,9 +234,21 @@ def _item_cli(argv, worklist):
         if not C.DEFAULT_TOKEN.search(rest):
             die("a [?] without a DEFAULT: is a note, not a decision; append "
                 "'DEFAULT: <what you will do if unanswered>'")
-        S.set_state(worklist, me, item_id, "?", rest)
-        print("deferred #%s; it will be reported every stop and its DEFAULT "
-              "executes after %d min" % (item_id, S.DEFER_WINDOW_MIN))
+        # v12: a deferral must EARN its seat at creation time, the same way
+        # --tick refuses evidence-free completion. The cheap shape gate lives
+        # here; whether the WHY is TRUE is the judge audit's question later.
+        just = C.parse_justification(rest)
+        why, how = just.get("why", ""), just.get("how", "")
+        if not why or not how:
+            die(M.CLI_DEFER_NO_JUSTIFICATION)
+        vague = C.VAGUE_WHY_RE.search(why)
+        if vague or len(why) < 12:
+            die(M.CLI_DEFER_VAGUE_WHY % (vague.group(0) if vague else why))
+        S.set_state(worklist, me, item_id, "?", rest, extra={"j": just})
+        print("deferred #%s with its justification on record; it is reported "
+              "every stop, its WHY faces the judge's audit after %d min, and "
+              "its DEFAULT executes after %d min"
+              % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN))
         return
     if mode == "--update":
         if not rest:

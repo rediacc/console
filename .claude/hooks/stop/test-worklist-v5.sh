@@ -1988,6 +1988,13 @@ ARITY = {
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
+    "V_UNJUSTIFIED": (2, 30, "rows", "", "m", "m"),
+    "V_CI_WAITING": ("w", 2, "rows"),
+    "V_DEFER_AUDIT": (1, "rows", "m"),
+    "N_DEFER_AUDIT_OK": (1, "rows"),
+    "R_AUDIT_MALFORMED": ("p", "f"),
+    "CLI_DEFER_NO_JUSTIFICATION": None, "CLI_DEFER_VAGUE_WHY": ("w",),
+    "DEFER_AUDIT_PROMPT": {"n": 1, "window": 120, "items": "i"},
     "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
     "V_LADDER_RESOLVE": ("rows", "facts", "m"),
     "N_LADDER_PING": ("rows", "m"),
@@ -2625,7 +2632,7 @@ say "answer
 ## Remaining
 - the two-hour stall"
 check "125 quiet minutes hits the RESOLVE rung" block "QUIET FOR TWO HOURS"
-reqcli --defer deadbeef aaaa2222 "keep waiting on the delegate? DEFAULT: stop it and redelegate" >/dev/null
+reqcli --defer deadbeef aaaa2222 "keep waiting on the delegate? DEFAULT: stop it and redelegate WHY: the delegate holds state only it can flush, so killing it loses work HOW: the operator says stop, or the DEFAULT redelegates" >/dev/null
 newturn
 say "deferred it
 
@@ -3009,6 +3016,284 @@ if grep -qF -- "--tick deadbeef" <<<"$OPEN" && grep -qF "open thing" <<<"$OPEN" 
     pass "--list --open shows the hook's slice; plain --list keeps the history"
 else
     fail "CLI slice mismatch: OPEN=${OPEN:0:200} FULL=${FULL:0:120}"
+fi
+
+# ---------------------------------------------------------------------------
+# v12 (cases 147+): deferral justification (WHY/HOW as real store fields),
+# the harsh judge audit over sitting [?] items, and the CI-waiting force.
+# The operator's evidence: 30+ deferrals sat 117 minutes while the session
+# stopped three times with "the run is healthy"; one deferral requested a
+# feature that had ALREADY been built. Every FIRE case is paired with a
+# SILENT control differing by one planted fact, and every demand's solo exit
+# is proven to reach an allowed stop (the anti-deadlock property).
+# ---------------------------------------------------------------------------
+
+shim_judge_out() { # shim_judge_out '<structured_output JSON>' -- canned claude + call counter
+    SO="$1" CALLS="$BASE/judgecalls" SHIM="$BASE/binonly/claude" python3 -c '
+import json, os, pathlib, stat
+out = {"is_error": False, "structured_output": json.loads(os.environ["SO"])}
+body = ("#!/bin/bash\necho x >> " + json.dumps(os.environ["CALLS"]) + "\n"
+        "echo " + json.dumps(json.dumps(out)) + "\n")
+p = pathlib.Path(os.environ["SHIM"])
+p.write_text(body)
+p.chmod(p.stat().st_mode | stat.S_IEXEC)
+'
+}
+
+echo "== 147. --defer refuses a deferral that cannot justify its seat =="
+setup
+NID=$(reqcli --add deadbeef "choose the flag default" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT=$(reqcli --defer deadbeef "$NID" "keep the flag? DEFAULT: keep it" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "WHY:" <<<"$OUT" && grep -qF "HOW:" <<<"$OUT"; then
+    pass "a deferral with no WHY/HOW is refused, naming both fields"
+else
+    fail "unjustified --defer was accepted (rc=$RC): ${OUT:0:200}"
+fi
+if ! grep -q '"ev":"state"' "${WL%.md}.events.jsonl"; then
+    pass "the refused defer wrote NO state event (a rejected write is not a delivered one)"
+else
+    fail "a refused defer still wrote an event: $(grep '"ev":"state"' "${WL%.md}.events.jsonl")"
+fi
+OUT=$(reqcli --defer deadbeef "$NID" "keep the flag? DEFAULT: keep it WHY: did not get to it yet HOW: revisit next week" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "avoidance" <<<"$OUT"; then
+    pass "a vacuous WHY ('did not get to it') is refused as avoidance"
+else
+    fail "the vague-why gate did not fire (rc=$RC): ${OUT:0:200}"
+fi
+OUT=$(reqcli --defer deadbeef "$NID" "keep the flag? DEFAULT: keep it WHY: flipping it changes billing for live users, an operator-only call HOW: operator confirms, or the DEFAULT keeps it TRIED: read the pricing doc BLOCKED_ON: operator" 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -q '"j":{' "${WL%.md}.events.jsonl" &&
+    grep -qF '"why":"flipping it changes billing' "${WL%.md}.events.jsonl" &&
+    grep -qF '"blocked_on":"operator"' "${WL%.md}.events.jsonl"; then
+    pass "a justified defer lands with WHY/HOW/TRIED/BLOCKED_ON as real JSON fields"
+else
+    fail "justified defer rc=$RC or fields missing: $(tail -c 300 "${WL%.md}.events.jsonl")"
+fi
+
+echo "== 148. an AGED [?] with no justification is demanded, bounded =="
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"dddd1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"quarantine the leg? DEFAULT: quarantine it"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the quarantine decision, deferred"
+check "a 60-minute [?] with no WHY/HOW blocks for its justification" block "NO justification on record"
+# THE HONEST-ANSWER EXIT (anti-deadlock): re-deferring with a WHY/HOW is
+# completable alone in one turn, and it reaches an allowed stop.
+reqcli --defer deadbeef dddd1111 "quarantine the leg? DEFAULT: quarantine it WHY: only the operator can accept the coverage loss it causes HOW: operator approves, or the DEFAULT quarantines it" >/dev/null
+newturn
+say "justified the deferral
+
+## Remaining
+- the quarantine decision, deferred with its justification"
+check "answering the WHY/HOW honestly reaches an allowed stop" allow "deferred rather than done"
+# CONTROL: the same age WITH a justification never fires (one planted fact).
+setup
+brief_now
+hand_now
+printf '{"ev":"add","id":"dddd1112","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"price the tier? DEFAULT: keep the price WHY: pricing is an operator-only call with revenue stakes HOW: operator picks a number"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the pricing decision, deferred with its justification"
+out="$(run)"
+got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+if [[ "$got" == "allow" ]] && ! grep -qF "NO justification on record" <<<"$out"; then
+    pass "CONTROL: the same aged [?] WITH a WHY/HOW does not fire"
+else
+    fail "justified deferral was nagged (got=$got): ${out:0:260}"
+fi
+# DRAIN CAP: five aged unjustified arrive three at a time, never as a wall.
+setup
+brief_now
+hand_now
+for i in 1 2 3 4 5; do
+    printf '{"ev":"add","id":"dddd222%s","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"aged bare question %s DEFAULT: option A"}\n' \
+        "$i" "$OLD" "$i" >>"${WL%.md}.events.jsonl"
+done
+say "answer
+
+## Remaining
+- five bare deferrals"
+out="$(run)"
+if grep -qF "5 deferred item(s) have sat" <<<"$out" && grep -qF "and 2 more, held back" <<<"$out"; then
+    pass "five unjustified deferrals drain 3 per stop, never as a wall"
+else
+    fail "justification drain cap wrong: ${out:0:300}"
+fi
+
+echo "== 149. THE CENTREPIECE: sitting on a CI watch forces the backlog =="
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"}]'
+say "the run is healthy, nothing to do
+
+## Remaining
+- the backfill decision, deferred"
+check "a CI watch as the ONLY in-flight work demands the aged backlog by id" block "YOU ARE SITTING ON CI"
+out="$(run)"
+if grep -qF "#eeee1111" <<<"$out" && grep -qF "NEXT:" <<<"$out"; then
+    pass "the force names the item id and its next verb"
+else
+    fail "no id or verb in the CI-waiting block: ${out:0:300}"
+fi
+# ANTI-DEADLOCK: doing the demanded work reaches an allowed stop, with the
+# same watch still running.
+reqcli --tick deadbeef eeee1111 "backfilled, exit 0" >/dev/null
+newturn
+say "executed the backfill default while the run finished
+
+## Remaining
+nothing open; the CI watch is still running"
+check "doing the demanded work reaches an allowed stop under the same watch" allow ""
+# CONTROL 1 (one planted fact: a real worker beside the watch): not sitting.
+setup
+brief_now
+hand_now
+printf '{"ev":"add","id":"eeee2221","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"},{"id":"bw2","type":"shell","status":"running","command":"bash scripts/build-embed.sh","description":"rebuild embed assets"}]'
+say "watching the run while the embed rebuild runs
+
+## Remaining
+- the backfill decision, deferred"
+out="$(run)"
+if ! grep -qF "SITTING ON CI" <<<"$out"; then
+    pass "CONTROL: a non-watch worker beside the watch means not sitting"
+else
+    fail "the force fired despite real delegated work: ${out:0:260}"
+fi
+# CONTROL 2 (one planted fact: the backlog is fresh): nothing to force.
+setup
+brief_now
+hand_now
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"eeee3331","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"backfill the audit log? DEFAULT: backfill last 30 days WHY: only the operator can accept the storage cost HOW: operator confirms the budget"}\n' \
+    "$NOW" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"cw1","type":"shell","status":"running","command":"gh run watch 30514648812 --exit-status","description":"watch CI run"}]'
+say "watching the run
+
+## Remaining
+- the backfill decision, freshly deferred"
+out="$(run)"
+if ! grep -qF "SITTING ON CI" <<<"$out"; then
+    pass "CONTROL: a FRESH deferral is not demanded (re-justifying is a real exit)"
+else
+    fail "the force fired on a fresh backlog: ${out:0:260}"
+fi
+
+echo "== 150. the judge AUDITS sitting justifications; do_now REOPENS the item =="
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"ffff1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"quarantine the flaky leg? DEFAULT: quarantine it WHY: only the operator can accept the coverage loss HOW: operator approves the quarantine"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the quarantine decision, deferred with its justification"
+shim_judge_out '{"verdict":"stop","reason":"ok","next_action":"none","defer_audit":[{"id":"ffff1111","verdict":"do_now","reason":"the flake stats are in the tree","order":"read the flake stats and quarantine it yourself"}]}'
+checkj "a do_now audit verdict blocks with the judge's order" block "DEFERRAL AUDIT REJECTED"
+LIST="$(reqcli --list)"
+if grep -qF -- "- [ ]" <<<"$LIST" && grep -qF "REOPENED by the stop-gate judge" <<<"$LIST"; then
+    pass "the rejected deferral is REOPENED as ordinary open work"
+else
+    fail "no reopened item in the store: ${LIST:0:260}"
+fi
+# ANTI-DEADLOCK: doing the reopened work reaches an allowed stop.
+reqcli --tick deadbeef ffff1111 "quarantined, exit 0" >/dev/null
+newturn
+say "quarantined the leg as ordered
+
+## Remaining
+nothing"
+checkj "ticking the reopened item with evidence reaches an allowed stop" allow ""
+
+echo "== 151. a VALID audit verdict is banked; an untouched item is asked once =="
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"ffff2221","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"rotate the org key? DEFAULT: keep the schedule WHY: rotation locks every teammate out for an hour, an operator-only call HOW: operator names the window"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the rotation decision, deferred with its justification"
+shim_judge_out '{"verdict":"stop","reason":"genuinely operator-only","next_action":"none","defer_audit":[{"id":"ffff2221","verdict":"valid","reason":"locking teammates out is a real operator-only stake","order":""}]}'
+checkj "a valid verdict allows and reports the banked reason" allow "survived interrogation"
+N1=$(wc -l <"$BASE/judgecalls" 2>/dev/null || echo 0)
+checkj "the untouched item is not re-audited (banked per stamp)" allow ""
+N2=$(wc -l <"$BASE/judgecalls" 2>/dev/null || echo 0)
+if [[ "$N1" -eq 1 && "$N2" -eq 1 ]]; then
+    pass "one judge call total: the bank and the verdict cache both held ($N1,$N2)"
+else
+    fail "judge was re-paid for an untouched item: calls=$N1 then $N2"
+fi
+# FAIL CLOSED: an audit that was requested and not answered is a judge error.
+setup
+brief_now
+hand_now
+printf '{"ev":"add","id":"ffff3331","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"rotate the org key? DEFAULT: keep the schedule WHY: rotation locks every teammate out for an hour, an operator-only call HOW: operator names the window"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the rotation decision, deferred with its justification"
+shim_judge_out '{"verdict":"stop","reason":"ok","next_action":"none"}'
+checkj "a requested audit with no defer_audit answer FAILS CLOSED" block "no usable defer_audit"
+
+echo "== 152. the silent poll forfeits to the justification demand =="
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-40 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"dddd7771","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"bare aged question DEFAULT: option A"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the bare deferral"
+check "the full stop demands the justification (and banks the poll baseline)" block "NO justification on record"
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "NO justification on record" <<<"$OUT"; then
+    pass "a poll stop cannot slip past an unjustified aged [?]"
+else
+    fail "the poll fast path swallowed the justification demand: '${OUT:0:200}'"
+fi
+# CONTROL (one planted fact: the same item, justified): the poll is silent.
+setup
+brief_now
+hand_now
+printf '{"ev":"add","id":"dddd7772","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"aged question DEFAULT: option A WHY: only the operator can weigh the trade HOW: operator answers"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- the justified deferral"
+check "baseline stop allows" allow ""
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    pass "CONTROL: the same age WITH a justification keeps the silent poll"
+else
+    fail "a justified deferral forfeited the fast path: rc=$RC '${OUT:0:160}'"
 fi
 
 echo
