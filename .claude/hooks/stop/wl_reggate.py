@@ -1,0 +1,294 @@
+"""wl_reggate: the v7 regression-gate machinery and its v8 bookkeeping.
+
+WHY (v7, operator request): "you fixed but we didn't have a mechanism for
+future regressions." A fix without a gate is a defect scheduled to return,
+and the i18n cross-locale bug proved it: fixed by hand, then invisible to
+every existing check by construction. On every stop where a fix landed, the
+judge is asked whether a gate protects it, and every model claim is VERIFIED
+against artifacts: a named existing gate must be a real check:* key; a new
+gate counts only when WIRED (reachable from `npm run ci` TRANSITIVELY) and
+its bounded run is green (cached by content hash).
+
+Detection is from ARTIFACTS, never prose: commit subjects matching
+^(fix|revert)[(!:] between the marker's last-seen HEAD and current HEAD,
+plus newly ticked `- [x]` items owned by this session. A fix-set touching
+only docs/** and **/*.md never asks. A settled fix-set is NEVER re-asked.
+
+FAIL SAFE: a missing marker initialises to current HEAD and asks nothing
+that stop; a corrupt one does the same plus ONE systemMessage line. Never a
+block, never silent. No field-wise salvage: any invalid shape discards the
+file, because half-parsed fixsets silently resurrect a blocked question as
+settled.
+"""
+
+import glob
+import hashlib
+import json
+import os
+import pathlib
+import re
+import subprocess
+
+import wl_core as C
+import worklist_messages as M
+
+FIX_SUBJECT = re.compile(r"^(fix|revert)[(!:]")
+REGGATE_TIMEOUT_S = int(os.environ.get("WORKLIST_REGGATE_TIMEOUT_S", "120"))
+REGGATE_VERDICTS = ("not-applicable", "covered", "one-off", "proven", "deferred")
+# Where a freshly written gate leaves its artifact. Both shapes exist in this
+# repo; anything else is not a gate the ci chain can run.
+CHECK_SCRIPT_GLOBS = ("scripts/check-*.ts", ".ci/scripts/quality/check-*.sh")
+# UPGRADE GUARD (v10). Tick identity is the hash of the RENDERED line, and the
+# v10 store rewrite changed rendering, so the first stop after an upgrade can
+# see every historical [x] as "new" (791 in the live store). A flood of ticks
+# is bookkeeping drift, not 791 simultaneous fixes: absorb silently with one
+# systemMessage line instead of asking the judge about ancient history.
+TICK_FLOOD = int(os.environ.get("WORKLIST_REGGATE_TICK_FLOOD", "20"))
+
+
+def reggate_path(worklist, session_id):
+    return worklist.with_suffix(".reggate-%s" % (session_id or "unknown")[:8])
+
+
+def load_reggate(path):
+    """(state, forgot). See the module docstring's FAIL SAFE contract."""
+    default = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
+    if not path.exists():
+        return default, False
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+        ok = (
+            isinstance(d, dict)
+            and isinstance(d.get("head"), str)
+            and isinstance(d.get("seen_ticks"), list)
+            and all(isinstance(t, str) for t in d.get("seen_ticks", []))
+            and isinstance(d.get("fixsets"), dict)
+            and all(
+                isinstance(v, dict) and v.get("verdict") in REGGATE_VERDICTS
+                for v in d.get("fixsets", {}).values()
+            )
+            and isinstance(d.get("gate_runs"), dict)
+        )
+    except (OSError, ValueError):
+        ok, d = False, None
+    if not ok:
+        return default, True
+    return d, False
+
+
+def save_reggate(path, state):
+    # Whole-file rewrite is correct here for the same reason as the handover:
+    # the marker is per-session, so there is no second writer to race.
+    try:
+        path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _tick_id(line):
+    return hashlib.sha1(line.strip().encode("utf-8", "replace")).hexdigest()[:12]
+
+
+def mine_tick_ids(lines, session_id):
+    out = []
+    for line in lines:
+        m = C.ITEM.match(line)
+        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
+            out.append(_tick_id(line))
+    return out
+
+
+def _hash_file(path):
+    try:
+        return hashlib.sha1(pathlib.Path(path).read_bytes()).hexdigest()[:16]
+    except OSError:
+        return ""
+
+
+def seed_gate_hashes(root):
+    """Hashes of every existing check script, recorded at marker init so only
+    scripts that are NEW or CHANGED after that point ever count as candidate
+    proof (or get run). Without this seed, the first fix-signal stop in a real
+    repo would treat ~all 90 existing gates as candidates and try to run them."""
+    stamp = C.stamp_now()
+    out = {}
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in glob.glob(os.path.join(str(root), pat)):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if digest:
+                out[rel] = {"hash": digest, "exit": -3, "at": stamp}  # -3 = seeded, never run
+    return out
+
+
+def fix_signals(root, lines, session_id, state):
+    """(descriptions, ids, new_tick_pairs, current_head).
+
+    ARTIFACTS, never prose. Primary: commit subjects matching FIX_SUBJECT in
+    marker-head..HEAD. Secondary: newly ticked `- [x]` lines owned by this
+    session, covering the uncommitted-tree default. The skip filter is
+    deliberately narrow: a fix commit touching only docs/** and **/*.md never
+    asks; everything else does, and the judge's four questions sort the
+    one-offs out. A rewound or unreachable old head yields an empty log,
+    which reads as no signals and lets head self-heal by advancing."""
+    head = C._git(root, "rev-parse", "HEAD")
+    commits, new_ticks = [], []
+    if state["head"] and head and state["head"] != head:
+        for row in C._git(
+            root, "log", "--format=%H%x09%s", "%s..%s" % (state["head"], head)
+        ).splitlines():
+            sha, _, subj = row.partition("\t")
+            if not FIX_SUBJECT.match(subj):
+                continue
+            files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
+            if files and all(f.startswith("docs/") or f.endswith(".md") for f in files):
+                continue
+            commits.append((sha, "%s %s" % (sha[:7], subj)))
+    for line in lines:
+        m = C.ITEM.match(line)
+        if m and m.group("state") == "x" and C.owned_by_me(m.group("owner"), session_id):
+            tid = _tick_id(line)
+            if tid not in state["seen_ticks"]:
+                new_ticks.append((tid, line.strip()))
+    descriptions = [d for _, d in commits] + ["tick: " + t[:120] for _, t in new_ticks]
+    ids = sorted([s for s, _ in commits] + [t for t, _ in new_ticks])
+    # new_ticks stays (id, line) pairs: I7 needs the LINE to check evidence,
+    # the absorb/settle sites need the id. Returning ids only here once made
+    # the I7 unpack crash, and a crashed hook reads as ALLOW -- fail-open.
+    return descriptions, ids, new_ticks, head
+
+
+def package_scripts(root):
+    try:
+        d = json.loads((pathlib.Path(root) / "package.json").read_text(encoding="utf-8"))
+        s = d.get("scripts")
+        return s if isinstance(s, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def gate_reachable(scripts, target):
+    """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
+    references? Transitive, because ci reaches most gates through batch keys.
+    NOT a substring test: a gate's name inside an `echo` is not reachability,
+    and the substring version produced real false positives on this repo."""
+    seen, todo = set(), ["ci"]
+    while todo:
+        k = todo.pop()
+        if k in seen or k not in scripts:
+            continue
+        seen.add(k)
+        todo.extend(re.findall(r"npm run\s+(?:--silent\s+)?([A-Za-z0-9:._-]+)", scripts[k]))
+    return target in seen
+
+
+def prove_new_gate(root, scripts, state):
+    """(proven, notes). A claimed gate must leave ARTIFACTS, each verified:
+    a NEW or CHANGED check script (content hash vs the marker), a check:* key
+    whose command runs it, reachability from `npm run ci` (transitive, see
+    gate_reachable), and a bounded green run. Runs are cached by content hash
+    so a red gate is not re-run every stop and a green one is not re-paid.
+    A green run of a control-first gate IS the planted-defect proof, because
+    such a gate self-fails when its own control cannot fire -- the
+    check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact
+    failure this rule exists for, and check-gate-reachability.ts exists
+    because a gate can be defined yet never run."""
+    stamp = C.stamp_now()
+    notes, proven = [], False
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in sorted(glob.glob(os.path.join(str(root), pat))):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if not digest:
+                continue
+            prev = state["gate_runs"].get(rel)
+            if prev and prev.get("hash") == digest:
+                continue  # neither new nor changed: proves nothing for THIS fix
+            key = next(
+                (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
+                "",
+            )
+            if not key:
+                state["gate_runs"][rel] = {"hash": digest, "exit": -1, "at": stamp}
+                notes.append("%s: no check:* key runs it" % rel)
+                continue
+            if not gate_reachable(scripts, key):
+                state["gate_runs"][rel] = {"hash": digest, "exit": -2, "at": stamp}
+                notes.append(
+                    "%s: %s is defined but NOT reachable from `npm run ci` "
+                    "(defined-but-never-run is the check-gate-reachability failure)"
+                    % (rel, key)
+                )
+                continue
+            try:
+                pr = subprocess.run(
+                    ["npm", "run", "--silent", key],
+                    cwd=str(root),
+                    capture_output=True,
+                    text=True,
+                    timeout=REGGATE_TIMEOUT_S,
+                )
+                code = pr.returncode
+            except subprocess.TimeoutExpired:
+                code = 124
+            except (OSError, subprocess.SubprocessError):
+                code = 127
+            state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
+            notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
+            if code == 0:
+                proven = True
+    if not notes:
+        notes.append("no new or changed check script found; a claimed gate must leave one")
+    return proven, "; ".join(notes)
+
+
+def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
+    """('malformed'|'settle'|'block', payload, detail).
+
+    Deterministic mapping from the judge's regression_gate object to an
+    action, with every model claim VERIFIED against artifacts:
+      applicable false                      -> settle 'not-applicable'
+      existing_gate is a REAL check:* key   -> settle 'covered'
+      existing_gate names a key that is not -> hallucinated coverage, counts
+                                               as none, falls through
+      recurring false                       -> settle 'one-off'
+      a `- [?]` line carrying reggate:<sig> -> settle 'deferred' (the deferral
+                                               machinery prints it every stop)
+      a new/changed gate, wired + green     -> settle 'proven'
+      otherwise: recurring AND ungated AND unproven AND undeferred -> block,
+      naming the three exits. gate_needed=false with recurring=true and no
+      real coverage is incoherent and blocks too; the REBUT exit lets the
+      judge re-answer coherently next stop."""
+    fields = (
+        "applicable", "blind_spot", "existing_gate", "recurring",
+        "gate_needed", "gate_proven", "instruction",
+    )
+    if not isinstance(rg, dict) or any(k not in rg for k in fields):
+        return "malformed", "regression_gate missing or incomplete: %r" % (rg,), ""
+    if rg["applicable"] is False:
+        return "settle", "not-applicable", str(rg["blind_spot"])[:160]
+    keys = [k for k in scripts if k.startswith("check:")]
+    hall, eg = "", str(rg["existing_gate"] or "").strip()
+    if eg:
+        if eg in keys:
+            return "settle", "covered", eg
+        hall = eg
+    if rg["recurring"] is False and not hall:
+        return "settle", "one-off", str(rg["blind_spot"])[:160]
+    token = "reggate:%s" % sig[:8]
+    for ln in lines:
+        m = C.ITEM.match(ln)
+        if m and m.group("state") == "?" and token in ln:
+            return "settle", "deferred", token
+    proven, notes = prove_new_gate(root, scripts, state)
+    if proven:
+        return "settle", "proven", notes[:300]
+    reason = M.R_REGGATE_BLOCK % (
+        str(rg["blind_spot"])[:300],
+        str(rg["instruction"])[:300],
+        "" if not hall else M.R_REGGATE_HALLUCINATED % hall,
+        "" if not notes else "  gate probe: %s\n" % notes[:400],
+        me8,
+        token,
+    )
+    return "block", reason, ""
