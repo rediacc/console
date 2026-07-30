@@ -31,6 +31,23 @@ LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 # worker:<background-task-id> on a lease line names the OS-checkable delegate.
 WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
 DEFAULT_TOKEN = re.compile(r"\bDEFAULT:[ \t]*\S")
+# v12 justification tokens (operator, 2026-07-30: "Too many '[?]'. This is an
+# escape hatch... there should be a field in json like 'why' and possibly
+# many"). A deferral now carries WHY (why THIS session cannot settle it right
+# now) and HOW (the concrete action or evidence that would resolve it), plus
+# optional TRIED / NEEDS / BLOCKED_ON. They live as inline tokens in the item
+# text (so the markdown inbox round-trips them) AND as a real `j` field on
+# the store event (so nothing downstream re-parses prose it wrote itself).
+JUST_TOKEN = re.compile(r"\b(WHY|HOW|TRIED|NEEDS|BLOCKED_ON|DEFAULT):")
+# WHY values that describe avoidance rather than inability. Deliberately a
+# SHORT list of unambiguous shapes: this regex is the cheap gate at creation
+# time; whether a why that passes it is actually TRUE is the judge's question.
+VAGUE_WHY_RE = re.compile(
+    r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
+    r"|too busy|later|low priority|will (do|get to)|have?n'?t (had|gotten"
+    r"|got around))\b",
+    re.I,
+)
 # Same charset the worklist owner tag accepts, so a request's from/to can be
 # written into a `- [?]` line on escalation without re-validation.
 PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
@@ -39,6 +56,25 @@ PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$")
 # would be a bypass, not a delegation. 120 also aligns the lease horizon with
 # the top rung of the v10 liveness ladder.
 MAX_LEASE_MIN = 120
+
+
+def parse_justification(text):
+    """{field: value} for every WHY:/HOW:/TRIED:/NEEDS:/BLOCKED_ON: token in a
+    deferral's text, keys lowercased. A value runs to the next known token
+    (DEFAULT: included, so the tokens compose in any order) or to the end of
+    the line. Empty values are absent, so `bool(j.get("why"))` is the whole
+    presence test."""
+    out = {}
+    matches = list(JUST_TOKEN.finditer(text or ""))
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        key = m.group(1)
+        if key == "DEFAULT":
+            continue
+        val = text[m.end():end].strip()
+        if val:
+            out[key.lower()] = val
+    return out
 
 
 def utcnow():

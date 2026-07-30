@@ -210,10 +210,16 @@ def escalate_requests(worklist, session_id, dry_run=False):
             body = r["body"]
             if not C.DEFAULT_TOKEN.search(body):
                 body += " DEFAULT: the asker proceeds without an answer and says so in its summary"
+            # The WHY/HOW are intrinsic here (v12): an escalated request IS a
+            # question no session could answer, so it earns its [?] seat at
+            # creation instead of being nagged for a justification at 30 min.
             S.add_item(
                 worklist,
                 (session_id or "unknown")[:8],
-                "request #%s to %s went unanswered (%s): %s" % (r["id"], r["to"], why, body),
+                "request #%s to %s went unanswered (%s): %s"
+                "  WHY: %s, so no session can settle it and only the operator can"
+                "  HOW: the operator answers it, or its DEFAULT executes when the window closes"
+                % (r["id"], r["to"], why, body, why),
                 state="?",
                 owner=r["from"] or "unknown",
             )
