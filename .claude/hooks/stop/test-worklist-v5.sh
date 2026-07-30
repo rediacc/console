@@ -3796,6 +3796,60 @@ else
     fail "154d: a wakeup section appeared with zero crons: ${OUT:0:200}"
 fi
 
+echo "== 155. supervised MUST correlate to the live worker, not just be fresh =="
+# Real review finding (PR #546, comment 3686791985): the freshest [>] item
+# across ALL in-flight records was taken as proof of supervision, with no
+# check that it names the SAME worker as the one in live_bg. Two leases: one
+# tracking bw1 (the actual watched job) gone STALE past the threshold, one
+# tracking an UNRELATED worker zz9 kept FRESH. The unrelated fresh one must
+# NOT excuse the stale one -- that is exactly the forgotten-watch case this
+# exemption exists to exclude.
+export WORKLIST_STUCK_ROUNDS=1
+setup
+brief_now
+hand_now
+STALE=$(date -u -d '-100 minutes' +%Y-%m-%dT%H:%M:%SZ)
+FRESH=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"bbbb0001","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"watching the real job"}\n{"ev":"lease","id":"bbbb0001","at":"%s","by":"deadbeef","until":"%s","worker":"bw1"}\n' \
+    "$STALE" "$STALE" "$UNTIL" >>"${WL%.md}.events.jsonl"
+printf '{"ev":"add","id":"bbbb0002","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"unrelated, still being renewed"}\n{"ev":"lease","id":"bbbb0002","at":"%s","by":"deadbeef","until":"%s","worker":"zz9"}\n' \
+    "$FRESH" "$FRESH" "$UNTIL" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"the actual watched job"}]'
+task 9 pending "thing"
+say "answer
+
+## Remaining
+- #9 thing (pending), watched via bw1 and zz9"
+for i in 1 2 3; do LAST="$(run)"; done
+if grep -qF "EMPLOY A PLANNING OR INVESTIGATION AGENT" <<<"$LAST"; then
+    pass "155: an uncorrelated fresh lease does NOT excuse a stale supervising one"
+else
+    fail "155: the unrelated fresh lease wrongly silenced the exempt-overrun: ${LAST:0:220}"
+fi
+
+echo "== 155b. CONTROL: the CORRELATED lease being fresh DOES supervise =="
+setup
+brief_now
+hand_now
+FRESH=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"bbbb0003","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"watching the real job"}\n{"ev":"lease","id":"bbbb0003","at":"%s","by":"deadbeef","until":"%s","worker":"bw1"}\n' \
+    "$FRESH" "$FRESH" "$UNTIL" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"the actual watched job"}]'
+task 9 pending "thing"
+say "answer
+
+## Remaining
+- #9 thing (pending), watched via bw1"
+for i in 1 2 3; do LAST="$(run)"; done
+if ! grep -qF "EMPLOY A PLANNING OR INVESTIGATION AGENT" <<<"$LAST"; then
+    pass "155b CONTROL: a fresh lease correlated to the live worker DOES supervise"
+else
+    fail "155b: a genuinely fresh, correlated lease still fired: ${LAST:0:220}"
+fi
+unset WORKLIST_STUCK_ROUNDS
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
