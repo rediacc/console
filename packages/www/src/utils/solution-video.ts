@@ -75,9 +75,12 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
 }
 
 export function resolveSolutionVideo(slug: string, lang: Language): SolutionVideo {
-  const used: VideoLang = (VIDEO_LANGS as readonly string[]).includes(lang)
-    ? (lang as VideoLang)
-    : 'en'; // ar / et / tr -> English video
+  // No fallback any more: VIDEO_LANGS is SITE_LOCALES (see :34), so VideoLang
+  // and Language are the same set and every locale has its own video. The old
+  // ternary narrowed ar/et/tr to English and became dead the moment the list was
+  // unified; eslint caught it as an unnecessary assertion, which is what an
+  // always-true guard looks like from the type system's side.
+  const used: VideoLang = lang;
   return {
     landscape: resolveUrl(slug, used, 'mp4'),
     vertical: resolveUrl(slug, used, 'vertical'),
