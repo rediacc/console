@@ -156,7 +156,8 @@ def wakeup_lines(event, now=None):
     rows = []
     for c in event.get("session_crons") or []:
         sched = str(c.get("schedule", ""))
-        label = str(c.get("prompt", "")).strip().splitlines()[0][:90] if c.get("prompt") else "(no prompt)"
+        stripped_prompt = str(c.get("prompt", "")).strip()
+        label = stripped_prompt.splitlines()[0][:90] if stripped_prompt else "(no prompt)"
         nxt = C.cron_next(sched, now)
         if nxt is None:
             rows.append((None, "  ?? unparseable schedule %r -- %s" % (sched, label)))
