@@ -2075,6 +2075,8 @@ ARITY = {
     "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
     "V_LADDER_RESOLVE": ("rows", "facts", "m"),
     "N_LADDER_PING": ("rows", "m"),
+    "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
+    "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "CLI_ITEM_USAGE": None, "CLI_TICK_NO_EVIDENCE": ("id",),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),

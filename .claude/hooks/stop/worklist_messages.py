@@ -221,7 +221,8 @@ V_NO_POLL_CRON = (
     "requests land between your stops, and an hourly loop makes the asker "
     "wait up to an hour for what costs you seconds. Create the second cron "
     "now (two crons is the required shape):\n"
-    "    CronCreate with schedule '*/5 * * * *' and a prompt that runs\n"
+    "    CronCreate with schedule '*/5 * * * *' (or a slower rung on the\n"
+    "    5/10/20/40/60 backoff ladder) and a prompt that runs\n"
     "        .claude/hooks/stop/worklist.py --poll %s\n"
     "    and, if it prints NOTHING, stops immediately with no summary and "
     "no commentary; if it prints requests, acts on them.\n"
@@ -237,7 +238,7 @@ V_MANY_WORK_CRONS = (
 )
 
 V_MANY_POLL_CRONS = (
-    "%d poll crons (*/5 * * * *) are live; one is the shape. Delete the "
+    "%d poll crons (*/5, */10, */20, */40 or hourly) are live; one is the shape. Delete the "
     "extra with CronDelete."
 )
 
@@ -797,3 +798,25 @@ Decide explicitly, then act:
         git submodule update --checkout <path>
     which is safe ONLY while that submodule's worktree is clean and its commit
     is pushed. Verify both first; this is not an undo you can take back."""
+
+
+# ---- poll backoff (advisory) -------------------------------------------------
+# The inbox poll defaults to every 5 minutes, which costs 12 firings an hour forever on a
+# session nobody is talking to. These two notes tell the session to move along the ladder
+# in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs
+# the cron swap itself so the change is visible, and can decline.
+N_POLL_BACKOFF = (
+    "INBOX HAS BEEN QUIET FOR %d MINUTES at a %d-minute poll. Double the interval so a\n"
+    "session nobody is talking to stops paying for it. Swap the poll cron in ONE turn --\n"
+    "a stop landing between the delete and the create trips the no-poll-cron check:\n"
+    "    CronDelete <the '%s' job id>\n"
+    "    CronCreate cron '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
+    "The ladder is 5 -> 10 -> 20 -> 40 -> 60 and stops at 60, because a poll slower than\n"
+    "the 70-minute fast-path horizon would pay the full battery on every firing. Drop back\n"
+    "to */5 as soon as a real request arrives."
+)
+N_POLL_BACKOFF_RESET = (
+    "A REQUEST IS WAITING while the poll is backed off to '%s'. Latency matters again:\n"
+    "swap back to the bottom rung in ONE turn -- CronDelete the current poll job, then\n"
+    "CronCreate cron '%s' with the same prompt verbatim."
+)
