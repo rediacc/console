@@ -1929,6 +1929,105 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 117. the message catalogue renders at every call-site arity =="
+# Seven catalogue strings have no needle in this suite (V_DIVERGED,
+# V_PR_UNREADABLE, V_EVENT_UNPARSEABLE, R_JUDGE_CONTINUE, CLI_REQUEST_USAGE,
+# CTX_SESSION_START_STALE, the exempt-overrun stuck detail). This case is
+# their shape protection: every constant must exist and render with the
+# EXACT argument arity its call site in worklist.py uses, so a placeholder
+# added or dropped in the catalogue cannot lurk in a branch no test drives.
+OUT=$(
+    python3 - "$(dirname "$HOOK")/worklist_messages.py" <<'PYEOF'
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("wm", sys.argv[1])
+wm = importlib.util.module_from_spec(spec); spec.loader.exec_module(wm)
+ARITY = {
+    "V_STUCK": ("H", 3, "D"), "V_EVENT_UNPARSEABLE": ("f",),
+    "V_OPEN_ITEMS": (1, "x"), "V_UNDEFAULTED": (1, "x"),
+    "V_REQUESTS_WAITING": (1, "r", "m", "m"), "V_ANSWERS_UNACKED": ("r", "m"),
+    "V_COMPLETION_EVIDENCE": ("a", "b"), "V_COMPLETION_TICKS": ("x",),
+    "V_COMPLETION_TASKS": ("x",), "V_IDLE": ("#1",),
+    "V_XSESSION_BAD": ("r", "m"), "V_BRIEF": ("s", "", "m"),
+    "V_STALE_LOCAL": ("r", 2), "V_DIVERGED": ("r", 2, "r"),
+    "V_PR_STALE": ("d",), "V_PR_UNREADABLE": ("d",), "V_LOOP_DIED": (1,),
+    "V_NO_POLL_CRON": ("m",), "V_MANY_WORK_CRONS": (2, "l"),
+    "V_MANY_POLL_CRONS": (2,), "V_HANDOVER": ("s", "", 250, 600, "m"),
+    "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
+    "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
+    "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
+    "V_HOOK_BLIND": ("p", "e", "f"), "V_NO_REMAINING": ("x",),
+    "R_BLOCK": (1, "v", "f"), "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
+    "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
+    "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
+    "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
+    "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("d", "l", ""),
+    "CTX_SESSION_START_STALE": (3, "s"), "CTX_POSTCOMPACT_MISSING": ("p", "m"),
+    "CTX_POSTCOMPACT_BRIEFING": ("d", "t"),
+    "JUDGE_PROMPT": {"streak": 1, "remaining": "r", "leases": 0, "loop": "l",
+                     "citations": "c", "message": "m"},
+    "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
+}
+fail = 0
+for name, args in ARITY.items():
+    val = getattr(wm, name, None)
+    if val is None:
+        print("MISSING %s" % name); fail += 1; continue
+    if args is None:
+        continue
+    try:
+        _ = val % args
+    except Exception as exc:
+        print("ARITY %s: %s" % (name, exc)); fail += 1
+strs = {k for k, v in vars(wm).items()
+        if not k.startswith("_") and isinstance(v, str)}
+gap = strs - set(ARITY)
+if gap:
+    print("UNMAPPED new constant(s), add arity here: %s" % sorted(gap)); fail += 1
+print("catalogue-arity failures=%d" % fail)
+sys.exit(1 if fail else 0)
+PYEOF
+)
+RC=$?
+if [[ "$RC" -eq 0 ]]; then
+    echo "  PASS: every catalogue constant renders at its call-site arity"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: $OUT"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 118. a MISSING catalogue fails CLOSED and spares the query modes =="
+# The import is guarded so a broken worklist_messages.py cannot become the
+# old crash-reads-as-ALLOW hole: message USE raises into the crash handler
+# (block, naming the catalogue), while --path, which uses no messages,
+# keeps working for the scripts that call it.
+mkdir -p "$BASE/nocat/proj/.git" "$BASE/nocat/tmp"
+cp "$HOOK" "$BASE/nocat/worklist.py"
+OUT=$(TMPDIR="$BASE/nocat/tmp" CLAUDE_PROJECT_DIR="$BASE/nocat/proj" python3 "$BASE/nocat/worklist.py" --path 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 && "$OUT" == *"claude-worklist"* ]]; then
+    echo "  PASS: --path works without the catalogue"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: --path broke without the catalogue: rc=$RC ${OUT:0:120}"
+    FAIL=$((FAIL + 1))
+fi
+NWL="$BASE/nocat/tmp/claude-worklist/$(echo "$BASE/nocat/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
+echo '- [ ] (deadbeef) open thing' >>"$NWL"
+OUT=$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"/none","last_assistant_message":"done"}' "$SID" "$BASE/nocat/proj" |
+    TMPDIR="$BASE/nocat/tmp" CLAUDE_PROJECT_DIR="$BASE/nocat/proj" WORKLIST_TASKS_DIR="$BASE/nocat/tasks" \
+        GITHUB_ACTIONS="" python3 "$BASE/nocat/worklist.py" 2>/dev/null)
+GOT=$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)
+if [[ "$GOT" == "block" ]] && grep -qF "worklist_messages" <<<"$OUT"; then
+    echo "  PASS: a blocking stop without the catalogue BLOCKS naming it"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: missing catalogue produced decision=$GOT: ${OUT:0:160}"
+    FAIL=$((FAIL + 1))
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
