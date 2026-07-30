@@ -2117,7 +2117,7 @@ ARITY = {
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
-    "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
+    "V_DOCS_DRIFT": (3, "s", "d"), "N_WAKEUPS": ("rows",), "V_UNCONFIRMED": ("#1",),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
     "V_UNJUSTIFIED": (2, 30, "rows", "", "m", "m"),
@@ -3718,6 +3718,82 @@ if [[ -n "$OUT" ]]; then
     pass "T12 CONTROL: a moved world pays the full battery"
 else
     fail "T12 CONTROL: the moved world stayed silent"
+fi
+
+echo "== 154. NEXT WAKEUPS: call moments computed from the live cron expansion =="
+# Operator, 2026-07-30: the event carries the FULL expansion of every scheduled
+# task (schedule + prompt) and the hook was reporting the loop from the stale
+# hand-declared sidecar instead. The wakeup section must (a) appear on ALLOW
+# stops, (b) appear on BLOCK stops, (c) carry the prompt's own first line as
+# the label, (d) name an unparseable schedule rather than skip it, and (e) be
+# absent when no crons exist -- the silent control that keeps (a)-(d) honest.
+setup
+brief_now
+hand_now
+CRONS='[{"id":"w","schedule":"17 * * * *","prompt":"HOURLY LOOP fixture: advance the campaign."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+OUT="$(run)"
+if grep -qF "NEXT WAKEUPS" <<<"$OUT" && grep -qF "HOURLY LOOP fixture: advance the campaign." <<<"$OUT" &&
+    grep -qF "INBOX POLL fixture." <<<"$OUT" && grep -qF "(17 * * * *)" <<<"$OUT"; then
+    pass "154a: allow stop carries the wakeup rows with prompt-derived labels"
+else
+    fail "154a: wakeup section wrong on allow: ${OUT:0:260}"
+fi
+# BLOCK path: stale STATE.md forces a block; the section must still ride it.
+touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+task 8 pending "moved"
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)
+- #8 moved (pending)"
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
+    pass "154b: block stop carries the wakeup rows too"
+else
+    fail "154b: wakeup section missing on block: ${OUT:0:220}"
+fi
+# Unparseable schedule is NAMED, never silently dropped.
+setup
+brief_now
+hand_now
+CRONS='[{"id":"w","schedule":"not a cron","prompt":"BROKEN fixture."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+OUT="$(run)"
+if grep -qF "unparseable schedule" <<<"$OUT" && grep -qF "BROKEN fixture." <<<"$OUT"; then
+    pass "154c: an unparseable schedule is reported by name"
+else
+    fail "154c: broken schedule silently dropped: ${OUT:0:220}"
+fi
+# SILENT control: no crons, no section. In-flight lease keeps V_IDLE quiet so
+# the only variable is the cron list itself.
+setup
+brief_now
+hand_now
+CRONS='[]'
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"aaaa4444","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated"}\n{"ev":"lease","id":"aaaa4444","at":"%s","by":"deadbeef","until":"%s","worker":"bw9"}\n' \
+    "$NOW" "$NOW" "$UNTIL" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"bw9","type":"shell","status":"running","description":"w","command":"sleep 9"}]'
+say "answer
+
+## Remaining
+- the delegated item (in flight)"
+OUT="$(run)"
+if ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
+    pass "154d CONTROL: no crons, no wakeup section"
+else
+    fail "154d: a wakeup section appeared with zero crons: ${OUT:0:200}"
 fi
 
 echo

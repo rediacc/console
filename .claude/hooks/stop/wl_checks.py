@@ -132,6 +132,37 @@ def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
     return M.N_POLL_BACKOFF % (int(quiet_min), cur_min, sched, nxt, nxt_min)
 
 
+def wakeup_lines(event, now=None):
+    """One line per scheduled task: when it fires next and what it will do.
+
+    WHY (operator, 2026-07-30: "there is actually expansion for scheduled
+    task... the stop hook should detect the call moments and share what needs
+    to be done"). The Stop event's `session_crons` carries each task's
+    schedule AND its full prompt, but the hook was reporting the loop from
+    the hand-declared `.loop` sidecar, whose stamped next-fire goes stale the
+    moment it is written. These lines are computed from the event itself, so
+    they cannot drift: the label is the prompt's own first line, the time is
+    derived from the schedule at this stop.
+
+    An unparseable schedule is REPORTED as such rather than skipped: a
+    wakeup list that silently omits a broken entry reads as "nothing else is
+    scheduled", which is the pass-quietly failure this hook bans.
+    """
+    rows = []
+    for c in event.get("session_crons") or []:
+        sched = str(c.get("schedule", ""))
+        label = str(c.get("prompt", "")).strip().splitlines()[0][:90] if c.get("prompt") else "(no prompt)"
+        nxt = C.cron_next(sched, now)
+        if nxt is None:
+            rows.append((None, "  ?? unparseable schedule %r -- %s" % (sched, label)))
+            continue
+        delta = int((nxt - (now or C.utcnow())).total_seconds() // 60)
+        rows.append((nxt, "  in %3dm at %s  (%s)  %s"
+                     % (delta, nxt.strftime("%H:%MZ"), sched, label)))
+    rows.sort(key=lambda r: (r[0] is None, r[0]))
+    return [r[1] for r in rows]
+
+
 def is_poll_cron(c):
     if not isinstance(c, dict):
         return False
@@ -958,6 +989,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         guide = "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s" % (
             str(exc)[:160]
         )
+    # The CALL MOMENTS ride the guide so they reach every full stop, allow and
+    # block alike: the guide is the one string both emit paths carry. Computed
+    # from the event's own cron expansion (schedule + prompt), never from the
+    # declared .loop sidecar, whose stamped next-fire goes stale on write.
+    try:
+        wk = wakeup_lines(event)
+        if wk:
+            guide += "\n\n" + M.N_WAKEUPS % "\n".join(wk)
+    except Exception:  # noqa: BLE001 -- an advisory section must never wedge a stop
+        pass
 
     violations = []
     if stuck_fired and something_remains:
@@ -1558,12 +1599,30 @@ def run_stop(event, event_ok, worklist, hook_file):
             judge_cached = verdict is not None
         err = None
         if verdict is None:
+            # The judge's loop line prefers the COMPUTED truth from the live
+            # cron expansion; the declared .loop record is only the fallback
+            # when no cron is visible, because its stamped next-fire goes
+            # stale on write (operator, 2026-07-30: the hook was not giving
+            # the correct message).
+            if live_work_crons:
+                _wc = live_work_crons[0]
+                _wnext = C.cron_next(str(_wc.get("schedule", "")))
+                _wlabel = (str(_wc.get("prompt", "")).strip().splitlines() or ["unlabelled"])[0][:70]
+                loop_desc = "%s, next fire %s (%d cron%s, live schedule %s)" % (
+                    _wlabel,
+                    _wnext.strftime("%Y-%m-%dT%H:%M:%SZ") if _wnext else "unparseable",
+                    len(live_work_crons), "" if len(live_work_crons) == 1 else "s",
+                    _wc.get("schedule", "?"),
+                )
+            elif lstate == "none":
+                loop_desc = "none declared"
+            else:
+                loop_desc = "%s, next fire %s (%d cron%s)" % (
+                    llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
+                    "" if lcrons == 1 else "s")
             verdict, err = wl_judge.run_judge(
                 remaining_lines, len(in_flight), last_msg, streak,
-                "none declared" if lstate == "none"
-                else "%s, next fire %s (%d cron%s)"
-                % (llabel or "unlabelled", lnext.strftime("%Y-%m-%dT%H:%M:%SZ"), lcrons,
-                   "" if lcrons == 1 else "s"),
+                loop_desc,
                 cited_excerpts(root, last_msg),
                 extra=reg_extra + audit_extra,
                 # Headings only (operator decision 2026-07-30): titles of

@@ -848,12 +848,13 @@ def sole_live_session(worklist, session_id):
 def loop_state(worklist, session_id):
     """('none'|'ok'|'overdue', next_fire_or_None, label, others_text, count).
 
-    WHY DECLARED AND NOT DISCOVERED. Measured: cron state lives nowhere on disk.
-    `CronList` shows the live crons, but grepping ~/.claude for their ids hits
-    ONLY the transcript, and scanning a 4 MB transcript tail for `CronCreate`
-    tool_use records returns ZERO because the calls scrolled out long ago. So
-    the hook cannot see the loop; the session DECLARES it and the hook holds it
-    to the declaration."""
+    HISTORICAL: this record predates the Stop event carrying the full cron
+    expansion. `session_crons` now includes each task's schedule AND prompt,
+    so the live truth is computable (wl_core.cron_next, wl_checks.wakeup_lines)
+    and the checks that matter prefer it. This declared record survives ONLY
+    as the fallback for contexts with no event in hand (the CLI) and for the
+    declared-vs-live divergence check; its stamped next-fire goes stale on
+    write, which is why nothing reports it when a live schedule is visible."""
     p = loop_path(worklist)
     if not p.exists():
         return "none", None, "", "", 0
