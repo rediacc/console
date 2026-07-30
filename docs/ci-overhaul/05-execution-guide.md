@@ -27,7 +27,19 @@
 
 ---
 
-## Spikes (run before committing to the designs that depend on them)
+## Spikes: BOTH SETTLED 2026-07-30
+
+Results and full evidence in [spike-s1-s2.md](spike-s1-s2.md). Neither needs
+re-running; the original questions are kept below so the answers have context.
+
+- **S-1: the model IS honoured.** #539 is a cosmetic label bug, not a
+  review-quality one, so every finding received so far came from the model that
+  was asked for.
+- **S-2: the flag DOES bind under OAuth**, but as a between-turns post-hoc stop
+  rather than a ceiling: a `$0.01` cap was measured spending `$0.2340351` before
+  halting. A dollar stop exists; a hard cap does not. It also turned out not to
+  need a CI dispatch, because the pinned action bundles a CLI build that was
+  already present locally under the same OAuth auth class.
 
 **S-1. Does `--model claude-sonnet-5` actually take effect?**
 Issue #539's third bullet is unresolved and it is the difference between a cosmetic label bug
