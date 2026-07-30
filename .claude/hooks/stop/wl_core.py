@@ -171,6 +171,49 @@ def _git(root, *args):
         return ""
 
 
+AGENT_BRANCH_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def git_branch(root):
+    """The slugified current branch, or "" when HEAD is not on one.
+
+    `symbolic-ref --short -q` and NOT `rev-parse --abbrev-ref HEAD`. The latter
+    returns the LITERAL STRING "HEAD" on a detached HEAD, and that string slugs
+    to a perfectly valid directory name, so it would silently seed a junk
+    `.agent/HEAD/` universe during every interactive rebase. Measured on this
+    worktree: `private/renet` is detached, where abbrev-ref returns "HEAD" and
+    symbolic-ref returns empty. Empty is the honest answer, and callers treat it
+    as "cannot resolve a branch" rather than as a branch name.
+
+    Slugged because a branch may contain a slash: `feature/foo` would otherwise
+    create a NESTED `.agent/feature/foo/`, which no caller expects and which the
+    bootstrap message could not name in one `mkdir`.
+
+    WORKLIST_AGENT_BRANCH is not decoration. It is how the test suite drives
+    this without a git repo (its fixture leaves `.git` unusable, so
+    `symbolic-ref` exits 128 and every branch-dependent check would be SKIPPED,
+    which is a gate that never fires in its own suite), and it is the escape
+    hatch for a session working mid-rebase.
+
+    timeout=5, not `_git`'s default 20: the Stop hook's own budget is 15s, so a
+    20s git call could outlive the hook that is waiting for it. `symbolic-ref`
+    is a local read and returns instantly, so 5 is generous.
+    """
+    b = os.environ.get("WORKLIST_AGENT_BRANCH")
+    if b is None:
+        try:
+            r = subprocess.run(
+                ["git", "-C", str(root), "symbolic-ref", "--short", "-q", "HEAD"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            b = r.stdout if r.returncode == 0 else ""
+        except (OSError, subprocess.SubprocessError):
+            b = ""
+    return AGENT_BRANCH_RE.sub("-", (b or "").strip()).strip("-.")
+
+
 def tasks_dir(session_id):
     home = os.environ.get("WORKLIST_TASKS_DIR") or os.path.join(
         os.path.expanduser("~"), ".claude", "tasks"

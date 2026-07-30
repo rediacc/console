@@ -33,12 +33,14 @@ skipped by every reader. Session-doc crash = tempfile + os.replace, old doc
 survives. Compact crash = tempfile + os.replace, log intact. Sync crash
 after fold, before append = nothing written, next invocation re-syncs.
 
-The sidecars (.requests, .sessions, .loop, .handover-*, .reggate-*,
+The sidecars (.requests, .sessions, .loop, .reggate-*,
 .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .stuck-*, .croncount-*,
 .blocks) keep their v5-v9 formats and names: their shapes are pinned by the
 suite and by living sessions, and consolidating them buys nothing. New v10
-state (liveness ladder, task ages, judge cache, autonomy windows, handover
+state (liveness ladder, task ages, judge cache, autonomy windows, STATE.md
 world-signature) lives in ONE new per-session doc, <worklist>.state-<prefix>.json.
+The compact-recovery document itself lives in the repo at
+.agent/<branch>/STATE.md (gitignored), not in TMPDIR.
 """
 
 import fcntl
@@ -55,30 +57,39 @@ import wl_core as C
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
 
-# FIFTEEN MINUTES, operator directive 2026-07-30, raised from the ten set on
-# 2026-07-29. Since v10 the clock only matters when the WORLD has moved: a
-# handover is stale when it is old AND the world signature has changed since
-# it was written. The pure-age rule it replaces was outpaced by the 5-minute
-# poll cron (a quiet session went stale every other poll and could never take
-# the silent path), which was fixing the constant when the KEY was wrong:
-# staleness is about the document no longer matching reality, and an unchanged
-# world cannot invalidate it.
+# The compact-recovery document is `.agent/<branch>/STATE.md` (operator
+# redesign, 2026-07-30, replacing the single per-session handover). The split
+# is BY LIFETIME: STATE.md is rewritten and freshness-gated; RULES.md is
+# sharpened and never age-gated; TRAPS.md is shared, append-only, and feeds the
+# judge headings. Only STATE.md can go stale by the clock, so only it has
+# constants here.
 #
-# Why ten was still too tight even world-keyed: a productive turn moves the
-# world several times, so the rewrite demand landed mid-task rather than at a
-# natural boundary, and each rewrite costs a full round trip against the
-# 1500-char budget. Fifteen spans a normal working turn without letting a
-# document drift far enough from reality to mislead the session that inherits
-# it. It stays an env override so a session with a different cadence can tune
-# it without editing code.
-HANDOVER_STALE_MIN = int(os.environ.get("WORKLIST_HANDOVER_STALE_MIN", "15"))
-HANDOVER_MIN_CHARS = 250
-# 1500, operator directive 2026-07-30: the 600 cap burned three rewrites in
-# one night (649, 620, 611 chars) before fitting. With the larger budget the
-# one-paragraph rule (a proxy for the old cap) relaxes to a fragmentation
-# guard: up to 3 paragraphs, because a handoff prompt is still not a report.
-HANDOVER_MAX_CHARS = int(os.environ.get("WORKLIST_HANDOVER_MAX_CHARS", "1500"))
-HANDOVER_MAX_PARAGRAPHS = 3
+# FIFTEEN MINUTES, unchanged from the handover it replaces. Since v10 the
+# clock only matters when the WORLD has moved: the document is stale when it
+# is old AND the world signature has changed since it was written. The pure-age
+# rule was outpaced by the 5-minute poll cron (a quiet session went stale every
+# other poll and could never take the silent path); staleness is about the
+# document no longer matching reality, and an unchanged world cannot
+# invalidate it.
+AGENT_STATE_STALE_MIN = int(os.environ.get("WORKLIST_AGENT_STATE_STALE_MIN", "15"))
+AGENT_STATE_MIN_CHARS = 250
+# 4000, up from the handover's 1500. The premise of the split is that the old
+# cap was strangling the WRONG file: measured, ~40% of every handover was
+# standing rules re-typed verbatim, and 8 rewrites in one session were refused
+# as over-budget, with the hard-won trap the first thing trimmed. Rules and
+# traps now live in their own unbudgeted files, so STATE.md needs room for
+# state alone; 4000 still refuses a pasted transcript.
+AGENT_STATE_MAX_CHARS = int(os.environ.get("WORKLIST_AGENT_STATE_MAX_CHARS", "4000"))
+# A second session arriving on a branch has no recorded signature for a
+# document the first session wrote. The old pure-age fallback would order it
+# rewritten immediately, reproducing the exact churn the redesign fixes, so an
+# UNSIGNED document is ADOPTED on first sight instead -- bounded by this
+# horizon so an abandoned one is not.
+AGENT_STATE_ADOPT_MAX_MIN = int(os.environ.get("WORKLIST_AGENT_ADOPT_MAX_MIN", "60"))
+# The one structural demand on STATE.md. Length is a proxy for value; the
+# presence of a next action IS the value, and it cannot be satisfied by
+# padding. Case-insensitive, any heading level.
+AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.I | re.M)
 
 # A [?] whose DEFAULT has stood unanswered this long is EXECUTED, not
 # restated: the operator said they almost always take the recommended
@@ -125,8 +136,52 @@ def loop_path(worklist):
     return worklist.with_suffix(".loop")
 
 
-def handover_path(worklist, session_id):
-    return worklist.with_suffix(".handover-%s.md" % (session_id or "unknown")[:8])
+def agent_root(root):
+    return pathlib.Path(root) / ".agent"
+
+
+def agent_branch_dir(root, branch):
+    return agent_root(root) / branch
+
+
+def agent_state_path(root, branch):
+    return agent_branch_dir(root, branch) / "STATE.md"
+
+
+def agent_rules_path(root, branch):
+    return agent_branch_dir(root, branch) / "RULES.md"
+
+
+def agent_traps_path(root):
+    return agent_root(root) / "TRAPS.md"
+
+
+def agent_state_lock_path(worklist):
+    # In TMPDIR beside the store, NOT under .agent/: the notes tree stays free
+    # of machine artifacts, and the lock shares the store's lifetime.
+    return worklist.with_suffix(".agentstate.lock")
+
+
+def trap_headings(root):
+    """The `## ` heading texts of TRAPS.md, in file order. [] when absent or
+    unreadable, never an exception.
+
+    ONLY `##`, never `###`, never body lines: the judge gets TITLES of
+    hard-won facts, one line each, because the file is designed to grow
+    forever and feeding it whole to a per-stop model call would turn an
+    intentionally-growing file into a per-stop cost multiplier. Caps are the
+    ceiling if it outgrows what anyone reviews."""
+    try:
+        text = agent_traps_path(root).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    out = []
+    for line in text.splitlines():
+        if line.startswith("## ") and not line.startswith("### "):
+            out.append(line[3:].strip()[:120])
+            if len(out) >= 40:
+                break
+    return out
 
 
 def requests_path(worklist):
@@ -711,7 +766,7 @@ def compact(worklist):
         print("events log compacted to %d record(s)" % len(out))
 
 
-# ---- briefs / loop / handover (v5 sidecars, formats unchanged) --------------
+# ---- briefs / loop / agent-state (.agent/<branch>/STATE.md) ------------------
 
 def read_briefs(worklist):
     """{prefix: (datetime_or_None, text)} from <worklist>.sessions.
@@ -833,51 +888,64 @@ def loop_state(worklist, session_id):
     return ("overdue" if mine[0] <= now else "ok"), mine[0], mine[1], others, mine[2]
 
 
-def handover_shape(body):
-    """The SHAPE half of handover_state, over a body that is not on disk yet.
+def agent_state_shape(body):
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated |
+    aimless | ok, plus a detail string.
 
-    Extracted so `--handover` can refuse a bad document AT WRITE TIME using the
-    identical rule the Stop check reads with. It used to accept any body, print
-    "handover written", and let the check reject it on the next stop. An
-    accept-then-reject asymmetry is worse than a plain bug here: the session is
-    told the document is fine, so the one artifact designed to survive
-    compaction sits there in a state nothing will fix until a stop happens to
-    notice. Measured 2026-07-30: a 1931-char handover was accepted with rc=0
-    against a 1500-char limit.
+    Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse
+    guard) refuse a bad document AT WRITE TIME with the identical rule the Stop
+    check reads with. The handover this replaces once accepted any body and let
+    the check reject it a stop later; an accept-then-reject asymmetry leaves
+    the one artifact designed to survive compaction broken while the session
+    believes it is fine.
 
-    Shape only. Staleness stays in handover_state, because it needs the file's
-    mtime and the world signature, neither of which exists before the write.
-
-    Returns (verdict, detail) with verdict "ok" when the body may be written.
+    `aimless` replaces the old fragmented/paragraph guard, which was an
+    explicit proxy for a 600-char cap and counted every markdown heading as a
+    paragraph (split on blank lines), which is why the old message had to
+    forbid headings outright. Presence of a `## Next action` section is a
+    strictly better gate: it targets the one question STATE.md exists to
+    answer, and padding cannot satisfy it.
     """
     text = (body or "").strip()
-    if len(text) < HANDOVER_MIN_CHARS:
-        return "thin", "%d chars, minimum %d" % (len(text), HANDOVER_MIN_CHARS)
-    if len(text) > HANDOVER_MAX_CHARS:
-        return "bloated", "%d chars, maximum %d" % (len(text), HANDOVER_MAX_CHARS)
-    paras = len([b for b in text.split("\n\n") if b.strip()])
-    if paras > HANDOVER_MAX_PARAGRAPHS:
-        return "fragmented", "%d paragraphs, maximum %d" % (paras, HANDOVER_MAX_PARAGRAPHS)
-    return "ok", "%d chars, %d paragraph(s)" % (len(text), paras)
+    if len(text) < AGENT_STATE_MIN_CHARS:
+        return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
+    if len(text) > AGENT_STATE_MAX_CHARS:
+        return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
+    if not AGENT_NEXT_RE.search(text):
+        return "aimless", "no '## Next action' section; the next action IS the value"
+    return "ok", "%d chars" % len(text)
 
 
-def handover_state(worklist, session_id, cur_sig=None, saved_sig=None):
-    """('missing'|'thin'|'bloated'|'fragmented'|'stale'|'ok', age_min, text).
+def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
+    """('no-branch'|'no-dir'|'missing'|'thin'|'bloated'|'aimless'|'stale'|'ok',
+    age_min, text).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a
-    real operator decision that way: the rediacc-autopilot App had already
-    been created, the operator had said so, and after a compact it was
-    reported as blocked-on-operator. The transcript is not the recovery
-    mechanism, because the thing that failed IS the transcript being
-    summarised.
+    real operator decision that way: the rediacc-autopilot App had already been
+    created, the operator had said so, and after a compact it was reported as
+    blocked-on-operator. The transcript is not the recovery mechanism, because
+    the thing that failed IS the transcript being summarised.
 
-    v10 staleness is WORLD-KEYED: old age alone no longer stales a handover;
-    the world signature must also have moved since it was written (see the
-    HANDOVER_STALE_MIN comment). A handover with no recorded signature
-    (written by an older flow) falls back to the pure-age rule once; the
-    rewrite records the signature and the fallback never fires again.
+    Staleness is WORLD-KEYED, unchanged from v10: age alone never stales the
+    document; the world signature must also have moved since it was recorded.
+
+    ADOPT-ON-FIRST-SIGHT is the one semantic change, forced by the document
+    becoming per-BRANCH. `saved_sig is None` used to fall back to pure age and
+    demand a rewrite; with a shared document that would order a second session
+    to rewrite what the first wrote thirty seconds ago, reproducing the exact
+    churn the redesign fixes. An unsigned document young enough
+    (<= AGENT_STATE_ADOPT_MAX_MIN) is "ok" and the CALLER banks the signature;
+    an abandoned one is not adopted. Named residual: a session's first stop on
+    a branch grants at most one stop of grace on a document up to that old.
+
+    OSError degrades to "missing", which BLOCKS: a permissions problem on
+    .agent/ must not read as a clean bill.
     """
-    p = handover_path(worklist, session_id)
+    if not branch:
+        return "no-branch", None, ""
+    if not agent_branch_dir(root, branch).is_dir():
+        return "no-dir", None, ""
+    p = agent_state_path(root, branch)
     if not p.exists():
         return "missing", None, ""
     try:
@@ -885,17 +953,17 @@ def handover_state(worklist, session_id, cur_sig=None, saved_sig=None):
         age = (time.time() - p.stat().st_mtime) / 60.0
     except OSError:
         return "missing", None, ""
-    body = text.strip()
-    if len(body) < HANDOVER_MIN_CHARS:
-        return "thin", int(age), text
-    if len(body) > HANDOVER_MAX_CHARS:
-        return "bloated", int(age), text
-    if len([b for b in body.split("\n\n") if b.strip()]) > HANDOVER_MAX_PARAGRAPHS:
-        return "fragmented", int(age), text
-    if age > HANDOVER_STALE_MIN:
-        world_moved = (saved_sig is None) or (cur_sig is not None and cur_sig != saved_sig)
-        if world_moved:
-            return "stale", int(age), text
+    verdict, _detail = agent_state_shape(text)
+    if verdict != "ok":
+        return verdict, int(age), text
+    if age <= AGENT_STATE_STALE_MIN:
+        return "ok", int(age), text
+    if saved_sig is None:
+        if age <= AGENT_STATE_ADOPT_MAX_MIN:
+            return "ok", int(age), text
+        return "stale", int(age), text
+    if cur_sig is not None and cur_sig != saved_sig:
+        return "stale", int(age), text
     return "ok", int(age), text
 
 

@@ -27,6 +27,12 @@ setup() {
     GHA=''
     rm -rf "$BASE"
     mkdir -p "$BASE/proj/.git" "$BASE/tmp/claude-worklist" "$BASE/tasks/session-deadbeef"
+    # The fixture .git is a plain directory, so `git symbolic-ref` exits 128
+    # and every branch-dependent check would be SKIPPED as no-branch across
+    # the whole suite -- a gate that never fires in its own tests. The env
+    # override exists in wl_core.git_branch for exactly this.
+    export WORKLIST_AGENT_BRANCH=agenttest
+    mkdir -p "$BASE/proj/.agent/agenttest"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
     : >"$WL"
     printf '%s\n' '{"type":"user","message":{"content":"go"}}' >"$BASE/t.jsonl"
@@ -51,21 +57,35 @@ task() { # task <id> <status> <subject>
     printf '{"id":"%s","status":"%s","subject":"%s"}\n' "$1" "$2" "$3" >"$BASE/tasks/session-deadbeef/$1.json"
 }
 
-# Plant a handover document DIRECTLY on disk, bypassing `--handover`.
+# Plant a STATE.md DIRECTLY on disk, bypassing `--state`.
 #
-# Since the CLI learned to refuse a badly-shaped body at write time, piping one
-# through it no longer produces a bad file -- it produces no file, and the
-# previous handover survives. The Stop check's shape detection must still work
-# regardless, because a document can reach that path without the CLI: written by
-# an older flow, hand-edited, or truncated by a full disk. So the shape cases
-# plant the file and the refusal gets its own case.
-plant_handover() { # plant_handover <body>
-    printf '%s' "$1" >"${WL%.md}.handover-deadbeef.md"
+# The CLI refuses a badly-shaped body at write time, so piping one through it
+# produces no file and the previous document survives. The Stop check's shape
+# detection must still work regardless, because a document can reach that path
+# without the CLI: written by an older flow, hand-edited, by a raw Write, or
+# truncated by a full disk. So the shape cases plant the file and the refusal
+# gets its own case.
+plant_state() { # plant_state <body>
+    printf '%s' "$1" >"$BASE/proj/.agent/agenttest/STATE.md"
 }
 
-hand_now() { # a handover fresh enough and long enough to satisfy the gate
-    printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. Next: push and watch the run, then bump the submodule pointers to the squash commits before the merge chain. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.\n' |
-        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null
+# A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the
+# literal phrase "ci-overhaul session" (case 20 greps for it in the PostCompact
+# additionalContext) and carries the mandatory '## Next action' section.
+# WORKLIST_TASKS_DIR is passed DELIBERATELY: hand_now's predecessor omitted it,
+# so all 91 setup handovers recorded a world signature computed against an
+# EMPTY task dir that could never match a stop-time signature (latent only
+# because no fixture aged past the stale limit). Finding F3 in the plan.
+STATE_BODY='You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.
+
+## Next action
+
+Push and watch the run, then bump the submodule pointers to the squash commits before the merge chain.'
+
+hand_now() {
+    printf '%s' "$STATE_BODY" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+            WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null
 }
 
 brief_now() {
@@ -106,7 +126,8 @@ runj() { # like run() but with the shim claude on PATH and the judge ON
     printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
         "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
         PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
-            WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_JUDGE=on GITHUB_ACTIONS="${GHA:-}" \
+            WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH="${WORKLIST_AGENT_BRANCH-agenttest}" \
+            WORKLIST_JUDGE=on GITHUB_ACTIONS="${GHA:-}" \
             python3 "$HOOK" 2>"$BASE/err.txt"
 }
 
@@ -155,6 +176,7 @@ run() { # feed the hook a Stop event and print its raw JSON verdict
     printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
         "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+            WORKLIST_AGENT_BRANCH="${WORKLIST_AGENT_BRANCH-agenttest}" \
             WORKLIST_JUDGE="${JUDGE_MODE:-off}" GITHUB_ACTIONS="${GHA:-}" \
             python3 "$HOOK" 2>"$BASE/err.txt"
 }
@@ -357,7 +379,7 @@ task 7 pending "thing"
 task 8 pending "the forgotten one"
 check "all task ids named is fine" allow ""
 
-echo "== 18. a MISSING handover blocks when work remains =="
+echo "== 18. a MISSING STATE.md blocks when work remains =="
 setup
 say "answer
 
@@ -365,9 +387,9 @@ say "answer
 - #7 thing (pending)"
 brief_now
 task 7 pending "thing"
-check "a missing compact-handover blocks" block "handover is missing"
+check "a missing STATE.md blocks" block "STATE.md is missing"
 
-echo "== 19. a THIN handover blocks (a stub is not a handover) =="
+echo "== 19. a THIN STATE.md blocks (a stub is not a recovery document) =="
 setup
 say "answer
 
@@ -375,31 +397,37 @@ say "answer
 - #7 thing (pending)"
 brief_now
 task 7 pending "thing"
-plant_handover 'wip'
-check "a too-short handover blocks" block "handover is thin"
+plant_state 'wip'
+check "a too-short STATE.md blocks" block "STATE.md is thin"
 
-echo "== 20. PostCompact hands the document back as additionalContext =="
+echo "== 20. PostCompact hands back STATE.md, RULES.md AND the trap titles =="
 setup
 hand_now
+printf 'settled fact: the reconciler exists, never rebuild it\n' >"$BASE/proj/.agent/agenttest/RULES.md"
+printf '# Traps\n\n## The review tooling comes from main\n\nbody detail here\n' >"$BASE/proj/.agent/TRAPS.md"
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --post-compact 2>/dev/null)"
-if grep -qF "picking up an in-progress session" <<<"$out" && grep -qF "ci-overhaul session" <<<"$out"; then
-    echo "  PASS: PostCompact returns the handover body as additionalContext"
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "picking up an in-progress session" <<<"$out" && grep -qF "ci-overhaul session" <<<"$out" &&
+    grep -qF "settled fact: the reconciler exists" <<<"$out" &&
+    grep -qF "The review tooling comes from main" <<<"$out" &&
+    ! grep -qF "body detail here" <<<"$out"; then
+    echo "  PASS: PostCompact returns STATE + RULES + trap TITLES (never trap bodies)"
     PASS=$((PASS + 1))
 else
-    echo "  FAIL: PostCompact did not return the handover: ${out:0:200}"
+    echo "  FAIL: PostCompact briefing incomplete or carries trap bodies: ${out:0:300}"
     FAIL=$((FAIL + 1))
 fi
 
-echo "== 21. PostCompact with NO handover still tells the session what to do =="
+echo "== 21. PostCompact with NO STATE.md still tells the session what to do =="
 setup
 out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --post-compact 2>/dev/null)"
-if grep -qF "NO handover document" <<<"$out"; then
-    echo "  PASS: a missing handover after compaction is reported, not silent"
+if grep -qF "NO STATE.md" <<<"$out"; then
+    echo "  PASS: a missing STATE.md after compaction is reported, not silent"
     PASS=$((PASS + 1))
 else
-    echo "  FAIL: missing-handover PostCompact was silent: ${out:0:200}"
+    echo "  FAIL: missing-STATE.md PostCompact was silent: ${out:0:200}"
     FAIL=$((FAIL + 1))
 fi
 
@@ -499,9 +527,11 @@ say "answer
 task 7 pending "thing"
 check "the confirmed operator-block is accepted" allow ""
 
-echo "== 29. a BLOATED handover is rejected (it is a prompt, not a report) =="
-# v10: the cap moved 600 -> 1500 (operator directive; the 600 budget burned
-# three rewrites in one night). The boundary pair below pins the new edge.
+echo "== 29. a BLOATED STATE.md is rejected (it is a prompt, not a report) =="
+# .agent split: the cap moved 1500 -> 4000. Rules and traps left the budget,
+# so STATE.md needs room for state alone; 4000 still refuses a pasted
+# transcript. The boundary pair pins the new edge, and both bodies carry the
+# '## Next action' section so length is the ONLY variable under test.
 setup
 brief_now
 say "answer
@@ -509,16 +539,19 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-plant_handover "$(python3 -c "print('x'*1600)")"
-check "an over-long handover blocks" block "handover is bloated"
-plant_handover "$(python3 -c "print('x'*1490)")"
-check "1490 chars sits inside the new 1500 budget" allow ""
+plant_state "$(python3 -c "print('## Next action\\ngo\\n' + 'x'*4100)")"
+check "an over-long STATE.md blocks" block "STATE.md is bloated"
+plant_state "$(python3 -c "print('## Next action\\ngo\\n' + 'x'*3900)")"
+check "3900-odd chars sits inside the new 4000 budget" allow ""
 
-echo "== 30. paragraphs are ALLOWED now; FRAGMENTATION (>3) still blocks =="
-# v10: the one-paragraph rule was a proxy for the old 600 cap. At 1500 a
-# handoff prompt may breathe: up to 3 paragraphs pass, more is a bullet list
-# wearing blank lines and still blocks. The old block fixture is now the
-# ALLOW control; the 5-paragraph twin proves the guard can still FIRE.
+echo "== 30. AIMLESS: a STATE.md without a Next action section blocks =="
+# The paragraph guard is DELETED: it was an explicit proxy for the old
+# 600-char cap and split("\n\n") counted every markdown heading as a
+# paragraph, which is why the old message had to forbid headings outright.
+# `aimless` is the strictly better gate: presence of a next action IS the
+# value, and padding cannot satisfy it. Three probes: FIRE without the
+# section, SILENT with it, SILENT with unusual case (the regex is
+# case-insensitive on purpose; a shouted heading is still a next action).
 setup
 brief_now
 say "answer
@@ -526,58 +559,74 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 task 7 pending "thing"
-plant_handover 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.
+plant_state 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all. Padding padding padding padding to comfortably clear the thin floor of the shape gate.'
+check "a STATE.md with no Next action section is aimless and blocks" block "STATE.md is aimless"
+plant_state 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2, where the immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything at all.
 
-Second paragraph, which since v10 is allowed: the limit is fragmentation, not breathing.'
-check "a two-paragraph handover is fine at the 1500 budget" allow ""
-plant_handover 'Paragraph one carries the mission statement for this handover fixture, padded well past the thin threshold so the fragmentation guard is the check under test.
+## Next action
 
-Paragraph two adds a second thought.
+Watch the run and diagnose from the job logs API.'
+check "the same document WITH a Next action section is fine" allow ""
+# Case-insensitivity probed as a UNIT assertion rather than a third stop:
+# three consecutive stops on an unmoved world trip the stuck detector, which
+# would make this case test the wrong gate.
+if python3 -c "
+import sys; sys.path.insert(0, '$(dirname "$HOOK")')
+import wl_store as S
+v, _ = S.agent_state_shape('x'*260 + chr(10) + '## NEXT ACTION' + chr(10) + 'go')
+sys.exit(0 if v == 'ok' else 1)"; then
+    pass "the Next action heading is matched case-insensitively"
+else
+    fail "a shouted '## NEXT ACTION' heading was not recognised"
+fi
 
-Paragraph three keeps going.
-
-Paragraph four is where it stops being prose.
-
-Paragraph five is a bullet list wearing blank lines.'
-check "five paragraphs is fragmentation and blocks" block "handover is fragmented"
-
-echo "== 29b. --handover REFUSES a bad body instead of accepting then blocking =="
-# The write path used to accept ANY body, print "handover written", and let the
-# Stop check reject it on the next stop. Measured 2026-07-30: a 1931-char
-# document was accepted with rc=0 against a 1500-char limit, costing a full
-# round trip and leaving the compaction-recovery artifact broken while the
-# session believed it was fine. Each rejection below is paired with the ALLOW
-# control immediately after, so the guard cannot pass by refusing everything.
+echo "== 29b. --state REFUSES a bad body instead of accepting then blocking =="
+# The old write path once accepted ANY body and let the Stop check reject it a
+# stop later, leaving the compaction-recovery artifact broken while the session
+# believed it was fine. Each rejection is paired with the ALLOW control so the
+# guard cannot pass by refusing everything, and the final assert is a byte cmp,
+# not a hook allow: a refused write must leave the previous document IDENTICAL.
 setup
 brief_now
-hand_now   # a GOOD handover is already on disk; a refused write must not destroy it
+hand_now # a GOOD STATE.md is already on disk; a refused write must not destroy it
+STATE_FILE="$BASE/proj/.agent/agenttest/STATE.md"
+cp "$STATE_FILE" "$BASE/state.before"
 refuse() { # refuse <label> <body-producing-command...>
     local label="$1"
     shift
     local out rc
-    out="$("$@" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef 2>&1)"
+    out="$("$@" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state deadbeef 2>&1)"
     rc=$?
-    if [[ "$rc" -ne 0 ]] && grep -qF "handover REFUSED" <<<"$out"; then
-        pass "--handover refuses $label (rc=$rc)"
+    if [[ "$rc" -ne 0 ]] && grep -qF "STATE REFUSED" <<<"$out"; then
+        pass "--state refuses $label (rc=$rc)"
     else
-        fail "--handover accepted $label: rc=$rc '${out:0:160}'"
+        fail "--state accepted $label: rc=$rc '${out:0:160}'"
     fi
 }
-refuse "an over-long body" python3 -c "print('x'*1600)"
+refuse "an over-long body" python3 -c "print('## Next action: go ' + 'x'*4100)"
 refuse "a stub body" printf 'wip'
-refuse "a fragmented body" python3 -c "print(('y'*80+chr(10)+chr(10))*5)"
+refuse "an aimless body (no Next action section)" python3 -c "print('y'*400)"
 # CONTROL: a well-shaped body must still be written, or the guard is just a
 # blanket refusal wearing three assertions.
-if printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. The immediate job is to watch the running CI round and diagnose any red from its complete failed-step log before changing anything. The rediacc-autopilot App already exists and is validated, so never report it as blocked on the operator.\n' |
-    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null 2>&1; then
-    pass "CONTROL: a well-shaped handover is still written"
+if printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1; then
+    pass "CONTROL: a well-shaped STATE.md is still written"
 else
-    fail "the refusal guard rejected a valid handover"
+    fail "the refusal guard rejected a valid STATE.md"
 fi
-# A refused write must leave the PREVIOUS document intact: destroying a good
-# handover on a bad rewrite is worse than the bug being fixed.
-python3 -c "print('x'*1600)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --handover deadbeef >/dev/null 2>&1 || true
-check "a refused rewrite leaves the good handover in place" allow ""
+# A refused write must leave the PREVIOUS document byte-identical. Stronger
+# than the old `check allow`: an allow only proves the gate was satisfied,
+# a cmp proves the bytes never moved.
+cp "$STATE_FILE" "$BASE/state.good"
+python3 -c "print('x'*4200)" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null 2>&1 || true
+if cmp -s "$BASE/state.good" "$STATE_FILE"; then
+    pass "a refused rewrite leaves the good STATE.md byte-identical"
+else
+    fail "a refused rewrite MUTATED the previous STATE.md"
+fi
 
 echo "== 31. design-doc DRIFT blocks =="
 setup
@@ -810,7 +859,9 @@ say "answer
 task 7 pending "thing"
 check "no found-not-fixed list, no complaint" allow ""
 
-echo "== 44. a handover just over the limit is STALE (the limit is load-bearing) =="
+echo "== 44. a STATE.md just over the limit is STALE (the limit is load-bearing) =="
+# NOTE: 44 and 45 are ONE indivisible fixture; 45 has no setup of its own and
+# reads $HAND set here. Do not reorder or insert a setup between them.
 setup
 brief_now
 hand_now
@@ -820,17 +871,17 @@ say "answer
 | #7 | thing | pending, me |"
 task 7 pending "thing"
 # Age it past the default without touching the clock: the check reads mtime.
-# The limit is 15 minutes (operator directive 2026-07-30, raised from 10), so
-# the pair below BRACKETS it: 16 must block, 14 must not. Bracketing rather
-# than picking one comfortable age is the point -- a single far-past fixture
-# would keep passing if the constant were raised to an hour by accident.
-HAND="$(dirname "$WL")/$(basename "${WL%.md}").handover-deadbeef.md"
+# The limit is 15 minutes, and the pair BRACKETS it: 16 must block, 14 must
+# not. A single far-past fixture would keep passing if the constant were
+# raised to an hour by accident. The world has moved since hand_now banked the
+# signature (task 7 landed after), so world-keyed staleness is armed.
+HAND="$BASE/proj/.agent/agenttest/STATE.md"
 touch -d '16 minutes ago' "$HAND"
-check "a 16-minute-old handover blocks at the 15-minute limit" block "handover is stale"
+check "a 16-minute-old STATE.md blocks at the 15-minute limit" block "STATE.md is stale"
 
 echo "== 45. and one just inside it does not =="
 touch -d '14 minutes ago' "$HAND"
-check "a 14-minute-old handover is inside the 15-minute limit" allow ""
+check "a 14-minute-old STATE.md is inside the 15-minute limit" allow ""
 
 echo "== 46. CONTROL: an open item still blocks off a runner =="
 setup
@@ -2061,7 +2112,11 @@ ARITY = {
     "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
     "V_NO_POLL_CRON": ("m",), "V_MANY_WORK_CRONS": (2, "l"),
-    "V_MANY_POLL_CRONS": (2,), "V_HANDOVER": ("s", "", 250, 1500, "m"),
+    "V_MANY_POLL_CRONS": (2,),
+    "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
+    "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
+    "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
+    "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
@@ -2091,10 +2146,12 @@ ARITY = {
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
     "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("d", "l", ""),
-    "CTX_SESSION_START_STALE": (3, "s"), "CTX_POSTCOMPACT_MISSING": ("p", "m"),
-    "CTX_POSTCOMPACT_BRIEFING": ("d", "t"),
+    "CTX_SESSION_START_STALE": (3, "s"),
+    "CTX_POSTCOMPACT_MISSING": ("p", "b", "m"),
+    "CTX_POSTCOMPACT_NO_BRANCH": ("t",),
+    "CTX_POSTCOMPACT_BRIEFING": ("d", "s", "r", "p", "t"),
     "JUDGE_PROMPT": {"streak": 1, "remaining": "r", "leases": 0, "loop": "l",
-                     "citations": "c", "message": "m"},
+                     "citations": "c", "message": "m", "traps": "t"},
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
 }
 fail = 0
@@ -2935,10 +2992,13 @@ else
     fail "flood note repeated: ${out:0:200}"
 fi
 
-echo "== 144. handover staleness is WORLD-KEYED: a quiet world never stales it =="
+echo "== 144. STATE.md staleness is WORLD-KEYED: a quiet world never stales it =="
 # The v9 trap this kills: the 10-minute age limit was outpaced by the
-# 5-minute poll cron, so a QUIET session went stale every other poll. Since
-# v10 age alone is not staleness; the world signature must also have moved.
+# 5-minute poll cron, so a QUIET session went stale every other poll. Age
+# alone is not staleness; the world signature must also have moved. The write
+# stays INLINE rather than folded into hand_now: passing WORKLIST_TASKS_DIR
+# explicitly here is the point of the case (the signature must cover the task
+# dir the stop will read), and the explicitness is what documents that.
 setup
 brief_now
 task 7 pending "thing"
@@ -2946,13 +3006,13 @@ say "answer
 
 ## Remaining
 | #7 | thing | pending, me |"
-printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh. Next: push and watch the run, then bump the submodule pointers to the squash commits before the merge chain closes out.\n' |
+printf 'You are picking up the ci-overhaul session driving PR #543 to green on branch 0728-2. Round 23 went red on a dead-shell finding, now fixed by running the stop-gate suite from test-hooks.sh.\n\n## Next action\n\nPush and watch the run, then bump the submodule pointers to the squash commits before the merge chain closes out.\n' |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-        python3 "$HOOK" --handover deadbeef >/dev/null
-check "fresh handover, settled world: allowed" allow ""
-HAND="$(dirname "$WL")/$(basename "${WL%.md}").handover-deadbeef.md"
+        WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null
+check "fresh STATE.md, settled world: allowed" allow ""
+HAND="$BASE/proj/.agent/agenttest/STATE.md"
 touch -d '25 minutes ago' "$HAND"
-check "an OLD handover with an UNCHANGED world is NOT stale (the poll trap is dead)" allow ""
+check "an OLD STATE.md with an UNCHANGED world is NOT stale (the poll trap is dead)" allow ""
 task 8 pending "the new thing"
 newturn
 say "answer
@@ -2960,7 +3020,7 @@ say "answer
 ## Remaining
 | #7 | thing | pending, me |
 | #8 | the new thing | pending, me |"
-check "the same old handover goes stale the moment the world moves" block "handover is stale"
+check "the same old STATE.md goes stale the moment the world moves" block "STATE.md is stale"
 
 echo "== 146. v11: the store-derived GUIDE rides every full stop, bounded =="
 # The operator's ask: "--list should be used always on stop hook to output
@@ -3444,6 +3504,220 @@ if [[ -n "$OUT" ]]; then
     pass "CONTROL: an UNFIRED rung at the same age still forfeits the silent poll"
 else
     fail "an unfired blocking rung was swallowed by the fast path"
+fi
+
+echo "== 153a. T1/T2: a missing .agent/<branch>/ blocks with the bootstrap, ONCE as a wall =="
+# Decision 5: block with the exact bootstrap commands, NEVER auto-create (the
+# RULES.md copy-forward is a judgement call a hook must not make). The WALL is
+# shown once per branch per session, latched on agent_boot_told; the follow-up
+# is a one-liner that keeps blocking without repeating itself.
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+rm -rf "$BASE/proj/.agent/agenttest"
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "mkdir -p .agent/agenttest" <<<"$OUT" &&
+    grep -qF "RULES.md" <<<"$OUT"; then
+    pass "T1 FIRE: a missing branch dir blocks with the exact bootstrap commands"
+else
+    fail "T1: bootstrap wall absent or wrong: ${OUT:0:200}"
+fi
+if [[ -d "$BASE/proj/.agent/agenttest" ]]; then
+    fail "T1: the hook AUTO-CREATED the branch dir (decision 5 violated)"
+else
+    pass "T1: the hook did not auto-create the directory"
+fi
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT2="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT2" && grep -qF "still absent" <<<"$OUT2" &&
+    ! grep -qF "mkdir -p .agent/agenttest" <<<"$OUT2"; then
+    pass "T2: the second stop still blocks but the wall is not repeated"
+else
+    fail "T2: second-stop shape wrong: ${OUT2:0:200}"
+fi
+# SILENT control: with the dir restored and a fresh STATE.md the wall is gone.
+# The world is moved first (task 8) or the third consecutive unmoved stop
+# would trip the STUCK detector and this control would test the wrong gate.
+mkdir -p "$BASE/proj/.agent/agenttest"
+task 8 pending "moved"
+hand_now
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)
+- #8 moved (pending)"
+check "T1 CONTROL: dir present + fresh STATE.md allows, no bootstrap text" allow ""
+
+echo "== 153b. T7a/T7b: adopt-on-first-sight, and the adopt NEVER fires on stale =="
+# A second session arriving on a branch has no recorded signature for the
+# document the first session wrote; the old pure-age fallback would order an
+# immediate rewrite, reproducing the churn the redesign fixes. Adoption is
+# bounded (60m) and fires ONLY on an "ok" verdict: banking the signature on a
+# "stale" verdict would let the next stop compare cur_sig against a signature
+# recorded DURING the block and allow -- a gate that clears itself without a
+# rewrite. T7b is the anti-vacuity control: it must block TWICE running.
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md" # planted: NO signature banked
+touch -d '30 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+check "T7a: an unsigned 30-minute document is ADOPTED, not rewritten" allow ""
+if python3 -c "
+import json, sys
+doc = json.load(open('${WL%.md}.state-deadbeef.json'))
+sys.exit(0 if doc.get('state_sig') else 1)"; then
+    pass "T7a: the adopt banked state_sig into the state doc (read, not inferred)"
+else
+    fail "T7a: no state_sig was banked on the ok verdict"
+fi
+# T7b: age the document past the ADOPT horizon with no signature -> stale, and
+# it must STAY stale on a second stop over an unchanged world.
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md"
+touch -d '90 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+check "T7b FIRE: an unsigned 90-minute document is past the adopt horizon" block "STATE.md is stale"
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+check "T7b ANTI-VACUITY: it blocks AGAIN on an unchanged world (no self-clear)" block "STATE.md is stale"
+if python3 -c "
+import json, sys
+doc = json.load(open('${WL%.md}.state-deadbeef.json'))
+sys.exit(1 if doc.get('state_sig') else 0)"; then
+    pass "T7b: state_sig was NOT banked during the stale blocks"
+else
+    fail "T7b: the stale path banked a signature (the gate would clear itself)"
+fi
+# Move the world (task 8) before the control stop, or the fourth consecutive
+# unmoved stop trips the STUCK detector instead of testing this gate.
+task 8 pending "moved"
+hand_now
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)
+- #8 moved (pending)"
+check "T7b CONTROL: a real --state rewrite clears it" allow ""
+
+echo "== 153c. T9: a detached HEAD is REPORT-ONLY, never a block =="
+# Operator decision 2026-07-30, a deliberate departure from the
+# V_PR_UNREADABLE blocks-when-blind precedent: HEAD detaches during every
+# interactive rebase and this operator rebase-merges everything, so blocking
+# each stop for the duration would be worse than one turn of unenforced
+# staleness. The note must NAME the blindness; silence would be a pass-quietly.
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+WORKLIST_AGENT_BRANCH=""
+OUT="$(run)"
+WORKLIST_AGENT_BRANCH=agenttest
+if ! grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "freshness check is BLIND" <<<"$OUT"; then
+    pass "T9: no-branch allows AND names the blindness"
+else
+    fail "T9: no-branch handled wrongly: ${OUT:0:200}"
+fi
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if ! grep -qF "freshness check is BLIND" <<<"$OUT"; then
+    pass "T9 CONTROL: with a branch resolvable the blindness note is absent"
+else
+    fail "T9 CONTROL: blindness note present despite a resolvable branch"
+fi
+
+echo "== 153d. T10/T11: trap TITLES feed the judge; bodies and ### never do =="
+setup
+printf '# Traps\n\n## Real trap title one\n\nsecret body line\n\n### a sub-heading\n\n## Second title\n' >"$BASE/proj/.agent/TRAPS.md"
+OUT=$(
+    python3 - "$(dirname "$HOOK")" "$BASE/proj" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+import wl_store as S
+import worklist_messages as M
+heads = S.trap_headings(sys.argv[2])
+prompt = M.JUDGE_PROMPT % {
+    "streak": 1, "remaining": "r", "leases": 0, "loop": "l",
+    "citations": "c", "message": "m",
+    "traps": "\n".join("  - " + h for h in heads) or "  (none recorded)",
+}
+checks = [
+    ("titles-only", heads == ["Real trap title one", "Second title"]),
+    ("prompt-has-title", "Real trap title one" in prompt),
+    ("prompt-no-body", "secret body line" not in prompt),
+    ("prompt-no-subheading", "a sub-heading" not in prompt),
+]
+import pathlib
+empty = S.trap_headings(sys.argv[2] + "/nonexistent")
+checks.append(("absent-file-empty-list", empty == []))
+for name, ok in checks:
+    print(("PASS " if ok else "FAIL ") + name)
+PYEOF
+)
+if grep -qF "FAIL" <<<"$OUT"; then
+    fail "T10/T11: $OUT"
+else
+    pass "T10/T11: judge sees ## titles only; bodies, ###, and absent files are safe"
+fi
+
+echo "== 153e. T12: the silent poll survives an old STATE.md on a quiet world =="
+# The poll fast path needs NO new forfeit: STATE.md staleness is world-keyed,
+# so an unchanged world cannot stale it, and a moved world already forfeits
+# the fast path at the world_sig comparison. Adding a forfeit would
+# reintroduce the 5-minute-poll trap the world-keying exists to kill.
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it WHY: operator trade HOW: operator answers' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "T12 baseline stop allows" allow ""
+touch -d '25 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    pass "T12: a 25-minute STATE.md on an unchanged world keeps the silent poll"
+else
+    fail "T12: the old STATE.md forfeited the fast path: rc=$RC '${OUT:0:160}'"
+fi
+task 9 pending "world moved"
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]]; then
+    pass "T12 CONTROL: a moved world pays the full battery"
+else
+    fail "T12 CONTROL: the moved world stayed silent"
 fi
 
 echo

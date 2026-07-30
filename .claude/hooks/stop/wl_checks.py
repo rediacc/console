@@ -678,18 +678,41 @@ def handle_session_start(event):
 
 def handle_post_compact(event):
     # PostCompact hook: the model has just lost its context. Hand the
-    # document straight back as additionalContext so continuity does not
-    # depend on it remembering to go looking.
-    wl = C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
+    # documents straight back as additionalContext so continuity does not
+    # depend on it remembering to go looking. Since the .agent/ split this
+    # returns MORE than the old handover ever could: STATE.md in full,
+    # RULES.md in full, and the TRAPS.md titles -- the first time a compacted
+    # session gets the standing rules at all, delivered exactly once per
+    # compaction. Full TRAPS.md is deliberately excluded (designed to grow);
+    # titles plus the path is the same economy the judge uses.
+    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
     sid = event.get("session_id", "")
-    state, _age, text = S.handover_state(wl, sid)
-    if state == "missing":
-        msg = M.CTX_POSTCOMPACT_MISSING % (S.handover_path(wl, sid), (sid or "unknown")[:8])
+    branch = C.git_branch(root)
+    traps = S.trap_headings(root)
+    traps_block = "\n".join("  - " + h for h in traps) or "  (none recorded)"
+    if not branch:
+        state = "no-branch"
+        msg = M.CTX_POSTCOMPACT_NO_BRANCH % traps_block
     else:
-        msg = M.CTX_POSTCOMPACT_BRIEFING % (DESIGN_DOCS, text.strip())
+        state, _age, text = S.agent_state_state(root, branch)  # shape + presence only
+        if state in ("missing", "no-dir"):
+            msg = M.CTX_POSTCOMPACT_MISSING % (
+                S.agent_state_path(root, branch), branch, (sid or "unknown")[:8]
+            )
+        else:
+            try:
+                rules = S.agent_rules_path(root, branch).read_text(
+                    encoding="utf-8", errors="replace"
+                ).strip()
+            except OSError:
+                rules = "(none for this branch)"
+            msg = M.CTX_POSTCOMPACT_BRIEFING % (
+                DESIGN_DOCS, text.strip(), rules, S.agent_traps_path(root), traps_block
+            )
     C.emit(
         {
-            "systemMessage": "PostCompact: handover %s (%s)" % (state, S.handover_path(wl, sid).name),
+            "systemMessage": "PostCompact: STATE.md %s (.agent/%s/STATE.md)"
+            % (state, branch or "<no-branch>"),
             "hookSpecificOutput": {
                 "hookEventName": "PostCompact",
                 "additionalContext": msg,
@@ -878,12 +901,24 @@ def run_stop(event, event_ok, worklist, hook_file):
     bstate, bage, others_briefs = S.brief_state(worklist, session_id, briefs)
     lstate, lnext, llabel, _others_loops, lcrons = S.loop_state(worklist, session_id)
     # The world signature is computed ONCE, after every shared-state write of
-    # this stop (sync, cleanup, escalation), and reused by the handover check,
+    # this stop (sync, cleanup, escalation), and reused by the STATE.md check,
     # the poll baseline and the judge cache, so all three describe one world.
     cur_sig = S.world_sig(root, worklist, session_id)
-    hstate, hage, _htext = S.handover_state(
-        worklist, session_id, cur_sig=cur_sig, saved_sig=state_doc.get("handover_sig")
+    agent_branch = C.git_branch(root)
+    astate, aage, _atext = S.agent_state_state(
+        root, agent_branch, cur_sig=cur_sig, saved_sig=state_doc.get("state_sig")
     )
+    if astate == "ok":
+        # ADOPT: an "ok" verdict banks the signature so a second session
+        # arriving on the branch inherits the document instead of being
+        # ordered to rewrite it. The adopt fires ONLY on "ok" -- banking on a
+        # "stale" verdict would let the next stop compare cur_sig against a
+        # signature recorded DURING the block, find them equal, and allow: a
+        # gate that clears itself without a rewrite (control T7b pins this by
+        # asserting it blocks TWICE on an unchanged world). Must sit above
+        # S.save_state below; emit() exits, so anything written after a later
+        # emit path never lands.
+        state_doc["state_sig"] = cur_sig
 
     remaining_lines = (
         ["[ ] " + i for i in open_items]
@@ -1190,17 +1225,34 @@ def run_stop(event, event_ok, worklist, hook_file):
     loop_died, had_crons = cron_memory(worklist, session_id, len(live_work_crons))
     if loop_died:
         violations.append(M.V_LOOP_DIED % had_crons)
-    if something_remains and hstate != "ok":
+    # Explicit state mapping, NOT `!= "ok"`: a detached HEAD ("no-branch")
+    # must be report-only (operator decision 2026-07-30, a deliberate
+    # departure from the V_PR_UNREADABLE blocks-when-blind precedent, because
+    # HEAD detaches during every interactive rebase and this operator
+    # rebase-merges everything), and a missing DIRECTORY gets the bootstrap
+    # wall exactly once per branch per session, latched on agent_boot_told.
+    agent_note = ""
+    if something_remains and astate in ("missing", "thin", "bloated", "aimless", "stale"):
         violations.append(
-            M.V_HANDOVER
+            M.V_AGENT_STATE
             % (
-                hstate,
-                "" if hage is None else " (%d min old, limit %d)" % (hage, S.HANDOVER_STALE_MIN),
-                S.HANDOVER_MIN_CHARS,
-                S.HANDOVER_MAX_CHARS,
+                agent_branch,
+                astate,
+                "" if aage is None else " (%d min old, limit %d)" % (aage, S.AGENT_STATE_STALE_MIN),
+                S.AGENT_STATE_MIN_CHARS,
+                S.AGENT_STATE_MAX_CHARS,
                 me8,
             )
         )
+    elif astate == "no-dir":
+        if state_doc.get("agent_boot_told") != agent_branch:
+            violations.append(M.V_AGENT_BOOTSTRAP % (agent_branch, agent_branch, agent_branch))
+            state_doc["agent_boot_told"] = agent_branch
+            S.save_state(worklist, session_id, state_doc)
+        elif something_remains:
+            violations.append(M.V_AGENT_STILL_ABSENT % agent_branch)
+    elif astate == "no-branch":
+        agent_note = M.N_AGENT_BLIND % root
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         violations.append(M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
@@ -1514,6 +1566,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                    "" if lcrons == 1 else "s"),
                 cited_excerpts(root, last_msg),
                 extra=reg_extra + audit_extra,
+                # Headings only (operator decision 2026-07-30): titles of
+                # hard-won facts let the judge tell a real constraint from an
+                # excuse, without turning a file designed to grow forever into
+                # a per-stop cost multiplier. ~145 tokens today.
+                traps=S.trap_headings(root),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer
@@ -1684,6 +1741,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         parts.append(audit_note)
     if ci_report:
         parts.append(ci_report)
+    if agent_note:
+        parts.append(agent_note)
     if ladder_pings:
         parts.append(
             M.N_LADDER_PING
