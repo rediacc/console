@@ -295,6 +295,11 @@ CLI_STATE_NO_BRANCH = (
     "a branch, or set WORKLIST_AGENT_BRANCH explicitly.\n"
 )
 
+N_WAKEUPS = (
+    "NEXT WAKEUPS (computed from the live schedules, not from a declaration; "
+    "the label is each task's own prompt):\n%s"
+)
+
 V_DOCS_DRIFT = (
     "the design docs have DRIFTED: %d commits have touched %s since %s was last "
     "updated. Those documents are how a new or compacted session understands this "
