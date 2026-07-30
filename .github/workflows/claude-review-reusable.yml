@@ -340,11 +340,29 @@ jobs:
       # Mark only AFTER a successful review step, and only when output
       # actually posted (the guard verifies; at-least-once semantics). Also
       # appends cost + token usage parsed from the execution file.
+      # `always()` HERE AND NOWHERE ELSE (operator decision 2026-07-30). This
+      # step is the ACCOUNTING RECORD, and it has to run precisely when the
+      # review failed, because that is the case it exists to charge for.
+      #
+      # Without it the leak was unbounded: the review step failed, implicit
+      # success() skipped this and the two steps above, no marker was written,
+      # and the cap counts POSTED reports, so a spent pass counted as zero and
+      # the same SHA was re-reviewed at full price on every later green push.
+      # Measured on PR #546 run 30552035566: error_max_turns, zero
+      # github-actions comments, no marker.
+      #
+      # The sibling post-report and post-findings steps deliberately stay on
+      # implicit success(): when the model produced nothing there is nothing for
+      # them to post, so running them would only add two more ways to fail the
+      # job. REVIEW_OUTCOME tells --mark which path to take; anything other than
+      # "success" records a SPENT ATTEMPT, which consumes budget without ever
+      # claiming the SHA was reviewed.
       - name: Record reviewed SHA
-        if: steps.gate.outputs.go == 'true'
+        if: always() && steps.gate.outputs.go == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
           HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          REVIEW_OUTCOME: ${{ steps.claude.outcome }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
         run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --mark
