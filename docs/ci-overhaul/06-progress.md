@@ -760,3 +760,32 @@ The field is populated and the two agree exactly, so run `30527484990`'s empty
 render was a one-off in a since-superseded run rather than a live defect. Third
 independent confirmation of spike S-1 along the way: one model key, sonnet, no
 haiku.
+
+### Wave B acceptance (a): the REDUCED RUN is demonstrated on live traffic
+
+Run `30562133323` on `826b6834a`, the docs-only push made as the FIRST push
+after green run `30557767857`. Read from the run's own `scope-shadow` artifact,
+not from a local classify, and the two files in it are the whole argument side
+by side:
+
+`scope-baseline.json`, the net-delta-from-last-green engine:
+
+    mode: reduced   modules: [docs]
+    reasons: [docs/ci-overhaul/06-progress.md -> docs]
+    all 17 job keys: run=false, reason out-of-scope
+    baseline: 24a4e4d0e (run 30557767857)
+    baseline_trail: [{24a4e4d0e, usable, full-green-attested}]
+
+`scope-classify.json`, the merge-base view of the SAME head:
+
+    mode: full   (16 harness:/workflow-closure: reasons, .ci/ and .github/)
+
+Same commit, same run: the cumulative frame says full, the incremental frame
+says reduced with seventeen jobs cut. The 5-percent-versus-30-percent economics
+this program was built on is now SHOWN on live traffic rather than measured
+offline. The engine stayed in SHADOW per D-1, so no job was engine-skipped (the
+run's 19 skips are the ordinary cache- and condition-driven set); the
+demonstration is the artifact, which is exactly what shadow mode is for.
+
+Remaining for full Wave B acceptance: (b) `pointer_bump_only` observed TRUE,
+which is also the only way to exercise the plan's exemption path.
