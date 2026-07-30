@@ -367,3 +367,36 @@ while the run is in progress, exits 1, and writes the explanation to stderr, so 
 `2>/dev/null` capture looks like an empty log. Use
 `gh api repos/OWNER/REPO/actions/jobs/<id>/logs` for a completed job inside a live
 run. The watchdog already does exactly this.
+
+## Second full green, and the reduced-run demonstration (2026-07-30)
+
+Run `30517957988` on `0b04a6f38` finished **completed/success, 95 jobs, zero
+failures**, and PR #543 moved from `BLOCKED` to `CLEAN`. That is the second full
+green on this branch; the first was `30509062386` on `43ecb261a`.
+
+This commit is deliberately **docs-only and pushed FIRST after that green**,
+because the scope engine computes its net delta from the last green ancestor
+rather than from the PR diff. Classified offline before pushing:
+
+    mode: reduced   full_reasons: []   jobs OFF: 17 of 17
+
+Three controls confirm the classifier discriminates rather than always saying
+`reduced`: a `.ci/` harness change returns `full` with
+`harness:.ci/scripts/ci/watchdog-monitor.cjs`, a real 16-file delta returns
+`full`, and an unmapped path fails closed to `full` with `unclassified:`.
+
+### Merge strategy changed, and it changes how you audit branches
+
+All five repos moved to **rebase-merge only** with `delete_branch_on_merge=true`
+on 2026-07-30, replacing squash. Squash collapsed huge PRs into one commit (#520
+was 100 commits, 1314 files, +226k/-101k), so `git blame` pointed at a commit
+that explained nothing.
+
+The trap this leaves behind is permanent and worth stating plainly: **rebase
+rewrites every SHA, so a merged branch shares no commit with `main` and
+`git branch --merged` reports it as unmerged.** That test called all 75 console
+local branches unsafe to delete when 59 had merged PRs. Ask the PR, never
+ancestry. Settings were also inconsistent before this: `delete_branch_on_merge`
+was false on renet, account and homebrew-tap and true on console and elite,
+which is exactly why those three accumulated stale remote branches and the other
+two stayed tidy.
