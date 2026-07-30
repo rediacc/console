@@ -170,6 +170,44 @@ V_PR_UNREADABLE = (
     "blind. It blocks rather than passing quietly, per no-escape-hatch."
 )
 
+V_CI_RED = """CI IS RED ON PR #%s AND NOTHING IS WATCHING IT. %d job(s) failed for real
+%s
+%s
+
+READ THE LOG BEFORE YOU GUESS. `gh run view --log-failed` is RUN-scoped even with
+--job: it refuses while the run is in progress, exits 1, and writes the reason to
+stderr, so a 2>/dev/null capture looks like an empty log. Use the per-job endpoint
+above, which works on a completed job inside a live run.
+
+Then brief a sub-agent with the job name, the failing step and the log excerpt
+(Agent tool, subagent_type general-purpose) and have it come back with a fix
+rather than a theory. Investigation parallelises; do not read 95 jobs yourself.
+
+THIS CANNOT TRAP YOU: it blocks at most %d consecutive stop(s) per failure set
+(this is %d), then downgrades to a report for that set forever. To clear it now,
+push the fix, or name the failing job in your stop message, or -- if it is not
+yours to fix -- file
+    - [?] (%s) CI: <job> red, <one-line reason>  DEFAULT: <what happens if nobody acts>"""
+
+V_CI_UNREADABLE = (
+    "THIS IS A HOOK BUG: the PR CI-status lookup failed (%s), so that check is "
+    "blind. It blocks rather than passing quietly, per no-escape-hatch. If `gh` "
+    "is simply not authenticated here, unset WORKLIST_PUBLISH_REF to opt out of "
+    "the check entirely rather than leaving it half-blind."
+)
+
+CI_NOTE_RETRYABLE = """CI on PR #%s: %d job(s) failed, but every one of them is on the watchdog's
+retry allowlist (%s) and the run is still live, so a rerun may already be
+inbound. Reported, NOT blocked on: investigating a leg the watchdog is about to
+rerun costs a round for nothing. If they are still red once the run is final,
+this will say so.
+%s"""
+
+CI_NOTE_DOWNGRADED = """CI on PR #%s is still red (%d job(s)) and this has already been raised %d
+time(s) for this failure set%s, so it will not block again for this set. It is
+still red and still yours to decide about:
+%s"""
+
 V_LOOP_DIED = (
     "YOUR WORK LOOP DIED. This session had %d work cron(s) and now has none "
     "(the 5-minute inbox poll does not count: it only reacts to other "
