@@ -278,16 +278,43 @@ agent and verified before acting:
   a control that the same worklist state still blocks off a runner, and that a
   value other than `true` is not a runner. 46/46.
 
-**S-2 is UNPROVEN and was wrongly marked done.** S-1 is genuinely resolved
-(issue #539: the haiku label was a `jq 'keys | first'` alphabetical artifact, not
-an ignored `--model` flag; fix live at `claude-review-gate.sh:280-300`). But no
-live `--max-budget-usd 0.01` run is recorded anywhere: not in these docs, the
-commit messages, PR #543, issue #539, or the worklist. **So no dollar stop is
-known to exist**, `03-v2-autonomy.md:359-360` stands unchanged, and Wave C's cost
-floor is structural instead: zero model cost on every no-go, dedup, superseded,
-ready-flip, review-rerun and done path, plus per-round `--max-turns`, a 30-minute
-job timeout, and the round cap. Run the spike during the S4 canary and record the
-answer either way.
+**S-2 was unproven and is now SETTLED (2026-07-30).** The paragraph that stood
+here said no live `--max-budget-usd 0.01` run was recorded anywhere and that
+therefore no dollar stop was known to exist. That was true when written and is
+false now; full evidence in `spike-s1-s2.md`.
+
+It did not need a CI dispatch. The action pin `fa7e2f0a` is v1.0.180, which
+bundles Claude Code 2.1.217, and that exact build was already on the dev machine
+under `claudeAiOauth` with no `ANTHROPIC_API_KEY`, i.e. the same auth class as
+`CLAUDE_CODE_OAUTH_TOKEN`. So the experiment ran on the real pinned binary under
+real OAuth, for $0.49.
+
+**The flag BINDS, but as a post-hoc stop, not a ceiling.** Cap `0.01` produced
+exit 1, `subtype: error_max_budget_usd`, `terminal_reason: budget_exhausted`,
+and `total_cost_usd: 0.2340351`. A 23x overshoot, because the check compares
+ACCUMULATED cost against the cap BETWEEN turns and nothing bounds a single
+request, so the real guarantee is *total <= budget + one more turn*. A control
+run at `--max-budget-usd 100` spent $0.22 without halting, proving it is not a
+blanket abort. **Say a dollar stop exists; never say a hard cap does.**
+`03-v2-autonomy.md`'s cost section has been rewritten accordingly, and
+`01-verified-context.md:413`'s "do not claim it binds" warning is marked
+superseded.
+
+S-1 is likewise resolved and the reading is unchanged: issue #539 is a cosmetic
+label bug, not a review-quality one, so every finding received so far came from
+the requested model. Corroborated independently of the original argument by
+comment `5102584893` reading `Cost: $5.9255 (claude-sonnet-5) | 61 turns`, and
+by `claude-review-gate.sh:280-300` joining EVERY `modelUsage` key with `", "`,
+so one name with no comma proves exactly one key.
+
+**One design consequence Wave C must not discover in production**, derived from
+the `if:` conditions rather than observed: `error_max_budget_usd` carries
+`is_error: true`, so the step FAILS, and the three steps after it in
+`claude-review-reusable.yml` carry only a `gate.outputs.go` condition with no
+status function, so implicit `success()` skips all three. A budget halt would
+therefore mean a red job, no report, no findings, and **no marker SHA**, so the
+next run re-reviews the same commit and pays again. If the flag is wired in,
+decide deliberately whether those steps get `always()`.
 
 ## The Stop hook (`.claude/hooks/stop/worklist.py` v5)
 
@@ -313,7 +340,8 @@ Two measured facts that constrain any future change:
 
 ## Corrections to the other documents
 
-- README: "Nothing in it has been built" is stale. Wave A merged, Wave B built.
+- README: "Nothing in it has been built" was stale. FIXED 2026-07-30; the README
+  now points at this file and records both spikes as settled.
 - `01-verified-context.md`: the nightly was red **12 of 12**, not four nights.
 - The plan's `generate-tag.sh` renet-input instruction is wrong; see above.
 - Wave C's App blocker is closed. The App exists and is validated.
@@ -559,3 +587,47 @@ not in the anti-vacuity registry, and that was measured too: it passes all nine
 assertions against the empty fixture, because its only repo dependency is the
 watchdog module the harness copies in, so an entry there could never fail. The
 exclusion is documented in `test-gate-anti-vacuity.sh` alongside the others.
+
+### The retry allowlist now OVERRIDES a confident code-change verdict (operator, 2026-07-30)
+
+A policy reversal, made with its cost stated, so it is recorded rather than
+discovered later in a diff.
+
+**What forced it.** Run `30540751569`, job `90867219911`. `Tests + Infra / E2E Ceph`
+failed on `failed to install Docker on node 21: ssh command failed: exit status 6`,
+preceded by a `manifest unknown` image-pull warning. That is infrastructure. The
+classifier answered **code-change at 0.9**, reasoning that "the error message
+indicates a setup error and E2E tests failed, which suggests a problem with the
+code under test" -- a tautology over the words "Setup failed", not an analysis.
+Because 0.9 clears the threshold it suppressed the retry, and the watchdog
+force-cancelled eighteen healthy siblings around the one red job.
+
+**The decision.** The operator was offered a prompt-side fix (demand a cited
+root-cause line) and chose the policy-side one: for jobs on
+`WATCHDOG_RETRY_ALLOWLIST_PATTERNS` the allowlist now beats a confident
+code-change verdict. The recommendation had been prompt-side; this is an
+override and is marked as one.
+
+**Why it is defensible.** Allowlist membership is a claim about the JOB (it boots
+VMs, it pulls images across the network), and a claim about a job cannot be wrong
+about a particular failure the way a model's reading of one log can. The cost is
+bounded: `MAX_ATTEMPTS` caps this at ONE extra attempt.
+
+**What it costs, stated plainly.** It re-opens part of #537, whose complaint was
+that everything retried on a judgment nobody made. The mitigation is that the
+override is narrow (allowlisted jobs only), loud (the reason string names it),
+and bounded (one attempt).
+
+**What still outranks it.** `guardForced`. The binary-exec guard SYNTHESISES a
+code-change verdict at confidence 1 specifically to block a retry of a job that
+downloads and executes a released binary, and the allowlist must never undo a
+deliberate safety check. That distinction now travels with the verdict as an
+explicit flag rather than being inferred from confidence, because a real
+classifier can also answer 1.0 -- the old test stood on exactly that proxy, and
+it would have silently handed the guard's authority to any confident model. No
+install-validation job matches the current allowlist, so this is defence in depth
+rather than a live conflict, and it stays correct if either list moves.
+
+Proven by mutation, not by reading: deleting the `!guardForced` term makes
+`test-watchdog-retry-allowlist.sh` exit 1, and the file was restored and verified
+by sha256 checksum. Battery 56 gates / 601 assertions green.
