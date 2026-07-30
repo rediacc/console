@@ -120,8 +120,15 @@ SIZE="$(stat -c%s "$FILE")"
 SHA256="$(sha256sum "$FILE" | cut -d' ' -f1)"
 
 log_step "Updating manifest: ${KIND}.${KEY}.${LANG}.${FIELD}"
+# The helper parses argv strictly in flag/value pairs, so an empty --engine would
+# shift everything and corrupt the call. Pass the flag only when we have a value.
+ENGINE_ARGS=()
+if [[ -n "$ENGINE" ]]; then
+    ENGINE_ARGS=(--engine "$ENGINE")
+fi
+
 npx tsx "$MANIFEST_HELPER" \
     --kind "$KIND" --key "$KEY" --lang "$LANG" --field "$FIELD" \
-    --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256"
+    --path "$REMOTE_KEY" --size "$SIZE" --sha256 "$SHA256" "${ENGINE_ARGS[@]}"
 
 log_info "Done: https://media.rediacc.com/${REMOTE_KEY}"
