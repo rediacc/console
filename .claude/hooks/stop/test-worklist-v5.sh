@@ -1986,6 +1986,7 @@ ARITY = {
     "V_NO_POLL_CRON": ("m",), "V_MANY_WORK_CRONS": (2, "l"),
     "V_MANY_POLL_CRONS": (2,), "V_HANDOVER": ("s", "", 250, 1500, "m"),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
+    "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
     "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
     "V_LADDER_RESOLVE": ("rows", "facts", "m"),
@@ -2883,6 +2884,132 @@ say "answer
 | #7 | thing | pending, me |
 | #8 | the new thing | pending, me |"
 check "the same old handover goes stale the moment the world moves" block "handover is stale"
+
+echo "== 146. v11: the store-derived GUIDE rides every full stop, bounded =="
+# The operator's ask: "--list should be used always on stop hook to output
+# enforced guided instructions". The defect it fixes: v10 stamped every item
+# and the hand-authored Remaining prose never read the store.
+
+# (a) ALLOW stop: guide present, with the state-correct verbs.
+setup
+brief_now
+hand_now
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"cccc1111","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated build"}\n{"ev":"lease","id":"cccc1111","at":"%s","by":"deadbeef","until":"%s","worker":"bw1"}\n{"ev":"add","id":"cccc1112","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"ship the flag? DEFAULT: ship it"}\n' \
+    "$NOW" "$NOW" "$UNTIL" "$NOW" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"watch","command":"sleep 999"}]'
+say "answer
+
+## Remaining
+- the delegated build and the flag question"
+out="$(run)"
+got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+if [[ "$got" == "allow" ]] && grep -qF "WORKLIST GUIDE" <<<"$out" &&
+    grep -qF -- "--update deadbeef cccc1111" <<<"$out" &&
+    grep -qF "DEFAULT executes in" <<<"$out"; then
+    pass "an ALLOW stop carries the guide: [>] gets --update, fresh [?] gets its window"
+else
+    fail "guide missing or wrong verbs on allow (got=$got): ${out:0:300}"
+fi
+
+# (b) BLOCK stop: the same guide rides the block reason, [ ] gets --tick.
+setup
+brief_now
+hand_now
+echo '- [ ] (deadbeef) wire the perf fixture' >>"$WL"
+say "answer
+
+## Remaining
+- the perf fixture"
+out="$(run)"
+if grep -qF '"decision": "block"' <<<"$out" && grep -qF "WORKLIST GUIDE" <<<"$out" &&
+    grep -qF -- "--tick deadbeef" <<<"$out" && grep -qF "do it, then" <<<"$out"; then
+    pass "a BLOCK stop carries the guide too, and an open item gets --tick"
+else
+    fail "guide missing from the block path: ${out:0:300}"
+fi
+
+# (c) ZERO actionable: a short honest line, never ambiguous silence.
+setup
+brief_now
+hand_now
+say "all done"
+out="$(run)"
+got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+if [[ "$got" == "allow" ]] && grep -qF "no actionable items in the store" <<<"$out"; then
+    pass "an empty store says so plainly on an otherwise clean allow"
+else
+    fail "empty-store guide wrong (got=$got): ${out:0:260}"
+fi
+
+# (d) TRUNCATION is loud: 15 open items show 12 and SAY 3 were held back.
+setup
+brief_now
+hand_now
+for i in $(seq 1 15); do
+    echo "- [ ] (deadbeef) backlog item number $i" >>"$WL"
+done
+say "answer
+
+## Remaining
+- fifteen backlog items"
+out="$(run)"
+# -o, not -c: the hook's output is ONE JSON line, so a line count reads 1.
+NSHOWN=$(grep -oF "do it, then --tick" <<<"$out" | wc -l)
+if [[ "$NSHOWN" == "12" ]] && grep -qF "+3 more actionable" <<<"$out" &&
+    grep -qF "HELD BACK by the 12-line cap" <<<"$out"; then
+    pass "the cap emits 12 of 15 and names the 3 it dropped"
+else
+    fail "silent or wrong truncation: shown=$NSHOWN out=${out:0:300}"
+fi
+
+# (e) VERB-STATE MATCH for the remaining shapes: undefaulted [?], expired
+# window, dead lease, each with its own exit spelled out.
+setup
+brief_now
+hand_now
+OLD=$(date -u -d '-130 minutes' +%Y-%m-%dT%H:%M:%SZ)
+PAST=$(date -u -d '-5 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"cccc2221","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"aged choice DEFAULT: option A"}\n' \
+    "$OLD" >>"${WL%.md}.events.jsonl"
+echo '- [?] (deadbeef) an undefaulted question' >>"$WL"
+echo "- [>] (deadbeef) until:$PAST stale delegation" >>"$WL"
+say "answer
+
+## Remaining
+- three differently broken items"
+out="$(run)"
+ok=1
+for needle in "execute its DEFAULT now" "--defer deadbeef" "LEASE DEAD" "re-lease: --lease deadbeef"; do
+    grep -qF -- "$needle" <<<"$out" || {
+        ok=0
+        echo "        MISSING: $needle"
+    }
+done
+if [[ "$ok" == 1 ]]; then
+    pass "expired [?], undefaulted [?] and a dead lease each carry their own exit"
+else
+    fail "verb-state mismatch: ${out:0:400}"
+fi
+
+# (f) --list --open is the SAME slice from the CLI, and the full dump keeps
+# the [x] history the slice excludes.
+setup
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+echo '- [x] (deadbeef) finished thing, exit 0' >>"$WL"
+OPEN="$(reqcli --list --open deadbeef)"
+FULL="$(reqcli --list)"
+if grep -qF -- "--tick deadbeef" <<<"$OPEN" && grep -qF "open thing" <<<"$OPEN" &&
+    ! grep -qF "finished thing" <<<"$OPEN" && grep -qF "finished thing" <<<"$FULL"; then
+    pass "--list --open shows the hook's slice; plain --list keeps the history"
+else
+    fail "CLI slice mismatch: OPEN=${OPEN:0:200} FULL=${FULL:0:120}"
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
