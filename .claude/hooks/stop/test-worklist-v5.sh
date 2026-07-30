@@ -1955,6 +1955,7 @@ ARITY = {
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
+    "V_SUBMODULE_POINTER": (1, "x"),
     # Printed verbatim by `--help`; no interpolation, so None (skip the % check)
     # rather than an arity. It still has to be REGISTERED, which is the point of
     # the gap check below: a constant nobody mapped is a constant nobody rendered.
@@ -2029,6 +2030,59 @@ if [[ "$GOT" == "block" ]] && grep -qF "worklist_messages" <<<"$OUT"; then
     PASS=$((PASS + 1))
 else
     echo "  FAIL: missing catalogue produced decision=$GOT: ${OUT:0:160}"
+    FAIL=$((FAIL + 1))
+fi
+
+echo "== 119. a submodule pointer moved onto a feature branch is caught =="
+# REGRESSION, from a real near-miss. A subagent committed inside a submodule on
+# its own branch, which necessarily moves the superproject's gitlink, and the
+# standing "sweep everything with git add -A" rule would have COMMITTED that
+# move, silently adding the submodule's PR to this PR's merge chain.
+# Quality / Submodule Branches only says so minutes later, in CI.
+#
+# A REAL git fixture with a REAL remote, because the decisive fact is which
+# REMOTE branches contain the commit: a local-only branch proves nothing about
+# what CI can fetch.
+SUBW="$BASE/subptr"
+mkdir -p "$SUBW"
+git init -q --bare "$SUBW/remote.git"
+git init -q "$SUBW/sub" -b main
+(cd "$SUBW/sub" && echo one >f && git add f \
+    && git -c user.email=t@t -c user.name=t commit -qm one \
+    && git remote add origin "$SUBW/remote.git" && git push -q origin main) >/dev/null 2>&1
+git init -q "$SUBW/super" -b main
+(cd "$SUBW/super" && git -c protocol.file.allow=always submodule add -q "$SUBW/remote.git" sub \
+    && git add -A && git -c user.email=t@t -c user.name=t commit -qm super) >/dev/null 2>&1
+
+probe_moves() {
+    python3 -c "
+import sys; sys.path.insert(0, '$(dirname "$HOOK")')
+import worklist as W
+for p, a, b, where in W.submodule_pointer_moves('$SUBW/super'):
+    print('%s|%s' % (p, where))"
+}
+
+# CONTROL FIRST: with the pointer where the index says, the check must find
+# nothing. Without this half, a detector that always fires would pass below.
+OUT=$(probe_moves)
+if [[ -z "$OUT" ]]; then
+    echo "  PASS: control, a pointer matching the index is not reported"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: control fired on a clean pointer: $OUT"
+    FAIL=$((FAIL + 1))
+fi
+
+(cd "$SUBW/super/sub" && git checkout -q -b feat && echo two >f2 && git add f2 \
+    && git -c user.email=t@t -c user.name=t commit -qm two \
+    && git push -q origin feat && git fetch -q origin) >/dev/null 2>&1
+
+OUT=$(probe_moves)
+if [[ "$OUT" == *"sub|"* && "$OUT" == *"origin/feat"* && "$OUT" == *"NOT on origin/main"* ]]; then
+    echo "  PASS: the move is reported with the branch that contains it and that it is off main"
+    PASS=$((PASS + 1))
+else
+    echo "  FAIL: expected sub/origin/feat/NOT on origin/main, got: $OUT"
     FAIL=$((FAIL + 1))
 fi
 

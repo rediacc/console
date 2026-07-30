@@ -522,3 +522,29 @@ rather than rewriting the file: other sessions share it.
 
 With no arguments this runs as the Stop hook and expects a JSON event on stdin.
 """
+
+
+# A dirty gitlink is the one tree state where the standing "sweep everything with
+# git add -A" rule silently changes what a PR DEPENDS ON. It happened: a subagent
+# committed inside private/renet on its own branch, which necessarily moved the
+# superproject's gitlink, and a blind sweep would have repointed the console PR at
+# a commit living only on an unmerged branch. That does not lose work (the branch
+# usually descends from the old pointer) but it adds a submodule PR to the merge
+# chain, and `Quality / Submodule Branches` only says so minutes later, in CI.
+#
+# Deliberately NOT auto-resolved: pointing at an unmerged submodule branch is
+# LEGITIMATE in this repo's flow (that is how a stacked submodule PR lands). Only
+# the human-or-agent deciding can say which case this is, so the check hands over
+# the facts rather than a verdict.
+V_SUBMODULE_POINTER = """SUBMODULE POINTER MOVED IN THE WORKTREE (%d): %s
+
+`git add -A` would COMMIT this pointer move, changing what this PR depends on.
+Decide explicitly, then act:
+  - keep the move (the submodule PR is part of this chain): stage it, and make
+    sure the console PR body links that submodule PR, or Quality / Submodule
+    Branches fails on the missing link.
+  - drop the move (the submodule work belongs to a different PR): restore the
+    recorded pointer with
+        git submodule update --checkout <path>
+    which is safe ONLY while that submodule's worktree is clean and its commit
+    is pushed. Verify both first; this is not an undo you can take back."""
