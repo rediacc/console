@@ -142,3 +142,7 @@ packages/www/src/i18n/translations/*.lock
 # never land in a PR diff, never be policed by the CI gates, and never become a
 # committed lie the way docs/ci-overhaul/ did when it drifted 44 commits behind.
 .agent/
+
+# Transient per-session render backups (another session writes these mid-campaign;
+# a blanket sweep once committed one into an unrelated PR, review finding on #546).
+.backup-render-*/
