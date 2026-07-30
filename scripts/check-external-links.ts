@@ -127,6 +127,16 @@ const KNOWN_BROKEN = new Map<string, string>([
   // publishes the X25519 config key, not the Ed25519 signing key. The docs
   // owner has to decide what to publish. Neither file is owned here.
   ['https://www.rediacc.com/api/public/account-key', 'route does not exist on any host (404 on www/edge/eu/us/asia); docs/dev-environments.md:95 and CLAUDE.md:371 document a curl -fsS that always fails'],
+  // The whole domain, not just the page, is unreachable -- a connection
+  // timeout on both http and https, not a 404. Measured 2026-07-30 from two
+  // independent networks (this repo's dev sandbox and, per the CI run that
+  // surfaced this, a GitHub Actions runner: "BROKEN [fetch failed]" on
+  // 30578925361). Referenced from docs/code-signing-guide.md:457 and :608.
+  // No replacement URL verified: fetching docs.appimage.org itself timed out
+  // the same way, so there is nothing live to point at yet. Re-check when the
+  // site is confirmed back (WARN tier will catch a 200 automatically) rather
+  // than guessing a successor URL now.
+  ['https://docs.appimage.org/packaging-guide/optional/signatures.html', 'docs.appimage.org (the whole domain) is unreachable: connection timeout, not a 404, confirmed from two independent networks 2026-07-30. docs/code-signing-guide.md:457 and :608. No replacement verified yet.'],
 ]);
 
 // Patterns matched against the RAW regex capture, before any punctuation
