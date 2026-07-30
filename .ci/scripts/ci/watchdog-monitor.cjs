@@ -461,7 +461,21 @@ const monitor = async ({ github, context, core }) => {
   // reached through the OpenAI-compatible /ai/v1/chat/completions endpoint rather
   // than the native-Workers-AI /ai/run/<model> route the previous qwen model used.
   const AI_CONFIDENCE_THRESHOLD = 0.8;
-  const AI_MODEL = 'deepseek/deepseek-v4-pro';
+  // NATIVE Workers AI, not a partner-served catalog model, and that distinction
+  // is the whole point. This tier was moved to `deepseek/deepseek-v4-pro` on the
+  // OpenAI-compatible /ai/v1 route, which is partner-served (Fireworks) and
+  // billed from a PREPAID AI GATEWAY BALANCE rather than from the Workers Paid
+  // plan. That balance is empty, so tier 1 has been answering
+  //   HTTP 402 {"code":2021,"message":"Insufficient balance; add money to your
+  //   gateway or use BYOK"}
+  // continuously, and every allowlisted CI failure has been taking a blind retry
+  // (~500 machine-minutes) with no classification behind it. Verified live
+  // 2026-07-30 against the real account: the partner route returns 402 while
+  // /ai/run/@cf/meta/llama-3.3-70b-instruct-fp8-fast returns 200 on the SAME
+  // credentials, so the subscription is healthy and only the gateway is unfunded.
+  // To go back to a partner-served model, fund the gateway or configure BYOK
+  // first, and re-probe before trusting it.
+  const AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
   // Tier 2. Sonnet rather than Haiku deliberately: this verdict decides whether
   // to spend a full retry (~500 machine-minutes), so the marginal token cost of
   // the better model is irrelevant next to being wrong. Overridable for a cheap
@@ -615,15 +629,16 @@ const monitor = async ({ github, context, core }) => {
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
     if (!token || !accountId) return null;
 
-    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`;
+    const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${AI_MODEL}`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), AI_TIMEOUT);
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        // No `model` field: the /ai/run route names the model in the URL, unlike
+        // the OpenAI-compatible /ai/v1 route this used to call.
         body: JSON.stringify({
-          model: AI_MODEL,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: logTail }
@@ -641,7 +656,14 @@ const monitor = async ({ github, context, core }) => {
       const data = await response.json();
       // Reasoning models put their thinking in message.reasoning_content; the
       // verdict must come from content only.
-      const aiResponse = data.choices?.[0]?.message?.content;
+      //
+      // TWO SHAPES ON PURPOSE. The /ai/run route wraps everything in `result`,
+      // while the OpenAI-compatible /ai/v1 route does not. Accepting both means
+      // moving between routes (see AI_MODEL) cannot silently produce "no answer"
+      // from a perfectly good reply, which would fall through to the allowlist
+      // and look exactly like the outage this tier just came back from.
+      const envelope = data.result ?? data;
+      const aiResponse = envelope.choices?.[0]?.message?.content ?? envelope.response;
       if (!aiResponse) {
         console.log(`[AI] Cloudflare unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
         return null;
