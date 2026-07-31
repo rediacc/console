@@ -855,3 +855,22 @@ acceptance criterion:
   a `randomUUID()` to `tempPath`. Verified: `tsc --noEmit` clean, `biome
   check` clean, `test:unit --workspace=@rediacc/cli` 159/159 files, 2132/2132
   tests. PR #547 does not touch the caption-sync failure above.
+
+### The `supervised` stuck-detector exemption was not correlated to the live worker
+
+Real review finding (PR #546, comments `3686789736` and `3686791985`,
+duplicated because two review passes caught it independently before the
+fix landed): `wl_checks.py`'s `_supervised` computation took the freshest
+`[>]` in-flight record across *all* of the session's records, with no
+check that its `worker:<id>` tag names the same background task as
+`live_bg`. A session holding two concurrent leases -- one genuinely
+tracking the watched job, one unrelated and still being renewed for some
+other reason -- would compute `_supervised = True` off the unrelated
+item, silencing the exempt-overrun fire even while the item tracking the
+actual job had gone stale. Fixed by correlating via `worker:<id>`,
+mirroring `wl_liveness.ladder()`'s existing `wid not in now_bg` pattern.
+Added cases 155/155b to `test-worklist-v5.sh` and proved them meaningful:
+reverted the fix, confirmed case 155 failed exactly as predicted, then
+restored byte-identical (diffed against a backup) and confirmed both
+pass. Verified: `test-worklist-v5.sh` 284/284 with `GITHUB_ACTIONS` unset
+and set.
