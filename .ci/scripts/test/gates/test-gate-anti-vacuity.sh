@@ -130,6 +130,22 @@ REGISTRY=(
     # `delete plan.reconciled`, drop the cheap-first mode gate, restore the
     # one-green-run-per-sha pick) each of which flips a different case red.
     #
+    # NOT registered here either: .ci/scripts/test/gates/test-scope-gate-outputs.sh,
+    # measured the same way and with the same result: all 6 cases pass against
+    # the empty tree (exit 0). It BUILDS the tree it needs -- it copies
+    # .ci/scripts/ci into a temp dir, `git init`s a repository there with the
+    # branch shape a baseline walk requires, and shims `gh` on PATH -- so the
+    # only repo input it has is the .ci/scripts/ tree this harness copies in
+    # anyway. It reads no packages/, no private/, no .github/. Passing with the
+    # source tree absent is CORRECT for it, so an entry here could never fail.
+    # Its controls are inline, one per case, and the emitter control was proven
+    # by a planted defect during authoring (suppress the run_*=false push in
+    # scope-shadow.sh's emitter and case (a) goes red naming the dead emitter;
+    # restore and it goes green). That same planted defect also caught a defect
+    # in the TEST: collecting the lines before the control check made the failing
+    # run exit silently with an empty log, which is a right exit code and a dead
+    # diagnostic. The control now runs first.
+    #
     # NOT registered here either: .ci/scripts/test/gates/test-watchdog-supersession.sh,
     # and the same measurement was taken rather than reasoned: all 9 assertions
     # pass against the empty tree (exit 0). Its only repo dependency is

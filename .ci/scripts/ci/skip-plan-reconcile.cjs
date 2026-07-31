@@ -137,9 +137,12 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 //
 //   full_suite   ci.yml:118, `github.event_name != 'push'`. FALSE only on
 //                push-to-main.
-//     - the 12 ct-tests leaves: their own `if: inputs.full_suite == 'true'`
-//       (ct-tests.yml:122, 134, 320, 454, 597, 733, 875, 1018, 1182, 1343,
-//       1474, 1514)
+//     - the 12 ct-tests leaves: each carries its own `inputs.full_suite ==
+//       'true'` clause. Cited by CLAUSE rather than by line number on purpose:
+//       the twelve line numbers that used to sit here went stale the moment
+//       ct-tests.yml gained the run_* inputs, and a stale citation is worse
+//       than none because it sends the next reader to the wrong job. Find them
+//       with `grep -n "full_suite" .github/workflows/ct-tests.yml`.
 //     - ops           ci.yml:717   elite_run    ci.yml:739
 //     - update_flow   ci.yml:568   package_tests ci.yml:584
 //     - install_methods is DELIBERATELY ABSENT: `validate-install`

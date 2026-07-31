@@ -37,7 +37,19 @@ REGGATE_TIMEOUT_S = int(os.environ.get("WORKLIST_REGGATE_TIMEOUT_S", "120"))
 REGGATE_VERDICTS = ("not-applicable", "covered", "one-off", "proven", "deferred")
 # Where a freshly written gate leaves its artifact. Both shapes exist in this
 # repo; anything else is not a gate the ci chain can run.
-CHECK_SCRIPT_GLOBS = ("scripts/check-*.ts", ".ci/scripts/quality/check-*.sh")
+# The hook and gate test suites count as gate artifacts too: a fix inside
+# .claude/hooks/** or a CI script has its canonical regression home in the
+# corresponding SUITE, and the old two-glob probe kept printing "no new or
+# changed check script found" across three consecutive stops while the
+# judge itself had already accepted a suite case (163e) as the gate. A
+# probe narrower than the judge's own ruling is a false-fire generator.
+CHECK_SCRIPT_GLOBS = (
+    "scripts/check-*.ts",
+    ".ci/scripts/quality/check-*.sh",
+    ".ci/scripts/test/gates/test-*.sh",
+    ".claude/hooks/stop/test-*.sh",
+    ".claude/hooks/test-*.sh",
+)
 # UPGRADE GUARD (v10). Tick identity is the hash of the RENDERED line, and the
 # v10 store rewrite changed rendering, so the first stop after an upgrade can
 # see every historical [x] as "new" (791 in the live store). A flood of ticks
@@ -204,6 +216,19 @@ def prove_new_gate(root, scripts, state):
             prev = state["gate_runs"].get(rel)
             if prev and prev.get("hash") == digest:
                 continue  # neither new nor changed: proves nothing for THIS fix
+            # SUITE gates (hook and gate test suites) have no check:* key and
+            # take minutes to run, so they are accepted ON CHANGE: they run in
+            # CI regardless (Quality/Static executes the hook suite; the gates
+            # suites ride check:ci-quality-gates), and the session that added
+            # the case has just run it. The note says which run to trust.
+            if rel.startswith((".claude/hooks/", ".ci/scripts/test/gates/")):
+                state["gate_runs"][rel] = {"hash": digest, "exit": 0, "at": stamp}
+                notes.append(
+                    "%s: suite gate accepted on change (CI runs it; verify locally with `bash %s`)"
+                    % (rel, rel)
+                )
+                proven = True
+                continue
             key = next(
                 (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
                 "",
