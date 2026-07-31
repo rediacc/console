@@ -46,6 +46,7 @@ could write pinned a session all night):
 import os
 import re
 import subprocess
+import tempfile
 import time
 
 import wl_core as C
@@ -180,6 +181,42 @@ def _needle(command):
         if len(line) > len(best):
             best = line
     return best if len(best) >= 12 else ""
+
+
+def bg_output_facts(cwd, session_id, live_bg):
+    """[(id, desc, age_min, size, stale)] for each running background task.
+
+    v15 (operator, 2026-07-31): a session whose only remaining work is
+    waiting on background jobs is in a LEGITIMATE state, but the hook must
+    still know whether those jobs are alive. The harness writes each task's
+    stream to <tmp>/<munged-cwd>/<session>/tasks/<id>.output; the mtime of
+    that file is direct evidence of progress no self-report can fake. age is
+    minutes since the last write (None when the file does not exist, e.g. a
+    teammate agent that reports only at completion); stale is True when the
+    file exists and has not grown for BG_STALE_MIN minutes.
+    """
+    base = os.environ.get("WORKLIST_BG_OUTPUT_DIR")
+    if not base:
+        munged = re.sub(r"[^A-Za-z0-9]", "-", str(cwd or ""))
+        base = os.path.join(
+            tempfile.gettempdir(), munged, str(session_id or ""), "tasks"
+        )
+    rows = []
+    for b in live_bg or []:
+        tid = str(b.get("id") or "?")
+        desc = (b.get("description") or b.get("command") or "")[:70]
+        p = os.path.join(base, tid + ".output")
+        try:
+            st = os.stat(p)
+            age = (time.time() - st.st_mtime) / 60.0
+            rows.append((tid, desc, int(age), st.st_size, age >= BG_STALE_MIN))
+        except OSError:
+            rows.append((tid, desc, None, 0, False))
+    return rows
+
+
+BG_STALE_MIN = int(os.environ.get("WORKLIST_BG_STALE_MIN", "15"))
+BG_REPORT_MIN = int(os.environ.get("WORKLIST_BG_REPORT_MIN", "15"))
 
 
 def verify_background(event_bg, table=None, ancestors=None):

@@ -2330,7 +2330,7 @@ ARITY = {
     "R_BLOCK": (1, "v", "f"), "R_BLOCK_FOCUS": ("v", "m", "f"),
     "R_FOCUS_MORE": (2,), "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
-    "N_EMAIL_SKIPPED": (1, "err"),
+    "N_EMAIL_SKIPPED": (1, "err"), "V_BG_REPORT": (2, "rows"),
     "N_EMAIL_SENT": (2, "to@x", 120), "N_EMAIL_FAIL": (2, "err", 15),
     "N_EMAIL_UNCONFIGURED": ("p", 2),
     "CLI_ASK_OPERATOR_NO_DEFAULT": None,
@@ -4891,6 +4891,155 @@ if [[ "$FIRED" == 1 ]]; then
     pass "161 CONTROL: without the request the exempt-overrun still fires"
 else
     fail "161 CONTROL: the overrun never fired: ${OUT:0:250}"
+fi
+
+echo "== 163. v15: pure background wait gets a 15-min check-in, not make-work =="
+# The state: live background jobs, no open items, no expired deferral. The
+# hook recognizes it as legitimate and demands only a bounded check-in whose
+# worker facts it gathered itself from the output streams.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
+task 7 pending "waiting on the nightly"
+say "answer
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+# Stop 1 SEEDS the wait clock silently: the check-in means "you have been
+# waiting 15 minutes", never "you started waiting".
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163 seed: first sight of the wait state does not fire"
+else
+    fail "163 seed: fired on first sight: ${OUT:0:250}"
+fi
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT" && grep -qF "bw1 (long CI watch)" <<<"$OUT" &&
+    grep -qF "output last grew" <<<"$OUT"; then
+    pass "163: after 15 waited minutes the check-in fires with the hook's own stream facts"
+else
+    fail "163: check-in wrong: ${OUT:0:300}"
+fi
+# CONTROL: inside the window it does not repeat (latched on fire).
+newturn
+say "bw1 confirmed: the long CI watch stream matches; nothing stuck.
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163 CONTROL: no second check-in inside the 15-minute window"
+else
+    fail "163 CONTROL: the check-in drumbeat: ${OUT:0:250}"
+fi
+
+echo "== 163b. a stale output stream is flagged POSSIBLY STUCK =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'old content\n' >"$BASE/bgout/bw2.output"
+touch -d '25 minutes ago' "$BASE/bgout/bw2.output"
+BG='[{"id":"bw2","type":"shell","status":"running","description":"quiet worker"}]'
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null # seed the wait clock
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if grep -qF "POSSIBLY STUCK" <<<"$OUT"; then
+    pass "163b: a 25-minute-silent stream is called out"
+else
+    fail "163b: stale stream not flagged: ${OUT:0:300}"
+fi
+
+echo "== 163c. CONTROL: an open item means normal battery, no wait check-in =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+BG='[{"id":"bw3","type":"shell","status":"running","description":"worker"}]'
+echo '- [ ] (deadbeef) real open work' >>"$WL"
+say "answer
+
+## Remaining
+- the open work"
+OUT="$(run)"
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163c CONTROL: open work suppresses the wait check-in"
+else
+    fail "163c: check-in fired despite open work: ${OUT:0:250}"
+fi
+
+echo "== 163d. a due check-in forfeits the silent poll; a fresh one does not =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bw4.output"
+BG='[{"id":"bw4","type":"shell","status":"running","description":"watch"}]'
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null # establishes the bgwait mark via the first check-in
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -z "$OUT" ]]; then
+    pass "163d: a fresh check-in mark keeps the silent poll"
+else
+    fail "163d: poll paid the battery inside the window: ${OUT:0:200}"
+fi
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+if [[ -n "$OUT" ]] && grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163d CONTROL: a due check-in forfeits the silent poll and delivers the facts"
+else
+    fail "163d CONTROL: due check-in stayed silent: ${OUT:0:200}"
 fi
 
 echo
