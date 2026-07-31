@@ -894,3 +894,73 @@ Found in the same round, worth its own trap note: `gh pr edit --body` with an
 IDENTICAL body does not bump `lastEditedAt`, so a "refresh" that changes
 nothing does not satisfy the PR-description freshness gate. A refresh must
 actually change the body.
+
+## D-1 GO-LIVE: the engine leaves shadow (branch 0731-2, 2026-07-31)
+
+Context that landed just before this wave: PR #546 (0730-2) MERGED as
+af0da029f (operator decision, 09:50:11Z) and shipped release v1.2.13; the
+merge cures both scheduled-nightly causes. D-7
+`strict_required_status_checks_policy` flipped TRUE on ruleset 12344707
+(verified on the PUT response), so every PR must now be up to date with main
+before merging. Issue #548 files the v2 deferrals with reasons. Issues
+#533/#534/#537/#538/#539 closed with evidence comments.
+
+**Item 2 of the wave (submodule review) needed NO code.** The bootstrap
+defect recorded at 01-verified-context.md:426-435 was already fixed on main
+by b54904779: the reusable checks out rediacc/console@main into
+.review-scripts (claude-review-reusable.yml:110-115), hard-asserts the gate
+script arrived, and stages it into RUNNER_TEMP. CLAUDE_CODE_OAUTH_TOKEN is
+set repo-level on renet/account/elite (org-level cannot cover private repos
+on the free tier). Remaining: one live dispatch on a submodule PR to confirm
+end to end.
+
+**The flip itself.** scope-shadow.sh (same filename) is now the decider:
+kill switches first (`full-ci` label per PR, `FULL_CI` repo variable
+globally, and deleting the step entirely, all revert-free), then the plan
+is written FROM scope-baseline.json (the deciding plan and the reconciled
+plan are the same object; the merge-base classify stays as a diagnostic),
+then outputs are emitted ONLY as `run_<key>=false` lines plus `scope_mode`,
+buffered and appended once, only after plan.json wrote. Fail-open lives in
+the encoding: consumers test `!= 'false'`, so every failure mode leaves
+full CI. initialize exposes 17 outputs; the tests caller forwards 12 as
+inputs; five top-level jobs append the condition; migration-test is
+untouched. assert-ci-complete.sh needed nothing: all five skippable
+top-level jobs were already SOFT_REQUIRED.
+
+**The reconciler goes hard exactly when work was skipped.**
+SCOPE_MODE=reduced arms it: a missing plan, an unreadable Jobs API, or a
+reconcile failure is exit 1, because a reduction nobody can verify is a
+skip nobody attested. Any other mode keeps the tolerant shadow behavior.
+The rerun question was settled with `filter=all` on the Jobs API, so the
+gate applies to every attempt rather than being scoped to attempt 1.
+
+**E2E account-trees cut**: `account: 'true'` removed from the 8 VM/E2E
+jobs' setup-workspace blocks (kept for test-account-e2e, which targets
+private/account). Saves the nma- cache restore of three node_modules trees
+per job (three npm ci runs on a miss) and removes account-lockfile changes
+from the E2E invalidation surface. No measured seconds existed before the
+cut; take before/after from the first post-merge run.
+
+**Proofs run, not reasoned**: test-scope-gate-outputs.sh (6 cases, each
+with a control; the dead-emitter control re-proven by planted defect at
+integration time: suppressing the run_*=false push fails exactly the
+anti-vacuity case and nothing else); the 17 emitted names are pinned
+against ci.yml byte for byte; test-skip-plan-reconcile.sh,
+test-scope-engine.sh, test-scope-baseline-attest.sh all green; actionlint
+and check-workflow-gates clean.
+
+**First live-reduced observation plan**: this PR touches .ci/ and .github/,
+so the engine decides FULL on its own PR and the hard reconciler verifies
+all 17 planned-run keys on every green run of the PR itself. The first
+reduced run comes from the next docs-only push after a green baseline,
+observed (initialize run_* lines, 17 job skips, reconcile verified counts)
+before that PR merges. The nightly stays full by construction: no scope
+outputs exist on schedule events.
+
+**Stop-hook work riding this branch** (the local-only ban was lifted by the
+operator): v13 F2 SES email channel with mail-optional skip semantics, v14
+six gap fixes, v15 pure-background-wait with the 15-minute worker check-in,
+the Stop hook timeout raised 15s to 300s (the judge alone budgets 120s;
+the 15s registration was killing every judge-consulting stop, which
+surfaced as the operator-reported EAGAIN), and 12 stale teammate tasks
+stopped to relieve harness process pressure.
