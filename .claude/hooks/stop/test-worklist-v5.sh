@@ -653,7 +653,7 @@ printf '%s' "$VICTIM" |
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-    python3 "$HOOK" --state cafe1234 2>&1)"
+        python3 "$HOOK" --state cafe1234 2>&1)"
 if [[ "$(cat "$BACKUP" 2>/dev/null)" == "$VICTIM" ]]; then
     pass "the clobbered body is byte-recoverable from the backup"
 else
@@ -679,7 +679,7 @@ fi
 rm -f "$STATE_FILE" "$BACKUP"
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-    python3 "$HOOK" --state deadbeef 2>&1)"
+        python3 "$HOOK" --state deadbeef 2>&1)"
 if grep -qF "previous body saved to" <<<"$out"; then
     fail "a first write with nothing to replace still advertised a backup"
 else
