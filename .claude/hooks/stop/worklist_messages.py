@@ -597,6 +597,17 @@ N_EMAIL_FAIL = (
     "summary."
 )
 
+V_BG_REPORT = (
+    "PURE BACKGROUND WAIT check-in (bounded, every ~15 min; latched so it "
+    "cannot drumbeat). Nothing is pending except %d background job(s), which "
+    "is a LEGITIMATE state: this is not a demand for other work. The hook's "
+    "own read of each worker's output stream:\n%s\n"
+    "    Confirm each worker in one line in your reply (what it is doing and "
+    "whether the stream evidence matches), --update any leased item riding "
+    "one, and restart or replace anything marked POSSIBLY STUCK. Then stop; "
+    "the next check-in is in ~15 minutes."
+)
+
 N_EMAIL_SKIPPED = (
     "WARNING: the operator email channel is SKIPPED (mail is optional and its "
     "last send with the current credentials failed: %s question(s) wait in the "
