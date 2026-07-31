@@ -874,3 +874,23 @@ reverted the fix, confirmed case 155 failed exactly as predicted, then
 restored byte-identical (diffed against a backup) and confirmed both
 pass. Verified: `test-worklist-v5.sh` 284/284 with `GITHUB_ACTIONS` unset
 and set.
+
+### Wave B half (b) closed: `pointer_bump_only=true` observed on a real push
+
+Observed 2026-07-31, run `30612674911`, head `9ea0b5e07`. The push was a pure
+`private/account` gitlink bump (`9890f5eff -> b200794`) over a green head, made
+to fix the nightly's Submodule Branches finding (main's pointer was the
+pre-rebase head of merged account PR #71). initialize reported:
+
+    pointer_bump_only=true -- baseline 07f3db1 passed CI Complete;
+    private/account 9890f5e->b200794 (tree-identical, on rediacc/account main)
+
+and the shadow scope plan exempted every expensive key on it
+(`unit:pointer_bump_only`, the full `e2e_*` family). This was the last
+unexercised exemption path in the skip plan; it fired on a REAL, needed bump
+rather than a synthetic one, exactly as the deferral's DEFAULT prescribed.
+
+Found in the same round, worth its own trap note: `gh pr edit --body` with an
+IDENTICAL body does not bump `lastEditedAt`, so a "refresh" that changes
+nothing does not satisfy the PR-description freshness gate. A refresh must
+actually change the body.
