@@ -543,6 +543,22 @@ N_LADDER_PING = (
     "(this becomes a block at 90 minutes; --update resets the clock)"
 )
 
+# ---- the allow-report output queue ------------------------------------------
+# The judge stamp is the bare confirmation that a paid call happened; the FULL
+# form carries the reason and is reserved for a stop whose context was just
+# rebuilt or whose reason changed (operator, 2026-07-31: the approval reason
+# was reprinted on every single stop).
+
+N_JUDGE_STAMP = "Stop-gate judge (%s) %s."
+
+N_JUDGE_STAMP_FULL = "Stop-gate judge (%s) %s: %s"
+
+N_OUTQ_MORE = (
+    "(%d more report section(s) queued; one is released per stop, highest "
+    "priority first, oldest first inside a priority. Raise "
+    "WORKLIST_REPORT_PER_STOP to drain faster.)"
+)
+
 # ---- block-reason wrappers (the `reason` field of an emitted block) ---------
 
 R_BLOCK = (
