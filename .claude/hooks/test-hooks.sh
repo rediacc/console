@@ -153,6 +153,25 @@ check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/packages/cli/s
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
 
+# --- warn-remote-drift: needs a real repo pair (a bare origin, a stale local),
+# because its subject is git state, not the command string. The origin is a
+# filesystem path so the hook's fetch works offline.
+DRIFT_TMP="$(mktemp -d)"
+git init -q --bare -b main "$DRIFT_TMP/origin.git"
+git clone -q "$DRIFT_TMP/origin.git" "$DRIFT_TMP/writer" 2>/dev/null
+git -C "$DRIFT_TMP/writer" -c user.email=t@t -c user.name=t commit -q --allow-empty -m c1
+git -C "$DRIFT_TMP/writer" push -q origin main 2>/dev/null
+git clone -q "$DRIFT_TMP/origin.git" "$DRIFT_TMP/stale" 2>/dev/null
+git -C "$DRIFT_TMP/writer" -c user.email=t@t -c user.name=t commit -q --allow-empty -m c2
+git -C "$DRIFT_TMP/writer" push -q origin main 2>/dev/null
+export CLAUDE_PROJECT_DIR="$DRIFT_TMP/stale"
+check 2 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: push from a stale local is blocked"
+export CLAUDE_PROJECT_DIR="$DRIFT_TMP/writer"
+check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git push')" "remote-drift: aligned local pushes freely"
+check 0 pre-bash/warn-remote-drift.sh "$(bash_json 'git status')" "remote-drift: non-push commands untouched"
+unset CLAUDE_PROJECT_DIR
+rm -rf "$DRIFT_TMP"
+
 # The Stop gate carries its own suite, because its cases need fixtures (a fake
 # task dir, a planted transcript, a gh shim) rather than the single-JSON-on-stdin
 # shape every case above uses. Delegating keeps both readable, and running it
