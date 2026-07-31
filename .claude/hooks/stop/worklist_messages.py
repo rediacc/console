@@ -1013,6 +1013,14 @@ high bar. Waiting counts ONLY when the thing waited on is NAMED and real: a run
 id, a task id, a live lease, or a question actually put to the human. "Waiting
 on <a phase of this project>" is not a blocker, it is a sentence.
 
+VERDICT MUST MATCH REASON. If your reason concludes the wait is legitimate
+(named live workers, a recognized background-wait state, "no unrelated work
+to advance", "next action: await X"), the verdict is "stop". Answering
+"continue" while your reason says awaiting is correct burns a turn to
+restate the same wait, which is the drift this gate exists to prevent, seen
+live three times on 2026-07-31. "Continue" is for work the session could do
+NOW, not for work that becomes possible when a worker finishes.
+
 Challenge every blocker that is not about the human. Ask: could the session
 unblock this ITSELF? Landing code and enabling a feature are DIFFERENT events,
 so "blocked on X landing" is valid only if the source says the CODE cannot be
