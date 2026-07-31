@@ -162,7 +162,7 @@ def agent_state_lock_path(worklist):
     return worklist.with_suffix(".agentstate.lock")
 
 
-def agent_state_backup_path(worklist):
+def agent_state_backup_path(worklist, branch=""):
     """The ONE previous STATE.md, so a clobber is undoable.
 
     Per-branch last-write-wins is deliberate (see worklist.py --state): a
@@ -173,7 +173,16 @@ def agent_state_backup_path(worklist):
     stores worklist item text and never STATE bodies, and the success line
     echoes only the first line back. One backup turns "sorry, rewrite it" into
     a `cp`. Same TMPDIR-beside-the-lock placement, for the same reason.
+
+    BRANCH-SCOPED (review finding 3688784930/3688787780): the slot was one
+    file per worklist, so writes on DIFFERENT branches shared it and a
+    branch-A write silently destroyed the only copy of branch-B's replaced
+    body -- the exact loss the backup exists to prevent. The branch rides
+    the suffix; a branchless caller keeps the legacy name.
     """
+    if branch:
+        safe = re.sub(r"[^A-Za-z0-9._-]", "_", str(branch))
+        return worklist.with_suffix(".agentstate.prev.%s.md" % safe)
     return worklist.with_suffix(".agentstate.prev.md")
 
 
@@ -327,6 +336,42 @@ def _render_line(rec):
     return line
 
 
+def brief_text(rec, cap=None):
+    """basetext + LATEST note only -- the v14 display identity.
+
+    rec['text'] accumulates every state/lease note forever; one live item
+    reached ~20 concatenated update lines and every block that mentioned it
+    printed them all. Logic (DEFAULT_TOKEN scans, lease_state, the reggate
+    token scan) still reads the FULL line; only human-facing rendering goes
+    through here. Items folded before v14 have no basetext, so the fallback
+    splits at the first double space, which is exactly the join the
+    accumulator uses. With a cap, base and note split it roughly in half so
+    the newest information survives truncation."""
+    base = (rec.get("basetext") or "").strip()
+    if not base:
+        base = str(rec.get("text", "")).strip().split("  ", 1)[0]
+    note = str(rec.get("lastnote", "")).strip()
+    if not note or note == base or note in base:
+        return base[:cap] if cap else base
+    if cap:
+        half = max(30, cap // 2 - 6)
+        return "%s ... LATEST: %s" % (base[:half], note[:half])
+    return "%s  LATEST: %s" % (base, note)
+
+
+def brief_line(rec):
+    """brief_text in the one-line item shape, until:/worker: tail included so
+    a displayed lease still names its worker and expiry."""
+    tag = "(%s) " % rec["owner"] if rec["owner"] else ""
+    txt = brief_text(rec)
+    line = "- [%s] %s%s" % (rec["state"], tag, txt)
+    if rec.get("until") and "until:" not in txt:
+        line += " until:%s" % rec["until"]
+    if rec.get("worker") and "worker:" not in txt:
+        line += " worker:%s" % rec["worker"]
+    return line
+
+
 def _fold_events(events):
     """(records, md_keys, cli_ids, last_md_hash). Chronological single pass;
     a later event wins, which is exactly the right answer for the one real
@@ -349,6 +394,11 @@ def _fold_events(events):
                 rec["md_s"] = a.get("s", " ")
                 rec["owner"] = a.get("o")
                 rec["text"] = str(a.get("t", ""))
+                # First sight wins: a later md sync replaces `text` wholesale
+                # (possibly already-accumulated), but the display identity is
+                # whatever the item FIRST said.
+                rec.setdefault("basetext", str(a.get("t", "")))
+                rec.setdefault("lastnote", "")
                 rec.setdefault("upd", rec["first"])
                 md_keys.add(k)
             for c in ev.get("chg") or []:
@@ -368,6 +418,13 @@ def _fold_events(events):
                 "state": ev.get("s", " "),
                 "owner": ev.get("o"),
                 "text": str(ev.get("t", "")),
+                # v14: the display identity. `text` accumulates every note
+                # forever (the durable history --list shows); rendering the
+                # whole accumulation in blocks was the single largest noise
+                # source of the v13 night, so displays show basetext + the
+                # LATEST note only, via brief_line().
+                "basetext": str(ev.get("t", "")),
+                "lastnote": "",
                 "first": at,
                 "upd": at,
                 "origin": "cli",
@@ -380,6 +437,8 @@ def _fold_events(events):
             if kind == "state":
                 rec["state"] = ev.get("s", rec["state"])
                 note = str(ev.get("note", "")).strip()
+                if note:
+                    rec["lastnote"] = note
                 if note and note not in rec["text"]:
                     rec["text"] = (rec["text"] + "  " + note).strip()
                 # v12: --defer records its justification as a REAL field, so
@@ -390,12 +449,19 @@ def _fold_events(events):
                 if isinstance(j, dict) and j:
                     rec["just"] = j
             elif kind == "update":
-                pass  # the stamp bump below is the whole point
+                # The stamp bump below is the point; the note additionally
+                # becomes the item's display note (v14) -- before that,
+                # --update notes were recorded and never shown anywhere.
+                note = str(ev.get("note", "")).strip()
+                if note:
+                    rec["lastnote"] = note
             elif kind == "lease":
                 rec["state"] = ">"
                 rec["until"] = str(ev.get("until", ""))
                 rec["worker"] = str(ev.get("worker", ""))
                 note = str(ev.get("note", "")).strip()
+                if note:
+                    rec["lastnote"] = note
                 if note and note not in rec["text"]:
                     rec["text"] = (rec["text"] + "  " + note).strip()
             elif kind == "tomb":
@@ -568,34 +634,51 @@ def deferral_justification(rec):
 
 # ---- classification ---------------------------------------------------------
 
-def classify_items(fold, session_id):
+def classify_items(fold, session_id, live_worker_ids=None):
     """(open_items, others, deferred, in_flight) as display strings / recs,
     the v2-v9 state machine unchanged: open blocks, [?] is reported, fresh
     [>] is allowed-and-reported, an expired or invalid lease fails closed
-    into an open item."""
+    into an open item.
+
+    v14 gap 4: an EXPIRED (never invalid) lease whose worker id appears in
+    `live_worker_ids` (the OS-verified running background tasks) is tolerated
+    as in-flight instead of failing closed, with `lease_tolerated` stamped on
+    the rec so displays can say so. A long job outliving the lease cap while
+    its watcher is demonstrably alive is supervision, not abandonment; the
+    moment the worker disappears the item fails closed exactly as before."""
     open_items, others, deferred, in_flight = [], {}, [], []
     for rec in fold.items:
         state, owner, line = rec["state"], rec["owner"], rec["line"]
+        # v14: DISPLAY strings are brief (basetext + latest note); every
+        # decision below still reads the full line (lease_state, ownership).
+        disp = brief_line(rec)
         mine = C.owned_by_me(owner, session_id)
         if state == " ":
             if mine:
-                open_items.append(line)
+                open_items.append(disp)
             else:
-                others.setdefault(owner, []).append(line)
+                others.setdefault(owner, []).append(disp)
         elif state == "?" and mine:
             deferred.append(rec)
         elif state == ">":
             if not mine:
-                others.setdefault(owner, []).append(line)
+                others.setdefault(owner, []).append(disp)
                 continue
             ls = C.lease_state(line)
             if ls == "fresh":
+                in_flight.append(rec)
+            elif (
+                ls == "expired"
+                and rec.get("worker")
+                and rec["worker"] in (live_worker_ids or ())
+            ):
+                rec["lease_tolerated"] = True
                 in_flight.append(rec)
             else:
                 # Fail closed: an expired or malformed lease is an open item.
                 open_items.append(
                     "%s   <- [>] lease %s; finish it, renew the lease, or tick it"
-                    % (line, ls)
+                    % (disp, ls)
                 )
     return open_items, others, deferred, in_flight
 
@@ -1010,6 +1093,40 @@ def world_sig(root, worklist, session_id):
             digest(worklist),
             digest(events_path(worklist)),
             digest(requests_path(worklist)),
+        ]
+    )
+    return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def state_world_sig(root, worklist, session_id, fold=None):
+    """The STATE.md staleness key (v14 gap 5): task statuses + HEAD + item
+    STRUCTURE (id, state, owner, basetext), deliberately NOT the raw byte
+    digests world_sig uses. Under the byte key every self-inflicted append
+    (--lease renewal, --update note, --brief) staled the very document the
+    session had just refreshed: six near-identical forced rewrites in one
+    night. Structure moves when work moves (an item added, ticked, reopened,
+    a commit, a task flip), which is exactly when the recovery document
+    genuinely needs rewriting. world_sig itself is untouched: the poll
+    baseline and judge cache still key on the full byte world."""
+    ts = C.task_statuses(session_id)
+    try:
+        f = fold if fold is not None else load(worklist, sync=False)
+        items = "|".join(
+            "%s:%s:%s:%s" % (
+                r["id"], r["state"], r.get("owner") or "",
+                hashlib.sha1(
+                    str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
+                ).hexdigest()[:8],
+            )
+            for r in sorted(f.items, key=lambda x: x["id"])
+        )
+    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
+        items = "unreadable"
+    blob = "|".join(
+        [
+            ",".join("%s:%s" % (i, st) for i, (st, _s) in sorted(ts.items())),
+            C._git(root, "rev-parse", "HEAD"),
+            items,
         ]
     )
     return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
