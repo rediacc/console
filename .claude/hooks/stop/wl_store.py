@@ -162,6 +162,21 @@ def agent_state_lock_path(worklist):
     return worklist.with_suffix(".agentstate.lock")
 
 
+def agent_state_backup_path(worklist):
+    """The ONE previous STATE.md, so a clobber is undoable.
+
+    Per-branch last-write-wins is deliberate (see worklist.py --state): a
+    document whose contract is "rewrite every time" has no merge semantics.
+    What was NOT deliberate is that the loss is permanent. Two live sessions
+    share branch 0730-2 today, and 84611aab replaced b9491d9c's 0-minute-old
+    document TWICE; both bodies were gone for good, because the event log
+    stores worklist item text and never STATE bodies, and the success line
+    echoes only the first line back. One backup turns "sorry, rewrite it" into
+    a `cp`. Same TMPDIR-beside-the-lock placement, for the same reason.
+    """
+    return worklist.with_suffix(".agentstate.prev.md")
+
+
 def trap_headings(root):
     """The `## ` heading texts of TRAPS.md, in file order. [] when absent or
     unreadable, never an exception.
