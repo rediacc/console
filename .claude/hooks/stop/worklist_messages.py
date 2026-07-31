@@ -476,6 +476,10 @@ Interrogate each record:
   - HOW: does it name a concrete resolving action or piece of evidence? If
     the HOW is something the session could do right now, the deferral is
     fake.
+  - Does the WHY amount to "an issue exists for this"? An issue is not an
+    inability. Findings are fixed in the session that finds them unless the
+    WHY names operator-only powers, an explicit operator deferral, or a
+    target outside the session's write access.
   - Is the WHY still TRUE? A reason that has expired (the run finished, the
     file landed, the answer is in the tree) is no reason.
 
@@ -666,13 +670,19 @@ R_REGGATE_BLOCK = (
     "count). The next stop runs it bounded, and a green run IS the "
     "planted-defect proof, because a control-first gate self-fails when "
     "its own control cannot fire.\n"
-    "  2. DEFER to the operator: append to the worklist\n"
+    "  2. DEFER to the operator, the ONLY exit that ends a finding without a "
+    "fix, and only for a decision that is genuinely theirs: append to the "
+    "worklist\n"
     "     - [?] (%s) %s <should this be gated?> DEFAULT: <what you do if "
     "unanswered> WHY: <why the call is not yours> HOW: <what settles it>\n"
     "     and the deferral machinery prints it to them every stop.\n"
     "  3. REBUT in your message: say why it is not applicable, already "
     "covered (name the REAL key), or a one-off; the judge re-reads your "
-    "message next stop."
+    "message next stop.\n"
+    "Filing an issue is NOT a fourth exit: an issue gates nothing and settles "
+    "nothing unless it names a last-resort door (operator-only powers, an "
+    "explicit operator deferral, or a target outside this session's write "
+    "access)."
 )
 
 R_REGGATE_HALLUCINATED = (
@@ -705,7 +715,9 @@ CLI_BODY_REFUSED = (
 
 CLI_ITEM_USAGE = (
     "usage: --add <my-prefix> <text...>\n"
-    "       --tick <my-prefix> <id> <evidence...>   (a sha, run id, file:line, exit code or URL)\n"
+    "       --triage <my-prefix> [--id <id>] <finding...>   big or small, plus the exact next command\n"
+    "       --tick <my-prefix> <id> <evidence...>   (a sha, run id, file:line, exit code or URL;\n"
+    "                                an issue reference alone is refused unless it names a door:)\n"
     "       --defer <my-prefix> <id> <question... DEFAULT: <action> WHY: <why you cannot settle it> HOW: <what resolves it>>\n"
     "                                (optional: TRIED:, NEEDS:, BLOCKED_ON: <person|system|run-id>)\n"
     "       --lease <my-prefix> <id> <+minutes|until-ISO8601Z> worker:<bg-task-id> [note...]\n"
@@ -718,6 +730,121 @@ CLI_TICK_NO_EVIDENCE = (
     "a file:line that resolves, an exit code, or a URL). You have it in hand "
     "at completion time, so this costs one paste; if you do NOT have it, the "
     "item is not done."
+)
+
+# ---- v16: the fix-in-session rule, the triage verb, the tick door gate ------
+# WHY (operator, 2026-07-31): a finding is FIXED in the session that finds it.
+# "It is big" was the standing excuse for filing an issue and calling the
+# finding handled, and --tick took a bare issue URL as evidence, so the excuse
+# was not merely rhetorical, it worked. The machinery now answers the size
+# question itself (--triage) and refuses a completion whose only evidence is
+# an issue reference. Underscore-prefixed, so the suite's catalogue-arity
+# sweep skips it: it is a fragment reused inside several constants, never
+# rendered on its own.
+_DOORS = (
+    "The three last-resort doors, and there are exactly three:\n"
+    "  door:operator-only      the fix needs powers this session does not "
+    "have (secrets, purchases, external accounts, production deploys)\n"
+    "  door:operator-deferred  you ASKED and the operator explicitly deferred "
+    "it\n"
+    "  door:no-write-access    the target is outside this session's write "
+    "access\n"
+    "\"It is big\" is not a door.\n"
+)
+
+CLI_TICK_ISSUE_DOOR = (
+    "REFUSED: ticking #%s with nothing but an issue reference. An issue "
+    "settles nothing on its own: a finding is fixed in the session that finds "
+    "it, so an issue closing an item is a report wearing a resolution's "
+    "clothes.\n"
+    + _DOORS
+    + "If a door genuinely applies, the issue must carry the evidence (the "
+    "exact command and its exact output) plus a ready-to-run brief a future "
+    "session can execute without rediscovering anything, and this tick must "
+    "NAME the door:\n"
+    "    --tick <me> <id> '<issue URL> door:no-write-access, the target repo "
+    "is not writable from this session'\n"
+    "Otherwise fix it now and tick with the evidence that it is fixed. If it "
+    "is too big to fix inline, ask the machinery which way it goes:\n"
+    "    .claude/hooks/stop/worklist.py --triage <me> --id <id> '<finding>'"
+)
+
+CLI_TRIAGE_INLINE = (
+    "TRIAGE VERDICT: INLINE (#%(id)s)\n"
+    "  why: %(reason)s\n\n"
+    "Fix it NOW, in this context, before moving on. It is small and local, so "
+    "there is nothing to design and nobody to delegate to. When the run you "
+    "are already doing proves it:\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'"
+)
+
+CLI_TRIAGE_PLAN = (
+    "TRIAGE VERDICT: PLAN+SUBAGENT (#%(id)s)\n"
+    "  why: %(reason)s\n"
+    "  plan file: %(plan)s\n\n"
+    "Too big to fix inline, and it is still fixed THIS session. Three steps, "
+    "in order:\n"
+    "  1. Agent tool, subagent_type: Plan. Tell it to design the fix and write "
+    "the plan to exactly %(plan)s, with this header inside the first 10 "
+    "lines:\n"
+    "         # PLAN: <title>\n"
+    "         Status: draft\n"
+    "         Owner: <who>\n"
+    "         Updated: <YYYY-MM-DD>\n"
+    "     every file:line anchor verified against the tree, and tests that "
+    "each FIRE on a planted defect and stay silent when clean. The finding to "
+    "design against: %(finding)s\n"
+    "  2. Flip that header to 'Status: executing' and implement it now. Use a "
+    "writer sub-agent when the plan's file set is disjoint from what you "
+    "already have in flight, or when your context is heavy: state its exact "
+    "file ownership, at most 2 writers, and forbid git checkout, restore, "
+    "stash and any sync or regenerate script. Implement inline otherwise.\n"
+    "  3. Ride the current PR when the risk is compatible, otherwise cut the "
+    "fix its own branch this same session. Then:\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'\n"
+    "Until %(plan)s exists on disk, every stop reports this item as TRIAGED "
+    "BIG with its plan file missing."
+)
+
+CLI_TRIAGE_OPERATOR = (
+    "TRIAGE VERDICT: OPERATOR-ONLY (#%(id)s)\n"
+    "  why: %(reason)s\n\n"
+    + _DOORS
+    + "\nIf this is a genuine DECISION that is theirs, park it as a question "
+    "whose default executes:\n"
+    "    .claude/hooks/stop/worklist.py --defer %(me)s %(id)s '<question> "
+    "DEFAULT: <what you do if unanswered> WHY: <the door plus the specifics> "
+    "HOW: <what concretely settles it>'\n"
+    "If it is a last-resort ISSUE (operator-only powers, or a target outside "
+    "this session's write access), file it WITH the evidence and a "
+    "ready-to-run brief, then close the item naming the door:\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<issue URL> "
+    "door:operator-only'\n"
+    "A tick carrying only an issue URL is refused."
+)
+
+CLI_TRIAGE_SELF = (
+    "TRIAGE, SELF-ASSESSED (#%(id)s)%(why)s\n\n"
+    "The facts this machine can see:\n"
+    "%(context)s\n"
+    "Answer the three-part test on them yourself:\n"
+    "  Is the fix SMALL AND LOCAL (no new abstraction, no signature change "
+    "rippling outward), and does the run you are already doing prove it?\n"
+    "  Is its file set DISJOINT from what you already have in flight above, "
+    "or is your context heavy?\n"
+    "  Does it need powers or decisions that are genuinely not yours?\n\n"
+    "INLINE if small and local: fix it now, then\n"
+    "    .claude/hooks/stop/worklist.py --tick %(me)s %(id)s '<evidence>'\n"
+    "PLAN+SUBAGENT if bigger: a Plan agent writes the design to "
+    "docs/agent/%(branch)s/PLAN-<slug>.md with a 'Status: draft' header, you "
+    "flip it to executing, and you implement it THIS session (a writer "
+    "sub-agent when the file set is disjoint or the context is heavy, at most "
+    "2, inline otherwise), riding the current PR when the risk is compatible "
+    "or its own branch when it is not.\n"
+    "OPERATOR-ONLY only through a door:\n"
+    + _DOORS
+    + "A finding is fixed in the session that finds it. Filing an issue "
+    "closes nothing."
 )
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
@@ -734,6 +861,29 @@ CTX_SESSION_START = (
 CTX_SESSION_START_STALE = (
     "\n\nRIGHT NOW THEY ARE STALE: %d commits have touched %s since the docs "
     "were last updated. Reconcile them early, not at the end."
+)
+
+# v16: the plan-file convention. docs/agent/<branch>/PLAN-<slug>.md is the
+# DURABLE design record, committed with the branch, as opposed to the
+# gitignored .agent/<branch>/ tree whose STATE.md is the volatile cursor. A
+# plan survives compaction and a machine loss, so a session that never reads
+# them re-litigates decisions that were already paid for.
+CTX_PLANS = (
+    "DURABLE PLANS FOR THIS BRANCH (%s), committed under docs/agent/<branch>/ "
+    "and written to survive compaction and a lost machine:\n%s\n\n"
+    "READ EVERY NON-DONE PLAN BEFORE ACTING. They carry decisions already "
+    "made and constraints that are invisible in the code, and re-deciding one "
+    "wastes the session that decided it. When you take a plan over, flip its "
+    "'Status:' header to executing and keep its '## Status' section current; "
+    "flip it to done once the work is proven. A plan listed as [UNKNOWN] has "
+    "no readable 'Status:' line in its first 10 lines: fix that header rather "
+    "than guessing at its state."
+)
+
+CTX_PLANS_EXCERPT = (
+    "=== %s, its '## Status' section (the progress cursor of work already "
+    "under way; treat it as the truth and your own recollection as "
+    "unreliable) ===\n%s"
 )
 
 CTX_POSTCOMPACT_MISSING = (
@@ -799,6 +949,44 @@ already covers it, or empty string), recurring, gate_needed, gate_proven
 concrete next step for the session).
 """
 
+TRIAGE_PROMPT = """\
+You are triaging ONE finding a coding session made while doing something else.
+This project's rule is not in question: the finding is FIXED in the session
+that finds it. Your job is only HOW, and you answer with exactly one verdict.
+
+  "inline"        small and local: no new abstraction, no signature change
+                  rippling outward, and the run the session is already doing
+                  proves it. The session fixes it right now, in context.
+  "plan-subagent" bigger than that: a design is warranted, so a Plan agent
+                  writes it to a committed plan file and the session
+                  implements it the SAME session, inline or through a writer
+                  sub-agent. Size alone NEVER means "file it and move on".
+  "operator-only" this session cannot settle it at all, and only through one
+                  of three doors: the fix needs operator-only powers (secrets,
+                  purchases, external accounts, production deploys); the
+                  operator was ASKED and explicitly deferred it; or the target
+                  is outside the session's write access. "It is big" is NOT a
+                  door.
+
+Prefer "inline" when the finding is genuinely one edit plus one check. Prefer
+"plan-subagent" whenever several files, a real design choice, or its own
+verification loop is involved. "operator-only" is a last resort and needs a
+door named in your reason.
+
+The finding:
+<<<
+%(finding)s
+>>>
+
+What the session can see right now:
+%(context)s
+
+Set `plan_slug` to a short kebab-case slug (a to z, 0 to 9 and dashes, at most
+60 characters) naming the fix, for "plan-subagent" ONLY; set it to an empty
+string for the other two verdicts. Write `reason` as one or two sentences
+addressed TO the session, naming the fact that decided it. Never use em dashes.
+"""
+
 JUDGE_PROMPT = """\
 You are a stop-gate for an autonomous coding session. Decide ONE thing: is
 ending the turn right now legitimate, or is the session idling with work it
@@ -821,7 +1009,15 @@ without the human, or when the last message is a status report that moves
 nothing forward.
 
 Be strict about one specific failure: reporting a problem instead of fixing it.
-This project's rules say defects found on the way get FIXED, not filed.
+This project's rules give a finding exactly two legitimate terminal states:
+FIXED THIS SESSION (with evidence, and a regression gate when one is due), or
+OPERATOR-DEFERRED (a [?] item the operator is genuinely needed for). "Filed an
+issue" settles nothing by itself. It is legitimate only when the message names
+one of the three last-resort doors: the fix needs operator-only powers, the
+operator explicitly deferred it when asked, or the target is outside the
+session's write access, and the issue carries evidence plus a ready-to-run
+brief. An issue with no named door is a report wearing a resolution's clothes:
+answer "continue" and direct the session to fix the finding.
 
 Consecutive times this gate has already said continue: %(streak)d. If that number
 is above 3, weigh heavily whether your advice is actually actionable.
@@ -881,8 +1077,16 @@ USAGE = """worklist.py -- shared per-repo worklist and cross-session inbox.
 Items (v10: a JSONL event store; the old markdown file still works as an
 inbox and is synced in, but the verbs are the first-class interface):
   --add <me> <text...>          track a new open item (prints its #id)
+  --triage <me> [--id <id>] <finding...>
+                                is this finding small enough to fix inline, or
+                                does it need a plan file and a sub-agent? Prints
+                                the verdict and the exact next command. Tracks
+                                the finding as an item when --id is omitted.
   --tick <me> <id> <evidence>   close it; the evidence (sha, run id,
-                                file:line, exit code, URL) is REQUIRED
+                                file:line, exit code, URL) is REQUIRED, and an
+                                issue reference alone is REFUSED unless it
+                                names a door: (operator-only, operator-deferred
+                                or no-write-access)
   --defer <me> <id> <q... DEFAULT: <action> WHY: <reason> HOW: <resolution>>
                                 hand it to the operator; the WHY/HOW are
                                 validated now and audited later, and the
