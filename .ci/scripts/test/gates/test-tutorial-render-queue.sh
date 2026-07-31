@@ -110,12 +110,20 @@ test_gate_runs_the_selftest() {
     log_pass "$GATE_NAME runs --selftest and propagates its exit code"
 }
 
-# The gate must be in the root `ci` chain, or nothing runs it.
-test_gate_is_in_ci_chain() {
-    local chain
-    chain="$(node -e "process.stdout.write(require('$REPO_ROOT/package.json').scripts.ci || '')")"
-    assert_contains "$chain" "$GATE_NAME" "$GATE_NAME must be part of the root ci chain"
-    log_pass "$GATE_NAME is wired into the ci chain"
+# The gate must be in the local gate set, or nothing runs it.
+#
+# This used to read package.json's `ci` value and look for the key in it. That
+# stopped working the moment `scripts.ci` became `tsx scripts/ci-runner/run.ts`:
+# the chain string no longer names any gate, so the assertion went red. It is
+# the same string-parsing assumption that made check-ci-chain-parity.ts and
+# check-gate-reachability.ts unfixable in place. The manifest is the gate set
+# now, and scripts/check-ci-parity.ts is what keeps it honest against CI.
+test_gate_is_in_the_gate_manifest() {
+    local manifest="$REPO_ROOT/scripts/ci-runner/manifest.ts"
+    [[ -f "$manifest" ]] || log_fail "no gate manifest at $manifest, so this assertion would be vacuous"
+    grep -q "id: '$GATE_NAME'" "$manifest" ||
+        log_fail "$GATE_NAME must be an entry in scripts/ci-runner/manifest.ts, or no local run schedules it"
+    log_pass "$GATE_NAME is wired into the gate manifest"
 }
 
 # CONTROL for this file: a deliberately broken predicate must make the empty-tree assertion
@@ -138,5 +146,5 @@ with_temp_dir test_half_populated_tree_refuses
 with_temp_dir test_selftest_passes
 with_temp_dir test_selftest_has_controls
 with_temp_dir test_gate_runs_the_selftest
-with_temp_dir test_gate_is_in_ci_chain
+with_temp_dir test_gate_is_in_the_gate_manifest
 with_temp_dir test_harness_can_actually_fail

@@ -48,6 +48,18 @@ const CONSOLE_ROOT = process.env.SUPPRESSION_LIVENESS_ROOT || path.join(__dirnam
 // Oracles
 // ---------------------------------------------------------------------------
 
+/**
+ * The gate name on a two-column `.ci-parity-exempt` line, given its 1-based
+ * line number. The file's entry lines are `<direction>  <gate>`, and the shared
+ * parseBlockeredList takes the first whitespace-separated token.
+ */
+function readSecondColumn(root: string, line: number): string {
+  const p = path.join(root, '.ci-parity-exempt');
+  if (!fs.existsSync(p)) return '';
+  const raw = fs.readFileSync(p, 'utf-8').split('\n')[line - 1] ?? '';
+  return raw.trim().split(/\s+/)[1] ?? '';
+}
+
 /** Every package name declared in any manifest in the workspace. */
 function declaredPackageNames(root: string): Universe | null {
   const globs = [
@@ -357,18 +369,32 @@ const PROBES: Probe[] = [
     ],
   },
   {
-    id: 'chain-exempt',
-    file: '.ci-chain-exempt',
+    id: 'parity-exempt',
+    file: '.ci-parity-exempt',
     tier: 'fail',
     // Structural guard, not a count floor: universe() returns null when there
     // are no workflows to read, and every entry can legitimately go stale at
     // once (a batch of PR-context gates being retired together).
     minUniverse: 0,
-    entries: (root) => blockeredEntries(path.join(root, '.ci-chain-exempt')),
+    // The entry lines carry a leading direction column, so the shared parser's
+    // first-token rule would read "ci-only" as the entry. Split it off here;
+    // the BLOCKER association and validation stay with the shared parser.
+    entries: (root) =>
+      blockeredEntries(path.join(root, '.ci-parity-exempt')).map((e) => ({
+        ...e,
+        entry: e.entry === 'ci-only' || e.entry === 'local-only' ? readSecondColumn(root, e.line) : e.entry,
+      })),
     universe: (root) => {
       // An exemption is live only while the thing it exempts is still invoked
       // by a workflow. Once the step is deleted the entry is a permanent hole
-      // in the "npm run ci catches CI failures" promise, guarding nothing.
+      // in the "a local run catches CI failures" promise, guarding nothing.
+      //
+      // ONLY THE ci-only DIRECTION IS ORACLED HERE. A local-only entry is live
+      // when the LOCAL gate set still runs it, which is a different question
+      // with a different oracle (scripts/ci-runner/manifest.ts). There are no
+      // local-only entries today; the day one appears, this probe must grow the
+      // second oracle rather than judge it against the workflow tree, which
+      // would condemn it for the very asymmetry it declares.
       const dir = path.join(root, '.github', 'workflows');
       if (!fs.existsSync(dir)) return null;
       const files = fs.readdirSync(dir).filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'));
@@ -388,7 +414,7 @@ const PROBES: Probe[] = [
     why: (entry, u) =>
       `no workflow invokes "${entry}" any more (oracle: ${u.source}); the exemption holds a hole open for a gate that no longer runs in CI.`,
     fix: (entry, e) => [
-      `remove line ${e.line} ("${entry}") from .ci-chain-exempt, then: npm run check:ci-chain-parity`,
+      `remove line ${e.line} ("${entry}") from .ci-parity-exempt, then: npm run check:ci-parity`,
     ],
   },
   {

@@ -51,6 +51,25 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 # BLOCKER: shared assertion helpers used by every .ci/scripts/test/test-*.sh
 source "$SCRIPT_DIR/../lib/test-helpers.sh"
 
+# Where the two control cases plant their synthetic scan targets.
+#
+# NOT scripts/, and not a mktemp -d either. The controls have to sit inside a
+# directory scan_targets() actually walks, or the detector never sees them and
+# the control silently stops firing -- so a temp dir outside the repo is not an
+# option. But scripts/ is ALSO linted (`eslint packages scripts private/account`,
+# and knip's project glob `scripts/**/*.ts`), and a file that appears and
+# vanishes mid-run raced a concurrent `npm run check:lint` into
+# `ENOENT ... open '.../scripts/.gate-paths-exist-fixture.ts'`, exit 2. That was
+# never a lint failure; it was this gate polluting a linted tree.
+#
+# .ci/scripts satisfies both halves, measured rather than assumed on 2026-07-31:
+# `find .ci/scripts -type f -name '*.ts'` reaches a dotfile planted here, and
+# `eslint packages scripts private/account` reports ZERO hits for it. biome
+# (packages/ private/account/) and knip (*.{js,ts}, scripts/**/*.ts) do not
+# cover .ci either. Keep it out of .ci/scripts/test/, which scan_targets()
+# excludes on purpose.
+FIXTURE_DIR="$REPO_ROOT/.ci/scripts"
+
 # Directory prefixes that are generated, vendored, or gitignored. A literal
 # whose path traverses one of these is skipped in Tier B.
 EPHEMERAL_SEGMENTS='/(dist|build|bin|out|coverage|node_modules|\.astro|\.backups|\.cache)(/|$)'
@@ -179,7 +198,7 @@ test_detector_fires_on_a_deleted_workspace() {
     # Control: prove the instrument can FAIL. A synthetic scan target naming a
     # workspace that has never existed must be reported, otherwise this gate is
     # exactly the vacuous check it was written to prevent.
-    local fixture="$REPO_ROOT/scripts/.gate-paths-exist-fixture.ts"
+    local fixture="$FIXTURE_DIR/.gate-paths-exist-fixture.ts"
     # BLOCKER: expanding fixture now binds the specific path into the trap so cleanup fires even if the variable is later reassigned
     # shellcheck disable=SC2064
     trap "rm -f '$fixture'" RETURN
@@ -194,7 +213,7 @@ test_detector_fires_on_a_deleted_workspace() {
 
 test_detector_ignores_runtime_and_glob_paths() {
     # Shape check: the two biggest false-positive sources must stay silent.
-    local fixture="$REPO_ROOT/scripts/.gate-paths-exist-noise-fixture.ts"
+    local fixture="$FIXTURE_DIR/.gate-paths-exist-noise-fixture.ts"
     # BLOCKER: expanding fixture now binds the specific path into the trap so cleanup fires even if the variable is later reassigned
     # shellcheck disable=SC2064
     trap "rm -f '$fixture'" RETURN
