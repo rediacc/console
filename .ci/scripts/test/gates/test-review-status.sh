@@ -504,17 +504,44 @@ test_existing_check_run_is_patched() {
 # ACYCLICITY -- the invariant that keeps this out of CI's dependency graph.
 # ---------------------------------------------------------------------------
 test_no_ci_job_references_review_complete() {
+    # CONTROL, planted first: a genuine dependency on the context (a `needs`
+    # or `if` style reference, anywhere other than the one documented
+    # exclusion line below) must still be caught, so the narrowed grep two
+    # blocks down is proven to still fire rather than having been widened
+    # into a no-op.
+    local t control_hits
+    t="$(mktemp -d)"
+    trap 'rm -rf "$t"' RETURN
+    printf 'jobs:\n  bad:\n    if: needs.review.outputs.context == '"'"'Review Complete'"'"'\n' >"$t/planted.yml"
+    control_hits="$(grep -n "Review Complete" "$t/planted.yml" |
+        grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' || true)"
+    [[ -n "$control_hits" ]] || log_fail "CONTROL failed: a genuine dependency reference on 'Review Complete' was not caught by the narrowed grep below"
+
+    # The real assertion. ONE narrow, documented exception: the
+    # WATCHDOG_EXCLUDE_PATTERNS line in watchdog-monitor.yml, which EXCLUDES
+    # 'Review Complete' from the watchdog's failure scan -- the opposite of
+    # a dependency. Verified live 2026-07-31 (run 30660765759, raw
+    # `GET .../actions/runs/{id}/jobs`): the check-run this script posts is
+    # genuinely attributed to the SAME run_id as an unrelated Console CI run
+    # (both ride the github-actions app's shared check_suite for that head
+    # SHA), so the watchdog's per-run job listing sees it and MUST be told to
+    # ignore it, or a not-yet-re-reviewed head deadlocks the very run that
+    # would re-review it. This does not weaken the invariant above: ci.yml
+    # still never `needs:` this workflow or gates on the context: it is only
+    # told not to react to it.
     local hits
     hits="$(grep -rn "Review Complete" "$REPO_ROOT/.github/workflows" \
-        --include='*.yml' | grep -v '^.*review-status.yml' || true)"
+        --include='*.yml' |
+        grep -v '^.*review-status.yml' |
+        grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' || true)"
     if [[ -n "$hits" ]]; then
-        log_fail "a workflow other than review-status.yml references 'Review Complete' -- that is a cycle:
+        log_fail "a workflow other than review-status.yml references 'Review Complete' outside the documented watchdog exclusion -- that is a cycle:
 $hits"
     fi
     if ! grep -q 'Review Complete' "$REPO_ROOT/.ci/scripts/review/review-status.sh"; then
         log_fail "review-status.sh no longer names the check it posts; this acyclicity check went blind"
     fi
-    log_pass "no workflow but review-status.yml mentions the 'Review Complete' context"
+    log_pass "no workflow but review-status.yml mentions the 'Review Complete' context, apart from the documented watchdog exclusion"
 }
 
 test_workflow_does_not_trigger_on_pull_request() {
