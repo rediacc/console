@@ -27,6 +27,65 @@ on:
         type: string
         required: false
         default: 'false'
+      # ---- Scope engine, one input per leaf below --------------------------
+      # The caller passes the scope engine's decision for each suite. The
+      # engine only ever says 'false', for a suite it has ruled OUT; it never
+      # says 'true'. So the default here is the EMPTY STRING and every job
+      # tests `!= 'false'`: an unset input, an empty input, a caller that
+      # predates these inputs, or a scope step that never ran all mean RUN.
+      # Fail-open is the whole safety argument for scoping, and it lives here.
+      #
+      # migration-test deliberately has no input: it is gated on
+      # pointer_bump_only alone because it validates the D1 migrations that
+      # push-to-main is about to deploy.
+      run_unit:
+        type: string
+        required: false
+        default: ''
+      run_e2e_workers:
+        type: string
+        required: false
+        default: ''
+      run_e2e_ceph:
+        type: string
+        required: false
+        default: ''
+      run_e2e_ceph_workers:
+        type: string
+        required: false
+        default: ''
+      run_e2e_k8s:
+        type: string
+        required: false
+        default: ''
+      run_e2e_k8s_ceph:
+        type: string
+        required: false
+        default: ''
+      run_e2e_k8s_multinode:
+        type: string
+        required: false
+        default: ''
+      run_e2e_migrate:
+        type: string
+        required: false
+        default: ''
+      run_fork_isolation:
+        type: string
+        required: false
+        default: ''
+      run_renet:
+        type: string
+        required: false
+        default: ''
+      run_license_enforcement:
+        type: string
+        required: false
+        default: ''
+      run_account_e2e:
+        type: string
+        required: false
+        default: ''
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -119,7 +178,7 @@ jobs:
 
   test-unit:
     name: Unit
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_unit != 'false'
     runs-on: ubuntu-slim
     timeout-minutes: 14
     steps:
@@ -131,7 +190,7 @@ jobs:
 
   test-e2e-workers:
     name: E2E Workers (${{ matrix.os-image }})
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -221,9 +280,20 @@ jobs:
           docker system prune -af 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
+      # `account: 'true'` was dropped here and in the seven other VM/E2E jobs
+      # below. It made setup-workspace restore or install the THREE account npm
+      # trees (private/account, its web, its e2e), and not one of these suites
+      # ever touches them: packages/e2e-tests contains zero references to
+      # private/account, and so do the .ci scripts these jobs run. So it was
+      # pure setup cost, and worse than cost -- the account cache key hashes
+      # the three account lockfiles, which dragged every account-side
+      # dependency change into the invalidation surface of eight E2E jobs that
+      # cannot be affected by one.
+      #
+      # test-account-e2e keeps it. That job runs run-account-e2e.sh against
+      # private/account and genuinely needs all three trees.
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -317,7 +387,7 @@ jobs:
 
   test-e2e-ceph:
     name: E2E Ceph
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -367,7 +437,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -451,7 +520,7 @@ jobs:
   # renet #78 removed the old 4 GB LUKS-unlock floor).
   test-e2e-ceph-workers:
     name: E2E Ceph Workers
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_ceph_workers != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -504,7 +573,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -594,7 +662,7 @@ jobs:
 
   test-e2e-k8s:
     name: E2E K8s
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_k8s != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -645,7 +713,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -730,7 +797,7 @@ jobs:
 
   test-e2e-k8s-ceph:
     name: E2E K8s Ceph
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_ceph != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -783,7 +850,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -872,7 +938,7 @@ jobs:
 
   test-e2e-k8s-multinode:
     name: E2E K8s Multinode
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -925,7 +991,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -1015,7 +1080,7 @@ jobs:
 
   test-e2e-migrate:
     name: E2E Migrate
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_e2e_migrate != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -1074,7 +1139,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -1179,7 +1243,7 @@ jobs:
 
   test-fork-isolation:
     name: Concurrent Fork Isolation
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_fork_isolation != 'false'
     runs-on: ubuntu-latest
     # 30 min covered the bind-isolation phases; the console#440 checkpoint
     # phase (counter warm-up + fork --checkpoint + restore) adds ~3 min.
@@ -1231,7 +1295,6 @@ jobs:
           df -h / || true
       - uses: ./.github/actions/setup-workspace
         with:
-          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -1340,7 +1403,7 @@ jobs:
 
   test-renet:
     name: Renet
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_renet != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -1471,7 +1534,7 @@ jobs:
   # ============================================================================
   test-license-enforcement:
     name: License Enforcement
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_license_enforcement != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -1511,7 +1574,7 @@ jobs:
   # ============================================================================
   test-account-e2e:
     name: Account E2E
-    if: inputs.full_suite == 'true'
+    if: inputs.full_suite == 'true' && inputs.run_account_e2e != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

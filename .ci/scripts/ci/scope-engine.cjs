@@ -4,15 +4,19 @@
 // pull_request: HEAD there is the synthetic 2-parent refs/pull/N/merge commit,
 // so the walk aborted on its first step, defect D9).
 //
-// THIS CHUNK IS THE PURE CORE ONLY. The only wired mode is --classify, which
-// reads a file list and prints a JSON plan; it performs no network call, no
-// git command, no GitHub API access (its only I/O is reading the file list
-// and, for edge case 24, the local .github/workflows/*.yml text). Nothing in
-// CI consumes the output yet, so landing this cannot change CI behaviour.
-// Baseline resolution (finding the nearest green FULL run to diff against) is
-// exported as pure decision helpers for unit testing but deliberately not
-// wired to any mode: the harvesting side needs gh/git and belongs to the next
-// chunk, behind its own mode, so --classify stays testable offline.
+// LIVE SINCE 2026-07-31 (D-1). Until then nothing in CI consumed these
+// outputs and every mode landed inert; that is no longer true, and the header
+// used to say so in three places. `--resolve-baseline` is now the source of
+// the plan that gates jobs: scope-shadow.sh writes plan.json from it, ci.yml
+// reads `run_<key>=false` outputs derived from that plan, and the reconcile
+// step audits the same object against the run's actual per-job outcomes.
+//
+// Both modes are still PURE of decision-making in one specific sense that
+// matters: every failure resolves to a FULL plan with a stated reason, so the
+// only direction this engine can be wrong in is running more CI than needed.
+// --classify performs no network call, no git command and no GitHub API access
+// (its only I/O is reading the file list and, for edge case 24, the local
+// .github/workflows/*.yml text), which keeps it testable offline.
 //
 // Usage:
 //   scope-engine.cjs --classify [--files <path>]
@@ -136,10 +140,11 @@ function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
 
 // ---------------------------------------------------------------------------
 // Baseline-resolution decision helpers (edge cases 1, 2, 4, 5). PURE and
-// exported for unit tests; NOT wired to any CLI mode yet. The harvesting side
-// (walking ancestors, downloading the attested plan artifact, reading the
-// merge commit's first parent) needs gh and git and will arrive as its own
-// mode in the next chunk.
+// exported for unit tests. The harvesting side that drives them (walking
+// ancestors, downloading the attested plan artifact, reading the merge
+// commit's first parent) needs gh and git and lives below, behind
+// --resolve-baseline; these stay separable so the decisions can be tested with
+// no network at all.
 // ---------------------------------------------------------------------------
 
 // A usable baseline is a GREEN run whose attested skip-plan exists, says
@@ -280,12 +285,13 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 // everything and say which of them happened. The only direction this
 // mechanism can be wrong in is running MORE CI than needed.
 //
-// Like --classify, this mode lands INERT, and it stays inert even now that
-// baselines can become usable: NOTHING consumes the engine's output. No job
-// `if:` in any workflow references a scope value, so a resolved baseline
-// changes a shadow artifact and nothing else. It cannot change CI behaviour
-// until someone wires the vector to a job condition, which is deliberate: it
-// means this can be landed and observed before it is trusted.
+// THIS MODE IS NO LONGER INERT. It landed that way deliberately, so it could
+// be observed on real traffic before it was trusted, and the comment here used
+// to say that no job `if:` referenced a scope value. D-1 flipped it on
+// 2026-07-31: scope-shadow.sh writes plan.json from THIS mode's output, emits
+// one `run_<key>=false` line per out-of-scope key, and ci.yml's job conditions
+// read them. The soak is over; the fail-open encoding below is now the only
+// thing standing between a bad answer here and a job that should have run.
 //
 // Candidates USED to resolve to 'no-skip-plan' unconditionally, because
 // nothing wrote the artifact. The shadow step in `initialize` now uploads
@@ -293,15 +299,15 @@ function isBaseUnchanged({ planBaseSha, mergeParentSha }) {
 // moved from "is there a plan" to "does that plan describe what that run
 // actually did". That is attestPlan's job, at READ time, per candidate.
 //
-// WIRING PRECONDITION, and it is not optional. `initialize` checks out with
-// `fetch-tags: true` and NO `fetch-depth` (ci.yml:128-131), which is a depth-1
-// shallow clone. Wired there as it stands, this mode would answer
-// 'baseline:shallow-clone' on every single run and go full forever, while
-// looking perfectly healthy from the outside. That is D9's exact failure
-// shape, so whoever wires it must add `fetch-depth: 0` plus `filter:
-// blob:none` to that ONE job (blob:none keeps it cheap: commits and trees
-// only, no historical file contents), and must then confirm a reduced run on
-// real traffic rather than assuming one.
+// WIRING PRECONDITION, satisfied but still load-bearing. `initialize` used to
+// check out with `fetch-tags: true` and NO `fetch-depth`, which is a depth-1
+// shallow clone; wired against that, this mode would answer
+// 'baseline:shallow-clone' on every single run and go full forever while
+// looking perfectly healthy from the outside, which is D9's exact failure
+// shape. That job now carries `fetch-depth: 0` plus `filter: blob:none`
+// (blob:none keeps it cheap: commits and trees only, no historical file
+// contents). Anyone tempted to trim that checkout back should know they would
+// be retiring this engine silently rather than turning it off.
 // ---------------------------------------------------------------------------
 
 // GitHub truncates a compare file list at 300 entries. Past that the list is

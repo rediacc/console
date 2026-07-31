@@ -121,6 +121,37 @@ jobs:
       # moved to tree-identical commits on the submodules' main (post-squash
       # bump). Gates the expensive jobs; see .ci/scripts/ci/detect-pointer-bump.sh.
       pointer_bump_only: ${{ steps.init.outputs.pointer_bump_only }}
+      # ---- Scope engine, LIVE ------------------------------------------------
+      # The scope step emits ONLY `run_<key>=false` for keys it has decided are
+      # out of scope, plus `scope_mode`. It never emits `=true`. Every consumer
+      # therefore tests `!= 'false'`, which makes the whole chain FAIL OPEN:
+      # an absent output, an empty output, a crashed engine, or the step not
+      # running at all (push, schedule, workflow_dispatch, where the `if:`
+      # excludes it) all read as "run", i.e. full CI. There is no path on which
+      # a broken scope engine silently removes coverage.
+      #
+      # scope_mode is carried only so ci-complete's reconciler can say WHICH
+      # decision it is reconciling against. It gates nothing.
+      scope_mode: ${{ steps.scope.outputs.scope_mode }}
+      # 12 ct-tests leaves, passed through to ct-tests.yml as inputs.
+      run_unit: ${{ steps.scope.outputs.run_unit }}
+      run_e2e_workers: ${{ steps.scope.outputs.run_e2e_workers }}
+      run_e2e_ceph: ${{ steps.scope.outputs.run_e2e_ceph }}
+      run_e2e_ceph_workers: ${{ steps.scope.outputs.run_e2e_ceph_workers }}
+      run_e2e_k8s: ${{ steps.scope.outputs.run_e2e_k8s }}
+      run_e2e_k8s_ceph: ${{ steps.scope.outputs.run_e2e_k8s_ceph }}
+      run_e2e_k8s_multinode: ${{ steps.scope.outputs.run_e2e_k8s_multinode }}
+      run_e2e_migrate: ${{ steps.scope.outputs.run_e2e_migrate }}
+      run_fork_isolation: ${{ steps.scope.outputs.run_fork_isolation }}
+      run_renet: ${{ steps.scope.outputs.run_renet }}
+      run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
+      run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
+      # 5 top-level ci.yml jobs, consumed by their own `if:` here.
+      run_ops: ${{ steps.scope.outputs.run_ops }}
+      run_elite_run: ${{ steps.scope.outputs.run_elite_run }}
+      run_update_flow: ${{ steps.scope.outputs.run_update_flow }}
+      run_package_tests: ${{ steps.scope.outputs.run_package_tests }}
+      run_install_methods: ${{ steps.scope.outputs.run_install_methods }}
     steps:
       # The rehearsal is only schedule-equivalent when it runs where the nightly
       # runs. A dispatch on a feature branch would produce a full ~70-minute run
@@ -218,20 +249,46 @@ jobs:
         # for schedule events.
         run: .ci/scripts/ci/assert-channel-for-event.sh "${{ github.event_name }}" "${{ steps.staging.outputs.channel }}"
 
-      # SHADOW ONLY: publishes what the scope engine WOULD decide, gates
-      # nothing, and always exits 0. Evidence on real traffic before anything
-      # is allowed to skip work. Rationale and the deliberate absence of a
-      # `reconciled` flag are documented in the script header.
-      # No continue-on-error, and none is needed: scope-shadow.sh ends in an
-      # unconditional `exit 0` and every command inside it is `|| true`-guarded.
-      # The script owning its own success is stronger than the workflow
-      # forgiving its failure, because it keeps the guarantee where the logic is.
-      - name: Scope engine (shadow, decides nothing)
+      # LIVE as of D-1: the `run_<key>` outputs this step writes now gate 17
+      # jobs. It was shadow-only until the reconciler had a clean run of real
+      # PR traffic behind it.
+      #
+      # What "live" does and does not mean here. The step still always exits 0
+      # (scope-shadow.sh ends in an unconditional `exit 0` and every command
+      # inside it is `|| true`-guarded), and it still emits nothing but
+      # `run_<key>=false` lines for keys it rules OUT. So a failure, a timeout,
+      # or a shallow clone produces no output lines at all, every consumer's
+      # `!= 'false'` is then true, and CI runs in full. Losing the engine costs
+      # money, never coverage. No continue-on-error is needed for the same
+      # reason: the script owns its own success, which keeps the guarantee
+      # where the logic is.
+      #
+      # OUTPUT_FILE is REQUIRED, not decoration. scope-shadow.sh treats an
+      # unset OUTPUT_FILE as "local run, decide nothing" and returns before
+      # writing a single line, so dropping this prefix does not fall back to
+      # $GITHUB_OUTPUT -- it silently disables scoping while every log line
+      # still looks healthy. That is the same shape of failure as the shallow
+      # clone that kept the shadow reporting full CI for twelve runs, which is
+      # why it is stated here rather than left to the script.
+      - name: Scope engine
+        id: scope
         if: github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           MERGE_SHA: ${{ github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Two independent full-CI overrides, both fail-open in the same
+          # direction: FORCE_FULL_CI is the repo-wide kill switch (set the
+          # `FULL_CI` repository variable to disable scoping for everyone
+          # without a code change), FULL_CI_LABEL is the per-PR escape hatch
+          # (label a PR `full-ci` when you want the whole fleet on one commit).
+          #
+          # The repository variable must be the exact string `true`. The script
+          # compares literally, so `FULL_CI=1` or `FULL_CI=yes` reads as OFF
+          # and the kill switch does nothing. FULL_CI_LABEL needs no such care:
+          # contains() already yields true or false.
+          FORCE_FULL_CI: ${{ vars.FULL_CI }}
+          FULL_CI_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full-ci') }}
           # The PRE-EXISTING (non-scope) skip conditions, recorded into the plan
           # so the reconciler can tell "skipped because scope said so" from
           # "skipped because this workflow has always skipped it here". Without
@@ -243,7 +300,7 @@ jobs:
           FULL_SUITE: ${{ github.event_name != 'push' }}
           POINTER_BUMP_ONLY: ${{ steps.init.outputs.pointer_bump_only }}
           IS_BOT: ${{ steps.init.outputs.is_bot }}
-        run: .ci/scripts/ci/scope-shadow.sh
+        run: OUTPUT_FILE="$GITHUB_OUTPUT" .ci/scripts/ci/scope-shadow.sh
 
       # if-no-files-found: ignore is what makes this succeed unconditionally:
       # the shadow step may legitimately produce neither file (no base/head
@@ -576,7 +633,7 @@ jobs:
   update-flow-test:
     name: Tests + Infra / Update Flow
     needs: [initialize, build-cli]
-    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success'
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.build-cli.result == 'success' && needs.initialize.outputs.run_update_flow != 'false'
     uses: ./.github/workflows/ct-update-flow.yml
     with:
       cli_artifact_name: build-cli-linux-x64-${{ github.sha }}
@@ -592,7 +649,7 @@ jobs:
     needs: [initialize, quality]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (needs.quality.result == 'success' || needs.quality.result == 'skipped')
+    if: always() && needs.initialize.outputs.full_suite == 'true' && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && needs.initialize.outputs.run_package_tests != 'false'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -700,6 +757,23 @@ jobs:
     with:
       full_suite: ${{ needs.initialize.outputs.full_suite }}
       pointer_bump_only: ${{ needs.initialize.outputs.pointer_bump_only }}
+      # Scope decisions, one per ct-tests leaf. Empty (the default on every
+      # non-PR event, where the scope step does not run) means RUN; only the
+      # literal string 'false' skips. migration-test takes no scope input on
+      # purpose: it validates the D1 migrations that push-to-main is about to
+      # deploy, and it is not the scope engine's to decide.
+      run_unit: ${{ needs.initialize.outputs.run_unit }}
+      run_e2e_workers: ${{ needs.initialize.outputs.run_e2e_workers }}
+      run_e2e_ceph: ${{ needs.initialize.outputs.run_e2e_ceph }}
+      run_e2e_ceph_workers: ${{ needs.initialize.outputs.run_e2e_ceph_workers }}
+      run_e2e_k8s: ${{ needs.initialize.outputs.run_e2e_k8s }}
+      run_e2e_k8s_ceph: ${{ needs.initialize.outputs.run_e2e_k8s_ceph }}
+      run_e2e_k8s_multinode: ${{ needs.initialize.outputs.run_e2e_k8s_multinode }}
+      run_e2e_migrate: ${{ needs.initialize.outputs.run_e2e_migrate }}
+      run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
+      run_renet: ${{ needs.initialize.outputs.run_renet }}
+      run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
+      run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -729,7 +803,8 @@ jobs:
       needs.initialize.result == 'success' &&
       needs.initialize.outputs.pointer_bump_only != 'true' &&
       (needs.quality.result == 'success' || needs.quality.result == 'skipped') &&
-      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped')
+      (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') &&
+      needs.initialize.outputs.run_ops != 'false'
     uses: ./.github/workflows/ci-ops-test.yml
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
@@ -749,7 +824,8 @@ jobs:
       always() &&
       needs.initialize.outputs.full_suite == 'true' &&
       needs.initialize.result == 'success' &&
-      needs.build-docker-fast.result == 'success'
+      needs.build-docker-fast.result == 'success' &&
+      needs.initialize.outputs.run_elite_run != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 14
     steps:
@@ -1111,7 +1187,8 @@ jobs:
     needs: [initialize, stage-artifacts]
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success'
+      needs.stage-artifacts.result == 'success' &&
+      needs.initialize.outputs.run_install_methods != 'false'
     uses: ./.github/workflows/ct-install-methods.yml
     with:
       version: ${{ needs.initialize.outputs.next_version }}
@@ -1281,6 +1358,11 @@ jobs:
         if: always() && github.event_name == 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          # Which decision the reconciler is reconciling against. Empty on any
+          # run where the scope step did not produce one, which the reconciler
+          # treats the same way every other consumer does: as "full CI", not as
+          # an error.
+          SCOPE_MODE: ${{ needs.initialize.outputs.scope_mode }}
         run: .ci/scripts/ci/scope-reconcile-shadow.sh
   # ============================================================================
   # FINALIZE RELEASE SENTINEL

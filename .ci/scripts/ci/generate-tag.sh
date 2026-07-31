@@ -107,9 +107,11 @@ if [[ -n "$SUBMODULE_PATH" ]]; then
     # ci-ops-test.yml, against one step here for the build/ script). It does not.
     # It compiles a dev binary from source into private/renet/bin for those test
     # jobs, which never pull ghcr.io/rediacc/renet and are never handed this tag
-    # -- ct-tests.yml takes only full_suite and pointer_bump_only, and its own
-    # cache is keyed on private/renet/embed-assets.lock.json. Its edits take
-    # effect immediately in all nine, so there is nothing here to invalidate.
+    # -- no input of ct-tests.yml carries an image tag (it takes full_suite,
+    # pointer_bump_only and the scope engine's run_* vector, none of which name
+    # an image), and its own cache is keyed on
+    # private/renet/embed-assets.lock.json. Its edits take effect immediately in
+    # all nine, so there is nothing here to invalidate.
     #
     # The first three entries are already covered by SUBMODULE_COMMIT above
     # (they live inside the submodule). They are kept because they cost nothing
