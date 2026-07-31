@@ -1,35 +1,49 @@
-# Gates a workflow runs that `npm run ci` deliberately does NOT run.
+# Deliberate asymmetries between the local gate set and the CI quality surface.
 #
-# Read by scripts/check-ci-chain-parity.ts. Entries are either a package.json
+# Read by scripts/check-ci-parity.ts. Every entry line is
+#
+#     <direction>  <entry>
+#
+# preceded by a `# BLOCKER: <reason>` comment that the shared blocker-validator
+# checks (scripts/lib/blocker-validator.ts). The entry is either a package.json
 # script name (`check:ci-foo`) or a repo-relative shell path
-# (`.ci/scripts/quality/check-foo.sh`), and every entry needs a BLOCKER reason
-# validated by the shared blocker-validator.
+# (`.ci/scripts/quality/check-foo.sh`).
 #
-# An exemption is a HOLE in the promise that `npm run ci` catches CI failures
-# before a push. The bar is "this gate cannot run on a developer machine at
-# all", not "it is slow" or "it is noisy". Everything below needs either a live
-# pull request or credentials a developer does not hold.
+# Two directions, because the two need different justifications:
+#
+#   ci-only     CI runs it; the local gate set deliberately does not. The bar is
+#               "this cannot run on a developer machine at all", not "it is slow"
+#               or "it is noisy" -- everything below needs either a live pull
+#               request or credentials a developer does not hold.
+#   local-only  The local gate set runs it; CI deliberately does not. Prefer
+#               `ci: { kind: 'local-only' }` in scripts/ci-runner/manifest.ts
+#               over an entry here; this file is for asymmetries the manifest
+#               cannot express.
+#
+# An exemption is a HOLE in the promise that a local run catches CI failures
+# before a push. There are none in the local-only direction today, and that is
+# the state to keep.
 
 # BLOCKER: reads the PR head/base refs from the GITHUB_* event environment and queries the GitHub API for the branch's PR; outside a pull_request event there is no branch pair to validate, so a local run has nothing to check
-.ci/scripts/quality/check-branch.sh
+ci-only  .ci/scripts/quality/check-branch.sh
 
 # BLOCKER: fetches the PR's commit list over the GitHub API to assert no commit carries an unwanted Claude attribution trailer; a local checkout has no PR number and the commits are not yet pushed
-.ci/scripts/quality/check-claude-attribution.sh
+ci-only  .ci/scripts/quality/check-claude-attribution.sh
 
 # BLOCKER: reads the pull request body and its updatedAt timestamp through the GitHub API to enforce the description-freshness rule; there is no PR body to read before the PR exists
-.ci/scripts/quality/check-pr-description.sh
+ci-only  .ci/scripts/quality/check-pr-description.sh
 
 # BLOCKER: walks the PR's review threads via the GitHub GraphQL API and fails on unresolved ones; nothing about it is computable from a local working tree
-.ci/scripts/quality/check-resolved-threads.sh
+ci-only  .ci/scripts/quality/check-resolved-threads.sh
 
 # BLOCKER: pulls bot review comments for the PR over the GitHub API and asserts each has a substantive reply; requires an open PR plus an authenticated token
-.ci/scripts/quality/check-review-comments.sh
+ci-only  .ci/scripts/quality/check-review-comments.sh
 
 # BLOCKER: fetches the PR's issue-comment timeline over the GitHub API to find the newest finished review report and its reply; there is no report to answer before the PR exists and the review has run
-.ci/scripts/quality/check-review-report-replies.sh
+ci-only  .ci/scripts/quality/check-review-report-replies.sh
 
 # BLOCKER: compares each submodule pointer against the branches open on the submodule's own GitHub remote; needs API access to three repos and a PR context to resolve the expected branch
-.ci/scripts/quality/check-submodule-branches.sh
+ci-only  .ci/scripts/quality/check-submodule-branches.sh
 
 # BLOCKER: probes the release-state sentinels in the R2 bucket, so it needs R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY; a developer without release credentials gets "Required environment variable 'R2_ACCESS_KEY_ID' is not set" rather than a verdict
-.ci/scripts/quality/check-release-state.sh
+ci-only  .ci/scripts/quality/check-release-state.sh

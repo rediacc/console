@@ -4,7 +4,48 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 
 # Quality Gates (`npm run ci`)
 
-`npm run ci` runs 23 checks that mirror CI. Run locally before pushing to catch issues early. The checks cover: version consistency, dependency freshness, ESLint, biome formatting, i18n completeness, TypeScript types, unit tests, security audit, shell linting, Go lint (renet), E2E coverage, and more.
+`npm run ci` runs the whole local gate set, which mirrors CI's quality tier. Run it before pushing to catch issues early. The gates cover version consistency, dependency freshness, ESLint, biome formatting, i18n completeness, TypeScript types, unit tests, security audit, shell linting, Go lint (renet), E2E coverage, the 57 quality-gate unit tests, and more.
+
+### The runner
+
+`npm run ci` is a parallel worker pool (`scripts/ci-runner/run.ts`), not a shell chain. It used to be a 93-step `&&` string measured at 1041.6 s serial, and that shape cost both time and signal: `&&` stops at the first red, so one failure hid every other one, and `check:ci-quality-gates` was 443 s of the total as a single opaque unit.
+
+The gate set lives in `scripts/ci-runner/manifest.ts`, which is also the input to `npm run check:ci-parity`. Every individual `check:*` npm key still exists and still works on its own; the manifest schedules them.
+
+| Command | What it does |
+|---|---|
+| `npm run ci` | Full run at `availableParallelism() - 2` workers, keep-going |
+| `npm run ci:serial` | The same set at `--jobs 1`. Use this to decide whether a red is caused by parallelism |
+| `npm run ci:list` | Every gate id and the exact command it runs |
+| `npm run ci -- --only 'check:ci-embed-*'` | Run a subset. Glob or comma-separated ids |
+| `npm run ci -- --skip check:ci-renet` | Run everything except a subset |
+| `npm run ci -- --fail-fast` | Stop at the first failure. Off by default, see below |
+| `npm run ci -- --json` | Machine-readable document on stdout, human stream on stderr |
+| `npm run ci -- --jobs N` | Override the worker budget (`CI_JOBS=N` also works) |
+| `npm run ci -- --verbose` | Also print a line when each gate starts. Worth it at `--jobs 1`, where a five-minute gate is otherwise indistinguishable from a hang |
+
+**Keep-going is the default, deliberately.** CI made the same call: every quality step carries `!cancelled()` so one push surfaces every failure in the lane. With keep-going, N independent failures cost one run; with `--fail-fast` they cost N runs. Use `--fail-fast` only in a tight edit loop where the first red is the only one you care about.
+
+**Failure output.** A passing gate prints one line. A failing gate prints, streamed the moment it fails rather than held to the end:
+
+```
+FAIL  check:ci-foo                           12.4s   exit 1
+  rerun: npm run check:ci-foo
+  --- stdout ---
+<complete captured stdout, unmodified and untruncated>
+  --- stderr ---
+<complete captured stderr, unmodified and untruncated>
+```
+
+stdout and stderr are captured separately and never merged, because merging hides progress-text-on-stdout and swallowed-output defects. `--merge-output` is the opt-in for a gate whose interleaving matters. The footer repeats every failure with a single copy-pasteable rerun line.
+
+**`--changed` is a convenience, never a verdict.** It selects gates whose declared `paths` intersect the diff against the merge base. A gate with no declared `paths` is always selected, which is the safe direction. Any selection flag marks the run `PARTIAL` in the header, in the footer, and as `partial: true` in `--json`. A partial run that reports green has not validated the tree.
+
+**Ordering and isolation.** Gates declare `needs` (ordering) and `mutex` (shared mutable resources: the per-package dist trees, `private/renet/bin`, the account vitest state, `packages/www/dist`). A gate whose dependency failed is reported `SKIP`, never as passed, and a skip still makes the run exit 1. If a gate passes at `--jobs 1` and fails under load, the fix is a new `mutex` group naming the resource, never a retry.
+
+`.ci/cache/gate-durations.json` (gitignored) records per-gate timings so the pool starts the longest gates first. Deleting it is harmless.
+
+`npm run ci` runs `--selftest` first: a synthetic failing gate that must produce exit 1, both captured streams, and a skipped dependent. If it prints `CONTROL FAILED`, the runner's green means nothing and nothing else should be trusted until it is fixed.
 
 ### Quick fixes for common failures
 

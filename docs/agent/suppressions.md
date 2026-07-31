@@ -18,7 +18,7 @@ Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists)
 | GitHub Actions upgrade blocklist | `.actions-upgrade-blocklist` | `scripts/check-actions.ts` |
 | Breakpoint drift acceptance | `.ci/breakpoint/.breakpoint-drift-accept` | `.ci/breakpoint/scripts/check-breakpoint-drift.sh` |
 | Dead-bash discovery allowlist | `.dead-bash-allowlist` | `scripts/check-dead-bash.ts` |
-| CI-chain parity exemptions | `.ci-chain-exempt` | `scripts/check-ci-chain-parity.ts` |
+| CI parity exemptions (direction-tagged) | `.ci-parity-exempt` | `scripts/check-ci-parity.ts` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
 | knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
 
@@ -35,6 +35,20 @@ A blank line resets the tracked BLOCKER, so a single BLOCKER covers a grouped li
 ```
 package-name  # BLOCKER: <reason>
 ```
+
+**Direction-tagged** (`.ci-parity-exempt`), because parity is a two-way relation
+and the two directions need different justifications:
+```
+# BLOCKER: <reason>
+ci-only  .ci/scripts/quality/check-branch.sh
+```
+`ci-only` means CI runs it and the local gate set deliberately does not;
+`local-only` is the reverse. The liveness oracle differs per direction, so the
+tag is load-bearing rather than documentation: a `ci-only` entry is live while
+some workflow still invokes it, and a `local-only` entry is live while the local
+gate set still runs it. The shared parser takes the first whitespace-separated
+token, so `scripts/check-ci-parity.ts` and the liveness probe both split the
+second column off explicitly.
 
 **JSONC files** (knip.jsonc) use real `// BLOCKER: <reason>` comments with the same
 group semantics as shell files: one BLOCKER covers the entries after it until a blank
@@ -74,7 +88,7 @@ with the *oracle* that decides whether an entry is load-bearing:
 | `.actions-upgrade-blocklist` | action has a `uses:` under `.github` | fail |
 | `package.json` `overrides` | key resolves to a `package-lock.json` node | **warn only** |
 | `.dead-bash-allowlist` | glob root exists / dispatch prefix matches a function / manual file exists | fail |
-| `.ci-chain-exempt` | the exempted gate is still invoked by some workflow | fail |
+| `.ci-parity-exempt` | a `ci-only` entry is still invoked by some workflow | fail |
 | `.audit-*` | advisory present in `npm audit` | fail — owned by `audit.sh` |
 | `knip.jsonc` | — | knip self-detects via `--treat-config-hints-as-errors` |
 
