@@ -434,6 +434,105 @@ def cimark_path(worklist, session_id):
     return worklist.with_suffix(".cimark-%s" % (session_id or "unknown")[:8])
 
 
+# ---- v13: CI-queue-aware backpressure ---------------------------------------
+# OPERATOR (2026-07-31): "CI side has stuck because of many commits. They're in
+# the queue. For that situation stop hook should be smart to avoid pushing the
+# system in such cases... there could be possibility that allow us to work
+# locally until we see CI result to save time." Observed live the same night:
+# a Console CI run sat status=pending for 25+ minutes because pushes had queued
+# runs behind each other; every further push made the jam strictly worse while
+# buying nothing, since only the newest head's result matters.
+CI_QUEUE_MIN = int(os.environ.get("WORKLIST_CI_QUEUE_MIN", "10"))
+CI_QUEUE_DEPTH = int(os.environ.get("WORKLIST_CI_QUEUE_DEPTH", "2"))
+CI_QUEUE_CACHE_S = int(os.environ.get("WORKLIST_CI_QUEUE_CACHE_S", "180"))
+_QUEUED_STATUSES = {"queued", "waiting", "pending", "requested"}
+
+
+def ciqueue_path(worklist, session_id):
+    return worklist.with_suffix(".ciqueue-%s" % (session_id or "unknown")[:8])
+
+
+def ci_queue_state(root, worklist, session_id):
+    """(state, detail) -- is the publish ref's CI queue saturated?
+
+    state: unset | clear | saturated | unknown. `detail` for saturated is
+    {"ref", "queued", "newest_age_min"}.
+
+    Reads `actions/runs?branch=` rather than the head-commit rollup ON PURPOSE:
+    the observed failure is OLDER runs jamming the queue behind the newest
+    push, and the rollup only sees the head. Saturated iff the newest run has
+    sat in a queued-family status for CI_QUEUE_MIN minutes, or CI_QUEUE_DEPTH
+    or more runs are queued at once. A newest run that is in_progress with an
+    empty queue is `clear`: a result is coming, normal discipline stands.
+
+    FAILURE MODE IS A DELIBERATE INVERSION of the blocks-when-blind rule that
+    governs the other CI checks. This check only ever GRANTS slack (permission
+    to hold pushes), so blindness must fail toward pressure: gh broken, slug
+    underivable, or non-JSON all return `unknown`, which callers treat exactly
+    like today's behavior -- no note, no relaxation. A blind slack-granter
+    would be an escape hatch. `unknown` is cached too, so a broken gh costs
+    one call per TTL, not one per stop.
+    """
+    ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
+    if not ref:
+        return "unset", None
+    cache_p = ciqueue_path(worklist, session_id)
+    try:
+        c = json.loads(cache_p.read_text(encoding="utf-8"))
+        if time.time() - (c.get("at") or 0) <= CI_QUEUE_CACHE_S:
+            return c.get("state") or "unknown", c.get("detail")
+    except (OSError, ValueError, TypeError):
+        pass
+    owner, name = repo_slug(root)
+    state, detail = "unknown", None
+    if owner:
+        data, err = _gh_json(
+            root,
+            ["api", "repos/%s/%s/actions/runs?branch=%s&per_page=10" % (owner, name, ref)],
+            timeout=20,
+        )
+        runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
+        if isinstance(runs, list):
+            queued, newest_age = 0, None
+            for i, r in enumerate(runs):
+                status = (r.get("status") or "").lower()
+                if status in _QUEUED_STATUSES:
+                    queued += 1
+                if i == 0:
+                    try:
+                        created = datetime.datetime.fromisoformat(
+                            (r.get("created_at") or "").replace("Z", "+00:00")
+                        )
+                        age = (
+                            datetime.datetime.now(datetime.timezone.utc) - created
+                        ).total_seconds() / 60.0
+                    except ValueError:
+                        age = None
+                    if status in _QUEUED_STATUSES:
+                        newest_age = age
+            if not runs:
+                state = "clear"
+            elif (newest_age is not None and newest_age >= CI_QUEUE_MIN) or (
+                queued >= CI_QUEUE_DEPTH
+            ):
+                state = "saturated"
+                detail = {
+                    "ref": ref,
+                    "queued": queued,
+                    "newest_age_min": int(newest_age or 0),
+                }
+            else:
+                state = "clear"
+    try:
+        cache_p.write_text(
+            json.dumps({"at": time.time(), "state": state, "detail": detail}),
+            encoding="utf-8",
+        )
+    except (OSError, TypeError):
+        pass
+    return state, detail
+
+
 def ci_trouble(root, worklist, session_id, live_bg, ack_text):
     """(state, detail) -- is the open PR in trouble nobody is on?
 

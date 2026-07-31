@@ -548,6 +548,34 @@ R_BLOCK = (
     "fixes it."
 )
 
+# ---- v13: the focused block (operator, 2026-07-31: "single and focused
+# message at a time... 1-2 sentence each time"). One rotating check per stop;
+# the others are a bare count. ALWAYS-tier texts (latched one-shots and hook
+# integrity) still ride in full when present, because hiding a latched message
+# swallows it forever. R_BLOCK stays verbatim for WORKLIST_FOCUS=off.
+
+R_BLOCK_FOCUS = (
+    "Do not stop yet.\n\n%s\n\n"
+    "(%s. Fix THIS, then stop. A check that fires wrongly is a bug in %s; "
+    "you are the session that fixes it.)"
+)
+
+R_FOCUS_MORE = "%d more check(s) outstanding; the next stop surfaces the next one, rotation forgets nothing"
+
+R_FOCUS_ONLY = "no other checks are outstanding"
+
+N_CI_QUEUE = (
+    "CI QUEUE IS SATURATED on %s: %d queued run(s), newest queued %d min. "
+    "DO NOT PUSH and do not start another CI watch this turn: a push now "
+    "queues one more full run behind the jam and buys nothing. Commit "
+    "locally and work the backlog; push once a result arrives. This note "
+    "lifts itself when the queue drains.%s"
+)
+
+N_CI_QUEUE_PR_STALE_LINE = (
+    " (Also: the PR body is stale; fold the refresh into that next push.)"
+)
+
 R_JUDGE_UNAVAILABLE = (
     "The stop-gate judge could not answer: %s\n\n"
     "This is a BUG in the gate, and blocking is deliberate: a judge that "
