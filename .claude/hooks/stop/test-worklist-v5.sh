@@ -26,6 +26,11 @@ setup() {
     # later case write mail into a stale directory, and a stray WORKLIST_SES_ENV
     # pointing at a deleted fixture would silently turn the channel off.
     unset WORKLIST_SES_ENV WORKLIST_EMAIL_TRANSPORT WORKLIST_EMAIL
+    # The output-queue knobs, reset for the same reason: a leaked
+    # WORKLIST_REPORT_PER_STOP would change how many report sections a later
+    # case sees and turn a real regression into a green run. Cases that need a
+    # wider drain export it AFTER their setup call.
+    unset WORKLIST_REPORT_PER_STOP WORKLIST_OUTQ_MAX
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
     # where 30 cases came back with empty output and read as failures.
@@ -1347,11 +1352,17 @@ check "someone else's request does not block a bystander" allow ""
 
 echo "== 67. CONTROL: my own OPEN request never blocks me, and is reported =="
 setup
+# The fixture produces TWO class-2 sections (this other session's brief and
+# the open request), and the output queue releases one per stop by default.
+# This case is about the request being reported at all, not about rationing,
+# so it drains wide; cases 173 to 177 own the rationing behaviour.
+export WORKLIST_REPORT_PER_STOP=9
 say "done for now"
 brief_now
 brief_other cafe1234
 askid deadbeef cafe1234 "please regenerate captions" >/dev/null
 check "the asker is never blocked on their own open request" allow "still OPEN"
+unset WORKLIST_REPORT_PER_STOP
 
 echo "== 68. answering releases the recipient =="
 setup
@@ -2031,6 +2042,9 @@ check "a session that never had a work cron is not nagged" allow ""
 
 echo "== 105. v9: waiting-cross-session with a VERIFIED open ask passes =="
 setup
+# Same two-class-2-sections shape as case 67: the brief and the open request
+# both queue, and one is released per stop by default.
+export WORKLIST_REPORT_PER_STOP=9
 brief_now
 hand_now
 brief_other cafe1234
@@ -2041,6 +2055,7 @@ say "answer
 ## Remaining
 | #7 | caption regen | waiting-cross-session #$XRID |"
 check "a verified open request IS the citation" allow "still OPEN"
+unset WORKLIST_REPORT_PER_STOP
 
 echo "== 106. and it exempts the task from I6 under a poll-only cron =="
 # The pair for case 92's poll-only block: same crons, but the wait is real
@@ -2316,6 +2331,9 @@ ARITY = {
     "V_LADDER_INVESTIGATE": ("rows", "facts", "m"),
     "V_LADDER_RESOLVE": ("rows", "facts", "m"),
     "N_LADDER_PING": ("rows", "m"),
+    "N_JUDGE_STAMP": ("m", "approved"),
+    "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
+    "N_OUTQ_MORE": (3,),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "CLI_ITEM_USAGE": None, "CLI_TICK_NO_EVIDENCE": ("id",),
@@ -3577,6 +3595,11 @@ checkj "ticking the reopened item with evidence reaches an allowed stop" allow "
 
 echo "== 151. a VALID audit verdict is banked; an untouched item is asked once =="
 setup
+# The [?] item is also an operator-only mail candidate, so the unconfigured
+# email channel queues a class-1 note ahead of the audit note. Both are
+# one-shots and neither is lost; this case asserts the audit note is produced,
+# so it drains wide rather than waiting a stop for its turn.
+export WORKLIST_REPORT_PER_STOP=9
 brief_now
 hand_now
 OLD=$(date -u -d '-60 minutes' +%Y-%m-%dT%H:%M:%SZ)
@@ -5451,6 +5474,11 @@ echo "== 172. allow-report diet: guide is the single source, advisories latch ==
 # every full stop. Now the guide says it once, and slow-moving sections
 # re-show only on content change or after the refresh window.
 setup
+# The default two-cron shape also produces a poll-backoff tip, which is
+# another class-2 section and would take the single per-stop slot. The latch
+# is what this case is about, so it drains wide and cases 173 to 177 own the
+# per-stop rationing.
+export WORKLIST_REPORT_PER_STOP=9
 brief_now
 hand_now
 IID=$(reqcli --add deadbeef "carry the CI watch to green" | grep -oE '#[0-9a-f]+' | tr -d '#')
@@ -5500,6 +5528,283 @@ else
     fail "172 CONTROL: the latch muted a real change: ${OUT:0:400}"
 fi
 BG='[]'
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 173. one report section per stop; the rest queue and SAY SO =="
+# Operator, 2026-07-31: the allow report still emitted every fired section at
+# once. It now releases WORKLIST_REPORT_PER_STOP of them, highest priority
+# first, and the tail states how many are waiting -- a silent cap reads as
+# "that is everything", the same argument the guide's own truncation carries.
+outq_fixture() { # four class-2 sections firing on one stop
+    say "done for now"
+    brief_now
+    hand_now
+    brief_other cafe1234
+    # An orphan needs a dead owner: a transcript for cafe1234 older than
+    # WORKLIST_DEAD_HOURS but younger than WORKLIST_ARCHIVE_HOURS.
+    touch -d '-48 hours' "$BASE/cafe1234.jsonl"
+    echo '- [ ] (cafe1234) their abandoned item' >>"$WL"
+}
+outq_seen() { # count the four section headers present in $1
+    local out="$1" n=0 needle
+    for needle in "INBOX HAS BEEN QUIET" "Other sessions in this worktree" \
+        "ORPHANED item(s)" "nothing open for this session"; do
+        grep -qF "$needle" <<<"$out" && n=$((n + 1))
+    done
+    echo "$n"
+}
+setup
+outq_fixture
+OUT="$(run)"
+# FOUR, not three: an orphaned item is by construction another session's OPEN
+# item, so it always drags the other-session count along with it.
+if [[ "$(outq_seen "$OUT")" -eq 1 ]] && grep -qF "WORKLIST GUIDE" <<<"$OUT" &&
+    grep -qF "(3 more report section(s) queued" <<<"$OUT"; then
+    pass "173: exactly one of four sections is released, and the tail counts the rest"
+else
+    fail "173: released $(outq_seen "$OUT") section(s), or the queued count is wrong: ${OUT:0:400}"
+fi
+# CONTROL: one planted fact differs, the per-stop budget. All four land and
+# nothing claims a queue, so the cap is the only thing the FIRE leg measured.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+outq_fixture
+OUT="$(run)"
+if [[ "$(outq_seen "$OUT")" -eq 4 ]] && ! grep -qF "more report section(s) queued" <<<"$OUT"; then
+    pass "173 CONTROL: a wide drain emits all four and claims no queue"
+else
+    fail "173 CONTROL: released $(outq_seen "$OUT") of 4: ${OUT:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 174. FIFO inside a priority class; changed content goes to the BACK =="
+# All four sections above are class 2, so nothing outranks anything here and
+# the only thing deciding the order is the sequence number each entry earned
+# when it was first queued.
+outq_fill() { # queue the four, one stop at a time, emitting nothing
+    export WORKLIST_REPORT_PER_STOP=0
+    say "done for now"
+    brief_now
+    hand_now
+    run >/dev/null # the poll-backoff tip is alone on this stop
+    brief_other cafe1234
+    newturn
+    say "done for now"
+    run >/dev/null # the other session's brief joins it
+    touch -d '-48 hours' "$BASE/cafe1234.jsonl"
+    echo '- [ ] (cafe1234) their abandoned item' >>"$WL"
+    newturn
+    say "done for now"
+    run >/dev/null # the orphan and its item count join
+}
+outq_order() { # drain four stops at one section each, printing the order
+    export WORKLIST_REPORT_PER_STOP=1
+    local order="" out
+    for _ in 1 2 3 4; do
+        newturn
+        say "done for now"
+        out="$(run)"
+        grep -qF "INBOX HAS BEEN QUIET" <<<"$out" && order="$order backoff"
+        grep -qF "Other sessions in this worktree" <<<"$out" && order="$order others"
+        grep -qF "ORPHANED item(s)" <<<"$out" && order="$order orphans"
+        grep -qF "nothing open for this session" <<<"$out" && order="$order items"
+    done
+    echo "$order"
+}
+setup
+outq_fill
+GOT="$(outq_order)"
+if [[ "$GOT" == " backoff others orphans items" ]]; then
+    pass "174: one priority class drains in the order it was enqueued"
+else
+    fail "174: drain order was '$GOT'"
+fi
+# CONTROL: the operator's "changed content re-enqueues at its priority",
+# proven rather than asserted. Touch the SECOND section's body and it loses
+# the position it had earned instead of keeping it.
+setup
+outq_fill
+printf '%s %s %s\n' "cafe1234" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "pivoted to the deploy fix" >>"${WL%.md}.sessions"
+newturn
+say "done for now"
+run >/dev/null
+GOT="$(outq_order)"
+if [[ "$GOT" == " backoff orphans items others" ]]; then
+    pass "174 CONTROL: a changed section goes to the back of its own class"
+else
+    fail "174 CONTROL: drain order was '$GOT'"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 175. priority beats FIFO: an actionable CI note passes an older advisory =="
+# PLANTED DEFECT, run 2026-07-31: outq_drain's sort key was changed from
+# (prio, seq) to (seq,). Both legs failed, the first with
+#   FAIL: 175: priority did not beat FIFO: {"systemMessage": "WORKLIST GUIDE:
+#   ... \n\nWorklist: nothing open for this session.\n  1 open item(s) owned
+#   by session cafe1234\n\n(1 more report section(s) queued; ...
+# which is the inversion exactly: the older class-2 advisory took the slot and
+# the CI note was the one left queued. 173 and 174 stayed green throughout. A
+# priority ladder nobody has watched invert is a ladder nobody knows is wired
+# up.
+ci_setup
+# The older advisory is another session's item count, NOT its brief:
+# ci_trouble returns "multi-session" the moment a second brief is live, and a
+# fixture that quietly switches off the check it is racing proves nothing.
+echo '- [ ] (cafe1234) their abandoned item' >>"$WL"
+export WORKLIST_REPORT_PER_STOP=0
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+ci_run >/dev/null # the class-2 advisory is queued first, and waits
+export WORKLIST_REPORT_PER_STOP=1
+ci_rollup PENDING "[$(ci_job "E2E / opensuse" FAILURE), $(ci_running "E2E / ubuntu")]"
+out="$(ci_run)"
+if grep -qF "retry allowlist" <<<"$out" && ! grep -qF "nothing open for this session" <<<"$out"; then
+    pass "175: the class-0 CI note is released ahead of the older class-2 advisory"
+else
+    fail "175: priority did not beat FIFO: ${out:0:400}"
+fi
+# CONTROL: with the run green there is no class-0 section, and the advisory
+# that was passed over is released on the very next stop. It is also what
+# makes the leg above non-vacuous: the section really was queued and waiting.
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+out="$(ci_run)"
+if grep -qF "nothing open for this session" <<<"$out"; then
+    pass "175 CONTROL: the passed-over advisory drains once nothing outranks it"
+else
+    fail "175 CONTROL: the advisory was lost, not delayed: ${out:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 176. a ONE-SHOT is never dropped, only delayed =="
+# The property that decides the whole design, so the fixture is built to make
+# the one-shot LOSE its first stop. wl_email.pump spends its budget at compute
+# time: it appends the ledger and sends. Nothing can regenerate that note, so
+# a report with no room for it has to keep it.
+#
+# PLANTED DEFECT, run 2026-07-31: outq_drain's per-entry removal was replaced
+# with `q["items"][:] = []` (a plausible "reset the queue after draining"
+# bug). Leg 2 failed with
+#   FAIL: 176: the one-shot was DROPPED, not delayed (mail=1):
+#   {"systemMessage": "WORKLIST GUIDE: ... \n\nRequests you posted, still
+#   OPEN (they block their recipients, never you): ...
+# The digest note was gone for good and a class-2 advisory took its place,
+# while the mail count proves no second send could ever bring it back. 173
+# also went red on that run (its queued count read 0 instead of 3), but only
+# this case says what was LOST rather than that a number was wrong.
+ci_setup
+mail_fixture
+export WORKLIST_REPORT_PER_STOP=1
+askid deadbeef operator 'which tier map? DEFAULT: ship the draft map' >/dev/null
+ci_rollup PENDING "[$(ci_job "E2E / opensuse" FAILURE), $(ci_running "E2E / ubuntu")]"
+out="$(ci_run)"
+if grep -qF "retry allowlist" <<<"$out" && ! grep -qF "OPERATOR EMAILED" <<<"$out" &&
+    [[ "$(mailcount)" == "1" ]]; then
+    pass "176: the class-0 CI note takes stop 1 although the digest has already gone"
+else
+    fail "176: leg 1 shape wrong (mail=$(mailcount)): ${out:0:400}"
+fi
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+out="$(ci_run)"
+# The mail count is the proof: pump() sends nothing on this stop, because its
+# ledger already holds the digest, so the text can only have come from the
+# queue.
+if grep -qF "OPERATOR EMAILED" <<<"$out" && [[ "$(mailcount)" == "1" ]]; then
+    pass "176: the send note arrives on stop 2 from the queue, with no second send"
+else
+    fail "176: the one-shot was DROPPED, not delayed (mail=$(mailcount)): ${out:0:400}"
+fi
+out="$(ci_run)"
+out="$(ci_run)"
+if ! grep -qF "more report section(s) queued" <<<"$out"; then
+    pass "176: the queue empties instead of holding drained entries forever"
+else
+    fail "176: entries still queued after every section was released: ${out:0:400}"
+fi
+# CONTROL: the same fixture with no CI trouble at all. The digest note lands
+# on stop 1, which is what makes stop 2 above a DELAY rather than the normal
+# path.
+ci_setup
+mail_fixture
+askid deadbeef operator 'which tier map? DEFAULT: ship the draft map' >/dev/null
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+out="$(ci_run)"
+if grep -qF "OPERATOR EMAILED" <<<"$out"; then
+    pass "176 CONTROL: with nothing outranking it the digest note lands on stop 1"
+else
+    fail "176 CONTROL: the note did not land unopposed either: ${out:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 177. the judge line is a STAMP unless the context is fresh or the reason changed =="
+# Operator, 2026-07-31: the approval reason was reprinted on every stop. It
+# now rides a stop whose context was just rebuilt (SessionStart, PostCompact)
+# or whose reason genuinely changed, and every other stop gets the bare stamp.
+# The verdict cache is pinned OFF so every stop pays a fresh call: a cached
+# verdict would make the cache, not the signature latch, the thing under test.
+ctx_event() { # drive a context-rebuilding hook mode: ctx_event --session-start
+    printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+            WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" "$1" >/dev/null 2>&1
+}
+judge_turn() { # a fresh turn whose message satisfies the Remaining demand
+    newturn
+    say "answer
+
+## Remaining
+| #7 | merge the chain | pending, you |"
+}
+setup
+export WORKLIST_JUDGE_CACHE_MIN=0
+# Six stops on an unchanged world would otherwise trip stuck detection, which
+# has nothing to do with what this case measures.
+export WORKLIST_STUCK_ROUNDS=99
+brief_now
+hand_now
+task 7 pending "merge the chain"
+judge_turn
+shim_judge_out '{"verdict":"stop","reason":"MARKER_REASON_ONE waiting on the run","next_action":"none"}'
+ctx_event --session-start
+out="$(runj)"
+if grep -qF "MARKER_REASON_ONE" <<<"$out"; then
+    pass "177: a context-fresh session gets the judge's full approval reason"
+else
+    fail "177: the fresh-context reason was withheld: ${out:0:400}"
+fi
+judge_turn
+out="$(runj)"
+if grep -qF "Stop-gate judge" <<<"$out" && ! grep -qF "MARKER_REASON_ONE" <<<"$out"; then
+    pass "177 CONTROL: an ordinary stop gets the stamp alone"
+else
+    fail "177 CONTROL: the reason was reprinted on an ordinary stop: ${out:0:400}"
+fi
+# PostCompact is the case the marker is load-bearing for: the state doc
+# SURVIVES a compaction, so the reason signature still matches and only the
+# marker can bring the full statement back.
+ctx_event --post-compact
+judge_turn
+out="$(runj)"
+if grep -qF "MARKER_REASON_ONE" <<<"$out"; then
+    pass "177: PostCompact restores the full reason on the next judged stop"
+else
+    fail "177: a compacted session got the bare stamp: ${out:0:400}"
+fi
+# The signature arm on its own: no marker anywhere, but a genuinely different
+# reason still fires, and a repeat of it does not.
+shim_judge_out '{"verdict":"stop","reason":"MARKER_REASON_TWO the gate changed","next_action":"none"}'
+judge_turn
+out="$(runj)"
+if grep -qF "MARKER_REASON_TWO" <<<"$out"; then
+    pass "177: a changed reason fires with no context marker at all"
+else
+    fail "177: a new reason was swallowed by the latch: ${out:0:400}"
+fi
+judge_turn
+out="$(runj)"
+if grep -qF "Stop-gate judge" <<<"$out" && ! grep -qF "MARKER_REASON_TWO" <<<"$out"; then
+    pass "177: and repeating that reason drops back to the stamp"
+else
+    fail "177: the changed reason kept reprinting: ${out:0:400}"
+fi
+unset WORKLIST_JUDGE_CACHE_MIN WORKLIST_STUCK_ROUNDS
 
 echo
 echo "  passed=$PASS failed=$FAIL"
