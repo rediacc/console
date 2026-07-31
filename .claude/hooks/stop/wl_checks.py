@@ -429,6 +429,35 @@ def completion_evidence(root, text):
     return False
 
 
+# v16: an issue reference is a URL, and completion_evidence passes on ANY URL
+# by shape, so `--tick <me> <id> 'filed as .../issues/560'` closed a finding.
+# That is the loophole the fix-in-session rule outlaws: filing settles nothing
+# unless one of the three last-resort doors applies, and the tick has to say
+# WHICH. Shape-only, the same division of labor as the WHY/HOW gate: whether
+# the named door is TRUE is the judge's question, and every new tick already
+# flows into the reggate/judge path.
+ISSUE_REF_RE = re.compile(
+    r"\S*github\.com/\S+/issues/\d+\S*|\bissues?\s+#\d+", re.I
+)
+DOOR_RE = re.compile(r"door:(operator-only|operator-deferred|no-write-access)")
+
+
+def issue_only_evidence(root, text):
+    """True iff the evidence is ONLY an issue reference.
+
+    Three conditions, all required: an issue reference is present, no door is
+    named, and the text with issue references stripped carries no other
+    evidence shape. So a tick that ALSO cites the fix (a real sha, an exit
+    code, a run URL, a resolving file:line) passes, and only "I filed it"
+    is refused.
+    """
+    if not ISSUE_REF_RE.search(text):
+        return False
+    if DOOR_RE.search(text):
+        return False
+    return not completion_evidence(root, ISSUE_REF_RE.sub(" ", text))
+
+
 def deferral_is_justified(rec):
     """Does this [?] carry a usable WHY and HOW (event field or inline
     tokens)? The shape test only; whether the justification is TRUE is the
@@ -538,6 +567,139 @@ def docs_drift(root):
     n = C._git(root, "rev-list", "--count", "%s..HEAD" % base, "--", *PROGRAM_SURFACE)
     drift = int(n) if n.isdigit() else 0
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
+
+
+# ---- v16: the plan-file convention (docs/agent/<branch>/PLAN-<slug>.md) -----
+#
+# A plan is the DURABLE design record: committed with its branch, so it
+# survives compaction and a lost machine. That is what distinguishes it from
+# the gitignored .agent/<branch>/ tree, whose STATE.md is the volatile cursor.
+# Plans are historical once executed, so only draft/executing/UNKNOWN ones are
+# surfaced; done and superseded appear as a count. An unparseable Status line
+# reads as UNKNOWN and is shown LOUDLY, per the V_PR_UNREADABLE convention
+# that a check which cannot read must say so rather than pass quietly.
+#
+# Cost: SessionStart and PostCompact only. The Stop battery and the poll fast
+# path never read plan files; the guide's single os.path.exists probe per
+# TRIAGED item is the only plan-related work on the stop path.
+
+PLAN_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)\s*$", re.M)
+PLAN_HEADER_LINES = 10
+PLAN_DONE_STATES = ("done", "superseded")
+PLAN_EXCERPT_CHARS = 1500
+
+
+def plan_dir(root, branch):
+    return pathlib.Path(root) / "docs" / "agent" / (branch or "")
+
+
+def plan_records(root, branch):
+    """[(relpath, status, lines)] for docs/agent/<branch>/PLAN-*.md.
+
+    status is the parsed value lowercased, or 'UNKNOWN' when no Status line
+    sits in the first PLAN_HEADER_LINES lines. Newest mtime first. Empty list
+    when the branch or the directory is absent, so callers never have to know
+    whether this project uses the convention.
+    """
+    if not branch:
+        return []
+    d = plan_dir(root, branch)
+    if not d.is_dir():
+        return []
+    rows = []
+    for f in sorted(d.glob("PLAN-*.md")):
+        try:
+            text = f.read_text(encoding="utf-8", errors="replace")
+            mtime = f.stat().st_mtime
+        except OSError:
+            continue
+        lines = text.splitlines()
+        m = PLAN_STATUS_RE.search("\n".join(lines[:PLAN_HEADER_LINES]))
+        status = m.group(1).lower() if m else "UNKNOWN"
+        try:
+            rel = str(f.relative_to(root))
+        except ValueError:
+            rel = str(f)
+        rows.append((rel, status, len(lines), mtime))
+    rows.sort(key=lambda r: -r[3])
+    return [(rel, status, n) for rel, status, n, _mt in rows]
+
+
+def plans_block(root, branch):
+    """(listing, live_records): the non-done plans, one line each, plus one
+    count line for the executed ones. ("", []) when there is nothing to say,
+    so a project without plans emits no block at all."""
+    recs = plan_records(root, branch)
+    live = [r for r in recs if r[1] not in PLAN_DONE_STATES]
+    if not live:
+        return "", []
+    lines = ["  %s [%s] (%d lines)" % (rel, status, n) for rel, status, n in live]
+    done = len(recs) - len(live)
+    if done:
+        lines.append(
+            "  (+%d done or superseded plan(s) in the same directory: historical "
+            "record, read one only if you need the reasoning behind it)" % done
+        )
+    return "\n".join(lines), live
+
+
+def plan_status_excerpt(root, live):
+    """(relpath, body) of the newest non-done plan's '## Status' section,
+    capped. ("", "") when there is none, which is the honest answer for a
+    draft that has not been taken over yet."""
+    if not live:
+        return "", ""
+    rel = live[0][0]
+    try:
+        text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return rel, ""
+    for chunk in text.split("\n## ")[1:]:
+        title, _nl, body = chunk.partition("\n")
+        if title.strip().lower() == "status":
+            return rel, body.strip()[:PLAN_EXCERPT_CHARS]
+    return rel, ""
+
+
+def triage_context(root, worklist, session_id=""):
+    """The facts the CLI can honestly gather about a finding's blast radius.
+
+    Passed to the triage judge AND printed in degraded mode, so the session
+    self-assesses on exactly the same facts the model would have seen.
+    `git status --porcelain` is the load-bearing one: it names the files this
+    session already has in flight, which is what makes "is the fix's file set
+    disjoint" an answerable question rather than a guess.
+    """
+    branch = C.git_branch(root)
+    d = plan_dir(root, branch)
+    recs = plan_records(root, branch)
+    if not branch:
+        plans = "no branch resolvable, so there is no plan directory to use"
+    elif not d.is_dir():
+        plans = "%s does not exist yet (creating it is part of writing a plan)" % d
+    else:
+        plans = "%s exists, %d plan file(s)" % (d, len(recs))
+    status = C._git(root, "status", "--porcelain") or ""
+    rows = [ln for ln in status.splitlines() if ln.strip()][:40]
+    files = "\n".join("    " + ln for ln in rows) or "    (working tree clean)"
+    try:
+        fold = S.load(worklist, sync=False)
+        open_n = sum(
+            1 for r in fold.items
+            if r["state"] in (" ", ">", "?")
+            and (not session_id or C.owned_by_me(r["owner"], session_id))
+        )
+        opens = "%d" % open_n
+    except Exception:  # noqa: BLE001 -- a context fact must never break the verb
+        opens = "unknown (the store could not be read)"
+    return (
+        "  branch: %s\n"
+        "  plan directory: %s\n"
+        "  files this session already has in flight (git status --porcelain, "
+        "first 40):\n%s\n"
+        "  open items this session is already tracking: %s"
+        % (branch or "(none)", plans, files, opens)
+    )
 
 
 def xsession_ok(line, reqs, session_id):
@@ -712,8 +874,35 @@ def poll_fast_path(worklist, session_id, event):
 GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
 GUIDE_TEXT_CHARS = 90
 
+# The allow-report diet (operator, 2026-07-31: "Why I see such a big
+# output?"). Slow-moving advisory sections re-show only when their content
+# changes or after this many minutes, whichever comes first.
+REPORT_REFRESH_MIN = int(os.environ.get("WORKLIST_REPORT_REFRESH_MIN", "360"))
+BACKOFF_NOTE_MIN = int(os.environ.get("WORKLIST_BACKOFF_NOTE_MIN", "60"))
 
-def guided_slice(fold, session_id, verdicts=None, me=None):
+
+def _report_latch(state_doc, key, content, min_min=None, on_change=True):
+    """True when a slow-moving advisory section should appear on this stop.
+
+    The allow report used to repeat week-stable sections (other sessions'
+    briefs, orphaned items) on every full stop until they were noise the
+    reader had learned to skip. Now each shows when its content CHANGES or
+    when the refresh window lapses. on_change=False rate-limits purely by
+    time, for advice whose wording shifts every stop (the poll-backoff tip
+    carries a live minute counter, so a content hash would re-fire always).
+    Mutates the state doc; run_stop saves it before emitting."""
+    window = REPORT_REFRESH_MIN if min_min is None else min_min
+    doc = state_doc.setdefault("report_seen", {})
+    prev = doc.get(key) or {}
+    sig = hashlib.sha1(content.encode("utf-8", "replace")).hexdigest()[:12]
+    age = C.stamp_age_min(prev.get("at", ""))
+    if (on_change and sig != prev.get("sig")) or age is None or age >= window:
+        doc[key] = {"sig": sig, "at": C.stamp_now()}
+        return True
+    return False
+
+
+def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
     """The bounded, guided, store-derived instruction block.
 
     One line per actionable item: state, #id, age from the store's own
@@ -723,6 +912,14 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
     by priority (obligations first) so truncation drops the least urgent.
     `verdicts` (from wl_liveness.verify_background) annotates lease workers
     when the caller has an event to verify against; the CLI does not.
+
+    v16 FOLLOW-THROUGH: an item triaged 'plan-subagent' whose recorded plan
+    file is NOT on disk is promoted to priority 0 with the demand to write
+    it, and one whose plan EXISTS advertises the path. This is one
+    os.path.exists per triaged item, bounded by the fold, and it is
+    report-only: a guide line, never a new block, so the stop path stays
+    cheap and the guide's no-new-block invariant holds. `root` is passed by
+    both callers; None derives it, which the direct-library callers rely on.
     """
     me_arg = (me or "<me>")[:8] if me else "<me>"
     verdicts = verdicts or {}
@@ -737,6 +934,20 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
         upd = C.stamp_age_min(rec.get("upd", ""))
         age = "?" if upd is None else "%dm" % upd
         rid = rec["id"]
+        tri = rec.get("triage") or {}
+        plan = tri.get("plan", "") if tri.get("v") == "plan-subagent" else ""
+        if plan and st in (" ", ">"):
+            if root is None:
+                root = C.project_root(
+                    os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+                )
+            if not os.path.exists(os.path.join(root, plan)):
+                rows.append((0, "  - [%s] #%s (upd %s) %s\n        TRIAGED BIG, plan file missing: %s\n        NEXT: write the plan (Plan agent) or re-triage: --triage %s --id %s <finding>"
+                             % (st, rid, age, txt, plan, me_arg, rid)))
+                continue
+        else:
+            plan = ""
+        before = len(rows)
         if st == " ":
             rows.append((0, "  - [ ] #%s (upd %s) %s\n        NEXT: do it, then --tick %s %s '<evidence>'"
                          % (rid, age, txt, me_arg, rid)))
@@ -764,6 +975,11 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
                 left = "?" if upd is None else "%dm" % max(0, S.DEFER_WINDOW_MIN - upd)
                 rows.append((4, "  - [?] #%s (age %s) %s\n        operator may answer; its DEFAULT executes in %s"
                              % (rid, age, txt, left)))
+        # The design EXISTS: advertise where it lives, so the guide points at
+        # the plan instead of leaving the next session to find it.
+        if plan and len(rows) > before:
+            prio, line = rows[-1]
+            rows[-1] = (prio, line + "\n        plan: %s" % plan)
     if not rows:
         return M.GUIDE_EMPTY
     rows.sort(key=lambda r: r[0])
@@ -777,33 +993,50 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
 # ---- SessionStart / PostCompact ---------------------------------------------
 
 def handle_session_start(event):
+    # TWO INDEPENDENT BLOCKS, and the structure is the point. This used to
+    # RETURN EARLY when the design-docs directory was absent, which meant a
+    # project keeping plans but no docs/ci-overhaul got nothing at all: the
+    # plans block would have been eaten by a check about a different thing.
+    # Each block is built on its own and the hook emits when EITHER has
+    # something to say.
     root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
     docs = pathlib.Path(root) / DESIGN_DOCS
-    if not docs.is_dir():
-        return
-    files = sorted(f for f in docs.iterdir() if f.is_file() and f.suffix == ".md")
-    listing = "\n".join(
-        "  %s (%d lines)"
-        % (f.relative_to(root), len(f.read_text(errors="replace").splitlines()))
-        for f in files
-    )
-    state, drift, _ = docs_drift(root)
-    stale = (
-        ""
-        if state != "drifted"
-        else M.CTX_SESSION_START_STALE % (drift, " ".join(PROGRAM_SURFACE))
-    )
-    C.emit(
-        {
-            "systemMessage": "SessionStart: %d design doc(s) in %s%s"
+    blocks, summary = [], []
+    if docs.is_dir():
+        files = sorted(f for f in docs.iterdir() if f.is_file() and f.suffix == ".md")
+        listing = "\n".join(
+            "  %s (%d lines)"
+            % (f.relative_to(root), len(f.read_text(errors="replace").splitlines()))
+            for f in files
+        )
+        state, drift, _ = docs_drift(root)
+        stale = (
+            ""
+            if state != "drifted"
+            else M.CTX_SESSION_START_STALE % (drift, " ".join(PROGRAM_SURFACE))
+        )
+        blocks.append(M.CTX_SESSION_START % (DESIGN_DOCS, listing, stale))
+        summary.append(
+            "%d design doc(s) in %s%s"
             % (
                 len(files),
                 DESIGN_DOCS,
                 "" if state != "drifted" else " (DRIFTED by %d commits)" % drift,
-            ),
+            )
+        )
+    branch = C.git_branch(root)
+    listing, live = plans_block(root, branch)
+    if listing:
+        blocks.append(M.CTX_PLANS % (branch, listing))
+        summary.append("%d open plan(s) in docs/agent/%s" % (len(live), branch))
+    if not blocks:
+        return
+    C.emit(
+        {
+            "systemMessage": "SessionStart: " + ", ".join(summary),
             "hookSpecificOutput": {
                 "hookEventName": "SessionStart",
-                "additionalContext": M.CTX_SESSION_START % (DESIGN_DOCS, listing, stale),
+                "additionalContext": "\n\n".join(blocks),
             },
         }
     )
@@ -842,6 +1075,18 @@ def handle_post_compact(event):
             msg = M.CTX_POSTCOMPACT_BRIEFING % (
                 DESIGN_DOCS, text.strip(), rules, S.agent_traps_path(root), traps_block
             )
+    # v16: the durable half of the briefing, appended to ALL THREE branches
+    # above. STATE.md says what is true right now and can be missing or
+    # stale; a plan file says what was DESIGNED and is committed, so it is
+    # the one artifact a compacted session can always fall back on. The
+    # newest non-done plan's '## Status' section rides along, capped, because
+    # that section is exactly the progress cursor the lost context held.
+    listing, live = plans_block(root, branch)
+    if listing:
+        msg += "\n\n" + M.CTX_PLANS % (branch, listing)
+        rel, body = plan_status_excerpt(root, live)
+        if body:
+            msg += "\n\n" + M.CTX_PLANS_EXCERPT % (rel, body)
     C.emit(
         {
             "systemMessage": "PostCompact: STATE.md %s (.agent/%s/STATE.md)"
@@ -1209,7 +1454,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # and block alike), so the session reports from the store, not memory.
     # Never breaks gating, and a broken guide SAYS SO rather than vanishing.
     try:
-        guide = guided_slice(fold, session_id, worker_verdicts, me8)
+        guide = guided_slice(fold, session_id, worker_verdicts, me8, root)
     except Exception as exc:  # noqa: BLE001
         guide = "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s" % (
             str(exc)[:160]
@@ -1238,6 +1483,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         violations.append((key, always, text))
 
     if bgwait_due:
+        # A silent stream alone cannot distinguish "stuck" from "a poll loop
+        # that prints only at the end", so OS-verify before accusing: a
+        # worker whose process is confirmed alive is reported in those
+        # words. Fired live 2026-07-31 on a healthy `until ... completed`
+        # CI watch, 29 minutes silent by design.
+        try:
+            _bg_verd = wl_liveness.verify_background(live_bg)
+        except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+            _bg_verd = {}
         _rows = []
         for tid, desc, age, size, stale in bg_facts:
             if age is None:
@@ -1246,10 +1500,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                     % (tid, desc)
                 )
             else:
+                if stale and _bg_verd.get(tid) == "confirmed":
+                    _suffix = ("  <- silent but its OS process is VERIFIED ALIVE"
+                               " (a loop that prints only at the end is healthy)")
+                elif stale:
+                    _suffix = "  <- POSSIBLY STUCK, investigate or restart"
+                else:
+                    _suffix = ""
                 _rows.append(
                     "    %s (%s): output last grew %dm ago, %d bytes%s"
-                    % (tid, desc, age, size,
-                       "  <- POSSIBLY STUCK, investigate or restart" if stale else "")
+                    % (tid, desc, age, size, _suffix)
                 )
         vadd("bg-report", True, M.V_BG_REPORT % (len(live_bg), "\n".join(_rows)))
     if stuck_fired and something_remains:
@@ -2139,12 +2399,14 @@ def run_stop(event, event_ok, worklist, hook_file):
     if judged_ok:
         # Never let a paid model call be invisible. A gate that spends money
         # without saying so is indistinguishable from one that is not running.
+        # One short line: the reason matters when the judge BLOCKS; on an
+        # approval it is confirmation, not reading material.
         parts.append(
-            "Stop-gate judge (%s) %s this stop: %s"
+            "Stop-gate judge (%s) %s: %s"
             % (
                 wl_judge.JUDGE_MODEL,
-                "approved (cached verdict, same world and message)" if judge_cached else "approved",
-                (verdict or {}).get("reason", "")[:200],
+                "approved (cached)" if judge_cached else "approved",
+                (verdict or {}).get("reason", "")[:120],
             )
         )
     if audit_note:
@@ -2173,41 +2435,25 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- an advisory note must never wedge a stop
         _quiet_min = 0
     backoff_tip = poll_backoff_tip(live_crons, _quiet_min, bool(req_to_me))
-    if backoff_tip:
+    if backoff_tip and _report_latch(state_doc, "backoff", backoff_tip,
+                                     min_min=BACKOFF_NOTE_MIN, on_change=False):
         parts.append(backoff_tip)
-    if others_briefs:
+    if others_briefs and _report_latch(state_doc, "others", others_briefs):
         parts.append("Other sessions in this worktree:\n" + others_briefs)
     if archived:
         parts.append(
             "Worklist: archived %d dead-session item(s) (state -> [~]):\n%s"
             % (len(archived), "\n".join("  " + a for a in archived))
         )
-    if orphaned:
+    if orphaned and _report_latch(state_doc, "orphans", "\n".join(orphaned)):
         parts.append(
             "Worklist: %d ORPHANED item(s) (owner session dead; auto-archive after %sh):\n%s"
             % (len(orphaned), os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"), "\n".join("  " + o for o in orphaned))
         )
-    if in_flight:
-        # Allowed to stop, but never silently: the operator sees what is
-        # still riding on background work every single time.
-        parts.append(
-            "Worklist: %d item(s) in flight on background work (lease-fresh):\n%s"
-            % (len(in_flight), "\n".join("  " + S.brief_line(r) for r in in_flight_recs))
-        )
-    if deferred:
-        # The operator sees these even if my summary buries them. Bounded
-        # display (v10): the two or three real decisions were drowning in a
-        # thirty-item wall, and everything past the window is already being
-        # drained by the autonomy check above.
-        shown = [S.brief_line(r) for r in deferred_recs[:8]]
-        parts.append(
-            "Worklist: %d item(s) deferred rather than done:\n%s%s"
-            % (
-                len(deferred),
-                "\n".join("  " + d for d in shown),
-                "" if len(deferred) <= 8 else "\n  ... and %d more (worklist.py --list shows all)" % (len(deferred) - 8),
-            )
-        )
+    # The in-flight and deferred sections that used to sit here were pure
+    # duplication (operator, 2026-07-31: "Why I see such a big output?"):
+    # guided_slice already lists every owned [>] and [?] with its LATEST and
+    # NEXT verb, and the guide LEADS this very report. One source, said once.
     if req_open_mine:
         rows = []
         for r in req_open_mine:
@@ -2251,4 +2497,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # tracking. Surfacing beats blocking.
         parts.append("Worklist: nothing open for this session.\n" + other_sessions_note())
     if parts:
+        # The report latches above mutated the state doc; persist them, or
+        # every "shown once" section shows forever.
+        S.save_state(worklist, session_id, state_doc)
         C.emit({"systemMessage": "\n\n".join(parts)})

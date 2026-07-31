@@ -247,7 +247,7 @@ say "answer
 brief_now
 hand_now
 echo '- [?] (deadbeef) should we do X DEFAULT: do X on Monday' >>"$WL"
-check "a deferral WITH DEFAULT: does not block" allow "deferred rather than done"
+check "a deferral WITH DEFAULT: does not block" allow "operator may answer"
 
 echo "== 4. missing session brief blocks =="
 setup
@@ -2129,7 +2129,7 @@ say "answer
 
 ## Remaining
 - the flag decision, deferred with a default"
-check "the full stop allows and reports (writes the poll baseline)" allow "deferred rather than done"
+check "the full stop allows and reports (writes the poll baseline)" allow "operator may answer"
 if [[ -f "${WL%.md}.pollbase-deadbeef" ]]; then
     echo "  PASS: the allowed full stop wrote the poll baseline"
     PASS=$((PASS + 1))
@@ -2163,7 +2163,7 @@ else
     FAIL=$((FAIL + 1))
 fi
 OUT="$(run)"
-if [[ -n "$OUT" ]] && grep -qF "deferred rather than done" <<<"$OUT"; then
+if [[ -n "$OUT" ]] && grep -qF "operator may answer" <<<"$OUT"; then
     echo "  PASS: CONTROL: without a fresh marker the same world is NOT silent"
     PASS=$((PASS + 1))
 else
@@ -2228,7 +2228,7 @@ check "baseline stop" allow ""
 touch -d '80 minutes ago' "${WL%.md}.pollbase-deadbeef"
 reqcli --poll deadbeef >/dev/null
 OUT="$(run)"
-if [[ -n "$OUT" ]] && grep -qF "deferred rather than done" <<<"$OUT"; then
+if [[ -n "$OUT" ]] && grep -qF "operator may answer" <<<"$OUT"; then
     echo "  PASS: past the horizon a poll stop runs the full battery (and re-arms)"
     PASS=$((PASS + 1))
 else
@@ -2319,6 +2319,16 @@ ARITY = {
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "CLI_ITEM_USAGE": None, "CLI_TICK_NO_EVIDENCE": ("id",),
+    # v16: the triage verb, the tick door gate and the plan-file convention.
+    "CLI_TICK_ISSUE_DOOR": ("id",),
+    "CLI_TRIAGE_INLINE": {"id": "i", "me": "m", "reason": "r"},
+    "CLI_TRIAGE_PLAN": {"id": "i", "me": "m", "reason": "r", "plan": "p",
+                        "finding": "f"},
+    "CLI_TRIAGE_OPERATOR": {"id": "i", "me": "m", "reason": "r"},
+    "CLI_TRIAGE_SELF": {"id": "i", "me": "m", "why": "", "context": "c",
+                        "branch": "b"},
+    "TRIAGE_PROMPT": {"finding": "f", "context": "c"},
+    "CTX_PLANS": ("b", "l"), "CTX_PLANS_EXCERPT": ("p", "b"),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
     "V_SUBMODULE_POINTER": (1, "x"),
@@ -2958,7 +2968,7 @@ say "deferred it
 
 ## Remaining
 - the stall, deferred with a default"
-check "the [?]+DEFAULT exit clears the top rung (it can never trap)" allow "deferred rather than done"
+check "the [?]+DEFAULT exit clears the top rung (it can never trap)" allow "operator may answer"
 
 echo "== 139. GONE fires on a vanished worker; UNVERIFIABLE never reads as dead =="
 setup
@@ -3047,7 +3057,7 @@ say "answer
 
 ## Remaining
 - the flag decision, deferred with a default"
-check "refreshing the item restarts the window (the exit is always available)" allow "deferred rather than done"
+check "refreshing the item restarts the window (the exit is always available)" allow "operator may answer"
 # CONTROL: a fresh deferral just reports (case 3 pins this too; here it is
 # the explicit twin of the aged fixture above).
 setup
@@ -3060,7 +3070,7 @@ say "answer
 
 ## Remaining
 - the flag decision, deferred with a default"
-check "CONTROL: a fresh deferral does not demand execution" allow "deferred rather than done"
+check "CONTROL: a fresh deferral does not demand execution" allow "operator may answer"
 # DRAIN CAP: five aged deferrals arrive three at a time, never as a wall.
 setup
 brief_now
@@ -3434,7 +3444,7 @@ say "justified the deferral
 
 ## Remaining
 - the quarantine decision, deferred with its justification"
-check "answering the WHY/HOW honestly reaches an allowed stop" allow "deferred rather than done"
+check "answering the WHY/HOW honestly reaches an allowed stop" allow "operator may answer"
 # CONTROL: the same age WITH a justification never fires (one planted fact).
 setup
 brief_now
@@ -5054,7 +5064,8 @@ SID_FULL="b9491d9c-full-session-id-fixture"
 MUNGED="-x-y" # re.sub non-alnum -> '-' of cwd "/x/y"
 mkdir -p "$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks"
 printf 'stream\n' >"$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks/bw5.output"
-FOUND=$(TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
+FOUND=$(
+    TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
 import sys, os
 sys.path.insert(0, os.path.dirname(sys.argv[2]))
 import tempfile
@@ -5073,7 +5084,8 @@ fi
 # CONTROL: with the stream ABSENT the same call reports missing, so the case
 # cannot pass vacuously on a derivation that never stats anything.
 rm -f "$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks/bw5.output"
-FOUND=$(TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
+FOUND=$(
+    TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
 import sys, os
 sys.path.insert(0, os.path.dirname(sys.argv[2]))
 import tempfile
@@ -5089,6 +5101,405 @@ if [[ "$FOUND" == "missing" ]]; then
 else
     fail "163e CONTROL: vacuous probe (got: $FOUND)"
 fi
+
+echo "== 163f. a stale stream with a VERIFIED-ALIVE OS process is not called stuck =="
+# Fired live 2026-07-31: a healthy `until ... completed` CI poll loop, silent
+# by design for 29 minutes, was accused POSSIBLY STUCK. Two fixes pinned here
+# at once: _needle must extract a quote-free SEGMENT (the poll-loop command
+# has a quoted middle, so the old whole-line rule made it unverifiable), and
+# the check-in must consult verify_background before accusing.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'old content\n' >"$BASE/bgout/bw6.output"
+touch -d '25 minutes ago' "$BASE/bgout/bw6.output"
+sleep 3717171717 &
+PROBE163F=$!
+export WORKLIST_HARNESS_PID=$$
+# The quoted tail is load-bearing: the OLD _needle refused any line carrying
+# a quote, which is exactly how the live worker became unverifiable.
+BG='[{"id":"bw6","type":"shell","status":"running","description":"silent poll loop","command":"sleep 3717171717 \"# ci watch tail\""}]'
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null # seed the wait clock
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if grep -qF "VERIFIED ALIVE" <<<"$OUT" && ! grep -qF -- "<- POSSIBLY STUCK" <<<"$OUT"; then
+    # NOT a plain "POSSIBLY STUCK" grep: V_BG_REPORT's fixed instruction text
+    # says "restart or replace anything marked POSSIBLY STUCK" on every
+    # check-in, so only the per-row "<- POSSIBLY STUCK" marker is the accusation.
+    pass "163f: a stale stream backed by a live OS process is reported alive, not stuck"
+else
+    fail "163f: alive worker still accused, or not reported: ${OUT:0:300}"
+fi
+# CONTROL: kill the process and the SAME setup goes back to POSSIBLY STUCK,
+# so the rescue is the verification, not an unconditional soft-pedal.
+kill "$PROBE163F" 2>/dev/null
+wait "$PROBE163F" 2>/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if grep -qF -- "<- POSSIBLY STUCK" <<<"$OUT" && ! grep -qF "VERIFIED ALIVE" <<<"$OUT"; then
+    pass "163f CONTROL: with the process dead the same worker is called out as stuck"
+else
+    fail "163f CONTROL: dead worker not flagged: ${OUT:0:300}"
+fi
+unset WORKLIST_HARNESS_PID
+unset WORKLIST_BG_OUTPUT_DIR
+BG='[]'
+
+# ---------------------------------------------------------------------------
+# v16 (cases 164+): the fix-in-session rule. A finding is fixed by the session
+# that finds it, so --triage answers the size question and hands back the exact
+# next command, --tick refuses a completion whose only evidence is an issue
+# reference, and docs/agent/<branch>/PLAN-*.md becomes a durable design record
+# the SessionStart and PostCompact hooks hand back. Every FIRE case is paired
+# with a SILENT control differing by one planted fact.
+# ---------------------------------------------------------------------------
+
+EVENTS="${WL%.md}.events.jsonl"
+
+triage() { # triage <judge-mode> <args...> -- the --triage verb, judge pinned
+    local mode="$1"
+    shift
+    PATH="$BASE/binonly:$PATH" TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+        WORKLIST_AGENT_BRANCH=agenttest WORKLIST_JUDGE="$mode" \
+        python3 "$HOOK" --triage "$@"
+}
+
+echo "== 164. --triage refuses an empty finding and appends NO event =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+OUT=$(triage off deadbeef 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "usage:" <<<"$OUT"; then
+    pass "--triage with no finding at all exits non-zero with the usage"
+else
+    fail "empty --triage was accepted (rc=$RC): ${OUT:0:200}"
+fi
+OUT=$(triage off deadbeef "   " 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "empty finding triages nothing" <<<"$OUT"; then
+    pass "--triage with blank finding text is refused, naming why"
+else
+    fail "blank-text --triage was accepted (rc=$RC): ${OUT:0:200}"
+fi
+if [[ ! -s "$EVENTS" ]]; then
+    pass "both refusals appended NO event (a rejected write is not a delivered one)"
+else
+    fail "a refused triage still wrote an event: $(head -c 200 "$EVENTS")"
+fi
+# CONTROL: the same verb WITH a finding does append, so the assertion above
+# could have failed. Without this the no-event check passes on a dead verb.
+triage off deadbeef "the retry loop swallows the exit code" >/dev/null 2>&1
+if [[ -s "$EVENTS" ]] && grep -q '"ev":"add"' "$EVENTS"; then
+    pass "164 CONTROL: a real finding DOES append an add event"
+else
+    fail "164 CONTROL: the verb appends nothing at all: $(head -c 200 "$EVENTS")"
+fi
+
+echo "== 165. --triage degrades to a self-assessment and claims NO verdict =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+OUT=$(triage off deadbeef "the fork path copies .env into the child repo" 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "INLINE" <<<"$OUT" && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
+    grep -qF "OPERATOR-ONLY" <<<"$OUT" && grep -qF "docs/agent/" <<<"$OUT"; then
+    pass "a judge-off triage hands back all three recipes and exits 0"
+else
+    fail "degraded triage wrong (rc=$RC): ${OUT:0:300}"
+fi
+if grep -q '"ev":"add"' "$EVENTS"; then
+    pass "the finding is TRACKED even when no verdict could be produced"
+else
+    fail "the degraded triage tracked nothing: $(head -c 200 "$EVENTS")"
+fi
+if ! grep -q '"ev":"triage"' "$EVENTS"; then
+    pass "165 CONTROL: degraded mode records NO triage event, so the machinery never claims a verdict it did not produce"
+else
+    fail "degraded mode recorded a verdict: $(grep '"ev":"triage"' "$EVENTS")"
+fi
+
+echo "== 166. --triage --id refuses another session's item =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+NID=$(reqcli --add other123 "their finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT=$(triage off deadbeef --id "$NID" "my take on their finding" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "is owned by other123" <<<"$OUT"; then
+    pass "triaging another session's item is refused by owner"
+else
+    fail "cross-session triage was accepted (rc=$RC): ${OUT:0:200}"
+fi
+if ! grep -q '"ev":"triage"' "$EVENTS"; then
+    pass "166 CONTROL: the refused triage recorded nothing"
+else
+    fail "a refused triage still recorded a verdict: $(grep '"ev":"triage"' "$EVENTS")"
+fi
+# The same item, triaged by its OWNER, reaches the degraded printout: the
+# refusal is about ownership and not about --id being broken.
+OUT=$(triage off other123 --id "$NID" "their own finding" 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "TRIAGE, SELF-ASSESSED (#$NID)" <<<"$OUT"; then
+    pass "166 CONTROL: the OWNER triages the same item fine"
+else
+    fail "166 CONTROL: --id is broken for the owner too: ${OUT:0:200}"
+fi
+
+echo "== 167. --triage judge path: verdict, recipe, recorded event, ONE call =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+: >"$BASE/judgecalls"
+shim_judge_out '{"verdict":"plan-subagent","reason":"multi-file","plan_slug":"fix-x"}'
+OUT=$(triage on deadbeef "renet forks inherit the parent buildkit session" 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "PLAN+SUBAGENT" <<<"$OUT" &&
+    grep -qF "docs/agent/agenttest/PLAN-fix-x.md" <<<"$OUT"; then
+    pass "a plan-subagent verdict prints the prefilled plan path and the recipe"
+else
+    fail "plan-subagent recipe wrong (rc=$RC): ${OUT:0:300}"
+fi
+if grep -q '"ev":"triage"' "$EVENTS" && grep -qF '"v":"plan-subagent"' "$EVENTS" &&
+    grep -qF '"plan":"docs/agent/agenttest/PLAN-fix-x.md"' "$EVENTS"; then
+    pass "the verdict is RECORDED with its plan path"
+else
+    fail "triage event missing or wrong: $(tail -c 300 "$EVENTS")"
+fi
+if [[ "$(wc -l <"$BASE/judgecalls")" -eq 1 ]]; then
+    pass "the judge was called exactly once (no retry loop, no double spend)"
+else
+    fail "judge called $(wc -l <"$BASE/judgecalls") times"
+fi
+# CONTROL: one different verdict from the same shim takes the other branch.
+setup
+EVENTS="${WL%.md}.events.jsonl"
+: >"$BASE/judgecalls"
+shim_judge_out '{"verdict":"inline","reason":"one line and one check","plan_slug":""}'
+OUT=$(triage on deadbeef "the error message names the wrong flag" 2>&1)
+TID=$(sed -n 's/^triaging #\([0-9a-f]*\).*/\1/p' <<<"$OUT")
+if grep -qF "TRIAGE VERDICT: INLINE" <<<"$OUT" && grep -qF -- "--tick deadbeef $TID" <<<"$OUT" &&
+    grep -qF '"v":"inline"' "$EVENTS" && ! grep -qF '"plan":' "$EVENTS"; then
+    pass "167 CONTROL: an inline verdict orders the fix now and records no plan"
+else
+    fail "167 CONTROL: inline branch wrong: ${OUT:0:300}"
+fi
+
+echo "== 168. a TRIAGED BIG item with no plan file on disk is demanded =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"deadbee1","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"forks leak the parent secrets"}\n' \
+    "$NOW" >>"$EVENTS"
+printf '{"ev":"triage","id":"deadbee1","at":"%s","by":"deadbeef","v":"plan-subagent","reason":"multi-file","plan":"docs/agent/agenttest/PLAN-big.md"}\n' \
+    "$NOW" >>"$EVENTS"
+OUT=$(reqcli --list --open deadbeef 2>&1)
+if grep -qF "TRIAGED BIG, plan file missing: docs/agent/agenttest/PLAN-big.md" <<<"$OUT" &&
+    grep -qF -- "--triage deadbeef --id deadbee1" <<<"$OUT"; then
+    pass "a big finding whose design was never written is demanded, with both exits"
+else
+    fail "the plan follow-through never fired: ${OUT:0:300}"
+fi
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+printf '# PLAN: big\nStatus: draft\nOwner: t\nUpdated: 2026-07-31\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-big.md"
+OUT=$(reqcli --list --open deadbeef 2>&1)
+if ! grep -qF "TRIAGED BIG" <<<"$OUT" &&
+    grep -qF "plan: docs/agent/agenttest/PLAN-big.md" <<<"$OUT"; then
+    pass "168 CONTROL: writing the plan silences the demand and advertises the path"
+else
+    fail "168 CONTROL: the probe does not read the disk: ${OUT:0:300}"
+fi
+
+echo "== 169. --tick refuses evidence that is ONLY an issue reference =="
+setup
+EVENTS="${WL%.md}.events.jsonl"
+reg_repo
+SHA=$(cd "$BASE/proj" && git rev-parse HEAD)
+NID=$(reqcli --add deadbeef "the retry loop swallows the exit code" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT=$(reqcli --tick deadbeef "$NID" "filed as https://github.com/x/y/issues/560" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "door:operator-only" <<<"$OUT" &&
+    grep -qF "door:operator-deferred" <<<"$OUT" && grep -qF "door:no-write-access" <<<"$OUT"; then
+    pass "a bare issue URL cannot close a finding, and the refusal names all three doors"
+else
+    fail "the bare-issue tick was accepted (rc=$RC): ${OUT:0:300}"
+fi
+if ! grep -q '"ev":"state"' "$EVENTS"; then
+    pass "the refused tick wrote NO state event"
+else
+    fail "a refused tick still closed the item: $(grep '"ev":"state"' "$EVENTS")"
+fi
+OUT=$(reqcli --tick deadbeef "$NID" "filed as https://github.com/x/y/issues/560 door:no-write-access, that repo is not writable here" 2>&1)
+if [[ $? -eq 0 ]] && grep -q '"ev":"state"' "$EVENTS"; then
+    pass "the SAME evidence naming its door is accepted (the door is the exit)"
+else
+    fail "a door-carrying tick was refused: ${OUT:0:300}"
+fi
+# REGRESSION CONTROLS: the gate is narrow. Ordinary evidence still ticks, and
+# a URL that is not an issue reference must keep working, because the gate
+# rides on the URL shape completion_evidence already accepts.
+N2=$(reqcli --add deadbeef "second finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT=$(reqcli --tick deadbeef "$N2" "ran the suite, exit 0" 2>&1)
+RC=$?
+N3=$(reqcli --add deadbeef "third finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT2=$(reqcli --tick deadbeef "$N3" "green on https://github.com/rediacc/console/actions/runs/123456789" 2>&1)
+RC2=$?
+N4=$(reqcli --add deadbeef "fourth finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+OUT3=$(reqcli --tick deadbeef "$N4" "fixed in $SHA" 2>&1)
+RC3=$?
+if [[ "$RC" -eq 0 && "$RC2" -eq 0 && "$RC3" -eq 0 ]]; then
+    pass "169 CONTROLS: exit-code, run-URL and verified-sha ticks all still pass"
+else
+    fail "169 CONTROLS: the door gate is too wide (rc=$RC/$RC2/$RC3): ${OUT:0:100} | ${OUT2:0:100} | ${OUT3:0:100}"
+fi
+
+echo "== 170. SessionStart lists non-done plans, with NO design-docs dir =="
+setup
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+printf '# PLAN: a\nStatus: draft\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-a.md"
+printf '# PLAN: b\nStatus: done\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-b.md"
+printf '# PLAN: c\nOwner: t\nUpdated: 2026-07-31\n\nbody\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-c.md"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --session-start 2>/dev/null)"
+if grep -qF "docs/agent/agenttest/PLAN-a.md [draft]" <<<"$out" &&
+    ! grep -qF "PLAN-b.md" <<<"$out" && grep -qF "1 done or superseded plan(s)" <<<"$out"; then
+    pass "draft plans are listed, executed ones collapse to a count"
+else
+    fail "the plans listing is wrong: ${out:0:400}"
+fi
+if grep -qF "docs/agent/agenttest/PLAN-c.md [UNKNOWN]" <<<"$out"; then
+    pass "a plan with no readable Status line surfaces LOUDLY as [UNKNOWN]"
+else
+    fail "an unparseable Status was hidden: ${out:0:400}"
+fi
+# THE CONTROL ON THE RESTRUCTURE: docs/ci-overhaul does not exist in this
+# fixture, and the old code RETURNED EARLY on that, which would have eaten
+# the plans block entirely. The design-docs prose must be absent and the
+# plans block present in the SAME output.
+if ! grep -qF "READ ALL OF THEM" <<<"$out" && grep -qF "READ EVERY NON-DONE PLAN" <<<"$out"; then
+    pass "170 CONTROL: a missing design-docs dir no longer eats the plans block"
+else
+    fail "170 CONTROL: the two blocks are still coupled: ${out:0:400}"
+fi
+# And the reverse: with NEITHER, SessionStart stays silent as it always did.
+rm -rf "$BASE/proj/docs"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --session-start 2>/dev/null)"
+if [[ -z "$out" ]]; then
+    pass "170 CONTROL: no docs and no plans stays silent, as before"
+else
+    fail "170 CONTROL: SessionStart now talks about nothing: ${out:0:200}"
+fi
+
+echo "== 171. PostCompact hands back the executing plan's ## Status cursor =="
+setup
+hand_now
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+printf '# PLAN: exec\nStatus: executing\nOwner: t\nUpdated: 2026-07-31\n\n## Status\n\nMARKER_EXEC_CURSOR wave two landed, wave three is next.\n\n## Detail\n\nnot the cursor\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-exec.md"
+printf '# PLAN: old\nStatus: done\nOwner: t\nUpdated: 2026-07-31\n\n## Status\n\nMARKER_DONE_PLAN must never be handed back.\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-old.md"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "MARKER_EXEC_CURSOR" <<<"$out" && grep -qF "PLAN-exec.md [executing]" <<<"$out" &&
+    grep -qF "picking up an in-progress session" <<<"$out"; then
+    pass "the compacted session gets the plan listing AND the executing plan's cursor"
+else
+    fail "PostCompact plan excerpt missing: ${out:0:400}"
+fi
+if ! grep -qF "MARKER_DONE_PLAN" <<<"$out" && ! grep -qF "not the cursor" <<<"$out"; then
+    pass "171 CONTROL: a done plan is not handed back, and only the Status section is"
+else
+    fail "171 CONTROL: the excerpt is unbounded: ${out:0:400}"
+fi
+
+echo "== 172. allow-report diet: guide is the single source, advisories latch =="
+# Operator, 2026-07-31: "Why I see such a big output? We already had round
+# robin." The allow report's in-flight section duplicated the guide's own
+# [>] rows, and week-stable advisories (other sessions' briefs) repeated on
+# every full stop. Now the guide says it once, and slow-moving sections
+# re-show only on content change or after the refresh window.
+setup
+brief_now
+hand_now
+IID=$(reqcli --add deadbeef "carry the CI watch to green" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --lease deadbeef "$IID" +60 worker:bw7 "watching the run" >/dev/null
+BG='[{"id":"bw7","type":"shell","status":"running","description":"the watch"}]'
+printf '%s %s %s\n' "cafebabe" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "building the fixture" >>"${WL%.md}.sessions"
+say "watching.
+
+## Remaining
+- #$IID carry the CI watch to green (in flight)"
+OUT="$(run)"
+if grep -qF -- "- [>] #$IID" <<<"$OUT" && ! grep -qF "in flight on background work" <<<"$OUT"; then
+    pass "172: the guide carries the lease once; the duplicate section is gone"
+else
+    fail "172: duplication or missing guide row: ${OUT:0:400}"
+fi
+if grep -qF "Other sessions in this worktree" <<<"$OUT"; then
+    pass "172: a fresh other-session brief appears on first sight"
+else
+    fail "172: first sight of the other session was hidden: ${OUT:0:400}"
+fi
+newturn
+reqcli --update deadbeef "$IID" "still watching, run pending" >/dev/null
+say "watching.
+
+## Remaining
+- #$IID carry the CI watch to green (in flight)"
+OUT="$(run)"
+if ! grep -qF "Other sessions in this worktree" <<<"$OUT"; then
+    pass "172: an unchanged advisory stays quiet on the next stop"
+else
+    fail "172: the advisory repeated with unchanged content: ${OUT:0:400}"
+fi
+# CONTROL: changed content re-shows immediately, so the latch is a dedupe,
+# not a mute.
+printf '%s %s %s\n' "cafebabe" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "pivoted to the deploy fix" >>"${WL%.md}.sessions"
+newturn
+reqcli --update deadbeef "$IID" "watch still healthy" >/dev/null
+say "watching.
+
+## Remaining
+- #$IID carry the CI watch to green (in flight)"
+OUT="$(run)"
+if grep -qF "Other sessions in this worktree" <<<"$OUT" && grep -qF "pivoted to the deploy fix" <<<"$OUT"; then
+    pass "172 CONTROL: changed advisory content re-shows immediately"
+else
+    fail "172 CONTROL: the latch muted a real change: ${OUT:0:400}"
+fi
+BG='[]'
 
 echo
 echo "  passed=$PASS failed=$FAIL"

@@ -430,7 +430,7 @@ def _fold_events(events):
                 "origin": "cli",
             }
             cli_ids.add(rid)
-        elif kind in ("state", "update", "lease", "tomb"):
+        elif kind in ("state", "update", "lease", "tomb", "triage"):
             rec = records.get(ev.get("id"))
             if rec is None:
                 continue
@@ -466,6 +466,15 @@ def _fold_events(events):
                     rec["text"] = (rec["text"] + "  " + note).strip()
             elif kind == "tomb":
                 rec["state"] = "~"
+            elif kind == "triage":
+                # v16: the size verdict --triage recorded for this finding.
+                # Only 'plan-subagent' carries a plan path, and the guide
+                # probes that path on disk, so a "big" finding whose design
+                # was never written is visible instead of forgotten.
+                rec["triage"] = {
+                    "v": str(ev.get("v", "")),
+                    "plan": str(ev.get("plan", "")),
+                }
             rec["upd"] = at
     return records, md_keys, cli_ids, last_md_hash
 
@@ -603,6 +612,21 @@ def update_item(worklist, by, item_id, note):
         worklist,
         [{"ev": "update", "id": item_id, "at": C.stamp_now(), "by": by, "note": note}],
     )
+
+
+def triage_item(worklist, by, item_id, verdict, reason, plan=""):
+    """Record a --triage verdict against an item.
+
+    Written ONLY on a real judge answer: a degraded triage prints the
+    self-assessment and records nothing, because the machinery must never
+    claim a verdict it did not produce. `plan` is the committed plan path and
+    is meaningful for 'plan-subagent' alone.
+    """
+    ev = {"ev": "triage", "id": item_id, "at": C.stamp_now(), "by": by,
+          "v": verdict, "reason": reason}
+    if plan:
+        ev["plan"] = plan
+    append_events(worklist, [ev])
 
 
 def lease_item(worklist, by, item_id, until, worker, note=""):
