@@ -344,6 +344,7 @@ def main():
             )
             sys.exit(2)
         target = S.agent_state_path(root, branch)
+        backup = S.agent_state_backup_path(wl)
         replaced = ""
         try:
             prev_age = int((time.time() - target.stat().st_mtime) / 60.0)
@@ -354,10 +355,22 @@ def main():
         lock = S.agent_state_lock_path(wl)
         with open(lock, "w", encoding="utf-8") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
+            # Keep the outgoing document before overwriting it. Inside the lock
+            # and before os.replace, so the copy is of the body we are actually
+            # about to destroy and not of one a racing writer slipped in.
+            try:
+                backup.write_text(target.read_text(encoding="utf-8"), encoding="utf-8")
+            except OSError:
+                pass  # first write on this branch, or an unreadable target
             fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(body)
             os.replace(tmp, target)
+        if replaced:
+            # Name the backup ONLY when something was replaced: a session that
+            # clobbers another's document learns how to undo it in the same
+            # breath as learning that it did.
+            replaced += "; previous body saved to %s" % backup
         try:
             S.load(wl, sync=True)  # sync first, so the signature covers the synced world
             doc = S.load_state(wl, prefix)

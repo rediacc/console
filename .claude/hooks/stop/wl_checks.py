@@ -431,7 +431,36 @@ def deferral_is_justified(rec):
 
 # ---- cron memory and docs drift --------------------------------------------
 
-def cron_memory(worklist, session_id, live_count):
+def loop_finished_declared(last_msg):
+    """True when the session explicitly declares its work loop is over.
+
+    V_LOOP_DIED offers two ways out: recreate the cron, OR "say out loud in your
+    message that the loop is deliberately finished". The second branch DID NOT
+    EXIST -- cron_memory compared a high-water mark and never read the message.
+    A session that finished its campaign, retired its cron on purpose and said
+    so plainly was blocked again on the very next stop, with no wording that
+    could ever satisfy the check. The block text promised an affordance the code
+    did not implement, which is worse than not offering it: it sends the session
+    hunting for the right phrase instead of telling it to recreate the cron.
+
+    Backticked and quoted spans are stripped before matching, following the
+    V_FOUND_NOT_FIXED precedent that a gate which cannot survive being written
+    about is too broad. It matters more here than there: this is an OPT-OUT, so
+    a message merely QUOTING the instruction (as any message discussing this
+    check does) must not silently switch the check off.
+    """
+    if not last_msg:
+        return False
+    stripped = re.sub(r"`[^`]*`|\"[^\"]*\"|“[^”]*”", " ", last_msg)
+    done = r"(?:finished|done|completed?|retired|ended|over)"
+    how = r"(?:deliberately|intentionally|on purpose)"
+    return bool(
+        re.search(r"\bloop\b[^.\n]{0,60}?\b%s\s+%s\b" % (how, done), stripped, re.I)
+        or re.search(r"\b%s\s+%s\b[^.\n]{0,60}?\bloop\b" % (how, done), stripped, re.I)
+    )
+
+
+def cron_memory(worklist, session_id, live_count, declared_done=False):
     """(died, remembered_max) -- was a loop running before that is gone now?
 
     WHY THIS REPLACED A DECLARATION. v5 first made the session declare its next
@@ -463,6 +492,18 @@ def cron_memory(worklist, session_id, live_count):
         except OSError:
             pass
         remembered = live_count
+    if declared_done and live_count == 0 and remembered >= 1:
+        # FORGET the high-water mark, do not merely skip this one stop. Without
+        # the reset the declaration would clear the block once and the check
+        # would fire again on the next stop, and the next, forever -- which is
+        # exactly what happened to the session that found this. A loop declared
+        # finished is finished; if a new one starts, live_count climbs above 0
+        # again and the mark rebuilds itself on its own.
+        try:
+            p.write_text("0")
+        except OSError:
+            pass
+        return False, remembered
     return (remembered >= 1 and live_count == 0), remembered
 
 
@@ -1325,7 +1366,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # v9: count WORK crons only. With two crons, a dead work loop behind a
     # surviving 5-minute poll was invisible to a total-count high-water mark,
     # and the work loop dying quietly is the exact failure the operator named.
-    loop_died, had_crons = cron_memory(worklist, session_id, len(live_work_crons))
+    loop_died, had_crons = cron_memory(
+        worklist, session_id, len(live_work_crons), loop_finished_declared(last_msg)
+    )
     if loop_died:
         violations.append(M.V_LOOP_DIED % had_crons)
     # Explicit state mapping, NOT `!= "ok"`: a detached HEAD ("no-branch")
@@ -1398,10 +1441,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     # alike cannot tell the operator what is moving and what is parked. The word
     # must also AGREE with the harness, which is the list they see in their app.
     state_re = re.compile(
-        r"\b(ongoing|in progress|in-progress|pending|blocked|parked|waiting-cross-session)\b",
+        r"\b(ongoing|in progress|in-progress|in_progress|pending|blocked|parked|waiting-cross-session)\b",
         re.I,
     )
-    ONGOING = {"ongoing", "in progress", "in-progress"}
+    ONGOING = {"ongoing", "in progress", "in-progress", "in_progress"}
     unstated, mislabelled, uncited, xw_bad, xw_ok = [], [], [], [], []
     if REMAINING_HEADING.search(last_msg or ""):
         section = (last_msg or "")[REMAINING_HEADING.search(last_msg).start():]

@@ -628,6 +628,60 @@ else
     fail "a refused rewrite MUTATED the previous STATE.md"
 fi
 
+echo "== 29c. a clobbered STATE.md is RECOVERABLE from the backup =="
+# Two live sessions share one branch, and --state is last-write-wins by design.
+# What was not by design is that the loss was permanent: session 84611aab
+# replaced session b9491d9c's 0-minute-old document twice, and neither body
+# could be recovered -- the event log stores item TEXT, never STATE bodies.
+# The write path now keeps exactly one previous body beside the lock.
+setup
+brief_now
+hand_now # writes STATE_BODY
+STATE_FILE="$BASE/proj/.agent/agenttest/STATE.md"
+BACKUP="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+BACKUP="${BACKUP%.md}.agentstate.prev.md"
+VICTIM='This is the document a SECOND session wrote and must be able to get back. It carries the one fact that would otherwise die with it: PR #547 merged to main at 01:30Z, so the nightly is now watchable on main rather than on the branch.
+
+## Next action
+Watch the scheduled nightly run on main and diagnose any red from its full log.'
+printf '%s' "$VICTIM" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+out="$(printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state cafe1234 2>&1)"
+if [[ "$(cat "$BACKUP" 2>/dev/null)" == "$VICTIM" ]]; then
+    pass "the clobbered body is byte-recoverable from the backup"
+else
+    fail "the backup does not hold the clobbered body: '$(head -c 120 "$BACKUP" 2>&1)'"
+fi
+# The backup must be the OUTGOING document, never the incoming one -- a copy
+# taken after os.replace would look like a backup and restore nothing.
+if [[ "$(cat "$BACKUP" 2>/dev/null)" != "$STATE_BODY" ]]; then
+    pass "CONTROL: the backup is the outgoing body, not the one just written"
+else
+    fail "the backup captured the INCOMING body; restoring it is a no-op"
+fi
+# The session that destroyed the document has to be TOLD where the copy went,
+# in the same line that tells it something was replaced.
+if grep -qF "previous body saved to" <<<"$out" && grep -qF "$BACKUP" <<<"$out"; then
+    pass "the success line names the backup path"
+else
+    fail "the clobber was silent about recovery: '${out:0:200}'"
+fi
+# CONTROL: the FIRST write on a branch replaces nothing, so it must not claim
+# a backup exists -- an unconditional path in that line would send the next
+# session chasing a file holding someone else's unrelated document.
+rm -f "$STATE_FILE" "$BACKUP"
+out="$(printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state deadbeef 2>&1)"
+if grep -qF "previous body saved to" <<<"$out"; then
+    fail "a first write with nothing to replace still advertised a backup"
+else
+    pass "CONTROL: a first write advertises no backup"
+fi
+
 echo "== 31. design-doc DRIFT blocks =="
 setup
 brief_now
@@ -703,6 +757,61 @@ task 7 pending "thing"
 CRONS='[]'
 BG='[{"status":"running","description":"agent"}]'
 check "no cron ever means no complaint" allow ""
+
+echo "== 34b. DECLARING the loop finished clears it, and STAYS cleared =="
+# V_LOOP_DIED offers two exits: recreate the cron, or say the loop is
+# deliberately finished. The second one did not exist -- cron_memory never read
+# the message -- so a session that retired its cron on purpose and said so was
+# blocked on every stop after, with no wording that could satisfy it. The final
+# assert is the one that matters: the declaration must FORGET the high-water
+# mark, not skip a single stop, or the block returns next stop forever.
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+# A live background agent, exactly as case 35 does. Without it the repeated
+# stops in this case trip the idle check and the 3-identical-stops check, and
+# the assertion then fails on THEIR reasons while V_LOOP_DIED is already clear
+# -- a confound that made this very case red on its first run.
+BG='[{"status":"running","description":"agent"}]'
+CRONS='[{"id":"bbb","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null
+CRONS='[]'
+# CONTROL first: the SAME world without the declaration must still block, or
+# the case proves nothing about the declaration.
+check "CONTROL: no declaration, the dead loop still blocks" block "WORK LOOP DIED"
+say 'The campaign is done, so the loop is deliberately finished and I retired the cron.
+
+## Remaining
+- #7 thing (pending)'
+check "declaring the loop deliberately finished clears it" allow ""
+check "and it STAYS cleared on the next stop" allow ""
+
+echo "== 34c. CONTROL: merely QUOTING the instruction does NOT opt out =="
+# This is an opt-out, so it must survive being written about: every message
+# that discusses this check quotes its own instruction text back. Stripping
+# quoted and backticked spans before matching is what keeps that honest.
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+BG='[{"status":"running","description":"agent"}]'
+CRONS='[{"id":"bbb","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null
+CRONS='[]'
+say 'The hook says to recreate it or "say out loud in your message that the loop is deliberately finished", and `the loop is deliberately finished` is the phrase it wants.
+
+## Remaining
+- #7 thing (pending)'
+check "a quoted/backticked mention does NOT switch the check off" block "WORK LOOP DIED"
 
 echo "== 36. a STALE LOCAL branch sharing the publish name blocks =="
 setup
@@ -820,6 +929,17 @@ say "answer
 | #7 | thing | ongoing, me |"
 task 7 in_progress "thing"
 check "an in_progress task labelled ongoing is fine" allow ""
+
+echo "== 41b. literal 'in_progress' (underscore) is recognized as the state word, even with a later 'pending' in the same line =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | **in_progress** | demo done; another observation still pending -- blocked on X |"
+task 7 in_progress "thing"
+check "in_progress spelled with an underscore is not skipped in favour of a later 'pending'" allow ""
 
 echo "== 42. a 'found, not fixed' list blocks: fix it or track it =="
 setup
