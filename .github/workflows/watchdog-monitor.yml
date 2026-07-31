@@ -96,7 +96,15 @@ jobs:
           # classification, then force-cancel waiting up to 5 minutes for
           # WATCHDOG_WAIT_PATTERNS jobs) stays under the 15-minute cap.
           WATCHDOG_DEADLINE_SECONDS: '480'
-          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete'
+          # "Review Complete" is the OBSERVER check review-status.yml posts
+          # against the head SHA; it lands in the same github-actions check
+          # suite as the CI jobs, so without this exclusion the watchdog
+          # reads its pre-re-review failure as a failed CI job and
+          # force-cancels the very run whose green the re-review WAITS FOR
+          # (deadlock, seen live 2026-07-31 on run 30660765759 after the
+          # check became ruleset-required). review-status.yml's own header
+          # demands acyclicity: nothing in CI may observe that check back.
+          WATCHDOG_EXCLUDE_PATTERNS: 'Watchdog,CI Complete,Review Complete'
           WATCHDOG_NO_RETRY_PATTERNS: 'Quality,Review Gate'
           # Per-platform legs only. The aggregator ("Install Methods Complete")
           # downloads no binary, and it reports skipped/cancelled when its needs
