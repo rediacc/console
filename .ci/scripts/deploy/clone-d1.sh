@@ -64,9 +64,22 @@ fi
 # Step 1: Export source database
 # Wrangler prints a pre-signed R2 URL valid for 1 hour -- strip it from output
 # to prevent leaking a database download link in CI logs.
+#
+# NOT a pipe into grep -v. The old `wrangler ... 2>&1 | grep -v <url>` under
+# pipefail died SILENTLY two ways (seen live, run 30628110972: a 21-second
+# gap then cleanup, zero error text): a failing wrangler whose message was
+# lost, and a SUCCESSFUL export whose entire output was the filtered URL
+# lines, which made grep -v exit 1 and kill the step with nothing to show.
+# Capture first, redact after, and report wrangler's own exit code.
 log_step "Exporting D1 database: $SOURCE_DB"
-npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" 2>&1 |
-    grep -v 'r2.cloudflarestorage.com\|valid for one hour'
+EXPORT_RC=0
+npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" \
+    >"$TMPDIR/export.log" 2>&1 || EXPORT_RC=$?
+grep -v 'r2.cloudflarestorage.com\|valid for one hour' "$TMPDIR/export.log" || true
+if [[ "$EXPORT_RC" -ne 0 ]]; then
+    log_error "wrangler d1 export $SOURCE_DB failed (exit $EXPORT_RC); its full output is above (R2 URL redacted)"
+    exit "$EXPORT_RC"
+fi
 log_info "Exported $(wc -l <"$TMPDIR/export.sql") lines ($(du -h "$TMPDIR/export.sql" | cut -f1))"
 
 # Step 1.5: Sanitize via local sqlite3 if requested

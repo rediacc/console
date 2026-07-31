@@ -166,12 +166,12 @@ if [[ "$FAIL_ON_SKIP" == "true" ]]; then
         rm -f "$E2E_LOG"
         exit 1
     fi
-    SKIPPED=$(grep -oE 'E2E_SKIPPED=[0-9]+' "$E2E_LOG" | grep -oE '[0-9]+$' | awk '{s+=$1} END{print s+0}')
+    SKIPPED=$(grep -oE 'E2E_SKIPPED=[0-9]+' "$E2E_LOG" | grep -oE '[0-9]+$' | awk '{s+=$1} END{print s+0}' || true)
     if [[ "${SKIPPED:-0}" -gt 0 ]]; then
         log_error "Zero-skip gate: ${SKIPPED} test(s) were SKIPPED (must be 0). A skipped test is invisible coverage loss."
         log_error "Each E2E job must SELECT only the tests its topology can run (config testMatch/testIgnore), not collect-then-skip."
         echo "----- skipped tests -----"
-        grep -E '0\.0s, skipped\)|, skipped\)' "$E2E_LOG" | head -80
+        grep -E '0\.0s, skipped\)|, skipped\)' "$E2E_LOG" | head -80 || true
         rm -f "$E2E_LOG"
         exit 1
     fi

@@ -31,9 +31,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=../lib/common.sh
 source "$SCRIPT_DIR/../lib/common.sh"
+# get_repo_root, NOT a hand-counted ../..: the old form resolved to .ci from
+# this script's directory, so the find below scanned .ci/.ci/scripts and
+# .ci/scripts/dev -- neither exists -- and the gate checked ZERO files from
+# the day it was written. Second of the two independent bugs (with the awk
+# guard escapes) that each alone kept this gate permanently green.
+REPO_ROOT="$(get_repo_root)"
 
 JSON_OUTPUT=false
 for arg in "$@"; do
@@ -53,13 +58,28 @@ done
 # Scopes: every shell script under .ci/scripts/ and scripts/dev/.
 SCAN_DIRS=(".ci/scripts" "scripts/dev")
 PIPE_HEADS_REGEX='(aws s3 ls|aws s3api list-objects-v2 +--query|find [^|]|grep [^|]+)'
+# Class 2: a redaction filter as the pipeline SINK. `cmd 2>&1 | grep -v X`
+# under pipefail dies with ZERO error text when grep filters every line --
+# including on SUCCESS, when the head's whole output happens to be the
+# redacted lines (live: clone-d1.sh's D1 export, run 30628110972: a
+# 21-second gap, then cleanup, nothing else). The head's own failure text is
+# also lost when its output never flushes. Capture to a file, redact after,
+# and test the head's own exit code instead.
+REDACT_SINK_REGEX='2>&1 *[|] *grep -v'
 # Sinks: pipeline endings that pipefail would propagate from.
-SINK_REGEX='\| *(wc -l|head|tail|awk|jq)'
+SINK_REGEX='[|] *(wc -l|head|tail|awk|jq)'
+# CHARACTER CLASSES, NEVER BACKSLASH ESCAPES, in every regex handed to awk
+# via -v: awk rewrites \| in a -v value to a plain |, which turns the old
+# '\|\| *(...)' guard into an ERE with EMPTY alternations that matches
+# every line. That made the unguarded test false everywhere, so this gate
+# had never fired on anything since it was written (proven 2026-07-31 by a
+# planted defect it could not see; the escape warnings were swallowed by
+# the 2>/dev/null on the awk call).
 # A line is guarded if it contains `|| true`, `|| echo`, `|| return`,
 # or a trailing `2>/dev/null` immediately after the head (the latter
 # doesn't actually rescue exit codes but is the common operator
 # habit; we treat it as a soft signal and still flag).
-GUARD_REGEX='\|\| *(true|echo|return|exit|continue|:)'
+GUARD_REGEX='[|][|] *(true|echo|return|exit|continue|:)'
 
 # Single-pass scan: walk every shell script under SCAN_DIRS, awk-extract any
 # risky pipelines, capture them into the `findings` array AND mirror to
@@ -77,7 +97,8 @@ while IFS= read -r -d '' file; do
     done < <(awk -v file="$file" \
         -v pipe_head="$PIPE_HEADS_REGEX" \
         -v sink="$SINK_REGEX" \
-        -v guard="$GUARD_REGEX" '
+        -v guard="$GUARD_REGEX" \
+        -v redact_sink="$REDACT_SINK_REGEX" '
         BEGIN { strict = 0; skip_next = 0 }
         /^set [+\-]e/ {
             if ($0 ~ /pipefail/) {
@@ -91,10 +112,21 @@ while IFS= read -r -d '' file; do
         {
             if (skip_next) { skip_next = 0; next }
             if (!strict) next
+            # Condition heads are exempt from BOTH classes: an if/while
+            # pipeline is consumed as a test, so pipefail cannot abort the
+            # script there.
             if ($0 ~ pipe_head && $0 ~ sink) {
-                if ($0 !~ guard) {
+                if ($0 !~ guard &&
+                    $0 !~ /^[[:space:]]*(if|elif|while|until) /) {
                     printf "%s:%d: %s\n", file, NR, $0
                 }
+            }
+            # Class 2 (see REDACT_SINK_REGEX above). Condition heads are
+            # exempt: an if/while pipeline is consumed as a test, so
+            # pipefail cannot abort the script there.
+            if ($0 ~ redact_sink && $0 !~ guard &&
+                $0 !~ /^[[:space:]]*(if|elif|while|until) /) {
+                printf "%s:%d: %s (redaction-filter sink: capture to a file, redact after, test the head'"'"'s own rc)\n", file, NR, $0
             }
         }
     ' "$file" 2>/dev/null || true)

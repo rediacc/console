@@ -267,6 +267,7 @@ counter_value() {
     _ssh "sudo bash -c '
       name=\$(docker -H unix://$1 ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | head -1)
       [ -n \"\$name\" ] || exit 0
+      # silent-failure-ok: this line is INSIDE the quoted remote command string; the remote shell runs without pipefail
       docker -H unix://$1 logs --tail 5 \"\$name\" 2>/dev/null | grep -o \"count=[0-9]*\" | tail -1 | cut -d= -f2
     '"
 }

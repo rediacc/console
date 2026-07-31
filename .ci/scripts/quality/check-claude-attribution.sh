@@ -53,7 +53,7 @@ PR_BODY=$(gh_retry "PR body for #${PR_NUMBER}" -- \
     api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.body // ""') || probe_failed
 
 if echo "$PR_BODY" | grep -qiE "$CLAUDE_PATTERN"; then
-    MATCH=$(echo "$PR_BODY" | grep -iE "$CLAUDE_PATTERN" | head -1)
+    MATCH=$(echo "$PR_BODY" | grep -iE "$CLAUDE_PATTERN" | head -1 || true)
     ISSUES+=("PR description contains: \"${MATCH}\"")
 fi
 
@@ -76,7 +76,7 @@ for SHA in $COMMITS; do
 
     if echo "$COMMIT_MSG" | grep -qiE "$CLAUDE_PATTERN"; then
         SHORT_SHA="${SHA:0:7}"
-        MATCH=$(echo "$COMMIT_MSG" | grep -iE "$CLAUDE_PATTERN" | head -1)
+        MATCH=$(echo "$COMMIT_MSG" | grep -iE "$CLAUDE_PATTERN" | head -1 || true)
         ISSUES+=("Commit ${SHORT_SHA} contains: \"${MATCH}\"")
     fi
 done
