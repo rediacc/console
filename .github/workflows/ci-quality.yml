@@ -512,6 +512,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-solution-videos
 
+      # Existence is not currency. The gate above passes on a video that exists; this one
+      # asserts the manifest records the CURRENT narration engine. Added after a live
+      # marketing page was found still playing Qwen3-TTS months after the VoxCPM2
+      # migration, with 207 of 273 pairs stale and nothing anywhere saying so.
+      - name: Validate solution narration engine is current
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-solution-video-engine
 
       - name: Block fallback hacks and error output in tutorial recordings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
