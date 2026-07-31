@@ -992,3 +992,190 @@ led through three nested defects, each proven by a planted control:
    key id), one in-string false positive whitelisted, and condition-head
    pipelines exempted in the gate itself. shellcheck, shfmt, and every
    touched gate suite re-run green.
+
+## Cross-PR greenlight: skipping a suite on ANY run's job-level green (2026-07-31)
+
+The scope engine asks a lineage-local question: did the delta against THIS
+branch's baseline touch the job's surface. So a rebase, or a second PR that
+bumps the same submodule pointer, pays for the 90-minute renet suite again
+even though the exact same inputs were executed green an hour earlier on
+another branch. `.ci/scripts/ci/greenlight.cjs` asks the wider question: has
+this exact input closure already been executed green by any run, anywhere.
+
+### Verify-at-read, because a memo is unsound here
+
+The obvious design is a memo store: a run that goes green records "renet at
+sha X passed", and later runs look it up. The repo already argued that down
+once, at `scope-engine.cjs:177`, and the argument transfers intact. A run that
+writes its own trust token mints a claim later readers cannot check, and the
+write would have to happen in a PR-triggered job whose code comes from the PR
+itself, which is exactly the bypass `.github/actions/app-token/action.yml:13`
+exists to remove. `SELF-DECLARATION IS DELETED, NOT BLACKLISTED`.
+
+So nothing is stored. The greenlight is derived fresh at Initialize time from
+three facts nobody had to be trusted to record:
+
+- the per-JOB conclusion from the Actions API;
+- the candidate's submodule gitlink, read from
+  `GET /repos/{repo}/contents/private/renet?ref=<head_sha>`, which returns the
+  submodule object and its sha;
+- the candidate's console-side closure, read the same way.
+
+All three are properties of a commit or of what the runner actually did. None
+is a claim a run made about itself.
+
+### Why the evidence is the JOB conclusion and never the check
+
+Run-level "CI Complete" cannot distinguish an executed job from a skipped one:
+`assert-ci-complete.sh` puts TESTS in `SOFT_REQUIRED`, where `skipped` passes
+identically to `success`. A fully-scoped-out run and a fully-executed run emit
+the same green check. The per-job conclusion does distinguish them, so that is
+the only thing read.
+
+This is also why a candidate that was itself a REDUCED run is perfectly good
+evidence. The rule asks whether the job RAN, not what the plan intended.
+Intent is not outcome; outcome is what gets read. A `skipped` conclusion is
+refused precisely so evidence cannot chain: without that rule a reduced run
+whose renet job was skipped would greenlight the next PR, which would skip it
+too, and the suite would go unrun forever with every check green.
+
+### The closure key
+
+A greenlight is granted only when all three hold, checked in this order so the
+expensive lookup is paid last:
+
+1. the job for the key exists, is unique, and concluded `success`;
+2. the candidate's submodule gitlink equals ours;
+3. the candidate's console-side closure hash equals ours.
+
+The closure is the part that is easy to get wrong. `test-renet` looks
+submodule-only and is not: `run-renet.sh:12` sources `.ci/scripts/lib/common.sh`,
+and renet's own `run-tests.sh:15-26` sources the CONSOLE-side
+`.ci/scripts/infra/ci-env.sh`. The table in `greenlight.cjs` therefore covers
+the five `.ci/scripts/private/renet-*.sh` entry points, those two libraries,
+and the whole `ct-tests.yml`. Account E2E adds `run-account-e2e.sh`, the
+`setup-workspace` and `app-token` composite actions, `install-deps.sh`, the
+root `package.json`/`package-lock.json`, and `packages/shared` plus
+`packages/provisioning` (the job runs `npm run build:packages`, and
+`private/account` depends on `@rediacc/shared` through a `file:` link).
+
+The hash is computed from the LOCAL checkout, so a PR that edits any of those
+files differs from every candidate and nothing greenlights, which is correct.
+Directories are covered by their tree sha and submodules by their commit sha,
+both read out of the same contents listing, which is also why the fetch costs
+one call per parent directory rather than one per path.
+
+Over-inclusion in that table is safe (rarer greenlights, more full rounds) and
+under-inclusion is not, so when in doubt the path is listed. One deliberate
+absence: `build-packages.sh` is NOT an account input, because
+`setup-workspace` only runs it when its `build-packages` input is `true` and
+`ct-tests.yml` leaves it unset, calling `npm run build:packages` directly.
+
+### Fail-open, and where it was proven
+
+The engine may only ever turn a RUN into a SKIP. It emits `run_<key>=false`
+and has no `=true` form at all, so any error, timeout, or absence of a match
+emits nothing and changes nothing. `scope-shadow.sh`'s reader is strict for the
+same reason: only an exact `run_<key>=false` line paired with an
+`evidence_<key>=<digits>` line does anything, so a malformed emit is inert.
+
+The first live run proved both directions at once. `renet` was greenlit by run
+30628333340 (gitlink and job conclusion independently confirmed by hand),
+while `account_e2e` walked 25 candidates and refused every one, exercising
+`job-failed:cancelled`, `job-not-run`, `pointer-differs`, and, when the 60s
+budget ran out mid-walk, `jobs-unreadable:budget exhausted`. Budget exhaustion
+resolves to no greenlight, which is a full round.
+
+### How it lands in the plan
+
+`apply_greenlight` runs inside the existing scope step, after `plan.json` is
+written and before any output is emitted, and only for keys the scope engine
+still plans to RUN. It rewrites the key's plan entry to
+`{"run": false, "reason": "greenlight:<run-id>"}` rather than emitting a
+parallel output, so `plan.json` stays the single object that gates jobs, gets
+uploaded, and is audited, and the audit trail names the evidence run. The
+reconciler reads `run` and `preexisting_skip` and never `reason`, so the
+annotation changes no verdict.
+
+The plan's `mode` flips to `reduced` when anything is greenlit, and that is a
+correctness requirement rather than bookkeeping: `attestPlan` refuses a
+non-full plan as a future baseline, so leaving `mode` at `full` would let a
+LATER run adopt a round that greenlit its way out of a suite as a full
+baseline. That is the evidence-chaining failure the scope engine already
+refuses, arriving by a different door.
+
+The kill switches need no new wiring. `FULL_CI` and the `full-ci` label
+short-circuit `scope-shadow.sh` before any of this runs, and the step is
+`pull_request`-only, so the nightly stays full by construction.
+
+Worth knowing: the greenlight needs no git history, so it still fires on a
+shallow clone where `--resolve-baseline` answers `baseline:shallow-clone` and
+falls open to a full plan. Reducing a fail-open-full plan is legitimate here
+because the evidence is independent of the baseline machinery, but it does
+mean a round can be shrunk that the scope engine had made full for a stated
+reason.
+
+### Cross-branch cache and API trust, which was undocumented anywhere
+
+The discovery pass found no doc in `docs/` or `.ci/` discussing cache scoping,
+poisoning, or cross-branch cache trust; the word "poison" in this repo always
+means "poisons CI Complete". Since this is the first mechanism to consume
+another branch's evidence, the trust model belongs here.
+
+GitHub's Actions cache is scoped to the ref that wrote it, and reads fall back
+UP the chain: a PR reads its own scope, then its base branch, then the default
+branch. Flow is base to PR, never PR to base, so a PR cannot overwrite or
+shadow an entry that main will later read. That is the property that makes the
+existing shared `renet-embed-assets` key safe, and `ci-build-renet.yml:78-82`
+adds a second layer on top of it: build.sh's content-based receipt makes
+`embed_assets` a verified no-op, so a stale or corrupt blob triggers a full
+restage rather than passing silently.
+
+The greenlight deliberately consumes NONE of that. It trusts only
+reader-derived API facts: job conclusions, and object shas read out of commits.
+It reads no cache, downloads no artifact, and writes nothing at all, so it adds
+no trust surface to the pipeline. The bound on how far back it can see is the
+Actions API's run retention, not the 7-day `ci-skip-plan` artifact retention
+that bounds the scope engine's baseline walk.
+
+### Tests
+
+`.ci/scripts/test/gates/test-greenlight.sh`, 44 assertions over nine cases,
+every one control-proven. Cases 1 to 5 drive the pure core with injected
+fixtures (full match, failed job, skipped job, differing closure, and
+fail-open over an empty list plus a throwing fetch at each of the three lazy
+stages). Case 6 drives the real CLI offline against a fake `gh` that serves
+this repo's actual tree as the candidate's content, so the fixture cannot rot,
+then withdraws the greenlight by flipping one job conclusion, then by moving
+one closure blob, then by breaking `gh` outright.
+
+Case 7 is the submodule pointer rule, which the operator names as the core
+soundness requirement of the feature: a suite may be skipped ONLY when the
+submodule points at the exact hash some job-green run already tested, and any
+submodule change runs the tests. It asserts the refusal with everything else
+held identical, that no evidence run is named, that a one-character difference
+is still a difference, that an absent gitlink is not a free pass, and, at CLI
+level against the real tree, that a moved `private/renet` pointer emits
+nothing at all. Each of those carries the matching control, including an
+unperturbed invocation that DOES greenlight, so an empty emit cannot pass for
+the right reason by accident.
+
+Two cases beyond the plan. One guards the job-name hazard: a real run carries
+`Tests + Infra / Renet` alongside `Build (Renet) / Renet (cached)` and
+`Build (Docker Fast) / Renet Docker`, so matching is on the exact leaf name
+after the last ` / `, and a substring match would read a cache-hit build job as
+proof that a 90-minute test suite passed. The other asserts every declared
+closure path still exists in HEAD, because a path that quietly stopped
+resolving would be hashed by nobody and noticed by nothing.
+
+PLANTED-DEFECT PROOFS, one per load-bearing rule. Rule 1 was inverted so a
+`skipped` conclusion fell through to the success path: case 3 failed with
+`FAIL: a skipped job must never greenlight: expected 'false', got 'true'`
+while cases 1 and 2 still passed. Rule 2 was then weakened from full hash
+equality to a 4-character prefix comparison, which is the shape a "cheap
+early-out" would take: case 7 failed on its near-miss assertion with
+`FAIL: a pointer differing in one character must refuse: expected 'false', got 'true'`
+while cases 1 to 6 ALL still passed, so a weakened pointer rule is invisible
+to every other property in the file and visible to that one. The engine was
+restored after each and re-verified byte-identical (md5
+`8b35c56e7f5ca90c959f90ac7db029b9` before and after both).

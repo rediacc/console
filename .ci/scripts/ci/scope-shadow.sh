@@ -79,6 +79,7 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENGINE="$SCRIPT_DIR/scope-engine.cjs"
+GREENLIGHT="$SCRIPT_DIR/greenlight.cjs"
 RECONCILER="$SCRIPT_DIR/skip-plan-reconcile.cjs"
 SCOPE_MAP="$SCRIPT_DIR/scope-map.cjs"
 SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"
@@ -255,6 +256,118 @@ process.stdout.write(`${lines.join("\n")}\n`);
 }
 
 # ---------------------------------------------------------------------------
+# apply_greenlight -- the CROSS-PR half, run after the plan is written and
+# before any output is emitted.
+#
+# The scope engine asks a lineage-local question: did the delta against THIS
+# branch's baseline touch the job's surface. greenlight.cjs asks a wider one:
+# has this exact input closure already been executed green by any run on any
+# branch. A rebase, or a second PR bumping the same submodule pointer, is
+# invisible to the first question and answerable by the second.
+#
+# IT RUNS ON THE PLAN, NOT ALONGSIDE IT. plan.json stays the single object that
+# gates jobs, gets uploaded, and is audited: this rewrites the entry rather
+# than emitting a parallel output, so emit_outputs below derives every run_*
+# line from one source and a greenlit skip is one the reconciler can see and
+# attest. The reason string names the evidence run, which is the whole audit
+# trail (the reconciler reads `run` and `preexisting_skip`, never `reason`, so
+# this annotates without changing any verdict).
+#
+# MODE FLIPS TO reduced, and that is a correctness requirement rather than
+# bookkeeping. scope-engine.cjs's attestPlan refuses a non-full plan as a
+# future baseline ('not-full-plan'); leaving mode at 'full' on a round that
+# greenlit its way out of a suite would let a LATER run adopt it as a full
+# baseline, which is the evidence-chaining failure that engine already refuses.
+#
+# THE PARSE IS DELIBERATELY STRICT: only a line matching exactly
+# `run_<key>=false`, paired with an `evidence_<key>=<digits>` line, does
+# anything. Any other output, including a hypothetical `=true`, is inert. That
+# keeps the fail-open contract intact on this side of the pipe too, so the
+# reader cannot be talked into widening a round by a malformed emit.
+#
+# Every failure path here returns without touching plan.json, which leaves the
+# scope engine's verdict exactly as it was: no greenlight, no change.
+# ---------------------------------------------------------------------------
+apply_greenlight() {
+    [[ -f "$GREENLIGHT" ]] || return 0
+    [[ -s "$OUT_DIR/plan.json" ]] || return 0
+
+    # Ask only about keys the engine still plans to RUN. A key already skipped
+    # needs no second opinion, and every key asked costs API calls inside
+    # `initialize`, which every other job waits on.
+    local pending
+    pending="$(bounded node -e '
+const fs = require("fs");
+const { CLOSURES } = require(process.argv[1]);
+const plan = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const jobs = (plan && plan.jobs) || {};
+const pending = Object.keys(CLOSURES).filter((k) => jobs[k] && jobs[k].run !== false);
+process.stdout.write(pending.join(" "));
+' "$GREENLIGHT" "$OUT_DIR/plan.json" 2>"$OUT_DIR/greenlight.err")" || pending=""
+
+    if [[ -z "$pending" ]]; then
+        emit "_greenlight: nothing to ask (every eligible key is already planned to skip)._" ""
+        return 0
+    fi
+
+    local args=()
+    local key
+    for key in $pending; do
+        args+=(--key "$key")
+    done
+
+    if ! bounded node "$GREENLIGHT" --repo "${GITHUB_REPOSITORY:-}" --debug "${args[@]}" \
+        >"$OUT_DIR/greenlight.out" 2>"$OUT_DIR/greenlight.err"; then
+        emit "_greenlight: the engine did not complete (timeout or crash), so no key was" \
+            "greenlit and the scope verdict stands unchanged._" ""
+        return 0
+    fi
+
+    local applied
+    applied="$(bounded node -e '
+const fs = require("fs");
+const planPath = process.argv[1];
+const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
+const emitted = fs.readFileSync(process.argv[2], "utf8");
+const evidence = {};
+const granted = [];
+for (const line of emitted.split("\n")) {
+  let m = /^run_([a-z0-9_]+)=false$/.exec(line);
+  if (m) {
+    granted.push(m[1]);
+    continue;
+  }
+  m = /^evidence_([a-z0-9_]+)=([0-9]+)$/.exec(line);
+  if (m) evidence[m[1]] = m[2];
+}
+const applied = [];
+for (const key of granted) {
+  const job = plan.jobs && plan.jobs[key];
+  // An unknown key, an already-skipped one, or a grant with no evidence run
+  // attached is ignored rather than guessed at.
+  if (!job || job.run === false || !evidence[key]) continue;
+  job.run = false;
+  job.reason = `greenlight:${evidence[key]}`;
+  applied.push(`${key}=${evidence[key]}`);
+}
+if (applied.length > 0) {
+  plan.mode = "reduced";
+  fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
+}
+process.stdout.write(applied.join(" "));
+' "$OUT_DIR/plan.json" "$OUT_DIR/greenlight.out" 2>>"$OUT_DIR/greenlight.err")" || applied=""
+
+    emit "**cross-PR greenlight** (asked about: ${pending})" "" '```'
+    head -c 3000 "$OUT_DIR/greenlight.err" | tee -a "$SUMMARY"
+    emit '```'
+    if [[ -n "$applied" ]]; then
+        emit "**greenlit, and the plan now says so**: \`${applied}\`" ""
+    else
+        emit "_no key was greenlit; the scope engine's verdict stands unchanged._" ""
+    fi
+}
+
+# ---------------------------------------------------------------------------
 # KILL SWITCH, CHECKED BEFORE THE ENGINE. See the header for all three.
 #
 # The plan is still written and uploaded on this path, because a forced full
@@ -342,6 +455,10 @@ process.stdout.write(JSON.stringify({
 }, null, 2) + "\n");
 ' "$OUT_DIR/plan.json" | tee -a "$SUMMARY"
         emit '```' ""
+        # AFTER the plan is written and BEFORE anything is emitted: the
+        # greenlight only ever rewrites plan.json, and emit_outputs is the one
+        # thing that turns a plan into outputs.
+        apply_greenlight
         emit_outputs
     fi
 else
