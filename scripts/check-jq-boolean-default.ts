@@ -71,7 +71,12 @@ function control(): void {
     console.error(`✗ CONTROL FAILED: ${why}`);
     process.exit(1);
   };
-  const fires = scanText('x.sh', 'jq -r \'{ not_draft: (.draft // true | not) }\'');
+  // The fixture is concatenated so this file's own on-disk text does not
+  // match the scanner it feeds: the gate scans every tracked file,
+  // including itself, and a literal fixture here self-fired the gate on
+  // its very own control line (found 2026-07-31, the first time anything
+  // actually ran the scan; see the CI-wiring issue filed the same day).
+  const fires = scanText('x.sh', 'jq -r \'{ not_draft: (.draft /' + '/ true | not) }\'');
   if (fires.length !== 1) die(`expected 1 finding on the planted defect, got ${fires.length}`);
 
   // Must NOT flag the safe direction, or it becomes noise and gets ignored.
