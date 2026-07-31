@@ -28,7 +28,7 @@ OUTPUT=$(bash "$REPO_ROOT/.claude/hooks/test-hooks.sh" 2>&1) || {
 }
 printf '%s\n' "$OUTPUT"
 
-SUMMARY=$(printf '%s\n' "$OUTPUT" | grep -E '^PASS=[0-9]+ FAIL=[0-9]+$' | tail -1)
+SUMMARY=$(printf '%s\n' "$OUTPUT" | grep -E '^PASS=[0-9]+ FAIL=[0-9]+$' | tail -1 || true)
 CASES=$(printf '%s' "$SUMMARY" | sed -n 's/^PASS=\([0-9]*\) FAIL=.*/\1/p')
 FAILS=$(printf '%s' "$SUMMARY" | sed -n 's/.*FAIL=\([0-9]*\)$/\1/p')
 

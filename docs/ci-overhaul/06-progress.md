@@ -964,3 +964,31 @@ the Stop hook timeout raised 15s to 300s (the judge alone budgets 120s;
 the 15s registration was killing every judge-consulting stop, which
 surfaced as the operator-reported EAGAIN), and 12 stale teammate tasks
 stopped to relieve harness process pressure.
+
+## 2026-07-31 (later): the silent-failure gate was doubly dead, repaired with a 28-site sweep
+
+Chasing the D-1 wave's one non-transient red (Migration Test attempt 2 on run
+30628110972: the asia D1 export died in a 21-second gap with ZERO error text)
+led through three nested defects, each proven by a planted control:
+
+1. **clone-d1.sh's export** piped wrangler through `grep -v <R2-url>` under
+   pipefail. A failing wrangler lost its message, and a SUCCESSFUL export
+   whose whole output was the redacted lines made `grep -v` exit 1 and kill
+   the step silently. Now capture-first, redact-after, report wrangler's own
+   exit code.
+2. **check-silent-failure-patterns.sh had never fired since it was written**,
+   for two independent reasons: awk's `-v` escape mangling rewrote the
+   `\|\|` guard regex into an ERE with EMPTY alternations that matched every
+   line (so nothing was ever "unguarded"), and its hand-counted `../..`
+   REPO_ROOT resolved to `.ci`, so the find scanned `.ci/.ci/scripts` --
+   zero files. Same failure family as issue #549: a green gate nobody had
+   ever seen fire. Both fixed (character classes, get_repo_root); a
+   two-class planted defect now exits 1 with both lines reported, and the
+   clean tree exits 0.
+3. **The repaired instrument exposed 28 real unguarded pipelines** across 15
+   scripts (grep/find heads whose no-match rc aborts the calling script
+   silently). All guarded with `|| true` where the value is validated or
+   display-only, one explicit loud empty-check added (build-pkg-repo's GPG
+   key id), one in-string false positive whitelisted, and condition-head
+   pipelines exempted in the gate itself. shellcheck, shfmt, and every
+   touched gate suite re-run green.

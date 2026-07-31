@@ -315,7 +315,7 @@ test_classify_mode_is_pure() {
 
     printf 'docs/a.md\n' | PATH="$WORK/shim:$PATH" node "$ENGINE" --classify >"$WORK/plan.json"
     assert_eq "$(pget 'p.mode')" "reduced" "--classify still works under the shims"
-    assert_eq "$(find "$WORK" -maxdepth 1 -name 'called-*' | wc -l)" "0" \
+    assert_eq "$(find "$WORK" -maxdepth 1 -name 'called-*' | wc -l || true)" "0" \
         "--classify invoked none of git, gh, curl"
     log_pass "--classify is pure: no git, no gh, no network"
 }

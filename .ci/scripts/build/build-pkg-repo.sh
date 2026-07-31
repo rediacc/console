@@ -133,7 +133,11 @@ else
     log_info "GPG private key imported"
 
     # Get the key ID for signing
-    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5)
+    GPG_KEY_ID=$(gpg --list-keys --with-colons 2>/dev/null | grep '^pub' | head -1 | cut -d: -f5 || true)
+    if [[ -z "$GPG_KEY_ID" ]]; then
+        log_error "No GPG public key found after import"
+        exit 1
+    fi
     log_info "Using GPG key: $GPG_KEY_ID"
 
     # Export public key
@@ -174,7 +178,7 @@ mkdir -p "$DISTS_DIR/main/binary-arm64"
 # Copy packages to temp pool for metadata generation
 find "$LOCAL_PKGS" -name "*.deb" -exec cp {} "$APT_POOL_DIR/" \;
 
-DEB_COUNT=$(find "$APT_POOL_DIR" -name "*.deb" | wc -l)
+DEB_COUNT=$(find "$APT_POOL_DIR" -name "*.deb" | wc -l || true)
 log_info "APT: generating metadata for $DEB_COUNT packages (packages served via R2)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
@@ -260,7 +264,7 @@ mkdir -p "$RPM_DIR"
 # Copy RPMs directly into output dir (self-contained repo)
 find "$LOCAL_PKGS" -name "*.rpm" -exec cp {} "$RPM_DIR/" \;
 
-RPM_COUNT=$(find "$RPM_DIR" -name "*.rpm" | wc -l)
+RPM_COUNT=$(find "$RPM_DIR" -name "*.rpm" | wc -l || true)
 log_info "RPM: generating metadata for $RPM_COUNT packages (self-contained)"
 
 if [[ "$DRY_RUN" == "true" ]]; then
@@ -315,7 +319,7 @@ done
 
 APK_COUNT_TOTAL=0
 for arch in x86_64 aarch64; do
-    count=$(find "$APK_WORK_DIR/$arch" -name "*.apk" 2>/dev/null | wc -l)
+    count=$(find "$APK_WORK_DIR/$arch" -name "*.apk" 2>/dev/null | wc -l || true)
     APK_COUNT_TOTAL=$((APK_COUNT_TOTAL + count))
 done
 log_info "APK: generating metadata for $APK_COUNT_TOTAL packages (packages served via R2)"
@@ -325,7 +329,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
 else
     for arch in x86_64 aarch64; do
         arch_work="$APK_WORK_DIR/$arch"
-        arch_count=$(find "$arch_work" -name "*.apk" 2>/dev/null | wc -l)
+        arch_count=$(find "$arch_work" -name "*.apk" 2>/dev/null | wc -l || true)
 
         if [[ "$arch_count" -eq 0 ]]; then
             log_warn "No APK packages found for $arch, skipping"
@@ -379,7 +383,7 @@ done
 
 ARCH_COUNT_TOTAL=0
 for arch in x86_64 aarch64; do
-    count=$(find "$ARCHLINUX_WORK_DIR/$arch" -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
+    count=$(find "$ARCHLINUX_WORK_DIR/$arch" -name "*.pkg.tar.zst" 2>/dev/null | wc -l || true)
     ARCH_COUNT_TOTAL=$((ARCH_COUNT_TOTAL + count))
 done
 log_info "Archlinux: generating metadata for $ARCH_COUNT_TOTAL packages (packages served via R2)"
@@ -389,7 +393,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
 else
     for arch in x86_64 aarch64; do
         arch_work="$ARCHLINUX_WORK_DIR/$arch"
-        arch_count=$(find "$arch_work" -name "*.pkg.tar.zst" 2>/dev/null | wc -l)
+        arch_count=$(find "$arch_work" -name "*.pkg.tar.zst" 2>/dev/null | wc -l || true)
 
         if [[ "$arch_count" -eq 0 ]]; then
             log_warn "No Archlinux packages found for $arch, skipping"

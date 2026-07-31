@@ -109,7 +109,7 @@ run_monitor() {
         node "$WORK/harness.cjs" "$WATCHDOG" "$dir" "$job" "$status" "$event" "${6:-failure}" "${7:-5}" 2>/dev/null | tail -1
 }
 
-captured_files() { find "$WORK/$1" -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' '; }
+captured_files() { find "$WORK/$1" -type f -name '*.log' 2>/dev/null | wc -l | tr -d ' ' || true; }
 
 # ---------------------------------------------------------------------------
 
@@ -147,7 +147,7 @@ test_captured_content_is_the_whole_log_not_the_excerpt() {
     # is the last moment it exists -- so the file must contain the post-error
     # cleanup lines the 80-line excerpt deliberately cuts.
     local file
-    file="$(find "$WORK/retry" -type f -name '*.log' | head -1)"
+    file="$(find "$WORK/retry" -type f -name '*.log' | head -1 || true)"
     assert_contains "$(cat "$file")" "Post job cleanup." \
         "the captured file holds the COMPLETE log, not the classifier excerpt"
     assert_contains "$(cat "$file")" "No APT metadata files found" "the captured file holds the error itself"
@@ -159,7 +159,7 @@ test_capture_filename_is_traceable() {
     # in a filename; the job id disambiguates legs that sanitise alike. The
     # name must still be recognisable or the artifact is useless.
     local base
-    base="$(basename "$(find "$WORK/retry" -type f -name '*.log' | head -1)")"
+    base="$(basename "$(find "$WORK/retry" -type f -name '*.log' | head -1 || true)")"
     assert_contains "$base" "E2E_Workers" "the sanitised filename still names the job"
     assert_contains "$base" "4242" "the filename carries the job id for disambiguation"
     log_pass "captured filenames are sanitised but still traceable ($base)"

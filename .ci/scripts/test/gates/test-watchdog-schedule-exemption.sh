@@ -167,8 +167,8 @@ test_exemption_is_checked_before_the_cancel_api_call() {
     # cancel, i.e. it proved nothing at all. Caught by reading the line number
     # it reported (97, the definition) instead of trusting the green.
     local check_line cancel_line
-    check_line="$(grep -n 'const exemption = evaluateCancelExemption(' "$WATCHDOG" | head -1 | cut -d: -f1)"
-    cancel_line="$(grep -n 'actions/runs/{run_id}/force-cancel' "$WATCHDOG" | head -1 | cut -d: -f1)"
+    check_line="$(grep -n 'const exemption = evaluateCancelExemption(' "$WATCHDOG" | head -1 | cut -d: -f1 || true)"
+    cancel_line="$(grep -n 'actions/runs/{run_id}/force-cancel' "$WATCHDOG" | head -1 | cut -d: -f1 || true)"
 
     if [[ -z "$check_line" || -z "$cancel_line" ]]; then
         log_fail "could not locate both the exemption check and the force-cancel API call in $WATCHDOG"

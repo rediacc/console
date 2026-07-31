@@ -47,7 +47,7 @@ if ! command -v wrangler &>/dev/null && [[ ! -d "node_modules" ]]; then
 fi
 
 # Read D1 database name from wrangler config
-DB_NAME=$(grep 'database_name' "$CONFIG" | head -1 | sed 's/.*= *"\(.*\)"/\1/')
+DB_NAME=$(grep 'database_name' "$CONFIG" | head -1 | sed 's/.*= *"\(.*\)"/\1/' || true)
 if [[ -z "$DB_NAME" ]]; then
     log_error "Could not read database_name from $CONFIG"
     exit 1
