@@ -1,12 +1,15 @@
 # PLAN: cross-PR greenlight, verify-at-read (skip test-renet / account E2E on any-PR job-green evidence)
-Status: executing
+Status: done
 Owner: orchestrator (design synthesized from three discovery investigations), branch 0731-2
 Updated: 2026-07-31
 
 ## Status
 
-Design settled by discovery (operator go received 2026-07-31 ~18:2xZ).
-Implementation assigned to an opus sub-agent. Nothing implemented yet.
+DONE 2026-07-31 (commit 03bac5a89). All of D1-D4 landed incl. the
+operator-required case 7; two planted-defect proofs recorded in the suite's
+case comments; live dry run GREENLIT by run 30628333340 and emitted
+run_renet=false with the evidence id. First real in-CI firing will be
+observed on a later PR round.
 
 ## The ask (operator, verbatim intent)
 
