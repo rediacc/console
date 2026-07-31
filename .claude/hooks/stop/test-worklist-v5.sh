@@ -290,12 +290,16 @@ hand_now
 task 7 completed "merge the chain"
 check "a completed task does not demand a Remaining section" allow ""
 
-echo "== 9. ONE block lists EVERY violation =="
+echo "== 9. WORKLIST_FOCUS=off: ONE block lists EVERY violation =="
+# v13 made the FOCUSED single-check block the default; the dump-all contract
+# survives behind WORKLIST_FOCUS=off and this case keeps that path exercised.
 setup
 say "nothing"
 echo '- [ ] (deadbeef) open thing' >>"$WL"
 echo '- [?] (deadbeef) undefaulted q' >>"$WL"
+export WORKLIST_FOCUS=off
 out="$(run)"
+unset WORKLIST_FOCUS
 n=$(grep -o "check(s) failed" <<<"$out" | wc -l)
 v=$(python3 -c 'import json,sys;d=json.loads(sys.stdin.read());print(d["reason"].count("\n\n  "))' <<<"$out" 2>/dev/null)
 if [[ "$n" -ge 1 && "${v:-0}" -ge 3 ]]; then
@@ -1543,7 +1547,11 @@ else
     echo "  FAIL: --compact modified the requests sidecar"
     FAIL=$((FAIL + 1))
 fi
+# FOCUS=off: this fixture has several outstanding checks and the assertion
+# is about the request one specifically, not about which check rotation picks.
+export WORKLIST_FOCUS=off
 check "an open request still blocks after --compact" block "waiting on you"
+unset WORKLIST_FOCUS
 
 echo "== 79. requests survive the worklist file being deleted entirely =="
 # Deleting the worklist is the hook's documented allow-a-stop residual, but it
@@ -2033,7 +2041,11 @@ say "answer
 
 ## Remaining
 | #7 | thing | waiting-cross-session #$XRID |"
+# FOCUS=off: the ANSWERS delivery check also fires here (the asker has an
+# unacked answer), and rotation would rightly surface it first.
+export WORKLIST_FOCUS=off
 check "an answered id means the wait is over" block "already ANSWERED"
+unset WORKLIST_FOCUS
 
 echo "== 110. FIRE: an ESCALATED request is the operator's now =="
 setup
@@ -2261,7 +2273,10 @@ ARITY = {
     # the gap check below: a constant nobody mapped is a constant nobody rendered.
     "USAGE": None,
     "V_HOOK_BLIND": ("p", "e", "f"), "V_NO_REMAINING": ("x",),
-    "R_BLOCK": (1, "v", "f"), "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
+    "R_BLOCK": (1, "v", "f"), "R_BLOCK_FOCUS": ("v", "m", "f"),
+    "R_FOCUS_MORE": (2,), "R_FOCUS_ONLY": None,
+    "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
+    "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
@@ -3172,7 +3187,10 @@ else
     fail "guide missing or wrong verbs on allow (got=$got): ${out:0:300}"
 fi
 
-# (b) BLOCK stop: the same guide rides the block reason, [ ] gets --tick.
+# (b) BLOCK stop under WORKLIST_FOCUS=off: the guide rides the dump-all block
+# reason, [ ] gets --tick. v13's FOCUSED block deliberately drops the guide
+# (operator, 2026-07-31, superseding the v11 every-full-stop mandate), so the
+# focused variant is asserted guide-FREE in (b2) below.
 setup
 brief_now
 hand_now
@@ -3181,12 +3199,24 @@ say "answer
 
 ## Remaining
 - the perf fixture"
+export WORKLIST_FOCUS=off
 out="$(run)"
+unset WORKLIST_FOCUS
 if grep -qF '"decision": "block"' <<<"$out" && grep -qF "WORKLIST GUIDE" <<<"$out" &&
     grep -qF -- "--tick deadbeef" <<<"$out" && grep -qF "do it, then" <<<"$out"; then
-    pass "a BLOCK stop carries the guide too, and an open item gets --tick"
+    pass "a FOCUS=off block carries the guide, and an open item gets --tick"
 else
-    fail "guide missing from the block path: ${out:0:300}"
+    fail "guide missing from the FOCUS=off block path: ${out:0:300}"
+fi
+
+# (b2) the v13 FOCUSED block is guide-free: the noise reduction IS the
+# feature, and the one check that needs store data carries its own slice.
+out="$(run)"
+if grep -qF '"decision": "block"' <<<"$out" && ! grep -qF "WORKLIST GUIDE" <<<"$out" &&
+    grep -qF "OPEN worklist item" <<<"$out"; then
+    pass "the focused block drops the guide and still names the open item"
+else
+    fail "focused block carried the guide or lost the item: ${out:0:300}"
 fi
 
 # (c) ZERO actionable: a short honest line, never ambiguous silence.
@@ -3215,7 +3245,9 @@ say "answer
 
 ## Remaining
 - fifteen backlog items"
+export WORKLIST_FOCUS=off
 out="$(run)"
+unset WORKLIST_FOCUS
 # -o, not -c: the hook's output is ONE JSON line, so a line count reads 1.
 NSHOWN=$(grep -oF "do it, then --tick" <<<"$out" | wc -l)
 if [[ "$NSHOWN" == "12" ]] && grep -qF "+3 more actionable" <<<"$out" &&
@@ -3240,7 +3272,9 @@ say "answer
 
 ## Remaining
 - three differently broken items"
+export WORKLIST_FOCUS=off
 out="$(run)"
+unset WORKLIST_FOCUS
 ok=1
 for needle in "execute its DEFAULT now" "--defer deadbeef" "LEASE DEAD" "re-lease: --lease deadbeef"; do
     grep -qF -- "$needle" <<<"$out" || {
@@ -3863,7 +3897,8 @@ if grep -qF "NEXT WAKEUPS" <<<"$OUT" && grep -qF "HOURLY LOOP fixture: advance t
 else
     fail "154a: wakeup section wrong on allow: ${OUT:0:260}"
 fi
-# BLOCK path: stale STATE.md forces a block; the section must still ride it.
+# BLOCK path: v13's focused block drops the wakeup section (it rides the
+# guide, and the guide leaves blocks); the FOCUS=off dump-all block keeps it.
 touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
 task 8 pending "moved"
 newturn
@@ -3872,11 +3907,26 @@ say "answer
 ## Remaining
 - #7 thing (pending)
 - #8 moved (pending)"
+export WORKLIST_FOCUS=off
 OUT="$(run)"
+unset WORKLIST_FOCUS
 if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154b: block stop carries the wakeup rows too"
+    pass "154b: FOCUS=off block stop carries the wakeup rows too"
 else
-    fail "154b: wakeup section missing on block: ${OUT:0:220}"
+    fail "154b: wakeup section missing on FOCUS=off block: ${OUT:0:220}"
+fi
+# And the focused block is wakeup-free by design.
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)
+- #8 moved (pending)"
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
+    pass "154b2: the focused block drops the wakeup section"
+else
+    fail "154b2: focused block carried NEXT WAKEUPS: ${OUT:0:220}"
 fi
 # Unparseable schedule is NAMED, never silently dropped.
 setup
@@ -3969,6 +4019,220 @@ else
     fail "155b: a genuinely fresh, correlated lease still fired: ${LAST:0:220}"
 fi
 unset WORKLIST_STUCK_ROUNDS
+
+echo "== 156. v13 FOCUS: one rotating check per stop, LRU rotation =="
+# Two rotating checks outstanding (an open item and a stale brief). Stop 1
+# surfaces exactly one; stop 2 surfaces the OTHER; stop 3 cycles back. The
+# header counts what is held back, so nothing is silently forgotten.
+setup
+hand_now
+export WORKLIST_STUCK_ROUNDS=99
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+# no brief_now: the session-brief check is the second rotating violation.
+# The message carries a '## Remaining' section so exactly TWO rotating
+# checks are outstanding and the cycle length is 2, not 3.
+say "answer
+
+## Remaining
+- the open thing (pending, mine)"
+OUT1="$(run)"
+newturn
+say "answer
+
+## Remaining
+- the open thing (pending, mine)"
+OUT2="$(run)"
+newturn
+say "answer
+
+## Remaining
+- the open thing (pending, mine)"
+OUT3="$(run)"
+unset WORKLIST_STUCK_ROUNDS
+has() { grep -qF "$2" <<<"$1"; }
+o1_open=$(has "$OUT1" "OPEN worklist item" && echo y || echo n)
+o1_brief=$(has "$OUT1" "session brief" && echo y || echo n)
+o2_open=$(has "$OUT2" "OPEN worklist item" && echo y || echo n)
+o2_brief=$(has "$OUT2" "session brief" && echo y || echo n)
+if [[ "$o1_open$o1_brief" == "yn" || "$o1_open$o1_brief" == "ny" ]] &&
+    [[ "$o2_open$o2_brief" == "yn" || "$o2_open$o2_brief" == "ny" ]] &&
+    [[ "$o1_open" != "$o2_open" ]] &&
+    grep -qF "check(s) outstanding, surfacing" <<<"$OUT1" &&
+    grep -qF "more check(s) outstanding" <<<"$OUT1"; then
+    pass "156: each stop surfaces exactly one rotating check, and they alternate"
+else
+    fail "156: rotation wrong (stop1 open=$o1_open brief=$o1_brief, stop2 open=$o2_open brief=$o2_brief)"
+fi
+o3_open=$(has "$OUT3" "OPEN worklist item" && echo y || echo n)
+if [[ "$o3_open" == "$o1_open" ]]; then
+    pass "156b: stop 3 cycles back to stop 1's check (LRU, nothing starves)"
+else
+    fail "156b: rotation did not cycle (stop1 open=$o1_open, stop3 open=$o3_open)"
+fi
+unset -f has
+
+echo "== 156c. CONTROL: WORKLIST_FOCUS=off restores the dump-all block =="
+# The revert control for the whole feature: the same two-check fixture shows
+# BOTH bodies in one block when focus is off.
+setup
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+say "answer"
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+unset WORKLIST_FOCUS
+if grep -qF "OPEN worklist item" <<<"$OUT" && grep -qF "session brief" <<<"$OUT" &&
+    grep -qF "check(s) failed" <<<"$OUT"; then
+    pass "156c CONTROL: FOCUS=off carries every violation in one block"
+else
+    fail "156c: FOCUS=off lost a violation: ${OUT:0:300}"
+fi
+
+echo "== 156d. ALWAYS tier rides every focused block beside the rotation =="
+# CI-red is latched (its block budget is spent at compute time), so hiding it
+# behind rotation would swallow it forever. It must appear IN ADDITION to the
+# one rotating check.
+ci_setup
+ci_rollup FAILURE "[$(ci_job "Quality / Static" FAILURE)]"
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+out="$(ci_run)"
+if grep -qF '"decision": "block"' <<<"$out" && grep -qF "CI IS RED ON PR" <<<"$out" &&
+    grep -qF "OPEN worklist item" <<<"$out"; then
+    pass "156d: the latched CI-red text and one rotating check ride the same focused block"
+else
+    fail "156d: ALWAYS tier missing from the focused block: ${out:0:400}"
+fi
+
+echo "== 157. CI-queue backpressure: a saturated queue says DO NOT PUSH =="
+# The operator's live incident (2026-07-31): pushes queued runs behind each
+# other and a run sat pending 25+ minutes. The hook must see the jam and tell
+# the session to work locally instead of pushing more.
+ci_queue_fixture() { # ci_queue_fixture <runs-json>
+    echo "$1" >"$BASE/ci-runs.json"
+    rm -f "${WL%.md}.ciqueue-deadbeef"
+    cat >"$BASE/binonly/gh" <<SHIM
+#!/bin/bash
+for a in "\$@"; do
+    case "\$a" in
+        *lastEditedAt*) cat "$BASE/ci-fresh.json"; exit 0 ;;
+        query=*) cat "$BASE/ci-rollup.json"; exit 0 ;;
+    esac
+done
+case "\$*" in
+    *actions/runs*) cat "$BASE/ci-runs.json"; exit 0 ;;
+    *actions/jobs/*) cat "$BASE/ci-job.json"; exit 0 ;;
+esac
+echo '{}'
+SHIM
+    chmod +x "$BASE/binonly/gh"
+}
+ci_setup
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+QOLD=$(date -u -d '-30 minutes' +%Y-%m-%dT%H:%M:%SZ)
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"queued\",\"created_at\":\"$QOLD\"},{\"status\":\"completed\",\"created_at\":\"$QOLD\"}]}"
+out="$(ci_run)"
+if grep -qF "CI QUEUE IS SATURATED" <<<"$out" && grep -qF "DO NOT PUSH" <<<"$out"; then
+    pass "157: a 30-minute-queued newest run raises the saturation note"
+else
+    fail "157: saturation note missing: ${out:0:300}"
+fi
+
+echo "== 157b. CONTROL: an in-progress run with an empty queue is clear =="
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"in_progress\",\"created_at\":\"$QOLD\"},{\"status\":\"completed\",\"created_at\":\"$QOLD\"}]}"
+out="$(ci_run)"
+if ! grep -qF "CI QUEUE IS SATURATED" <<<"$out"; then
+    pass "157b CONTROL: a running (not queued) newest run stays quiet"
+else
+    fail "157b: clear queue raised the note: ${out:0:300}"
+fi
+
+echo "== 157c. depth trigger: two queued runs saturate even when fresh =="
+QNEW=$(date -u -d '-1 minute' +%Y-%m-%dT%H:%M:%SZ)
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"queued\",\"created_at\":\"$QNEW\"},{\"status\":\"queued\",\"created_at\":\"$QOLD\"}]}"
+out="$(ci_run)"
+if grep -qF "CI QUEUE IS SATURATED" <<<"$out" && grep -qF "2 queued run(s)" <<<"$out"; then
+    pass "157c: queue depth >= 2 saturates regardless of the newest run's age"
+else
+    fail "157c: depth trigger missing: ${out:0:300}"
+fi
+
+echo "== 157d. FAILURE MODE: a broken gh grants NO slack (fails toward pressure) =="
+rm -f "${WL%.md}.ciqueue-deadbeef"
+cat >"$BASE/binonly/gh" <<SHIM
+#!/bin/bash
+for a in "\$@"; do
+    case "\$a" in
+        *lastEditedAt*) cat "$BASE/ci-fresh.json"; exit 0 ;;
+        query=*) cat "$BASE/ci-rollup.json"; exit 0 ;;
+    esac
+done
+case "\$*" in
+    *actions/runs*) echo "boom" >&2; exit 1 ;;
+esac
+echo '{}'
+SHIM
+chmod +x "$BASE/binonly/gh"
+out="$(ci_run)"
+if ! grep -qF "CI QUEUE IS SATURATED" <<<"$out"; then
+    pass "157d: gh failure reads as unknown, note absent, no relaxation granted"
+else
+    fail "157d: a blind queue check granted slack: ${out:0:300}"
+fi
+
+echo "== 157e. SUPPRESSION PAIR: pr-stale folds into the note only while saturated =="
+# Stale body: last push AFTER the PR-body edit (edit stamped in 2000).
+ci_setup
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+echo '{"data":{"repository":{"pullRequests":{"nodes":[{"number":543,"lastEditedAt":"2000-01-01T00:00:00Z","updatedAt":"2000-01-01T00:00:00Z"}]}}}}' >"$BASE/ci-fresh.json"
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"queued\",\"created_at\":\"$QOLD\"}]}"
+CIMSG="answer with work remaining"
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+out="$(ci_run)"
+if ! grep -qF "YOU PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT" <<<"$out" &&
+    grep -qF "the PR body is stale; fold the refresh into that next push" <<<"$out"; then
+    pass "157e: under saturation the stale-body nag folds into the queue note"
+else
+    fail "157e: fold wrong: ${out:0:400}"
+fi
+# The pair's control: same stale body, queue now clear -> the check fires.
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"completed\",\"created_at\":\"$QOLD\"}]}"
+export WORKLIST_FOCUS=off
+out="$(ci_run)"
+unset WORKLIST_FOCUS
+unset CIMSG
+if grep -qF "YOU PUSHED AFTER YOUR LAST PR-DESCRIPTION EDIT" <<<"$out"; then
+    pass "157e CONTROL: with the queue clear the stale-body check fires again"
+else
+    fail "157e CONTROL: pr-stale did not fire on a clear queue: ${out:0:300}"
+fi
+
+echo "== 157f. the queue read is cached: two stops inside the TTL, one gh hit =="
+ci_setup
+ci_rollup SUCCESS "[$(ci_job "Quality / Static" SUCCESS)]"
+ci_queue_fixture "{\"workflow_runs\":[{\"status\":\"queued\",\"created_at\":\"$QOLD\"}]}"
+cat >"$BASE/binonly/gh" <<SHIM
+#!/bin/bash
+for a in "\$@"; do
+    case "\$a" in
+        *lastEditedAt*) cat "$BASE/ci-fresh.json"; exit 0 ;;
+        query=*) cat "$BASE/ci-rollup.json"; exit 0 ;;
+    esac
+done
+case "\$*" in
+    *actions/runs*) echo hit >>"$BASE/runs-hits.txt"; cat "$BASE/ci-runs.json"; exit 0 ;;
+esac
+echo '{}'
+SHIM
+chmod +x "$BASE/binonly/gh"
+rm -f "$BASE/runs-hits.txt" "${WL%.md}.ciqueue-deadbeef"
+ci_run >/dev/null
+ci_run >/dev/null
+HITS=$(wc -l <"$BASE/runs-hits.txt" 2>/dev/null || echo 0)
+if [[ "$HITS" == "1" ]]; then
+    pass "157f: the second stop served the queue state from the cache"
+else
+    fail "157f: expected exactly 1 runs-endpoint hit, got $HITS"
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
