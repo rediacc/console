@@ -35,11 +35,25 @@ them silently is the failure this rule exists to prevent.
   nothing, a flag that misbehaves, an error that explains nothing), you have found a
   defect. Say so, with the exact command and the exact output. Do not quietly take the
   long way and leave the bug for the next session to rediscover.
-- **Discovery is always in scope. Fixing has a test.** Fix it on the spot, and say you
-  did, when ALL THREE hold: it is in code you are already editing, the fix is small and
-  local (no new abstraction, no signature change rippling outward), and the run you are
-  already doing proves it. Otherwise report it with a one-line repro and ask. Do not
-  silently start a second project inside the first one.
+- **Discovery is always in scope, and so is the fix.** A finding is fixed in the
+  session that finds it. Filing an issue never closes a finding. Small and local
+  (no new abstraction, no signature change rippling outward): fix it inline
+  immediately and say you did. Bigger than that: ask the machinery
+  (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or
+  OPERATOR-ONLY with the exact next command), have a Plan agent write the design
+  to `docs/agent/<branch>/PLAN-<slug>.md` (committed, survives compaction), then
+  implement it THIS session: via a writer sub-agent when the fix's file set is
+  disjoint from your current work or your context is heavy (disjoint ownership,
+  max 2, rule 4), inline otherwise. The fix rides the current PR when
+  risk-compatible, otherwise its own branch cut the same session.
+- **Issues are a last resort with exactly three doors:** the fix needs
+  operator-only powers (secrets, purchases, external accounts, production
+  deploys); the operator explicitly deferred it when asked; or the target is
+  outside this session's write access. "It is big" is not a door. Any last-resort
+  issue must carry the evidence (exact command, exact output) and a ready-to-run
+  brief a future session can execute without rediscovery, and its worklist item
+  closes only with the door named in the tick evidence (`door:operator-only`,
+  `door:operator-deferred`, or `door:no-write-access`).
 - **Unblocking and cross-boundary fixes: do the minimum, then say so loudly.** A gate or
   lint rule blocking the task, or a defect in another package or submodule, still gets
   fixed. Make the smallest change that works and flag it in the summary as something the
@@ -53,6 +67,10 @@ them silently is the failure this rule exists to prevent.
   patch: put the whole cluster into a single plan (root cause, siblings, tests,
   regenerated artifacts, submodules included) and ask to run it. Ask as soon as the
   cluster is visible, not after you have spent the session working around it.
+  The ask decides PACKAGING (one comprehensive change versus riding the current
+  PR), never WHETHER the findings get fixed: park the ask as a [?] whose
+  DEFAULT is "fix the cluster this session", and keep working anything that is
+  safe under either packaging while it waits.
 - **Clean break, no compatibility theater.** There is one operator and no external
   consumers. Fix the root cause; do not add migration commands, deprecation windows,
   fallbacks, or dual code paths to preserve behavior nobody depends on.
@@ -73,6 +91,7 @@ them silently is the failure this rule exists to prevent.
   ```
   worklist.py --add <me> <text...>              track a new open item, prints its #id
   worklist.py --tick <me> <id> <evidence>       close it; evidence is mandatory
+  worklist.py --triage <me> [--id <id>] <finding...>  big/small verdict + next command
   worklist.py --defer <me> <id> <q... DEFAULT: <action>>
   worklist.py --lease <me> <id> <+min|ISO8601Z> worker:<bg-id> [note]
   worklist.py --update <me> <id> <text...>      progress; resets the liveness ladder
@@ -109,8 +128,10 @@ them silently is the failure this rule exists to prevent.
   settle from the code, the request, or a sensible default is yours to do, and
   parking it as "blocked on you" wastes a round trip. Thirty open deferrals is a
   symptom of over-asking, not a queue.
-- **End with what you did NOT fix**, as a short "found, not fixed" list, and offer it as
-  the next big-bang so nothing discovered gets lost.
+- **End with what remains**, which under this rule is short: operator-deferred
+  `[?]` items and last-resort issues with their doors named. A "found, not
+  fixed" entry that fits neither category means the fix-in-session rule was
+  not followed; go back and fix it.
 
 ### 3. Verify before you claim
 

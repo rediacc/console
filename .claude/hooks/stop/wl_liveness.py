@@ -170,16 +170,20 @@ def harness_ancestors(table):
 
 def _needle(command):
     """A distinctive, quote-free substring of a declared command, or ''.
-    The harness wraps the command in an eval with shell re-quoting, so any
-    line containing quote characters may be rewritten in the child cmdline;
-    a quote-free line survives verbatim."""
+    The harness wraps the command in an eval with shell re-quoting, so quote
+    characters may be rewritten in the child cmdline; but re-quoting only
+    inserts or replaces QUOTE characters, so any maximal quote-free run of
+    the original text survives contiguously. Segments, not whole lines: the
+    CI-watch poll loop is one long line with a quoted middle, and requiring
+    the whole line quote-free left exactly that worker unverifiable, which
+    let the pure-wait check-in call a healthy silent poll loop POSSIBLY
+    STUCK (2026-07-31)."""
     best = ""
     for line in (command or "").splitlines():
-        line = line.strip()
-        if "'" in line or '"' in line:
-            continue
-        if len(line) > len(best):
-            best = line
+        for seg in re.split(r"['\"]", line):
+            seg = seg.strip()
+            if len(seg) > len(best):
+                best = seg
     return best if len(best) >= 12 else ""
 
 

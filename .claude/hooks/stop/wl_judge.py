@@ -85,6 +85,85 @@ JUDGE_SCHEMA = {
 }
 
 
+# v16 TRIAGE. Same shape as JUDGE_SCHEMA (flat object, string enum) and the
+# same transport, but DELIBERATELY the opposite failure semantics: the stop
+# judge fails closed because it gates an exit, while triage is a decision aid
+# on a CLI path, so an error degrades to the self-assessment printout and
+# exit 0. See run_triage.
+TRIAGE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "verdict": {
+            "type": "string",
+            "enum": ["inline", "plan-subagent", "operator-only"],
+        },
+        "reason": {"type": "string", "maxLength": 300},
+        "plan_slug": {"type": "string", "maxLength": 60},
+    },
+    "required": ["verdict", "reason", "plan_slug"],
+    "additionalProperties": False,
+}
+
+TRIAGE_VERDICTS = ("inline", "plan-subagent", "operator-only")
+
+
+def run_triage(finding, context):
+    """(verdict_dict, error_string). Exactly one is non-None.
+
+    Modeled on run_judge down to the recursion guard and the workdir, because
+    the transport is the same and a second copy that drifts is a second bug.
+    The CALLER decides what an error means; here every failure is simply
+    reported, never swallowed, so a degraded triage can name what broke.
+    """
+    exe = resolve_claude()
+    if not exe or not os.path.exists(exe):
+        return None, "claude CLI not found (looked at PATH and ~/.local/bin/claude)"
+    workdir = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist" / ".judge"
+    try:
+        workdir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return None, "triage workdir unusable: %s" % exc
+    prompt = M.TRIAGE_PROMPT % {"finding": finding[-4000:], "context": context}
+    env = dict(os.environ)
+    # THE RECURSION GUARD, same as run_judge: `claude -p` fires the Stop hook.
+    env["STOPHOOK_CHILD"] = "1"
+    try:
+        proc = subprocess.run(
+            [
+                exe, "-p", prompt,
+                "--output-format", "json",
+                "--json-schema", json.dumps(TRIAGE_SCHEMA),
+                "--model", JUDGE_MODEL,
+                "--max-budget-usd", JUDGE_BUDGET_USD,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=JUDGE_TIMEOUT_S,
+            env=env,
+            cwd=str(workdir),
+            stdin=subprocess.DEVNULL,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "triage timed out after %ds" % JUDGE_TIMEOUT_S
+    except OSError as exc:
+        return None, "triage could not be launched: %s" % exc
+    if proc.returncode != 0:
+        return None, "triage exited %d: %s" % (proc.returncode, (proc.stderr or "")[-300:])
+    try:
+        env_out = json.loads(proc.stdout)
+    except ValueError:
+        return None, "triage returned unparseable stdout: %s" % (proc.stdout or "")[-300:]
+    if env_out.get("is_error"):
+        return None, "triage reported is_error (subtype=%s, api=%s)" % (
+            env_out.get("subtype"),
+            env_out.get("api_error_status"),
+        )
+    out = env_out.get("structured_output")
+    if not isinstance(out, dict) or out.get("verdict") not in TRIAGE_VERDICTS:
+        return None, "triage produced no usable structured_output: %s" % repr(out)[:300]
+    return out, None
+
+
 def apply_defer_audit(rows, batch):
     """(kind, valids, orders) from the judge's defer_audit answer.
 

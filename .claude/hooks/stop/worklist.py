@@ -123,6 +123,7 @@ C = _MODS["wl_core"]
 S = _MODS["wl_store"]
 R = _MODS["wl_requests"]
 CK = _MODS["wl_checks"]
+J = _MODS["wl_judge"]
 M = _MODS["worklist_messages"]
 
 # Re-exported for direct importers (the suite drives these two as library
@@ -173,10 +174,89 @@ def _read_event():
 USAGE_FALLBACK = "worklist.py: see --help (message catalogue unavailable: %s)"
 
 
+PLAN_SLUG_RE = re.compile(r"[^a-z0-9-]+")
+
+
+def _triage_cli(argv, worklist, me, die):
+    """--triage <me> [--id <id>] <finding...>: how does this finding get fixed?
+
+    WHY (operator, 2026-07-31): the fix-in-session rule says a finding is
+    fixed by the session that finds it, and the only excuse that ever beat
+    that rule was "it is too big for right now". So the machinery answers the
+    size question itself and hands back the exact next command: fix it
+    inline, or write a plan file and implement it this session, or the one
+    door that genuinely makes it someone else's.
+
+    DELIBERATELY ASYMMETRIC with the stop judge, which fails CLOSED because
+    it gates an exit. This is a decision aid on a CLI path, so a judge error
+    DEGRADES to the self-assessment printout with the error named, exit 0,
+    and WORKLIST_JUDGE=off degrades the same way silently. Degraded mode
+    records NO triage event: the machinery must not claim a verdict it did
+    not produce. The `add` event still lands either way, so the finding is
+    tracked regardless of whether the judge could answer.
+    """
+    args = argv[2:]
+    item_id = ""
+    if args[:1] == ["--id"]:
+        if len(args) < 2:
+            die(M.CLI_ITEM_USAGE)
+        item_id = args[1].lstrip("#")
+        args = args[2:]
+    text = " ".join(args).replace("\n", " ").strip()
+    if not text:
+        die("an empty finding triages nothing: state what you found, in a line")
+    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    if item_id:
+        fold = S.load(worklist, sync=True)
+        rec = fold.by_id.get(item_id)
+        if rec is None:
+            die("no item #%s (worklist.py --list shows ids)" % item_id)
+        if rec["owner"] is not None and not C.same_session(rec["owner"], me):
+            die("#%s is owned by %s; never tick or edit another session's tracking"
+                % (item_id, rec["owner"]))
+    else:
+        # Every triaged finding is TRACKED, before any verdict exists. A
+        # finding that reaches this verb and leaves no item behind is exactly
+        # the loss the worklist exists to prevent.
+        item_id = S.add_item(worklist, me, text)
+    print("triaging #%s: %s" % (item_id, text[:120]))
+    branch = C.git_branch(root)
+    context = CK.triage_context(root, worklist, me)
+    degraded = ""
+    verdict = None
+    if not J.JUDGE_DISABLED:
+        verdict, err = J.run_triage(text, context)
+        if err:
+            degraded = "\n  THE TRIAGE JUDGE COULD NOT ANSWER: %s" % err
+    if verdict is None:
+        print(M.CLI_TRIAGE_SELF % {
+            "id": item_id, "me": me, "why": degraded, "context": context,
+            "branch": branch or "<branch>",
+        })
+        return
+    kind = verdict.get("verdict", "")
+    reason = str(verdict.get("reason", "")).strip() or "(the judge gave no reason)"
+    if kind == "plan-subagent":
+        slug = PLAN_SLUG_RE.sub("-", str(verdict.get("plan_slug", "")).lower()).strip("-")
+        slug = slug[:60] or item_id
+        plan = "docs/agent/%s/PLAN-%s.md" % (branch or "<branch>", slug)
+        S.triage_item(worklist, me, item_id, kind, reason, plan)
+        print(M.CLI_TRIAGE_PLAN % {
+            "id": item_id, "me": me, "reason": reason, "plan": plan,
+            "finding": text,
+        })
+        return
+    S.triage_item(worklist, me, item_id, kind, reason)
+    if kind == "inline":
+        print(M.CLI_TRIAGE_INLINE % {"id": item_id, "me": me, "reason": reason})
+    else:
+        print(M.CLI_TRIAGE_OPERATOR % {"id": item_id, "me": me, "reason": reason})
+
+
 def _item_cli(argv, worklist):
-    """--add / --tick / --defer / --lease / --update / --list: the v10 item
-    verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken
-    for a delivered one."""
+    """--add / --triage / --tick / --defer / --lease / --update / --list: the
+    v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be
+    mistaken for a delivered one."""
 
     def die(msg):
         print(msg, file=sys.stderr)
@@ -190,7 +270,8 @@ def _item_cli(argv, worklist):
             # and the hook are never looking at different views. An optional
             # prefix scopes ownership and binds the printed verbs.
             me = argv[2] if len(argv) > 2 else ""
-            print(CK.guided_slice(fold, me or None, None, me or None))
+            root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+            print(CK.guided_slice(fold, me or None, None, me or None, root))
             return
         for rec in fold.items:
             age = C.stamp_age_min(rec.get("first", ""))
@@ -218,6 +299,12 @@ def _item_cli(argv, worklist):
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
         return
+    if mode == "--triage":
+        # BEFORE the item_id parse below, because like --add this verb takes
+        # free text: `--triage <me> <finding...>`, with an optional
+        # `--id <item>` to triage a finding that is already tracked.
+        _triage_cli(argv, worklist, me, die)
+        return
     item_id = argv[2].lstrip("#")
     fold = S.load(worklist, sync=True)
     rec = fold.by_id.get(item_id)
@@ -231,6 +318,14 @@ def _item_cli(argv, worklist):
     if mode == "--tick":
         if not rest or not CK.completion_evidence(root, rest):
             die(M.CLI_TICK_NO_EVIDENCE % item_id)
+        # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape,
+        # so a bare issue link closed a finding: filing WAS a resolution, in
+        # code, whatever the prose said. An issue now settles an item only
+        # when the tick names the last-resort door that made filing the right
+        # answer. Shape-only; whether the door is TRUE is the judge's
+        # question, and every tick already flows into that path.
+        if CK.issue_only_evidence(root, rest):
+            die(M.CLI_TICK_ISSUE_DOOR % item_id)
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))
         return
@@ -468,7 +563,7 @@ def main():
             __file__,
         )
         return
-    if sys.argv[1:2] and sys.argv[1] in ("--add", "--tick", "--defer", "--lease", "--update", "--list"):
+    if sys.argv[1:2] and sys.argv[1] in ("--add", "--triage", "--tick", "--defer", "--lease", "--update", "--list"):
         _item_cli(
             sys.argv[1:], C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         )
