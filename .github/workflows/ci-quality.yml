@@ -163,12 +163,19 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/test/test-install-script.sh
 
-      # Pure bash, so it is called by path: this lane has no node_modules and
-      # `npm run` would need one. check-ci-chain-parity.ts resolves the path
-      # against the chain, so both directions still agree.
+      # Pure bash, so these two are called by path: this lane has no
+      # node_modules and `npm run` would need one. check-ci-parity.ts resolves
+      # the path against the manifest, so both directions still agree.
       - name: install.sh config tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/test/test-install-sh-config.sh
+
+      # Its sibling above ran in CI from the day it was written; this one ran
+      # only locally, for the same reason and with the same shape. Neither the
+      # forward gate nor the reverse one could see the asymmetry.
+      - name: rdc.sh env tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/test/test-rdc-sh-env.sh
 
       - name: Check for Claude attribution
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' }}
@@ -456,6 +463,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      # The proven rediacc/console#549 instance: this gate sat in the local
+      # chain and in no workflow, so nothing in CI ever ran its real scan. It is
+      # NAMED by test-gate-anti-vacuity.sh:104, and that test ran green for
+      # weeks while the scan never executed once -- which is why mentioning a
+      # script never counts as coverage in check-ci-parity.ts.
+      - name: jq boolean defaults
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-jq-boolean-default
+
   # ============================================================================
   # L5 CONTENT -- node + submodules. Content, tutorials, and every gate that
   # touches the public network.
@@ -545,11 +561,20 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-noninteractive
 
-      # `npm run ci` is the promise that a local run catches CI failures. This
-      # fails when a gate is wired into a workflow but not into that chain.
-      - name: Validate every workflow gate is in `npm run ci`
+      # A local run is the promise that a developer finds CI failures before
+      # pushing, and the promise has to hold in BOTH directions: a gate wired
+      # into a workflow but not into the local set breaks it forwards, and a
+      # gate that runs only locally is a gate CI never enforces. This one gate
+      # replaced the two that each checked one direction; the third relation
+      # (local-only, rediacc/console#549) had no gate at all.
+      #
+      # The step NAME here deliberately no longer contains a literal npm
+      # invocation. The old name did, and matching whole workflow text for
+      # `npm run ci` made the entire gate set look CI-executed, which reported
+      # perfect parity forever.
+      - name: Validate parity between the local gate set and the CI quality surface
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-chain-parity
+        run: npm run check:ci-parity
 
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -731,6 +756,19 @@ jobs:
       - name: i18n command parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-i18n-command-parity
+
+      # This is the gate whose planted-defect selftest shipped behind a flag
+      # nothing invoked (2026-07-29). It then spent its life in the local chain
+      # and in no workflow, so the CI half was inert for a second, independent
+      # reason. Both halves are closed now: the key runs the real scan, and this
+      # step runs the key.
+      - name: i18n cross-locale
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-i18n-cross-locale
+
+      - name: Locale sources
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-locale-sources
 
   # ============================================================================
   # L8 BUILT-WWW GATES -- alone. One astro build is the expensive input.
@@ -980,9 +1018,9 @@ jobs:
         run: npm run check:ci-embed-asset-freshness
 
       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
-      # extracted: a check-*.sh path would make check-ci-chain-parity require it
-      # in `npm run ci`, which would newly demand clang + libbpf on a developer
-      # machine. Same coverage, no new local prerequisite.
+      # extracted: a check-*.sh path would make check-ci-parity's R2 demand a
+      # manifest entry for it, which would newly require clang + libbpf on a
+      # developer machine. Same coverage, no new local prerequisite.
       - name: Verify BPF objects are up-to-date
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |

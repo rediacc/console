@@ -83,10 +83,12 @@ REGISTRY=(
     # `exit 0` on a missing directory, which meant renaming the workflow tree
     # would silently retire the gate.
     ".ci/scripts/security/check-workflow-gates.sh|blind"
-    # The empty tree has no .github/workflows, so there is no gate census to
-    # compare against the chain. It used to die with a raw ENOENT stack trace,
-    # which reads as a crash rather than a verdict.
-    "check-ci-chain-parity.ts|blind"
+    # The empty tree has no package.json and no .github/workflows, so there is
+    # no gate census on either side and every one of its seven assertions would
+    # be over an empty set. It replaced check-ci-chain-parity.ts and
+    # check-gate-reachability.ts, which were registered here separately for the
+    # same property; both are gone.
+    "check-ci-parity.ts|Refusing to run"
     # The scope engine's workflow closure is computed by ITERATING
     # `uses: ./.github/workflows/*` at runtime, never by matching names, so the
     # test asserts a real closure over the real tree. On the empty fixture that
@@ -100,7 +102,6 @@ REGISTRY=(
     # draft did the opposite: a wrong ledger path made the protected set empty,
     # so it reported OK on a planted fabrication. Only a control caught that.
     "check-locale-only-edits.ts|Refusing to run"
-    "check-gate-reachability.ts|Refusing to run"
     "check-jq-boolean-default.ts|Refusing to run"
     ".ci/scripts/security/check-autopilot-workflow-invariants.sh|INVARIANT-FAIL"
     # Its DOCS_DIR is a hardcoded path constant, so this is root pattern 1

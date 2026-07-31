@@ -48,7 +48,7 @@ const ROOT_MANIFESTS = new Set([
   '.actions-upgrade-blocklist',
   '.audit-allowlist',
   '.audit-prod-allowlist',
-  '.ci-chain-exempt',
+  '.ci-parity-exempt',
   '.ci-trigger',
   '.cli-i18n-orphan-allowlist',
   '.dead-bash-allowlist',

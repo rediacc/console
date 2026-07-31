@@ -328,7 +328,7 @@ test_drift_gate_runs_standalone() {
 # h) the vendored BLOCKER phrase list has not rotted away from the canonical one
 # =============================================================================
 test_vendored_blocker_list_is_a_subset() {
-    local bp phrase canon vendored missing=0 count=0
+    local bp phrase canon vendored canon_count missing=0 count=0
     bp="$(make_isolated "$1")"
 
     if [[ ! -f "$CANONICAL_VALIDATOR" ]]; then
@@ -344,6 +344,13 @@ test_vendored_blocker_list_is_a_subset() {
 
     [[ -n "$canon" ]] || log_fail "could not parse LOW_EFFORT_BLOCKER_PATTERNS out of $CANONICAL_VALIDATOR"
     [[ -n "$vendored" ]] || log_fail "could not parse BREAKPOINT_LOW_EFFORT_BLOCKERS out of the vendored copy"
+    # Same sanity rule the vendored side gets below. A truncated CANONICAL read
+    # (seen once under the parallel npm-ci runner, 2026-07-31: canon came back
+    # missing 'none' and the subset check false-accused the vendored list)
+    # is an extractor/environment failure, not a subset violation, and must
+    # say so instead of blaming the list.
+    canon_count="$(printf '%s\n' "$canon" | grep -c .)"
+    ((canon_count >= 30)) || log_fail "only $canon_count canonical phrases parsed; the extractor or its read was truncated, not the list"
 
     while IFS= read -r phrase; do
         [[ -z "$phrase" ]] && continue
