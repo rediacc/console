@@ -198,9 +198,18 @@ def bg_output_facts(cwd, session_id, live_bg):
     base = os.environ.get("WORKLIST_BG_OUTPUT_DIR")
     if not base:
         munged = re.sub(r"[^A-Za-z0-9]", "-", str(cwd or ""))
-        base = os.path.join(
-            tempfile.gettempdir(), munged, str(session_id or ""), "tasks"
-        )
+        # The harness scratch root is <tmp>/claude-<uid>/ on this platform,
+        # not <tmp>/ itself; the plain-gettempdir form is kept as a fallback
+        # for setups where TMPDIR already points inside the scratch root.
+        # Found live on the check-in's FIRST real firing: a shell task with a
+        # growing output stream read as "no output stream yet" because the
+        # derivation missed the claude-<uid> segment.
+        tails = [str(session_id or ""), "tasks"]
+        candidates = [
+            os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), munged, *tails),
+            os.path.join(tempfile.gettempdir(), munged, *tails),
+        ]
+        base = next((c for c in candidates if os.path.isdir(c)), candidates[0])
     rows = []
     for b in live_bg or []:
         tid = str(b.get("id") or "?")
