@@ -16,6 +16,7 @@ import time
 
 import wl_ci
 import wl_core as C
+import wl_email
 import wl_judge
 import wl_liveness
 import wl_reggate
@@ -219,7 +220,7 @@ def bank_pollbase(worklist, session_id, sig):
 
 # ---- stuck detection --------------------------------------------------------
 
-def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False):
+def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False, own_stamp=""):
     """(count, fired, why) -- how many consecutive stops have moved NOTHING?
 
     THE OPERATOR'S RULE, IN THEIR WORDS: "I'd go with employing a
@@ -272,7 +273,14 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False):
     and this fires as designed.
     """
     # tasks are (id, subject, status); the STATUS is what has to move.
-    base = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks))
+    # v14 gap 2: `own_stamp` (the newest upd stamp across this session's own
+    # worklist items) rides both signatures. The v13 night proved the harness
+    # task list alone is too narrow an evidence base: a session shipping
+    # commits and ticking worklist items hourly read as "stuck 92 stops"
+    # because its long-horizon harness tasks legitimately never flipped.
+    # Worklist activity is real movement; a genuinely stuck session produces
+    # none, so the catch is intact.
+    base = "|".join(sorted("%s:%s" % (i, st) for i, _, st in tasks)) + "@" + (own_stamp or "")
 
     def dig(s):
         return hashlib.sha1(s.encode("utf-8", "replace")).hexdigest()[:12]
@@ -639,8 +647,18 @@ def poll_fast_path(worklist, session_id, event):
             if ci_watching and age is not None and age >= CI_FORCE_MIN_AGE:
                 return False
         if state == ">":
-            if C.lease_state(rec["line"]) != "fresh":
-                return False  # an expiring lease is a wake-up; the battery says so
+            _ls = C.lease_state(rec["line"])
+            if _ls != "fresh":
+                # v14 gap 4: an EXPIRED lease whose worker the OS still shows
+                # running is supervision, not abandonment; it keeps the silent
+                # path exactly as classify_items keeps it in-flight.
+                _wid = rec.get("worker") or ""
+                if not (
+                    _ls == "expired"
+                    and _wid
+                    and any(str(b.get("id") or "") == _wid for b in live_bg)
+                ):
+                    return False  # an expiring lease is a wake-up; the battery says so
             if wl_liveness.blocking_rung_due(
                 state_doc, "item:" + rec["id"],
                 C.stamp_age_min(rec.get("upd", "")), rec.get("upd", ""),
@@ -705,7 +723,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
         st = rec["state"]
         if st == "x":
             continue
-        txt = rec["text"][:GUIDE_TEXT_CHARS]
+        txt = S.brief_text(rec, GUIDE_TEXT_CHARS)
         upd = C.stamp_age_min(rec.get("upd", ""))
         age = "?" if upd is None else "%dm" % upd
         rid = rec["id"]
@@ -715,9 +733,11 @@ def guided_slice(fold, session_id, verdicts=None, me=None):
         elif st == ">":
             wm = C.WORKER.search(rec["line"])
             wid = rec.get("worker") or (wm.group(1) if wm else "")
-            if C.lease_state(rec["line"]) == "fresh":
+            if C.lease_state(rec["line"]) == "fresh" or rec.get("lease_tolerated"):
                 osw = verdicts.get(wid, "")
                 wtag = "worker:%s%s" % (wid or "?", " [%s]" % osw if osw else "")
+                if rec.get("lease_tolerated"):
+                    wtag += " (lease expired, worker verified alive: auto-honored; renew or tick when it lands)"
                 rows.append((3, "  - [>] #%s (quiet %s, %s) %s\n        NEXT: --update %s %s '<one line of what moved>'"
                              % (rid, age, wtag, txt, me_arg, rid)))
             else:
@@ -891,8 +911,29 @@ def run_stop(event, event_ok, worklist, hook_file):
         all_reqs = {}
         req_to_me, req_bcast, req_answered, req_open_mine = [], [], [], []
 
+    # v13 F2: push operator-only questions OUT over email. Placed beside the
+    # escalation pass because it answers the same question ("who can settle
+    # this?") for the one recipient escalation cannot reach, and BELOW the
+    # poll fast path (which exits the process above), so a 5-minute no-op poll
+    # never pays for it. Wrapped, because a mail transport that can wedge the
+    # gate would be a worse bug than the silence it fixes.
+    email_note = ""
+    try:
+        email_note = wl_email.pump(root, worklist, session_id, fold)
+    except Exception:  # noqa: BLE001 -- the mail channel must never break gating
+        email_note = ""
+
     lines = fold.lines()
-    open_items, others, deferred_recs, in_flight_recs = S.classify_items(fold, session_id)
+    # v14 gap 4: computed HERE (it used to sit below) so classification can
+    # tolerate an expired lease whose worker the OS still shows RUNNING: a
+    # full CI battery legitimately outlives the 120-minute lease cap, and the
+    # v13 night cost three manual renewals for a watcher that was verifiably
+    # alive the whole time. A worker the OS cannot see keeps failing closed.
+    live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
+    _live_worker_ids = {str(b.get("id") or "") for b in live_bg}
+    open_items, others, deferred_recs, in_flight_recs = S.classify_items(
+        fold, session_id, live_worker_ids=_live_worker_ids
+    )
     deferred = [r["line"] for r in deferred_recs]
     in_flight = [r["line"] for r in in_flight_recs]
 
@@ -990,7 +1031,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # another session acts.
     live_poll_crons = [c for c in live_crons if is_poll_cron(c)]
     live_work_crons = [c for c in live_crons if not is_poll_cron(c)]
-    live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
+    # live_bg is computed above, beside classify_items, since v14 gap 4.
     # Keep the raw event: when a check fires wrongly the first question is always
     # "what did the hook actually receive", and that is unanswerable afterwards.
     try:
@@ -1007,9 +1048,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     # this stop (sync, cleanup, escalation), and reused by the STATE.md check,
     # the poll baseline and the judge cache, so all three describe one world.
     cur_sig = S.world_sig(root, worklist, session_id)
+    # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a
+    # session's own bookkeeping (lease renewals, update notes) does not stale
+    # the document it just refreshed. Polls and the judge keep cur_sig.
+    st_sig = S.state_world_sig(root, worklist, session_id, fold=fold)
     agent_branch = C.git_branch(root)
     astate, aage, _atext = S.agent_state_state(
-        root, agent_branch, cur_sig=cur_sig, saved_sig=state_doc.get("state_sig")
+        root, agent_branch, cur_sig=st_sig, saved_sig=state_doc.get("state_sig")
     )
     if astate == "ok":
         # ADOPT: an "ok" verdict banks the signature so a second session
@@ -1021,7 +1066,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # asserting it blocks TWICE on an unchanged world). Must sit above
         # S.save_state below; emit() exits, so anything written after a later
         # emit path never lands.
-        state_doc["state_sig"] = cur_sig
+        state_doc["state_sig"] = st_sig
 
     remaining_lines = (
         ["[ ] " + i for i in open_items]
@@ -1030,6 +1075,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         + ["[>] " + f for f in in_flight]
     )
     something_remains = bool(remaining_lines)
+    # v14 gap 6: BANK a message that carries a '## Remaining' section, keyed
+    # to the structural world sig. A later stop on an UNCHANGED world (a
+    # forfeited poll, a bookkeeping-only turn) is then not ordered to re-type
+    # a byte-identical table; any real move changes st_sig and the demand
+    # returns. Banked before the battery so the stop that writes the report
+    # banks it even when it blocks for some other reason.
+    if msg_readable and REMAINING_HEADING.search(last_msg or ""):
+        state_doc["last_report_sig"] = st_sig
 
     # STUCK DETECTION. Runs before the others so the count advances on every
     # stop, including the ones where something else already fired: a session
@@ -1046,8 +1099,22 @@ def run_stop(event, event_ok, worklist, hook_file):
     # gone stale -- exactly the forgotten-watch case this exemption exists to
     # exclude. Only records whose worker:<id> tag names a task in live_bg can
     # supervise it (mirrors wl_liveness.ladder's wid-not-in-now_bg check).
+    # v14 addendum: AN OPEN OPERATOR REQUEST IS SUPERVISION. When this
+    # session's own question to the operator is posted, unanswered, and
+    # unresolved, the ball is verifiably out of its court; a terminal-hold
+    # state (all work done, DEFAULT: hold) otherwise re-fires the
+    # exempt-overrun every 3x rounds forever off long-lived teammate tasks.
+    # Counting continues; the moment the request is answered or acked the
+    # suppression lifts by itself.
     _supervised = False
-    if live_bg:
+    try:
+        _supervised = any(
+            r.get("to") == "operator" and not r.get("acked") and not wl_requests.request_resolved(r)
+            for r in req_open_mine
+        )
+    except Exception:  # noqa: BLE001 -- a suppression heuristic must never wedge a stop
+        _supervised = False
+    if live_bg and not _supervised:
         try:
             _live_ids = {str(b.get("id") or "") for b in live_bg}
             _correlated = []
@@ -1064,9 +1131,18 @@ def run_stop(event, event_ok, worklist, hook_file):
         except Exception:  # noqa: BLE001 -- never let a suppression heuristic wedge a stop
             _supervised = False
 
+    # Newest own stamp PLUS the own item set (id+state): stamps are
+    # second-resolution, so two moves inside one second would otherwise read
+    # as none, and an added-then-ticked item is movement even when the clock
+    # cannot show it.
+    _mine = [r for r in fold.items if C.owned_by_me(r.get("owner"), session_id)]
+    _own_stamp = "%s#%s" % (
+        max((str(r.get("upd") or "") for r in _mine), default=""),
+        ",".join(sorted("%s%s" % (r["id"], r["state"]) for r in _mine)),
+    )
     stuck_n, stuck_fired, stuck_why = stuck_rounds(
         worklist, session_id, tasks, C._git(root, "rev-parse", "HEAD"), bool(live_bg),
-        supervised=_supervised,
+        supervised=_supervised, own_stamp=_own_stamp,
     )
 
     # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked
@@ -1159,7 +1235,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 len(expired),
                 S.DEFER_WINDOW_MIN,
                 "\n".join(
-                    "    #%s %s" % (r["id"], r["line"][:150]) for r in shown
+                    "    #%s %s" % (r["id"], S.brief_text(r, 150)) for r in shown
                 ),
                 "" if len(expired) <= len(shown) else
                 "    (and %d more, held back so this drains %d per stop)\n"
@@ -1187,7 +1263,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             % (
                 len(unjustified),
                 S.JUSTIFY_AGE_MIN,
-                "\n".join("    #%s %s" % (r["id"], r["line"][:150]) for r in shown),
+                "\n".join("    #%s %s" % (r["id"], S.brief_text(r, 150)) for r in shown),
                 "" if len(unjustified) <= len(shown) else
                 "    (and %d more, held back so this drains %d per stop)\n"
                 % (len(unjustified) - len(shown), S.JUSTIFY_PER_STOP),
@@ -1582,7 +1658,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 rows.append(
                     "    #%s (sat %dm) %s\n        NEXT: %s"
                     % (r["id"], C.stamp_age_min(r.get("upd", "")) or 0,
-                       r["line"][:120], verb)
+                       S.brief_text(r, 120), verb)
                 )
             vadd('ci-waiting', False,
                 M.V_CI_WAITING % (watch_desc, len(backlog), "\n".join(rows))
@@ -1624,8 +1700,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 hook_file,
             )
         )
-    elif something_remains and not REMAINING_HEADING.search(last_msg or ""):
-        vadd('no-remaining', False,M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]))
+    elif (
+        something_remains
+        and not REMAINING_HEADING.search(last_msg or "")
+        # v14 gap 6: an unchanged world accepts the banked report instead of
+        # demanding a byte-identical restatement.
+        and state_doc.get("last_report_sig") != st_sig
+    ):
+        vadd('no-remaining', False, M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]))
 
     if violations:
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
@@ -1643,6 +1725,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         extras = (
             ("\n\n" + ci_report if ci_report else "")
             + ("\n\n" + queue_note if queue_note else "")
+            + ("\n\n" + email_note if email_note else "")
         )
         if os.environ.get("WORKLIST_FOCUS", "on").lower() in ("off", "0", "no"):
             C.emit(
@@ -1999,6 +2082,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         parts.append(ci_report)
     if queue_note:
         parts.append(queue_note)
+    if email_note:
+        parts.append(email_note)
     if agent_note:
         parts.append(agent_note)
     if ladder_pings:
@@ -2036,14 +2121,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         # still riding on background work every single time.
         parts.append(
             "Worklist: %d item(s) in flight on background work (lease-fresh):\n%s"
-            % (len(in_flight), "\n".join("  " + d for d in in_flight))
+            % (len(in_flight), "\n".join("  " + S.brief_line(r) for r in in_flight_recs))
         )
     if deferred:
         # The operator sees these even if my summary buries them. Bounded
         # display (v10): the two or three real decisions were drowning in a
         # thirty-item wall, and everything past the window is already being
         # drained by the autonomy check above.
-        shown = deferred[:8]
+        shown = [S.brief_line(r) for r in deferred_recs[:8]]
         parts.append(
             "Worklist: %d item(s) deferred rather than done:\n%s%s"
             % (

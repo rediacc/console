@@ -153,6 +153,14 @@ def escalate_requests(worklist, session_id, dry_run=False):
     def unanswerable(r):
         if r["escalated"] or r["acked"] or request_resolved(r):
             return ""
+        if r["to"] == "operator":
+            # THE EMAIL IS THE ESCALATION (v13 F2). An operator request has
+            # already left the machine over SES, so cloning it into a `- [?]`
+            # would report the same question twice: once as a live request and
+            # once as a deferral carrying its text, each with its own DEFAULT
+            # window. Escalation exists for a question with nobody left to
+            # answer it; this one is addressed to the one party who always can.
+            return ""
         age = C.stamp_age_min(r["at"])
         if age is None:
             return ""
@@ -314,6 +322,13 @@ def request_cli(argv, worklist):
         body = request_body("request body")
         if not body:
             die("an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered")
+        if to == "operator" and not C.DEFAULT_TOKEN.search(body):
+            # Same rule the escalation retrofit applies below, enforced at the
+            # door instead. An operator request is answered by a human who may
+            # be asleep, so a question with no stated fallback is a session
+            # volunteering to stall for hours; a DEFAULT: makes the wait
+            # time-boxed rather than open-ended.
+            die(M.CLI_ASK_OPERATOR_NO_DEFAULT)
         rid = hashlib.sha1(
             ("%d|%d|%s|%s" % (time.time_ns(), os.getpid(), me, body)).encode("utf-8")
         ).hexdigest()[:8]
@@ -336,6 +351,14 @@ def request_cli(argv, worklist):
                     len(others),
                     "" if others else "; NONE are live, so it will escalate to the operator",
                 )
+            )
+        elif to == "operator":
+            # The operator has no brief and never will, so the liveness line
+            # below would be a lie. Say what actually happens instead.
+            print(
+                "request #%s posted to the operator; your next full stop emails it "
+                "and it is mailed only once. It does not block you: keep working, "
+                "and its DEFAULT stands until an answer arrives." % rid
             )
         else:
             seen = S.brief_age_min(worklist, to)
