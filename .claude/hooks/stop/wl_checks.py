@@ -682,6 +682,16 @@ def poll_fast_path(worklist, session_id, event):
         return False  # the inbox is the poll's whole subject; deliver it loudly
     if wl_requests.escalate_requests(worklist, session_id, dry_run=True):
         return False  # due escalations happen on a full stop that reports them
+    # v15: in a pure background wait the 15-minute worker check-in rides the
+    # full battery, so a due check-in forfeits the silent path. By this point
+    # in the function no open item and no expired deferral survived, which is
+    # exactly the pure-wait shape.
+    if live_bg:
+        _bg_age = C.stamp_age_min((state_doc.get("bgwait") or {}).get("at", ""))
+        # An unseeded clock stays silent (seeding happens on full stops, and
+        # the poll horizon bounds how long that can take); a due one forfeits.
+        if _bg_age is not None and _bg_age >= wl_liveness.BG_REPORT_MIN:
+            return False  # the background check-in is due; the battery delivers it
     return True
 
 
@@ -1084,6 +1094,42 @@ def run_stop(event, event_ok, worklist, hook_file):
     if msg_readable and REMAINING_HEADING.search(last_msg or ""):
         state_doc["last_report_sig"] = st_sig
 
+    # ---- v15 PURE BACKGROUND WAIT (operator, 2026-07-31): "sometimes you
+    # only have background jobs and wait for them without any other pending
+    # task. The hook should respect that but have information about them,
+    # with a 15 min timeout to have a report, since they may stuck."
+    # The state: live background work, no open items, no expired deferral.
+    # In it, waiting is LEGITIMATE (the judge is told so below), and the
+    # hook's demand shrinks to a bounded 15-minute check-in whose facts the
+    # hook gathers ITSELF from each worker's output stream (mtime/size),
+    # because file growth is evidence no self-report can fake. Latched on
+    # fire, so the check-in costs one focused block per window, never a
+    # drumbeat.
+    bg_facts, bgwait_due = [], False
+    if live_bg and not open_items:
+        _expired_any = any(
+            C.DEFAULT_TOKEN.search(r["line"])
+            and (C.stamp_age_min(r.get("upd", "")) or 0) >= S.DEFER_WINDOW_MIN
+            for r in deferred_recs
+        )
+        if not _expired_any:
+            try:
+                bg_facts = wl_liveness.bg_output_facts(
+                    event.get("cwd"), session_id, live_bg
+                )
+            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+                bg_facts = []
+            _last = (state_doc.get("bgwait") or {}).get("at", "")
+            _age = C.stamp_age_min(_last)
+            if _age is None:
+                # First sight of the wait state SEEDS the clock silently: the
+                # check-in is "you have been waiting 15 minutes, report",
+                # never "you started waiting, report".
+                state_doc["bgwait"] = {"at": C.stamp_now()}
+            elif _age >= wl_liveness.BG_REPORT_MIN:
+                bgwait_due = True
+                state_doc["bgwait"] = {"at": C.stamp_now()}
+
     # STUCK DETECTION. Runs before the others so the count advances on every
     # stop, including the ones where something else already fired: a session
     # blocked three times running on the same check has also moved nothing.
@@ -1191,6 +1237,21 @@ def run_stop(event, event_ok, worklist, hook_file):
     def vadd(key, always, text):
         violations.append((key, always, text))
 
+    if bgwait_due:
+        _rows = []
+        for tid, desc, age, size, stale in bg_facts:
+            if age is None:
+                _rows.append(
+                    "    %s (%s): no output stream yet (a teammate agent reports at completion)"
+                    % (tid, desc)
+                )
+            else:
+                _rows.append(
+                    "    %s (%s): output last grew %dm ago, %d bytes%s"
+                    % (tid, desc, age, size,
+                       "  <- POSSIBLY STUCK, investigate or restart" if stale else "")
+                )
+        vadd("bg-report", True, M.V_BG_REPORT % (len(live_bg), "\n".join(_rows)))
     if stuck_fired and something_remains:
         # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
         # status AND HEAD did not advance" for every tier, which is FALSE for
@@ -1900,6 +1961,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                 if queue_note
                 else ""
             )
+            # v15: waiting on background workers with nothing else pending is
+            # a recognized state; the judge must not manufacture work for it.
+            if live_bg and not open_items and bg_facts:
+                queue_extra += (
+                    "\nNOTE: the session is in a recognized PURE BACKGROUND "
+                    "WAIT (%d live worker(s); the hook checks their output "
+                    "streams every %d min). Waiting is legitimate here; do "
+                    "not direct the session to find unrelated work.\n"
+                    % (len(live_bg), wl_liveness.BG_REPORT_MIN)
+                )
             verdict, err = wl_judge.run_judge(
                 remaining_lines, len(in_flight), last_msg, streak,
                 loop_desc,
