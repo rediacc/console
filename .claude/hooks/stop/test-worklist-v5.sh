@@ -5042,6 +5042,54 @@ else
     fail "163d CONTROL: due check-in stayed silent: ${OUT:0:200}"
 fi
 
+echo "== 163e. the output-stream path DERIVATION finds the claude-<uid> layout =="
+# Regression gate for 9b557ab0e: every other 163 case overrides the base via
+# WORKLIST_BG_OUTPUT_DIR, so the derivation itself was untested and its first
+# live firing missed the claude-<uid> segment. This case exercises the real
+# derivation end to end: no override, TMPDIR pointed at a fixture root, the
+# stream living exactly where the harness writes it.
+setup
+FAKETMP="$BASE/faketmp"
+SID_FULL="b9491d9c-full-session-id-fixture"
+MUNGED="-x-y" # re.sub non-alnum -> '-' of cwd "/x/y"
+mkdir -p "$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks"
+printf 'stream\n' >"$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks/bw5.output"
+FOUND=$(TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
+import sys, os
+sys.path.insert(0, os.path.dirname(sys.argv[2]))
+import tempfile
+tempfile.tempdir = None  # re-read TMPDIR
+import wl_liveness
+rows = wl_liveness.bg_output_facts("/x/y", sys.argv[1],
+    [{"id": "bw5", "status": "running", "description": "d"}])
+print("found" if rows and rows[0][2] is not None else "missing")
+PYEOF
+)
+if [[ "$FOUND" == "found" ]]; then
+    pass "163e: the real derivation locates the claude-<uid> stream layout"
+else
+    fail "163e: derivation missed the claude-<uid> layout (got: $FOUND)"
+fi
+# CONTROL: with the stream ABSENT the same call reports missing, so the case
+# cannot pass vacuously on a derivation that never stats anything.
+rm -f "$FAKETMP/claude-$(id -u)/$MUNGED/$SID_FULL/tasks/bw5.output"
+FOUND=$(TMPDIR="$FAKETMP" python3 - "$SID_FULL" "$HOOK" <<'PYEOF'
+import sys, os
+sys.path.insert(0, os.path.dirname(sys.argv[2]))
+import tempfile
+tempfile.tempdir = None
+import wl_liveness
+rows = wl_liveness.bg_output_facts("/x/y", sys.argv[1],
+    [{"id": "bw5", "status": "running", "description": "d"}])
+print("found" if rows and rows[0][2] is not None else "missing")
+PYEOF
+)
+if [[ "$FOUND" == "missing" ]]; then
+    pass "163e CONTROL: an absent stream reads as missing, the probe is real"
+else
+    fail "163e CONTROL: vacuous probe (got: $FOUND)"
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
