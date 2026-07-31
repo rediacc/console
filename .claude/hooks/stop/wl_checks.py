@@ -880,26 +880,134 @@ GUIDE_TEXT_CHARS = 90
 REPORT_REFRESH_MIN = int(os.environ.get("WORKLIST_REPORT_REFRESH_MIN", "360"))
 BACKOFF_NOTE_MIN = int(os.environ.get("WORKLIST_BACKOFF_NOTE_MIN", "60"))
 
+# ---- the allow-report OUTPUT QUEUE ------------------------------------------
+# The diet above deduplicated sections; this bounds how many reach one stop.
+# Sections are ENQUEUED AT COMPUTE TIME, at their producer's call site, never
+# in the emit block -- because emit() exits the process, and three producers
+# (the liveness ladder, dead-session archiving, request escalation) spend a
+# one-shot budget BEFORE the block emit at run_stop's violations branch. Their
+# text was only ever appended on the allow path, so a stop that blocked for an
+# unrelated reason swallowed them for good: the rung is recorded, the item is
+# already [~], the [?] is already appended, and nothing re-fires. An entry
+# that lands in the state doc the moment its producer spends that budget
+# survives a block, a judge block, a crash and a restart.
+OUTQ_PER_STOP = int(os.environ.get("WORKLIST_REPORT_PER_STOP", "1"))
+OUTQ_MAX = int(os.environ.get("WORKLIST_OUTQ_MAX", "40"))
 
-def _report_latch(state_doc, key, content, min_min=None, on_change=True):
-    """True when a slow-moving advisory section should appear on this stop.
 
-    The allow report used to repeat week-stable sections (other sessions'
-    briefs, orphaned items) on every full stop until they were noise the
-    reader had learned to skip. Now each shows when its content CHANGES or
-    when the refresh window lapses. on_change=False rate-limits purely by
-    time, for advice whose wording shifts every stop (the poll-backoff tip
-    carries a live minute counter, so a content hash would re-fire always).
-    Mutates the state doc; run_stop saves it before emitting."""
-    window = REPORT_REFRESH_MIN if min_min is None else min_min
-    doc = state_doc.setdefault("report_seen", {})
-    prev = doc.get(key) or {}
-    sig = hashlib.sha1(content.encode("utf-8", "replace")).hexdigest()[:12]
-    age = C.stamp_age_min(prev.get("at", ""))
-    if (on_change and sig != prev.get("sig")) or age is None or age >= window:
-        doc[key] = {"sig": sig, "at": C.stamp_now()}
-        return True
-    return False
+def _outq(state_doc):
+    """The queue sub-doc, seeded from the v11 report_seen ledger on first sight.
+
+    Without the seed the first upgraded stop re-shows every already-latched
+    advisory at once, which is precisely the symptom being fixed. report_seen
+    is left in place unread rather than deleted: a sole-operator clean break
+    still should not make that stop the noisiest one the session ever saw."""
+    q = state_doc.get("outq")
+    if not isinstance(q, dict):
+        q = {"seq": 0, "items": [], "shown": dict(state_doc.get("report_seen") or {})}
+        state_doc["outq"] = q
+    q.setdefault("seq", 0)
+    q.setdefault("items", [])
+    q.setdefault("shown", {})
+    return q
+
+
+def _outq_cap(q):
+    """Hold OUTQ_MAX by dropping non-sticky entries, lowest priority first
+    then oldest first. A sticky entry is NEVER dropped, even when stickies
+    alone exceed the cap: a one-shot the cap ate is a one-shot lost."""
+    items = q["items"]
+    if len(items) <= OUTQ_MAX:
+        return
+    for e in sorted(
+        (e for e in items if not e.get("sticky")),
+        key=lambda e: (-int(e.get("prio") or 0), int(e.get("seq") or 0)),
+    ):
+        if len(items) <= OUTQ_MAX:
+            break
+        items.remove(e)
+
+
+def outq_add(worklist, session_id, state_doc, key, text, prio,
+             sticky=False, refresh_min=None, on_change=True):
+    """Queue one allow-report section. Persists the state doc immediately.
+
+    Returns True when an entry was added or refreshed, False when the call was
+    absorbed (unchanged content inside its refresh window, or already queued).
+    The return value is for the suite and for a caller that wants to skip
+    building an expensive body; nothing in run_stop needs it.
+
+    PERSISTS ON EVERY CALL, deliberately. Six of run_stop's emit paths do not
+    save the state doc before emitting, so a "save at the end" contract would
+    lose exactly what this queue exists to keep. The cost is at most about ten
+    tempfile+os.replace writes on a path that already runs git and gh
+    subprocesses."""
+    q = _outq(state_doc)
+    items = q["items"]
+    sig = hashlib.sha1(text.encode("utf-8", "replace")).hexdigest()[:12]
+    # A one-shot's entry key carries its own sig, so two different bodies under
+    # one section name never overwrite each other. There is deliberately NO
+    # shown-ledger for sticky keys: a one-shot producer cannot re-fire, so a
+    # ledger that could suppress one is a way to lose it. Showing one twice is
+    # cosmetic; dropping one is the failure this queue exists to prevent.
+    ekey = "%s:%s" % (key, sig) if sticky else key
+    cur = next((e for e in items if e.get("key") == ekey), None)
+    added = False
+    if sticky:
+        if cur is None:
+            q["seq"] = int(q.get("seq") or 0) + 1
+            items.append({"key": ekey, "prio": prio, "sticky": True, "sig": sig,
+                          "text": text, "at": C.stamp_now(), "seq": q["seq"]})
+            added = True
+    elif cur is not None and not on_change:
+        # Identity is the KEY alone: the backoff tip's wording carries a live
+        # minute counter, so a content hash would re-enqueue it every stop.
+        # The freshest wording rides the position the entry already earned.
+        if cur.get("text") != text:
+            cur["text"], cur["sig"] = text, sig
+            added = True
+    elif cur is not None:
+        if cur.get("sig") != sig:
+            # Changed content re-enqueues AT ITS PRIORITY: a new seq sends it
+            # to the back of its own class rather than jumping the queue.
+            q["seq"] = int(q.get("seq") or 0) + 1
+            cur["text"], cur["sig"], cur["seq"] = text, sig, q["seq"]
+            cur["at"] = C.stamp_now()
+            added = True
+    else:
+        window = REPORT_REFRESH_MIN if refresh_min is None else refresh_min
+        prev = q["shown"].get(key) or {}
+        age = C.stamp_age_min(prev.get("at", ""))
+        fresh = age is not None and age < window
+        if not (fresh and (prev.get("sig") == sig or not on_change)):
+            q["seq"] = int(q.get("seq") or 0) + 1
+            items.append({"key": key, "prio": prio, "sticky": False, "sig": sig,
+                          "text": text, "at": C.stamp_now(), "seq": q["seq"]})
+            added = True
+    if added:
+        _outq_cap(q)
+        S.save_state(worklist, session_id, state_doc)
+    return added
+
+
+def outq_drain(worklist, session_id, state_doc, n):
+    """(texts, remaining): the n highest-priority entries, FIFO inside a class.
+
+    Removes exactly those entries BY IDENTITY (never by slicing or clearing --
+    a clear silently eats every one-shot that had not reached its turn),
+    records shown[] for the volatile ones, and persists before returning,
+    because the caller emits and emit() exits the process."""
+    q = _outq(state_doc)
+    take = sorted(
+        q["items"], key=lambda e: (int(e.get("prio") or 0), int(e.get("seq") or 0))
+    )[: max(0, n)]
+    picked = {id(e) for e in take}
+    for e in take:
+        if not e.get("sticky"):
+            q["shown"][e["key"]] = {"sig": e.get("sig", ""), "at": C.stamp_now()}
+    q["items"] = [e for e in q["items"] if id(e) not in picked]
+    S.save_state(worklist, session_id, state_doc)
+    return [e.get("text", "") for e in take], len(q["items"])
 
 
 def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
@@ -992,7 +1100,28 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
 
 # ---- SessionStart / PostCompact ---------------------------------------------
 
+def mark_context_fresh(event, why):
+    """Record that this session's context was just (re)built, so the next
+    judged stop states the judge's FULL approval reason instead of the bare
+    stamp. Never raises: a context marker must not be able to wedge a
+    SessionStart."""
+    try:
+        wl = C.worklist_for(
+            os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd()
+        )
+        sid = event.get("session_id", "")
+        doc = S.load_state(wl, sid)
+        doc["ctx_fresh"] = {"why": why, "at": C.stamp_now()}
+        S.save_state(wl, sid, doc)
+    except Exception:  # noqa: BLE001 -- a marker must never wedge a SessionStart
+        pass
+
+
 def handle_session_start(event):
+    # FIRST statement, not last: the design-docs/plans blocks below return
+    # early when a project has neither, and such a project would otherwise
+    # never be marked.
+    mark_context_fresh(event, "session-start")
     # TWO INDEPENDENT BLOCKS, and the structure is the point. This used to
     # RETURN EARLY when the design-docs directory was absent, which meant a
     # project keeping plans but no docs/ci-overhaul got nothing at all: the
@@ -1043,6 +1172,11 @@ def handle_session_start(event):
 
 
 def handle_post_compact(event):
+    # FIRST statement, for the same reason as handle_session_start, and this
+    # is the case the marker is genuinely load-bearing for: a compacted
+    # session KEEPS its state doc, so the judge-reason signature below would
+    # otherwise read as unchanged and hand it the stamp alone.
+    mark_context_fresh(event, "post-compact")
     # PostCompact hook: the model has just lost its context. Hand the
     # documents straight back as additionalContext so continuity does not
     # depend on it remembering to go looking. Since the .agent/ split this
@@ -1145,6 +1279,15 @@ def run_stop(event, event_ok, worklist, hook_file):
             fold = S.load(worklist, sync=True)
     except Exception:  # noqa: BLE001 -- cleanup must never break gating
         archived, orphaned = [], []
+    if archived:
+        # STICKY, and queued HERE rather than in the allow tail: the store is
+        # already flipped to [~], so an archived item never reports twice.
+        outq_add(
+            worklist, session_id, state_doc, "archived",
+            "Worklist: archived %d dead-session item(s) (state -> [~]):\n%s"
+            % (len(archived), "\n".join("  " + a for a in archived)),
+            1, sticky=True,
+        )
 
     # v6: escalate unanswerable requests BEFORE classifying items, so a
     # freshly appended `- [?]` is classified by this very stop. Then classify
@@ -1156,6 +1299,14 @@ def run_stop(event, event_ok, worklist, hook_file):
             fold = S.load(worklist, sync=True)
     except Exception:  # noqa: BLE001 -- escalation must never break gating
         req_escalated = []
+    if req_escalated:
+        # STICKY: escalate_requests appends the event and the [?] exactly once.
+        outq_add(
+            worklist, session_id, state_doc, "req-escalated",
+            "Requests ESCALATED to operator-visible [?] items (nobody left to block):\n"
+            + "\n".join("  " + e for e in req_escalated),
+            1, sticky=True,
+        )
     all_reqs = {}
     try:
         all_reqs = wl_requests.read_requests(worklist)
@@ -1177,6 +1328,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         email_note = wl_email.pump(root, worklist, session_id, fold)
     except Exception:  # noqa: BLE001 -- the mail channel must never break gating
         email_note = ""
+    if email_note:
+        # STICKY: pump() has already appended the ledger and SENT, or latched
+        # its unconfigured/failed warning on a marker file.
+        outq_add(worklist, session_id, state_doc, "email", email_note, 1, sticky=True)
 
     lines = fold.lines()
     # v14 gap 4: computed HERE (it used to sit below) so classification can
@@ -1206,6 +1361,15 @@ def run_stop(event, event_ok, worklist, hook_file):
     reg_done_tasks, reg_flood = [], 0
     try:
         reg_state, reg_forgot = wl_reggate.load_reggate(reg_marker)
+        if reg_forgot:
+            # STICKY: load_reggate has already discarded the marker, so the
+            # flag is true only on the discovering pass.
+            outq_add(
+                worklist, session_id, state_doc, "reg-forgot",
+                "Regression marker was corrupt and has been re-initialised; previously "
+                "settled verdicts were forgotten, so an old fix-set may be asked once more.",
+                1, sticky=True,
+            )
         reg_cur_tasks = C.task_statuses(session_id)
         if not reg_state["head"]:
             # FAIL SAFE: first sight (or a corrupt marker just discarded)
@@ -1244,6 +1408,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 reg_new_ticks = []
                 reg_ids = [i for i in reg_ids if i not in tick_ids]
                 reg_signals = [s for s in reg_signals if not s.startswith("tick: ")]
+                # STICKY: the absorbed ticks are already banked in seen_ticks.
+                outq_add(
+                    worklist, session_id, state_doc, "reg-flood",
+                    "Regression gate: %d historical ticks were absorbed as bookkeeping "
+                    "(store-format change), not asked about." % reg_flood,
+                    1, sticky=True,
+                )
             if reg_ids:
                 reg_sig = hashlib.sha1("|".join(reg_ids).encode("utf-8")).hexdigest()[:12]
             if reg_ids and reg_sig in reg_state["fixsets"]:
@@ -1448,6 +1619,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     except Exception:  # noqa: BLE001 -- liveness must never break gating
         ladder_pings, ladder_inv, ladder_res = [], [], []
+    if ladder_pings:
+        # STICKY AND CLASS 0. Sticky because ladder() has already recorded the
+        # fired rung against the item's stamp, so the text cannot be
+        # regenerated until the item moves; class 0 because the wording is a
+        # direct instruction that becomes a block at the 90-minute rung.
+        outq_add(
+            worklist, session_id, state_doc, "ladder",
+            M.N_LADDER_PING % ("\n".join("  " + p for p in ladder_pings), me8),
+            0, sticky=True,
+        )
     S.save_state(worklist, session_id, state_doc)
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow
@@ -1730,6 +1911,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             qdetail.get("newest_age_min", 0),
             M.N_CI_QUEUE_PR_STALE_LINE if pr_stale_folded else "",
         )
+        # Class 0, volatile, and refresh_min=0 so the shown-ledger NEVER
+        # suppresses it: a jam that is still a jam must say so on every stop.
+        # The change-or-window latch is for slow-moving advisories; applying it
+        # here would mute an actionable note for six hours after one showing.
+        outq_add(worklist, session_id, state_doc, "ci-queue", queue_note, 0, refresh_min=0)
     # v10: CI trouble on the open PR. Structurally BELOW the poll fast path
     # (which exits the process above), so a 5-minute no-op poll never pays for
     # it. `live_bg` is already running-only, which ci_watch_armed relies on.
@@ -1793,6 +1979,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
+    if ci_report:
+        # Class 0, volatile, refresh_min=0 for the same reason as the queue
+        # note: ci_trouble recomputes this from the live run every stop, and a
+        # PR that is still red must keep saying so. Case 128 pins it: the
+        # downgraded note is what remains after the block budget is spent, so
+        # latching it would leave a red PR reported exactly once.
+        outq_add(worklist, session_id, state_doc, "ci-report", ci_report, 0, refresh_min=0)
     # v9: count WORK crons only. With two crons, a dead work loop behind a
     # surviving 5-minute poll was invisible to a total-count high-water mark,
     # and the work loop dying quietly is the exact failure the operator named.
@@ -1829,6 +2022,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             vadd('agent-absent', False,M.V_AGENT_STILL_ABSENT % agent_branch)
     elif astate == "no-branch":
         agent_note = M.N_AGENT_BLIND % root
+        # Class 2, volatile: recomputed from the branch state every stop.
+        outq_add(worklist, session_id, state_doc, "agent-blind", agent_note, 2)
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         vadd('docs-drift', False,M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
@@ -2290,6 +2485,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 wl_reggate.save_reggate(reg_marker, reg_state)
                 reg_settled = (payload, detail)
+                # STICKY: the fixset is persisted, so every later stop absorbs
+                # this verdict silently and the text never returns.
+                outq_add(
+                    worklist, session_id, state_doc, "reg-settled",
+                    "Regression gate: fix-set %s settled as %s (%s); it will not be asked again."
+                    % (reg_sig[:8], reg_settled[0], (reg_settled[1] or "")[:160]),
+                    1, sticky=True,
+                )
             if kind == "block":
                 counter.write_text(str(streak + 1))
                 C.emit(
@@ -2336,6 +2539,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "  #%s: %s" % (rid, reason[:160]) for rid, _st, reason in avalids
                     ),
                 )
+                # STICKY: the verdicts were banked into defer_audit above, and
+                # a banked item is never interrogated again at that stamp, so
+                # this note cannot be regenerated.
+                outq_add(worklist, session_id, state_doc, "audit", audit_note, 1, sticky=True)
             if aorders:
                 # The REOPEN is the enforcement: a rejected deferral becomes
                 # an ordinary open [ ] item, so the existing open-items
@@ -2397,33 +2604,32 @@ def run_stop(event, event_ok, worklist, hook_file):
     # into its Remaining section, so it comes before everything else.
     parts = [guide]
     if judged_ok:
-        # Never let a paid model call be invisible. A gate that spends money
-        # without saying so is indistinguishable from one that is not running.
-        # One short line: the reason matters when the judge BLOCKS; on an
-        # approval it is confirmation, not reading material.
-        parts.append(
-            "Stop-gate judge (%s) %s: %s"
-            % (
-                wl_judge.JUDGE_MODEL,
-                "approved (cached)" if judge_cached else "approved",
-                (verdict or {}).get("reason", "")[:120],
-            )
-        )
-    if audit_note:
-        parts.append(audit_note)
-    if ci_report:
-        parts.append(ci_report)
-    if queue_note:
-        parts.append(queue_note)
-    if email_note:
-        parts.append(email_note)
-    if agent_note:
-        parts.append(agent_note)
-    if ladder_pings:
-        parts.append(
-            M.N_LADDER_PING
-            % ("\n".join("  " + p for p in ladder_pings), me8)
-        )
+        # NEVER QUEUED, deliberately: this line exists so a paid model call can
+        # never be invisible, and the operator requires a context-fresh session
+        # to get the full statement unconditionally. Queuing it would make both
+        # properties probabilistic. What is rationed is the VERBOSITY -- the
+        # reason is reading material on the stop where the context was just
+        # rebuilt or the reason actually changed, and a bare stamp otherwise.
+        # The pop sits inside this branch so a blocked stop cannot consume the
+        # marker and a WORKLIST_JUDGE=off session holds it until its first
+        # judged stop.
+        fresh = state_doc.pop("ctx_fresh", None)
+        rsn = (verdict or {}).get("reason", "")
+        rsig = hashlib.sha1(rsn.encode("utf-8", "replace")).hexdigest()[:12]
+        stamp = "approved (cached)" if judge_cached else "approved"
+        if fresh or (not judge_cached and rsig != state_doc.get("judge_reason_sig")):
+            # Set ONLY when the full reason is shown, so the next genuinely
+            # different reason still fires. bank_stop_verdict already truncates
+            # at 200, so 400 is a ceiling that bites only a fresh uncached one.
+            parts.append(M.N_JUDGE_STAMP_FULL % (wl_judge.JUDGE_MODEL, stamp, rsn[:400]))
+            state_doc["judge_reason_sig"] = rsig
+        else:
+            parts.append(M.N_JUDGE_STAMP % (wl_judge.JUDGE_MODEL, stamp))
+    # Every section with an earlier producer was queued at that producer's
+    # call site, so it survives a stop that blocks. The four below have no
+    # earlier producer: the allow path is the only place they exist, and they
+    # are enqueued here in the order the report used to carry them.
+    #
     # Advisory, and deliberately on the FULL-stop path only: a silent poll exits long before
     # here, so the tip lands on the ~hourly stop the session is already reading rather than
     # interrupting the quiet it is telling us to buy more of.
@@ -2435,20 +2641,22 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:  # noqa: BLE001 -- an advisory note must never wedge a stop
         _quiet_min = 0
     backoff_tip = poll_backoff_tip(live_crons, _quiet_min, bool(req_to_me))
-    if backoff_tip and _report_latch(state_doc, "backoff", backoff_tip,
-                                     min_min=BACKOFF_NOTE_MIN, on_change=False):
-        parts.append(backoff_tip)
-    if others_briefs and _report_latch(state_doc, "others", others_briefs):
-        parts.append("Other sessions in this worktree:\n" + others_briefs)
-    if archived:
-        parts.append(
-            "Worklist: archived %d dead-session item(s) (state -> [~]):\n%s"
-            % (len(archived), "\n".join("  " + a for a in archived))
-        )
-    if orphaned and _report_latch(state_doc, "orphans", "\n".join(orphaned)):
-        parts.append(
+    if backoff_tip:
+        outq_add(worklist, session_id, state_doc, "backoff", backoff_tip, 2,
+                 refresh_min=BACKOFF_NOTE_MIN, on_change=False)
+    if others_briefs:
+        outq_add(worklist, session_id, state_doc, "others",
+                 "Other sessions in this worktree:\n" + others_briefs, 2)
+    if orphaned:
+        outq_add(
+            worklist, session_id, state_doc, "orphans",
             "Worklist: %d ORPHANED item(s) (owner session dead; auto-archive after %sh):\n%s"
-            % (len(orphaned), os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"), "\n".join("  " + o for o in orphaned))
+            % (
+                len(orphaned),
+                os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"),
+                "\n".join("  " + o for o in orphaned),
+            ),
+            2,
         )
     # The in-flight and deferred sections that used to sit here were pure
     # duplication (operator, 2026-07-31: "Why I see such a big output?"):
@@ -2466,38 +2674,33 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "never briefed" if seen is None else "last seen %dm ago" % seen,
                 )
             rows.append("  #%s (%s; asked %s) %s" % (r["id"], who, r["at"], r["body"][:120]))
-        parts.append(
+        outq_add(
+            worklist, session_id, state_doc, "req-open",
             "Requests you posted, still OPEN (they block their recipients, never you):\n"
-            + "\n".join(rows)
-        )
-    if req_escalated:
-        parts.append(
-            "Requests ESCALATED to operator-visible [?] items (nobody left to block):\n"
-            + "\n".join("  " + e for e in req_escalated)
-        )
-    if reg_settled:
-        parts.append(
-            "Regression gate: fix-set %s settled as %s (%s); it will not be asked again."
-            % (reg_sig[:8], reg_settled[0], (reg_settled[1] or "")[:160])
-        )
-    if reg_flood:
-        parts.append(
-            "Regression gate: %d historical ticks were absorbed as bookkeeping "
-            "(store-format change), not asked about." % reg_flood
-        )
-    if reg_forgot:
-        parts.append(
-            "Regression marker was corrupt and has been re-initialised; previously "
-            "settled verdicts were forgotten, so an old fix-set may be asked once more."
+            + "\n".join(rows),
+            2,
         )
     if others:
         # Reported, never blocked on. Blocking one session on another's
         # items deadlocks it: it cannot do them without racing live work in
         # the same tree, and it must not tick or delete someone else's
         # tracking. Surfacing beats blocking.
-        parts.append("Worklist: nothing open for this session.\n" + other_sessions_note())
-    if parts:
-        # The report latches above mutated the state doc; persist them, or
-        # every "shown once" section shows forever.
-        S.save_state(worklist, session_id, state_doc)
-        C.emit({"systemMessage": "\n\n".join(parts)})
+        outq_add(
+            worklist, session_id, state_doc, "others-items",
+            "Worklist: nothing open for this session.\n" + other_sessions_note(), 2,
+        )
+    # ONE section per stop by default, highest priority first and FIFO inside
+    # a priority class. The "+N more" tail is MANDATORY for the reason spelled
+    # out at the guide's own truncation: a silent cap reads as "that is
+    # everything", and a session that can see three are waiting can raise
+    # WORKLIST_REPORT_PER_STOP for one turn.
+    texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
+    parts.extend(texts)
+    if remaining:
+        parts.append(M.N_OUTQ_MORE % remaining)
+    # No `if parts:` guard: parts always holds the guide, so it was never
+    # false. outq_drain persisted the queue already; this save carries the
+    # judge-line marker pop and any late state mutation, and one redundant
+    # atomic write is cheaper than reasoning about which came last.
+    S.save_state(worklist, session_id, state_doc)
+    C.emit({"systemMessage": "\n\n".join(parts)})
