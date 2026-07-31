@@ -576,6 +576,45 @@ N_CI_QUEUE_PR_STALE_LINE = (
     " (Also: the PR body is stale; fold the refresh into that next push.)"
 )
 
+# ---- the operator email channel (wl_email) ---------------------------------
+
+N_EMAIL_SENT = (
+    "OPERATOR EMAILED: %d question(s) went out to %s in one digest. Nothing "
+    "further is owed on them this turn -- keep working, and act on the answer "
+    "when it arrives (a reply comes back as `--answer operator <id> '<words>'` "
+    "and lands in your next stop). No second mail goes out for %d min, and "
+    "each question is mailed only once, so re-sending is not something you "
+    "need to arrange."
+)
+
+N_EMAIL_FAIL = (
+    "OPERATOR EMAIL FAILED for %d question(s): %s\n"
+    "The questions are NOT lost -- nothing was recorded as sent, so the next "
+    "stop after %d min retries the same digest. This is loud rather than "
+    "silent on purpose: a mail channel that fails quietly is worse than "
+    "having none, because the operator believes they were asked. If it keeps "
+    "failing, check the AWS_SES_* credentials and say so out loud in your "
+    "summary."
+)
+
+N_EMAIL_SKIPPED = (
+    "WARNING: the operator email channel is SKIPPED (mail is optional and its "
+    "last send with the current credentials failed: %s question(s) wait in the "
+    "stop reports instead; last error: %s). Said once per session; fresh "
+    "AWS_SES_* credentials or one successful send re-arm the channel by "
+    "themselves."
+)
+
+N_EMAIL_UNCONFIGURED = (
+    "NOTE: the operator email channel is unconfigured at %s, so %d question(s) "
+    "that would have been mailed are waiting on the operator reading this "
+    "report instead. Report-only, never a block: this is a setup gap, not "
+    "your unfinished work. It is said ONCE per session. Configure it by "
+    "putting AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_REGION "
+    "and AWS_SES_FROM in that file, or set WORKLIST_EMAIL=off to silence the "
+    "channel deliberately."
+)
+
 R_JUDGE_UNAVAILABLE = (
     "The stop-gate judge could not answer: %s\n\n"
     "This is a BUG in the gate, and blocking is deliberate: a judge that "
@@ -637,6 +676,13 @@ CLI_REQUEST_USAGE = (
     "       --answer <my-prefix> <id> <text...>\n"
     "       --decline <my-prefix> <id> <reason...>\n"
     "       --ack <my-prefix> <id>"
+)
+
+CLI_ASK_OPERATOR_NO_DEFAULT = (
+    "REFUSED: a request to the operator must carry a DEFAULT:. It leaves this "
+    "machine as an email and is answered by a human who may be asleep, so "
+    "without a stated fallback you have volunteered to stall until they wake "
+    "up. Re-ask with '... DEFAULT: <what you will do if no answer arrives>'."
 )
 
 CLI_BODY_REFUSED = (

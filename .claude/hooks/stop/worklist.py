@@ -37,6 +37,7 @@ MODULE MAP:
     wl_liveness   worker verification against /proc|ps, the 45/90/120 ladder
     wl_ci         publish divergence, PR freshness, submodule pointers, CI
     wl_reggate    v7/v8 regression-gate machinery
+    wl_email      the operator email channel (SES digests of open questions)
     wl_judge      the stop-legitimacy judge and its verdict cache
     wl_checks     the static battery and the Stop orchestration (run_stop)
     worklist_messages  every user-facing string (arity-pinned by the suite)
@@ -110,7 +111,7 @@ class _BrokenModule:
 
 for _name in (
     "wl_core", "wl_store", "wl_requests", "wl_liveness", "wl_ci",
-    "wl_reggate", "wl_judge", "wl_checks", "worklist_messages",
+    "wl_reggate", "wl_judge", "wl_email", "wl_checks", "worklist_messages",
 ):
     try:
         _MODS[_name] = __import__(_name)
@@ -280,8 +281,37 @@ def _item_cli(argv, worklist):
         if C.lease_state("until:%s" % until) != "fresh":
             die("until:%s is not a valid fresh lease (ISO8601Z, at most %d min ahead)"
                 % (until, C.MAX_LEASE_MIN))
-        S.lease_item(worklist, me, item_id, until, wm.split(":", 1)[1], note)
-        print("leased #%s until %s on %s" % (item_id, until, wm))
+        wid = wm.split(":", 1)[1]
+        # v14 gap 3: validate the worker id against the harness's last event
+        # AT LEASE TIME. The hook verifies leases against OS-visible task ids,
+        # and an Agent's NAME is not its task id: a lease on the name reads as
+        # unverifiable forever, which cost a false "worker is gone" round. A
+        # warning, not a refusal, because the sidecar can lag a just-started
+        # task; a genuinely wrong id still gets caught by the hook's verifier.
+        verified = ""
+        try:
+            _ev = json.loads(
+                worklist.with_suffix(".lastevent-%s.json" % me[:8]).read_text(encoding="utf-8")
+            )
+            _running = sorted(
+                str(b.get("id") or "")
+                for b in (_ev.get("background_tasks") or [])
+                if b.get("status") == "running"
+            )
+        except (OSError, ValueError):
+            _running = None
+        if _running is not None:
+            if wid in _running:
+                verified = " (worker verified against the harness's running tasks)"
+            else:
+                print(
+                    "WARNING: worker:%s is not among the harness's running background "
+                    "task ids (%s). If you named an Agent, lease its TASK id instead; "
+                    "the hook verifies against these ids and anything else reads as "
+                    "unverifiable." % (wid, ", ".join(_running[:10]) or "none")
+                )
+        S.lease_item(worklist, me, item_id, until, wid, note)
+        print("leased #%s until %s on %s%s" % (item_id, until, wm, verified))
         return
     die("unknown item mode %s" % mode)
 
@@ -344,7 +374,10 @@ def main():
             )
             sys.exit(2)
         target = S.agent_state_path(root, branch)
-        backup = S.agent_state_backup_path(wl)
+        # Branch-scoped since the review round of 2026-07-31 (findings
+        # 3688784930/3688787780): a shared slot let a write on ANOTHER branch
+        # destroy this branch's only backup.
+        backup = S.agent_state_backup_path(wl, branch)
         replaced = ""
         try:
             prev_age = int((time.time() - target.stat().st_mtime) / 60.0)
@@ -352,6 +385,7 @@ def main():
             replaced = ", replacing a %d-minute-old document (first line: %r)" % (prev_age, prev_first)
         except (OSError, IndexError):
             pass
+        backed_up = False
         lock = S.agent_state_lock_path(wl)
         with open(lock, "w", encoding="utf-8") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
@@ -360,6 +394,7 @@ def main():
             # about to destroy and not of one a racing writer slipped in.
             try:
                 backup.write_text(target.read_text(encoding="utf-8"), encoding="utf-8")
+                backed_up = True
             except OSError:
                 pass  # first write on this branch, or an unreadable target
             fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
@@ -367,14 +402,18 @@ def main():
                 f.write(body)
             os.replace(tmp, target)
         if replaced:
-            # Name the backup ONLY when something was replaced: a session that
-            # clobbers another's document learns how to undo it in the same
-            # breath as learning that it did.
-            replaced += "; previous body saved to %s" % backup
+            # Name the backup ONLY when something was replaced AND the copy
+            # actually landed (findings 3688770247/3688779150/3688787850: the
+            # old line advertised a recovery path that a failed write had
+            # never created, which is worse than no promise at all).
+            if backed_up:
+                replaced += "; previous body saved to %s" % backup
+            else:
+                replaced += "; WARNING: the backup copy FAILED, the replaced body is gone"
         try:
             S.load(wl, sync=True)  # sync first, so the signature covers the synced world
             doc = S.load_state(wl, prefix)
-            doc["state_sig"] = S.world_sig(root, wl, prefix)
+            doc["state_sig"] = S.state_world_sig(root, wl, prefix)
             S.save_state(wl, prefix, doc)
         except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
             pass

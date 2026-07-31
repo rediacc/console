@@ -21,6 +21,11 @@ setup() {
     # Cases that test cron behavior (25, 26, 34, 35, 101+) or I6 pin their own.
     CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
     JUDGE_MODE=off
+    # The v13 F2 email knobs. Reset here for the same reason every other knob
+    # is: a stray WORKLIST_EMAIL_TRANSPORT leaking out of one case would make a
+    # later case write mail into a stale directory, and a stray WORKLIST_SES_ENV
+    # pointing at a deleted fixture would silently turn the channel off.
+    unset WORKLIST_SES_ENV WORKLIST_EMAIL_TRANSPORT WORKLIST_EMAIL
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
     # where 30 cases came back with empty output and read as failures.
@@ -643,7 +648,9 @@ brief_now
 hand_now # writes STATE_BODY
 STATE_FILE="$BASE/proj/.agent/agenttest/STATE.md"
 BACKUP="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
-BACKUP="${BACKUP%.md}.agentstate.prev.md"
+# Branch-scoped since the 2026-07-31 review round: one shared slot let a
+# write on ANOTHER branch destroy this branch's only backup.
+BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.md"
 VICTIM='This is the document a SECOND session wrote and must be able to get back. It carries the one fact that would otherwise die with it: PR #547 merged to main at 01:30Z, so the nightly is now watchable on main rather than on the branch.
 
 ## Next action
@@ -684,6 +691,53 @@ if grep -qF "previous body saved to" <<<"$out"; then
     fail "a first write with nothing to replace still advertised a backup"
 else
     pass "CONTROL: a first write advertises no backup"
+fi
+
+echo "== 29d. the backup slot is BRANCH-scoped, and a failed copy is confessed =="
+# Review findings 3688784930/3688787780 (shared slot across branches) and
+# 3688770247/3688779150/3688787850 (success line claimed a backup the failed
+# write never created).
+setup
+brief_now
+hand_now # branch agenttest, STATE_BODY
+STATE_A="$BASE/proj/.agent/agenttest/STATE.md"
+BACKUP_A="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+BACKUP_B="${BACKUP_A%.md}.agentstate.prev.otherbranch.md"
+BACKUP_A="${BACKUP_A%.md}.agentstate.prev.agenttest.md"
+VICT_A='Branch A victim body, deliberately long enough for the shape gate to accept it as a real state document (the gate refuses anything under 250 characters as thin, and an earlier draft of this very fixture was refused exactly that way, which is why this sentence exists). It carries the one fact only this branch-A document holds.
+
+## Next action
+Recover me from the branch-A backup and nothing else.'
+printf '%s' "$VICT_A" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+mkdir -p "$BASE/proj/.agent/otherbranch"
+printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
+        python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+printf '%s' "$VICT_A" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
+        python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+if [[ "$(cat "$BACKUP_A" 2>/dev/null)" == "$VICT_A" ]] &&
+    [[ "$(cat "$BACKUP_B" 2>/dev/null)" == "$STATE_BODY" ]]; then
+    pass "29d: each branch keeps its own backup; a write elsewhere cannot destroy it"
+else
+    fail "29d: cross-branch write clobbered the backup (A: $(head -c 40 "$BACKUP_A" 2>&1))"
+fi
+# A failed backup copy must be CONFESSED, not advertised as a recovery path.
+rm -f "$BACKUP_A"
+mkdir -p "$BACKUP_A" # a directory at the path makes write_text raise OSError
+out="$(printf '%s' "$STATE_BODY" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --state deadbeef 2>&1)"
+rmdir "$BACKUP_A" 2>/dev/null
+if grep -qF "backup copy FAILED" <<<"$out" && ! grep -qF "previous body saved to" <<<"$out"; then
+    pass "29d CONTROL: a failed backup write warns instead of naming a phantom file"
+else
+    fail "29d CONTROL: the failed backup was advertised as saved: '${out:0:200}'"
 fi
 
 echo "== 31. design-doc DRIFT blocks =="
@@ -2276,6 +2330,10 @@ ARITY = {
     "R_BLOCK": (1, "v", "f"), "R_BLOCK_FOCUS": ("v", "m", "f"),
     "R_FOCUS_MORE": (2,), "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
+    "N_EMAIL_SKIPPED": (1, "err"),
+    "N_EMAIL_SENT": (2, "to@x", 120), "N_EMAIL_FAIL": (2, "err", 15),
+    "N_EMAIL_UNCONFIGURED": ("p", 2),
+    "CLI_ASK_OPERATOR_NO_DEFAULT": None,
     "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
@@ -4232,6 +4290,607 @@ if [[ "$HITS" == "1" ]]; then
     pass "157f: the second stop served the queue state from the cache"
 else
     fail "157f: expected exactly 1 runs-endpoint hit, got $HITS"
+fi
+
+echo "== 159. operator email: an operator request is mailed once, with its relay command =="
+# v13 F2. NOTHING here touches the network: WORKLIST_EMAIL_TRANSPORT=file:<dir>
+# makes send() write the SES payload it would have POSTed into <dir>, so the
+# assertions read the exact JSON body that would have gone to AWS.
+mail_fixture() { # a configured channel writing into $BASE/mail (call AFTER setup)
+    mkdir -p "$BASE/mail"
+    cat >"$BASE/ses.env" <<'ENVEOF'
+AWS_SES_ACCESS_KEY_ID=AKIAFIXTURENOTREAL
+AWS_SES_SECRET_ACCESS_KEY=secretfixturenotreal
+AWS_SES_REGION=eu-central-1
+AWS_SES_FROM=notify@example.invalid
+ENVEOF
+    export WORKLIST_SES_ENV="$BASE/ses.env"
+    export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
+}
+mailcount() { ls "$BASE/mail" 2>/dev/null | wc -l; }
+mailbody() { cat "$BASE/mail"/* 2>/dev/null; }
+newest_mail() { ls -t "$BASE/mail" 2>/dev/null | head -n1; }
+age_ledger() { # age_ledger <minutes> -- backdate every stamp in the email ledger
+    # The suite's usual aging trick for a sidecar it cannot wait out. Rewriting
+    # a fixture ledger is fine; the append-only discipline is the PRODUCT's, and
+    # cases 159b/159e/159f exist precisely to prove the windows it keys on.
+    python3 - "${WL%.md}.emails" "$1" <<'PYEOF'
+import datetime, json, sys
+p, mins = sys.argv[1], float(sys.argv[2])
+old = (datetime.datetime.now(datetime.timezone.utc)
+       - datetime.timedelta(minutes=mins)).strftime("%Y-%m-%dT%H:%M:%SZ")
+rows = []
+for line in open(p, encoding="utf-8"):
+    line = line.strip()
+    if line:
+        o = json.loads(line)
+        o["at"] = old
+        rows.append(o)
+open(p, "w", encoding="utf-8").write(
+    "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in rows))
+PYEOF
+}
+setup
+mail_fixture
+brief_now
+hand_now
+RID=$(askid deadbeef operator 'which tier map? DEFAULT: ship the draft map')
+say "answer
+
+## Remaining
+- the tier map question, now with the operator"
+run >/dev/null
+BODY="$(mailbody)"
+if [[ "$(mailcount)" == "1" ]] && grep -qF "which tier map?" <<<"$BODY" &&
+    grep -qF "$RID" <<<"$BODY" && grep -qF -- "--answer operator" <<<"$BODY"; then
+    pass "159: one digest carries the question, its request id and the relay command"
+else
+    fail "159: count=$(mailcount) rid=$RID body=${BODY:0:400}"
+fi
+# CONTROL: same world, cooldown REMOVED, and still nothing goes out. Aging the
+# ledger past the cooldown is what makes this a dedup proof rather than a
+# restatement of the rate limit.
+age_ledger 500
+newturn
+say "answer
+
+## Remaining
+- still waiting on the operator"
+run >/dev/null
+if [[ "$(mailcount)" == "1" ]]; then
+    pass "159 CONTROL: an already-mailed question is never mailed twice (ledger dedup)"
+else
+    fail "159 CONTROL: a second digest went out for the same question ($(mailcount) files)"
+fi
+
+echo "== 159b. COOLDOWN: a new question waits out the window, then goes =="
+age_ledger 0 # re-arm: the last send is "now" again
+RID2=$(askid deadbeef operator 'ship the ceph leg? DEFAULT: hold it for the next wave')
+newturn
+say "answer
+
+## Remaining
+- two operator questions outstanding"
+run >/dev/null
+if [[ "$(mailcount)" == "1" ]]; then
+    pass "159b: inside the cooldown a fresh question is delayed, not mailed"
+else
+    fail "159b: the cooldown did not hold ($(mailcount) files)"
+fi
+age_ledger 500
+newturn
+say "answer
+
+## Remaining
+- two operator questions outstanding"
+run >/dev/null
+BODY2="$(cat "$BASE/mail/$(newest_mail)")"
+if [[ "$(mailcount)" == "2" ]] && grep -qF "$RID2" <<<"$BODY2" && ! grep -qF "$RID" <<<"$BODY2"; then
+    pass "159b: past the cooldown the delayed question goes out, alone (nothing lost, nothing repeated)"
+else
+    fail "159b: count=$(mailcount) second digest=${BODY2:0:400}"
+fi
+
+echo "== 159c. ANSWER LOOP: --answer operator reaches the asker, --ack clears it =="
+reqcli --answer operator "$RID" 'use tier map B, the draft undercounts seats' >/dev/null
+newturn
+say "answer
+
+## Remaining
+- act on the operator's tier map answer"
+export WORKLIST_FOCUS=off
+check "the operator's answer blocks its asker with the text in the reason" block \
+    "use tier map B, the draft undercounts seats"
+reqcli --ack deadbeef "$RID" >/dev/null
+newturn
+say "acted on it
+
+## Remaining
+- one operator question still open"
+out="$(run)"
+unset WORKLIST_FOCUS
+if ! grep -qF "use tier map B" <<<"$out"; then
+    pass "159c: --ack ends the delivery permanently"
+else
+    fail "159c: the acked answer still blocked: ${out:0:300}"
+fi
+# CONTROL: the self-answer guard is untouched by the operator recipient.
+reqcli --answer deadbeef "$RID2" 'answering myself' >"$BASE/self.out" 2>&1
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "your own request" "$BASE/self.out"; then
+    pass "159c CONTROL: answering your own request is still refused"
+else
+    fail "159c CONTROL: self-answer rc=$RC out=$(head -c 200 "$BASE/self.out")"
+fi
+
+echo "== 159d. an operator request does NOT escalate into a duplicate [?] =="
+# Without the exemption every emailed question would ALSO clone itself into a
+# deferral carrying the same text and its own DEFAULT window: asked once,
+# reported twice, defaulted twice.
+setup
+mail_fixture
+brief_now
+hand_now
+OLDREQ=$(date -u -d '-300 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"ask","id":"aaaa1111","from":"deadbeef","to":"operator","at":"%s","body":"which tier map? DEFAULT: ship the draft"}\n' \
+    "$OLDREQ" >>"${WL%.md}.requests"
+say "answer
+
+## Remaining
+- the operator question"
+run >/dev/null
+if ! grep -q '"ev":"escalate"' "${WL%.md}.requests" &&
+    ! grep -q 'aaaa1111' "${WL%.md}.events.jsonl" 2>/dev/null; then
+    pass "159d: a 300-minute-old operator request is not cloned into a [?]"
+else
+    fail "159d: the operator request escalated: $(grep escalate "${WL%.md}.requests" | head -c 200)"
+fi
+# CONTROL: the dead-recipient rule itself still works for an ordinary session.
+printf '{"ev":"ask","id":"bbbb2222","from":"deadbeef","to":"zzzzzzzz","at":"%s","body":"restart the leg? DEFAULT: restart it"}\n' \
+    "$OLDREQ" >>"${WL%.md}.requests"
+newturn
+say "answer
+
+## Remaining
+- the operator question and the dead-recipient one"
+run >/dev/null
+if grep -q '"ev":"escalate"' "${WL%.md}.requests" && grep -q 'bbbb2222' "${WL%.md}.events.jsonl"; then
+    pass "159d CONTROL: an ordinary request to a silent session still escalates"
+else
+    fail "159d CONTROL: dead-recipient escalation stopped working"
+fi
+
+echo "== 159e. DEFERRAL DIGEST: aged [?] items fold into one mail, once per generation =="
+setup
+mail_fixture
+brief_now
+hand_now
+OLDD=$(date -u -d '-90 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"add","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"flip the billing tier? DEFAULT: keep it WHY: only the operator owns revenue calls HOW: operator picks"}\n' \
+    "$OLDD" >>"${WL%.md}.events.jsonl"
+printf '{"ev":"add","id":"eeee2222","at":"%s","by":"deadbeef","s":"?","o":"deadbeef","t":"drop the asia region? DEFAULT: keep it WHY: only the operator owns the cost tradeoff HOW: operator decides"}\n' \
+    "$OLDD" >>"${WL%.md}.events.jsonl"
+say "answer
+
+## Remaining
+- two deferred decisions waiting on the operator"
+run >/dev/null
+BODY="$(mailbody)"
+if [[ "$(mailcount)" == "1" ]] && grep -qF "eeee1111" <<<"$BODY" && grep -qF "eeee2222" <<<"$BODY" &&
+    grep -qF "flip the billing tier?" <<<"$BODY"; then
+    pass "159e: two aged deferrals fold into ONE digest listing both"
+else
+    fail "159e: count=$(mailcount) body=${BODY:0:400}"
+fi
+age_ledger 500
+newturn
+say "answer
+
+## Remaining
+- two deferred decisions waiting on the operator"
+run >/dev/null
+if [[ "$(mailcount)" == "1" ]]; then
+    pass "159e: an untouched deferral is never re-mailed, cooldown or no cooldown"
+else
+    fail "159e: an untouched deferral was mailed again ($(mailcount) files)"
+fi
+# A re-deferral is a NEW generation, so it re-arms. Planted with an aged stamp
+# because a `--defer` issued now is one minute old and correctly not yet due;
+# the event below is exactly what that CLI writes, 80 minutes ago.
+OLDD2=$(date -u -d '-80 minutes' +%Y-%m-%dT%H:%M:%SZ)
+printf '{"ev":"state","id":"eeee1111","at":"%s","by":"deadbeef","s":"?","note":"re-deferred after the pricing call slipped"}\n' \
+    "$OLDD2" >>"${WL%.md}.events.jsonl"
+newturn
+say "answer
+
+## Remaining
+- the re-deferred billing decision"
+run >/dev/null
+BODY2="$(cat "$BASE/mail/$(newest_mail)")"
+if [[ "$(mailcount)" == "2" ]] && grep -qF "eeee1111" <<<"$BODY2" && ! grep -qF "eeee2222" <<<"$BODY2"; then
+    pass "159e: a re-deferral re-arms that item alone, keyed by its update stamp"
+else
+    fail "159e: re-arm wrong: count=$(mailcount) body=${BODY2:0:400}"
+fi
+
+echo "== 159f. FAILURE: a broken transport is loud, changes no verdict, and retries =="
+setup
+mail_fixture
+export WORKLIST_EMAIL_TRANSPORT="file:$BASE/no-such-mail-dir"
+brief_now
+hand_now
+askid deadbeef operator 'rotate the SES key now? DEFAULT: rotate it next window' >/dev/null
+say "answer
+
+## Remaining
+- the SES rotation question"
+out="$(run)"
+got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+export WORKLIST_EMAIL=off
+newturn
+say "answer
+
+## Remaining
+- the SES rotation question"
+out_off="$(run)"
+got_off="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out_off" 2>/dev/null)"
+unset WORKLIST_EMAIL
+if grep -qF "OPERATOR EMAIL FAILED" <<<"$out" && [[ "$got" == "$got_off" ]] &&
+    grep -q '"ev":"fail"' "${WL%.md}.emails" && ! grep -q '"ev":"sent"' "${WL%.md}.emails"; then
+    pass "159f: a failed send is loud, records no false 'sent', and leaves the verdict at '$got_off'"
+else
+    fail "159f: got=$got got_off=$got_off out=${out:0:300}"
+fi
+# MAIL IS OPTIONAL (operator, 2026-07-31): after a failure with the current
+# credentials the channel is SKIPPED with one warning, not retried loudly.
+newturn
+say "answer
+
+## Remaining
+- the SES rotation question"
+out="$(run)"
+if grep -qF "email channel is SKIPPED" <<<"$out" && ! grep -qF "OPERATOR EMAIL FAILED" <<<"$out"; then
+    pass "159f: the second stop warns ONCE that the optional channel is skipped"
+else
+    fail "159f: skip warning wrong: ${out:0:300}"
+fi
+newturn
+say "answer
+
+## Remaining
+- the SES rotation question"
+out="$(run)"
+if ! grep -qF "email channel is SKIPPED" <<<"$out" && ! grep -qF "OPERATOR EMAIL FAILED" <<<"$out"; then
+    pass "159f: after the one warning the skipped channel is silent"
+else
+    fail "159f: the skip warning repeated: ${out:0:300}"
+fi
+# FRESH CREDENTIALS RE-ARM the channel by themselves: new key id, transport
+# restored, the same question finally goes out. Nothing was lost.
+age_ledger 60
+cat >"$BASE/ses.env" <<'ENVEOF'
+AWS_SES_ACCESS_KEY_ID=AKIAROTATEDFRESHKEY
+AWS_SES_SECRET_ACCESS_KEY=secretrotatedfresh
+AWS_SES_REGION=eu-central-1
+AWS_SES_FROM=notify@example.invalid
+ENVEOF
+export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
+newturn
+say "answer
+
+## Remaining
+- the SES rotation question"
+run >/dev/null
+if [[ "$(mailcount)" == "1" ]] && grep -qF "rotate the SES key now?" "$(ls -d "$BASE/mail"/*)"; then
+    pass "159f: fresh credentials re-arm the channel and the question is sent, nothing lost"
+else
+    fail "159f: re-arm did not resend ($(mailcount) files)"
+fi
+
+echo "== 159g. UNCONFIGURED: one note, no crash, no block; and --ask operator needs a DEFAULT =="
+setup
+export WORKLIST_SES_ENV="$BASE/there-is-no-env-file"
+export WORKLIST_EMAIL_TRANSPORT="file:$BASE/mail"
+mkdir -p "$BASE/mail"
+brief_now
+hand_now
+askid deadbeef operator 'approve the pricing page? DEFAULT: leave it as drafted' >/dev/null
+say "answer
+
+## Remaining
+- the pricing page question"
+check "an unconfigured channel notes itself and never blocks" allow \
+    "operator email channel is unconfigured"
+newturn
+say "answer
+
+## Remaining
+- the pricing page question"
+out="$(run)"
+if ! grep -qF "operator email channel is unconfigured" <<<"$out" && [[ "$(mailcount)" == "0" ]]; then
+    pass "159g: the unconfigured note is latched to once per session, and nothing was sent"
+else
+    fail "159g: the note repeated or mail escaped: ${out:0:300}"
+fi
+reqcli --ask deadbeef operator 'just tell me what you think' >"$BASE/ask.out" 2>&1
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "must carry a DEFAULT:" "$BASE/ask.out"; then
+    pass "159g: an operator request with no DEFAULT: is refused at the door"
+else
+    fail "159g: DEFAULT-less operator ask rc=$RC out=$(head -c 200 "$BASE/ask.out")"
+fi
+unset WORKLIST_SES_ENV WORKLIST_EMAIL_TRANSPORT WORKLIST_EMAIL
+
+echo "== 160. v14 gap 1: displays show basetext + LATEST note, never the whole history =="
+# One live item reached ~20 concatenated notes and every block printed them
+# all. brief_line/brief_text keep the full accumulation in the store (--list)
+# and render base + newest only.
+setup
+brief_now
+hand_now
+GID=$(reqcli --add deadbeef "campaign base text for the brief test" | grep -oE '#[0-9a-f]+' | tr -d '#')
+JW="WHY: only the operator can pick between the two tier maps because both are defensible and the code decides nothing HOW: the operator answers on their next pass"
+reqcli --defer deadbeef "$GID" "first old note DEFAULT: alpha $JW" >/dev/null
+reqcli --defer deadbeef "$GID" "second old note DEFAULT: beta $JW" >/dev/null
+reqcli --defer deadbeef "$GID" "newest note wins DEFAULT: gamma $JW" >/dev/null
+say "answer
+
+## Remaining
+- the deferred campaign item"
+export WORKLIST_FOCUS=off
+out="$(run)"
+unset WORKLIST_FOCUS
+if grep -qF "campaign base text for the brief test" <<<"$out" &&
+    grep -qF "newest note wins" <<<"$out" &&
+    ! grep -qF "first old note" <<<"$out" &&
+    ! grep -qF "second old note" <<<"$out"; then
+    pass "160: the stop shows base + LATEST and drops the middle history"
+else
+    fail "160: brief rendering wrong: ${out:0:400}"
+fi
+FULL="$(reqcli --list)"
+if grep -qF "first old note" <<<"$FULL" && grep -qF "second old note" <<<"$FULL"; then
+    pass "160 CONTROL: --list still carries the full accumulated history"
+else
+    fail "160 CONTROL: the store lost history: ${FULL:0:300}"
+fi
+
+echo "== 160b. v14 gap 2: own worklist activity resets the stuck counter =="
+# A session ticking/leasing/updating items hourly is MOVING even when its
+# long-horizon harness tasks never flip; only a session doing neither counts.
+# STUCK_ROUNDS=2 so tasks+head fires at 2 unchanged stops (1 would fire on
+# every stop by construction: a fresh signature starts its count at 1).
+setup
+brief_now
+hand_now
+export WORKLIST_STUCK_ROUNDS=2
+task 7 pending "long-horizon watch"
+FIRED=0
+for i in 1 2 3 4; do
+    newturn
+    say "answer
+
+## Remaining
+- #7 long-horizon watch (pending)"
+    OUT="$(run)"
+    grep -qF "CONSECUTIVE STOPS" <<<"$OUT" && FIRED=1
+    AID=$(reqcli --add deadbeef "movement item $i" | grep -oE '#[0-9a-f]+' | tr -d '#')
+    reqcli --tick deadbeef "$AID" "done, exit 0" >/dev/null
+done
+if [[ "$FIRED" == 0 ]]; then
+    pass "160b: worklist activity between stops keeps the stuck detector quiet"
+else
+    fail "160b: an active session still read as stuck: ${OUT:0:250}"
+fi
+# CONTROL: the identical shape WITHOUT worklist activity fires.
+setup
+brief_now
+hand_now
+task 7 pending "long-horizon watch"
+FIRED=0
+for i in 1 2 3 4; do
+    newturn
+    say "answer
+
+## Remaining
+- #7 long-horizon watch (pending)"
+    OUT="$(run)"
+    grep -qF "CONSECUTIVE STOPS" <<<"$OUT" && FIRED=1
+done
+unset WORKLIST_STUCK_ROUNDS
+if [[ "$FIRED" == 1 ]]; then
+    pass "160b CONTROL: with no activity the detector still fires"
+else
+    fail "160b CONTROL: the stuck detector never fired: ${OUT:0:250}"
+fi
+
+echo "== 160c. v14 gap 3: --lease warns when the worker id is not a running task =="
+setup
+brief_now
+hand_now
+CID=$(reqcli --add deadbeef "leased thing" | grep -oE '#[0-9a-f]+' | tr -d '#')
+printf '{"background_tasks":[{"id":"bw1","type":"shell","status":"running","description":"real watch"}]}\n' \
+    >"${WL%.md}.lastevent-deadbeef.json"
+OUT="$(reqcli --lease deadbeef "$CID" +30 worker:my-agent-name "watching" 2>&1)"
+if grep -qF "WARNING: worker:my-agent-name is not among" <<<"$OUT" && grep -qF "bw1" <<<"$OUT"; then
+    pass "160c: a name-not-id lease is warned about, naming the real ids"
+else
+    fail "160c: no warning for an unverifiable worker: ${OUT:0:250}"
+fi
+OUT="$(reqcli --lease deadbeef "$CID" +30 worker:bw1 "watching" 2>&1)"
+if grep -qF "worker verified against the harness" <<<"$OUT" && ! grep -qF "WARNING" <<<"$OUT"; then
+    pass "160c CONTROL: a real task id is verified, no warning"
+else
+    fail "160c CONTROL: verification suffix missing: ${OUT:0:250}"
+fi
+
+echo "== 160d. v14 gap 4: an expired lease with an OS-verified-alive worker stays in-flight =="
+setup
+brief_now
+hand_now
+FRESH=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+PAST=$(date -u -d '-5 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"dddd0001","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"long CI watch"}\n{"ev":"lease","id":"dddd0001","at":"%s","by":"deadbeef","until":"%s","worker":"bw1"}\n' \
+    "$FRESH" "$FRESH" "$PAST" >>"${WL%.md}.events.jsonl"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"the long CI watch"}]'
+say "answer
+
+## Remaining
+- the long CI watch, in flight on bw1"
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+unset WORKLIST_FOCUS
+if ! grep -qF "lease expired; finish it" <<<"$OUT" && ! grep -qF "OPEN worklist item" <<<"$OUT"; then
+    pass "160d: the verified-alive worker keeps the expired lease in flight"
+else
+    fail "160d: a supervised long job still failed closed: ${OUT:0:300}"
+fi
+# CONTROL: the same expired lease with the worker GONE fails closed as before.
+BG='[]'
+newturn
+say "answer
+
+## Remaining
+- the long CI watch, in flight on bw1"
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+unset WORKLIST_FOCUS
+BG=''
+if grep -qF "lease expired; finish it" <<<"$OUT"; then
+    pass "160d CONTROL: a gone worker still fails the expired lease closed"
+else
+    fail "160d CONTROL: the expired lease was tolerated without a live worker: ${OUT:0:300}"
+fi
+
+echo "== 160e. v14 gap 5: own bookkeeping does not stale STATE.md; structure does =="
+setup
+brief_now
+# The lease vehicle exists and is ALREADY [>] before the document is written,
+# so the later renewal changes no structure (state stays '>', only until/upd
+# move), which is exactly the bookkeeping-only shape this gap is about.
+FID=$(reqcli --add deadbeef "lease vehicle" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --lease deadbeef "$FID" +60 worker:bw9 "watching the long job" >/dev/null
+BG='[{"id":"bw9","type":"shell","status":"running","description":"the long job"}]'
+hand_now
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null
+touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+reqcli --lease deadbeef "$FID" +90 worker:bw9 "renewing the watch lease" >/dev/null
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if ! grep -qF "STATE.md is stale" <<<"$OUT"; then
+    pass "160e: an aged STATE.md survives a same-session lease renewal"
+else
+    fail "160e: own bookkeeping staled the document: ${OUT:0:300}"
+fi
+# CONTROL: a STRUCTURAL move (new open item) stales the aged document.
+reqcli --add deadbeef "genuinely new work" >/dev/null
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+unset WORKLIST_FOCUS
+if grep -qF "STATE.md is stale" <<<"$OUT"; then
+    pass "160e CONTROL: a structural move stales the aged document"
+else
+    fail "160e CONTROL: structure moved and staleness never fired: ${OUT:0:300}"
+fi
+
+echo "== 160f. v14 gap 6: an unchanged world accepts the banked Remaining report =="
+setup
+brief_now
+hand_now
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+run >/dev/null
+newturn
+say "bookkeeping-only turn, nothing moved since the last report"
+OUT="$(run)"
+if ! grep -qF "no '## Remaining' section" <<<"$OUT"; then
+    pass "160f: the banked report stands on an unchanged world"
+else
+    fail "160f: an unchanged world still demanded a restatement: ${OUT:0:300}"
+fi
+# CONTROL: the world moves (new open item) and the demand returns.
+reqcli --add deadbeef "new work invalidates the bank" >/dev/null
+newturn
+say "another turn without a remaining section"
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+unset WORKLIST_FOCUS
+if grep -qF "no '## Remaining' section" <<<"$OUT"; then
+    pass "160f CONTROL: a moved world demands a fresh report"
+else
+    fail "160f CONTROL: the bank outlived the world it described: ${OUT:0:300}"
+fi
+
+echo "== 161. an OPEN operator request suppresses the stuck exempt-overrun =="
+# Terminal-hold shape: all work done, the one question posted to the operator
+# with DEFAULT: hold, long-lived teammate tasks keeping live_bg nonempty. The
+# ball is verifiably out of this session's court, so the overrun must not
+# nag it into fake motion; the suppression lifts when the request resolves.
+setup
+brief_now
+hand_now
+export WORKLIST_STUCK_ROUNDS=1
+task 7 pending "operator-gated decision"
+reqcli --ask deadbeef operator "merge the green PR? DEFAULT: hold and do not merge" >/dev/null
+BG='[{"id":"tz1","type":"teammate","status":"running","description":"long-lived teammate"}]'
+FIRED=0
+for i in 1 2 3 4 5 6; do
+    newturn
+    say "answer
+
+## Remaining
+- #7 operator-gated decision (pending)"
+    OUT="$(run)"
+    grep -qF "CONSECUTIVE STOPS" <<<"$OUT" && FIRED=1
+done
+if [[ "$FIRED" == 0 ]]; then
+    pass "161: waiting on an open operator question is not stuck"
+else
+    fail "161: the hold state was nagged as stuck: ${OUT:0:250}"
+fi
+# CONTROL: the same shape WITHOUT the operator request still overruns.
+setup
+brief_now
+hand_now
+task 7 pending "operator-gated decision"
+BG='[{"id":"tz1","type":"teammate","status":"running","description":"long-lived teammate"}]'
+FIRED=0
+for i in 1 2 3 4 5 6; do
+    newturn
+    say "answer
+
+## Remaining
+- #7 operator-gated decision (pending)"
+    OUT="$(run)"
+    grep -qF "CONSECUTIVE STOPS" <<<"$OUT" && FIRED=1
+done
+unset WORKLIST_STUCK_ROUNDS
+BG='[]'
+if [[ "$FIRED" == 1 ]]; then
+    pass "161 CONTROL: without the request the exempt-overrun still fires"
+else
+    fail "161 CONTROL: the overrun never fired: ${OUT:0:250}"
 fi
 
 echo
