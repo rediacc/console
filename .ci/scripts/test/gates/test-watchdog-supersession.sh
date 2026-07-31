@@ -140,8 +140,8 @@ test_verdict_is_checked_before_classification() {
     # placed after it would be decorative. Assert the call site ordering in the
     # real file.
     local check_line classify_line
-    check_line="$(grep -n 'evaluateSupersession({' "$WATCHDOG" | tail -1 | cut -d: -f1)"
-    classify_line="$(grep -n 'classifyFailure(' "$WATCHDOG" | tail -1 | cut -d: -f1)"
+    check_line="$(grep -n 'evaluateSupersession({' "$WATCHDOG" | tail -1 | cut -d: -f1 || true)"
+    classify_line="$(grep -n 'classifyFailure(' "$WATCHDOG" | tail -1 | cut -d: -f1 || true)"
     if [[ -z "$check_line" || -z "$classify_line" ]]; then
         log_fail "could not locate both the supersession check and classifyFailure in $WATCHDOG"
         exit 1

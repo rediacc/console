@@ -126,7 +126,7 @@ fi
 echo ""
 echo "smoke test:"
 STATUS=$(curl -sI "https://rediacc.com/solutions/backup-verification/" | head -1 | awk '{print $2}')
-LOC=$(curl -sI "https://rediacc.com/solutions/backup-verification/" | grep -i '^location:' | awk '{print $2}' | tr -d '\r')
+LOC=$(curl -sI "https://rediacc.com/solutions/backup-verification/" | grep -i '^location:' | awk '{print $2}' | tr -d '\r' || true)
 if [[ "$STATUS" == "301" ]] && [[ "$LOC" == *"www.rediacc.com"* ]]; then
     echo "[OK]   rediacc.com/* -> www.rediacc.com/* (live, 301)"
 else

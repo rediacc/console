@@ -48,11 +48,11 @@ done
 # would let someone add a decorative early check and move the real one after the
 # chmod without this gate noticing.
 last_line_matching() {
-    grep -nE "$2" "$1" | tail -1 | cut -d: -f1
+    grep -nE "$2" "$1" | tail -1 | cut -d: -f1 || true
 }
 
 first_line_matching() {
-    grep -nE "$2" "$1" | head -1 | cut -d: -f1
+    grep -nE "$2" "$1" | head -1 | cut -d: -f1 || true
 }
 
 # code_of <file> -- the file with whole-line comments stripped. Every "what not
@@ -146,7 +146,7 @@ test_no_pipe_to_interpreter_or_sudo() {
         # between where a checksum could be. The word-boundary form is
         # deliberate -- a naive '| sh' also matches '| sha256sum'.
         if echo "$code" | grep -qE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)'; then
-            echo "$code" | grep -nE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)' >&2
+            echo "$code" | grep -nE '\|[[:space:]]*(bash|sh|sudo)([[:space:]]|$)' >&2 || true
             log_fail "$name pipes into an interpreter or sudo"
         fi
         # No sudo at all: the raw binary needs only chmod +x, and dropping sudo
