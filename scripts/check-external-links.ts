@@ -155,8 +155,11 @@ const PLACEHOLDER_PATTERNS = [
 // URL patterns that are not real links (examples, templates, localhost).
 // These appear in documentation code blocks and should never be fetched.
 const SKIP_PATTERNS = [
-  /^https?:\/\/example\.com/,
-  /^https?:\/\/[^/]*\.example\.com/,
+  // RFC 2606 reserved domains/TLDs: example.com/net/org and any host ending
+  // in .example/.invalid/.test never resolve by design (this is the whole
+  // point of reserving them), so a fetch failure there is not a broken link.
+  /^https?:\/\/(?:[^/]*\.)?example\.(com|net|org)/,
+  /^https?:\/\/[^/]*\.(example|invalid|test)(:\d+)?(\/|$)/,
   /^https?:\/\/127\.\d+\.\d+\.\d+/,
   /^https?:\/\/localhost/,
   // Inline-code artifact. A URL captured with a backtick anywhere in it came
