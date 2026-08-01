@@ -366,3 +366,25 @@ jobs:
           REVIEW_OUTCOME: ${{ steps.claude.outcome }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
         run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --mark
+
+      # workflow_dispatch's own head_sha (and therefore the head_sha that
+      # review-status.yml would read off github.event.workflow_run.head_sha
+      # once THIS run completes) is the ref it was dispatched against, never
+      # the PR head -- documented GitHub Actions behavior, not a bug here.
+      # review-status.yml's commits/.../pulls lookup finds nothing for that
+      # SHA and silently no-ops. Tell it directly which PR to re-check
+      # instead of relying on SHA inference for this one entry point.
+      # Verified live 2026-08-01: PR #550's marker updated correctly on a
+      # workflow_dispatch review, but no check-run from that downstream
+      # workflow appeared until this was worked around by hand.
+      # Hardcoded to rediacc/console (never github.repository): this
+      # reusable is also called from the private submodule repos, where
+      # github.repository reads rediacc/account or similar, but
+      # review-status.yml exists only in console.
+      - name: Nudge review-status.yml with the resolved PR
+        if: always() && steps.gate.outputs.go == 'true' && github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run review-status.yml --repo rediacc/console --ref main \
+            -f pr_number="${{ steps.gate.outputs.pr_number }}"
