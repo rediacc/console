@@ -504,44 +504,71 @@ test_existing_check_run_is_patched() {
 # ACYCLICITY -- the invariant that keeps this out of CI's dependency graph.
 # ---------------------------------------------------------------------------
 test_no_ci_job_references_review_complete() {
-    # CONTROL, planted first: a genuine dependency on the context (a `needs`
-    # or `if` style reference, anywhere other than the one documented
-    # exclusion line below) must still be caught, so the narrowed grep two
-    # blocks down is proven to still fire rather than having been widened
-    # into a no-op.
+    # CONTROL A, planted first: a genuine dependency on the context (a
+    # `needs` or `if` style reference, anywhere other than the two
+    # documented exceptions below) must still be caught.
     local t control_hits
     t="$(mktemp -d)"
     trap 'rm -rf "$t"' RETURN
     printf 'jobs:\n  bad:\n    if: needs.review.outputs.context == '"'"'Review Complete'"'"'\n' >"$t/planted.yml"
     control_hits="$(grep -n "Review Complete" "$t/planted.yml" |
         grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' || true)"
-    [[ -n "$control_hits" ]] || log_fail "CONTROL failed: a genuine dependency reference on 'Review Complete' was not caught by the narrowed grep below"
+    [[ -n "$control_hits" ]] || log_fail "CONTROL A failed: a genuine dependency reference on 'Review Complete' was not caught by the narrowed grep below"
 
-    # The real assertion. ONE narrow, documented exception: the
-    # WATCHDOG_EXCLUDE_PATTERNS line in watchdog-monitor.yml, which EXCLUDES
-    # 'Review Complete' from the watchdog's failure scan -- the opposite of
-    # a dependency. Verified live 2026-07-31 (run 30660765759, raw
-    # `GET .../actions/runs/{id}/jobs`): the check-run this script posts is
-    # genuinely attributed to the SAME run_id as an unrelated Console CI run
-    # (both ride the github-actions app's shared check_suite for that head
-    # SHA), so the watchdog's per-run job listing sees it and MUST be told to
-    # ignore it, or a not-yet-re-reviewed head deadlocks the very run that
-    # would re-review it. This does not weaken the invariant above: ci.yml
-    # still never `needs:` this workflow or gates on the context: it is only
-    # told not to react to it.
+    # CONTROL B, review finding 2026-08-01 (PR #550): an EXECUTABLE line
+    # inside a file NAMED watchdog-monitor.yml must still be caught by the
+    # exact production filter chain -- the comment-line exemption below
+    # must not widen into "the whole file is exempt".
+    mkdir -p "$t/wf"
+    printf 'jobs:\n  bad:\n    if: needs.review.outputs.context == '"'"'Review Complete'"'"'\n' \
+        >"$t/wf/watchdog-monitor.yml"
+    control_hits="$(grep -rn "Review Complete" "$t/wf" --include='*.yml' |
+        grep -v '^.*review-status.yml' |
+        grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' |
+        grep -vE '^[^:]*watchdog-monitor\.yml:[0-9]+: *#' || true)"
+    [[ -n "$control_hits" ]] || log_fail "CONTROL B failed: an executable reference inside watchdog-monitor.yml itself was swallowed by the comment-line exemption"
+
+    # The real assertion. TWO narrow, documented exceptions, both scoped to
+    # watchdog-monitor.yml specifically:
+    #   1. The WATCHDOG_EXCLUDE_PATTERNS line, which EXCLUDES 'Review
+    #      Complete' from the watchdog's failure scan -- the opposite of a
+    #      dependency. Verified live 2026-07-31 (run 30660765759, raw
+    #      `GET .../actions/runs/{id}/jobs`): the check-run this script
+    #      posts is genuinely attributed to the SAME run_id as an unrelated
+    #      Console CI run (both ride the github-actions app's shared
+    #      check_suite for that head SHA), so the watchdog's per-run job
+    #      listing sees it and MUST be told to ignore it, or a
+    #      not-yet-re-reviewed head deadlocks the very run that would
+    #      re-review it.
+    #   2. Comment lines (matched by content, `# ...`, never by wording) in
+    #      that same file explaining the exclusion above. Review finding
+    #      2026-08-01 (PR #550): the first version of this gate exempted
+    #      exactly ONE line by content match, and the explanatory comment
+    #      one line above it survived only by ACCIDENT -- it happens to
+    #      also contain the substring "review-status.yml", which the
+    #      OLDER, unrelated exemption below (meant for review-status.yml's
+    #      own self-references) also matches. A comment reword that keeps
+    #      the same meaning but drops that one substring would have flipped
+    #      this gate red for no functional reason, and CONTROL A alone
+    #      could not catch it (it only plants a synthetic executable
+    #      reference, never a comment). Comments cannot create a real
+    #      `needs`/`if` coupling in GitHub Actions' dependency graph, so
+    #      exempting them by shape is sound, not just convenient.
+    # Neither exception applies outside watchdog-monitor.yml.
     local hits
     hits="$(grep -rn "Review Complete" "$REPO_ROOT/.github/workflows" \
         --include='*.yml' |
         grep -v '^.*review-status.yml' |
-        grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' || true)"
+        grep -v ':.*WATCHDOG_EXCLUDE_PATTERNS:.*Review Complete' |
+        grep -vE '^[^:]*watchdog-monitor\.yml:[0-9]+: *#' || true)"
     if [[ -n "$hits" ]]; then
-        log_fail "a workflow other than review-status.yml references 'Review Complete' outside the documented watchdog exclusion -- that is a cycle:
+        log_fail "a workflow other than review-status.yml references 'Review Complete' outside the documented watchdog exceptions -- that is a cycle:
 $hits"
     fi
     if ! grep -q 'Review Complete' "$REPO_ROOT/.ci/scripts/review/review-status.sh"; then
         log_fail "review-status.sh no longer names the check it posts; this acyclicity check went blind"
     fi
-    log_pass "no workflow but review-status.yml mentions the 'Review Complete' context, apart from the documented watchdog exclusion"
+    log_pass "no workflow but review-status.yml mentions the 'Review Complete' context, apart from the documented watchdog exceptions"
 }
 
 test_workflow_does_not_trigger_on_pull_request() {
