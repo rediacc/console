@@ -588,16 +588,102 @@ test_workflow_does_not_trigger_on_pull_request() {
 }
 
 # ---------------------------------------------------------------------------
+# workflow_dispatch -- closes the head-SHA gap a workflow_run event hits when
+# Claude Review was itself invoked via workflow_dispatch (its head_sha is the
+# dispatch ref, e.g. main, never the PR head -- documented GitHub Actions
+# behavior). See docs/agent/0731-2/PLAN-github-actions-workflow-run-trigger-fix.md.
+# ---------------------------------------------------------------------------
+test_workflow_dispatch_resolves_pr_directly() {
+    local t="$1"
+    setup "$t"
+    # No commit-pulls fixture entry needed at all for this path -- the whole
+    # point is EVENT_NAME=workflow_dispatch must never call commits/.../pulls.
+    echo '[]' >"$t/fixtures/commit-pulls.json"
+    run_status "$t" EVENT_NAME=workflow_dispatch PR_NUMBER=42
+    assert_exit_code 0 "$LAST_RC" "workflow_dispatch must resolve without a commit->PR lookup"
+    assert_eq "$(posted "$t" '.conclusion')" success "current marker + clean hygiene, same as any other entry point"
+    assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" "check-run anchored to the PR's live head, not any dispatch ref"
+    log_pass "workflow_dispatch (PLANTED: empty commit-pulls) still resolves PR #42 via PR_NUMBER"
+}
+
+test_workflow_run_with_unassociated_sha_reports_nothing() {
+    local t="$1"
+    setup "$t"
+    # The dispatch ref's SHA belongs to no open PR -- commits/.../pulls returns [].
+    echo '[]' >"$t/fixtures/commit-pulls.json"
+    local MAIN_SHA="3333333333333333333333333333333333333333"
+    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$MAIN_SHA" WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/dispatch
+    assert_exit_code 0 "$LAST_RC" "an unresolvable PR is a no-op, not an error"
+    assert_eq "$(captured_method "$t")" "" "nothing is posted when workflow_run's head_sha resolves to no PR"
+    log_pass "CONTROL: workflow_run path genuinely cannot resolve a dispatch-ref SHA (this is why F1 adds a separate workflow_dispatch path rather than 'fixing' this lookup)"
+}
+
+test_workflow_dispatch_requires_pr_number() {
+    local t="$1"
+    setup "$t"
+    run_status "$t" EVENT_NAME=workflow_dispatch
+    if [[ "$LAST_RC" -eq 0 ]]; then
+        log_fail "workflow_dispatch without PR_NUMBER must abort, not silently report nothing"
+    fi
+    assert_contains "$LAST_OUT" "PR_NUMBER" "the abort names the missing var"
+    log_pass "PLANTED missing PR_NUMBER on workflow_dispatch => hard exit"
+}
+
+# ---------------------------------------------------------------------------
+# F2 -- a hygiene-only failure (head genuinely reviewed, a hygiene script
+# failed) must read differently in the check-run TITLE than a never-reviewed
+# head, so the checks list communicates the right next action on its own.
+# ---------------------------------------------------------------------------
+test_hygiene_only_failure_title_says_reviewed() {
+    local t="$1"
+    setup "$t"               # marker already on NEW_SHA (current head) by default
+    write_hygiene "$t" 0 1 0 # check-review-comments.sh fails; currency stays true
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "hygiene failure still fails the check"
+    assert_eq "$(posted "$t" '.output.title')" "Reviewed, but needs attention (see failures)" \
+        "title distinguishes a reviewed-but-unaddressed head from a never-reviewed one"
+    log_pass "PLANTED hygiene failure on a CURRENT-head PR => title says 'Reviewed, but needs attention'"
+}
+
+test_unreviewed_head_title_unchanged() {
+    local t="$1"
+    setup "$t"
+    echo '[]' >"$t/fixtures/comments.json" # CONTROL: no marker at all
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42
+    assert_eq "$(posted "$t" '.conclusion')" failure "still fails"
+    assert_eq "$(posted "$t" '.output.title')" "Review is not complete for this head" \
+        "CONTROL: a genuinely unreviewed head keeps the original title"
+    log_pass "CONTROL: unreviewed head keeps 'Review is not complete for this head', unaffected by F2"
+}
+
+test_review_status_has_workflow_dispatch_with_pr_number() {
+    local wf="$REPO_ROOT/.github/workflows/review-status.yml"
+    grep -qE '^  workflow_dispatch:[[:space:]]*$' "$wf" ||
+        log_fail "review-status.yml lost its workflow_dispatch trigger"
+    grep -q "pr_number:" "$wf" ||
+        log_fail "review-status.yml's workflow_dispatch has no pr_number input"
+    log_pass "review-status.yml declares workflow_dispatch with a pr_number input"
+}
+
+# ---------------------------------------------------------------------------
 
 test_real_gate_constants_parseable
 test_no_ci_job_references_review_complete
 test_workflow_does_not_trigger_on_pull_request
+test_review_status_has_workflow_dispatch_with_pr_number
 
 with_temp_dir test_current_head_succeeds
 with_temp_dir test_empty_diff_succeeds
 with_temp_dir test_gitlink_only_succeeds
 with_temp_dir test_cancelled_review_run_is_not_a_failure
 with_temp_dir test_draft_is_neutral
+
+with_temp_dir test_workflow_dispatch_resolves_pr_directly
+with_temp_dir test_workflow_run_with_unassociated_sha_reports_nothing
+with_temp_dir test_workflow_dispatch_requires_pr_number
+with_temp_dir test_hygiene_only_failure_title_says_reviewed
+with_temp_dir test_unreviewed_head_title_unchanged
 
 with_temp_dir test_stale_head_fails
 with_temp_dir test_unreviewed_head_fails

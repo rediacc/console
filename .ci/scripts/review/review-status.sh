@@ -44,7 +44,7 @@
 # Env (workflow-supplied):
 #   GH_TOKEN GITHUB_REPOSITORY EVENT_NAME
 #   workflow_run:           WR_CONCLUSION WR_HEAD_SHA WR_HTML_URL
-#   review/comment events:  PR_NUMBER
+#   review/comment/dispatch events:  PR_NUMBER
 #
 # Test seams (see .ci/scripts/test/gates/test-review-status.sh):
 #   REVIEW_STATUS_HYGIENE_DIR  dir holding the three check-*.sh (default ../quality)
@@ -133,7 +133,7 @@ case "${EVENT_NAME:-}" in
         pr="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${WR_HEAD_SHA}/pulls" \
             --jq '[.[] | select(.state == "open")] | first | .number // empty')"
         ;;
-    pull_request_review | pull_request_review_comment | issue_comment)
+    pull_request_review | pull_request_review_comment | issue_comment | workflow_dispatch)
         require_var PR_NUMBER
         pr="$PR_NUMBER"
         ;;
@@ -319,7 +319,11 @@ conclusion="success"
 title="Reviewed at the current head"
 if ((${#failures[@]} > 0)); then
     conclusion="failure"
-    title="Review is not complete for this head"
+    if [[ "$currency_ok" == true ]]; then
+        title="Reviewed, but needs attention (see failures)"
+    else
+        title="Review is not complete for this head"
+    fi
 elif ((${#warnings[@]} > 0)); then
     conclusion="success"
     title="Reviewed, with warnings"

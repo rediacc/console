@@ -30,6 +30,22 @@ on:
     types: [created, edited, deleted]
   issue_comment:
     types: [created, edited, deleted]
+  # A workflow_dispatch-invoked Claude Review run's own head_sha is the ref
+  # it was dispatched against (documented GitHub Actions behavior: a
+  # workflow_run event always reports the DEFAULT BRANCH's SHA, regardless
+  # of which branch's workflow triggered the source run), never the PR
+  # head. The workflow_run branch below therefore cannot resolve a PR for
+  # a dispatch-sourced completion and silently no-ops. Verified live
+  # 2026-08-01 on PR #550: the review genuinely completed and the marker
+  # comment updated, but no Review Complete check-run appeared until
+  # nudged by hand. claude-review-reusable.yml calls this directly with a
+  # resolved PR number instead of relying on SHA inference for that path.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to re-evaluate (used when the workflow_run entry point could not resolve the PR, e.g. after a Claude Review workflow_dispatch)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -43,7 +59,8 @@ concurrency:
   group: >-
     review-status-${{ github.event.workflow_run.head_branch
       || github.event.pull_request.number
-      || github.event.issue.number }}
+      || github.event.issue.number
+      || format('dispatch-{0}', inputs.pr_number) }}
   cancel-in-progress: true
 
 jobs:
@@ -78,5 +95,5 @@ jobs:
           WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           WR_HTML_URL: ${{ github.event.workflow_run.html_url }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
         run: .ci/scripts/review/review-status.sh
