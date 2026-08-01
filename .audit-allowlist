@@ -11,9 +11,10 @@
 #   - Each group MUST have a "# BLOCKER: <reason>" line; the audit script
 #     enforces this strictly. Blank lines separate groups.
 #
-# Currently EMPTY, and that is the correct state. Every previous entry
-# (tar, minimatch, yauzl, brace-expansion, tmp, node-tar — 18 advisory IDs
-# across 6 groups) was justified by an electron / electron-builder chain.
+# Was EMPTY from 2026-07-31 to 2026-08-01 (see the brace-expansion entry
+# below for why it isn't now). Every entry before that emptying (tar,
+# minimatch, yauzl, brace-expansion, tmp, node-tar — 18 advisory IDs across
+# 6 groups) was justified by an electron / electron-builder chain.
 # Electron is gone from the tree: package-lock.json contains no electron,
 # electron-builder, electron-vite, electron-updater, electron-publish,
 # app-builder-lib or @electron/* entry, and none of those 18 advisories
