@@ -808,11 +808,17 @@ drill_account_patch_subscription() {
 # do nothing.
 DRILL_ARGS_REST=()
 # Honour an inherited DRILL_KEEP_WORK. A bare `DRILL_KEEP_WORK=0` here clobbered
-# the environment, which made the `${DRILL_KEEP_WORK:-0}` at the teardown read
-# site dead code and, worse, a lie: it advertises environment support that did
-# not exist, so exporting the variable silently deleted the work dir anyway.
-# DRILL_HOST just below already uses this idiom, so this is consistency, not a
-# new capability. `--keep-work` still works and still wins.
+# the environment, so exporting the variable silently deleted the work dir
+# anyway -- a missing convenience rather than a broken promise, since only
+# `--keep-work` was ever documented. DRILL_HOST below already uses this idiom.
+# The flag still works and still wins.
+#
+# Do NOT "simplify" the `${DRILL_KEEP_WORK:-0}` at the drill_teardown read site
+# to a bare `$DRILL_KEEP_WORK`. It looks redundant now -- this assignment runs
+# while lib.sh is sourced, and the EXIT trap is only installed later, inside
+# drill_init -- but it is the cheap guard that keeps the trap from aborting
+# under `set -u` if that order ever changes. A teardown that dies half-way
+# leaves the gateway and the sandbox behind.
 DRILL_KEEP_WORK=${DRILL_KEEP_WORK:-0}
 drill_parse_common_args() {
     DRILL_ARGS_REST=()
