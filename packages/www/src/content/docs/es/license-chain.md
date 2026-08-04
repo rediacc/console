@@ -22,7 +22,7 @@ Cada licencia emitida por un servidor de cuentas se registra en un libro de cont
 
 ## Cómo se Emite una Licencia
 
-Cuando el CLI solicita una activación de máquina o una licencia de repositorio, el servidor de cuentas:
+Cuando el CLI solicita una licencia de repositorio, el servidor de cuentas:
 
 1. Lee el encabezado de la cadena actual (última secuencia + hash) para la suscripción.
 2. Construye el payload de la licencia con el siguiente número de secuencia y el hash de cadena anterior incorporados.

@@ -22,7 +22,7 @@ Bir hesap sunucusu tarafından düzenlenen her lisans, salt ekleme yapılan bir 
 
 ## Lisans Nasıl Düzenlenir
 
-CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu:
+CLI bir depo lisansı talep ettiğinde, hesap sunucusu:
 
 1. Abonelik için mevcut zincir başını (son sıra ve hash) okur.
 2. Sonraki sıra numarasını ve önceki zincir hash'ini içeren lisans yükünü oluşturur.

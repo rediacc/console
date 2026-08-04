@@ -7326,8 +7326,8 @@
   {
     "id": "search-17385",
     "content": "许可证颁发流程",
-    "body": "CLI 请求机器激活或仓库许可证时，账户服务器会： 读取该订阅当前的链头（最后的序列号和哈希）。 构建包含下一个序列号和前一链哈希的许可证载荷。 使用 Ed25519 对载荷进行签名。 计算 chainHash = SHA256(prevChainHash + \":\" + signedPayload)。 原子性地将条目追加到颁发账本中。若两个并发请求在同一序列号上冲突，失败方重新获取下一个序列号并重新签名。 将带有链哈希的已签名 blob 返回给 CLI。 sequence 和 prevChainHash 包含在已签名的载荷中（因此无法在不使签名失效的情况下修改）。chainHash 在信封上（签名后计算，以避免循环依赖）。",
-    "excerpt": "CLI 请求机器激活或仓库许可证时，账户服务器会： 读取该订阅当前的链头（最后的序列号和哈希）。 构建包含下一个序列号和前一链哈希的许可证载荷。 使用 Ed25519 对载荷进行签名。 计算 chainHash = SHA256(prevChainHash + \":\" + signedPayload...",
+    "body": "CLI 请求仓库许可证时，账户服务器会： 读取该订阅当前的链头（最后的序列号和哈希）。 构建包含下一个序列号和前一链哈希的许可证载荷。 使用 Ed25519 对载荷进行签名。 计算 chainHash = SHA256(prevChainHash + \":\" + signedPayload)。 原子性地将条目追加到颁发账本中。若两个并发请求在同一序列号上冲突，失败方重新获取下一个序列号并重新签名。 将带有链哈希的已签名 blob 返回给 CLI。 sequence 和 prevChainHash 包含在已签名的载荷中（因此无法在不使签名失效的情况下修改）。chainHash 在信封上（签名后计算，以避免循环依赖）。",
+    "excerpt": "CLI 请求仓库许可证时，账户服务器会： 读取该订阅当前的链头（最后的序列号和哈希）。 构建包含下一个序列号和前一链哈希的许可证载荷。 使用 Ed25519 对载荷进行签名。 计算 chainHash = SHA256(prevChainHash + \":\" + signedPayload)。 原子...",
     "category": "Documentation",
     "page": "/zh/docs/license-chain",
     "path": "docs.license-chain.content",

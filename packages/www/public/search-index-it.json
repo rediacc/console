@@ -7372,7 +7372,7 @@
   {
     "id": "search-9655",
     "content": "Catena di Licenze e Delega",
-    "excerpt": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork. La catena è verificata crittograficamente a ogni avvio, così la sicurezza è garantita.",
+    "excerpt": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork.",
     "category": "Documentation",
     "page": "/it/docs/license-chain",
     "path": "docs.license-chain.title",
@@ -7381,8 +7381,8 @@
   },
   {
     "id": "search-9656",
-    "content": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork. La catena è verificata crittograficamente a ogni avvio, così la sicurezza è garantita.",
-    "excerpt": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork. La catena è verificata crittograficamente a ogni a...",
+    "content": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork.",
+    "excerpt": "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork.",
     "category": "Documentation",
     "page": "/it/docs/license-chain",
     "path": "docs.license-chain.description",

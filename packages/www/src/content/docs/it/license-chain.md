@@ -1,6 +1,6 @@
 ---
 title: "Catena di Licenze e Delega"
-description: "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork. La catena è verificata crittograficamente a ogni avvio, così la sicurezza è garantita."
+description: "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork."
 category: "Guides"
 order: 8
 language: it
@@ -68,7 +68,7 @@ Un rifiuto lascia intatta la licenza installata. La macchina continua a funziona
 
 ### Rinnovo e slot macchina
 
-Un rinnovo riuscito tocca la riga di attivazione della macchina: occupa uno slot se la macchina non ne aveva, e lo aggiorna se ne aveva già uno. A differenza dell'emissione, non viene mai rifiutato per superamento del limite. La risposta porta `overLimit`, e l'attivazione viene contrassegnata perché il portale, l'endpoint di stato della licenza e `rdc subscription status` possano mostrarla. L'emissione di una licenza davvero nuova, invece, si blocca sempre contro il tetto. Il ragionamento è spiegato in [Abbonamento e licenze - Slot macchina](/en/docs/subscription-licensing).
+Un rinnovo riuscito tocca la riga di attivazione della macchina: occupa uno slot se la macchina non ne aveva, e lo aggiorna se ne aveva già uno. A differenza dell'emissione, non viene mai rifiutato per superamento del limite. La risposta porta `overLimit`, e l'attivazione viene contrassegnata perché il portale, l'endpoint di stato della licenza e `rdc subscription status` possano mostrarla. L'emissione di una licenza davvero nuova, invece, si blocca sempre contro il tetto. Il ragionamento è spiegato in [Abbonamento e licenze - Slot macchina](/it/docs/subscription-licensing).
 
 ### Ordine di deployment
 
@@ -370,7 +370,7 @@ Tutti i template email e l'API email pubblica sono identici tra i trasporti.
 
 ## Documentazione Correlata
 
-- [Installazione On-Premise](/en/docs/on-premise) -- come distribuire il server on-premise
-- [Abbonamento e Licenze](/en/docs/subscription-licensing) -- limiti del piano e slot macchina
-- [Canali di Rilascio](/en/docs/release-channels) -- canali edge vs stable
-- [Regioni dei Dati](/en/docs/data-regions) -- residenza dei dati regionale
+- [Installazione On-Premise](/it/docs/on-premise) -- come distribuire il server on-premise
+- [Abbonamento e Licenze](/it/docs/subscription-licensing) -- limiti del piano e slot macchina
+- [Canali di Rilascio](/it/docs/release-channels) -- canali edge vs stable
+- [Regioni dei Dati](/it/docs/data-regions) -- residenza dei dati regionale
