@@ -53,10 +53,14 @@ import {
  *
  * ## CI
  *
- * NOT on CI yet. The project entry in `playwright.k8s-multinode.config.ts` is
- * dark unless `CLUSTER_LICENSING_SUITE=1`, mirroring suite 23's `CLI_SUITE`
- * gate — wiring a ct-tests leg is a workflow change and out of this suite's
- * scope.
+ * ON CI, ACCOUNT tier only. The ct-tests multinode job starts an in-job
+ * TEST_MODE account server and sets `CLUSTER_LICENSING_SUITE=1`, which lights
+ * the project entry in `playwright.k8s-multinode.config.ts` (still gated, so a
+ * job supplying no account server collects nothing rather than skipping
+ * silently). The VM tier stays declared-skipped there via
+ * `E2E_EXPECT_NO_CLUSTER_VMS`: suite 17 tears its cluster down in its own last
+ * test, and that fleet runs `--nolicense` renet, so there is no licensed
+ * cluster to adopt.
  *
  * Argv marked TRANSCRIPT-CONFIRM is the best-derived form from the CLI source
  * and is to be confirmed on the first live run; the assertion SHAPE is final.
