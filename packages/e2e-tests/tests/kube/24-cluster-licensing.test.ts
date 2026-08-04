@@ -247,6 +247,12 @@ test.describe
 
       // A kvm declaration needs a network, and it must not be one the ops fleet
       // or any other cluster uses (192.168.111 is the harness's own).
+      // The pool is k8s-agent, not k8s-server, because test 4 scales it: only
+      // k8s-agent pools scale in place (cluster-provision.ts), so a server pool
+      // is refused for its ROLE before the slot pre-flight is ever consulted,
+      // and test 4 would be measuring the wrong refusal. Declaration-time is
+      // unaffected either way -- createCluster pre-flights the SUM of every
+      // pool's count before it looks at any role.
       const declareArgs = (name: string, count: number): string[] => [
         'cluster',
         'create',
@@ -254,7 +260,7 @@ test.describe
         '--provider',
         'kvm',
         '--pool',
-        `nodes:k8s-server:${count}`,
+        `nodes:k8s-agent:${count}`,
         '--net-name',
         'renet-e2e-lic',
         '--net-base',
@@ -335,7 +341,10 @@ test.describe
       });
 
       test('4. `cluster scale` past the ceiling is refused with the same message', async () => {
-        // TRANSCRIPT-CONFIRM: `--pool` names the pool declared in test 2.
+        // TRANSCRIPT-CONFIRM: `--pool` names the pool declared in test 2, which
+        // is k8s-agent so that this reaches the slot pre-flight rather than the
+        // "only k8s-agent pools scale in place" role refusal. The ask is the
+        // DELTA (900 - the declared count), which is what the message must name.
         const res = await cli.run([
           'cluster',
           'scale',
