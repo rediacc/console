@@ -972,8 +972,8 @@ def loop_state(worklist, session_id):
 
     HISTORICAL: this record predates the Stop event carrying the full cron
     expansion. `session_crons` now includes each task's schedule AND prompt,
-    so the live truth is computable (wl_core.cron_next, wl_checks.wakeup_lines)
-    and the checks that matter prefer it. This declared record survives ONLY
+    so the live truth is computable (wl_core.cron_next) and the checks that
+    matter prefer it. This declared record survives ONLY
     as the fallback for contexts with no event in hand (the CLI) and for the
     declared-vs-live divergence check; its stamped next-fire goes stale on
     write, which is why nothing reports it when a live schedule is visible."""
@@ -1092,32 +1092,103 @@ def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
 
 # ---- world signature --------------------------------------------------------
 
-def world_sig(root, worklist, session_id):
-    """Coarse world signature: task statuses + HEAD + markdown bytes + event
-    log bytes + requests bytes. Deliberately the same altitude as the stuck
-    detector's signature (tasks + HEAD), plus the shared files, because those
-    are the artifacts every other check reads. Known residual, shared with
-    the stuck detector and documented rather than papered over: uncommitted
-    source edits with no task/tick/commit are invisible. A dirty-tree hash
-    was considered and rejected -- other sessions edit this tree
-    continuously, so it would break the signature on every poll and turn the
-    fast path off in exactly the environment it was built for."""
+def world_sig(root, worklist, session_id, fold=None):
+    """THIS SESSION's world: task statuses + HEAD + the structure of the items
+    it owns + the requests that involve it. Keyed by the poll fast path (has
+    anything moved since the last full stop?) and by the judge verdict cache.
 
-    def digest(p):
-        try:
-            return hashlib.sha1(pathlib.Path(p).read_bytes()).hexdigest()
-        except OSError:
-            return "absent"
+    v17 (2026-08-04): it used to hash the BYTES of the markdown, the event log
+    and the requests file. All three are SHARED across every session in the
+    repo, so one teammate's --add, --tick, --lease or --update broke every
+    other session's baseline, forfeited their silent poll and invalidated
+    their judge cache. Measured on the live store before the fix: 32 of 32
+    events in a 3-hour window came from other sessions, polluting 18 of the 36
+    five-minute windows -- roughly half of all poll stops paid the full
+    battery, plus a paid judge call, for work that was none of their business.
+    That is the exact failure the docstring below already argued against for a
+    dirty-tree hash, committed one paragraph later against shared files.
 
+    A dirty-tree hash was considered and rejected for the same reason -- other
+    sessions edit this tree continuously. Known residual, shared with the
+    stuck detector and documented rather than papered over: this session's own
+    uncommitted source edits with no task/tick/commit are invisible.
+
+    Nothing foreign that could change this session's OBLIGATIONS is dropped: a
+    request addressed to it or broadcast is inside the slice below, and
+    poll_fast_path re-checks the inbox, the ladder and the deferral windows
+    from artifacts anyway. What is dropped is foreign BOOKKEEPING, which was
+    never this session's business.
+
+    An UNOWNED item counts as this session's (C.owned_by_me), matching the
+    rule that an untagged item is yours: such an item blocks this session, so
+    it must move the signature."""
     ts = C.task_statuses(session_id)
+    try:
+        f = fold if fold is not None else load(worklist, sync=False)
+        items = "|".join(
+            "%s:%s:%s" % (
+                r["id"], r["state"],
+                hashlib.sha1(
+                    str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
+                ).hexdigest()[:8],
+            )
+            for r in sorted(f.items, key=lambda x: x["id"])
+            if C.owned_by_me(r.get("owner"), session_id)
+        )
+    except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
+        items = "unreadable"
     blob = "|".join(
         [
             ",".join("%s:%s" % (i, st) for i, (st, _s) in sorted(ts.items())),
             C._git(root, "rev-parse", "HEAD"),
-            digest(worklist),
-            digest(events_path(worklist)),
-            digest(requests_path(worklist)),
+            items,
+            my_requests_sig(worklist, session_id),
         ]
+    )
+    return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
+
+
+def my_requests_sig(worklist, session_id):
+    """A digest of the request events that involve THIS session, and only
+    those. Deliberately parsed here rather than through wl_requests, which
+    imports this module: the poll baseline must not depend on an import cycle.
+
+    Two passes, because a follow-up event (answer, ack, decline, escalation)
+    carries the request id but not its from/to: pass one collects the ids of
+    asks this session sent, was sent, or that were broadcast; pass two hashes
+    every event touching one of those ids."""
+    p = requests_path(worklist)
+    try:
+        lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        # An ABSENT file must hash exactly like a file holding only other
+        # sessions' traffic, or the first foreign --ask in a repo moves this
+        # session's signature and forfeits its silent poll -- the very bug
+        # this function exists to close, reintroduced by a sentinel string.
+        lines = []
+    evs = []
+    for line in lines:
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(ev, dict):
+            evs.append(ev)
+    mine = set()
+    for ev in evs:
+        if ev.get("ev") != "ask":
+            continue
+        to = str(ev.get("to", "*"))
+        if (
+            to == "*"
+            or C.same_session(to, session_id)
+            or C.same_session(str(ev.get("from", "")), session_id)
+        ):
+            mine.add(str(ev.get("id") or ""))
+    blob = "\n".join(
+        json.dumps(ev, sort_keys=True, separators=(",", ":"))
+        for ev in evs
+        if str(ev.get("id") or "") in mine
     )
     return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
 
@@ -1125,13 +1196,18 @@ def world_sig(root, worklist, session_id):
 def state_world_sig(root, worklist, session_id, fold=None):
     """The STATE.md staleness key (v14 gap 5): task statuses + HEAD + item
     STRUCTURE (id, state, owner, basetext), deliberately NOT the raw byte
-    digests world_sig uses. Under the byte key every self-inflicted append
-    (--lease renewal, --update note, --brief) staled the very document the
-    session had just refreshed: six near-identical forced rewrites in one
+    digests world_sig used to take. Under the byte key every self-inflicted
+    append (--lease renewal, --update note, --brief) staled the very document
+    the session had just refreshed: six near-identical forced rewrites in one
     night. Structure moves when work moves (an item added, ticked, reopened,
     a commit, a task flip), which is exactly when the recovery document
-    genuinely needs rewriting. world_sig itself is untouched: the poll
-    baseline and judge cache still key on the full byte world."""
+    genuinely needs rewriting.
+
+    Still SEPARATE from world_sig after v17 made that one structural too, and
+    the difference is ownership: this key covers EVERY item, because another
+    session's item landing on the branch is a reason to rewrite the recovery
+    document, while world_sig covers only this session's own, because another
+    session's bookkeeping is not a reason to pay a full stop battery."""
     ts = C.task_statuses(session_id)
     try:
         f = fold if fold is not None else load(worklist, sync=False)

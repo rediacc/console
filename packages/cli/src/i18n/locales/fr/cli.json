@@ -304,6 +304,8 @@
         "optionMasterPassword": "Chiffrer les ressources avec un mot de passe principal",
         "success": "Configuration \"{{name}}\" initialisée",
         "bareForm": "La configuration par défaut est créée automatiquement ; utilisez 'config init <name>' pour une configuration nommée, ou passez un indicateur (--ssh-key, --server, ...) pour définir une option sur celle par défaut.",
+        "serverKeyMissing": "Le serveur de compte {{server}} n'a pas annoncé de clé de chiffrement. Elle sera découverte à la première requête réussie.",
+        "serverKeyUnreachable": "Impossible de contacter le serveur de compte {{server}} pour synchroniser sa clé de chiffrement ({{error}}). Elle sera découverte à la première requête réussie.",
         "examples": {
           "basic": "Créer un profil de configuration nommé.",
           "withServer": "Créer un profil pointant vers un serveur de compte spécifique."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "La configuration \"{{config}}\" est toujours en conflit avec un autre appareil après 3 tentatives. Relancez la commande.",
         "passkeySecretMissing": "Secret de passkey introuvable dans le trousseau du système. Réauthentifiez-vous avec : rdc config remote enable",
         "staleSlot": "Votre key slot est obsolète (la clé de chiffrement de la configuration a été rotée). Réinscrivez-vous avec : rdc config remote enable",
+        "undecryptableIdentity": "La configuration {{configId}} dans le store {{storeId}} a été chiffrée avec une clé différente de celle que détient votre slot, donc cet appareil ne peut pas la lire. Cela arrive quand le store contient déjà une configuration issue d'une autre inscription. Récupérez cette configuration depuis un appareil déjà inscrit et vérifiez de quelle configuration il s'agissait, ou demandez à un administrateur de repartager la clé du store avec cet appareil depuis le portail (Config Storage > key slots).",
+        "undecryptableSession": "La configuration {{configId}} a été déverrouillée avec votre clé, mais la couche de session du serveur a refusé de l'ouvrir ({{detail}}). Relancez la commande ; si l'échec persiste, réinscrivez-vous avec : rdc config remote enable",
+        "handoffUndecryptable": "Le navigateur a envoyé un handoff que cet appareil ne peut pas ouvrir ({{error}}). Cela signifie généralement qu'un ancien onglet 'config remote enable' est encore ouvert et a publié vers la mauvaise session. Fermez tous les onglets du portail rediacc, puis relancez la commande.",
         "enable": {
           "description": "Lier cette configuration au stockage distant chiffré",
           "optionHeadless": "Utiliser le flux de code d'appareil (pour les serveurs sans interface)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "Mot de passe maître de la configuration :",
           "passwordNonInteractive": "Un mot de passe maître de configuration est requis. Définissez REDIACC_CONFIG_PASSWORD, ou lancez la commande sans --password dans un terminal interactif.",
           "passwordRequirePasskey": "Cette organisation exige une passkey pour déverrouiller le stockage de configuration ; l'inscription par mot de passe est désactivée. Inscrivez-vous depuis un navigateur avec : rdc config remote enable",
+          "passwordIpBound": "Le jeton API dans REDIACC_TOKEN est lié à une autre adresse IP client. Un jeton se lie à l'adresse depuis laquelle il est utilisé pour la première fois, donc un jeton créé ailleurs ne peut pas s'inscrire depuis cette machine. Émettez un nouveau jeton depuis le portail web et réessayez.",
+          "passwordMissingScope": "Le jeton API dans REDIACC_TOKEN ne porte pas le scope config:enroll. Émettez un jeton avec ce scope depuis le portail web et réessayez.",
+          "passwordTeamGone": "L'équipe à laquelle appartient ce jeton API a été archivée ou supprimée. Émettez un nouveau jeton pour une équipe active depuis le portail web et réessayez.",
+          "passwordTokenNotEnrollable": "Ce jeton API ne peut pas inscrire un config slot car il n'est pas lié à un utilisateur au sein d'une organisation. Émettez un jeton personnel depuis votre propre compte dans le portail web et réessayez.",
+          "passwordForbidden": "Le serveur de compte a refusé l'inscription de la configuration : {{error}}",
           "passwordNoSlot": "Aucun password slot n'est provisionné pour votre stockage de configuration. Ajoutez-en un depuis le portail (Config Storage > key slots), puis réessayez.",
           "passwordWrong": "Impossible de déverrouiller la configuration avec ce mot de passe. Vérifiez REDIACC_CONFIG_PASSWORD (ou le mot de passe saisi) et réessayez.",
           "optionForce": "Remplacer le contenu local différent par la copie du serveur sans confirmation",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "Échec de l'écriture de l'alias SSH (non fatal) : {{error}}",
-          "sshConfigWritten": "Alias SSH rediacc--{{name}} écrit dans ~/.ssh/config_rediacc"
+          "sshConfigWritten": "Alias SSH rediacc--{{name}} écrit dans {{path}}"
         },
         "remove": {
           "sshConfigCleared": "Alias SSH rediacc--{{name}} supprimé"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "Afficher le statut complet d'une machine.",
           "containers": "Afficher uniquement les conteneurs en cours d'exécution sur une machine."
-        }
+        },
+        "licenseBackupBlocked": "\nSAUVEGARDES BLOQUÉES : {{repositoryGuid}} est refusé par le système de licences depuis {{at}} ({{reason}}). {{message}}\nLes sauvegardes planifiées pour ce dépôt ne s'exécutent pas. Réémettez avec : rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "success": "Connexion réussie",
         "validated": "Jeton validé",
         "validating": "Validation du jeton...",
-        "waitingApproval": "En attente de l’autorisation du navigateur..."
+        "waitingApproval": "En attente de l’autorisation du navigateur...",
+        "machinesOverLimit": "  {{count}} emplacement(s) de machine dépassent la limite."
       },
       "logout": {
         "description": "Supprimer le jeton d'abonnement stocké",
@@ -1686,7 +1698,11 @@
           "empty": "  Aucune licence de dépôt installée",
           "entry": "  - {{repositoryGuid}} : {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (expiration définitive : {{effectiveHardExpiry}})",
-          "header": "\nLicences des dépôts : ({{machineName}})"
+          "header": "\nLicences des dépôts : ({{machineName}})",
+          "datastoreSuffix": " [datastore : {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}} : les sauvegardes sont BLOQUÉES par le système de licences depuis {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Exécutez 'rdc subscription refresh -m {{machineName}}' pour réémettre ; le marqueur est effacé au prochain renouvellement réussi.",
+          "lastRenewal": "    dernier renouvellement : {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  Forfait :     {{plan}}",
         "remoteRepoLicenseIssuances": "  Demandes de licence flottante : {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licences de dépôt : {{totalTrackedRepos}} suivis, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement",
-        "remoteStatus": "  État :       {{status}}"
+        "remoteStatus": "  État :       {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (vu pour la dernière fois : {{lastSeen}}) DÉPASSE LA LIMITE",
+        "overLimitSummary": "  {{count}} machine(s) sont réclamées de façon provisoire au-delà de la limite d'emplacements de machine. Les renouvellements continuent de fonctionner ; les NOUVEAUX dépôts ne peuvent pas être licenciés tant que vous ne libérez pas un emplacement ou n'augmentez pas la limite."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "skipActivationHint": "Sur une machine jetable, vous pouvez complètement ignorer l'activation avec REDIACC_SKIP_MACHINE_ACTIVATION=1.",
       "recoveryFailedNoKnownRepos": "Des dépôts ont été trouvés sur {{machine}} mais aucun n'est suivi dans votre configuration locale. Listez vos dépôts suivis avec `rdc repo list`, puis réessayez.",
       "recoveryFailedServerRejected": "Le serveur de compte a refusé l'émission de la licence pour le dépôt sur \"{{machine}}\". Première erreur : {{error}}. Exécutez : rdc subscription refresh --repo <repo-ref> pour plus de détails.",
-      "recoveryFailedTokenNotReady": "Votre jeton d'abonnement n'est pas prêt. Exécutez : rdc subscription login, puis réessayez."
+      "recoveryFailedTokenNotReady": "Votre jeton d'abonnement n'est pas prêt. Exécutez : rdc subscription login, puis réessayez.",
+      "machineSlotLimit": "Ce placement nécessite {{needed}} emplacement(s) de machine supplémentaire(s), et l'abonnement dispose de {{free}} libre(s) ({{active}} sur {{max}} utilisés). Un emplacement est libéré automatiquement 5 heures après la dernière activité de cette machine, ou immédiatement lorsque la machine est supprimée. Augmentez la limite en mettant à niveau votre offre, ou contactez les ventes pour une limite de machines Enterprise ou partenaire négociée.",
+      "partialPlacement": "Le placement s'est arrêté en cours de route : {{placed}} machine(s) terminée(s) ({{placedNames}}) et {{remaining}} jamais démarrée(s) ({{remainingNames}}). Rien n'a été annulé, donc les machines terminées conservent leurs dépôts et leurs emplacements. Libérez un emplacement ou augmentez la limite, puis relancez : {{command}}",
+      "nothingProvisioned": "Rien n'a été provisionné : le dépôt n'a pas été créé."
     },
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
     "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",

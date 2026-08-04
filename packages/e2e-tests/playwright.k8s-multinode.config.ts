@@ -50,5 +50,16 @@ export default test.defineConfig({
   use: {
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'k8s-multinode-17', testMatch: '17-*.test.ts' }],
+  projects: [
+    { name: 'k8s-multinode-17', testMatch: '17-*.test.ts' },
+    // Suite 24 (cluster licensing) rides this topology but is DARK on CI until
+    // a leg is wired for it, mirroring suite 23's CLI_SUITE gate in
+    // playwright.config.ts. It needs an account server and a subscription token
+    // on top of the fleet, which no ct-tests job provides yet; collecting it
+    // unconditionally would either red the job or turn into the silent skip the
+    // suite's own prerequisite gate exists to forbid.
+    ...(process.env.CI && process.env.CLUSTER_LICENSING_SUITE !== '1'
+      ? []
+      : [{ name: 'k8s-multinode-24', testMatch: '24-*.test.ts' }]),
+  ],
 });

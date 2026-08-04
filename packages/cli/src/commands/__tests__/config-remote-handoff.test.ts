@@ -92,4 +92,23 @@ describe('handoff blob contract round-trip (real X25519)', () => {
 
     await expect(decryptHandoff(blob, otherPair.privateKey)).rejects.toThrow();
   });
+
+  it('explains a wrong-key handoff instead of leaking the WebCrypto error', async () => {
+    // A stale portal tab from an earlier `config remote enable` seals against
+    // the OLD run's public key and posts to the new run's callback. Raw, that
+    // reached the user as "OperationError: The operation failed for an
+    // operation-specific reason" at all three call sites in config-remote.ts.
+    const keyPair = await generateX25519KeyPair();
+    const otherPair = await generateX25519KeyPair();
+    const blob = await seal({ ...BASE_PAYLOAD }, keyPair.publicKey);
+
+    const error = await decryptHandoff(blob, otherPair.privateKey).then(
+      () => null,
+      (e: unknown) => e as Error
+    );
+
+    expect(error).not.toBeNull();
+    expect(error?.message).toMatch(/cannot open/i);
+    expect(error?.message).toMatch(/close every rediacc portal tab/i);
+  });
 });

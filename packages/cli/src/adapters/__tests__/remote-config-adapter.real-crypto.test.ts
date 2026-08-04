@@ -57,7 +57,11 @@ import {
 } from '@rediacc/shared/config-crypto';
 import { buildConfigPushPayload } from '@rediacc/shared/config-schema';
 import type { RdcConfig, RemoteConfig } from '../../types/index.js';
-import { RemoteConfigAdapter, RemoteStaleSlotError } from '../remote-config-adapter.js';
+import {
+  RemoteConfigAdapter,
+  RemoteConfigUndecryptableError,
+  RemoteStaleSlotError,
+} from '../remote-config-adapter.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
 // ─── Fixture constants ───────────────────────────────────────────────────
@@ -260,5 +264,82 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     expect(err).toBeInstanceOf(RemoteStaleSlotError);
     // The surfaced message points the user at re-enrollment.
     expect((err as RemoteStaleSlotError).message).toMatch(/re-?enroll/i);
+  });
+
+  // ─── F5: the blob refuses AFTER a successful CEK unwrap ────────────────
+  //
+  // Enrolling a fresh device against a store that already holds a DIFFERENT
+  // config for the org used to die with a raw WebCrypto
+  // "OperationError: The operation failed for an operation-specific reason",
+  // because the only crypto catch in pull() wraps cekUnwrap, and here the
+  // unwrap SUCCEEDS. The failure is one layer later, in selectiveDecrypt.
+
+  it('names the store/config mismatch when the blob was sealed under another CEK', async () => {
+    // The slot wraps CEK-B; the stored blob was sealed under CEK-A. The device
+    // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the
+    // "store already holds a different config for this org" case.
+    const otherCek = await generateCek();
+    const f = await provision(PASSWORD, TEAM_ID, { wrapCek: otherCek });
+    wireConfigApi(f.session, f.config);
+
+    const unwrapSpy = vi.spyOn(configCrypto, 'cekUnwrap');
+
+    const adapter = new RemoteConfigAdapter(
+      REMOTE,
+      CONFIG_NAME,
+      createTokenStorage({
+        token: 'rct_1',
+        wrappedCek: f.wrappedCek,
+      }) as unknown as RemoteTokenStorage,
+      createSecureStorage(toBase64(f.slotSecret))
+    );
+
+    const err = await adapter.pull().then(
+      () => null,
+      (e: unknown) => e
+    );
+
+    // The unwrap really did succeed, so this is not the stale-slot path.
+    expect(unwrapSpy).toHaveBeenCalledTimes(1);
+    await expect(unwrapSpy.mock.results[0]?.value).resolves.toBeDefined();
+    expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
+    expect(err).not.toBeInstanceOf(RemoteStaleSlotError);
+
+    const message = (err as Error).message;
+    // No raw WebCrypto text reaches the user.
+    expect(message).not.toMatch(/operation-specific reason/i);
+    // The identity of the thing that would not open, and a recovery step.
+    expect(message).toContain(CONFIG_ID);
+    expect(message).toContain(STORE_ID);
+    expect(message).toMatch(/key slots|enrolled/i);
+  });
+
+  it('separates a session-layer failure from the store mismatch', async () => {
+    // Same CEK on both sides, so the HMAC and the CEK layer both pass; only the
+    // server-derived SDK layer is wrong. That is a retryable session problem,
+    // not a store-identity problem, and it must not claim the latter.
+    const f = await provision(PASSWORD);
+    wireConfigApi({ ...f.session, sdk_derived: toBase64(randomBytes(32)) }, f.config);
+
+    const adapter = new RemoteConfigAdapter(
+      REMOTE,
+      CONFIG_NAME,
+      createTokenStorage({
+        token: 'rct_1',
+        wrappedCek: f.wrappedCek,
+      }) as unknown as RemoteTokenStorage,
+      createSecureStorage(toBase64(f.slotSecret))
+    );
+
+    const err = await adapter.pull().then(
+      () => null,
+      (e: unknown) => e
+    );
+
+    expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
+    const message = (err as Error).message;
+    expect(message).toContain(CONFIG_ID);
+    expect(message).toMatch(/retry/i);
+    expect(message).not.toContain(STORE_ID);
   });
 });

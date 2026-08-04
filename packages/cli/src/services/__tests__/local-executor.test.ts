@@ -62,7 +62,13 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-vi.mock('../account/license.js', () => ({
+// The three network-facing verbs are stubbed; everything else stays REAL. In
+// particular `isDatastoreScopedId` — the executor asks it whether a resolved
+// datastore identity will actually scope the write, and the licence writer asks
+// it where to put the file. Stubbing it here would let the two answers drift,
+// which is the exact class of bug this module is guarding against.
+vi.mock('../account/license.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../account/license.js')>()),
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
   issueRepoLicense: mockIssueRepoLicense,
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
@@ -630,6 +636,96 @@ describe('localExecutorService create/fork licensing flow', () => {
     }
   });
 
+  // `rdc repo commit` freezes a working fork into a NEW immutable repo, and
+  // renet's cmd layer refuses to start without a licence for that new repo's
+  // name (cmd/renet/repository_commit.go's
+  // ValidateInstalledRepoLicenseForCreate(scope, commitName)). Against an
+  // enforcing binary the CLI never minted one, so commit was broken outright;
+  // dev builds carry --nolicense, which is what hid it.
+  describe('repo commit pre-issuance', () => {
+    const commitGuid = '11111111-2222-4333-8444-555555555555';
+    const commitOptions = {
+      functionName: 'repository_commit',
+      machineName: 'hostinger',
+      params: {
+        repository: 'myrepo',
+        tag: commitGuid,
+        message: 'freeze',
+        network_id: 3,
+      },
+      captureOutput: true,
+    };
+
+    beforeEach(() => {
+      // `repo commit` passes no --size, so the licence is sized from the
+      // working fork's image on disk, the same way a fork is: the commit
+      // starts life as a reflink of it.
+      mockExec.mockResolvedValue(`${2 * 1024 * 1024 * 1024}\n`);
+    });
+
+    it('mints a licence for the COMMIT, not for the working fork it came from', async () => {
+      mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1', grandGuid: 'grand-1' });
+
+      const result = await localExecutorService.execute(commitOptions);
+
+      expect(result.success).toBe(true);
+      expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
+      // The target is params.tag (the commit object), exactly as for a fork.
+      // Minting against params.repository would licence a repo that already
+      // has one and leave the commit unlicensed, which is the bug.
+      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: commitGuid,
+        kind: 'fork',
+        grandGuid: 'grand-1',
+        // Sized from the working fork's image, which the commit reflinks.
+        requestedSizeGb: 2,
+      });
+    });
+
+    it('roots the commit at the working fork itself when that fork is a grand', async () => {
+      mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1' });
+
+      await localExecutorService.execute(commitOptions);
+
+      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: commitGuid,
+        kind: 'fork',
+        grandGuid: 'guid-1',
+      });
+    });
+
+    it('re-issues with identity proofs once the commit exists on disk', async () => {
+      mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1', grandGuid: 'grand-1' });
+
+      await localExecutorService.execute(commitOptions);
+
+      expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
+      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: commitGuid,
+      });
+    });
+
+    // commit_meta rewrites an already-pushed commit's out-of-volume state
+    // mirror. It is CREATE tier in renet's map, but it provisions nothing: its
+    // cmd layer runs no licence check, and the dispatch check resolves the
+    // EXISTING repo. Pre-issuing for it would mint a second licence for a repo
+    // that already has one and spend a monthly issuance on a metadata write.
+    it('does not pre-issue for the metadata-only commit_meta verb', async () => {
+      mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1', grandGuid: 'grand-1' });
+
+      const result = await localExecutorService.execute({
+        functionName: 'repository_commit_meta',
+        machineName: 'hostinger',
+        params: { repository: commitGuid, message: 'freeze', grandGuid: 'grand-1' },
+        captureOutput: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+      expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+    });
+  });
+
   it('refreshIdentityFor acquires a pooled connection and shares it with licensing', async () => {
     await localExecutorService.refreshIdentityFor('repository_create', 'hostinger', {
       repository: 'myrepo',
@@ -761,6 +857,193 @@ describe('localExecutorService create/fork licensing flow', () => {
 
       const opts = mockBuildLocalVault.mock.calls[0][0] as { machine: { datastore?: string } };
       expect(opts.machine.datastore).toBe('/mnt/rediacc');
+    });
+  });
+
+  // ── Datastore-scoped pre-issuance ─────────────────────────────────────────
+  //
+  // Live on a real VM: `repo create <r> --datastore <d>` against an enforcing
+  // renet printed "License activated" (slot claimed, meter moved) and then died
+  // with exit 10 LICENSE_REQUIRED, repo rolled back. The licence was real; it
+  // was in the wrong place. The CLI wrote it to the unscoped
+  // `license/repos/<guid>/`, while renet's create-tier check for a
+  // datastore-resident repo reads ONLY `license/datastores/<id>/repos/<guid>/`
+  // — a clean break with no dual read (pkg/license/store.go RepoLicenseBaseDir).
+  //
+  // The identity was unavailable to the pre-issuance path for a structural
+  // reason: every LATER touch reads it from renet's licence scan, and the scan
+  // is empty here because the repo does not exist yet. The DATASTORE does exist,
+  // so the identity comes from the machine's datastore registry instead.
+  //
+  // These tests ask what reaches `issueRepoLicense`, which is the function that
+  // both stamps the payload and picks the store path. Asserting that some
+  // command "knows" the datastore would pass while the wire stayed unscoped.
+  describe('datastore-scoped repo licensing (create/fork pre-issuance)', () => {
+    const DS_ID = '06a4f728-4c53-4b0e-9f61-2f0a1d3e5c77';
+
+    /** `renet datastore list --json` answering with one named datastore. */
+    function registryReturns(rows: unknown): void {
+      mockExec.mockImplementation((command: string) => {
+        if (command.includes('datastore list')) return Promise.resolve(JSON.stringify(rows));
+        return Promise.resolve('');
+      });
+    }
+
+    beforeEach(() => {
+      registryReturns([
+        { name: 'drill-ds', datastoreId: DS_ID, backend: 'local' },
+        { name: 'other-ds', datastoreId: '11111111-2222-4333-8444-555555555555' },
+      ]);
+      mockGetRepository.mockResolvedValue({
+        repositoryGuid: 'guid-1',
+        placement: { datastore: 'drill-ds' },
+      });
+    });
+
+    const datastoreCreate = {
+      functionName: 'repository_create',
+      machineName: 'hostinger',
+      datastore: '/mnt/rediacc-ds/drill-ds',
+      params: { repository: 'drill-repo', size: '1G', guid: 'guid-1' },
+      captureOutput: true,
+    };
+
+    it('mints the licence under the datastore identity the repo is placed on', async () => {
+      const result = await localExecutorService.execute(datastoreCreate);
+
+      expect(result.success).toBe(true);
+      // One field, two jobs: the server embeds it in the signed payload and the
+      // writer puts the blob on the path renet reads for this datastore.
+      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: 'guid-1',
+        kind: 'grand',
+        datastoreId: DS_ID,
+      });
+    });
+
+    it('reads the identity from the machine registry, not from the config', async () => {
+      await localExecutorService.execute(datastoreCreate);
+
+      expect(mockExec).toHaveBeenCalledWith(
+        expect.stringContaining('/usr/bin/renet datastore list --json')
+      );
+    });
+
+    it('keeps a machine-placed create on the legacy unscoped path', async () => {
+      // The implicit default datastore carries no descriptor and therefore no
+      // identity; renet reads the unscoped population for it. Inventing a scope
+      // here would break every ordinary create.
+      mockGetRepository.mockResolvedValue({
+        repositoryGuid: 'guid-1',
+        placement: { machine: 'hostinger' },
+      });
+
+      const result = await localExecutorService.execute({
+        functionName: 'repository_create',
+        machineName: 'hostinger',
+        params: { repository: 'plain', size: '1G' },
+        captureOutput: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(mockIssueRepoLicense.mock.calls[0][2].datastoreId).toBeUndefined();
+      // And it does not pay for a registry round-trip it has no use for.
+      expect(mockExec).not.toHaveBeenCalledWith(expect.stringContaining('datastore list'));
+    });
+
+    it('carries the parent datastore identity into a fork of a datastore-resident repo', async () => {
+      const forkGuid = '99999999-8888-4777-8666-555555555555';
+      mockGetRepository.mockResolvedValue({
+        repositoryGuid: 'guid-1',
+        grandGuid: 'grand-1',
+        // Placement is a property of the FAMILY, so the parent's read is the
+        // fork's answer: a fork lands in the datastore its parent lives in.
+        placement: { datastore: 'drill-ds' },
+      });
+
+      await localExecutorService.execute({
+        functionName: 'repository_fork',
+        machineName: 'hostinger',
+        params: { repository: 'drill-repo', tag: forkGuid, size: '1G' },
+        captureOutput: true,
+      });
+
+      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: forkGuid,
+        kind: 'fork',
+        datastoreId: DS_ID,
+      });
+    });
+
+    it('re-issues with identity proofs under the same scope, so the proven blob lands scoped too', async () => {
+      await localExecutorService.execute(datastoreCreate);
+
+      // The post-create refresh prefers renet's scan, which now sees the repo.
+      // The resolved id rides along as the fallback for a scan that cannot
+      // answer — without it the PROVEN reissue would land unscoped and undo the
+      // pre-issuance fix one step later.
+      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
+        repositoryGuid: 'guid-1',
+        datastoreId: DS_ID,
+      });
+    });
+
+    // Failing closed is the whole point: an unscoped write is INVISIBLE to
+    // renet's validation, so "issue anyway and hope" costs an activation and
+    // still fails the create. Refusing costs nothing — it runs before issuance.
+    describe('refuses rather than issuing into a scope it cannot name', () => {
+      it('when the datastore is absent from the machine registry', async () => {
+        registryReturns([{ name: 'other-ds', datastoreId: DS_ID }]);
+
+        const result = await localExecutorService.execute(datastoreCreate);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('drill-ds');
+        expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+      });
+
+      it('when the registry row carries no usable identity', async () => {
+        registryReturns([{ name: 'drill-ds', backend: 'local' }]);
+
+        const result = await localExecutorService.execute(datastoreCreate);
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('no usable identity');
+        expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+      });
+
+      it('when the registry cannot be read at all', async () => {
+        mockExec.mockImplementation((command: string) => {
+          if (command.includes('datastore list')) return Promise.resolve('not json at all');
+          return Promise.resolve('');
+        });
+
+        const result = await localExecutorService.execute(datastoreCreate);
+
+        expect(result.success).toBe(false);
+        expect(mockIssueRepoLicense).not.toHaveBeenCalled();
+      });
+
+      // The refusal belongs to the path that SPENDS. Once the repo exists, the
+      // scan is the authority and this resolution is only a fallback, so a
+      // registry that goes unreadable must not fail an operation that already
+      // succeeded.
+      it('but never after the repo exists: a post-create registry failure is not fatal', async () => {
+        let calls = 0;
+        mockExec.mockImplementation((command: string) => {
+          if (!command.includes('datastore list')) return Promise.resolve('');
+          calls += 1;
+          return calls === 1
+            ? Promise.resolve(JSON.stringify([{ name: 'drill-ds', datastoreId: DS_ID }]))
+            : Promise.reject(new Error('registry unavailable'));
+        });
+
+        const result = await localExecutorService.execute(datastoreCreate);
+
+        expect(result.success).toBe(true);
+        expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
+        expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2].datastoreId).toBeUndefined();
+      });
     });
   });
 

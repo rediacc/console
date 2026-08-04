@@ -229,6 +229,24 @@ const JOB_SURFACES = {
   // full CI, so it needs no separate module.
   license_enforcement: ['renet'],
   account_e2e: ['account', 'shared'],
+  // The drills leg runs `./run.sh drill universe` + `drill transfer`: the CLI's
+  // own config resolution (`packages/cli`), the shared package both it and the
+  // account server build against, and a live `./run.sh account dev` gateway
+  // (`private/account`) the assertions log in to.
+  //
+  // The drills' OWN source (scripts/drills/*.sh) is not a module: `scripts/`
+  // hits the `scripts-harness` rule => full CI, so an edit to a drill always
+  // runs this leg. Same shape as license_enforcement's harness under `.ci/`.
+  //
+  // `www` is DELIBERATELY ABSENT even though `account_dev` starts the Astro dev
+  // server from packages/www and exits non-zero if it does not come up. A www
+  // change cannot change what these drills ASSERT (config isolation, per-config
+  // tokens, config-storage seed/offline/fail-closed): it can only break the
+  // harness. Carrying www here would run a ~15-minute leg on every marketing or
+  // i18n PR, which is the single most common change shape in this repo. The
+  // accepted cost: a www change that breaks `astro dev` while still building
+  // clean would surface as a red drills leg on the NEXT cli/account PR.
+  drills: ['cli', 'shared', 'account'],
   ops: ['cli', 'shared', 'provisioning', 'json', 'renet', 'account', 'tutorials'],
   elite_run: ['elite', 'renet'],
   update_flow: ['cli', 'shared', 'json', 'renet'],

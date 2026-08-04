@@ -61,6 +61,31 @@ async function dispatch(
   return res.stdout ?? '';
 }
 
+/**
+ * A datastore's registry record as the machine that holds it reports it.
+ *
+ * `renet datastore list --json` emits each row as the flattened Record plus its
+ * `name`, which is the shape `datastore adopt --record-b64` reads back, so this
+ * one call is both the lookup and the ferry payload.
+ */
+async function captureDatastoreRecord(
+  machineName: string,
+  ref: string,
+  debug?: boolean
+): Promise<{ name: string; backend?: string; fork?: unknown }> {
+  const stdout = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
+  const records =
+    parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout) ?? [];
+  const record = records.find((r) => r.name === ref);
+  if (!record) {
+    throw new ValidationError(
+      `Datastore "${ref}" is not in ${machineName}'s registry, so there is no record to move. ` +
+        `Nothing has been detached.`
+    );
+  }
+  return record;
+}
+
 function registerCreate(datastore: Command): void {
   datastore
     .command('create')
@@ -279,6 +304,50 @@ function registerAttach(datastore: Command): void {
             // and a failed detach aborts the move with the old attach intact.
             outputService.info(
               t('commands.datastore.attach.relocating', { ref, from: current, to: options.to })
+            );
+            // The registry is PER-MACHINE, and it is the only place a datastore's
+            // ceph pool and image are written down. The target has never seen this
+            // datastore, so detach-then-attach cannot work: the attach died with
+            // `datastore "<ref>" is not registered on this machine` AFTER the detach
+            // had already happened, leaving the datastore attached NOWHERE (found
+            // live by `./run.sh drill license --legs b`, 2026-08-04). Ferry the
+            // record across — the same `datastore_adopt` the cluster paths use
+            // (cluster-fork.ts, repo-replicate.ts; findings #14 and #18), whose
+            // `--plain` half exists for exactly this non-fork move.
+            //
+            // EVERYTHING NON-DESTRUCTIVE HAPPENS FIRST, which is why the adopt
+            // precedes the detach and not merely the attach. renet's own Adopt
+            // doc states the ordering rule for this exact case (adopt.go:22-28:
+            // "adopts it BEFORE anything destructive, so a registry miss can never
+            // strand a downed source"), and adopt earns it: it writes one registry
+            // row, does no disk work, and is idempotent on a name already present
+            // (adopt.go:61-62), so a resumed relocation converges. With the adopt
+            // last, a malformed record or an unreachable target still strands the
+            // datastore attached nowhere — the same bug, one step later.
+            const record = await captureDatastoreRecord(current, ref, options.debug);
+            // A local-backend datastore's bytes never leave their machine, so
+            // relocating one is not something that can be half-done — it is
+            // something that must not start. renet refuses it too (adopt.go:44-46),
+            // but only after this command would already have detached.
+            if (record.backend !== 'ceph') {
+              throw new ValidationError(
+                `Datastore "${ref}" is ${record.backend ?? 'local'}-backed, so its bytes live on ` +
+                  `${current} alone and ${options.to} cannot reach them. Only a ceph-backed ` +
+                  `datastore relocates. Nothing has been detached.`
+              );
+            }
+            await dispatch(
+              'datastore_adopt',
+              options.to,
+              {
+                name: ref,
+                record_b64: Buffer.from(JSON.stringify(record)).toString('base64'),
+                // renet refuses a fork record under --plain and a plain record
+                // without it, so the shape is read off the record, not guessed
+                // from the ref.
+                ...(record.fork ? {} : { plain: true }),
+              },
+              { debug: options.debug }
             );
             await dispatch('datastore_detach', current, { name: ref }, { debug: options.debug });
           }

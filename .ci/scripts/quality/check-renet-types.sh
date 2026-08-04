@@ -19,7 +19,10 @@ OUTPUT_DIR="$REPO_ROOT/packages/shared/src/renet-contract/data"
 
 cd "$REPO_ROOT"
 
-require_submodule "$RENET_DIR" "Renet submodule" || exit 0
+# Marker is a FILE inside the submodule, not the directory: an uninitialised
+# submodule leaves an empty directory behind, which would satisfy a directory
+# marker while proving nothing about content.
+require_submodule "$RENET_DIR/go.mod" "Renet submodule" || exit 0
 
 # Build renet
 log_step "Building renet..."

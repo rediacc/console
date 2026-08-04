@@ -304,6 +304,8 @@
         "optionMasterPassword": "Encriptar recursos com uma palavra-passe mestra",
         "success": "Configuração \"{{name}}\" inicializada",
         "bareForm": "A configuração predefinida é criada automaticamente; use 'config init <name>' para uma configuração com nome, ou passe uma flag (--ssh-key, --server, ...) para definir uma opção na predefinida.",
+        "serverKeyMissing": "O servidor de conta {{server}} não anunciou uma chave de encriptação. Será descoberta no primeiro pedido bem-sucedido.",
+        "serverKeyUnreachable": "Não foi possível contactar o servidor de conta {{server}} para sincronizar a sua chave de encriptação ({{error}}). Será descoberta no primeiro pedido bem-sucedido.",
         "examples": {
           "basic": "Cria um perfil de configuração com nome.",
           "withServer": "Cria um perfil apontado para um account server específico."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "A configuração \"{{config}}\" continua em conflito com outro dispositivo após 3 tentativas. Execute o comando novamente.",
         "passkeySecretMissing": "Segredo de chave de acesso não encontrado no porta-chaves do sistema operativo. Autentique-se novamente com: rdc config remote enable",
         "staleSlot": "O seu key slot está desatualizado (a chave de encriptação da config foi rodada). Volte a inscrever-se com: rdc config remote enable",
+        "undecryptableIdentity": "A config {{configId}} no armazenamento {{storeId}} foi encriptada com uma chave diferente da que o seu slot possui, por isso este dispositivo não a consegue ler. Isto acontece quando o armazenamento já contém uma config de outra inscrição. Obtenha essa config num dispositivo já inscrito e verifique a que config se referia, ou peça a um administrador para voltar a partilhar a chave do armazenamento com este dispositivo a partir do portal (Config Storage > key slots).",
+        "undecryptableSession": "A config {{configId}} foi desbloqueada com a sua chave, mas a camada de sessão do servidor recusou-se a abri-la ({{detail}}). Repita o comando; se continuar a falhar, volte a inscrever-se com: rdc config remote enable",
+        "handoffUndecryptable": "O browser enviou um handoff que este dispositivo não consegue abrir ({{error}}). Isto normalmente significa que um separador antigo de 'config remote enable' ainda está aberto e enviou para a sessão errada. Feche todos os separadores do portal rediacc e execute o comando novamente.",
         "enable": {
           "description": "Ligar esta configuração ao armazenamento encriptado remoto",
           "optionHeadless": "Usar fluxo de código de dispositivo (para servidores sem interface gráfica)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "Password mestra da config:",
           "passwordNonInteractive": "É necessária uma password mestra da config. Defina REDIACC_CONFIG_PASSWORD, ou execute sem --password num terminal interativo.",
           "passwordRequirePasskey": "Esta organização exige uma passkey para desbloquear o config storage; a inscrição por password está desativada. Inscreva-se a partir de um browser com: rdc config remote enable",
+          "passwordIpBound": "O token de API em REDIACC_TOKEN está vinculado a um endereço IP de cliente diferente. Um token vincula-se ao endereço a partir do qual é usado por primeira vez, por isso um token criado noutro local não pode inscrever-se a partir desta máquina. Emita um token novo a partir do portal web e tente novamente.",
+          "passwordMissingScope": "O token de API em REDIACC_TOKEN não tem o scope config:enroll. Emita um token com esse scope a partir do portal web e tente novamente.",
+          "passwordTeamGone": "A equipa a que este token de API pertence foi arquivada ou removida. Emita um novo token para uma equipa ativa a partir do portal web e tente novamente.",
+          "passwordTokenNotEnrollable": "Este token de API não pode inscrever um config slot porque não está associado a um utilizador dentro de uma organização. Emita um token pessoal a partir da sua própria conta no portal web e tente novamente.",
+          "passwordForbidden": "O servidor de conta rejeitou a inscrição da config: {{error}}",
           "passwordNoSlot": "Não há nenhum password slot aprovisionado para o seu config storage. Adicione um a partir do portal (Config Storage > key slots) e tente novamente.",
           "passwordWrong": "Não foi possível desbloquear a config com essa password. Verifique REDIACC_CONFIG_PASSWORD (ou a password introduzida) e tente novamente.",
           "optionForce": "Substituir o conteúdo local divergente pela cópia do servidor sem confirmação",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "Falha ao escrever o alias SSH (não fatal): {{error}}",
-          "sshConfigWritten": "Alias SSH rediacc--{{name}} escrito em ~/.ssh/config_rediacc"
+          "sshConfigWritten": "Alias SSH rediacc--{{name}} escrito em {{path}}"
         },
         "remove": {
           "sshConfigCleared": "Alias SSH rediacc--{{name}} removido"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "Mostra o estado completo de uma máquina.",
           "containers": "Mostra apenas os containers em execução numa máquina."
-        }
+        },
+        "licenseBackupBlocked": "\nCÓPIAS DE SEGURANÇA BLOQUEADAS: {{repositoryGuid}} está a ser recusado pelo licenciamento desde {{at}} ({{reason}}). {{message}}\nAs cópias de segurança agendadas para este repositório não estão a ser executadas. Reemita com: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "Token validado",
         "validating": "A validar token...",
         "waitingApproval": "À espera de autorização pelo browser...",
-        "edgeSeparator": "Canal Edge"
+        "edgeSeparator": "Canal Edge",
+        "machinesOverLimit": "  {{count}} vaga(s) de máquina acima do limite."
       },
       "logout": {
         "description": "Apagar token de subscrição armazenado",
@@ -1686,7 +1698,11 @@
           "empty": "  Nenhuma licença de repositório instalada",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (expiração definitiva: {{effectiveHardExpiry}})",
-          "header": "\nLicenças de repositório: ({{machineName}})"
+          "header": "\nLicenças de repositório: ({{machineName}})",
+          "datastoreSuffix": " [datastore: {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: as cópias de segurança estão BLOQUEADAS pelo licenciamento desde {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Execute 'rdc subscription refresh -m {{machineName}}' para reemitir; a marca é removida na próxima renovação bem-sucedida.",
+          "lastRenewal": "    última renovação: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  Plano:     {{plan}}",
         "remoteRepoLicenseIssuances": "  Emissões mensais de licenças de repositório: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licenças de repositório: {{totalTrackedRepos}} rastreadas, {{validCount}} válidas, {{refreshRecommendedCount}} recomendada atualização, {{hardExpiredCount}} expiradas definitivamente",
-        "remoteStatus": "  Estado:   {{status}}"
+        "remoteStatus": "  Estado:   {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (visto pela última vez: {{lastSeen}}) ACIMA DO LIMITE",
+        "overLimitSummary": "  {{count}} máquina(s) estão reclamadas provisoriamente para além do limite de vagas de máquina. As renovações continuam a funcionar; repositórios NOVOS não podem ser licenciados até libertar uma vaga ou aumentar o limite."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc repo list`, depois tente novamente.",
       "recoveryFailedServerRejected": "O servidor de conta rejeitou a emissão de licença para o repositório em \"{{machine}}\". Primeiro erro: {{error}}. Execute: rdc subscription refresh --repo <repo-ref> para obter detalhes.",
       "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente.",
-      "skipActivationHint": "Numa máquina descartável, pode ignorar a ativação por completo com REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "skipActivationHint": "Numa máquina descartável, pode ignorar a ativação por completo com REDIACC_SKIP_MACHINE_ACTIVATION=1.",
+      "machineSlotLimit": "Esta colocação precisa de mais {{needed}} vaga(s) de máquina, e a subscrição tem {{free}} livre(s) ({{active}} de {{max}} em uso). Uma vaga é libertada automaticamente 5 horas após a última atividade dessa máquina, ou imediatamente quando a máquina é removida. Aumente o limite fazendo upgrade do plano, ou contacte as vendas para um limite de máquinas Enterprise ou de parceiro negociado.",
+      "partialPlacement": "A colocação parou a meio caminho: {{placed}} máquina(s) concluída(s) ({{placedNames}}) e {{remaining}} nunca iniciada(s) ({{remainingNames}}). Nada foi revertido, pelo que as máquinas concluídas mantêm os seus repositórios e vagas. Liberte uma vaga ou aumente o limite e volte a executar: {{command}}",
+      "nothingProvisioned": "Nada foi aprovisionado: o repositório não foi criado."
     },
     "machineNotFound": "Máquina \"{{name}}\" não encontrada",
     "machineRequired": "Nome da máquina necessário. Use --machine <name>",

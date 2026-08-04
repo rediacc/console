@@ -2675,6 +2675,10 @@
           {
             "answer": "Se disdici durante la prova di 14 giorni non ti viene addebitato nulla. Se disdici un piano a pagamento in seguito, mantieni le sue funzionalità fino alla fine del periodo di fatturazione, poi il tuo account torna al piano gratuito Community. I tuoi repository continuano a funzionare per tutto il tempo.",
             "question": "Cosa succede se disdico?"
+          },
+          {
+            "answer": "Ogni nodo di un cluster è una macchina, e ciascuna conta come una macchina. Non esiste un'allocazione condivisa per il cluster né uno sconto per raggruppare più server insieme. Un nodo occupa uno slot solo quando su di esso viene distribuito un repository, quindi costruire il cluster in sé non costa nulla. Il clustering viene venduto tramite i nostri partner come parte di un contratto Enterprise, e il numero di nodi si concorda al momento dell'ordine.",
+            "question": "Come vengono contati i nodi di un cluster?"
           }
         ]
       },
@@ -14413,10 +14417,10 @@
           "content": ["Rediacc offre più piani di Abbonamento:"],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuito): limitato a 2 attivazioni di Dispositivi, funzionalità di base, supporto della community",
-            "<strong>Professional</strong>: fino a 5 attivazioni di Dispositivi, registro di audit, supporto prioritario, branding personalizzato",
-            "<strong>Business</strong>: fino a 20 attivazioni di Dispositivi, storage distribuito, analisi avanzate, responsabile del successo dedicato",
-            "<strong>Enterprise</strong>: fino a 50 attivazioni di Dispositivi, infrastruttura dedicata, integrazioni personalizzate, supporto 24/7"
+            "<strong>Community</strong> (gratuito): 1 attivazione di Dispositivo, funzionalità principali, supporto della community. Questo è il piano predefinito a cui il vostro account torna dopo la fine di una prova o di un Abbonamento a pagamento.",
+            "<strong>Professional</strong>: 1 attivazione di Dispositivo, audit logging, supporto prioritario, branding personalizzato",
+            "<strong>Business</strong>: 1 attivazione di Dispositivo, storage distribuito, analisi avanzate, success manager dedicato",
+            "<strong>Enterprise</strong>: infrastruttura dedicata, integrazioni personalizzate, supporto 24/7 e un tetto di attivazioni di Dispositivi fissato nel vostro ordine. Se non viene negoziato alcun tetto, si applicano 25 attivazioni di Dispositivi. Enterprise viene venduto tramite i nostri partner."
           ],
           "subsections": {
             "billing": {
@@ -14426,6 +14430,15 @@
                 "Ci riserviamo il diritto di modificare i nostri prezzi con un preavviso di trenta (30) giorni. Le variazioni di prezzo non avranno effetto sul ciclo di fatturazione in corso. Se non accettate una modifica di prezzo, potete disdire il vostro Abbonamento prima dell'inizio del ciclo di fatturazione successivo."
               ],
               "title": "5.1 Fatturazione"
+            },
+            "clusters": {
+              "content": [
+                "Un <strong>\"Cluster\"</strong> indica due o più Dispositivi che gestite insieme come un unico pool di storage o calcolo utilizzando i Servizi. Un <strong>\"Nodo\"</strong> indica un Dispositivo che è membro di un Cluster. Un Nodo è un Dispositivo a tutti gli effetti previsti dai presenti Termini, e ciascun Nodo consuma un'attivazione di Dispositivo. I Cluster non vengono raggruppati né scontati: un Cluster di cinque Nodi consuma cinque attivazioni di Dispositivi.",
+                "Il vostro <strong>tetto di attivazioni di Dispositivi</strong> è il numero massimo di Dispositivi che possono mantenere un'attivazione contemporaneamente. Viene registrato sul vostro Abbonamento ed è disciplinato dal vostro ordine. I valori per piano elencati sopra sono i valori predefiniti standard, non negoziati; un tetto concordato in un ordine o in un accordo con un partner sostituisce il valore predefinito per quell'Abbonamento. Il clustering è disponibile solo nell'ambito di accordi Enterprise e con partner.",
+                "Un'attivazione di Dispositivo viene consumata quando un Repository viene creato, copiato o collocato su un Dispositivo, e viene rilasciata automaticamente dopo un periodo di inattività. La sola costruzione dell'infrastruttura, inclusa la creazione di un Cluster e l'aggiunta di Nodi ad esso, non consuma alcuna attivazione.",
+                "Quando tutte le attivazioni sono già in uso, Rediacc può rifiutarsi di attivare un Dispositivo aggiuntivo. I Dispositivi che già mantengono un'attivazione continuano a funzionare e possono rinnovare le proprie licenze esistenti, e Rediacc può registrare tali rinnovi come eccedenti il vostro tetto. Rediacc può contattarvi per riconciliare il vostro Abbonamento quando un tetto di attivazioni di Dispositivi viene superato in modo persistente."
+              ],
+              "title": "5.5 Attivazioni di Dispositivi, cluster e nodi"
             },
             "gracePeriod": {
               "content": [

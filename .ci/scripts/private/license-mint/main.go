@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rediacc/renet/pkg/license"
@@ -75,6 +76,10 @@ type config struct {
 
 	forgeSigner string
 	keyID       string
+
+	datastoreID        string
+	renewalURL         string
+	storageFingerprint string
 }
 
 func run() error {
@@ -112,6 +117,13 @@ func run() error {
 
 	flag.StringVar(&cfg.forgeSigner, "forge-signer", "", "base64 PKCS8 key that produces the license SIGNATURE, while publicKeyId still names the nominal signer (forges a stranger-signed blob)")
 	flag.StringVar(&cfg.keyID, "key-id", "", "override the blob's publicKeyId (and therefore the output filename)")
+
+	flag.StringVar(&cfg.datastoreID, "datastore-id", "",
+		"bind the license to a datastore identity (payload datastoreId); empty = unbound, which is what a pre-binding license looks like")
+	flag.StringVar(&cfg.renewalURL, "renewal-url", "",
+		"stamp the self-renewal endpoint into the payload (payload renewalUrl)")
+	flag.StringVar(&cfg.storageFingerprint, "storage-fingerprint", "",
+		"bind the license to a repo path's storage fingerprint; the literal value, or 'auto:<path>' to compute it the way the scan does")
 	flag.Parse()
 
 	switch {
@@ -192,6 +204,11 @@ func mint(cfg config) error {
 		return fmt.Errorf("-hard-expires: %w", err)
 	}
 
+	storageFingerprint, err := resolveStorageFingerprint(cfg.storageFingerprint)
+	if err != nil {
+		return err
+	}
+
 	payloadJSON, err := json.Marshal(license.RepoLicense{
 		Version:              1,
 		SubscriptionID:       cfg.subscription,
@@ -202,6 +219,9 @@ func mint(cfg config) error {
 		PlanCode:             cfg.plan,
 		Status:               cfg.status,
 		MaxRepositorySizeGb:  cfg.maxSizeGb,
+		DatastoreID:          cfg.datastoreID,
+		RenewalURL:           cfg.renewalURL,
+		StorageFingerprint:   storageFingerprint,
 		IssuedAt:             issuedAt,
 		RefreshRecommendedAt: refreshAt,
 		HardExpiresAt:        hardExpires,
@@ -260,6 +280,24 @@ func mint(cfg config) error {
 		"machineId":   machineID,
 		"chainHash":   blob.ChainHash,
 	})
+}
+
+// resolveStorageFingerprint turns the -storage-fingerprint flag into a payload
+// value. `auto:<path>` computes it with license.StorageFingerprint, which is the
+// SAME function the scan mints with and the validators check with. Computing it
+// here by hand would recreate exactly the mint/check skew that made the check
+// dormant in the first place.
+func resolveStorageFingerprint(value string) (string, error) {
+	const autoPrefix = "auto:"
+	if !strings.HasPrefix(value, autoPrefix) {
+		return value, nil
+	}
+	path := strings.TrimPrefix(value, autoPrefix)
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("-storage-fingerprint auto: %w", err)
+	}
+	return license.StorageFingerprint(info), nil
 }
 
 // buildDelegation returns the delegated signing key plus the cert that

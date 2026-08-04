@@ -1,5 +1,5 @@
 ---
-description: Land the current branch's stacked PRs: squash-merge submodule PRs first, bump the console pointers to the merged commits, wait for the fast-path CI run and auto-merge the console PR (flipping it ready first if needed), check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Use when the console PR is ready + Claude-reviewed with threads resolved, and you want to release without re-typing the submodule sequence.
+description: Land the current branch's stacked PRs: rebase-merge submodule PRs first, bump the console pointers to the merged commits, wait for the fast-path CI run and auto-merge the console PR (flipping it ready first if needed), check out main, watch the release pipeline (Console CI on main + CD edge deploy) to green, then RE-SYNC main because CD pushes a homebrew-tap pointer bump and a release-state commit back to main after the merge. Use when the console PR is ready + Claude-reviewed with threads resolved, and you want to release without re-typing the submodule sequence.
 argument-hint: "[branch]  (optional; defaults to the current branch)"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
@@ -41,6 +41,57 @@ For each one found:
 - Its remote may not be GitHub. Check `git -C <dir> remote get-url origin` before reaching for `gh`; PR/merge tooling that assumes GitHub silently fails elsewhere.
 - Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it" — this has actually happened.
 
+### Stray worktrees from past sessions
+
+`git worktree list` can hold entries this session never created — a prior session's
+scratch worktree, abandoned mid-task. They are invisible to everything above: `git status`
+in the main checkout says nothing about them, and neither does the §0 sibling-repo check.
+
+Discover them every run, before landing anything:
+
+```bash
+git worktree list
+```
+
+For each entry besides the one you are running in, check what it actually holds before
+touching it — the same "identify whose work it is first" rule the dirty-tree precondition
+below applies to the main checkout, just one directory over:
+
+```bash
+git -C <worktree-path> status --short
+git -C <worktree-path> diff --stat  # and per-submodule, if any submodule shows dirty too
+```
+
+A worktree with nothing dirty and nothing unpushed is debris — remove it:
+
+```bash
+git worktree remove <worktree-path> --force
+git worktree prune
+```
+
+A worktree with dirty content is **not** automatically debris, even if it looks stale.
+Verify, per file, whether the content is safe to discard before removing anything:
+- **Byte-identical to (or a strict subset of) what the current `main` already has**
+  (`diff <worktree-file> <main-checkout-equivalent>`) → safe, the work already landed by some
+  other path and this is a leftover draft. Removing the worktree loses nothing.
+- **Not found in `main`, not matched by any open PR, genuinely orphaned** → do not delete
+  silently. Report what it is and ask, the same as an unclear dirty file in the main tree —
+  worktree content has exactly the same loss risk as working-tree content, it is just easier
+  to forget it exists.
+
+Observed live 2026-08-01: six stray worktrees had accumulated in one checkout. Two held real,
+substantial uncommitted work from other sessions (a ~270-line CLI+Go feature, six locale
+files' worth of in-progress translation). Both turned out to be fully superseded by `main`
+(verified byte-identical / a strict subset before deleting), but that was established by
+checking, not assumed from how old or untouched the worktree looked.
+
+**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.**
+`.claude/hooks/pre-bash/block-worktree-add.sh` refuses `git worktree add` from the assistant's
+own Bash tool unconditionally — if this flow genuinely needs one (it normally does not; steps
+4-6 operate on the existing checkout), ask the operator to run the command themselves via the
+`!` prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance — that creates a
+branch in the current checkout, not a new worktree, and is unaffected by the hook.
+
 - Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
 
@@ -57,20 +108,38 @@ For each one found:
   moved), or the other session commits first. Observed live: a session held 18 uncommitted
   paths through a `/pr-merge`; nothing was lost, but only because `main`'s two new commits
   happened to touch none of them.
+
+  If the dirty path **does** overlap what `main` moved, `git checkout main` aborts outright
+  (it will not silently clobber). If, on investigation, the diff is genuinely orphaned — no
+  commit in the branch's own history ever referenced it, it sat untouched across many rounds,
+  and it is not part of anything currently in flight (check `git log --all -- <path>` and think
+  about whether the content is even still needed, e.g. a semver range bump the lockfile already
+  satisfies) — the running session may commit it itself (never stash/discard) to unblock the
+  checkout, with a message stating plainly that it was found orphaned and why it's safe to land.
+  This is committing to preserve, not deciding the change was wanted; if genuinely unsure whose
+  work it is or why it exists, stop and ask instead.
 - A `rediacc/console` PR exists for this branch. Note its number.
 - The console PR should arrive at the babysitter's finish line: **flipped ready, Claude-reviewed (a `<!-- claude-reviewed: <sha> -->` marker matching the current head), and zero unresolved review threads**, with the latest console CI run green (`gh run list --repo rediacc/console --branch <branch> --workflow "Console CI" --limit 1`, then confirm `conclusion=success`). If it is still a draft, flip it ready (`gh pr ready`; the `block-premature-ready` hook verifies `CI Complete` is green), wait for the Claude review to complete, and resolve its threads before proceeding. Never merge over red or over unresolved threads.
 - `/code-review ultra` is available as an optional deep pre-land review for a big wave (operator-invoked; it does not replace the automated Claude review).
 
-### 1. Merge submodule PRs first (submodule-first, squash)
+### 1. Merge submodule PRs first (submodule-first, rebase)
+**All 5 repos (console + 4 submodules) are rebase-merge only, since 2026-07-30.**
+`--squash` is rejected outright: `gh pr merge <n> --squash` fails with `GraphQL: Squash merges
+are not allowed on this repository.` Do not try it first and fall back — go straight to
+`--rebase`. `git branch --merged` lies about ancestry on these repos (a rebased PR's commits are
+never literally on the base branch under the old SHAs), so judge "is this landed" by PR **state**
+(`gh pr view --json state` → `MERGED`), never by `--merged`/`--contains`.
+
 For each submodule that has an **open PR on this branch** (check the list above):
 - Confirm `mergeStateStatus` is `CLEAN` and there are **no unresolved bot review threads** (`gh api graphql` reviewThreads → all `isResolved:true`). If unresolved threads remain, resolve them first (substantive reply + `resolveReviewThread`), because they block the console `Submodule Branches` gate while the console PR is still open.
-- Squash-merge: `gh pr merge <n> --repo rediacc/<r> --squash`. **Do not delete the branch** (`delete_branch_on_merge` is false on submodules; keeping it preserves the gate's fallback path).
-- Capture the new submodule `main` HEAD: `gh api repos/rediacc/<r>/commits/main --jq .sha`. This is the **squash commit**, not the branch tip.
+  - A **failing but non-required** check (e.g. a broken submodule Claude Review job) shows as `mergeStateStatus: UNSTABLE`, not `CLEAN` — that alone does not mean stop. Confirm with GraphQL whether it's actually required before treating it as a blocker: `pullRequest.commits.nodes[].commit.statusCheckRollup.contexts.nodes[].isRequired(pullRequestNumber: <n>)`. `isRequired:false` on the only failing context means the PR is safely mergeable despite UNSTABLE.
+- Rebase-merge: `gh pr merge <n> --repo rediacc/<r> --rebase`. **Do not delete the branch** (`delete_branch_on_merge` is false on submodules; keeping it preserves the gate's fallback path).
+- Capture the new submodule `main` HEAD: `gh api repos/rediacc/<r>/commits/main --jq .sha`. This is the **rebased tip commit** — a new SHA even for a single-commit PR (rebase always creates new commit objects), tree-identical to the branch tip but not the same object.
 
 ### 2. Update console submodule pointers to the merged commits
-Squash means the branch-tip commits are **not** on the submodule's `main`, so the pointer must move. For each merged submodule:
+Rebase means the branch-tip commits are **not literally on** the submodule's `main` (new SHAs from the replay), so the pointer must move. For each merged submodule:
 - `git -C private/<sm> fetch origin main`
-- **Safety check:** `git -C private/<sm> diff --stat <old-branch-tip-sha> <new-main-sha>` must be **empty** (squash tree == branch tip; content is unchanged). If it is not empty, stop: something diverged (e.g. main advanced mid-merge).
+- **Safety check:** `git -C private/<sm> diff --stat <old-branch-tip-sha> <new-main-sha>` must be **empty** (rebase preserves tree content exactly; only the commit SHA changes). If it is not empty, stop: something diverged (e.g. main advanced mid-merge).
 - `git -C private/<sm> checkout <new-main-sha>` (detached at the merged commit).
 
 Then in the console repo: `git add private/renet private/account …` (only the merged pointers), commit (`chore(submodules): bump pointers to merged main commits`), and push to the branch. This re-runs console CI; the `Submodule Branches` gate now passes via the **ancestor-of-main (pointer-bump-only)** path in `.ci/scripts/quality/check-submodule-branches.sh`.
@@ -80,7 +149,8 @@ Refresh the console PR body before pushing (staleness gate reads `updatedAt`; th
 ### 3. Wait for the fast-path run, then auto-merge the console PR
 The pointer bump changed only submodule SHAs (trees verified identical in step 2), so the push is a **pointer-bump fast path**: `.ci/scripts/ci/detect-pointer-bump.sh` sets `pointer_bump_only=true` in the `initialize` job and `ci.yml` skips `build-renet` (and everything cascading from it: the other builds, tests, install-matrix, preview) plus `migration-test`, `stripe-sandbox`, `package-tests`, and `ops-tests`. Only `quality`, `review-gate`, and `ci-complete` run, so the run goes green in **minutes**, and `assert-ci-complete.sh` accepts the skipped builds under this flag. The pointer-only diff deliberately triggers **no** Claude re-review.
 - Arm the standard terminal-state watch on that run (run_in_background: true; do NOT use `gh run watch`): `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs`.
-- When `CI Complete` is green: `gh pr merge <console-pr> --repo rediacc/console --squash --auto` (console is squash-only; `--squash --auto` is the sanctioned merge, which GitHub lands the moment required checks are green. `--admin` is banned by the `block-admin-merge` hook; there is no place for it here).
+- When `CI Complete` is green: `gh pr merge <console-pr> --repo rediacc/console --rebase --auto` (console is rebase-only too, same policy as the submodules since 2026-07-30; `--squash` is rejected here as well. `--rebase --auto` is the sanctioned merge, which GitHub lands the moment required checks are green. `--admin` is banned by the `block-admin-merge` hook; there is no place for it here).
+- If `Review Complete` hasn't posted for the pointer-bump head yet (Claude Review deliberately does not re-run for a pointer-only diff, so nothing auto-triggers review-status.yml for this new SHA either): nudge it with a throwaway PR comment (`gh pr comment <console-pr> --body "..."`, fires the `issue_comment` trigger). The currency check recognizes a gitlink-only diff as reviewed-equivalent, so this posts clean without spending review budget.
 - Verify: `gh pr view <console-pr> --repo rediacc/console --json state` → `MERGED`, and capture `console/main` HEAD.
 
 ### 4. Check out main (first pass — it will go stale again in step 5, see step 6)
@@ -167,4 +237,4 @@ So finish by making the state explicit rather than leaving it implied:
   to skip past.
 
 ### 8. Report
-State each merged commit (renet / account / console → their squash SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.
+State each merged commit (renet / account / console → their rebased-tip SHAs on main), confirm local `main` is in sync, and give the release outcome: Console CI green, Release/CD green with the new version tag + edge deployed (or the exact failed step if not). If step 5 required a fix pushed directly to `main`, state that explicitly with its SHA and the failure it repaired. Close with the step-7 hand-back note (on `main`, branch before editing). **Do not** merge anything else or re-cut a release.

@@ -295,9 +295,19 @@ CLI_STATE_NO_BRANCH = (
     "a branch, or set WORKLIST_AGENT_BRANCH explicitly.\n"
 )
 
-N_WAKEUPS = (
-    "NEXT WAKEUPS (computed from the live schedules, not from a declaration; "
-    "the label is each task's own prompt):\n%s"
+# v18 replaces N_WAKEUPS, which printed every scheduled task's next firing on
+# every stop. The operator deleted that section outright ("we don't need to
+# print next wakeup times... let's go for efficient ai context usage"); this is
+# the one row of it that was ever actionable, and it is silent unless a
+# schedule is genuinely broken.
+V_BROKEN_SCHEDULE = (
+    "%d scheduled task(s) carry a schedule this hook CANNOT PARSE:\n%s\n"
+    "    An unparseable schedule is invisible to every other check here -- it "
+    "counts as neither an inbox poll nor a work loop, so the cron-shape "
+    "checks, the poll backoff ladder and the loop-death detector all skip it, "
+    "and the task may never fire at all. Fix the schedule (delete the job and "
+    "recreate it with a valid 5-field cron expression, same prompt verbatim), "
+    "or delete it if it is no longer wanted."
 )
 
 V_DOCS_DRIFT = (
@@ -618,14 +628,17 @@ N_EMAIL_FAIL = (
 )
 
 V_BG_REPORT = (
-    "PURE BACKGROUND WAIT check-in (bounded, every ~15 min; latched so it "
-    "cannot drumbeat). Nothing is pending except %d background job(s), which "
-    "is a LEGITIMATE state: this is not a demand for other work. The hook's "
-    "own read of each worker's output stream:\n%s\n"
+    "PURE BACKGROUND WAIT check-in. Last delivered: %s. Next one no earlier "
+    "than %s (a %d-minute latch, and the two stamps are here so you can check "
+    "that claim from this message alone rather than taking it on trust). "
+    "Nothing is pending except %d background job(s), which is a LEGITIMATE "
+    "state: this is not a demand for other work. The hook's own read of each "
+    "worker's output stream:\n%s\n"
     "    Confirm each worker in one line in your reply (what it is doing and "
     "whether the stream evidence matches), --update any leased item riding "
-    "one, and restart or replace anything marked POSSIBLY STUCK. Then stop; "
-    "the next check-in is in ~15 minutes."
+    "one, and restart or replace anything marked POSSIBLY STUCK. Then stop. "
+    "If nothing at all moves between wakes, this check-in stands down by "
+    "itself and the hook asks you to slow the poll cron instead."
 )
 
 N_EMAIL_SKIPPED = (
@@ -865,11 +878,18 @@ CLI_TRIAGE_SELF = (
 
 # ---- SessionStart / PostCompact additionalContext ---------------------------
 
+# HONEST ABOUT WHAT IT IS. This used to open "those documents are the
+# starting context for the work", which is a claim about YOUR task that the
+# hook has no way to know: it fires for every session in the repo, and a
+# session working on something unrelated was told to go read a program it has
+# nothing to do with. The docs are standing material for one surface; say so,
+# name the surface, and let the session decide whether it is in it.
 CTX_SESSION_START = (
-    "This project keeps its design in %s, and those documents are the "
-    "starting context for the work. READ ALL OF THEM before acting: "
-    "they carry decisions you must not re-litigate and constraints "
-    "that are invisible in the code.\n%s\n\n"
+    "STANDING PROGRAM DOCS (background, not an assignment): this project "
+    "keeps the design of its %s surface in %s. READ ALL OF THEM before you "
+    "touch that surface -- they carry decisions you must not re-litigate and "
+    "constraints that are invisible in the code. If your task is elsewhere, "
+    "note the listing and move on.\n%s\n\n"
     "They are also YOURS TO MAINTAIN. When you change what the program "
     "does, update the document describing it in the SAME turn.%s"
 )
@@ -1183,6 +1203,7 @@ Decide explicitly, then act:
 # in wl_checks.POLL_BACKOFF_LADDER. They are notes, never violations: the session performs
 # the cron swap itself so the change is visible, and can decline.
 N_POLL_BACKOFF = (
+    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
     "INBOX HAS BEEN QUIET FOR %d MINUTES at a %d-minute poll. Double the interval so a\n"
     "session nobody is talking to stops paying for it. Swap the poll cron in ONE turn --\n"
     "a stop landing between the delete and the create trips the no-poll-cron check:\n"
@@ -1192,6 +1213,36 @@ N_POLL_BACKOFF = (
     "the 70-minute fast-path horizon would pay the full battery on every firing. Drop back\n"
     "to */5 as soon as a real request arrives."
 )
+# ---- v17: the no-op wake ladder ---------------------------------------------
+# The backoff notes above are advisory sections that ride a full report. These
+# two REPLACE the report: on a wake where the hook can prove nothing changed,
+# they are the entire output of the stop. See wl_checks.quiet_wake_note for
+# what "nothing changed" is measured against.
+N_QUIET_WAKE = (
+    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
+    "%d CONSECUTIVE QUIET WAKES: same items, same tasks, same HEAD, no inbox\n"
+    "traffic, and not one new byte on any worker's output stream. Waking every\n"
+    "%d minutes to learn that is the only thing this session is spending, so\n"
+    "the one useful action is to wake less often. Swap the poll cron in ONE\n"
+    "turn -- a stop landing between the delete and the create trips the\n"
+    "no-poll-cron check:\n"
+    "    delete the current poll job ('%s')\n"
+    "    create it again with '%s'   (%d minutes), same prompt VERBATIM, recurring true\n"
+    "This message is the WHOLE stop report on purpose: the worker roster, the\n"
+    "worklist guide and the advisory sections are all suppressed while nothing\n"
+    "is moving, and every one of them returns the moment something does. The\n"
+    "ladder is 5 -> 10 -> 20 -> 40 -> 60. Drop straight back to */5 when a real\n"
+    "request arrives."
+)
+N_QUIET_WAKE_CAPPED = (
+    "ADVISORY (this stop is already allowed; nothing here blocks you).\n"
+    "%d CONSECUTIVE QUIET WAKES at the %d-minute cap, which is the slowest rung\n"
+    "(a poll slower than the 70-minute fast-path horizon would pay the full\n"
+    "battery on every firing, so the ladder stops here). Nothing to reschedule.\n"
+    "This one line is the whole stop report while nothing moves; if the wait\n"
+    "itself has stopped being worth holding, end it and say so."
+)
+
 N_POLL_BACKOFF_RESET = (
     "A REQUEST IS WAITING while the poll is backed off to '%s'. Latency matters again:\n"
     "swap back to the bottom rung in ONE turn -- CronDelete the current poll job, then\n"

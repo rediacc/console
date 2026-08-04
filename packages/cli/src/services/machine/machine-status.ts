@@ -9,6 +9,10 @@ import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isDevBuild } from '../../utils/platform.js';
+import {
+  readRuntimeRepoLicenseStatuses,
+  type RuntimeRepoLicenseStatus,
+} from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { buildRenetEnvPrefix } from '../executor/local-executor.js';
@@ -131,5 +135,46 @@ export async function fetchMachineStatus(
     return parsed;
   } finally {
     lease.release();
+  }
+}
+
+/**
+ * The licensing detail `renet list` does not carry: which datastore each repo's
+ * license lives in, the blocked-backup marker, and what the last unattended
+ * renewal did.
+ *
+ * It is a second, deliberately separate read because `list`'s licenses section
+ * is a generated contract shared with other consumers, while these three fields
+ * come from `repository license-status`, which is also the only reader of the
+ * machine-wide marker tree and renewal state. It runs over the SAME pooled
+ * connection, so the cost is one exec of a local-only command.
+ *
+ * Best-effort by contract: an older renet that does not know `--all-datastores`
+ * (or a machine with an unreadable datastore) must degrade the license table,
+ * never fail `machine status`.
+ */
+export async function fetchRepoLicenseDetail(
+  machineName: string
+): Promise<RuntimeRepoLicenseStatus[]> {
+  try {
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      const { remotePath } = await provisionRenetToRemote(
+        await configService.getLocalConfig(),
+        lease.machine,
+        lease.sshPrivateKey,
+        { skipRouterRestart: true }
+      );
+      return await readRuntimeRepoLicenseStatuses(
+        lease.machine,
+        lease.sshPrivateKey,
+        remotePath,
+        await lease.ensure()
+      );
+    } finally {
+      lease.release();
+    }
+  } catch {
+    return [];
   }
 }

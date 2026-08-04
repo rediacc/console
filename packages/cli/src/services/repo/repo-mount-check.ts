@@ -4,6 +4,24 @@ import { ValidationError } from '../../utils/errors.js';
 import { getExecutor } from '../executor/executor-factory.js';
 
 /**
+ * Options shared by both probes.
+ *
+ * `datastore` is the caller's answer to "which datastore is this repo recorded
+ * on" (#74). It matters because `repository_list` enumerates exactly ONE
+ * datastore — there is no `--all-datastores` on it the way there is on the
+ * licence verbs — so a probe that declares nothing looks only at the machine's
+ * default, and a repo living on a NAMED datastore reads as absent. That is a
+ * false negative in the worst direction: the mount probe files a live repo as
+ * unmounted. Callers hold the repo key, so they pass
+ * `recordedDatastoreMount(repoKey)`; undefined keeps the default-datastore
+ * behaviour for repos that live there.
+ */
+export interface ProbeOptions {
+  debug?: boolean;
+  datastore?: string;
+}
+
+/**
  * Throw a ValidationError if `repoGuid` is not currently mounted on `machineName`.
  *
  * Probe failures (machine unreachable, renet error, parse error) are treated as
@@ -13,7 +31,7 @@ export async function assertRepoMountedOnMachine(
   repoName: string,
   repoGuid: string,
   machineName: string,
-  options: { debug?: boolean } = {}
+  options: ProbeOptions = {}
 ): Promise<void> {
   const mounted = await probeRepoMounted(repoGuid, machineName, options);
   if (mounted === false) {
@@ -32,11 +50,12 @@ export async function assertRepoMountedOnMachine(
 export async function probeRepoMounted(
   repoGuid: string,
   machineName: string,
-  options: { debug?: boolean } = {}
+  options: ProbeOptions = {}
 ): Promise<boolean | undefined> {
   const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName,
+    datastore: options.datastore,
     params: {},
     captureOutput: true,
     quietSpinners: true,
@@ -80,11 +99,12 @@ export async function probeRepoMounted(
 export async function probeRepoPresent(
   repoGuid: string,
   machineName: string,
-  options: { debug?: boolean } = {}
+  options: ProbeOptions = {}
 ): Promise<boolean | undefined> {
   const result = await getExecutor().execute({
     functionName: 'repository_list',
     machineName,
+    datastore: options.datastore,
     params: {},
     captureOutput: true,
     quietSpinners: true,

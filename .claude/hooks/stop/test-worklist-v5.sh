@@ -4,6 +4,22 @@
 # WORKLIST_TASKS_DIR and the project root are all isolated fixtures.
 set -uo pipefail
 
+# AMBIENT SCRUB, before a single case runs. The hook reads ~65 WORKLIST_* knobs
+# and setup() resets only the ones cases set, so anything exported in the shell
+# that launches this suite silently retuned it: a developer who set
+# WORKLIST_BG_REPORT_MIN or WORKLIST_QUIET_WAKES while debugging would get a
+# different suite from CI's, and the difference would look like flakiness rather
+# than like configuration. The fixtures were always isolated on DISK (TMPDIR,
+# WORKLIST_TASKS_DIR, the project root); this makes them isolated in the
+# ENVIRONMENT too. WORKLIST_AGENT_BRANCH and the rest are exported by setup()
+# and the cases themselves, after this point, so nothing the suite needs is lost.
+while IFS='=' read -r _k _; do
+    case "$_k" in
+        WORKLIST_*) unset "$_k" ;;
+    esac
+done < <(env)
+unset _k
+
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/worklist.py"
 BASE="$(mktemp -d)/hookfix"
 trap 'rm -rf "$(dirname "$BASE")"' EXIT
@@ -31,6 +47,16 @@ setup() {
     # case sees and turn a real regression into a green run. Cases that need a
     # wider drain export it AFTER their setup call.
     unset WORKLIST_REPORT_PER_STOP WORKLIST_OUTQ_MAX
+    # The background-wait knobs. WORKLIST_BG_OUTPUT_DIR and WORKLIST_HARNESS_PID
+    # were exported by individual cases and unset by only SOME of them, so both
+    # leaked forward -- a case downstream of 163f pointed the stream reader at a
+    # deleted fixture directory and gave the OS verifier a stale ancestor pid.
+    # That was survivable while verify_background ran only on a due check-in; it
+    # stopped being survivable in v17, which reads it on every pure-wait stop and
+    # feeds the verdict into the no-op streak. WORKLIST_QUIET_WAKES is here for
+    # the AMBIENT case rather than the leak: it is a real knob, so a value in the
+    # operator's own shell would silently retune the streak under the suite.
+    unset WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID WORKLIST_QUIET_WAKES
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
     # where 30 cases came back with empty output and read as failures.
@@ -2318,7 +2344,8 @@ ARITY = {
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
-    "V_DOCS_DRIFT": (3, "s", "d"), "N_WAKEUPS": ("rows",), "V_UNCONFIRMED": ("#1",),
+    "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
+    "V_BROKEN_SCHEDULE": (2, "rows"),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
     "V_UNJUSTIFIED": (2, 30, "rows", "", "m", "m"),
@@ -2336,6 +2363,8 @@ ARITY = {
     "N_OUTQ_MORE": (3,),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
+    "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),
+    "N_QUIET_WAKE_CAPPED": (7, 60),
     "CLI_ITEM_USAGE": None, "CLI_TICK_NO_EVIDENCE": ("id",),
     # v16: the triage verb, the tick door gate and the plan-file convention.
     "CLI_TICK_ISSUE_DOOR": ("id",),
@@ -2358,7 +2387,8 @@ ARITY = {
     "R_BLOCK": (1, "v", "f"), "R_BLOCK_FOCUS": ("v", "m", "f"),
     "R_FOCUS_MORE": (2,), "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
-    "N_EMAIL_SKIPPED": (1, "err"), "V_BG_REPORT": (2, "rows"),
+    "N_EMAIL_SKIPPED": (1, "err"),
+    "V_BG_REPORT": ("never", "2026-01-01T00:15:00Z", 15, 2, "rows"),
     "N_EMAIL_SENT": (2, "to@x", 120), "N_EMAIL_FAIL": (2, "err", 15),
     "N_EMAIL_UNCONFIGURED": ("p", 2),
     "CLI_ASK_OPERATOR_NO_DEFAULT": None,
@@ -2366,7 +2396,7 @@ ARITY = {
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
-    "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("d", "l", ""),
+    "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("s", "d", "l", ""),
     "CTX_SESSION_START_STALE": (3, "s"),
     "CTX_POSTCOMPACT_MISSING": ("p", "b", "m"),
     "CTX_POSTCOMPACT_NO_BRANCH": ("t",),
@@ -3305,19 +3335,58 @@ else
     fail "focused block carried the guide or lost the item: ${out:0:300}"
 fi
 
-# (c) ZERO actionable: a short honest line, never ambiguous silence.
+# (c) ZERO actionable: SILENT since v18. This case used to assert the
+# opposite -- "a short honest line, never ambiguous silence" -- and the
+# operator overruled it (2026-08-04, quoting a stop whose whole output was
+# that line plus the wakeup times): "silent when there is nothing to act on...
+# let's go for efficient ai context usage". The ambiguity the old line guarded
+# against is also gone, because the poll fast path already exits silently many
+# times an hour, so zero bytes is the session's familiar "nothing to do".
 setup
 brief_now
 hand_now
 say "all done"
 out="$(run)"
-got="$(python3 -c 'import json,sys
-raw=sys.stdin.read().strip()
-print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
-if [[ "$got" == "allow" ]] && grep -qF "no actionable items in the store" <<<"$out"; then
-    pass "an empty store says so plainly on an otherwise clean allow"
+if ! grep -qF "no actionable items in the store" <<<"$out"; then
+    pass "an empty store no longer announces its own emptiness"
 else
-    fail "empty-store guide wrong (got=$got): ${out:0:260}"
+    fail "the empty-guide line survived: ${out:0:260}"
+fi
+# This fixture is NOT silent, and it should not be: a repo with no request
+# traffic at all trips the poll-backoff advisory, which is a real thing to act
+# on. Pinning that here keeps the zero-byte case below honest -- it proves the
+# silence there comes from having nothing to say, not from a muted report.
+if grep -qF "INBOX HAS BEEN QUIET" <<<"$out"; then
+    pass "and the one section that DID have something to say still speaks"
+else
+    fail "the backoff advisory was swallowed with the guide: ${out:0:260}"
+fi
+# NOW the zero-byte case: one fresh request in the log (between two OTHER
+# sessions, so it never reaches this inbox) resets the quiet clock and silences
+# the backoff advisory, leaving a stop with genuinely nothing to report.
+askid cafe1234 beefcafe "a question between two other sessions" >/dev/null
+newturn
+say "all done"
+out="$(run)"
+rc=$?
+if [[ "$rc" -eq 0 && -z "$out" ]]; then
+    pass "a clean stop with nothing to act on emits ZERO bytes"
+else
+    fail "the nothing-to-report stop was not silent (rc=$rc): ${out:0:260}"
+fi
+# CONTROL, so the silence above is the guide standing down and not the battery
+# being skipped: the SAME fixture plus one real item speaks up immediately.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+newturn
+say "all done
+
+## Remaining
+- the flag decision, deferred with a default"
+out="$(run)"
+if grep -qF "WORKLIST GUIDE" <<<"$out" && grep -qF "keep the flag?" <<<"$out"; then
+    pass "CONTROL: one actionable item brings the guide straight back"
+else
+    fail "CONTROL: the guide stayed silent with a real item: ${out:0:260}"
 fi
 
 # (d) TRUNCATION is loud: 15 open items show 12 and SAY 3 were held back.
@@ -3965,31 +4034,41 @@ else
     fail "T12 CONTROL: the moved world stayed silent"
 fi
 
-echo "== 154. NEXT WAKEUPS: call moments computed from the live cron expansion =="
-# Operator, 2026-07-30: the event carries the FULL expansion of every scheduled
-# task (schedule + prompt) and the hook was reporting the loop from the stale
-# hand-declared sidecar instead. The wakeup section must (a) appear on ALLOW
-# stops, (b) appear on BLOCK stops, (c) carry the prompt's own first line as
-# the label, (d) name an unparseable schedule rather than skip it, and (e) be
-# absent when no crons exist -- the silent control that keeps (a)-(d) honest.
+echo "== 154. v18: NEXT WAKEUPS is GONE, and a broken schedule still warns =="
+# Operator, 2026-08-04: "we don't need to print next wakeup times. We should
+# just track the hook moments and notify/warn when needed. let's go for
+# efficient ai context usage." The section printed every task's next firing on
+# every full stop. This case is what remains of the old case 154: the display
+# must be absent on BOTH emit paths, and the one actionable row it used to
+# carry -- a schedule the hook cannot parse -- must still fire on its own.
 setup
 brief_now
 hand_now
 CRONS='[{"id":"w","schedule":"17 * * * *","prompt":"HOURLY LOOP fixture: advance the campaign."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
+# A real item, so this stop has a guide to print: without one the whole report
+# would be silent (v18) and the absence assertion below would pass vacuously.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
 say "answer
 
 ## Remaining
-- #7 thing (pending)"
+- #7 thing (pending)
+- the flag decision, deferred with a default"
 task 7 pending "thing"
 OUT="$(run)"
-if grep -qF "NEXT WAKEUPS" <<<"$OUT" && grep -qF "HOURLY LOOP fixture: advance the campaign." <<<"$OUT" &&
-    grep -qF "INBOX POLL fixture." <<<"$OUT" && grep -qF "(17 * * * *)" <<<"$OUT"; then
-    pass "154a: allow stop carries the wakeup rows with prompt-derived labels"
+if ! grep -qF "NEXT WAKEUPS" <<<"$OUT" && ! grep -qF "HOURLY LOOP fixture" <<<"$OUT" &&
+    ! grep -qF "INBOX POLL fixture" <<<"$OUT"; then
+    pass "154a: the allow stop prints no wakeup times and no cron prompt labels"
 else
-    fail "154a: wakeup section wrong on allow: ${OUT:0:260}"
+    fail "154a: the wakeup display survived on allow: ${OUT:0:260}"
 fi
-# BLOCK path: v13's focused block drops the wakeup section (it rides the
-# guide, and the guide leaves blocks); the FOCUS=off dump-all block keeps it.
+# CONTROL that 154a is not vacuous: the stop DID produce its normal report, so
+# the absence above is the section being gone rather than the hook being mute.
+if grep -qF "WORKLIST GUIDE" <<<"$OUT" && grep -qF "keep the flag?" <<<"$OUT"; then
+    pass "154a CONTROL: the stop still emitted its guide, so the absence is real"
+else
+    fail "154a CONTROL: the stop emitted nothing at all: ${OUT:0:260}"
+fi
+# The FOCUS=off dump-all block carried the section too; it must not any more.
 touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
 task 8 pending "moved"
 newturn
@@ -4001,25 +4080,13 @@ say "answer
 export WORKLIST_FOCUS=off
 OUT="$(run)"
 unset WORKLIST_FOCUS
-if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154b: FOCUS=off block stop carries the wakeup rows too"
-else
-    fail "154b: wakeup section missing on FOCUS=off block: ${OUT:0:220}"
-fi
-# And the focused block is wakeup-free by design.
-newturn
-say "answer
-
-## Remaining
-- #7 thing (pending)
-- #8 moved (pending)"
-OUT="$(run)"
 if grep -qF '"decision": "block"' <<<"$OUT" && ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154b2: the focused block drops the wakeup section"
+    pass "154b: the FOCUS=off block carries no wakeup section either"
 else
-    fail "154b2: focused block carried NEXT WAKEUPS: ${OUT:0:220}"
+    fail "154b: the wakeup section survived on the dump-all block: ${OUT:0:220}"
 fi
-# Unparseable schedule is NAMED, never silently dropped.
+# THE SURVIVING WARNING. An unparseable schedule is invisible to every other
+# cron check, so deleting the display must not delete this.
 setup
 brief_now
 hand_now
@@ -4030,31 +4097,27 @@ say "answer
 - #7 thing (pending)"
 task 7 pending "thing"
 OUT="$(run)"
-if grep -qF "unparseable schedule" <<<"$OUT" && grep -qF "BROKEN fixture." <<<"$OUT"; then
-    pass "154c: an unparseable schedule is reported by name"
+if grep -qF "CANNOT PARSE" <<<"$OUT" && grep -qF "BROKEN fixture." <<<"$OUT"; then
+    pass "154c: an unparseable schedule is still named, on its own warning"
 else
-    fail "154c: broken schedule silently dropped: ${OUT:0:220}"
+    fail "154c: a broken schedule went silent with the section: ${OUT:0:260}"
 fi
-# SILENT control: no crons, no section. In-flight lease keeps V_IDLE quiet so
-# the only variable is the cron list itself.
+# CONTROL: with every schedule valid the warning is silent, so it reports a
+# real defect rather than firing on any cron list at all.
 setup
 brief_now
 hand_now
-CRONS='[]'
-NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
-printf '{"ev":"add","id":"aaaa4444","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated"}\n{"ev":"lease","id":"aaaa4444","at":"%s","by":"deadbeef","until":"%s","worker":"bw9"}\n' \
-    "$NOW" "$NOW" "$UNTIL" >>"${WL%.md}.events.jsonl"
-BG='[{"id":"bw9","type":"shell","status":"running","description":"w","command":"sleep 9"}]'
+CRONS='[{"id":"w","schedule":"17 * * * *","prompt":"HOURLY LOOP fixture."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
 say "answer
 
 ## Remaining
-- the delegated item (in flight)"
+- #7 thing (pending)"
+task 7 pending "thing"
 OUT="$(run)"
-if ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154d CONTROL: no crons, no wakeup section"
+if ! grep -qF "CANNOT PARSE" <<<"$OUT"; then
+    pass "154c CONTROL: valid schedules raise no warning"
 else
-    fail "154d: a wakeup section appeared with zero crons: ${OUT:0:200}"
+    fail "154c CONTROL: the warning fired on a healthy cron list: ${OUT:0:260}"
 fi
 
 echo "== 155. supervised MUST correlate to the live worker, not just be fresh =="
@@ -5558,7 +5621,7 @@ outq_fixture
 OUT="$(run)"
 # FOUR, not three: an orphaned item is by construction another session's OPEN
 # item, so it always drags the other-session count along with it.
-if [[ "$(outq_seen "$OUT")" -eq 1 ]] && grep -qF "WORKLIST GUIDE" <<<"$OUT" &&
+if [[ "$(outq_seen "$OUT")" -eq 1 ]] &&
     grep -qF "(3 more report section(s) queued" <<<"$OUT"; then
     pass "173: exactly one of four sections is released, and the tail counts the rest"
 else
@@ -5805,6 +5868,481 @@ else
     fail "177: the changed reason kept reprinting: ${out:0:400}"
 fi
 unset WORKLIST_JUDGE_CACHE_MIN WORKLIST_STUCK_ROUNDS
+
+echo "== 178. v17: the poll baseline is SESSION-scoped, not repo-scoped =="
+# THE BUG this fixes: world_sig hashed the BYTES of the shared markdown, event
+# log and requests file, so one teammate's --add broke every other session's
+# baseline and forfeited their silent poll. Measured on the live store before
+# the fix: 32 of 32 events in a 3-hour window were foreign, polluting 18 of 36
+# five-minute windows.
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "178 baseline: the full stop banks the poll baseline" allow "operator may answer"
+# A DIFFERENT session tracks its own work. Nothing about this session moved.
+reqcli --add cafe1234 "a teammate's own finding" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -z "$OUT" ]]; then
+    pass "178: another session's worklist event does NOT forfeit the silent poll"
+else
+    fail "178: a foreign event paid the full battery: ${OUT:0:200}"
+fi
+# CONTROL: the signature is not simply dead -- this session's OWN store write
+# still forfeits, which is the whole point of having a baseline.
+reqcli --add deadbeef "my own new finding" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "OPEN worklist item" <<<"$OUT"; then
+    pass "178 CONTROL: this session's own store write still forfeits the silence"
+else
+    fail "178 CONTROL: an own item went silent: ${OUT:0:200}"
+fi
+
+echo "== 178b. a foreign REQUEST to someone else is invisible; to me it is not =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "178b baseline" allow "operator may answer"
+askid cafe1234 beefcafe "a question between two OTHER sessions" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -z "$OUT" ]]; then
+    pass "178b: a request between two other sessions keeps the silence"
+else
+    fail "178b: a foreign request forfeited: ${OUT:0:200}"
+fi
+askid cafe1234 deadbeef "please rebuild the docs index" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "rebuild the docs index" <<<"$OUT"; then
+    pass "178b CONTROL: a request addressed to ME still forfeits and delivers"
+else
+    fail "178b CONTROL: a request to me was swallowed: ${OUT:0:200}"
+fi
+
+echo "== 179. v17: the bgwait latch RESETS when the wait ends =="
+# THE BUG: the clock was only written inside the wait state, so leaving it
+# froze the stamp. Re-entering an hour later found it 60 minutes old and fired
+# the roster demand on the FIRST stop back -- "you started waiting, report",
+# the exact thing the silent seed exists to prevent.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bw9.output"
+BGON='[{"id":"bw9","type":"shell","status":"running","description":"long watch"}]'
+BG="$BGON"
+task 7 pending "waiting on the nightly"
+say "answer
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+run >/dev/null # seeds the wait clock
+age_bgwait() {
+    python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc.setdefault("bgwait", {})["at"] = "2026-01-01T00:00:00Z"
+p.write_text(json.dumps(doc))
+PYEOF
+}
+has_bgwait() {
+    python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+try:
+    doc = json.loads(p.read_text())
+except OSError:
+    doc = {}
+print("present" if doc.get("bgwait") else "absent")
+PYEOF
+}
+age_bgwait
+# The wait ENDS: the workers are gone.
+BG='[]'
+newturn
+say "the watch finished
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+run >/dev/null
+if [[ "$(has_bgwait)" == "absent" ]]; then
+    pass "179: leaving the wait state clears the check-in clock"
+else
+    fail "179: the stale clock survived the end of the wait"
+fi
+# And a LATER wait re-seeds silently instead of firing on arrival.
+BG="$BGON"
+newturn
+say "started a new watch
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "179: re-entering a wait re-seeds the clock instead of firing on arrival"
+else
+    fail "179: the check-in fired on the first stop of a NEW wait: ${OUT:0:250}"
+fi
+# CONTROL: the latch is not simply disabled -- aged INSIDE a live wait it fires.
+age_bgwait
+newturn
+say "still waiting
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "179 CONTROL: aged inside a live wait, the check-in still fires"
+else
+    fail "179 CONTROL: the check-in never fires at all now: ${OUT:0:250}"
+fi
+# v17 requirement 3: the bound is VISIBLE, so a reader can verify the latch
+# from the message alone.
+if grep -qF "Last delivered:" <<<"$OUT" && grep -qF "Next one no earlier than" <<<"$OUT"; then
+    pass "179: the check-in carries its last-fired and next-earliest stamps"
+else
+    fail "179: the check-in still only CLAIMS a bound: ${OUT:0:300}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180. v17: three no-op wakes collapse the whole stop to ONE line =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwq.output"
+BG='[{"id":"bwq","type":"shell","status":"running","description":"long watch"}]'
+task 7 pending "waiting on the nightly"
+# A real deferral, so the NON-collapsed report has a guide in it. Since v18 an
+# empty guide is silent, and the reset control below needs a full report it can
+# actually see coming back.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+quiet_turn() {
+    newturn
+    say "still waiting on the nightly
+
+## Remaining
+- #7 waiting on the nightly (pending)
+- the flag decision, deferred with a default"
+}
+quiet_turn
+OUT1="$(run)"
+quiet_turn
+OUT2="$(run)"
+quiet_turn
+OUT3="$(run)"
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT3"; then
+    pass "180: the third consecutive no-op wake fires the reschedule message"
+else
+    fail "180: no collapse after three quiet wakes: ${OUT3:0:300}"
+fi
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT1" && ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT2"; then
+    pass "180: and NOT before three (one quiet wake proves nothing)"
+else
+    fail "180: fired too early: 1='${OUT1:0:120}' 2='${OUT2:0:120}'"
+fi
+if grep -qF '*/10 * * * *' <<<"$OUT3"; then
+    pass "180: it names the next rung up from */5"
+else
+    fail "180: no next rung in the message: ${OUT3:0:300}"
+fi
+# THE FOCUS REQUIREMENT: this is the ENTIRE output. The worker roster, the
+# guide and the advisory sections are all gone.
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT3" &&
+    ! grep -qF "bwq (long watch)" <<<"$OUT3" &&
+    ! grep -qF "WORKLIST GUIDE" <<<"$OUT3"; then
+    pass "180: the quiet wake emits ONLY the one-liner (no roster, no guide)"
+else
+    fail "180: the collapsed stop still carried other sections: ${OUT3:0:400}"
+fi
+# CONTROL: a real event -- new bytes on a worker's stream -- resets the streak.
+printf 'the worker printed something new\n' >>"$BASE/bgout/bwq.output"
+quiet_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT" && grep -qF "WORKLIST GUIDE" <<<"$OUT"; then
+    pass "180 CONTROL: new worker output resets the streak and restores the full report"
+else
+    fail "180 CONTROL: the collapse survived a real event: ${OUT:0:300}"
+fi
+# ... and the count starts again from zero rather than resuming where it was.
+quiet_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180 CONTROL: the streak restarts from zero, it does not resume"
+else
+    fail "180 CONTROL: the streak resumed after a real event: ${OUT:0:300}"
+fi
+
+echo "== 180b. a HARD check is never suppressed by the quiet collapse =="
+# The whole risk of collapsing output is hiding something that matters. Get a
+# session into the collapsed state, then plant an open item: it must BLOCK.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwh.output"
+BG='[{"id":"bwh","type":"shell","status":"running","description":"long watch"}]'
+task 7 pending "waiting"
+for _ in 1 2 3; do
+    newturn
+    say "still waiting
+
+## Remaining
+- #7 waiting (pending)"
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180b setup: the session is in the collapsed quiet state"
+else
+    fail "180b setup: never reached the collapsed state: ${OUT:0:250}"
+fi
+echo '- [ ] (deadbeef) a real finding that must not be swallowed' >>"$WL"
+newturn
+say "still waiting
+
+## Remaining
+- #7 waiting (pending)"
+check "180b: an open item BLOCKS even from inside the quiet collapse" block "OPEN worklist item"
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180c. the rung ladder escalates 5->10->20->40->60 and CAPS =="
+OUT=$(
+    python3 - "$(dirname "$HOOK")" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+import wl_checks as CK
+fail = 0
+want = [("*/5 * * * *", "*/10 * * * *"), ("*/10 * * * *", "*/20 * * * *"),
+        ("*/20 * * * *", "*/40 * * * *"), ("*/40 * * * *", "0 * * * *")]
+for cur, nxt in want:
+    note = CK.quiet_wake_note([{"id": "p", "schedule": cur}], 3)
+    if nxt not in note:
+        print("rung %s did not recommend %s: %r" % (cur, nxt, note[:120])); fail += 1
+cap = CK.quiet_wake_note([{"id": "p", "schedule": "0 * * * *"}], 9)
+if "cap" not in cap or "0 * * * *" in cap.split("cap")[1]:
+    print("the top rung did not cap cleanly: %r" % cap[:160]); fail += 1
+# No recognisable poll cron -> no collapse at all, so the report is never
+# replaced by an instruction the session cannot act on.
+for crons in ([], [{"id": "p", "schedule": "*/7 * * * *"}],
+              [{"id": "p", "schedule": "*/5 * * * *"}, {"id": "q", "schedule": "*/5 * * * *"}]):
+    if CK.quiet_wake_note(crons, 5) != "":
+        print("collapsed on an unusable cron shape: %r" % crons); fail += 1
+print("ladder failures=%d" % fail)
+sys.exit(1 if fail else 0)
+PYEOF
+)
+if [[ $? -eq 0 ]]; then
+    pass "180c: every rung recommends the next, the top rung caps, odd shapes decline"
+else
+    fail "180c: $OUT"
+fi
+
+echo "== 180d. this session's OWN progress note is a real event =="
+# Found by the suite, not by design: with the streak keyed on item STRUCTURE
+# alone, a session dutifully renewing its lease and posting --update notes
+# looked quiet, and case 172's advisory got collapsed away. Doing what the
+# liveness ladder asks is movement.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwu.output"
+BG='[{"id":"bwu","type":"shell","status":"running","description":"the watch"}]'
+UID180=$(reqcli --add deadbeef "carry the CI watch to green" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --lease deadbeef "$UID180" +60 worker:bwu "watching the run" >/dev/null
+upd_turn() {
+    newturn
+    say "watching.
+
+## Remaining
+- #$UID180 carry the CI watch to green (in flight)"
+}
+for _ in 1 2 3; do
+    upd_turn
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180d setup: three untouched wakes do collapse"
+else
+    fail "180d setup: never collapsed: ${OUT:0:250}"
+fi
+reqcli --update deadbeef "$UID180" "still watching, run pending" >/dev/null
+upd_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180d: an --update on this session's own item resets the streak"
+else
+    fail "180d: a progress note was treated as silence: ${OUT:0:300}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180e. a worker DYING is never silenced by the streak =="
+# The one change a byte-level view cannot see: the stream is identical, the
+# event still lists the task as running, and the only difference is that the
+# OS process is gone. If the streak counter could hide that, the collapse
+# would be actively dangerous rather than merely quiet.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'old content\n' >"$BASE/bgout/bwd.output"
+touch -d '25 minutes ago' "$BASE/bgout/bwd.output"
+sleep 3717171718 &
+PROBE180E=$!
+export WORKLIST_HARNESS_PID=$$
+BG='[{"id":"bwd","type":"shell","status":"running","description":"silent watch","command":"sleep 3717171718"}]'
+task 7 pending "thing"
+dead_turn() {
+    newturn
+    say "answer
+
+## Remaining
+- #7 thing (pending)"
+}
+for _ in 1 2 3 4; do
+    dead_turn
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180e setup: a live, silent worker collapses into the quiet state"
+else
+    fail "180e setup: never collapsed with a live worker: ${OUT:0:250}"
+fi
+kill "$PROBE180E" 2>/dev/null
+wait "$PROBE180E" 2>/dev/null
+# The check-in window is opened too, so this case asserts BOTH halves: the
+# streak breaks, AND the report that the break makes room for actually
+# carries the accusation. Without the ageing it would only ever prove the
+# first half, and a half-proof of a safety property is not one.
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc.setdefault("bgwait", {})["at"] = "2026-01-01T00:00:00Z"
+p.write_text(json.dumps(doc))
+PYEOF
+dead_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT" && grep -qF -- "<- POSSIBLY STUCK" <<<"$OUT"; then
+    pass "180e: the worker's death breaks the streak and delivers the accusation"
+else
+    fail "180e: a dead worker stayed hidden behind the streak: ${OUT:0:400}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID
+
+echo "== 181. ISOLATION: the suite can never reach the live worklist =="
+# Raised by the team lead after a run of this suite came back with failures a
+# clean tree could not reproduce, on the hypothesis that fixture state and live
+# session state were mixing. They were not mixing on DISK -- every invocation
+# passes TMPDIR -- but the check belongs here rather than in anyone's memory,
+# because the cost of being wrong is a suite that tests the operator's real
+# store. Two halves: the store path resolves inside the fixture, and the
+# ENVIRONMENT the hook reads carries no ambient knob.
+setup
+RESOLVED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+if [[ "$RESOLVED" == "$BASE/tmp/"* ]]; then
+    pass "181: the fixture store resolves inside the fixture, not beside the live one"
+else
+    fail "181: fixture store escaped to '$RESOLVED'"
+fi
+# CONTROL: without the fixture TMPDIR the SAME command resolves somewhere else
+# entirely, so the assertion above is about TMPDIR doing the work and not about
+# the path being unconditionally fixture-shaped.
+ELSEWHERE="$(TMPDIR=/var/tmp CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+if [[ "$ELSEWHERE" != "$RESOLVED" && "$ELSEWHERE" == /var/tmp/* ]]; then
+    pass "181 CONTROL: TMPDIR is what pins it; a different one moves the store"
+else
+    fail "181 CONTROL: TMPDIR did not move the store ('$ELSEWHERE')"
+fi
+# The env half. Every WORKLIST_* knob the operator's shell might carry is
+# scrubbed at suite start, and setup() re-scrubs the ones cases set, so a stop
+# here runs on the suite's own configuration whatever the launching shell had.
+LEAKED=""
+for _v in WORKLIST_QUIET_WAKES WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID \
+    WORKLIST_BG_REPORT_MIN WORKLIST_REPORT_PER_STOP WORKLIST_FOCUS \
+    WORKLIST_STUCK_ROUNDS WORKLIST_JUDGE_CACHE_MIN; do
+    [[ -n "${!_v:-}" ]] && LEAKED="$LEAKED $_v=${!_v}"
+done
+if [[ -z "$LEAKED" ]]; then
+    pass "181: no ambient WORKLIST_* knob survives into a case"
+else
+    fail "181: ambient knobs leaked into the suite:$LEAKED"
+fi
+
+echo "== 182. SessionStart source=compact does NOT re-inject the docs blurb =="
+# THE BUG (operator, 2026-08-04): a long-running licensing session compacted,
+# Claude Code fired SessionStart with source=compact, and the session was handed
+# "N design doc(s) in docs/ci-overhaul" plus an order to read all of them --
+# material belonging to an unrelated program, injected mid-task. Compaction is
+# handle_post_compact's job (cases 20, 21, 171): it already re-points at the
+# design docs AND hands back the branch's plans, so SessionStart must stay quiet.
+setup
+mkdir -p "$BASE/proj/docs/ci-overhaul" "$BASE/proj/docs/agent/agenttest"
+printf '# doc\nbody\n' >"$BASE/proj/docs/ci-overhaul/01-design.md"
+printf '# PLAN: a\nStatus: draft\nOwner: t\nUpdated: 2026-08-04\n\nbody\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-a.md"
+ss_out() { # ss_out <source-json-fragment>
+    printf '{"session_id":"%s","cwd":"%s","hook_event_name":"SessionStart"%s}' \
+        "$SID" "$BASE/proj" "$1" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+            python3 "$HOOK" --session-start 2>/dev/null
+}
+out="$(ss_out ',"source":"compact"')"
+if [[ -z "$out" ]]; then
+    pass "a compact-sourced SessionStart says nothing at all"
+else
+    fail "compact still injects context: ${out:0:300}"
+fi
+# THE CONTROL, because a check that can only pass is not a check: the very same
+# fixture must still speak on a genuinely new session, and on an event with no
+# source field at all (the shape every older case in this suite feeds).
+out="$(ss_out ',"source":"startup"')"
+if grep -qF "READ ALL OF THEM" <<<"$out" && grep -qF "READ EVERY NON-DONE PLAN" <<<"$out"; then
+    pass "182 CONTROL: source=startup still gets the docs AND the plans"
+else
+    fail "182 CONTROL: startup lost its context: ${out:0:300}"
+fi
+out="$(ss_out '')"
+if grep -qF "READ ALL OF THEM" <<<"$out"; then
+    pass "182 CONTROL: an event with no source field is not treated as compact"
+else
+    fail "182 CONTROL: a missing source silenced the hook: ${out:0:300}"
+fi
+# The marker the judge stamp rides on is set BEFORE the compact return, so a
+# compacted session still gets the full approval reason on its next judged stop.
+rm -f "$BASE"/tmp/claude-worklist/*.state-*.json
+ss_out ',"source":"compact"' >/dev/null
+if python3 - "$BASE" <<'PY'; then
+import glob, json, sys
+docs = [json.load(open(p)) for p in glob.glob(sys.argv[1] + "/tmp/claude-worklist/*.state-*.json")]
+sys.exit(0 if any(d.get("ctx_fresh", {}).get("why", "").startswith("session-start") for d in docs) else 1)
+PY
+    pass "182: compact still marks the context fresh for the judge stamp"
+else
+    fail "182: the compact path stopped marking ctx_fresh"
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"

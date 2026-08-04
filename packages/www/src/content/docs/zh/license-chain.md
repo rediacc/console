@@ -4,8 +4,8 @@ description: "可验证防篡改的许可证颁发、本地部署的委托签名
 category: "Guides"
 order: 8
 language: zh
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "c0578c7e0cf3f116"
+sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
 # 许可证链与委托
@@ -33,16 +33,65 @@ CLI 请求机器激活或仓库许可证时，账户服务器会：
 
 `sequence` 和 `prevChainHash` 包含在已签名的载荷中（因此无法在不使签名失效的情况下修改）。`chainHash` 在信封上（签名后计算，以避免循环依赖）。
 
+## 许可证续期流程
+
+颁发从您的工作站发起，以您的身份完成认证。续期则从机器本身发起，而机器完全不持有任何账户凭据，因此需要另一道门：
+
+```
+POST /licenses/renew
+{ license: <the installed signed blob>, machineId, clusterId? }
+```
+
+**提交的许可证本身就是凭据。** 该端点上没有任何 API 令牌。服务器会验证 blob 的 Ed25519 签名，若 blob 携带委托证书则一并通过该证书验证，做法与 Renet 在机器上的验证完全一致。持有一张针对某个仓库的有效签名许可证，本身就是权益的证明：能拿出这张许可证的机器，此前必然已被授予该权益。
+
+该端点的完整 URL 会随服务器颁发或续期的每一张许可证一起传递，字段为 `renewalUrl`。机器从自己的许可证中读取自身账户服务器的地址，而不是靠配置获知，这正是一台同时服务于两个账户宇宙的机器能向两边分别续期的原因。
+
+续期后的 blob 保留所提交 blob 的仓库 GUID、grand GUID 和类型，从同一账本中取得下一个序列号以及由此推导出的链哈希，并获得重新计算的有效期窗口。机器 ID 会重新绑定到提交该 blob 的机器上，虚拟机迁移能在 40 天宽限期内自愈正是依靠这一点。存储身份（LUKS UUID 或存储指纹）则原样沿用，因为一次网络调用无法重新扫描它所描述的磁盘。
+
+### 拒绝原因
+
+| 代码 | 状态 | 含义 |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | blob 的签名未通过验证，或其链哈希与服务器账本中该序列号处的记录不符 |
+| `INVALID_LICENSE_PAYLOAD` | 400 | blob 格式有误 |
+| `DELEGATION_CERT_INVALID` | 403 | 所附证书未通过某项约束检查或其主密钥签名无效 |
+| `DELEGATION_CERT_EXPIRED` | 403 | 所附证书已超出有效期窗口 |
+| `DELEGATION_CERT_REVOKED` | 403 | 所附证书已被上游撤销 |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | 提交许可证的机器并非被授权的那一台，且 40 天宽限期已过 |
+| `SUBSCRIPTION_LAPSED` | 403 | 订阅已过期或已被暂停 |
+| `GRACE_PERIOD_ENDED` | 403 | 订阅的宽限期已结束 |
+| `TRIAL_REQUIRED` | 403 | 该订阅需要有效的试用或计划 |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | 该仓库 GUID 属于另一个订阅 |
+| `LICENSE_RENEWAL_FAILED` | 500 | 任何无法归类的情况 |
+
+被拒绝时已安装的许可证不受影响。机器会继续依靠现有许可证运行，直到该许可证硬性到期。
+
+### 续期与机器槽位
+
+一次成功的续期会触及机器的激活记录：机器原先没有槽位就占用一个，已有槽位则刷新它。与颁发不同，续期绝不会因为超出上限而被拒绝。响应中会带上 `overLimit`，并且该激活会被标记，以便门户、许可证状态端点和 `rdc subscription status` 都能显示出来。而颁发一张真正的新许可证在上限处仍会被硬性阻止。相关理由参见 [订阅与许可 - 机器槽位](/zh/docs/subscription-licensing)。
+
+### 部署顺序
+
+账户服务器要先于依赖上述字段的 CLI 和 Renet Agent 构建版本部署。若 Renet Agent 在某张许可证中找不到 `renewalUrl`，它会跳过该仓库并说明原因，而不是直接失败，因此旧许可证在工作站端刷新补上该字段之前仍可继续使用。反过来部署，只会让机器去请求一个尚不存在的端点。
+
 ## Renet 的验证方式
 
-每台运行 Renet 的机器都会在 `{licenseDir}/chain-state.json`（即 `/var/lib/rediacc/license/chain-state.json`，与按仓库划分的 `repos/` 目录同级）中存储其最后已知的链状态。链状态按签名密钥和订阅划定范围，以 `"<keyId>:<subscriptionId>"` 的形式作为键，因此由不同密钥签名的宇宙会各自独立追踪其序列号。每次验证许可证时，Renet 会执行以下检查：
+每台运行 Renet 的机器都会在 `{licenseDir}/chain-state.json`（即 `/var/lib/rediacc/license/chain-state.json`，与按仓库划分的 `repos/` 目录同级）中存储其最后已知的链状态。链状态按签名密钥、订阅、仓库和数据存储四者划定范围，以 `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` 的形式作为键（对于位于机器默认数据存储上的仓库，数据存储部分为空）。
+
+这个键中的仓库和数据存储部分至关重要。服务器上的序列号是按订阅递增的，因此在同一订阅下存放多个仓库的机器上，为仓库 B 记录的链头会领先于仓库 A 即将提交的许可证，于是仓库 A 会被误判为一次与它毫无关系的重放而遭拒绝。数据存储分支会让同样的问题更严重：克隆体保留了仓库的 GUID，只有它的数据存储身份会被重新铸造，因此如果没有数据存储部分，分支上更新的许可证会推进一个原始仓库仍在据以验证的链头。把记录的链头同时限定到许可证所指明的仓库和数据存储，就能消除这两个问题。较旧版本 Renet Agent 以更短键格式写入的条目，会在状态首次保存时被丢弃，下一次验证会重新建立链头。
+
+链状态只在按完整层级验证的操作中被读取和推进。运维层级既不读取也不推进它，因此启动仓库永远不会移动链头。
+
+每次验证许可证时，Renet 会执行以下检查：
 
 | 检查项 | 失败意味着 |
 |---|---|
 | Ed25519 签名有效 | 许可证被伪造或篡改 |
-| `sequence > lastKnownSequence` | 服务器回滚了链（重放攻击） |
+| `sequence >= lastKnownSequence` | 服务器回滚了链（重放攻击） |
+| 重复出现的 `lastKnownSequence` 携带相同的 `chainHash` | 分叉的链重复使用了同一个序列号 |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | 链条目被修改 |
-| `issuedAt >= lastKnownIssuedAt` | 时钟操纵（服务器时钟被回拨） |
+
+重新验证已经安装的那张许可证并不算回退：相同的序列号搭配相同的链哈希会被接受，机器每次启动仓库时都能验证同一个文件，靠的正是这一点。
 
 任何检查失败时，许可证将被拒绝，并报告失败原因。
 

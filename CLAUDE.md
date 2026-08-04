@@ -4,6 +4,8 @@
 
 **CRITICAL: This repo uses git worktrees.** Your working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
 
+**`git worktree add` is hook-blocked from the assistant's own Bash tool** (`.claude/hooks/pre-bash/block-worktree-add.sh`), unconditionally — the operator runs it themselves via the `!` prefix when they want one created. On top of that hard block: **if a new task starts and no worktree exists yet for its branch, ASK the operator first** (AskUserQuestion) whether to create one, rather than silently working in whatever checkout you're already in. Reserve the ask for genuinely new work; do not re-ask mid-task or for a task that already has an obvious home (e.g. continuing in the checkout you were invoked in). Do not decide either way on your own — this has gone wrong both directions: sessions have created throwaway worktrees the operator didn't want, and sessions have run for a long time directly on `main` in the shared checkout when a dedicated worktree would have kept concurrent sessions' work from colliding.
+
 ## Session Defaults
 
 Standing rules for every task, in this repo and its submodules. The operator should never

@@ -257,6 +257,7 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // and arrays whose values are primitives are registered at the container
   // level (same style as backupStrategies/*/include).
   '/state/datastores/*/attachedTo': { kind: 'public' },
+  '/state/datastores/*/lastHolder': { kind: 'public' },
   '/state/datastores/*/writes': { kind: 'public' },
   '/state/datastores/*/mounted': { kind: 'public' },
   '/state/datastores/*/mountPath': { kind: 'public' },

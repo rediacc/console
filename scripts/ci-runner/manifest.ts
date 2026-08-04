@@ -138,7 +138,14 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-design-tree', run: 'npm run check:ci-design-tree', gate: true, leaves: ['scripts/check-design-tree.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Design tree" } },
   { id: 'check:ci-i18n-placeholders', run: 'npm run check:ci-i18n-placeholders', gate: true, leaves: ['scripts/check-i18n-placeholders.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n placeholders" } },
   { id: 'check:ci-i18n-untranslated', run: 'npm run check:ci-i18n-untranslated', gate: true, leaves: ['scripts/check-i18n-untranslated.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n untranslated" } },
-  { id: 'check:ci-i18n-cross-locale', run: 'npm run check:ci-i18n-cross-locale', gate: true, leaves: ['scripts/check-i18n-cross-locale.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n cross-locale" } },
+  { id: 'check:ci-i18n-cross-locale', run: 'npm run check:ci-i18n-cross-locale', gate: true, leaves: ['scripts/check-i18n-cross-locale.ts','scripts/check-locale-de-contamination.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n cross-locale" } },
+  // Chained into check:ci-i18n-cross-locale rather than given a workflow step of its
+  // own, so it inherits a REAL CI home instead of a 'local-only' BLOCKER. The two are
+  // the same defect class read by two instruments: the stopword detector identifies a
+  // language and can only look at the six locales it has function words for, while
+  // this one keys on byte equality with the German value and is the only thing that
+  // can see contamination in ar/ja/ko/ru/zh/et.
+  { id: 'check:ci-locale-de-contamination', run: 'npm run check:ci-locale-de-contamination', gate: true, leaves: ['scripts/check-locale-de-contamination.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n cross-locale" } },
   { id: 'check:ci-locale-sources', run: 'npm run check:ci-locale-sources', gate: true, leaves: ['scripts/check-locale-sources.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "Locale sources" } },
   { id: 'check:ci-i18n-command-parity', run: 'npm run check:ci-i18n-command-parity', gate: true, leaves: ['scripts/check-cli-docs.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n command parity" } },
   { id: 'check:ci-config-migrations', run: 'npm run check:ci-config-migrations', gate: true, leaves: ['.ci/scripts/quality/check-config-migrations.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Check config-migration runner + fixtures" } },
@@ -155,6 +162,19 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-renet', run: 'npm run check:ci-renet', gate: true, mutex: ['renet-bin'], leaves: ['.ci/scripts/private/run-renet.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Run renet quality" } },
   { id: 'check:ci-go-deps', run: 'npm run check:ci-go-deps', gate: true, leaves: ['.ci/scripts/quality/check-go-deps.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check Go dependency freshness" } },
   { id: 'check:ci-renet-types', run: 'npm run check:ci-renet-types', gate: true, mutex: ['renet-bin'], leaves: ['.ci/scripts/quality/check-renet-types.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check renet types freshness" } },
+  // No `renet-bin` mutex, deliberately: that group guards the shared WRITE of
+  // private/renet/bin/renet (check-renet-types.sh:26, and the renet quality
+  // battery that rebuilds it). This gate only runs `go test`, which writes
+  // nothing into bin/ and whose build cache is concurrency-safe, so serialising
+  // it behind the two binary writers would buy nothing.
+  //
+  // `local-only` is measured, not assumed. The tier-map tests DO run in CI, but
+  // through ct-tests.yml job test-renet step "Run renet tests", which resolves
+  // to the leaf .ci/scripts/private/run-renet.sh (renet's whole `go test ./...`
+  // suite) and never to this script. Declaring that as a `step` pointer fails
+  // R3 with "the pointer names a step that runs something else", which is the
+  // oracle working correctly: a manifest pointer asserts CI runs THIS leaf.
+  { id: 'check:ci-renet-tiers', run: 'npm run check:ci-renet-tiers', gate: true, leaves: ['.ci/scripts/quality/check-renet-tier-map.sh'], ci: { kind: 'local-only', blocker: 'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside .ci/scripts/private/run-renet.sh test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes' } },
   { id: 'check:ci-embed-credits', run: 'npm run check:ci-embed-credits', gate: true, leaves: ['scripts/check-embed-credits.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed credits consistency" } },
   { id: 'check:ci-embed-arch-parity', run: 'npm run check:ci-embed-arch-parity', gate: true, leaves: ['scripts/check-embed-arch-parity.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed arch parity" } },
   { id: 'check:ci-embed-asset-freshness', run: 'npm run check:ci-embed-asset-freshness', gate: true, leaves: ['scripts/check-embed-asset-freshness.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed-asset upstream freshness" } },

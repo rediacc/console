@@ -11,6 +11,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
 import { applyPullDeltaParams, applyPushDeltaParams, finalizePush } from './repo-delta.js';
@@ -18,6 +19,13 @@ import { reportPushStats } from './repo-push-stats.js';
 
 interface BackupRunOptions {
   machine?: string;
+  /**
+   * #74: the datastore mount the repo is RECORDED on, threaded into the transfer
+   * itself. renet reads it from the machine vault, so a push whose source repo
+   * lives on a named datastore has to declare it or `backup_push` looks for the
+   * image under the machine's default and dies on `stat`.
+   */
+  datastore?: string;
   cluster?: string;
   kubeCluster?: string;
   debug?: boolean;
@@ -56,6 +64,7 @@ async function executeFunction(
     functionName,
     machineName,
     kubeCluster: options.kubeCluster,
+    datastore: options.datastore,
     params: coerced,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
@@ -180,6 +189,11 @@ export async function postPushDeploy(
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,
+    // NO datastore on purpose (#74). The push landed the image wherever the
+    // TARGET machine's own vault record points — `resolveExtraMachines` builds
+    // `--dest-path` from that record, not from the source's placement — and
+    // dispatching here without a declaration resolves to exactly the same place.
+    // Passing the source's named mount would name a path that need not exist here.
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
@@ -229,6 +243,9 @@ async function preparePush(
   if (resolvedType === 'storage') {
     const mounted = await probeRepoMounted(repoConfig.repositoryGuid, options.machine as string, {
       debug: options.debug as boolean | undefined,
+      // #74: the probe enumerates ONE datastore, so without the repo's own mount
+      // a named-datastore repo reads as absent and every push is filed as `cold`.
+      datastore: options.datastore as string | undefined,
     });
     storageMode = mounted === false ? 'cold' : 'hot';
   }
@@ -274,6 +291,10 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
     ...options,
     machine: machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
+    // The SOURCE side's datastore: the push reads the image from where this repo
+    // actually lives. The destination's is a separate question, answered by the
+    // target machine's own vault record (see postPushDeploy).
+    datastore: await recordedDatastoreMount(repoKey),
   };
 
   const { type: resolvedType, name: targetName } = await resolvePushTarget(execOptions);
@@ -335,6 +356,9 @@ async function postPullDeploy(
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetMachine,
+    // The pull landed on the repo's own home, so this is the same mount the pull
+    // itself declared (#74).
+    datastore: options.datastore as string | undefined,
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
@@ -360,6 +384,9 @@ async function pullRepo(ref: string, options: Record<string, unknown>): Promise<
     ...options,
     machine: machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
+    // A pull lands on the repo's OWN home, so the recorded mount is both where
+    // renet writes the image and where a following `--up` must look for it.
+    datastore: await recordedDatastoreMount(repoKey),
   };
 
   const { type: resolvedType, name: sourceName } = await resolvePullSource(execOptions);

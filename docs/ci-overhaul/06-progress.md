@@ -1179,3 +1179,460 @@ while cases 1 to 6 ALL still passed, so a weakened pointer rule is invisible
 to every other property in the file and visible to that one. The engine was
 restored after each and re-verified byte-identical (md5
 `8b35c56e7f5ca90c959f90ac7db029b9` before and after both).
+
+## `check:ci-renet-tiers`: the tier-map tests get a local leg (2026-08-04)
+
+New gate id `check:ci-renet-tiers`, script
+`.ci/scripts/quality/check-renet-tier-map.sh`, manifest entry beside
+`check:ci-renet-types`. It runs the seven Go tests that prove renet's licence
+tier map covers the function registry and drives dispatch
+(`TestTierMapCoversRegistry`, `TestTierMapHasNoOrphans`, `TestTierMapGateCanFail`,
+`TestPendingBacklogIsReported`, `TestTierMapDrivesDispatch`,
+`TestOperateTierSurvivesExpiry`, `TestTierProbeMatchesTheMap`).
+
+WHY IT IS WORTH A LOCAL LEG. Those tests already run in CI, inside
+`ct-tests.yml` job `test-renet` step "Run renet tests", which is renet's whole
+`go test ./...`. But `npm run ci` had no leg for them, so a tier-map regression
+was only visible after a push, and it stopped being a renet-only concern this
+same session: the CLI now DERIVES which functions are licence-issuance-relevant
+from that map, through
+`packages/shared/src/renet-contract/data/license-tiers.generated.ts` and the new
+accessor in `packages/cli/src/services/renet/renet-license-contract.ts`. A
+function registered with no tier is now a console defect as well as a renet one.
+
+`ci` is declared `local-only`, NOT a step pointer at `test-renet`, and that is a
+measured decision rather than a shortcut. The parity oracle compares LEAVES:
+that step resolves to `.ci/scripts/private/run-renet.sh` and never to this
+script, so a `step` pointer fails R3 with "the pointer names a step that runs
+something else". That is the oracle working. The BLOCKER names the CI job that
+does cover the property. Registered in
+`.ci/scripts/test/gates/test-gate-anti-vacuity.sh` as
+`|required`, since with `private/renet` absent the gate would otherwise run zero
+tests and report that the map is complete.
+
+PROVE-IT-FIRES, three planted defects against a scratch copy of `private/renet`
+(the gate takes a `RENET_DIR` override so the real submodule is never touched):
+
+1. Registering `planted_defect_untiered_function` in the copy's command registry
+   turned it RED with `1 registered function(s) have no tier decision`, exit 1;
+   removing it returned exit 0.
+2. Renaming `TestTierProbeMatchesTheMap` turned it RED at the phase-1 instrument
+   check ("The tier-map test selection has drifted"). This is the failure mode
+   the phase exists for: `go test -run` exits 0 with "no tests to run" when its
+   regex matches nothing, so a rename would otherwise have silently retired the
+   gate while leaving it green.
+3. Planting `t.Skip` in `TestOperateTierSurvivesExpiry` left `go test` exiting 0
+   with `ok`, and the gate still went RED at the phase-3 PASS accounting:
+   "These tier-map tests never reported PASS". A green exit code is not evidence
+   that the tests ran.
+
+## 2026-08-04 -- `check:ci-locale-de-contamination`
+
+`scripts/check-locale-de-contamination.ts`, chained into
+`check:ci-i18n-cross-locale` in `package.json` so it inherits that gate's real CI
+home (`ci-quality.yml`, job `quality-i18n`, step "i18n cross-locale"). Its
+manifest entry declares that same step, and the chained parent's `leaves` now
+lists both scripts, which is what the parity oracle's hygiene rule compares
+against.
+
+Chaining rather than `local-only` was the point. The defect it catches is live in
+the tree right now: 94-95 German values sitting in each of account-web's `ar`,
+`ja`, `ru` and `zh`. A gate no CI step invokes would not have stopped the next
+batch, and the operator's own review would still be the only instrument.
+
+WHY IT IS A SECOND GATE AND NOT A WIDENED FIRST ONE.
+`scripts/check-i18n-cross-locale.ts` identifies a string's LANGUAGE from function
+words, which is the right tool for telling French from German but structurally
+cannot look at a locale it has no word list for (`if (!STOPWORDS[locale])
+continue` -- de/fr/es/it/pt/tr only). Arabic, Japanese, Korean, Russian, Chinese
+and Estonian were never scanned by anything: every other i18n check in the repo
+compares a locale against ENGLISH, and German is not English. This gate keys on
+byte equality with the German value instead, so it reads exactly the locales the
+other one skips.
+
+Equality alone is far too loose -- 699 hits, nearly all of them units ("200 GB"),
+localised numbers ("2,4 TB") and product names ("Rediacc (btrfs CoW)"). Three
+filters, each added because dropping it produced a false positive that is named
+in the script's header comment, bring it to 379 findings with none in
+`packages/www` or `packages/cli`: the value must hold two real words after
+placeholders and markup are stripped; it must not be shared by the crowd (a
+citation every locale carries is language-neutral, not a leak); and it must carry
+language evidence chosen per script -- for a non-Latin locale, a value with not
+one character of that locale's own script IS the evidence, while a Latin-script
+locale needs German markers.
+
+BASELINE THAT ONLY SHRINKS. `scripts/data/locale-de-contamination-baseline.json`
+holds the 379 known findings so the gate lands green today. A baselined finding
+that is no longer contaminated is a hard ERROR telling the caller to re-run
+`--write-baseline`, so fixing keys forces the file down and it cannot rot into a
+permanent suppression list. The 12-locale naturalization pass drains it.
+
+Registered in `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` as
+`|Refusing to run`: with the locale trees absent it would find zero contamination
+AND see all 379 baselined findings as fixed, so an unguarded version could fail
+for entirely the wrong reason.
+
+PROVE-IT-FIRES, against a scratch copy of the four locale trees so the real files
+were never touched:
+
+1. Copying the German `activity.emptyMessage` into `ko/admin.json` and the German
+   pricing-FAQ question into `et.json` turned it RED naming both, exit 1. Both
+   locales are invisible to the stopword gate, which is the whole reason this one
+   exists.
+2. Reverting those two and instead FIXING one baselined key (`ar` /
+   `admin.json:activity.emptyMessage`) turned it RED with "1 baselined finding(s)
+   are already fixed", exit 1. The shrink-only property is enforced, not
+   documented.
+3. The seven inline self-test cases run on every invocation, not behind a flag.
+   Three of them are the false-positive controls (a shared unit, an English
+   citation every locale carries, a shared product name) and one pins the flat
+   `packages/www` layout, where the German values live in `de.json` rather than in
+   a same-named file -- getting that lookup wrong finds nothing while looking
+   perfectly healthy.
+
+## 2026-08-04 -- the i18n gates could not see three whole defect classes
+
+The operator asked why pre-existing translation defects were never caught. The
+answer was not "no gate covers translations". Four gates did. Each one had a
+hole, and every hole had the same shape: a code path that reports NOTHING is
+indistinguishable, in the output, from a code path that finds nothing.
+
+### 1. `check-i18n-cross-locale.ts` skipped six of its twelve locales
+
+`if (locale === SOURCE_LOCALE || !STOPWORDS[locale]) continue` walked past every
+locale with no function-word list -- `ar`, `ja`, `ko`, `ru`, `zh` and `et`. Those
+are precisely where the damage was: 379 German values sat in account-web's `ar`,
+`ja`, `ru` and `zh` while this gate printed a checkmark.
+
+MEASURED, not argued. A scratch copy of `private/account/web/src/i18n/locales`
+with 1,576 real German values planted into `ar/ja/ru/zh`:
+
+* the gate as it stood at `HEAD`: `No cross-locale contamination across 1 locale
+  root(s)`, exit 0;
+* the same tree after this change: `236 value(s)`, 59 per locale, exit 1.
+
+A stopword list is a Latin-alphabet instrument and cannot be built for these five,
+so they get a second instrument instead: a value holding not one character of its
+own writing system is not a translation into it. It is paired with the existing
+function-word signal rather than used alone, so a Latin PRODUCT NAME standing by
+itself scores zero and is not reported.
+
+There is no `continue` left. A locale directory the gate cannot model by either
+instrument is a hard error naming the locale.
+
+### 2. There was no `en` stopword list, so English residue was undetectable
+
+Every other i18n check compares a locale against English, so it can see a value
+that IS English. None could see a value that is MOSTLY English -- the ordinary
+residue of a half-finished translation pass. Adding `en` (and `et`) closes it:
+2,364 real English values planted across `fr/es/it/pt/tr/et` produce 316 findings
+in all six locales; the clean tree produces zero.
+
+While adding it, `more` was found sitting in the SPANISH stopword list. It is an
+English word, it was that list's only non-Spanish entry, and it scored every
+English string one point towards "this is Spanish". Removed.
+
+`packages/www` was measured for inclusion and deliberately left out: 1,060
+findings, essentially all of them English CITATIONS that all twelve locales carry
+verbatim ("IBM Security, Cost of a Data Breach Report 2024"). Those are
+language-neutral content, not contamination, and admitting them would need the
+crowd filter from `check-locale-de-contamination.ts`, which already scans that
+tree.
+
+### 3. Nothing at all validated renet's locale VALUES
+
+`private/renet/.ci/scripts/quality/i18n.sh` scans Go SOURCE for hardcoded strings.
+The catalogs in `pkg/i18n/locales/*.go` were checked for key alignment, exact
+identity with English, and format parity -- structure, never content. So this
+shipped and stayed green:
+
+    ru  "Zadachi dobavleny v ochered"   for  "Added tasks to queue"
+
+Twenty-six `ru` values are Russian written in LATIN TRANSLITERATION. They are not
+English, every key aligns, every format verb matches, so every existing class
+passed them, and a Russian user reads romanized gibberish.
+
+`pkg/i18n/locale_quality_test.go` adds three rules, each provable rather than a
+judgement call: the value IS English; three CONSECUTIVE English function words
+(one is noise and two is arguable, three in a row is a clause); and for
+`ar/ja/ko/ru/zh`, prose carrying not one character of its own script. Findings are
+held in a shrink-only baseline, and a baselined finding that is no longer detected
+FAILS, so a fix forces its removal.
+
+It does NOT reuse `localeHomographs` from `rules.go`. That map was widened until
+the advisory fragment rule stopped producing noise, which left entries that are
+not homographs at all -- `the` is in both the German and the French lists, and
+`is`, `of`, `to`, `at`, `it` and `was` in the German one. Borrowing it would score
+"because the socket is" as a run of ONE.
+
+### 4. The renet i18n gate could retire itself in one line
+
+    ./bin/renet i18n extract ... 2>/dev/null || { log_warn "...skipping"; exit 0; }
+
+A crashed extractor produced a WARNING and a GREEN gate -- and because `exit 0`
+came before them, it took the locale validation and the hash-manifest check with
+it. Proven on a fixture whose `bin/renet` exits 3: the `HEAD` script prints
+`i18n extraction failed or not implemented, skipping` and exits 0; the new one
+prints the crash and exits 1.
+
+The six `jq ... 2>/dev/null || echo "0"` reads were the same defect one layer
+down, because `0` is the value that means clean. With `jq` off `PATH` and
+`validate` reporting 99 certain defects over ZERO locales, the `HEAD` script
+printed `All 12 locales clean`. They now go through a `read_stat` helper that
+refuses to substitute a default, `jq` is a `require_cmd`, and the locale count is
+pinned at 12 so a moved catalog directory cannot make every total a vacuous zero.
+The two fixed `/tmp/findings.json` and `/tmp/validate.json` paths, which two
+concurrent runs shared, are now a per-run `mktemp -d`.
+
+The new Go tests already run in CI's test stage via `go test ./pkg/...`. They are
+also invoked from `i18n.sh` using the three-phase pattern of
+`check-renet-tier-map.sh` -- confirm `-list` selects exactly the expected names,
+run with `-count=1`, then assert each reported `--- PASS` -- so neither a rename
+nor a `t.Skip` can retire one silently, the control included.
+
+### Registered
+
+`check-i18n-cross-locale.ts` joins `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`
+as `|Refusing to run`. Its three locale-root constants are root pattern 1, and it
+was previously unregistered while carrying a second vacuity inside itself. The
+harness copies `scripts/` and `.ci/scripts/` only, so renet's `i18n.sh` cannot be
+registered there; the submodule-absent case is already pinned through
+`.ci/scripts/private/run-renet.sh`.
+
+## 2026-08-04 (later) -- the locale SET becomes derived, and two more hidden classes
+
+Four follow-ups to the section above, three of them defects the first pass did not reach.
+
+### 5. Both locale gates hand-maintained their own implicit locale universe
+
+`check-i18n-cross-locale.ts` decided which locales existed from `readdirSync` plus the
+keys of its own `STOPWORDS` map. That is the root of the original hole: the set of
+locales the gate KNEW about and the set it could JUDGE were the same object, so a locale
+with no detection data was not a gap, it simply was not a locale.
+
+Both gates now derive the universe from `@rediacc/locales`, the same declaration the rest
+of the repo builds against, and cross-check the tree against it in both directions:
+
+* a directory that is not a site locale is a hard error naming it;
+* a site locale with no directory is a hard error, because comparing it against nothing
+  reports no contamination, which is the same checkmark as finding none;
+* every non-English site locale must have a function-word list OR a writing system, and
+  that is asserted AT MODULE LOAD, before a single file is opened. A fourteenth locale
+  added to `packages/locales/index.js` turns both gates red immediately, with no tree
+  needed to trigger it;
+* every key of the detection data must itself be a site locale, so `NATIVE_SCRIPT.jp`
+  fails loudly instead of silently never matching the `ja` directory.
+
+Both selftests now build fixtures with all thirteen locales, and each rule above has a
+case that plants the failure and requires the throw.
+
+Found while wiring it: `packages/www/src/i18n/translations` holds
+`.naturalized-hashes.json` and `.translation-hashes.json`, 2.2 MB of CRC sidecars that
+the de-contamination gate had been reading and flattening as two extra LOCALES on every
+run. No finding came from them, but they counted towards `targets`, which is the
+denominator of the crowd filter, so its exemption threshold was computed against fourteen
+locales where twelve exist. Dot-prefixed entries are now excluded.
+
+### 6. The crowd-exclusion filter was hiding shared CORRUPTION
+
+`check-locale-de-contamination.ts` exempted any value that most other locales also carry,
+on the reasoning that a string every locale shares belongs to no language -- a citation, a
+product name. Sound for citations, wrong in general, and it hid 59 genuinely corrupted
+keys: most of account-web's `team.json` was German across `ar`, `ja`, `ru` and `zh`
+IDENTICALLY, which the filter read as language-neutral when it was one bad translation
+pass writing the same German into four files.
+
+The two cases are told apart by evidence the gate already computed and simply did not
+consult: shared corruption looks German, a citation does not. Crowd-exclusion now applies
+only when `looksGerman` is false.
+
+MEASURED against the real tree, with 280 real German values planted identically into seven
+locales of account-web's `team.json` (seven, because the exemption needs
+`shared * 2 >= targets - 1` and four locales never reached it):
+
+* unconditional filter, everything else identical: `No new German contamination across 4
+  locale root(s)`, exit 0;
+* conditioned on the German evidence: 147 findings, exit 1.
+
+The English-citation control still passes, which is the whole point of conditioning rather
+than deleting.
+
+### 7. A translation pasted over a run of unrelated keys
+
+Found live in `ja.go`: 64 clusters covering 255 keys where DISTINCT English strings had all
+been collapsed onto the SAME Japanese value. Larger than every other class combined, and
+invisible to every per-value rule -- each value on its own is fluent Japanese, differs from
+English, aligns on keys and keeps its format verbs. The defect exists only in the
+RELATIONSHIP between keys.
+
+`duplicate-cluster` groups a locale's values and reports any value shared by three or more
+keys whose English sources are pairwise DIFFERENT. The one-directional signal is what makes
+it precise: locales do legitimately collapse short labels, but when they do the English
+side is identical too, so requiring distinct English exempts every legitimate case without
+a list to maintain.
+
+Its substance floor is measured in LETTERS, not words. A four-WORD threshold silently
+exempted every CJK value, because Japanese writes a whole clause with no spaces in it and
+so scores two tokens -- and CJK is the one locale family where the defect was actually
+found. Caught by a control that expected four planted keys and got zero, not by reading.
+
+### 8. `localeHomographs` in rules.go listed words that are not words
+
+The map suppresses English function words on the grounds that they are also ordinary words
+in the target language. It had been widened until the advisory fragment rule stopped
+producing noise, which is a different criterion, and it let through entries that belong to
+no language involved: `the`, `is`, `of`, `to`, `at`, `it`, `be`, `are`, `do`, `must`, `has`
+and `not` were all listed as GERMAN, and `the`, `in` and `it` as FRENCH.
+
+Each entry is a word the fragment rule can no longer see. Pruned to words a native speaker
+would confirm, with `error` ADDED for Spanish (spelled exactly as in English, which is the
+only thing that ever justifies an entry). Zero new findings on the current tree, so this is
+pure sharpening; `TestHomographListHoldsOnlyRealWords` pins it, and restoring the original
+German list makes that test fail on seven words.
+
+NOT fixed, reported instead: `detectWordBlends` skips wholly-ASCII tokens, so an
+ASCII-only corruption like `"Listeer available images"` is caught by neither it nor
+`detectEnglishFragments` (which only counts KNOWN English words). Making it ASCII-aware
+would fire on every legitimate `Starting`/`Running` in twelve locales and needs a
+false-positive measurement pass per locale. That is a rework, not a cheap hardening.
+
+### Renet's locale set is already derived, and stays that way
+
+No `@rediacc/locales` change is needed on the renet side and none was made. Renet's
+catalogs register themselves through `pkg/i18n/locales/registry.go`, and
+`GetAllLocaleFiles` derives the locale list from the generated files rather than from a
+hand-written list, which is the same property `@rediacc/locales` provides on the console
+side. The Go test asserts that list is exactly 12 non-English catalogs and that each
+yields at least 200 keys, so a moved or renamed catalog is a hard failure rather than a
+scan over nothing.
+
+## 2026-08-04 -- two dark coverage assets get CI legs: the drills, and suite 24's ACCOUNT tier
+
+Both were written, both passed on an operator's box, and neither had ever executed in CI.
+This wires them, with the scope engine's 18th key and one new job script. UNCOMMITTED: the
+workflow edits land locally and the operator pushes, so **the first real CI run is the
+operator's push** -- everything below was proven locally or is named as unproven.
+
+### `test-drills`, a new ct-tests leaf (scope key `drills`)
+
+Runs `./run.sh drill universe` then `./run.sh drill transfer`. Both drive the real
+`./rdc.sh` against a real `./run.sh account dev` gateway and assert on stdout and stderr
+SEPARATELY, which is the surface no unit test sees and the surface each drill's header
+says it was written to catch defects in.
+
+Proven locally before the wiring, not after: universe 42/42 in 31s, transfer 33/33 in 32s,
+both on this checkout with Docker up (transfer needs the RustFS container, so it is a real
+prerequisite rather than a nicety). No org secrets are involved -- `account_ensure_env`
+generates `private/account/.env` with fresh throwaway ed25519/x25519 keys on first use.
+
+The Go toolchain, the Docker Hub login and the embed-assets cache on this leg all exist
+for ONE reason, and it is worth stating because none of them look like a drill's business:
+`rdc.sh:188` calls `ensure_renet_built` unconditionally, which runs `build.sh dev` ->
+`embed_assets`. With the cache warm the receipt check makes staging a verified no-op; on a
+miss it falls back to the Docker extraction, which is what the 30-minute budget covers.
+Neither drill touches renet.
+
+**`www` is deliberately NOT in the `drills` surface**, and this is the one judgement call
+in the key. `account_dev` starts the Astro dev server from `packages/www` and exits
+non-zero if it does not come up, so www is a literal dependency of the harness. It is
+still excluded: a www change cannot change what these drills ASSERT, only whether the
+harness stands, and carrying www would run a ~15-minute leg on every i18n or marketing PR
+-- the most common change shape in this repo. Accepted cost, stated so the next reader does
+not think it was an oversight: a www change that breaks `astro dev` while still building
+clean surfaces as a red drills leg on the NEXT cli/account PR.
+
+The drills' own source needs no module: `scripts/` hits the `scripts-harness` rule => full
+CI, so editing a drill always runs the leg. Same shape as `license_enforcement` under
+`.ci/`.
+
+### The 18th key costs five tables, not one
+
+Adding a `JOB_SURFACES` key is not a one-file edit, and every one of these fails CLOSED,
+which is why they were found by running rather than by reading:
+
+- `scope-map.cjs` -- `drills: ['cli', 'shared', 'account']`.
+- `ci.yml` -- an `initialize` output and a `with:` pass-through. A key missing here is
+  silently DROPPED by the outputs block.
+- `ct-tests.yml` -- the `run_drills` input plus the leaf's `!= 'false'` clause.
+- `skip-plan-reconcile.cjs` -- `EXPECTED_JOB_NAMES` (validateNameTable THROWS AT LOAD on a
+  surface key with no name) and `CT_TESTS_LEAF_KEYS` (without it the leaf is not exempted
+  under `full_suite`/`pointer_bump_only` and reds every push-to-main).
+- three gate fixtures under `.ci/scripts/test/gates/` that carry a second, independent copy
+  of the job list on purpose.
+
+Instrument check rather than assertion-reading: `buildPlan` was driven over single-path
+deltas and the key discriminates in both directions -- `packages/cli/**` and
+`private/account/**` and `packages/shared/**` => `run:true reason:modules:*`,
+`packages/www/**` and `private/renet/**` => `run:false reason:out-of-scope`,
+`scripts/drills/**` => full.
+
+### Suite 24: the ACCOUNT tier runs, the VM tier is excluded (not skipped)
+
+`.ci/scripts/test/start-account-for-e2e.sh` starts a TEST_MODE node account server with
+throwaway keys, seeds a PROFESSIONAL subscription, and mints a token over the COOKIE
+session only -- the CLI must be the token's first user, because a token binds to the client
+IP on first use and the CLI's E2E tunnel presents a different one (the drill lib paid an
+hour for that; violating it answers 403 and the CLI misreports it as a passkey requirement).
+`CLUSTER_LICENSING_SUITE=1` on the multinode leg lights project `k8s-multinode-24`.
+
+**The VM tier cannot run here, and the brief's assumption that it could was checked and is
+wrong.** Three independent blockers, any one of them sufficient:
+
+1. it adopts an EXISTING cluster named by `E2E_CLUSTER_NAME`; the only cluster this job
+   builds is suite 17's `mnprod`, which suite 17's own last test and its `afterAll` tear
+   down completely (kube uninstall, datastore detach + delete, ceph pool delete). Project
+   `k8s-multinode-24` runs after project `k8s-multinode-17`, so there is nothing left;
+2. suite 17 builds that cluster through raw `renet` over the bridge, so no rdc config ever
+   holds a `clusters` entry for it -- `cluster fork mnprod` could not resolve it even if it
+   still stood;
+3. every renet on this fleet is `--nolicense`, so the on-machine licence blobs the tier's
+   test 1 asserts on do not exist by construction.
+
+So the tier is removed from the RUN with `--grep-invert "licensing on the fleet"` (its
+describe title; suite 17's titles do not contain it), AND `E2E_EXPECT_NO_CLUSTER_VMS` is
+declared. The pair is deliberate and the ordering is the whole point: a declared skip is
+still a SKIP, and this leg carries `--fail-on-skip`, so declaring alone would red the job.
+`--grep-invert` filters at collection so nothing is reported as skipped, while the
+declaration keeps the omission loud on stderr and keeps the suite fail-closed if the grep
+is ever dropped.
+
+### Four things this touched that were not obviously in scope
+
+- **`account: 'true'` is back on the multinode leg**, reversing part of the eight-job strip
+  documented above `test-e2e-workers`. That comment's reason (no E2E suite touches
+  private/account) is no longer true for this one job. The cost it names is real and
+  accepted: this job's setup cache key now hashes the three account lockfiles.
+- **The E2E run line must stay ON ONE LINE.** `check-e2e-coverage`'s registry self-check
+  scans workflows line by line and only pairs a `--config` with a `run-e2e.sh` on the SAME
+  line. Folding the invocation across lines with `>-` made the gate report
+  `'playwright.k8s-multinode.config.ts' is in LIVE_CONFIG_REGISTRY but NO workflow runs
+  it`, and silently set `bareDefaultSeen` from a line that is not a bare invocation. Loud
+  and fail-closed, so not repaired; noted at the call site so the next folder is not
+  puzzled.
+- **`CLUSTER_LICENSING_SUITE` in `CI_LEG_ENABLE_FLAGS` over-counts by design and it was
+  checked, not assumed.** Config expansion resolves FILES, so the flag counts the whole of
+  suite 24 as live while `--grep-invert` runs only half of it. Inert today: the only bridge
+  method suite 24 calls is `executeViaBridge`, which dispatches no renet verb and is in the
+  method map for none, so the file confers no verb coverage in either tier. The gate's
+  expansion moved `playwright.k8s-multinode.config.ts` from 1 file to 2, which is the
+  instrument check that the flag does something.
+- **`npx` forks, so `$!` is not the server.** The first cut of the start script recorded
+  `$!` and used `kill -0` on it as a startup liveness check. Measured: launch pid 1155097,
+  tsx 1155113, listener 1155124 -- the recorded pid was already gone while the server was
+  healthy, so that check was a false red waiting on scheduling. Readiness is now the PORT
+  for the full budget, and the pid is resolved from the listening socket afterwards
+  (verified: recorded pid == listener pid, and killing it stops the server).
+
+### What is NOT proven, and cannot be from here
+
+The suite-24 ACCOUNT tier's own assertions were not executed. `subscription login --token`
+and `subscription status` were driven against the throwaway server and print the exact
+lines the suite parses (`Machine slots: 0/5`, `Monthly repo license issuances: 0/2000`),
+and E2E key discovery against a non-production server works when `REDIACC_ACCOUNT_SERVER`
+is set -- but `cluster create` is gate class D and `assertCommandPolicy` refuses it inside
+an agent session unless the operator exported `REDIACC_ALLOW_CLUSTER_OPS` before the
+session started. It refused, verbatim: `Cluster command "cluster create" is blocked in
+agent mode`. CI has no agent ancestor so the override is legitimate there, and suite 24's
+test 1 detects exactly this case and says so rather than failing obscurely eight tests
+later. The pre-flight's refusal text and exit code are therefore first proven on the
+operator's push.

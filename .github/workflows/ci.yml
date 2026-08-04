@@ -133,7 +133,7 @@ jobs:
       # scope_mode is carried only so ci-complete's reconciler can say WHICH
       # decision it is reconciling against. It gates nothing.
       scope_mode: ${{ steps.scope.outputs.scope_mode }}
-      # 12 ct-tests leaves, passed through to ct-tests.yml as inputs.
+      # 13 ct-tests leaves, passed through to ct-tests.yml as inputs.
       run_unit: ${{ steps.scope.outputs.run_unit }}
       run_e2e_workers: ${{ steps.scope.outputs.run_e2e_workers }}
       run_e2e_ceph: ${{ steps.scope.outputs.run_e2e_ceph }}
@@ -146,6 +146,7 @@ jobs:
       run_renet: ${{ steps.scope.outputs.run_renet }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
       run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
+      run_drills: ${{ steps.scope.outputs.run_drills }}
       # 5 top-level ci.yml jobs, consumed by their own `if:` here.
       run_ops: ${{ steps.scope.outputs.run_ops }}
       run_elite_run: ${{ steps.scope.outputs.run_elite_run }}
@@ -774,6 +775,7 @@ jobs:
       run_renet: ${{ needs.initialize.outputs.run_renet }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
       run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
+      run_drills: ${{ needs.initialize.outputs.run_drills }}
     secrets:
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

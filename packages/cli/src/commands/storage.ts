@@ -6,7 +6,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { storageBrowserService } from '../services/repo/storage-browser.js';
-import { handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
 import { assertStorageExists } from './_validate.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
@@ -271,7 +271,8 @@ export function registerStorageCommands(program: Command): void {
 
         files = resolveGuidFileNames(files, guidMap);
 
-        if (files.length === 0) {
+        const format = getOutputFormat();
+        if (files.length === 0 && format === 'table') {
           outputService.info(t('commands.storage.browse.noFiles'));
           return;
         }
@@ -283,8 +284,8 @@ export function registerStorageCommands(program: Command): void {
           modified: f.modTime ?? '-',
         }));
 
-        outputService.print(tableData);
-        outputService.info(`\n${files.length} entries`);
+        outputService.print(tableData, format);
+        if (format === 'table') outputService.info(`\n${files.length} entries`);
       } catch (error) {
         handleError(error);
       }
