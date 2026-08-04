@@ -807,7 +807,13 @@ drill_account_patch_subscription() {
 # DRILL_SELFTEST in a child that then exits: the flag would parse cleanly and
 # do nothing.
 DRILL_ARGS_REST=()
-DRILL_KEEP_WORK=0
+# Honour an inherited DRILL_KEEP_WORK. A bare `DRILL_KEEP_WORK=0` here clobbered
+# the environment, which made the `${DRILL_KEEP_WORK:-0}` at the teardown read
+# site dead code and, worse, a lie: it advertises environment support that did
+# not exist, so exporting the variable silently deleted the work dir anyway.
+# DRILL_HOST just below already uses this idiom, so this is consistency, not a
+# new capability. `--keep-work` still works and still wins.
+DRILL_KEEP_WORK=${DRILL_KEEP_WORK:-0}
 drill_parse_common_args() {
     DRILL_ARGS_REST=()
     while [[ $# -gt 0 ]]; do
