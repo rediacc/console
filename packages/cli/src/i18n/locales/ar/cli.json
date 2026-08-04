@@ -304,6 +304,8 @@
         "optionMasterPassword": "تشفير الموارد بكلمة مرور رئيسية",
         "success": "تمت تهيئة الإعدادات \"{{name}}\"",
         "bareForm": "يُنشأ التكوين الافتراضي تلقائيًا؛ استخدم 'config init <name>' لتكوين مسمى، أو مرّر علامة (--ssh-key، --server، ...) لتعيين خيار على الافتراضي.",
+        "serverKeyMissing": "لم يعلن خادم الحساب {{server}} عن مفتاح تشفير. سيتم اكتشافه عند أول طلب ناجح.",
+        "serverKeyUnreachable": "تعذّر الوصول إلى خادم الحساب {{server}} لمزامنة مفتاح تشفيره ({{error}}). سيتم اكتشافه عند أول طلب ناجح.",
         "examples": {
           "basic": "إنشاء ملف تعريف إعدادات مسمى.",
           "withServer": "إنشاء ملف تعريف يشير إلى خادم حساب معيّن."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "لا تزال الإعدادات \"{{config}}\" متعارضة مع جهاز آخر بعد 3 محاولات. أعد تشغيل الأمر.",
         "passkeySecretMissing": "لم يتم العثور على مفتاح المرور في حلقة مفاتيح النظام. أعد المصادقة باستخدام: rdc config remote enable",
         "staleSlot": "فتحة مفتاحك قديمة (تم تدوير مفتاح تشفير الإعدادات). أعد التسجيل عبر: rdc config remote enable",
+        "undecryptableIdentity": "تم تشفير الإعدادات {{configId}} في المخزن {{storeId}} بمفتاح مختلف عن الذي تحمله فتحتك، لذا لا يمكن لهذا الجهاز قراءتها. يحدث ذلك عندما يحمل المخزن بالفعل إعدادات من تسجيل آخر. اسحب تلك الإعدادات على جهاز مسجَّل مسبقًا وتحقق من الإعدادات التي قصدتها، أو اطلب من مسؤول إعادة مشاركة مفتاح المخزن مع هذا الجهاز من البوابة (Config Storage > key slots).",
+        "undecryptableSession": "تم فتح الإعدادات {{configId}} بمفتاحك، لكن طبقة جلسة الخادم رفضت فتحها ({{detail}}). أعد تنفيذ الأمر؛ وإذا استمر الفشل، أعد التسجيل باستخدام: rdc config remote enable",
+        "handoffUndecryptable": "أرسل المتصفح تسليمًا لا يمكن لهذا الجهاز فتحه ({{error}}). يحدث هذا عادةً عندما يبقى تبويب 'config remote enable' قديم مفتوحًا ويُرسل إلى الجلسة الخاطئة. أغلق كل تبويبات بوابة rediacc، ثم شغّل الأمر مرة أخرى.",
         "enable": {
           "description": "ربط هذه الإعدادات بالتخزين المشفر عن بُعد",
           "optionHeadless": "استخدام تدفق رمز الجهاز (للخوادم بدون واجهة)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "كلمة مرور الإعدادات الرئيسية:",
           "passwordNonInteractive": "كلمة مرور الإعدادات الرئيسية مطلوبة. عيّن REDIACC_CONFIG_PASSWORD، أو شغّل الأمر بلا --password في طرفية تفاعلية.",
           "passwordRequirePasskey": "تتطلب هذه المؤسسة مفتاح مرور (passkey) لفتح تخزين الإعدادات؛ التسجيل بكلمة المرور معطَّل. سجِّل من متصفح عبر: rdc config remote enable",
+          "passwordIpBound": "رمز API الموجود في REDIACC_TOKEN مرتبط بعنوان IP مختلف للعميل. يرتبط الرمز بالعنوان الذي استُخدم منه أول مرة، لذلك لا يمكن لرمز أُنشئ في مكان آخر التسجيل من هذا الجهاز. أصدر رمزًا جديدًا من البوابة وأعد المحاولة.",
+          "passwordMissingScope": "رمز API الموجود في REDIACC_TOKEN لا يحمل نطاق config:enroll. أصدر رمزًا يحمل هذا النطاق من البوابة وأعد المحاولة.",
+          "passwordTeamGone": "الفريق الذي ينتمي إليه رمز API هذا تمت أرشفته أو إزالته. أصدر رمزًا جديدًا لفريق نشط من البوابة وأعد المحاولة.",
+          "passwordTokenNotEnrollable": "لا يمكن لرمز API هذا تسجيل فتحة إعدادات لأنه غير مرتبط بمستخدم داخل مؤسسة. أصدر رمزًا شخصيًا من حسابك الخاص في البوابة وأعد المحاولة.",
+          "passwordForbidden": "رفض خادم الحساب تسجيل الإعدادات: {{error}}",
           "passwordNoSlot": "لا توجد فتحة كلمة مرور مُجهَّزة لتخزين إعداداتك. أضف واحدة من البوابة (Config Storage > key slots) ثم أعد المحاولة.",
           "passwordWrong": "تعذّر فتح الإعدادات بكلمة المرور تلك. تحقّق من REDIACC_CONFIG_PASSWORD (أو كلمة المرور التي أدخلتها) ثم أعد المحاولة.",
           "optionForce": "استبدال المحتوى المحلي المختلف بنسخة الخادم دون تأكيد",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "فشل كتابة الاسم المستعار لـ SSH (غير حرج): {{error}}",
-          "sshConfigWritten": "تمت كتابة الاسم المستعار rediacc--{{name}} إلى ~/.ssh/config_rediacc"
+          "sshConfigWritten": "تمت كتابة الاسم المستعار rediacc--{{name}} إلى {{path}}"
         },
         "remove": {
           "sshConfigCleared": "تمت إزالة الاسم المستعار rediacc--{{name}}"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "عرض الحالة الكاملة لجهاز.",
           "containers": "عرض الحاويات قيد التشغيل على جهاز فقط."
-        }
+        },
+        "licenseBackupBlocked": "\nالنسخ الاحتياطي محظور: تم رفض {{repositoryGuid}} من قبل نظام الترخيص منذ {{at}} ({{reason}}). {{message}}\nالنسخ الاحتياطية المجدولة لهذا المستودع لا تعمل. أعد الإصدار باستخدام: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "تم التحقق من الرمز",
         "validating": "جارٍ التحقق من الرمز...",
         "waitingApproval": "في انتظار التفويض من المتصفح...",
-        "edgeSeparator": "قناة Edge"
+        "edgeSeparator": "قناة Edge",
+        "machinesOverLimit": "  {{count}} من حصص الأجهزة تتجاوز الحد."
       },
       "logout": {
         "description": "مسح رمز الاشتراك المحفوظ",
@@ -1686,7 +1698,11 @@
           "empty": "  لا توجد تراخيص مستودعات مثبتة",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (انتهاء صلاحية نهائي: {{effectiveHardExpiry}})",
-          "header": "\nتراخيص المستودعات: ({{machineName}})"
+          "header": "\nتراخيص المستودعات: ({{machineName}})",
+          "datastoreSuffix": " [مخزن البيانات {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: النسخ الاحتياطي محظور من قبل نظام الترخيص منذ {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  شغّل 'rdc subscription refresh -m {{machineName}}' لإعادة الإصدار؛ تُزال العلامة عند نجاح التجديد التالي.",
+          "lastRenewal": "    آخر تجديد: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  الخطة:    {{plan}}",
         "remoteRepoLicenseIssuances": "  طلبات الترخيص العائم: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  تراخيص المستودعات: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
-        "remoteStatus": "  الحالة:   {{status}}"
+        "remoteStatus": "  الحالة:   {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (آخر ظهور: {{lastSeen}}) تجاوز الحد",
+        "overLimitSummary": "  {{count}} من الأجهزة محجوزة مؤقتًا بما يتجاوز حد حصص الأجهزة. عمليات التجديد لا تزال تنجح؛ لا يمكن ترخيص المستودعات الجديدة حتى تحرر حصة أو ترفع الحد."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "تم العثور على مستودعات على {{machine}} لكن لا يوجد أي منها في إعداداتك المحلية. راجع مستودعاتك المتابَعة باستخدام `rdc repo list`، ثم أعد المحاولة.",
       "recoveryFailedServerRejected": "رفض خادم الحساب إصدار الترخيص للمستودع على \"{{machine}}\". الخطأ الأول: {{error}}. شغّل: rdc subscription refresh --repo <repo-ref> للمزيد من التفاصيل.",
       "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة.",
-      "skipActivationHint": "على جهاز مؤقت يمكنك تخطي التفعيل تمامًا بـ REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "skipActivationHint": "على جهاز مؤقت يمكنك تخطي التفعيل تمامًا بـ REDIACC_SKIP_MACHINE_ACTIVATION=1.",
+      "machineSlotLimit": "يحتاج هذا التوضّع إلى {{needed}} حصة/حصص جهاز إضافية، ولدى الاشتراك {{free}} حصة متاحة ({{active}} من {{max}} قيد الاستخدام). تُحرَّر الحصة تلقائيًا بعد 5 ساعات من آخر نشاط لذلك الجهاز، أو فورًا عند إزالة الجهاز. ارفع الحد بترقية الخطة، أو تواصل مع المبيعات للاتفاق على حد أجهزة Enterprise أو حد شراكة مخصص.",
+      "partialPlacement": "توقّف التوضّع في منتصف الطريق: اكتمل {{placed}} من الأجهزة ({{placedNames}}) ولم يبدأ {{remaining}} منها ({{remainingNames}}). لم يتم التراجع عن شيء، لذا تحتفظ الأجهزة المكتملة بمستودعاتها وحصصها. حرّر حصة أو ارفع الحد، ثم أعد التشغيل: {{command}}",
+      "nothingProvisioned": "لم يتم توفير أي شيء: لم يتم إنشاء المستودع."
     },
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",

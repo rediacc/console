@@ -134,6 +134,44 @@ function setSubscriptionTelemetryContext(input: {
   });
 }
 
+/**
+ * The post-login summary. One renderer for both login paths (an explicit
+ * `--token` and the device-code flow), which had drifted into two copies of the
+ * same four lines.
+ */
+function renderLoginSummary(
+  status: {
+    orgName?: string;
+    planCode?: string;
+    activeMachineCount?: number;
+    maxMachines?: number;
+    overLimitCount?: number;
+  },
+  teamName: string | undefined,
+  serverUrl: string
+): void {
+  outputService.success(t('commands.subscription.login.success'));
+  outputSubscriptionScope({ orgName: status.orgName, teamName, serverUrl });
+  outputService.info(
+    t('commands.subscription.login.plan', {
+      plan: status.planCode ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_PLAN,
+    })
+  );
+  outputService.info(
+    t('commands.subscription.login.machines', {
+      active: status.activeMachineCount ?? 0,
+      max: status.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
+    })
+  );
+  // Soft-claimed slots: renewals still succeed, but new repositories cannot be
+  // licensed, so say it at login rather than at the next `repo create`.
+  if ((status.overLimitCount ?? 0) > 0) {
+    outputService.warn(
+      t('commands.subscription.login.machinesOverLimit', { count: status.overLimitCount })
+    );
+  }
+}
+
 export function registerSubscriptionCommands(program: Command): void {
   const sub = program
     .command('subscription')
@@ -170,6 +208,7 @@ export function registerSubscriptionCommands(program: Command): void {
                 status?: string;
                 activeMachineCount?: number;
                 maxMachines?: number;
+                overLimitCount?: number;
                 teamId?: string;
                 teamName?: string;
               }>('/account/api/v1/licenses/status', { token, serverUrl }),
@@ -199,23 +238,7 @@ export function registerSubscriptionCommands(program: Command): void {
             status: s.status,
             source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
           });
-          outputService.success(t('commands.subscription.login.success'));
-          outputSubscriptionScope({
-            orgName: s.orgName,
-            teamName: s.teamName ?? currentTeamName,
-            serverUrl,
-          });
-          outputService.info(
-            t('commands.subscription.login.plan', {
-              plan: s.planCode ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_PLAN,
-            })
-          );
-          outputService.info(
-            t('commands.subscription.login.machines', {
-              active: s.activeMachineCount ?? 0,
-              max: s.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
-            })
-          );
+          renderLoginSummary(s, s.teamName ?? currentTeamName, serverUrl);
         } else {
           const { status } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
             interactive: true,
@@ -226,23 +249,7 @@ export function registerSubscriptionCommands(program: Command): void {
             planCode: status.planCode,
             source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
           });
-          outputService.success(t('commands.subscription.login.success'));
-          outputSubscriptionScope({
-            orgName: status.orgName,
-            teamName: status.teamName,
-            serverUrl,
-          });
-          outputService.info(
-            t('commands.subscription.login.plan', {
-              plan: status.planCode ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_PLAN,
-            })
-          );
-          outputService.info(
-            t('commands.subscription.login.machines', {
-              active: status.activeMachineCount ?? 0,
-              max: status.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
-            })
-          );
+          renderLoginSummary(status, status.teamName, serverUrl);
         }
       } catch (error) {
         handleError(error);

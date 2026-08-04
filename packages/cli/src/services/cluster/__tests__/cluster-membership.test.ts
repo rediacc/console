@@ -7,6 +7,15 @@ import { outputService } from '../../core/output.js';
 import { localExecutorService } from '../../executor/local-executor.js';
 import { evictCluster, joinCluster } from '../cluster-membership.js';
 
+// The machine-slot pre-flight reaches the account server. Stub it: a unit test
+// must not depend on whether the box running it happens to hold a live
+// subscription token. Its own behaviour is covered in
+// services/__tests__/license-preflight.test.ts.
+vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../account/license-preflight.js')>()),
+  assertMachineSlotsAvailable: vi.fn().mockResolvedValue(undefined),
+}));
+
 const cluster: ClusterConfig = {
   provider: 'kvm',
   pools: [

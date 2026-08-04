@@ -117,13 +117,14 @@ export function registerJobCommands(program: Command): void {
     .action(async (options: JobCommandOptions) => {
       try {
         const jobs = await withJobConnection(options.machine, listJobs);
+        const format = getOutputFormat();
 
-        if (jobs.length === 0) {
+        if (jobs.length === 0 && format === 'table') {
           outputService.info(t('commands.job.list.empty', { machine: options.machine }));
           return;
         }
 
-        outputService.print(jobs.map(toListRow), getOutputFormat());
+        outputService.print(jobs.map(toListRow), format);
       } catch (error) {
         handleError(error);
       }

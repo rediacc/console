@@ -14,6 +14,7 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
+import { assertMachineSlotsAvailable } from '../account/license-preflight.js';
 import { getCluster } from '../config/config-cluster-ops.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
@@ -114,6 +115,9 @@ export async function joinCluster(machineName: string, options: JoinClusterOptio
         `Evict it first: rdc cluster evict ${machineName}.`
     );
   }
+
+  // One more machine that will hold repositories, so one more slot.
+  await assertMachineSlotsAvailable({ machineCount: 1 });
 
   const cluster = await getCluster(options.cluster);
   const control = controlMember(options.cluster, cluster);

@@ -383,6 +383,12 @@ _renet_source_hash() {
 # last built, regardless of mtime ordering. The build mode (license flags,
 # account key) is folded into the hash so toggling RDC_BENCH / RDC_RENET_LICENSE
 # also forces a rebuild.
+# size:mtime of a built artifact, empty when absent. GNU stat first, BSD as
+# the macOS fallback.
+_renet_artifact_fp() {
+    stat -c '%s:%Y' "$1" 2>/dev/null || stat -f '%z:%m' "$1" 2>/dev/null || true
+}
+
 ensure_renet_built() {
     local renet_dir="$LOCAL_ROOT_DIR/private/renet"
     local renet_bin="$renet_dir/bin/renet"
@@ -426,9 +432,20 @@ ensure_renet_built() {
             printf 'key=%s\n' "$_account_key"
         } | _sha256sum | awk '{print $1}'
     )"
-    saved_hash="$(read_stamp_hash "$stamp_file")"
+    # The stamp hashes the build INPUTS; it says nothing about the artifact.
+    # A foreign `go build -o bin/renet` (another session, a stray IDE task)
+    # replaces the binary without touching the stamp, and the wrong-flavored
+    # binary then deploys to every VM until sources change (paid for live
+    # 2026-08-04: an enforcing keyless renet failed the license drill with
+    # "public key not configured" while the stamp said fresh). The stamp's
+    # second line records the artifact's size:mtime; a mismatch is stale.
+    local saved_stamp saved_bin
+    saved_stamp="$(read_stamp_hash "$stamp_file")"
+    saved_hash="$(printf '%s\n' "$saved_stamp" | sed -n 1p)"
+    saved_bin="$(printf '%s\n' "$saved_stamp" | sed -n 's/^bin=//p')"
 
-    if [[ -f "$renet_bin" ]] && [[ -n "$current_hash" ]] && [[ "$saved_hash" == "$current_hash" ]]; then
+    if [[ -f "$renet_bin" ]] && [[ -n "$current_hash" ]] && [[ "$saved_hash" == "$current_hash" ]] &&
+        [[ -n "$saved_bin" ]] && [[ "$saved_bin" == "$(_renet_artifact_fp "$renet_bin")" ]]; then
         log_debug "Renet binary is up-to-date (stamp matched)"
         return 0
     fi
@@ -471,8 +488,10 @@ ensure_renet_built() {
     # Record the stamp ONLY after a fully successful build (binary + any
     # cross-compiled Linux binaries). If anything above failed we exited
     # non-zero and never get here, so a partial/failed build never marks the
-    # tree "fresh" and the next ./rdc.sh will rebuild.
-    write_stamp_hash "$stamp_file" "$current_hash"
+    # tree "fresh" and the next ./rdc.sh will rebuild. Line 2 fingerprints
+    # the artifact itself so a foreign overwrite of bin/renet reads as stale.
+    write_stamp_hash "$stamp_file" "$current_hash
+bin=$(_renet_artifact_fp "$renet_bin")"
 
     log_info "Renet built successfully"
 }

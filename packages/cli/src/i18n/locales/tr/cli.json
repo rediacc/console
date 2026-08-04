@@ -304,6 +304,8 @@
         "optionMasterPassword": "Kaynakları bir ana şifreyle şifreleyin",
         "success": "\"{{name}}\" yapılandırması başlatıldı",
         "bareForm": "Varsayılan yapılandırma otomatik olarak oluşturulur; adlandırılmış bir yapılandırma için 'config init <ad>' kullanın veya varsayılan üzerinde bir seçenek ayarlamak için bir bayrak geçirin (--ssh-key, --server, ...).",
+        "serverKeyMissing": "Hesap sunucusu {{server}} bir şifreleme anahtarı bildirmedi. İlk başarılı istekte bulunacak.",
+        "serverKeyUnreachable": "Şifreleme anahtarını senkronize etmek için hesap sunucusu {{server}}'a ulaşılamadı ({{error}}). İlk başarılı istekte bulunacak.",
         "examples": {
           "basic": "Adlandırılmış bir yapılandırma profili oluştur.",
           "withServer": "Belirli bir hesap sunucusuna işaret eden profil oluştur."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "\"{{config}}\" yapılandırması 3 denemeden sonra hâlâ başka bir cihazla çakışıyor. Komutu yeniden çalıştırın.",
         "passkeySecretMissing": "Geçiş anahtarı sırrı işletim sistemi anahtar deposunda bulunamadı. Yeniden kimlik doğrulayın: rdc config remote enable",
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
+        "undecryptableIdentity": "{{storeId}} deposundaki {{configId}} yapılandırması, sizin yuvanızın taşıdığından farklı bir anahtarla şifrelenmiş, bu nedenle bu cihaz onu okuyamıyor. Bu, depo zaten başka bir kayıttan gelen bir yapılandırma taşıdığında olur. O yapılandırmayı zaten kayıtlı bir cihazda çekip hangi yapılandırmayı kastettiğinizi kontrol edin veya bir yöneticiden depo anahtarını portaldan (Config Storage > key slots) bu cihazla yeniden paylaşmasını isteyin.",
+        "undecryptableSession": "{{configId}} yapılandırmasının kilidi anahtarınızla açıldı ancak sunucu oturum katmanı onu açmayı reddetti ({{detail}}). Komutu tekrar deneyin; hata sürerse şu komutla yeniden kaydolun: rdc config remote enable",
+        "handoffUndecryptable": "Tarayıcı bu cihazın açamadığı bir devir teslim (handoff) gönderdi ({{error}}). Bu genellikle eski bir 'config remote enable' sekmesinin hâlâ açık olduğunu ve yanlış oturuma gönderim yaptığını gösterir. Tüm rediacc portal sekmelerini kapatın, sonra komutu tekrar çalıştırın.",
         "enable": {
           "description": "Bu yapılandırmayı uzak şifreli depolamaya bağla",
           "optionHeadless": "Cihaz kodu akışını kullan (arayüzsüz sunucular için)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "Yapılandırma ana parolası:",
           "passwordNonInteractive": "Bir yapılandırma ana parolası gereklidir. REDIACC_CONFIG_PASSWORD değişkenini ayarlayın veya etkileşimli bir terminalde --password olmadan çalıştırın.",
           "passwordRequirePasskey": "Bu organizasyon, yapılandırma deposunun kilidini açmak için passkey gerektiriyor; parolayla kayıt devre dışı. Bir tarayıcıdan şununla kaydolun: rdc config remote enable",
+          "passwordIpBound": "REDIACC_TOKEN içindeki API belirteci farklı bir istemci IP adresine bağlı. Bir belirteç ilk kullanıldığı adrese bağlanır, bu nedenle başka bir yerde oluşturulan bir belirteç bu makineden kayıt olamaz. Web portalından yeni bir belirteç alın ve tekrar deneyin.",
+          "passwordMissingScope": "REDIACC_TOKEN içindeki API belirteci config:enroll kapsamını taşımıyor. Web portalından bu kapsama sahip bir belirteç alın ve tekrar deneyin.",
+          "passwordTeamGone": "Bu API belirtecinin ait olduğu takım arşivlendi veya kaldırıldı. Web portalından aktif bir takım için yeni bir belirteç alın ve tekrar deneyin.",
+          "passwordTokenNotEnrollable": "Bu API belirteci bir organizasyondaki bir kullanıcıya bağlı olmadığından bir config slot kaydedemez. Web portalından kendi hesabınızdan kişisel bir belirteç alın ve tekrar deneyin.",
+          "passwordForbidden": "Hesap sunucusu yapılandırma kaydını reddetti: {{error}}",
           "passwordNoSlot": "Yapılandırma deponuz için hazırlanmış bir password slot yok. Portaldan bir tane ekleyin (Config Storage > key slots), sonra tekrar deneyin.",
           "passwordWrong": "Yapılandırmanın kilidi bu parolayla açılamadı. REDIACC_CONFIG_PASSWORD değişkenini (veya girdiğiniz parolayı) kontrol edip tekrar deneyin.",
           "optionForce": "Farklı olan yerel içeriği onay almadan sunucu kopyasıyla değiştir",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "SSH takma adı yazılamadı (kritik değil): {{error}}",
-          "sshConfigWritten": "rediacc--{{name}} SSH takma adı ~/.ssh/config_rediacc dosyasına yazıldı"
+          "sshConfigWritten": "rediacc--{{name}} SSH takma adı {{path}} dosyasına yazıldı"
         },
         "remove": {
           "sshConfigCleared": "rediacc--{{name}} SSH takma adı kaldırıldı"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "Bir makinenin tam durumunu göster.",
           "containers": "Bir makinedeki yalnızca çalışan konteynerleri göster."
-        }
+        },
+        "licenseBackupBlocked": "\nYEDEKLEMELER ENGELLENDİ: {{repositoryGuid}}, {{at}} tarihinden beri lisanslama tarafından reddediliyor ({{reason}}). {{message}}\nBu depo için zamanlanmış yedeklemeler çalışmıyor. Şununla yeniden verin: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "Belirteç doğrulandı",
         "validating": "Belirteç doğrulanıyor...",
         "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor...",
-        "edgeSeparator": "Edge Kanalı"
+        "edgeSeparator": "Edge Kanalı",
+        "machinesOverLimit": "  {{count}} makine slotu sınırın üzerinde."
       },
       "logout": {
         "description": "Kayıtlı abonelik jetonunu temizle",
@@ -1686,7 +1698,11 @@
           "empty": "  Yüklü depo lisansı yok",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (son kullanma: {{effectiveHardExpiry}})",
-          "header": "\nDepo lisansları: ({{machineName}})"
+          "header": "\nDepo lisansları: ({{machineName}})",
+          "datastoreSuffix": " [veri deposu {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: yedeklemeler {{at}} tarihinden beri lisanslama tarafından ENGELLENDİ ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Yeniden vermek için 'rdc subscription refresh -m {{machineName}}' komutunu çalıştırın; işaret bir sonraki başarılı yenilemede kalkar.",
+          "lastRenewal": "    son yenileme: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  Plan:      {{plan}}",
         "remoteRepoLicenseIssuances": "  Yüzen lisans istekleri: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
-        "remoteStatus": "  Durum:     {{status}}"
+        "remoteStatus": "  Durum:     {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (son görülme: {{lastSeen}}) SINIRI AŞIYOR",
+        "overLimitSummary": "  {{count}} makine, makine slotu sınırının ötesinde geçici olarak tutuluyor. Yenilemeler başarılı olmaya devam ediyor; bir slot boşaltana veya sınırı artırana kadar YENİ depolar lisanslanamaz."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "{{machine}} üzerinde depolar bulundu ancak hiçbiri yerel yapılandırmanızda kayıtlı değil. İzlenen depolarınızı `rdc repo list` ile listeleyin, ardından yeniden deneyin.",
       "recoveryFailedServerRejected": "Hesap sunucusu \"{{machine}}\" üzerindeki depo için lisans verilmesini reddetti. İlk hata: {{error}}. Ayrıntılar için çalıştırın: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "Abonelik jetonunuz hazır değil. Çalıştırın: rdc subscription login, ardından yeniden deneyin.",
-      "skipActivationHint": "Kullan-at bir makinede REDIACC_SKIP_MACHINE_ACTIVATION=1 ile etkinleştirmeyi tamamen atlayabilirsiniz."
+      "skipActivationHint": "Kullan-at bir makinede REDIACC_SKIP_MACHINE_ACTIVATION=1 ile etkinleştirmeyi tamamen atlayabilirsiniz.",
+      "machineSlotLimit": "Bu yerleştirme {{needed}} makine slotu daha gerektiriyor ve abonelikte {{free}} boş slot var ({{max}} slotun {{active}} tanesi kullanımda). Bir slot, o makinenin son etkinliğinden 5 saat sonra otomatik olarak veya makine kaldırıldığında hemen serbest kalır. Planı yükselterek sınırı artırın veya anlaşmalı bir Enterprise ya da iş ortağı makine sınırı için satış ekibiyle iletişime geçin.",
+      "partialPlacement": "Yerleştirme yarıda durdu: {{placed}} makine tamamlandı ({{placedNames}}) ve {{remaining}} makine hiç başlatılmadı ({{remainingNames}}). Hiçbir şey geri alınmadı, bu yüzden tamamlanan makineler depolarını ve slotlarını korur. Bir slot boşaltın veya sınırı artırın, ardından yeniden çalıştırın: {{command}}",
+      "nothingProvisioned": "Hiçbir şey provizyonlanmadı: depo oluşturulmadı."
     },
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
     "machineRequired": "Makine adı gerekli. --machine <name> kullanın",

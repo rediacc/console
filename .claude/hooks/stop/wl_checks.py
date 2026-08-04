@@ -144,36 +144,132 @@ def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
     return M.N_POLL_BACKOFF % (int(quiet_min), cur_min, sched, nxt, nxt_min)
 
 
-def wakeup_lines(event, now=None):
-    """One line per scheduled task: when it fires next and what it will do.
+# ---- v17: the NO-OP WAKE LADDER ---------------------------------------------
+# WHY (operator, 2026-08-04): "normally there is exponential backoff for the
+# stop hook. It seems it's running every 5 mins." The ladder above existed and
+# never fired usefully during a pure background wait: it measures INBOX quiet
+# time, so it says nothing about a session whose wakes are empty for every
+# other reason, and it is queued behind the very report it is trying to
+# replace at one advisory section per stop.
+#
+# This is the missing half: the hook counts wakes on which it can PROVE
+# nothing moved, and once it has three in a row the whole stop collapses to
+# one line asking for the next rung. Three, not one, because the streak is
+# what makes the claim honest -- a single quiet wake happens constantly
+# between two real ones -- and because at */5 three wakes is 15 minutes, the
+# same window as the background check-in it stands in for, so the collapsed
+# message can never arrive sooner than the report it replaces.
+QUIET_WAKES_TO_RESCHEDULE = int(os.environ.get("WORKLIST_QUIET_WAKES", "3"))
 
-    WHY (operator, 2026-07-30: "there is actually expansion for scheduled
-    task... the stop hook should detect the call moments and share what needs
-    to be done"). The Stop event's `session_crons` carries each task's
-    schedule AND its full prompt, but the hook was reporting the loop from
-    the hand-declared `.loop` sidecar, whose stamped next-fire goes stale the
-    moment it is written. These lines are computed from the event itself, so
-    they cannot drift: the label is the prompt's own first line, the time is
-    derived from the schedule at this stop.
 
-    An unparseable schedule is REPORTED as such rather than skipped: a
-    wakeup list that silently omits a broken entry reads as "nothing else is
-    scheduled", which is the pass-quietly failure this hook bans.
-    """
+def quiet_wake_sig(st_sig, fold, session_id, live_bg, bg_facts, bg_verdicts):
+    """Everything a wake could have changed, in one key.
+
+    st_sig carries item STRUCTURE, task statuses and HEAD. Added on top for
+    this session's OWN items: the update stamp AND the latest note. The stamp
+    alone is not enough and the suite caught it -- stamps are second
+    resolution, so an --update landing in the same second as the lease it
+    follows moves nothing, and a session doing exactly what the liveness
+    ladder asks of it read as silent. The note is content, so it moves
+    whenever the session actually said something new.
+
+    The worker half is the OUTPUT SIZE rather than the stream's mtime-age
+    (which advances on its own and would reset the streak every stop by simply
+    existing), plus the live id set, plus each worker's OS-liveness verdict.
+    The verdict is in here because it is the one thing about a background wait
+    that can change while every byte on disk stays identical: a worker that
+    was confirmed alive and is now suspect must never be silenced by a streak
+    counter."""
+    rows = sorted(
+        "%s:%s:%s" % (tid, "?" if size is None else size, bg_verdicts.get(tid, "?"))
+        for tid, _desc, _age, size, _stale in bg_facts
+    )
+    ids = ",".join(sorted(str(b.get("id") or "") for b in live_bg))
+    try:
+        own = ";".join(
+            "%s:%s:%s:%s" % (
+                r["id"], r["state"], r.get("upd") or "",
+                hashlib.sha1(
+                    str(r.get("lastnote") or "").encode("utf-8", "replace")
+                ).hexdigest()[:8],
+            )
+            for r in sorted(fold.items, key=lambda x: x["id"])
+            if C.owned_by_me(r.get("owner"), session_id)
+        )
+    except Exception:  # noqa: BLE001 -- an unreadable store must not wedge a stop
+        own = "unreadable"
+    return hashlib.sha1(
+        ("%s|%s|%s|%s" % (st_sig, own, ids, ";".join(rows))).encode("utf-8", "replace")
+    ).hexdigest()[:16]
+
+
+def quiet_wake_bump(state_doc, sig, quiet):
+    """The consecutive-no-op-wake counter, and it persists in the per-session
+    state doc so it survives the process, a restart and a compaction. Any real
+    event -- a changed signature or a stop that had something to say -- resets
+    it to zero, so the streak can only ever describe consecutive silence."""
+    q = state_doc.setdefault("quietwake", {})
+    if not quiet:
+        q["n"], q["sig"] = 0, sig
+    elif q.get("sig") != sig:
+        q["n"], q["sig"] = 1, sig
+    else:
+        q["n"] = int(q.get("n") or 0) + 1
+    return int(q["n"])
+
+
+def quiet_wake_note(live_crons, streak):
+    """The ONE message a proven-quiet wake gets, or "" to fall through to the
+    normal report.
+
+    Empty when the poll cron is not a single recognisable rung: the cron-shape
+    checks own that case, and collapsing the report to a reschedule
+    instruction the session cannot act on would hide the real output and offer
+    nothing back."""
+    polls = [c for c in live_crons if is_poll_cron(c)]
+    if len(polls) != 1:
+        return ""
+    sched = " ".join(str(polls[0].get("schedule", "")).split())
+    rungs = [s for _, s in POLL_BACKOFF_LADDER]
+    if sched not in rungs:
+        return ""
+    i = rungs.index(sched)
+    cur_min = POLL_BACKOFF_LADDER[i][0]
+    if i + 1 >= len(POLL_BACKOFF_LADDER):
+        return M.N_QUIET_WAKE_CAPPED % (streak, cur_min)
+    nxt_min, nxt = POLL_BACKOFF_LADDER[i + 1]
+    return M.N_QUIET_WAKE % (streak, cur_min, sched, nxt, nxt_min)
+
+
+def broken_schedules(event, now=None):
+    """The scheduled tasks whose schedule this hook cannot parse, as
+    "<schedule> -- <label>" rows. Empty when every schedule is readable.
+
+    THIS IS WHAT SURVIVES the v18 deletion of the NEXT WAKEUPS section
+    (operator, 2026-08-04: "we don't need to print next wakeup times. We
+    should just track the hook moments and notify/warn when needed. let's go
+    for efficient ai context usage"). The section printed every task's next
+    firing on every single stop, which is context spent on a fact nobody acts
+    on -- the schedules are in the harness, and a session that wants them can
+    read them there.
+
+    One line of it WAS actionable and does not survive deletion on its own: a
+    schedule the hook cannot parse. That task will never be reasoned about by
+    the cron-shape checks, the backoff ladder or the loop-death detector, and
+    a list that silently omitted it would read as "nothing else is scheduled"
+    -- the pass-quietly failure this hook bans. So the timing display is gone
+    and the warning stays, which is exactly the trade the instruction asks
+    for: silent when there is nothing to act on, one focused message when
+    there is."""
     rows = []
     for c in event.get("session_crons") or []:
         sched = str(c.get("schedule", ""))
+        if C.cron_next(sched, now) is not None:
+            continue
         stripped_prompt = str(c.get("prompt", "")).strip()
         label = stripped_prompt.splitlines()[0][:90] if stripped_prompt else "(no prompt)"
-        nxt = C.cron_next(sched, now)
-        if nxt is None:
-            rows.append((None, "  ?? unparseable schedule %r -- %s" % (sched, label)))
-            continue
-        delta = int((nxt - (now or C.utcnow())).total_seconds() // 60)
-        rows.append((nxt, "  in %3dm at %s  (%s)  %s"
-                     % (delta, nxt.strftime("%H:%MZ"), sched, label)))
-    rows.sort(key=lambda r: (r[0] is None, r[0]))
-    return [r[1] for r in rows]
+        rows.append("    %r -- %s" % (sched, label))
+    return rows
 
 
 def is_poll_cron(c):
@@ -776,14 +872,17 @@ def poll_fast_path(worklist, session_id, event):
     except (OSError, ValueError, KeyError, TypeError):
         return False
     root = C.project_root(event.get("cwd") or os.getcwd())
-    if S.world_sig(root, worklist, session_id) != base_sig:
+    # The fold is loaded BEFORE the signature check since v17, because the
+    # signature is now derived from this session's items rather than from the
+    # shared files' bytes; passing it here keeps the store parsed once.
+    fold = S.load(worklist, sync=False)
+    if S.world_sig(root, worklist, session_id, fold=fold) != base_sig:
         return False  # tracked work happened since the last full stop
     crons = event.get("session_crons") or []
     if len([c for c in crons if is_poll_cron(c)]) != 1:
         return False
     if len([c for c in crons if not is_poll_cron(c)]) > 1:
         return False
-    fold = S.load(worklist, sync=False)
     state_doc = S.load_state(worklist, session_id)
     live_bg = [
         b for b in (event.get("background_tasks") or []) if b.get("status") == "running"
@@ -1121,7 +1220,20 @@ def handle_session_start(event):
     # FIRST statement, not last: the design-docs/plans blocks below return
     # early when a project has neither, and such a project would otherwise
     # never be marked.
-    mark_context_fresh(event, "session-start")
+    source = str(event.get("source") or "").strip().lower()
+    mark_context_fresh(event, "session-start:" + (source or "unknown"))
+    # COMPACT IS NOT A NEW SESSION. Claude Code fires SessionStart with
+    # source=compact on every compaction, on TOP of the PostCompact hook, and
+    # this handler used to ignore the source entirely: a session working on
+    # something else got "READ ALL OF THEM before acting" pointed at the
+    # standing program docs, mid-task, as if it had just started. It is also
+    # a straight duplicate -- handle_post_compact already re-points at
+    # DESIGN_DOCS and already hands back the branch's plans, plus STATE.md,
+    # RULES.md and the trap titles, which is the briefing a compacted session
+    # actually needs. So compaction is handled in exactly one place: mark the
+    # context fresh (the judge stamp depends on it) and say nothing here.
+    if source == "compact":
+        return
     # TWO INDEPENDENT BLOCKS, and the structure is the point. This used to
     # RETURN EARLY when the design-docs directory was absent, which meant a
     # project keeping plans but no docs/ci-overhaul got nothing at all: the
@@ -1144,9 +1256,11 @@ def handle_session_start(event):
             if state != "drifted"
             else M.CTX_SESSION_START_STALE % (drift, " ".join(PROGRAM_SURFACE))
         )
-        blocks.append(M.CTX_SESSION_START % (DESIGN_DOCS, listing, stale))
+        blocks.append(
+            M.CTX_SESSION_START % (" ".join(PROGRAM_SURFACE), DESIGN_DOCS, listing, stale)
+        )
         summary.append(
-            "%d design doc(s) in %s%s"
+            "%d standing program doc(s) in %s%s"
             % (
                 len(files),
                 DESIGN_DOCS,
@@ -1473,7 +1587,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # The world signature is computed ONCE, after every shared-state write of
     # this stop (sync, cleanup, escalation), and reused by the STATE.md check,
     # the poll baseline and the judge cache, so all three describe one world.
-    cur_sig = S.world_sig(root, worklist, session_id)
+    cur_sig = S.world_sig(root, worklist, session_id, fold=fold)
     # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a
     # session's own bookkeeping (lease renewals, update notes) does not stale
     # the document it just refreshed. Polls and the judge keep cur_sig.
@@ -1521,7 +1635,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # because file growth is evidence no self-report can fake. Latched on
     # fire, so the check-in costs one focused block per window, never a
     # drumbeat.
-    bg_facts, bgwait_due = [], False
+    bg_facts, bgwait_due, bgwait_prev, bgwait_next = [], False, "", ""
+    bg_verdicts = {}
+    _in_pure_wait = False
     if live_bg and not open_items:
         _expired_any = any(
             C.DEFAULT_TOKEN.search(r["line"])
@@ -1529,22 +1645,45 @@ def run_stop(event, event_ok, worklist, hook_file):
             for r in deferred_recs
         )
         if not _expired_any:
+            _in_pure_wait = True
             try:
                 bg_facts = wl_liveness.bg_output_facts(
                     event.get("cwd"), session_id, live_bg
                 )
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
                 bg_facts = []
-            _last = (state_doc.get("bgwait") or {}).get("at", "")
+            try:
+                # Read on EVERY pure-wait stop since v17, not only when the
+                # check-in is due: the no-op ladder keys on it, and a worker
+                # dying is the one change a byte-level view cannot see.
+                bg_verdicts = wl_liveness.verify_background(live_bg)
+            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+                bg_verdicts = {}
+            _bgw = state_doc.get("bgwait") or {}
+            _last = _bgw.get("at", "")
             _age = C.stamp_age_min(_last)
+            bgwait_prev = _bgw.get("fired", "")
             if _age is None:
                 # First sight of the wait state SEEDS the clock silently: the
                 # check-in is "you have been waiting 15 minutes, report",
                 # never "you started waiting, report".
-                state_doc["bgwait"] = {"at": C.stamp_now()}
+                _bgw["at"] = C.stamp_now()
+                state_doc["bgwait"] = _bgw
             elif _age >= wl_liveness.BG_REPORT_MIN:
                 bgwait_due = True
-                state_doc["bgwait"] = {"at": C.stamp_now()}
+                _bgw["at"] = C.stamp_now()
+                state_doc["bgwait"] = _bgw
+            bgwait_next = C.stamp_ahead(wl_liveness.BG_REPORT_MIN)
+    if not _in_pure_wait:
+        # v17 THE LATCH RESET, and it is a fix not a tidy-up. The clock was
+        # only ever WRITTEN inside the wait state, so leaving it (an open item
+        # appears, a deferral expires, the workers finish) froze the stamp.
+        # Re-entering a wait an hour later then found _age >= 15 on the FIRST
+        # stop back and fired the check-in immediately -- precisely the "you
+        # started waiting, report" behaviour the seed above exists to prevent,
+        # and the reason a session that flickers in and out of waiting saw the
+        # roster demand over and over. Dropping the key re-seeds it silently.
+        state_doc.pop("bgwait", None)
 
     # STUCK DETECTION. Runs before the others so the count advances on every
     # stop, including the ones where something else already fired: a session
@@ -1640,16 +1779,34 @@ def run_stop(event, event_ok, worklist, hook_file):
         guide = "WORKLIST GUIDE unavailable (hook bug, fix wl_checks.guided_slice): %s" % (
             str(exc)[:160]
         )
-    # The CALL MOMENTS ride the guide so they reach every full stop, allow and
-    # block alike: the guide is the one string both emit paths carry. Computed
-    # from the event's own cron expansion (schedule + prompt), never from the
-    # declared .loop sidecar, whose stamped next-fire goes stale on write.
-    try:
-        wk = wakeup_lines(event)
-        if wk:
-            guide += "\n\n" + M.N_WAKEUPS % "\n".join(wk)
-    except Exception:  # noqa: BLE001 -- an advisory section must never wedge a stop
-        pass
+    # v18: AN EMPTY GUIDE IS NOT INFORMATION. "no actionable items in the
+    # store" was a deliberate v11 choice -- "a short honest line, never
+    # ambiguous silence" -- and the operator has now overruled it on the same
+    # breath as the wakeup section ("silent when there is nothing to act on...
+    # efficient ai context usage"), quoting a stop whose entire output was this
+    # line followed by the wakeup times. The ambiguity argument has also aged
+    # out: the poll fast path already exits with zero bytes many times an hour,
+    # so silence is the session's normal signal for "nothing to do" rather than
+    # something it has to guess about. The line is dropped from every emit
+    # path; a guide with real rows, and the unavailable-guide bug report, are
+    # both untouched.
+    guide_empty = guide == M.GUIDE_EMPTY
+    if guide_empty:
+        guide = ""
+    # Every block path appends the guide as a trailing section; this keeps the
+    # separator with the content, so a suppressed guide leaves no blank tail.
+    guide_tail = "" if guide_empty else "\n\n" + guide
+    # THE NEXT WAKEUPS SECTION USED TO RIDE THE GUIDE HERE, and it is deleted
+    # rather than shortened (operator, 2026-08-04: "we don't need to print next
+    # wakeup times. We should just track the hook moments and notify/warn when
+    # needed. let's go for efficient ai context usage"). It printed every
+    # scheduled task's next firing and prompt label on EVERY full stop, which
+    # is a recurring context cost for a fact that is already in the harness and
+    # that no reader ever had to act on. The schedules are still tracked -- the
+    # cron-shape checks, the poll backoff ladder, the loop-death detector and
+    # the judge's loop line all read session_crons directly -- and the one
+    # genuinely actionable thing the section carried is now its own warning
+    # (broken_schedules, below), which is silent when there is nothing wrong.
 
     # ---- v13: keyed, tiered violations (operator, 2026-07-31: "single and
     # focused message at a time"). Each entry is (key, always, text). `always`
@@ -1669,10 +1826,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # worker whose process is confirmed alive is reported in those
         # words. Fired live 2026-07-31 on a healthy `until ... completed`
         # CI watch, 29 minutes silent by design.
-        try:
-            _bg_verd = wl_liveness.verify_background(live_bg)
-        except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
-            _bg_verd = {}
+        _bg_verd = bg_verdicts
         _rows = []
         for tid, desc, age, size, stale in bg_facts:
             if age is None:
@@ -1692,7 +1846,10 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "    %s (%s): output last grew %dm ago, %d bytes%s"
                     % (tid, desc, age, size, _suffix)
                 )
-        vadd("bg-report", True, M.V_BG_REPORT % (len(live_bg), "\n".join(_rows)))
+        vadd("bg-report", True, M.V_BG_REPORT % (
+            bgwait_prev or "never (this is the first one of this wait)",
+            bgwait_next, wl_liveness.BG_REPORT_MIN, len(live_bg), "\n".join(_rows),
+        ))
     if stuck_fired and something_remains:
         # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
         # status AND HEAD did not advance" for every tier, which is FALSE for
@@ -2044,6 +2201,17 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     if len(live_poll_crons) > 1:
         vadd('many-poll-crons', False,M.V_MANY_POLL_CRONS % len(live_poll_crons))
+    # v18: the surviving half of the deleted NEXT WAKEUPS section. A schedule
+    # this hook cannot parse is invisible to every check above -- it is neither
+    # a poll cron nor a countable work cron -- so it must be said out loud
+    # rather than left implicit in a list nobody prints any more.
+    try:
+        _broken_scheds = broken_schedules(event)
+    except Exception:  # noqa: BLE001 -- a shape check must never wedge a stop
+        _broken_scheds = []
+    if _broken_scheds:
+        vadd('broken-schedule', False,
+             M.V_BROKEN_SCHEDULE % (len(_broken_scheds), "\n".join(_broken_scheds)))
     # A "blocked on you" claim the operator never confirmed is a guess about
     # someone else's intent, and it is how work parks itself indefinitely. The
     # confirmed form carries the operator's own words back.
@@ -2225,6 +2393,49 @@ def run_stop(event, event_ok, worklist, hook_file):
     ):
         vadd('no-remaining', False, M.V_NO_REMAINING % "\n".join("    " + r for r in remaining_lines[:12]))
 
+    # ---- v17 THE NO-OP WAKE LADDER. Placed HERE, after the whole battery has
+    # run and before anything is emitted, because "nothing changed" is only
+    # provable once every check has had its say: the streak advances on a wake
+    # where the ONLY thing the hook had to offer was the background check-in,
+    # and the signature says even that had no new bytes behind it.
+    #
+    # WHAT IS NEVER SUPPRESSED: every other violation key. An open item, a
+    # missing evidence tick, an expired deferral, a stuck-rounds block, a
+    # hook-integrity failure -- any one of them makes the wake not quiet, so
+    # this branch is not reached and the normal battery blocks as before. Only
+    # the ADVISORY layer stands down: the worker roster, the guide, the judge
+    # stamp and the queued report sections.
+    quiet_note = ""
+    if _in_pure_wait:
+        _other = [v for v in violations if v[0] != "bg-report"]
+        _qsig = quiet_wake_sig(st_sig, fold, session_id, live_bg, bg_facts, bg_verdicts)
+        _streak = quiet_wake_bump(state_doc, _qsig, not _other)
+        if not _other and _streak >= QUIET_WAKES_TO_RESCHEDULE:
+            quiet_note = quiet_wake_note(live_crons, _streak)
+    else:
+        state_doc.pop("quietwake", None)
+    # Saved EAGERLY. The counter is bookkeeping that must survive every exit
+    # below, and one of them (the WORKLIST_FOCUS=off block) emits without
+    # saving at all -- exactly the shape that made the output queue lose
+    # latched sections before it was moved to compute-time persistence.
+    S.save_state(worklist, session_id, state_doc)
+    if quiet_note:
+        # The only violation that can be outstanding here is the check-in, and
+        # it is STOOD DOWN rather than delivered: this emit replaces the block
+        # entirely. Its window is deliberately not marked as fired, so the
+        # "last delivered" stamp the roster prints stays true and the next
+        # genuinely eventful stop still owes it.
+        bank_pollbase(worklist, session_id, cur_sig)
+        counter.unlink(missing_ok=True)
+        S.save_state(worklist, session_id, state_doc)
+        C.emit({"systemMessage": quiet_note})
+    if bgwait_due:
+        # Delivered for real (this stop emits it either way below), so the
+        # stamp the next check-in prints is banked here and saved eagerly:
+        # the WORKLIST_FOCUS=off block path emits without saving.
+        state_doc.setdefault("bgwait", {})["fired"] = C.stamp_now()
+        S.save_state(worklist, session_id, state_doc)
+
     if violations:
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
         # Bank BEFORE emitting, because emit() exits the process and this is
@@ -2260,14 +2471,15 @@ def run_stop(event, event_ok, worklist, hook_file):
                         hook_file,
                     )
                     + extras
-                    + "\n\n" + guide,
+                    + guide_tail,
                 }
             )
         # ---- v13 FOCUSED BLOCK (default). One rotating check per stop, the
         # ALWAYS tier in full when present, everything else a bare count. The
-        # guide and wakeups deliberately do NOT ride blocks any more (operator,
-        # 2026-07-31, superseding the v11 every-full-stop mandate): they still
-        # lead every allow stop, and the one check that needs store data
+        # guide deliberately does NOT ride blocks any more (operator,
+        # 2026-07-31, superseding the v11 every-full-stop mandate); the wakeup
+        # section that used to ride beside it is gone entirely as of v18. The
+        # guide still leads every allow stop, and the one check that needs store data
         # (no-remaining) carries its own slice inside its text. Rotation is
         # LRU over check KEYS: prune what is no longer outstanding, serve the
         # least-recently-served, break ties by the battery's own order (which
@@ -2447,7 +2659,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "no-escape-hatch." % err[:110],
                     "decision": "block",
                     "reason": M.R_JUDGE_UNAVAILABLE % (err, hook_file, wl_judge.JUDGE_MODEL)
-                    + "\n\n" + guide,
+                    + guide_tail,
                 }
             )
         # v7: the regression verdict is processed BEFORE the stop/continue
@@ -2468,7 +2680,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "no-escape-hatch.",
                         "decision": "block",
                         "reason": M.R_REGGATE_MALFORMED % (payload, hook_file)
-                        + "\n\n" + guide,
+                        + guide_tail,
                     }
                 )
             if kind == "settle":
@@ -2500,7 +2712,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "systemMessage": "Stop hook: a fix landed with no "
                         "regression gate (fix-set %s). Blocking." % reg_sig[:8],
                         "decision": "block",
-                        "reason": payload + "\n\n" + guide,
+                        "reason": payload + guide_tail,
                     }
                 )
         # v12: the audit verdicts are processed BEFORE stop/continue, same
@@ -2521,7 +2733,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         "decision": "block",
                         "reason": M.R_AUDIT_MALFORMED
                         % (repr(verdict.get("defer_audit"))[:200], hook_file)
-                        + "\n\n" + guide,
+                        + guide_tail,
                     }
                 )
             for rid, stamp, reason in avalids:
@@ -2570,7 +2782,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                             ),
                             me8,
                         )
-                        + "\n\n" + guide,
+                        + guide_tail,
                     }
                 )
         judged_ok = verdict["verdict"] == "stop"
@@ -2587,7 +2799,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         verdict["next_action"],
                         "\n".join("  " + r for r in remaining_lines[:12]),
                     )
-                    + "\n\n" + guide,
+                    + guide_tail,
                 }
             )
         if judged_ok and not judge_cached and not reg_signals:
@@ -2601,8 +2813,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     # because poll_fast_path exits before reaching here.
     bank_pollbase(worklist, session_id, cur_sig)
     # The guide LEADS the allow report: it is the thing the session copies
-    # into its Remaining section, so it comes before everything else.
-    parts = [guide]
+    # into its Remaining section, so it comes before everything else. Absent
+    # entirely when it had no rows (v18), which is what lets a clean stop with
+    # nothing queued emit zero bytes.
+    parts = [] if guide_empty else [guide]
     if judged_ok:
         # NEVER QUEUED, deliberately: this line exists so a paid model call can
         # never be invisible, and the operator requires a context-fresh session
@@ -2698,9 +2912,16 @@ def run_stop(event, event_ok, worklist, hook_file):
     parts.extend(texts)
     if remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
-    # No `if parts:` guard: parts always holds the guide, so it was never
-    # false. outq_drain persisted the queue already; this save carries the
-    # judge-line marker pop and any late state mutation, and one redundant
-    # atomic write is cheaper than reasoning about which came last.
+    # outq_drain persisted the queue already; this save carries the judge-line
+    # marker pop and any late state mutation, and one redundant atomic write is
+    # cheaper than reasoning about which came last. It happens BEFORE the exit
+    # below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
+    if not parts:
+        # v18: nothing actionable, nothing queued, no judge line to show. This
+        # used to be impossible (the guide was unconditional) and is now the
+        # common shape of a clean stop, so it exits the way the poll fast path
+        # does: zero bytes, exit 0. Everything above still ran and still
+        # persisted -- the silence is the report, not a skipped battery.
+        raise SystemExit(0)
     C.emit({"systemMessage": "\n\n".join(parts)})

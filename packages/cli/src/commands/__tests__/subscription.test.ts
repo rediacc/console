@@ -21,6 +21,7 @@ const {
   mockOutputInfo,
   mockOutputWarn,
   mockOutputSuccess,
+  mockOutputError,
   mockWithSpinner,
   mockReadAccountPointer,
   mockDiscoverRegions,
@@ -51,6 +52,7 @@ const {
   mockOutputInfo: vi.fn(),
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
+  mockOutputError: vi.fn(),
   mockWithSpinner: vi.fn(),
   mockReadAccountPointer: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
   mockDiscoverRegions: vi.fn(),
@@ -117,6 +119,7 @@ vi.mock('../../services/core/output.js', () => ({
     info: mockOutputInfo,
     warn: mockOutputWarn,
     success: mockOutputSuccess,
+    error: mockOutputError,
   },
 }));
 
@@ -325,6 +328,93 @@ describe('subscription command helpers', () => {
     );
     // The account view is a different scope: no -m means no machine report.
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
+  });
+
+  it('status -m shouts about a blocked backup instead of listing it as another row', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-blocked',
+        status: 'expired',
+        runtimeValid: false,
+        installed: true,
+        blockedBackup: {
+          repositoryGuid: 'repo-blocked',
+          code: 'LICENSE_REQUIRED',
+          reason: 'expired',
+          message: 'the installed license expired',
+          at: '2026-08-01T03:00:00Z',
+          source: 'backup_gate',
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    // Error-styled, not info: a machine whose scheduled backups have silently
+    // stopped copying data is the one line in this table nobody is watching for.
+    expect(mockOutputError).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.blockedBackup:repo-blocked:2026-08-01T03:00:00Z:expired:the installed license expired'
+    );
+    expect(mockOutputError).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.blockedBackupRemedy:hostinger'
+    );
+  });
+
+  it('status -m warns on a refused renewal and leads with the server’s code', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-refused',
+        status: 'valid',
+        runtimeValid: true,
+        installed: true,
+        lastRenewal: {
+          repositoryGuid: 'repo-refused',
+          keyId: 'fc6a12b178711e65',
+          outcome: 'refused',
+          code: 'SUBSCRIPTION_LAPSED',
+          message: 'the subscription is no longer active',
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    // A refused renewal means this licence is no longer being kept alive, so it
+    // is a warning; the code leads because it is what the operator acts on.
+    expect(mockOutputWarn).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.lastRenewal:refused: (SUBSCRIPTION_LAPSED: the subscription is no longer active)'
+    );
+  });
+
+  it('status -m reports a healthy renewal as information, with its sequence', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-ok',
+        status: 'valid',
+        runtimeValid: true,
+        installed: true,
+        datastoreId: '7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f',
+        lastRenewal: {
+          repositoryGuid: 'repo-ok',
+          keyId: 'fc6a12b178711e65',
+          outcome: 'renewed',
+          newSequence: 42,
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.lastRenewal:renewed: (seq 42)'
+    );
+    expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('lastRenewal'));
+    // The datastore a licence is scoped to rides on the entry line.
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'commands.subscription.repo.status.datastoreSuffix:7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f'
+      )
+    );
   });
 
   it('status -m still renders the repo table when the activation lookup fails', async () => {

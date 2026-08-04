@@ -107,7 +107,9 @@ describe('license sharedSftp plumb-through', () => {
     expect(spies.close).not.toHaveBeenCalled();
     // The license write inside issueRepoLicense ran on the same shared instance.
     expect(spies.execStreaming).toHaveBeenCalledTimes(1);
-    expect(spies.exec).toHaveBeenCalledWith(expect.stringContaining('luksUUID'));
+    // Identity proofs come from renet's own licence scan, not from a `stat` of
+    // ours: storageFingerprint is a signed field whose bytes renet re-derives.
+    expect(spies.exec).toHaveBeenCalledWith(expect.stringContaining('license-scan'));
     expect(spies.exec).toHaveBeenCalledWith(expect.stringContaining('machine-id'));
   });
 
@@ -128,6 +130,99 @@ describe('license sharedSftp plumb-through', () => {
     expect(mockConnect).toHaveBeenCalledTimes(1);
     expect(mockClose).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).toHaveBeenCalledTimes(1);
+  });
+
+  // The identity refresh re-issues a repo licence WITH proofs, and it reads the
+  // datastore identity out of renet's own licence scan — the right source,
+  // because the scan reads where the repo actually lives. But the scan can come
+  // back empty (an older renet, a datastore it could not read), and dropping to
+  // "no identity" there writes the PROVEN reissue to the unscoped path that
+  // renet does not read for a datastore-resident repo. That undoes the
+  // pre-issuance scoping one step later, so the caller's resolved identity
+  // stands in as a fallback.
+  describe('datastore identity on the identity refresh', () => {
+    const DS_ID = '06a4f728-4c53-4b0e-9f61-2f0a1d3e5c77';
+    const SCANNED_DS_ID = '11111111-2222-4333-8444-555555555555';
+
+    function lastIssuanceBody(): { datastoreId?: string } {
+      const call = mockAccountServerFetch.mock.calls.at(-1) as [
+        string,
+        { body: { datastoreId?: string } },
+      ];
+      return call[1].body;
+    }
+
+    beforeEach(() => {
+      mockAccountServerFetch.mockResolvedValue({
+        license: { payload: 'a', signature: 'b', publicKeyId: 'fc6a12b178711e65' },
+      });
+    });
+
+    it("falls back to the caller's identity when the scan cannot answer", async () => {
+      const { sftp, spies } = createSharedSftp();
+
+      const result = await refreshRepoLicenseIdentity(
+        machine,
+        'dummy-key',
+        { repositoryGuid: REPO_GUID, kind: 'grand', requestedSizeGb: 5, datastoreId: DS_ID },
+        '/usr/bin/renet',
+        sftp
+      );
+
+      expect(result).toBe(true);
+      expect(lastIssuanceBody().datastoreId).toBe(DS_ID);
+      expect(spies.exec).toHaveBeenCalledWith(
+        expect.stringContaining(`/var/lib/rediacc/license/datastores/${DS_ID}/repos/${REPO_GUID}`)
+      );
+    });
+
+    it('prefers what the scan saw, because it read the repo where it actually lives', async () => {
+      const { sftp, spies } = createSharedSftp();
+      spies.exec.mockImplementation((command: string) => {
+        if (command.includes('machine-id')) return Promise.resolve(`${MACHINE_ID}\n`);
+        if (command.includes('license-scan')) {
+          return Promise.resolve(
+            JSON.stringify([
+              { repositoryGuid: REPO_GUID, datastoreId: SCANNED_DS_ID, requestedSizeGb: 5 },
+            ])
+          );
+        }
+        return Promise.resolve('');
+      });
+
+      await refreshRepoLicenseIdentity(
+        machine,
+        'dummy-key',
+        { repositoryGuid: REPO_GUID, kind: 'grand', requestedSizeGb: 5, datastoreId: DS_ID },
+        '/usr/bin/renet',
+        sftp
+      );
+
+      expect(lastIssuanceBody().datastoreId).toBe(SCANNED_DS_ID);
+      expect(spies.exec).toHaveBeenCalledWith(
+        expect.stringContaining(
+          `/var/lib/rediacc/license/datastores/${SCANNED_DS_ID}/repos/${REPO_GUID}`
+        )
+      );
+    });
+
+    it('stays on the legacy unscoped path when neither side names a datastore', async () => {
+      const { sftp, spies } = createSharedSftp();
+
+      await refreshRepoLicenseIdentity(
+        machine,
+        'dummy-key',
+        { repositoryGuid: REPO_GUID, kind: 'grand', requestedSizeGb: 5 },
+        '/usr/bin/renet',
+        sftp
+      );
+
+      expect(lastIssuanceBody().datastoreId).toBeUndefined();
+      expect(spies.exec).toHaveBeenCalledWith(
+        expect.stringContaining(`/var/lib/rediacc/license/repos/${REPO_GUID}`)
+      );
+      expect(spies.exec).not.toHaveBeenCalledWith(expect.stringContaining('license/datastores/'));
+    });
   });
 
   it('readMachineActivationStatus prefers the provided sharedSftp and leaves its lifecycle alone', async () => {

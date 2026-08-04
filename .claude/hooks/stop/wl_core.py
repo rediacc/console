@@ -85,6 +85,16 @@ def stamp_now():
     return utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def stamp_ahead(minutes):
+    """An ISO8601Z stamp `minutes` from now. Used where a message promises a
+    bound (the background check-in's next-earliest time): a claimed latch a
+    reader cannot check from the message alone is not a latch, it is a
+    slogan."""
+    return (utcnow() + datetime.timedelta(minutes=minutes)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+
 def parse_stamp(stamp):
     """datetime or None from an ISO8601Z stamp (seconds optional)."""
     for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ"):

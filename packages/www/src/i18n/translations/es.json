@@ -2671,6 +2671,10 @@
           {
             "answer": "Si cancelas durante la prueba de 14 días, nunca te cobrarán. Si cancelas un plan de pago después, mantienes sus funciones hasta el final del período de facturación, luego tu cuenta vuelve al plan Community gratuito. Tus repositorios seguirán funcionando todo el tiempo.",
             "question": "¿Qué pasa si cancelo?"
+          },
+          {
+            "answer": "Cada nodo de un clúster es una máquina, y cada una cuenta como una máquina. No hay una asignación compartida para el clúster ni descuento por agrupar servidores. Un nodo solo ocupa un puesto cuando se despliega un repositorio en él, así que crear el clúster en sí no cuesta nada. El clustering se vende a través de nuestros socios como parte de un acuerdo Enterprise, y el número de nodos se acuerda al hacer el pedido.",
+            "question": "¿Cómo se cuentan los nodos de un clúster?"
           }
         ]
       },
@@ -14395,10 +14399,10 @@
           ],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuito) — Limitado a 2 activaciones de Máquina, funcionalidades básicas, soporte comunitario",
-            "<strong>Professional</strong> — Hasta 5 activaciones de Máquina, registro de auditoría, soporte prioritario, marca personalizada",
-            "<strong>Business</strong> — Hasta 20 activaciones de Máquina, almacenamiento distribuido, análisis avanzado, gestor de éxito dedicado",
-            "<strong>Enterprise</strong> — Hasta 50 activaciones de Máquina, infraestructura dedicada, integraciones personalizadas, soporte 24/7"
+            "<strong>Community</strong> (gratis): 1 activación de Máquina, funciones básicas, soporte comunitario. Este es el plan por defecto al que vuelve su cuenta tras finalizar una prueba o una Suscripción de pago.",
+            "<strong>Professional</strong>: 1 activación de Máquina, registro de auditoría, soporte prioritario, marca personalizada",
+            "<strong>Business</strong>: 1 activación de Máquina, almacenamiento distribuido, análisis avanzado, gestor de éxito dedicado",
+            "<strong>Enterprise</strong>: infraestructura dedicada, integraciones personalizadas, soporte 24/7 y un tope de activaciones de Máquina fijado en su pedido. Cuando no se negocia un tope, se aplican 25 activaciones de Máquina. Enterprise se vende a través de nuestros socios."
           ],
           "subsections": {
             "billing": {
@@ -14408,6 +14412,15 @@
                 "Nos reservamos el derecho de cambiar nuestros precios con treinta (30) días de aviso previo. Los cambios de precio no afectarán su ciclo de facturación actual. Si no está de acuerdo con un cambio de precio, puede cancelar su Suscripción antes del próximo ciclo de facturación."
               ],
               "title": "5.1 Billing"
+            },
+            "clusters": {
+              "content": [
+                "Un <strong>\"Clúster\"</strong> significa dos o más Máquinas que usted opera conjuntamente como un único conjunto de almacenamiento o computación mediante los Servicios. Un <strong>\"Nodo\"</strong> significa una Máquina que es miembro de un Clúster. Un Nodo es una Máquina para todos los efectos de estas Condiciones, y cada Nodo consume una activación de Máquina. Los Clústeres no se agrupan ni se descuentan: un Clúster de cinco Nodos consume cinco activaciones de Máquina.",
+                "Su <strong>tope de activaciones de Máquina</strong> es el número máximo de Máquinas que pueden mantener una activación al mismo tiempo. Se registra en su Suscripción y se rige por su pedido. Las cifras de nivel indicadas arriba son los valores por defecto estándar y no negociados; un tope acordado en un pedido o acuerdo de socio sustituye al valor por defecto para esa Suscripción. El clustering solo está disponible bajo acuerdos Enterprise y de socio.",
+                "Se consume una activación de Máquina cuando se crea, copia o coloca un Repositorio en una Máquina, y se libera automáticamente tras un período de inactividad. Construir infraestructura por sí sola, incluida la creación de un Clúster y la incorporación de Nodos a él, no consume ninguna activación.",
+                "Cuando todas las activaciones ya están en uso, Rediacc puede negarse a activar una Máquina adicional. Las Máquinas que ya mantienen una activación siguen funcionando y pueden renovar sus licencias existentes, y Rediacc puede registrar dichas renovaciones como un exceso sobre su tope. Rediacc puede contactarle para conciliar su Suscripción cuando un tope de activaciones de Máquina se supere de forma persistente."
+              ],
+              "title": "5.5 Activaciones de Máquina, clústeres y nodos"
             },
             "gracePeriod": {
               "content": [

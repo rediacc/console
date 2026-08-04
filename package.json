@@ -27,6 +27,7 @@
     "check:ci-compose-env": ".ci/scripts/quality/check-compose-env.sh",
     "check:ci-go-deps": ".ci/scripts/quality/check-go-deps.sh",
     "check:ci-renet-types": ".ci/scripts/quality/check-renet-types.sh",
+    "check:ci-renet-tiers": ".ci/scripts/quality/check-renet-tier-map.sh",
     "check:ci-app-admin-perm": ".ci/scripts/quality/check-no-app-admin-perm.sh",
     "check:ci-autopilot-workflow": ".ci/scripts/security/check-autopilot-workflow-invariants.sh",
     "check:ci-silent-failures": ".ci/scripts/quality/check-silent-failure-patterns.sh",
@@ -42,7 +43,8 @@
     "check:ci-i18n-placeholders": "tsx scripts/check-i18n-placeholders.ts",
     "check:ci-i18n-locale-only": "tsx scripts/check-locale-only-edits.ts",
     "check:ci-locale-sources": "tsx scripts/check-locale-sources.ts --selftest && tsx scripts/check-locale-sources.ts",
-    "check:ci-i18n-cross-locale": "tsx scripts/check-i18n-cross-locale.ts",
+    "check:ci-i18n-cross-locale": "tsx scripts/check-i18n-cross-locale.ts && npm run check:ci-locale-de-contamination",
+    "check:ci-locale-de-contamination": "tsx scripts/check-locale-de-contamination.ts",
     "check:ci-i18n-untranslated": "tsx scripts/check-i18n-untranslated.ts",
     "check:ci-i18n-command-parity": "tsx scripts/check-cli-docs.ts --locales-only",
     "check:ci-i18n-cli-key-usage": "tsx scripts/check-cli-i18n-key-usage.ts",
@@ -175,8 +177,8 @@
     "eslint-plugin-sonarjs": "^4.2.0",
     "eslint-plugin-unicorn": "^65.0.1",
     "glob": "^11.0.0",
-    "globals": "^17.8.0",
-    "knip": "^6.29.0",
+    "globals": "^17.9.0",
+    "knip": "^6.31.0",
     "lockfile-lint": "^5.0.0",
     "syncpack": "^15.3.2",
     "tsx": "^4.21.0",
@@ -218,8 +220,8 @@
       "js-yaml": "^3.15.0"
     },
     "linkify-it": ">=5.0.1",
-    "brace-expansion@^1.1.7": "1.1.16",
-    "brace-expansion@^5.0.5": "5.0.8"
+    "brace-expansion@^1.1.7": "1.1.18",
+    "brace-expansion@^5.0.5": "5.0.9"
   },
   "_overridesReasons": {
     "body-parser": "BLOCKER: force 2.3.0 to clear GHSA-v422-hmwv-36x6 (DoS via an invalid limit value that silently disables body-size enforcement; vulnerable >=2.0.0 <2.3.0 and <1.20.6). express@5 pulls body-parser ^2.2.1 which froze the lockfile at 2.2.2; 2.3.0 is the patched 2.x line and satisfies express's range. Advisory published after 2.3.0 (2026-06-15) had already aged past minimum-release-age, so this is a straight patched-version bump, not a deferral.",
@@ -247,7 +249,7 @@
     "js-yaml": "BLOCKER: force >=4.2.0 <5.0.0 to include GHSA-h67p-54hq-rp68 (quadratic-complexity DoS via repeated merge-key aliases) fix while staying off the v5 major; @astrojs/markdown-remark and astro transitively pull js-yaml@4.1.1, and @astrojs/markdown-remark's `import yaml from \"js-yaml\"` default import breaks under js-yaml 5.x's ESM-only export shape (observed as a hard `astro build` SyntaxError)",
     "gray-matter": "BLOCKER: nested override pins js-yaml ^3.15.0 inside the gray-matter chain since gray-matter's frontmatter parser is written against the js-yaml v3 API and cannot accept v4; GHSA-h67p-54hq-rp68 covers two disjoint ranges (>=4.0.0 <=4.1.1 AND <3.15.0), so the v3 line also needed bumping to its final 3.15.0 patch release",
     "linkify-it": "BLOCKER: force >=5.0.1 to include GHSA-22p9-wv53-3rq4 (quadratic-complexity DoS in LinkifyIt#match) fix; markdown-it (via @marp-team/marpit) transitively pulls linkify-it@5.0.0",
-    "brace-expansion@^1.1.7": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp (DoS via exponential-time expansion of consecutive non-expanding {} groups; vulnerable <1.1.16 || >=3.0.0 <5.0.7) for the six eslint/minimatch@3 edges that request ^1.1.7. Pin to 1.1.16 (the patched 1.x) rather than blanket-bumping to v5: brace-expansion v5 became ESM-only and its CommonJS build changed from `module.exports = expand` to a NAMED export `{ expand, EXPANSION_MAX }`, so minimatch@3's `var expand = require('brace-expansion'); expand(pattern)` throws 'expand is not a function' and eslint crashes. 1.1.16 keeps the callable default export and is out of the vulnerable range.",
-    "brace-expansion@^5.0.5": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp and GHSA-mh99-v99m-4gvg (unbounded expansion LENGTH — expand() caps the result count but not each result's size, so chained brace groups OOM the process; vulnerable <=5.0.7, patched 5.0.8) for the single top-level minimatch@10 edge that requests ^5.0.5. This consumer expects the v5 named-export API, so it stays on the v5 line — kept separate from the ^1.1.7 override above so neither consumer is forced across brace-expansion's v4->v5 export-shape break."
+    "brace-expansion@^1.1.7": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp (DoS via exponential-time expansion of consecutive non-expanding {} groups; vulnerable <1.1.16 || >=3.0.0 <5.0.7) for the six eslint/minimatch@3 edges that request ^1.1.7. Pin to 1.1.18 (the patched 1.x, raised from 1.1.16 for GHSA-rgw5-rvv9-x895: the CVE-2026-14257 maxLength mitigation was incomplete, intermediate arrays stayed unbounded) rather than blanket-bumping to v5: brace-expansion v5 became ESM-only and its CommonJS build changed from `module.exports = expand` to a NAMED export `{ expand, EXPANSION_MAX }`, so minimatch@3's `var expand = require('brace-expansion'); expand(pattern)` throws 'expand is not a function' and eslint crashes. 1.1.16 keeps the callable default export and is out of the vulnerable range.",
+    "brace-expansion@^5.0.5": "BLOCKER: clear GHSA-3jxr-9vmj-r5cp and GHSA-mh99-v99m-4gvg (unbounded expansion LENGTH — expand() caps the result count but not each result's size, so chained brace groups OOM the process; vulnerable <=5.0.7, patched 5.0.8) plus GHSA-rgw5-rvv9-x895 (the 5.0.8 maxLength mitigation was incomplete, intermediate arrays stayed unbounded; completed in 5.0.9) for the single top-level minimatch@10 edge that requests ^5.0.5. This consumer expects the v5 named-export API, so it stays on the v5 line — kept separate from the ^1.1.7 override above so neither consumer is forced across brace-expansion's v4->v5 export-shape break."
   }
 }

@@ -16,6 +16,9 @@ const mockRemoveRepository = vi.hoisted(() => vi.fn());
 const mockGetLocalMachine = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ ip: '127.0.0.1', user: 'root' })
 );
+// The recorded-placement read (#74): repo-executor's recordedDatastoreMount
+// resolves the parent's datastore from the whole config, not from the repo row.
+const mockGetCurrent = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -24,6 +27,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
     allocateNetworkId: mockAllocateNetworkId,
     removeRepository: mockRemoveRepository,
     getLocalMachine: mockGetLocalMachine,
+    getCurrent: mockGetCurrent,
+    ensureRepositoryNetworkId: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -114,6 +119,8 @@ beforeEach(() => {
     Promise.resolve(ref === 'app' ? PARENT : undefined)
   );
   mockExecute.mockResolvedValue({ success: true, allSteps: [], steps: [] });
+  // Default: the parent lives on the machine's implicit default datastore.
+  mockGetCurrent.mockResolvedValue({ resources: { repositories: { app: {} } } });
   mockRefreshIdentityFor.mockResolvedValue(undefined);
   mockEnsureDns.mockResolvedValue('example.com');
   mockAcquire.mockResolvedValue({
@@ -312,6 +319,77 @@ describe('repo fork — orchestration', () => {
     expect(mockRefreshIdentityFor).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
     expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── #74 on the fork verb ────────────────────────────────────────────────────
+//
+// renet resolves a repo's datastore from the MACHINE VAULT (`p.Datastore()` ->
+// `AddDatastore`, private/renet/pkg/functions/commands/repository.go), never
+// from the params bag, and `renet repository fork` looks for the PARENT image
+// under exactly that `--datastore` path
+// (private/renet/cmd/renet/repository_fork.go). `executeRepoFunction` learned
+// to declare it for up/down/status/validate/ownership/template; fork never did,
+// because it drives the executor directly instead of going through that helper.
+// So a fork of a repo living in a named datastore hunted for its parent on the
+// machine's default docker datastore, where the parent has never been.
+//
+// These assert on what reaches the EXECUTOR, which is the only channel renet
+// reads. Asserting that the command "knew" the datastore would pass while the
+// wire stayed wrong — the same trap #74 documents for repo create.
+describe('repo fork — datastore declaration (#74)', () => {
+  /** A config whose `app` family is placed on a named datastore. */
+  function placedOnDatastore(): void {
+    mockGetCurrent.mockResolvedValue({
+      resources: { repositories: { app: { placement: { datastore: 'tier1' } } } },
+    });
+  }
+
+  it('declares the parent datastore on the fork leg', async () => {
+    placedOnDatastore();
+
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+
+    expect(mockExecute.mock.calls[0][0].datastore).toBe('/mnt/rediacc-ds/tier1');
+  });
+
+  it('declares it on the chained up leg too, where the fork is mounted', async () => {
+    placedOnDatastore();
+    // Remote renet ignored the compound --up, so the legacy second leg runs.
+    mockExecute.mockResolvedValue({
+      success: true,
+      steps: [{ name: 'cow_clone', duration_ms: 7 }],
+      allSteps: [],
+    });
+
+    await handleForkAction('app', 'staging', { machine: 'hostinger', up: true });
+
+    const upCall = mockExecute.mock.calls[1][0];
+    expect(upCall.functionName).toBe('repository_up');
+    expect(upCall.datastore).toBe('/mnt/rediacc-ds/tier1');
+  });
+
+  it('says nothing for a machine-placed parent, leaving the machine default in place', async () => {
+    // The fallback is CORRECT here and must not become a declaration: a repo on
+    // the implicit default datastore has no named mount to name.
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockExecute.mock.calls[0][0].datastore).toBeUndefined();
+  });
+
+  it('reads the PARENT family placement, not the fork tag', async () => {
+    // `repo checkout` forks under a different base name; the reflink source is
+    // still the parent's image, so the parent's datastore is the one renet needs.
+    placedOnDatastore();
+
+    await handleForkAction('app', 'staging', {
+      machine: 'hostinger',
+      forkBaseName: 'restored',
+    });
+
+    expect(mockAddRepository.mock.calls[0][0]).toBe('restored:staging');
+    expect(mockExecute.mock.calls[0][0].datastore).toBe('/mnt/rediacc-ds/tier1');
   });
 });
 

@@ -1006,6 +1006,10 @@
           {
             "question": "What happens if I cancel?",
             "answer": "Cancel during the 14-day trial and you are never charged. Cancel a paid plan later and you keep its features until the end of the billing period, then your account falls back to the free Community plan. Your repositories keep running the whole time."
+          },
+          {
+            "question": "How are cluster nodes counted?",
+            "answer": "Every node in a cluster is a machine, and each one counts as a machine. There is no shared cluster allowance and no discount for grouping servers together. A node only takes a slot when a repository lands on it, so building the cluster itself costs nothing. Clustering is sold through our partners as part of an Enterprise agreement, and your node count is agreed when you order."
           }
         ]
       },
@@ -1790,10 +1794,10 @@
           "title": "5. Subscriptions, Billing, and Payment",
           "content": ["Rediacc offers multiple Subscription tiers:"],
           "items": [
-            "<strong>Community</strong> (free) — 1 Machine activation, core features, community support. This is the fallback plan your account returns to after a trial or paid Subscription ends.",
-            "<strong>Professional</strong> — 1 Machine activation, audit logging, priority support, custom branding",
-            "<strong>Business</strong> — 1 Machine activation, distributed storage, advanced analytics, dedicated success manager",
-            "<strong>Enterprise</strong> — up to 25 Machine activations, dedicated infrastructure, custom integrations, 24/7 support. Enterprise is sold through our partners."
+            "<strong>Community</strong> (free): 1 Machine activation, core features, community support. This is the fallback plan your account returns to after a trial or paid Subscription ends.",
+            "<strong>Professional</strong>: 1 Machine activation, audit logging, priority support, custom branding",
+            "<strong>Business</strong>: 1 Machine activation, distributed storage, advanced analytics, dedicated success manager",
+            "<strong>Enterprise</strong>: dedicated infrastructure, custom integrations, 24/7 support, and a Machine activation ceiling set in your order. Where no ceiling is negotiated, 25 Machine activations apply. Enterprise is sold through our partners."
           ],
           "subsections": {
             "billing": {
@@ -1820,6 +1824,15 @@
               "title": "5.4 License Validation and Grace Period",
               "content": [
                 "The On-Premise Software periodically validates your Subscription status. If validation fails (due to network issues, expired Subscription, or non-payment), a three (3) day grace period applies. After the grace period, the On-Premise Software will operate at the Community tier feature level until Subscription status is restored."
+              ]
+            },
+            "clusters": {
+              "title": "5.5 Machine Activations, Clusters, and Nodes",
+              "content": [
+                "A <strong>\"Cluster\"</strong> means two or more Machines that you operate together as a single pool of storage or compute using the Services. A <strong>\"Node\"</strong> means one Machine that is a member of a Cluster. A Node is a Machine for all purposes under these Terms, and each Node consumes one Machine activation. Clusters are not pooled or discounted: a Cluster of five Nodes consumes five Machine activations.",
+                "Your <strong>Machine activation ceiling</strong> is the maximum number of Machines that may hold an activation at one time. It is recorded on your Subscription and is governed by your order. The tier figures listed above are the standard, non-negotiated defaults; a ceiling agreed in an order or partner agreement replaces the default for that Subscription. Clustering is available under Enterprise and partner agreements only.",
+                "A Machine activation is consumed when a Repository is created, copied, or placed on a Machine, and is released automatically after a period of inactivity. Building infrastructure alone, including creating a Cluster and joining Nodes to it, does not consume an activation.",
+                "Where every activation is already in use, Rediacc may refuse to activate an additional Machine. Machines that already hold an activation continue to operate and may renew their existing licenses, and Rediacc may record such renewals as exceeding your ceiling. Rediacc may contact you to reconcile your Subscription where a Machine activation ceiling is persistently exceeded."
               ]
             }
           }

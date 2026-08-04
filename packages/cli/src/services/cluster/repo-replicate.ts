@@ -28,6 +28,10 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { ReplicaSet } from '@rediacc/shared/config-schema';
+import {
+  assertMachineSlotsAvailable,
+  partialPlacementGuidance,
+} from '../account/license-preflight.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
@@ -115,6 +119,17 @@ export async function provisionReplicaDatastores(
   if (input.nodes.length === 0) {
     throw new Error(`Cannot replicate "${input.repo}": the cluster has no nodes to host replicas.`);
   }
+
+  // Replicas land round-robin, so the machines this touches are the distinct
+  // nodes the rotation reaches — fewer than `replicas` when replicas outnumber
+  // nodes. Asked before the snapshot, because everything after it is placement.
+  const targetMachines = [
+    ...new Set(
+      Array.from({ length: input.replicas }, (_, i) => input.nodes[i % input.nodes.length].machine)
+    ),
+  ];
+  await assertMachineSlotsAvailable({ machineCount: targetMachines.length });
+
   // 1. One instant snapshot of the repo's datastore.
   await dispatch(
     'datastore_snapshot_create',
@@ -125,9 +140,26 @@ export async function provisionReplicaDatastores(
 
   const placements: ReplicaPlacement[] = [];
   const forks: ReplicaSet['replicas'] = [];
+  const placed: string[] = [];
   for (let i = 1; i <= input.replicas; i++) {
     const node = input.nodes[(i - 1) % input.nodes.length];
-    await provisionOneReplica(input, i, node);
+    try {
+      await provisionOneReplica(input, i, node);
+    } catch (error) {
+      // A replica set is placed one node at a time, so any failure part-way
+      // leaves a real, working partial deployment behind. Say what exists and
+      // what to re-run rather than letting a bare bridge error imply that
+      // nothing happened, or that everything did.
+      throw new Error(
+        `${error instanceof Error ? error.message : String(error)}\n\n${partialPlacementGuidance({
+          placed,
+          remaining: targetMachines.filter((m) => !placed.includes(m)),
+          command: `rdc repo replicate ${input.repo} --replicas ${input.replicas}`,
+        })}`,
+        { cause: error }
+      );
+    }
+    if (!placed.includes(node.machine)) placed.push(node.machine);
     const tag = replicaTag(input.setName, i);
     placements.push({
       index: i,

@@ -86,6 +86,66 @@ export async function readSshKeyForInit(
 }
 
 /**
+ * One row of `config list`.
+ *
+ * An unparseable file must not abort the whole listing, so it degrades to a
+ * status:"invalid" row and the walk continues (same tolerant-read stance as
+ * configFileStorage.getBackupInfo).
+ */
+async function buildConfigListRow(
+  name: string,
+  currentName: string
+): Promise<{ name: string; active: string; machines: string; status: string }> {
+  const active = name === currentName ? '*' : '';
+  const { configFileStorage } = await import('../adapters/config-file-storage.js');
+  try {
+    const cfg = await configFileStorage.load(name);
+    return {
+      name,
+      active,
+      machines: Object.keys(cfg.resources?.machines ?? {}).length.toString(),
+      status: 'ok',
+    };
+  } catch {
+    return { name, active, machines: '-', status: 'invalid' };
+  }
+}
+
+/**
+ * Build the `account` patch for `config init --server <url>`.
+ *
+ * Writing only `accountServer` leaves the config with no `e2ePublicKey`, so the
+ * FIRST tunnelled request falls through to the baked-in production key
+ * (getServerKeyMaterial tier 3) and dies with a bare "Decryption failed". Only
+ * a LATER command self-heals, via discoverServerKey(). Seeding the key here is
+ * what makes the first real command work.
+ *
+ * An unreachable server is not fatal: discovery still heals the config on a
+ * later run, so this warns and writes the server URL alone.
+ */
+export async function buildInitAccountUpdate(
+  server: string | undefined
+): Promise<Partial<NonNullable<RdcConfig['account']>> | undefined> {
+  if (!server) return undefined;
+  const accountServer = server.replace(/\/+$/, '');
+  try {
+    const { fetchServerInfo } = await import('../services/account/account-client.js');
+    const info = await fetchServerInfo(accountServer);
+    const e2ePublicKey = info.e2e.keys[0]?.publicKeySpki;
+    if (e2ePublicKey) return { accountServer, e2ePublicKey };
+    outputService.warn(t('commands.config.init.serverKeyMissing', { server: accountServer }));
+  } catch (error) {
+    outputService.warn(
+      t('commands.config.init.serverKeyUnreachable', {
+        server: accountServer,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+  return { accountServer };
+}
+
+/**
  * Merge the pieces an `init` action collects into a single RdcConfig ready
  * for `configFileStorage.save`. Pure — no I/O — so unit tests can drive it
  * and assert the resulting shape, which is where the v1→v2 regression hid.
@@ -334,9 +394,7 @@ ${t('help.examples')}
 
         const sshContent = options.sshKey ? await readSshKeyForInit(options.sshKey) : undefined;
 
-        const accountUpdate = options.server
-          ? { accountServer: options.server.replace(/\/+$/, '') }
-          : undefined;
+        const accountUpdate = await buildInitAccountUpdate(options.server);
 
         const mpUpdate = await handleMasterPasswordSetup(options);
         const merged: RdcConfig = mergeInitUpdates(newConfig, {
@@ -363,33 +421,14 @@ ${t('help.examples')}
         const format = program.opts().output as OutputFormat;
         const currentName = configService.getCurrentName();
 
-        if (configs.length === 0) {
+        if (configs.length === 0 && format === 'table') {
           outputService.info(t('commands.config.list.noConfigs'));
           return;
         }
 
-        const { configFileStorage } = await import('../adapters/config-file-storage.js');
         const displayData = [];
         for (const name of configs) {
-          // One unparseable file must not abort the whole listing — show it
-          // as invalid and keep going (same tolerant-read stance as
-          // configFileStorage.getBackupInfo).
-          try {
-            const cfg = await configFileStorage.load(name);
-            displayData.push({
-              name,
-              active: name === currentName ? '*' : '',
-              machines: Object.keys(cfg.resources?.machines ?? {}).length.toString(),
-              status: 'ok',
-            });
-          } catch {
-            displayData.push({
-              name,
-              active: name === currentName ? '*' : '',
-              machines: '-',
-              status: 'invalid',
-            });
-          }
+          displayData.push(await buildConfigListRow(name, currentName));
         }
 
         outputService.print(displayData, format);
@@ -410,7 +449,10 @@ ${t('help.examples')}
         const name = configService.getCurrentName();
 
         if (!cfg) {
-          outputService.info(t('commands.config.show.noConfig', { name }));
+          // Same contract as the list commands: a machine-readable format gets an
+          // explicit null payload, never an empty stdout.
+          if (format === 'table') outputService.info(t('commands.config.show.noConfig', { name }));
+          else outputService.print(null, format);
           return;
         }
 

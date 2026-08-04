@@ -136,6 +136,25 @@ export class RemoteStaleSlotError extends Error {
   }
 }
 
+/**
+ * The pulled blob will not open, even though the CEK unwrap succeeded.
+ *
+ * Distinct from RemoteStaleSlotError, which is an unwrap failure: here the slot
+ * secret was correct and the store still handed back something this device
+ * cannot read. The realistic cause is a store that already holds a config sealed
+ * under a DIFFERENT CEK than the slot this device just enrolled against, i.e. a
+ * second config for the same organization created from another enrollment.
+ *
+ * Before this existed the failure escaped as a raw WebCrypto
+ * "OperationError: The operation failed for an operation-specific reason".
+ */
+export class RemoteConfigUndecryptableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RemoteConfigUndecryptableError';
+  }
+}
+
 // ─── Adapter ────────────────────────────────────────────────────────────
 
 export class RemoteConfigAdapter {
@@ -194,7 +213,12 @@ export class RemoteConfigAdapter {
       hmac: pullResp.data.hmac ?? '',
     };
 
-    const decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
+    let decrypted: Awaited<ReturnType<typeof selectiveDecrypt>>;
+    try {
+      decrypted = await selectiveDecrypt(payload, cek, session.sdkDerived);
+    } catch (error) {
+      throw this.classifyDecryptFailure(error, pullResp.data.envelope.configId);
+    }
 
     // Rebuild the RdcConfig from the decrypted blob through the ONE shared
     // reconstruction. This used to be a hand-written copy that had to "mirror"
@@ -309,6 +333,36 @@ export class RemoteConfigAdapter {
     } catch {
       throw new RemoteStaleSlotError();
     }
+  }
+
+  /**
+   * Turn a selectiveDecrypt failure into something the user can act on.
+   *
+   * The two failure modes carry different meanings and different recoveries, and
+   * the protocol does distinguish them: the HMAC is keyed by the CEK, so a verify
+   * failure proves the blob was sealed under a different CEK than the slot handed
+   * this device (a store holding another enrollment's config), while a failure
+   * PAST the HMAC means the CEK layer opened and the server-derived session layer
+   * did not.
+   */
+  private classifyDecryptFailure(error: unknown, configId: string): Error {
+    const detail = error instanceof Error ? error.message : String(error);
+
+    // The envelope-version guard already names its own problem.
+    if (detail.includes('envelope version')) return error as Error;
+
+    if (detail.includes('integrity check failed')) {
+      return new RemoteConfigUndecryptableError(
+        t('commands.config.remote.undecryptableIdentity', {
+          configId,
+          storeId: this.remote.storeId,
+        })
+      );
+    }
+
+    return new RemoteConfigUndecryptableError(
+      t('commands.config.remote.undecryptableSession', { configId, detail })
+    );
   }
 
   /**

@@ -24,6 +24,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
@@ -78,18 +79,40 @@ interface MigrateOptions {
   debug?: boolean;
 }
 
+/**
+ * The SOURCE datastore every leg of a migration runs against (#74).
+ *
+ * renet resolves a repo's datastore from the MACHINE VAULT, never from the params
+ * bag, so an execution that declares nothing is dispatched against the machine's
+ * default docker datastore. Migrate declared nothing on any of its source-side
+ * legs, so a repo living in a NAMED datastore failed at the first one with
+ * `stat /mnt/rediacc/repositories/<guid>: no such file or directory` — renet
+ * looking for the image where the repo has never been.
+ *
+ * It is captured ONCE, before finalizeCutover rewrites placement to `{machine: to}`,
+ * because after that rewrite the derivation answers for the TARGET and the last
+ * source-side leg (deleteSourceImage) would go looking on the wrong machine's
+ * default. The target side is deliberately left undefined: `buildExtraMachines`
+ * gives a peer with no recorded datastore the default mount, so the pushed image
+ * lands in the target's DEFAULT datastore, which is exactly what the rewritten
+ * `{machine: to}` placement then describes.
+ */
+type SourceDatastore = string | undefined;
+
 /** Execute backup_push with extraMachines resolution (needed for cross-machine rsync).
  * Returns the parsed transfer stats from renet's push_result stdout line, when present. */
 async function executePush(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
+  datastore: SourceDatastore,
   debug?: boolean
 ): Promise<PushResultStats | undefined> {
   await configService.ensureRepositoryNetworkId(repoName);
   const result = await getExecutor().execute({
     functionName: 'backup_push',
     machineName,
+    datastore,
     params: { repository: repoName, ...params },
     debug,
     quietSpinners: true,
@@ -106,12 +129,14 @@ async function executeQuiet(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
+  datastore: SourceDatastore,
   debug?: boolean
 ): Promise<void> {
   await configService.ensureRepositoryNetworkId(repoName);
   const result = await getExecutor().execute({
     functionName,
     machineName,
+    datastore,
     params: { repository: repoName, ...params },
     debug,
     quietSpinners: true,
@@ -161,6 +186,7 @@ async function executePhase1(
   bwlimit: string | undefined,
   strategy: string | undefined,
   retainBase: string,
+  datastore: SourceDatastore,
   debug: boolean | undefined
 ): Promise<void> {
   outputService.info(`\n${t('commands.repo.migrate.phase1')}`);
@@ -182,7 +208,7 @@ async function executePhase1(
   await deployRepoKeyIfNeeded(name, to);
   const stats = await withSpinner(
     t('commands.repo.migrate.phase1'),
-    () => executePush(name, from, pushParams.params, debug),
+    () => executePush(name, from, pushParams.params, datastore, debug),
     t('commands.repo.migrate.phase1Done')
   );
   renderPhaseStats('commands.repo.migrate.phase1Stats', stats);
@@ -208,6 +234,7 @@ async function executePhase2(
   bwlimit: string | undefined,
   checkpoint: boolean | undefined,
   delta: { base: string; prune: string; strategy?: string },
+  datastore: SourceDatastore,
   debug: boolean | undefined
 ): Promise<number> {
   outputService.info(`\n${t('commands.repo.migrate.phase2')}`);
@@ -233,14 +260,14 @@ async function executePhase2(
           checkpoint: true,
         });
         applyDelta(deltaParams.params);
-        return executePush(name, from, deltaParams.params, debug);
+        return executePush(name, from, deltaParams.params, datastore, debug);
       },
       t('commands.repo.migrate.deltaDone')
     );
   } else {
     await withSpinner(
       t('commands.repo.migrate.stoppingSource'),
-      () => executeQuiet('repository_down', name, from, {}, debug),
+      () => executeQuiet('repository_down', name, from, {}, datastore, debug),
       t('commands.repo.migrate.sourceStopped')
     );
 
@@ -251,7 +278,7 @@ async function executePhase2(
           force: true,
         });
         applyDelta(deltaParams.params);
-        return executePush(name, from, deltaParams.params, debug);
+        return executePush(name, from, deltaParams.params, datastore, debug);
       },
       t('commands.repo.migrate.deltaDone')
     );
@@ -260,7 +287,7 @@ async function executePhase2(
 
   await withSpinner(
     t('commands.repo.migrate.unmountingSource'),
-    () => executeQuiet('repository_down', name, from, { unmount: true }, debug),
+    () => executeQuiet('repository_down', name, from, { unmount: true }, datastore, debug),
     t('commands.repo.migrate.sourceUnmounted')
   );
 
@@ -280,7 +307,12 @@ async function executePhase3(
     t('commands.repo.migrate.startingTarget'),
     async () => {
       await deployRepoKeyIfNeeded(name, to);
-      await executeQuiet('repository_up', name, to, {}, debug);
+      // Target side: the push landed the image in the TARGET's default datastore
+      // (buildExtraMachines gives a peer with no recorded datastore the default
+      // mount), and placement has already been rewritten to `{machine: to}` to
+      // match. So this leg declares no datastore ON PURPOSE — the source's named
+      // mount does not exist here.
+      await executeQuiet('repository_up', name, to, {}, undefined, debug);
     },
     t('commands.repo.migrate.targetStarted')
   );
@@ -323,6 +355,7 @@ async function resolveMigrateEndpoint(name: string): Promise<string> {
 async function deleteSourceImage(
   repoKey: string,
   from: string,
+  datastore: SourceDatastore,
   debug: boolean | undefined
 ): Promise<void> {
   outputService.info(`  ${t('commands.repo.migrate.deletingSource', { machine: from })}`);
@@ -332,6 +365,7 @@ async function deleteSourceImage(
     const result = await getExecutor().execute({
       functionName: 'repository_delete',
       machineName: from,
+      datastore,
       params: { repository: repoKey },
       debug,
       quietSpinners: true,
@@ -401,6 +435,7 @@ async function finalizeCutover(
   to: string,
   skipDns: boolean | undefined,
   keepSource: boolean | undefined,
+  sourceDatastore: SourceDatastore,
   debug: boolean | undefined
 ): Promise<void> {
   await configService.setRepositoryPlacement(name, { machine: to });
@@ -425,7 +460,7 @@ async function finalizeCutover(
     outputService.warn(t('commands.repo.migrate.sourceRetained', { name, machine: from }));
     return;
   }
-  await deleteSourceImage(repoKey, from, debug);
+  await deleteSourceImage(repoKey, from, sourceDatastore, debug);
 }
 
 export async function migrateRepo(ref: string, options: MigrateOptions): Promise<void> {
@@ -481,10 +516,25 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
     await assertNotMountedOnTarget(repoKey, repoConfig.repositoryGuid, to);
   }
 
+  // Captured BEFORE finalizeCutover rewrites placement to `{machine: to}`: every
+  // source-side leg (both pushes, both downs, the source delete) must dispatch
+  // against the datastore the repo actually lives in. See SourceDatastore.
+  const sourceDatastore = await recordedDatastoreMount(repoKey);
+
   // Phase 1 retains this base; Phase 2 deltas against it (or an explicit
   // --delta-base override) and prunes it.
   const phase1Base = randomUUID();
-  await executePhase1(repoKey, repoConfig, from, to, bwlimit, strategy, phase1Base, debug);
+  await executePhase1(
+    repoKey,
+    repoConfig,
+    from,
+    to,
+    bwlimit,
+    strategy,
+    phase1Base,
+    sourceDatastore,
+    debug
+  );
   const downtimeMs = await executePhase2(
     repoKey,
     repoConfig,
@@ -497,9 +547,10 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
       prune: phase1Base,
       strategy,
     },
+    sourceDatastore,
     debug
   );
-  await finalizeCutover(name, repoKey, from, to, skipDns, keepSource, debug);
+  await finalizeCutover(name, repoKey, from, to, skipDns, keepSource, sourceDatastore, debug);
 
   const totalMs = Date.now() - migrationStart;
   outputService.info('');

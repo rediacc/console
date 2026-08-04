@@ -61,6 +61,7 @@ WORKFLOW_CONTRACT_KEYS=(
     run_renet
     run_license_enforcement
     run_account_e2e
+    run_drills
     run_ops
     run_elite_run
     run_update_flow
@@ -83,8 +84,8 @@ CURRENT_RUN_ID=999
 # The engine walks first-parent from head (C2) fenced at M^1 (B), so C1 is the
 # only candidate. C1's run is green and carries an attested FULL plan, which
 # makes it a usable baseline, and the NET delta C1..C2 touches docs plus
-# packages/www only. Of the 17 job surfaces exactly one (`unit`) consumes www,
-# so the correct plan runs `unit` and skips the other sixteen. That asymmetry
+# packages/www only. Of the 18 job surfaces exactly one (`unit`) consumes www,
+# so the correct plan runs `unit` and skips the other seventeen. That asymmetry
 # is the point: an emitter that skips everything, or nothing, fails.
 # ---------------------------------------------------------------------------
 build_fixture() {
@@ -118,7 +119,7 @@ build_fixture() {
     MERGE_SHA_FIX="$(git -C "$FIX" rev-parse HEAD)"
 
     # The baseline plan C1's run attested. Built THROUGH the real buildPlan so
-    # its 17 keys cannot drift from scope-map's; a hand-written key list here
+    # its 18 keys cannot drift from scope-map's; a hand-written key list here
     # would silently stop being a full plan the day a surface is added, and the
     # test would then pass for the wrong reason.
     node -e '
@@ -181,7 +182,7 @@ exit 1
 SHIM
     chmod +x "$WORK/bin/gh"
 
-    # The sixteen keys a correct reduced plan must mark false, derived from the
+    # The seventeen keys a correct reduced plan must mark false, derived from the
     # real surface table rather than listed by hand.
     EXPECTED_FALSE="$(node -e '
 const { JOB_SURFACES } = require(process.argv[1]);
@@ -265,7 +266,7 @@ test_reduced_plan_emits_exactly_the_out_of_scope_keys() {
 test_emitted_names_match_the_workflow_contract() {
     # The emitter can only ever produce `run_<key>` for a key in scope-map's
     # JOB_SURFACES, so comparing that table to the literal list above is the
-    # whole contract: same 17 names, same spelling. A key added to scope-map
+    # whole contract: same 18 names, same spelling. A key added to scope-map
     # without a matching ci.yml output would be emitted and dropped on the
     # floor; a key renamed in ci.yml without scope-map would be read as empty
     # forever, which reads as "run it" and is safe but silently free of any
@@ -277,13 +278,13 @@ process.stdout.write(Object.keys(JOB_SURFACES).map((k) => `run_${k}`).join("\n")
 ' "$CI_DIR/scope-map.cjs")"
     expected="$(printf '%s\n' "${WORKFLOW_CONTRACT_KEYS[@]}")"
     assert_eq "$from_map" "$expected" \
-        "the emitter's key set must match ci.yml's 17 declared outputs exactly, in name and spelling"
+        "the emitter's key set must match ci.yml's 18 declared outputs exactly, in name and spelling"
 
     # CONTROL: the comparison is over a non-empty set. An empty JOB_SURFACES and
     # an empty literal list would compare equal and assert nothing.
-    assert_eq "$(printf '%s\n' "${WORKFLOW_CONTRACT_KEYS[@]}" | grep -c .)" "17" \
-        "the contract list must hold all 17 keys, or the comparison above is vacuous"
-    log_pass "the 17 emitted output names match ci.yml's declared outputs byte for byte"
+    assert_eq "$(printf '%s\n' "${WORKFLOW_CONTRACT_KEYS[@]}" | grep -c .)" "18" \
+        "the contract list must hold all 18 keys, or the comparison above is vacuous"
+    log_pass "the 18 emitted output names match ci.yml's declared outputs byte for byte"
 }
 
 test_quiet_wire_values_do_not_trip_the_kill_switch() {
@@ -305,7 +306,7 @@ test_quiet_wire_values_do_not_trip_the_kill_switch() {
         cat "$OUTDIR/gate.log" >&2
         log_fail "the quiet wire values suppressed every false line -- the kill switch is firing on an ordinary PR"
     fi
-    assert_eq "$n" "16" "and the reduction must be the same one an unset environment produces"
+    assert_eq "$n" "17" "and the reduction must be the same one an unset environment produces"
     log_pass "the empty-string and literal-'false' wire values leave the kill switch disarmed"
 }
 

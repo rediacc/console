@@ -54,6 +54,15 @@ REGISTRY=(
     # to `exit 0` when private/renet was absent, silently taking govulncheck,
     # deadcode and golangci-lint with it.
     ".ci/scripts/private/run-renet.sh|required"
+    # Same submodule, same failure mode: with private/renet absent it would run
+    # `go test` over nothing and report that the licence tier map covers the
+    # function registry. The CLI now derives its licence-issuance class from
+    # that map, so a vacuous green here would launder a console defect too.
+    ".ci/scripts/quality/check-renet-tier-map.sh|required"
+    # Same shape again: `require_submodule ... || exit 0` becomes a hard fail
+    # under CI=true (which this harness sets), so an empty tree is a loud
+    # "required in CI but missing" rather than a green diff of nothing.
+    ".ci/scripts/quality/check-renet-types.sh|required"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
@@ -110,6 +119,19 @@ REGISTRY=(
     # printed "All external links are valid". Measured on the empty fixture
     # before the guard was added, not inferred from reading it.
     "check-external-links.ts|Refusing to run"
+    # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale
+    # trees absent it finds zero contamination AND every one of its 379 baselined
+    # findings looks fixed, so an unguarded version would either print a checkmark or
+    # fail for the wrong reason. It must refuse instead.
+    "check-locale-de-contamination.ts|Refusing to run"
+    # Its sibling, and root pattern 1 again: three hardcoded locale-root constants, so a
+    # tree without any of them made it walk zero locales and print a checkmark. It was
+    # NOT registered here while it carried a second, subtler vacuity inside itself --
+    # `if (!STOPWORDS[locale]) continue` silently skipped ar/ja/ko/ru/zh/et, which is how
+    # 379 German values lived in account-web's ar/ja/ru/zh under a green gate. That skip
+    # is now a hard error naming the locale, so the only way left to make this gate
+    # assert nothing is to take its input away -- which is exactly what this entry pins.
+    "check-i18n-cross-locale.ts|Refusing to run"
     # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its

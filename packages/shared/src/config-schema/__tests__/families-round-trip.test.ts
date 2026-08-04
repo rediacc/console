@@ -258,3 +258,34 @@ describe('resource families round trip', () => {
     expect(hostLocal).toEqual([]);
   });
 });
+
+describe('datastore fork keys', () => {
+  // `datastore fork` records the fork as a FLAT `name:tag` entry with a
+  // `parent` backref (mirroring renet's machine-side registry key), so the
+  // datastores record key must admit the colon that repository family keys
+  // deliberately forbid. Regression: the drill's `drill-ds:remeter` entry
+  // made every subsequent config load fail with "Invalid key in record".
+  it('accepts a name:tag datastores key in resources and state', () => {
+    const config = allFamiliesConfig();
+    const resources = config.resources as { datastores: Record<string, unknown> };
+    resources.datastores['ds1:exp'] = {
+      backend: { kind: 'rbd', pool: 'rbd-pool', image: 'img-1' },
+      parent: { datastore: 'ds1', snapshot: 'snap-1' },
+    };
+    (config.state as { datastores: Record<string, unknown> }).datastores['ds1:exp'] = {
+      attachedTo: 'm1',
+      writes: 'local',
+    };
+    expect(() => RdcConfigSchema.parse(config)).not.toThrow();
+  });
+
+  it('still rejects malformed datastore keys', () => {
+    for (const bad of ['ds1:', ':exp', 'ds1:exp:more', 'Ds1:exp', 'ds1:Exp']) {
+      const config = allFamiliesConfig();
+      (config.resources as { datastores: Record<string, unknown> }).datastores[bad] = {
+        backend: { kind: 'local', machine: 'm1', path: '/mnt/pool' },
+      };
+      expect(RdcConfigSchema.safeParse(config).success, `key ${JSON.stringify(bad)}`).toBe(false);
+    }
+  });
+});

@@ -29,6 +29,7 @@
     "test:20-image": "playwright test tests/20-image-build.test.ts",
     "test:21-local": "playwright test tests/21-local-executor.test.ts",
     "test:22-setup": "playwright test tests/22-setup-command.test.ts",
+    "test:24-cluster-licensing": "CLUSTER_LICENSING_SUITE=1 playwright test --config=playwright.k8s-multinode.config.ts --project=k8s-multinode-24",
     "test:bridge:ceph": "playwright test --config=playwright.ceph.config.ts",
     "test:ceph": "playwright test --config=playwright.ceph.config.ts",
     "test:debug": "playwright test --debug",

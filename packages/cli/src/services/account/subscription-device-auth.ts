@@ -16,6 +16,8 @@ interface LicenseStatusResponse {
   planCode?: string;
   activeMachineCount?: number;
   maxMachines?: number;
+  /** Active machines soft-claimed beyond maxMachines by a renewal. */
+  overLimitCount?: number;
   teamId?: string;
   teamName?: string;
 }

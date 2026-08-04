@@ -2673,6 +2673,10 @@
           {
             "answer": "Annulez pendant l'essai de 14 jours et vous ne serez jamais facturé. Annulez un forfait payant plus tard et vous gardez ses fonctionnalités jusqu'à la fin de la période de facturation, puis votre compte repasse au forfait Community gratuit. Vos dépôts continuent de tourner pendant tout ce temps.",
             "question": "Que se passe-t-il si j'annule ?"
+          },
+          {
+            "answer": "Chaque nœud d'un cluster est une machine, et chacun compte comme une machine. Il n'y a pas d'allocation partagée pour le cluster ni de remise pour regrouper des serveurs. Un nœud n'occupe un emplacement que lorsqu'un dépôt y est déployé, donc la construction du cluster lui-même ne coûte rien. Le clustering est vendu par nos partenaires dans le cadre d'un contrat Enterprise, et le nombre de nœuds est convenu au moment de la commande.",
+            "question": "Comment les nœuds d'un cluster sont-ils comptés ?"
           }
         ]
       },
@@ -14399,10 +14403,10 @@
           ],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuit) — Limité à 2 activations de Machine, fonctionnalités de base, support communautaire",
-            "<strong>Professional</strong> — Jusqu'à 5 activations de Machine, journalisation d'audit, support prioritaire, personnalisation de la marque",
-            "<strong>Business</strong> — Jusqu'à 20 activations de Machine, stockage distribué, analyses avancées, responsable de compte dédié",
-            "<strong>Enterprise</strong> — Jusqu'à 50 activations de Machine, infrastructure dédiée, intégrations personnalisées, support 24h/24 7j/7"
+            "<strong>Community</strong> (gratuit) : 1 activation de Machine, fonctionnalités essentielles, support communautaire. C'est le plan par défaut auquel votre compte revient après la fin d'un essai ou d'un Abonnement payant.",
+            "<strong>Professional</strong> : 1 activation de Machine, journalisation d'audit, support prioritaire, marque personnalisée",
+            "<strong>Business</strong> : 1 activation de Machine, stockage distribué, analyses avancées, gestionnaire de succès dédié",
+            "<strong>Enterprise</strong> : infrastructure dédiée, intégrations personnalisées, support 24/7, et un plafond d'activations de Machine fixé dans votre commande. Lorsqu'aucun plafond n'est négocié, 25 activations de Machine s'appliquent. Enterprise est vendu par l'intermédiaire de nos partenaires."
           ],
           "subsections": {
             "billing": {
@@ -14412,6 +14416,15 @@
                 "Nous nous réservons le droit de modifier nos tarifs avec un préavis de trente (30) jours. Les changements de prix n'affecteront pas votre cycle de facturation en cours. Si vous n'acceptez pas un changement de prix, vous pouvez annuler votre Abonnement avant le prochain cycle de facturation."
               ],
               "title": "5.1 Billing"
+            },
+            "clusters": {
+              "content": [
+                "Un <strong>« Cluster »</strong> désigne deux Machines ou plus que vous exploitez ensemble comme un pool unique de stockage ou de calcul via les Services. Un <strong>« Nœud »</strong> désigne une Machine qui est membre d'un Cluster. Un Nœud est une Machine à toutes les fins des présentes Conditions, et chaque Nœud consomme une activation de Machine. Les Clusters ne sont ni mutualisés ni remisés : un Cluster de cinq Nœuds consomme cinq activations de Machine.",
+                "Votre <strong>plafond d'activations de Machine</strong> est le nombre maximal de Machines pouvant détenir une activation à un instant donné. Il est enregistré sur votre Abonnement et régi par votre commande. Les chiffres par niveau indiqués ci-dessus sont les valeurs par défaut standard, non négociées ; un plafond convenu dans une commande ou un accord partenaire remplace la valeur par défaut pour cet Abonnement. Le clustering n'est disponible que dans le cadre d'accords Enterprise et partenaires.",
+                "Une activation de Machine est consommée lorsqu'un Dépôt est créé, copié ou placé sur une Machine, et elle est libérée automatiquement après une période d'inactivité. Le seul fait de construire une infrastructure, y compris créer un Cluster et y rattacher des Nœuds, ne consomme aucune activation.",
+                "Lorsque toutes les activations sont déjà utilisées, Rediacc peut refuser d'activer une Machine supplémentaire. Les Machines qui détiennent déjà une activation continuent de fonctionner et peuvent renouveler leurs licences existantes, et Rediacc peut enregistrer ces renouvellements comme dépassant votre plafond. Rediacc peut vous contacter pour régulariser votre Abonnement lorsqu'un plafond d'activations de Machine est dépassé de façon persistante."
+              ],
+              "title": "5.5 Activations de Machine, clusters et nœuds"
             },
             "gracePeriod": {
               "content": [

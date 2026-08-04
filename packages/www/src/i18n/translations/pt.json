@@ -2686,6 +2686,10 @@
           {
             "answer": "Cancela durante os 14 dias e nunca te cobram. Cancela um plano pago depois e mantens as funcionalidades até ao fim do período de faturação, depois a tua conta volta ao plano Community grátis. Os teus repositórios continuam a funcionar o tempo todo.",
             "question": "O que acontece se eu cancelar?"
+          },
+          {
+            "answer": "Cada nó de um cluster é uma máquina, e cada uma conta como uma máquina. Não existe uma cota partilhada para o cluster nem desconto por agrupar servidores. Um nó só ocupa uma vaga quando um repositório é implementado nele, pelo que construir o cluster em si não custa nada. O clustering é vendido através dos nossos parceiros como parte de um acordo Enterprise, e o número de nós é acordado no momento da encomenda.",
+            "question": "Como são contados os nós de um cluster?"
           }
         ]
       },
@@ -14422,10 +14426,10 @@
           "content": ["A Rediacc oferece vários níveis de Subscrição:"],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (gratuito): Limitado a 2 ativações de Máquinas, funcionalidades essenciais, suporte da comunidade",
-            "<strong>Professional</strong>: Até 5 ativações de Máquinas, registo de auditoria, suporte prioritário, marca personalizada",
-            "<strong>Business</strong>: Até 20 ativações de Máquinas, armazenamento distribuído, análise avançada, gestor de sucesso dedicado",
-            "<strong>Enterprise</strong>: Até 50 ativações de Máquinas, infraestrutura dedicada, integrações personalizadas, suporte 24/7"
+            "<strong>Community</strong> (gratuito): 1 ativação de Máquina, funcionalidades essenciais, suporte da comunidade. Este é o plano padrão para o qual a sua conta regressa após o fim de um período experimental ou de uma Subscrição paga.",
+            "<strong>Professional</strong>: 1 ativação de Máquina, registo de auditoria, suporte prioritário, marca personalizada",
+            "<strong>Business</strong>: 1 ativação de Máquina, armazenamento distribuído, análises avançadas, gestor de sucesso dedicado",
+            "<strong>Enterprise</strong>: infraestrutura dedicada, integrações personalizadas, suporte 24/7 e um teto de ativações de Máquina definido na sua encomenda. Quando não é negociado nenhum teto, aplicam-se 25 ativações de Máquina. Enterprise é vendido através dos nossos parceiros."
           ],
           "subsections": {
             "billing": {
@@ -14435,6 +14439,15 @@
                 "Reservamo-nos o direito de alterar os nossos preços com um aviso prévio de trinta (30) dias. As alterações de preço não afetarão o seu ciclo de faturação atual. Se não concordar com uma alteração de preço, pode cancelar a sua Subscrição antes do próximo ciclo de faturação."
               ],
               "title": "5.1 Faturação"
+            },
+            "clusters": {
+              "content": [
+                "Um <strong>\"Cluster\"</strong> significa duas ou mais Máquinas que opera em conjunto como um único conjunto de armazenamento ou computação através dos Serviços. Um <strong>\"Nó\"</strong> significa uma Máquina que é membro de um Cluster. Um Nó é uma Máquina para todos os efeitos destes Termos, e cada Nó consome uma ativação de Máquina. Os Clusters não são agrupados nem descontados: um Cluster de cinco Nós consome cinco ativações de Máquina.",
+                "O seu <strong>teto de ativações de Máquina</strong> é o número máximo de Máquinas que podem manter uma ativação em simultâneo. É registado na sua Subscrição e é regido pela sua encomenda. Os valores por nível indicados acima são os valores padrão não negociados; um teto acordado numa encomenda ou acordo de parceria substitui o valor padrão para essa Subscrição. O clustering está disponível apenas no âmbito de acordos Enterprise e de parceria.",
+                "Uma ativação de Máquina é consumida quando um Repositório é criado, copiado ou colocado numa Máquina, e é libertada automaticamente após um período de inatividade. A simples construção de infraestrutura, incluindo a criação de um Cluster e a associação de Nós a este, não consome nenhuma ativação.",
+                "Quando todas as ativações já estão em uso, a Rediacc pode recusar-se a ativar uma Máquina adicional. As Máquinas que já detêm uma ativação continuam a funcionar e podem renovar as suas licenças existentes, e a Rediacc pode registar essas renovações como excedendo o seu teto. A Rediacc pode contactá-lo para reconciliar a sua Subscrição quando um teto de ativações de Máquina for persistentemente excedido."
+              ],
+              "title": "5.5 Ativações de Máquina, clusters e nós"
             },
             "gracePeriod": {
               "content": [

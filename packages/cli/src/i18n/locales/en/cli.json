@@ -211,6 +211,8 @@
         "alreadyExists": "Config \"{{name}}\" already exists",
         "success": "Config \"{{name}}\" initialized",
         "bareForm": "The default config is created automatically; use 'config init <name>' for a named config, or pass a flag (--ssh-key, --server, ...) to set an option on the default.",
+        "serverKeyMissing": "Account server {{server}} did not advertise an encryption key. It will be discovered on the first successful request.",
+        "serverKeyUnreachable": "Could not reach account server {{server}} to sync its encryption key ({{error}}). It will be discovered on the first successful request.",
         "examples": {
           "basic": "Create a named configuration profile.",
           "withServer": "Create a profile pointed at a specific account server."
@@ -278,6 +280,9 @@
         "conflictRetryExhausted": "Config \"{{config}}\" is still conflicting with another device after 3 attempts. Re-run the command.",
         "passkeySecretMissing": "Passkey secret not found in OS keyring. Re-authenticate with: rdc config remote enable",
         "staleSlot": "Your key slot is outdated (the config encryption key was rotated). Re-enroll with: rdc config remote enable",
+        "undecryptableIdentity": "Config {{configId}} in store {{storeId}} was encrypted with a different key than your slot holds, so this device cannot read it. That happens when the store already holds a config from another enrollment. Pull that config on a device that is already enrolled and check which config you meant, or ask an admin to re-share the store's key with this device from the portal (Config Storage > key slots).",
+        "undecryptableSession": "Config {{configId}} unlocked with your key but the server session layer would not open it ({{detail}}). Retry the command; if it keeps failing, re-enroll with: rdc config remote enable",
+        "handoffUndecryptable": "The browser sent a handoff this device cannot open ({{error}}). This usually means an older 'config remote enable' tab is still open and posted to the wrong session. Close every rediacc portal tab, then run the command again.",
         "enable": {
           "description": "Link this config to remote encrypted storage",
           "optionHeadless": "Use device code flow (for headless servers)",
@@ -293,6 +298,11 @@
           "passwordPrompt": "Config master password:",
           "passwordNonInteractive": "A config master password is required. Set REDIACC_CONFIG_PASSWORD, or run without --password in an interactive terminal.",
           "passwordRequirePasskey": "This organization requires a passkey to unlock config storage; password enrollment is disabled. Enroll from a browser with: rdc config remote enable",
+          "passwordIpBound": "The API token in REDIACC_TOKEN is bound to a different client IP address. A token binds to the address it is first used from, so a token created elsewhere cannot enroll from this machine. Issue a fresh token from the web portal and retry.",
+          "passwordMissingScope": "The API token in REDIACC_TOKEN does not carry the config:enroll scope. Issue a token with that scope from the web portal and retry.",
+          "passwordTeamGone": "The team this API token belongs to has been archived or removed. Issue a new token for an active team from the web portal and retry.",
+          "passwordTokenNotEnrollable": "This API token cannot enroll a config slot because it is not tied to a user in an organization. Issue a personal token from your own account in the web portal and retry.",
+          "passwordForbidden": "The account server refused the config enrollment: {{error}}",
           "passwordNoSlot": "No password slot is provisioned for your config storage. Add one from the portal (Config Storage > key slots), then retry.",
           "passwordWrong": "Could not unlock the config with that password. Check REDIACC_CONFIG_PASSWORD (or the password you entered) and try again.",
           "optionForce": "Replace differing local content with the server copy without confirmation",
@@ -430,7 +440,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "Failed to write SSH alias (non-fatal): {{error}}",
-          "sshConfigWritten": "Wrote SSH alias rediacc--{{name}} to ~/.ssh/config_rediacc"
+          "sshConfigWritten": "Wrote SSH alias rediacc--{{name}} to {{path}}"
         },
         "remove": {
           "sshConfigCleared": "Removed SSH alias rediacc--{{name}}"
@@ -693,7 +703,8 @@
         "examples": {
           "basic": "Show a machine's full status.",
           "containers": "Show only the running containers on a machine."
-        }
+        },
+        "licenseBackupBlocked": "\nBACKUPS BLOCKED: {{repositoryGuid}} has been refused by licensing since {{at}} ({{reason}}). {{message}}\nScheduled backups for this repository are not running. Reissue with: rdc subscription refresh"
       }
     },
     "ops": {
@@ -1660,7 +1671,8 @@
         "regionPrompt": "Where should your data be stored?",
         "channelSynced": "Update channel set to {{channel}}.",
         "serverChanged": "Server changed. Previous session cleared.",
-        "edgeSeparator": "Edge Channel"
+        "edgeSeparator": "Edge Channel",
+        "machinesOverLimit": "  {{count}} machine slot(s) are over the limit."
       },
       "logout": {
         "description": "Clear stored subscription token",
@@ -1679,7 +1691,9 @@
         "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
         "issuanceLimitReached": "Monthly repo license issuance limit reached for the current UTC calendar month.",
         "issuanceUsageHigh95": "Monthly repo license issuances are above 95% of the current UTC limit.",
-        "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit."
+        "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit.",
+        "remoteMachineOverLimit": "    - {{id}}... (last seen: {{lastSeen}}) OVER LIMIT",
+        "overLimitSummary": "  {{count}} machine(s) are soft-claimed beyond the machine-slot limit. Renewals still succeed; NEW repositories cannot be licensed until you free a slot or raise the limit."
       },
       "activation": {
         "status": {
@@ -1696,7 +1710,11 @@
           "header": "\nRepo licenses: ({{machineName}})",
           "empty": "  No repo licenses installed",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
-          "hardExpirySuffix": " (hard expiry: {{effectiveHardExpiry}})"
+          "hardExpirySuffix": " (hard expiry: {{effectiveHardExpiry}})",
+          "datastoreSuffix": " [datastore {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: backups are BLOCKED by licensing since {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Run 'rdc subscription refresh -m {{machineName}}' to reissue; the marker clears on the next successful renewal.",
+          "lastRenewal": "    last renewal: {{outcome}}{{detail}}"
         }
       },
       "refresh": {
@@ -2059,7 +2077,10 @@
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",
       "recoveryFailedServerRejected": "The account server rejected license issuance for the repository on \"{{machine}}\". First error: {{error}}. Run: rdc subscription refresh --repo <repo-ref> for details.",
       "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
-      "skipActivationHint": "On a throwaway machine you can skip activation entirely with REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "skipActivationHint": "On a throwaway machine you can skip activation entirely with REDIACC_SKIP_MACHINE_ACTIVATION=1.",
+      "machineSlotLimit": "This placement needs {{needed}} more machine slot(s), and the subscription has {{free}} free ({{active}} of {{max}} in use). A slot is released automatically 5 hours after that machine's last activity, or immediately when the machine is removed. Raise the ceiling by upgrading the plan, or contact sales for a negotiated Enterprise or partner machine ceiling.",
+      "partialPlacement": "The placement stopped part-way: {{placed}} machine(s) completed ({{placedNames}}) and {{remaining}} were never started ({{remainingNames}}). Nothing was rolled back, so the completed machines keep their repositories and their slots. Free a slot or raise the ceiling, then re-run: {{command}}",
+      "nothingProvisioned": "Nothing was provisioned: the repository was not created."
     },
     "machineNotFound": "Machine \"{{name}}\" not found",
     "machineRequired": "Machine name required. Use --machine <name>",

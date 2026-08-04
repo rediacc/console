@@ -30,6 +30,39 @@ FORCED onto the aged backlog by id and verb (wl_ci.ci_watch_only). Every
 demand's exit is completable alone in one turn: do it and tick with
 evidence, execute the DEFAULT, or answer the WHY/HOW honestly.
 
+v17 (2026-08-04, operator report: "normally there is exponential backoff for
+the stop hook. It seems it's running every 5 mins."): it WAS, and the cause
+was scope, not cadence. wl_store.world_sig hashed the BYTES of the shared
+markdown, event log and requests file, so any teammate's --add or --tick broke
+every other session's poll baseline and invalidated its judge cache; measured
+on the live store, 32 of 32 events in a three-hour window were foreign and
+polluted half the five-minute windows. The signature is this session's own
+world now (wl_store.world_sig, wl_store.my_requests_sig). Two smaller fixes
+ride with it: the background check-in's clock is cleared when the wait ENDS
+(it used to freeze, so re-entering a wait fired the roster demand on arrival),
+and it prints its last-fired and next-earliest stamps so the latch it claims
+is checkable from the message. New: the NO-OP WAKE LADDER (wl_checks
+.quiet_wake_sig / quiet_wake_bump / quiet_wake_note) counts wakes on which
+nothing measurably moved and, after three, collapses the whole stop to one
+line asking for the next rung of the 5/10/20/40/60 poll ladder. It suppresses
+ADVISORY output only: every violation that can block still blocks.
+
+v18 (2026-08-04, operator: "we don't need to print next wakeup times. We
+should just track the hook moments and notify/warn when needed. let's go for
+efficient ai context usage"): two standing sections that printed on every full
+stop are DELETED rather than shortened. The NEXT WAKEUPS list (every scheduled
+task's next firing plus its prompt label) is gone; the schedules are still
+tracked by the cron-shape checks, the backoff ladder, the loop-death detector
+and the judge's loop line, and the one actionable thing the list carried is
+now its own silent-until-broken warning (wl_checks.broken_schedules,
+V_BROKEN_SCHEDULE). The empty WORKLIST GUIDE line ("no actionable items in the
+store") is gone too, which lets a clean stop with nothing queued exit with
+zero bytes the way the poll fast path does. Both supersede earlier deliberate
+choices ("a short honest line, never ambiguous silence"): silence is no longer
+ambiguous now that the fast path is silent many times an hour. The rule going
+forward is silent when there is nothing to act on, one focused message when
+there is.
+
 MODULE MAP:
     wl_core       shared primitives (paths, git, regexes, tasks, transcript)
     wl_store      event log, markdown sync, sidecars, session state doc

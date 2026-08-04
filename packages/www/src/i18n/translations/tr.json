@@ -2666,6 +2666,10 @@
           {
             "answer": "14 günlük deneme süresi içinde iptal ederseniz hiç ücretlendirilmezsiniz. Ücretli bir planı daha sonra iptal ederseniz, faturalandırma döneminin sonuna kadar özelliklerini kullanmaya devam edersiniz, ardından hesabınız ücretsiz Community planına döner. Repolarınız bu süre boyunca çalışmaya devam eder.",
             "question": "İptal edersem ne olur?"
+          },
+          {
+            "answer": "Bir kümedeki her düğüm bir makinedir ve her biri bir makine olarak sayılır. Küme için paylaşılan bir kota veya sunucuları bir araya getirmek için indirim yoktur. Bir düğüm, üzerine bir depo yerleştirildiğinde bir slot kullanır; yani kümeyi kurmanın kendisi hiçbir maliyete yol açmaz. Kümeleme, bir Enterprise anlaşmasının parçası olarak iş ortaklarımız aracılığıyla satılır ve düğüm sayınız sipariş verirken belirlenir.",
+            "question": "Küme düğümleri nasıl sayılır?"
           }
         ]
       },
@@ -14386,10 +14390,10 @@
           ],
           "id": "subscriptions",
           "items": [
-            "<strong>Topluluk</strong> (ücretsiz) — 2 Makine etkinleştirmesiyle sınırlı, temel özellikler, topluluk desteği",
-            "<strong>Profesyonel</strong> — 5'e kadar Makine etkinleştirmesi, denetim günlüğü, öncelikli destek, özel markalama",
-            "<strong>İş</strong> — 20'ye kadar Makine etkinleştirmesi, dağıtık depolama, gelişmiş analitik, özel başarı yöneticisi",
-            "<strong>Kurumsal</strong> — 50'ye kadar Makine etkinleştirmesi, ayrılmış altyapı, özel entegrasyonlar, 7/24 destek"
+            "<strong>Community</strong> (ücretsiz): 1 Makine etkinleştirmesi, temel özellikler, topluluk desteği. Bu, deneme süresi veya ücretli bir Abonelik sona erdikten sonra hesabınızın döndüğü varsayılan plandır.",
+            "<strong>Professional</strong>: 1 Makine etkinleştirmesi, denetim günlüğü, öncelikli destek, özel markalama",
+            "<strong>Business</strong>: 1 Makine etkinleştirmesi, dağıtık depolama, gelişmiş analizler, özel başarı yöneticisi",
+            "<strong>Enterprise</strong>: özel altyapı, özel entegrasyonlar, 7/24 destek ve siparişinizde belirlenen bir Makine etkinleştirme tavanı. Bir tavan üzerinde anlaşılmadığı takdirde 25 Makine etkinleştirmesi uygulanır. Enterprise, iş ortaklarımız aracılığıyla satılır."
           ],
           "subsections": {
             "billing": {
@@ -14399,6 +14403,15 @@
                 "Fiyatlarımızı otuz (30) gün önceden bildirimle değiştirme hakkımızı saklı tutarız. Fiyat değişiklikleri mevcut faturalandırma döngünüzü etkilemez. Bir fiyat değişikliğini kabul etmiyorsanız, bir sonraki faturalandırma döngüsünden önce Aboneliğinizi iptal edebilirsiniz."
               ],
               "title": "5.1 Billing"
+            },
+            "clusters": {
+              "content": [
+                "Bir <strong>\"Küme\"</strong>, Hizmetleri kullanarak birlikte tek bir depolama veya işlem havuzu olarak işlettiğiniz iki veya daha fazla Makine anlamına gelir. Bir <strong>\"Düğüm\"</strong>, bir Kümenin üyesi olan bir Makine anlamına gelir. Bir Düğüm, bu Şartlar kapsamındaki tüm amaçlar için bir Makinedir ve her Düğüm bir Makine etkinleştirmesi tüketir. Kümeler havuzlanmaz veya indirime tabi tutulmaz: beş Düğümden oluşan bir Küme, beş Makine etkinleştirmesi tüketir.",
+                "<strong>Makine etkinleştirme tavanınız</strong>, bir anda etkinleştirme tutabilecek maksimum Makine sayısıdır. Aboneliğinizde kayıtlıdır ve siparişiniz tarafından belirlenir. Yukarıda listelenen seviye rakamları, üzerinde pazarlık yapılmamış standart varsayılan değerlerdir; bir siparişte veya iş ortağı anlaşmasında kabul edilen bir tavan, o Abonelik için varsayılan değerin yerini alır. Kümeleme yalnızca Enterprise ve iş ortağı anlaşmaları kapsamında kullanılabilir.",
+                "Bir Makine etkinleştirmesi, bir Depo bir Makinede oluşturulduğunda, kopyalandığında veya yerleştirildiğinde tüketilir ve bir hareketsizlik süresinden sonra otomatik olarak serbest bırakılır. Bir Küme oluşturmak ve ona Düğüm eklemek dahil, yalnızca altyapı kurmak bir etkinleştirme tüketmez.",
+                "Tüm etkinleştirmeler zaten kullanımdayken Rediacc, ek bir Makinenin etkinleştirilmesini reddedebilir. Zaten bir etkinleştirme tutan Makineler çalışmaya devam eder ve mevcut lisanslarını yenileyebilir; Rediacc bu yenilemeleri tavanınızı aşan durumlar olarak kaydedebilir. Bir Makine etkinleştirme tavanı sürekli olarak aşıldığında Rediacc, Aboneliğinizi uyumlu hale getirmek için sizinle iletişime geçebilir."
+              ],
+              "title": "5.5 Makine Etkinleştirmeleri, Kümeler ve Düğümler"
             },
             "gracePeriod": {
               "content": [

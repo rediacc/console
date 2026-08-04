@@ -104,6 +104,7 @@ const healthyJobs = () => [
   S('Tests + Infra / Renet'),
   S('Tests + Infra / License Enforcement'),
   S('Tests + Infra / Account E2E'),
+  S('Tests + Infra / Drills'),
   S('Tests + Infra / Migration Test'),
   S('OPS Tests / OPS Provision (linux-amd64)'),
   S('OPS Tests / OPS Check (linux-arm64)'),

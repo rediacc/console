@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "bac2903bdb56e7df"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "4e7aa81c81aef1e9"
+sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
 # Abonelik ve Lisanslama
@@ -64,27 +64,59 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder. Her self-servis plan (Community, Professional, Business) bir makine slotu içerir; çok makineli dağıtımlar ortaklarımızla birlikte boyutlandırılan bir Enterprise kurulumudur. Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Bir slot yalnızca aktif olarak sağlama yaparken tutulduğundan, tek bir slot bir ay boyunca yine de birden fazla makineyi kapsayabilir.
 
+Tavan, sabit kodlanmış bir plan sabitinden değil aboneliğinizin kaydından okunur; dolayısıyla pazarlıkla belirlenmiş bir etkinleştirme sayısı, abonelikte tanımlandığı anda geçerli olur. Plan seviyesi yalnızca başlangıç değerini belirler.
+
+Düzenleme ile yenileme farklı şekilde uygulanır ve bu fark önemlidir:
+
+- **Yeni bir lisans düzenlemek tavanda engellenir.** Tüm slotlar doluysa istek `MAX_MACHINES_REACHED` ile başarısız olur ve hiçbir şey sağlanmaz.
+- **Mevcut bir lisansı yenilemek asla engellenmez.** Tüm slotlar doluyken yenileme yapan bir makine çalışmaya devam eder ve slotu limit aşımı olarak kaydedilir. Bunu portalda Makineler sayfasında, `rdc subscription status` çıktısında ve lisans durumu API'sinin `overLimitCount` alanında görebilirsiniz. Makine yeniden limitin içine girdiğinde işaret kendiliğinden kalkar.
+
+Yenilemenin daha yumuşak yol olması bilinçlidir. Zaten elinde tuttuğu bir lisansı yenileyen bir makine yeni kapasite anlamına gelmez ve onu reddetmek, bedeli çoktan ödenmiş bir altyapıda yedeklemeleri durdururdu. Engellenmeye devam eden şey kapasite eklemektir.
+
 Makinede hiçbir makine lisans dosyası depolanmaz. Slot uygulaması, sunucuda düzenleme zamanında gerçekleşir.
 
 ### Depo lisansı
 
-Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır. Makinede depolanan tek lisans dosyasıdır ve imzalama anahtarı başına şu şekilde düzenlenir:
+Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır. Makinede depolanan tek lisans dosyasıdır ve datastore başına ve imzalama anahtarı başına şu şekilde düzenlenir:
 
-    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+```
+/var/lib/rediacc/license/repos/{guid}/{keyId}.json
+/var/lib/rediacc/license/datastores/{datastoreId}/repos/{guid}/{keyId}.json
+```
+
+Makinenin varsayılan depolamasındaki depolar ilk yolu kullanır. Adlandırılmış bir datastore içindeki depolar ise ikincisini kullanır; burada `{datastoreId}`, o datastore oluşturulurken ona verilen kimliktir. Bir datastore çatalının dürüstçe ölçülmesini sağlayan şey tam olarak bu kapsamlandırmadır: çatallanan datastore bambaşka bir kimlik alır, dolayısıyla içindeki depolar hiç lisansı olmadan yola çıkar, ilk lisanslı işlemlerinde `missing` bildirir ve kendi lisanslarını alır. Lisansında, içinde bulunduğundan başka bir datastore adı geçen bir depo, otomatik yeniden düzenleme yerine `identity_mismatch` ile hızlıca başarısız olur; bir lisans dosyasının yan tarafa kopyalanmasını engelleyen de budur.
 
 `{keyId}`, 16 haneli onaltılık bir parmak izidir (imzalayan sunucunun Ed25519 genel anahtarının `SHA-256` değerinin ilk 8 baytı). Birden fazla hesap evreni tarafından yönetilen bir depo (örneğin, aynı makineye dağıtım yapan üretim ve bench), `{guid}` dizini altında imzalama anahtarı başına bir dosya tutar. Makinenin renet derlemesi yalnızca kendi gömülü anahtarının, veya ona zincirlenmiş bir yetkilendirme sertifikasının doğrulayabileceği dosyayı doğrular; diğer evrenlerin dosyaları etkisizdir. Evren değiştirmek lisansları asla geçersiz kılmaz: yeni bir evrendeki ilk işlem, o evrenin lisansını bir kez düzenler (bir `missing` sonucu otomatik olarak düzenlemeyi tetikler) ve ardından ikisi birlikte var olur.
 
 Şunlar için kullanılır:
 
-- `rdc repo create` ve `rdc repo fork`, sağlamadan önce doğrulanır (kimlik kanıtı olmadan önceden düzenlenir, oluşturulduktan sonra kimlik kanıtlarıyla yeniden düzenlenir)
-- `rdc repo resize` ve `rdc repo expand`, son kullanma tarihi dahil tam doğrulama
-- `rdc repo up`, `rdc repo down`, `rdc repo delete`, **son kullanma tarihi atlanarak** doğrulanır
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **son kullanma tarihi dahil tam olarak doğrulanır**: yedekleme aktarımı aktif bir hak gerektirir
-- makine yeniden başlatılırken depo otomatik başlatma, **son kullanma tarihi atlanarak** doğrulanır
+- `rdc repo create`, `rdc repo fork` ve `rdc repo commit`, sağlamadan önce doğrulanır (kimlik kanıtı olmadan önceden düzenlenir, kontrol anında depo henüz var olmadığı için oluşturulduktan sonra kimlik kanıtlarıyla yeniden düzenlenir)
+- `rdc repo resize`, `rdc repo expand`, `rdc repo merge` ve `rdc repo promote`, **son kullanma tarihi dahil tam olarak doğrulanır**
+- yedekleme aktarımı, **son kullanma tarihi dahil tam olarak doğrulanır**: `rdc repo push`, `rdc repo pull`, `rdc repo migrate` ve zamanlanmış yedeklemeler
+- `rdc repo up`, `rdc repo up --all`, `rdc repo exec` ve makine yeniden başlatılırken depo otomatik başlatma, **hem son kullanma tarihi hem de yetkilendirme sertifikası penceresi atlanarak** doğrulanır
+- `rdc repo down`, `rdc repo delete` ve depoları listelemek gibi salt okunur komutlar hiçbir lisans gerektirmez
+
+İmzalar, anahtar bağlama, makine bağlama, depo bağlama ve her yetkilendirme sertifikası kısıtlaması bunların hepsinde uygulanır. Son grubun gevşettiği tek şey iki zaman penceresidir; böylece süresi dolmuş bir lisans ya da geçerliliğini yitirmiş bir sertifika, kendi verinizi çalıştırmanızı veya kapatmanızı asla engelleyemez.
 
 Depo lisansları makineye ve hedef depoya bağlıdır. Her lisans, makine kimliği, depo GUID'i, abonelik kimliği, plan limitleri ve son kullanma tarihini içerir. Şifrelenmiş depolar için Rediacc, altta yatan birimin LUKS kimliğini de doğrular.
 
 Aynı makinede birden fazla abonelik birlikte var olabilir. Her depo, kendi abonelik bağlamıyla birlikte kendi lisansını taşır.
+
+## Kümeler
+
+Kümeleme, iş ortaklarımız aracılığıyla bir Enterprise anlaşmasının parçası olarak satılır. Self-servis bir plan seçeneği değildir ve aşağıdaki bölümler onun nasıl satın alınacağını değil nasıl ölçüldüğünü anlatır.
+
+**Bir düğüm bir makinedir.** Bir Kümenin kendine ait bir lisans kimliği yoktur. İçindeki her düğüm, Renet Agent kurulu sıradan bir makinedir ve tıpkı tek başına duran bir makine gibi sayılır.
+
+**Havuzlama yoktur.** Beş düğümlü bir küme tek bir ortak küme slotundan beslenmez. Her düğüm, üzerine ilk kez bir depo yerleştirildiğinde kendi slotunu alır ve bu slot diğerleriyle aynı 5 saatlik akışa tabidir: o düğümdeki son depo lisansı düzenlemesinden itibaren 5 saat tutulur ve sonrasında kendiliğinden serbest kalır.
+
+**Kümeyi kurmak ücretsizdir. Ölçülen şey depoları yerleştirmektir.** Kümeyi oluşturmak, düğümleri katmak, dağıtık depolama katmanını kurmak ve Kubernetes kontrol düzlemini ayağa kaldırmak hiçbir slota mal olmaz. Ölçüm, bir depo bir düğüme indiğinde başlar.
+
+**Bir küme çatalı her depo için yeniden ölçülür.** Bir kümenin tamamını çatallamak, çatallanan datastore'a yeni bir kimlik verir; dolayısıyla çataldaki her depo, hangi düğümde çalışıyorsa orada ilk dokunulduğunda kendi lisansını alır. Düz geçiş bunun tam tersidir: bir depoyu makineler arasında taşımak lisansını da beraberinde götürür ve doğrulanmaya devam eder, çünkü depolama kimliğiyle ilgili hiçbir şey değişmemiştir.
+
+**Bir kümede yenileme, yukarıdaki yumuşak talep kuralına uyar.** Düğümler kendi lisanslarını insan müdahalesi olmadan yeniler; böylece etkinleştirme sayısını aşmış bir küme, gecenin bir yarısı yedeklemeleri düşürmek yerine çalışmaya devam eder ve limiti aşan düğümlerini raporlar. Yeni bir düğüm eklemek ise tavanda hâlâ engellenir.
+
+Bir kümeyi boyutlandırmak bir sohbettir, bir onay kutusu değil. Kümeler için etkinleştirme sayıları siparişte kararlaştırılır ve iş ortağınız bunları doğrudan aboneliğe işler. Bu sohbeti başlatmak için [İletişim](/tr/contact) sayfasına bakın.
 
 ## Varsayılan Limitler
 
@@ -110,7 +142,12 @@ Yeni kayıtlar Professional veya Business planında 14 günlük ücretsiz deneme
 
 Community, kalıcı ücretsiz tabandır. Artık yeni hesaplar için doğrudan kayıt seçeneği değildir; bunun yerine bir abonelik sona erdiğinde (deneme sırasında iptal, ücretli bir planın sonradan iptali veya başarısız bir ödeme) hesap Community'ye düşer. Community geri dönüşünde bir makine, depo başına 10 GB ve ayda 100 kurulum hakkınız kalır. Deneme tabanlı model başlamadan önce oluşturulmuş hesaplar mevcut Community erişimlerini korur.
 
-Uygulama en çok önem taşıdığı yerde yumuşak kalmaya devam eder: çalışan depolar (`up`, `down`, `delete`, otomatik başlatma) abonelik sona erse bile çalışmaya devam eder. Buna karşılık yeni işler (oluşturma, çatallama, yeniden boyutlandırma ve lisans yenileme) ve yedekleme aktarımı (`push`, `pull`, `sync`) aktif bir hak ile sınırlandırılır.
+Uygulama en çok önem taşıdığı yerde yumuşak kalmaya devam eder: çalışan depolar (`up`, `down`, `delete`, otomatik başlatma) abonelik sona erse bile çalışmaya devam eder. Bunun ötesinde iki ayrı kural geçerlidir ve 60 günlük ek süreyi tutarsız gösteren şey, bu ikisinin birbirine karıştırılmasıdır:
+
+- **Hesap sunucusuna ihtiyaç duyan işlemler** aktif bir abonelik olmadan gerçekleşemez, çünkü sunucu imzalamayı reddeder. Bunlar `create`, `fork` ve her türlü lisans yenileme veya tazelemedir. Abonelik sona erdiğinde yeni hiçbir şey sağlanmaz.
+- **Yalnızca geçerli bir yüklü lisansa ihtiyaç duyan işlemler**, o lisans kesin olarak sona erene kadar sunucuya hiç uğramadan çalışmaya devam eder. Bunlar, halihazırda sahip olduğunuz depolarda `resize` ve `expand` ile yedekleme aktarımıdır (`push`, `pull`, zamanlanmış yedeklemeler). Bir deponun birincil lisansı, abonelik bitiş tarihinden 60 gün sonra kesin olarak sona erer; 60 günlük ek süre buradan gelir. Bir çatalın lisansı ise çok daha kısa ömürlüdür, en fazla 7 gündür; çatal ağırlıklı makinelerin aşağıda anlatılan kendi kendine yenilemeye bağımlı olmasının nedeni budur.
+
+Yani sona ermiş bir abonelik filonuzu büyütmenizi hemen, o filodaki depoları büyütmenizi ise 60 gün sonra durdurur.
 
 ## Makine Geçişi Uyum Dönemi
 
@@ -210,6 +247,58 @@ Etkileşimli olmayan ortamlarda CLI, tarayıcı onayını beklemez. Bunun yerine
 
 İlk makine kurulumu için [Makine Kurulumu](/tr/docs/setup) sayfasına bakın.
 
+## Lisansların Kendi Kendini Yenilemesi
+
+Buraya kadar anlatılan her şey, klavye başında olduğunuzu varsayar. Zamanlanmış yedeklemeler ise değildir; kendi kendine yenilemenin var olma sebebi tam olarak bu durumdur.
+
+Zamanlanmış bir yedekleme katı katmanda doğrulanır, dolayısıyla süresi dolmamış bir lisansa ihtiyaç duyar. Bir çatalın lisansı en fazla 7 gündür. Makineleriniz tasarım gereği hiçbir hesap kimlik bilgisi tutmaz; bu yüzden kendi kendine yenilemeden önce bir çatalın yedeklemesi, oluşturulmasından bir hafta sonra, sessizce, gecenin üçünde duruverirdi.
+
+### Bir makine token tutmadan nasıl yeniler
+
+Rediacc'in düzenlediği veya yenilediği her lisans, kendisini imzalayan hesap sunucusundaki yenileme uç noktasının tam adresini `renewalUrl` alanında taşır. Makine bu adresi kendi yüklü lisansından okur; dolayısıyla hesap sunucusunun nerede olduğunun ona ayrıca söylenmesi hiç gerekmez.
+
+Ardından makine, yüklü lisansı o uç noktaya geri sunar. Lisansın kendisi kimlik bilgisidir: imzalıdır, sunucu bu imzayı doğrular ve hiçbir yerde API tokeni devreye girmez. Sunucu, yeni geçerlilik pencereleriyle taze bir lisans döndürür; makine de yenilemeyi tamamlanmış saymadan önce lisansı kurar ve yeniden doğrular.
+
+Yenileme makine genelinde bir işlemdir:
+
+```bash
+sudo renet license renew
+```
+
+Depolar, kendilerini imzalayan sunucuya göre gruplanır; böylece iki hesap evrenine hizmet eden bir makine her birine yalnızca bir kez başvurur. Bir kilit dosyası, iki yenilemenin aynı anda çalışmasını önler ve `--jitter`, aksi hâlde hepsi saat başında uyanacak bir makine filosunu zamana yayar.
+
+Sunucu bir yenilemeyi üç durumda reddeder ve her biri farklı bir anlama gelir:
+
+| Ret | Ne anlama gelir |
+|---|---|
+| Abonelik sona ermiş, askıya alınmış veya ek süresi geçmiş | Faturalandırma konusu. Abonelik yeniden aktif olduğunda yenileme kendiliğinden devam eder |
+| Yetkilendirme sertifikasının süresi dolmuş veya sertifika iptal edilmiş | Yerinde kurulum konusu. Sertifikayı yerinde sunucunuzda yenileyin, makineler ardından normal şekilde yenilenir |
+| Makine kimliği artık eşleşmiyor ve 40 günlük ek süre dolmuş | Lisans, bu makine olmayan başka bir makineye ait. Mevcut makine bağlamından yeniden düzenleyin |
+
+Bir ret, çalışmanın tamamını durdurmaz. Süresi geçmiş tek bir depo, aynı makinedeki diğerlerinin yenilenmesini engellemez.
+
+### Zamanlanmış yedeklemeler kendini yeniler
+
+Rediacc'in yazdığı her yedekleme birimi önce bir yenileme çalıştırır:
+
+```
+ExecStartPre=-<renet> license renew --jitter 45s
+```
+
+Baştaki `-` işareti, bu adımı bilerek elden geldiğince yapılacak bir iş olarak işaretler. Reddedilen bir yenileme, bir ağ kesintisi ya da komutu henüz bilmeyen eski bir Renet Agent, yedeklemenin kendisini asla düşürmemelidir. Yedekleme çalışır, lisans da mümkün olduğunda yol üstünde yenilenir.
+
+### Bir yedekleme engellendiğinde
+
+Lisanslama bir yedeklemeyi gerçekten reddederse makine bunu kaydeder. Bu işaret, gözetimsiz yedeklemelerin veri kopyalamayı bıraktığının tek sinyalidir; bu yüzden yüksek sesle gösterilir:
+
+```bash
+rdc machine status <machine> --licenses
+```
+
+`backups` sütunu, nedeniyle birlikte `BLOCKED` gösterir; aynı bilgi, otuz depo arasında kaybolmasın diye tablonun altında bir hata olarak da yazdırılır. `renewed` sütunu, son gözetimsiz yenilemenin nasıl geçtiğini, varsa sunucunun ret kodunu da içerecek şekilde gösterir; çözümün bir faturalandırma sorusu mu yoksa bir yerinde sertifika sorusu mu olduğunu size söyleyen budur.
+
+Başarılı bir yenileme işareti kaldırır; lisans kontrolünü geçen bir yedekleme de aynısını yapar. Elle onaylanacak veya sıfırlanacak bir şey yoktur.
+
 ## Çevrimdışı Davranış ve Sona Erme
 
 Lisans doğrulaması makine üzerinde yerel olarak gerçekleşir. Hesap sunucusuna canlı bağlantı gerektirmez.
@@ -219,7 +308,7 @@ Bu şu anlama gelir:
 - çalışan bir ortam her komutta hesaba canlı bağlantı gerektirmez
 - tüm depolar süresi dolmuş lisanslarla bile her zaman başlatılabilir, durdurulabilir ve silinebilir; kullanıcılar kendi depolarını işletmekten hiçbir zaman engellenmez
 - sağlama işlemleri (`create`, `fork`) önceden düzenlenen bir depo lisansı gerektirir ve büyüme işlemleri (`resize`, `expand`) geçerli bir depo lisansı gerektirir
-- gerçekten süresi dolmuş depo lisansları, resize/expand öncesinde `rdc` aracılığıyla yenilenmelidir
+- gerçekten süresi dolmuş depo lisansları, resize/expand öncesinde ya iş istasyonunuzdan `rdc` ile ya da makinenin kendini yenilemesiyle değiştirilmelidir
 - lisans imzaları gömülü bir ortak anahtar ile doğrulanır; imza doğrulama devre dışı bırakılamaz
 
 ## Kurtarma Davranışı
@@ -237,6 +326,11 @@ Otomatik kurtarma kasıtlı olarak dar tutulmuştur:
 - `cert_invalid`: hızla başarısız olur, yetkilendirme sertifikası bir kısıtlamayı karşılamadı (geçersiz ana anahtar imzası, abonelik/plan uyuşmazlığı, boyut sınırı veya `maxTotalIssuances` üzerinde bir sıra numarası). Altta yatan sınırı düzelttikten sonra sertifikayı yeniden düzenleyin
 
 Bu hızlı başarısızlık durumları otomatik olarak hesap destekli yenileme veya düzenleme çağrısı tüketmez.
+
+Bu listeyi okurken iki not:
+
+- `missing` her zaman bir sorun değildir. Yeni çatallanmış bir datastore içindeki bir depoya ilk kez dokunulduğunda alınan normal sonuç da budur ve o çatalın ölçülmesini sağlayan tam olarak odur: lisans düzenlenir, bir slot alınır ve işlem devam eder. `identity_mismatch` ise bunun bilinçli tersidir; başka bir datastore'dan kopyalanmış bir lisans dosyası sessizce yeniden düzenlenmek yerine hızlıca başarısız olur.
+- Bu liste, iş istasyonunuzdan yapılan kurtarmayı anlatır. Kendi kendini yenileyen bir makinenin kendi sonuçları vardır; bunlar bir komut hatası olarak yükseltilmek yerine `rdc machine status <machine> --licenses` ile raporlanır, çünkü zamanlanmış bir yedeklemenin durumu anlatabileceği kimse yoktur.
 
 ## Şirket İçi Kurulum için Delegasyon Sertifikaları
 
