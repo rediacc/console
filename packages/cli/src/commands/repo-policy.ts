@@ -5,6 +5,7 @@ import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
@@ -31,6 +32,8 @@ interface PolicySetOptions {
  */
 interface PolicyTarget {
   machineName: string;
+  /** Recorded datastore mount for a single-repo ref; undefined machine-wide (#74). */
+  datastore?: string;
   /** `{ name: <guid> }` for a single-repo ref, `{}` for the machine-wide form. */
   params: Record<string, unknown>;
 }
@@ -58,6 +61,10 @@ async function resolvePolicyTarget(
     }
     return {
       machineName: resolved.machineName,
+      // #74: the ref arm addresses ONE repo, so it must be read from the datastore
+      // that repo is recorded on. The machine-wide arm below addresses the
+      // machine's own default policy and correctly declares nothing.
+      datastore: await recordedDatastoreMount(resolved.repoKey),
       params: { name: repo.repositoryGuid },
     };
   }
@@ -87,6 +94,7 @@ async function runPolicyFunction(
   const result = await getExecutor().execute({
     functionName,
     machineName: target.machineName,
+    datastore: target.datastore,
     params: target.params,
     debug,
     captureOutput: true,

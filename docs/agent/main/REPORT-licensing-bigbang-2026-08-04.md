@@ -90,16 +90,73 @@ job with an in-job TEST_MODE account server (no org secrets).
 - Test suites: CLI 164 files / 2198 tests; account 81 / 1470+; renet go test green
   both tag variants; e2e 26 unit + suite battery; hook harness 504/0.
 
+## Live battery results (added 2026-08-04 evening — the drill ran, and it earned its keep)
+
+`./run.sh drill license` is **39/39 GREEN** (final logs full16/17/18 in the session
+scratchpad), after an iterative run that caught NINE more defects the entire offline
+pyramid had missed — every one fixed in-session:
+
+1. **Poisoned renet build artifact**: bin/renet had been overwritten by a foreign bare
+   `go build` (enforcing flavor, NO key baked) and the build stamp only fingerprinted
+   inputs, so the wrong binary kept deploying — every validation failed
+   "public key not configured". Fixed three ways: stamp now fingerprints the artifact
+   (.ci/lib/local-common.sh), the drill pins its flavor (RDC_RENET_LICENSE=1) and
+   proves it pre-deploy (verify_renet_flavor), knowledge agents document the trap.
+2. **Config schema rejected datastore fork keys** (`name:tag` → "Invalid key in
+   record", poisoning every later config load). Fixed: datastoreRef key grammar in
+   schemas.ts + state-schema.ts, pin tests.
+3. **Fork mount naming**: renet mounts a fork at `<parent>-<tag>` (hyphen);
+   namedDatastoreMount() and the drill probe both assumed the ref's colon. Fixed at
+   the single derivation point.
+4. **Chain state lacked the datastore scope** (S8d live catch): parent and datastore
+   fork share a repo GUID, so the fork's fresher reissue regressed the parent →
+   sequence_regression. Fixed: 4-part chain key
+   `<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>`, self-GC migration,
+   13-language license-chain.md delta.
+5. **`repo migrate` never declared the repo's datastore** (five executor legs ran
+   against the default pool). Fixed + the leg-b contract corrected: a repo-level
+   migrate OUT of a datastore re-meters BY DESIGN; identity travel is a DATASTORE
+   move (`datastore attach --to`).
+6. **Datastore relocation could strand the datastore attached nowhere** (detach
+   succeeded, target refused "not registered"). Fixed with renet's own
+   `datastore_adopt`, adopt-before-detach (non-destructive first).
+7. **The E2E tunnel laundered every caller's IP to 'unknown'**, silently disabling
+   api-token IP binding for all CLI traffic. Fixed server-side (app.ts threads the
+   outer address inward, drops spoofable envelope forwarding headers).
+8. **The missing-datastore CLASS (20 sites)**: 16 dispatch sites lacking
+   ExecuteOptions.datastore (a named-datastore repo could not be deleted, promoted,
+   committed, logged, exec'd, trimmed, gc'd, backed up...) + 4 repository_list
+   sites blind to named datastores (fsck called their refs dangling). One
+   comprehensive sweep, 21 behavior-pin tests, full suite 2244/2244.
+9. **`backup restore --datastore` dropped its flag** (image landed in the default
+   pool with no placement recorded — permanent divergence). Fixed as a birth-record
+   placement write, not a one-shot mount declaration.
+
+Also proven by the battery: renewal from a credential-less machine (the blob is the
+credential), per-repo refusal codes on a lapsed subscription, soft-claim over-cap
+with visible overage, and chainHash surviving the HTTP boundary with a planted-strip
+control.
+
 ## Operator actions outstanding
 
-1. **Live drill legs a-e** (the ancestry-verified overrides forbid agent
-   self-authorization, correctly):
-   `export REDIACC_ALLOW_CLUSTER_OPS=* REDIACC_ALLOW_GRAND_REPO=*` then
-   `./run.sh drill license` (6-VM cluster is UP and left running for this; tear down
-   with `./rdc.sh ops down` afterwards).
-2. **Push when ready**: the new CI legs (test-drills, suite 24 ACCOUNT tier) are
-   first exercised by your push. Deploy order for the licensing changes: account
-   servers (migration 0047 + worker) BEFORE renet BEFORE CLI.
+1. ~~Live drill legs a-e~~ **DONE 2026-08-04 evening** — 39/39, see above. VMs still
+   up; tear down with `./rdc.sh ops down` when the wave is done.
+2. **PR wave 0804-1 in flight overnight** (delegated babysitter): console #551
+   (draft) + renet #98 + account #74. The new CI legs (test-drills, suite 24 ACCOUNT
+   tier) get their first exercise here. Deploy order unchanged: account servers
+   (migration 0047 + worker) BEFORE renet BEFORE CLI.
+3. **Submodule Claude-Review tokens — one mandatory paste**: renet+account
+   repo-level CLAUDE_CODE_OAUTH_TOKEN secrets (created 07-28) were dead (every
+   review run 401 since). The overnight org-inherit experiment REFUTED the org
+   route structurally: the org is on GitHub Free, which delivers org secrets to
+   PUBLIC repos only — console (public) gets them, renet/account (private) never
+   can. The dead repo secrets were deleted during the experiment (tombstone in the
+   babysit round log; nothing lost — dead token, zero successful runs ever), org
+   scoping reverted to console-only. THE FIX: paste console's working
+   CLAUDE_CODE_OAUTH_TOKEN value (repo-level secret, created 2026-02-16) into
+   repo-level secrets on rediacc/renet and rediacc/account. Structural alternative:
+   upgrade the org to Team. Until then submodule Claude-Review reds are expected
+   and non-required.
 
 ## Found-not-fixed ledger (final)
 

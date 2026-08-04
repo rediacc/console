@@ -6,6 +6,7 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 
 /**
@@ -74,6 +75,9 @@ async function handleRepoPromote(ref: string, options: PromoteOptions): Promise<
     const result = await getExecutor().execute({
       functionName: 'repository_promote',
       machineName,
+      // #74: both images are the same FAMILY, so one recorded placement answers
+      // for the grand and the fork alike — a fork lives beside its parent.
+      datastore: await recordedDatastoreMount(grandEntry.name),
       params: {
         parent: grandEntry.config.repositoryGuid,
         fork: forkConfig.repositoryGuid,

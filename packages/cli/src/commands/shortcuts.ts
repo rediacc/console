@@ -5,6 +5,7 @@ import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { coerceCliParams, parseParamOptions, validateFunctionParams } from './function-params.js';
 
@@ -81,6 +82,14 @@ async function runLocalMode(functionName: string, options: RunLocalOptions): Pro
     functionName,
     machineName,
     params,
+    // #74: `run` is the escape hatch, so it cannot know which verb it is calling —
+    // but if the caller named a repository, that repo's recorded placement is the
+    // same answer every real verb would give. A GUID or an unknown name yields
+    // undefined, which is the machine default this always used.
+    datastore:
+      typeof params.repository === 'string'
+        ? await recordedDatastoreMount(params.repository)
+        : undefined,
     extraMachines,
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,

@@ -5,6 +5,7 @@ import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoTarget } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
 import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
@@ -67,6 +68,10 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
   let machineName: string;
   let kubeCluster: string | undefined;
   const params: Record<string, unknown> = {};
+  // #74: set only by the REF arm. The machine-wide form addresses the machine's
+  // own default datastore by definition, so leaving it undefined there is the
+  // correct answer, not an omission.
+  let datastore: string | undefined;
 
   if (ref) {
     // A ref carries its own machine, so -m would be contradictory.
@@ -82,6 +87,7 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
       throw new Error(t('commands.repo.trim.repoNotFound', { name: resolved.name }));
     }
     params.name = repo.repositoryGuid;
+    datastore = await recordedDatastoreMount(resolved.repoKey);
   } else {
     // Machine-wide form: trim every mounted repo on the machine (errors when
     // -m is also absent, as before).
@@ -102,6 +108,7 @@ async function handleTrimAction(ref: string | undefined, options: TrimOptions): 
     functionName: 'repository_trim',
     machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
+    datastore,
     params,
     debug: options.debug,
     captureOutput: true,
