@@ -74,8 +74,7 @@ async function captureDatastoreRecord(
   debug?: boolean
 ): Promise<{ name: string; backend?: string; fork?: unknown }> {
   const stdout = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
-  const records =
-    parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout);
+  const records = parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout);
   const record = records.find((r) => r.name === ref);
   if (!record) {
     throw new ValidationError(
