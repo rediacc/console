@@ -7392,8 +7392,8 @@
   {
     "id": "search-16102",
     "content": "Lisans Nasıl Düzenlenir",
-    "body": "CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu: Abonelik için mevcut zincir başını (son sıra ve hash) okur. Sonraki sıra numarasını ve önceki zincir hash'ini içeren lisans yükünü oluşturur. Yükü Ed25519 ile imzalar. chainHash = SHA256(prevChainHash + \":\" + signedPayload) hesaplar. Girdiyi düzenleme defterine atomik olarak ekler. İki eş zamanlı istek aynı sıra üzerinde çakışırsa, kaybeden bir sonraki sırayı yeniden alır ve yeniden imzalar. İmzalı blob'u zincir hash'iyle birlikte CLI'ya döndürür. sequence ve prevChainHash, imzalı yükün içindedir (dolayısıyla imzayı geçersiz kılmadan değiştirilemezler). chainHash zarfın üzerindedir (döngüsel bağımlılıktan kaçınmak için imzalamadan sonra hesaplanır).",
-    "excerpt": "CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu: Abonelik için mevcut zincir başını (son sıra ve hash) okur. Sonraki sıra...",
+    "body": "CLI bir depo lisansı talep ettiğinde, hesap sunucusu: Abonelik için mevcut zincir başını (son sıra ve hash) okur. Sonraki sıra numarasını ve önceki zincir hash'ini içeren lisans yükünü oluşturur. Yükü Ed25519 ile imzalar. chainHash = SHA256(prevChainHash + \":\" + signedPayload) hesaplar. Girdiyi düzenleme defterine atomik olarak ekler. İki eş zamanlı istek aynı sıra üzerinde çakışırsa, kaybeden bir sonraki sırayı yeniden alır ve yeniden imzalar. İmzalı blob'u zincir hash'iyle birlikte CLI'ya döndürür. sequence ve prevChainHash, imzalı yükün içindedir (dolayısıyla imzayı geçersiz kılmadan değiştirilemezler). chainHash zarfın üzerindedir (döngüsel bağımlılıktan kaçınmak için imzalamadan sonra hesaplanır).",
+    "excerpt": "CLI bir depo lisansı talep ettiğinde, hesap sunucusu: Abonelik için mevcut zincir başını (son sıra ve hash) okur. Sonraki sıra numarasını ve önceki zi...",
     "category": "Documentation",
     "page": "/tr/docs/license-chain",
     "path": "docs.license-chain.content",

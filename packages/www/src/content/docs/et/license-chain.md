@@ -68,7 +68,7 @@ Keeldumine jätab paigaldatud litsentsi puutumata. Masin töötab olemasoleva li
 
 ### Uuendamine ja masina koht
 
-Edukas uuendamine puudutab masina aktiveerimise kirjet: kui masinal kohta ei olnud, võtab see koha, ja kui oli, värskendab seda. Erinevalt väljastamisest ei keelduta sellest kunagi limiidi ületamise pärast. Vastus kannab välja `overLimit` ja aktiveering märgistatakse, nii et portaal, litsentsi oleku lõpp-punkt ja `rdc subscription status` saavad seda näidata. Päris uue litsentsi väljastamine seevastu põrkab endiselt kõvasti lae vastu. Põhjendust vaata jaotisest [Tellimus ja litsentsid - masina kohad](/en/docs/subscription-licensing).
+Edukas uuendamine puudutab masina aktiveerimise kirjet: kui masinal kohta ei olnud, võtab see koha, ja kui oli, värskendab seda. Erinevalt väljastamisest ei keelduta sellest kunagi limiidi ületamise pärast. Vastus kannab välja `overLimit` ja aktiveering märgistatakse, nii et portaal, litsentsi oleku lõpp-punkt ja `rdc subscription status` saavad seda näidata. Päris uue litsentsi väljastamine seevastu põrkab endiselt kõvasti lae vastu. Põhjendust vaata jaotisest [Tellimus ja litsentsid - masina kohad](/et/docs/subscription-licensing).
 
 ### Juurutamise järjekord
 
@@ -370,7 +370,7 @@ Kõik e-posti mallid ja avalik e-posti API on transpordite lõikes identsed.
 
 ## Seotud dokumentatsioon
 
-- [Kohapealne installatsioon](/en/docs/on-premise) -- kuidas juurutada kohapealset serverit
-- [Tellimus ja litsentsimine](/en/docs/subscription-licensing) -- plaani piirangud ja masina pesad
-- [Väljalaskekanalid](/en/docs/release-channels) -- edge vs stable kanalid
-- [Andmeregioonid](/en/docs/data-regions) -- piirkondlik andmete residentsus
+- [Kohapealne installatsioon](/et/docs/on-premise) -- kuidas juurutada kohapealset serverit
+- [Tellimus ja litsentsimine](/et/docs/subscription-licensing) -- plaani piirangud ja masina pesad
+- [Väljalaskekanalid](/et/docs/release-channels) -- edge vs stable kanalid
+- [Andmeregioonid](/et/docs/data-regions) -- piirkondlik andmete residentsus

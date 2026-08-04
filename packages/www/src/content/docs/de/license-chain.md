@@ -22,7 +22,7 @@ Jede von einem Account-Server ausgestellte Lizenz wird in einem Append-Only-Ledg
 
 ## Wie eine Lizenz ausgestellt wird
 
-Wenn die CLI eine Maschinenaktivierung oder Repo-Lizenz anfordert, führt der Account-Server folgende Schritte aus:
+Wenn die CLI eine Repo-Lizenz anfordert, führt der Account-Server folgende Schritte aus:
 
 1. Den aktuellen Kettenkopf (letzte Sequenz und Hash) für das Abonnement lesen.
 2. Den Lizenzpayload mit der nächsten Sequenznummer und dem vorherigen Chain-Hash erstellen.

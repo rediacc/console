@@ -22,7 +22,7 @@ Chaque licence émise par un serveur de compte est enregistrée dans un registre
 
 ## Comment une licence est émise
 
-Lorsque la CLI demande une activation de machine ou une licence de dépôt, le serveur de compte :
+Lorsque la CLI demande une licence de dépôt, le serveur de compte :
 
 1. Lit la tête de chaîne actuelle (dernière séquence + hachage) pour l'abonnement.
 2. Construit la charge utile de licence avec le numéro de séquence suivant et le hachage de chaîne précédent intégrés.
