@@ -1775,15 +1775,25 @@ jobs:
       # two runs are independent and the second is not measuring the first's
       # server. `set -o pipefail` is load-bearing: GitHub runs `bash -e`, not
       # `-eo pipefail`, so without it `tee` would swallow a red drill.
+      # `--keep-work` is load-bearing for the collector below, and an env var
+      # cannot replace it: lib.sh assigns DRILL_KEEP_WORK=0 at script level,
+      # overwriting anything inherited, so only the flag survives. Without it
+      # drill_teardown rm -rf's the work dir on EXIT and the gateway log is gone
+      # before any later step can read it. The runner is ephemeral, so keeping
+      # the dir costs nothing.
       - name: drill universe
         run: |
           set -o pipefail
-          ./run.sh drill universe 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
+          ./run.sh drill universe --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
 
       - name: drill transfer
         run: |
           set -o pipefail
-          ./run.sh drill transfer 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
+          ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
+
+      - name: collect drill diagnostics
+        if: failure()
+        run: .ci/scripts/test/collect-drill-diagnostics.sh
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: failure()
@@ -1792,5 +1802,6 @@ jobs:
           path: |
             ${{ runner.temp }}/drill-universe.log
             ${{ runner.temp }}/drill-transfer.log
+            ${{ runner.temp }}/drill-diagnostics
           retention-days: 3
           if-no-files-found: ignore
