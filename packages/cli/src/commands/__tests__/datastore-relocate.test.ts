@@ -24,11 +24,12 @@ vi.mock('../../i18n/index.js', () => ({
 const mockGetDatastore = vi.hoisted(() => vi.fn());
 const mockListDatastoreState = vi.hoisted(() => vi.fn());
 const mockSetDatastoreState = vi.hoisted(() => vi.fn());
+const mockForgetDatastore = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-datastores.js', () => ({
   assertCreatableName: vi.fn(),
   at: (state: Record<string, unknown>, ref: string) => state[ref],
-  forgetDatastore: vi.fn(),
+  forgetDatastore: mockForgetDatastore,
   getDatastore: mockGetDatastore,
   listDatastoreState: mockListDatastoreState,
   listDatastores: vi.fn().mockResolvedValue([]),
@@ -87,6 +88,13 @@ const CEPH_RECORD = {
   ceph: { pool: 'rediacc_rbd_pool', image: 'ds-tier1' },
   state: 'attached',
 };
+
+async function runDetach(ref: string, extra: string[] = []): Promise<void> {
+  const program = new Command();
+  program.exitOverride();
+  registerDatastoreCommands(program);
+  await program.parseAsync(['node', 'rdc', 'datastore', 'detach', ref, ...extra]);
+}
 
 async function runAttach(ref: string, to: string): Promise<void> {
   const program = new Command();
@@ -179,11 +187,100 @@ describe('datastore attach — cross-machine relocation', () => {
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
   });
 
-  it('does not ferry anything when the datastore is not attached anywhere yet', async () => {
+  it('does not ferry anything when no machine has ever held the datastore', async () => {
     mockListDatastoreState.mockResolvedValue({});
 
     await runAttach('tier1', 'machine-b');
 
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_attach']);
+  });
+});
+
+// The DETACHED arm. A datastore that is attached nowhere still has its registry
+// row on exactly one machine — the one that last held it — so attaching it
+// somewhere else needs the same ferry, minus the detach there is nothing to do.
+// Without `lastHolder` the CLI has no idea which registry to read, and the attach
+// fails "not registered on this machine" exactly as the attached case used to.
+describe('datastore attach — relocation from a DETACHED state', () => {
+  beforeEach(() => {
+    mockListDatastoreState.mockResolvedValue({ tier1: { lastHolder: 'machine-a' } });
+  });
+
+  it('ferries from the last holder, and detaches nothing', async () => {
+    await runAttach('tier1', 'machine-b');
+
+    expect(dispatched().map((d) => `${d.fn}@${d.machine}`)).toEqual([
+      'datastore_list@machine-a',
+      'datastore_adopt@machine-b',
+      'datastore_attach@machine-b',
+    ]);
+  });
+
+  it('skips the ferry when the last holder IS the target', async () => {
+    mockListDatastoreState.mockResolvedValue({ tier1: { lastHolder: 'machine-b' } });
+
+    await runAttach('tier1', 'machine-b');
+
+    // machine-b already has the row; re-reading and re-adopting it would be two
+    // pointless round trips on the common re-attach-where-it-was path.
+    expect(dispatched().map((d) => d.fn)).toEqual(['datastore_attach']);
+  });
+
+  it('refuses a local-backend datastore before adopting anything', async () => {
+    mockExecute.mockImplementation(({ functionName }: { functionName: string }) =>
+      Promise.resolve({
+        success: true,
+        stdout:
+          functionName === 'datastore_list'
+            ? JSON.stringify([{ name: 'tier1', backend: 'local', state: 'detached' }])
+            : '',
+      })
+    );
+
+    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
+
+    expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
+  });
+
+  // The mirror of the attached arm's control. There is no detach to protect here,
+  // so what must not happen is the ATTACH: a target whose registry never took the
+  // record would otherwise be asked to mount a name it still does not know, and
+  // renet's "not registered on this machine" would be blamed on the attach rather
+  // than on the adopt that actually failed.
+  it('never attaches when the target refuses the ferried record', async () => {
+    mockExecute.mockImplementation(({ functionName }: { functionName: string }) =>
+      functionName === 'datastore_adopt'
+        ? Promise.resolve({ success: false, error: 'unmarshal adopt record: unexpected end' })
+        : Promise.resolve({
+            success: true,
+            stdout: functionName === 'datastore_list' ? JSON.stringify([CEPH_RECORD]) : '',
+          })
+    );
+
+    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/datastore_adopt/);
+
+    const fns = dispatched().map((d) => d.fn);
+    expect(fns).not.toContain('datastore_attach');
+    expect(fns).not.toContain('datastore_detach');
+  });
+});
+
+// The other half of the detached arm: nothing can ferry from a machine nobody
+// wrote down. Detach used to erase the state entry outright, which is why a
+// detached datastore could never be attached anywhere else.
+describe('datastore detach records the last holder', () => {
+  it('replaces the attachment state with the machine that held it', async () => {
+    await runDetach('tier1');
+
+    expect(mockSetDatastoreState).toHaveBeenCalledWith('tier1', { lastHolder: 'machine-a' });
+  });
+
+  it('forgets the datastore entirely on --discard', async () => {
+    await runDetach('tier1', ['--discard', '-y']);
+
+    // forgetDatastore clears the resource record AND the state entry, so the
+    // lastHolder written a moment earlier goes with it — correct, because there
+    // is no longer a datastore to relocate.
+    expect(mockForgetDatastore).toHaveBeenCalledWith('tier1');
   });
 });

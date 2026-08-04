@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
+import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -194,12 +195,24 @@ function registerBackupRestore(backup: Command): void {
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
         const sourceType = resolved.type === 'storage' ? 'storage' : 'machine';
 
+        // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and
+        // then dropped — the pull ran against the machine's default, so a restore
+        // the operator asked to land on a named datastore landed somewhere else.
+        // Record the placement as the birth record (the same field `repo create`
+        // writes) so every later verb derives the right mount, and declare it on
+        // the transfer below.
+        const placement = options.datastore
+          ? { datastore: options.datastore }
+          : { machine: targetMachine };
+        const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
+
         const networkId = await configService.allocateNetworkId();
         await configService.addRepository(compositeKey(targetName, 'latest'), {
           repositoryGuid: source.repositoryGuid,
           tag: 'latest',
           credential: randomBytes(24).toString('base64'),
           networkId,
+          placement,
         });
 
         outputService.info(
@@ -209,6 +222,7 @@ function registerBackupRestore(backup: Command): void {
         const pull = await getExecutor().execute({
           functionName: 'backup_pull',
           machineName: targetMachine,
+          datastore,
           params: { repository: targetName, sourceType, from },
           debug: options.debug,
         });
@@ -225,7 +239,7 @@ function registerBackupRestore(backup: Command): void {
         );
 
         if (options.up) {
-          await restoreDeploy(targetName, targetMachine, options);
+          await restoreDeploy(targetName, targetMachine, datastore, options);
         }
       } catch (error) {
         handleError(error);
@@ -237,6 +251,7 @@ function registerBackupRestore(backup: Command): void {
 async function restoreDeploy(
   name: string,
   machine: string,
+  datastore: string | undefined,
   options: RestoreOptions
 ): Promise<void> {
   outputService.info(t('commands.backup.restore.deploying', { name, machine }));
@@ -246,6 +261,8 @@ async function restoreDeploy(
   const up = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: machine,
+    // The same mount the pull wrote into (#74).
+    datastore,
     params,
     debug: options.debug,
   });

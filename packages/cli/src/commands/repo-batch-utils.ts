@@ -1,6 +1,7 @@
 import readline from 'node:readline';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
+import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { getDatastore, requireDatastoreHost } from '../services/config/config-datastores.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -409,12 +410,19 @@ export async function handleRepoList(options: {
           kubeCluster: (await getDatastore(options.datastore)).cluster,
         }
       : await resolveRepoTarget(options);
+    // #74: `--datastore` resolved the HOLDER and then said nothing about the
+    // datastore itself, so `repo list --datastore tier1` dispatched at the right
+    // machine and listed its DEFAULT pool — the one place the operator did not
+    // ask about. `repository_list` enumerates exactly one datastore, so naming it
+    // is the whole fix; without --datastore the machine's default stays correct.
+    const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));
     const format = getOutputFormat();
     const result = await getExecutor().execute({
       functionName: 'repository_list',
       machineName,
       kubeCluster,
+      datastore,
       params: {},
       debug: options.debug,
       captureOutput: true,

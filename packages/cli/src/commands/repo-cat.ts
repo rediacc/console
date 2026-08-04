@@ -5,6 +5,7 @@ import { outputService } from '../services/core/output.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** Surface renet's specific error reason from a failed repository_cat result. */
@@ -107,6 +108,9 @@ export function registerRepoCatCommand(repo: Command): void {
             functionName: 'repository_cat',
             machineName,
             kubeCluster,
+            // #74: declare the datastore the repo is RECORDED on; renet resolves
+            // the image from the machine vault, never from the params bag.
+            datastore: await recordedDatastoreMount(repoKey),
             params: { repository: repoKey, ...params },
             debug: options.debug,
             skipRouterRestart: options.skipRouterRestart,

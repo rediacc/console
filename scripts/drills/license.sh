@@ -805,6 +805,28 @@ leg_b_migration_does_not_remeter() {
     # Put it back where legs c-e (and the next run's leg a preclean) expect it.
     drill_run "$RDC" datastore attach "$DATASTORE_NAME" --to "$MACHINE_NAME"
     assert_exit 0 "the datastore relocates back to the first machine"
+
+    # The DETACHED relocation, which is a different code path and was broken for
+    # longer: with nothing holding the datastore there is no current holder to
+    # ferry its registry row from, so the CLI has to remember who held it last.
+    # Both halves are exercised here because only the pair proves it — recording
+    # the holder is useless if the ferry does not read it, and the ferry cannot be
+    # tested without a detach that recorded one.
+    drill_run "$RDC" datastore detach "$DATASTORE_NAME"
+    assert_exit 0 "the datastore detaches, holding no machine at all"
+
+    drill_run "$RDC" datastore attach "$DATASTORE_NAME" --to "$MACHINE2_NAME"
+    assert_exit 0 "a DETACHED datastore still attaches elsewhere (ferried from its last holder)"
+
+    after_ds=$(_ssh "$VM2_IP" \
+        "sudo $VM_RENET repository license-status --all-datastores --output json" \
+        2>/dev/null | drill_json '(d.find(e => e.repositoryGuid) || {}).datastoreId')
+    DRILL_LAST_CMD="renet repository license-status --all-datastores on $VM2_IP (after the detached move)"
+    assert_equal "$before_ds" "$after_ds" \
+        "and it arrives with the same identity: a detached move re-meters nothing either"
+
+    drill_run "$RDC" datastore attach "$DATASTORE_NAME" --to "$MACHINE_NAME"
+    assert_exit 0 "the datastore comes home again"
 }
 
 # -----------------------------------------------------------------------------
