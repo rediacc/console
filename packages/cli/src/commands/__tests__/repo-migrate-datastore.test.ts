@@ -168,7 +168,7 @@ describe('repo migrate — source datastore declaration (#74)', () => {
     placeOnNamedDatastore();
     // finalizeCutover rewrites placement BEFORE phase 3, so a derivation done at
     // delete time would answer for the target and hunt the image on the wrong mount.
-    mockSetRepositoryPlacement.mockImplementation(async () => {
+    mockSetRepositoryPlacement.mockImplementation(() => {
       mockGetCurrent.mockResolvedValue({
         resources: {
           repositories: {
@@ -176,6 +176,8 @@ describe('repo migrate — source datastore declaration (#74)', () => {
           },
         },
       });
+      // Stays thenable to match the mockResolvedValue baseline set in beforeEach.
+      return Promise.resolve();
     });
 
     await migrateRepo('app', { to: 'dst-machine', skipDns: true });
