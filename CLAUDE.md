@@ -578,7 +578,7 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 
 ## Quality Gates and the BLOCKER convention
 
-`npm run ci` runs the checks CI runs. Two things live in their own files because
+`npm run ci` runs the checks CI runs. Three things live in their own files because
 they are lookup material, not standing rules:
 
 - **[docs/agent/ci-gates.md](docs/agent/ci-gates.md)** — what `npm run ci` covers,
@@ -590,3 +590,8 @@ they are lookup material, not standing rules:
   plus the liveness gate that proves a reason is still true.
   **Read it before adding an entry to any allowlist, and never suppress a gate to
   get past it.**
+- **[docs/agent/TRAPS.md](docs/agent/TRAPS.md)** — ways a session gets FOOLED rather
+  than blocked: a check that cannot fail, a ruling taken on faith, a comment that
+  invites the deletion of the line it guards, an error that was only ever hiding
+  the next one. **Read it when a result looks clean and you have not yet asked what
+  it would look like if the check had not run.**
