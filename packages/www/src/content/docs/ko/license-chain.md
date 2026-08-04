@@ -4,8 +4,8 @@ description: "변조 방지 라이선스 발급, 온프레미스를 위한 위�
 category: "Guides"
 order: 8
 language: ko
-sourceHash: "c0578c7e0cf3f116"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # 라이선스 체인 및 위임

@@ -75,7 +75,7 @@ async function captureDatastoreRecord(
 ): Promise<{ name: string; backend?: string; fork?: unknown }> {
   const stdout = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
   const records =
-    parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout) ?? [];
+    parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout);
   const record = records.find((r) => r.name === ref);
   if (!record) {
     throw new ValidationError(
@@ -330,8 +330,9 @@ function registerAttach(datastore: Command): void {
             // something that must not start. renet refuses it too (adopt.go:44-46),
             // but only after this command would already have detached.
             if (record.backend !== 'ceph') {
+              const backend = record.backend ?? DEFAULTS.DATASTORE.BACKEND;
               throw new ValidationError(
-                `Datastore "${ref}" is ${record.backend ?? 'local'}-backed, so its bytes live on ` +
+                `Datastore "${ref}" is ${backend}-backed, so its bytes live on ` +
                   `${current} alone and ${options.to} cannot reach them. Only a ceph-backed ` +
                   `datastore relocates. Nothing has been detached.`
               );
