@@ -160,6 +160,30 @@ control.
 
 ## Found-not-fixed ledger (final)
 
+- **renet `build.sh::ebpf_generate` staleness guard is mtime-based** (`.o -nt .c`).
+  Git does not preserve mtimes, so on a fresh checkout the committed BPF object is
+  never newer than its source and the fast path can never fire — CI attempts a
+  regeneration on every run. Found live 2026-08-04 when the Drills CI leaf reded:
+  bpf2go also shells out to `llvm-strip`, which the capability probe did not check,
+  so a runner with clang but no llvm binutils took neither the skip nor the
+  documented "use pre-committed BPF objects" fallback. The probe was fixed (renet
+  c74e0e8, proven with a control under the runner's exact toolchain condition); the
+  mtime guard was deliberately NOT touched — smallest correct fix. Residual hazard,
+  pre-existing and identical for missing clang before this change: editing
+  `socket_isolation.c` on a host without the toolchain silently uses stale objects.
+  The real cure is a content-hash guard replacing the mtime guard, which changes
+  when regeneration fires for every developer and CI job and therefore needs its
+  own verification pass (fresh checkout / edited source / unchanged source, each
+  with and without the toolchain).
+- **`validate:translation-freshness` cannot distinguish an honest hash bump from a
+  lazy one.** `computeEnglishDiff` diffs English-at-sourceCommit against
+  English-now and never inspects locale content; the only content-ish check is a
+  40%-of-English line-count floor. Its "Sections added (translate and add these)"
+  message describes the ENGLISH delta, which reads as "the locale is missing this"
+  and nearly caused 12 already-correct professional translations to be rewritten
+  on 2026-08-04. A gate that is satisfiable by bumping a hash cannot tell a
+  finished translation from an absent one.
+
 - Foreign in-flight work: pkg/infra/docker pull-retry (their session's; 2 i18n
   findings are theirs to clear).
 - Account-side coded 403s for the six enroll causes (CLI branches on message text
