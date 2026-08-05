@@ -27,6 +27,11 @@ on:
         required: false
         type: string
         default: ''
+      model:
+        description: 'Model for the review round. Optional: submodule callers omit it and get the default.'
+        required: false
+        type: string
+        default: 'claude-sonnet-5'
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN:
         required: true
@@ -65,6 +70,12 @@ jobs:
       # covers that case; it is gated on TRACK_PROGRESS != 'true', which now
       # always holds.
       TRACK_PROGRESS: 'false'
+      # ONE definition, TWO consumers: the claude_args actually sent, and the
+      # CLAUDE_ARGS_SENT line that claims what was sent. They were two
+      # hardcoded copies of `--model claude-sonnet-5`, which is a log that can
+      # lie about the run it is describing the moment one of them changes.
+      # The caller's `model` input flows through here or nowhere.
+      REVIEW_MODEL: ${{ inputs.model || 'claude-sonnet-5' }}
     permissions:
       contents: read
       pull-requests: write # inline review comments + summary comment
@@ -250,7 +261,7 @@ jobs:
           # so the work must happen inline: delegation is only cheaper when
           # something collects the result.
           claude_args: |
-            --model claude-sonnet-5
+            --model ${{ env.REVIEW_MODEL }}
             --max-turns ${{ steps.gate.outputs.review_turns }}
             --disallowed-tools Task,Agent
 
@@ -261,7 +272,7 @@ jobs:
         if: always() && steps.gate.outputs.go == 'true'
         env:
           CLAUDE_ARGS_SENT: |
-            --model claude-sonnet-5
+            --model ${{ env.REVIEW_MODEL }}
             --max-turns ${{ steps.gate.outputs.review_turns }}
             --disallowed-tools Task,Agent
         # INLINE ON PURPOSE, and this is the trap it fell into. The review

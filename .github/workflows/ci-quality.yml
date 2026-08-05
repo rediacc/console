@@ -73,6 +73,16 @@ on:
       next_version:
         type: string
         required: false
+      # Three-state control for externally-dependent gates, computed by
+      # ci.yml's initialize: 'hard' (normal PR: failures block), 'skip' (PR
+      # with the no-external-quality label: steps do not run), 'soft'
+      # (schedule/dispatch: run-external-gate.sh downgrades a failure to a
+      # ::warning:: so external drift cannot redden the nightly). Default
+      # 'hard' fails closed if a caller forgets to pass it.
+      external_quality:
+        type: string
+        required: false
+        default: 'hard'
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -479,10 +489,11 @@ jobs:
         run: npm run check:ci-actionlint
 
       - name: Action freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:actions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:actions
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
       # The proven rediacc/console#549 instance: this gate sat in the local
       # chain and in no workflow, so nothing in CI ever ran its real scan. It is
@@ -617,22 +628,31 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-e2e-skip-hygiene
 
+      # external_quality (not the old inline label expression): hard on a
+      # normal PR, absent on a labelled one, soft on the nightly. The old
+      # guard was PR-only, so this gate never ran on schedule at all; now it
+      # runs there too, warning instead of blocking.
       - name: External dependency freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality') }}
-        run: npm run check:deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:deps
+        env:
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
       - name: External links
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
-        run: npm run check:ci-external-links
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-external-links
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
-      # Same opt-out label as external-links: both do live public-network
-      # lookups, and both should respect `no-external-quality` on PRs that
-      # intentionally bypass external checks (e.g., offline branch work).
+      # Same external_quality treatment as external-links: both do live
+      # public-network lookups, so both skip on a labelled PR (offline branch
+      # work) and soften on the nightly.
       - name: DKIM notify DNS
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
-        run: npm run check:ci-dkim-notify
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-dkim-notify
+        env:
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
   # ============================================================================
   # L6 PACKAGES -- node + submodules + built packages + native modules.
@@ -888,7 +908,11 @@ jobs:
     # follow-up; the capped runner just makes it a coin flip.
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
+    # No label opt-out at JOB level any more: that guard skipped four fully
+    # OFFLINE gates (overrides/syncpack reasons, suppression liveness, the
+    # quality-gate battery) along with the one external step it aimed at.
+    # The Audit step below carries the external_quality skip itself.
+    if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Submodules are load-bearing here, not incidental. Without them this job
@@ -915,8 +939,12 @@ jobs:
       - id: setup
         uses: ./.github/actions/setup-workspace
 
+      # external_quality 'skip' only, deliberately NO soft mode: a new
+      # production advisory against main's unchanged lockfile is a real
+      # signal about main, so the nightly stays red on it (operator decision
+      # 2026-08-04). The label skip survives for offline branch work.
       - name: Audit
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         run: .ci/scripts/security/audit.sh
         env:
           # Authenticates `gh api /advisories/...` calls inside audit.sh so the
@@ -1003,8 +1031,10 @@ jobs:
         run: .ci/scripts/private/run-renet.sh quality
 
       - name: Check Go dependency freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality')) }}
-        run: npm run check:ci-go-deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-go-deps
+        env:
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
 
       - name: Check renet types freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -1031,12 +1061,15 @@ jobs:
       # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
       # raises the API rate limit; the gate fails SOFT on any network/rate-limit
       # error, so a missing token or a blip never reddens the build — only a
-      # confirmed-stale pin does.
+      # confirmed-stale pin does. external_quality softens even that confirmed
+      # case on the nightly: a new rclone release reddened 3 consecutive
+      # nightlies (2026-08-02..04) with zero commits on main.
       - name: Check embed-asset upstream freshness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.external_quality != 'skip' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: npm run check:ci-embed-asset-freshness
+          EXTERNAL_QUALITY_MODE: ${{ inputs.external_quality }}
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-embed-asset-freshness
 
       # Kept inline (3 logic lines, under check-workflows.sh's limit) rather than
       # extracted: a check-*.sh path would make check-ci-parity's R2 demand a

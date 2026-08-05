@@ -1,0 +1,169 @@
+# Jobs exempt from the "every Linux job is profiled" invariant enforced by
+# .ci/scripts/quality/check-profiler-coverage.sh.
+#
+# Entry format: <workflow-basename>.yml:<job-id>, one per line, each covered by
+# a "# BLOCKER: <reason>" comment block above it (a blank line resets the
+# tracked BLOCKER, so one reason covers the contiguous group beneath it; plain
+# `#` comment lines do NOT reset it, which is how the per-workflow subheadings
+# below stay inside their group). Reasons are parsed and quality-checked by the
+# shared validator in .ci/scripts/lib/blocker-validator.sh, exactly like every
+# other allowlist in this repo -- see docs/agent/suppressions.md.
+#
+# THIS LIST CAN ONLY SHRINK. The gate re-derives its own oracle every run and
+# rejects an entry the moment it stops suppressing something real: a job that
+# no longer exists, a job that is now profiled, a reusable-workflow caller, or
+# a job that does not run on Linux. That is the liveness half of the BLOCKER
+# convention, enforced in the gate itself rather than by an external probe,
+# because the oracle IS the parse the gate already performs.
+
+# BLOCKER: breakpoint.yml is in the frozen set hashed by .ci/breakpoint/MANIFEST.sha256 (workflow/breakpoint.yml) and must stay byte-identical in every repository that vendors breakpoint; check-breakpoint-drift.sh cmp's the live copy against the template, so a console-only profiler step would fail that gate. The session job is also runner-agnostic by design (runs-on is the dispatch input, chosen per session), so there is no single runner-label to arm the HOST_LEAK check with.
+breakpoint.yml:preflight
+breakpoint.yml:session
+
+# BLOCKER: these are the profiler probe's own experiment arms and adding a direct profiler step would destroy the measurement. facts-slim/facts-latest run the sampler in --probe form only, on purpose: they answer what a job inside the ubuntu-slim container can read from /sys/fs/cgroup, and a second sampler in the same job would contend with the one being measured. post-nested-slim/post-nested-latest are the TREATMENT arm of the nesting question (does a JavaScript action's post: hook fire when nested inside a composite?); giving them a direct uses: as well would make a panel appear whether or not nesting works, which is precisely the thing the probe exists to distinguish.
+profiler-probe.yml:facts-latest
+profiler-probe.yml:facts-slim
+profiler-probe.yml:post-nested-latest
+profiler-probe.yml:post-nested-slim
+
+# BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. The shape of the burn-down depends on the answer profiler-probe.yml is dispatched to get -- if a nested post: hook fires, one uses: in setup-workspace covers most of these at once and COVERING_ACTIONS in the gate grows by one line; if it does not, each job needs its own edit.
+#
+# autopilot.yml
+autopilot.yml:finish
+autopilot.yml:gate
+autopilot.yml:model
+autopilot.yml:sweeper
+#
+# backfill-release-sentinel.yml
+backfill-release-sentinel.yml:backfill
+#
+# cd-deploy-account.yml
+cd-deploy-account.yml:build
+cd-deploy-account.yml:deploy
+cd-deploy-account.yml:read-regions
+#
+# cd-deploy-worker.yml
+cd-deploy-worker.yml:deploy
+#
+# cd-stage.yml
+cd-stage.yml:stage
+#
+# cd-v2.yml
+cd-v2.yml:init
+cd-v2.yml:publish
+cd-v2.yml:smoke-test
+cd-v2.yml:tag-and-release
+#
+# ci-build-cli.yml
+ci-build-cli.yml:build-cli-executables
+#
+# ci-build-docker.yml
+ci-build-docker.yml:build-cli
+ci-build-docker.yml:build-cli-docker
+ci-build-docker.yml:build-cli-docker-skip
+ci-build-docker.yml:build-devcontainer-amd64
+ci-build-docker.yml:build-devcontainer-arm64
+ci-build-docker.yml:build-devcontainer-manifest
+ci-build-docker.yml:build-json
+ci-build-docker.yml:build-renet-docker
+ci-build-docker.yml:build-renet-skip
+ci-build-docker.yml:build-server-docker-amd64
+ci-build-docker.yml:build-server-docker-arm64
+ci-build-docker.yml:build-server-docker-manifest
+ci-build-docker.yml:build-server-docker-skip
+ci-build-docker.yml:build-www
+#
+# ci-build-renet.yml
+ci-build-renet.yml:build-renet
+ci-build-renet.yml:cross-compile-smoke
+ci-build-renet.yml:extract-renet
+#
+# ci-ops-test.yml
+ci-ops-test.yml:ops-platform-check
+ci-ops-test.yml:ops-vm-provision
+#
+# ci-quality.yml
+ci-quality.yml:quality-branch
+ci-quality.yml:quality-code
+ci-quality.yml:quality-content
+ci-quality.yml:quality-go
+ci-quality.yml:quality-i18n
+ci-quality.yml:quality-packages
+ci-quality.yml:quality-security
+ci-quality.yml:quality-static
+ci-quality.yml:quality-submodule-branches
+ci-quality.yml:quality-www-build
+#
+# ci.yml
+ci.yml:breakpoint-lifecycle
+ci.yml:cancel-watchdog
+ci.yml:check-release-state
+ci.yml:ci-complete
+ci.yml:deploy-preview
+ci.yml:elite-run-test
+ci.yml:finalize-release-sentinel
+ci.yml:initialize
+ci.yml:label-guide
+ci.yml:package-tests
+ci.yml:pipeline-sentinel
+ci.yml:review-gate
+ci.yml:smoke-test-preview
+ci.yml:stripe-sandbox
+ci.yml:validate-promote
+#
+# claude-mention.yml
+claude-mention.yml:claude
+#
+# claude-review-reusable.yml
+claude-review-reusable.yml:review
+#
+# cleanup-preview.yml
+cleanup-preview.yml:cleanup
+#
+# cleanup-r2-staging.yml
+cleanup-r2-staging.yml:cleanup
+#
+# ct-install-methods.yml
+ct-install-methods.yml:install-methods-complete
+ct-install-methods.yml:test-linux-arm64
+ct-install-methods.yml:test-linux-x64
+#
+# ct-tests.yml
+ct-tests.yml:migration-test
+ct-tests.yml:test-account-e2e
+ct-tests.yml:test-drills
+ct-tests.yml:test-e2e-ceph
+ct-tests.yml:test-e2e-ceph-workers
+ct-tests.yml:test-e2e-k8s
+ct-tests.yml:test-e2e-k8s-ceph
+ct-tests.yml:test-e2e-k8s-multinode
+ct-tests.yml:test-e2e-migrate
+ct-tests.yml:test-e2e-workers
+ct-tests.yml:test-fork-isolation
+ct-tests.yml:test-license-enforcement
+ct-tests.yml:test-renet
+ct-tests.yml:test-unit
+#
+# ct-update-flow.yml
+ct-update-flow.yml:test-linux-x64
+#
+# edge-clone-d1.yml
+edge-clone-d1.yml:clone
+edge-clone-d1.yml:read-regions
+#
+# housekeeping.yml
+housekeeping.yml:cleanup
+housekeeping.yml:stripe-cleanup
+#
+# nightly-status.yml
+nightly-status.yml:report
+#
+# promote-stable.yml
+promote-stable.yml:promote
+promote-stable.yml:verify-stable
+#
+# review-status.yml
+review-status.yml:review-status
+#
+# watchdog-monitor.yml
+watchdog-monitor.yml:monitor

@@ -8,7 +8,11 @@
 #
 # THE WORKFLOW OWNS THE FETCHING. Each fixture is produced by the calling
 # workflow (values env-passed, never interpolated into run:):
-#   --event   $GITHUB_EVENT_PATH of the workflow_run event, verbatim.
+#   --event   $GITHUB_EVENT_PATH of the workflow_run event, verbatim. On the
+#             workflow_dispatch path the workflow SYNTHESIZES this from the
+#             head's completed CI run and adds one key the real payload never
+#             has: {autopilot_dispatch: {actor, pr_input, model, max_rounds}}.
+#             Its presence is what makes this a dispatch-armed round.
 #   --pr      {number, author, draft, labels[], label_applier, head_repo,
 #              base_repo, head_sha, unresolved_threads, review_gate_red}
 #             from `gh api repos/$R/pulls/$N` (author=.user.login,
@@ -31,11 +35,29 @@
 #   AUTOPILOT_APPLIER_ALLOWLIST  comma-separated label appliers
 #                                (defaults to the author allowlist)
 #   AUTOPILOT_LABEL              arming label (default: autopilot)
-#   AUTOPILOT_MAX_ROUNDS         round cap (default: 25)
+#   AUTOPILOT_MAX_ROUNDS         round cap fallback (default: 25)
+#
+# THREE WAYS TO ARM, one escalation latch. `autopilot-blocked` is checked
+# FIRST and beats all three. Then, in order:
+#   label     the arming label is applied (the manual path, unchanged)
+#   dispatch  a workflow_dispatch carrying a pr_number - THE DISPATCH IS THE
+#             ARMING ACT, so round 1 runs straight off it with no label
+#   campaign  the trusted state comment says `campaign: open` and rounds
+#             remain - this is what carries the loop across the workflow_run
+#             rounds that follow the dispatch
+# Each path carries its own trust check: label -> the label applier, dispatch
+# -> the dispatching actor, campaign -> nothing further, because the state
+# comment is only trusted when its AUTHOR is the autopilot app (enforced by
+# state-comment.sh select, upstream in the workflow). The author allowlist
+# applies on all three.
 #
 # Output: {"decision":"go"|"no-go","mode":...,"reason":...,"round":N,
-#          "push_allowed":bool}. Exit 0 for any decision; 2 for usage errors
-#          (a wiring bug must be loud, never read as a quiet no-go).
+#          "push_allowed":bool,"armed_by":...,"model":...,"rounds_max":N,
+#          "campaign":"open"|"closed"|"none","dispatch_trusted":bool}.
+#          Exit 0 for any decision; 2 for
+#          usage errors (a wiring bug must be loud, never read as a quiet
+#          no-go). `model`, `rounds_max` and `campaign` are what the workflow
+#          feeds to claude_args and to the next state-comment write.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -72,9 +94,20 @@ jq -e . "$PR" >/dev/null || {
 }
 
 MAX_ROUNDS="${AUTOPILOT_MAX_ROUNDS:-25}"
+[[ "$MAX_ROUNDS" =~ ^[0-9]{1,4}$ ]] || MAX_ROUNDS=25
 LABEL="${AUTOPILOT_LABEL:-autopilot}"
 PUSH_ALLOWED=false
 [[ "${AUTOPILOT_ALLOW_PUSH:-}" == "true" ]] && PUSH_ALLOWED=true
+
+# The only models a round may be dispatched with. An unknown value is a
+# TYPO, not an instruction: it falls back to the default rather than reaching
+# claude_args, where it would fail the round after paying for the runner.
+DEFAULT_MODEL="claude-sonnet-5"
+MODEL_ALLOWED="claude-sonnet-5,claude-opus-5"
+RESOLVED_MODEL="$DEFAULT_MODEL"
+CAMPAIGN_STATE="none"
+ARMED_BY="none"
+DISPATCH_TRUSTED=false
 
 # Round number this invocation would become: ledger entries + 1. The ledger
 # in the trusted-author state comment is the ONLY round counter (wall 3: the
@@ -85,14 +118,43 @@ if [[ -n "$STATE" && -s "$STATE" ]]; then
 fi
 ROUND=$((ROUNDS_DONE + 1))
 
+# in_csv_allowlist <value> <csv> - exact-name membership, whitespace-trimmed.
+in_csv_allowlist() {
+    local value="$1" csv="$2" item
+    local -a __items=()
+    IFS=',' read -ra __items <<<"$csv"
+    for item in "${__items[@]}"; do
+        item="${item//[[:space:]]/}"
+        [[ -n "$item" && "$item" == "$value" ]] && return 0
+    done
+    return 1
+}
+
 emit() { # emit <decision> <mode> <reason>
+    # The campaign value the NEXT state-comment write should record. A
+    # dispatch-armed round opens the campaign; reaching mode done closes it;
+    # anything else carries the current value forward untouched, so a
+    # label-armed round never closes a campaign it knows nothing about.
+    local campaign_next="$CAMPAIGN_STATE"
+    if [[ "$2" == "done" ]]; then
+        [[ "$CAMPAIGN_STATE" == "none" ]] || campaign_next="closed"
+    elif [[ "$1" == "go" && "$ARMED_BY" == "dispatch" ]]; then
+        campaign_next="open"
+    fi
     jq -cn \
         --arg decision "$1" \
         --arg mode "$2" \
         --arg reason "$3" \
         --argjson round "$ROUND" \
         --argjson push_allowed "$PUSH_ALLOWED" \
-        '{decision: $decision, mode: $mode, reason: $reason, round: $round, push_allowed: $push_allowed}'
+        --arg armed_by "$ARMED_BY" \
+        --arg model "$RESOLVED_MODEL" \
+        --argjson rounds_max "$MAX_ROUNDS" \
+        --arg campaign "$campaign_next" \
+        --argjson dispatch_trusted "$DISPATCH_TRUSTED" \
+        '{decision: $decision, mode: $mode, reason: $reason, round: $round, push_allowed: $push_allowed,
+          armed_by: $armed_by, model: $model, rounds_max: $rounds_max, campaign: $campaign,
+          dispatch_trusted: $dispatch_trusted}'
     exit 0
 }
 no_go() { emit "no-go" "none" "$1"; }
@@ -124,6 +186,60 @@ pr_threads="$(jq -r '.unresolved_threads // 0' "$PR")"
 [[ "$pr_threads" =~ ^[0-9]+$ ]] || pr_threads=0
 pr_review_red="$(jq -r '.review_gate_red // false' "$PR")"
 
+# Dispatch facts. The key is absent on the workflow_run path, so `is_dispatch`
+# is false there without the gate needing to know the event name twice.
+is_dispatch=false
+jq -e '.autopilot_dispatch' "$EVENT" >/dev/null 2>&1 && is_dispatch=true
+dispatch_actor="$(jq -r '.autopilot_dispatch.actor // empty' "$EVENT")"
+dispatch_pr="$(jq -r '.autopilot_dispatch.pr_input // empty' "$EVENT")"
+dispatch_model="$(jq -r '.autopilot_dispatch.model // empty' "$EVENT")"
+dispatch_rounds="$(jq -r '.autopilot_dispatch.max_rounds // empty' "$EVENT")"
+
+# Is the DISPATCHER trusted? Reported separately from the arming decision
+# because the workflow gates its hold-open debug session on it, and that
+# session is a human shell on the runner. Arming can succeed by label (whose
+# trust check is the label APPLIER, a different person) while the actor who
+# pressed Run workflow is nobody in particular, so "this round is armed" is
+# not the same claim as "this dispatcher may open a shell here".
+DISPATCH_TRUSTED=false
+if [[ "$is_dispatch" == "true" ]] &&
+    in_csv_allowlist "$dispatch_actor" "${AUTOPILOT_APPLIER_ALLOWLIST:-${AUTOPILOT_AUTHOR_ALLOWLIST:-}}"; then
+    DISPATCH_TRUSTED=true
+fi
+
+# Campaign fields, read back through state-comment.sh rather than parsed here.
+# The metadata line therefore has exactly ONE writer and ONE reader; a second
+# copy of the format in this file is how the two would drift apart silently.
+# Every value it returns is already normalized there.
+campaign_fields='{"campaign":"none","model":"none","rounds_max":0}'
+if [[ -n "$STATE" && -s "$STATE" ]]; then
+    campaign_fields="$("$SCRIPT_DIR/state-comment.sh" fields --body "$STATE")"
+fi
+CAMPAIGN_STATE="$(jq -r '.campaign' <<<"$campaign_fields")"
+campaign_model="$(jq -r '.model' <<<"$campaign_fields")"
+campaign_rounds="$(jq -r '.rounds_max' <<<"$campaign_fields")"
+
+# Model resolution, in the design's order: the dispatch input beats the
+# campaign's recorded model, which beats the default. An unrecognised value at
+# either level degrades to the default rather than failing the round.
+if [[ "$is_dispatch" == "true" && -n "$dispatch_model" ]]; then
+    RESOLVED_MODEL="$dispatch_model"
+elif [[ "$campaign_model" != "none" ]]; then
+    RESOLVED_MODEL="$campaign_model"
+fi
+if ! in_csv_allowlist "$RESOLVED_MODEL" "$MODEL_ALLOWED"; then
+    log_warn "model '$RESOLVED_MODEL' is not one of $MODEL_ALLOWED; falling back to $DEFAULT_MODEL"
+    RESOLVED_MODEL="$DEFAULT_MODEL"
+fi
+
+# Round-cap resolution, same order, with the repo variable as the third
+# fallback (already loaded into MAX_ROUNDS above) and 25 as the fourth.
+if [[ "$is_dispatch" == "true" && "$dispatch_rounds" =~ ^[0-9]{1,4}$ ]] && ((dispatch_rounds > 0)); then
+    MAX_ROUNDS="$dispatch_rounds"
+elif ((campaign_rounds > 0)); then
+    MAX_ROUNDS="$campaign_rounds"
+fi
+
 # 2. Fork guard, in both records: the run's head repo and the PR's head repo
 # must both equal the base repo. The autopilot never touches fork-sourced
 # heads (03-v2-autonomy.md section 2, check 2).
@@ -134,26 +250,29 @@ if [[ -z "$pr_head_repo" || "$pr_head_repo" != "$pr_base_repo" ]]; then
     no_go "fork-pr: PR head repo '$pr_head_repo' is not the base repo '$pr_base_repo'"
 fi
 
-# 3. The arming label is a state flag; no label, no autopilot. The blocked
-# label is the escalation latch and always wins.
+# 3. Arming. The blocked label is the escalation latch and is checked FIRST,
+# so it beats every arming path including a fresh dispatch: cancelling a run
+# kills one round, `autopilot-blocked` kills the loop.
 if jq -e --arg l "autopilot-blocked" '.labels // [] | index($l)' "$PR" >/dev/null; then
     no_go "blocked-label: 'autopilot-blocked' is applied; a human must clear the escalation first"
 fi
-if ! jq -e --arg l "$LABEL" '.labels // [] | index($l)' "$PR" >/dev/null; then
-    no_go "label-absent: '$LABEL' is not applied to this PR"
+if jq -e --arg l "$LABEL" '.labels // [] | index($l)' "$PR" >/dev/null; then
+    ARMED_BY="label"
+elif [[ "$is_dispatch" == "true" && -n "$dispatch_pr" ]]; then
+    # The dispatch IS the arming act (03-v2-autonomy.md section 2, corrected
+    # 2026-08-05): round 1 runs straight off it, and the state-comment write
+    # at the end of that round records the campaign so the workflow_run
+    # rounds that follow can continue without a label ever existing.
+    ARMED_BY="dispatch"
+elif [[ "$CAMPAIGN_STATE" == "open" ]] && ((ROUNDS_DONE < MAX_ROUNDS)); then
+    # The campaign path. Trust comes from the state comment's AUTHORSHIP,
+    # already enforced upstream by state-comment.sh select (bot author + exact
+    # header), so there is deliberately no applier/actor check below for it:
+    # an outsider cannot post a comment this gate would read at all.
+    ARMED_BY="campaign"
+else
+    no_go "not-armed: no '$LABEL' label, no dispatch with a PR number, and no open campaign with rounds remaining (campaign: $CAMPAIGN_STATE, rounds done: $ROUNDS_DONE/$MAX_ROUNDS)"
 fi
-
-# in_csv_allowlist <value> <csv> - exact-name membership, whitespace-trimmed.
-in_csv_allowlist() {
-    local value="$1" csv="$2" item
-    local -a __items=()
-    IFS=',' read -ra __items <<<"$csv"
-    for item in "${__items[@]}"; do
-        item="${item//[[:space:]]/}"
-        [[ -n "$item" && "$item" == "$value" ]] && return 0
-    done
-    return 1
-}
 
 # 4. Author allowlist: the autopilot never babysits a stranger's PR. An empty
 # allowlist allows nobody (fail closed), by construction of the membership
@@ -162,11 +281,23 @@ if ! in_csv_allowlist "$pr_author" "${AUTOPILOT_AUTHOR_ALLOWLIST:-}"; then
     no_go "author-not-allowlisted: PR author '$pr_author' is not in AUTOPILOT_AUTHOR_ALLOWLIST"
 fi
 
-# 5. Label applier allowlist: anyone with triage can apply a label on a
-# public repo, so the applier is a separate trust decision from the author.
-if ! in_csv_allowlist "$pr_applier" "${AUTOPILOT_APPLIER_ALLOWLIST:-${AUTOPILOT_AUTHOR_ALLOWLIST:-}}"; then
-    no_go "applier-not-allowlisted: label applier '$pr_applier' is not allowlisted"
-fi
+# 5. Arming trust, per path. Anyone with triage can apply a label on a public
+# repo and anyone with write can dispatch a workflow, so whoever performed the
+# ARMING ACT is a separate trust decision from the PR author. Same allowlist
+# for both: the act is the same delegation either way.
+case "$ARMED_BY" in
+    label)
+        if ! in_csv_allowlist "$pr_applier" "${AUTOPILOT_APPLIER_ALLOWLIST:-${AUTOPILOT_AUTHOR_ALLOWLIST:-}}"; then
+            no_go "applier-not-allowlisted: label applier '$pr_applier' is not allowlisted"
+        fi
+        ;;
+    dispatch)
+        if ! in_csv_allowlist "$dispatch_actor" "${AUTOPILOT_APPLIER_ALLOWLIST:-${AUTOPILOT_AUTHOR_ALLOWLIST:-}}"; then
+            no_go "dispatch-actor-not-allowlisted: dispatching actor '$dispatch_actor' is not allowlisted"
+        fi
+        ;;
+    campaign) ;; # see the arming block: authorship of the state comment is the check
+esac
 
 # 6. Dedup by (run_id, attempt): a queued duplicate of an already-handled
 # event must exit without a round (concurrency is cancel-in-progress:false,
@@ -175,7 +306,10 @@ if [[ -n "$STATE" && -s "$STATE" ]] && grep -qE "run ${run_id}/${run_attempt}([^
     no_go "already-handled: run ${run_id}/${run_attempt} is in the ledger"
 fi
 
-# 7. Round cap, from the trusted ledger only.
+# 7. Round cap, from the trusted ledger only. This is also what ends a
+# campaign the operator never stops: the arming path above will not re-arm on
+# a campaign once the cap is reached, and a label-armed PR dies here with the
+# reason spelled out instead of a bare "not armed".
 if ((ROUNDS_DONE >= MAX_ROUNDS)); then
     no_go "round-cap: $ROUNDS_DONE rounds recorded, cap is $MAX_ROUNDS; escalating to the operator is the design working"
 fi

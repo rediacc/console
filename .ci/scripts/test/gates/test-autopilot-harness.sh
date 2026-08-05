@@ -660,6 +660,37 @@ run_gate() { # <event> <pr> [extra gate args...] ; env preset by caller
     bash "$GATE" --classify --event "$1" --pr "$2" "${@:3}"
 }
 
+# mk_dispatch_event <file> <conclusion> [actor] [pr_input] [model] [max_rounds]
+# The dispatch path's SYNTHESIZED payload: the same workflow_run shape plus
+# the autopilot_dispatch key the real payload never carries. Its presence is
+# what makes a round dispatch-armed.
+mk_dispatch_event() {
+    local file="$1"
+    mk_event "$file" "$2"
+    # `${n-default}`, NOT `${n:-default}`: an explicitly EMPTY pr_input is the
+    # case under test (a dispatch with no PR number arms nothing), and `:-`
+    # would silently substitute the default and test the opposite.
+    jq -c --arg a "${3-op}" --arg p "${4-7}" --arg m "${5-}" --arg r "${6-}" \
+        '. + {autopilot_dispatch: {actor: $a, pr_input: $p, model: $m, max_rounds: $r}}' \
+        "$file" >"$file.tmp" && mv "$file.tmp" "$file"
+}
+
+# mk_state <file> <campaign> <model> <rounds_max> [rounds-recorded]
+# A state body in the exact shape state-comment.sh render produces, so the
+# gate is reading the real format rather than a convenient approximation.
+mk_state() {
+    local file="$1" campaign="$2" model="$3" cap="$4" done_rounds="${5:-0}" i
+    {
+        printf '### Autopilot state (machine-maintained, do not edit)\n'
+        printf 'state: waiting-ci | round: %s/%s | head: abc | last_run: 1/1 handled | campaign: %s | model: %s | rounds_max: %s\n' \
+            "$((done_rounds + 1))" "$cap" "$campaign" "$model" "$cap"
+        printf '\n#### Round ledger\n'
+        for ((i = 1; i <= done_rounds; i++)); do
+            printf 'r%d | run 3999900%04d/1 | red: unit | cause: x | fix: y\n' "$i" "$i"
+        done
+    } >"$file"
+}
+
 gate_field() { jq -r ".$2" <<<"$1"; }
 
 test_gate_stage_flags_fail_closed() {
@@ -699,7 +730,10 @@ test_gate_label_and_allowlists() {
     local d
     mk_pr "$WORK/pr-nolabel.json" 'labels=[]'
     d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json")"
-    assert_contains "$(gate_field "$d" reason)" "label-absent" "no arming label, no autopilot"
+    # 'not-armed' rather than the old 'label-absent': since the campaign work
+    # the label is one of three ways in, so the reason names all three and the
+    # state it read for each.
+    assert_contains "$(gate_field "$d" reason)" "not-armed" "no label, no dispatch, no campaign: no autopilot"
     mk_pr "$WORK/pr-blocked.json" 'labels=["autopilot","autopilot-blocked"]'
     d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev.json" "$WORK/pr-blocked.json")"
     assert_contains "$(gate_field "$d" reason)" "blocked-label" "the escalation latch always wins"
@@ -718,6 +752,192 @@ test_gate_label_and_allowlists() {
         run_gate "$WORK/ev.json" "$WORK/pr-applier.json")"
     assert_eq "$(gate_field "$d" decision)" "go" "an explicit applier allowlist admits them"
     log_pass "label, author and applier checks each refuse independently"
+}
+
+# ---------------------------------------------------------------------------
+# The arming matrix. Three ways in (label, dispatch, campaign), one latch that
+# beats all three, and one trust check per path. Every direction gets its own
+# case, because "armed" and "may be armed by THIS actor" are different claims
+# and conflating them is how a debug shell gets handed to a stranger.
+# ---------------------------------------------------------------------------
+
+test_gate_arming_label_only() {
+    mk_event "$WORK/ev.json" failure
+    mk_pr "$WORK/pr.json"
+    local d
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev.json" "$WORK/pr.json")"
+    assert_eq "$(gate_field "$d" decision)" "go" "the label alone still arms a round"
+    assert_eq "$(gate_field "$d" armed_by)" "label" "and reports which path armed it"
+    assert_eq "$(gate_field "$d" campaign)" "none" "a label-armed round opens no campaign"
+    assert_eq "$(gate_field "$d" dispatch_trusted)" "false" "and no dispatcher is trusted on a workflow_run"
+    log_pass "arming path 1: the label, unchanged by the campaign work"
+}
+
+test_gate_arming_dispatch_only() {
+    mk_event "$WORK/ev.json" failure
+    mk_pr "$WORK/pr-nolabel.json" 'labels=[]' 'label_applier=""'
+    local d
+    # No label at all: the dispatch IS the arming act.
+    mk_dispatch_event "$WORK/ev-disp.json" failure op 7
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-disp.json" "$WORK/pr-nolabel.json")"
+    assert_eq "$(gate_field "$d" decision)" "go" "a dispatch with a PR number arms an unlabelled PR"
+    assert_eq "$(gate_field "$d" armed_by)" "dispatch" "by the dispatch path"
+    assert_eq "$(gate_field "$d" campaign)" "open" "and the round opens a campaign for the rounds that follow"
+    assert_eq "$(gate_field "$d" dispatch_trusted)" "true" "an allowlisted dispatcher may also hold the runner open"
+    # REFUSAL: the dispatching actor is a separate trust decision.
+    mk_dispatch_event "$WORK/ev-stranger.json" failure stranger 7
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-stranger.json" "$WORK/pr-nolabel.json")"
+    assert_eq "$(gate_field "$d" decision)" "no-go" "a non-allowlisted dispatcher is refused"
+    assert_contains "$(gate_field "$d" reason)" "dispatch-actor-not-allowlisted" "as dispatch-actor-not-allowlisted"
+    assert_eq "$(gate_field "$d" dispatch_trusted)" "false" "and is never trusted for the debug session"
+    # A dispatch with no PR number arms nothing: the sweeper's shape, and the
+    # reason the PR input is part of the arming condition rather than decoration.
+    mk_dispatch_event "$WORK/ev-nopr.json" failure op ""
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-nopr.json" "$WORK/pr-nolabel.json")"
+    assert_contains "$(gate_field "$d" reason)" "not-armed" "a dispatch without a PR number arms nothing"
+    log_pass "arming path 2: the dispatch, with the dispatching actor checked in both directions"
+}
+
+test_gate_arming_campaign() {
+    mk_event "$WORK/ev.json" failure
+    mk_pr "$WORK/pr-nolabel.json" 'labels=[]' 'label_applier=""'
+    local d
+    # An open campaign carries the loop with no label and no dispatch: this is
+    # the workflow_run round that follows the arming dispatch.
+    mk_state "$WORK/state-open.txt" open claude-opus-5 12 1
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json" --state "$WORK/state-open.txt")"
+    assert_eq "$(gate_field "$d" decision)" "go" "an open campaign arms the next round by itself"
+    assert_eq "$(gate_field "$d" armed_by)" "campaign" "by the campaign path"
+    assert_eq "$(gate_field "$d" campaign)" "open" "and leaves the campaign open"
+    # Closed campaign, no label, no dispatch: nothing arms it.
+    mk_state "$WORK/state-closed.txt" closed claude-opus-5 12 1
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json" --state "$WORK/state-closed.txt")"
+    assert_eq "$(gate_field "$d" decision)" "no-go" "a closed campaign arms nothing"
+    assert_contains "$(gate_field "$d" reason)" "not-armed" "as not-armed"
+    assert_contains "$(gate_field "$d" reason)" "campaign: closed" "naming the campaign state it read"
+    # An open campaign whose rounds are spent stops at the cap rather than
+    # re-arming forever.
+    mk_state "$WORK/state-spent.txt" open claude-opus-5 2 2
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json" --state "$WORK/state-spent.txt")"
+    assert_eq "$(gate_field "$d" decision)" "no-go" "an open campaign at its cap arms nothing"
+    assert_contains "$(gate_field "$d" reason)" "rounds done: 2/2" "reporting the exhausted budget"
+    log_pass "arming path 3: an open campaign carries the loop, a closed or spent one does not"
+}
+
+test_gate_blocked_label_beats_every_arming_path() {
+    mk_event "$WORK/ev.json" failure
+    local d
+    # 1) label + blocked
+    mk_pr "$WORK/pr-b1.json" 'labels=["autopilot","autopilot-blocked"]'
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev.json" "$WORK/pr-b1.json")"
+    assert_contains "$(gate_field "$d" reason)" "blocked-label" "the latch beats the label path"
+    # 2) dispatch + blocked
+    mk_pr "$WORK/pr-b2.json" 'labels=["autopilot-blocked"]' 'label_applier=""'
+    mk_dispatch_event "$WORK/ev-disp.json" failure op 7
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-disp.json" "$WORK/pr-b2.json")"
+    assert_contains "$(gate_field "$d" reason)" "blocked-label" "and the dispatch path, even though the dispatch is the arming act"
+    # 3) campaign + blocked
+    mk_state "$WORK/state-open.txt" open claude-opus-5 12 1
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-b2.json" --state "$WORK/state-open.txt")"
+    assert_contains "$(gate_field "$d" reason)" "blocked-label" "and an open campaign"
+    log_pass "autopilot-blocked kills the loop on all three arming paths"
+}
+
+test_gate_campaign_field_resolution() {
+    mk_pr "$WORK/pr.json"
+    mk_state "$WORK/state-camp.txt" open claude-opus-5 7 1
+    local d
+    # Campaign values apply when the event carries no dispatch.
+    mk_event "$WORK/ev.json" failure
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op AUTOPILOT_MAX_ROUNDS=25 \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --state "$WORK/state-camp.txt")"
+    assert_eq "$(gate_field "$d" model)" "claude-opus-5" "the campaign's model beats the default"
+    assert_eq "$(gate_field "$d" rounds_max)" "7" "and its cap beats the AUTOPILOT_MAX_ROUNDS variable"
+    # The dispatch input beats the campaign.
+    mk_dispatch_event "$WORK/ev-d.json" failure op 7 claude-sonnet-5 3
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op AUTOPILOT_MAX_ROUNDS=25 \
+        run_gate "$WORK/ev-d.json" "$WORK/pr.json" --state "$WORK/state-camp.txt")"
+    assert_eq "$(gate_field "$d" model)" "claude-sonnet-5" "the dispatch input beats the campaign's model"
+    assert_eq "$(gate_field "$d" rounds_max)" "3" "and the dispatch cap beats the campaign's"
+    # With neither, the repo variable is the third fallback and 25 the fourth.
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op AUTOPILOT_MAX_ROUNDS=9 \
+        run_gate "$WORK/ev.json" "$WORK/pr.json")"
+    assert_eq "$(gate_field "$d" model)" "claude-sonnet-5" "no campaign and no input means the default model"
+    assert_eq "$(gate_field "$d" rounds_max)" "9" "and the repo variable's cap"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev.json" "$WORK/pr.json")"
+    assert_eq "$(gate_field "$d" rounds_max)" "25" "with 25 as the last fallback"
+    # An unknown model is a TYPO, not an instruction: it never reaches
+    # claude_args, where it would fail the round after paying for the runner.
+    mk_dispatch_event "$WORK/ev-bad.json" failure op 7 "claude-not-a-model" ""
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-bad.json" "$WORK/pr.json")"
+    assert_eq "$(gate_field "$d" model)" "claude-sonnet-5" "an unrecognised model falls back to the default"
+    log_pass "model and round-cap resolution follows dispatch > campaign > variable > default"
+}
+
+test_gate_campaign_closes_on_done() {
+    mk_event "$WORK/ev-s.json" success
+    mk_pr "$WORK/pr.json"
+    mk_state "$WORK/state-open.txt" open claude-opus-5 12 1
+    local d
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev-s.json" "$WORK/pr.json" --state "$WORK/state-open.txt")"
+    assert_eq "$(gate_field "$d" mode)" "done" "green, ready, reviewed: done"
+    assert_eq "$(gate_field "$d" campaign)" "closed" "and done closes the campaign, so nothing re-arms off it"
+    # CONTROL: with no campaign at all, done leaves 'none' rather than
+    # inventing a campaign to close.
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr.json")"
+    assert_eq "$(gate_field "$d" campaign)" "none" "a PR that never had a campaign does not acquire a closed one"
+    log_pass "the campaign has a terminating state, and done is it"
+}
+
+test_gate_campaign_fields_survive_a_round_trip() {
+    # ANTI-DRIFT: the gate reads the metadata line through state-comment.sh
+    # rather than re-parsing it, so a rendered body must classify back to the
+    # values it was rendered with. If the format ever changes in one file
+    # only, this is what goes red.
+    bash "$STATE_COMMENT" render --body /dev/null --state waiting-ci --round 1/6 \
+        --head abc1234 --last-run "30123456789/1 handled" \
+        --campaign open --model claude-opus-5 --rounds-max 6 >"$WORK/rt-body.txt"
+    mk_event "$WORK/ev.json" failure
+    mk_pr "$WORK/pr-nolabel.json" 'labels=[]' 'label_applier=""'
+    local d
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json" --state "$WORK/rt-body.txt")"
+    assert_eq "$(gate_field "$d" armed_by)" "campaign" "a rendered body arms the campaign path"
+    assert_eq "$(gate_field "$d" model)" "claude-opus-5" "with the model it was rendered with"
+    assert_eq "$(gate_field "$d" rounds_max)" "6" "and the cap it was rendered with"
+    # CONTROL: the reader CAN come back empty. A body with no metadata line
+    # must yield the sentinels, not the previous test's values.
+    printf 'not a state comment at all\n' >"$WORK/rt-junk.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr-nolabel.json" --state "$WORK/rt-junk.txt")"
+    assert_contains "$(gate_field "$d" reason)" "campaign: none" "and a body with no metadata line reads as no campaign"
+    log_pass "render -> classify round-trips, and a bodyless read degrades to the sentinels"
+}
+
+test_state_comment_fields_normalize_hostile_values() {
+    # The state comment is bot-authored and author-checked upstream, so this
+    # is defence in depth -- but these values feed a model selection and a
+    # round cap, and a surprise value must fail closed rather than propagate.
+    printf 'state: x | campaign: open; rm -rf / | model: ../../etc/passwd | rounds_max: 99999999\n' \
+        >"$WORK/hostile.txt"
+    local f
+    f="$(bash "$STATE_COMMENT" fields --body "$WORK/hostile.txt")"
+    assert_eq "$(jq -r '.campaign' <<<"$f")" "none" "a campaign value with shell in it collapses to none"
+    assert_eq "$(jq -r '.model' <<<"$f")" "none" "a path-shaped model collapses to none"
+    assert_eq "$(jq -r '.rounds_max' <<<"$f")" "0" "an out-of-range cap collapses to 0"
+    # CONTROL: the same reader passes legitimate values through untouched.
+    printf 'state: waiting-ci | round: 1/9 | head: a | last_run: 1/1 handled | campaign: open | model: claude-opus-5 | rounds_max: 9\n' \
+        >"$WORK/clean.txt"
+    f="$(bash "$STATE_COMMENT" fields --body "$WORK/clean.txt")"
+    assert_eq "$(jq -r '.campaign' <<<"$f")" "open" "a legitimate campaign survives"
+    assert_eq "$(jq -r '.model' <<<"$f")" "claude-opus-5" "so does a legitimate model"
+    assert_eq "$(jq -r '.rounds_max' <<<"$f")" "9" "and a legitimate cap"
+    log_pass "campaign fields are validated on read, in both directions"
 }
 
 test_gate_dedup_and_round_cap() {
@@ -959,6 +1179,14 @@ test_push_boundary_never_stages_wholesale
 test_gate_stage_flags_fail_closed
 test_gate_fork_guard
 test_gate_label_and_allowlists
+test_gate_arming_label_only
+test_gate_arming_dispatch_only
+test_gate_arming_campaign
+test_gate_blocked_label_beats_every_arming_path
+test_gate_campaign_field_resolution
+test_gate_campaign_closes_on_done
+test_gate_campaign_fields_survive_a_round_trip
+test_state_comment_fields_normalize_hostile_values
 test_gate_dedup_and_round_cap
 test_gate_watchdog_deferral
 test_gate_mode_selection_table
