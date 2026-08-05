@@ -26,6 +26,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { ValidationError } from '../utils/errors.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
@@ -390,6 +391,14 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       const sshPrivateKey =
         localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
+      // #74: declare the datastore the repo is RECORDED on. This is the only
+      // caller that passes no requestedSizeGb, so it is the one that reaches
+      // the size probe — and without this it measured the machine's default
+      // datastore for a repo that lives on a named one, found nothing, and
+      // reissued at the 1 GB floor. Undefined for a {machine} placement, which
+      // correctly leaves the machine's own default in place.
+      const datastoreMount = await recordedDatastoreMount(repoKey);
+
       const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
         repositoryGuid: repoConfig.repositoryGuid,
         grandGuid: repoConfig.grandGuid,
@@ -397,6 +406,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
           repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid
             ? 'fork'
             : 'grand',
+        ...(datastoreMount !== undefined && { datastoreMount }),
       });
       if (!refreshed) {
         throw new ValidationError(t('commands.subscription.refresh.repo.failed'));

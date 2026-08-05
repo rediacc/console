@@ -39,7 +39,7 @@ import {
   machineSlotLimitMessage,
   readMachineSlotStatus,
 } from '../account/license-preflight.js';
-import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
+import { clusterKubeconfigRemotePath, namedDatastoreMount } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
@@ -125,6 +125,13 @@ interface RepoLicenseContext {
    * BEFORE issuance because a pre-provisioning mint has no repo to scan.
    */
   datastoreId?: string;
+  /**
+   * Mount of the datastore holding the repo's image, from its recorded
+   * placement. Carried so the post-create identity refresh measures the same
+   * place the pre-issuance probe did, instead of falling back to the machine
+   * default inside `refreshRepoLicenseIdentity`.
+   */
+  datastoreMount: string;
 }
 
 async function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
@@ -334,11 +341,12 @@ async function resolveRepoLicenseContext(
   if (!resolved) return null;
   const { repo, machine } = resolved;
 
-  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  const datastoreMount = repoImageDatastoreMount(repo, machine);
   const requestedSizeGb = await resolveRequestedSizeGb(
+    functionName,
     params,
     repo?.repositoryGuid,
-    datastore,
+    datastoreMount,
     sftp
   );
   if (requestedSizeGb === null) return null;
@@ -359,8 +367,9 @@ async function resolveRepoLicenseContext(
   // (fork, commit) the placement read is the SOURCE repo's, which is the right
   // one — a fork lands in the datastore its parent lives in, and placement is a
   // property of the family, not of the tag.
-  const ctx = buildRepoLicenseContext(functionName, params, repo, requestedSizeGb);
-  if (!ctx) return null;
+  const built = buildRepoLicenseContext(functionName, params, repo, requestedSizeGb);
+  if (!built) return null;
+  const ctx: RepoLicenseContext = { ...built, datastoreMount };
   const datastoreId = await resolveProvisioningDatastoreId(repo, sftp, scope);
   return datastoreId === undefined ? ctx : { ...ctx, datastoreId };
 }
@@ -394,7 +403,7 @@ function buildRepoLicenseContext(
   params: Record<string, unknown>,
   repo: Awaited<ReturnType<typeof configService.getRepository>> | null,
   requestedSizeGb: number
-): RepoLicenseContext | null {
+): Omit<RepoLicenseContext, 'datastoreMount'> | null {
   // fork and commit both mint against `params.tag`, and both are derived
   // snapshots of the source repo rather than new lineages, so both are kind
   // 'fork' rooted at the source's grand. `repo commit` registers the commit
@@ -420,7 +429,47 @@ function buildRepoLicenseContext(
   };
 }
 
+/**
+ * The datastore mount the repo's image actually lives under.
+ *
+ * The machine's default datastore is the answer ONLY for a `{machine}`
+ * placement. A repo created with `repo create --datastore <d>` lives at
+ * `/mnt/rediacc-ds/<d>/repositories/<guid>`, and reading the machine default
+ * for it is the same #74 mistake the dispatch path made: the config records one
+ * place and the machine is asked about another. It was still live here, on the
+ * size probe below, and it failed SILENTLY rather than loudly — the stat found
+ * nothing, the old `|| echo ${REPO_SIZE_PROBE_UNKNOWN}` turned that into 0 bytes, and every fork or
+ * commit of a named-datastore repo was pre-issued a licence for the 1 GB floor
+ * regardless of the repo's real size. Neither verb exposes `--size`, so that
+ * estimate was not a fallback for them; it was the only number they ever sent.
+ *
+ * Placement is a property of the FAMILY, and the flat per-tag records carry a
+ * copy of it (resource-state.ts flattening), so `repo.placement` answers for a
+ * fork's parent as well — which is the repo this probe measures.
+ */
+function repoImageDatastoreMount(
+  repo: RepositoryConfig | null | undefined,
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>
+): string {
+  const placement = repo?.placement;
+  if (placement && 'datastore' in placement) return namedDatastoreMount(placement.datastore);
+  return machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+}
+
+/**
+ * Printed by the size probe when `stat` could not answer. Deliberately not a
+ * number: a failed probe and a real measurement must not be the same bytes.
+ */
+const REPO_SIZE_PROBE_UNKNOWN = 'rediacc-size-unknown';
+
+/**
+ * Floor for a licence size request. renet compares `requested > contract limit`,
+ * so the floor never over-claims against a contract.
+ */
+const MIN_REQUESTED_SIZE_GB = 1;
+
 async function resolveRequestedSizeGb(
+  functionName: string,
   params: Record<string, unknown>,
   repositoryGuid: string | undefined,
   datastore: string,
@@ -432,11 +481,53 @@ async function resolveRequestedSizeGb(
   // Sized from the PARENT image in every case, fork included: a fork has no
   // image of its own yet, and it starts as a reflink of its parent.
   if (!repositoryGuid) return null;
-  const bytesOutput = await sftp.exec(
-    `stat -c %s '${datastore}/repositories/${repositoryGuid}' 2>/dev/null || echo 0`
+  const imagePath = `${datastore}/repositories/${repositoryGuid}`;
+  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY
+  // reason — wrong datastore, unreadable mount, missing image — produced the
+  // same bytes as a genuinely tiny image, and the caller then reported the 1 GB
+  // floor with the confidence of a measurement. The sentinel keeps "we did not
+  // measure" expressible, which is the whole point of the distinction.
+  const probe = (
+    await sftp.exec(
+      `stat -c %s ${shellQuote(imagePath)} 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}`
+    )
+  ).trim();
+  if (!/^\d+$/.test(probe)) {
+    warnUnmeasuredRepoSize(functionName, imagePath);
+    return MIN_REQUESTED_SIZE_GB;
+  }
+  return Math.max(
+    MIN_REQUESTED_SIZE_GB,
+    Math.ceil(Number.parseInt(probe, 10) / (1024 * 1024 * 1024))
   );
-  const bytes = Number.parseInt(bytesOutput.trim(), 10);
-  return Math.max(1, Math.ceil(bytes / (1024 * 1024 * 1024)));
+}
+
+/**
+ * Say out loud that the licence size is a floor rather than a measurement —
+ * but only where the image was supposed to be there to measure.
+ *
+ * For `repository_create` the probe targets a repo that does not exist yet by
+ * construction (the config record is written before renet runs), so an
+ * unanswerable stat is the NORMAL case and warning on it would train the
+ * operator to ignore this line. `repository_fork` and `repository_commit` take
+ * their size from the SOURCE repo, which must already exist; there, an
+ * unanswerable stat means the CLI looked in the wrong place or the machine
+ * cannot read its own datastore, and both are worth a line on stderr.
+ *
+ * Warn rather than throw, deliberately: this runs on `repo fork`, `repo commit`
+ * and their post-create identity refresh, and refusing on a probe that is only
+ * ever an ESTIMATE would turn a cosmetic under-report into a failed
+ * provisioning run. renet re-checks the real size against the contract on the
+ * machine, so the floor cannot smuggle an over-limit repo past enforcement.
+ */
+function warnUnmeasuredRepoSize(functionName: string, imagePath: string): void {
+  if (!usesTagAsProvisioningTarget(functionName)) return;
+  outputService.warn(
+    `Could not measure the source repository image at ${imagePath}, so its license is being ` +
+      `requested at the ${MIN_REQUESTED_SIZE_GB} GB minimum instead of its real size. ` +
+      `If this repository lives on a named datastore, check that its recorded placement ` +
+      `matches where the image actually is ("rdc config reconcile").`
+  );
 }
 
 /**

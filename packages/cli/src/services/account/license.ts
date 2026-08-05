@@ -5,6 +5,7 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
@@ -235,17 +236,69 @@ async function readLocalMachineId(): Promise<string> {
   return (await readFile(CLIENT_MACHINE_ID_PATH, 'utf-8')).trim();
 }
 
+/**
+ * Printed by the size probe when it could not measure the image. Deliberately
+ * not a number: `else echo 0` made a missing image and a real zero the same
+ * bytes, so the caller reported the 1 GB floor as though it had measured it.
+ */
+const REPO_SIZE_PROBE_UNKNOWN = 'rediacc-size-unknown';
+
+/** Floor for a size request. renet compares `requested > limit`, so it never over-claims. */
+const MIN_REQUESTED_SIZE_GB = 1;
+
+/**
+ * Measure a repo's image, or answer `null` when it could not be measured.
+ *
+ * `null` rather than a number, because the two are genuinely different facts
+ * and the old signature could not express the second one. The caller decides
+ * what an unmeasurable image is worth; this only reports what it saw.
+ */
 async function readRepoSizeGb(
   sftp: SFTPClient,
   datastore: string,
   repositoryGuid: string
-): Promise<number> {
+): Promise<number | null> {
   const repoPath = `${datastore}/repositories/${repositoryGuid}`;
   const bytesOutput = await sftp.exec(
-    `sudo sh -lc 'if [ -e "${repoPath}" ]; then stat -c %s "${repoPath}" 2>/dev/null; else echo 0; fi'`
+    `sudo sh -lc 'if [ -e "${repoPath}" ]; then stat -c %s "${repoPath}" 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}; else echo ${REPO_SIZE_PROBE_UNKNOWN}; fi'`
   );
-  const bytes = Number.parseInt(bytesOutput.trim(), 10);
-  return Math.max(1, Math.ceil((Number.isFinite(bytes) ? bytes : 0) / (1024 * 1024 * 1024)));
+  const probe = bytesOutput.trim();
+  if (!/^\d+$/.test(probe)) return null;
+  return Math.max(
+    MIN_REQUESTED_SIZE_GB,
+    Math.ceil(Number.parseInt(probe, 10) / (1024 * 1024 * 1024))
+  );
+}
+
+/**
+ * Measure the repo image across the candidate mounts, best answer first, and
+ * say so out loud if none of them could answer.
+ *
+ * A list rather than one path because the three sources genuinely disagree in
+ * rank: the machine's own scan knows where the repo lives, the caller knows
+ * what placement it recorded, and the machine default is a guess that is only
+ * right for a default-datastore repo. Trying them in order costs one extra
+ * `stat` in the rare case where the better source is absent, and it removes the
+ * failure mode that made this worth fixing — measuring the wrong mount and
+ * reporting the floor as though it were a measurement.
+ */
+async function measureRepoSizeGb(
+  sftp: SFTPClient,
+  repositoryGuid: string,
+  candidateMounts: (string | undefined)[]
+): Promise<number> {
+  const mounts = [...new Set(candidateMounts.filter((m): m is string => !!m))];
+  for (const mount of mounts) {
+    const measured = await readRepoSizeGb(sftp, mount, repositoryGuid);
+    if (measured !== null) return measured;
+  }
+  outputService.warn(
+    `Could not measure repository ${repositoryGuid} on ${mounts.join(', ') || 'any datastore'}, ` +
+      `so its license is being requested at the ${MIN_REQUESTED_SIZE_GB} GB minimum instead of ` +
+      `its real size. If this repository lives on a named datastore, check that its recorded ` +
+      `placement matches where the image actually is ("rdc config reconcile").`
+  );
+  return MIN_REQUESTED_SIZE_GB;
 }
 
 export async function readMachineActivationStatus(
@@ -423,6 +476,7 @@ async function readRepoLicenseInputs(
   luksUuid?: string;
   storageFingerprint?: string;
   datastoreId?: string;
+  datastorePath?: string;
   requestedSizeGb?: number;
 }> {
   try {
@@ -433,6 +487,10 @@ async function readRepoLicenseInputs(
         luksUuid: entry.luksUuid,
         storageFingerprint: entry.storageFingerprint,
         datastoreId: entry.datastoreId,
+        // The mount the machine itself reports for this repo. Better than
+        // anything the client can derive, and it is the datastore the size
+        // probe below must measure when the scan could not price the repo.
+        datastorePath: entry.datastorePath,
         requestedSizeGb: entry.requestedSizeGb,
       };
     }
@@ -460,6 +518,19 @@ export async function refreshRepoLicenseIdentity(
      * unscoped path that renet does not read for a datastore-resident repo.
      */
     datastoreId?: string;
+    /**
+     * Mount of the datastore this repo's image lives on, as the CALLER recorded
+     * it (`repo.placement`). A fallback, on the same terms as `datastoreId`
+     * above: the scan reports the machine's own `datastorePath` and that wins.
+     *
+     * It matters when the scan cannot price the repo — no licence installed
+     * yet, or a scan that failed — and the size probe has to measure the image
+     * itself. The machine's DEFAULT datastore is the wrong guess there for any
+     * repo created with `repo create --datastore <d>`: the image is at
+     * `/mnt/rediacc-ds/<d>/repositories/<guid>`, the probe found nothing, and
+     * the reissue silently asked for the 1 GB floor.
+     */
+    datastoreMount?: string;
   },
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
@@ -471,6 +542,10 @@ export async function refreshRepoLicenseIdentity(
     sharedSftp,
     sftpConfigForMachine(machine, sshPrivateKey),
     async (sftp) => {
+      // The PRIMARY datastore for the scan below, not the repo's home: the scan
+      // command passes --all-datastores, so it walks every attached named
+      // datastore too and reports each repo tagged with its own datastorePath.
+      // That is why the scan half of this function was never the bug.
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;
       const scanned = await readRepoLicenseInputs(
         sftp,
@@ -478,15 +553,23 @@ export async function refreshRepoLicenseIdentity(
         params.repositoryGuid,
         remoteRenetPath
       );
+      const { datastoreMount, ...issueParams } = params;
       const requestedSizeGb =
         params.requestedSizeGb ??
         scanned.requestedSizeGb ??
-        (await readRepoSizeGb(sftp, datastore, params.repositoryGuid));
+        (await measureRepoSizeGb(sftp, params.repositoryGuid, [
+          // Most authoritative first: the machine's own answer, then the
+          // placement the caller recorded, then the machine default — which is
+          // right only for a repo that really is on the default datastore.
+          scanned.datastorePath,
+          datastoreMount,
+          datastore,
+        ]));
       return issueRepoLicense(
         machine,
         sshPrivateKey,
         {
-          ...params,
+          ...issueParams,
           requestedSizeGb,
           luksUuid: scanned.luksUuid,
           storageFingerprint: scanned.storageFingerprint,
