@@ -642,6 +642,39 @@ def main():
     # ONE CLI DOOR. Everything a session is told to run goes through this file,
     # so the report inbox and the waiter are reachable here too rather than by
     # remembering two more script names. Both delegate; neither reimplements.
+    if sys.argv[1:2] == ["--reap"]:
+        # `worklist.py --reap <me> <task-id>...` -- retire roster entries this
+        # session knows are finished. Validated against the LAST EVENT the hook
+        # saw, so a typo cannot silently suppress a live worker, and a compacted
+        # session (which remembers nothing) can still see the id list.
+        me = sys.argv[2] if len(sys.argv) > 2 else ""
+        ids = sys.argv[3:]
+        if not C.PREFIX_RE.match(me or "") or not ids:
+            sys.stderr.write(M.CLI_REAP_USAGE)
+            sys.exit(2)
+        wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        known = {}
+        try:
+            ev = json.loads(wl.with_suffix(".lastevent-%s.json" % me[:8]).read_text())
+            known = {str(b.get("id")): b for b in (ev.get("background_tasks") or [])
+                     if isinstance(b, dict)}
+        except (OSError, ValueError):
+            known = {}
+        if known:
+            unknown = [i for i in ids if i not in known]
+            if unknown:
+                sys.stderr.write(M.CLI_REAP_UNKNOWN % (", ".join(unknown),
+                                                       ", ".join(sorted(known)) or "(none)"))
+                sys.exit(2)
+        path = wl.with_suffix(".reaped-%s" % me[:8])
+        with open(path, "a", encoding="utf-8") as fh:
+            for i in ids:
+                fh.write(i + "\n")
+        print("reaped %d task(s): %s\nThey no longer count as running for this "
+              "session. Nothing was killed -- if one is in fact alive it will "
+              "still run; only this session's supervision of it stops."
+              % (len(ids), " ".join(ids)))
+        return
     if sys.argv[1:2] == ["--reports"]:
         import wl_report
         rest = sys.argv[2:]
