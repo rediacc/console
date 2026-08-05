@@ -86,6 +86,16 @@ assert_verdict() {
     local label="$1" count="$2" fails="$3" selftest="$4" want_rc="$5" want_word="$6" forbid_word="$7"
     local result rc out
     result="$(run_summary "$count" "$fails" "$selftest" || true)"
+    # An empty capture means the subshell died before its printf, i.e. the harness
+    # could not be driven at all. Say that, rather than letting it fall through to
+    # the rc comparison below and surface as the cryptic "expected exit 0, got ".
+    # A gate whose probe failed must not be able to look like a gate whose probe
+    # returned nothing interesting.
+    if [[ -z "$result" ]]; then
+        log_error "$label: run_summary produced no output — drill_summary could not be driven."
+        failures=$((failures + 1))
+        return
+    fi
     rc="${result%%|*}"
     out="${result#*|}"
 
