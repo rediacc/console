@@ -977,6 +977,11 @@ def poll_fast_path(worklist, session_id, event):
 # well past any legitimate relaunch window.
 WAITER_GRACE_NUDGES = int(os.environ.get("WORKLIST_WAITER_GRACE_NUDGES", "3"))
 GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
+# How long a SUBMODULE POINTER MOVED warning stays latched for one (path, sha)
+# signature. Time-boxed on purpose: a permanent acknowledgement would go silent
+# on a pointer somebody forgot, and a forgotten pointer ships whatever the
+# parent last recorded. A move to a new sha re-fires immediately regardless.
+SUBMODULE_LATCH_MIN = int(os.environ.get("WORKLIST_SUBMODULE_LATCH_MIN", "15"))
 GUIDE_TEXT_CHARS = 90
 
 # The allow-report diet (operator, 2026-07-31: "Why I see such a big
@@ -2199,13 +2204,39 @@ def run_stop(event, event_ok, worklist, hook_file):
     # Before the PR checks, because a moved pointer changes what the PR IS.
     moves = wl_ci.submodule_pointer_moves(root)
     if moves:
-        vadd('submodule', False,
-            M.V_SUBMODULE_POINTER
-            % (
-                len(moves),
-                "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
+        # LATCHED PER (path, target sha), NOT silenced. Before this, an
+        # unpushed pointer re-fired on EVERY stop, including after a deliberate
+        # decision to keep it unpushed for now -- so a session doing exactly the
+        # right thing was told off once a minute, which is how a real warning
+        # becomes wallpaper.
+        #
+        # The latch is TIME-BOXED, never permanent, and that distinction is the
+        # whole design. A permanent "I acknowledged this" flag would go silent
+        # on a pointer somebody genuinely forgot, which is worse than the noise
+        # it removes: the check exists because a forgotten pointer ships whatever
+        # the parent last recorded. So it re-fires every SUBMODULE_LATCH_MIN, and
+        # a pointer moving to a NEW sha re-fires immediately because the
+        # signature changes.
+        _sub_sig = hashlib.sha1(
+            "|".join("%s@%s" % (p, b) for p, _a, b, _w in moves).encode("utf-8")
+        ).hexdigest()[:12]
+        _sub = state_doc.get("subptr") or {}
+        _same = _sub.get("sig") == _sub_sig
+        _sub_age = C.stamp_age_min(_sub.get("at")) if _same else None
+        _due = (not _same) or _sub_age is None or _sub_age >= SUBMODULE_LATCH_MIN
+        if _due:
+            vadd('submodule', False,
+                M.V_SUBMODULE_POINTER
+                % (
+                    len(moves),
+                    "; ".join("%s %s -> %s, %s" % (p, a, b, w) for p, a, b, w in moves),
+                )
             )
-        )
+            state_doc["subptr"] = {"sig": _sub_sig, "at": C.stamp_now()}
+    elif state_doc.get("subptr"):
+        # Pointers match again (pushed, or reverted): drop the latch so the next
+        # genuine move fires at once rather than inheriting a stale window.
+        state_doc.pop("subptr", None)
     # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before
     # the freshness check because a saturated queue changes what that check
     # should say. A slack-granter must fail toward pressure: any error here
