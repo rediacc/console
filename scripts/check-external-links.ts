@@ -64,6 +64,14 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.meity.gov.in',  // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
   'www.ftc.gov',       // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
+  // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners
+  // on 2026-08-05 (run 30990002964), after this checker's own two retries AND
+  // its last-chance GET, so not a one-shot blip. Measured rather than assumed:
+  // the same URL answers 200 six times out of six (three HEAD, three GET) from
+  // a non-datacenter IP, in ~0.6s. The page is live; debian.org simply does not
+  // answer this runner. Recheck by removing this line -- if the host starts
+  // answering CI again the gate will pass without it.
+  'www.debian.org',
   'www.dataprotection.ie', // Ireland DPC - whole domain unreachable from CI/datacenter IPs (connection fails at site root, not just deep links); the Meta-fine press release resolves from browsers
   // Brazil Planalto (LGPD, Lei 13.709/2018 full text) - ECONNRESET to
   // GitHub-hosted runners, reported by this checker as `fetch failed`.
