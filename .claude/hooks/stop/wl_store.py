@@ -35,10 +35,18 @@ after fold, before append = nothing written, next invocation re-syncs.
 
 The sidecars (.requests, .sessions, .loop, .reggate-*,
 .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .stuck-*, .croncount-*,
-.blocks) keep their v5-v9 formats and names: their shapes are pinned by the
-suite and by living sessions, and consolidating them buys nothing. New v10
-state (liveness ladder, task ages, judge cache, autonomy windows, STATE.md
-world-signature) lives in ONE new per-session doc, <worklist>.state-<prefix>.json.
+.blocks, .waiter-*, .state-*) keep their v5-v9 formats and names: their shapes
+are pinned by the suite and by living sessions, and consolidating them buys
+nothing. New v10 state (liveness ladder, task ages, judge cache, autonomy
+windows, STATE.md world-signature) lives in ONE new per-session doc,
+<worklist>.state-<prefix>.json.
+
+THIS LIST IS LOAD-BEARING, not documentation. .ci/scripts/quality/
+check-tracked-sidecars.sh parses it to decide what git must never track, so a
+sidecar missing from it is a sidecar the gate is blind to. That already
+happened: .waiter-* and .state-* were absent when the gate was written, so a
+planted tracked heartbeat passed cleanly. Add new sidecars HERE when you add
+them, and keep the parenthesised shape the parser depends on.
 The compact-recovery document itself lives in the repo at
 .agent/<branch>/STATE.md (gitignored), not in TMPDIR.
 """
