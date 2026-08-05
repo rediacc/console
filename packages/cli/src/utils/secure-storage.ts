@@ -266,11 +266,34 @@ class ValidatingStorage implements SecureStorage {
 
 // ─── Factory ────────────────────────────────────────────────────────────
 
+// DECLARED SKIP (2026-08-06): these are AVAILABILITY probes, not round-trip
+// probes, and the difference is a security-posture one that is written down here
+// rather than quietly carried.
+//
+// `keyctl show @u` answers "does the command run and can I see a keyring", not
+// "can I add, read back and unlink a key". A false negative -- a transient
+// failure, a container without the user keyring, a stripped-down PATH -- is not
+// an error here: it falls through to FileStorage, which puts the secret in a
+// 0600 file on disk. That is a REAL downgrade from kernel-held to
+// filesystem-held, and today it happens SILENTLY, with nothing in the output to
+// say the guarantee changed.
+//
+// Why the honest round-trip probe is not written yet: a probe that can itself
+// false-negative would trigger the very downgrade it exists to prevent, so it
+// has to be validated on a box with a working keyctl before it is trusted --
+// and this session has no such box (the sandbox blocks the privileged calls).
+// Writing it blind would encode an unvalidated notion of "correct probe" into
+// the security path, which is worse than the known gap.
+//
+// The open question is NOT just "add a probe": it is whether a silent
+// fallback-to-file is acceptable at all, or whether it must require an explicit
+// opt-in. That is the operator's call, tracked as worklist reggate:f91a4d9e.
 function selectBackend(): SecureStorage {
   switch (process.platform) {
     case 'linux':
       try {
-        // Test if keyctl is available
+        // Availability only -- see DECLARED SKIP above. A pass here does not
+        // prove a key can actually be stored and read back.
         execSync('keyctl show @u 2>/dev/null', { encoding: 'utf-8' });
         return new KeyctlStorage();
       } catch {
@@ -278,7 +301,7 @@ function selectBackend(): SecureStorage {
       }
     case 'darwin':
       try {
-        // Test if security command is available
+        // Availability only -- see DECLARED SKIP above.
         execSync('security help 2>/dev/null', { encoding: 'utf-8' });
         return new KeychainStorage();
       } catch {
