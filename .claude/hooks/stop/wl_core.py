@@ -262,7 +262,20 @@ def check_me(me):
         # UNVERIFIABLE, so silent. A plain operator terminal has no session id
         # and must not be accused of impersonating one.
         return True, ""
-    if len(me) < ME_MIN_LEN:
+    if len(me) < ME_MIN_LEN and os.environ.get("WORKLIST_SESSION_ID") != me:
+        # The floor is skipped ONLY on an exact declared match, and that
+        # exception is a bug fix, not a loophole. Legacy sub-agents tagged items
+        # with their NAME (`w2s-en`, 6 chars), and those items still need
+        # reading and reassigning. Without this, `WORKLIST_SESSION_ID=w2s-en
+        # --list --open w2s-en` was REFUSED and then advised to "rerun with
+        # <me>=w2s-en" -- the value it had just rejected. An instruction that
+        # tells you to retry the thing it refused leaves no next move at all,
+        # and it made two real items unreadable.
+        #
+        # Safe because the floor guards against an UNDER-SPECIFIED guess about
+        # self, and an exact match to an explicit declaration is not a guess.
+        # A bare short `me` with no declaration is still refused, which is the
+        # case the floor was built for.
         return False, _identity_msg(me, sid, "it is shorter than %d characters, so it "
                                     "does not identify one session" % ME_MIN_LEN)
     if not sid.startswith(me):
