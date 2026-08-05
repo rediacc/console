@@ -96,6 +96,12 @@ upload_source_maps = true
 
 [vars]
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
+# Must be set explicitly. envSchema defaults ENVIRONMENT to "production", so an
+# unset value here made every preview worker report environment "production" and
+# hand out updateChannel "stable" -- while the install.sh this same worker serves
+# bakes in channel pr-N. A CLI installed from a preview would then self-update
+# off the wrong channel. See private/account/src/types/env.ts.
+ENVIRONMENT = "preview"
 
 [observability]
 enabled = true
