@@ -60,7 +60,15 @@ PANEL_RC=0
 run_panel() {
     local f="$1" wall="$2" strict="${3:-false}"
     PANEL_RC=0
-    PANEL_OUT="$(PROFILER_SAMPLE_FILE="$f" PROFILER_WALL_S="$wall" PROFILER_STRICT="$strict" \
+    # GITHUB_STEP_SUMMARY must be PINNED, not inherited. panel.sh:52 reads
+    # `SUMMARY="${GITHUB_STEP_SUMMARY:-/dev/stdout}"`, and GitHub Actions always
+    # sets that variable -- so on a runner the panel wrote to the step-summary
+    # FILE while this helper captured stdout and asserted against "". The suite
+    # passed locally (variable unset) and failed in CI for that reason alone.
+    # An unset variable is not a neutral default; pinning it makes the seam
+    # explicit and the suite hermetic wherever it runs.
+    PANEL_OUT="$(GITHUB_STEP_SUMMARY=/dev/stdout \
+        PROFILER_SAMPLE_FILE="$f" PROFILER_WALL_S="$wall" PROFILER_STRICT="$strict" \
         PROFILER_TITLE="fixture-job" bash "$PANEL_SH" 2>&1)" || PANEL_RC=$?
 }
 
