@@ -182,6 +182,20 @@ def _fit(obj):
         obj["transcript"] = obj["transcript"][-shrink:] if shrink else ""
         if len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) < INDEX_LINE_MAX:
             return obj
+    # LAST RESORT: the remaining fields are not "pathological id/agent" only --
+    # `branch` is attacker-shaped in the ordinary sense that a git branch name
+    # can be arbitrarily long, and `body` embeds it. So shrink those too rather
+    # than returning a line that is still over the cap. Returning an oversized
+    # object here is what let a single long-branch entry raise inside scan()'s
+    # loop and abort the whole self-healing pass; the entry was never marked
+    # known, so every later scan aborted at the same place, permanently and
+    # silently. Found in review, not by a test.
+    for field, keep in (("agent", 64), ("type", 64), ("body", 200), ("branch", 120)):
+        val = obj.get(field)
+        if isinstance(val, str) and len(val) > keep:
+            obj[field] = val[:keep]
+            if len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) < INDEX_LINE_MAX:
+                return obj
     return obj
 
 
@@ -728,22 +742,34 @@ def scan(store, start, idle_min=None):
                 info = {}
             if not isinstance(info, dict):
                 info = {}
-            sends, final, rec = harvest_transcript(jsonl)
-            entry = capture(
-                store,
-                str(rec.get("gitBranch") or "") or _branch_of(start) or NO_BRANCH,
-                agent_id=agent_id,
-                agent_type=info.get("agentType") or rec.get("attributionAgent"),
-                agent_name=info.get("name") or info.get("agentType"),
-                session=str(rec.get("sessionId") or meta.parent.parent.name or "")[:8],
-                body=assemble_body(sends, final),
-                transcript=str(jsonl),
-                source="scan",
-                at=_iso_of(rec.get("timestamp")) or C.stamp_now(),
-                title=_title_of(sends, final),
-                sends=len(sends),
-                tx="ok",  # scan globbed this file, so it resolves by construction
-            )
+            # ONE BAD AGENT MUST NOT ABORT THE WHOLE PASS. Without this guard a
+            # single entry that raises -- an oversized index line, an unreadable
+            # transcript, a surprise in the meta shape -- kills the loop before
+            # it reaches anything sorted after it. And because a failed entry is
+            # never recorded as `known`, the NEXT scan hits the same wall at the
+            # same place: the self-heal starves permanently, silently, and worst
+            # of all invisibly, since wl_wait's periodic scan wraps this in a
+            # blanket except of its own. Isolating per agent means a bad entry
+            # costs exactly itself.
+            try:
+                sends, final, rec = harvest_transcript(jsonl)
+                entry = capture(
+                    store,
+                    str(rec.get("gitBranch") or "") or _branch_of(start) or NO_BRANCH,
+                    agent_id=agent_id,
+                    agent_type=info.get("agentType") or rec.get("attributionAgent"),
+                    agent_name=info.get("name") or info.get("agentType"),
+                    session=str(rec.get("sessionId") or meta.parent.parent.name or "")[:8],
+                    body=assemble_body(sends, final),
+                    transcript=str(jsonl),
+                    source="scan",
+                    at=_iso_of(rec.get("timestamp")) or C.stamp_now(),
+                    title=_title_of(sends, final),
+                    sends=len(sends),
+                    tx="ok",  # scan globbed this file, so it resolves by construction
+                )
+            except Exception:
+                continue
             if entry:
                 known.add(entry["id"])
                 added.append(entry)
