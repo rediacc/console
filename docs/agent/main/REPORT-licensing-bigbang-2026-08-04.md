@@ -222,6 +222,20 @@ own environment is the one place that lie is never exposed.
   both methods. Not fixed because the string exists in 13 locales, so a one-word
   correction ripples across twelve translations; ready-to-run whenever the next
   locale pass happens.
+- **`secure-storage.ts` selects the kernel keyring on boxes where it does not work**
+  (the fourth instance of the pattern above, and the only one in the product).
+  `selectBackend()` (:269-292) probes with `keyctl show @u` and falls back to the
+  existing `FileStorage` only if that throws; on a GitHub runner it exits zero while
+  the keyring is unusable, so `KeyctlStorage` is chosen and dies at `keyctl add` with
+  `keyctl_read_alloc: Permission denied`. Real users on restricted or keyring-less
+  Linux hit the same wall and see an "OS keyring" error the fallback was written to
+  prevent. NOT fixed deliberately: the obvious cure (an honest add/read/unlink
+  round-trip probe) can false-negative, and a false negative silently downgrades a
+  user from the kernel keyring to a 0600 file on disk — a security-posture change
+  that should be made in daylight, verified on a box with a working `keyctl`, which
+  neither the operator's workstation nor the runner provides. CI coverage is
+  preserved meanwhile by the transfer drill declaring the keyring dependency and
+  skipping loudly when it is absent (undeclared absence still reds).
 - **`.ci/lib/account.sh` cannot be sourced under `set -euo pipefail`.** Errexit trips
   on its own re-source guard (account.sh:8 — `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] &&
   return 0` returns non-zero on a first load) and nounset trips on unset variables it
