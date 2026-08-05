@@ -84,7 +84,18 @@ fi
 TRACKED=""
 while read -r pat; do
     [[ -n "$pat" ]] || continue
-    hits="$(git ls-files -- "$HOOK_DIR/$pat" 2>/dev/null || true)"
+    # The exit status is load-bearing and MUST NOT be discarded. `2>/dev/null
+    # || true` here would make a FAILED `git ls-files` -- no repo, a broken
+    # index, a bad pathspec -- read exactly like "no sidecars are tracked", so
+    # the gate would report a clean tree precisely when it could not look. That
+    # is the vacuity this gate exists to prevent, and the swallowed-failure
+    # scanner caught it in this very file on the first CI run.
+    if ! hits="$(git ls-files -- "$HOOK_DIR/$pat" 2>&1)"; then
+        echo "✗ git ls-files failed for pattern '$pat', so this gate cannot" >&2
+        echo "  tell a clean tree from an unreadable one. Refusing to pass." >&2
+        echo "  git said: $hits" >&2
+        exit 1
+    fi
     [[ -n "$hits" ]] && TRACKED+="$hits"$'\n'
 done <<<"$PATTERNS"
 
