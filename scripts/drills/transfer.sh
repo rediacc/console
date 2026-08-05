@@ -119,11 +119,24 @@ drill_parse_args() {
 # prevent, so an undeclared missing keyring must never pass quietly.
 preflight_keyring() {
     drill_step "Preflight: an OS keyring the CLI can actually write to"
+    # ROUND TRIP, not just a write. A GitHub runner lets `keyctl add` SUCCEED and
+    # then denies the read with `keyctl_read_alloc: Permission denied`, so a probe
+    # that only adds reports the keyring usable and the drill still dies four
+    # assertions deep — which is exactly what the first version of this preflight
+    # did. Mirror the two calls secure-storage.ts actually makes on the read path
+    # (`keyctl search @u user <key>` then `keyctl pipe <id>`), and require the
+    # value to come back intact.
+    local probe_key='rediacc-drill-keyring-probe' probe_id='' probe_val=''
     if command -v keyctl >/dev/null 2>&1 &&
-        keyctl add user rediacc-drill-probe probe @u >/dev/null 2>&1; then
-        keyctl purge user rediacc-drill-probe >/dev/null 2>&1 || true
-        drill_note "keyring usable (keyctl @u)"
-        return 0
+        keyctl add user "$probe_key" probe-ok @u >/dev/null 2>&1; then
+        probe_id=$(keyctl search @u user "$probe_key" 2>/dev/null || true)
+        [[ -n "$probe_id" ]] && probe_val=$(keyctl pipe "$probe_id" 2>/dev/null || true)
+        keyctl purge user "$probe_key" >/dev/null 2>&1 || true
+        if [[ "$probe_val" == "probe-ok" ]]; then
+            drill_note "keyring usable (keyctl @u write+read round trip)"
+            return 0
+        fi
+        drill_note "keyctl add succeeded but the read back did not — treating the keyring as unusable"
     fi
 
     if [[ -n "${DRILL_EXPECT_NO_KEYRING:-}" ]]; then
@@ -137,7 +150,7 @@ preflight_keyring() {
         exit 0
     fi
 
-    log_error "No usable OS keyring: 'keyctl add user ... @u' failed."
+    log_error "No usable OS keyring: the write+read round trip against @u did not complete."
     log_error "Enrollment stores its slot secret there (secure-storage.ts), so every"
     log_error "phase of this drill would fail four assertions deep, blaming the store."
     log_error "On a machine that genuinely has no keyring, declare it:"

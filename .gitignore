@@ -146,3 +146,6 @@ packages/www/src/i18n/translations/*.lock
 # Transient per-session render backups (another session writes these mid-campaign;
 # a blanket sweep once committed one into an unrelated PR, review finding on #546).
 .backup-render-*/
+
+# Built by .ci/scripts/private/license-e2e.sh; an 11MB Go binary, never committed.
+.ci/scripts/private/license-mint/license-mint
