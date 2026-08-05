@@ -155,6 +155,35 @@ def same_session(a, b):
 # whatever shell they have open, and if that shell happens to be a Claude
 # session's Bash the env check would refuse the one command the mail exists to
 # get run. It is a name, not a session prefix, and it was never verifiable.
+#
+# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt,
+# a session can run `--answer operator <its-own-request-id>` and answer its own
+# question, slipping past the self-answer refusal in wl_requests (which compares
+# `me` to the asker). This is PRE-EXISTING -- it was true before any identity
+# checking existed and is not a regression from it -- and it is recorded here
+# rather than fixed because both obvious fixes are worse than the hole:
+#
+#   * "refuse when a session id IS resolvable" breaks the exact case the
+#     exemption exists for. The documented path is a human pasting the mailed
+#     command into a Claude session's Bash, and that process has a perfectly
+#     resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator.
+#   * "refuse when the answering session is the asker" fails too: the operator
+#     may legitimately paste the answer into the very session that asked, which
+#     is the commonest way it happens.
+#
+# There is no narrower rule, and the reason is structural rather than a gap in
+# imagination: from inside this process, a session forging an operator answer
+# and the operator answering through that session's shell are the SAME syscall,
+# from the same pid, with the same environment. Nothing observable separates
+# them. Any check would be inferring intent from evidence that does not carry
+# it -- which is the shape of validation that produced the incident this module
+# exists to prevent.
+#
+# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried
+# in the mail (a per-request token wl_email generates and --answer requires),
+# not an inference. That makes the operator's answer provable instead of
+# assumed. Until someone wants that, an operator answer is trusted by
+# construction, and this comment is why.
 UNCHECKED_ME = ("operator",)
 # A `<me>` must be at least this long. GENERALISED from --poll/--wait, which
 # have carried the floor since they were written for a reason that applies

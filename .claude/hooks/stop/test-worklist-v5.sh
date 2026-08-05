@@ -165,11 +165,23 @@ peer_id() { # the full session id a fixture PREFIX stands for
 }
 
 as_peer() { # as_peer <prefix> <cmd...> -- drive a helper as ANOTHER session
-    # A SUBSHELL, not a prefix assignment. In bash a `VAR=x somefunc` prefix
-    # PERSISTS after the function returns, so the peer id would leak forward into
-    # every later case and quietly disarm the identity check for the rest of the
-    # suite -- the same leaked-knob class the setup() comment above documents,
-    # arriving through a different door.
+    # A SUBSHELL, not a `WORKLIST_SESSION_ID=... reqcli ...` prefix assignment.
+    #
+    # NOT because the prefix form leaks here -- it does not, and an earlier
+    # version of this comment claimed it did. Measured on this machine rather
+    # than recalled: bash 5.2 in default mode, bash 5.2 under `set -o posix`,
+    # and dash all DISCARD the assignment when the function returns. The rule
+    # that does persist is POSIX's rule for SPECIAL BUILTINS (eval, export,
+    # set), which a function is not.
+    #
+    # The real reason is portability of the CONSTRUCT. That persistence rule has
+    # genuinely differed across shells and modes, this helper is the kind of
+    # thing that gets copied into contexts its author does not control, and the
+    # failure it would cause is invisible: a leaked peer id disarms the identity
+    # check for every later case while the suite stays green. A subshell cannot
+    # leak under ANY shell. Choose the construct that cannot fail over the one
+    # that happens not to fail here -- the same leaked-knob class the setup()
+    # comment above documents, arriving through a different door.
     (
         local sid
         sid="$(peer_id "$1")"
