@@ -149,3 +149,14 @@ packages/www/src/i18n/translations/*.lock
 
 # Built by .ci/scripts/private/license-e2e.sh; an 11MB Go binary, never committed.
 .ci/scripts/private/license-mint/license-mint
+
+# Stop-hook RUNTIME sidecars. These are per-session state written by
+# .claude/hooks/stop/* at run time -- session briefs, waiter heartbeats, poll
+# marks. wl_store.py:36 lists them as sidecars alongside .requests and .loop.
+# They are machine-local and MUST NOT be tracked: a committed heartbeat is a
+# lie about a process that is not running, and a committed brief describes a
+# session that no longer exists. A `git add -A` swept two of them in once.
+.claude/hooks/stop/.sessions
+.claude/hooks/stop/.waiter-*
+.claude/hooks/stop/.requests
+.claude/hooks/stop/.loop
