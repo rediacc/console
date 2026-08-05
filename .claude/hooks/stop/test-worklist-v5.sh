@@ -7443,6 +7443,83 @@ else
     fail "186 CONTROL: CLAUDE_CODE_SESSION_ID is not read at all (rc=$RC): ${OUT:0:200}"
 fi
 
+echo "== 184x. a SHORT <me> that exactly matches an explicit declaration is honoured =="
+# REGRESSION, from a defect the floor itself caused (26d7814c5). Legacy
+# sub-agents tagged items with their NAME rather than a session prefix, and
+# `w2s-en` is 6 characters. The floor refused it even WITH the override
+# declared, and the refusal then advised "rerun with <me>=w2s-en" -- the exact
+# value it had just rejected. An instruction to retry the thing it refused
+# leaves no next move: the listing path was closed, so the only way to see
+# those items was to reassign them BLIND, which is the opposite of
+# inspect-then-decide. A capability reachable only by acting blind is not
+# reachable.
+#
+# The floor guards against an UNDER-SPECIFIED GUESS about self. An exact match
+# to an explicit declaration is not a guess, so it is honoured -- and the three
+# controls below are what keep that from being a loophole.
+#
+# PLACED HERE, not beside case 184, deliberately: setup() does `rm -rf $BASE`,
+# which would wipe the coverage file case 185 reads. Do not move it up.
+setup
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --add w2s-en "a legacy agent-named item" 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "added #" <<<"$OUT"; then
+    pass "184x FIRE: a 6-char <me> matching its declaration exactly is accepted"
+else
+    fail "184x FIRE: the floor still refuses a declared short identity (rc=$RC): ${OUT:0:200}"
+fi
+# ...and the path that was actually closed: READING before deciding ownership.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --list --open w2s-en 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "a legacy agent-named item" <<<"$OUT"; then
+    pass "184x FIRE: its items can be INSPECTED, so ownership is a decision and not a gamble"
+else
+    fail "184x FIRE: the listing path is still closed: ${OUT:0:200}"
+fi
+# CONTROL A: one planted fact -- no declaration at all. This is the case the
+# floor was built for, and it must still refuse.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    CLAUDE_CODE_SESSION_ID=w2s-en-1111-2222 python3 "$HOOK" --add w2s-en "x" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "shorter than 8 characters" <<<"$OUT"; then
+    pass "184x CONTROL A: a bare short <me> with no declaration is still refused"
+else
+    fail "184x CONTROL A: the escape swallowed the whole floor (rc=$RC): ${OUT:0:200}"
+fi
+# CONTROL B: a declaration that does not EXACTLY match. A prefix relationship is
+# not enough -- that is what makes this an exact-match rule rather than a second
+# way to express the guess the floor exists to refuse.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_SESSION_ID=w2s-en-1111-2222 python3 "$HOOK" --add w2s-en "x" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "shorter than 8 characters" <<<"$OUT"; then
+    pass "184x CONTROL B: a declaration the value merely prefixes is not an exact match"
+else
+    fail "184x CONTROL B: near-enough counted as exact (rc=$RC): ${OUT:0:200}"
+fi
+# CONTROL C: THE PROPERTY THAT MAKES THE ESCAPE SAFE, and nothing else asserts
+# it. --poll and --wait key SIDECAR FILENAMES off <me>[:8], so a short prefix
+# there names a different marker than the Stop hook derives from the full
+# session id and silently disables the fast path. Those two carry their own
+# floor, ahead of check_me, and the escape must not reach them.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --poll w2s-en 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "8-char" <<<"$OUT"; then
+    pass "184x CONTROL C: --poll keeps its own floor; the escape does not reach the sidecar verbs"
+else
+    fail "184x CONTROL C: a declared short prefix reached the poll marker (rc=$RC): ${OUT:0:200}"
+fi
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$(dirname "$HOOK")/wl_wait.py" w2s-en --timeout 0.01 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "8-char" <<<"$OUT"; then
+    pass "184x CONTROL C: --wait keeps its own floor too"
+else
+    fail "184x CONTROL C: a declared short prefix armed the waiter (rc=$RC): ${OUT:0:200}"
+fi
+
 echo "== 187. --ask refuses a recipient that has never briefed here =="
 # The same defect from the SENDER'S side, and it cost the same incident 34
 # hours: peers addressed `4c3e095a`, an identity that never existed, and the
