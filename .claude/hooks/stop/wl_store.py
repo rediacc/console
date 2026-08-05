@@ -112,6 +112,37 @@ AGENT_STATE_MIN_CHARS = 250
 # traps now live in their own unbudgeted files, so STATE.md needs room for
 # state alone; 4000 still refuses a pasted transcript.
 AGENT_STATE_MAX_CHARS = int(os.environ.get("WORKLIST_AGENT_STATE_MAX_CHARS", "4000"))
+
+# ...but the BUDGET IS PER SESSION while the DOCUMENT IS PER BRANCH, and two
+# live sessions routinely share one branch. A flat cap then gives each session
+# `cap minus the other session's block`: measured 2026-08-05 with a 1899-char
+# neighbour, one session had ~1850 usable and was refused ELEVEN times across
+# three refresh cycles (4996/4706/4410/4243/4131/4047/4019), deleting real
+# content each round to fit.
+#
+# The dangerous part is not the friction, it is the INCENTIVE: under a flat
+# cap the cheapest way to satisfy it is to delete the other session's block,
+# which is precisely the loss this document's own header warns about and which
+# had already happened twice. A limit that rewards the failure it guards
+# against is mis-scoped, so the cap SCALES with the number of session blocks
+# present. One block behaves exactly as before.
+AGENT_STATE_SESSION_RE = re.compile(r"^##[ \t]+SESSION\b", re.M | re.I)
+
+
+def agent_state_blocks(text):
+    """How many `## SESSION ...` blocks a STATE.md body carries (minimum 1).
+
+    Deliberately counts the HEADING rather than parsing owners: the merge
+    convention is a heading per session, and a body with no such heading is
+    the single-session shape this file has always had.
+    """
+    return max(1, len(AGENT_STATE_SESSION_RE.findall(text or "")))
+
+
+def agent_state_max_chars(text):
+    """The effective cap for THIS body: the per-session budget times the
+    number of session blocks in it."""
+    return AGENT_STATE_MAX_CHARS * agent_state_blocks(text)
 # A second session arriving on a branch has no recorded signature for a
 # document the first session wrote. The old pure-age fallback would order it
 # rewritten immediately, reproducing the exact churn the redesign fixes, so an
@@ -1064,8 +1095,15 @@ def agent_state_shape(body):
     text = (body or "").strip()
     if len(text) < AGENT_STATE_MIN_CHARS:
         return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
-    if len(text) > AGENT_STATE_MAX_CHARS:
-        return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
+    cap = agent_state_max_chars(text)
+    if len(text) > cap:
+        blocks = agent_state_blocks(text)
+        # Name the arithmetic when the cap is not the bare constant, so a
+        # refusal on a shared document does not read as "you wrote too much".
+        detail = "%d chars, maximum %d" % (len(text), cap)
+        if blocks > 1:
+            detail += " (%d session blocks x %d)" % (blocks, AGENT_STATE_MAX_CHARS)
+        return "bloated", detail
     if not AGENT_NEXT_RE.search(text):
         return "aimless", "no '## Next action' section; the next action IS the value"
     return "ok", "%d chars" % len(text)

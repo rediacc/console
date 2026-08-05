@@ -320,6 +320,34 @@ CLI_STATE_REFUSED = (
     "section. Nothing was written; the previous STATE.md is untouched.\n"
 )
 
+# WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced
+# before fixing). `--state` used to require argv[2] to be RECOGNISED at all:
+# `len(sys.argv) > 2 and sys.argv[1] == "--state"`. A bare `--state`, or one
+# whose body was passed as argv instead of on stdin, therefore fell through
+# every branch into the Stop-HOOK path, which reads the hook event from stdin
+# and so BLOCKED FOREVER on a terminal. It cost the reporting session a
+# ten-minute tool timeout, and the control that proves it is stdin rather than
+# a lock is one redirect: `--state </dev/null` returns instantly, the same
+# command without it hangs.
+CLI_STATE_USAGE = (
+    "usage: worklist.py --state <session-prefix> <<'EOF' ... EOF\n"
+    "The STATE.md body is read from STDIN, never from argv. A bare `--state` "
+    "used to fall through to the hook path and hang forever reading stdin; it "
+    "now refuses here instead.\n"
+)
+
+# The second half of the same report: the body arrives on stdin, so passing it
+# as arguments left `body` empty and the shape check said `thin: 0 chars`.
+# That reads as "your document was too short" when the truth is "your document
+# never arrived", and the reporter chased the wrong thing twice. Empty stdin is
+# now its own message, and it names the extra argv when that is the likely
+# cause.
+CLI_STATE_NO_BODY = (
+    "STATE REFUSED: no body arrived on stdin%s. The document is read from "
+    "STDIN, not from arguments: worklist.py --state %s <<'EOF' ... EOF. "
+    "Nothing was written; the previous STATE.md is untouched.\n"
+)
+
 CLI_STATE_NO_DIR = (
     "STATE REFUSED: .agent/%s/ does not exist, and this tool NEVER creates it "
     "(the RULES.md copy-forward is a judgement call). Bootstrap first:\n"
