@@ -223,6 +223,28 @@ Its sibling `check-account-probes` is registered precisely because its subject
 episode teachable rather than a curiosity: an instrument caught the person who had
 just written it, minutes after that person wrote the gate for this very class.
 
+And an eighth, which is the tidiest demonstration available: the gate written to
+catch vacuous greens was itself caught — by the repo's existing swallowed-failures
+scanner — for SWALLOWING THE FAILURE OF ITS OWN PROBE (`result="$(run_summary ... ||
+true)"`, with no test distinguishing a failed probe from an empty result). An
+instrument built for this class, authored by someone who had spent the night on this
+class, failed the class, and a DIFFERENT pre-existing instrument caught it. That is
+the argument for having many cheap independent checks rather than one careful author.
+
+**WHY KNOWING ABOUT IT DOES NOT PREVENT IT.** The pull is not toward carelessness;
+it is toward the cheapest observable PROXY for the thing you actually need.
+`command -v clang` for "the toolchain can build this". `keyctl show @u` for "the
+keyring works". `keyctl add` for "the keyring can be read". A port that answers for
+"the service is up". A grep that finds the verb for "the code runs the verb". Each
+proxy is one step easier to reach than the real dependency, and every one of them
+LOOKS like diligence while you are writing it. That is why the rule has to name the
+operation — "exercise the thing you depend on, and nothing else counts as evidence"
+— rather than urge care, and why a planted defect is the only check that cannot
+itself be satisfied by a proxy. Eight instances in one night, three authored by
+someone who had just written about the class, one where a meta-gate caught its own
+author minutes later, and one where a scanner caught a gate for committing the very
+defect it audits, is the evidence for that claim.
+
 The only cure is to exercise the absent case deliberately — which is precisely what
 the controls that caught all three had to do: run with `llvm-strip` hidden from
 PATH, probe a port confirmed closed first, collect the logs a swallowed failure
