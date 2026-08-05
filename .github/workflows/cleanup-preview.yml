@@ -103,9 +103,15 @@ jobs:
       # `deployments: write` permission this workflow already has, and the
       # repo's Deployments view is driven by the records, so this is what
       # actually removes pr-N from that view. The empty environment object
-      # remains under Settings -> Environments (no secrets, no rules);
-      # cleanup-versions.sh Phase 6 reaps those if the App is ever granted
-      # admin.
+      # remains under Settings -> Environments (no secrets, no rules).
+      #
+      # Those empty objects are NOT reaped by automation and never will be.
+      # cleanup-versions.sh Phase 6 exists for them but can never succeed:
+      # check-no-app-admin-perm.sh is a blocking gate that forbids granting the
+      # App Administration:write, deliberately, so a leaked token cannot delete
+      # edge/stable. The real mechanism is a periodic manual `gh` sweep by a
+      # human with an owner token -- one on 2026-08-05 removed 13 stale pr-*
+      # environments with production verified surviving by name and by id.
       - name: Delete GitHub deployments for PR environment
         env:
           GH_TOKEN: ${{ github.token }}
