@@ -39,8 +39,18 @@ if ((LEN < 250)); then
     echo "❌ BLOCKED: this STATE.md is thin (${LEN} chars, minimum 250). A stub is not a recovery document; the next session inherits ONLY what is written here." >&2
     exit 2
 fi
-if ((LEN > 4000)); then
-    echo "❌ BLOCKED: this STATE.md is bloated (${LEN} chars, maximum 4000). Standing rules belong in RULES.md and hard-won lessons in ../TRAPS.md; STATE.md carries only what is volatile." >&2
+# The cap SCALES with the number of `## SESSION` blocks, matching
+# wl_store.agent_state_max_chars. The document is per BRANCH but the budget is
+# per SESSION, and a flat cap left the second session ~1850 usable chars --
+# whose cheapest remedy is deleting the other session's block, the exact loss
+# this document warns about. Kept in lockstep with wl_store deliberately: this
+# guard fires on a direct Write, that one on `--state`, and a guard stricter
+# than the tool would block a body the tool accepts.
+BLOCKS=$(grep -ciE '^[ \t]*##[ \t]+SESSION\b' <<<"$CONTENT" || true)
+((BLOCKS < 1)) && BLOCKS=1
+MAXLEN=$((4000 * BLOCKS))
+if ((LEN > MAXLEN)); then
+    echo "❌ BLOCKED: this STATE.md is bloated (${LEN} chars, maximum ${MAXLEN} = ${BLOCKS} session block(s) x 4000). Standing rules belong in RULES.md and hard-won lessons in ../TRAPS.md; STATE.md carries only what is volatile." >&2
     exit 2
 fi
 if ! grep -qiE '^[ \t]*#{1,6}[ \t]*next action\b' <<<"$CONTENT"; then

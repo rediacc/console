@@ -1110,7 +1110,7 @@ def outq_drain(worklist, session_id, state_doc, n):
     return [e.get("text", "") for e in take], len(q["items"])
 
 
-def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
+def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False):
     """The bounded, guided, store-derived instruction block.
 
     One line per actionable item: state, #id, age from the store's own
@@ -1128,6 +1128,13 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
     report-only: a guide line, never a new block, so the stop path stays
     cheap and the guide's no-new-block invariant holds. `root` is passed by
     both callers; None derives it, which the direct-library callers rely on.
+
+    `full=True` LIFTS the GUIDE_MAX cap. The cap exists to bound the Stop
+    hook's payload, so the hook keeps it; the CLI does not, and until now it
+    silently inherited it -- which made GUIDE_TRUNCATED's own advice a loop,
+    since it points at `--list --open` "for the full slice" and that command
+    re-rendered the same 12 rows. A human asking for the slice by hand gets
+    every row and no truncation footer.
     """
     me_arg = (me or "<me>")[:8] if me else "<me>"
     verdicts = verdicts or {}
@@ -1191,7 +1198,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None):
     if not rows:
         return M.GUIDE_EMPTY
     rows.sort(key=lambda r: r[0])
-    shown = rows[:GUIDE_MAX]
+    shown = rows if full else rows[:GUIDE_MAX]
     out = [M.GUIDE_HEADER] + [line for _p, line in shown]
     if len(rows) > len(shown):
         out.append(M.GUIDE_TRUNCATED % (len(rows) - len(shown), GUIDE_MAX))

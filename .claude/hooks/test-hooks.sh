@@ -37,6 +37,81 @@ STATE_AIMLESS="$(python3 -c "print('x'*300)")"
 WF_FAT=$'      - name: Big\n        run: |\n          echo 1\n          echo 2\n          echo 3\n          echo 4\n          echo 5\n          echo 6\n          echo 7\n          echo 8\n          echo 9'
 WF_THIN=$'      - name: Thin\n        run: |\n          echo hi\n          bash .ci/scripts/quality/x.sh'
 
+# --- WIRING: what is on disk and what settings.json registers must match ---
+# Every case in this file drives a hook by literal path, which proves the
+# script behaves and says NOTHING about whether Claude ever invokes it. Two
+# failures are invisible to the whole suite: a hook file nobody registered
+# (dead code that tests green and never guards anything), and a registration
+# pointing at a file that no longer exists (a hook that silently never fires).
+# settings.json is READ here, never written.
+
+# hook_files <hooks-root> -- relative path of every hook script, lib/ excluded
+hook_files() {
+    local root="$1"
+    find "$root" -type f -name '*.sh' -not -path '*/lib/*' 2>/dev/null |
+        sed "s|^$root/||" |
+        grep -E '^(pre-bash|pre-edit|post-bash)/' | sort -u
+}
+
+# hook_registrations <settings-file> -- the same relative paths, as named by
+# the hook command strings in settings.json
+hook_registrations() {
+    jq -r '.hooks // {} | to_entries[] | .value[]? | .hooks[]? | .command // empty' "$1" 2>/dev/null |
+        grep -oE '(pre-bash|pre-edit|post-bash)/[A-Za-z0-9._-]+\.sh' | sort -u
+}
+
+# check_wiring <settings-file> <hooks-root> -- 0 when the two sets agree, 1
+# otherwise, naming every offender on stdout.
+check_wiring() {
+    local settings="$1" root="$2" rc=0 unwired dangling
+    unwired="$(comm -23 <(hook_files "$root") <(hook_registrations "$settings"))"
+    dangling="$(comm -13 <(hook_files "$root") <(hook_registrations "$settings"))"
+    if [[ -n "$unwired" ]]; then
+        rc=1
+        while read -r f; do printf 'UNWIRED (on disk, not in settings): %s\n' "$f"; done <<<"$unwired"
+    fi
+    if [[ -n "$dangling" ]]; then
+        rc=1
+        while read -r f; do printf 'DANGLING (in settings, not on disk): %s\n' "$f"; done <<<"$dangling"
+    fi
+    return "$rc"
+}
+
+# wiring_case <expected-exit> <settings> <hooks-root> <label> [<must-name>...]
+wiring_case() {
+    local expected="$1" settings="$2" root="$3" label="$4" out rc miss="" needle
+    shift 4
+    out="$(check_wiring "$settings" "$root" 2>&1)"
+    rc=$?
+    for needle in "$@"; do
+        grep -qF -- "$needle" <<<"$out" || miss="$miss $needle"
+    done
+    if [[ "$rc" == "$expected" && -z "$miss" ]]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got exit %s, unnamed:%s)\n' "$expected" "$label" "$rc" "${miss:- -}"
+        sed 's/^/       /' <<<"$out"
+    fi
+}
+
+wiring_case 0 "$DIR/../settings.json" "$DIR" "wiring: every hook on disk is registered, every registration exists"
+
+# CONTROL, so the green above is agreement and not a check that cannot fire:
+# one fixture drops a real registration, the other invents one. Each must fail
+# AND name the offender -- a bare non-zero would pass either fixture.
+WIRE_TMP="$(mktemp -d)"
+jq '(.hooks[]?[]?.hooks) |= map(select((.command // "") | contains("block-worktree-add.sh") | not))' \
+    "$DIR/../settings.json" >"$WIRE_TMP/unwired.json"
+wiring_case 1 "$WIRE_TMP/unwired.json" "$DIR" "wiring CONTROL: a dropped registration is caught as UNWIRED" \
+    "UNWIRED (on disk, not in settings): pre-bash/block-worktree-add.sh"
+jq '(.hooks[]?[]?.hooks) |= . + [{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-nonexistent-ghost.sh\""}]' \
+    "$DIR/../settings.json" >"$WIRE_TMP/dangling.json"
+wiring_case 1 "$WIRE_TMP/dangling.json" "$DIR" "wiring CONTROL: a registration with no file is caught as DANGLING" \
+    "DANGLING (in settings, not on disk): pre-bash/block-nonexistent-ghost.sh"
+rm -rf "$WIRE_TMP"
+
 # --- should BLOCK (exit 2) ---
 check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
 check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"

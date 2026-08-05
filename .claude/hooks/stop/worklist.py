@@ -302,9 +302,14 @@ def _item_cli(argv, worklist):
             # The same actionable slice the Stop hook emits (v11), so a human
             # and the hook are never looking at different views. An optional
             # prefix scopes ownership and binds the printed verbs.
+            #
+            # full=True: the hook's GUIDE_MAX cap bounds a payload nobody
+            # asked for; this command IS the ask, and it is the command
+            # GUIDE_TRUNCATED sends people to "for the full slice". Inheriting
+            # the cap here made that advice a loop.
             me = argv[2] if len(argv) > 2 else ""
             root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
-            print(CK.guided_slice(fold, me or None, None, me or None, root))
+            print(CK.guided_slice(fold, me or None, None, me or None, root, full=True))
             return
         for rec in fold.items:
             age = C.stamp_age_min(rec.get("first", ""))
@@ -468,6 +473,13 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--compact":
         S.compact(C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
         return
+    if sys.argv[1:2] == ["--state"] and len(sys.argv) < 3:
+        # BEFORE the real handler and matched on argv[1] ALONE, which is the
+        # whole point: the old guard required argv[2] to enter this branch at
+        # all, so a bare `--state` fell through to the hook path below and hung
+        # forever reading the event from stdin (report #7c1c2629).
+        sys.stderr.write(M.CLI_STATE_USAGE)
+        sys.exit(2)
     if len(sys.argv) > 2 and sys.argv[1] == "--state":
         # `... --state <prefix>` with the STATE.md body on stdin. The document
         # is PER BRANCH now, not per session, so the old "no other writer to
@@ -489,7 +501,25 @@ def main():
             # copy-forward is a judgement call a tool must not make.
             sys.stderr.write(M.CLI_STATE_NO_DIR % (branch, branch, branch))
             sys.exit(2)
+        # isatty FIRST: reading an interactive terminal is the hang this verb
+        # was reported for, and refusing beats blocking even now that a bare
+        # `--state` no longer reaches the hook path.
+        if sys.stdin.isatty():
+            sys.stderr.write(M.CLI_STATE_NO_BODY % (" (stdin is a terminal)", prefix))
+            sys.exit(2)
         body = sys.stdin.read()
+        # An EMPTY stdin is its own diagnosis, not a short document. The shape
+        # check would call it `thin: 0 chars`, which reads as "too short" when
+        # the truth is "never arrived" -- and the commonest cause is passing
+        # the body as argv, so say so when extra arguments are present.
+        if not body.strip():
+            extra = ""
+            if len(sys.argv) > 3:
+                extra = " (%d extra argument(s) were passed; the body does not go in argv)" % (
+                    len(sys.argv) - 3
+                )
+            sys.stderr.write(M.CLI_STATE_NO_BODY % (extra, prefix))
+            sys.exit(2)
         # Refuse a document the Stop check would reject, with the SAME rule.
         # Accept-then-reject leaves the one artifact designed to survive
         # compaction broken while the session believes it is fine; refusing
@@ -498,7 +528,7 @@ def main():
         if verdict != "ok":
             sys.stderr.write(
                 M.CLI_STATE_REFUSED
-                % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
+                % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.agent_state_max_chars(body))
             )
             sys.exit(2)
         target = S.agent_state_path(root, branch)
