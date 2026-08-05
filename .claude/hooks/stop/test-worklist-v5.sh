@@ -5073,7 +5073,8 @@ TMPDIR="$BASE/waittmp" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
 WAITER_PID=$!
 export WORKLIST_HARNESS_PID=$$
 sleep 1
-BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
 import json, sys
 print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
                    "command": sys.argv[1], "description": "inbox waiter"}]))
@@ -5275,7 +5276,8 @@ hand_now
 mkdir -p "$BASE/bgout"
 export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 export WORKLIST_HARNESS_PID=$$
-BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
 import json, sys
 print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
                    "command": sys.argv[1], "description": "inbox waiter (dead)"}]))
@@ -5321,7 +5323,8 @@ TMPDIR="$BASE/waittmp2" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
 WAITER_PID=$!
 export WORKLIST_HARNESS_PID=$$
 sleep 1
-BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
 import json, sys
 print(json.dumps([
     {"id": "wt1", "type": "shell", "status": "running", "command": sys.argv[1],
