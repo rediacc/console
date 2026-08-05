@@ -644,7 +644,18 @@ def main():
     # remembering two more script names. Both delegate; neither reimplements.
     if sys.argv[1:2] == ["--reports"]:
         import wl_report
-        sys.exit(wl_report.main(sys.argv[2:] or ["--list", "--unread"]))
+        rest = sys.argv[2:]
+        # `--reports --all` MUST work, and it did not: the dispatcher forwarded
+        # `--all` as if it were a MODE, and wl_report answered "unknown mode
+        # --all" (exit 2). It matters more than a papercut because that exact
+        # flag was in the announcement broadcast to other sessions, so the first
+        # thing a peer tried, on our instructions, failed. Anything that is not
+        # a mode is a modifier, and modifiers belong to --list.
+        if not rest:
+            rest = ["--list", "--unread"]
+        elif rest[0] not in wl_report.MODES:
+            rest = ["--list"] + rest
+        sys.exit(wl_report.main(rest))
     if sys.argv[1:2] == ["--wait"]:
         import wl_wait
         sys.exit(wl_wait.main(sys.argv[2:]))
