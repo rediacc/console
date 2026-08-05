@@ -356,6 +356,67 @@ stop_event "abare-signoff-4444444444444444" bare "Released. Task complete."
 assert_has "12 control: the same sign-off with no sends IS silent" \
     "$(cat "$T/store/index.jsonl")" '"silent":true'
 
+echo "== 12b. ONE POISONED AGENT MUST NOT STARVE THE PASS =="
+# The review finding this pins: scan()'s per-agent capture was not isolated, so a
+# single entry that raised killed the loop before it reached anything sorted
+# AFTER it -- and because a failed entry is never recorded as `known`, the next
+# scan hit the same wall at the same place. The self-heal starved permanently
+# and silently.
+#
+# Ordering is load-bearing: scan() walks sorted(), so the poison must sort
+# BEFORE the good agent or this proves nothing. "apoison" < "bgood".
+scratch
+mkdir -p "$T/claude/projects"
+python3 - "$T" <<'PY2'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "sess1" / "subagents"
+proj.mkdir(parents=True)
+def agent(aid, atype, text):
+    (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": atype, "name": atype}))
+    rec = {"type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
+           "timestamp": "2026-08-05T10:00:00.500Z", "cwd": str(root),
+           "message": {"content": [{"type": "text", "text": text}]}}
+    p = proj / ("agent-%s.jsonl" % aid)
+    p.write_text(json.dumps(rec) + "\n")
+    old = time.time() - 3600
+    os.utime(p, (old, old))  # idle, so --scan considers it finished
+# POISON, arrived at by ELIMINATION and worth recording so nobody re-walks it:
+#   - a >255-byte id fails the WRITE during setup, so the case tests nothing;
+#   - a giant agentType does NOT poison, because _fit's last-resort stage
+#     shrinks the agent field too and the entry captures cleanly.
+# So the poison is a transcript that EXISTS and STATS like a file but cannot be
+# read: a directory named agent-*.jsonl. exists() and stat() both succeed, the
+# idle check passes, and harvest_transcript raises IsADirectoryError -- a real
+# read failure rather than a size one, and independent of permissions (a chmod
+# 000 poison would evaporate under a root-run CI).
+pid = "apoison-1111111111111111"
+(proj / ("agent-%s.meta.json" % pid)).write_text(json.dumps({"agentType": "POISONAGENT"}))
+pdir = proj / ("agent-%s.jsonl" % pid)
+pdir.mkdir()
+os.utime(pdir, (time.time() - 3600,) * 2)
+agent("bgood-5555555555555555", "goodagent", "GOOD AGENT REPORT " + "detail. " * 40)
+PY2
+SCAN12B="$(report_py --scan)"
+assert_has "12b the good agent sorted AFTER the poison is still indexed" "$SCAN12B" "goodagent"
+# WHAT AN UNREADABLE TRANSCRIPT ACTUALLY DOES, established by elimination rather
+# than assumed: it does NOT raise. harvest_transcript absorbs the read failure,
+# so the entry is indexed with an empty body and flagged silent. Both agents
+# therefore index, and the pass completes.
+#
+# That makes the `except Exception: continue` in scan() DEFENSIVE rather than
+# load-bearing for this input: no public input found so far reaches it (an
+# oversized agentType does not either -- _fit's last-resort stage shrinks that
+# field). This case pins the property that matters and can be observed from
+# outside -- a problematic entry does not cost the entries sorted after it --
+# and deliberately does NOT claim to exercise the except arm. A control that
+# asserted the poison vanished would be asserting something false.
+assert_eq "12b both agents indexed; the bad one costs only itself" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "2"
+assert_has "12b the unreadable transcript indexes as silent, not as an abort" \
+    "$(cat "$T/store/index.jsonl")" '"silent":true' 
+
 echo "== 13. scan skips a still-running agent =="
 scratch
 python3 - "$T" <<'PY'
