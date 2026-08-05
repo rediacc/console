@@ -623,8 +623,9 @@ assert_has "22 control: bare usage prints the contract, not a one-liner" "$ERR" 
 
 echo "== 23. a transcript path that does not resolve is recorded as absent =="
 # Found in LIVE USE, not by this suite: a SubagentStop fired carrying a
-# well-formed transcript path to a file that was never written (no .jsonl, no
-# .meta.json, no trace in the parent transcript -- the agent produced no turn).
+# well-formed transcript path to a file that was never written. The agent here
+# is TYPED on purpose -- a typeless one with no transcript is a phantom and is
+# refused outright (case 26), so a typed agent is what still exercises this.
 # Every fixture here writes its transcript first, so 74/74 passed while this was
 # broken. A stored path that silently does not exist is worse than a null:
 # readers treat it as readable and quietly get nothing.
@@ -632,15 +633,15 @@ scratch
 python3 - <<'EVJSON' | python3 "$HERE/wl_report.py" --subagent-stop
 import json, os
 print(json.dumps({
-    "agent_id": "aghost-agent-7171717171717171", "agent_type": "",
+    "agent_id": "aghost-agent-7171717171717171", "agent_type": "ghost-agent",
     "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
     "agent_transcript_path": "/nonexistent/dir/agent-aghost.jsonl",
     "last_assistant_message": "push it when the agent reports back",
 }))
 EVJSON
 assert_has "23 the unresolved path is flagged" "$(cat "$T/store/index.jsonl")" '"tx":"absent"'
-# The filename comes from the index, not a guess: this agent's type is EMPTY,
-# so the name falls back to "agent" and a *ghost* glob matches nothing.
+# The filename comes from the index rather than a guess, so this case does not
+# break again if the name-fallback rules change.
 GHOSTBODY="$T/store/$(python3 -c '
 import json, sys
 print(json.loads(open(sys.argv[1]).readline())["body"])' "$T/store/index.jsonl")"
@@ -724,6 +725,105 @@ sys.path.insert(0, os.environ["HERE"])
 import wl_core as C
 print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
 assert_eq "25 control: with no live peer there is nothing to listen for" "$(nudge)" ""
+
+echo "== 26. a main-loop turn is NOT captured as a report (the self-wake loop) =="
+# THE LOOP THIS CLOSES, found by running the thing rather than testing it.
+# SubagentStop also fires for the session's OWN main-loop turns. Each was
+# captured as a "report"; the waiter saw a new report and fired; the session
+# spent a turn reading and re-arming; that turn was captured; the waiter fired
+# again. It does not converge, and every cycle costs the exact turn the waiter
+# exists to save. Measured on the live store: 44 of 181 records were these.
+scratch
+# A phantom: no agent_type AND a transcript that does not resolve.
+python3 - <<'PHANTOM' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os
+print(json.dumps({
+    "agent_id": "aphantom0000111122223", "agent_type": "",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "/nonexistent/subagents/agent-aphantom.jsonl",
+    "last_assistant_message": "push it when the agent reports back",
+}))
+PHANTOM
+if [ ! -s "$T/store/index.jsonl" ]; then
+    ok "26 a typeless, transcript-less stop is not indexed at all"
+else
+    bad "26 the phantom was indexed" "$(cat "$T/store/index.jsonl")"
+fi
+
+# REJECTS ONLY WHEN BOTH SIGNALS FAIL. These two controls are the whole reason
+# the predicate is an AND: either signal alone would drop a real report.
+# CONTROL A: a real agent whose transcript has not flushed yet still has a TYPE.
+python3 - <<'FLUSHRACE' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os
+print(json.dumps({
+    "agent_id": "aracer-agent-2222333344445555", "agent_type": "some-agent",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "/nonexistent/subagents/agent-aracer.jsonl",
+    "last_assistant_message": "a real report whose transcript has not landed yet",
+}))
+FLUSHRACE
+assert_has "26 control: a TYPED agent survives an unresolved transcript" "$(cat "$T/store/index.jsonl")" "some-agent"
+# CONTROL B: a typeless agent that DOES have a transcript still survives.
+python3 - "$T/tx.jsonl" <<'MKTX2'
+import json, sys
+open(sys.argv[1], "w").write(json.dumps({
+    "type": "assistant",
+    "message": {"content": [{"type": "text", "text": "typeless but real"}]}}) + "\n")
+MKTX2
+python3 - "$T/tx.jsonl" <<'TYPELESS' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os, sys
+print(json.dumps({
+    "agent_id": "atypeless-6666777788889999", "agent_type": "",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": sys.argv[1],
+    "last_assistant_message": "typeless but real",
+}))
+TYPELESS
+assert_has "26 control: a TRANSCRIPTED agent survives an empty type" "$(cat "$T/store/index.jsonl")" "typeless"
+assert_eq "26 exactly the phantom was rejected, the two real ones kept" \
+    "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "2"
+# And the phantom must not reach the surfaced inbox either.
+assert_lacks "26 the phantom never surfaces" "$(surface --session-start startup)" "push it when the agent reports back"
+
+echo "== 27. --retire-phantoms removes existing ones and keeps the real reports =="
+# The filter stops NEW phantoms; 44 were already in the live index and would
+# have kept surfacing as unread forever. Retirement is an APPENDED event, never
+# an edit: the append-only log is what makes the lock-free single-write design
+# sound, and rewriting lines to remove them would trade that away for tidiness.
+scratch
+stop_event "areal-one-1010101010101010" real-one "a genuine report $BIG"
+python3 - <<'PHANTOM2' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os
+print(json.dumps({
+    "agent_id": "aphantom2-444455556666", "agent_type": "",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "/nonexistent/agent-x.jsonl",
+    "last_assistant_message": "a main loop turn",
+}))
+PHANTOM2
+# Force a legacy phantom in directly, as if captured before the filter existed.
+python3 - "$T/store/index.jsonl" <<'LEGACY'
+import json, sys
+open(sys.argv[1], "a").write(json.dumps({
+    "ev": "report", "id": "legacyphantom", "at": "2026-08-05T10:00:00Z",
+    "branch": "testbr", "agent": "agent", "type": "", "session": "aaaaaaaa",
+    "body": "testbr/none.md", "bytes": 40, "silent": True, "sends": 0,
+    "tx": "absent", "title": "push it", "transcript": "/gone/x.jsonl",
+    "src": "hook"}) + "\n")
+LEGACY
+OUT="$(report_py --retire-phantoms --dry-run)"
+assert_has "27 dry run names the legacy phantom" "$OUT" "legacyphantom"
+assert_lacks "27 dry run does not retire the real report" "$OUT" "real-one"
+assert_has "27 dry run changes nothing" "$(report_py --list --all)" "legacyphantom"
+OUT="$(report_py --retire-phantoms)"
+assert_has "27 it reports what it kept" "$OUT" "1 real report(s) untouched"
+assert_lacks "27 the phantom is gone from the listing" "$(report_py --list --all)" "legacyphantom"
+assert_has "27 control: the real report survives" "$(report_py --list --all)" "real-one"
+# The retirement is an APPEND: the original report line is still on disk.
+assert_has "27 the log stayed append-only (the line is still there)" "$(cat "$T/store/index.jsonl")" '"id":"legacyphantom"'
+assert_has "27 and a retire event was appended for it" "$(cat "$T/store/index.jsonl")" '"ev":"retire"'
+# Re-runnable, and a second pass finds nothing.
+assert_has "27 control: re-running finds nothing left" "$(report_py --retire-phantoms)" "nothing to retire"
 
 echo
 echo "================================"
