@@ -2252,3 +2252,51 @@ wrapper, three against the phantom filter, and one per review-gate assertion.
 Two tests were found passing for the WRONG reason and fixed rather than accepted --
 one asserted an outer layer while appearing to assert an inner one, and one read
 the real report store because an unset env var is not neutral.
+
+## 2026-08-05 — identity, latching, and three gates that could not fail
+
+Eleven commits touched `.ci`, `.github` and `.claude` after the entry above. What
+a new session needs from them:
+
+**The stop hook now validates WHO is calling it.** Every `<me>` was previously
+accepted on SHAPE alone, so a session that copied a sub-agent's namespace token
+out of a tool result used the wrong identity for 26 hours: 219 calls under it,
+20 under the right one, from one process. Every call SUCCEEDED — writes and reads
+key off the same unvalidated string, so one typo splits a session into two
+internally-consistent halves and nothing downstream can tell. A peer's message
+sat unread for 34 hours while it auto-escalated. `wl_core.py::check_me` compares
+`<me>` against `CLAUDE_CODE_SESSION_ID` (that name is verified against a live
+child's environment; `CLAUDE_SESSION_ID` DOES NOT EXIST and would resolve to ""
+forever, which every caller treats as pass). Three layers: refusal, a phantom
+backstop that names orphaned identities, and `--reassign` that moves open work
+without rewriting history. `WORKLIST_SESSION_ID` is the declared override, an
+identity ASSERTION rather than a suppression flag.
+
+Its own control landed by accident and is the clearest evidence in the file:
+`--list --open <session>` answered "no actionable items" while that session held
+22 open items and a request.
+
+**A gate keyed on a description of what a producer emits, rather than the
+constant the producer writes, cannot fail.** Six instances this day, across
+review-comment checks, the sidecar gate, and a suite harness reading only the
+last of two summaries. The sidecar gate shipped WITH the defect it was written to
+prevent (it swallowed `git ls-files`'s exit status, so an unreadable tree read as
+a clean one), caught by `test-swallowed-failures.sh`. Standing lesson: derive the
+gate from the constant, and prove it fires by planting the defect.
+
+**Latched, never silenced.** The SUBMODULE POINTER MOVED warning re-fired every
+stop until push, including after a deliberate decision to keep a pointer local —
+which is how a real warning becomes wallpaper. It is now latched per
+(path, target sha) for `SUBMODULE_LATCH_MIN` (15). TIME-BOXED on purpose: a
+permanent acknowledgement would go silent on a pointer somebody forgot, and
+silence there is indistinguishable from correctness.
+
+**Housekeeping Phase 6 is dead by design, and now says so.** Deleting a pr-*
+environment OBJECT needs Administration:write, which `check-no-app-admin-perm.sh`
+deliberately forbids the App so a leaked token cannot delete edge/stable. The
+comment used to read as a pending upgrade. The real mechanism is a periodic
+manual `gh` sweep by an owner-token human.
+
+Gate: `.ci/scripts/test/gates/test-worklist-hooks.sh` runs BOTH stop-hook
+harnesses (569 + 115 = 684). It previously parsed only the last summary, so the
+first harness could fail unnoticed.
