@@ -164,6 +164,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-silent-failures
 
+      # Runtime sidecars must never be tracked. They have no static markers in
+      # source -- they exist only while a session runs -- so every other gate is
+      # blind to them by construction and `git ls-files` is the only observable
+      # that can tell. A committed .waiter-* heartbeat tells a fresh clone a
+      # waiter is running when none is, so that session goes silently deaf to
+      # peer messages. A `git add -A` swept two of them in on 2026-08-05.
+      - name: Tracked runtime sidecars
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-tracked-sidecars
+
       # Unit tests for shell helpers. Deterministic, no network.
       - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
