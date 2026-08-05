@@ -103,6 +103,48 @@ drill_parse_args() {
     done
 }
 
+# preflight_keyring — every phase below enrolls a device, and enrollment stores
+# its unlocked slot secret in the OS keyring: packages/cli/src/utils/secure-storage.ts
+# uses `keyctl` against the `@u` user keyring on Linux, for the PASSWORD method as
+# much as for passkeys (config-remote-password.ts writes `rdc:pw:<uuid>` there, and
+# the shared deriveCek reads it back). A GitHub runner job has no accessible session
+# keyring, so the read fails with `keyctl_read_alloc: Permission denied` and the CLI
+# reports a missing secret four assertions deep, blaming the store.
+#
+# Checked here so the drill names the missing dependency instead of failing inside
+# an assertion that reads like a config-storage bug. Follows the declared-skip
+# discipline the e2e suites and renet already use (E2E_EXPECT_NO_CLUSTER_VMS,
+# RENET_EXPECT_NO_ACCOUNT_SERVER): absent WITH a declaration is a loud skip, absent
+# WITHOUT one is a red. A silent skip is the failure mode that rule exists to
+# prevent, so an undeclared missing keyring must never pass quietly.
+preflight_keyring() {
+    drill_step "Preflight: an OS keyring the CLI can actually write to"
+    if command -v keyctl >/dev/null 2>&1 &&
+        keyctl add user rediacc-drill-probe probe @u >/dev/null 2>&1; then
+        keyctl purge user rediacc-drill-probe >/dev/null 2>&1 || true
+        drill_note "keyring usable (keyctl @u)"
+        return 0
+    fi
+
+    if [[ -n "${DRILL_EXPECT_NO_KEYRING:-}" ]]; then
+        printf '\n'
+        log_warn "config-storage enrollment: SKIPPED BY DECLARATION"
+        log_warn "  reason (DRILL_EXPECT_NO_KEYRING): ${DRILL_EXPECT_NO_KEYRING}"
+        log_warn "  every phase of this drill enrolls a device, and enrollment needs the"
+        log_warn "  OS keyring (keyctl @u) that this environment does not provide."
+        printf '\n'
+        drill_summary
+        exit 0
+    fi
+
+    log_error "No usable OS keyring: 'keyctl add user ... @u' failed."
+    log_error "Enrollment stores its slot secret there (secure-storage.ts), so every"
+    log_error "phase of this drill would fail four assertions deep, blaming the store."
+    log_error "On a machine that genuinely has no keyring, declare it:"
+    log_error "  DRILL_EXPECT_NO_KEYRING='<why>' ./run.sh drill transfer"
+    exit 1
+}
+
 setup_sandbox() {
     drill_step "Setup: two isolated config directories (device 1 and device 2)"
     DEVICE1_HOME="$DRILL_WORK/device1"
@@ -332,6 +374,9 @@ main() {
         drill_summary
         return
     fi
+    # After the selftest gate: --selftest proves the harness without touching a
+    # gateway or a keyring, so it must stay runnable where enrollment cannot be.
+    preflight_keyring
     setup_gateway
     setup_store
     phase_seed_on_enable

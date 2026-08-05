@@ -1786,7 +1786,18 @@ jobs:
           set -o pipefail
           ./run.sh drill universe --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
 
+      # DECLARED, not skipped silently. Every phase of this drill enrolls a
+      # device, and enrollment writes its slot secret to the OS keyring
+      # (secure-storage.ts uses keyctl @u, for the password method as much as for
+      # passkeys). A runner job has no accessible session keyring, so the CLI
+      # fails with `keyctl_read_alloc: Permission denied` four assertions deep
+      # and blames the config store. Without this declaration the drill REDS
+      # rather than passing quietly — that is the point of the variable.
       - name: drill transfer
+        env:
+          DRILL_EXPECT_NO_KEYRING: >-
+            GitHub runners give the job no accessible session keyring, so
+            keyctl @u is unwritable and device enrollment cannot run here
         run: |
           set -o pipefail
           ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
