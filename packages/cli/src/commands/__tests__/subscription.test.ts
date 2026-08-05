@@ -13,6 +13,7 @@ const {
   mockGetRepository,
   mockResolveRepoRef,
   mockGetTeam,
+  mockGetCurrent,
   mockReadSSHKey,
   mockProvisionRenetToRemote,
   mockGetSubscriptionServerUrl,
@@ -39,6 +40,7 @@ const {
   mockGetRepository: vi.fn(),
   mockResolveRepoRef: vi.fn(),
   mockGetTeam: vi.fn(),
+  mockGetCurrent: vi.fn(),
   mockReadSSHKey: vi.fn(),
   mockProvisionRenetToRemote: vi.fn(),
   mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
@@ -106,6 +108,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getLocalMachine: mockGetLocalMachine,
     getRepository: mockGetRepository,
     getTeam: mockGetTeam,
+    getCurrent: mockGetCurrent,
   },
 }));
 
@@ -491,6 +494,52 @@ describe('subscription command helpers', () => {
     expect(mockOutputSuccess).toHaveBeenCalledWith(
       'commands.subscription.refresh.repo.success:shop:test'
     );
+  });
+
+  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the
+  // one that reaches the size probe inside refreshRepoLicenseIdentity. Without
+  // the mount, that probe measures the machine's default datastore for a repo
+  // that lives on a named one, finds nothing, and reissues at the 1 GB floor.
+  it('refresh --repo declares the datastore the repo is recorded on', async () => {
+    mockGetCurrent.mockResolvedValue({
+      resources: {
+        repositories: {
+          shop: { grand: 'latest', tags: { latest: {} }, placement: { datastore: 'tier1' } },
+        },
+      },
+    });
+
+    await executeRepoLicenseRefresh('shop:test');
+
+    expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      expect.objectContaining({ machineName: 'hostinger' }),
+      'PRIVATE_KEY',
+      {
+        repositoryGuid: 'repo-guid',
+        grandGuid: 'grand-guid',
+        kind: 'fork',
+        datastoreMount: '/mnt/rediacc-ds/tier1',
+      }
+    );
+    // The control: rewriting the expected mount must not match.
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalledWith(
+      expect.anything(),
+      'PRIVATE_KEY',
+      expect.objectContaining({ datastoreMount: '/mnt/rediacc-ds/tier1-mutated' })
+    );
+  });
+
+  // CONTROL, other direction: a repo on the machine's implicit default declares
+  // nothing, leaving the machine's own datastore in place.
+  it('refresh --repo sends no mount for a repo with no named-datastore placement', async () => {
+    mockGetCurrent.mockResolvedValue({
+      resources: { repositories: { shop: { grand: 'latest', tags: { latest: {} } } } },
+    });
+
+    await executeRepoLicenseRefresh('shop:test');
+
+    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][2] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('datastoreMount');
   });
 
   it('refresh --repo fails when the ref is not a repository in this config', async () => {
