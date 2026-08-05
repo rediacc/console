@@ -56,6 +56,7 @@
     "check:ci-embed-credits": "tsx scripts/check-embed-credits.ts",
     "check:ci-embed-asset-freshness": "tsx scripts/check-embed-asset-freshness.ts",
     "check:ci-embed-arch-parity": "tsx scripts/check-embed-arch-parity.ts",
+    "check:ci-account-probes": ".ci/scripts/quality/check-account-probes.sh",
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
     "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",
     "install:natives": "npm rebuild ssh2 cpu-features esbuild --foreground-scripts --ignore-scripts=false",
