@@ -36,6 +36,13 @@ if (!PREVIEW_URL || !TOKEN || !ED25519_PUBLIC_KEY) {
   process.exit(1);
 }
 
+// This guard proves all three are strings from here on, but TypeScript does not
+// carry that narrowing across a closure boundary: every use below sits inside a
+// step function, and there the declared type is still `string | undefined`. The
+// three `!` assertions further down restate what this guard already enforced.
+// They are erased at runtime -- do not replace them with `?? ''` or a default,
+// which would let a missing variable reach the network instead of exiting here.
+
 const TEST_MACHINE_ID = 'a'.repeat(64); // deterministic 64-char hex
 const TEST_CLIENT_MACHINE_ID = 'b'.repeat(64);
 const TEST_REPO_GUID = '00000000-0000-4000-8000-000000000001';
@@ -157,7 +164,7 @@ async function main(): Promise<void> {
     // A null channel is not this check's business: Step 7 below already reports
     // an unparseable PREVIEW_URL once, and comparing against null here would
     // report the same fault a second time in a much more confusing shape.
-    const expected = extractChannel(PREVIEW_URL);
+    const expected = extractChannel(PREVIEW_URL!);
     if (expected !== null && serverInfo.updateChannel !== expected) {
       throw new Error(`updateChannel is "${serverInfo.updateChannel}", expected "${expected}"`);
     }
@@ -213,7 +220,7 @@ async function main(): Promise<void> {
   // Step 5: Verify Ed25519 signature
   if (signedLicense) {
     try {
-      await importPublicKey(signedLicense.publicKeyId, ED25519_PUBLIC_KEY);
+      await importPublicKey(signedLicense.publicKeyId, ED25519_PUBLIC_KEY!);
       const valid = await verifySignature(signedLicense);
       if (!valid) throw new Error('Signature verification returned false');
       ok('Ed25519 signature verified');
@@ -246,7 +253,7 @@ async function main(): Promise<void> {
   // PR-N channel into the CLI defaults it hands out. Without this, users
   // visiting a PR preview download the stable CLI instead of the preview
   // build — the exact regression this test exists to catch.
-  const expectedChannel = extractChannel(PREVIEW_URL);
+  const expectedChannel = extractChannel(PREVIEW_URL!);
   if (!expectedChannel) {
     fail('Channel extraction', new Error(`Could not parse channel from ${PREVIEW_URL}`));
   } else {
