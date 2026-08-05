@@ -153,6 +153,70 @@ function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
 // cannot prove what it ran (case 2: pre-engine or expired artifact reads as
 // absent, case 3), or on a plan whose jobs were skipped by a watchdog rerun
 // rather than by scope (case 4: intent is not outcome).
+// A greenlit skip is written by scope-shadow.sh's apply_greenlight as
+// `greenlight:<run-id>`; nothing else in the pipeline produces a reason of
+// that shape (buildPlan writes 'full', 'modules:<...>' and 'out-of-scope').
+const GREENLIGHT_REASON_RE = /^greenlight:\d+$/;
+
+// planCoverageIsFull(plan) -> did that run cover every key, by execution or by
+// evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what
+// kept this engine from ever reducing a round.
+//
+// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight
+// skips a single key, and it is right to: the plan no longer describes a round
+// that executed everything. But `renet` and `account_e2e` closures change
+// rarely, so on this repo the flip fires on nearly every run, and a run that
+// executed sixteen of eighteen keys and held greenlight EVIDENCE for the other
+// two was refused as a baseline exactly like a run that skipped its way to
+// green. Measured over the 14 console PR runs from 30944973190 to 30983418337:
+// every single walk died at the merge parent, and no job was ever skipped with
+// reason 'out-of-scope'.
+//
+// So the question is asked per key instead of per label. A key covers if it
+// was planned to RUN (the reconciler, which every caller of this predicate
+// runs afterwards, then proves it actually ran) or if it was skipped on a
+// greenlight, whose evidence is a DIFFERENT run in which that job's exact
+// input closure executed green (greenlight.cjs's rule 1: "asks whether the job
+// RAN, not what the plan intended"). A key skipped as 'out-of-scope' does not
+// cover, which is case 1 intact: scope evidence still cannot chain.
+//
+// This makes `reason` load-bearing where the reconciler deliberately ignores
+// it. That adds no trust: the reason string arrives in the same artifact as
+// `mode`, `run` and `base_sha`, all already load-bearing, so a plan able to
+// lie here could lie by claiming mode 'full' today. What stays derived rather
+// than declared is the part that matters -- `reconciled` is still recomputed by
+// the reader, per attestPlan's doctrine.
+//
+// EVERY MALFORMED SHAPE READS AS "NOT COVERED", because the two verdicts are
+// not symmetric: reading garbage as coverage reduces a round on evidence that
+// was never checked, while reading it as a gap costs one full round. Only the
+// second is recoverable, so the predicate is written to reach `true` from
+// exactly the two shapes the producers emit, and from nothing else.
+function planCoverageIsFull(plan) {
+  if (!plan || typeof plan !== 'object') return false;
+  if (plan.mode === 'full') return true;
+  if (plan.mode !== 'reduced') return false;
+  // An ARRAY is refused outright rather than tolerated. buildPlan writes a map
+  // keyed by job id and every reader indexes it by key, so Object.values on an
+  // array would quietly succeed on a shape no producer emits and no consumer
+  // could use.
+  if (!plan.jobs || typeof plan.jobs !== 'object' || Array.isArray(plan.jobs)) return false;
+  const jobs = Object.values(plan.jobs);
+  // An empty jobs vector proves nothing about anything.
+  if (jobs.length === 0) return false;
+  // STRICT BOOLEANS ON BOTH SIDES, never `run !== false`. scope-map.cjs's
+  // buildPlan writes real booleans and skip-plan-reconcile.cjs already reads
+  // them strictly (`planned.run === true`), so `run` absent, `"false"` or `0`
+  // are malformed entries rather than dialects. `run` ABSENT is the one that
+  // decides the form: paired with reason 'out-of-scope' it is precisely the
+  // skip case 1 forbids, and `!== false` would have called it coverage.
+  return jobs.every(
+    (j) =>
+      j &&
+      (j.run === true || (j.run === false && GREENLIGHT_REASON_RE.test(String(j.reason || ''))))
+  );
+}
+
 function evaluateBaselineCandidate(candidate) {
   if (!candidate || candidate.conclusion !== 'success') {
     return { usable: false, reason: 'not-green' };
@@ -160,7 +224,7 @@ function evaluateBaselineCandidate(candidate) {
   if (!candidate.plan) {
     return { usable: false, reason: 'no-skip-plan' };
   }
-  if (candidate.plan.mode !== 'full') {
+  if (!planCoverageIsFull(candidate.plan)) {
     return { usable: false, reason: 'reduced-baseline' };
   }
   if (candidate.plan.reconciled !== true) {
@@ -216,10 +280,11 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
 
   try {
     // Cheapest first, and the order is a cost decision, not a style one.
-    // A non-full plan can never be a baseline whatever the reconciler says
-    // (case 1: evidence does not chain across reduced rounds), so asking the
-    // Jobs API about it would be a round trip spent on a foregone conclusion.
-    if (plan.mode !== 'full') return refuse('not-full-plan');
+    // A plan that did not cover every key can never be a baseline whatever the
+    // reconciler says (case 1: evidence does not chain across SCOPE-reduced
+    // rounds), so asking the Jobs API about it would be a round trip spent on a
+    // foregone conclusion. Coverage, not the mode label: see planCoverageIsFull.
+    if (!planCoverageIsFull(plan)) return refuse('not-full-plan');
     // Case 30 again, but at READ time: a plan that does not name the run we
     // downloaded it from is stale or substituted evidence.
     // The `!plan.run_id` half is load-bearing: without it a plan carrying NO
@@ -915,6 +980,7 @@ module.exports = {
   parseFileList,
   computeWorkflowClosure,
   evaluateBaselineCandidate,
+  planCoverageIsFull,
   attestPlan,
   parseJsonStream,
   isBaseUnchanged,
