@@ -3,10 +3,6 @@
   color: "FEF2C0"
   description: "Prevents watchdog from force-cancelling older same-PR runs"
 
-- name: no-cancel-failure
-  color: "FEF2C0"
-  description: "Prevents watchdog from canceling workflow on job failure"
-
 - name: no-auto-retry
   color: "FEF2C0"
   description: "Prevents watchdog from auto-retrying failed jobs"

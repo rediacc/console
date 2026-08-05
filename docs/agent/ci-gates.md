@@ -152,8 +152,8 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
   2026-07-16**, entirely unnoticed. On a scheduled run the failure is recorded,
   the run is left to conclude as `failure`, and the watchdog KEEPS MONITORING so
   later failures are still logged and captured. See `evaluateCancelExemption`.
-  The `no-cancel-failure` label could never have covered this: labels live on a
-  PR, and a scheduled run has none.
+  This has to live in code: labels are read from the PR, and a scheduled run has
+  none.
 
   **Retries are NOT suppressed on the nightly, only cancels are.** A flaky E2E
   leg is still re-run under the allowlist rules below. Suppressing both would
@@ -186,8 +186,14 @@ job list. A lost dispatch fails open -- the run finishes unwatched, and
 | Label | Effect |
 |-------|--------|
 | `no-cancel-push` | Don't cancel older runs on new pushes |
-| `no-cancel-failure` | Don't cancel run when jobs fail |
 | `no-auto-retry` | Skip retry, force-cancel immediately on failure |
+
+There is no label that holds a failing run open. `no-cancel-failure` did, and it
+was removed 2026-08-05: a red run kept alive still has to wait out the 44-minute
+E2E and OPS legs before it concludes, so every iteration on a branch being driven
+to green paid that cost. The full roster of deterministic reds arrives anyway --
+the Quality drain above collects every lane, and `forceCancel` re-fetches the job
+list so the annotation names every job that had failed by then.
 
 Labels apply to PR runs only. A `push` or `schedule` run has no PR, so none of
 them are readable there -- which is why the nightly exemption above is in code

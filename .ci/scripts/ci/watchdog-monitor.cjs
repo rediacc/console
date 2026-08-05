@@ -73,7 +73,6 @@
 //                                 as an artifact. Unset = no capture.
 //
 // Labels (PR context only):
-//   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
 //   no-auto-retry      - Skip AI + retry entirely (force-cancel immediately)
 //
 // Usage (from actions/github-script):
@@ -87,10 +86,11 @@ const BINARY_EXEC_FAILURE_RE = /is not a valid application for this OS platform|
 
 const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p));
 
-// Jobs whose force-cancel `no-cancel-failure` may NOT suppress. Per CLAUDE.md a
-// Review Gate failure means review feedback is outstanding, not that code is
-// broken, so it is never something to label past. Nothing else is immune.
-const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
+// Jobs whose force-cancel fires INSTANTLY, without waiting for the drain below.
+// Per CLAUDE.md a Review Gate failure means review feedback is outstanding, not
+// that code is broken: there is no sibling verdict worth collecting, so holding
+// the run open for one buys nothing. Nothing else skips the drain.
+const NO_DRAIN_PATTERNS = ['Review Gate'];
 
 // Run events the watchdog must never cancel.
 //
@@ -129,11 +129,10 @@ const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
  * noticed, because the run-level rollup said `cancelled`. The individual gate
  * breaks were the symptom; this laundering is why they survived twelve days.
  *
- * WHY NOT THE EXISTING LABEL. `no-cancel-failure` already means "record the
- * failure, do not cancel". It cannot help here: labels live on a PR, and a
- * `schedule` run has no PR, so `prNumber` is null and the label block never
- * runs. The nightly is structurally incapable of wearing the one escape hatch
- * that would have saved it.
+ * WHY IT LIVES IN CODE AND NOT IN A LABEL. Labels are read from the PR, and a
+ * `schedule` run has no PR: `prNumber` is null and the label block never runs.
+ * The nightly is structurally incapable of wearing a PR-side escape hatch, so
+ * the only place this exemption can live is here.
  *
  * FAIL-CLOSED DIRECTION. An unknown or unreadable event is NOT exempt, so it
  * cancels exactly as it does today. The exemption only ever fires on a positive
@@ -228,22 +227,28 @@ async function hasNewerRun({ github, context, run }) {
 }
 
 /**
- * Should a failed job force-cancel the run immediately, before any label or
- * retry handling downstream?
+ * Should a failed job force-cancel the run, before any retry handling
+ * downstream?
+ *
+ * A no-retry job (Quality, Review Gate) that genuinely FAILED cancels: a lint
+ * or type error is deterministic, so there is nothing to classify and nothing
+ * to retry. A CANCELLATION of the same job is not a verdict about the code, so
+ * it falls through -- see the branch comment at the call site.
+ *
+ * `noDrain` rides along because the two questions share the pattern lists: a
+ * Review Gate failure cancels the instant it is seen, while everything else
+ * waits for its sibling no-retry lanes to settle so one round reports every
+ * failing lane (see pendingNoRetryJobs).
  *
  * Extracted and exported so the ordering is testable against the REAL
- * WATCHDOG_NO_RETRY_PATTERNS rather than a copy. The bug this replaces was pure
- * ordering: the no-retry branch returned before the `no-cancel-failure` check,
- * and the pattern list is 'Quality,Review Gate', so the label was unreachable
- * for every Quality job -- the entire class it exists for -- while still being
- * detected and logged as honoured. Run 29825013399.
+ * WATCHDOG_NO_RETRY_PATTERNS rather than a copy.
  */
-function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, noRetryPatterns }) {
-  const labelImmune = matchesPatterns(jobName, LABEL_IMMUNE_PATTERNS);
+function evaluateNoRetryCancel({ jobName, isFailure, noRetryPatterns }) {
+  const noDrain = matchesPatterns(jobName, NO_DRAIN_PATTERNS);
   const matchesNoRetry = matchesPatterns(jobName, noRetryPatterns);
   return {
-    cancel: Boolean(isFailure) && matchesNoRetry && (labelImmune || !skipCancellationOnFailure),
-    labelImmune,
+    cancel: Boolean(isFailure) && matchesNoRetry,
+    noDrain,
     matchesNoRetry,
   };
 }
@@ -392,8 +397,9 @@ function evaluateRetryEligibility({
  * state. The expensive jobs the cancel exists to stop -- the E2E and OPS legs --
  * are not in this set, so they still die at the same moment they used to.
  *
- * Label-immune jobs (Review Gate) are excluded: CLAUDE.md specifies those fail
- * immediately, full stop, and an outstanding review is not something to wait on.
+ * NO_DRAIN_PATTERNS jobs (Review Gate) are excluded: CLAUDE.md specifies those
+ * fail immediately, full stop, and an outstanding review is not something to
+ * wait on.
  *
  * Pure so the ordering is testable against the REAL pattern list.
  */
@@ -402,7 +408,7 @@ function pendingNoRetryJobs({ jobs, noRetryPatterns, excludePatterns = [] }) {
     j.status !== 'completed' &&
     !excludePatterns.some(p => j.name.includes(p)) &&
     matchesPatterns(j.name, noRetryPatterns) &&
-    !matchesPatterns(j.name, LABEL_IMMUNE_PATTERNS)
+    !matchesPatterns(j.name, NO_DRAIN_PATTERNS)
   );
 }
 
@@ -1016,7 +1022,7 @@ const monitor = async ({ github, context, core }) => {
     // still gets the full "here is everything that failed" banner) and BEFORE
     // the critical-job drain (there is nothing to drain for if nothing is being
     // cancelled). This is the single chokepoint: all five call sites route
-    // through forceCancel, including the label-immune Review Gate path, so the
+    // through forceCancel, including the no-drain Review Gate path, so the
     // exemption cannot be bypassed by adding a sixth.
     const exemption = evaluateCancelExemption({ runEvent: targetRunEvent });
     if (exemption.exempt) {
@@ -1078,12 +1084,11 @@ const monitor = async ({ github, context, core }) => {
     return true;
   }
 
-  // Check for skip-cancellation and skip-auto-retry labels.
+  // Check for the skip-auto-retry label.
   // Labels are fetched LIVE from the API: the event payload's label list is
   // frozen at the event that created the run, so a label added afterwards
-  // (e.g. no-cancel-failure added right before rerunning failed jobs) would
-  // be invisible in context.payload and silently ignored.
-  let skipCancellationOnFailure = false;
+  // (e.g. no-auto-retry added right before rerunning failed jobs) would be
+  // invisible in context.payload and silently ignored.
   let skipAutoRetry = false;
   if (prNumber) {
     let labels = context.payload.pull_request?.labels.map(l => l.name) || [];
@@ -1096,10 +1101,6 @@ const monitor = async ({ github, context, core }) => {
       labels = liveLabels.data.map(l => l.name);
     } catch (e) {
       console.log(`Could not fetch live PR labels (${e.message}) - falling back to event payload labels`);
-    }
-    skipCancellationOnFailure = labels.includes('no-cancel-failure');
-    if (skipCancellationOnFailure) {
-      console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
     }
     skipAutoRetry = labels.includes('no-auto-retry');
     if (skipAutoRetry) {
@@ -1321,12 +1322,12 @@ const monitor = async ({ github, context, core }) => {
       // together loses the evidence exactly where it matters most.
       //
       // It used to happen as a side effect of classifyFailure, which is only
-      // reached on branch 5. Every earlier branch -- a no-retry Quality
-      // failure, the `no-cancel-failure` label, a cancel-exempt scheduled run,
-      // max-attempts -- returned or continued without ever fetching a log. So
-      // the NIGHTLY, which now takes the exempt path by construction, captured
-      // nothing at all. Caught by test-watchdog-log-capture.sh's scheduled-run
-      // case, which expected one captured file and found zero.
+      // reached on the last branch. Every earlier branch -- a no-retry Quality
+      // failure, a cancel-exempt scheduled run, max-attempts -- returned or
+      // continued without ever fetching a log. So the NIGHTLY, which now takes
+      // the exempt path by construction, captured nothing at all. Caught by
+      // test-watchdog-log-capture.sh's scheduled-run case, which expected one
+      // captured file and found zero.
       //
       // Cached in logTails, so the later classification does not re-fetch.
       await getLogTail(job);
@@ -1345,7 +1346,7 @@ const monitor = async ({ github, context, core }) => {
         // must not fall through into the branches below.
         //
         // Falling through was a real regression, introduced when forceCancel
-        // began returning a boolean and caught in review of PR #541. Branch 5
+        // began returning a boolean and caught in review of PR #541. Branch 4
         // would be reached with `isFailure: failed.includes(job)` === false --
         // correct, it IS a cancellation -- and evaluateRetryEligibility's
         // "non-stuck cancellation is a runner/infra flake" path would resolve it
@@ -1363,40 +1364,29 @@ const monitor = async ({ github, context, core }) => {
       // Only for real FAILURES: a Quality failure (lint/type error) is deterministic,
       // so retrying is pointless and we force-cancel fast. A non-stuck CANCELLATION of
       // a Quality job, by contrast, is a runner/infra flake (not a code error) -- nuking
-      // a 0-failure run for it is wrong. Let cancellations fall through to the label /
+      // a 0-failure run for it is wrong. Let cancellations fall through to the
       // retry handling below so a flaky-cancelled job can be re-run instead.
       //
-      // The label check is INSIDE this branch's condition, not after it. Without
-      // that, this branch returns before the label handling below, and
-      // WATCHDOG_NO_RETRY_PATTERNS is 'Quality,Review Gate' -- so
-      // `no-cancel-failure` was unreachable for every Quality job, which is the
-      // entire class the label exists to hold the run open for. Worse, the label
-      // was still detected and logged ("will not cancel on job failures") two
-      // minutes before the run was force-cancelled, so the log asserted the
-      // opposite of what happened. Observed on run 29825013399.
+      // The full roster still reaches the operator in ONE round: the drain below
+      // holds this cancel until every sibling no-retry lane is terminal, and
+      // forceCancel re-fetches the job list so the annotation names every job
+      // that failed by then.
       //
-      // Honouring the label here does NOT reintroduce retries: the label branch
-      // below records the failure via core.setFailed and keeps monitoring; it
-      // never dispatches a rerun. "Do not retry" and "do not cancel" are
-      // compatible.
-      //
-      // LABEL_IMMUNE_PATTERNS is the exception. CLAUDE.md specifies that Review
-      // Gate fails immediately and force-cancels, full stop -- an outstanding
-      // review is not a red to be raced past by labelling the PR. Nothing else
-      // is immune.
+      // NO_DRAIN_PATTERNS is the exception. CLAUDE.md specifies that Review Gate
+      // fails immediately and force-cancels, full stop -- there is no sibling
+      // verdict worth waiting for when the red means "reply to the review".
       const noRetryVerdict = evaluateNoRetryCancel({
         jobName: job.name,
         isFailure: failed.includes(job),
-        skipCancellationOnFailure,
         noRetryPatterns,
       });
       if (noRetryVerdict.cancel) {
-        console.log(`"${job.name}" matches no-retry pattern${noRetryVerdict.labelImmune ? ' (label-immune)' : ''}`);
+        console.log(`"${job.name}" matches no-retry pattern${noRetryVerdict.noDrain ? ' (no drain)' : ''}`);
 
-        // Drain before cancelling (see pendingNoRetryJobs). Label-immune jobs
-        // keep the old instant kill; everything else waits for its siblings so
-        // one round reports every failing lane instead of the first one.
-        const stillRunning = noRetryVerdict.labelImmune
+        // Drain before cancelling (see pendingNoRetryJobs). No-drain jobs keep
+        // the instant kill; everything else waits for its siblings so one round
+        // reports every failing lane instead of the first one.
+        const stillRunning = noRetryVerdict.noDrain
           ? []
           : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
         if (stillRunning.length > 0) {
@@ -1418,7 +1408,7 @@ const monitor = async ({ github, context, core }) => {
 
         // Cancel-exempt run: recorded, not cancelled, and this branch has
         // already reached its verdict -- a no-retry job never retries, by
-        // definition. Falling through would hand it to branch 5, which
+        // definition. Falling through would hand it to branch 4, which
         // independently re-derives "no retry" for a real failure and so reaches
         // the same answer, but only after paying for a classifyFailure call (a
         // billed Workers AI request) and emitting duplicate log lines. Same
@@ -1428,23 +1418,17 @@ const monitor = async ({ github, context, core }) => {
         continue;
       }
 
-      // 2. Label: no-cancel-failure -- let everything finish
-      if (skipCancellationOnFailure) {
-        console.log('NOTICE: Skipping cancellation due to "no-cancel-failure" label');
-        core.setFailed(failureMsg + ' (cancellation skipped)');
-        // DON'T return -- keep monitoring
-      }
-      // 3. Label: no-auto-retry -- force-cancel immediately
-      else if (skipAutoRetry) {
+      // 2. Label: no-auto-retry -- force-cancel immediately
+      if (skipAutoRetry) {
         console.log('Force-cancel due to "no-auto-retry" label');
         if (await forceCancel(failureMsg)) return;
       }
-      // 4. Max attempts reached -- force-cancel
+      // 3. Max attempts reached -- force-cancel
       else if (run.run_attempt >= MAX_ATTEMPTS) {
         console.log(`Attempt ${run.run_attempt}/${MAX_ATTEMPTS} -- no more retries`);
         if (await forceCancel(failureMsg)) return;
       }
-      // 5. First failure: AI classifies.
+      // 4. First failure: AI classifies.
       // Transient -> hold a PENDING RERUN and keep monitoring. The chain waits
       // for the run to complete, reruns every failed job from this attempt
       // itself, and keeps watching attempt 2. Further failures are not
@@ -1563,7 +1547,7 @@ module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
 module.exports.formatFailureRoster = formatFailureRoster;
 module.exports.evaluateNoRetryCancel = evaluateNoRetryCancel;
 module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
-module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;
+module.exports.NO_DRAIN_PATTERNS = NO_DRAIN_PATTERNS;
 module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;

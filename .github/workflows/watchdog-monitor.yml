@@ -165,8 +165,8 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # !cancelled(), not the implicit success(): the no-cancel-failure label
-      # path and the transient-classification generation both core.setFailed()
+      # !cancelled(), not the implicit success(): the transient-classification
+      # generation and the cancel-exempt (nightly) path both core.setFailed()
       # while the run must STAY monitored, so the chain has to continue from a
       # red monitor step. A rerun resets the generation counter: the new
       # attempt earns the full chain budget, like the old attempt-2 watchdog
