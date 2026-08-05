@@ -263,6 +263,41 @@ def verify_background(event_bg, table=None, ancestors=None):
     return out
 
 
+# The inbox waiter (wl_wait.py) launched as a background shell task. Matched on
+# the SCRIPT NAME in the declared command, which is the only stable marker: the
+# task id is per-launch and the description is free text.
+WAITER_MARK = "wl_wait.py"
+
+
+def waiter_tasks(live_bg):
+    """Running background tasks that are inbox waiters."""
+    return [
+        b
+        for b in live_bg or []
+        if isinstance(b, dict)
+        and b.get("type") == "shell"
+        and WAITER_MARK in str(b.get("command") or "")
+    ]
+
+
+def confirmed_waiters(live_bg, verdicts):
+    """Waiters whose liveness the OS has CONFIRMED, never merely claimed.
+
+    Both callers in wl_checks trade a supervision demand for this verdict, so
+    `confirmed` is the only verdict that may buy the trade. A waiter that is
+    `suspect` or `unverifiable` is treated exactly as any other background task:
+    it still owes the check-in and it still does not substitute for a poll cron.
+    That is the safe direction -- the whole argument for relaxing those checks is
+    that this process's EXIT is itself the wake-up, which is worth nothing if
+    nobody can see the process.
+    """
+    return [
+        b
+        for b in waiter_tasks(live_bg)
+        if (verdicts or {}).get(str(b.get("id") or "")) == "confirmed"
+    ]
+
+
 def output_quiet_min(session_id, task_id):
     """Minutes since the task's output file (or its symlink target, the
     subagent transcript) last grew, or None if unreadable. The freshest

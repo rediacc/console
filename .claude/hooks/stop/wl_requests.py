@@ -28,7 +28,6 @@ Dead recipients cannot black-hole a request: liveness comes from the
 under a flock, into an operator-visible `- [?]` item owned by the asker.
 """
 
-import fcntl
 import hashlib
 import json
 import os
@@ -192,7 +191,11 @@ def escalate_requests(worklist, session_id, dry_run=False):
     escalated = []
     with open(str(S.requests_path(worklist)) + ".lock", "w") as lock:
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # S._flock, not a direct fcntl import: this module is imported by the
+            # read-only inbox surfaces (the report index and the waiter), which
+            # take no lock at all, so a module-scope `import fcntl` here would
+            # kill them on Windows over a call they never make.
+            S._flock(lock, S.LOCK_EX | S.LOCK_NB)
         except OSError:
             return []  # another stop is escalating; it wins, next stop retries
         current = read_requests(worklist)  # re-read under the lock
@@ -436,6 +439,17 @@ def poll_cli(worklist, me, hook_path):
     to_me, bcast, answered, _mine = classify_requests(read_requests(worklist), me)
     if not (to_me or bcast or answered):
         sys.exit(0)  # print NOTHING: the operator's contract for this mode
+    print_inbox(to_me, bcast, answered, me, hook_path)
+    sys.exit(0)
+
+
+def print_inbox(to_me, bcast, answered, me, hook_path):
+    """The inbox rendering, shared by `--poll` and by the blocking waiter.
+
+    Factored out rather than copied because the payload and the exact
+    --answer/--decline/--ack command lines are the whole product of both modes:
+    a second copy would drift, and the copy that drifts is the one a session
+    reads at 3am when it cannot remember the verb."""
     for r in to_me + bcast:
         print(
             "INBOX #%s from %s (%s, asked %s): %s"
@@ -456,4 +470,3 @@ def poll_cli(worklist, me, hook_path):
         for d in r["declines"]:
             print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
         print("    ack when acted on: %s --ack %s %s" % (hook_path, me, r["id"]))
-    sys.exit(0)

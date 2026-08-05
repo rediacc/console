@@ -107,6 +107,16 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --subagent-stop"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -126,6 +136,14 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py\" --post-compact"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --post-compact"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -134,6 +152,14 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py\" --session-start"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_report.py\" --session-start"
           }
         ]
       }

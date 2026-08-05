@@ -20,6 +20,7 @@ import wl_email
 import wl_judge
 import wl_liveness
 import wl_reggate
+import wl_report
 import wl_requests
 import wl_store as S
 import worklist_messages as M
@@ -1638,6 +1639,30 @@ def run_stop(event, event_ok, worklist, hook_file):
     bg_facts, bgwait_due, bgwait_prev, bgwait_next = [], False, "", ""
     bg_verdicts = {}
     _in_pure_wait = False
+    # v18: A CONFIRMED INBOX WAITER IS A PUSH CHANNEL, NOT A JOB TO SUPERVISE.
+    # wl_wait.py blocks until something new arrives for this session and then
+    # EXITS, and its exit is the harness notification that wakes the session. So
+    # its liveness IS its report: there is nothing a 15-minute check-in could
+    # learn that the waiter's own exit will not deliver, and nothing a poll cron
+    # delivers that it does not deliver sooner. Both relaxations below are keyed
+    # on `confirmed` and on nothing weaker, because a waiter nobody can see on
+    # the OS is exactly the case where those checks still earn their keep.
+    #
+    # Computed only when a waiter is actually declared, so the ordinary busy stop
+    # pays no extra process-table read.
+    _waiters_confirmed = []
+    if live_bg:
+        try:
+            if wl_liveness.waiter_tasks(live_bg):
+                bg_verdicts = wl_liveness.verify_background(live_bg)
+                _waiters_confirmed = wl_liveness.confirmed_waiters(live_bg, bg_verdicts)
+        except Exception:  # noqa: BLE001 -- a suppression heuristic must never wedge a stop
+            _waiters_confirmed = []
+    # EVERY live task must be a confirmed waiter, not merely one of them. A
+    # session waiting on a real long job AND holding a waiter still owes the
+    # check-in for the real job; relaxing on "any waiter present" would let one
+    # waiter silence supervision of everything else running beside it.
+    _only_waiters = bool(_waiters_confirmed) and len(_waiters_confirmed) == len(live_bg)
     if live_bg and not open_items:
         _expired_any = any(
             C.DEFAULT_TOKEN.search(r["line"])
@@ -1656,7 +1681,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # Read on EVERY pure-wait stop since v17, not only when the
                 # check-in is due: the no-op ladder keys on it, and a worker
                 # dying is the one change a byte-level view cannot see.
-                bg_verdicts = wl_liveness.verify_background(live_bg)
+                # v18: reuse the read the waiter probe above already paid for.
+                if not bg_verdicts:
+                    bg_verdicts = wl_liveness.verify_background(live_bg)
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
                 bg_verdicts = {}
             _bgw = state_doc.get("bgwait") or {}
@@ -1670,9 +1697,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
             elif _age >= wl_liveness.BG_REPORT_MIN:
-                bgwait_due = True
+                # RESTAMPED EITHER WAY, fired only when something other than a
+                # confirmed waiter is running. Suppressing without restamping
+                # would leave the clock expired, so the first stop after any
+                # ordinary background job joined the waiter would fire the
+                # check-in INSTANTLY -- the "you started waiting, report"
+                # behaviour the seed above exists to prevent, reintroduced
+                # through the back door.
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
+                if not _only_waiters:
+                    bgwait_due = True
             bgwait_next = C.stamp_ahead(wl_liveness.BG_REPORT_MIN)
     if not _in_pure_wait:
         # v17 THE LATCH RESET, and it is a fix not a tidy-up. The clock was
@@ -2181,12 +2216,53 @@ def run_stop(event, event_ok, worklist, hook_file):
         agent_note = M.N_AGENT_BLIND % root
         # Class 2, volatile: recomputed from the branch state every stop.
         outq_add(worklist, session_id, state_doc, "agent-blind", agent_note, 2)
+    # v18: unread sub-agent reports, on ORDINARY stops as well as at the two
+    # boundaries wl_report already covers by hook. SessionStart and PostCompact
+    # catch a fresh or compacted session; this catches the far commoner case of
+    # a long-running session whose teammate finished twenty minutes ago and
+    # whose SendMessage has since scrolled out of reach.
+    #
+    # REPORT-ONLY, never a violation. An unread report is information the
+    # session may act on, not an obligation it owes anyone -- and there is no
+    # honest evidence a stop could demand for "I read it".
+    try:
+        _unread = wl_report.unread(
+            wl_report.store_root(root), agent_branch or wl_report.NO_BRANCH, session_id
+        )
+        if _unread:
+            _rp = str(pathlib.Path(__file__).resolve().parent / "wl_report.py")
+            _rows = "\n".join(
+                "    %s%-12s %-22s %s"
+                % (
+                    "[SILENT] " if e.get("silent") else "",
+                    e["id"],
+                    str(e.get("agent"))[:22],
+                    e.get("title") or "(stopped without reporting)",
+                )
+                for e in _unread[-10:]
+            )
+            if len(_unread) > 10:
+                _rows = "    (%d older not shown)\n%s" % (len(_unread) - 10, _rows)
+            outq_add(
+                worklist, session_id, state_doc, "unread-reports",
+                M.N_UNREAD_REPORTS % (
+                    len(_unread), agent_branch or "?", _rows, _rp, _rp, me8
+                ),
+                2,
+            )
+    except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
+        pass
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         vadd('docs-drift', False,M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
     # v9: the two-cron shape (operator directive). A looped session carries
     # exactly one 5-minute inbox poll beside at most one work loop.
-    if live_crons and not live_poll_crons:
+    # v18: a CONFIRMED waiter satisfies this in place of a poll cron. The check
+    # exists so that a looped session has SOME inbox delivery mechanism; the
+    # waiter is a strictly better one (seconds of latency instead of up to the
+    # cron period, and no turn spent on an empty inbox), so demanding a cron
+    # beside it would be demanding the worse mechanism for its own sake.
+    if live_crons and not live_poll_crons and not _waiters_confirmed:
         vadd('no-poll', False,M.V_NO_POLL_CRON % me8)
     if len(live_work_crons) > 1:
         vadd('many-work-crons', False,
