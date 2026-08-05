@@ -264,18 +264,20 @@ def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
 def reader_id(explicit=None):
     """This reader's identity: an explicit prefix, else the session id.
 
-    CLAUDE_CODE_SESSION_ID, not CLAUDE_SESSION_ID. The latter does not exist --
-    checked against the live environment rather than assumed, after an earlier
-    draft of this file guessed the name and would have silently resolved to the
-    empty reader forever, which reads as "has read nothing" and would have
-    surfaced every report on every stop while looking like it worked."""
+    THE ENV LOOKUP MOVED to wl_core.resolve_session_id, which carries this
+    function's hard-won note verbatim: the variable is CLAUDE_CODE_SESSION_ID
+    and CLAUDE_SESSION_ID does not exist, checked against a live environment
+    rather than assumed, because a wrong name resolves to the empty reader
+    forever -- which reads as "has read nothing" and would surface every report
+    on every stop while looking like it worked.
+
+    It moved because this was the ONLY place in the CLI that ever asked the
+    environment who it was, and the answer was never generalised past this one
+    verb. Two definitions of "who am I" is how the drift starts; there is now
+    one, and every `<me>` argument is checked against it."""
     if explicit:
         return str(explicit)
-    return str(
-        os.environ.get("CLAUDE_CODE_SESSION_ID")
-        or os.environ.get("CLAUDE_SESSION_ID")
-        or ""
-    )
+    return C.resolve_session_id()
 
 
 def read_marks(store, reader):
@@ -857,7 +859,16 @@ def main(argv):
         entries = read_index(store, None) if "--all" in rest else [
             e for e in read_index(store) if str(e.get("branch", "")) == branch
         ]
-        who = reader_id(argv[argv.index("--as") + 1] if "--as" in argv[1:-1] else None)
+        explicit = argv[argv.index("--as") + 1] if "--as" in argv[1:-1] else None
+        if explicit:
+            # Only the EXPLICIT one is checked. The env default is correct by
+            # construction -- it IS the resolved identity -- so checking it
+            # would compare a value to itself.
+            ok, why = C.check_me(explicit)
+            if not ok:
+                print(why, file=sys.stderr)
+                return 2
+        who = reader_id(explicit)
         marks = read_marks(store, who)
         if "--unread" in rest:
             entries = [e for e in entries if str(e["id"]) not in marks]
@@ -903,6 +914,13 @@ def main(argv):
         me = argv[1] if len(argv) > 1 else ""
         if not C.PREFIX_RE.match(me or ""):
             print("usage: --read <your-session-id-prefix> <id> [<id>...]", file=sys.stderr)
+            return 2
+        ok, why = C.check_me(me)
+        if not ok:
+            # A read mark under the wrong identity clears nothing for the reader
+            # who filed it and hides the report from nobody -- the same
+            # write-here-read-there split, in the report inbox.
+            print(why, file=sys.stderr)
             return 2
         ids = argv[2:]
         if not ids:

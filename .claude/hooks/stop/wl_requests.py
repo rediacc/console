@@ -94,6 +94,16 @@ def read_requests(worklist):
                 r["acked"] = True
             elif kind == "escalate" and not r["escalated"]:
                 r["escalated"] = str(ev.get("why", "escalated"))
+            elif kind == "reassign":
+                # v19: rebind a phantom identity's side of the request onto a
+                # session that actually reads its inbox. APPENDED like every
+                # other state change here, so the `ask` event still records who
+                # really sent it -- the log stays truthful about history and
+                # only the routing moves.
+                if ev.get("from"):
+                    r["from"] = str(ev["from"])
+                if ev.get("to"):
+                    r["to"] = str(ev["to"])
     return reqs
 
 
@@ -265,6 +275,24 @@ def classify_requests(reqs, session_id):
     return to_me, bcast, answered_mine, open_mine
 
 
+def _briefed(worklist, to):
+    """Has `to` ever briefed in this store? None when the ROSTER ITSELF is empty.
+
+    Three values, not two, because the blind case is not the negative case. An
+    empty `.sessions` means the check has no data at all (a fresh worktree, a
+    wiped TMPDIR), and refusing every ask there would break the mechanism in
+    exactly the situation where nothing is wrong. A check that cannot answer
+    must say so rather than answer no.
+
+    same_session, not ==: a brief is filed under a short prefix and an asker may
+    hold the full uuid, and either side of that comparison can be either.
+    """
+    briefs = S.read_briefs(worklist)
+    if not briefs:
+        return None
+    return any(C.same_session(k, to) for k in briefs)
+
+
 def request_cli(argv, worklist):
     """--ask / --answer / --decline / --ack / --requests. Exits non-zero on
     misuse, so a session cannot mistake a rejected post for a delivered one.
@@ -316,12 +344,25 @@ def request_cli(argv, worklist):
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _ok, _why = C.check_me(me)
+    if not _ok:
+        die(_why)
     if mode == "--ask":
         to = argv[2]
         if to != "*" and not C.PREFIX_RE.match(to):
             die("bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast" % to)
         if to != "*" and C.same_session(me, to):
             die("that request is addressed to yourself; use the worklist for your own items")
+        # THE SAME DEFECT FROM THE SENDER'S SIDE. The recipient was validated by
+        # SHAPE only, so a prefix no session has ever briefed accepted the post
+        # and nobody ever read it. That is not hypothetical: peers asked
+        # `4c3e095a` -- an identity that never existed -- and the request sat
+        # until it auto-escalated with "recipient silent for 2062min", 34 hours
+        # late. A NEVER-EXISTED check, not a staleness check: an idle peer still
+        # has a brief, so this cannot fire on one that is merely quiet.
+        if to not in ("*", "operator") and _briefed(worklist, to) is False:
+            die(M.CLI_ASK_UNKNOWN_RECIPIENT % (
+                to, ", ".join(sorted(S.read_briefs(worklist)))))
         body = request_body("request body")
         if not body:
             die("an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered")
@@ -421,14 +462,20 @@ def poll_cli(worklist, me, hook_path):
     context. Non-empty: the full payloads plus the exact commands. Either way
     it drops the single-use poll marker that lets the Stop hook recognise
     this turn structurally."""
-    if not C.PREFIX_RE.match(me or "") or len(me or "") < 8:
+    if not C.PREFIX_RE.match(me or "") or len(me or "") < C.ME_MIN_LEN:
         # A short prefix would name a DIFFERENT marker than the Stop hook
         # derives from the full session id, silently disabling the fast
-        # path, so misuse is refused rather than half-working.
+        # path, so misuse is refused rather than half-working. This floor is
+        # where C.ME_MIN_LEN comes from; check_me now applies it -- and the
+        # identity check this verb never had -- to every verb taking a <me>.
         print(
             "usage: --poll <your-8-char-session-id-prefix> (got %r)" % me,
             file=sys.stderr,
         )
+        sys.exit(1)
+    ok, why = C.check_me(me)
+    if not ok:
+        print(why, file=sys.stderr)
         sys.exit(1)
     try:
         worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(

@@ -149,6 +149,116 @@ def same_session(a, b):
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
+# The identity a `<me>` argument may name without being checked against the
+# environment. "operator" is the HUMAN's reply handle: wl_email mails
+# `worklist.py --answer operator <id> '<words>'` to a person who runs it in
+# whatever shell they have open, and if that shell happens to be a Claude
+# session's Bash the env check would refuse the one command the mail exists to
+# get run. It is a name, not a session prefix, and it was never verifiable.
+UNCHECKED_ME = ("operator",)
+# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which
+# have carried the floor since they were written for a reason that applies
+# everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook
+# derives from the full session id, so it half-works instead of failing. It
+# also closes the hole `same_session`'s symmetry would leave open -- `--add d`
+# would otherwise be accepted by every session whose id starts with "d".
+ME_MIN_LEN = 8
+
+
+def resolve_session_id():
+    """This process's TRUE session id, or "" when the environment cannot say.
+
+    ONE definition, deliberately: two answers to "who am I" is how the drift
+    this function exists to catch starts again.
+
+    WORKLIST_SESSION_ID first, and it is an identity ASSERTION rather than a
+    suppression flag -- the test suite declares its fixture id with it, and an
+    operator acting for a dead session declares that session's id. A boolean
+    bypass was rejected: it would suppress the check without stating a claim,
+    which is the exact shape docs/agent/suppressions.md exists to prevent, and
+    it would be reachable by a session trying to get past its own mistake.
+
+    CLAUDE_CODE_SESSION_ID, not CLAUDE_SESSION_ID. The latter DOES NOT EXIST;
+    the name was verified against a live Bash-tool child's environment rather
+    than guessed, and a wrong name here resolves to "" forever, which every
+    caller treats as pass -- a check that cannot fire, wearing the costume of
+    one that works. The harness injects it per child spawn and rotates it on
+    /clear, so it is "current id", not "id at startup", and it is
+    platform-neutral (no /proc, no filesystem assumption). Sub-agents inherit
+    the PARENT's value, which is why a sub-agent tagging items with the parent
+    prefix is correct and this check does not fire on the sub-agent fleet.
+
+    Returns "" rather than raising. "" means CANNOT VERIFY, and the honest
+    response to that is to say nothing, not to accuse.
+    """
+    return str(
+        os.environ.get("WORKLIST_SESSION_ID")
+        or os.environ.get("CLAUDE_CODE_SESSION_ID")
+        or ""
+    ).strip()
+
+
+def check_me(me):
+    """(ok, message) for a `<me>` argument: is this session really that one?
+
+    THE DEFECT THIS CLOSES, in one paragraph because the fix is only obvious
+    once you have seen it. Every `<me>` in this CLI was accepted on SHAPE alone
+    (PREFIX_RE), and nothing had ever compared one to reality. A session copied
+    a SUB-AGENT's namespace token out of a Task-spawn tool result
+    (`agent_id: search-renet2@session-4c3e095a`) and used it as its own `<me>`
+    for 26 hours: 219 calls under the wrong identity and 20 under the right one,
+    from the same process. Every individual operation SUCCEEDED, because writes
+    and reads key off the same unvalidated string -- so one typo splits a session
+    into two half-sessions, each internally consistent, and nothing downstream
+    can tell. The cost was a peer's message sitting unread in the other half's
+    inbox for 34 hours while it auto-escalated.
+
+    ASYMMETRIC on purpose: `sid.startswith(me)`, not `same_session(me, sid)`.
+    On the CLI `me` is always a claim about SELF, never a peer id, so the
+    symmetry that makes same_session right for peer comparisons is exactly what
+    would let a one-character `me` through here. same_session is NOT changed;
+    its other callers compare peers, where symmetry is correct.
+
+    REFUSES rather than warns (operator decision). A warning beside a
+    successful command is what the failing session skimmed past for a day:
+    shape-only validation passing silently is what let this through in the
+    first place, and a warning would be read past the same way. A non-zero exit
+    costs one turn and the message carries the copy-paste fix.
+    """
+    me = me or ""
+    if me in UNCHECKED_ME:
+        return True, ""
+    sid = resolve_session_id()
+    if not sid:
+        # UNVERIFIABLE, so silent. A plain operator terminal has no session id
+        # and must not be accused of impersonating one.
+        return True, ""
+    if len(me) < ME_MIN_LEN:
+        return False, _identity_msg(me, sid, "it is shorter than %d characters, so it "
+                                    "does not identify one session" % ME_MIN_LEN)
+    if not sid.startswith(me):
+        return False, _identity_msg(me, sid, "this session is %s" % sid)
+    return True, ""
+
+
+def _identity_msg(me, sid, why):
+    """The refusal text. Names the variable it read, because the next session to
+    hit this needs the mechanism to be inspectable, not just the verdict."""
+    src = "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
+    return (
+        "identity mismatch: you passed <me>=%s but %s (%s).\n"
+        "Writing as one identity and reading as another gives you two inboxes "
+        "and neither of them is complete: every call succeeds, the halves stay "
+        "internally consistent, and a peer's message waits in the one you are "
+        "not reading.\n"
+        "  rerun with <me>=%s\n"
+        "If you really mean to act as another session, declare it rather than "
+        "assert it by hand:\n"
+        "  WORKLIST_SESSION_ID=<that session's id> worklist.py ..."
+        % (me, why, src, sid[:ME_MIN_LEN])
+    )
+
+
 def project_root(start):
     """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
     FILE, not a directory, so test existence rather than is_dir()."""

@@ -408,11 +408,18 @@ def main(argv):
         print(HELP, file=sys.stderr)
         return 2
     me = argv[0]
-    if not C.PREFIX_RE.match(me) or len(me) < 8:
+    if not C.PREFIX_RE.match(me) or len(me) < C.ME_MIN_LEN:
         # Refused rather than half-working: a short prefix does not identify one
         # session, so the baseline would be armed against the wrong slice and the
         # waiter would wake on other sessions' mail or miss its own.
         print("bad prefix %r: pass YOUR 8-char session-id prefix" % me, file=sys.stderr)
+        return 2
+    # And the same argument one step further: a full-length prefix that is not
+    # THIS session arms the baseline against the wrong slice just as completely,
+    # and silently. This waiter blocks for minutes on the wrong inbox otherwise.
+    ok, why = C.check_me(me)
+    if not ok:
+        print(why, file=sys.stderr)
         return 2
     timeout_min = DEFAULT_TIMEOUT_MIN
     if "--timeout" in argv:

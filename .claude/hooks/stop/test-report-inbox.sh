@@ -14,6 +14,25 @@
 # Run:  bash .claude/hooks/stop/test-report-inbox.sh
 set -u
 
+# AMBIENT SCRUB, before a single case runs -- the same one test-worklist-v5.sh
+# carries, and for the same reason with a sharper edge here. Since v19 every
+# <me> argument is checked against the real session id, which resolves
+# WORKLIST_SESSION_ID first and CLAUDE_CODE_SESSION_ID second. Run from inside a
+# Claude session with the ambient id live, this suite's fixture readers
+# (aaaaaaaa, bbbbbbbb, cccccccc) all mismatch and 16 cases fail; run in CI with
+# it unset, the check silently passes and those cases prove nothing about
+# identity at all. Measured, not predicted: 16 reds locally, green in CI, from
+# one missing unset. Case 28 below is the control that proves this ran.
+while IFS='=' read -r _k _; do
+    case "$_k" in
+        WORKLIST_* | CLAUDE_CODE_SESSION_ID | CLAUDE_SESSION_ID) unset "$_k" ;;
+    esac
+done < <(env)
+unset _k
+# The DEFAULT reader, matching this suite's default fixture session. Cases that
+# act as a PEER declare that peer's id per call rather than relying on this.
+export WORKLIST_SESSION_ID="aaaaaaaa-1111"
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PASS=0
 FAIL=0
@@ -262,7 +281,10 @@ assert_eq "10 control: marked read by THIS reader, SessionStart emits nothing" "
 OUT3="$(surface_as bbbbbbbb-2222 --session-start startup)"
 assert_has "10b a PEER session still sees a report reader A marked read" "$OUT3" "SURFACED TITLE"
 # ...and the peer marking it read clears it for the peer, and ONLY the peer.
-report_py --read bbbbbbbb "$RID" >/dev/null
+# As the PEER, declared rather than asserted by hand: since v19 a read mark
+# filed under an identity you are not is refused, because it clears nothing
+# for the reader who filed it and hides the report from nobody.
+WORKLIST_SESSION_ID="bbbbbbbb-2222" report_py --read bbbbbbbb "$RID" >/dev/null
 OUT3b="$(surface_as bbbbbbbb-2222 --session-start startup)"
 assert_eq "10b control: the peer's own mark does clear it for the peer" "$OUT3b" ""
 # The ACCEPTED COST, asserted so nobody later "fixes" it: a restarted session is
@@ -824,6 +846,25 @@ assert_has "27 the log stayed append-only (the line is still there)" "$(cat "$T/
 assert_has "27 and a retire event was appended for it" "$(cat "$T/store/index.jsonl")" '"ev":"retire"'
 # Re-runnable, and a second pass finds nothing.
 assert_has "27 control: re-running finds nothing left" "$(report_py --retire-phantoms)" "nothing to retire"
+
+# 28. META-CONTROL: the ambient scrub at the top of this file really happened.
+# A CHECK ON A CHECK, and not redundant. Every identity assertion above depends
+# on WORKLIST_SESSION_ID being the ONLY session id in the environment. If the
+# scrub stops stripping CLAUDE_CODE_SESSION_ID this suite splits in two: red
+# from inside a Claude session, and green-but-meaningless in CI. The second is
+# the dangerous one. The probe unsets WORKLIST_SESSION_ID ONLY and issues a read
+# mark under an identity no real session could be; it can only succeed if no
+# ambient id survived.
+OUT="$(env -u WORKLIST_SESSION_ID python3 "$HERE/wl_report.py" --read zzzzzzzz nosuchid 2>&1)"
+case "$OUT" in
+    *"identity mismatch"*) bad "28 an ambient session id leaked past the scrub" "$OUT" ;;
+    *) ok "28 no ambient CLAUDE_CODE_SESSION_ID survives the scrub" ;;
+esac
+# control: force one back in and the same call must be refused. Without this,
+# case 28 is satisfied by a check that never runs at all.
+OUT="$(CLAUDE_CODE_SESSION_ID="beef0000-9999" env -u WORKLIST_SESSION_ID \
+    python3 "$HERE/wl_report.py" --read zzzzzzzz nosuchid 2>&1)"
+assert_has "28 control: with an ambient id present the same call IS refused" "$OUT" "identity mismatch"
 
 echo
 echo "================================"

@@ -501,6 +501,17 @@ def _fold_events(events):
                 "origin": "cli",
             }
             cli_ids.add(rid)
+        elif kind == "reassign":
+            # v19: an item's OWNER moves to a live session. Appended, never
+            # rewritten, like every other event here -- that is what makes the
+            # lock-free fold sound, and it keeps the log truthful about who
+            # actually wrote the item. Only the `o` field moves; `by` on the
+            # original events still names the phantom, because it really did
+            # write them.
+            rec = records.get(ev.get("id"))
+            if rec is not None:
+                rec["owner"] = ev.get("o")
+                rec["upd"] = at
         elif kind in ("state", "update", "lease", "tomb", "triage"):
             rec = records.get(ev.get("id"))
             if rec is None:
