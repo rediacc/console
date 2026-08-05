@@ -202,6 +202,24 @@ guarding a heavy external dependency is therefore untested by construction, no
 matter how carefully it was written or reviewed. Reading the code cannot find these,
 because the code is not wrong on the path anyone ever runs.
 
+**The pattern caught the people hunting it, three times, which is the part worth
+keeping.** (i) The first version of the RustFS probe gate passed its dead-port
+assertion VACUOUSLY: `.ci/lib/account.sh` cannot be sourced under `set -euo
+pipefail`, so the function was never defined, the call returned non-zero, and "not
+alive" read as "correctly dead". Only the live-port control exposed it. (ii) Two
+attempted controls during the llvm-strip diagnosis proved nothing — a `git archive`
+that extracted nothing made `-nt` compare two absent files, and a restricted PATH
+hid `bash` itself — so "my check passed" and "my check did not run" were briefly
+indistinguishable, twice in five minutes. (iii) The drill-verdict gate was
+REGISTERED in the anti-vacuity meta-gate, and the meta-gate rejected it — correctly.
+That harness's fixture copies `scripts/`, so the gate's subject exists on the
+"empty" tree and all four assertions run for real; demanding a failure there would
+have asserted that a gate must fail when its input is PRESENT, which is backwards.
+Its sibling `check-account-probes` is registered precisely because its subject
+(`.ci/lib/account.sh`) genuinely is not copied. That asymmetry is what makes the
+episode teachable rather than a curiosity: an instrument caught the person who had
+just written it, minutes after that person wrote the gate for this very class.
+
 The only cure is to exercise the absent case deliberately — which is precisely what
 the controls that caught all three had to do: run with `llvm-strip` hidden from
 PATH, probe a port confirmed closed first, collect the logs a swallowed failure
