@@ -65,17 +65,9 @@ ATTEMPT_PREFIX='<!-- claude-review-attempt:'
 # THEN take the last -- `tail -n 1` before the sed grabbed the trailing cost
 # line and matched nothing, silently disabling the whole review-dedup (every
 # green push re-reviewed). Found by review finding F4.
-# Count finished review reports posted on the PR so far (same signature
-# check-review-report-replies.sh uses: a github-actions issue comment starting
-# with the report header and carrying either the findings fence or the
-# "### Review" heading -- an in-progress tracking comment matches neither).
-review_report_count() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.user.login | contains(\"github-actions\"))
-                  | select(.body | startswith(\"**Claude finished\"))
-                  | select((.body | contains(\"json:review-findings\")) or (.body | contains(\"### Review\")))
-                  | .id" 2>/dev/null | wc -l || true
-}
+# review_report_count() lives in ../lib/common.sh beside review_cap_for(), for
+# the reason stated there: this file counts the numerator and review-status.sh
+# reports the fraction, and two copies of the numerator drifted once already.
 
 # Spent review passes that produced no report. Counted against the same cap as
 # posted reports, because the cost is identical; see the --mark spent-attempt

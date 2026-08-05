@@ -109,15 +109,8 @@ last_marker_sha() {
         sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p' | tail -n 1 || true
 }
 
-# Finished review reports posted so far -- the same signature the gate script
-# counts against MAX_REVIEWS_PER_PR, so both files agree on "cap reached".
-review_report_count() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.user.login | contains(\"github-actions\"))
-                  | select(.body | startswith(\"**Claude finished\"))
-                  | select((.body | contains(\"json:review-findings\")) or (.body | contains(\"### Review\")))
-                  | .id" 2>/dev/null | wc -l || true
-}
+# review_report_count() lives in ../lib/common.sh beside review_cap_for(), so the
+# numerator this file reports and the denominator it reads come from one place.
 
 # --- resolve the pull request -----------------------------------------------
 log_step "Review Complete: resolving the PR (event: ${EVENT_NAME:-unset})"
