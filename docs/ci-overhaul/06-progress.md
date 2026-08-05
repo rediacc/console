@@ -1858,3 +1858,54 @@ call sites plus 7 classification rows (counted separately so the table cannot
 shrink unnoticed), `test-scope-baseline-attest.sh` 128; both green, as are
 `test-scope-gate-outputs.sh`, `test-skip-plan-reconcile.sh` and
 `test-gate-anti-vacuity.sh`.
+
+---
+
+## 2026-08-05 -- the `no-cancel-failure` label is deleted, engine and all
+
+Operator instruction, and the reason is the whole point: the label made CI
+iterations slower. It suppressed the watchdog's force-cancel so a red run ran to
+completion and reported every failure at once, which on this pipeline means
+waiting out the 44-minute E2E and OPS legs before the round ends. On a branch
+being driven to green that cost is paid every round.
+
+**What it gated, both halves, because deleting one and leaving the other is how a
+flag removal goes wrong.** `skipCancellationOnFailure` was consumed in exactly
+two places: branch 2 of the failure handler (`core.setFailed` and keep
+monitoring, instead of cancelling), and one term of `evaluateNoRetryCancel`,
+where it suppressed the Quality/no-retry force-cancel. Both are gone; the
+no-retry decision is now `isFailure && matchesNoRetry`, with no suppression
+argument at all, and the branch chain renumbers 3/4/5 to 2/3/4.
+
+The third thing keyed off the label was `LABEL_IMMUNE_PATTERNS`, and it does NOT
+die with it -- it had a second job. `['Review Gate']` is also the set excluded
+from the sibling drain (`pendingNoRetryJobs`) and the set whose force-cancel
+fires instantly rather than waiting, so deleting it would have silently made a
+Review Gate failure wait on every `Quality / *` lane. It survives, renamed
+`NO_DRAIN_PATTERNS` after what it actually does, with `labelImmune` on the
+verdict renamed `noDrain`.
+
+The schedule/dispatch cancel exemption (`evaluateCancelExemption`) is untouched:
+it never read the label, only cited it in prose to explain why the nightly could
+not use one. Those paragraphs now say the same thing without naming a dead label.
+
+**What replaces the label's purpose.** Nothing needed to: the Quality drain
+landed after it and covers the deterministic half properly. A no-retry failure
+holds its cancel until every sibling no-retry lane is terminal (90s cap), and
+`forceCancel` re-fetches the job list so the annotation names every job that had
+failed by then. What the label added on top was holding the run open for the
+EXPENSIVE legs, which is precisely the cost being removed. A long job that keeps
+being cancelled before it reports is verified by running its gate locally
+(`npx tsx scripts/ci-runner/run.ts --only '<gate-id>'`), not by keeping a red run
+alive.
+
+**Gate.** `test-watchdog-cancel-label.sh` was not deleted: seven of its twelve
+cases test the branch ordering and the drain, which outlived the label. It is
+reduced and renamed `test-watchdog-no-retry-cancel.sh` (manifest id
+`gate-test:watchdog-no-retry-cancel`), keeping the anti-vacuity read of the real
+`WATCHDOG_NO_RETRY_PATTERNS`, and gains a case asserting that passing the old
+suppression flag changes nothing -- so a half-reverted removal cannot pass
+silently. Twelve assertions, green, and proven able to fire: four mutants run
+against a mirrored copy (drop the cancel, re-introduce the suppression term,
+empty `NO_DRAIN_PATTERNS`, treat a cancellation as a failure) each turn it red on
+a different named case, with the unmutated copy green as the control.

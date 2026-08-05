@@ -322,8 +322,13 @@ dispatched unconditionally from `finalize-release-sentinel`, ci.yml:1023), `desc
 (`good first issue`, `help wanted`, `wontfix`, `duplicate`, `invalid`, `question`).
 
 **Alive, machine-read:** `no-external-quality` (5 workflow references), `no-cancel-push`,
-`no-cancel-failure`, `no-auto-retry`, `bump-minor`, `bump-major`, `automated`, `dependencies`,
+`no-auto-retry`, `bump-minor`, `bump-major`, `automated`, `dependencies`,
 `github-actions`.
+
+`no-cancel-failure` was machine-read at the time of this inventory and was
+**deleted on 2026-08-05**, label and consumers together: holding a red run open
+to collect a full roster meant waiting out the E2E and OPS legs on every
+iteration. See `docs/ci-overhaul/06-progress.md`.
 
 **Alive, triage:** `enhancement` (29), `bug` (23), `translation` (13), `documentation` (1).
 

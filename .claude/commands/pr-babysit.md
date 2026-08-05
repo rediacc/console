@@ -91,7 +91,7 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 
 ### 6. Verify once, then close
 - On the green report: **verify independently, ONCE** — check every PR's checks via `gh`, spot-run the local battery. Never accept "all green" on report; require run URLs. **This is the only time you touch the GitHub API during a babysit** — a per-round habit is exactly how the lead drifts back into shadowing.
-- Confirm debugging aids are off (e.g. a `no-cancel-failure` label) and files you told it to leave alone are still uncommitted.
+- Confirm debugging aids are off (e.g. a `no-auto-retry` label, a temporarily loosened gate) and files you told it to leave alone are still uncommitted.
 - Distill the round log into a `pr-babysit-<branch>` memory file (the previous one demonstrably saved rounds on the next wave).
 - Report PR links + headline results. **Do NOT merge, do NOT push `main`** — `/pr-merge` is the user's call.
 

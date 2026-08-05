@@ -19,11 +19,10 @@
 # None were noticed, because the rollup said `cancelled`. The gate breaks were
 # the symptom. This laundering is why they survived twelve days.
 #
-# WHY THE EXISTING LABEL COULD NOT SAVE IT. `no-cancel-failure` already means
-# "record the failure, do not cancel". It is unreachable here: labels live on a
-# PR, a `schedule` run has no PR, so `prNumber` is null and the whole label block
-# is skipped. The nightly is structurally incapable of wearing the one escape
-# hatch that would have helped.
+# WHY A LABEL COULD NOT SAVE IT. Labels are read from the PR, and a `schedule`
+# run has no PR: `prNumber` is null and the whole label block is skipped. The
+# nightly is structurally incapable of wearing a PR-side escape hatch, so the
+# exemption has to live in code.
 #
 # WHY A UNIT TEST AND NOT A MIRROR. Re-implementing the boolean here would prove
 # nothing about the watchdog. This calls the exported decision, reads the exempt
@@ -181,7 +180,7 @@ test_exemption_is_checked_before_the_cancel_api_call() {
 
 test_single_chokepoint() {
     # The exemption lives inside forceCancel precisely so every call site
-    # inherits it, including the label-immune Review Gate path. If somebody adds
+    # inherits it, including the no-drain Review Gate path. If somebody adds
     # a direct cancel API call elsewhere in the file, it would bypass the
     # exemption entirely -- so assert there is exactly one of each.
     local force_cancels regular_cancels
