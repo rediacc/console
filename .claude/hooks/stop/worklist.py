@@ -555,7 +555,16 @@ def main():
         ev, _ok = _read_event()
         CK.handle_post_compact(ev)
         return
-    if len(sys.argv) > 3 and sys.argv[1] == "--loop":
+    if sys.argv[1:2] == ["--loop"]:
+        # ARITY VALIDATED INSIDE, matched on argv[1] ALONE. The old guard was
+        # `len(sys.argv) > 3 and sys.argv[1] == "--loop"`, so `--loop x` did not
+        # merely fail: it fell through to the Stop battery below, which ran every
+        # check against an empty event, returned a real "decision": "block" at
+        # exit 0, and wrote six `*-unknown` sidecars. Same shape and same fix as
+        # the `--state` guard above; verified by running it.
+        if len(sys.argv) <= 3:
+            sys.stderr.write(M.CLI_LOOP_USAGE)
+            sys.exit(2)
         # `worklist.py --loop <prefix> <next-ISO8601Z> <count> <label...>`
         # Self-contained append (works without siblings, like --brief).
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
@@ -571,7 +580,11 @@ def main():
             )
         print("loop declared for %s, next fire %s" % (sys.argv[2], sys.argv[3]))
         return
-    if len(sys.argv) > 2 and sys.argv[1] == "--brief":
+    if sys.argv[1:2] == ["--brief"]:
+        # Same class as --loop above, same fix.
+        if len(sys.argv) <= 2:
+            sys.stderr.write(M.CLI_BRIEF_USAGE)
+            sys.exit(2)
         # `worklist.py --brief <session-prefix> <text...>` -- append, never
         # rewrite, for the same lost-update reason the store appends.
         # Self-contained so a broken sibling cannot take the brief channel down.
@@ -596,11 +609,32 @@ def main():
             __file__,
         )
         return
+    # ONE CLI DOOR. Everything a session is told to run goes through this file,
+    # so the report inbox and the waiter are reachable here too rather than by
+    # remembering two more script names. Both delegate; neither reimplements.
+    if sys.argv[1:2] == ["--reports"]:
+        import wl_report
+        sys.exit(wl_report.main(sys.argv[2:] or ["--list", "--unread"]))
+    if sys.argv[1:2] == ["--wait"]:
+        import wl_wait
+        sys.exit(wl_wait.main(sys.argv[2:]))
     if sys.argv[1:2] and sys.argv[1] in ("--add", "--triage", "--tick", "--defer", "--lease", "--update", "--list"):
         _item_cli(
             sys.argv[1:], C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         )
         return
+
+    # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has
+    # noticed; this closes the shape. ANY unrecognised flag reaching this point
+    # used to be handed to the Stop battery, which reads its event from stdin --
+    # so `worklist.py --tpyo` emitted a genuine block verdict at exit 0 with
+    # stdin closed, and hung forever with stdin open. Both measured, not
+    # theorised. A bare invocation (no argv) is the real hook and passes through
+    # untouched, which is why this tests for a LEADING DASH and not for
+    # "unmatched".
+    if sys.argv[1:2] and str(sys.argv[1]).startswith("-"):
+        sys.stderr.write(M.CLI_UNKNOWN_VERB % sys.argv[1])
+        sys.exit(2)
 
     # CI NO-OP, and it is placed HERE rather than beside the STOPHOOK_CHILD guard
     # on purpose. Everything above this line is a query or write mode that a

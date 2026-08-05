@@ -43,7 +43,10 @@ The compact-recovery document itself lives in the repo at
 .agent/<branch>/STATE.md (gitignored), not in TMPDIR.
 """
 
-import fcntl
+try:
+    import fcntl
+except ImportError:  # Windows: no POSIX advisory locking
+    fcntl = None
 import hashlib
 import json
 import os
@@ -53,6 +56,35 @@ import tempfile
 import time
 
 import wl_core as C
+
+# Kept as module constants so the lock sites read the same with or without the
+# module present. The values are POSIX's and are only ever passed to _flock.
+LOCK_EX = getattr(fcntl, "LOCK_EX", 2)
+LOCK_NB = getattr(fcntl, "LOCK_NB", 4)
+
+
+def _flock(handle, flags):
+    """flock, or a NAMED refusal on a platform that has none.
+
+    WHY A SHIM RATHER THAN A BARE MODULE-SCOPE IMPORT. `import fcntl` at the top
+    of this file means the module does not DEGRADE on Windows, it DIES at
+    import -- and it takes every read-only path down with it, including the
+    report inbox and the waiter, which import this module purely to reuse its
+    fold and take no lock at all. The read paths never needed fcntl; only the
+    writes do. So the import is guarded, reads keep working everywhere, and a
+    write on a platform without locking fails with a sentence naming the reason
+    instead of an ImportError raised from a file nobody was looking at.
+
+    This does NOT make the hook Windows-complete: `_append_lines` still uses
+    os.pwrite, and ~20 sibling hooks are bash. It makes the read-only surfaces
+    usable there, which is what the new inbox needs.
+    """
+    if fcntl is None:
+        raise RuntimeError(
+            "worklist WRITES need file locking, which this platform does not "
+            "provide (fcntl is POSIX-only). Read-only paths still work."
+        )
+    fcntl.flock(handle, flags)
 
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
@@ -247,7 +279,7 @@ def _append_lines(path, lock_path, payloads):
     stays its own unparseable line instead of corrupting this event too.
     """
     with open(lock_path, "w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+        _flock(lock, LOCK_EX)
         fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
         try:
             size = os.fstat(fd).st_size
@@ -536,7 +568,7 @@ def load(worklist, sync=True):
         at = C.stamp_now()
         if sync:
             with open(events_lock_path(worklist), "w") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
+                _flock(lock, LOCK_EX)
                 # Re-fold under the lock: another syncer may have won.
                 records, md_keys, cli_ids, last_h = build(_read_events(worklist))
                 if last_h != md_hash:
@@ -786,7 +818,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             lock_path = str(worklist) + ".lock"
             with open(lock_path, "w") as lock:
                 try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    _flock(lock, LOCK_EX | LOCK_NB)
                 except OSError:
                     return archived, orphaned, changed  # another cleaner holds it
                 with open(worklist, "r+b") as f:
@@ -826,7 +858,7 @@ def compact(worklist):
     if worklist.exists():
         lock_path = str(worklist) + ".lock"
         with open(lock_path, "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            _flock(lock, LOCK_EX)
             done = False
             for _ in range(5):
                 data = worklist.read_bytes()
@@ -856,7 +888,7 @@ def compact(worklist):
     if not ep.exists():
         return
     with open(events_lock_path(worklist), "w") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+        _flock(lock, LOCK_EX)
         # sync=False, DELIBERATELY: load(sync=True) takes this same flock on a
         # second fd, and flock conflicts across fds within one process, so a
         # sync here deadlocks against ourselves (found by tracing, missed by

@@ -1,0 +1,609 @@
+#!/usr/bin/env bash
+# Tests for wl_report.py (durable sub-agent report capture + unread inbox) and
+# wl_wait.py (the blocking waiter that replaces the poll cron).
+#
+# A NEW FILE rather than cases in test-worklist-v5.sh: that harness is 431 cases
+# and is held by another session. These cases move there once it frees.
+#
+# EVERY CASE ASSERTS ITS NEGATION TOO. A gate that cannot fail is worthless, and
+# an empty output is only meaningful once a non-empty one has been demonstrated
+# from the same fixture. Where a case has a control it is labelled `control:` and
+# is counted like any other assertion -- so a control that stops discriminating
+# turns the suite red rather than quietly passing.
+#
+# Run:  bash .claude/hooks/stop/test-report-inbox.sh
+set -u
+
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PASS=0
+FAIL=0
+FAILED_NAMES=""
+
+ok() {
+    PASS=$((PASS + 1))
+    printf '  ok   %s\n' "$1"
+}
+
+bad() {
+    FAIL=$((FAIL + 1))
+    FAILED_NAMES="$FAILED_NAMES
+  - $1"
+    printf '  FAIL %s\n' "$1"
+    [ -n "${2:-}" ] && printf '       %s\n' "$2"
+    return 0
+}
+
+assert_has() { # name haystack needle
+    case "$2" in
+        *"$3"*) ok "$1" ;;
+        *) bad "$1" "expected to contain: $3" ;;
+    esac
+}
+
+assert_lacks() { # name haystack needle
+    case "$2" in
+        *"$3"*) bad "$1" "expected NOT to contain: $3" ;;
+        *) ok "$1" ;;
+    esac
+}
+
+assert_eq() { # name got want
+    if [ "$2" = "$3" ]; then ok "$1"; else bad "$1" "got [$2] want [$3]"; fi
+}
+
+# ---- an isolated universe per case ------------------------------------------
+# TMPDIR moves the worklist, CLAUDE_CONFIG_DIR moves the projects tree that
+# --scan walks, WORKLIST_REPORTS_DIR moves the store, and CLAUDE_PROJECT_DIR
+# moves the repo root the slug derives from. Together they mean a case cannot
+# see, or damage, the live session's worklist -- which is running right now.
+
+# The base for every scratch universe, captured ONCE. Deriving it from $TMPDIR
+# at call time instead would nest each case inside the previous case's TMPDIR,
+# and the slugified worklist name (which embeds the whole absolute path) then
+# grows until it trips ENAMETOOLONG a dozen cases in -- which is exactly what
+# the first run of this suite did.
+TEST_BASE="$(mktemp -d "${TMPDIR:-/tmp}/wl-report-suite-XXXXXX")"
+trap 'rm -rf "$TEST_BASE"' EXIT
+
+scratch() {
+    T="$(mktemp -d "$TEST_BASE/case-XXXXXX")"
+    mkdir -p "$T/tmp" "$T/store" "$T/claude/projects" "$T/repo"
+    : >"$T/repo/.git" # a FILE, like a worktree's: C.project_root tests existence
+    export TMPDIR="$T/tmp"
+    export CLAUDE_CONFIG_DIR="$T/claude"
+    export WORKLIST_REPORTS_DIR="$T/store"
+    export CLAUDE_PROJECT_DIR="$T/repo"
+    export WORKLIST_AGENT_BRANCH="testbr"
+}
+
+report_py() { python3 "$HERE/wl_report.py" "$@"; }
+
+# A SubagentStop payload on stdin. $1 agent_id, $2 agent_type, $3 body.
+stop_event() {
+    python3 - "$1" "$2" "$3" <<'PY' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os, sys
+print(json.dumps({
+    "agent_id": sys.argv[1], "agent_type": sys.argv[2],
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "", "last_assistant_message": sys.argv[3],
+}))
+PY
+}
+
+surface_as() { # $1 session_id (the READER), $2 mode, $3 source
+    python3 - "$1" "$3" <<'PY' >"$T/ev.json"
+import json, os, sys
+print(json.dumps({"cwd": os.environ["CLAUDE_PROJECT_DIR"],
+                  "session_id": sys.argv[1], "source": sys.argv[2]}))
+PY
+    python3 "$HERE/wl_report.py" "$2" <"$T/ev.json"
+}
+
+# The default reader for cases that do not care which session is looking.
+surface() { # $1 mode (--session-start|--post-compact), $2 source
+    surface_as aaaaaaaa-1111 "$1" "$2"
+}
+
+# Same, but the body comes from a FILE. A 400 KB body cannot travel in argv:
+# execve caps a single argument at MAX_ARG_STRLEN (128 KB on Linux) and the
+# shell reports it as "Argument list too long".
+stop_event_f() { # $1 agent_id, $2 agent_type, $3 path to a body file
+    python3 - "$1" "$2" "$3" <<'PY' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os, sys
+print(json.dumps({
+    "agent_id": sys.argv[1], "agent_type": sys.argv[2],
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "",
+    "last_assistant_message": open(sys.argv[3], encoding="utf-8").read(),
+}))
+PY
+}
+
+BIG="$(python3 -c 'print("a substantive body. " * 40)')"
+
+echo "== 6/7. capture: substantive vs silent =="
+scratch
+stop_event "asome-agent-1111222233334444" some-agent "TITLE LINE
+$BIG"
+stop_event "aquiet-one-5555666677778888" quiet-one ""
+IDX="$T/store/index.jsonl"
+assert_eq "6 one line per capture" "$(wc -l <"$IDX" | tr -d ' ')" "2"
+assert_has "6 substantive is not silent" "$(sed -n 1p "$IDX")" '"silent":false'
+assert_has "6 title is the first non-empty line" "$(sed -n 1p "$IDX")" '"title":"TITLE LINE"'
+# control: the silent flag must actually be able to take the other value, or the
+# assertion above is satisfied by a field that is hard-coded false.
+assert_has "7 control: silent agent is flagged silent" "$(sed -n 2p "$IDX")" '"silent":true'
+assert_eq "6 body stored whole" \
+    "$(python3 -c 'import sys;print(len(open(sys.argv[1]).read()))' "$(ls "$T"/store/testbr/*some-agent*.md)")" \
+    "$(python3 -c "
+import sys
+front=open(sys.argv[1]).read().split('---',2)[2]
+print(len(open(sys.argv[1]).read()))" "$(ls "$T"/store/testbr/*some-agent*.md)")"
+assert_has "6 body file holds the body verbatim" "$(cat "$T"/store/testbr/*some-agent*.md)" "TITLE LINE"
+LONGEST="$(awk '{ n = length($0) + 1; if (n > m) m = n } END { print m }' "$IDX")"
+if [ "$LONGEST" -lt 1024 ]; then ok "6 index line under the 1024-byte atomic cap ($LONGEST)"; else
+    bad "6 index line under the 1024-byte atomic cap" "longest $LONGEST"
+fi
+
+echo "== 6b. a huge body still yields a capped index line =="
+scratch
+python3 -c 'import sys; open(sys.argv[1], "w").write("X" * 400000)' "$T/huge.txt"
+stop_event_f "ahuge-agent-9999888877776666" huge-agent "$T/huge.txt"
+LONGEST="$(awk '{ n = length($0) + 1; if (n > m) m = n } END { print m }' "$T/store/index.jsonl")"
+if [ "$LONGEST" -lt 1024 ]; then ok "6b 400 KB body -> index line $LONGEST bytes"; else
+    bad "6b 400 KB body -> capped index line" "longest $LONGEST"
+fi
+assert_eq "6b the body itself is NOT truncated" \
+    "$(python3 -c '
+import glob, sys
+p = glob.glob(sys.argv[1] + "/store/testbr/*huge-agent*.md")[0]
+print(open(p).read().count("X"))' "$T")" "400000"
+# control: the cap is enforced by shrinking values, never by dropping keys.
+assert_has "6b control: no key was dropped to fit" "$(cat "$T/store/index.jsonl")" '"transcript"'
+assert_has "6b control: no key was dropped to fit (title)" "$(cat "$T/store/index.jsonl")" '"title"'
+
+echo "== 6c. the 1024-byte cap holds when the OVERSIZE IS NOT THE TITLE =="
+# 6b does NOT exercise the cap: the title is truncated to TITLE_MAX before the
+# line is ever built, so a 400 KB body yields a short line no matter what _fit
+# does (disabling _fit leaves 6b green -- verified by mutation). The cap only
+# has real work when some OTHER field is long. Deep worktree paths make that
+# concrete rather than theoretical; this suite tripped ENAMETOOLONG on its own
+# first run.
+scratch
+python3 - <<'PY' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os
+print(json.dumps({
+    "agent_id": "along-path-agent-3131313131313131",
+    "agent_type": "T" * 300,
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "/" + "d" * 3000 + "/agent.jsonl",
+    "last_assistant_message": "A REAL TITLE\n" + "body. " * 200,
+}))
+PY
+LONGEST="$(awk '{ n = length($0) + 1; if (n > m) m = n } END { print m }' "$T/store/index.jsonl")"
+if [ "$LONGEST" -lt 1024 ]; then ok "6c a 3 KB transcript path still fits ($LONGEST bytes)"; else
+    bad "6c a 3 KB transcript path still fits" "longest $LONGEST -- an atomic append is no longer guaranteed"
+fi
+assert_has "6c control: the transcript KEY survived the shrink" "$(cat "$T/store/index.jsonl")" '"transcript"'
+assert_has "6c control: the title KEY survived the shrink" "$(cat "$T/store/index.jsonl")" '"title"'
+# The id is the LAST 12 characters of the agent id, so the 16-char hex suffix
+# above yields exactly 12 of them.
+assert_has "6c control: the id is intact" "$(cat "$T/store/index.jsonl")" '"id":"313131313131"'
+assert_eq "6c the line is still valid JSON" "$(python3 -c '
+import json, sys
+print(json.loads(open(sys.argv[1]).readline())["ev"])' "$T/store/index.jsonl")" "report"
+
+echo "== 8. index atomicity under 50 concurrent writers (validates the no-lock choice) =="
+scratch
+i=0
+while [ "$i" -lt 50 ]; do
+    # The counter must vary within the LAST 12 characters: `short_id` is the id's
+    # TAIL (a leading truncation would collide on same-named teammates), so ids
+    # differing only in a prefix would all fold to one id and 49 of these would
+    # be dropped as duplicates -- which is what the first draft of this case did,
+    # and it looked exactly like a lost-append bug.
+    stop_event "aconc-$(printf '%016d' $i)" "conc" "concurrent body number $i, long enough to matter $BIG" &
+    i=$((i + 1))
+done
+wait
+TOTAL="$(wc -l <"$T/store/index.jsonl" | tr -d ' ')"
+PARSEABLE="$(python3 -c '
+import json, sys
+n = 0
+for line in open(sys.argv[1]):
+    try:
+        json.loads(line)
+        n += 1
+    except ValueError:
+        pass
+print(n)' "$T/store/index.jsonl")"
+assert_eq "8 all 50 lines present" "$TOTAL" "50"
+assert_eq "8 all 50 lines parseable (no interleaving)" "$PARSEABLE" "50"
+
+echo "== 9. branch keying =="
+scratch
+stop_event "abr-one-1111111111111111" br-one "on branch one $BIG"
+WORKLIST_AGENT_BRANCH=otherbr stop_event "abr-two-2222222222222222" br-two "on branch two $BIG"
+# A glob, not `ls | grep` (SC2010): the branch names here are fixed, so counting
+# directories directly is both correct and shellcheck-clean.
+_brdirs=0
+for _d in "$T"/store/*br; do [ -d "$_d" ] && _brdirs=$((_brdirs + 1)); done
+assert_eq "9 bodies land in separate branch dirs" "$_brdirs" "2"
+assert_has "9 first line carries its branch" "$(sed -n 1p "$T/store/index.jsonl")" '"branch":"testbr"'
+assert_has "9 second line carries its branch" "$(sed -n 2p "$T/store/index.jsonl")" '"branch":"otherbr"'
+
+echo "== 10/11. surfacing, read marks, and the compaction rule =="
+scratch
+stop_event "asurf-one-1212121212121212" surf-one "SURFACED TITLE
+$BIG"
+OUT="$(surface --session-start startup)"
+assert_has "10 unread report is surfaced at SessionStart" "$OUT" "SURFACED TITLE"
+assert_has "10 surfacing names the --show command" "$OUT" "--show"
+assert_has "10 emitted as additionalContext" "$OUT" "additionalContext"
+RID="$(python3 -c '
+import json, sys
+print(json.loads(open(sys.argv[1]).readline())["id"])' "$T/store/index.jsonl")"
+report_py --read aaaaaaaa "$RID" >/dev/null
+OUT2="$(surface --session-start startup)"
+# The empty half is only meaningful because the non-empty half above ran first.
+assert_eq "10 control: marked read by THIS reader, SessionStart emits nothing" "$OUT2" ""
+
+# 10b. READ MARKS ARE PER-READER, KEYED ON SESSION ID (operator decision, which
+# OVERRODE this design's own branch-level recommendation). This is the case the
+# decision exists for, so it is the one that must be provably able to fail:
+# session A marking a report read must NOT hide it from its live peer B.
+#
+# The rejected alternative -- one ledger per branch -- means B never learns the
+# report existed, which is a quieter restatement of the failure this whole
+# feature fixes. Two concurrent sessions per worktree is this repo's normal
+# state, so it is not a corner case.
+OUT3="$(surface_as bbbbbbbb-2222 --session-start startup)"
+assert_has "10b a PEER session still sees a report reader A marked read" "$OUT3" "SURFACED TITLE"
+# ...and the peer marking it read clears it for the peer, and ONLY the peer.
+report_py --read bbbbbbbb "$RID" >/dev/null
+OUT3b="$(surface_as bbbbbbbb-2222 --session-start startup)"
+assert_eq "10b control: the peer's own mark does clear it for the peer" "$OUT3b" ""
+# The ACCEPTED COST, asserted so nobody later "fixes" it: a restarted session is
+# a different reader (same_session matches by PREFIX) and re-sees the report.
+# That resurfacing IS the compaction-recovery case working.
+OUT3c="$(surface_as cccccccc-3333 --session-start startup)"
+assert_has "10b a fresh reader re-sees the branch's reports (recovery, not a bug)" "$OUT3c" "SURFACED TITLE"
+# control: proves the emitter can still fire for reader A too, so the empty at
+# 10-control is a read mark working and not a surfacing path that is dead.
+stop_event "asurf-two-3434343434343434" surf-two "SECOND TITLE
+$BIG"
+OUT4="$(surface --session-start startup)"
+assert_has "10b control: a NEW report still surfaces to reader A" "$OUT4" "SECOND TITLE"
+assert_lacks "10b control: the one A read stays suppressed for A" "$OUT4" "SURFACED TITLE"
+# branch isolation, kept from the original 10b: a report captured on testbr is
+# not another branch's business, whoever is reading.
+OUT5="$(WORKLIST_AGENT_BRANCH=elsewhere surface --session-start startup)"
+assert_eq "10b reports do not leak across branches" "$OUT5" ""
+# 11: SessionStart declines source=compact; PostCompact is what emits there.
+OUT6="$(surface --session-start compact)"
+assert_eq "11 SessionStart is silent on source=compact" "$OUT6" ""
+OUT7="$(surface --post-compact compact)"
+assert_has "11 control: PostCompact emits on the same fixture" "$OUT7" "SECOND TITLE"
+
+echo "== 12. SendMessage payloads are the report, not the sign-off =="
+scratch
+mkdir -p "$T/claude/projects"
+python3 - "$T" <<'PY'
+import json, os, pathlib, re, sys, time
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "sess1" / "subagents"
+proj.mkdir(parents=True)
+aid = "asender-7777777777777777"
+(proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
+    {"agentType": "sender", "name": "sender", "taskKind": "in_process_teammate"}))
+recs = [{
+    "type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
+    "timestamp": "2026-08-05T10:00:00.500Z", "cwd": str(root),
+    "message": {"content": [
+        {"type": "tool_use", "name": "SendMessage",
+         "input": {"to": "team-lead", "summary": "the report",
+                   "message": "THE ACTUAL REPORT\n" + "detail. " * 200}}]},
+}, {
+    "type": "assistant", "agentId": aid, "sessionId": "sess1", "gitBranch": "testbr",
+    "timestamp": "2026-08-05T10:01:00.500Z", "cwd": str(root),
+    "message": {"content": [{"type": "text", "text": "Released. Task complete."}]},
+}]
+p = proj / ("agent-%s.jsonl" % aid)
+p.write_text("".join(json.dumps(r) + "\n" for r in recs))
+old = time.time() - 3600
+os.utime(p, (old, old))  # idle, so --scan considers it finished
+PY
+SCAN="$(report_py --scan)"
+assert_has "12 scan indexed the agent" "$SCAN" "sender"
+assert_has "12 title comes from the SendMessage, not the sign-off" "$SCAN" "THE ACTUAL REPORT"
+assert_lacks "12 the sign-off is NOT the title" "$SCAN" "Released. Task complete."
+BODY="$(report_py --show "$(python3 -c '
+import json, sys
+print(json.loads(open(sys.argv[1]).readline())["id"])' "$T/store/index.jsonl")")"
+assert_has "12 body holds the SendMessage payload" "$BODY" "THE ACTUAL REPORT"
+assert_has "12 body also holds the sign-off" "$BODY" "Released. Task complete."
+# control: WITHOUT the SendMessage harvest this agent reads as silent (24 chars
+# of sign-off is under the 200-char floor). This is the whole finding.
+assert_has "12 control: an agent that only SendMessages is NOT silent" \
+    "$(cat "$T/store/index.jsonl")" '"silent":false'
+scratch
+stop_event "abare-signoff-4444444444444444" bare "Released. Task complete."
+assert_has "12 control: the same sign-off with no sends IS silent" \
+    "$(cat "$T/store/index.jsonl")" '"silent":true'
+
+echo "== 13. scan skips a still-running agent =="
+scratch
+python3 - "$T" <<'PY'
+import json, pathlib, re, sys
+T = pathlib.Path(sys.argv[1])
+root = T / "repo"
+proj = T / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(root)) / "s" / "subagents"
+proj.mkdir(parents=True)
+aid = "arunning-6666666666666666"
+(proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps({"agentType": "running"}))
+(proj / ("agent-%s.jsonl" % aid)).write_text(json.dumps({
+    "type": "assistant", "agentId": aid, "gitBranch": "testbr",
+    "message": {"content": [{"type": "text", "text": "half an answer so far"}]}}) + "\n")
+PY
+assert_has "13 a fresh (running) transcript is not indexed" "$(report_py --scan)" "nothing to index"
+# control: the same fixture, backdated, IS indexed -- so the skip is the idle
+# rule and not a scan that simply cannot see the directory.
+python3 -c '
+import glob, os, sys, time
+p = glob.glob(sys.argv[1] + "/claude/projects/*/*/subagents/*.jsonl")[0]
+old = time.time() - 3600
+os.utime(p, (old, old))' "$T"
+assert_has "13 control: backdated, the same agent IS indexed" "$(report_py --scan)" "running"
+
+echo "== 14. torn index tail =="
+scratch
+stop_event "atorn-one-8888888888888888" torn-one "a real report $BIG"
+printf '{"ev":"report","id":"trunc' >>"$T/store/index.jsonl" # no newline, no close
+assert_has "14 a torn tail does not hide the good line" "$(report_py --list --all)" "torn-one"
+assert_lacks "14 the torn line itself is skipped" "$(report_py --list --all)" "trunc"
+OUT="$(surface --session-start startup)"
+assert_has "14 surfacing survives a torn tail" "$OUT" "a real report"
+
+echo "== 15. wl_wait: misuse =="
+scratch
+OUT="$(python3 "$HERE/wl_wait.py" 2>&1)"
+assert_eq "15 no argument -> exit 2" "$?" "2"
+assert_has "15 usage on stderr" "$OUT" "usage:"
+OUT="$(python3 "$HERE/wl_wait.py" abc 2>&1)"
+assert_eq "15 short prefix -> exit 2" "$?" "2"
+assert_has "15 short prefix names the problem" "$OUT" "bad prefix"
+OUT="$(python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0 2>&1)"
+assert_eq "15 non-positive timeout -> exit 2" "$?" "2"
+
+echo "== 16. wl_wait takes no lock (structural, with a proven-live control) =="
+LOCKUSE="$(grep -cE '_flock\(|fcntl\.flock\(|import fcntl' "$HERE/wl_wait.py" || true)"
+assert_eq "16 wl_wait.py makes no lock call" "$LOCKUSE" "0"
+LOCKUSE2="$(grep -cE '_flock\(|fcntl\.flock\(|import fcntl' "$HERE/wl_report.py" || true)"
+assert_eq "16 wl_report.py makes no lock call" "$LOCKUSE2" "0"
+# control: the SAME grep must fire on a file that really does lock, or it is a
+# pattern that can never match and the two assertions above prove nothing.
+LOCKUSE3="$(grep -cE '_flock\(|fcntl\.flock\(|import fcntl' "$HERE/wl_store.py" || true)"
+if [ "$LOCKUSE3" -gt 0 ]; then ok "16 control: the grep fires on wl_store.py ($LOCKUSE3 hits)"; else
+    bad "16 control: the grep fires on wl_store.py" "0 hits -- the pattern is dead"
+fi
+
+echo "== 17. wl_wait: wakes on a NEW request, not on a pre-existing one =="
+scratch
+WL="$(python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))' HERE="$HERE" 2>/dev/null || HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+REQ="${WL%.md}.requests"
+mkreq() { # id from to body
+    python3 - "$REQ" "$1" "$2" "$3" "$4" <<'PY'
+import json, sys, datetime
+p, rid, frm, to, body = sys.argv[1:6]
+at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+with open(p, "a") as f:
+    f.write(json.dumps({"ev": "ask", "id": rid, "from": frm, "to": to, "at": at,
+                        "body": body}) + "\n")
+PY
+}
+
+# 17a. A request that PREDATES the waiter must NOT wake it. This is the spin-loop
+# regression: arming on "the slice is non-empty" would fire instantly, forever.
+mkreq preexist bbbbbbbb aaaaaaaa "a request the session has already seen"
+python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.15 >"$T/w1.out" 2>"$T/w1.err" &
+W1=$!
+sleep 4
+if kill -0 "$W1" 2>/dev/null; then ok "17a pre-existing request does NOT wake the waiter"; else
+    bad "17a pre-existing request does NOT wake the waiter" "$(cat "$T/w1.out")"
+fi
+assert_eq "17a nothing printed while waiting" "$(cat "$T/w1.out")" ""
+# 17b control: with that same request still unresolved, a NEW one DOES wake it,
+# and prints ONLY the new one.
+mkreq fresh001 bbbbbbbb aaaaaaaa "THE NEW REQUEST"
+sleep 5
+if kill -0 "$W1" 2>/dev/null; then
+    bad "17b control: a new request wakes the waiter" "still running after 5s"
+    kill "$W1" 2>/dev/null
+else
+    ok "17b control: a new request wakes the waiter"
+fi
+wait "$W1" 2>/dev/null
+assert_has "17b it prints the new request" "$(cat "$T/w1.out")" "THE NEW REQUEST"
+assert_lacks "17b it does NOT reprint the pre-existing one" "$(cat "$T/w1.out")" "already seen"
+assert_has "17b it prints the answer command" "$(cat "$T/w1.out")" "--answer"
+
+echo "== 17c. the baseline suppresses a request the session already saw, even when the signature MOVES =="
+# 17a alone does NOT prove the request baseline: with no new appends the cheap
+# signature gate never opens, so the fold never runs and the baseline is never
+# consulted. Mutating the baseline away leaves 17a green. THIS case forces the
+# signature to move while the only classified item is one the session already
+# had -- a third session declining a pre-existing BROADCAST, whose id counts as
+# ours in my_requests_sig -- so the fold DOES run and only the baseline can
+# suppress the wake.
+scratch
+WL="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+REQ="${WL%.md}.requests"
+python3 - "$REQ" <<'PY'
+import datetime, json, sys
+at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+with open(sys.argv[1], "a") as f:
+    f.write(json.dumps({"ev": "ask", "id": "bcast001", "from": "bbbbbbbb", "to": "*",
+                        "at": at, "body": "A BROADCAST ALREADY IN CONTEXT"}) + "\n")
+PY
+python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.2 >"$T/w5.out" 2>&1 &
+W5=$!
+sleep 2
+SIG_BEFORE="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C, wl_store as S
+print(S.my_requests_sig(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]), "aaaaaaaa"))')"
+python3 - "$REQ" <<'PY'
+import datetime, json, sys
+at = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+with open(sys.argv[1], "a") as f:
+    f.write(json.dumps({"ev": "decline", "id": "bcast001", "by": "cccccccc",
+                        "at": at, "reason": "not my area"}) + "\n")
+PY
+SIG_AFTER="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C, wl_store as S
+print(S.my_requests_sig(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]), "aaaaaaaa"))')"
+# The premise of this case, asserted rather than assumed: if the signature did
+# NOT move, the fold would be skipped and the case would prove nothing.
+if [ "$SIG_BEFORE" != "$SIG_AFTER" ]; then
+    ok "17c premise: the third-party decline DID move our signature"
+else
+    bad "17c premise: the third-party decline moved our signature" "unchanged: $SIG_BEFORE -- this case is vacuous"
+fi
+sleep 5
+if kill -0 "$W5" 2>/dev/null; then ok "17c an already-seen request does not wake it even when the fold runs"; else
+    bad "17c an already-seen request does not wake it even when the fold runs" "$(cat "$T/w5.out")"
+fi
+assert_eq "17c nothing printed" "$(cat "$T/w5.out")" ""
+kill "$W5" 2>/dev/null
+wait "$W5" 2>/dev/null
+
+echo "== 18. wl_wait: foreign traffic does not wake it =="
+scratch
+WL="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+REQ="${WL%.md}.requests"
+python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.3 >"$T/w2.out" 2>&1 &
+W2=$!
+sleep 2
+mkreq foreign1 bbbbbbbb cccccccc "traffic between two other sessions"
+sleep 5
+if kill -0 "$W2" 2>/dev/null; then ok "18 foreign traffic does NOT wake the waiter"; else
+    bad "18 foreign traffic does NOT wake the waiter" "$(cat "$T/w2.out")"
+fi
+assert_eq "18 nothing printed for foreign traffic" "$(cat "$T/w2.out")" ""
+# control: the same fixture, addressed to us, DOES wake it -- so 18 is a
+# signature gate working, not a waiter that is simply deaf.
+mkreq mine0001 bbbbbbbb aaaaaaaa "ADDRESSED TO ME"
+sleep 5
+if kill -0 "$W2" 2>/dev/null; then
+    bad "18 control: the same append addressed to us wakes it" "still running"
+    kill "$W2" 2>/dev/null
+else
+    ok "18 control: the same append addressed to us wakes it"
+fi
+wait "$W2" 2>/dev/null
+assert_has "18 control: it prints the addressed request" "$(cat "$T/w2.out")" "ADDRESSED TO ME"
+
+echo "== 19. wl_wait: wakes on a NEW sub-agent report =="
+scratch
+python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.3 >"$T/w3.out" 2>&1 &
+W3=$!
+sleep 2
+stop_event "await-report-5151515151515151" waiter-report "A REPORT THAT SHOULD WAKE IT
+$BIG"
+sleep 5
+if kill -0 "$W3" 2>/dev/null; then
+    bad "19 a new report wakes the waiter" "still running"
+    kill "$W3" 2>/dev/null
+else
+    ok "19 a new report wakes the waiter"
+fi
+wait "$W3" 2>/dev/null
+assert_has "19 it names the report" "$(cat "$T/w3.out")" "A REPORT THAT SHOULD WAKE IT"
+assert_has "19 it names the read command" "$(cat "$T/w3.out")" "--show"
+
+echo "== 20. wl_wait: timeout prints one bounded line and exits 0 =="
+scratch
+OUT="$(python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.05 2>&1)"
+RC=$?
+assert_eq "20 timeout exits 0" "$RC" "0"
+assert_has "20 timeout says so" "$OUT" "INBOX-WAIT"
+assert_eq "20 timeout is ONE line" "$(printf '%s\n' "$OUT" | wc -l | tr -d ' ')" "1"
+
+echo "== 21. wl_wait does not block a concurrent worklist write =="
+scratch
+python3 "$HERE/wl_wait.py" aaaaaaaa --timeout 0.4 >"$T/w4.out" 2>&1 &
+W4=$!
+sleep 2
+ELAPSED="$(HERE="$HERE" python3 -c '
+import os, sys, time
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C, wl_store as S
+w = C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"])
+p = S.requests_path(w)
+t = time.monotonic()
+S._append_lines(p, str(p) + ".lock", [{"ev": "probe"}])
+print("%.3f" % (time.monotonic() - t))')"
+if python3 -c "import sys; sys.exit(0 if float(sys.argv[1]) < 1.0 else 1)" "$ELAPSED"; then
+    ok "21 a locked write completes in ${ELAPSED}s while the waiter runs"
+else
+    bad "21 a locked write completes quickly while the waiter runs" "took ${ELAPSED}s"
+fi
+kill "$W4" 2>/dev/null
+wait "$W4" 2>/dev/null
+# control: the SAME measurement, against a deliberate LOCK_EX holder, must show
+# blocking. Without this, "fast" could just mean the timer cannot detect a stall.
+HELD="$(HERE="$HERE" python3 -c '
+import os, subprocess, sys, time
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C, wl_store as S
+w = C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"])
+p = S.requests_path(w)
+holder = subprocess.Popen([sys.executable, "-c",
+    "import fcntl,sys,time\n"
+    "f=open(sys.argv[1],\"w\")\n"
+    "fcntl.flock(f, fcntl.LOCK_EX)\n"
+    "time.sleep(3)\n", str(p) + ".lock"])
+time.sleep(1)
+t = time.monotonic()
+S._append_lines(p, str(p) + ".lock", [{"ev": "probe2"}])
+print("%.3f" % (time.monotonic() - t))
+holder.wait()')"
+if python3 -c "import sys; sys.exit(0 if float(sys.argv[1]) > 1.0 else 1)" "$HELD"; then
+    ok "21 control: a real LOCK_EX holder DOES block it (${HELD}s)"
+else
+    bad "21 control: a real LOCK_EX holder DOES block it" "took only ${HELD}s -- the timer cannot detect a stall, so the assertion above is vacuous"
+fi
+
+echo
+echo "================================"
+if [ "$FAIL" -gt 0 ]; then
+    printf 'failed cases:%s\n' "$FAILED_NAMES"
+fi
+# EXACTLY the shape test-worklist-v5.sh ends with, and deliberately the LAST line
+# and the ONLY one of this shape. The CI gate parses `passed=<n> failed=<m>`, so a
+# prettier "passed 72, failed 0" here would have made this harness's result
+# unreadable to the wrapper that is supposed to enforce it -- green in CI by
+# being unparsed.
+printf '  passed=%d failed=%d\n' "$PASS" "$FAIL"
+[ "$FAIL" -gt 0 ] && exit 1
+exit 0

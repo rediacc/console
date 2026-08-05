@@ -68,6 +68,12 @@ setup() {
     # the whole suite -- a gate that never fires in its own tests. The env
     # override exists in wl_core.git_branch for exactly this.
     export WORKLIST_AGENT_BRANCH=agenttest
+    # PINNED INTO THE FIXTURE, for the same reason TMPDIR is. Unset, the v18
+    # unread-reports surface reads the OPERATOR'S REAL report store on every
+    # stop in this suite. That happened to stay green only because the fixture
+    # branch is `agenttest` and no real report carries it -- a hermetic suite
+    # must not depend on a branch name never colliding.
+    export WORKLIST_REPORTS_DIR="$BASE/reports"
     mkdir -p "$BASE/proj/.agent/agenttest"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
     : >"$WL"
@@ -2343,6 +2349,8 @@ ARITY = {
     "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
+    "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
+    "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "V_BROKEN_SCHEDULE": (2, "rows"),
@@ -5045,6 +5053,312 @@ else
     fail "163 CONTROL: the check-in drumbeat: ${OUT:0:250}"
 fi
 
+echo "== 163z. v18: a CONFIRMED inbox waiter owes no check-in and needs no poll cron =="
+# The waiter blocks until something new arrives for this session and then EXITS,
+# and its exit is the harness notification that wakes the session. Its liveness
+# IS its report, so the two supervision demands that exist to make a session
+# account for a silent background job do not apply to it. Both relaxations are
+# keyed on `confirmed` and on nothing weaker.
+#
+# A REAL wl_wait.py process, not a fake command string: `confirmed` means the OS
+# can see a live descendant carrying the command, so a fixture that only claims
+# the command would prove the string match and not the verdict.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+WAITER_CMD="python3 $(dirname "$HOOK")/wl_wait.py deadbeef --timeout 3"
+TMPDIR="$BASE/waittmp" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+WAITER_PID=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter"}]))
+PYEOF
+)"
+# Premise, asserted rather than assumed: if the verdict is not `confirmed` this
+# whole case is vacuous and would "pass" for the wrong reason.
+VERDICT=$(
+    cd "$BASE" && python3 - "$(dirname "$HOOK")" "$WAITER_CMD" <<'PYEOF'
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+bg = [{"id": "wt1", "type": "shell", "status": "running", "command": sys.argv[2]}]
+print(L.verify_background(bg, ancestors={int(os.environ["WORKLIST_HARNESS_PID"])}).get("wt1"))
+PYEOF
+)
+if [[ "$VERDICT" == "confirmed" ]]; then
+    pass "163z premise: the live waiter verifies as confirmed"
+else
+    fail "163z premise: waiter verdict is '$VERDICT', not confirmed -- this case is vacuous"
+fi
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+task 7 pending "waiting on the inbox"
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}  # 15 minutes overdue
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z: an overdue check-in is SUPPRESSED when the only live task is a confirmed waiter"
+else
+    fail "163z: the check-in fired at a waiter: ${OUT:0:250}"
+fi
+# The needle is lifted VERBATIM from V_NO_POLL_CRON. The first draft of this
+# line grepped for "no inbox poll" and "poll cron", neither of which appears in
+# that message at all -- so the assertion could never fail and passed for a
+# reason unrelated to the waiter.
+if ! grep -qF "NO 5-MINUTE INBOX POLL" <<<"$OUT"; then
+    pass "163z: a work cron with NO poll cron is accepted beside a confirmed waiter"
+else
+    fail "163z: no-poll fired despite the waiter: ${OUT:0:250}"
+fi
+kill "$WAITER_PID" 2>/dev/null
+wait "$WAITER_PID" 2>/dev/null
+
+echo "== 163x. NO CLI verb may fall through to the Stop battery (the phantom stop) =="
+# THE DEFECT, measured on HEAD before the fix, not theorised. A verb whose guard
+# put the arity check INSIDE the condition (`len(argv) > 3 and argv[1] ==
+# "--loop"`) did not fail on too few arguments -- it fell through to the hook
+# path, which runs the whole battery against an EMPTY event. With stdin closed
+# that returned a genuine `"decision": "block"` at EXIT 0 and wrote six
+# `*-unknown` sidecars for a session id that does not exist; with stdin left open
+# it hung forever in json.load(sys.stdin). Both reproduced.
+#
+# The fix is the CLASS, not the three verbs anyone noticed: any argv[1] with a
+# leading dash that matched no verb is refused. A typo must not be able to emit a
+# verdict or hang.
+setup
+for _bad in "--loop x" "--brief" "--tpyo" "--state"; do
+    # shellcheck disable=SC2086
+    OUT="$(reqcli $_bad </dev/null 2>&1)"
+    RC=$?
+    if [[ "$RC" == "2" ]] && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+        pass "163x: '$_bad' is refused (exit 2) and emits NO verdict"
+    else
+        fail "163x: '$_bad' rc=$RC verdict=${OUT:0:120}"
+    fi
+done
+# It must not hang either. stdin is a pipe that STAYS OPEN, and the timeout is on
+# the interpreter itself -- NOT on a shell wrapping a `sleep`, which is what made
+# the first measurement of this read 124 for the sleep rather than for python.
+if timeout 8 env TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    python3 "$HOOK" --tpyo < <(sleep 15) >/dev/null 2>&1; then
+    fail "163x: an unknown verb succeeded, which it must not"
+elif [[ "$?" != "124" ]]; then
+    pass "163x: an unknown verb does not hang on an open stdin"
+else
+    fail "163x: an unknown verb still hangs reading stdin"
+fi
+# CONTROL 1: the legitimate forms still work, so the guards refuse arity and not
+# the verb.
+setup
+if reqcli --loop pfx 2026-01-01T00:00:00Z 1 label </dev/null 2>&1 | grep -qF "loop declared"; then
+    pass "163x CONTROL: a well-formed --loop still declares"
+else
+    fail "163x CONTROL: --loop broke for valid input"
+fi
+if reqcli --brief pfx some text </dev/null 2>&1 | grep -qF "brief recorded"; then
+    pass "163x CONTROL: a well-formed --brief still records"
+else
+    fail "163x CONTROL: --brief broke for valid input"
+fi
+# CONTROL 2, THE LOAD-BEARING ONE: the real Stop hook takes NO arguments, so the
+# leading-dash catch-all must not be able to swallow it. If this regressed, every
+# stop in the repo would exit 2 instead of running any check at all.
+setup
+brief_now
+hand_now
+say "answer"
+task 7 pending "something"
+OUT="$(run)"
+if grep -qF '"decision"' <<<"$OUT" || [[ -n "$OUT" ]]; then
+    pass "163x CONTROL: a bare (no-argv) invocation still runs the battery"
+else
+    fail "163x CONTROL: the catch-all swallowed the real hook: '${OUT:0:200}'"
+fi
+
+echo "== 163y. v18: unread sub-agent reports are surfaced on an ORDINARY stop =="
+# SessionStart and PostCompact are covered by wl_report's own hooks. This is the
+# commoner case they miss: a long-running session whose teammate finished twenty
+# minutes ago and whose SendMessage has scrolled out of reach. Report-only: an
+# unread report is information, not an obligation, and there is no honest
+# evidence a stop could demand for "I read it".
+setup
+brief_now
+hand_now
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+(store / "agenttest").mkdir(parents=True, exist_ok=True)
+(store / "agenttest" / "r.md").write_text("SUBSTANTIVE FINDING FROM A TEAMMATE\nbody")
+(store / "index.jsonl").write_text(json.dumps({
+    "ev": "report", "id": "abcdef123456", "at": "2026-08-05T10:00:00Z",
+    "branch": "agenttest", "agent": "some-teammate", "type": "some-teammate",
+    "session": "deadbeef", "body": "agenttest/r.md", "bytes": 900,
+    "silent": False, "sends": 1, "title": "SUBSTANTIVE FINDING FROM A TEAMMATE",
+    "transcript": "", "src": "hook"}) + "\n")
+PYEOF
+say "all done, nothing outstanding"
+OUT="$(run)"
+if grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT" && grep -qF "SUBSTANTIVE FINDING FROM A TEAMMATE" <<<"$OUT"; then
+    pass "163y: an unread report is surfaced on an ordinary stop, with its title"
+else
+    fail "163y: no unread-report section: ${OUT:0:300}"
+fi
+if ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "163y: it is REPORT-ONLY and does not block the stop"
+else
+    fail "163y: an unread report blocked the stop: ${OUT:0:300}"
+fi
+# CONTROL: marked read, the section is gone. Without this the assertion above is
+# satisfied by any section that is simply always emitted.
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+(store / "read.jsonl").write_text(json.dumps({
+    "ev": "read", "id": "abcdef123456", "by": "deadbeef",
+    "at": "2026-08-05T10:05:00Z", "branch": "agenttest"}) + "\n")
+PYEOF
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT"; then
+    pass "163y CONTROL: once marked read, the section is gone"
+else
+    fail "163y CONTROL: a read report is still surfaced: ${OUT:0:300}"
+fi
+# CONTROL: a report on ANOTHER branch is not this branch's business.
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+with (store / "index.jsonl").open("a") as f:
+    f.write(json.dumps({
+        "ev": "report", "id": "999999999999", "at": "2026-08-05T10:00:00Z",
+        "branch": "some-other-branch", "agent": "elsewhere", "type": "elsewhere",
+        "session": "deadbeef", "body": "x/y.md", "bytes": 900, "silent": False,
+        "sends": 1, "title": "FROM ANOTHER BRANCH", "transcript": "",
+        "src": "hook"}) + "\n")
+PYEOF
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "FROM ANOTHER BRANCH" <<<"$OUT"; then
+    pass "163y CONTROL: another branch's report is not surfaced here"
+else
+    fail "163y CONTROL: a foreign branch's report leaked in: ${OUT:0:300}"
+fi
+
+echo "== 163z-c1. CONTROL: a waiter that is NOT confirmed buys nothing =="
+# Same fixture, same command string, but the process is DEAD -- so the verdict is
+# `suspect`. Without this control, 163z would equally pass if the code had simply
+# stopped running either check at all.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+export WORKLIST_HARNESS_PID=$$
+BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter (dead)"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+task 7 pending "waiting on the inbox"
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z-c1 CONTROL: an unconfirmed waiter still owes the check-in"
+else
+    fail "163z-c1 CONTROL: the check-in was skipped for a DEAD waiter: ${OUT:0:250}"
+fi
+
+echo "== 163z-c2. CONTROL: a waiter does not silence a REAL job running beside it =="
+# Relaxing on "any waiter present" would let one waiter suppress supervision of
+# everything else. The suppression requires EVERY live task to be a confirmed
+# waiter, and this is the case that pins that word.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+TMPDIR="$BASE/waittmp2" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+WAITER_PID=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([
+    {"id": "wt1", "type": "shell", "status": "running", "command": sys.argv[1],
+     "description": "inbox waiter"},
+    {"id": "bw1", "type": "shell", "status": "running", "command": "sleep 999",
+     "description": "long CI watch"},
+]))
+PYEOF
+)"
+task 7 pending "waiting on both"
+say "answer
+
+## Remaining
+- #7 waiting on both (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on both (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z-c2 CONTROL: a real job beside the waiter still gets its check-in"
+else
+    fail "163z-c2 CONTROL: one waiter silenced supervision of a real job: ${OUT:0:250}"
+fi
+kill "$WAITER_PID" 2>/dev/null
+wait "$WAITER_PID" 2>/dev/null
+unset WORKLIST_HARNESS_PID
+
 echo "== 163b. a stale output stream is flagged POSSIBLY STUCK =="
 setup
 brief_now
@@ -6289,6 +6603,13 @@ if [[ -z "$LEAKED" ]]; then
     pass "181: no ambient WORKLIST_* knob survives into a case"
 else
     fail "181: ambient knobs leaked into the suite:$LEAKED"
+fi
+# The report store is pinned rather than scrubbed: an UNSET WORKLIST_REPORTS_DIR
+# is not neutral, it points wl_report at the operator's real store under $HOME.
+if [[ "${WORKLIST_REPORTS_DIR:-}" == "$BASE/reports" ]]; then
+    pass "181: the report store is pinned inside the fixture"
+else
+    fail "181: report store is '${WORKLIST_REPORTS_DIR:-<unset -- reads the REAL store>}'"
 fi
 
 echo "== 182. SessionStart source=compact does NOT re-inject the docs blurb =="

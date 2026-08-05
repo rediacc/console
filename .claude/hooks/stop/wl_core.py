@@ -14,6 +14,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 # `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
@@ -159,7 +160,15 @@ def project_root(start):
 
 
 def worklist_for(start):
-    d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
+    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX
+    # that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR
+    # unset would resolve a DIFFERENT worklist path than the old expression did
+    # and silently orphan every live session's open items. This spelling is
+    # byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is
+    # set or absent-with-/tmp-present (verified on this machine), and it is what
+    # gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir
+    # instead of a literal "/tmp" it cannot create.
+    d = pathlib.Path(os.environ.get("TMPDIR") or tempfile.gettempdir()) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
     root = project_root(start)
     slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(root)).strip("_")

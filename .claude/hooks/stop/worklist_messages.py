@@ -278,6 +278,43 @@ N_AGENT_BLIND = (
     "staleness. Set WORKLIST_AGENT_BRANCH to re-enable it mid-rebase."
 )
 
+CLI_LOOP_USAGE = (
+    "usage: worklist.py --loop <session-prefix> <next-ISO8601Z> [<count>] [<label...>]\n"
+    "Nothing was declared. This is refused rather than ignored because the old\n"
+    "arity-in-the-guard shape fell THROUGH to the Stop battery: it ran the whole\n"
+    "check suite against an empty event, emitted a real block verdict at exit 0,\n"
+    "and wrote sidecars for a session id that does not exist.\n"
+)
+
+CLI_BRIEF_USAGE = (
+    "usage: worklist.py --brief <session-prefix> <text...>\n"
+    "Nothing was recorded. Refused rather than ignored, for the same reason as\n"
+    "--loop above: too few arguments used to reach the Stop battery instead.\n"
+)
+
+CLI_UNKNOWN_VERB = (
+    "worklist.py: unknown verb %r.\n"
+    "REFUSED rather than run as a Stop event. Every unrecognised flag used to\n"
+    "fall through to the hook path, which reads the event from stdin: with stdin\n"
+    "closed that produced a PHANTOM STOP (a real block verdict at exit 0, from a\n"
+    "battery run against an empty event), and with stdin open it hung forever.\n"
+    "A typo must not be able to do either.\n"
+    "Verbs: --add --triage --tick --defer --lease --update --list --state --path\n"
+    "       --compact --brief --loop --poll --ask --answer --decline --ack\n"
+    "       --requests --reports --wait --session-start --post-compact --help\n"
+    "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
+)
+
+N_UNREAD_REPORTS = (
+    "UNREAD SUB-AGENT REPORTS (%d on branch %s). A teammate's report arrives by "
+    "SendMessage and lands nowhere you can look afterwards; these were captured "
+    "at SubagentStop and survive a restart and a compaction. A [SILENT] one said "
+    "nothing at all, which is the case that used to be indistinguishable from a "
+    "substantive report.\n%s\n"
+    "    read one:  python3 %s --show <id>\n"
+    "    mark read: python3 %s --read %s <id> [<id>...]"
+)
+
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
     "section. Nothing was written; the previous STATE.md is untouched.\n"
