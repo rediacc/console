@@ -270,7 +270,17 @@ if [[ -x "$STOP_SUITE" ]]; then
     else
         FAIL=$((FAIL + 1))
         echo "FAIL [1] stop/test-worklist-v5.sh"
-        sed 's/^/       /' <<<"$out" | tail -20
+        # THE FAILING CASES FIRST, then context. This used to be `tail -20`,
+        # which prints the LAST twenty lines -- in a 575-case suite those are
+        # almost always PASS lines plus the summary, so the FAIL lines scroll
+        # past and CI reports "12 failed" while naming none of them. A failure
+        # report that hides the failures forces a re-run to learn anything, and
+        # when the failure only reproduces in CI (as this one did) there is no
+        # local run to fall back on.
+        echo "       --- failing cases ---"
+        grep -E "^\s*(FAIL|  - )" <<<"$out" | sed 's/^/       /' | head -40
+        echo "       --- tail for context ---"
+        sed 's/^/       /' <<<"$out" | tail -12
     fi
 else
     FAIL=$((FAIL + 1))
