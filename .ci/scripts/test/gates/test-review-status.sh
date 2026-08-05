@@ -1117,6 +1117,36 @@ test_reply_thresholds_match_across_both_gates() {
     log_pass "both top-level gates carry identical reply thresholds ($(sed -n 's/^SUMMARY_MIN_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1)/$(sed -n 's/^SUMMARY_LONGFORM_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1))"
 }
 
+test_review_report_count_is_shared_and_unqualified() {
+    # The numerator in "X/Y reviews used". Two failures are pinned here because
+    # both actually happened.
+    #
+    # ONE DEFINITION. It existed as identical copies in claude-review-gate.sh
+    # (which counts) and review-status.sh (which reports the fraction). Two
+    # copies of a numerator drift, and the denominator already lives in
+    # common.sh for exactly that reason.
+    local lib="$REPO_ROOT/.ci/scripts/lib/common.sh"
+    local defs
+    defs="$(grep -rlE '^review_report_count\(\)' "$REPO_ROOT/.ci/scripts/" 2>/dev/null | sort)"
+    [[ "$defs" == "$lib" ]] ||
+        log_fail "review_report_count() must be defined ONLY in .ci/scripts/lib/common.sh, found in: ${defs:-<nowhere>}"
+
+    # NO CONTENT QUALIFIER. Both copies used to AND the header with
+    # (json:review-findings OR "### Review"), a guess about the report's wording
+    # that no producer emits. Measured live when it was removed: #551 counted 0
+    # of 1 -- a completed, marked review registering as never having happened,
+    # so the cap never advanced and every push re-reviewed at full price.
+    local body
+    body="$(sed -n '/^review_report_count()/,/^}/p' "$lib")"
+    [[ -n "$body" ]] || log_fail "could not extract review_report_count() from common.sh"
+    grep -q 'startswith(\\"\*\*Claude finished' <<<"$body" ||
+        log_fail "review_report_count() no longer keys on the **Claude finished header, which is the producer constant claude-review-gate.sh writes verbatim"
+    if grep -qE 'json:review-findings|### Review' <<<"$body"; then
+        log_fail "review_report_count() has regained a content qualifier; that undercounts real reviews and makes the cap unreachable -- exclude on something the producer emits on purpose, not on its prose"
+    fi
+    log_pass "review_report_count() is defined once, in common.sh, and keys on the header alone"
+}
+
 test_review_status_has_workflow_dispatch_with_pr_number() {
     local wf="$REPO_ROOT/.github/workflows/review-status.yml"
     grep -qE '^  workflow_dispatch:[[:space:]]*$' "$wf" ||
@@ -1172,6 +1202,7 @@ with_temp_dir test_unreadable_issue_comments_fail_closed
 
 test_report_prefix_is_shared_with_the_pipeline
 test_reply_thresholds_match_across_both_gates
+test_review_report_count_is_shared_and_unqualified
 with_temp_dir test_report_without_fence_or_heading_blocks
 with_temp_dir test_report_answered_passes
 with_temp_dir test_report_bot_self_reply_does_not_count
