@@ -39,7 +39,12 @@ printf '%s\n' "$OUTPUT"
 # The harness ends with "  passed=<n> failed=<m>". Parse BOTH: trusting the exit
 # code alone is what lets a harness that executed nothing look identical to one
 # that executed everything and passed.
-SUMMARY=$(grep -oE 'passed=[0-9]+ failed=[0-9]+' <<<"$OUTPUT" | tail -1)
+# `|| true` is required, not decorative: under `set -eo pipefail` a grep that
+# matches nothing aborts this assignment, so the explicit empty-check below
+# would never be reached and the script would die with no diagnostic at all --
+# the exact silent failure this gate exists to prevent, in the gate's own
+# wrapper. With it, an absent summary reaches the check and gets named.
+SUMMARY=$(grep -oE 'passed=[0-9]+ failed=[0-9]+' <<<"$OUTPUT" | tail -1 || true)
 if [[ -z "$SUMMARY" ]]; then
     echo "FAIL: could not find the harness summary line — it may have changed" >&2
     echo "shape, in which case this gate is no longer reading its result." >&2
