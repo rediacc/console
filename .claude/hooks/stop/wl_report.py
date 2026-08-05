@@ -185,6 +185,30 @@ def _fit(obj):
     return obj
 
 
+def is_phantom(agent_type, transcript):
+    """Is this SubagentStop something other than a finished sub-agent?
+
+    THE LOOP THIS CLOSES, and it inverted the feature. `SubagentStop` also fires
+    for the session's own main-loop turns, which the design never modelled. Each
+    such turn was captured as a "report"; the waiter saw a new report and fired;
+    the session spent a turn reading and re-arming; THAT turn was captured; the
+    waiter fired again. Two consecutive firings served the lead its own session
+    summary three minutes apart. It does not converge, and every cycle costs the
+    exact turn the waiter exists to save.
+
+    REJECTS ONLY WHEN BOTH SIGNALS FAIL, which is the safe direction and is the
+    opposite of over-strict. A real agent whose transcript has not flushed yet
+    still has a type; a hypothetical typeless agent kind still has a transcript.
+    Only the phantom class fails both.
+
+    Measured over the live store before choosing: 181 records partition exactly
+    181 = 44 (no type, no transcript) + 137 (type, transcript). Not one mixed
+    case. And across 1885 real `*.meta.json` sidecars, ZERO lack `agentType`, so
+    type-emptiness does not exclude any real agent kind that exists today.
+    """
+    return not str(agent_type or "").strip() and not _resolves(transcript)
+
+
 def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
     """Parseable index lines, oldest first. An UNPARSEABLE line is skipped, never
     fatal -- same rule every `.requests` reader follows, and the reason a crash
@@ -205,14 +229,22 @@ def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
             p.read_text(encoding="utf-8", errors="replace").splitlines()
     except OSError:
         return out
+    retired = set()
     for line in lines:
         try:
             ev = json.loads(line)
         except ValueError:
             continue
-        if isinstance(ev, dict) and ev.get("ev") == "report" and ev.get("id"):
+        if not isinstance(ev, dict) or not ev.get("id"):
+            continue
+        if ev.get("ev") == "retire":
+            # APPENDED, never edited. Retirement keeps the log append-only, which
+            # is what makes the lock-free single-write design sound; rewriting
+            # lines to remove them would give that up for a tidier file.
+            retired.add(str(ev["id"]))
+        elif ev.get("ev") == "report":
             out.append(ev)
-    return out
+    return [e for e in out if str(e["id"]) not in retired]
 
 
 def reader_id(explicit=None):
@@ -322,6 +354,8 @@ def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
     rid = short_id(agent_id)
     if not rid:
         return None
+    if is_phantom(agent_type, transcript):
+        return None  # a main-loop turn, not a sub-agent report; see is_phantom
     for ev in read_index(store):
         if str(ev["id"]) == rid:
             return None
@@ -755,7 +789,7 @@ def prune(store):
 # The verbs main() dispatches on. Exported so worklist.py's `--reports` door can
 # tell a MODE from a MODIFIER without duplicating the list.
 MODES = ("--subagent-stop", "--session-start", "--post-compact",
-         "--list", "--show", "--read", "--scan")
+         "--list", "--show", "--read", "--scan", "--retire-phantoms")
 
 
 def _hook_path():
@@ -767,7 +801,7 @@ def main(argv):
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
         print("usage: wl_report.py --subagent-stop | --session-start | --post-compact"
               " | --list [--unread|--all] [--as <me>] | --show <id>"
-              " | --read <me> <id>... | --scan",
+              " | --read <me> <id>... | --scan | --retire-phantoms [--dry-run]",
               file=sys.stderr)
         return 2
     mode = argv[0]
@@ -865,6 +899,37 @@ def main(argv):
         if not marked:
             return 2
         print("marked %d report(s) read" % marked)
+        return 0
+
+    if mode == "--retire-phantoms":
+        # One-off (and re-runnable) cleanup for records captured before the
+        # phantom filter existed. Appends a `retire` event per offender; the
+        # report lines themselves are never touched.
+        dry = "--dry-run" in argv[1:]
+        entries = read_index(store, None)
+        doomed = [e for e in entries if is_phantom(e.get("type"), e.get("transcript"))]
+        if not doomed:
+            print("nothing to retire (%d live record(s))" % len(entries))
+            return 0
+        for e in doomed:
+            print("%s %-10s %s%s" % (
+                e["id"], e.get("agent") or "?",
+                "[would retire] " if dry else "[retired] ",
+                (e.get("title") or "")[:70]))
+            if not dry:
+                _append_line(index_path(store), {
+                    "ev": "retire", "id": e["id"], "at": C.stamp_now(),
+                    "why": "phantom: main-loop turn, not a sub-agent report",
+                })
+                body = store / str(e.get("body") or "")
+                try:
+                    if body.is_file():
+                        body.unlink()
+                except OSError:
+                    pass
+        print("%s %d of %d record(s); %d real report(s) untouched"
+              % ("would retire" if dry else "retired", len(doomed), len(entries),
+                 len(entries) - len(doomed)))
         return 0
 
     if mode == "--scan":
