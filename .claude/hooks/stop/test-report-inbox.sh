@@ -415,7 +415,7 @@ assert_has "12b the good agent sorted AFTER the poison is still indexed" "$SCAN1
 assert_eq "12b both agents indexed; the bad one costs only itself" \
     "$(wc -l <"$T/store/index.jsonl" | tr -d ' ')" "2"
 assert_has "12b the unreadable transcript indexes as silent, not as an abort" \
-    "$(cat "$T/store/index.jsonl")" '"silent":true' 
+    "$(cat "$T/store/index.jsonl")" '"silent":true'
 
 echo "== 13. scan skips a still-running agent =="
 scratch
