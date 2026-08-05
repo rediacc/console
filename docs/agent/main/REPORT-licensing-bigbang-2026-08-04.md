@@ -192,7 +192,10 @@ each cost a CI round to find:
    denied`. The fallback the code already contains never gets reached. Proof it was
    selected: a keyctl error surfaced at all, which is impossible if the probe had
    thrown. Real users on keyring-less or restricted Linux boxes hit the same wall,
-   and see an "OS keyring" error the fallback exists to prevent.
+   and see an "OS keyring" error the fallback exists to prevent. MECHANISM CONFIRMED
+   empirically 2026-08-05: a runner lets `keyctl add` SUCCEED and denies the READ
+   (`keyctl pipe`). The probe exercises a permitted operation while the operation the
+   code actually depends on is the denied one.
 
 These four share a MECHANISM, not merely a resemblance, and the mechanism is the
 useful part: in every case the operator's machine HAS the thing — llvm-strip
@@ -245,9 +248,11 @@ own environment is the one place that lie is never exposed.
   `selectBackend()` (:269-292) probes with `keyctl show @u` and falls back to the
   existing `FileStorage` only if that throws; on a GitHub runner it exits zero while
   the keyring is unusable, so `KeyctlStorage` is chosen and dies at `keyctl add` with
-  `keyctl_read_alloc: Permission denied`. Real users on restricted or keyring-less
-  Linux hit the same wall and see an "OS keyring" error the fallback was written to
-  prevent. NOT fixed deliberately: the obvious cure (an honest add/read/unlink
+  `keyctl_read_alloc: Permission denied`. Confirmed empirically 2026-08-05: on a
+  runner `keyctl add` SUCCEEDS and `keyctl pipe` is DENIED, so any probe that tests
+  the write path reports usable while the read path — the one `deriveCek` needs — is
+  not. Real users on restricted or keyring-less Linux hit the same wall and see an
+  "OS keyring" error the fallback was written to prevent. NOT fixed deliberately: the obvious cure (an honest add/read/unlink
   round-trip probe) can false-negative, and a false negative silently downgrades a
   user from the kernel keyring to a 0600 file on disk — a security-posture change
   that should be made in daylight, verified on a box with a working `keyctl`, which
