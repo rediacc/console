@@ -68,6 +68,7 @@ interface ServerInfo {
   e2e?: { keys?: { keyId: string; publicKeySpki: string }[] };
   apiVersion?: number;
   environment?: string;
+  updateChannel?: string;
 }
 
 async function getServerInfo(): Promise<ServerInfo> {
@@ -127,16 +128,42 @@ async function main(): Promise<void> {
   // Step 2: Server-info + E2E key
   let serverKey: CryptoKey;
   let keyId: string;
+  let serverInfo: ServerInfo;
   try {
-    const info = await getServerInfo();
-    if (!info.e2e?.keys?.length) throw new Error('No E2E keys in server-info');
-    const key = info.e2e.keys[0];
+    serverInfo = await getServerInfo();
+    if (!serverInfo.e2e?.keys?.length) throw new Error('No E2E keys in server-info');
+    const key = serverInfo.e2e.keys[0];
     serverKey = await importX25519PublicKey(key.publicKeySpki);
     keyId = key.keyId;
-    ok(`Server-info (E2E key: ${keyId}, env: ${info.environment})`);
+    ok(`Server-info (E2E key: ${keyId}, env: ${serverInfo.environment})`);
   } catch (e) {
     fail('Server-info', e);
     process.exit(1);
+  }
+
+  // Step 2b: the preview must not identify as production.
+  //
+  // ASSERTED, not printed, because printing is precisely how this stayed broken.
+  // envSchema defaults ENVIRONMENT to 'production' and nothing set it for
+  // preview deploys, so every PR preview reported environment 'production' and
+  // updateChannel 'stable'. The line above printed that wrong value on every
+  // single run and nobody read it. Meanwhile the same worker rewrites the
+  // install.sh it serves to channel pr-N, so 'stable' here would send a CLI
+  // installed from this hostname to a different channel on its first update.
+  try {
+    if (serverInfo.environment !== 'preview') {
+      throw new Error(`environment is "${serverInfo.environment}", expected "preview"`);
+    }
+    // A null channel is not this check's business: Step 7 below already reports
+    // an unparseable PREVIEW_URL once, and comparing against null here would
+    // report the same fault a second time in a much more confusing shape.
+    const expected = extractChannel(PREVIEW_URL);
+    if (expected !== null && serverInfo.updateChannel !== expected) {
+      throw new Error(`updateChannel is "${serverInfo.updateChannel}", expected "${expected}"`);
+    }
+    ok(`Preview identity (environment: preview, updateChannel: ${serverInfo.updateChannel})`);
+  } catch (e) {
+    fail('Preview identity', e);
   }
 
   // Step 3: License status via tunnel
