@@ -407,6 +407,20 @@ drill_summary() {
         printf '  %bdrill %s FAILED%b\n' "$RED" "$DRILL_NAME" "$NC"
         return 1
     fi
+
+    # A run that asserted NOTHING is not a pass, and must not print the word a
+    # dashboard or a grep for PASSED will find. A declared skip exits 0 on
+    # purpose -- the caller has said in advance why the environment cannot host
+    # this drill -- but "0 assertions: 0 passed, 0 failed / PASSED" reads as
+    # proof to anyone who did not scroll up to the declaration, which is the
+    # vacuous-green shape these drills exist to catch. Say SKIPPED instead and
+    # keep the exit code.
+    if [[ "$DRILL_COUNT" -eq 0 ]]; then
+        printf '  %bdrill %s SKIPPED%b (0 assertions ran — nothing was proven)\n' \
+            "$YELLOW" "$DRILL_NAME" "$NC"
+        return 0
+    fi
+
     printf '  %bdrill %s PASSED%b\n' "$GREEN" "$DRILL_NAME" "$NC"
     return 0
 }
