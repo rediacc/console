@@ -5332,19 +5332,33 @@ setup
 brief_now
 hand_now
 # A projects store with a teammate transcript that is STALE (hours old).
-python3 - "$BASE" <<'MKSTORE'
+python3 - "$BASE" "$SID" <<'MKSTORE'
 import json, os, pathlib, re, sys, time
 B = pathlib.Path(sys.argv[1])
-proj = B / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(B / "proj")) / "s1" / "subagents"
-proj.mkdir(parents=True)
-for name, age_min in (("oldmate", 600),):
+SID = sys.argv[2]
+root = B / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(B / "proj"))
+def mate(sess, name, age_min):
+    d = root / sess / "subagents"
+    d.mkdir(parents=True, exist_ok=True)
     aid = "a%s-1111222233334444" % name
-    (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
+    (d / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
         {"agentType": name, "name": name, "taskKind": "in_process_teammate"}))
-    j = proj / ("agent-%s.jsonl" % aid)
+    j = d / ("agent-%s.jsonl" % aid)
     j.write_text(json.dumps({"type": "assistant", "message": {"content": []}}) + "\n")
     old = time.time() - age_min * 60
     os.utime(j, (old, old))
+# THIS session's own teammate, stale by hours: the roster is genuinely dead.
+# The directory is named for the SESSION ID, which is the real convention --
+# it used to be a literal "s1", which meant the scoped lookup could not resolve
+# and the case was really exercising the unscoped glob.
+mate(SID, "oldmate", 600)
+# A DIFFERENT session in the same project, with a FRESH teammate. This is the
+# cross-session contamination the review found: unscoped, this one transcript
+# made fresh > 0 for EVERY session in the project, so a session whose own roster
+# was 100% phantom was told it still had live workers and the auto-reap never
+# fired. Concurrent sessions in one tree are routine here, so this was the
+# common case rather than an edge one.
+mate("bystander-9999-8888-7777-666666666666", "freshmate", 0)
 MKSTORE
 export CLAUDE_CONFIG_DIR="$BASE/claude"
 BG='[{"id":"tm1","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."},{"id":"tm2","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."}]'
@@ -5382,8 +5396,13 @@ fi
 # the certainty branch, not a blanket "teammates never count".
 python3 -c '
 import glob, os, sys, time
-p = glob.glob(sys.argv[1] + "/claude/projects/*/*/subagents/*.jsonl")[0]
-os.utime(p, (time.time(), time.time()))' "$BASE"
+# THIS SESSIONS OWN transcript, not glob()[0]. With a bystander session in the
+# fixture, [0] could pick the other sessions file -- which is already fresh --
+# leaving this sessions mate stale, so the control would silently assert the
+# opposite of what it means.
+hits = glob.glob(sys.argv[1] + "/claude/projects/*/" + sys.argv[2] + "/subagents/*.jsonl")
+assert hits, "control fixture missing: no transcript for this session"
+os.utime(hits[0], (time.time(), time.time()))' "$BASE" "$SID"
 python3 - "$WL" <<'SEED'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
