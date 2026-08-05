@@ -1360,6 +1360,106 @@ def handle_post_compact(event):
     )
 
 
+PHANTOM_MIN = float(os.environ.get("WORKLIST_PHANTOM_MIN", "30"))
+# Writers in the event log that are not identities at all. `compact` is stamped
+# by S.compact when it rewrites history; the others are the store's own
+# fallbacks. Naming them here beats inferring intent from shape.
+PHANTOM_NOT_IDENTITIES = frozenset({"compact", "unknown", "md"})
+
+
+def phantom_identities(worklist, session_id, fold, reqs):
+    """([(prefix, events, age_min, owns)], blind_reason) for identities that
+    WRITE to this store but have never stopped.
+
+    THE BACKSTOP for what the CLI check cannot reach: history already written,
+    and the deliberate hole where the environment cannot name the caller. Both
+    are real -- the incident put 240 events into the live store under an
+    identity that never existed, and a plain operator terminal has no session id
+    to check against.
+
+    THE SIGNATURE IS EXACT AND BINARY. `<worklist>.lastevent-<prefix>.json` is
+    written at exactly ONE place, inside run_stop below; worklist.py's --lease
+    and --reap only READ it. So an identity with no `.lastevent-` file is one
+    for which a Stop hook has NEVER RUN, and a real session always stops. The
+    byte-size asymmetry on `.state-` (the CLI writes only state_sig, the hook
+    writes the whole document) says the same thing less reliably; this is the
+    better test.
+
+    FOUR GATES, and each one is a false positive that was measured in the live
+    store rather than imagined:
+      1. not me                -- obviously
+      2. no `.lastevent-`      -- the signature above
+      3. older than PHANTOM_MIN -- a brand-new session writes before its first
+         stop, and that window is not a phantom
+      4. owns OPEN work        -- `state-spotchk1`, `state-spotchk2` and a
+         session that died before its first stop all sit in the live store with
+         no `.lastevent-`. A phantom that owns nothing is not worth a word.
+
+    THE INSTRUMENT CONTROL IS INSIDE THE CHECK. If the store holds ZERO
+    `.lastevent-*` files the test is blind -- a wiped TMPDIR, a fresh worktree --
+    and it would otherwise indict every identity at once. It reports the
+    BLINDNESS in words and flags nobody. A check that cannot fail must say so.
+    """
+    try:
+        seen = list(worklist.parent.glob(worklist.stem + ".lastevent-*.json"))
+    except OSError:
+        return [], ""
+    if not seen:
+        return [], (
+            "no .lastevent-*.json exists in %s, so the phantom-identity check "
+            "is BLIND this stop (it recognises a phantom by the ABSENCE of one, "
+            "and with none present every identity would look like one). Nothing "
+            "is being flagged. A wiped TMPDIR is the usual cause."
+            % worklist.parent
+        )
+    stopped = {p.name.split(".lastevent-")[-1][:-5] for p in seen}
+    counts, first_at = {}, {}
+    try:
+        raw = S.events_path(worklist).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return [], ""
+    for line in raw.splitlines():
+        if not line.strip():
+            continue
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        by = str(ev.get("by") or "")
+        if not by or by in PHANTOM_NOT_IDENTITIES or not C.PREFIX_RE.match(by):
+            continue
+        counts[by] = counts.get(by, 0) + 1
+        at = ev.get("at") or ""
+        if by not in first_at or (at and at < first_at[by]):
+            first_at[by] = at
+    out = []
+    for by, n in sorted(counts.items()):
+        if C.same_session(by, session_id) or by[:8] in stopped:
+            continue
+        age = C.stamp_age_min(first_at.get(by, ""))
+        if age is None or age < PHANTOM_MIN:
+            continue
+        owns = []
+        n_items = sum(
+            1 for rec in fold.items
+            if rec["state"] in (" ", "?", ">") and rec["owner"] is not None
+            and C.same_session(rec["owner"], by)
+        )
+        if n_items:
+            owns.append("%d open item(s)" % n_items)
+        n_reqs = sum(
+            1 for r in (reqs or {}).values()
+            if not r["acked"] and not wl_requests.request_resolved(r)
+            and (C.same_session(r["from"], by) or C.same_session(r["to"], by))
+        )
+        if n_reqs:
+            owns.append("%d open request(s)" % n_reqs)
+        if not owns:
+            continue
+        out.append((by, n, age, " and ".join(owns)))
+    return out, ""
+
+
 # ---- the Stop battery -------------------------------------------------------
 
 def run_stop(event, event_ok, worklist, hook_file):
@@ -2281,6 +2381,33 @@ def run_stop(event, event_ok, worklist, hook_file):
                 2,
             )
     except Exception:  # noqa: BLE001 -- an advisory surface must never wedge a stop
+        pass
+    # v19 L2: identities that write to this store but have never stopped. The
+    # CLI check refuses them at the door from now on; this is the backstop for
+    # what it cannot reach -- history already written, and the deliberate hole
+    # where the environment cannot name the caller.
+    #
+    # PRIORITY 1, not 2, and the reason is mechanical: OUTQ_PER_STOP defaults to
+    # 1 and outq_drain is highest-priority-first, so a priority-2 note can queue
+    # behind others for many stops. An identity split is not something to
+    # ration. REPORT-ONLY: this runs on every session's Stop path and the repair
+    # is not always this session's to make.
+    try:
+        _phantoms, _blind = phantom_identities(worklist, session_id, fold, all_reqs)
+        _wp = str(pathlib.Path(hook_file).resolve())
+        if _blind:
+            outq_add(worklist, session_id, state_doc, "phantom-blind",
+                     M.N_PHANTOM_BLIND % _blind, 1)
+        elif _phantoms:
+            _rows = "\n".join(
+                "    %-12s %4d event(s), first seen %dm ago, owns %s"
+                % (p, n, age, owns) for p, n, age, owns in _phantoms
+            )
+            outq_add(
+                worklist, session_id, state_doc, "phantom-identity",
+                M.N_PHANTOM_IDENTITY % (len(_phantoms), _rows, _wp, me8), 1,
+            )
+    except Exception:  # noqa: BLE001 -- a backstop must never wedge a stop
         pass
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":

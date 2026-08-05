@@ -379,6 +379,53 @@ N_UNREAD_REPORTS = (
     "    mark read: python3 %s --read %s <id> [<id>...]"
 )
 
+CLI_REASSIGN_USAGE = (
+    "usage: --reassign <my-prefix> <phantom-prefix>\n"
+    "Moves OPEN items and OPEN requests off an identity that never stopped "
+    "(no .lastevent-<prefix>.json) and onto you. History is not rewritten: the "
+    "events still record who wrote them.\n"
+)
+
+CLI_REASSIGN_ALIVE = (
+    "REFUSED: %s has a .lastevent-%s.json, so a Stop hook HAS run under it -- "
+    "it is a real session, not a phantom. Taking its open work would be exactly "
+    "the thing CLAUDE.md forbids: never tick or remove an item that is not "
+    "yours. If it is genuinely dead, its items age into the liveness ladder and "
+    "are reported there; ask it, or ask the operator.\n"
+)
+
+CLI_REASSIGN_DONE = (
+    "reassigned %s -> %s\n"
+    "  items:    %s\n"
+    "  requests: %s\n"
+    "Both logs were APPENDED to, never rewritten, so the history still says the "
+    "phantom wrote them -- only the ownership and the routing moved.\n"
+    "Check the inbox you could not see before:\n"
+    "    worklist.py --poll %s\n"
+    "    worklist.py --list --open %s"
+)
+
+N_PHANTOM_IDENTITY = (
+    "PHANTOM IDENTITY IN THE STORE (%d). These prefixes WRITE here and have "
+    "never stopped -- no .lastevent-<prefix>.json exists for any of them, and "
+    "that file is written on every Stop hook, so a real session always has one. "
+    "The commonest cause is a session that mistyped its own <me> once and kept "
+    "using it: writes and reads then key off the same wrong string, every call "
+    "succeeds, and the session ends up with two inboxes and reads only one. "
+    "That cost a peer's message 34 hours here.\n%s\n"
+    "    take the work over:  python3 %s --reassign %s <prefix>\n"
+    "It moves OPEN items and OPEN requests only; the history stays truthful "
+    "about who wrote what. If you know the prefix is a live peer that simply "
+    "has not stopped yet, ignore this -- it is report-only and never blocks."
+)
+
+N_PHANTOM_BLIND = (
+    "PHANTOM-IDENTITY CHECK IS BLIND. %s\n"
+    "Said out loud rather than passed over in silence: a check with no data "
+    "reads exactly like a check with nothing to report, and this repo has "
+    "found six that were the former while looking like the latter."
+)
+
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
     "section. Nothing was written; the previous STATE.md is untouched.\n"
@@ -864,6 +911,17 @@ CLI_ASK_OPERATOR_NO_DEFAULT = (
     "up. Re-ask with '... DEFAULT: <what you will do if no answer arrives>'."
 )
 
+CLI_ASK_UNKNOWN_RECIPIENT = (
+    "REFUSED: %s has never briefed in this store, so a request addressed there "
+    "lands in an inbox nobody reads. That is not hypothetical -- peers asked an "
+    "identity that never existed and their request sat until it auto-escalated "
+    "34 hours later with 'recipient silent for 2062min'.\n"
+    "Sessions that HAVE briefed here: %s\n"
+    "Use one of those, '*' to broadcast to every live session, or 'operator' "
+    "for the human. If you believe that session is real but silent, it has "
+    "never run --brief; ask it to, or broadcast."
+)
+
 CLI_BODY_REFUSED = (
     "%s is %d chars, limit %d. REFUSED rather than silently truncated: "
     "the tail is often the crucial part, and a clipped payload that "
@@ -1290,6 +1348,15 @@ Session state:
 
 Maintenance:
   --compact                     drop tombstones and fold the event log
+  --reassign <me> <phantom>     take over the OPEN items and requests of an
+                                identity that never stopped (the Stop hook
+                                names one when it finds one); history is
+                                appended to, never rewritten
+
+Every <me> is checked against this process's real session id
+(CLAUDE_CODE_SESSION_ID) and a mismatch is REFUSED, because writing as one
+identity and reading as another gives you two inboxes and neither is complete.
+To act deliberately as another session, declare it: WORKLIST_SESSION_ID=<id>.
 
 Item states: `- [ ]` open, `- [x]` done, `- [?]` deferred with a DEFAULT,
 `- [>]` in-flight (carries `until:<ISO8601>Z` and `worker:<id>`). Lines

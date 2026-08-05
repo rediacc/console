@@ -192,6 +192,36 @@ def _emit(obj):
     sys.exit(0)
 
 
+def _die2(msg):
+    """The `sys.exit(2)` misuse exit the top-level verbs use, as a callable, so
+    _identity_or_die reports the same way whichever verb called it."""
+    sys.stderr.write(msg.rstrip("\n") + "\n")
+    sys.exit(2)
+
+
+def _identity_or_die(me, die):
+    """Refuse a `<me>` that this process cannot be. See wl_core.check_me for the
+    incident that bought this.
+
+    Applied at EVERY `<me>` parse site, and the completeness is the point: the
+    defect's shape is "a rule applied to some call sites and not others", so a
+    partial rollout reproduces the bug in whichever verbs were missed. The
+    suite's anti-vacuity case derives the verb list from this source and fails
+    when a verb it finds has no coverage, so verb 14 cannot silently reopen it.
+
+    A BROKEN wl_core DEGRADES TO PASS rather than crashing. --brief and --loop
+    are deliberately self-contained (a broken sibling must not take the roster
+    or the loop channel down), and an unresolvable identity is already the
+    documented "cannot verify, so say nothing" case. The Stop path still fails
+    closed on the same broken module a few lines below.
+    """
+    if "wl_core" in _BROKEN:
+        return
+    ok, msg = C.check_me(me)
+    if not ok:
+        die(msg)
+
+
 def _read_event():
     try:
         ev = json.load(sys.stdin)
@@ -308,6 +338,12 @@ def _item_cli(argv, worklist):
             # GUIDE_TRUNCATED sends people to "for the full slice". Inheriting
             # the cap here made that advice a loop.
             me = argv[2] if len(argv) > 2 else ""
+            # Checked even though it is OPTIONAL and read-only. The incident's
+            # writes were wrong and its reads were right; the next one could be
+            # the other way round, and a session reading the wrong half's slice
+            # sees an empty, reassuring, false picture.
+            if me:
+                _identity_or_die(me, die)
             root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
             print(CK.guided_slice(fold, me or None, None, me or None, root, full=True))
             return
@@ -330,6 +366,7 @@ def _item_cli(argv, worklist):
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
     if mode == "--add":
         text = " ".join(argv[2:]).replace("\n", " ").strip()
         if not text:
@@ -449,6 +486,81 @@ def _item_cli(argv, worklist):
     die("unknown item mode %s" % mode)
 
 
+def _reassign_cli(argv):
+    """`--reassign <me> <phantom-prefix>`: take over a dead identity's work.
+
+    THE REPAIR VERB for what the identity check cannot heal by refusing: items
+    and requests already written under a `<me>` that was never a session. The
+    Stop hook's phantom backstop points here, and a backstop with no fix verb is
+    a nag.
+
+    THREE RULES, each one guarding a way this could become a weapon:
+
+    * `<me>` faces the same identity check as every other verb, so you cannot
+      reassign work TO a fiction and make the problem worse.
+    * `<phantom>` must have no `.lastevent-<prefix>.json` -- it must never have
+      stopped. This is what stops --reassign becoming a way to steal a LIVE
+      peer's items, which CLAUDE.md forbids in as many words ("never tick or
+      remove an item that is not yours").
+    * OPEN items and OPEN requests only. History is left exactly as it was:
+      the phantom really did write those events, and a log that lies about that
+      is worse than one that is untidy.
+
+    Appends `reassign` events; nothing is ever rewritten. Both logs are
+    append-only and fold-derived, which is what makes the lock-free design
+    sound, and the fold arms that read these events live beside the events they
+    interpret (wl_store._fold_events, wl_requests.read_requests).
+    """
+    if len(argv) < 3:
+        sys.stderr.write(M.CLI_REASSIGN_USAGE)
+        sys.exit(2)
+    me, phantom = argv[1], argv[2]
+    if not C.PREFIX_RE.match(me) or not C.PREFIX_RE.match(phantom):
+        sys.stderr.write(M.CLI_REASSIGN_USAGE)
+        sys.exit(2)
+    _identity_or_die(me, _die2)
+    if C.same_session(me, phantom):
+        _die2("%s is you; there is nothing to take over" % phantom)
+    worklist = C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    if worklist.with_suffix(".lastevent-%s.json" % phantom[:8]).exists():
+        _die2(M.CLI_REASSIGN_ALIVE % (phantom, phantom))
+    fold = S.load(worklist, sync=True)
+    stamp = C.stamp_now()
+    moved_items = [
+        rec["id"] for rec in fold.items
+        if rec["state"] in (" ", "?", ">") and rec["owner"] is not None
+        and C.same_session(rec["owner"], phantom)
+    ]
+    if moved_items:
+        S.append_events(worklist, [
+            {"ev": "reassign", "id": rid, "at": stamp, "by": me, "o": me,
+             "from_o": phantom}
+            for rid in moved_items
+        ])
+    reqs = R.read_requests(worklist)
+    moved_reqs = []
+    for r in sorted(reqs.values(), key=lambda x: x["at"]):
+        if r["acked"] or R.request_resolved(r):
+            continue
+        ev = {"ev": "reassign", "id": r["id"], "at": stamp, "by": me}
+        if C.same_session(r["from"], phantom):
+            ev["from"] = me
+        if C.same_session(r["to"], phantom):
+            ev["to"] = me
+        if "from" in ev or "to" in ev:
+            R.append_request_event(worklist, ev)
+            moved_reqs.append(r["id"])
+    if not moved_items and not moved_reqs:
+        print("nothing open under %s; the history stays as it is" % phantom)
+        return
+    print(M.CLI_REASSIGN_DONE % (
+        phantom, me,
+        ", ".join("#" + i for i in moved_items) or "(none)",
+        ", ".join("#" + i for i in moved_reqs) or "(none)",
+        me, me,
+    ))
+
+
 def main():
     # FIRST STATEMENT, DELIBERATELY. `claude -p` runs this hook again; the guard
     # is the only thing that works (--settings with empty hooks does not).
@@ -491,6 +603,7 @@ def main():
         # defence against session B silently deleting session A's next action.
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         prefix = sys.argv[2]
+        _identity_or_die(prefix, _die2)
         root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         branch = C.git_branch(root)
         if not branch:
@@ -597,6 +710,7 @@ def main():
             sys.exit(2)
         # `worklist.py --loop <prefix> <next-ISO8601Z> <count> <label...>`
         # Self-contained append (works without siblings, like --brief).
+        _identity_or_die(sys.argv[2], _die2)
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         with open(wl.with_suffix(".loop"), "a", encoding="utf-8") as fh:
             fh.write(
@@ -621,6 +735,11 @@ def main():
         import datetime
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         prefix = sys.argv[2]
+        # THE ROSTER. `.sessions` is the registry of who exists here -- it is
+        # what --ask's recipient check reads and what the liveness ladder counts
+        # -- and until now an unvalidated command-line string populated it. A
+        # phantom identity that briefs itself looks exactly like a real session.
+        _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
         stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(wl.with_suffix(".sessions"), "a", encoding="utf-8") as fh:
@@ -652,6 +771,7 @@ def main():
         if not C.PREFIX_RE.match(me or "") or not ids:
             sys.stderr.write(M.CLI_REAP_USAGE)
             sys.exit(2)
+        _identity_or_die(me, _die2)
         wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
         known = {}
         try:
@@ -674,6 +794,9 @@ def main():
               "session. Nothing was killed -- if one is in fact alive it will "
               "still run; only this session's supervision of it stops."
               % (len(ids), " ".join(ids)))
+        return
+    if sys.argv[1:2] == ["--reassign"]:
+        _reassign_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--reports"]:
         import wl_report
