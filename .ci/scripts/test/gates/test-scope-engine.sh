@@ -342,6 +342,57 @@ process.stdout.write(v.usable + ":" + v.reason);
     assert_eq "$(verdict '{"conclusion":"failure","plan":{"mode":"full","reconciled":true}}')" \
         "false:not-green" "a red run is never a baseline"
 
+    # GREENLIGHT-ONLY REDUCTION, the defect that made this engine inert. A run
+    # whose every key either ran or carries greenlight evidence covered the
+    # work, whatever the aggregate label says; a run that skipped a key as
+    # out-of-scope did not, and case 1 still refuses it. Both plans below carry
+    # the identical `mode: "reduced"`, so only the per-key reading separates
+    # them -- which is the whole point of the pair.
+    local greenlit_plan='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "unit":{"run":true,"reason":"full"},
+      "renet":{"run":false,"reason":"greenlight:30968082228"}}}}'
+    assert_eq "$(verdict "$greenlit_plan")" "true:full-green-attested" \
+        "a run reduced ONLY by greenlight evidence is a usable baseline"
+    local scoped_plan='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "unit":{"run":true,"reason":"full"},
+      "renet":{"run":false,"reason":"out-of-scope"}}}}'
+    assert_eq "$(verdict "$scoped_plan")" "false:reduced-baseline" \
+        "a run that SCOPE-skipped a key is still not a baseline (case 1 intact)"
+    # And the reason string must be the real shape, not any string starting
+    # with the word: a hand-written 'greenlight:maybe' proves nothing.
+    local forged_plan='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "renet":{"run":false,"reason":"greenlight:probably-fine"}}}}'
+    assert_eq "$(verdict "$forged_plan")" "false:reduced-baseline" \
+        "a greenlight reason without an evidence run id does not count"
+    assert_eq "$(verdict '{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{}}}')" \
+        "false:reduced-baseline" "an empty jobs vector proves nothing"
+
+    # MALFORMED ENTRIES MUST READ AS "NOT COVERED", and the asymmetry is why
+    # this block exists. Reading garbage as coverage reduces a round on
+    # evidence nobody checked; reading it as a gap costs one full round. An
+    # earlier form of this predicate asked `run !== false`, and every case
+    # below answered COVERS under it -- the first one most dangerously,
+    # because a dropped `run` key beside an out-of-scope skip is exactly the
+    # scope-chaining case 1 forbids, wearing a shape that looked benign.
+    local no_run_key='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "renet":{"reason":"out-of-scope"}}}}'
+    assert_eq "$(verdict "$no_run_key")" "false:reduced-baseline" \
+        "an entry with NO run key is not coverage, whatever its reason says"
+    local string_false='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "renet":{"run":"false","reason":"out-of-scope"}}}}'
+    assert_eq "$(verdict "$string_false")" "false:reduced-baseline" \
+        "the STRING \"false\" is a malformed entry, not a truthy run"
+    local zero_run='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":{
+      "renet":{"run":0,"reason":"out-of-scope"}}}}'
+    assert_eq "$(verdict "$zero_run")" "false:reduced-baseline" \
+        "and so is 0: only a real boolean true is an executed key"
+    # An ARRAY is not the jobs map. Object.values would happily walk it, so the
+    # refusal has to be explicit rather than incidental.
+    local array_jobs='{"conclusion":"success","plan":{"mode":"reduced","reconciled":true,"jobs":[
+      {"run":true,"reason":"full"}]}}'
+    assert_eq "$(verdict "$array_jobs")" "false:reduced-baseline" \
+        "an array jobs vector is a shape no producer emits, so it covers nothing"
+
     moved() {
         node -e '
 const e = require(process.argv[1]);
@@ -448,6 +499,162 @@ test_resolve_baseline_needs_a_repo() {
     log_pass "a caller bug is reported, not absorbed into a full run"
 }
 
+# ---------------------------------------------------------------------------
+# THE CLASSIFICATION REGRESSION TABLE (2026-08-05).
+#
+# WHAT IT GUARDS, and why nothing above already did. Every case above tests the
+# engine's DECISION MACHINERY -- fail-closed on an unclassified path, the
+# baseline-coverage predicate, the walk's bounds. None of them pins the ANSWER
+# for a representative delta, which is the half the operator actually
+# experienced: "run 30983418337 ran the whole matrix for a commit that is
+# documentation". Add a surface to JOB_SURFACES, mistype a glob, or drop a
+# module mapping, and every case above stays green while docs-only silently
+# goes back to running eighteen jobs.
+#
+# SETS, NEVER COUNTS, wherever the expectation is a partial run. A count of 14
+# passes just as happily when the map swaps two keys for two others, which is
+# exactly the rot this table exists to catch.
+#
+# WHY IT IS CALLED LAST, which is load-bearing and not stylistic.
+# test-gate-anti-vacuity.sh registers THIS FILE with the pattern `closure`: run
+# against an empty fixture tree, the file must fail AND say "closure". That is
+# test_workflow_closure_is_computed_not_name_matched, seventh in the call order,
+# and log_fail exits on the first failure. A table placed ahead of it would fail
+# first on the empty tree with a message containing no "closure", quietly
+# retiring that registration. Verified by running the anti-vacuity gate before
+# and after this block was added.
+# ---------------------------------------------------------------------------
+
+# classify_verdict <path>... -> "<mode>|<total keys>|<sorted running keys>",
+# or a SENTINEL that can never equal an expectation.
+#
+# The sentinel is the whole point. A classification that produced nothing must
+# not read as "no keys to run": here that is the vacuity shape, and it fails
+# toward skipping everything. So a dead engine, unparseable bytes and a plan
+# with no job vector each answer with a distinct string rather than an empty
+# key list, and the `total` field means a zero-key row still has to prove it
+# saw all eighteen keys before finding none of them running.
+classify_verdict() {
+    local out
+    if ! out="$(printf '%s\n' "$@" | node "$ENGINE" --classify 2>/dev/null)" || [[ -z "$out" ]]; then
+        printf 'ENGINE-PRODUCED-NOTHING'
+        return 0
+    fi
+    printf '%s' "$out" | node -e '
+let raw = "";
+process.stdin.on("data", (d) => (raw += d)).on("end", () => {
+  let p;
+  try { p = JSON.parse(raw); } catch { process.stdout.write("PLAN-UNPARSEABLE"); return; }
+  const jobs = p && p.jobs;
+  if (!jobs || typeof jobs !== "object" || Array.isArray(jobs)) {
+    process.stdout.write("PLAN-HAS-NO-JOB-VECTOR");
+    return;
+  }
+  const keys = Object.keys(jobs);
+  const running = keys.filter((k) => jobs[k].run === true).sort();
+  process.stdout.write([p.mode, keys.length, running.join(" ")].join("|"));
+});'
+}
+
+# expect_classify <label> <"mode|total|keys"> <path>...
+#
+# Named expect_ rather than assert_ deliberately: the assertion census at the
+# foot of this file counts lines matching ^\s*assert_, so a helper called
+# assert_classify would count its own definition and inflate the total by one.
+expect_classify() {
+    local label="$1" expected="$2"
+    shift 2
+    local actual
+    actual="$(classify_verdict "$@")"
+    # Spelled as an if rather than `[[ ... ]] && return 0`: under this file's
+    # `set -e` the AND-list form happens to be safe (bash exempts every command
+    # in a && list but the last), and a reader should not have to know that to
+    # trust the failure path runs.
+    if [[ "$actual" == "$expected" ]]; then
+        return 0
+    fi
+    # An ACTIONABLE failure. A legitimate JOB_SURFACES change must be a
+    # one-line edit here, not a stare at two fourteen-item blobs looking for
+    # the difference: a regression test that is a puzzle to update is a
+    # regression test that gets suppressed instead of updated.
+    local want got missing unexpected
+    want="$(tr ' ' '\n' <<<"${expected##*|}" | sed '/^$/d' | sort -u)"
+    got="$(tr ' ' '\n' <<<"${actual##*|}" | sed '/^$/d' | sort -u)"
+    missing="$(comm -23 <(printf '%s\n' "$want") <(printf '%s\n' "$got") | tr '\n' ' ')"
+    unexpected="$(comm -13 <(printf '%s\n' "$want") <(printf '%s\n' "$got") | tr '\n' ' ')"
+    log_fail "$label: expected '$expected', got '$actual' (missing: ${missing:-none}| unexpected: ${unexpected:-none})"
+}
+
+test_representative_deltas_classify_to_pinned_verdicts() {
+    # Each partial set is named ONCE and reused by every row that expects it,
+    # so a legitimate map change edits one line rather than several rows. The
+    # sets are the measured truth as of 2026-08-05, taken from the real
+    # --classify path rather than read off JOB_SURFACES by hand.
+    local cli_keys="drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers fork_isolation install_methods ops package_tests unit update_flow"
+    local renet_keys="e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet update_flow"
+    local account_keys="account_e2e drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers fork_isolation ops"
+
+    # -- the rows that must skip the heavy matrix entirely -------------------
+    expect_classify "docs only" "reduced|18|" 'docs/ci-overhaul/06-progress.md'
+    expect_classify "agent tooling only" "reduced|18|" '.claude/commands/pr-babysit.md'
+    # THE REPORTED CASE, kept recognisable as the report it came from: the
+    # exact four paths of push 1d172438f..208c8a2d9, whose run 30983418337 ran
+    # all eighteen keys. A regression test for a real incident should be
+    # readable as that incident.
+    expect_classify "the reported push (run 30983418337)" "reduced|18|" \
+        '.claude/agents/pr-babysitter.md' \
+        '.claude/commands/pr-babysit.md' \
+        '.claude/hooks/stop/wl_judge.py' \
+        'docs/agent/main/REPORT-licensing-bigbang-2026-08-04.md'
+
+    # -- the rows that must run a specific, named set -----------------------
+    expect_classify "cli source" "reduced|18|$cli_keys" 'packages/cli/src/commands/repo.ts'
+    expect_classify "renet source" "reduced|18|$renet_keys" 'private/renet/pkg/license/keys.go'
+    expect_classify "account source" "reduced|18|$account_keys" 'private/account/src/index.ts'
+
+    # THE ROW THAT CATCHES AN OVER-EAGER SKIP, which is the direction that
+    # costs correctness rather than money: docs alongside one cli file must
+    # still run every cli key. An engine that let the docs classification win
+    # would pass every zero-key row above and be catastrophically wrong here.
+    expect_classify "MIXED docs + one cli file" "reduced|18|$cli_keys" \
+        'docs/ci-overhaul/06-progress.md' 'packages/cli/src/commands/repo.ts'
+
+    # -- the rows that must force full --------------------------------------
+    # Asserted STRUCTURALLY (mode, every key running, the pinned reason) rather
+    # than as a literal eighteen-name list. Naming all eighteen in three more
+    # rows would make a legitimate key addition an eighteen-line diff in a file
+    # that is not about the key list, and "every key runs" is the property that
+    # actually matters for a forced-full round.
+    local full_row
+    for full_row in \
+        '.github/workflows/ci.yml|workflow-closure:.github/workflows/ci.yml' \
+        '.audit-allowlist|root-manifest:.audit-allowlist' \
+        '.ci/lib/common.sh|harness:.ci/lib/common.sh'; do
+        local path="${full_row%%|*}" reason="${full_row##*|}"
+        printf '%s\n' "$path" | plan
+        assert_eq "$(pget 'p.mode')" "full" "$path forces full CI"
+        assert_eq "$(pget 'Object.values(p.jobs).every(j => j.run === true)')" "true" \
+            "and every key in the vector runs for $path"
+        assert_contains "$(pget 'p.full_reasons')" "$reason" \
+            "naming $reason as the reason"
+    done
+
+    # -- the block's own anti-vacuity control -------------------------------
+    # It cannot borrow this file's registered one: that fires seven tests
+    # earlier and never reaches here. So prove the sentinel is live, or every
+    # zero-key row above could be passing on an engine that ran at all.
+    local saved_engine="$ENGINE"
+    ENGINE="$WORK/definitely-not-an-engine.cjs"
+    assert_eq "$(classify_verdict 'docs/ci-overhaul/06-progress.md')" "ENGINE-PRODUCED-NOTHING" \
+        "a classification that could not run must never read as 'no keys to run'"
+    ENGINE="$saved_engine"
+    # CONTROL for the control: the real engine still answers, so the sentinel
+    # above is a dead engine rather than a helper stuck at its error string.
+    assert_eq "$(classify_verdict 'docs/ci-overhaul/06-progress.md')" "reduced|18|" \
+        "and the same call against the real engine answers normally"
+    log_pass "representative deltas classify to their pinned verdicts, as sets"
+}
+
 log_test "test-scope-engine"
 test_unclassified_path_fails_closed
 test_empty_delta_is_full_never_reduced
@@ -465,6 +672,15 @@ test_baseline_helpers_refuse_weak_baselines
 test_baseline_resolution_fails_open_on_every_defect
 test_resolve_baseline_needs_a_repo
 test_surface_table_is_self_validating
+# LAST, deliberately: see the block comment above classify_verdict. The
+# anti-vacuity registration for this file expects the empty-tree run to die in
+# the closure test, which is seventh.
+test_representative_deltas_classify_to_pinned_verdicts
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
+# The classification rows assert through expect_classify, which the census
+# above cannot see. Counted separately so the table cannot silently shrink
+# either. The trailing space keeps the helper's own definition out of the
+# count, so this is call sites and nothing else.
+echo "classification rows: $(grep -cE '^[[:space:]]*expect_classify ' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"

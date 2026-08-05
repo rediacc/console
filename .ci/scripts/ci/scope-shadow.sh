@@ -273,11 +273,19 @@ process.stdout.write(`${lines.join("\n")}\n`);
 # trail (the reconciler reads `run` and `preexisting_skip`, never `reason`, so
 # this annotates without changing any verdict).
 #
-# MODE FLIPS TO reduced, and that is a correctness requirement rather than
-# bookkeeping. scope-engine.cjs's attestPlan refuses a non-full plan as a
-# future baseline ('not-full-plan'); leaving mode at 'full' on a round that
-# greenlit its way out of a suite would let a LATER run adopt it as a full
-# baseline, which is the evidence-chaining failure that engine already refuses.
+# MODE FLIPS TO reduced, because the plan no longer describes a round that
+# executed everything and `mode` is what arms the reconcile gate downstream.
+#
+# It does NOT, since 2026-08-05, disqualify the run as a future baseline, and
+# the correction matters: `renet` and `account_e2e` closures change rarely, so
+# this flip fired on nearly every console run and every later walk then refused
+# its own parent as 'reduced-baseline'. Measured across 14 consecutive PR runs
+# (30944973190..30983418337), not one job was ever skipped by SCOPE. The
+# baseline reader now asks per key whether the work was covered -- executed, or
+# skipped on greenlight evidence that a different run executed the identical
+# closure green -- instead of reading this aggregate label. See
+# scope-engine.cjs's planCoverageIsFull. A key skipped as 'out-of-scope' still
+# covers nothing, so scope evidence still cannot chain (case 1).
 #
 # THE PARSE IS DELIBERATELY STRICT: only a line matching exactly
 # `run_<key>=false`, paired with an `evidence_<key>=<digits>` line, does

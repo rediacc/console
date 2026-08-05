@@ -1104,6 +1104,14 @@ LATER run adopt a round that greenlit its way out of a suite as a full
 baseline. That is the evidence-chaining failure the scope engine already
 refuses, arriving by a different door.
 
+> **Half-corrected on 2026-08-05.** The flip stays; the conclusion drawn from it
+> did not survive contact with the traffic. Because these two closures change
+> rarely, the flip fired on nearly every console run, so every later walk
+> refused its own parent and the engine never reduced a round at all. The
+> baseline reader now asks per key whether the work was COVERED rather than
+> reading this aggregate label. See "the scope engine had never reduced a
+> round" below.
+
 The kill switches need no new wiring. `FULL_CI` and the `full-ci` label
 short-circuit `scope-shadow.sh` before any of this runs, and the step is
 `pull_request`-only, so the nightly stays full by construction.
@@ -1636,3 +1644,217 @@ agent mode`. CI has no agent ancestor so the override is legitimate there, and s
 test 1 detects exactly this case and says so rather than failing obscurely eight tests
 later. The pre-flight's refusal text and exit code are therefore first proven on the
 operator's push.
+
+## 2026-08-05 -- the scope engine had never reduced a round, in five days live
+
+Reported as "run 30983418337 is running the whole test matrix for a commit that
+is documentation and agent tooling". The push `1d172438f..208c8a2d9` carried
+four files: `.claude/agents/pr-babysitter.md`, `.claude/commands/pr-babysit.md`,
+`.claude/hooks/stop/wl_judge.py`, and a report under `docs/agent/main/`. Every
+one classifies to the `docs` module, which appears in no `JOB_SURFACES` entry,
+so the table would skip all eighteen keys. It skipped none.
+
+### The measurement, before any hypothesis
+
+The plan artifact is uploaded per run, so the verdict is readable rather than
+inferable. Twenty-five recent `pull_request` runs, fourteen of which still had
+their `ci-skip-plan` artifact:
+
+```
+30983418337  mode=reduced full_reasons=["baseline:merge-base-reached"] skipped=2 out-of-scope=0
+30975223299  mode=reduced full_reasons=["baseline:merge-base-reached"] skipped=1 out-of-scope=0
+...  (12 more, identical shape)
+30944973190  mode=full    full_reasons=["baseline:no-candidates"]      skipped=0 out-of-scope=0
+```
+
+Every walk died at the merge parent or found no candidates, and **not one job
+in any run was ever skipped with reason `out-of-scope`**. Both skips visible
+above came from the cross-PR greenlight, not from scope. The engine went live
+on 2026-07-31 (D-1) and had, by its own artifacts, never once reduced a round.
+
+### Why the reduction path was unreachable rather than unlucky
+
+Four properties compose into a closed loop:
+
+1. the walk is fenced at the merge parent, so only the PR's OWN commits are
+   candidates. A one-commit PR therefore has none;
+2. a candidate must be green, its plan `mode: 'full'`, and its outcome
+   reconciled;
+3. every superseded push is `cancelled`, which reads as `not-green`, and a
+   babysit loop supersedes constantly;
+4. the surviving green run had its plan's `mode` flipped to `reduced` by the
+   greenlight the moment it skipped a single key -- and `renet` /
+   `account_e2e` closures change rarely, so this fired almost every time.
+
+Run 30983418337's own trail says it in one line: 28 candidates `not-green`, and
+the one green one (`1d172438f`, run 30975223299) refused as `reduced-baseline`.
+That run had executed seventeen of eighteen keys and held greenlight evidence
+for the eighteenth.
+
+### Two changes were designed. ONE LANDS; the other is held for a soak
+
+**LANDED -- baseline usability is read per key, not from the mode label**
+(`planCoverageIsFull`). A key covers if it was planned to RUN -- the reconciler
+then proves it actually ran -- or if it was skipped with a `greenlight:<run-id>`
+reason, whose evidence is a different run that executed that job's exact input
+closure green. A key skipped as `out-of-scope` covers nothing, so case 1 stands:
+scope evidence still cannot chain. This makes `reason` load-bearing where the
+reconciler ignores it, which adds no trust: it arrives in the same artifact as
+`mode`, `run` and `base_sha`, all already load-bearing. What stays derived
+rather than declared is `reconciled`, per `attestPlan`'s doctrine.
+
+This is the change that answers the report, and it answers it alone: run
+30975223299 becomes a usable baseline, so run 30983418337 resolves one instead
+of walking off the fence. It fixes pushes 2..N of every PR, which is the large
+majority of pushes.
+
+**HELD -- no usable baseline classifies the merge-parent delta instead of
+forcing full** (`noBaseline`). Designed, implemented and gated, then deliberately
+NOT landed on 2026-08-05. Kept here rather than deleted, because the design is
+sound and the reason for holding it is about the state of `main`, not about the
+mechanism.
+
+The design: `diff(merge-parent, head)` is a SUPERSET of any baseline delta (the
+baseline is an ancestor of head and a descendant of the merge parent), and it is
+the evidence GitHub's own `paths:` filters run on, so a job whose surface is
+disjoint from it would execute byte-identical inputs to the ones main already
+carries. `decideBaseMove` already trusts this exact diff for the case-5 fold. It
+would be offered ONLY for the "no usable baseline" family -- a shallow clone, a
+throwing walk, a throwing diff and an over-cap diff all still force full,
+because there the instrument is what is broken and a second reading from it
+proves nothing.
+
+Why it is held:
+
+1. **It reduces against a baseline nobody verified was green.** `ci.yml:276` and
+   `:327` are both `if: github.event_name == 'pull_request'`, so a main commit
+   never uploads a plan. Push #1 of every PR therefore has no baseline BY
+   CONSTRUCTION -- not by accident -- and the fallback would reduce that round
+   against whatever the merge parent happens to be. Right now that parent is a
+   `[skip ci]` commit with no run at all, and main's last four scheduled runs
+   are all failure. A docs-only PR would skip all eighteen heavy keys against a
+   red main.
+2. **It buys the smallest share of the win and carries all of the risk.** The
+   landed change already covers pushes 2..N; the fallback only adds push #1.
+
+What it would need before landing: a shadow soak that records what the fallback
+WOULD have decided, alongside a main that is green often enough for the
+merge-parent to be worth anything as evidence.
+
+### The API-outage boundary, which the existing gates were right to guard
+
+Recorded with the held change, because it is the boundary that change has to
+respect and the reasoning does not expire.
+
+`test-scope-gate-outputs.sh` asserts that an engine which cannot reach the API
+must not skip a single job, and the fallback would have broken it: git still
+works under a `gh` outage, so the delta would classify and the round would
+reduce. Two reasons that is wrong, and only the second is decisive. "No green
+ancestor" derived from an API that answered nothing is an absence of
+measurement, not a finding; and a round that reduces must be RECONCILED against
+that same API at the end of the pipeline, so it would trade a full round for a
+red required check. The held implementation handled this by marking an
+unreadable candidate in `candidateFor` and declining the fallback with the note
+`merge-parent-classify-declined:run-history-unreadable` when every candidate was
+unreadable. An EMPTY walk is not that case: a one-commit PR legitimately has no
+ancestor inside the fence.
+
+### The hardening the landed change needed
+
+`planCoverageIsFull` first asked `run !== false`, which is the wrong polarity
+for this predicate. The two verdicts are not symmetric: reading a malformed
+entry as coverage reduces a round on evidence nobody checked, while reading it
+as a gap costs one full round, and only the second is recoverable. Driven
+against the real predicate, `{run absent, reason:"out-of-scope"}`, `{run:"false"}`
+and `{run:0}` all answered COVERS. The first is the dangerous one -- a dropped
+`run` key beside an out-of-scope skip is precisely the scope-chaining case 1
+forbids, wearing a shape that looks benign.
+
+It now asks `run === true` for an executed key and `run === false` plus a
+well-formed `greenlight:<digits>` reason for an evidenced one, matching
+`skip-plan-reconcile.cjs:408,428` (`planned.run === true`) and the strict
+booleans `scope-map.cjs:325-332` always writes. An array `jobs` is refused
+explicitly, since `Object.values` would otherwise walk a shape no producer emits.
+
+The hardening costs the fix nothing on real evidence: run 30975223299's
+downloaded plan still answers `planCoverageIsFull = true` under the strict form,
+its single non-run key being exactly `{"run":false,"reason":"greenlight:30968082228"}`.
+
+### Evidence, both directions
+
+Classification of the real deltas, through the real CLI (`--classify` over
+stdin), re-run after the split:
+
+| delta | mode | heavy keys running |
+|---|---|---|
+| `docs/ci-overhaul/06-progress.md` | reduced | 0 of 18 |
+| `packages/cli/src/commands/repo.ts` | reduced | 14 of 18 |
+| `.audit-allowlist` | full | 18 (`root-manifest:`) |
+| `.ci/lib/common.sh` | full | 18 (`harness:`) |
+
+The last two rows are the honest part of the answer: for PR #551 the full matrix
+was CORRECT, because the branch also touches those surfaces. What was wrong is
+that the mechanism which should have noticed the last push changed nothing
+relevant had never been able to fire.
+
+And the claim that it fires now, checked against the real artifacts rather than
+asserted: run 30975223299's plan artifact was downloaded and attested against
+that run's real Jobs API payload (96 jobs), and answers
+`planCoverageIsFull = true`, `reconciled = true` DERIVED (the artifact carries no
+`reconciled` field at all), and `full-green-attested`. So run 30983418337 would
+have taken it as its baseline -- with the fallback held and playing no part.
+
+### Gates
+
+`test-scope-engine.sh` gains four cases pinning greenlight-only versus
+scope-reduced baselines (including a forged `greenlight:probably-fine` reason
+and an empty jobs vector), plus four more for the malformed entries the
+hardening refuses. `test-scope-baseline-attest.sh`'s case (i) now mutates a real
+skipped key rather than only the label -- a fixture that relabelled alone would
+be asserting the thing that no longer decides.
+
+Mutation-proven both directions against a copy of the tree carrying the
+pre-hardening predicate: all four malformed entries answered
+`full-green-attested` there and `reduced-baseline` here, while five controls
+(greenlight skip, scope skip, forged reason, empty jobs, `mode: full`) answer
+identically under both, so the hardening refuses exactly the malformed shapes
+and nothing else.
+
+### The classification regression table
+
+Added the same day, because everything above tests the engine's decision
+MACHINERY and nothing pinned the ANSWER for a representative delta -- which is
+the half the operator actually experienced. Seven rows in
+`test_representative_deltas_classify_to_pinned_verdicts`, asserted through the
+real `--classify` path: docs-only, agent-tooling-only, THE REPORTED PUSH (the
+exact four paths behind run 30983418337), cli, renet and account source each
+against their named key SET, and docs-plus-one-cli-file, which is the row that
+catches an over-eager skip. The three forced-full surfaces
+(`.github/workflows/**`, `.audit-allowlist`, `.ci/lib/**`) are asserted
+structurally -- mode, every key running, the pinned reason -- rather than as a
+literal eighteen-name list, so adding a job key is not an eighteen-line diff in
+a file that is not about the key list.
+
+SETS, NEVER COUNTS, and that distinction was proven rather than asserted:
+swapping `cli` from the `drills` surface onto `renet` leaves the count at
+fourteen, so a count-based assertion still passes, while the set assertion goes
+red with `missing: drills | unexpected: renet`. Dropping `cli` from `drills`
+alone is caught the same way and by nothing else in the file. The failure
+message names the row and the exact symmetric difference, deliberately: a
+regression test that is a puzzle to update gets suppressed instead of updated.
+
+The block runs LAST, and that is load-bearing. `test-gate-anti-vacuity.sh`
+registers this file with the pattern `closure`, meaning the empty-tree run must
+fail saying "closure" -- which is the seventh test, and `log_fail` exits on the
+first failure. A table placed ahead of it would fail first with a message
+carrying no "closure" and silently retire that registration. Verified by running
+the anti-vacuity gate before and after. The block also carries its own inline
+vacuity control, since it cannot borrow the file's registered one: a dead engine
+answers `ENGINE-PRODUCED-NOTHING` rather than an empty key list, which would
+otherwise read as "no keys to run" and pass every zero-key row.
+
+Gate counts after the split and the table: `test-scope-engine.sh` 97 assertion
+call sites plus 7 classification rows (counted separately so the table cannot
+shrink unnoticed), `test-scope-baseline-attest.sh` 128; both green, as are
+`test-scope-gate-outputs.sh`, `test-skip-plan-reconcile.sh` and
+`test-gate-anti-vacuity.sh`.
