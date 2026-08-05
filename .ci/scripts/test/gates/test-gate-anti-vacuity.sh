@@ -54,6 +54,16 @@ REGISTRY=(
     # present). It also refuses when python3 is missing, because its control
     # listener could not fire.
     ".ci/scripts/quality/check-account-probes.sh|nothing to check"
+    # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling
+    # above IS, and the asymmetry is real rather than an oversight. The probe
+    # gate's subject is .ci/lib/account.sh, which this harness's fixture does
+    # NOT copy, so an empty tree genuinely starves it. The drill-verdict gate's
+    # subject is scripts/drills/lib.sh, and the fixture DOES copy scripts/ — so
+    # on the "empty" tree its subject is present, all four verdict assertions
+    # run for real, and it correctly exits 0. Registering it asserted that a
+    # gate must fail when its input exists, which is backwards; the meta-gate
+    # caught exactly that on the first run. Its own missing-subject branch is
+    # real but unreachable from here.
     # Against an empty tree every oracle is unavailable, so the run is vacuous
     # and must FAIL rather than report "every entry is still load-bearing".
     "check-suppression-liveness.ts|vacuous"
