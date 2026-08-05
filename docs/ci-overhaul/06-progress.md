@@ -1909,3 +1909,144 @@ silently. Twelve assertions, green, and proven able to fire: four mutants run
 against a mirrored copy (drop the cancel, re-introduce the suppression term,
 empty `NO_DRAIN_PATTERNS`, treat a cancellation as a failure) each turn it red on
 a different named case, with the unmutated copy green as the control.
+
+---
+
+## 2026-08-05 -- review-gate blind spots, a review-budget undercount, and a durable agent report inbox
+
+Landed on branch `0804-1` (console PR #551). Everything below touches `.ci/`,
+`.github/` or `.claude/`, which is why it belongs in this log rather than only in
+the wave's own plan file.
+
+### Both review gates were blind to the larger half of a review
+
+`check-review-comments.sh` read only `pulls/{PR}/comments`, so the reviewer's
+TOP-LEVEL verdict -- the comment carrying the severity-ordered defects, the nits
+and the coverage map -- could go unanswered with CI green. Only the top findings
+are ever mirrored inline (capped at 20, and any whose line is outside the diff is
+dropped), so the summary is strictly the larger surface. It now also reads
+`issues/{PR}/comments`.
+
+`check-review-report-replies.sh` had the same class of defect for a different
+reason: its selector AND-ed the report header with `json:review-findings` OR
+`### Review`, a guess about the report's WORDING that no producer emits.
+`--post-report` wraps whatever the model's closing text happened to be, which on
+this PR carried neither marker, so the gate found no report and passed
+vacuously. It now keys on the `**Claude finished` header alone.
+
+The rule both fixes follow: **key on what the producer actually writes, never on
+a description of it.** The header and the findings fence are constants the
+pipeline emits verbatim, so a rename breaks posting in the same commit instead of
+silently blinding a gate.
+
+The two gates are complementary rather than duplicate -- different producer
+constants, different comments from the same pass -- so their reply thresholds are
+asserted equal, and `test_one_reply_clears_both_gates` proves one reply satisfies
+both. That property has since held twice on live data.
+
+**Gate self-demonstration:** the new gate went red on this very PR, on its own
+author, for an unanswered verdict that would have passed silently a day earlier.
+
+### The review budget was undercounting, and the cap could never be reached
+
+`review_report_count()` carried the same defective qualifier in its two remaining
+call sites. Measured against live PRs before the change, counted versus actually
+posted: **#551 0 of 1**, #550 5 of 7, #546 3 of 7, #543 1 of 9. So a completed,
+marked review registered as never having happened, the cap never advanced, and
+every subsequent green push paid for another full review -- the exact
+"pays again forever" failure the spent-attempt path exists to prevent.
+
+The function also existed as two identical copies. It now lives in
+`.ci/scripts/lib/common.sh` beside `review_cap_for()`, so numerator and
+denominator come from one place. Counts after: 1, 7, 7, 9.
+
+### A typecheck target that had never run
+
+`scripts/tsconfig.json` had covered 70 files since January with nothing invoking
+it, and `.ci/scripts/**/*.ts` had no tsconfig at all -- a config that read as
+coverage and provided none. Corrected and extended, it reports 0 errors across 71
+files (512 as written, ~99% of it noise from settings nobody had executed). It
+surfaced two real bugs: a fifth argument passed to a four-parameter function, so
+a "cloud-only context detection" silently did nothing (deleted, not implemented --
+the cloud adapter was removed deliberately), and a `snippet` field set on a type
+that has no such field and requires `command`, so that reporter printed
+`in: undefined`.
+
+Wiring it into `check:types` needs `package.json` and is left as a one-line
+operator decision against a provably green target.
+
+### Preview readiness required a streak, and previews stopped lying about themselves
+
+`wait-for-preview-worker.sh` declared ready on a SINGLE successful probe. Two
+prior fixes had changed WHICH endpoint was probed; neither changed how many
+times, so the failure returned a third time. The deploy flaps by construction --
+the per-PR D1 database is recreated on every push and `server-info` is the first
+endpoint touching it. Readiness now requires 3 consecutive successes, control-
+proven both directions (a flapping stub passes at streak 1 and fails at streak 3).
+
+Separately, preview workers self-identified as **production**: `envSchema`
+defaults `ENVIRONMENT` to `production` and `wrangler.preview.toml` never set it,
+so a preview served `updateChannel` `stable` while the `install.sh` it served
+baked in channel `pr-N`. Fixed in the preview heredoc only; production deploys
+unchanged.
+
+### Durable sub-agent report inbox and a push-based waiter
+
+Sub-agent reports reached the lead session only as a message in its context, so a
+compaction lost them and an agent that reported substantively was
+indistinguishable from one that went idle silently. Investigation inverted the
+premise: reports are ALREADY durable -- every sub-agent writes a transcript --
+so the gap was discovery, addressing and unread-ness, and the `SubagentStop`
+hook that would capture them had never been wired.
+
+`.claude/settings.json` now wires `SubagentStop` plus a second `SessionStart` and
+`PostCompact` group (two groups on one event both deliver their context --
+probed, not assumed). New `wl_report.py` captures and surfaces; new `wl_wait.py`
+blocks until something new arrives and exits, so its EXIT is the notification and
+a waiting session costs zero turns. A `--scan` back-filled 132 previously
+unrecoverable reports.
+
+Four findings worth carrying:
+
+- **`last_assistant_message` is the SIGN-OFF, not the report.** A teammate
+  delivers by SendMessage and then says "Released. Task complete." Measured on one
+  agent: 24 characters handed over against payloads of 8,646 and 6,331. Building
+  to spec would have marked that agent `silent`, inverting the one distinction
+  the feature exists to draw. Bodies are harvested from the payloads instead.
+- **A waiter EXITS every time it fires**, so "no waiter running right now" is true
+  exactly when a session is behaving correctly. A force-a-waiter check keyed on
+  that broke 16 harness cases. It is now a grace count over unacted `PostToolUse`
+  nudges, resetting the moment a waiter appears.
+- **`PostToolUse` carries no `background_tasks`**, so the nudge cannot see the task
+  table; it uses a heartbeat the waiter re-touches, since a marker written once at
+  launch becomes a lie the moment the process dies.
+- **Phantom captures.** 44 of 181 records had neither an agent type nor a
+  resolving transcript -- not sub-agent reports at all. The store partitioned
+  exactly, with no mixed case, and 1885 sidecars confirmed no real agent kind
+  lacks a type. Discarded only when BOTH fail (AND-on-reject is more permissive
+  than either predicate alone; the OR form drops real reports and turns seven
+  assertions red). The 44 were retired by APPENDING retire events, preserving the
+  append-only property the lock-free design rests on.
+
+### Gates run
+
+`test-worklist-v5.sh` 432 -> 460, new `test-report-inbox.sh` 113,
+`test-claude-hooks.sh` 541, `test-review-status.sh` 26 -> 44,
+`test-gate-paths-exist.sh` 4, `test-swallowed-failures.sh` 22, plus
+`check:ci-parity`, `check:ci-suppression-liveness` (82 entries, 0 findings),
+`check:ci-external-links`, `check:ci-shell-lint`, `check:ci-shell-format` and
+`shfmt -i 4 -ci -d` on every touched script.
+
+`gate-test:worklist-hooks` now runs BOTH stop-hook harnesses, parsing each one's
+own summary -- the wrapper previously used `tail -1`, which would have read only
+the second. No `manifest.ts` change was needed for that (the gate is already
+registered); `test-preview-readiness.sh` DID need one, correcting a claim from the
+preceding commit that glob discovery made an entry unnecessary: `run-all.sh`
+globs for CI, but `npm run ci` schedules from the manifest, so a glob-only gate
+runs on one side and `check-ci-parity` catches it.
+
+Mutations, not reasoning: nine against the report inbox, six against the gate
+wrapper, three against the phantom filter, and one per review-gate assertion.
+Two tests were found passing for the WRONG reason and fixed rather than accepted --
+one asserted an outer layer while appearing to assert an inner one, and one read
+the real report store because an unset env var is not neutral.
