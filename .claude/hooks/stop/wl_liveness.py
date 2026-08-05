@@ -43,6 +43,7 @@ could write pinned a session all night):
     45 minutes per long-running delegate; it rides the report instead.
 """
 
+import json
 import os
 import re
 import subprocess
@@ -296,6 +297,103 @@ def confirmed_waiters(live_bg, verdicts):
         for b in waiter_tasks(live_bg)
         if (verdicts or {}).get(str(b.get("id") or "")) == "confirmed"
     ]
+
+
+TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
+
+
+def live_teammate_transcripts(cwd, fresh_min=None):
+    """How many in-process teammates have a transcript that is still growing.
+
+    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists
+    because `verify_background` cannot help: it returns `unverifiable` for
+    anything whose type is not "shell", and a teammate has no OS process of its
+    own to find. A teammate that is working writes to its transcript; one that
+    stopped does not.
+
+    Deliberately a COUNT and not a mapping. There is no join from a background
+    task id to an agent: the task carries only {id, type, status, description},
+    the description is the PROMPT truncated to ~50 characters, and that prefix is
+    provably not unique -- measured on a live roster, 10 of 19 teammate tasks
+    collided on it ("You are an Opus writer sub-agent in /home/muh..." matched
+    five different agents). The disambiguating text is exactly what the
+    truncation removes, so no amount of care recovers it.
+
+    Reads the filesystem, never the session's memory, so it is unaffected by a
+    compaction -- which is the case this exists for.
+    """
+    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+
+    fresh_min = TEAMMATE_FRESH_MIN if fresh_min is None else fresh_min
+    proj = RPT._projects_dir() / RPT._munged(C.project_root(cwd or os.getcwd()))
+    if not proj.is_dir():
+        return None  # cannot tell: NOT the same as zero, and callers must differ
+    now, fresh = time.time(), 0
+    for meta in proj.glob("*/subagents/*.meta.json"):
+        try:
+            info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(info, dict) or info.get("taskKind") != "in_process_teammate":
+            continue
+        jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
+        try:
+            if (now - jsonl.stat().st_mtime) / 60.0 <= fresh_min:
+                fresh += 1
+        except OSError:
+            continue
+    return fresh
+
+
+def reaped_path(worklist, session_id):
+    return worklist.with_suffix(".reaped-%s" % (session_id or "unknown")[:8])
+
+
+def read_reaped(worklist, session_id):
+    """Task ids this session has declared dead. Append-only, one id per line."""
+    try:
+        return {
+            ln.strip()
+            for ln in reaped_path(worklist, session_id)
+            .read_text(encoding="utf-8", errors="replace")
+            .splitlines()
+            if ln.strip()
+        }
+    except OSError:
+        return set()
+
+
+def prune_background(event_bg, worklist, session_id, cwd):
+    """(live, dropped, unknown) -- the roster with provably-dead entries removed.
+
+    TWO MECHANISMS, and the split is the whole safety argument.
+
+    AUTOMATIC, and only where it is a CERTAINTY: when NOT ONE teammate transcript
+    is fresh, every teammate task in the roster is dead, whatever its id. No join
+    is needed to know that, and nothing live can be hidden by it -- if even one
+    teammate were working, its transcript would be growing and this branch would
+    not be taken. This is the compaction case: a session reopened hours later
+    inherits a roster of twenty and none of them exist.
+
+    MANUAL for the in-between. With some transcripts fresh but fewer than the
+    roster claims, at least (claimed - fresh) are dead and NOTHING CAN SAY WHICH.
+    Guessing there would mean dropping a live worker's supervision, which is
+    worse than a stale entry, so those are KEPT and reported as `unknown` -- and
+    the session can retire specific ids by hand with `worklist.py --reap`.
+    """
+    bg = [b for b in (event_bg or []) if isinstance(b, dict)]
+    reaped = read_reaped(worklist, session_id)
+    bg = [b for b in bg if str(b.get("id") or "") not in reaped]
+    mates = [b for b in bg if b.get("type") == "teammate"]
+    if not mates:
+        return bg, [], 0
+    fresh = live_teammate_transcripts(cwd)
+    if fresh is None:
+        return bg, [], 0  # cannot see the store: claim nothing, change nothing
+    if fresh == 0:
+        return [b for b in bg if b.get("type") != "teammate"], mates, 0
+    unknown = max(0, len(mates) - fresh)
+    return bg, [], unknown
 
 
 def output_quiet_min(session_id, task_id):

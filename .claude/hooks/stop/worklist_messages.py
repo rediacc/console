@@ -318,6 +318,32 @@ CLI_UNKNOWN_VERB = (
     "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
 )
 
+CLI_REAP_USAGE = (
+    "usage: worklist.py --reap <your-session-prefix> <task-id> [<task-id>...]\n"
+    "Retires roster entries this session knows are finished. Nothing is killed:\n"
+    "a reap only stops THIS session counting the task as running, which is what\n"
+    "drives the pure-wait state and the 15-minute check-in.\n"
+    "Ids come from the background-task list in your Stop event.\n"
+)
+
+CLI_REAP_UNKNOWN = (
+    "REFUSED: %s is not in the last background-task list this hook saw.\n"
+    "A typo must not be able to silence supervision of a live worker, so an id\n"
+    "the hook has never seen is rejected rather than recorded.\n"
+    "Known ids: %s\n"
+)
+
+N_ROSTER_STALE = (
+    "    ROSTER OVERCLAIMS: %d teammate task(s) are reported running but only %d "
+    "teammate transcript(s) are still growing, so at least %d finished. WHICH "
+    "ones cannot be determined -- a background task carries only its id, type, "
+    "status and a ~50-char PROMPT PREFIX, and that prefix is not unique (10 of "
+    "19 collided on a live roster), so there is no join from a task id to an "
+    "agent. They are kept rather than guessed at, because dropping a live "
+    "worker's supervision is worse than a stale row. Retire the ones you know "
+    "are done: python3 %s --reap %s <task-id>..."
+)
+
 N_WAITER_NUDGE = (
     "NOT LISTENING: %d live peer session(s) can send you work and nothing here "
     "would wake you. Start a waiter as a BACKGROUND task (run_in_background: "

@@ -1467,6 +1467,19 @@ def run_stop(event, event_ok, worklist, hook_file):
     # v13 night cost three manual renewals for a watcher that was verifiably
     # alive the whole time. A worker the OS cannot see keeps failing closed.
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
+    # v18: REAP A ROSTER THE SESSION CANNOT VERIFY. After a compaction, or an
+    # operator reopening the session, the harness still reports every teammate
+    # ever spawned as `running` -- measured: 20 claimed, exactly 1 transcript
+    # still growing. That roster drives real checks (_in_pure_wait, the
+    # 15-minute BG_REPORT_MIN obligation, confirmed_waiters), so a permanently
+    # stale one means a session is told it supervises twenty workers forever and
+    # confirms phantoms every fifteen minutes -- ritual without signal.
+    _bg_dropped, _bg_unknown = [], 0
+    try:
+        live_bg, _bg_dropped, _bg_unknown = wl_liveness.prune_background(
+            live_bg, worklist, session_id, event.get("cwd"))
+    except Exception:  # noqa: BLE001 -- a roster heuristic must never wedge a stop
+        pass
     _live_worker_ids = {str(b.get("id") or "") for b in live_bg}
     open_items, others, deferred_recs, in_flight_recs = S.classify_items(
         fold, session_id, live_worker_ids=_live_worker_ids
@@ -1893,6 +1906,11 @@ def run_stop(event, event_ok, worklist, hook_file):
                     "    %s (%s): output last grew %dm ago, %d bytes%s"
                     % (tid, desc, age, size, _suffix)
                 )
+        if _bg_unknown:
+            _mates = len([b for b in live_bg if b.get("type") == "teammate"])
+            _rows.append(M.N_ROSTER_STALE % (
+                _mates, _mates - _bg_unknown, _bg_unknown,
+                str(pathlib.Path(__file__).resolve().parent / "worklist.py"), me8))
         vadd("bg-report", True, M.V_BG_REPORT % (
             bgwait_prev or "never (this is the first one of this wait)",
             bgwait_next, wl_liveness.BG_REPORT_MIN, len(live_bg), "\n".join(_rows),

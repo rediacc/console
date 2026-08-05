@@ -2427,6 +2427,8 @@ ARITY = {
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
     "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
+    "CLI_REAP_USAGE": (), "CLI_REAP_UNKNOWN": ("t", "l"),
+    "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
     "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
@@ -5233,6 +5235,147 @@ else
 fi
 kill "$WAITER_PID" 2>/dev/null
 wait "$WAITER_PID" 2>/dev/null
+
+echo "== 163v. a roster the session cannot verify is reaped, but only where certain =="
+# THE BUG: after a compaction, or an operator reopening the session, the harness
+# still reports every teammate ever spawned as `running`. Measured live: 20
+# claimed, exactly 1 transcript still growing. That roster drives _in_pure_wait,
+# the 15-minute check-in and confirmed_waiters, so a stale one means a session is
+# told it supervises twenty workers forever and confirms phantoms every quarter
+# hour.
+#
+# There is NO JOIN from a task id to an agent -- a task carries only {id, type,
+# status, description}, the description is the prompt truncated to ~50 chars, and
+# that prefix is provably not unique (10 of 19 collided on a live roster). So the
+# automatic reap fires only where it is a CERTAINTY: not one teammate transcript
+# fresh means every teammate task is dead, whatever its id.
+setup
+brief_now
+hand_now
+# A projects store with a teammate transcript that is STALE (hours old).
+python3 - "$BASE" <<'MKSTORE'
+import json, os, pathlib, re, sys, time
+B = pathlib.Path(sys.argv[1])
+proj = B / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(B / "proj")) / "s1" / "subagents"
+proj.mkdir(parents=True)
+for name, age_min in (("oldmate", 600),):
+    aid = "a%s-1111222233334444" % name
+    (proj / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
+        {"agentType": name, "name": name, "taskKind": "in_process_teammate"}))
+    j = proj / ("agent-%s.jsonl" % aid)
+    j.write_text(json.dumps({"type": "assistant", "message": {"content": []}}) + "\n")
+    old = time.time() - age_min * 60
+    os.utime(j, (old, old))
+MKSTORE
+export CLAUDE_CONFIG_DIR="$BASE/claude"
+BG='[{"id":"tm1","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."},{"id":"tm2","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."}]'
+task 7 pending "waiting on the teammates"
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+run >/dev/null # establishes the state doc
+# THE CLOCK MUST BE OVERDUE BEFORE THIS PROVES ANYTHING. Asserting on a seeding
+# stop is vacuous: the check-in does not fire on first sight of the wait state
+# whether or not the roster was pruned, so the assertion passed with the pruning
+# removed entirely (mutation Mk). With the clock overdue the two cases diverge:
+# pruned -> the roster is empty, so it is not a pure wait and nothing is owed;
+# unpruned -> the check-in fires for two phantoms.
+python3 - "$WL" <<'SEED0'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+d = json.loads(p.read_text()) if p.exists() else {}
+d["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(d))
+SEED0
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v: with zero fresh transcripts the phantom roster is dropped"
+else
+    fail "163v: still supervising phantoms: ${OUT:0:250}"
+fi
+# CONTROL: make one transcript FRESH and the same roster is kept -- the drop is
+# the certainty branch, not a blanket "teammates never count".
+python3 -c '
+import glob, os, sys, time
+p = glob.glob(sys.argv[1] + "/claude/projects/*/*/subagents/*.jsonl")[0]
+os.utime(p, (time.time(), time.time()))' "$BASE"
+python3 - "$WL" <<'SEED'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+d = json.loads(p.read_text()) if p.exists() else {}
+d["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(d))
+SEED
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v CONTROL: one fresh transcript keeps the roster and the check-in"
+else
+    fail "163v CONTROL: a live teammate was reaped: ${OUT:0:250}"
+fi
+# ...and because 2 are claimed while only 1 is fresh, the overclaim is REPORTED
+# rather than guessed at.
+if grep -qF "ROSTER OVERCLAIMS" <<<"$OUT"; then
+    pass "163v: the unresolvable remainder is surfaced, not silently kept"
+else
+    fail "163v: the overclaim was hidden: ${OUT:0:300}"
+fi
+unset CLAUDE_CONFIG_DIR
+
+echo "== 163v-c1. --reap retires an id, and refuses one the hook never saw =="
+setup
+brief_now
+hand_now
+BG='[{"id":"tm1","type":"teammate","status":"running","description":"a teammate"}]'
+task 7 pending "waiting"
+say "answer
+
+## Remaining
+- #7 waiting (pending)"
+run >/dev/null # banks the lastevent the CLI validates against
+if reqcli --reap deadbeef nosuchid >/dev/null 2>"$BASE/reap.err"; then
+    fail "163v-c1: an unknown task id was accepted"
+else
+    if grep -qF "not in the last background-task list" "$BASE/reap.err"; then
+        pass "163v-c1: an id the hook never saw is REFUSED, not recorded"
+    else
+        fail "163v-c1: refusal was unclear: $(head -c 120 "$BASE/reap.err")"
+    fi
+fi
+if [ ! -f "${WL%.md}.reaped-deadbeef" ]; then
+    pass "163v-c1: the refused reap wrote nothing"
+else
+    fail "163v-c1: a rejected reap still recorded an id"
+fi
+# CONTROL: a REAL id from that same roster is accepted and takes effect.
+OUT="$(reqcli --reap deadbeef tm1 2>&1)"
+assert_c1=$?
+if grep -qF "reaped 1 task" <<<"$OUT"; then
+    pass "163v-c1 CONTROL: a known id is accepted"
+else
+    fail "163v-c1 CONTROL: a valid reap was refused: ${OUT:0:150}"
+fi
+newturn
+say "answer
+
+## Remaining
+- #7 waiting (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v-c1: the reaped task no longer counts as running"
+else
+    fail "163v-c1: the reap had no effect: ${OUT:0:200}"
+fi
 
 echo "== 163w. v18: a session that IGNORES the waiter nudges is blocked =="
 # The operator asked to "force contexts to run in background". The trigger is
