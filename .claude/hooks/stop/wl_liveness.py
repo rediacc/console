@@ -302,7 +302,7 @@ def confirmed_waiters(live_bg, verdicts):
 TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
 
 
-def live_teammate_transcripts(cwd, fresh_min=None):
+def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     """How many in-process teammates have a transcript that is still growing.
 
     THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists
@@ -328,8 +328,26 @@ def live_teammate_transcripts(cwd, fresh_min=None):
     proj = RPT._projects_dir() / RPT._munged(C.project_root(cwd or os.getcwd()))
     if not proj.is_dir():
         return None  # cannot tell: NOT the same as zero, and callers must differ
+    # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` --
+    # every session directory under the project -- so ANY unrelated session with
+    # a teammate transcript touched in the last fresh_min made `fresh > 0` here,
+    # for a session whose own roster might be 100% phantom. That silently
+    # defeated the certainty branch in prune_background (fresh == 0 is what
+    # licenses the auto-reap) in exactly the situation it was built for: a
+    # session resumed after compaction, which is when OTHER sessions are most
+    # likely to be active in the same tree. It also deflated the `unknown`
+    # overclaim count reported to the operator. This tree runs concurrent
+    # sessions as a matter of course, so the collision was routine, not exotic.
+    scope = proj / session_id / "subagents" if session_id else None
+    if scope is not None and not scope.is_dir():
+        # FAIL TO "CANNOT TELL", NEVER TO ZERO. Zero is the value that licenses
+        # reaping the whole teammate roster, so a session id that does not
+        # resolve to a directory (a prefix instead of a full uuid, a store not
+        # yet created) must not be read as "no teammates are alive".
+        return None
+    metas = scope.glob("*.meta.json") if scope is not None else proj.glob("*/subagents/*.meta.json")
     now, fresh = time.time(), 0
-    for meta in proj.glob("*/subagents/*.meta.json"):
+    for meta in metas:
         try:
             info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError):
@@ -387,7 +405,7 @@ def prune_background(event_bg, worklist, session_id, cwd):
     mates = [b for b in bg if b.get("type") == "teammate"]
     if not mates:
         return bg, [], 0
-    fresh = live_teammate_transcripts(cwd)
+    fresh = live_teammate_transcripts(cwd, session_id=session_id)
     if fresh is None:
         return bg, [], 0  # cannot see the store: claim nothing, change nothing
     if fresh == 0:
