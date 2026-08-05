@@ -6344,6 +6344,90 @@ else
     fail "182: the compact path stopped marking ctx_fresh"
 fi
 
+echo "== 183. a failed judge child explains ITSELF, not an empty stderr =="
+# THE BUG (2026-08-05): the Stop gate blocked with "judge exited 1: " and nothing
+# after the colon, which is unactionable. wl_judge reported proc.stderr on a
+# non-zero exit, but the claude CLI writes its error ENVELOPE TO STDOUT -- stderr
+# is empty -- and the is_error branch that would have explained it sits behind
+# returncode == 0, so it was unreachable exactly when needed. The real cause was
+# error_max_budget_usd at $0.1025 against a $0.10 cap. A gate that cannot say why
+# it failed is an escape hatch wearing a gate's clothes: the same swallowed-
+# failure class this repo scans for, inside the thing that audits it.
+if python3 - "$(dirname "$HOOK")" <<'JUDGEDIAG'; then
+import sys, json
+sys.path.insert(0, sys.argv[1])
+import wl_judge
+
+class P:
+    def __init__(self, rc, out, err):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+# Derive the over-budget cost from the CURRENT constant rather than hardcoding
+# the 0.1025 that was measured against a $0.10 default. The first draft of this
+# case pinned the literal and went red the moment the default was raised to
+# $0.25 -- a test coupled to a constant it does not own, caught by running it.
+budget = float(wl_judge.JUDGE_BUDGET_USD)
+envelope = json.dumps({
+    "is_error": True, "subtype": "error_max_budget_usd",
+    "stop_reason": "tool_use", "total_cost_usd": budget + 0.01,
+})
+msg = wl_judge._explain_failed_exit("judge", P(1, envelope, ""))
+# The cause must be NAMED. Asserting merely "non-empty" would have passed on the
+# original defect too, whose message was also non-empty.
+assert "error_max_budget_usd" in msg, msg
+assert "cost=" in msg, msg
+assert "BUDGET EXHAUSTED" in msg, msg
+
+# CONTROL 0: a failure UNDER budget must NOT cry budget. Without this, a message
+# that always shouted BUDGET EXHAUSTED would satisfy the assertion above.
+under = json.dumps({"is_error": True, "subtype": "error_during_execution",
+                    "total_cost_usd": budget / 2})
+m0 = wl_judge._explain_failed_exit("judge", P(1, under, ""))
+assert "BUDGET EXHAUSTED" not in m0, m0
+assert "error_during_execution" in m0, m0
+
+# CONTROL 1: unparseable stdout must still say something concrete rather than
+# falling back to the empty stderr that started all this.
+m2 = wl_judge._explain_failed_exit("judge", P(1, "segfault", ""))
+assert "segfault" in m2, m2
+
+# CONTROL 2: a populated stderr must still be surfaced, so the fix did not trade
+# one blind spot for another.
+m3 = wl_judge._explain_failed_exit("triage", P(2, "", "boom: no such model"))
+assert "no such model" in m3, m3
+
+# CONTROL 3: the label distinguishes the two call sites, which is how an operator
+# knows whether triage or the judge died.
+assert m3.startswith("triage exited 2"), m3
+
+# CONTROL 4 -- THE ONE THAT MATTERS, and it was missing from the first draft.
+# Everything above exercises the HELPER. The defect lived in the CALL SITES, which
+# formatted their own message from an empty stderr. Reverting a call site leaves
+# the helper perfect and the bug fully restored, and the planted-defect proof
+# showed exactly that: the case passed with the original defect back in place.
+# A test that cannot see the regression it was written for is the ninth instance
+# of the probe-tests-the-wrong-thing class in this campaign. So assert the wiring,
+# not just the function.
+import pathlib
+src = pathlib.Path(sys.argv[1], "wl_judge.py").read_text(encoding="utf-8")
+code = "\n".join(
+    ln for ln in src.splitlines() if not ln.lstrip().startswith("#")
+)
+assert code.count("_explain_failed_exit(") >= 3, (
+    "both non-zero-exit call sites must route through the helper "
+    "(definition + 2 uses); found %d" % code.count("_explain_failed_exit(")
+)
+assert "exited %d: %s" not in code, (
+    "a call site is formatting its own exit message again -- that is the "
+    "2026-08-05 defect, which reports an EMPTY stderr because the CLI writes "
+    "its error envelope to stdout"
+)
+JUDGEDIAG
+    pass "183: a failed judge child names its own cause (budget, stdout, stderr, label)"
+else
+    fail "183: wl_judge._explain_failed_exit no longer explains a failed child"
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
