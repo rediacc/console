@@ -6,6 +6,26 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 
 Every escape hatch in the repo (allowlists, blocklists, overrides, ignore lists) must carry a substantive `BLOCKER:` comment. CI enforces the presence and quality of each BLOCKER through a shared validator; this is the single escape mechanism — no lazy `# no fix` or `# tbd` suppressions.
 
+### When a suppression is the wrong answer
+
+**Suppressions are for when the alternative is worse. Reach for one only after
+establishing that.** The test is not "is this annoying to fix" — it is whether the
+BLOCKER reason you are about to write is *true*.
+
+A suppression whose stated reason does not hold is worse than no suppression at
+all, because the next reader inherits a false justification and has no way to tell
+it apart from a real one. That reader will not re-derive it; the whole point of the
+convention is that they trust it.
+
+Worked example (2026-08-05). A Go dependency bump deleted an API renet used, and
+blocklisting the module at its 0.x line looked reasonable: it would keep emitted
+telemetry byte-identical while the migration waited. Checking what actually flowed
+through the call site showed every attribute was already a string, so the "keeps
+behaviour identical" reason was vacuous — there was no behaviour to preserve. The
+3-line migration was strictly better, and the suppression would have parked an
+untrue reason in the tree indefinitely. **Verify the reason before you write it,
+the same way you would verify a gate's finding.**
+
 ### Current sites
 
 | Mechanism | File | Reader |
