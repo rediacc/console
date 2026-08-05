@@ -158,6 +158,36 @@ control.
    upgrade the org to Team. Until then submodule Claude-Review reds are expected
    and non-required.
 
+## The pattern worth naming: "works on the operator's box"
+
+Three separate CI reds on the night of 2026-08-04 shared one shape — a dependency
+that is warm, present, or already running on the operator's workstation and cold,
+absent, or unstarted on a fresh runner. None was detectable by reading code, and
+each cost a CI round to find:
+
+1. **`llvm-strip` absent on runners.** renet's `ebpf_generate` probed for `clang`
+   only; bpf2go also shells out to `llvm-strip`, so a runner with clang and no llvm
+   binutils took neither the mtime skip nor the documented pre-committed-objects
+   fallback. Fixed by probing both tools.
+2. **A 434MB image pull that is cached locally.** `rustfs/rustfs:latest` is resident
+   on the operator's box, so `./run.sh account dev` never pays the pull there.
+3. **A liveness probe that returns true for a dead port** (the sharpest of the
+   three, and the one the other two disguised). `.ci/lib/account.sh`'s
+   `account_rustfs_alive` ran `code=$(curl -w '%{http_code}' ... || echo 000)`; on a
+   refused connection curl PRINTS `000` and exits non-zero, so `|| echo 000` appends
+   a second one and the captured value is `000000`, which is `!= "000"` — so the
+   probe reported ALIVE. On a fresh runner that made `account_dev` announce
+   "Reusing RustFS already serving on port 9100", never start the container, and
+   export `CONFIG_R2_*` anyway; the gateway then advertised config storage that did
+   not exist and the drill died on `ECONNREFUSED`. Masked on the operator's box
+   because RustFS genuinely IS listening there. **Blast radius is wider than CI**:
+   every developer whose RustFS is not already up got the same false reassurance.
+
+The lesson generalizes past these three: a check that cannot distinguish "absent"
+from "present" is worse than no check, because it converts a loud failure into a
+confident lie — and the operator's own environment is the one place that lie is
+never exposed.
+
 ## Found-not-fixed ledger (final)
 
 - **renet `build.sh::ebpf_generate` staleness guard is mtime-based** (`.o -nt .c`).
