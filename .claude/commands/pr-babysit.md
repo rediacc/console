@@ -1,6 +1,6 @@
 ---
-description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default — SPAWN a background pr-babysitter teammate (Opus, per .claude/agents/pr-babysitter.md) and supervise it as team lead; it messages you (SendMessage) for tier-3 questions and reports. Pass `inline` as the first argument to instead run the loop in this session. The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges.
-argument-hint: "[inline] [short summary of the change to seed intent/PR titles]"
+description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default — run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges.
+argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
 disable-model-invocation: true
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*)
 ---
@@ -16,8 +16,19 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 ## Mode
 
-- **Default — including no arguments — is Delegate mode** (below): spawn a background pr-babysitter teammate (the agent file's `model: opus` applies) and supervise it as team lead; `$ARGUMENTS` seeds the intent summary. `bg` as the first token is an accepted legacy synonym for the default and is stripped from the summary. (Operator directive 2026-08-04: delegation is the default — it preserves the lead session's context and runs the loop on Opus for cost.)
-- If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `inline`** → **Inline mode**: you run the loop in this session on the session model; the remainder of `$ARGUMENTS` seeds the intent summary. (`inline` must be the entire first token: a summary that merely starts with those letters is still delegate mode.)
+- **Default — including no arguments — is Inline mode** (below): you run the loop in THIS session per the agent file; `$ARGUMENTS` seeds the intent summary.
+- If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `bg`** → **Delegate mode**: spawn a background pr-babysitter teammate and supervise it as team lead; the remainder of `$ARGUMENTS` seeds the intent summary.
+
+**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was
+tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at
+05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly
+(four separate deaths across the night, each needing a lead ping to recover) and the
+last one took the terminal verdict with it. The PR was still sitting in DRAFT hours
+later with every check green. The delegated loop's failure mode is that NOBODY is
+watching the watcher: a dropped watch is invisible to the babysitter by construction,
+and the lead can only detect it by polling a round log. Running in-session puts the
+loop on the same wake-ups as the rest of the session, where a stall is visible
+immediately. `bg` remains available for genuinely multi-day waves.
 
 ## Preflight (both modes)
 
@@ -48,7 +59,7 @@ For each one found:
 - **Stacking decision — made here, not mid-loop**: new `MMDD-N` branch from main, or stack onto an existing branch/PRs? Stack when the work depends on unmerged prerequisites (precedent: a follow-up wave stacked onto its predecessor's open PRs because main lacked the base). Record the decision and rationale in the wave header/briefing.
 - **Cold-start rule**: if you lack session context to fill the wave header's first four slots (intent, deliberate renames, sanctioned reds, frozen surfaces — spec in the agent file's round-log section), survey the diff, fill what you can, and **ask the user the unfillable questions before starting** — sanctioned reds? deliberate renames? stack or new branch? Three questions up front beat a wrong round 1.
 
-## Delegate mode (default): spawn and supervise
+## Delegate mode (`bg` only): spawn and supervise
 
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list* — if you have nothing to do but watch CI, the wave was mis-scoped.
 
@@ -84,7 +95,7 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 - Distill the round log into a `pr-babysit-<branch>` memory file (the previous one demonstrably saved rounds on the next wave).
 - Report PR links + headline results. **Do NOT merge, do NOT push `main`** — `/pr-merge` is the user's call.
 
-## Inline mode: run the loop here
+## Inline mode (default): run the loop here
 
 **Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here — that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
 
@@ -92,4 +103,4 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 - **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.
 - **AUTONOMOUS — never ask the user.** The agent file's in-context tier-3 rule applies as written: decide, log under DECISIONS (post-hoc review), keep the loop moving; irreversible-outside-the-PR actions stay forbidden outright.
 - **Absorb the operator's uncommitted work too.** The snapshot takes the whole tree, and the operator may keep adding to it while you run. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (This is the OPPOSITE of delegated mode's never-absorb-by-inference rule, on purpose: here the principal IS the person editing the tree.) Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.
-- Scoping honesty: inline mode is the exception now, chosen when the operator wants the loop's full reasoning visible in this session. For anything **multi-day** it is actively wrong — the 0707 babysitter itself died of context exhaustion mid-campaign; stay with the delegate default.
+- Scoping honesty: inline is the default because a delegated loop can die silently (see the Mode note above). The counter-risk is real too: the 0707 in-session babysitter died of context exhaustion mid-campaign. For a genuinely multi-day wave, `bg` is still the right call — just watch the round log yourself, because nothing else will.
