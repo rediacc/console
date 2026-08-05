@@ -1,17 +1,62 @@
 {
+  // Type-check target for the repo's tooling scripts: scripts/**/*.ts plus the
+  // single .ci/scripts/**/*.ts file. Nothing else covers either tree.
+  //
+  // THIS CONFIG WAS ORPHANED UNTIL 2026-08-05. It existed, it looked like
+  // coverage, and no npm target or workflow ever ran it -- the only
+  // `scripts/tsconfig` reference in the repo is private/account/package.json's,
+  // which resolves to that package's OWN file. Running it as written produced
+  // 512 errors, ~99% of them artifacts of the settings below rather than faults
+  // in the code, which is why nobody could have turned it on casually.
+  //
+  // What changed and why each one had to:
+  //
+  //   module/moduleResolution: NodeNext -> ESNext/bundler. These scripts run
+  //     under `tsx`, which resolves extensionless relative imports. NodeNext
+  //     demanded explicit `.js` extensions and reported every import in
+  //     scripts/ci-runner/ as an error (TS2835) for code that runs fine.
+  //
+  //   rootDir: "." -> removed. scripts/check-schema-coverage.ts imports
+  //     packages/shared/src/config-schema/coverage.ts, which is outside
+  //     scripts/. With rootDir pinned here that single import dragged the whole
+  //     shared tree in as a rootDir violation and produced 295 of the 512
+  //     errors on its own. rootDir only constrains emit, and this config does
+  //     not emit.
+  //
+  //   lib: added explicitly. The root config sets lib ES2020 while this one
+  //     sets target ES2022, so String.replaceAll and Object.hasOwn were
+  //     reported missing (TS2550) even though the runtime has both. `target`
+  //     does not imply `lib` when a base config already pinned it.
+  //
+  //   allowImportingTsExtensions: several scripts import a sibling as
+  //     `./lib/foo.ts` because tsx runs the TypeScript directly. Legal only
+  //     with this flag, and only because we never emit.
+  //
+  //   allowJs: scripts/ and eslint-rules/ contain plain .js helpers that are
+  //     imported from TypeScript (packages/www/scripts/lib/*.js,
+  //     eslint-rules/lib/*.js). Without this they are untyped implicit-any
+  //     imports (TS7016). checkJs stays off: those files are not ours to make
+  //     type-clean, we only need their shapes inferred.
+  //
+  //   outDir/declaration/composite: dropped or pinned off. This target exists
+  //     to type-check, never to build.
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     "target": "ES2022",
-    "outDir": "./dist",
-    "rootDir": ".",
+    "lib": ["ES2022", "DOM"],
     "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
     "composite": false,
     "incremental": false,
     "declaration": false,
-    "declarationMap": false
+    "declarationMap": false,
+    "sourceMap": false
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "../.ci/scripts/**/*.ts"],
   "exclude": ["dist"]
 }

@@ -76,7 +76,13 @@ function walk(node: unknown, file: string, out: Violation[], counter: { total: n
         counter.total += 1;
         const parsed = parseRdcCommand(command);
         if (parsed.ok || parsed.reason === 'not-rdc') continue;
-        out.push({ file, command, reason: parsed.reason, flag: parsed.flag });
+        // `reason` is set on every `ok: false` return in parseRdcCommand
+        // (packages/www/scripts/lib/cli-reference-catalog.js: not-rdc,
+        // unknown-global-option, unknown-command, unknown-option), but the
+        // inferred union does not tie it to `ok`, so the guard above cannot
+        // narrow it. Asserted rather than defaulted: a `?? 'unknown'` here
+        // would invent a reason if a future return path ever forgot one.
+        out.push({ file, command, reason: parsed.reason as string, flag: parsed.flag });
       }
       continue;
     }

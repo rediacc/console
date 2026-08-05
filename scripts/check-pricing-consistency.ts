@@ -22,7 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PLAN_LIMITS, PLAN_MAX_MACHINES, PLAN_ORDER } from '@rediacc/shared/subscription';
+import { type PlanCode, PLAN_LIMITS, PLAN_MAX_MACHINES, PLAN_ORDER } from '@rediacc/shared/subscription';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, '..');
@@ -97,7 +97,11 @@ function checkEnJson(): void {
           `(parsed ${jobsPerMonth}) does not match PLAN_LIMITS.${code}.maxRepoLicenseIssuancesPerMonth = ${canonicalIssuances}`
       );
     }
-    if (PAID_PLAN_CODES.includes(code) && !hasPlusSuffix(entry.jobsPerMonth ?? '')) {
+    // Widened for the membership test only: PAID_PLAN_CODES is the three paid
+    // tiers, `code` is a PlanCode and may be COMMUNITY. At runtime .includes
+    // simply returns false for it, which is the intended answer; the cast just
+    // stops the narrow tuple type from rejecting the question.
+    if ((PAID_PLAN_CODES as readonly PlanCode[]).includes(code) && !hasPlusSuffix(entry.jobsPerMonth ?? '')) {
       fail(
         `en.json technicalSummary.values.${planId}.jobsPerMonth = "${entry.jobsPerMonth}" ` +
           'is missing the "+" display convention for a paid tier'
@@ -114,8 +118,8 @@ function checkEnJson(): void {
 
   // 2. comparison.categories.infrastructure.rows — duplicate of the same two metrics
   const rows = pricing.comparison?.categories?.infrastructure?.rows ?? [];
-  const machinesRow = rows.find((r) => /floating licenses/i.test(r.label ?? ''));
-  const issuancesRow = rows.find((r) => /server setups per month/i.test(r.label ?? ''));
+  const machinesRow = rows.find((r: { label?: string }) => /floating licenses/i.test(r.label ?? ''));
+  const issuancesRow = rows.find((r: { label?: string }) => /server setups per month/i.test(r.label ?? ''));
   if (!machinesRow) fail('en.json comparison.categories.infrastructure.rows: Floating Licenses row not found');
   if (!issuancesRow) fail('en.json comparison.categories.infrastructure.rows: server-setups row not found');
   for (const code of PLAN_ORDER) {

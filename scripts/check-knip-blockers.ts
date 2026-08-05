@@ -181,7 +181,10 @@ function main(): void {
     process.exit(1);
   }
 
-  const entries = parseKnipSuppressions(configPath);
+  // Typed as the BASE shape, which is all verifyAllBlockers consumes. The
+  // parsed entries carry an extra `context` label that nothing reads, so
+  // requiring it here only made the public-tag entries below unassignable.
+  const entries: BlockeredEntry[] = parseKnipSuppressions(configPath);
   if (!process.argv.includes('--config')) {
     entries.push(...collectPublicTagEntries(CONSOLE_ROOT));
   }
