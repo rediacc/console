@@ -47,6 +47,13 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 REGISTRY=(
     "check-translation-hashes.ts|locale"
     "check-translation-completeness.ts|locale"
+    # The probe gate's subject is a single library file. Against an empty tree
+    # that file is absent, and "nothing to check" must be a FAILURE: a liveness
+    # gate that silently passes when it cannot reach the probe would recreate
+    # the very class it exists to catch (a check that cannot tell absent from
+    # present). It also refuses when python3 is missing, because its control
+    # listener could not fire.
+    ".ci/scripts/quality/check-account-probes.sh|nothing to check"
     # Against an empty tree every oracle is unavailable, so the run is vacuous
     # and must FAIL rather than report "every entry is still load-bearing".
     "check-suppression-liveness.ts|vacuous"

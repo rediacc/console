@@ -74,6 +74,40 @@ Two from the same wave, in opposite directions:
 Report the refutation with the evidence, and say plainly that the ruling was
 wrong. Someone who is only ever agreed with is a single point of failure.
 
+## A version check can disagree with itself about what "installed" means
+
+`scripts/check-deps.ts` runs `npm outdated` **against `node_modules`** at the repo
+root, but with `--package-lock-only` for submodule directories. So after editing
+`package.json` and regenerating the lockfile, the ROOT check still reports the old
+version until you actually install, while CI — which installs from the lockfile —
+is already satisfied.
+
+The failure mode is not a red; it is chasing a phantom. You "fix" the gate, it
+still complains, and the obvious next move is to assume the fix did not take and
+start changing more things. Confirm which source a version check reads before
+concluding your change did not land: node_modules, the lockfile, `package.json`,
+and the registry can all disagree at the same moment, and each is right about a
+different question.
+
+## Some dependencies can only move as a set
+
+`typescript-eslint`, `@typescript-eslint/eslint-plugin` and
+`@typescript-eslint/parser` peer-depend on each other at an **exact** version. Any
+upgrade that touches one at a time is a hard `ERESOLVE`, so a per-package upgrade
+loop can never succeed on them no matter how many times it is run:
+
+```
+Conflicting peer dependency: @typescript-eslint/parser@8.66.0
+  peer @typescript-eslint/parser@"^8.66.0" from @typescript-eslint/eslint-plugin@8.66.0
+```
+
+They need one `package.json` edit covering all three, then a single lockfile
+regeneration. The same shape appears in the OpenTelemetry Go modules, which move
+as a family of ten. When an automated upgrade reports "some upgrades failed",
+check whether the failures are a MUTUALLY-PINNED SET before treating them as
+independent problems — and check the tree is still consistent afterwards, since a
+half-applied set is worse than none.
+
 ## Errors stack: fixing the first one promotes the second
 
 Clearing a build error does not reveal the next one, it *makes the next one
