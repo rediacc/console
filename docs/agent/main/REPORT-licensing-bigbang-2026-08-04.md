@@ -183,10 +183,20 @@ each cost a CI round to find:
    because RustFS genuinely IS listening there. **Blast radius is wider than CI**:
    every developer whose RustFS is not already up got the same false reassurance.
 
-The lesson generalizes past these three: a check that cannot distinguish "absent"
-from "present" is worse than no check, because it converts a loud failure into a
-confident lie — and the operator's own environment is the one place that lie is
-never exposed.
+These three share a MECHANISM, not merely a resemblance, and the mechanism is the
+useful part: in every case the operator's machine HAS the thing — llvm-strip
+installed, the image cached, RustFS listening — so **the branch that handles its
+absence has never once executed on any machine where the work is done.** Anything
+guarding a heavy external dependency is therefore untested by construction, no
+matter how carefully it was written or reviewed. Reading the code cannot find these,
+because the code is not wrong on the path anyone ever runs.
+
+The only cure is to exercise the absent case deliberately — which is precisely what
+the controls that caught all three had to do: run with `llvm-strip` hidden from
+PATH, probe a port confirmed closed first, collect the logs a swallowed failure
+discards. A check that cannot distinguish "absent" from "present" is worse than no
+check, because it converts a loud failure into a confident lie, and the operator's
+own environment is the one place that lie is never exposed.
 
 ## Found-not-fixed ledger (final)
 
