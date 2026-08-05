@@ -217,17 +217,30 @@ V_LOOP_DIED = (
 )
 
 V_NO_POLL_CRON = (
-    "THIS SESSION HAS A LOOP BUT NO 5-MINUTE INBOX POLL. Cross-session "
-    "requests land between your stops, and an hourly loop makes the asker "
-    "wait up to an hour for what costs you seconds. Create the second cron "
-    "now (two crons is the required shape):\n"
-    "    CronCreate with schedule '*/5 * * * *' (or a slower rung on the\n"
-    "    5/10/20/40/60 backoff ladder) and a prompt that runs\n"
-    "        .claude/hooks/stop/worklist.py --poll %s\n"
-    "    and, if it prints NOTHING, stops immediately with no summary and "
+    "THIS SESSION HAS A LOOP BUT NOTHING LISTENING FOR CROSS-SESSION MAIL. "
+    "Requests land between your stops, and an hourly loop makes the asker wait "
+    "up to an hour for what costs you seconds.\n"
+    "TWO shapes satisfy this check. The waiter is the better one and is listed "
+    "first deliberately -- it was built, shipped, and then not adopted because "
+    "nothing ever mentioned it:\n"
+    "  (a) A WAITER, launched as a BACKGROUND task (run_in_background: true), "
+    "no quotes anywhere in the command line:\n"
+    "        python3 .claude/hooks/stop/wl_wait.py %s --timeout 60\n"
+    "      It blocks until something NEW arrives for you and then exits, and "
+    "its EXIT is the notification -- seconds of latency instead of up to a "
+    "cron period, and no turn spent on an empty inbox. It fires ONCE, so "
+    "relaunch it in the same turn you act on what it reports. Run "
+    "`python3 .claude/hooks/stop/wl_wait.py --help` for the full contract.\n"
+    "  (b) A POLL CRON, which is also still worth keeping BESIDE a waiter:\n"
+    "        CronCreate with schedule '0 * * * *' (or a faster rung on the "
+    "5/10/20/40/60 ladder) and a prompt that runs\n"
+    "            .claude/hooks/stop/worklist.py --poll %s\n"
+    "        and, if it prints NOTHING, stops immediately with no summary and "
     "no commentary; if it prints requests, acts on them.\n"
-    "The stop after an empty poll is silent and near-free (the hook "
-    "verifies the no-op itself), so the cadence costs almost nothing."
+    "WHY BOTH IS NOT REDUNDANT: a waiter arms against a snapshot taken when it "
+    "launched, so it is a CHANGE detector and can never see a request that "
+    "predates it. The cron is what still surfaces a backlog. The stop after an "
+    "empty poll is silent and near-free, so the cadence costs almost nothing."
 )
 
 V_MANY_WORK_CRONS = (
@@ -303,6 +316,31 @@ CLI_UNKNOWN_VERB = (
     "       --compact --brief --loop --poll --ask --answer --decline --ack\n"
     "       --requests --reports --wait --session-start --post-compact --help\n"
     "The Stop hook itself takes NO arguments; that is how it stays reachable.\n"
+)
+
+N_WAITER_NUDGE = (
+    "NOT LISTENING: %d live peer session(s) can send you work and nothing here "
+    "would wake you. Start a waiter as a BACKGROUND task (run_in_background: "
+    "true), no quotes anywhere in the command:\n"
+    "    python3 %s %s --timeout %d\n"
+    "It blocks until something new arrives and then EXITS -- the exit is the "
+    "notification. It fires once, so relaunch it in the turn you act on it."
+)
+
+V_NO_WAITER = (
+    "THIS SESSION HAS A WORK LOOP AND %d LIVE PEER(S), AND IS NOT LISTENING. "
+    "No confirmed waiter is running, so a request addressed to you sits unseen "
+    "until your next stop or poll -- and a peer blocked on your answer waits "
+    "that long for something that costs you seconds.\n"
+    "Start one as a BACKGROUND task (run_in_background: true), NO QUOTES "
+    "anywhere in the command line (a quoted path renders the waiter "
+    "`unverifiable`, which does not satisfy this check):\n"
+    "    python3 %s %s --timeout 60\n"
+    "Its EXIT is the notification. It fires ONCE, so relaunch it in the same "
+    "turn you act on what it reports; this check is what catches you if you "
+    "forget. `--help` on that path explains the whole contract.\n"
+    "This does NOT replace the poll cron: a waiter cannot see a request that "
+    "predates it, so keep the hourly cron as the backlog backstop."
 )
 
 N_UNREAD_REPORTS = (

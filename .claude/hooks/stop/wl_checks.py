@@ -21,6 +21,7 @@ import wl_judge
 import wl_liveness
 import wl_reggate
 import wl_report
+import wl_wait
 import wl_requests
 import wl_store as S
 import worklist_messages as M
@@ -971,6 +972,10 @@ def poll_fast_path(worklist, session_id, event):
 # [x]), at most GUIDE_MAX lines, each capped, and a cap that drops anything
 # SAYS SO with the count, because a silent cap reads as "that is everything".
 
+# How many unheeded PostToolUse nudges before the Stop hook blocks. Three at the
+# 10-minute throttle is half an hour of being asked and not complying, which is
+# well past any legitimate relaunch window.
+WAITER_GRACE_NUDGES = int(os.environ.get("WORKLIST_WAITER_GRACE_NUDGES", "3"))
 GUIDE_MAX = int(os.environ.get("WORKLIST_GUIDE_MAX", "12"))
 GUIDE_TEXT_CHARS = 90
 
@@ -2270,7 +2275,39 @@ def run_stop(event, event_ok, worklist, hook_file):
     # cron period, and no turn spent on an empty inbox), so demanding a cron
     # beside it would be demanding the worse mechanism for its own sake.
     if live_crons and not live_poll_crons and not _waiters_confirmed:
-        vadd('no-poll', False,M.V_NO_POLL_CRON % me8)
+        vadd('no-poll', False,M.V_NO_POLL_CRON % (me8, me8))
+    # v18: REQUIRE a waiter -- but ONLY of a session that has been told and has
+    # ignored it. The operator asked to "force contexts to run in background";
+    # my first attempt keyed on "no confirmed waiter right now" and was WRONG in
+    # both of its branches, measured rather than argued:
+    #
+    #   as a VIOLATION it broke 16 unrelated cases in this suite, because a
+    #   looped session with a peer is the NORMAL state, and -- worse -- a waiter
+    #   legitimately exits every time it fires, so the condition is true in
+    #   exactly the window the session is supposed to be in. It punished the
+    #   correct behaviour.
+    #
+    #   as a REPORT it was worse still: a sticky outq entry on every such stop
+    #   permanently occupied a slot in a bounded queue and starved the real
+    #   sections (cases 173/174 released nothing at all).
+    #
+    # So the trigger is the IGNORED COUNT the PostToolUse nudge maintains. The
+    # nudge does the forcing -- every 10 minutes, with the exact command, at no
+    # cost when satisfied -- and it resets the moment a waiter appears. This is
+    # only the backstop for a session that has been asked WAITER_GRACE_NUDGES
+    # times over half an hour and has not complied.
+    if live_work_crons and not _waiters_confirmed:
+        _dead_min = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
+        _peers = [
+            k for k in briefs
+            if not C.same_session(k, session_id)
+            and (S.brief_age_min(worklist, k, briefs) or _dead_min + 1) <= _dead_min
+        ]
+        if _peers and wl_wait.nudges_ignored(worklist, me8) >= WAITER_GRACE_NUDGES:
+            vadd('no-waiter', False, M.V_NO_WAITER % (
+                len(_peers),
+                str(pathlib.Path(__file__).resolve().parent / "wl_wait.py"),
+                me8))
     if len(live_work_crons) > 1:
         vadd('many-work-crons', False,
             M.V_MANY_WORK_CRONS

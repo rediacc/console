@@ -2111,7 +2111,7 @@ say "answer
 - #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[{"id":"w","schedule":"17 * * * *"}]'
-check "a work cron without the poll cron blocks" block "5-MINUTE INBOX POLL"
+check "a work cron without the poll cron blocks" block "NOTHING LISTENING FOR CROSS-SESSION MAIL"
 
 echo "== 102. two poll crons block (one is the shape) =="
 setup
@@ -2420,7 +2420,8 @@ ARITY = {
     "V_CI_RED": ("9", 1, "q", "rows", 2, 1, "m"), "V_CI_UNREADABLE": ("d",),
     "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
-    "V_NO_POLL_CRON": ("m",), "V_MANY_WORK_CRONS": (2, "l"),
+    "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
+    "N_WAITER_NUDGE": (2, "p", "m", 60), "V_MANY_WORK_CRONS": (2, "l"),
     "V_MANY_POLL_CRONS": (2,),
     "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
@@ -5225,13 +5226,122 @@ fi
 # line grepped for "no inbox poll" and "poll cron", neither of which appears in
 # that message at all -- so the assertion could never fail and passed for a
 # reason unrelated to the waiter.
-if ! grep -qF "NO 5-MINUTE INBOX POLL" <<<"$OUT"; then
+if ! grep -qF "NOTHING LISTENING FOR CROSS-SESSION MAIL" <<<"$OUT"; then
     pass "163z: a work cron with NO poll cron is accepted beside a confirmed waiter"
 else
     fail "163z: no-poll fired despite the waiter: ${OUT:0:250}"
 fi
 kill "$WAITER_PID" 2>/dev/null
 wait "$WAITER_PID" 2>/dev/null
+
+echo "== 163w. v18: a session that IGNORES the waiter nudges is blocked =="
+# The operator asked to "force contexts to run in background". The trigger is
+# deliberately NOT "no confirmed waiter right now": a waiter EXITS every time it
+# fires, so that condition is true in exactly the window the session is supposed
+# to be in, and keying on it blocked correct behaviour and broke 16 cases here.
+# It keys on the count of PostToolUse nudges the session has been given and not
+# acted on, which only grows over half an hour of being asked.
+setup
+brief_now
+hand_now
+brief_other peer1234
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+say "answer"
+# Below the grace threshold: asked twice, not yet blocked.
+printf '2 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w: under the grace count the session is not blocked yet"
+else
+    fail "163w: blocked too early: ${OUT:0:200}"
+fi
+# At the threshold: three unheeded nudges is half an hour of being asked.
+printf '3 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+OUT="$(run)"
+if grep -qF "AND IS NOT LISTENING" <<<"$OUT" && grep -qF "wl_wait.py" <<<"$OUT"; then
+    pass "163w: three ignored nudges blocks, and the block carries the command"
+else
+    fail "163w: did not block at the threshold: ${OUT:0:250}"
+fi
+
+echo "== 163w-c1. CONTROL: a CONFIRMED waiter silences it =="
+# Same ignored count, same peer, same loop -- only a live waiter differs.
+setup
+brief_now
+hand_now
+brief_other peer1234
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+WAITER_CMD="python3 $(dirname "$HOOK")/wl_wait.py deadbeef --timeout 3"
+TMPDIR="$BASE/wt1" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+W163W=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '9 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c1 CONTROL: a confirmed waiter silences it even at nine ignored nudges"
+else
+    fail "163w-c1 CONTROL: blocked despite a live waiter: ${OUT:0:250}"
+fi
+kill "$W163W" 2>/dev/null
+wait "$W163W" 2>/dev/null
+
+echo "== 163w-c2. CONTROL: an UNVERIFIABLE waiter does NOT satisfy it =="
+# The case that could silently pass for the wrong reason. Same command string,
+# dead process, so the verdict is `suspect` rather than `confirmed`. A waiter
+# nobody can see on the OS is worth nothing: the whole argument is that its EXIT
+# wakes you.
+setup
+brief_now
+hand_now
+brief_other peer1234
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+export WORKLIST_HARNESS_PID=$$
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter (dead)"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '3 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c2 CONTROL: a dead (unverifiable) waiter still blocks"
+else
+    fail "163w-c2 CONTROL: an unseeable waiter satisfied the check: ${OUT:0:250}"
+fi
+unset WORKLIST_HARNESS_PID
+
+echo "== 163w-c3. CONTROL: no live peer, no block =="
+# The harm of not listening is TO SOMEBODY. With no peer there is nobody whose
+# request could go unseen, so the check has no victim and must stay silent --
+# this is the condition that makes blocking safe at all.
+setup
+brief_now
+hand_now
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '9 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c3 CONTROL: with no live peer the check stays silent"
+else
+    fail "163w-c3 CONTROL: blocked with nobody to hear from: ${OUT:0:250}"
+fi
 
 echo "== 163x. NO CLI verb may fall through to the Stop battery (the phantom stop) =="
 # THE DEFECT, measured on HEAD before the fix, not theorised. A verb whose guard

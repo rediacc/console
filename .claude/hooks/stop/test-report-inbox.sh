@@ -153,11 +153,13 @@ LONGEST="$(awk '{ n = length($0) + 1; if (n > m) m = n } END { print m }' "$T/st
 if [ "$LONGEST" -lt 1024 ]; then ok "6b 400 KB body -> index line $LONGEST bytes"; else
     bad "6b 400 KB body -> capped index line" "longest $LONGEST"
 fi
+# Counted in the BODY ONLY, past the front matter: a whole-file count also
+# caught the word EXIST in the front-matter marker and read 400001.
 assert_eq "6b the body itself is NOT truncated" \
     "$(python3 -c '
 import glob, sys
 p = glob.glob(sys.argv[1] + "/store/testbr/*huge-agent*.md")[0]
-print(open(p).read().count("X"))' "$T")" "400000"
+print(open(p).read().split("---\n\n", 1)[1].count("X"))' "$T")" "400000"
 # control: the cap is enforced by shrinking values, never by dropping keys.
 assert_has "6b control: no key was dropped to fit" "$(cat "$T/store/index.jsonl")" '"transcript"'
 assert_has "6b control: no key was dropped to fit (title)" "$(cat "$T/store/index.jsonl")" '"title"'
@@ -369,7 +371,10 @@ echo "== 15. wl_wait: misuse =="
 scratch
 OUT="$(python3 "$HERE/wl_wait.py" 2>&1)"
 assert_eq "15 no argument -> exit 2" "$?" "2"
-assert_has "15 usage on stderr" "$OUT" "usage:"
+# The needle tracks the new help text: the bare-usage path prints the full
+# contract, not a "usage:" one-liner. Case 22 owns the detail; this one only
+# asserts that misuse is explained on stderr at all.
+assert_has "15 the contract is printed on stderr" "$OUT" "BACKGROUND TASK"
 OUT="$(python3 "$HERE/wl_wait.py" abc 2>&1)"
 assert_eq "15 short prefix -> exit 2" "$?" "2"
 assert_has "15 short prefix names the problem" "$OUT" "bad prefix"
@@ -593,6 +598,132 @@ if python3 -c "import sys; sys.exit(0 if float(sys.argv[1]) > 1.0 else 1)" "$HEL
 else
     bad "21 control: a real LOCK_EX holder DOES block it" "took only ${HELD}s -- the timer cannot detect a stall, so the assertion above is vacuous"
 fi
+
+echo "== 22. wl_wait --help explains how to invoke it, not just the argument order =="
+# The help was ONE usage line. A tool whose entire value depends on being
+# launched in the BACKGROUND, and whose help does not say so, does not get used
+# -- and that is not hypothetical: it shipped, and the session that built it
+# kept polling instead. These pin the facts a reader cannot infer from the
+# signature.
+OUT="$(python3 "$HERE/wl_wait.py" --help 2>&1)"
+RC=$?
+assert_eq "22 --help exits 0" "$RC" "0"
+assert_has "22 says it must run in the background" "$OUT" "BACKGROUND TASK"
+assert_has "22 says the exit IS the notification" "$OUT" "EXIT IS THE NOTIFICATION"
+assert_has "22 says it is not a backlog detector" "$OUT" "BACKLOG DETECTOR"
+assert_has "22 warns about quotes (the unverifiable trap)" "$OUT" "NO QUOTES"
+assert_has "22 says it only fires once" "$OUT" "ONLY FIRES ONCE"
+assert_has "22 documents the exit codes" "$OUT" "EXIT CODES"
+# The bare-usage path must carry the SAME text, on stderr, exit 2. Help only
+# reachable by asking for it is not reachable by the reader who needs it.
+ERR="$(python3 "$HERE/wl_wait.py" 2>&1 >/dev/null)"
+RC=$?
+assert_eq "22 bare invocation exits 2" "$RC" "2"
+assert_has "22 control: bare usage prints the contract, not a one-liner" "$ERR" "EXIT IS THE NOTIFICATION"
+
+echo "== 23. a transcript path that does not resolve is recorded as absent =="
+# Found in LIVE USE, not by this suite: a SubagentStop fired carrying a
+# well-formed transcript path to a file that was never written (no .jsonl, no
+# .meta.json, no trace in the parent transcript -- the agent produced no turn).
+# Every fixture here writes its transcript first, so 74/74 passed while this was
+# broken. A stored path that silently does not exist is worse than a null:
+# readers treat it as readable and quietly get nothing.
+scratch
+python3 - <<'EVJSON' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os
+print(json.dumps({
+    "agent_id": "aghost-agent-7171717171717171", "agent_type": "",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": "/nonexistent/dir/agent-aghost.jsonl",
+    "last_assistant_message": "push it when the agent reports back",
+}))
+EVJSON
+assert_has "23 the unresolved path is flagged" "$(cat "$T/store/index.jsonl")" '"tx":"absent"'
+# The filename comes from the index, not a guess: this agent's type is EMPTY,
+# so the name falls back to "agent" and a *ghost* glob matches nothing.
+GHOSTBODY="$T/store/$(python3 -c '
+import json, sys
+print(json.loads(open(sys.argv[1]).readline())["body"])' "$T/store/index.jsonl")"
+assert_has "23 the body still survives (nothing is lost)" "$(cat "$GHOSTBODY")" "push it when the agent reports back"
+assert_has "23 the body file says so too" "$(cat "$GHOSTBODY")" "DID NOT EXIST AT CAPTURE TIME"
+# CONTROL: a resolvable path is recorded ok, so the flag is not hard-coded.
+python3 - "$T/real.jsonl" <<'MKTX'
+import json, sys
+open(sys.argv[1], "w").write(json.dumps({
+    "type": "assistant",
+    "message": {"content": [{"type": "text", "text": "a real body"}]}}) + "\n")
+MKTX
+python3 - "$T/real.jsonl" <<'EVJSON2' | python3 "$HERE/wl_report.py" --subagent-stop
+import json, os, sys
+print(json.dumps({
+    "agent_id": "areal-agent-8181818181818181", "agent_type": "real",
+    "session_id": "aaaaaaaa-1111", "cwd": os.environ["CLAUDE_PROJECT_DIR"],
+    "agent_transcript_path": sys.argv[1],
+    "last_assistant_message": "a real body",
+}))
+EVJSON2
+assert_has "23 control: a resolvable transcript is recorded as ok" "$(sed -n 2p "$T/store/index.jsonl")" '"tx":"ok"'
+
+echo "== 24. worklist.py --reports forwards modifiers instead of rejecting them =="
+# A peer hit this following our own broadcast: --all was documented in the
+# announcement and the dispatcher answered "unknown mode --all" (exit 2).
+scratch
+stop_event "adisp-agent-9191919191919191" disp "a report for the dispatcher $BIG"
+OUT="$(python3 "$HERE/worklist.py" --reports --all 2>&1)"
+RC=$?
+assert_eq "24 --reports --all exits 0" "$RC" "0"
+assert_has "24 --reports --all lists the report" "$OUT" "disp"
+assert_lacks "24 it is not rejected as a mode" "$OUT" "unknown mode"
+OUT="$(python3 "$HERE/worklist.py" --reports --unread 2>&1)"
+assert_has "24 --reports --unread works too" "$OUT" "disp"
+# CONTROL: a genuine mode is still dispatched as a mode, not as a modifier.
+OUT="$(python3 "$HERE/worklist.py" --reports --scan 2>&1)"
+assert_lacks "24 control: a real mode is still dispatched as one" "$OUT" "unknown mode"
+
+echo "== 25. the PostToolUse nudge fires, and is throttled =="
+# The waiter fires ONCE and exits; nothing relaunches it, so a session goes deaf
+# after its first event -- worse than the cron, which at least fires again.
+# Measured live: a waiter fired at 16:13, a peer answered at 16:16, and the
+# answer was never seen. This is the re-arm.
+scratch
+WL="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+printf 'bbbbbbbb %s peer session\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"${WL%.md}.sessions"
+nudge() {
+    printf '{"session_id":"aaaaaaaa-1111","cwd":"%s","tool_name":"Bash"}' "$CLAUDE_PROJECT_DIR" |
+        python3 "$HERE/wl_wait.py" --nudge
+}
+OUT="$(nudge)"
+assert_has "25 with no waiter and a live peer, the nudge fires" "$OUT" "NOT LISTENING"
+assert_has "25 it carries the exact command" "$OUT" "wl_wait.py"
+assert_has "25 it says background" "$OUT" "BACKGROUND task"
+# CONTROL 1: throttled. This is what stops it becoming noise, and noise is how a
+# mechanism gets switched off.
+assert_eq "25 control: throttled, the second call is silent" "$(nudge)" ""
+# CONTROL 2: a fresh heartbeat silences it once the throttle is cleared.
+rm -f "${WL%.md}.waiternudge-aaaaaaaa"
+: >"${WL%.md}.waiter-aaaaaaaa"
+assert_eq "25 control: a live waiter heartbeat silences it" "$(nudge)" ""
+# CONTROL 3: a STALE heartbeat must NOT silence it, or a dead waiter looks alive
+# forever and the nudge never fires again. This is the case a marker written
+# once at launch would fail, and it is why the waiter re-touches every tick.
+python3 -c '
+import os, sys, time
+old = time.time() - 3600
+os.utime(sys.argv[1], (old, old))' "${WL%.md}.waiter-aaaaaaaa"
+assert_has "25 control: a STALE heartbeat does not silence it" "$(nudge)" "NOT LISTENING"
+# CONTROL 4: no live peer, no nudge. There is nobody who could send anything, so
+# a waiter would be pure cost; over-firing is how this gets routed around.
+scratch
+WL="$(HERE="$HERE" python3 -c '
+import os, sys
+sys.path.insert(0, os.environ["HERE"])
+import wl_core as C
+print(C.worklist_for(os.environ["CLAUDE_PROJECT_DIR"]))')"
+assert_eq "25 control: with no live peer there is nothing to listen for" "$(nudge)" ""
 
 echo
 echo "================================"

@@ -315,7 +315,7 @@ def resolve(store, ident):
 # ---- capture ----------------------------------------------------------------
 
 def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
-            transcript, source="hook", at=None, title=None, sends=0):
+            transcript, source="hook", at=None, title=None, sends=0, tx="ok"):
     """Write the body whole, then append one index line. Returns the entry, or
     None when the id is already indexed (so the hook and `--scan` can both run
     over the same agent without producing a duplicate)."""
@@ -338,10 +338,12 @@ def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
     front = (
         "---\n"
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
-        "at: %s\nsource: %s\nsends: %d\ntranscript: %s\nbytes: %d\n"
+        "at: %s\nsource: %s\nsends: %d\ntranscript: %s%s\nbytes: %d\n"
         "---\n\n"
         % (agent_id, agent_type or "", name, session or "", branch, stamp, source,
-           sends, transcript or "", len(body.encode("utf-8")))
+           sends, transcript or "(none)",
+           "" if tx == "ok" else "   <- DID NOT EXIST AT CAPTURE TIME",
+           len(body.encode("utf-8")))
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(front + body, encoding="utf-8")
@@ -372,6 +374,15 @@ def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
         # nothing -- inverting the exact distinction this field exists to draw.
         "silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,
         "sends": sends,
+        # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A
+        # stored path that silently does not exist is worse than a null: every
+        # reader treats it as readable and quietly gets nothing, which is the
+        # vacuous-check class -- a lookup that cannot succeed and never says so.
+        # Found live: a stop fired with a well-formed path to a file that was
+        # never written, and the SendMessage harvest read nothing from it
+        # without anybody being able to tell that from an agent that simply
+        # sent nothing.
+        "tx": tx,
         "title": title,
         "transcript": str(transcript or ""),
         "src": source,
@@ -413,8 +424,17 @@ def handle_subagent_stop(event):
     # (it needs no file to exist and cannot race the transcript's last flush);
     # the transcript is read ONLY for the SendMessage payloads, which the event
     # does not carry and which are usually the actual report.
+    # RESOLVE THE PATH BEFORE TRUSTING IT. Proven necessary by a live capture:
+    # `SubagentStop` fired for an agent id whose transcript was never written at
+    # all -- no `.jsonl`, no `.meta.json`, and no record of it anywhere in the
+    # parent session either. Not a race (still absent 30 minutes later) and not
+    # an id-to-filename mismatch (the name matched the convention exactly); the
+    # agent simply produced no turn, so nothing was ever flushed. The harvest
+    # then read an absent file and reported `sends: 0`, which is indistinguishable
+    # from an agent that genuinely sent nothing.
     sends = []
-    if transcript:
+    tx = "ok" if transcript and _resolves(transcript) else "absent"
+    if tx == "ok":
         sends, t_final, _rec = harvest_transcript(pathlib.Path(transcript))
         final = final or t_final
     body = assemble_body(sends, final)
@@ -430,6 +450,7 @@ def handle_subagent_stop(event):
         source="hook",
         title=_title_of(sends, final),
         sends=len(sends),
+        tx=tx,
     )
 
 
@@ -502,6 +523,21 @@ def _munged(root):
     the absolute path becomes a `-`. Verified against this repo's live directory
     (`/home/muhammed/monorepo/console` -> `-home-muhammed-monorepo-console`)."""
     return re.sub(r"[^A-Za-z0-9]", "-", str(root))
+
+
+def _resolves(path):
+    """Does this path name an existing file? False for ANY failure to find out.
+
+    NOT `Path.is_file()`. That only swallows a WHITELIST of errnos (ENOENT,
+    ENOTDIR, EBADF, ELOOP) and lets everything else propagate -- so a 3 KB path
+    raises ENAMETOOLONG, which crashed the whole capture and LOST the report,
+    strictly worse than the unresolved-path bug this check exists to catch.
+    Caught by the suite's own long-path case, which is why that case exists.
+    """
+    try:
+        return pathlib.Path(path).is_file()
+    except (OSError, ValueError):
+        return False
 
 
 def _bounded_lines(path, max_bytes=TRANSCRIPT_MAX_BYTES):
@@ -672,6 +708,7 @@ def scan(store, start, idle_min=None):
                 at=_iso_of(rec.get("timestamp")) or C.stamp_now(),
                 title=_title_of(sends, final),
                 sends=len(sends),
+                tx="ok",  # scan globbed this file, so it resolves by construction
             )
             if entry:
                 known.add(entry["id"])
@@ -714,6 +751,12 @@ def prune(store):
 
 
 # ---- CLI --------------------------------------------------------------------
+
+# The verbs main() dispatches on. Exported so worklist.py's `--reports` door can
+# tell a MODE from a MODIFIER without duplicating the list.
+MODES = ("--subagent-stop", "--session-start", "--post-compact",
+         "--list", "--show", "--read", "--scan")
+
 
 def _hook_path():
     return "python3 %s" % pathlib.Path(__file__).resolve()

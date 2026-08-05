@@ -105,6 +105,14 @@
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/post-bash/refresh-pr-body.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop/wl_wait.py\" --nudge"
+          }
+        ]
       }
     ],
     "SubagentStop": [
