@@ -117,3 +117,29 @@ The red looked identical from the run summary both times.
 
 After fixing a blocking error, re-run the thing it was blocking. Clearing the
 first error is not progress until you have.
+
+## `npx eslint` cannot be run from inside a package directory
+
+`cd packages/cli && npx eslint src/index.ts` does not lint that package. It dies:
+
+```
+Error while loading rule 'i18n-source/interpolation-match': the "localeDir"
+option resolves to ".../packages/cli/packages/cli/src/i18n/locales/en", which
+is not an existing directory.
+```
+
+`eslint.config.js` sets `localeDir` relative to the REPO ROOT, and ESLint
+resolves it against the CWD, so entering the package doubles the path. Run
+lint from the repo root, always -- there is no per-package invocation.
+
+The rule failing loudly is the correct half and worth preserving: it says in as
+many words that *a path that does not exist would make this rule read nothing
+and silently report no problems*. That is the vacuity class this file exists
+for, caught by a rule author who thought about it. Had it merely resolved to a
+missing directory and shrugged, every locale-interpolation check would have
+passed on zero files, and the green would have been indistinguishable from a
+clean tree.
+
+The trap is not the error. The trap is concluding from it that the package's
+lint is broken, and going to fix `eslint.config.js` -- the config is right, the
+invocation is wrong.
