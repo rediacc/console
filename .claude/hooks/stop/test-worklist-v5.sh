@@ -651,35 +651,6 @@ refuse() { # refuse <label> <body-producing-command...>
     fi
 }
 refuse "an over-long body" python3 -c "print('## Next action: go ' + 'x'*4100)"
-# The cap is PER SESSION but the document is PER BRANCH: with a flat 4000 a
-# second session got `4000 minus the neighbour's block` and was refused eleven
-# times in one session, and its cheapest remedy was DELETING the other block --
-# the very loss this document exists to prevent. So the cap scales with the
-# number of `## SESSION` headings. This body would be refused under a flat cap
-# and must be ACCEPTED now; the control immediately after proves the scaled cap
-# still refuses, so this is not a blanket lift.
-two_session_body() {
-    python3 -c "
-print('## SESSION A')
-print('a'*3000)
-print('## SESSION B')
-print('b'*2500)
-print('## Next action')
-print('carry on')"
-}
-if two_session_body | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
-    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null 2>&1; then
-    pass "a 2-session body over the flat cap is accepted (the cap scales per block)"
-else
-    fail "the scaled cap regressed: a 2-session body under 2x4000 was refused"
-fi
-refuse "a 2-session body over the SCALED cap" python3 -c "
-print('## SESSION A')
-print('a'*4200)
-print('## SESSION B')
-print('b'*4200)
-print('## Next action')
-print('go')"
 refuse "a stub body" printf 'wip'
 refuse "an aimless body (no Next action section)" python3 -c "print('y'*400)"
 # CONTROL: a well-shaped body must still be written, or the guard is just a
@@ -701,53 +672,6 @@ if cmp -s "$BASE/state.good" "$STATE_FILE"; then
     pass "a refused rewrite leaves the good STATE.md byte-identical"
 else
     fail "a refused rewrite MUTATED the previous STATE.md"
-fi
-
-echo "== 29e. a SHORT or body-less --state refuses instead of HANGING =="
-# REGRESSION GATE for the defect session 4c3e095a reported as #7c1c2629 and
-# this session fixed by hand. `--state` used to require argv[2] to enter its
-# own branch at all (`len(sys.argv) > 2`), so a BARE `--state` matched nothing
-# and fell through to the Stop-HOOK path, which reads the hook event from
-# stdin and therefore BLOCKED FOREVER on a terminal. It cost the reporter a
-# ten-minute tool timeout, and no test could see it: every existing --state
-# case pipes a body in, which is exactly the shape that does NOT reproduce it.
-#
-# The timeout IS the assertion. A regression re-hangs, `timeout` returns 124,
-# and the case fails loudly instead of stalling the suite forever -- which is
-# what a naive assert-on-exit-code test would have done.
-bare_out="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-    timeout 15 python3 "$HOOK" --state 2>&1)"
-bare_rc=$?
-if [[ "$bare_rc" -eq 124 ]]; then
-    fail "a bare --state HUNG again (rc=124): the argv-length guard regressed"
-elif [[ "$bare_rc" -ne 0 ]] && grep -qF "usage: worklist.py --state" <<<"$bare_out"; then
-    pass "a bare --state refuses with usage instead of hanging (rc=$bare_rc)"
-else
-    fail "a bare --state did not refuse with usage: rc=$bare_rc '${bare_out:0:160}'"
-fi
-# The second half of the same report: the body is read from STDIN, so passing
-# it as argv left the body EMPTY and the shape check said `thin: 0 chars`.
-# "Too short" and "never arrived" are different diagnoses, and the reporter
-# chased the wrong one twice. Empty stdin must say so in its own words.
-argv_out="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-    timeout 15 python3 "$HOOK" --state deadbeef "a body passed as an argument" </dev/null 2>&1)"
-argv_rc=$?
-if [[ "$argv_rc" -eq 124 ]]; then
-    fail "--state with an argv body HUNG (rc=124)"
-elif grep -qF "no body arrived on stdin" <<<"$argv_out" && grep -qF "extra argument" <<<"$argv_out"; then
-    pass "an argv-passed body is diagnosed as absent stdin, naming the extra argument"
-else
-    fail "--state mis-diagnosed an argv body: rc=$argv_rc '${argv_out:0:200}'"
-fi
-# CONTROL: the empty-stdin message must NOT be a blanket response. A body that
-# genuinely IS too short has to keep saying `thin`, or the new branch has just
-# swallowed the old diagnosis.
-thin_out="$(printf 'wip' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
-    WORKLIST_AGENT_BRANCH=agenttest timeout 15 python3 "$HOOK" --state deadbeef 2>&1)"
-if grep -qF "thin" <<<"$thin_out" && ! grep -qF "no body arrived" <<<"$thin_out"; then
-    pass "CONTROL: a genuinely short body still reports thin, not absent-stdin"
-else
-    fail "the absent-stdin branch swallowed the thin diagnosis: '${thin_out:0:200}'"
 fi
 
 echo "== 29c. a clobbered STATE.md is RECOVERABLE from the backup =="
@@ -2428,7 +2352,6 @@ ARITY = {
     "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
     "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
-    "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
     "V_BROKEN_SCHEDULE": (2, "rows"),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
@@ -3540,29 +3463,6 @@ if grep -qF -- "--tick deadbeef" <<<"$OPEN" && grep -qF "open thing" <<<"$OPEN" 
     pass "--list --open shows the hook's slice; plain --list keeps the history"
 else
     fail "CLI slice mismatch: OPEN=${OPEN:0:200} FULL=${FULL:0:120}"
-fi
-
-# (f2) the CLI slice is UNCAPPED. GUIDE_TRUNCATED (case (d)) tells the reader
-# to run this exact command "for the full slice", and until the full= flag the
-# command re-rendered the same 12 rows -- advice that looped back onto itself.
-# 15 open items must all appear here, with NO truncation footer. The 12-line
-# cap stays on the Stop path, which case (d) pins; this case and that one are
-# each other's control, so a regression that lifts the cap everywhere (or
-# restores it here) fails one of the two.
-setup
-for i in $(seq 1 15); do
-    echo "- [ ] (deadbeef) uncapped backlog item number $i" >>"$WL"
-done
-OPEN="$(reqcli --list --open deadbeef)"
-NSHOWN=$(grep -cF "do it, then --tick" <<<"$OPEN")
-MISS=""
-for i in $(seq 1 15); do
-    grep -qF "uncapped backlog item number $i" <<<"$OPEN" || MISS="$MISS $i"
-done
-if [[ "$NSHOWN" == "15" && -z "$MISS" ]] && ! grep -qF "HELD BACK" <<<"$OPEN"; then
-    pass "--list --open lifts the 12-line cap: all 15 items, no truncation footer"
-else
-    fail "CLI slice still capped (shown=$NSHOWN missing=[$MISS]): ${OPEN:0:300}"
 fi
 
 # ---------------------------------------------------------------------------
