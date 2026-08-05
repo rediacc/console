@@ -19,7 +19,15 @@ import worklist_messages as M
 JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001")
 # Measured on 2026-07-29 with --json-schema: haiku warm $0.011-$0.026 per call
 # at 4.9-20.0s; sonnet $0.231 at 12.1s for the same judgement. Haiku it is.
-JUDGE_BUDGET_USD = os.environ.get("WORKLIST_JUDGE_BUDGET_USD", "0.10")
+# MEASURED, not guessed (2026-08-05): at $0.10 the judge died mid-run with
+# subtype=error_max_budget_usd at cost $0.1025 — and reported it as the
+# unactionable "judge exited 1: " because the envelope goes to stdout, which the
+# failure path was not reading (see _explain_failed_exit). The cap is a post-hoc
+# between-turns stop, not a ceiling, so it must sit clear of the real cost rather
+# than at it: a trivial prompt in a project cwd already reached $0.1025, while the
+# same prompt in the judge's isolated workdir cost $0.0205. $0.25 leaves room for
+# the real prompt (finding + context) without being open-ended.
+JUDGE_BUDGET_USD = os.environ.get("WORKLIST_JUDGE_BUDGET_USD", "0.25")
 JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "120"))
 JUDGE_DISABLED = os.environ.get("WORKLIST_JUDGE") == "off"
 
@@ -107,6 +115,50 @@ TRIAGE_SCHEMA = {
 TRIAGE_VERDICTS = ("inline", "plan-subagent", "operator-only")
 
 
+def _explain_failed_exit(label, proc):
+    """Why a `claude -p` child exited non-zero, in a line an operator can act on.
+
+    THE BUG THIS FIXES (2026-08-05): these paths reported `proc.stderr` only, and
+    the CLI writes its error ENVELOPE TO STDOUT, leaving stderr empty. The gate
+    therefore surfaced the unactionable "judge exited 1: " with nothing after the
+    colon, while stdout was holding is_error, the stop_reason, and the exact cost
+    against the budget. The `is_error` branch further down never ran, because it
+    sits behind returncode == 0. A judge that cannot say why it failed is an
+    escape hatch wearing a gate's clothes -- the same swallowed-failure class the
+    repo scans for, inside the thing that audits it.
+    """
+    bits = ["%s exited %d" % (label, proc.returncode)]
+    env_out = None
+    try:
+        env_out = json.loads(proc.stdout or "")
+    except ValueError:
+        env_out = None
+    if isinstance(env_out, dict):
+        if env_out.get("subtype"):
+            bits.append("subtype=%s" % env_out["subtype"])
+        if env_out.get("api_error_status"):
+            bits.append("api=%s" % env_out["api_error_status"])
+        if env_out.get("stop_reason"):
+            bits.append("stop_reason=%s" % env_out["stop_reason"])
+        cost = env_out.get("total_cost_usd")
+        if isinstance(cost, (int, float)):
+            bits.append("cost=$%.4f of budget $%s" % (cost, JUDGE_BUDGET_USD))
+            try:
+                if cost >= float(JUDGE_BUDGET_USD):
+                    bits.append(
+                        "BUDGET EXHAUSTED -- raise WORKLIST_JUDGE_BUDGET_USD "
+                        "(currently %s) or shorten the prompt" % JUDGE_BUDGET_USD
+                    )
+            except (TypeError, ValueError):
+                pass
+    stderr_tail = (proc.stderr or "").strip()
+    if stderr_tail:
+        bits.append("stderr=%s" % stderr_tail[-200:])
+    elif not isinstance(env_out, dict):
+        bits.append("stdout=%s" % (proc.stdout or "")[-200:].strip())
+    return "; ".join(bits)
+
+
 def run_triage(finding, context):
     """(verdict_dict, error_string). Exactly one is non-None.
 
@@ -148,7 +200,7 @@ def run_triage(finding, context):
     except OSError as exc:
         return None, "triage could not be launched: %s" % exc
     if proc.returncode != 0:
-        return None, "triage exited %d: %s" % (proc.returncode, (proc.stderr or "")[-300:])
+        return None, _explain_failed_exit("triage", proc)
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:
@@ -273,7 +325,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
     except OSError as exc:
         return None, "judge could not be launched: %s" % exc
     if proc.returncode != 0:
-        return None, "judge exited %d: %s" % (proc.returncode, (proc.stderr or "")[-300:])
+        return None, _explain_failed_exit("judge", proc)
     try:
         env_out = json.loads(proc.stdout)
     except ValueError:
