@@ -82,11 +82,25 @@ account_wait_port() {
 # True when a RustFS (S3) endpoint is answering on the port. RustFS returns 403
 # on GET / (no anonymous access), so any HTTP status — not just 2xx — means the
 # service is up; a closed port yields curl code 000.
+#
+# Do NOT reintroduce `|| echo 000` here. curl ALREADY prints 000 on a refused
+# connection and exits non-zero, so the fallback appended a second one and the
+# captured value became "000000" — which is != "000", so this reported ALIVE for
+# a dead port. Everything downstream believed it: account_dev logged "Reusing
+# RustFS already serving", never started the container, still exported
+# CONFIG_R2_*, and the gateway advertised a config store that answered
+# ECONNREFUSED on first use.
+#
+# `|| true` is the repo's established shape for this — .ci/breakpoint/scripts/
+# {start-tunnel,hold-breakpoint,reap-breakpoint-orphans}.sh all document the same
+# trap. It also keeps the assignment from aborting under `set -e`, which today is
+# masked only because both callers invoke this inside an `if`. An empty value
+# (curl absent) counts as dead.
 account_rustfs_alive() {
     local port="$1"
     local code
-    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || echo 000)
-    [[ "$code" != "000" ]]
+    code=$(curl -s -o /dev/null -m 2 -w '%{http_code}' "http://127.0.0.1:${port}/" 2>/dev/null || true)
+    [[ -n "$code" && "$code" != "000" ]]
 }
 
 # Force-remove ghost RustFS containers by name. A corrupt `docker compose`
