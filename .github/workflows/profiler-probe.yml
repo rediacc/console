@@ -1,0 +1,109 @@
+name: Profiler Probe
+
+# Answer, from a real runner, the three questions that cannot be settled by
+# reading anything:
+#
+#   1. What does a job INSIDE the ubuntu-slim container actually see? slim is an
+#      unprivileged container, not a VM, so `nproc` and /proc/meminfo report the
+#      HOST. Whether /sys/fs/cgroup is readable there, and at which version,
+#      decides whether the profiler can size anything at all or is quietly
+#      reading 4 cores / 16 GB on a 1-core / 5 GB box.
+#   2. Does a JavaScript action's `post:` hook still fire when the action is
+#      NESTED inside a composite action? If yes, one line in setup-workspace
+#      covers 26 jobs. If no, every job needs an explicit edit. The direct jobs
+#      below are the CONTROL: without them, "no panel" cannot be told apart from
+#      "the action is broken everywhere".
+#   3. What does a sample really cost on 1 vCPU? The loop is fork-free precisely
+#      to stay out of the way of the work it measures; that claim is timed here
+#      over 100 iterations rather than asserted.
+#
+# workflow_dispatch ONLY, and every job is read-only: it checks out the repo,
+# reads /proc and /sys, times a loop, and writes to its own job summary. It
+# mutates nothing, holds no secrets, and is safe to dispatch at any time.
+#
+# READING THE RESULT: each job's summary panel gets a "Runner probe" section
+# from the facts jobs, and a "Runner Profile" section IF AND ONLY IF the post
+# hook fired. Compare post-direct against post-nested to answer question 2.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  facts-slim:
+    name: Facts (ubuntu-slim)
+    runs-on: ubuntu-slim
+    # ubuntu-slim's 15-minute cap is a CANCELLATION, not a failure: it reads as
+    # neither pass nor fail and poisons anything aggregating it. An explicit
+    # timeout under the cap turns it into an ordinary, legible failure.
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Probe runner facts
+        run: .ci/scripts/ci/profiler/sampler-linux.sh --probe
+        env:
+          PROFILER_RUNNER_LABEL: ubuntu-slim
+
+  facts-latest:
+    name: Facts (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .ci/scripts
+
+      - name: Probe runner facts
+        run: .ci/scripts/ci/profiler/sampler-linux.sh --probe
+        env:
+          PROFILER_RUNNER_LABEL: ubuntu-latest
+
+  post-direct-latest:
+    name: Post hook, direct (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          interval: '5'
+          runner-label: ubuntu-latest
+
+      - name: Burn one core for 40s
+        run: timeout 40 bash -c 'while :; do :; done' || true
+
+  post-nested-latest:
+    name: Post hook, nested in a composite (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler/nest-probe
+        with:
+          interval: '5'
+          runner-label: ubuntu-latest
+
+      - name: Burn one core for 40s
+        run: timeout 40 bash -c 'while :; do :; done' || true
+
+  post-nested-slim:
+    name: Post hook, nested in a composite (ubuntu-slim)
+    runs-on: ubuntu-slim
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler/nest-probe
+        with:
+          interval: '5'
+          runner-label: ubuntu-slim
+
+      - name: Burn one core for 40s
+        run: timeout 40 bash -c 'while :; do :; done' || true

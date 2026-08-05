@@ -1910,6 +1910,208 @@ against a mirrored copy (drop the cancel, re-introduce the suppression term,
 empty `NO_DRAIN_PATTERNS`, treat a cancellation as a failure) each turn it red on
 a different named case, with the unmutated copy green as the control.
 
+## External drift leaves the nightly's verdict: `external_quality` (2026-08-05)
+
+Five of the eight nightlies before 2026-08-04 were red on nothing but external
+drift (a new rclone release, freshly published npm advisories, a new action
+version): main's head had not changed for three of those nights. The
+`no-external-quality` label could never help, because the nightly fires on
+`schedule` where no PR label is readable, and push-to-main skips quality
+entirely, so the one suite that validates main was the one place the escape
+hatch could not reach. Worse, the guard existed in three spellings across five
+sites, one gate (`check:ci-embed-asset-freshness`, the one that actually
+reddened 3 consecutive nightlies) had NO guard at all, and `quality-security`'s
+guard was job-level, silently skipping four fully offline gates alongside the
+one external step it aimed at.
+
+**The shape that landed.** ONE three-state initialize output,
+`external_quality` (`hard` normal PR / `skip` labelled PR / `soft`
+schedule+dispatch), passed to ci-quality.yml as a `workflow_call` input and
+consumed by every external step the same way: `inputs.external_quality !=
+'skip'` in the `if:`, command routed through
+`.ci/scripts/quality/run-external-gate.sh` with `EXTERNAL_QUALITY_MODE`. In
+soft mode the wrapper downgrades a failure to `::warning::` + step summary +
+exit 0, which is exactly what the nightly-red machinery needs: it judges the
+whole-run conclusion, so #544 stops crying wolf and closes on the first green
+nightly. `audit.sh` deliberately keeps only the skip half (operator decision:
+a new advisory against an unchanged lockfile is a real signal about main).
+`check:deps` gains schedule execution it never had (its old guard was
+positive-form PR-only).
+
+**Why a wrapper and not `continue-on-error`:** check-workflows.sh BANS
+continue-on-error repo-wide, and the repo's precedent for non-blocking is the
+script-internal soft-fail (check-embed-asset-freshness.ts). The wrapper is that
+precedent factored out once. It fails closed: unset mode is hard, an unknown
+mode refuses (exit 2) even around a passing command.
+
+**Proofs run, not reasoned.** test-external-gate-wrapper.sh pins all four
+directions (soft-fail green + warning, hard-fail keeps the child's exit code,
+unset->hard, unknown->refuse) plus the step-summary write. check-ci-parity
+initially reported all six converted pointers as "runs something else" -- the
+resolver read the wrapper as the leaf -- so resolveLeaves gained wrapper
+transparency, pinned by two new cases: the wrapped gate counts as covered
+(planted-defect proven: removing transparency fails exactly that case), and an
+UNKNOWN wrapper does NOT count (the transparency cannot leak into generic
+indirection). check-workflow-gates CHECK 2 held the input/with pair together;
+actionlint, check-workflows, shellcheck, shfmt all green.
+
+## Labels: four kill switches existed only in code (2026-08-05)
+
+The sweep behind the external_quality work found that `.github/labels.yml` had
+ZERO consumers (nothing created labels from it, nothing checked drift), and
+four labels referenced by running code did not exist on the repo at all:
+`full-ci` (the scope engine's documented kill switch, which
+scope-reconcile-shadow.sh literally tells the operator to apply), `autopilot`
+and `autopilot-blocked` (hard-required by autopilot-gate.sh), and `rollback` --
+the nastiest, because promote-stable.yml's `label:rollback` search returns
+zero PRs for a nonexistent label, so the rollback promotion-block was silently
+FAIL-OPEN.
+
+All four are now created live and declared in labels.yml, alongside
+declarations for `nightly-red`, `bug` and `automated` (consumed by
+report-nightly-status.cjs; nightly-red stays self-creating on first fire, the
+declaration is inventory). The mechanism that stops the fifth unreachable
+label: `check:ci-label-refs` (.ci/scripts/quality/check-label-references.sh)
+sweeps `.github` and `.ci` with ten curated extraction patterns (one per
+consumption shape in the tree: workflow contains(), gh api labels[]=, search
+filters, cjs includes()/consts/arrays, jq --arg, the AUTOPILOT_LABEL defaults
+in both yml and sh spellings, and detect-bump-type's grep -qx) and fails on
+any reference labels.yml does not declare. Every extractor self-tests against
+a planted sample BEFORE the sweep, and a distinct-labels floor refuses a dead
+sweep outright -- the check-silent-failure-patterns lesson (a green gate that
+scanned zero files for weeks) designed in from the start. The gate's own test
+drives all ten shapes through fixtures, proves the fail direction names label
+AND site, proves declared-but-unreferenced stays legal, and runs the real gate
+seam-free so the sweep provably executes in CI.
+
+## Autopilot: dispatch-campaign arming, model plumbing, hold-open debug (2026-08-05)
+
+**Arming is no longer label-only.** `gh workflow run Autopilot -f pr_number=N`
+is now itself the arming act: round 1 runs off the dispatch, and that round's
+state-comment write records a CAMPAIGN on the metadata line, which gained three
+fields (`campaign: open|closed|none | model: <id> | rounds_max: N`). Later
+`workflow_run` rounds re-arm from the campaign while it is open and rounds
+remain, so the loop no longer depends on a label existing. The label path is
+untouched and still works; `autopilot-blocked` is checked before all three
+paths and beats all three. Stop story, three scopes: cancel the run kills one
+round, `autopilot-blocked` kills the loop, `AUTOPILOT_ENABLED` kills everything.
+
+The carry-over parser in state-comment.sh deliberately drops unknown content
+(anti-tamper), so the new fields ride the metadata line, which is re-rendered
+from validated values every round rather than copied forward. Every value is
+normalized on read AND on write: campaign is one of three literals, model
+matches a tight identifier shape, rounds_max is a small integer, and anything
+else collapses to its sentinel. The gate does not re-parse that line -- it calls
+the new `state-comment.sh fields` subcommand, so the format has exactly one
+reader and one writer, and a round-trip case (render -> classify) is what would
+go red if they ever diverged. The 400-char line cap and 55 KB compaction are
+untouched.
+
+**Campaign termination is real, not aspirational.** The model job only runs for
+fix and review-response, so it can never observe mode `done`; a campaign closed
+only there would stay open forever and re-arm on every later CI completion. The
+finish job therefore got a `Close the campaign` step (same `AUTOPILOT_ALLOW_STATE`
+flag, same render call, `--campaign closed`). The round cap is the second
+terminator: the campaign path will not re-arm once `ROUNDS_DONE >= MAX_ROUNDS`.
+
+**Model and effort plumbing.** The model job's `claude_args` no longer hardcodes
+`--model claude-sonnet-5`. The gate resolves the effective model as dispatch
+input > campaign field > `claude-sonnet-5`, validates it against a two-entry
+allowlist (an unknown value is a typo, not an instruction: it falls back rather
+than failing the round after paying for the runner), and emits it as a decision
+output. Round caps resolve the same way with `AUTOPILOT_MAX_ROUNDS` as the third
+fallback and 25 as the fourth. The argument list is assembled in one env-routed
+step output, so there is a single copy of it.
+
+**The `effort` input is wired, and the forwarding was verified rather than
+assumed.** Evidence, at the pinned action SHA `fa7e2f0a` (v1.0.180): the action
+leaves every unrecognised `claude_args` flag in `extraArgs`
+(`base-action/src/parse-sdk-options.ts` extracts only model, add-dir,
+allowed/disallowed-tools, mcp-config and setting-sources, and passes the rest
+through); `@anthropic-ai/claude-agent-sdk` (dependency `^0.3.217`, current
+0.3.222) emits every `extraArgs` entry to the CLI verbatim as `--<key> <value>`
+(`sdk.mjs`: `for (let [W, Se] of Object.entries(Zt)) ... $w(H, W, Se)`, with the
+intervening filter a pass-through that only touches sandbox/settings); and the
+CLI accepts `--effort <level>` -- the SDK emits exactly that flag for its own
+`effort` option (`if (this.options.effort) H.push("--effort", this.options.effort)`),
+its types declare `'low'|'medium'|'high'|'xhigh'|'max'|number`, and the local
+CLI 2.1.222 `--help` lists it. So the lever is live, not decorative. It is
+dispatch-ONLY on purpose: unlike model and max_rounds it is not recorded in the
+campaign, because raising effort is a decision about one hard failure rather
+than a property of the whole run.
+
+**Hold-open debug session, and why it sits where it sits.** A dispatch may now
+carry `debug-shell` and hold the runner open behind a quick Cloudflare tunnel
+with a tmate shell, driven by the vendored `.ci/breakpoint/scripts/`. The steps
+sit strictly BETWEEN "Assert the model left HEAD alone" and "Mint post-model app
+token", and that placement is the whole security argument: it is the only window
+where the workspace holds the round's entire result and no write credential
+exists anywhere on the runner. Two steps later `Wire push authentication` writes
+the app token into `.git/config`, and a human on the box after that line holds a
+repo-write bearer token. Three conditions gate every step: the input, the event
+being `workflow_dispatch` (an autonomous round must never hold a runner open),
+and the gate's new `dispatch_trusted` output. That third one is not redundant --
+a round can be armed by the LABEL, whose trust check is the label applier, so
+without it anyone with dispatch rights could get a shell on a runner holding the
+repo source by dispatching an already-armed PR.
+
+Three further calls, each deliberate: a credential SCRUB with an assertion runs
+before the tunnel (a scrub whose result is never checked is a claim, not a
+control); the breakpoint scripts are invoked from `$RUNNER_TEMP/harness`, the
+trusted copy staged before the PR head landed, because running `.ci/breakpoint`
+out of the workspace would execute PR-authored shell; and the Cloudflare token
+is deliberately NOT in any of these steps' env. Quick mode never reads it
+(`start-tunnel.sh` requires it only in `start_named`) and `stop-breakpoint.sh`
+skips its whole account-side block without it, so passing a tunnel-edit +
+`rediacc.io` DNS-edit token into the one step sequence whose purpose is to put a
+human on the runner would hand that human the token for nothing. This is a
+deliberate deviation from a literal reading of the brief, called out here rather
+than buried. The tunnel URL is not a step output and appears in no `env:` block,
+for the reason breakpoint learned in run 30254567365. The job timeout is
+`350 || 30` by expression -- 350 rather than 360 for breakpoint's reason, and a
+choice between two constants because Actions expressions have no arithmetic.
+
+**New gate: `check:ci-autopilot-bp-align`.** breakpoint.yml is frozen in
+MANIFEST.sha256 and GitHub has no include mechanism for workflow inputs, so the
+three debug inputs are hand-copied -- and hand-copied shapes drift silently. The
+gate extracts breakpoint's `duration` option list and the two booleans'
+type+default and compares them to autopilot's copies (breakpoint is canonical;
+the gate never asks anyone to edit the frozen file). Descriptions are
+deliberately not compared: breakpoint's duration text is about named-mode Access
+logins, which the quick-tunnel autopilot does not have. Anti-vacuity is the
+point of most of its code: a missing file, a missing input block, a missing
+field, or an options list under five entries all exit 1, because
+empty-equals-empty is this gate's only real failure mode. Its test proves the
+real tree, unmutated copies through the env seams, a removed duration option, a
+flipped `send-email` default, both missing-file directions, a renamed input
+block, and the short-list floor.
+
+**Also fixed while in here.** `Build event fixture` used to end in a bare
+`jq -e '.workflow_run.id'`, so a dispatch aimed at a head whose CI had not
+finished died with exit 1 and nothing on stdout explaining it. It now sets a
+`ready` output, emits a `::notice::` naming the head and telling the operator to
+dispatch again after CI completes, and the two downstream steps that need the
+event fixture are gated on it -- a no-go with a reason instead of a red step.
+
+**claude-review model input.** `claude-review-reusable.yml` gained an optional
+`model` workflow_call input (default `claude-sonnet-5`) consumed at BOTH
+hardcode sites through ONE job-level `REVIEW_MODEL` env var: the real
+`claude_args` and the `CLAUDE_ARGS_SENT` log echo were two independent copies of
+the same string, which is a log that can lie about the run it describes. The
+console caller gained a matching `workflow_dispatch` choice input; submodule
+callers are untouched and get the default.
+
+**Gates run:** test-autopilot-harness (216 assertions), test-autopilot-workflow-invariants
+(30, still "4 jobs scanned" -- no new job), test-autopilot-breakpoint-alignment (23),
+test-gate-paths-exist, test-gate-anti-vacuity, test-ci-parity, plus
+check:ci-autopilot-workflow, check:ci-autopilot-bp-align, check:ci-parity,
+check:ci-workflows, check:ci-actionlint, check:ci-shell-lint, check:ci-label-refs
+and `shfmt -i 4 -ci -d` on every touched script. Two planted defects, not
+reasoned: removing one `duration` option from a fixture copy fires the alignment
+gate with its pinned diagnostic, and disabling the gate's dispatch-arming branch
+fails exactly the dispatch case in the harness test (restored md5-identical,
+green again afterwards).
+
 ---
 
 ## 2026-08-05 -- review-gate blind spots, a review-budget undercount, and a durable agent report inbox

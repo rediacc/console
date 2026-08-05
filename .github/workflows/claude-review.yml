@@ -39,6 +39,12 @@ on:
         description: 'PR number to manually re-review (use when workflow_run does not fire)'
         required: true
         type: string
+      model:
+        description: 'Model for this review round.'
+        required: false
+        type: choice
+        default: 'claude-sonnet-5'
+        options: ['claude-sonnet-5', 'claude-opus-5']
 
 permissions:
   contents: read
@@ -79,5 +85,8 @@ jobs:
     with:
       required_check: CI Complete
       pr_number: ${{ inputs.pr_number || '' }}
+      # Empty on the two automatic entry points, where the reusable's own
+      # default applies; only a manual re-review can pick a different model.
+      model: ${{ inputs.model || 'claude-sonnet-5' }}
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}

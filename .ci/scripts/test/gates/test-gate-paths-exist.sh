@@ -184,7 +184,37 @@ collect_dead_paths() {
     done < <(scan_targets) | sort -u
 }
 
+# The scan must be WHOLE before an empty result means anything. Every
+# assertion here reads an empty `dead` list as "no dead paths", so a scan that
+# silently walked a fraction of the tree hands back a clean bill of health from
+# an instrument that barely ran.
+#
+# THIS IS NOT HYPOTHETICAL. Inside a full 168-gate `npm run ci` on 2026-08-05
+# this suite finished in 90.6s against 210-231s whenever it was healthy, and
+# its own planted-defect control -- which writes a fixture naming a workspace
+# that has never existed and asserts the detector reports it -- came back
+# EMPTY. Alone, in a 2-gate batch, in a 3-gate batch and in a re-run of the
+# exact 4-gate batch that failed, it passed every time. The signal was never a
+# co-running gate; it was DURATION, i.e. the walk terminating around 40% of
+# the way through under whatever pressure a full fleet applies.
+#
+# The floor converts that silent truncation into a loud refusal. It is set
+# well under the ~283 files the three legs yield today (86 + 24 + 173) so
+# ordinary churn never trips it, and far above the handful a truncated walk
+# would return.
+SCAN_FLOOR="${GATE_PATHS_SCAN_FLOOR:-150}"
+
+assert_scan_is_whole() {
+    local n
+    n="$(scan_targets | wc -l)"
+    if ((n < SCAN_FLOOR)); then
+        log_fail "scan_targets yielded only $n file(s), floor $SCAN_FLOOR: the walk TRUNCATED, so an empty finding list here would be a false clean bill rather than a clean tree"
+    fi
+    log_pass "the scan is whole ($n files, floor $SCAN_FLOOR)"
+}
+
 test_no_dead_path_constants() {
+    assert_scan_is_whole
     local dead
     dead="$(collect_dead_paths)"
     if [[ -n "$dead" ]]; then
@@ -204,6 +234,12 @@ test_detector_fires_on_a_deleted_workspace() {
     trap "rm -f '$fixture'" RETURN
     printf 'const p = "packages/definitely-not-a-workspace/src/index.ts";\n' >"$fixture"
 
+    # Guard the CONTROL too, and for the sharper reason: this is the case that
+    # actually failed under load. Without the floor its failure message was
+    # "not in ''", which reads as "the detector is broken" when the truth was
+    # "the walk never reached the fixture". Diagnosing the wrong thing cost a
+    # full bisect across four batch shapes.
+    assert_scan_is_whole
     local dead
     dead="$(collect_dead_paths)"
     assert_contains "$dead" "packages/definitely-not-a-workspace" \

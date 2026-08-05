@@ -124,6 +124,93 @@ cached `node_modules` (200 MB, ~2.5s) instead of running `npm ci` per job. On a
 cache miss it falls back to `.ci/scripts/setup/install-deps.sh`, so a miss is
 slow, never broken.
 
+### Runner profiling is an invariant, not a habit (`check:ci-profiler-coverage`)
+
+Standard runners are free and unlimited on this public repo, which is exactly
+what makes oversizing invisible: a job that uses ~1 core on a 4-vCPU
+`ubuntu-latest` VM burns four cores' worth of the world's electricity to do one
+core's work, and no bill ever says so. `./.github/actions/profiler` samples
+cpu/ram/disk/net and appends a profile to the job's own summary panel, so runner
+sizing becomes a measurement instead of a guess. Coverage maintained by habit
+decays the first time somebody adds a job in a hurry, so
+`.ci/scripts/quality/check-profiler-coverage.sh` makes it a build failure.
+
+It asserts two relations over `.github/workflows/*.yml`:
+
+- **Coverage.** Every job whose `runs-on` resolves to Linux (`ubuntu-*`,
+  including matrix legs) must use the action. Reusable-workflow callers
+  (`uses: ./.github/workflows/...`) are excluded: they have no runner of their
+  own, and their steps are the called workflow's jobs, which the gate sees in
+  that file. macOS and Windows jobs are out of scope (the sampler is Linux-only).
+- **Configuration.** A job that uses the action must reference it as
+  `./.github/actions/profiler` (a missing `./` is read as `owner/repo` and fails
+  at workflow parse time), pass only inputs `action.yml` declares, keep
+  `interval` a positive integer in 1..300, and pass a `runner-label` that agrees
+  with its own `runs-on`. That last one matters most: `runner-label` arms the
+  HOST_LEAK check, and a copy-pasted `runner-label: ubuntu-latest` on an
+  `ubuntu-slim` job makes the sampler read the host's 4 cores / 16 GB as the
+  job's own, which is wrong in the direction that moves work onto a runner that
+  cannot hold it.
+
+Two design points worth knowing before you edit a workflow:
+
+- **It fails CLOSED on what it cannot resolve.** `runs-on: ${{ inputs.runner }}`
+  has no static answer, so the job counts as REQUIRING coverage. "We could not
+  tell" costs an allowlist line with a reason; it is never silently exempt.
+- **Coverage is DIRECT.** A wrapping composite action does not count, because
+  whether a JavaScript action's `post:` hook fires when nested inside a composite
+  is the open question `profiler-probe.yml` exists to answer. It is
+  `workflow_dispatch`-only and has never been dispatched, so nobody knows yet;
+  compare the `post-direct-latest` and `post-nested-latest` job summaries after a
+  dispatch, which are identical except for the nesting precisely so "no panel"
+  can be told apart from "the action is broken". When it answers yes, set
+  `PROFILER_COVERAGE_COVERING_ACTIONS`'s default in the gate to the wrapping
+  composite and every job that already calls it is covered in one line.
+
+  **Do not flip that seam without also extending the CONFIG relation.** The
+  configuration checks only inspect DIRECT uses, and a composite forwards a
+  fixed input, so a job covered through the wrapper passes no per-job
+  `runner-label` and is checked for none.
+
+  How much that costs depends on runtime behaviour that lives in
+  `.ci/scripts/ci/profiler/report.awk` (`advise()`) and `sampler-linux.sh`, and
+  it has moved twice already, so read those rather than trusting a summary here.
+  The stable parts:
+
+  - **A cgroup-tier reading is self-validating.** The kernel-enforced quota is
+    ground truth about the box regardless of what anyone labelled it, so the
+    advisor keys on the ceiling there and a missing or wrong label costs
+    nothing. A `PROC_HOST` reading is not: `/proc` is only the job's ceiling if
+    the job owns the whole machine, which is exactly what the label asserts and
+    cannot prove.
+  - **So the label matters only when the cgroup read failed**, and there its
+    absence mutes the advisor while a wrong value is what the runtime guards
+    (`HOST_LEAK`, `MISLABEL SUSPECTED`) exist to catch.
+
+  The gate's runs-on/runner-label agreement check is authoring-time
+  defence-in-depth over those runtime guards, not a substitute for them: it
+  fires before a run exists, off the workflow text, with no dependence on
+  fingerprint heuristics. It needs BOTH values to be literals, which the wrapper
+  path prevents. And there is no `runs-on` value in any runner-side context
+  (`runner.os` is `Linux` for slim and latest alike), so the label can only be
+  threaded by hand: either each job passes it through the wrapper, which is most
+  of the edits the nesting was meant to avoid, or the guard needs a different
+  signal. Settle that first, then extend the config relation to the wrapper's
+  call sites in the same change.
+
+**The allowlist can only shrink.** `.profiler-coverage-allowlist` takes
+`<workflow>.yml:<job>` entries under the usual `# BLOCKER:` convention
+(`docs/agent/suppressions.md`). It currently carries the rollout ledger: 90
+jobs unwired as of 2026-08-05, plus `breakpoint.yml` (frozen in
+`.ci/breakpoint/MANIFEST.sha256`, so a console-only step would fail the drift
+gate) and `profiler-probe.yml`'s own experiment arms. Delete a job's line in the
+commit that profiles it: the gate re-derives its oracle every run and rejects an
+entry whose job no longer exists, is now profiled, is a caller, or does not run
+on Linux, so a forgotten deletion is a build failure rather than dead weight.
+That is the liveness half of the BLOCKER convention, enforced inside the gate
+rather than by a probe in `scripts/check-suppression-liveness.ts`, because the
+oracle IS the parse the gate already performs.
+
 ### CI watchdog and auto-retry
 
 The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-older-runs.sh`) that manage run lifecycle.
@@ -199,6 +286,35 @@ Labels apply to PR runs only. A `push` or `schedule` run has no PR, so none of
 them are readable there -- which is why the nightly exemption above is in code
 rather than in a label.
 
+### External gates and `external_quality` (hard / skip / soft)
+
+The externally-dependent quality gates (`check:deps`, `check:ci-go-deps`,
+`check:ci-embed-asset-freshness`, `check:actions`, `check:ci-external-links`,
+`check:ci-dkim-notify`, plus the audit's skip half) are controlled by ONE
+three-state flag, `external_quality`, computed by ci.yml's initialize job and
+passed into ci-quality.yml as a `workflow_call` input:
+
+- **hard** -- normal PR: a failure blocks, exactly as before.
+- **skip** -- PR carrying the `no-external-quality` label: the steps do not run
+  at all (offline branch work; the lookups cannot succeed).
+- **soft** -- schedule / workflow_dispatch: the gate RUNS and reports, but
+  `.ci/scripts/quality/run-external-gate.sh` downgrades a failure to a
+  `::warning::` + step summary + exit 0. The nightly's red then means "main is
+  broken", never "the world moved" (5 of the 8 nightlies before 2026-08-04 were
+  red on external drift alone, and the `nightly-red` issue cried wolf).
+
+`audit.sh` deliberately gets only the skip half: a new production advisory
+against main's unchanged lockfile is a real signal about main, so it still
+reddens the nightly (operator decision 2026-08-04).
+
+Do not hand a new external gate its own `if:` expression or
+`continue-on-error` (banned by check-workflows.sh): give the step
+`inputs.external_quality != 'skip'`, route its command through
+`run-external-gate.sh`, and pass `EXTERNAL_QUALITY_MODE`. The wrapper fails
+closed (unset or unknown mode behaves as hard), check-ci-parity resolves
+through it (the wrapped command stays the leaf), and
+test-external-gate-wrapper.sh pins all four directions.
+
 Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
 
 ### The nightly is reported, not just run
@@ -218,6 +334,100 @@ loudly). It is schedule-equivalent by construction -- `full_suite` is
 push or pull_request -- so it exercises the nightly path without waiting a day.
 That matters because the alternative is one attempt per 24 hours, which is not a
 feedback loop.
+
+### Labels: the chain from a code reference to a PR comment
+
+Labels in this repo are kill switches (`full-ci` bypasses the scope engine's
+skips, `no-cancel-push` disarms the watchdog, `autopilot-blocked` latches the
+babysit loop off, `rollback` blocks stable promotion), and nothing about a label
+is self-documenting. Four links now connect a label reference to a human who can
+understand it, each enforced by a different thing:
+
+| Link | Enforced by |
+|------|-------------|
+| code names a label -> declared in `.github/labels.yml` | `check:ci-label-refs` (`.ci/scripts/quality/check-label-references.sh`) |
+| declared <-> the label exists on the repo | `check:ci-label-inventory` (`.ci/scripts/quality/check-label-inventory.sh`) |
+| declared (and not `guide: false`) -> explained on every PR | `label-guide` job in `ci.yml` -> `.ci/scripts/ci/label-guide-comment.cjs` |
+
+**The inventory gate** reconciles `.github/labels.yml` against the live repo in
+both directions. Declared-but-absent is the direction that already bit:
+`rollback` was declared and referenced while not existing, and
+`promote-stable.yml` searches `label:rollback` -- a search for a nonexistent
+label returns zero PRs rather than an error, so the promotion block silently
+never fired. Live-but-undeclared is the quieter direction: such a label never
+reaches the PR guide, so people can apply it and nobody can look it up. If the
+live list cannot be read (no token, API error, empty response) the gate REFUSES
+rather than passing; an empty label list is a failed read, never a clean tree.
+
+**Verify-at-read, for the absent direction only.** The list is a snapshot and
+the repo's labels change under it. A full run once accused `no-auto-retry` of
+not existing while it existed and `watchdog-monitor.cjs:1105` was reading it --
+someone was mid-way through a delete-and-recreate, and the paginated list came
+back one short. The empty-list guard does not catch wrong-by-one, so a race
+produced this gate's loudest message, the one about `rollback` and silent
+fail-open. A gate that cries wolf that hard gets ignored, and is then worth
+nothing on the day it is right. So a label that looks absent is re-read on its
+own (`gh api repos/{owner}/{repo}/labels/<name>`, URL-encoded) before it is
+accused: a 404 confirms the finding, a 200 drops it with a note, and anything
+else (403, 500, network) counts as "could not tell" and the finding stands.
+Only this direction needs it -- a stale read loses entries, it never invents
+them, so an extra name cannot be an artifact. In injected mode
+(`LABEL_INVENTORY_LIVE_FILE`) there is no API to re-read, so the injected list
+stands as its own authority and findings are reported; `LABEL_INVENTORY_PROBE_FILE`
+is the separate seam that lets the test drive both re-verify outcomes offline.
+One label is exempt from the absent direction, via a commented allowlist inside
+the script: `nightly-red` is created on demand by `report-nightly-status.cjs`
+right before it opens the rolling issue. The allowlist re-verifies both halves of
+its own entry each run, so the exemption expires rather than rots.
+
+Its CI coverage is `kind: 'test'`: `test-label-inventory.sh` drives the real gate
+over the real `.github/labels.yml` inside the `Quality-gate unit tests` battery,
+with the live list injected, plus controls that drop a real label and add an
+undeclared one. The **live** GitHub read is the one part that lane cannot do (it
+holds no label-read token); run `npm run check:ci-label-inventory` locally for
+that.
+
+**The PR label guide** is a single sticky comment posted by the `label-guide`
+job, rendered from `.github/labels.yml` so it cannot become a second, rotting
+copy. It is identified by the HTML marker `<!-- rediacc:label-guide -->` and is
+idempotent in the strong sense: the job creates when absent, updates when the
+rendered body differs, and performs **zero API writes** when it is byte-identical
+-- otherwise a PR would collect one guide per push. Only a comment authored by a
+BOT counts as the guide, so an outsider cannot suppress it by posting a fake one.
+A marker comment from a human is ignored, not rewritten.
+
+**`guide: false` separates declaring from listing.** All 26 labels must be
+declared (the inventory gate reconciles the whole file), but only 12 are listed
+on the PR: GitHub's stock defaults, bot-applied labels, and the three with zero
+consumers in code carry `guide: false`. The guide exists because the roster got
+too long to remember, so padding it with `duplicate` and `good first issue`
+would recreate the problem it solves. **Absent means true**, so a new label is
+visible unless someone opts it out -- failing toward showing a label, because
+one that quietly vanishes from the guide is invisible while one that appears
+needlessly is a row too many. A present value must be exactly `true` or `false`;
+anything else is a loud parse failure rather than a coerced truthy string, since
+coercion flips visibility in the direction nobody notices. The visible set
+carries its own anti-vacuity floor, separate from the declaration floor: a
+parser change that mis-read the field would otherwise leave the declaration
+count satisfied while the rendered table came out empty.
+
+Three labels are declared as **historical only** and worth knowing about,
+because their own descriptions used to claim otherwise: `release` does not
+trigger CD (`finalize-release-sentinel` dispatches unconditionally and reads no
+label), `description-current` is not read by the PR-description gate (which uses
+`lastEditedAt`), and `codex` has no consumer at all. They stay declared rather
+than deleted because deleting a label strips it from the history of every PR
+that carries it. A label's description is not evidence of its behaviour; the
+`check:ci-label-refs` sweep is.
+
+The job is separate from `initialize` for one reason worth remembering: it needs
+`pull-requests: write`, and no other job in `ci.yml` holds that. `initialize`
+carries a 20-step surface (checkout, a five-repo app token, GHCR login, the scope
+engine), and widening its grant to buy one comment is the wrong trade. Its result
+is soft-required in `assert-ci-complete.sh` as `LABEL_GUIDE` -- it legitimately
+skips on non-PR events, but a genuine failure still reddens `CI Complete`, which
+is what you want: the commenter throwing means `.github/labels.yml` stopped
+parsing, and that same file feeds the inventory gate.
 
 ### Draft-until-green and the merge hooks
 

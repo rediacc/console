@@ -1,0 +1,31 @@
+name: Profiler Nest Probe
+description: >
+  A composite action whose ONLY job is to wrap the profiler JS action, so a
+  dispatch of profiler-probe.yml can answer the question nobody can answer by
+  reading the docs: does a JavaScript action's `post:` hook still fire when the
+  action is used from INSIDE a composite action?
+
+  The answer decides the whole rollout shape. If post fires when nested, one
+  `uses:` line inside setup-workspace covers every job that already calls it.
+  If it does not, every job needs its own explicit edit. Guessing wrong means
+  either 26 pointless edits or 26 jobs that silently profile nothing.
+
+  This exists only for the probe workflow. It is not part of the rollout.
+
+inputs:
+  interval:
+    description: Seconds between samples, passed straight through.
+    required: false
+    default: '10'
+  runner-label:
+    description: Runner label, passed straight through to arm the HOST_LEAK check.
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/profiler
+      with:
+        interval: ${{ inputs.interval }}
+        runner-label: ${{ inputs.runner-label }}
