@@ -160,7 +160,7 @@ control.
 
 ## The pattern worth naming: "works on the operator's box"
 
-Three separate CI reds on the night of 2026-08-04 shared one shape — a dependency
+Four defects found on the night of 2026-08-04 shared one shape — a dependency
 that is warm, present, or already running on the operator's workstation and cold,
 absent, or unstarted on a fresh runner. None was detectable by reading code, and
 each cost a CI round to find:
@@ -183,7 +183,18 @@ each cost a CI round to find:
    because RustFS genuinely IS listening there. **Blast radius is wider than CI**:
    every developer whose RustFS is not already up got the same false reassurance.
 
-These three share a MECHANISM, not merely a resemblance, and the mechanism is the
+4. **A capability probe that says "usable" when the thing is not usable** — and this
+   one is in the PRODUCT, not the harness. `packages/cli/src/utils/secure-storage.ts`
+   `selectBackend()` decides whether Linux gets the kernel keyring or the file
+   fallback by running `keyctl show @u` and falling back only if that throws. On a
+   GitHub runner it exits zero while the keyring is unusable, so `KeyctlStorage` is
+   selected and then fails at `keyctl add` with `keyctl_read_alloc: Permission
+   denied`. The fallback the code already contains never gets reached. Proof it was
+   selected: a keyctl error surfaced at all, which is impossible if the probe had
+   thrown. Real users on keyring-less or restricted Linux boxes hit the same wall,
+   and see an "OS keyring" error the fallback exists to prevent.
+
+These four share a MECHANISM, not merely a resemblance, and the mechanism is the
 useful part: in every case the operator's machine HAS the thing — llvm-strip
 installed, the image cached, RustFS listening — so **the branch that handles its
 absence has never once executed on any machine where the work is done.** Anything
@@ -199,6 +210,25 @@ check, because it converts a loud failure into a confident lie, and the operator
 own environment is the one place that lie is never exposed.
 
 ## Found-not-fixed ledger (final)
+
+- **`passkeySecretMissing` is the wrong noun on the password path.** A user who
+  enrolled with `rdc config remote enable --password` sees "Passkey secret not found
+  in OS keyring" when the keyring is unavailable. Verified from source, and the
+  behaviour is CORRECT: `config-remote-password.ts:126-127` deliberately mints a
+  password-specific key id (`rdc:pw:<uuid>`) and stores the slot secret in the
+  keyring; `remote-config-adapter.ts:315` reads it back through the shared
+  `deriveCek`, which serves every enrollment method. Only the message is wrong, and
+  only in its noun — the remedy it names (`rdc config remote enable`) is right for
+  both methods. Not fixed because the string exists in 13 locales, so a one-word
+  correction ripples across twelve translations; ready-to-run whenever the next
+  locale pass happens.
+- **`.ci/lib/account.sh` cannot be sourced under `set -euo pipefail`.** Errexit trips
+  on its own re-source guard (account.sh:8 — `[[ -n "${ACCOUNT_LIB_LOADED:-}" ]] &&
+  return 0` returns non-zero on a first load) and nounset trips on unset variables it
+  and `find-port.sh` reference. `run.sh` is unaffected because it does not source the
+  library under strict flags. The new probe gate works around it with `set +eu` in a
+  subshell and documents why. Not fixed because the blast radius is the whole account
+  path and nothing is blocked by it.
 
 - **renet `build.sh::ebpf_generate` staleness guard is mtime-based** (`.o -nt .c`).
   Git does not preserve mtimes, so on a fresh checkout the committed BPF object is
