@@ -88,6 +88,12 @@ REGISTRY=(
     # would be an ENVIRONMENT failure wearing a vacuity failure's exit code, and
     # pinning that would assert nothing about the gate.
     ".ci/scripts/quality/check-python-lint.sh|VACUOUS INPUT"
+    # Same shape, different subject: against an empty tree `git ls-files` returns
+    # no JS/TS at all and the detector would report "no inline Python" over zero
+    # files -- indistinguishable from a clean repo. The MIN_FILES floor turns
+    # that into a loud refusal. Its own detector controls run first and abort
+    # separately, so a control failure cannot masquerade as this one.
+    ".ci/scripts/quality/check_inline_python.py|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
@@ -244,8 +250,15 @@ run_against_empty_tree() {
     # deliberately soften to a warning locally (require_submodule in
     # .ci/scripts/lib/common.sh does exactly that, so a fresh clone without
     # --recursive stays workable while CI still fails loudly).
+    # .sh and .py are repo-root-relative and run directly; everything else is a
+    # .ts under scripts/, run via tsx. The else-branch used to be the ONLY
+    # alternative to .sh, which silently resolved any new language to
+    # "scripts/<path>" and failed as a stale-registry error rather than as an
+    # unsupported one -- the first .py entry hit exactly that.
     if [[ "$script" == *.sh ]]; then
         out="$(cd "$TEMP" && CI=true bash "$script" 2>&1)" || rc=$?
+    elif [[ "$script" == *.py ]]; then
+        out="$(cd "$TEMP" && CI=true python3 "$script" 2>&1)" || rc=$?
     else
         out="$(cd "$TEMP" && CI=true npx tsx "scripts/$script" 2>&1)" || rc=$?
     fi
@@ -283,8 +296,9 @@ test_registry_entries_exist() {
     local entry script
     for entry in "${REGISTRY[@]}"; do
         script="${entry%%|*}"
-        # .sh entries are repo-root-relative; .ts entries are relative to scripts/.
-        if [[ "$script" == *.sh ]]; then
+        # .sh and .py entries are repo-root-relative; .ts entries are relative
+        # to scripts/.
+        if [[ "$script" == *.sh || "$script" == *.py ]]; then
             [[ -f "$REPO_ROOT/$script" ]] ||
                 log_fail "registry names $script, which does not exist -- the registry has gone stale"
         elif [[ ! -f "$REPO_ROOT/scripts/$script" ]]; then

@@ -88,18 +88,26 @@ def findings(text):
                     % (region.count("\n") + 1, len(hits)),
                 )
             )
-    for m in _DASH_C.finditer(text):
-        line_start = text.rfind("\n", 0, m.start()) + 1
-        line = text[line_start : text.find("\n", m.start())]
-        # `python3 -c` naming a module path or a short fixed probe is fine; what
-        # is not fine is handing it source assembled in this file.
-        if "${" in line or "+" in line.split("-c", 1)[1]:
-            out.append(
-                (
-                    text.count("\n", 0, m.start()) + 1,
-                    "python -c is handed source built in this file",
-                )
-            )
+    if not out:
+        # `python -c` is a CORROBORATING signal, never an independent one.
+        #
+        # It was independent for exactly one revision, and it immediately
+        # produced a false positive on the very code that FIXED the original
+        # defect: once the program moved to setup-script.py, bootstrap.ts still
+        # reads `python3 -c ${script} ${config}` -- and ${script} is now a
+        # shell-quoted embedded CONSTANT, which is precisely what was wanted.
+        # Flagging that would punish the fix and teach the next reader that this
+        # gate is noise, which is how a gate gets deleted.
+        #
+        # If no quoted region in this file looks like Python, there is no
+        # program here for an interpolation to be part of. Whatever reaches -c
+        # came from somewhere else: from a literal, which this same rule catches
+        # in the file that holds it, or from a real .py file, which is the goal.
+        return out
+    out.extend(
+        (text.count("\n", 0, m.start()) + 1, "python -c executes the embedded source flagged above")
+        for m in _DASH_C.finditer(text)
+    )
     return out
 
 
@@ -112,12 +120,19 @@ _MUST_FLAG = [
         "a program in a template literal",
         "const s = `\nimport os\nimport pathlib\n\ndef go():\n    print(os.getcwd())\n`;\n",
     ),
-    ("python -c handed an interpolation", "const c = `python3 -c '${script}'`;\n"),
+    (
+        "python -c alongside an embedded program",
+        "const s = `\nimport os\ndef go():\n    print(os.getcwd())\n`;\nconst c = `python3 -c '${s}'`;\n",
+    ),
 ]
 _MUST_CLEAR = [
     ("naming the interpreter binary", "const pythonBin = process.env.BIN || 'python3';\n"),
     ("the word python in a list", "const words = ['bash', 'git', 'npm', 'node', 'python'];\n"),
     ("a gate id that contains python", "{ id: 'check:ci-python-lint', gate: true }\n"),
+    (
+        "python -c running an IMPORTED script -- the fix, not the defect",
+        "import SETUP_SCRIPT from './setup-script.py';\nconst cmd = `python3 -c ${q(SETUP_SCRIPT)} ${q(cfg)}`;\n",
+    ),
     (
         "prose mentioning def and import",
         "// we import os-level defaults here\nconst x = 'import the config, then define it';\n",
