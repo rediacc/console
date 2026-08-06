@@ -79,10 +79,10 @@ import grp
 # Configuration
 ENV_BLOCK = '''${escapedEnvBlock}'''
 BASH_FUNCTIONS = '''${escapedBashFunctions}'''
-UNIVERSAL_USER = '${universalUser}'
-SERVER_INSTALL_PATH = '${serverInstallPath}'
-MARKER_START = '${REDIACC_MARKER_START}'
-MARKER_END = '${REDIACC_MARKER_END}'
+UNIVERSAL_USER = '${escapeForPythonString(universalUser)}'
+SERVER_INSTALL_PATH = '${escapeForPythonString(serverInstallPath)}'
+MARKER_START = '${escapeForPythonString(REDIACC_MARKER_START)}'
+MARKER_END = '${escapeForPythonString(REDIACC_MARKER_END)}'
 
 def get_uid_gid(username):
     """Get UID and GID for a username"""
