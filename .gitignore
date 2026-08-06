@@ -22,6 +22,11 @@ packages/*/src/**/*.d.ts
 # E2E tests use dual .ts/.js files (noEmit tsconfig, manually maintained JS)
 !packages/e2e-tests/src/**/*.js
 !packages/e2e-tests/src/**/*.d.ts
+# Hand-authored ambient declarations, which are SOURCE and must ship. The rule
+# above exists to keep COMPILER-EMITTED .d.ts out of src/; it silently swallowed
+# packages/cli/src/types/py-modules.d.ts, so tsc passed locally and would have
+# failed in CI on a file that was never committed.
+!packages/*/src/types/*.d.ts
 
 # Desktop package compiled config
 packages/desktop/*.js
