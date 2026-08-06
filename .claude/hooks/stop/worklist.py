@@ -433,6 +433,24 @@ def _item_cli(argv, worklist):
     if mode == "--lease":
         if len(argv) < 4:
             die(M.CLI_ITEM_USAGE)
+        # RELEASE, the missing third exit. The quiet-worker rung tells a session
+        # to "finish the item, re-delegate with a new worker id, or RECLASSIFY
+        # it" -- and until this existed the third option had no verb. --lease
+        # could only ever set [>]; nothing moved an item back to open. So a
+        # session whose worker had legitimately finished, with the item NOT done
+        # and no honest successor to lease, had exactly two false choices: tick
+        # work that was not finished, or lease a worker that was not measuring
+        # it. Both are the stale claim the rung exists to prevent, arrived at by
+        # following the rung's own instructions.
+        if argv[3] in ("release", "none", "-"):
+            _rid = argv[2]
+            S.append_events(worklist, [{
+                "ev": "unlease", "id": _rid, "at": C.stamp_now(), "by": me,
+                "t": " ".join(argv[4:]).strip() or "worker finished; no successor rides this",
+            }])
+            print("released #%s back to open; it is ordinary open work again, "
+                  "claimed by no worker" % _rid)
+            return
         until_arg = argv[3]
         if until_arg.startswith("+") and until_arg[1:].isdigit():
             import datetime

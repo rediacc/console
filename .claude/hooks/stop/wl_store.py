@@ -512,7 +512,7 @@ def _fold_events(events):
             if rec is not None:
                 rec["owner"] = ev.get("o")
                 rec["upd"] = at
-        elif kind in ("state", "update", "lease", "tomb", "triage"):
+        elif kind in ("state", "update", "lease", "unlease", "tomb", "triage"):
             rec = records.get(ev.get("id"))
             if rec is None:
                 continue
@@ -546,6 +546,22 @@ def _fold_events(events):
                     rec["lastnote"] = note
                 if note and note not in rec["text"]:
                     rec["text"] = (rec["text"] + "  " + note).strip()
+            elif kind == "unlease":
+                # THE RELEASE ARM. Moves a [>] back to plain open and CLEARS the
+                # worker and expiry, because a released item that keeps its old
+                # worker string still reads as claimed to every liveness check
+                # that looks at the field rather than the state.
+                #
+                # Deliberately does not touch `done`: releasing says "no worker
+                # rides this", never "this finished". The whole point is to give
+                # a session an honest exit that is neither a false tick nor a
+                # false lease.
+                rec["state"] = " "
+                rec["until"] = ""
+                rec["worker"] = ""
+                note = str(ev.get("t", "")).strip()
+                if note:
+                    rec["lastnote"] = note
             elif kind == "tomb":
                 rec["state"] = "~"
             elif kind == "triage":
