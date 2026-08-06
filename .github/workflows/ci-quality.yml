@@ -978,6 +978,14 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-suppression-liveness
 
+      # The scope map's scripts/ carve-outs were traced by hand once. This
+      # catches the next file that becomes reachable from a gated job and would
+      # otherwise be narrowed silently -- a job skipped on the very delta that
+      # changed its dependency, which reads as a faster green rather than a gap.
+      - name: Scope map — reachable scripts/ paths force full CI
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-scope-scripts-reachability
+
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-quality-gates

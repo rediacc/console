@@ -72,6 +72,7 @@
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-actionlint": ".ci/scripts/security/actionlint.sh",
+    "check:ci-scope-scripts-reachability": ".ci/scripts/quality/check-scope-scripts-reachability.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",
     "check:ci-breakpoint-drift": ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
     "check:ci-workflows": ".ci/scripts/quality/check-workflows.sh",
