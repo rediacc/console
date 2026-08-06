@@ -124,7 +124,7 @@ def _proc_table_ps():
     try:
         r = subprocess.run(
             ["ps", "-axo", "pid=,ppid=,args="],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True, text=True, timeout=10, check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -458,7 +458,10 @@ def worker_facts(event, session_id):
     for b in live_bg:
         tid = str(b.get("id") or "?")
         v = verdicts.get(tid, "unverifiable")
-        quiet = output_quiet_min(event.get("session_id", ""), tid)
+        # The PARAMETER, not a second read of the event. Both carry the same
+        # value today (wl_checks.py:1471 derives it from this very event), but
+        # one source at the call boundary cannot drift from the other.
+        quiet = output_quiet_min(session_id, tid)
         if v == "confirmed":
             osword = "OS process confirmed"
         elif v == "suspect":
@@ -536,7 +539,15 @@ def ladder(fold, session_id, event, state_doc):
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
-        def fire_once(rung):
+        # The loop variables are bound as DEFAULTS, not closed over. B023 is a
+        # false positive at this particular site -- fire_once is only ever
+        # called inside the same iteration that defines it, never stored or
+        # deferred, so the late-binding bug it warns about cannot happen here.
+        # Binding them anyway is free and provably equivalent, and it keeps
+        # B023 enabled for the sites where the warning WOULD be real; turning
+        # the rule off to clear six known-safe uses is how the next genuine
+        # late-binding bug ships unnoticed.
+        def fire_once(rung, rung_rec=rung_rec, stampkey=stampkey, key=key):
             nonlocal changed
             if rung_rec.get(rung) == stampkey:
                 return False

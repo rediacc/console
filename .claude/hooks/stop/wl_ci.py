@@ -94,7 +94,7 @@ def pr_body_freshness(root):
     try:
         out = subprocess.run(
             ["gh", "api", "graphql", "-f", "query=" + query],
-            capture_output=True, text=True, timeout=25, cwd=str(root),
+            capture_output=True, text=True, timeout=25, cwd=str(root), check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return "unreadable", str(exc)[:120]
@@ -196,7 +196,8 @@ def _gh_json(root, args, timeout=25):
     every caller can report blindness instead of guessing."""
     try:
         out = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, timeout=timeout, cwd=str(root)
+            ["gh", *args], capture_output=True, text=True, timeout=timeout, cwd=str(root),
+            check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return None, str(exc)[:160]
@@ -456,7 +457,9 @@ def ciqueue_path(worklist, session_id):
 def ci_queue_state(root, worklist, session_id):
     """(state, detail) -- is the publish ref's CI queue saturated?
 
-    state: unset | clear | saturated | unknown. `detail` for saturated is
+    state: unset | clear | saturated | unknown. `detail` on unknown carries
+    {"ref", "error"} when the gh call itself failed, so a blind read is
+    distinguishable from a quiet queue. `detail` for saturated is
     {"ref", "queued", "newest_age_min"}.
 
     Reads `actions/runs?branch=` rather than the head-commit rollup ON PURPOSE:
@@ -493,6 +496,11 @@ def ci_queue_state(root, worklist, session_id):
             timeout=20,
         )
         runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
+        if runs is None and err:
+            # SAY WHY, rather than reporting a bare "unknown". A failed gh call
+            # and a genuinely empty queue used to be indistinguishable here,
+            # which is the blindness this program refuses everywhere else.
+            detail = {"ref": ref, "error": err}
         if isinstance(runs, list):
             queued, newest_age = 0, None
             for i, r in enumerate(runs):

@@ -197,7 +197,7 @@ def curl_usable():
         _curl_probe = False
         try:
             r = subprocess.run(
-                ["curl", "--version"], capture_output=True, text=True, timeout=5
+                ["curl", "--version"], capture_output=True, text=True, timeout=5, check=False
             )
             m = CURL_VERSION_RE.match((r.stdout or "").strip())
             if r.returncode == 0 and m:
@@ -229,7 +229,7 @@ def _send_file(transport, blob):
     The directory is NOT created: a missing one is the failure-path fixture."""
     d = transport.split(":", 1)[1]
     try:
-        fd, p = tempfile.mkstemp(dir=d, prefix="mail-", suffix=".json")
+        fd, _path = tempfile.mkstemp(dir=d, prefix="mail-", suffix=".json")
         with os.fdopen(fd, "wb") as f:
             f.write(blob)
     except OSError as exc:
@@ -268,6 +268,7 @@ def _send_curl(cfg, blob):
             capture_output=True,
             text=True,
             timeout=SEND_TIMEOUT_S,
+            check=False,
         )
         try:
             resp_body = open(btmp, encoding="utf-8", errors="replace").read(200)

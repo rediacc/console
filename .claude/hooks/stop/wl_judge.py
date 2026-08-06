@@ -192,6 +192,7 @@ def run_triage(finding, context):
             text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
+            check=False,
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
@@ -317,6 +318,7 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
             text=True,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
+            check=False,
             cwd=str(workdir),
             stdin=subprocess.DEVNULL,
         )
