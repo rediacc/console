@@ -2420,3 +2420,109 @@ real invocation of a narrowed path in `.ci/scripts/build` and observing rc=1,
 then removing it for rc=0. The proof was RE-RUN after the rewrite rather than
 assumed to survive it.
 
+
+## 2026-08-06 — Python was ungated, and the first thing the gate caught was ours
+
+Operator ask: "we have too much linting and tidy-up thingy for js/ts but we don't
+have for python! Especially for hook program."
+
+The premise held exactly. `package.json` carried **91** `check:ci-*` gates
+covering TypeScript, shell and Go and **zero** covering Python, while 13 of the
+15 tracked `.py` files are the Stop-hook program that gates every agent turn.
+There was no `ruff.toml`, `pyproject.toml`, `setup.cfg`, `.flake8` or `mypy.ini`
+anywhere — yet the hook modules already carried `# noqa: BLE001` and
+`# noqa: PLC0415`. Someone had run ruff against them once, by hand, and nothing
+had enforced it since: **suppressions with no gate behind them**, which is worse
+than neither, because the annotations read as evidence that something checks.
+
+### `check:ci-python-lint`
+
+`.ci/scripts/quality/check-python-lint.sh` + `ruff.toml`, `select = ["ALL"]` with
+every exclusion stated in config rather than sprinkled as per-line noqa, so new
+ruff rules opt IN automatically. Wired at all four points, three of which are
+silent when missing: the package.json key, the `manifest.ts` GateSpec, the
+`ci-quality.yml` step it names, and a pinned+verified ruff install step beside
+the shfmt one. `check-ci-parity.ts` green in both directions.
+
+**Control-first, because there are two ways this gate could be green while
+proving nothing.** (1) `ruff check` with no paths exits 0, so a broken glob or a
+run outside a work tree reads exactly like a clean repo — the file list is
+counted against a floor, and that check runs BEFORE ruff is resolved, so an
+empty-tree failure is about vacuity rather than a missing binary. (2) A wrong
+config path or a dropped rule also looks like a clean tree — so a synthetic
+`F821` is planted in a scratch dir outside the repo and ruff must report it.
+`F821` specifically, because that is the rule that caught the real bug: if a
+future config change disables it, the gate fails loudly instead of going quietly
+blind to the defect it was built for. Registered in `test-gate-anti-vacuity.sh`
+and observed rejecting an empty tree.
+
+### mypy was measured and rejected
+
+Default mode finds exactly **2** things, both the deliberate sibling-import shim
+`worklist.py` documents as an invariant. `--strict` finds **1061**, of which
+96.7% is `no-untyped-def`/`no-untyped-call` annotation churn, for 5 real
+findings. It does not earn a gate. That is a measurement, not a preference.
+
+### 97 findings → 0, five of them real
+
+- **`F821` in `wl_checks.guided_slice`** — a `NameError` introduced by this same
+  session's root-anchoring sweep an hour earlier. Both hook suites (584 and 118
+  assertions) passed straight over it, because reaching the branch needs
+  `root=None` AND a plan-subagent triage at once. It then failed **soft** into a
+  bare `except` that replaced the operator's whole worklist guide with an
+  apology. The gate caught it before it had landed.
+- A leaked SES response-body handle (`SIM115`): the `finally` unlinked the temp
+  file and never closed the reader. CPython refcounting hid it.
+- `ci_queue_state` unpacked the `gh` error and dropped it, so a **failed API call
+  and a genuinely quiet queue both surfaced as a bare "unknown"** — the exact
+  blindness `worklist.py`'s own invariants forbid.
+- `worker_facts` took a `session_id` parameter, ignored it, and re-read the same
+  value from the event.
+- `app.run(debug=True)` in a Flask **template** whose purpose is to be copied.
+
+**Nothing was baselined and no rule was disabled to reach zero.** Where a
+finding was genuinely deliberate it is annotated AT THE SITE with its reason
+(4 lazy sibling imports, 2 urlopen calls behind a runtime https guard, one
+blanket except whose 11-line comment already explained itself). The other 3
+`PLC0415` were lazy for no reason and were hoisted, so those findings are gone
+rather than documented.
+
+**The 6 `B023` are false positives and were fixed anyway**: `fire_once` is only
+called inside the iteration that defines it. Binding the loop variables as
+default args is free and provably equivalent, and it keeps `B023` ENABLED for
+sites where it would be real. Disabling a rule to clear six known-safe uses is
+how the next genuine late-binding bug ships unnoticed.
+
+### A trap that nearly cost 50 deliberate suppressions
+
+`ruff check --select RUF100` **replaces** the rule set. `BLE001` switches off,
+and every one of the 50 deliberate `# noqa: BLE001` in the tree reports as an
+unused directive — all marked `[*] fixable`. Auto-fixing that would have
+stripped the suppressions guarding the fail-closed exception handlers, whose
+whole job is to stop a crashing hook from reading as ALLOW. **Only the
+full-config run is authoritative**; under it there is no `RUF100` at all. Never
+judge noqa health from a narrowed `--select`.
+
+### `check_inline_python.py` — the blind spot the ruff gate leaves
+
+A `.py` gate lints tracked `.py` files. Python inside a JS/TS string literal is
+invisible to it, and that is not hypothetical:
+`packages/cli/src/remote/vscode/bootstrap.ts` held a **130-line, 4871-character
+Python program** in a template literal, executed on a remote host over SSH. Four
+of its six interpolations were unescaped, and `ast.parse` says what that means —
+a `universalUser` of `'; import os; os.system('id'); x='` **parses cleanly** and
+turns the middle into executable Python, under `sudo -u` on the user-switch
+path. Escaping fixed separately; the program itself still needs to move.
+
+The detector is narrow on purpose. Of 999 tracked JS/TS files, four match
+`/python3?/` and **three are innocent** — an interpreter binary name, the word
+"python" in a word list, and the string `"check:ci-python-lint"`. A rule that
+flagged those would be switched off within a week. So it flags only a quoted
+region carrying two or more Python STATEMENT shapes at line starts, or a
+`python -c` handed source assembled in the same file. Controls run in both
+directions before any real file is read, and a control failure aborts without a
+verdict.
+
+Written in Python so the ruff gate polices it — it had 10 findings on its first
+run. Committed **unwired**: the tree cannot pass it until `bootstrap.ts` is
+migrated, and wiring a gate the tree fails is landing a red gate, not a fix.
