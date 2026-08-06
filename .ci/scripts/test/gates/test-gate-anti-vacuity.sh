@@ -102,6 +102,9 @@ REGISTRY=(
     # be resolved at all and the gate would otherwise report that zero enabled
     # rules are healthy -- which is what a healthy repo looks like too.
     ".ci/scripts/quality/check_lint_rule_liveness.py|VACUOUS INPUT"
+    # An empty tree tracks no js/ts at all, so "every file reaches a linter" is
+    # trivially true over zero files -- indistinguishable from full coverage.
+    ".ci/scripts/quality/check_lint_scope_coverage.py|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
