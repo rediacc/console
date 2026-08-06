@@ -466,7 +466,7 @@ def handle_subagent_stop(event):
     agent_id = event.get("agent_id")
     if not agent_id:
         return  # main thread, not a subagent
-    start = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    start = C.project_start(event)
     store = store_root(start)
     transcript = event.get("agent_transcript_path") or ""
     final = event.get("last_assistant_message") or ""
@@ -548,7 +548,7 @@ def handle_surface(event, hook_event, hook_path):
     handler (`wl_checks.py:1232-1241`) -- the duplicate is not hypothetical."""
     if hook_event == "SessionStart" and str(event.get("source") or "") == "compact":
         return
-    start = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    start = C.project_start(event)
     store = store_root(start)
     block = surface_block(
         store, _branch_of(start), hook_path, reader_id(event.get("session_id"))
@@ -848,7 +848,7 @@ def main(argv):
             pass
         return 0
 
-    start = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    start = C.project_start()
     store = store_root(start)
     branch = _branch_of(start)
 

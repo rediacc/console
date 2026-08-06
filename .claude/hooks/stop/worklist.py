@@ -170,6 +170,27 @@ if "wl_ci" not in _BROKEN:
     submodule_pointer_moves = _MODS["wl_ci"].submodule_pointer_moves
 
 
+def _local_project_start(event=None):
+    """Self-contained twin of wl_core.project_start, for the same reason
+    _local_worklist_path exists: --path and the self-contained append modes
+    must answer even when every sibling module is broken, and reaching for
+    C.project_start() there would raise out of _BrokenModule instead. Keep in
+    lockstep with wl_core.project_start -- including the ladder ORDER, since a
+    divergence here would silently point --path at a different store than the
+    hook writes to."""
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return env
+    cand = pathlib.Path(__file__).resolve().parents[3]
+    if (cand / ".git").exists() and (cand / ".claude" / "hooks" / "stop").is_dir():
+        return str(cand)
+    if event:
+        cwd = event.get("cwd")
+        if cwd:
+            return cwd
+    return os.getcwd()
+
+
 def _local_worklist_path(start):
     """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the
     self-contained append modes and the broken-sibling block, so the queries
@@ -268,7 +289,7 @@ def _triage_cli(argv, worklist, me, die):
     text = " ".join(args).replace("\n", " ").strip()
     if not text:
         die("an empty finding triages nothing: state what you found, in a line")
-    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    root = C.project_root(C.project_start())
     if item_id:
         fold = S.load(worklist, sync=True)
         rec = fold.by_id.get(item_id)
@@ -344,7 +365,7 @@ def _item_cli(argv, worklist):
             # sees an empty, reassuring, false picture.
             if me:
                 _identity_or_die(me, die)
-            root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+            root = C.project_root(C.project_start())
             print(CK.guided_slice(fold, me or None, None, me or None, root, full=True))
             return
         for rec in fold.items:
@@ -389,7 +410,7 @@ def _item_cli(argv, worklist):
         die("#%s is owned by %s; never tick or edit another session's tracking"
             % (item_id, rec["owner"]))
     rest = " ".join(argv[3:]).replace("\n", " ").strip()
-    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    root = C.project_root(C.project_start())
     if mode == "--tick":
         if not rest or not CK.completion_evidence(root, rest):
             die(M.CLI_TICK_NO_EVIDENCE % item_id)
@@ -548,7 +569,7 @@ def _reassign_cli(argv):
     _identity_or_die(me, _die2)
     if C.same_session(me, phantom):
         _die2("%s is you; there is nothing to take over" % phantom)
-    worklist = C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    worklist = C.worklist_for(C.project_start())
     if worklist.with_suffix(".lastevent-%s.json" % phantom[:8]).exists():
         _die2(M.CLI_REASSIGN_ALIVE % (phantom, phantom))
     fold = S.load(worklist, sync=True)
@@ -633,10 +654,10 @@ def main():
 
     if len(sys.argv) > 1 and sys.argv[1] == "--path":
         # Self-contained: works with every sibling broken (see case 118).
-        print(_local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
+        print(_local_worklist_path(_local_project_start()))
         return
     if len(sys.argv) > 1 and sys.argv[1] == "--compact":
-        S.compact(C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()))
+        S.compact(C.worklist_for(C.project_start()))
         return
     if sys.argv[1:2] == ["--state"] and len(sys.argv) < 3:
         # BEFORE the real handler and matched on argv[1] ALONE, which is the
@@ -654,10 +675,10 @@ def main():
         # whose contract is "rewrite every time" has no merge semantics. The
         # success line names what was replaced, which is the only cheap
         # defence against session B silently deleting session A's next action.
-        wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        wl = _local_worklist_path(_local_project_start())
         prefix = sys.argv[2]
         _identity_or_die(prefix, _die2)
-        root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        root = C.project_root(C.project_start())
         branch = C.git_branch(root)
         if not branch:
             sys.stderr.write(M.CLI_STATE_NO_BRANCH % root)
@@ -764,7 +785,7 @@ def main():
         # `worklist.py --loop <prefix> <next-ISO8601Z> <count> <label...>`
         # Self-contained append (works without siblings, like --brief).
         _identity_or_die(sys.argv[2], _die2)
-        wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        wl = _local_worklist_path(_local_project_start())
         with open(wl.with_suffix(".loop"), "a", encoding="utf-8") as fh:
             fh.write(
                 "%s %s %s %s\n"
@@ -786,7 +807,7 @@ def main():
         # rewrite, for the same lost-update reason the store appends.
         # Self-contained so a broken sibling cannot take the brief channel down.
         import datetime
-        wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        wl = _local_worklist_path(_local_project_start())
         prefix = sys.argv[2]
         # THE ROSTER. `.sessions` is the registry of who exists here -- it is
         # what --ask's recipient check reads and what the liveness ladder counts
@@ -801,12 +822,12 @@ def main():
         return
     if sys.argv[1:2] and sys.argv[1] in ("--ask", "--answer", "--decline", "--ack", "--requests"):
         R.request_cli(
-            sys.argv[1:], C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+            sys.argv[1:], C.worklist_for(C.project_start())
         )
         return
     if sys.argv[1:2] == ["--poll"]:
         R.poll_cli(
-            C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()),
+            C.worklist_for(C.project_start()),
             sys.argv[2] if len(sys.argv) > 2 else "",
             __file__,
         )
@@ -825,7 +846,7 @@ def main():
             sys.stderr.write(M.CLI_REAP_USAGE)
             sys.exit(2)
         _identity_or_die(me, _die2)
-        wl = _local_worklist_path(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+        wl = _local_worklist_path(_local_project_start())
         known = {}
         try:
             ev = json.loads(wl.with_suffix(".lastevent-%s.json" % me[:8]).read_text())
@@ -870,7 +891,7 @@ def main():
         sys.exit(wl_wait.main(sys.argv[2:]))
     if sys.argv[1:2] and sys.argv[1] in ("--add", "--triage", "--tick", "--defer", "--lease", "--update", "--list"):
         _item_cli(
-            sys.argv[1:], C.worklist_for(os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+            sys.argv[1:], C.worklist_for(C.project_start())
         )
         return
 
@@ -898,9 +919,11 @@ def main():
         sys.exit(0)
 
     event, event_ok = _read_event()
-    worklist = _local_worklist_path(
-        os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd()
-    )
+    # _local_project_start, NOT C.project_start: this line runs BEFORE the
+    # _BROKEN fail-closed emit below, so touching a sibling here would raise
+    # out of _BrokenModule and crash the hook with nothing on stdout -- which
+    # the harness reads as ALLOW. Same reason _local_worklist_path exists.
+    worklist = _local_worklist_path(_local_project_start(event))
     if _BROKEN:
         # Fail CLOSED with the full list: a hook that cannot run its checks
         # must not wave the stop through, and the session that hits this is

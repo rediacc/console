@@ -7892,6 +7892,73 @@ else
     fail "190a CONTROL: --reassign accepted a foreign <me> (rc=$RC): ${OUT:0:200}"
 fi
 
+echo "== 191. root resolution must not walk into a repo NESTED in the repo =="
+# THE DEFECT, measured live on 2026-08-06: the Stop event's cwd is wherever the
+# session last worked, and this tree holds repos INSIDE the repo -- submodules
+# (private/renet) and gitignored non-submodule siblings (private/growth). Every
+# root resolution started from that cwd, so project_root() stopped at the NESTED
+# repo and the branch check read ITS branch: a session on 0804-1 was ordered to
+# bootstrap .agent/main/ because private/growth happened to be on main.
+#
+# CONTROL FIRST, and it is the pre-fix expression itself rather than a mutation:
+# if `event.cwd or getcwd()` does NOT resolve to the nested repo on this
+# fixture, the fixture is not reproducing the bug and the FIRE below proves
+# nothing.
+setup
+NESTBASE="$BASE/nesting"
+rm -rf "$NESTBASE"
+mkdir -p "$NESTBASE/outer/.claude/hooks/stop" "$NESTBASE/outer/nested"
+: >"$NESTBASE/outer/.git" # a FILE, as a worktree or submodule writes it
+: >"$NESTBASE/outer/nested/.git"
+OUT=$(
+    CLAUDE_PROJECT_DIR="$NESTBASE/outer" NESTBASE="$NESTBASE" HOOKDIR="$(dirname "$HOOK")" \
+        python3 - <<'PYEOF'
+import os
+import sys
+
+sys.path.insert(0, os.environ["HOOKDIR"])
+import wl_core as C
+
+base = os.environ["NESTBASE"]
+nested = os.path.join(base, "outer", "nested")
+event = {"cwd": nested}
+print("CONTROL", C.project_root(event.get("cwd") or os.getcwd()))
+print("FIRE", C.project_root(C.project_start(event)))
+# Rung 2: with no CLAUDE_PROJECT_DIR at all, a CLI run must anchor on the hook
+# FILE's own repo, not on wherever the shell happens to be standing.
+del os.environ["CLAUDE_PROJECT_DIR"]
+os.chdir(nested)
+print("CLI", C.project_start(), C.hook_repo_root())
+PYEOF
+)
+if grep -qF "CONTROL $NESTBASE/outer/nested" <<<"$OUT"; then
+    pass "191 CONTROL: the pre-fix ladder does resolve to the nested repo"
+else
+    fail "191 CONTROL: fixture does not reproduce the bug, so FIRE proves nothing: ${OUT:0:300}"
+fi
+if grep -qF "FIRE $NESTBASE/outer" <<<"$OUT" && ! grep -qF "FIRE $NESTBASE/outer/nested" <<<"$OUT"; then
+    pass "191 FIRE: project_start anchors on the outer repo, not the nested one"
+else
+    fail "191 FIRE: still resolving into the nested repo: ${OUT:0:300}"
+fi
+CLI_LINE=$(grep "^CLI " <<<"$OUT")
+CLI_START=$(awk '{print $2}' <<<"$CLI_LINE")
+CLI_HOOK=$(awk '{print $3}' <<<"$CLI_LINE")
+if [[ -n "$CLI_HOOK" && "$CLI_START" == "$CLI_HOOK" ]]; then
+    pass "191 FIRE: with no CLAUDE_PROJECT_DIR the anchor is the hook file's repo"
+else
+    fail "191 FIRE: a CLI run still anchors on cwd (start=$CLI_START hook=$CLI_HOOK)"
+fi
+# The store path is the thing a wrong root DESTROYS: it is slugged from the
+# root, so a root that moves orphans every open item in the old file. Pin it.
+PATH_OUTER=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$NESTBASE/outer" python3 "$HOOK" --path)
+PATH_NESTED=$(cd "$NESTBASE/outer/nested" && TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$NESTBASE/outer" python3 "$HOOK" --path)
+if [[ "$PATH_OUTER" == "$PATH_NESTED" ]]; then
+    pass "191 FIRE: --path is identical from the outer repo and from inside the nested one"
+else
+    fail "191 FIRE: --path moved with cwd ($PATH_OUTER vs $PATH_NESTED)"
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]

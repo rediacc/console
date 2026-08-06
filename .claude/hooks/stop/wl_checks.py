@@ -873,7 +873,7 @@ def poll_fast_path(worklist, session_id, event):
             return False  # the horizon: a poll stop now pays the battery
     except (OSError, ValueError, KeyError, TypeError):
         return False
-    root = C.project_root(event.get("cwd") or os.getcwd())
+    root = C.project_root(C.project_start(event))
     # The fold is loaded BEFORE the signature check since v17, because the
     # signature is now derived from this session's items rather than from the
     # shared files' bytes; passing it here keeps the store parsed once.
@@ -1163,9 +1163,7 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         plan = tri.get("plan", "") if tri.get("v") == "plan-subagent" else ""
         if plan and st in (" ", ">"):
             if root is None:
-                root = C.project_root(
-                    os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
-                )
+                root = C.project_root(C.project_start(event))
             if not os.path.exists(os.path.join(root, plan)):
                 rows.append((0, "  - [%s] #%s (upd %s) %s\n        TRIAGED BIG, plan file missing: %s\n        NEXT: write the plan (Plan agent) or re-triage: --triage %s --id %s <finding>"
                              % (st, rid, age, txt, plan, me_arg, rid)))
@@ -1223,9 +1221,7 @@ def mark_context_fresh(event, why):
     stamp. Never raises: a context marker must not be able to wedge a
     SessionStart."""
     try:
-        wl = C.worklist_for(
-            os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd()
-        )
+        wl = C.worklist_for(C.project_start(event))
         sid = event.get("session_id", "")
         doc = S.load_state(wl, sid)
         doc["ctx_fresh"] = {"why": why, "at": C.stamp_now()}
@@ -1258,7 +1254,7 @@ def handle_session_start(event):
     # plans block would have been eaten by a check about a different thing.
     # Each block is built on its own and the hook emits when EITHER has
     # something to say.
-    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
+    root = C.project_root(C.project_start(event))
     docs = pathlib.Path(root) / DESIGN_DOCS
     blocks, summary = [], []
     if docs.is_dir():
@@ -1317,7 +1313,7 @@ def handle_post_compact(event):
     # session gets the standing rules at all, delivered exactly once per
     # compaction. Full TRAPS.md is deliberately excluded (designed to grow);
     # titles plus the path is the same economy the judge uses.
-    root = C.project_root(os.environ.get("CLAUDE_PROJECT_DIR") or event.get("cwd") or os.getcwd())
+    root = C.project_root(C.project_start(event))
     sid = event.get("session_id", "")
     branch = C.git_branch(root)
     traps = S.trap_headings(root)
@@ -1476,7 +1472,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     counter = worklist.with_suffix(".blocks")
     session_id = event.get("session_id", "")
     me8 = (session_id or "unknown")[:8]
-    root = C.project_root(event.get("cwd") or os.getcwd())
+    root = C.project_root(C.project_start(event))
 
     # ---- v9: the no-op inbox-poll fast path (see WHY v9) --------------------
     # SILENT by design: a verified no-op poll stop exits 0 with NO output at
