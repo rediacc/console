@@ -301,7 +301,7 @@ def request_cli(argv, worklist):
     read-only --requests listing) keep working when worklist_messages.py is
     broken; the two die() sites that need it fail into the crash handler,
     naming the catalogue, which is the fail-closed direction."""
-    import worklist_messages as M
+    import worklist_messages as M  # noqa: PLC0415 -- lazy on purpose: a broken catalogue must fail into the crash handler, not at import time
 
     def die(msg):
         print(msg, file=sys.stderr)

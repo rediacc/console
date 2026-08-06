@@ -106,6 +106,7 @@ What still allows a stop:
      design and bounded by POLL_FULL_MAX_MIN.
 """
 
+import datetime
 import fcntl
 import json
 import os
@@ -483,7 +484,6 @@ def _item_cli(argv, worklist):
             return
         until_arg = argv[3]
         if until_arg.startswith("+") and until_arg[1:].isdigit():
-            import datetime
             minutes = min(int(until_arg[1:]), C.MAX_LEASE_MIN)
             until = (C.utcnow() + datetime.timedelta(minutes=minutes)).strftime(
                 "%Y-%m-%dT%H:%MZ"
@@ -806,7 +806,6 @@ def main():
         # `worklist.py --brief <session-prefix> <text...>` -- append, never
         # rewrite, for the same lost-update reason the store appends.
         # Self-contained so a broken sibling cannot take the brief channel down.
-        import datetime
         wl = _local_worklist_path(_local_project_start())
         prefix = sys.argv[2]
         # THE ROSTER. `.sessions` is the registry of who exists here -- it is
@@ -872,7 +871,7 @@ def main():
         _reassign_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--reports"]:
-        import wl_report
+        import wl_report  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
         rest = sys.argv[2:]
         # `--reports --all` MUST work, and it did not: the dispatcher forwarded
         # `--all` as if it were a MODE, and wl_report answered "unknown mode
@@ -886,7 +885,7 @@ def main():
             rest = ["--list", *rest]
         sys.exit(wl_report.main(rest))
     if sys.argv[1:2] == ["--wait"]:
-        import wl_wait
+        import wl_wait  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
         sys.exit(wl_wait.main(sys.argv[2:]))
     if sys.argv[1:2] and sys.argv[1] in ("--add", "--triage", "--tick", "--defer", "--lease", "--update", "--list"):
         _item_cli(

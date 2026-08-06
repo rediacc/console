@@ -451,7 +451,7 @@ def pump(root, worklist, session_id, fold):
     Called from run_stop AFTER the poll fast path has exited, so a 5-minute
     no-op poll never pays for reading the ledger, let alone for a subprocess.
     """
-    import worklist_messages as M
+    import worklist_messages as M  # noqa: PLC0415 -- lazy on purpose: see the docstring above; a no-op poll must not pay for the catalogue
 
     if DISABLED:
         return ""
