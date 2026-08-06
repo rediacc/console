@@ -98,6 +98,10 @@ REGISTRY=(
     # is over an empty set and the gate would exit 0 reporting that every value
     # matches. The MIN_PAIRS floor turns that into a loud refusal.
     ".ci/scripts/quality/check_i18n_value_types.py|VACUOUS INPUT"
+    # Against an empty tree the probe locale file is absent, so no rule set can
+    # be resolved at all and the gate would otherwise report that zero enabled
+    # rules are healthy -- which is what a healthy repo looks like too.
+    ".ci/scripts/quality/check_lint_rule_liveness.py|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
