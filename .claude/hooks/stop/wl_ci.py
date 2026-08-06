@@ -94,7 +94,11 @@ def pr_body_freshness(root):
     try:
         out = subprocess.run(
             ["gh", "api", "graphql", "-f", "query=" + query],
-            capture_output=True, text=True, timeout=25, cwd=str(root), check=False,
+            capture_output=True,
+            text=True,
+            timeout=25,
+            cwd=str(root),
+            check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return "unreadable", str(exc)[:120]
@@ -196,7 +200,11 @@ def _gh_json(root, args, timeout=25):
     every caller can report blindness instead of guessing."""
     try:
         out = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, timeout=timeout, cwd=str(root),
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(root),
             check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
@@ -208,8 +216,10 @@ def _gh_json(root, args, timeout=25):
     except ValueError:
         return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), out.stdout[:80])
     # GraphQL reports field errors with exit 0 and an `errors` array.
-    if isinstance(data, dict) and data.get("errors") and not (data.get("data") or {}).get(
-        "repository"
+    if (
+        isinstance(data, dict)
+        and data.get("errors")
+        and not (data.get("data") or {}).get("repository")
     ):
         return None, json.dumps(data["errors"])[:160]
     return data, ""
@@ -370,7 +380,8 @@ def ci_watch_only(live_bg):
         blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
         if CI_WATCH_RE.search(blob):
             names.append(
-                "%s: %s" % (b.get("id") or "?", (b.get("description") or b.get("command") or "")[:60])
+                "%s: %s"
+                % (b.get("id") or "?", (b.get("description") or b.get("command") or "")[:60])
             )
         else:
             return False, ""
@@ -420,7 +431,9 @@ def ci_steps(root, info, rows, cached):
         if data is None:
             continue
         steps = data.get("steps") or []
-        bad = [s.get("name") for s in steps if (s.get("conclusion") or "") in ("failure", "timed_out")]
+        bad = [
+            s.get("name") for s in steps if (s.get("conclusion") or "") in ("failure", "timed_out")
+        ]
         if not bad:
             bad = [s.get("name") for s in steps if (s.get("conclusion") or "") == "cancelled"]
         row["step"] = bad[0] if bad else ""
@@ -509,12 +522,8 @@ def ci_queue_state(root, worklist, session_id):
                     queued += 1
                 if i == 0:
                     try:
-                        created = datetime.datetime.fromisoformat(
-                            r.get("created_at") or ""
-                        )
-                        age = (
-                            datetime.datetime.now(datetime.UTC) - created
-                        ).total_seconds() / 60.0
+                        created = datetime.datetime.fromisoformat(r.get("created_at") or "")
+                        age = (datetime.datetime.now(datetime.UTC) - created).total_seconds() / 60.0
                     except ValueError:
                         age = None
                     if status in _QUEUED_STATUSES:
@@ -635,8 +644,14 @@ def _ci_cache_write(path, sha, state, info, steps, final):
     with contextlib.suppress(OSError, TypeError):
         path.write_text(
             json.dumps(
-                {"sha": sha, "at": time.time(), "state": state, "info": info,
-                 "steps": steps, "final": bool(final)}
+                {
+                    "sha": sha,
+                    "at": time.time(),
+                    "state": state,
+                    "info": info,
+                    "steps": steps,
+                    "final": bool(final),
+                }
             ),
             encoding="utf-8",
         )
@@ -705,9 +720,12 @@ def submodule_pointer_moves(root):
         elif on_default:
             where = "on origin/%s (an ordinary bump)" % default
         else:
-            where = "only on %s, NOT on origin/%s, so this adds that branch's PR to the merge chain" % (
-                ", ".join(names[:3]),
-                default,
+            where = (
+                "only on %s, NOT on origin/%s, so this adds that branch's PR to the merge chain"
+                % (
+                    ", ".join(names[:3]),
+                    default,
+                )
             )
         moves.append((path, recorded[:9], live[:9], where))
     return moves

@@ -574,8 +574,7 @@ V_NO_REMAINING = (
 # item state); these three carry the surrounding prose.
 
 GUIDE_HEADER = (
-    "WORKLIST GUIDE (derived from the store, not from memory; base your "
-    "Remaining section on THIS):"
+    "WORKLIST GUIDE (derived from the store, not from memory; base your Remaining section on THIS):"
 )
 
 GUIDE_EMPTY = (
@@ -611,7 +610,7 @@ V_CI_WAITING = (
     "(%s), so the only thing in flight is waiting for a pipeline, and "
     "waiting is not work: %d deferred item(s) are actionable RIGHT NOW. The "
     "watch wakes you when the run ends, so working the backlog costs the "
-    "wait nothing. \"The run is healthy, nothing to do\" is not an accepted "
+    'wait nothing. "The run is healthy, nothing to do" is not an accepted '
     "stop while these sit. Work them, oldest first, this turn:\n%s\n"
     "Every one has an exit you complete alone: do it and tick it with "
     "evidence, execute its DEFAULT early, or re-defer it with a WHY: naming "
@@ -781,7 +780,9 @@ R_BLOCK_FOCUS = (
     "you are the session that fixes it.)"
 )
 
-R_FOCUS_MORE = "%d more check(s) outstanding; the next stop surfaces the next one, rotation forgets nothing"
+R_FOCUS_MORE = (
+    "%d more check(s) outstanding; the next stop surfaces the next one, rotation forgets nothing"
+)
 
 R_FOCUS_ONLY = "no other checks are outstanding"
 
@@ -793,9 +794,7 @@ N_CI_QUEUE = (
     "lifts itself when the queue drains.%s"
 )
 
-N_CI_QUEUE_PR_STALE_LINE = (
-    " (Also: the PR body is stale; fold the refresh into that next push.)"
-)
+N_CI_QUEUE_PR_STALE_LINE = " (Also: the PR body is stale; fold the refresh into that next push.)"
 
 # ---- the operator email channel (wl_email) ---------------------------------
 
@@ -980,16 +979,14 @@ _DOORS = (
     "it\n"
     "  door:no-write-access    the target is outside this session's write "
     "access\n"
-    "\"It is big\" is not a door.\n"
+    '"It is big" is not a door.\n'
 )
 
 CLI_TICK_ISSUE_DOOR = (
     "REFUSED: ticking #%s with nothing but an issue reference. An issue "
     "settles nothing on its own: a finding is fixed in the session that finds "
     "it, so an issue closing an item is a report wearing a resolution's "
-    "clothes.\n"
-    + _DOORS
-    + "If a door genuinely applies, the issue must carry the evidence (the "
+    "clothes.\n" + _DOORS + "If a door genuinely applies, the issue must carry the evidence (the "
     "exact command and its exact output) plus a ready-to-run brief a future "
     "session can execute without rediscovering anything, and this tick must "
     "NAME the door:\n"

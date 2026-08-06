@@ -144,8 +144,16 @@ class _BrokenModule:
 
 
 for _name in (
-    "wl_core", "wl_store", "wl_requests", "wl_liveness", "wl_ci",
-    "wl_reggate", "wl_judge", "wl_email", "wl_checks", "worklist_messages",
+    "wl_core",
+    "wl_store",
+    "wl_requests",
+    "wl_liveness",
+    "wl_ci",
+    "wl_reggate",
+    "wl_judge",
+    "wl_email",
+    "wl_checks",
+    "worklist_messages",
 ):
     try:
         _MODS[_name] = __import__(_name)
@@ -297,8 +305,10 @@ def _triage_cli(argv, worklist, me, die):
         if rec is None:
             die("no item #%s (worklist.py --list shows ids)" % item_id)
         if rec["owner"] is not None and not C.same_session(rec["owner"], me):
-            die("#%s is owned by %s; never tick or edit another session's tracking"
-                % (item_id, rec["owner"]))
+            die(
+                "#%s is owned by %s; never tick or edit another session's tracking"
+                % (item_id, rec["owner"])
+            )
     else:
         # Every triaged finding is TRACKED, before any verdict exists. A
         # finding that reaches this verb and leaves no item behind is exactly
@@ -314,10 +324,16 @@ def _triage_cli(argv, worklist, me, die):
         if err:
             degraded = "\n  THE TRIAGE JUDGE COULD NOT ANSWER: %s" % err
     if verdict is None:
-        print(M.CLI_TRIAGE_SELF % {
-            "id": item_id, "me": me, "why": degraded, "context": context,
-            "branch": branch or "<branch>",
-        })
+        print(
+            M.CLI_TRIAGE_SELF
+            % {
+                "id": item_id,
+                "me": me,
+                "why": degraded,
+                "context": context,
+                "branch": branch or "<branch>",
+            }
+        )
         return
     kind = verdict.get("verdict", "")
     reason = str(verdict.get("reason", "")).strip() or "(the judge gave no reason)"
@@ -326,10 +342,16 @@ def _triage_cli(argv, worklist, me, die):
         slug = slug[:60] or item_id
         plan = "docs/agent/%s/PLAN-%s.md" % (branch or "<branch>", slug)
         S.triage_item(worklist, me, item_id, kind, reason, plan)
-        print(M.CLI_TRIAGE_PLAN % {
-            "id": item_id, "me": me, "reason": reason, "plan": plan,
-            "finding": text,
-        })
+        print(
+            M.CLI_TRIAGE_PLAN
+            % {
+                "id": item_id,
+                "me": me,
+                "reason": reason,
+                "plan": plan,
+                "finding": text,
+            }
+        )
         return
     S.triage_item(worklist, me, item_id, kind, reason)
     if kind == "inline":
@@ -408,8 +430,10 @@ def _item_cli(argv, worklist):
     if rec is None:
         die("no item #%s (worklist.py --list shows ids)" % item_id)
     if rec["owner"] is not None and not C.same_session(rec["owner"], me):
-        die("#%s is owned by %s; never tick or edit another session's tracking"
-            % (item_id, rec["owner"]))
+        die(
+            "#%s is owned by %s; never tick or edit another session's tracking"
+            % (item_id, rec["owner"])
+        )
     rest = " ".join(argv[3:]).replace("\n", " ").strip()
     root = C.project_root(C.project_start())
     if mode == "--tick":
@@ -428,8 +452,10 @@ def _item_cli(argv, worklist):
         return
     if mode == "--defer":
         if not C.DEFAULT_TOKEN.search(rest):
-            die("a [?] without a DEFAULT: is a note, not a decision; append "
-                "'DEFAULT: <what you will do if unanswered>'")
+            die(
+                "a [?] without a DEFAULT: is a note, not a decision; append "
+                "'DEFAULT: <what you will do if unanswered>'"
+            )
         # v12: a deferral must EARN its seat at creation time, the same way
         # --tick refuses evidence-free completion. The cheap shape gate lives
         # here; whether the WHY is TRUE is the judge audit's question later.
@@ -441,10 +467,11 @@ def _item_cli(argv, worklist):
         if vague or len(why) < 12:
             die(M.CLI_DEFER_VAGUE_WHY % (vague.group(0) if vague else why))
         S.set_state(worklist, me, item_id, "?", rest, extra={"j": just})
-        print("deferred #%s with its justification on record; it is reported "
-              "every stop, its WHY faces the judge's audit after %d min, and "
-              "its DEFAULT executes after %d min"
-              % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN))
+        print(
+            "deferred #%s with its justification on record; it is reported "
+            "every stop, its WHY faces the judge's audit after %d min, and "
+            "its DEFAULT executes after %d min" % (item_id, S.DEFER_AUDIT_MIN, S.DEFER_WINDOW_MIN)
+        )
         return
     if mode == "--update":
         if not rest:
@@ -475,30 +502,43 @@ def _item_cli(argv, worklist):
             # the defect this whole file exists to catch, and it shipped inside
             # the fix for a different silent no-op.
             _rid = item_id
-            S.append_events(worklist, [{
-                "ev": "unlease", "id": _rid, "at": C.stamp_now(), "by": me,
-                "t": " ".join(argv[4:]).strip() or "worker finished; no successor rides this",
-            }])
-            print("released #%s back to open; it is ordinary open work again, "
-                  "claimed by no worker" % _rid)
+            S.append_events(
+                worklist,
+                [
+                    {
+                        "ev": "unlease",
+                        "id": _rid,
+                        "at": C.stamp_now(),
+                        "by": me,
+                        "t": " ".join(argv[4:]).strip()
+                        or "worker finished; no successor rides this",
+                    }
+                ],
+            )
+            print(
+                "released #%s back to open; it is ordinary open work again, "
+                "claimed by no worker" % _rid
+            )
             return
         until_arg = argv[3]
         if until_arg.startswith("+") and until_arg[1:].isdigit():
             minutes = min(int(until_arg[1:]), C.MAX_LEASE_MIN)
-            until = (C.utcnow() + datetime.timedelta(minutes=minutes)).strftime(
-                "%Y-%m-%dT%H:%MZ"
-            )
+            until = (C.utcnow() + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%MZ")
         else:
             until = until_arg.replace("until:", "")
         wm = next((a for a in argv[4:] if a.startswith("worker:")), "")
         if not wm:
-            die("a [>] lease must name its worker (worker:<background-task-id>); "
+            die(
+                "a [>] lease must name its worker (worker:<background-task-id>); "
                 "an in-flight claim with no worker to trace is the gap this "
-                "program exists to catch")
+                "program exists to catch"
+            )
         note = " ".join(a for a in argv[4:] if not a.startswith("worker:")).strip()
         if C.lease_state("until:%s" % until) != "fresh":
-            die("until:%s is not a valid fresh lease (ISO8601Z, at most %d min ahead)"
-                % (until, C.MAX_LEASE_MIN))
+            die(
+                "until:%s is not a valid fresh lease (ISO8601Z, at most %d min ahead)"
+                % (until, C.MAX_LEASE_MIN)
+            )
         wid = wm.split(":", 1)[1]
         # v14 gap 3: validate the worker id against the harness's last event
         # AT LEASE TIME. The hook verifies leases against OS-visible task ids,
@@ -601,16 +641,20 @@ def _reassign_cli(argv):
         _die2(M.CLI_REASSIGN_YOUNG % (phantom, _age, CK.PHANTOM_MIN, phantom))
     stamp = C.stamp_now()
     moved_items = [
-        rec["id"] for rec in fold.items
-        if rec["state"] in (" ", "?", ">") and rec["owner"] is not None
+        rec["id"]
+        for rec in fold.items
+        if rec["state"] in (" ", "?", ">")
+        and rec["owner"] is not None
         and C.same_session(rec["owner"], phantom)
     ]
     if moved_items:
-        S.append_events(worklist, [
-            {"ev": "reassign", "id": rid, "at": stamp, "by": me, "o": me,
-             "from_o": phantom}
-            for rid in moved_items
-        ])
+        S.append_events(
+            worklist,
+            [
+                {"ev": "reassign", "id": rid, "at": stamp, "by": me, "o": me, "from_o": phantom}
+                for rid in moved_items
+            ],
+        )
     reqs = R.read_requests(worklist)
     moved_reqs = []
     for r in sorted(reqs.values(), key=lambda x: x["at"]):
@@ -627,12 +671,17 @@ def _reassign_cli(argv):
     if not moved_items and not moved_reqs:
         print("nothing open under %s; the history stays as it is" % phantom)
         return
-    print(M.CLI_REASSIGN_DONE % (
-        phantom, me,
-        ", ".join("#" + i for i in moved_items) or "(none)",
-        ", ".join("#" + i for i in moved_reqs) or "(none)",
-        me, me,
-    ))
+    print(
+        M.CLI_REASSIGN_DONE
+        % (
+            phantom,
+            me,
+            ", ".join("#" + i for i in moved_items) or "(none)",
+            ", ".join("#" + i for i in moved_reqs) or "(none)",
+            me,
+            me,
+        )
+    )
 
 
 def main():
@@ -726,8 +775,13 @@ def main():
         replaced = ""
         try:
             prev_age = int((time.time() - target.stat().st_mtime) / 60.0)
-            prev_first = target.read_text(encoding="utf-8", errors="replace").strip().splitlines()[0][:100]
-            replaced = ", replacing a %d-minute-old document (first line: %r)" % (prev_age, prev_first)
+            prev_first = (
+                target.read_text(encoding="utf-8", errors="replace").strip().splitlines()[0][:100]
+            )
+            replaced = ", replacing a %d-minute-old document (first line: %r)" % (
+                prev_age,
+                prev_first,
+            )
         except (OSError, IndexError):
             pass
         backed_up = False
@@ -820,9 +874,7 @@ def main():
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
         return
     if sys.argv[1:2] and sys.argv[1] in ("--ask", "--answer", "--decline", "--ack", "--requests"):
-        R.request_cli(
-            sys.argv[1:], C.worklist_for(C.project_start())
-        )
+        R.request_cli(sys.argv[1:], C.worklist_for(C.project_start()))
         return
     if sys.argv[1:2] == ["--poll"]:
         R.poll_cli(
@@ -849,29 +901,35 @@ def main():
         known = {}
         try:
             ev = json.loads(wl.with_suffix(".lastevent-%s.json" % me[:8]).read_text())
-            known = {str(b.get("id")): b for b in (ev.get("background_tasks") or [])
-                     if isinstance(b, dict)}
+            known = {
+                str(b.get("id")): b
+                for b in (ev.get("background_tasks") or [])
+                if isinstance(b, dict)
+            }
         except (OSError, ValueError):
             known = {}
         if known:
             unknown = [i for i in ids if i not in known]
             if unknown:
-                sys.stderr.write(M.CLI_REAP_UNKNOWN % (", ".join(unknown),
-                                                       ", ".join(sorted(known)) or "(none)"))
+                sys.stderr.write(
+                    M.CLI_REAP_UNKNOWN % (", ".join(unknown), ", ".join(sorted(known)) or "(none)")
+                )
                 sys.exit(2)
         path = wl.with_suffix(".reaped-%s" % me[:8])
         with open(path, "a", encoding="utf-8") as fh:
             fh.writelines(i + "\n" for i in ids)
-        print("reaped %d task(s): %s\nThey no longer count as running for this "
-              "session. Nothing was killed -- if one is in fact alive it will "
-              "still run; only this session's supervision of it stops."
-              % (len(ids), " ".join(ids)))
+        print(
+            "reaped %d task(s): %s\nThey no longer count as running for this "
+            "session. Nothing was killed -- if one is in fact alive it will "
+            "still run; only this session's supervision of it stops." % (len(ids), " ".join(ids))
+        )
         return
     if sys.argv[1:2] == ["--reassign"]:
         _reassign_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--reports"]:
         import wl_report  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
+
         rest = sys.argv[2:]
         # `--reports --all` MUST work, and it did not: the dispatcher forwarded
         # `--all` as if it were a MODE, and wl_report answered "unknown mode
@@ -886,11 +944,18 @@ def main():
         sys.exit(wl_report.main(rest))
     if sys.argv[1:2] == ["--wait"]:
         import wl_wait  # noqa: PLC0415 -- sibling, probed not assumed (see SIBLING IMPORTS above)
+
         sys.exit(wl_wait.main(sys.argv[2:]))
-    if sys.argv[1:2] and sys.argv[1] in ("--add", "--triage", "--tick", "--defer", "--lease", "--update", "--list"):
-        _item_cli(
-            sys.argv[1:], C.worklist_for(C.project_start())
-        )
+    if sys.argv[1:2] and sys.argv[1] in (
+        "--add",
+        "--triage",
+        "--tick",
+        "--defer",
+        "--lease",
+        "--update",
+        "--list",
+    ):
+        _item_cli(sys.argv[1:], C.worklist_for(C.project_start()))
         return
 
     # THE CLASS FIX. Per-verb arity guards close the three verbs anyone has

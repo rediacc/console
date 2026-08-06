@@ -187,9 +187,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
         others = {k for k in live if not C.same_session(k, r["from"])}
         if not others:
             return "no other live session to answer"
-        if all(
-            any(C.same_session(str(d.get("by", "")), k) for d in r["declines"]) for k in others
-        ):
+        if all(any(C.same_session(str(d.get("by", "")), k) for d in r["declines"]) for k in others):
             return "every live session declined"
         return ""
 
@@ -327,16 +325,27 @@ def request_cli(argv, worklist):
             return
         for r in sorted(reqs.values(), key=lambda x: x["at"]):
             state = (
-                "acked" if r["acked"]
-                else "answered" if request_resolved(r)
-                else "escalated" if r["escalated"]
+                "acked"
+                if r["acked"]
+                else "answered"
+                if request_resolved(r)
+                else "escalated"
+                if r["escalated"]
                 else "open"
             )
-            print("#%s %s %s -> %s [%s] %s" % (r["id"], r["at"], r["from"], r["to"], state, r["body"]))
+            print(
+                "#%s %s %s -> %s [%s] %s" % (r["id"], r["at"], r["from"], r["to"], state, r["body"])
+            )
             for a in r["answers"]:
-                print("    answer by %s at %s: %s" % (a.get("by", "?"), a.get("at", "?"), a.get("body", "")))
+                print(
+                    "    answer by %s at %s: %s"
+                    % (a.get("by", "?"), a.get("at", "?"), a.get("body", ""))
+                )
             for d in r["declines"]:
-                print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
+                print(
+                    "    decline by %s at %s: %s"
+                    % (d.get("by", "?"), d.get("at", "?"), d.get("reason", ""))
+                )
             if r["escalated"]:
                 print("    escalated: %s" % r["escalated"])
         return
@@ -351,7 +360,10 @@ def request_cli(argv, worklist):
     if mode == "--ask":
         to = argv[2]
         if to != "*" and not C.PREFIX_RE.match(to):
-            die("bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast" % to)
+            die(
+                "bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast"
+                % to
+            )
         if to != "*" and C.same_session(me, to):
             die("that request is addressed to yourself; use the worklist for your own items")
         # THE SAME DEFECT FROM THE SENDER'S SIDE. The recipient was validated by
@@ -362,11 +374,12 @@ def request_cli(argv, worklist):
         # late. A NEVER-EXISTED check, not a staleness check: an idle peer still
         # has a brief, so this cannot fire on one that is merely quiet.
         if to not in ("*", "operator") and _briefed(worklist, to) is False:
-            die(M.CLI_ASK_UNKNOWN_RECIPIENT % (
-                to, ", ".join(sorted(S.read_briefs(worklist)))))
+            die(M.CLI_ASK_UNKNOWN_RECIPIENT % (to, ", ".join(sorted(S.read_briefs(worklist)))))
         body = request_body("request body")
         if not body:
-            die("an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered")
+            die(
+                "an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered"
+            )
         if to == "operator" and not C.DEFAULT_TOKEN.search(body):
             # Same rule the escalation retrofit applies below, enforced at the
             # door instead. An operator request is answered by a human who may
@@ -439,18 +452,24 @@ def request_cli(argv, worklist):
     if mode == "--answer":
         if not body:
             die("an empty answer answers nothing")
-        append_request_event(worklist, {"ev": "answer", "id": rid, "by": me, "at": stamp, "body": body})
+        append_request_event(
+            worklist, {"ev": "answer", "id": rid, "by": me, "at": stamp, "body": body}
+        )
         print("answered #%s; %s is blocked on acting on it at their next stop" % (rid, r["from"]))
         return
     if mode == "--decline":
         if not body:
             die("a decline without a reason is a stall, not an answer: say why not")
-        append_request_event(worklist, {"ev": "decline", "id": rid, "by": me, "at": stamp, "reason": body})
+        append_request_event(
+            worklist, {"ev": "decline", "id": rid, "by": me, "at": stamp, "reason": body}
+        )
         print(
             "declined #%s%s"
             % (
                 rid,
-                " (broadcast: this releases only you)" if r["to"] == "*" else "; the asker gets your reason",
+                " (broadcast: this releases only you)"
+                if r["to"] == "*"
+                else "; the asker gets your reason",
             )
         )
         return
@@ -480,9 +499,7 @@ def poll_cli(worklist, me, hook_path):
         sys.exit(1)
     # No marker means no fast path: the safe direction.
     with contextlib.suppress(OSError):
-        worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(
-            C.stamp_now(), encoding="utf-8"
-        )
+        worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(C.stamp_now(), encoding="utf-8")
     to_me, bcast, answered, _mine = classify_requests(read_requests(worklist), me)
     if not (to_me or bcast or answered):
         sys.exit(0)  # print NOTHING: the operator's contract for this mode
@@ -513,7 +530,13 @@ def print_inbox(to_me, bcast, answered, me, hook_path):
     for r in answered:
         print("ANSWERED #%s (you asked: %s)" % (r["id"], r["body"][:120]))
         for a in r["answers"]:
-            print("    answer by %s at %s: %s" % (a.get("by", "?"), a.get("at", "?"), a.get("body", "")))
+            print(
+                "    answer by %s at %s: %s"
+                % (a.get("by", "?"), a.get("at", "?"), a.get("body", ""))
+            )
         for d in r["declines"]:
-            print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
+            print(
+                "    decline by %s at %s: %s"
+                % (d.get("by", "?"), d.get("at", "?"), d.get("reason", ""))
+            )
         print("    ack when acted on: %s --ack %s %s" % (hook_path, me, r["id"]))
