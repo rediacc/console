@@ -727,7 +727,7 @@ def scan(store, start, idle_min=None):
             jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
             if not jsonl.exists():
                 continue
-            agent_id = jsonl.stem[len("agent-"):] if jsonl.stem.startswith("agent-") else jsonl.stem
+            agent_id = jsonl.stem.removeprefix("agent-")
             if short_id(agent_id) in known:
                 continue
             try:

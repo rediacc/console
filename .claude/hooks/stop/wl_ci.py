@@ -350,7 +350,7 @@ CI_WATCH_RE = re.compile(
     r"|actions/runs/\d+"
     r"|\bci\b[^\n]{0,40}\bwatch|\bwatch\w*\b[^\n]{0,40}\bci\b"
     r"|\bwatch\w*\b[^\n]{0,40}\b\d{9,}\b|\b\d{9,}\b[^\n]{0,40}\bwatch\w*\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -504,7 +504,7 @@ def ci_queue_state(root, worklist, session_id):
                             (r.get("created_at") or "").replace("Z", "+00:00")
                         )
                         age = (
-                            datetime.datetime.now(datetime.timezone.utc) - created
+                            datetime.datetime.now(datetime.UTC) - created
                         ).total_seconds() / 60.0
                     except ValueError:
                         age = None
