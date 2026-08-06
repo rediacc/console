@@ -14,7 +14,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 
-const MARKER_RE = /\x1b\]rediacc-marker:(.*?)\x07/g;
+// ESC and BEL from char codes, not written literally: a raw control character
+// in a regex is precisely what no-control-regex exists to catch, and building
+// them keeps the rule enabled for the accidental cases. The sequence is an OSC
+// string -- ESC ] payload BEL.
+const ESC = String.fromCharCode(0x1b);
+const BEL = String.fromCharCode(0x07);
+const MARKER_RE = new RegExp(`${ESC}\\]rediacc-marker:(.*?)${BEL}`, 'g');
 
 // Substitute the recordist's real $HOME with ~ so the cast doesn't reveal the
 // maintainer's username. The fake prompt is "user@rediacc:~$", so the home

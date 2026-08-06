@@ -42,7 +42,10 @@ export interface RedirectsFile {
 
 const typed = redirectsJson as RedirectsFile;
 
-export const EXACT: Record<string, RedirectTarget> = typed.exact;
+// `| undefined` is load-bearing: a lookup for a path that is not in the table
+// returns undefined at runtime, and applyRedirect() branches on exactly that.
+// Without it the guard below reads as dead code to type-aware lint.
+export const EXACT: Record<string, RedirectTarget | undefined> = typed.exact;
 
 export const PATTERNS: PatternRule[] = typed.patterns.map((p) => ({
   re: new RegExp(p.from),

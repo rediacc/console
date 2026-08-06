@@ -118,6 +118,43 @@ export const crossLanguageConsistency = {
     const languages = getLanguageDirectories(absoluteLocalesDir)
       .filter((lang) => lang !== sourceLanguage);
 
+    /**
+     * Report both directions of the key-set difference for one language.
+     * Reports land on the Document node -- the offending key lives in another
+     * file, so there is no position in this one to point at.
+     */
+    const reportKeySetDiff = (node, lang, englishKeys, langKeys) => {
+      // Find keys missing in this language
+      for (const key of englishKeys) {
+        if (!langKeys.has(key)) {
+          context.report({
+            node,
+            messageId: 'missingInLanguage',
+            data: {
+              key,
+              source: sourceLanguage,
+              language: lang,
+            },
+          });
+        }
+      }
+
+      // Find extra keys in this language (not in English)
+      for (const key of langKeys) {
+        if (!englishKeys.has(key)) {
+          context.report({
+            node,
+            messageId: 'extraInLanguage',
+            data: {
+              key,
+              source: sourceLanguage,
+              language: lang,
+            },
+          });
+        }
+      }
+    };
+
     return {
       Document(node) {
         if (node.body?.type !== 'Object') return;
@@ -135,38 +172,7 @@ export const crossLanguageConsistency = {
             continue;
           }
 
-          const langKeys = loadLocaleKeys(langFilePath);
-
-          // Find keys missing in this language
-          for (const key of englishKeys) {
-            if (!langKeys.has(key)) {
-              // Report on the Document node since we can't pinpoint the exact location
-              context.report({
-                node,
-                messageId: 'missingInLanguage',
-                data: {
-                  key,
-                  source: sourceLanguage,
-                  language: lang,
-                },
-              });
-            }
-          }
-
-          // Find extra keys in this language (not in English)
-          for (const key of langKeys) {
-            if (!englishKeys.has(key)) {
-              context.report({
-                node,
-                messageId: 'extraInLanguage',
-                data: {
-                  key,
-                  source: sourceLanguage,
-                  language: lang,
-                },
-              });
-            }
-          }
+          reportKeySetDiff(node, lang, englishKeys, loadLocaleKeys(langFilePath));
         }
       },
     };

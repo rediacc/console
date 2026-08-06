@@ -120,10 +120,15 @@ async function tunnelRequest(
 
 // ── Main ─────────────────────────────────────────────────────────────
 
-async function main(): Promise<void> {
-  console.log(`\nLicense Smoke Test: ${PREVIEW_URL}\n`);
+/** Everything the tunnel steps need from server-info. */
+interface E2eContext {
+  serverKey: CryptoKey;
+  keyId: string;
+  serverInfo: ServerInfo;
+}
 
-  // Step 1: Health
+// Step 1: Health
+async function stepHealth(): Promise<void> {
   try {
     await checkHealth();
     ok('Health check (GET /health)');
@@ -131,32 +136,33 @@ async function main(): Promise<void> {
     fail('Health check', e);
     process.exit(1); // Can't continue without a healthy worker
   }
+}
 
-  // Step 2: Server-info + E2E key
-  let serverKey: CryptoKey;
-  let keyId: string;
-  let serverInfo: ServerInfo;
+// Step 2: Server-info + E2E key
+async function stepServerInfo(): Promise<E2eContext> {
   try {
-    serverInfo = await getServerInfo();
+    const serverInfo = await getServerInfo();
     if (!serverInfo.e2e?.keys?.length) throw new Error('No E2E keys in server-info');
     const key = serverInfo.e2e.keys[0];
-    serverKey = await importX25519PublicKey(key.publicKeySpki);
-    keyId = key.keyId;
-    ok(`Server-info (E2E key: ${keyId}, env: ${serverInfo.environment})`);
+    const serverKey = await importX25519PublicKey(key.publicKeySpki);
+    ok(`Server-info (E2E key: ${key.keyId}, env: ${serverInfo.environment})`);
+    return { serverKey, keyId: key.keyId, serverInfo };
   } catch (e) {
     fail('Server-info', e);
     process.exit(1);
   }
+}
 
-  // Step 2b: the preview must not identify as production.
-  //
-  // ASSERTED, not printed, because printing is precisely how this stayed broken.
-  // envSchema defaults ENVIRONMENT to 'production' and nothing set it for
-  // preview deploys, so every PR preview reported environment 'production' and
-  // updateChannel 'stable'. The line above printed that wrong value on every
-  // single run and nobody read it. Meanwhile the same worker rewrites the
-  // install.sh it serves to channel pr-N, so 'stable' here would send a CLI
-  // installed from this hostname to a different channel on its first update.
+// Step 2b: the preview must not identify as production.
+//
+// ASSERTED, not printed, because printing is precisely how this stayed broken.
+// envSchema defaults ENVIRONMENT to 'production' and nothing set it for
+// preview deploys, so every PR preview reported environment 'production' and
+// updateChannel 'stable'. The line above printed that wrong value on every
+// single run and nobody read it. Meanwhile the same worker rewrites the
+// install.sh it serves to channel pr-N, so 'stable' here would send a CLI
+// installed from this hostname to a different channel on its first update.
+function stepPreviewIdentity(serverInfo: ServerInfo): void {
   try {
     if (serverInfo.environment !== 'preview') {
       throw new Error(`environment is "${serverInfo.environment}", expected "preview"`);
@@ -172,8 +178,10 @@ async function main(): Promise<void> {
   } catch (e) {
     fail('Preview identity', e);
   }
+}
 
-  // Step 3: License status via tunnel
+// Step 3: License status via tunnel
+async function stepLicenseStatus({ serverKey, keyId }: E2eContext): Promise<void> {
   try {
     const { status, data } = await tunnelRequest(
       serverKey,
@@ -189,9 +197,13 @@ async function main(): Promise<void> {
   } catch (e) {
     fail('License status', e);
   }
+}
 
-  // Step 4: Issue repo license via tunnel
-  let signedLicense: SignedSubscriptionBlob | null = null;
+// Step 4: Issue repo license via tunnel
+async function stepIssueLicense({
+  serverKey,
+  keyId,
+}: E2eContext): Promise<SignedSubscriptionBlob | null> {
   try {
     const { status, data } = await tunnelRequest(
       serverKey,
@@ -211,56 +223,81 @@ async function main(): Promise<void> {
     if (!result.license?.payload) throw new Error('Missing license.payload');
     if (!result.license?.signature) throw new Error('Missing license.signature');
     if (!result.license?.publicKeyId) throw new Error('Missing license.publicKeyId');
-    signedLicense = result.license as SignedSubscriptionBlob;
+    const signedLicense = result.license as SignedSubscriptionBlob;
     ok(`Repo license issued (keyId: ${signedLicense.publicKeyId})`);
+    return signedLicense;
   } catch (e) {
     fail('Repo license issuance', e);
+    return null;
   }
+}
 
-  // Step 5: Verify Ed25519 signature
-  if (signedLicense) {
-    try {
-      await importPublicKey(signedLicense.publicKeyId, ED25519_PUBLIC_KEY!);
-      const valid = await verifySignature(signedLicense);
-      if (!valid) throw new Error('Signature verification returned false');
-      ok('Ed25519 signature verified');
-    } catch (e) {
-      fail('Signature verification', e);
-    }
-
-    // Step 6: Decode and validate payload fields
-    try {
-      const payload = JSON.parse(atob(signedLicense.payload)) as Record<string, unknown>;
-      const checks = [
-        ['machineId', payload.machineId === TEST_MACHINE_ID],
-        ['repositoryGuid', payload.repositoryGuid === TEST_REPO_GUID],
-        ['kind', payload.kind === 'grand'],
-        ['planCode', typeof payload.planCode === 'string' && (payload.planCode as string).length > 0],
-        ['hardExpiresAt', typeof payload.hardExpiresAt === 'string' && new Date(payload.hardExpiresAt as string).getTime() > Date.now()],
-        ['issuedAt', typeof payload.issuedAt === 'string'],
-        ['maxRepositorySizeGb', typeof payload.maxRepositorySizeGb === 'number' && (payload.maxRepositorySizeGb as number) > 0],
-      ] as const;
-      const failures = checks.filter(([, ok]) => !ok).map(([name]) => name);
-      if (failures.length > 0) throw new Error(`Invalid fields: ${failures.join(', ')}`);
-      ok(`Payload fields valid (plan: ${payload.planCode}, expires: ${payload.hardExpiresAt})`);
-    } catch (e) {
-      fail('Payload validation', e);
-    }
+// Step 5: Verify Ed25519 signature
+async function stepVerifySignature(signedLicense: SignedSubscriptionBlob): Promise<void> {
+  try {
+    await importPublicKey(signedLicense.publicKeyId, ED25519_PUBLIC_KEY!);
+    const valid = await verifySignature(signedLicense);
+    if (!valid) throw new Error('Signature verification returned false');
+    ok('Ed25519 signature verified');
+  } catch (e) {
+    fail('Signature verification', e);
   }
+}
 
-  // ── Step 7: Channel rewrite assertions ─────────────────────────────
-  // The preview worker must rewrite install.sh/install.ps1 to bake the
-  // PR-N channel into the CLI defaults it hands out. Without this, users
-  // visiting a PR preview download the stable CLI instead of the preview
-  // build — the exact regression this test exists to catch.
+// Step 6: Decode and validate payload fields
+function stepValidatePayload(signedLicense: SignedSubscriptionBlob): void {
+  try {
+    const payload = JSON.parse(atob(signedLicense.payload)) as Record<string, unknown>;
+    const checks = [
+      ['machineId', payload.machineId === TEST_MACHINE_ID],
+      ['repositoryGuid', payload.repositoryGuid === TEST_REPO_GUID],
+      ['kind', payload.kind === 'grand'],
+      ['planCode', typeof payload.planCode === 'string' && (payload.planCode as string).length > 0],
+      ['hardExpiresAt', typeof payload.hardExpiresAt === 'string' && new Date(payload.hardExpiresAt as string).getTime() > Date.now()],
+      ['issuedAt', typeof payload.issuedAt === 'string'],
+      ['maxRepositorySizeGb', typeof payload.maxRepositorySizeGb === 'number' && (payload.maxRepositorySizeGb as number) > 0],
+    ] as const;
+    const failures = checks.filter(([, ok]) => !ok).map(([name]) => name);
+    if (failures.length > 0) throw new Error(`Invalid fields: ${failures.join(', ')}`);
+    ok(`Payload fields valid (plan: ${payload.planCode}, expires: ${payload.hardExpiresAt})`);
+  } catch (e) {
+    fail('Payload validation', e);
+  }
+}
+
+// ── Step 7: Channel rewrite assertions ─────────────────────────────
+// The preview worker must rewrite install.sh/install.ps1 to bake the
+// PR-N channel into the CLI defaults it hands out. Without this, users
+// visiting a PR preview download the stable CLI instead of the preview
+// build — the exact regression this test exists to catch.
+async function stepChannelRewrite(): Promise<void> {
   const expectedChannel = extractChannel(PREVIEW_URL!);
-  if (expectedChannel) {
-    await checkInstallSh(expectedChannel);
-    await checkInstallPs1(expectedChannel);
-    await checkMarketingHtml(expectedChannel);
-  } else {
+  if (!expectedChannel) {
     fail('Channel extraction', new Error(`Could not parse channel from ${PREVIEW_URL}`));
+    return;
   }
+
+  await checkInstallSh(expectedChannel);
+  await checkInstallPs1(expectedChannel);
+  await checkMarketingHtml(expectedChannel);
+}
+
+async function main(): Promise<void> {
+  console.log(`\nLicense Smoke Test: ${PREVIEW_URL}\n`);
+
+  await stepHealth();
+
+  const context = await stepServerInfo();
+  stepPreviewIdentity(context.serverInfo);
+  await stepLicenseStatus(context);
+
+  const signedLicense = await stepIssueLicense(context);
+  if (signedLicense) {
+    await stepVerifySignature(signedLicense);
+    stepValidatePayload(signedLicense);
+  }
+
+  await stepChannelRewrite();
 
   // Summary
   console.log(`\n${passed} passed, ${failed} failed\n`);

@@ -133,47 +133,61 @@ function runMain() {
   );
 }
 
+// What the main phase recorded, with the defaults a run that never got there
+// would leave behind.
+function readSamplerState() {
+  return {
+    pid: Number(process.env.STATE_pid || 0),
+    out: process.env.STATE_out || '',
+    log: process.env.STATE_log || '',
+    start: Number(process.env.STATE_start || 0),
+    strict: process.env.STATE_strict === 'true' ? 'true' : 'false',
+  };
+}
+
+// Stop a live sampler, returning the note that describes how it went.
+function stopSampler(pid) {
+  let note = '';
+  try {
+    process.kill(pid, 'SIGTERM');
+  } catch (err) {
+    note = `could not signal sampler pid ${pid}: ${err.message}`;
+  }
+
+  for (let i = 0; i < 20 && alive(pid); i++) sleepMs(100);
+  if (!alive(pid)) return note;
+
+  try {
+    process.kill(pid, 'SIGKILL');
+  } catch {
+    /* already gone between the check and the signal */
+  }
+  return 'the sampler had to be SIGKILLed; the final sample may be truncated';
+}
+
+// A sampler that is already gone is the failure worth naming: the panel must
+// say so rather than render whatever partial file it left behind as if it were
+// the whole job.
+function samplerGoneNote(log) {
+  const why = tail(log, 400);
+  return `the sampler was no longer running when the job ended${why ? ` (last log: ${why})` : ''}`;
+}
+
 function runPost() {
   const skip = process.env.STATE_skip;
   if (skip) {
     process.stdout.write(`profiler: skipped (${skip})${os.EOL}`);
     return;
   }
-  const pid = Number(process.env.STATE_pid || 0);
-  const out = process.env.STATE_out || '';
-  const log = process.env.STATE_log || '';
-  const start = Number(process.env.STATE_start || 0);
-  const strict = process.env.STATE_strict === 'true' ? 'true' : 'false';
+  const { pid, out, log, start, strict } = readSamplerState();
 
   if (!out) {
     notice('warning', 'no sampler state recorded; the main step never ran');
     return;
   }
 
-  // A sampler that is already gone is the failure worth naming: the panel must
-  // say so rather than render whatever partial file it left behind as if it
-  // were the whole job.
   const wasAlive = pid > 0 && alive(pid);
-  let note = '';
-  if (wasAlive) {
-    try {
-      process.kill(pid, 'SIGTERM');
-    } catch (err) {
-      note = `could not signal sampler pid ${pid}: ${err.message}`;
-    }
-    for (let i = 0; i < 20 && alive(pid); i++) sleepMs(100);
-    if (alive(pid)) {
-      try {
-        process.kill(pid, 'SIGKILL');
-      } catch {
-        /* already gone between the check and the signal */
-      }
-      note = 'the sampler had to be SIGKILLed; the final sample may be truncated';
-    }
-  } else {
-    const why = tail(log, 400);
-    note = `the sampler was no longer running when the job ended${why ? ` (last log: ${why})` : ''}`;
-  }
+  const note = wasAlive ? stopSampler(pid) : samplerGoneNote(log);
 
   const wallS = start > 0 ? Math.round((Date.now() - start) / 1000) : 0;
   const res = spawnSync('bash', [PANEL], {

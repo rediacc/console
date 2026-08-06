@@ -46,30 +46,42 @@ const extractKeysFromFile = (filePath) => {
   return keys;
 };
 
+// Directories that never hold first-party source
+const SKIPPED_DIRS = new Set(['node_modules', 'dist', '.git']);
+const SOURCE_FILE_RE = /\.(ts|tsx|js|jsx)$/;
+
+/**
+ * Accumulate one directory entry: recurse into directories, collect source files.
+ */
+const collectSourceEntry = (entry, dir, files) => {
+  const fullPath = path.join(dir, entry.name);
+
+  if (entry.isDirectory()) {
+    if (!SKIPPED_DIRS.has(entry.name)) {
+      findSourceFiles(fullPath, files);
+    }
+    return;
+  }
+
+  if (entry.isFile() && SOURCE_FILE_RE.test(entry.name)) {
+    files.push(fullPath);
+  }
+};
+
 /**
  * Recursively find all TypeScript/JavaScript files in a directory
  */
 const findSourceFiles = (dir, files = []) => {
+  let entries;
   try {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-
-      if (entry.isDirectory()) {
-        // Skip node_modules and dist directories
-        if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== '.git') {
-          findSourceFiles(fullPath, files);
-        }
-      } else if (entry.isFile()) {
-        // Include .ts, .tsx, .js, .jsx files
-        if (/\.(ts|tsx|js|jsx)$/.test(entry.name)) {
-          files.push(fullPath);
-        }
-      }
-    }
+    entries = fs.readdirSync(dir, { withFileTypes: true });
   } catch {
     // Directory read error - skip
+    return files;
+  }
+
+  for (const entry of entries) {
+    collectSourceEntry(entry, dir, files);
   }
 
   return files;
@@ -79,6 +91,23 @@ const findSourceFiles = (dir, files = []) => {
  * Extract all translation keys used in source files
  * Returns a Map of namespace -> Set of keys
  */
+const recordUsedKey = (usedKeys, fullKey) => {
+  // Parse namespace:key format
+  let namespace = 'common';
+  let key = fullKey;
+
+  const colonIndex = fullKey.indexOf(':');
+  if (colonIndex !== -1) {
+    namespace = fullKey.slice(0, colonIndex);
+    key = fullKey.slice(colonIndex + 1);
+  }
+
+  if (!usedKeys.has(namespace)) {
+    usedKeys.set(namespace, new Set());
+  }
+  usedKeys.get(namespace).add(key);
+};
+
 export const extractUsedKeys = (sourceDir) => {
   // Check cache
   const now = Date.now();
@@ -93,20 +122,7 @@ export const extractUsedKeys = (sourceDir) => {
     const fileKeys = extractKeysFromFile(filePath);
 
     for (const fullKey of fileKeys) {
-      // Parse namespace:key format
-      let namespace = 'common';
-      let key = fullKey;
-
-      if (fullKey.includes(':')) {
-        const colonIndex = fullKey.indexOf(':');
-        namespace = fullKey.slice(0, colonIndex);
-        key = fullKey.slice(colonIndex + 1);
-      }
-
-      if (!usedKeys.has(namespace)) {
-        usedKeys.set(namespace, new Set());
-      }
-      usedKeys.get(namespace).add(key);
+      recordUsedKey(usedKeys, fullKey);
     }
   }
 

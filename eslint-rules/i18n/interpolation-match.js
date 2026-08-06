@@ -10,6 +10,52 @@ import { resolveRequiredDirOption } from './shared/require-path-option.js';
 // Cache for loaded translations
 const translationCache = new Map();
 
+// i18next option keys that are never interpolation variables.
+const SPECIAL_T_OPTIONS = new Set(['count', 'context', 'defaultValue']);
+
+/**
+ * The namespace literal from one `const { t } = useTranslation('ns')` binding.
+ * `undefined` means "no namespace here, keep looking" -- a Literal's value can
+ * be null but never undefined, so it is a safe sentinel.
+ */
+const namespaceFromVariable = (variable) => {
+  for (const def of variable.defs) {
+    // Check if it's destructured from useTranslation
+    if (def.node?.init?.callee?.name !== 'useTranslation') continue;
+    const args = def.node.init.arguments;
+    if (args && args.length > 0 && args[0].type === 'Literal') {
+      return args[0].value;
+    }
+  }
+  return undefined;
+};
+
+/** The namespace declared by a `t` binding in this scope, or undefined. */
+const namespaceFromScope = (scope) => {
+  for (const variable of scope.variables) {
+    if (variable.name !== 't') continue;
+    const namespace = namespaceFromVariable(variable);
+    if (namespace !== undefined) return namespace;
+  }
+  return undefined;
+};
+
+/** The variable names passed in the options object of a t() call. */
+const collectProvidedVars = (optionsArg) => {
+  const providedVars = new Set();
+  if (!optionsArg || optionsArg.type !== 'ObjectExpression') return providedVars;
+
+  for (const prop of optionsArg.properties) {
+    if (prop.type !== 'Property') continue;
+    if (prop.key.type === 'Identifier') {
+      providedVars.add(prop.key.name);
+    } else if (prop.key.type === 'Literal') {
+      providedVars.add(String(prop.key.value));
+    }
+  }
+  return providedVars;
+};
+
 /**
  * Extract {{variable}} patterns from a string
  */
@@ -131,22 +177,46 @@ export const interpolationMatch = {
       // Look for useTranslation call in the component
       let currentScope = scope;
       while (currentScope) {
-        for (const variable of currentScope.variables) {
-          if (variable.name === 't') {
-            for (const def of variable.defs) {
-              // Check if it's destructured from useTranslation
-              if (def.node?.init?.callee?.name === 'useTranslation') {
-                const args = def.node.init.arguments;
-                if (args && args.length > 0 && args[0].type === 'Literal') {
-                  return args[0].value;
-                }
-              }
-            }
-          }
-        }
+        const namespace = namespaceFromScope(currentScope);
+        if (namespace !== undefined) return namespace;
         currentScope = currentScope.upper;
       }
       return 'common'; // Default namespace
+    };
+
+    // Check for missing variables
+    const reportMissingVars = (expectedVars, providedVars, fullKey, reportNode) => {
+      for (const expectedVar of expectedVars) {
+        if (!providedVars.has(expectedVar)) {
+          context.report({
+            node: reportNode,
+            messageId: 'missingVariable',
+            data: {
+              key: fullKey,
+              variable: expectedVar,
+            },
+          });
+        }
+      }
+    };
+
+    // Check for extra variables (warning level - could be intentional)
+    const reportExtraVars = (expectedVars, providedVars, fullKey, optionsArg) => {
+      const expectedSet = new Set(expectedVars);
+      for (const providedVar of providedVars) {
+        // Skip common special keys like 'count' for pluralization
+        if (SPECIAL_T_OPTIONS.has(providedVar)) continue;
+        if (!expectedSet.has(providedVar)) {
+          context.report({
+            node: optionsArg,
+            messageId: 'extraVariable',
+            data: {
+              key: fullKey,
+              variable: providedVar,
+            },
+          });
+        }
+      }
     };
 
     return {
@@ -182,51 +252,11 @@ export const interpolationMatch = {
         const expectedVars = extractInterpolationVars(translationString);
 
         // Extract provided variables from t() call
-        const providedVars = new Set();
         const optionsArg = node.arguments[1];
+        const providedVars = collectProvidedVars(optionsArg);
 
-        if (optionsArg && optionsArg.type === 'ObjectExpression') {
-          for (const prop of optionsArg.properties) {
-            if (prop.type === 'Property' && prop.key.type === 'Identifier') {
-              providedVars.add(prop.key.name);
-            } else if (prop.type === 'Property' && prop.key.type === 'Literal') {
-              providedVars.add(String(prop.key.value));
-            }
-          }
-        }
-
-        // Check for missing variables
-        for (const expectedVar of expectedVars) {
-          if (!providedVars.has(expectedVar)) {
-            context.report({
-              node: optionsArg || keyArg,
-              messageId: 'missingVariable',
-              data: {
-                key: fullKey,
-                variable: expectedVar,
-              },
-            });
-          }
-        }
-
-        // Check for extra variables (warning level - could be intentional)
-        const expectedSet = new Set(expectedVars);
-        for (const providedVar of providedVars) {
-          // Skip common special keys like 'count' for pluralization
-          if (providedVar === 'count' || providedVar === 'context' || providedVar === 'defaultValue') {
-            continue;
-          }
-          if (!expectedSet.has(providedVar)) {
-            context.report({
-              node: optionsArg,
-              messageId: 'extraVariable',
-              data: {
-                key: fullKey,
-                variable: providedVar,
-              },
-            });
-          }
-        }
+        reportMissingVars(expectedVars, providedVars, fullKey, optionsArg || keyArg);
+        reportExtraVars(expectedVars, providedVars, fullKey, optionsArg);
       },
     };
   },

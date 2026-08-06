@@ -175,18 +175,25 @@ function scoreCandidate(req: ParsedRequest, candidate: RouteEntry): number {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * File-like paths (CSS, JS, images, fonts) and non-content prefixes never get
+ * a fuzzy redirect — a missing hashed asset must stay a 404.
+ */
+function isRedirectCandidate(pathname: string): boolean {
+  if (FILE_EXT_RE.test(pathname)) return false;
+
+  const lower = pathname.toLowerCase();
+  for (const prefix of SKIP_PREFIXES) {
+    if (lower.startsWith(prefix)) return false;
+  }
+  return true;
+}
+
 export async function findSmartRedirect(
   pathname: string,
   assets: Fetcher
 ): Promise<SmartRedirectResult | null> {
-  // Guard: skip file-like paths (CSS, JS, images, fonts)
-  if (FILE_EXT_RE.test(pathname)) return null;
-
-  // Guard: skip non-content paths
-  const lower = pathname.toLowerCase();
-  for (const prefix of SKIP_PREFIXES) {
-    if (lower.startsWith(prefix)) return null;
-  }
+  if (!isRedirectCandidate(pathname)) return null;
 
   const manifest = await loadManifest(assets);
   if (manifest.length === 0) return null;

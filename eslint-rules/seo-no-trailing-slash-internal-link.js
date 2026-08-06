@@ -91,6 +91,13 @@ function templateLiteralRaw(node) {
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
+/** Static property key as a string, or null for anything not statically named. */
+function propertyKeyName(key) {
+  if (key?.type === 'Identifier') return key.name;
+  if (key?.type === 'Literal') return key.value;
+  return null;
+}
+
 export const seoNoTrailingSlashInternalLink = {
   meta: {
     type: 'problem',
@@ -153,12 +160,7 @@ export const seoNoTrailingSlashInternalLink = {
       // { href: '/en/', url: `/${lang}/`, to: ... }
       Property(node) {
         if (node.computed) return;
-        const keyName =
-          node.key?.type === 'Identifier'
-            ? node.key.name
-            : node.key?.type === 'Literal'
-              ? node.key.value
-              : null;
+        const keyName = propertyKeyName(node.key);
         if (!keyName || !URL_PROP_KEYS.has(keyName)) return;
         checkValueNode(node.value);
       },

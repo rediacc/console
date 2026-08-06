@@ -53,7 +53,9 @@
 
 'use strict';
 
-const crypto = require('crypto');
+// Destructured, not `const crypto = require('crypto')`: `crypto` is a Node
+// global now, and rebinding it shadows the builtin.
+const { createHash } = require('node:crypto');
 
 // ---------------------------------------------------------------------------
 // THE CLOSURE TABLE. Hand-derived from .github/workflows/ct-tests.yml by
@@ -268,7 +270,7 @@ function evaluateGreenlight({ key, wantSubmoduleSha, wantClosureHash, candidates
 // iteration order cannot change the answer, and NUL-delimited so no path can
 // forge a different map's serialization by containing the delimiter.
 function closureHashOf(shaByPath) {
-  const h = crypto.createHash('sha256');
+  const h = createHash('sha256');
   for (const p of Object.keys(shaByPath).sort()) {
     h.update(p);
     h.update('\0');

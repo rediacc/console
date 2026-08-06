@@ -66,7 +66,7 @@ export const isNotTranslationKey = (key) => {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(key)) return true;
   if (/^[YMDHhmsaAzZT\-/:.\s]+$/.test(key)) return true;
   if (/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2})?Z?$/.test(key)) return true;
-  if (/^\s*[\[{]/.test(key)) return true;
+  if (/^\s*[[{]/.test(key)) return true;
   if (/^\[.+\]\s/.test(key)) return true;
   if (/^[\d\s.,;:!?-]+$/.test(key)) return true;
   if (/^-/.test(key)) return true;

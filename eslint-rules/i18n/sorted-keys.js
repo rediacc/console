@@ -3,6 +3,53 @@
  * Supports auto-fix to sort keys automatically.
  */
 
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
+/**
+ * Fixer that rewrites the whole object with its members in sorted order.
+ */
+const sortObjectFixer = (context, members, compare) => (fixer) => {
+  const sourceCode = context.sourceCode;
+  const sortedTexts = [...members]
+    .filter((m) => m.type === 'Member')
+    .sort((a, b) => compare(memberKey(a) || '', memberKey(b) || ''))
+    .map((m) => sourceCode.getText(m));
+
+  // Replace the entire object content
+  const firstMember = members[0];
+  const lastMember = members[members.length - 1];
+  if (!firstMember || !lastMember) return null;
+
+  return fixer.replaceTextRange(
+    [firstMember.range[0], lastMember.range[1]],
+    sortedTexts.join(',\n  ')
+  );
+};
+
+/**
+ * Report the FIRST out-of-order key in one object and stop -- reporting every
+ * pair would bury the file in noise for a single misplaced key.
+ */
+const reportFirstUnsorted = (context, keys, members, compare) => {
+  for (let i = 1; i < keys.length; i++) {
+    const prev = keys[i - 1];
+    const curr = keys[i];
+
+    if (compare(prev.key, curr.key) <= 0) continue;
+
+    context.report({
+      node: curr.node,
+      messageId: 'unsorted',
+      data: {
+        current: curr.key,
+        previous: prev.key,
+      },
+      fix: sortObjectFixer(context, members, compare),
+    });
+    return;
+  }
+};
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const sortedKeys = {
   meta: {
@@ -54,77 +101,29 @@ export const sortedKeys = {
      * @param {string} path - Current path for error messages
      */
     const checkObject = (node, path = '') => {
-      if (!node || node.type !== 'Object') return;
-
-      const members = node.body?.members || [];
+      const members = objectMembers(node);
       const keys = [];
 
       for (const member of members) {
         if (member.type !== 'Member') continue;
 
-        const key = member.name?.type === 'String'
-          ? member.name.value
-          : member.name?.name;
+        const key = memberKey(member);
 
         if (key) {
           keys.push({
             key,
             node: member,
-            fullPath: path ? `${path}.${key}` : key,
+            fullPath: joinPath(path, key),
           });
         }
 
         // Recursively check nested objects
         if (member.value?.type === 'Object') {
-          const fullPath = path ? `${path}.${key}` : key;
-          checkObject(member.value, fullPath);
+          checkObject(member.value, joinPath(path, key));
         }
       }
 
-      // Check if keys are sorted
-      for (let i = 1; i < keys.length; i++) {
-        const prev = keys[i - 1];
-        const curr = keys[i];
-
-        if (naturalCompare(prev.key, curr.key) > 0) {
-          context.report({
-            node: curr.node,
-            messageId: 'unsorted',
-            data: {
-              current: curr.key,
-              previous: prev.key,
-            },
-            fix(fixer) {
-              // Fix by sorting all keys in this object
-              const sourceCode = context.sourceCode;
-              const sortedMembers = [...members]
-                .filter((m) => m.type === 'Member')
-                .sort((a, b) => {
-                  const keyA = a.name?.type === 'String' ? a.name.value : a.name?.name || '';
-                  const keyB = b.name?.type === 'String' ? b.name.value : b.name?.name || '';
-                  return naturalCompare(keyA, keyB);
-                });
-
-              // Get the text for each member
-              const sortedTexts = sortedMembers.map((m) => sourceCode.getText(m));
-
-              // Replace the entire object content
-              const firstMember = members[0];
-              const lastMember = members[members.length - 1];
-
-              if (firstMember && lastMember) {
-                return fixer.replaceTextRange(
-                  [firstMember.range[0], lastMember.range[1]],
-                  sortedTexts.join(',\n  ')
-                );
-              }
-              return null;
-            },
-          });
-          // Only report the first unsorted key to avoid noise
-          break;
-        }
-      }
+      reportFirstUnsorted(context, keys, members, naturalCompare);
     };
 
     return {

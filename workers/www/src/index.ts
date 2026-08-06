@@ -166,8 +166,10 @@ export function normalizePath(pathname: string): { path: string; changed: boolea
   // Lowercase outside percent-encoded sequences only. A %XX triple is
   // case-insensitive per RFC 3986 but ASSETS normalizes to uppercase;
   // lowercasing the whole string would loop.
+  // `enc` is either a full 3-char %XX triple or undefined when that alternative
+  // did not participate — never the empty string, so ?? and ?: agree here.
   p = p.replaceAll(/(%[0-9a-fA-F]{2})|([^%]+)/g, (_, enc, plain) =>
-    enc ? enc : (plain as string).toLowerCase()
+    (enc as string | undefined) ?? (plain as string).toLowerCase()
   );
 
   return { path: p, changed: p !== pathname };
@@ -207,6 +209,159 @@ function buildGoneResponse(rationale: string): Response {
   });
 }
 
+// Static-asset paths are case-sensitive (Vite hashes like client.BzZdRM54.js,
+// fonts like Inter-Regular.woff2). normalizePath() would lowercase them and
+// 301 to a filename that doesn't exist on disk — breaking CSS, fonts, and
+// dynamic imports. These are served directly from ASSETS before normalizing.
+const STATIC_ASSET_PREFIX_RE = /^\/(assets|fonts|images|videos|scripts|styles|_astro)\//;
+
+/** ASSETS passthrough, with the preview-origin rewrite the whole worker shares. */
+async function serveAsset(
+  request: Request,
+  env: Env,
+  url: URL,
+  isPreview: boolean,
+  channel: string
+): Promise<Response> {
+  const response = await env.ASSETS.fetch(request);
+  return isPreview ? rewriteOrigin(response, url, channel) : response;
+}
+
+function isAccountApiPath(pathname: string): boolean {
+  return pathname.startsWith('/account/api/') || pathname === '/account/api';
+}
+
+// Account API: served here only on PR previews (env.DB bound by
+// deploy-www.sh). On stable / edge the regional workers serve it.
+// Public marketing endpoints (contact submit, newsletter subscribe)
+// are forwarded via the ACCOUNT service binding so the forms on
+// www.rediacc.com keep working; everything else 410s so the SPA
+// region picker routes authenticated traffic to the right region.
+function handleAccountApi(request: Request, env: Env, url: URL): Response | Promise<Response> {
+  if (env.DB) {
+    return accountApp.fetch(request, env);
+  }
+  const isPublicMarketingEndpoint =
+    url.pathname.startsWith('/account/api/v1/contact/') ||
+    url.pathname.startsWith('/account/api/v1/newsletter/');
+  if (isPublicMarketingEndpoint && env.ACCOUNT) {
+    return env.ACCOUNT.fetch(request);
+  }
+  return new Response(
+    JSON.stringify({
+      error: 'gone',
+      message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+    }),
+    { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
+  );
+}
+
+/** Serve the account SPA for /account/* routes. */
+function handleAccountSpa(
+  request: Request,
+  env: Env,
+  url: URL,
+  isPreview: boolean,
+  channel: string
+): Promise<Response> {
+  // Static files (JS, CSS, SVG, etc.): serve from assets directly
+  if (/\.\w+$/.test(url.pathname)) {
+    return env.ASSETS.fetch(request);
+  }
+  // SPA routes: rewrite to /account/ so assets serves index.html.
+  // Don't use /account/index.html — Cloudflare pretty URLs 307-redirects it.
+  if (url.pathname !== '/account' && url.pathname !== '/account/') {
+    const spaRequest = new Request(new URL('/account/', url.origin), request);
+    return serveAsset(spaRequest, env, url, isPreview, channel);
+  }
+  return serveAsset(request, env, url, isPreview, channel);
+}
+
+/**
+ * 404 recovery steps 1-3: root redirect, canonicalization, curated table.
+ * Returns null when the request should fall through to ASSETS — including the
+ * self-redirect case, where a matched alias resolves back to the same URL.
+ */
+function resolveCuratedRedirect(url: URL): Response | null {
+  // Root -> default language. Replaces the old public/_redirects rule which
+  // Workers don't process (that was a Cloudflare Pages feature).
+  if (url.pathname === '/') {
+    const target = new URL(`/${DEFAULT_LANG}${url.search}`, url.origin);
+    return buildRedirectResponse(target.toString(), 301, 'root-to-default-lang');
+  }
+
+  // Step 1: normalize (strip trailing slash, .html/.md, lowercase).
+  // If the canonical form differs, 301 to it immediately.
+  const normalized = normalizePath(url.pathname);
+  if (normalized.changed) {
+    const canonical = new URL(normalized.path + url.search, url.origin);
+    return buildRedirectResponse(canonical.toString(), 301, 'canonicalize');
+  }
+
+  // Step 2: detect language prefix, strip for lookup.
+  const { lang, pathWithoutLang } = detectLanguage(url.pathname);
+
+  // Step 3: curated table lookup (exact, then pattern).
+  // Decode percent-encoded chars so UTF-8 keys (e.g. /blog/tags/configuración)
+  // match regardless of whether the request came in encoded form.
+  let lookupPath = pathWithoutLang;
+  try {
+    lookupPath = decodeURIComponent(pathWithoutLang);
+  } catch {
+    /* malformed encoding — fall back to raw */
+  }
+  const alias = applyRedirect(lookupPath);
+  if (!alias) return null;
+
+  if (alias.status === 410 || alias.to === null) {
+    return buildGoneResponse(alias.rationale);
+  }
+  // Preserve language prefix if present, else use default
+  const targetLang = lang ?? DEFAULT_LANG;
+  // If the target starts with /account, don't add lang (Worker-served SPA)
+  const targetPath = alias.to.startsWith('/account') ? alias.to : `/${targetLang}${alias.to}`;
+  // Self-redirect guard: if the redirect would land on the same URL (e.g.,
+  // /en/checkout/success → /en/checkout/success), fall through to ASSETS
+  // so the user lands on the actual page instead of looping.
+  if (targetPath === url.pathname) return null;
+
+  const target = new URL(targetPath + url.search, url.origin);
+  return buildRedirectResponse(target.toString(), 301, `curated-${alias.via}`);
+}
+
+/**
+ * 404 recovery steps 4-5: serve from ASSETS, and on a 404 consult the fuzzy
+ * smart-redirect fallback. run_worker_first = ["/*"] routes everything here.
+ *
+ * Both log lines are console.warn, not console.log: they only ever fire on a
+ * 404 response, so they are anomaly records, and warn is the lowest level the
+ * repo's no-console policy admits.
+ */
+async function serveWithSmartRedirect(
+  request: Request,
+  env: Env,
+  url: URL,
+  isPreview: boolean,
+  channel: string
+): Promise<Response> {
+  const response = await env.ASSETS.fetch(request);
+
+  if (response.status === 404) {
+    const redirect = await findSmartRedirect(url.pathname, env.ASSETS);
+    if (redirect) {
+      console.warn(JSON.stringify({ event: 'smart-redirect', from: url.pathname, to: redirect.url, score: redirect.score }));
+      return new Response(null, {
+        status: 301,
+        headers: { Location: new URL(redirect.url, url.origin).toString(), 'X-Redirect-Reason': 'smart-404' },
+      });
+    }
+    // Log unmatched 404s for future alias-table maintenance.
+    console.warn(JSON.stringify({ event: 'redirect-miss', path: url.pathname }));
+  }
+
+  return isPreview ? rewriteOrigin(response, url, channel) : response;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -217,124 +372,24 @@ export default {
       return buildDisallowRobots();
     }
 
-    // Account API: served here only on PR previews (env.DB bound by
-    // deploy-www.sh). On stable / edge the regional workers serve it.
-    // Public marketing endpoints (contact submit, newsletter subscribe)
-    // are forwarded via the ACCOUNT service binding so the forms on
-    // www.rediacc.com keep working; everything else 410s so the SPA
-    // region picker routes authenticated traffic to the right region.
-    if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      if (env.DB) {
-        return accountApp.fetch(request, env);
-      }
-      const isPublicMarketingEndpoint =
-        url.pathname.startsWith('/account/api/v1/contact/') ||
-        url.pathname.startsWith('/account/api/v1/newsletter/');
-      if (isPublicMarketingEndpoint && env.ACCOUNT) {
-        return env.ACCOUNT.fetch(request);
-      }
-      return new Response(
-        JSON.stringify({
-          error: 'gone',
-          message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
-        }),
-        { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
-      );
+    if (isAccountApiPath(url.pathname)) {
+      return handleAccountApi(request, env, url);
     }
 
-    // Serve account SPA for /account/* routes
     if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
-      // Static files (JS, CSS, SVG, etc.): serve from assets directly
-      if (/\.\w+$/.test(url.pathname)) {
-        return env.ASSETS.fetch(request);
-      }
-      // SPA routes: rewrite to /account/ so assets serves index.html.
-      // Don't use /account/index.html — Cloudflare pretty URLs 307-redirects it.
-      if (url.pathname !== '/account' && url.pathname !== '/account/') {
-        const spaRequest = new Request(new URL('/account/', url.origin), request);
-        const response = await env.ASSETS.fetch(spaRequest);
-        return isPreview ? rewriteOrigin(response, url, channel) : response;
-      }
-      const response = await env.ASSETS.fetch(request);
-      return isPreview ? rewriteOrigin(response, url, channel) : response;
+      return handleAccountSpa(request, env, url, isPreview, channel);
     }
 
-    // Static-asset paths are case-sensitive (Vite hashes like client.BzZdRM54.js,
-    // fonts like Inter-Regular.woff2). normalizePath() below would lowercase
-    // them and 301 to a filename that doesn't exist on disk — breaking CSS,
-    // fonts, and dynamic imports. Serve directly from ASSETS before normalizing.
-    if (/^\/(assets|fonts|images|videos|scripts|styles|_astro)\//.test(url.pathname)) {
-      const response = await env.ASSETS.fetch(request);
-      return isPreview ? rewriteOrigin(response, url, channel) : response;
+    if (STATIC_ASSET_PREFIX_RE.test(url.pathname)) {
+      return serveAsset(request, env, url, isPreview, channel);
     }
 
     // -----------------------------------------------------------------------
     // 404 recovery: normalize path, then consult the curated redirect table.
     // -----------------------------------------------------------------------
+    const curated = resolveCuratedRedirect(url);
+    if (curated) return curated;
 
-    // Root -> default language. Replaces the old public/_redirects rule which
-    // Workers don't process (that was a Cloudflare Pages feature).
-    if (url.pathname === '/') {
-      const target = new URL(`/${DEFAULT_LANG}${url.search}`, url.origin);
-      return buildRedirectResponse(target.toString(), 301, 'root-to-default-lang');
-    }
-
-    // Step 1: normalize (strip trailing slash, .html/.md, lowercase).
-    // If the canonical form differs, 301 to it immediately.
-    const normalized = normalizePath(url.pathname);
-    if (normalized.changed) {
-      const canonical = new URL(normalized.path + url.search, url.origin);
-      return buildRedirectResponse(canonical.toString(), 301, 'canonicalize');
-    }
-
-    // Step 2: detect language prefix, strip for lookup.
-    const { lang, pathWithoutLang } = detectLanguage(url.pathname);
-
-    // Step 3: curated table lookup (exact, then pattern).
-    // Decode percent-encoded chars so UTF-8 keys (e.g. /blog/tags/configuración)
-    // match regardless of whether the request came in encoded form.
-    let lookupPath = pathWithoutLang;
-    try {
-      lookupPath = decodeURIComponent(pathWithoutLang);
-    } catch {
-      /* malformed encoding — fall back to raw */
-    }
-    const alias = applyRedirect(lookupPath);
-    if (alias) {
-      if (alias.status === 410 || alias.to === null) {
-        return buildGoneResponse(alias.rationale);
-      }
-      // Preserve language prefix if present, else use default
-      const targetLang = lang ?? DEFAULT_LANG;
-      // If the target starts with /account, don't add lang (Worker-served SPA)
-      const targetPath = alias.to.startsWith('/account') ? alias.to : `/${targetLang}${alias.to}`;
-      // Self-redirect guard: if the redirect would land on the same URL (e.g.,
-      // /en/checkout/success → /en/checkout/success), fall through to ASSETS
-      // so the user lands on the actual page instead of looping.
-      if (targetPath !== url.pathname) {
-        const target = new URL(targetPath + url.search, url.origin);
-        return buildRedirectResponse(target.toString(), 301, `curated-${alias.via}`);
-      }
-    }
-
-    // Step 4: static asset fetch.
-    // run_worker_first = ["/*"] routes everything through here.
-    const response = await env.ASSETS.fetch(request);
-
-    // Step 5: on 404, consult the fuzzy smart-redirect fallback.
-    if (response.status === 404) {
-      const redirect = await findSmartRedirect(url.pathname, env.ASSETS);
-      if (redirect) {
-        console.log(JSON.stringify({ event: 'smart-redirect', from: url.pathname, to: redirect.url, score: redirect.score }));
-        return new Response(null, {
-          status: 301,
-          headers: { Location: new URL(redirect.url, url.origin).toString(), 'X-Redirect-Reason': 'smart-404' },
-        });
-      }
-      // Log unmatched 404s for future alias-table maintenance.
-      console.log(JSON.stringify({ event: 'redirect-miss', path: url.pathname }));
-    }
-
-    return isPreview ? rewriteOrigin(response, url, channel) : response;
+    return serveWithSmartRedirect(request, env, url, isPreview, channel);
   },
 };

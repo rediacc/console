@@ -100,6 +100,10 @@ const calculateCoverage = (localesDir, namespace, sourceLanguage) => {
   return { sourceCount, languages: coverage };
 };
 
+// Rule-option default: percentage of source-language keys a locale must carry
+// before the rule reports it as under-translated.
+const DEFAULT_MINIMUM_COVERAGE = 80;
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const translationCoverage = {
   meta: {
@@ -141,7 +145,7 @@ export const translationCoverage = {
   create(context) {
     const options = context.options[0] || {};
     const sourceLanguage = options.sourceLanguage || 'en';
-    const minimumCoverage = options.minimumCoverage ?? 80;
+    const minimumCoverage = options.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE;
 
     // Resolve paths
     const absoluteLocalesDir = resolveRequiredDirOption(

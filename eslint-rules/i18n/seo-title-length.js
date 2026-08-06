@@ -1,7 +1,14 @@
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
 /**
  * ESLint rule to enforce SEO-friendly title lengths in translation JSON files.
  * Titles (keys matching *.meta.title) must be 30-60 characters.
  */
+
+// Rule-option defaults: the SERP display window for a page title.
+// Below the minimum the title carries no keywords; above it Google truncates.
+const DEFAULT_MIN_LENGTH = 30;
+const DEFAULT_MAX_LENGTH = 60;
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoTitleLength = {
@@ -36,8 +43,8 @@ export const seoTitleLength = {
 
   create(context) {
     const options = context.options[0] || {};
-    const minLength = options.minLength ?? 30;
-    const maxLength = options.maxLength ?? 60;
+    const minLength = options.minLength ?? DEFAULT_MIN_LENGTH;
+    const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
     const exemptKeys = options.exemptKeys || [];
 
     /**
@@ -57,42 +64,43 @@ export const seoTitleLength = {
     /**
      * Recursively walk the JSON AST checking title values
      */
-    const checkObject = (node, path = '') => {
-      if (!node || node.type !== 'Object') return;
+    const checkValue = (value, fullPath) => {
+      if (value.type === 'Object') {
+        checkObject(value, fullPath);
+        return;
+      }
+      if (value.type !== 'String') return;
+      if (!isMetaTitleKey(fullPath) || isExempt(fullPath)) return;
 
-      for (const member of node.members || []) {
+      const str = value.value;
+      // Skip interpolation-heavy titles (e.g., "{{companyName}}")
+      const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
+      const len = rendered.length;
+
+      if (len < minLength) {
+        context.report({
+          node: value,
+          messageId: 'tooShort',
+          data: { value: str, key: fullPath, length: String(len), min: String(minLength) },
+        });
+      } else if (len > maxLength) {
+        context.report({
+          node: value,
+          messageId: 'tooLong',
+          data: { value: str, key: fullPath, length: String(len), max: String(maxLength) },
+        });
+      }
+    };
+
+    const checkObject = (node, path = '') => {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
 
-        const key =
-          member.name?.type === 'String' ? member.name.value : member.name?.name;
-        if (!key) continue;
-
-        const fullPath = path ? `${path}.${key}` : key;
+        const key = memberKey(member);
         const value = member.value;
-        if (!value) continue;
+        if (!key || !value) continue;
 
-        if (value.type === 'Object') {
-          checkObject(value, fullPath);
-        } else if (value.type === 'String' && isMetaTitleKey(fullPath) && !isExempt(fullPath)) {
-          const str = value.value;
-          // Skip interpolation-heavy titles (e.g., "{{companyName}}")
-          const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
-          const len = rendered.length;
-
-          if (len < minLength) {
-            context.report({
-              node: value,
-              messageId: 'tooShort',
-              data: { value: str, key: fullPath, length: String(len), min: String(minLength) },
-            });
-          } else if (len > maxLength) {
-            context.report({
-              node: value,
-              messageId: 'tooLong',
-              data: { value: str, key: fullPath, length: String(len), max: String(maxLength) },
-            });
-          }
-        }
+        checkValue(value, joinPath(path, key));
       }
     };
 
