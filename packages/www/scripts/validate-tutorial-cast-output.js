@@ -55,7 +55,7 @@ const MARKER_HACK_PATTERNS = [
 
 /** Strip ANSI escape sequences and OSC sequences from text. */
 function stripAnsi(text) {
-  return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1b\][^\x07]*\x07/g, '');
+  return text.replaceAll(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replaceAll(/\x1b\][^\x07]*\x07/g, '');
 }
 
 function pushError(errors, file, message, suggestion) {
@@ -201,9 +201,9 @@ function collectExpectFailLabels() {
       // The script source carries shell escapes (\" \\ \$ \`) that bash
       // resolves before the label reaches the cast marker — unescape them
       // the same way so the derived regex matches the recorded marker.
-      const unescaped = m[1].replace(/\\(["\\$`])/g, '$1');
-      const templated = unescaped.replace(/\$\{[^}]+\}|\$\w+/g, placeholder);
-      const escaped = templated.replace(/[.*+?^()|[\]\\{}$]/g, '\\$&');
+      const unescaped = m[1].replaceAll(/\\(["\\$`])/g, '$1');
+      const templated = unescaped.replaceAll(/\$\{[^}]+\}|\$\w+/g, placeholder);
+      const escaped = templated.replaceAll(/[.*+?^()|[\]\\{}$]/g, '\\$&');
       labels.push(new RegExp(`^${escaped.split(placeholder).join('.+?')}$`));
     }
   }
@@ -254,7 +254,7 @@ function validateTutorialScripts(errors) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       // Only check run_cmd lines (visible tutorial commands), skip setup/infra code
-      if (!/run_cmd/.test(line)) continue;
+      if (!line.includes('run_cmd')) continue;
       if (/^\s*#/.test(line)) continue;
 
       for (const { pattern, message, suggestion } of FORBIDDEN_SCRIPT_PATTERNS) {

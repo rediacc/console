@@ -179,11 +179,11 @@ export const translationStaleness = {
           // For web package, keys in hashes are prefixed with namespace
           // For CLI package, they're flat (single file)
           // Check both formats for compatibility
-          const fullKey = namespace !== 'cli' ? `${namespace}.${key}` : key;
+          const fullKey = namespace === 'cli' ? key : `${namespace}.${key}`;
           const currentHash = crc32(value);
 
           // Try full key first, then bare key
-          let storedHash = storedHashes[fullKey] || storedHashes[key];
+          const storedHash = storedHashes[fullKey] || storedHashes[key];
 
           if (storedHash === undefined) {
             // New key that doesn't exist in hash manifest

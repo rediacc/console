@@ -74,7 +74,7 @@ export const noUnusedKeys = {
 
       // Check if this is a parent of a used key
       for (const usedKey of usedKeys) {
-        if (usedKey.startsWith(key + '.')) {
+        if (usedKey.startsWith(`${key  }.`)) {
           return true;
         }
       }

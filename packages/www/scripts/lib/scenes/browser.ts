@@ -48,7 +48,7 @@ export function hostCommandEnv(): NodeJS.ProcessEnv {
  * values produce baffling recordings.
  */
 export function substituteEnv(value: string): string {
-  return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, name: string) => {
+  return value.replaceAll(/\$\{([A-Z0-9_]+)\}/g, (_, name: string) => {
     const v = process.env[name];
     if (v === undefined) {
       throw new Error(`browser scene references \${${name}} but it is not set in the environment`);
@@ -123,7 +123,7 @@ async function showClickIndicator(page: Page, target: Locator, timeoutMs: number
   await page
     .evaluate(
       ([cx, cy]) => {
-        let dot = document.getElementById('__tut_cursor') as HTMLElement | null;
+        let dot = document.getElementById('__tut_cursor');
         if (!dot) {
           dot = document.createElement('div');
           dot.id = '__tut_cursor';

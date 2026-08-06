@@ -34,7 +34,7 @@ const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
 const DEFAULT_EXEMPT_PREFIXES = SHARED_EXEMPT_PREFIXES;
 
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');

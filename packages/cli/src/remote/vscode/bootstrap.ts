@@ -9,9 +9,6 @@
 import { spawn } from 'node:child_process';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { BASHRC_REDIACC_CONTENT } from '../repository/bashFunctions.js';
-// Embedded as text at bundle time (esbuild loader for .py). Keeping the
-// program in a real .py file is what lets ruff lint and format it.
-import SETUP_SCRIPT from './setup-script.py';
 import { formatBashExports, needsUserSwitch } from './envCompose.js';
 
 /**
@@ -75,6 +72,25 @@ function buildSetupConfig(
     markerStart: REDIACC_MARKER_START,
     markerEnd: REDIACC_MARKER_END,
   });
+}
+
+/**
+ * The remote setup program, embedded as text at bundle time (esbuild's `.py`
+ * text loader; see packages/cli/bundle.mjs).
+ *
+ * DYNAMIC, and inside the function that needs it, for a reason that cost a
+ * regression to learn: a STATIC `import ... from './setup-script.py'` is
+ * resolved by every runtime that loads this module's graph, not just by the
+ * bundler. packages/cli/scripts/check-command-planes.ts walks the whole command
+ * tree under tsx, which has no .py loader, and died with
+ * ERR_UNKNOWN_FILE_EXTENSION -- transitively, so grepping for direct importers
+ * of this file found nothing and said it was safe. Deferring the import means
+ * only code that actually runs the bootstrap ever asks for it, and esbuild
+ * still inlines it into the bundle.
+ */
+async function loadSetupScript(): Promise<string> {
+  const mod = await import('./setup-script.py');
+  return mod.default;
 }
 
 /** Single-quotes a value for POSIX sh. Applies to VALUES only, never to code. */
@@ -186,7 +202,7 @@ export async function ensureVSCodeEnvSetup(
     const envBlock = formatBashExports(envVars);
 
     // The script is a fixed program; only the config varies.
-    const script = shellSingleQuote(SETUP_SCRIPT);
+    const script = shellSingleQuote(await loadSetupScript());
     const config = shellSingleQuote(buildSetupConfig(envBlock, universalUser, serverInstallPath));
 
     // Build command to execute

@@ -25,7 +25,7 @@ function collectFiles(dir: string, base: string): Record<string, string> {
     if (entry === 'template.json' || entry === '.git' || entry === 'node_modules') continue;
 
     const fullPath = join(dir, entry);
-    const relPath = relative(base, fullPath).replace(/\\/g, '/');
+    const relPath = relative(base, fullPath).replaceAll('\\', '/');
     const stat = statSync(fullPath);
 
     if (stat.isDirectory()) {
@@ -39,7 +39,7 @@ function collectFiles(dir: string, base: string): Record<string, string> {
 }
 
 function escapeString(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
+  return s.replaceAll('\\', '\\\\').replaceAll('`', '\\`').replaceAll('${', '\\${');
 }
 
 function main() {

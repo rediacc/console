@@ -1,7 +1,7 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import matter from 'gray-matter';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -116,7 +116,7 @@ function _indexTranslations(searchIndex, startingId) {
         const page = detectPage(keyPath);
         const priority = calculatePriority(keyPath);
 
-        const cleanContent = obj.replace(/\{\{.*?\}\}/g, '').trim();
+        const cleanContent = obj.replaceAll(/\{\{.*?\}\}/g, '').trim();
 
         if (cleanContent.length > 0) {
           searchIndex.push({
@@ -191,7 +191,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
               id: `search-${idCounter++}`,
               content: frontmatter.title,
               excerpt: frontmatter.description || truncateExcerpt(content, 150),
-              category: category,
+              category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
               path: `${urlPrefix}.${slug}.title`,
               priority: 1,
@@ -206,7 +206,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
               id: `search-${idCounter++}`,
               content: frontmatter.description,
               excerpt: truncateExcerpt(frontmatter.description, 150),
-              category: category,
+              category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
               path: `${urlPrefix}.${slug}.description`,
               priority: 2,
@@ -222,7 +222,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
                 id: `search-${idCounter++}`,
                 content: tag,
                 excerpt: `Tag: ${tag}`,
-                category: category,
+                category,
                 page: `/${langDir}/${urlPrefix}/${slug}`,
                 path: `${urlPrefix}.${slug}.tags`,
                 priority: 3,
@@ -246,7 +246,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
               content: section.heading,
               body,
               excerpt: truncateExcerpt(body || section.heading, 150),
-              category: category,
+              category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
               path: `${urlPrefix}.${slug}.content`,
               priority: 2,
@@ -273,7 +273,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             id: `search-${idCounter++}`,
             content: frontmatter.title,
             excerpt: frontmatter.description || truncateExcerpt(content, 150),
-            category: category,
+            category,
             page: `/${urlPrefix}/${slug}`,
             path: `${urlPrefix}.${slug}.title`,
             priority: 1,
@@ -367,7 +367,7 @@ function splitIntoSections(markdown, fallbackHeading) {
   };
 
   for (const line of lines) {
-    if (/^```/.test(line)) {
+    if (line.startsWith("```")) {
       inFence = !inFence;
       currentBody.push(line);
       continue;
@@ -400,26 +400,26 @@ function stripMarkdown(text) {
   if (!text) return '';
   return (
     text
-      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replaceAll(/<!--[\s\S]*?-->/g, ' ')
       // MDX: strip top-of-file ESM imports/exports so they do not pollute the
       // search index with module paths and identifiers.
-      .replace(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, ' ')
-      .replace(/^\s*export\s+(?:default\s+)?[\s\S]*?;?\s*$/gm, ' ')
+      .replaceAll(/^\s*import\s+[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, ' ')
+      .replaceAll(/^\s*export\s+(?:default\s+)?[\s\S]*?;?\s*$/gm, ' ')
       // MDX: strip JSX components (capitalised tag names) so component names
       // and prop values do not leak into search results.
-      .replace(/<[A-Z][A-Za-z0-9]*\b[^>]*\/>/g, ' ')
-      .replace(/<[A-Z][A-Za-z0-9]*\b[^>]*>[\s\S]*?<\/[A-Z][A-Za-z0-9]*>/g, ' ')
-      .replace(/^```.*$/gm, ' ')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-      .replace(/^\s*>\s?/gm, '')
-      .replace(/^\s*[-*+]\s+/gm, '')
-      .replace(/^\s*\d+\.\s+/gm, '')
-      .replace(/\*\*([^*\n]+)\*\*/g, '$1')
-      .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
-      .replace(/~~([^~\n]+)~~/g, '$1')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/<[A-Z][A-Za-z0-9]*\b[^>]*\/>/g, ' ')
+      .replaceAll(/<[A-Z][A-Za-z0-9]*\b[^>]*>[\s\S]*?<\/[A-Z][A-Za-z0-9]*>/g, ' ')
+      .replaceAll(/^```.*$/gm, ' ')
+      .replaceAll(/`([^`]+)`/g, '$1')
+      .replaceAll(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replaceAll(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replaceAll(/^\s*>\s?/gm, '')
+      .replaceAll(/^\s*[-*+]\s+/gm, '')
+      .replaceAll(/^\s*\d+\.\s+/gm, '')
+      .replaceAll(/\*\*([^*\n]+)\*\*/g, '$1')
+      .replaceAll(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1')
+      .replaceAll(/~~([^~\n]+)~~/g, '$1')
+      .replaceAll(/\s+/g, ' ')
       .trim()
   );
 }

@@ -65,7 +65,7 @@ function validateOffline(translations, errors) {
 
   for (const [pageKey, pageData] of Object.entries(solutionPages)) {
     const comparison = pageData?.comparison;
-    if (!comparison || !comparison.features) continue;
+    if (!comparison?.features) continue;
 
     const references = pageData?.references;
     const refItems = references?.items || [];

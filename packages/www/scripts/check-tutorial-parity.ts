@@ -155,7 +155,7 @@ interface TranscriptDoc {
   title?: string;
   chapters?: Record<string, string>;
   events?: TranscriptEvent[];
-  narrations?: Array<{ id: string; text: string }>;
+  narrations?: { id: string; text: string }[];
 }
 
 function listStoryboards(): string[] {
@@ -236,7 +236,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
       continue;
     }
     const markerEvent = labeledMarkers[scene.markerIndex];
-    const recorded = typeof markerEvent?.[2] === 'string' ? (markerEvent[2] as string) : '';
+    const recorded = typeof markerEvent?.[2] === 'string' ? (markerEvent[2]) : '';
     if (recorded && commandPath(full) !== commandPath(recorded)) {
       push(
         sbPath,
@@ -285,7 +285,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
     }
   }
   if (Array.isArray(trRaw.events)) {
-    for (const ev of trRaw.events as Array<Record<string, unknown>>) {
+    for (const ev of trRaw.events as Record<string, unknown>[]) {
       for (const key of Object.keys(ev)) {
         if (!PRESERVED_EVENT_KEYS.has(key)) {
           push(

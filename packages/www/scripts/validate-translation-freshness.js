@@ -34,7 +34,7 @@ const EXCLUDED_EN_PATHS = {
 function normalizeText(input) {
   return (
     String(input ?? '')
-      .replace(/\r\n/g, '\n')
+      .replaceAll('\r\n', '\n')
       .trimEnd() + '\n'
   );
 }

@@ -81,7 +81,7 @@ export function applyRedirect(pathWithoutLang: string): {
   for (const p of PATTERNS) {
     const m = pathWithoutLang.match(p.re);
     if (m) {
-      const to = p.to === null ? null : p.to.replace(/\$(\d+)/g, (_, n) => m[Number(n)] ?? '');
+      const to = p.to === null ? null : p.to.replaceAll(/\$(\d+)/g, (_, n) => m[Number(n)] ?? '');
       return { to, status: p.status, via: 'pattern', rationale: p.rationale };
     }
   }

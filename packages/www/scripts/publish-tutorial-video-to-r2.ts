@@ -25,7 +25,7 @@ const REPO_ROOT = path.join(__dirname, '../../..');
 const TUTORIALS_DIR = path.join(__dirname, '../public/assets/tutorials/video');
 const UPLOAD_SCRIPT = path.join(REPO_ROOT, '.ci/scripts/deploy/upload-media-to-r2.sh');
 
-const FIELDS: Array<{ field: string; suffix: (castKey: string, lang: string) => string }> = [
+const FIELDS: { field: string; suffix: (castKey: string, lang: string) => string }[] = [
   { field: 'mp4', suffix: (castKey) => `${castKey}.mp4` },
   { field: 'poster', suffix: (castKey, lang) => `${castKey}.${lang}.poster.jpg` },
   { field: 'vtt', suffix: (castKey, lang) => `${castKey}.${lang}.vtt` },

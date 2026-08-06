@@ -396,7 +396,7 @@ function collectCueGroups(args: CollectArgs): CueGroup[] {
       const narrationKey = scene.narrationKey;
       if (!narrationKey) continue;
       const entry = narrationById.get(narrationKey);
-      if (!entry || !entry.narrationText || !entry.audioDurationSec) continue;
+      if (!entry?.narrationText || !entry.audioDurationSec) continue;
       groups.push(
         ...cuesFromNarration(
           entry.narrationText,

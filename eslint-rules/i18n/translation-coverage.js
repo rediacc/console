@@ -8,7 +8,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for locale coverage data
-let coverageCache = new Map();
+const coverageCache = new Map();
 
 /**
  * Get all supported language directories

@@ -303,7 +303,7 @@ export function resolveOptionTier(
 
 type GateCommand = {
   readonly pathKey: string;
-  readonly options: ReadonlyArray<Pick<ContractOption, 'long' | 'valueTaking' | 'mandatory'>>;
+  readonly options: readonly Pick<ContractOption, 'long' | 'valueTaking' | 'mandatory'>[];
 };
 
 /**

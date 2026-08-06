@@ -76,7 +76,7 @@ export const seoTitleLength = {
         } else if (value.type === 'String' && isMetaTitleKey(fullPath) && !isExempt(fullPath)) {
           const str = value.value;
           // Skip interpolation-heavy titles (e.g., "{{companyName}}")
-          const rendered = str.replace(/\{\{[^}]+\}\}/g, 'placeholder');
+          const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
           const len = rendered.length;
 
           if (len < minLength) {

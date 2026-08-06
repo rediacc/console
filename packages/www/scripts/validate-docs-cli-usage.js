@@ -65,7 +65,7 @@ const MARKDOWN_FENCE_WHITELIST_PATTERNS = [
   /CLAUDE\.md$/,
 ];
 
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildDetectionRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
@@ -280,7 +280,7 @@ function validateCodeFences(content, file, errors) {
     // Normalise placeholders to dummy values so they're validated as real commands
     // instead of silently skipped. This catches wrong flag/positional syntax even
     // when the example uses <placeholder> tokens.
-    commandText = commandText.replace(/<([a-zA-Z][\w-]*)>/g, 'PLACEHOLDER');
+    commandText = commandText.replaceAll(/<([a-zA-Z][\w-]*)>/g, 'PLACEHOLDER');
 
     const parsed = parseRdcCommand(commandText);
     if (!parsed.ok && parsed.reason !== 'not-rdc') {

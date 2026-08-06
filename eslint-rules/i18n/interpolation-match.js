@@ -8,7 +8,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded translations
-let translationCache = new Map();
+const translationCache = new Map();
 
 /**
  * Extract {{variable}} patterns from a string

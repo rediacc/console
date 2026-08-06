@@ -420,7 +420,7 @@ async function main(): Promise<void> {
       for (const entry of debugCollector.castNarrated) {
         const dstPng = path.join(
           debugFramesDir,
-          `${entry.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+          `${entry.sceneId.replaceAll(/[:<>"|?*]/g, '-')}.lastframe.png`
         );
         try {
           copyFileSync(entry.lastFramePngSrc, dstPng);
@@ -444,7 +444,7 @@ async function main(): Promise<void> {
           lastFramePngSrc: undefined,
           lastFramePng: path.join(
             debugFramesDir,
-            `${d.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+            `${d.sceneId.replaceAll(/[:<>"|?*]/g, '-')}.lastframe.png`
           ),
           mp4StartSec: sceneTimingAbs[d.sceneId].start,
           mp4EndSec: sceneTimingAbs[d.sceneId].end,

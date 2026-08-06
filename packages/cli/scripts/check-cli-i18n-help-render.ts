@@ -170,7 +170,7 @@ async function main(): Promise<void> {
         const idx = captured.indexOf(token);
         const snippet = captured
           .slice(Math.max(0, idx - 30), idx + token.length + 10)
-          .replace(/\s+/g, ' ')
+          .replaceAll(/\s+/g, ' ')
           .trim();
         leaks.push({ commandPath, token, snippet });
       }
@@ -210,7 +210,7 @@ async function main(): Promise<void> {
           token,
           snippet: rootCaptured
             .slice(Math.max(0, idx - 30), idx + token.length + 10)
-            .replace(/\s+/g, ' ')
+            .replaceAll(/\s+/g, ' ')
             .trim(),
         });
       }

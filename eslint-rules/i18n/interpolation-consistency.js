@@ -8,7 +8,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for English translations
-let englishCache = new Map();
+const englishCache = new Map();
 
 /**
  * Extract all {{variable}} placeholders from a string

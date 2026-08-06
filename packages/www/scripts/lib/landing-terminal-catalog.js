@@ -13,7 +13,7 @@ const LANGUAGES = SITE_LOCALES;
 function normalizeCommandText(text) {
   return String(text || '')
     .trim()
-    .replace(/\s+/g, ' ');
+    .replaceAll(/\s+/g, ' ');
 }
 
 function getCommandFromLine(line) {
@@ -103,7 +103,7 @@ function extractField(objText, key) {
 
 function getHomepageTerminalCommands() {
   const src = fs.readFileSync(INDEX_PAGE_PATH, 'utf-8');
-  const arrayMatch = src.match(/const\s+heroTerminalLines\s*=\s*\[(.*?)\];/s);
+  const arrayMatch = /const\s+heroTerminalLines\s*=\s*\[(.*?)\];/s.exec(src);
   if (!arrayMatch) return [];
 
   const body = arrayMatch[1];

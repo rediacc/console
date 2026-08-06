@@ -174,10 +174,6 @@ export default tseslint.config(
       // Ignore www public assets — the search-index-*.json files are large
       // generated artifacts that don't need linting and slow eslint to a crawl.
       'packages/www/public/**',
-      // Ignore custom eslint rules (plain JS)
-      'eslint-rules/**',
-      // Ignore package-level scripts (plain JS utilities)
-      'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
       'packages/e2e-tests/reports/**',
       // Ignore private submodules except account (which has i18n enforcement)
@@ -191,8 +187,6 @@ export default tseslint.config(
       'workers/account/dist/**',
       // Ignore Astro build artifacts
       'packages/www/.astro/**',
-      // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
-      '.ci/**',
       // Ignore CLI template files (embedded into the CLI binary, not source code)
       'packages/cli/templates/**',
     ]
@@ -1287,6 +1281,76 @@ export default tseslint.config(
     rules: {
       'sonarjs/cognitive-complexity': 'off',
     },
+  },
+
+
+  // ---- Node tooling trees: .ci scripts, the repo's own eslint rules, GitHub
+  // Actions glue --------------------------------------------------------------
+  //
+  // These were EXCLUDED rather than configured, and the two ignore comments said
+  // why: "custom eslint rules (plain JS)" and "JS scripts are github-script
+  // glue". The first was a PARSER workaround -- the repo-wide block is type-aware
+  // via projectService, and a file no tsconfig covers fails to PARSE there, which
+  // looks like 45 fatal errors rather than like a missing config. The second
+  // premise is stale: .ci/ holds 7247 lines of JS/TS including the live CI scope
+  // engine, which is not glue.
+  //
+  // Measured before writing this. Lifting the exclusions with NO config gave 385
+  // errors, of which 290 were no-undef (console 108, process 91, module 36,
+  // require 27, setTimeout 8, __dirname 7) and 45 were "not found by the project
+  // service" -- 87% of the total was this block's absence, not defects.
+  // packages/*/scripts/** are the SAME KIND OF THING as scripts/**/*.ts, which
+  // already has this exact relaxation twenty lines up: build and utility scripts
+  // whose stdout IS their interface. They were excluded rather than configured
+  // ("package-level scripts (plain JS utilities)"), and that exclusion was never
+  // a parser workaround -- these files ARE tsconfig-covered and parse fine, which
+  // is why lifting it yields 115 real findings and zero fatals.
+  //
+  // It also hid the gates from themselves: package.json implements TEN check:ci-*
+  // gates out of this tree, among them check:ci-command-planes,
+  // check:ci-tutorial-parity and check:ci-tutorial-casts.
+  {
+    files: ['packages/*/scripts/**/*.{js,cjs,mjs,ts}'],
+    rules: {
+      // stdout is the interface, exactly as for scripts/**/*.ts above.
+      'no-console': 'off',
+      'sonarjs/cognitive-complexity': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/no-negated-condition': 'off',
+      'no-nested-ternary': 'off',
+      'prefer-template': 'off',
+      'no-regex-spaces': 'off',
+    },
+  },
+  {
+    files: ['.ci/**/*.{js,cjs,mjs,ts}', 'eslint-rules/**/*.js', '.github/actions/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      parser: tseslint.parser,
+      // projectService is explicitly CLEARED. These files are deliberately
+      // outside every tsconfig, so type-aware linting cannot apply to them;
+      // leaving it inherited is what produced the parse errors.
+      parserOptions: { projectService: false, project: false },
+      globals: { ...globals.node, ...globals.es2021 },
+    },
+    rules: {
+      // Type-aware rules cannot run without type information.
+      ...tseslint.configs.disableTypeChecked.rules,
+      // These ARE command-line tools and CI steps. stdout is their interface.
+      'no-console': 'off',
+    },
+  },
+  {
+    // .cjs is CommonJS. require/module/exports are the module system here, not
+    // a legacy habit to lint away -- and the repo-wide block's glob
+    // (**/*.{js,jsx,ts,tsx}) never matched .cjs at all, which is why these files
+    // had no globals and every `process` read as undefined.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.es2021 },
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
 
 );

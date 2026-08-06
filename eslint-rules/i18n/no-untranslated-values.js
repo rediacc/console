@@ -8,7 +8,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for English translations
-let englishCache = new Map();
+const englishCache = new Map();
 
 /**
  * Flatten a JSON object to get key-value pairs
@@ -65,7 +65,7 @@ const needsTranslation = (value) => {
   }
 
   // Skip if it's ONLY interpolation variables
-  if (/^{{[^}]+}}$/.test(value.trim())) {
+  if (/^\{\{[^}]+\}\}$/.test(value.trim())) {
     return false;
   }
 
@@ -199,7 +199,7 @@ export const noUntranslatedValues = {
               messageId: 'untranslated',
               data: {
                 key: fullPath,
-                value: strValue.length > 50 ? strValue.slice(0, 47) + '...' : strValue,
+                value: strValue.length > 50 ? `${strValue.slice(0, 47)  }...` : strValue,
               },
             });
           }

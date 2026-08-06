@@ -80,13 +80,13 @@ export interface SessionManager {
     outMp4: string,
     padFilter?: string
   ): { durSec: number };
-  debugInfo(): Array<{
+  debugInfo(): {
     name: string;
     webmDurSec: number;
     wallSpanSec: number;
     headGapSec: number;
-    scenes: Array<{ id: string; videoStartSec: number; videoEndSec: number }>;
-  }>;
+    scenes: { id: string; videoStartSec: number; videoEndSec: number }[];
+  }[];
 }
 
 function paneSize(width: SessionWidth): { w: number; h: number } {
@@ -134,7 +134,7 @@ export function createSessionManager(opts: {
       viewport,
       deviceScaleFactor: 1,
       recordVideo: {
-        dir: path.join(opts.tmp, 'sessions', name.replace(/[^\w.-]+/g, '_')),
+        dir: path.join(opts.tmp, 'sessions', name.replaceAll(/[^\w.-]+/g, '_')),
         size: viewport,
       },
     });
@@ -286,7 +286,7 @@ export function createSessionManager(opts: {
         throw new Error(`cutSegment: session "${sessionName}" has no closed recording`);
       }
       const marks = session.marks.get(sceneId);
-      if (!marks || !marks.endMs) {
+      if (!marks?.endMs) {
         throw new Error(`cutSegment: session "${sessionName}" has no marks for scene "${sceneId}"`);
       }
       const start = videoTime(session, marks.startMs);
@@ -301,7 +301,7 @@ export function createSessionManager(opts: {
       if (opts.debugFramesDir) {
         // Sanitize ':' (and other Windows-illegal chars) from scene IDs like
         // 'vscode-versions:left' so debug frame filenames never break checkout.
-        const safeId = sceneId.replace(/[:<>"|?*]/g, '-');
+        const safeId = sceneId.replaceAll(/[:<>"|?*]/g, '-');
         extractPosterJpg(
           session.result.webm,
           start,

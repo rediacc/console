@@ -97,7 +97,7 @@ export function renderCastToGif(
   gifPath: string,
   cols: number,
   rows: number,
-  lastFrameHoldSec: number = 0
+  lastFrameHoldSec = 0
 ): void {
   run(AGG_BIN, [
     '--theme',
@@ -306,7 +306,7 @@ export function addSilentAudio(mp4InPath: string, mp4OutPath: string): void {
 }
 
 export function concatMp4(inputs: string[], outPath: string, listPath: string): void {
-  const body = inputs.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
+  const body = inputs.map((p) => `file '${p.replaceAll('\'', "'\\''")}'`).join('\n');
   writeFileSync(listPath, `${body}\n`);
   run(FFMPEG_BIN, [
     '-y',
@@ -535,7 +535,7 @@ export function assembleWithTransitions(
   fadeAfter: boolean[],
   outPath: string,
   tmpDir: string,
-  fadeSec: number = 0.3
+  fadeSec = 0.3
 ): void {
   // Partition into runs of chunks connected by flagged boundaries.
   const groups: number[][] = [];
