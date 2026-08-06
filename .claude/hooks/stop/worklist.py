@@ -815,7 +815,7 @@ def main():
         # phantom identity that briefs itself looks exactly like a real session.
         _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
-        stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(wl.with_suffix(".sessions"), "a", encoding="utf-8") as fh:
             fh.write("%s %s %s\n" % (prefix, stamp, text))
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
@@ -862,8 +862,7 @@ def main():
                 sys.exit(2)
         path = wl.with_suffix(".reaped-%s" % me[:8])
         with open(path, "a", encoding="utf-8") as fh:
-            for i in ids:
-                fh.write(i + "\n")
+            fh.writelines(i + "\n" for i in ids)
         print("reaped %d task(s): %s\nThey no longer count as running for this "
               "session. Nothing was killed -- if one is in fact alive it will "
               "still run; only this session's supervision of it stops."

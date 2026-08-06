@@ -1,9 +1,9 @@
-from flask import Flask, jsonify, render_template_string
 import random
-import string
-import os
-from datetime import datetime
 import sqlite3
+import string
+from datetime import datetime
+
+from flask import Flask, jsonify, render_template_string
 
 app = Flask(__name__)
 
@@ -45,8 +45,7 @@ def merge_records():
         cursor.close()
         conn.close()
         return jsonify([{'ID': x[0], 'Name': x[1], 'InsertTime': str(x[2])} for x in records])
-    else:
-        return jsonify(error="Database connection failed"), 500
+    return jsonify(error="Database connection failed"), 500
 
 @app.route('/')
 def index():

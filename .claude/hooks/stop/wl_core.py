@@ -47,7 +47,7 @@ VAGUE_WHY_RE = re.compile(
     r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
     r"|too busy|later|low priority|will (do|get to)|have?n'?t (had|gotten"
     r"|got around))\b",
-    re.I,
+    re.IGNORECASE,
 )
 # Same charset the worklist owner tag accepts, so a request's from/to can be
 # written into a `- [?]` line on escalation without re-validation.
@@ -79,7 +79,7 @@ def parse_justification(text):
 
 
 def utcnow():
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(datetime.UTC)
 
 
 def stamp_now():
@@ -100,7 +100,7 @@ def parse_stamp(stamp):
     """datetime or None from an ISO8601Z stamp (seconds optional)."""
     for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ"):
         try:
-            return datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+            return datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
         except (TypeError, ValueError):
             continue
     return None
@@ -121,7 +121,7 @@ def lease_state(line):
     stamp = m.group(1)
     fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
     try:
-        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
     except ValueError:
         return "invalid"
     now = utcnow()

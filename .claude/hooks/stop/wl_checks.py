@@ -21,13 +21,13 @@ import wl_judge
 import wl_liveness
 import wl_reggate
 import wl_report
-import wl_wait
 import wl_requests
 import wl_store as S
+import wl_wait
 import worklist_messages as M
 
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
-REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.M | re.I)
+REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
 
 # Consecutive stops that may move nothing before the hook demands a planning or
 # investigation agent. Three is the operator's number, not a guess.
@@ -501,7 +501,7 @@ def cited_excerpts(root, message, limit=3, span=4):
 
 
 RUN_ID_RE = re.compile(r"\b\d{9,}\b")
-EXIT_RE = re.compile(r"\bexit(?:\s+code)?\s*[:=]?\s*\d+\b", re.I)
+EXIT_RE = re.compile(r"\bexit(?:\s+code)?\s*[:=]?\s*\d+\b", re.IGNORECASE)
 URL_RE = re.compile(r"https?://\S+")
 SHA_RE = re.compile(r"\b[0-9a-f]{7,40}\b")
 
@@ -535,7 +535,7 @@ def completion_evidence(root, text):
 # the named door is TRUE is the judge's question, and every new tick already
 # flows into the reggate/judge path.
 ISSUE_REF_RE = re.compile(
-    r"\S*github\.com/\S+/issues/\d+\S*|\bissues?\s+#\d+", re.I
+    r"\S*github\.com/\S+/issues/\d+\S*|\bissues?\s+#\d+", re.IGNORECASE
 )
 DOOR_RE = re.compile(r"door:(operator-only|operator-deferred|no-write-access)")
 
@@ -590,8 +590,8 @@ def loop_finished_declared(last_msg):
     done = r"(?:finished|done|completed?|retired|ended|over)"
     how = r"(?:deliberately|intentionally|on purpose)"
     return bool(
-        re.search(r"\bloop\b[^.\n]{0,60}?\b%s\s+%s\b" % (how, done), stripped, re.I)
-        or re.search(r"\b%s\s+%s\b[^.\n]{0,60}?\bloop\b" % (how, done), stripped, re.I)
+        re.search(r"\bloop\b[^.\n]{0,60}?\b%s\s+%s\b" % (how, done), stripped, re.IGNORECASE)
+        or re.search(r"\b%s\s+%s\b[^.\n]{0,60}?\bloop\b" % (how, done), stripped, re.IGNORECASE)
     )
 
 
@@ -681,7 +681,7 @@ def docs_drift(root):
 # path never read plan files; the guide's single os.path.exists probe per
 # TRIAGED item is the only plan-related work on the stop path.
 
-PLAN_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)\s*$", re.M)
+PLAN_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)\s*$", re.MULTILINE)
 PLAN_HEADER_LINES = 10
 PLAN_DONE_STATES = ("done", "superseded")
 PLAN_EXCERPT_CHARS = 1500
@@ -2532,7 +2532,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # must also AGREE with the harness, which is the list they see in their app.
     state_re = re.compile(
         r"\b(ongoing|in progress|in-progress|in_progress|pending|blocked|parked|waiting-cross-session)\b",
-        re.I,
+        re.IGNORECASE,
     )
     ONGOING = {"ongoing", "in progress", "in-progress", "in_progress"}
     unstated, mislabelled, uncited, xw_bad, xw_ok = [], [], [], [], []
@@ -2567,7 +2567,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else:
                     xw_bad.append("#%s: %s" % (tid, detail))
             elif word in ("blocked", "parked") and not live_bg and not in_flight:
-                if not re.search(r"\byou\b", line, re.I):
+                if not re.search(r"\byou\b", line, re.IGNORECASE):
                     ok, detail = citation_state(root, line)
                     if not ok:
                         uncited.append("#%s %s" % (tid, detail))
@@ -2656,7 +2656,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # mid-sentence or inside quotes or backticks, none of which match here.
     if uncited:
         vadd('uncited', False,M.V_UNCITED % "\n".join("    " + u for u in uncited))
-    if re.search(r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b", last_msg or "", re.I | re.M):
+    if re.search(r"^[ \t>*_#-]{0,6}found,?[ \t]+not[ \t]+fixed\b", last_msg or "", re.IGNORECASE | re.MULTILINE):
         vadd('found-not-fixed', False,M.V_FOUND_NOT_FIXED)
     if unstated:
         vadd('unstated', False,M.V_UNSTATED % ", ".join("#" + i for i in unstated))

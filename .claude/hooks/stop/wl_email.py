@@ -269,7 +269,7 @@ def _send_curl(cfg, blob):
             timeout=SEND_TIMEOUT_S,
         )
         try:
-            resp_body = open(btmp, "r", encoding="utf-8", errors="replace").read(200)
+            resp_body = open(btmp, encoding="utf-8", errors="replace").read(200)
         except OSError:
             resp_body = ""
         finally:

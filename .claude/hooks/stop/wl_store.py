@@ -134,7 +134,7 @@ AGENT_STATE_MAX_CHARS = int(os.environ.get("WORKLIST_AGENT_STATE_MAX_CHARS", "40
 # had already happened twice. A limit that rewards the failure it guards
 # against is mis-scoped, so the cap SCALES with the number of session blocks
 # present. One block behaves exactly as before.
-AGENT_STATE_SESSION_RE = re.compile(r"^##[ \t]+SESSION\b", re.M | re.I)
+AGENT_STATE_SESSION_RE = re.compile(r"^##[ \t]+SESSION\b", re.MULTILINE | re.IGNORECASE)
 
 
 def agent_state_blocks(text):
@@ -160,7 +160,7 @@ AGENT_STATE_ADOPT_MAX_MIN = int(os.environ.get("WORKLIST_AGENT_ADOPT_MAX_MIN", "
 # The one structural demand on STATE.md. Length is a proxy for value; the
 # presence of a next action IS the value, and it cannot be satisfied by
 # padding. Case-insensitive, any heading level.
-AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.I | re.M)
+AGENT_NEXT_RE = re.compile(r"^\s*#{1,6}\s*next action\b", re.IGNORECASE | re.MULTILINE)
 
 # A [?] whose DEFAULT has stood unanswered this long is EXECUTED, not
 # restated: the operator said they almost always take the recommended
