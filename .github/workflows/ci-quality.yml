@@ -133,6 +133,17 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/shfmt" --version
 
+      - name: Install ruff
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        # Pinned, and VERIFIED after install for the same reason the shfmt step
+        # above is: an installer that exits 0 without producing a binary turns
+        # into a bare "ruff is not available" in a later step, which the
+        # watchdog cannot classify as a network fault.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "ruff==0.16.1"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/ruff" --version
+
       - name: EditorConfig
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-editorconfig.sh
@@ -152,6 +163,10 @@ jobs:
       - name: Shell format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/shfmt.sh
+
+      - name: Python lint + format (ruff)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-python-lint.sh
 
       - name: Shell commands exist on the runner image
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

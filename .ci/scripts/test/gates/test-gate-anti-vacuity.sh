@@ -80,6 +80,14 @@ REGISTRY=(
     # under CI=true (which this harness sets), so an empty tree is a loud
     # "required in CI but missing" rather than a green diff of nothing.
     ".ci/scripts/quality/check-renet-types.sh|required"
+    # Python lint. Against an empty tree `git ls-files` enumerates nothing and
+    # `ruff check` with no paths exits 0 -- indistinguishable from a clean repo,
+    # which is the exact shape this harness exists to catch. The input floor is
+    # therefore checked BEFORE the linter is even resolved, so the empty-tree
+    # failure is about VACUITY and not about a missing binary: an absent ruff
+    # would be an ENVIRONMENT failure wearing a vacuity failure's exit code, and
+    # pinning that would assert nothing about the gate.
+    ".ci/scripts/quality/check-python-lint.sh|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
