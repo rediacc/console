@@ -463,8 +463,8 @@ def _cron_field(spec, lo, hi):
     shape this parser does not understand (the caller treats None as
     unparseable and skips the cron rather than guessing)."""
     vals = set()
-    for part in spec.split(","):
-        part = part.strip()
+    for raw_part in spec.split(","):
+        part = raw_part.strip()
         step = 1
         if "/" in part:
             part, _, s = part.partition("/")

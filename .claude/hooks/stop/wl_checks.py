@@ -1574,11 +1574,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     # stale one means a session is told it supervises twenty workers forever and
     # confirms phantoms every fifteen minutes -- ritual without signal.
     _bg_dropped, _bg_unknown = [], 0
-    try:
+    # A roster heuristic must never wedge a stop, so every failure is swallowed.
+    with contextlib.suppress(Exception):
         live_bg, _bg_dropped, _bg_unknown = wl_liveness.prune_background(
             live_bg, worklist, session_id, event.get("cwd"))
-    except Exception:  # noqa: BLE001 -- a roster heuristic must never wedge a stop
-        pass
     _live_worker_ids = {str(b.get("id") or "") for b in live_bg}
     open_items, others, deferred_recs, in_flight_recs = S.classify_items(
         fold, session_id, live_worker_ids=_live_worker_ids
@@ -2525,7 +2524,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         r"\b(ongoing|in progress|in-progress|in_progress|pending|blocked|parked|waiting-cross-session)\b",
         re.IGNORECASE,
     )
-    ONGOING = {"ongoing", "in progress", "in-progress", "in_progress"}
+    ongoing_words = {"ongoing", "in progress", "in-progress", "in_progress"}
     unstated, mislabelled, uncited, xw_bad, xw_ok = [], [], [], [], []
     if REMAINING_HEADING.search(last_msg or ""):
         section = (last_msg or "")[REMAINING_HEADING.search(last_msg).start():]
@@ -2562,9 +2561,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                     ok, detail = citation_state(root, line)
                     if not ok:
                         uncited.append("#%s %s" % (tid, detail))
-            if status == "in_progress" and word not in ONGOING:
+            if status == "in_progress" and word not in ongoing_words:
                 mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
-            elif status == "pending" and word in ONGOING:
+            elif status == "pending" and word in ongoing_words:
                 mislabelled.append("#%s is pending but reads '%s'" % (tid, word))
     # ---- I6: static idle detection (v8; below the scan since v9) ------------
     # Disjoint from the stuck detector by geometry: stuck is active-but-futile

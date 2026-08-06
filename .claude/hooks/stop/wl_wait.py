@@ -156,10 +156,9 @@ def nudge_path(worklist, me):
 
 
 def _touch(path):
-    try:
+    # A missing heartbeat costs an extra nudge, never a wedged waiter.
+    with contextlib.suppress(OSError):
         path.write_text(C.stamp_now(), encoding="utf-8")
-    except OSError:
-        pass  # a missing heartbeat costs an extra nudge, never a wedged waiter
 
 
 def wait(me, timeout_min, start):

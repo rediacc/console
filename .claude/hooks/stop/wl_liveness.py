@@ -181,8 +181,8 @@ def _needle(command):
     STUCK (2026-07-31)."""
     best = ""
     for line in (command or "").splitlines():
-        for seg in re.split(r"['\"]", line):
-            seg = seg.strip()
+        for raw_seg in re.split(r"['\"]", line):
+            seg = raw_seg.strip()
             if len(seg) > len(best):
                 best = seg
     return best if len(best) >= 12 else ""
