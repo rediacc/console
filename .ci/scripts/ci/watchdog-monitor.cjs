@@ -680,9 +680,15 @@ const monitor = async ({ github, context, core }) => {
         job_id: job.id,
       });
       const lines = String(response.data).split('\n');
-      // Strip timestamp prefixes and ANSI escape codes
+      // Strip timestamp prefixes and ANSI escape codes.
+      // ESC is built from its char code rather than written literally: a raw
+      // control character in a regex is what no-control-regex exists to catch,
+      // and spelling it out keeps the rule ENABLED for the accidental cases.
+      // Same shape as packages/www/scripts/validate-tutorial-cast-output.js.
+      const ESC = String.fromCharCode(0x1b);
+      const ANSI_SGR_RE = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
       const stripped = lines.map(l =>
-        l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(/\x1b\[[0-9;]*m/g, '')
+        l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(ANSI_SGR_RE, '')
       );
       // Persist the WHOLE log, not the excerpt below. The excerpt is tuned for
       // the classifier's context window; a human debugging afterwards wants

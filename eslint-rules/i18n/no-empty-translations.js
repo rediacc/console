@@ -3,6 +3,46 @@
  * Detects: "", "   ", null values
  */
 
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
+/**
+ * Report one leaf value, recursing through nested objects.
+ */
+const checkValue = (context, value, fullPath) => {
+  if (value.type === 'Object') {
+    checkObject(context, value, fullPath);
+    return;
+  }
+
+  if (value.type === 'Null') {
+    context.report({ node: value, messageId: 'nullValue', data: { key: fullPath } });
+    return;
+  }
+
+  if (value.type !== 'String') return;
+
+  if (value.value === '') {
+    context.report({ node: value, messageId: 'emptyValue', data: { key: fullPath } });
+  } else if (value.value.trim() === '') {
+    context.report({ node: value, messageId: 'whitespaceOnly', data: { key: fullPath } });
+  }
+};
+
+/**
+ * Recursively check all values in a JSON object
+ */
+const checkObject = (context, node, path = '') => {
+  for (const member of objectMembers(node)) {
+    if (member.type !== 'Member') continue;
+
+    const key = memberKey(member);
+    const value = member.value;
+    if (!key || !value) continue;
+
+    checkValue(context, value, joinPath(path, key));
+  }
+};
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noEmptyTranslations = {
   meta: {
@@ -20,60 +60,10 @@ export const noEmptyTranslations = {
   },
 
   create(context) {
-    /**
-     * Recursively check all values in a JSON object
-     * @param {object} node - AST node
-     * @param {string} path - Current key path
-     */
-    const checkObject = (node, path = '') => {
-      if (!node || node.type !== 'Object') return;
-
-      for (const member of node.body?.members || []) {
-        if (member.type !== 'Member') continue;
-
-        const key = member.name?.type === 'String'
-          ? member.name.value
-          : member.name?.name;
-
-        if (!key) continue;
-
-        const fullPath = path ? `${path}.${key}` : key;
-        const value = member.value;
-
-        if (!value) continue;
-
-        if (value.type === 'Object') {
-          // Recursively check nested objects
-          checkObject(value, fullPath);
-        } else if (value.type === 'String') {
-          const strValue = value.value;
-          if (strValue === '') {
-            context.report({
-              node: value,
-              messageId: 'emptyValue',
-              data: { key: fullPath },
-            });
-          } else if (strValue.trim() === '') {
-            context.report({
-              node: value,
-              messageId: 'whitespaceOnly',
-              data: { key: fullPath },
-            });
-          }
-        } else if (value.type === 'Null') {
-          context.report({
-            node: value,
-            messageId: 'nullValue',
-            data: { key: fullPath },
-          });
-        }
-      }
-    };
-
     return {
       Document(node) {
         if (node.body?.type === 'Object') {
-          checkObject(node.body);
+          checkObject(context, node.body);
         }
       },
     };

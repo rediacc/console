@@ -100,9 +100,38 @@ function i18nLocaleConfigs({
       ...jsonBase,
       rules: {
         'json/no-duplicate-keys': 'error',
-        'i18n/no-empty-translations': 'error',
-        'i18n/sorted-keys': 'error',
-        'i18n/key-naming-convention': ['error', {
+        // ---- THE FIVE RULES THAT WERE INERT FROM BIRTH ------------------
+        // Until 2026-08-06 these five read `node.body?.members` on an
+        // @eslint/json Object node, which carries `members` DIRECTLY. They
+        // walked an empty list and COULD NOT REPORT, while sitting at
+        // 'error' the whole time. The access is fixed now (one helper,
+        // eslint-rules/i18n/shared/json-ast.js::objectMembers) and no rule
+        // spells the walk inline any more.
+        //
+        // They are OFF rather than on, and that is a deliberate, reviewable
+        // choice instead of the silent inertness it replaces. Measured the
+        // moment they woke: 7245 findings after excluding the generated hash
+        // sidecars (which were themselves being linted as content - a second
+        // scoping bug this exposed, worth 4265 of an initial 11510).
+        //   no-unused-keys        3773
+        //   sorted-keys           2172
+        //   key-naming-convention 1261
+        //   no-empty-translations   39
+        // None of it is mechanically fixable: sorted-keys declares
+        // `fixable: 'code'` but its fixer DOES NOT CONVERGE - five --fix
+        // passes over packages/cli/src/i18n/locales/en/cli.json left 1589
+        // findings unchanged while rewriting 3930 lines. So a fourth defect
+        // sits inside these rules, and turning them on means auditing
+        // thousands of translation keys by hand, including deletions that
+        // no-unused-keys cannot prove are unused (it sees no dynamic key
+        // construction).
+        //
+        // Turning them on is its own wave, on its own branch, with the
+        // conventions re-decided first: the tree has never conformed to them,
+        // so 'error' was never a tested setting. Tracked, not forgotten.
+        'i18n/no-empty-translations': 'off',
+        'i18n/sorted-keys': 'off',
+        'i18n/key-naming-convention': ['off', {
           keyFormat: 'camelCase',
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
@@ -120,9 +149,9 @@ function i18nLocaleConfigs({
       rules: {
         'i18n/cross-language-consistency': ['error', { localesDir, sourceLanguage: 'en' }],
         'i18n/translation-coverage': ['error', { localesDir, sourceLanguage: 'en', minimumCoverage: 100 }],
-        'i18n/translation-staleness': ['error', { hashFileName: '.translation-hashes.json' }],
+        'i18n/translation-staleness': ['off', { hashFileName: '.translation-hashes.json' }],
         ...(sourceDir && unusedKeyIgnores ? {
-          'i18n/no-unused-keys': ['error', { sourceDir, ignorePatterns: unusedKeyIgnores }],
+          'i18n/no-unused-keys': ['off', { sourceDir, ignorePatterns: unusedKeyIgnores }],
         } : {}),
         // Flags are language-invariant, so this only runs on the en source locale
         // (this block is scoped to `${localesDir}/en/**`). Avoids translation-only
@@ -171,6 +200,13 @@ export default tseslint.config(
       'packages/*/src/**/*.js.map',
       'packages/*/tests/**/*.js',
       'packages/*/tests/**/*.js.map',
+      // Hash SIDECARS are key->hash maps, not translations. Only www's pair was
+      // excluded (in the per-block ignores far below), so the identical files
+      // under packages/cli and private/account/web were linted as content --
+      // invisible until the five dead i18n rules were repaired on 2026-08-06,
+      // at which point they produced 4008 of the 11510 findings between them.
+      '**/.translation-hashes.json',
+      '**/.naturalized-hashes.json',
       // Ignore www public assets — the search-index-*.json files are large
       // generated artifacts that don't need linting and slow eslint to a crawl.
       'packages/www/public/**',
@@ -1148,8 +1184,9 @@ export default tseslint.config(
     language: 'json/json',
     rules: {
       'json/no-duplicate-keys': 'error',
-      'i18n/no-empty-translations': 'error',
-      'i18n/sorted-keys': 'error',
+      // see the banner at the top block: inert since birth, now OFF by choice
+      'i18n/no-empty-translations': 'off',
+      'i18n/sorted-keys': 'off',
       'i18n/seo-title-length': ['error', {
         minLength: 30,
         maxLength: 60,
@@ -1176,7 +1213,7 @@ export default tseslint.config(
     language: 'json/json',
     rules: {
       'json/no-duplicate-keys': 'error',
-      'i18n/no-empty-translations': 'error',
+      'i18n/no-empty-translations': 'off',  // see the banner above
       'i18n/no-untranslated-tutorial-transcript-values': ['error', {
         transcriptsDir: 'packages/www/src/data/tutorial-transcripts',
         minLength: 3,

@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
 /**
  * Calculate CRC32 hash of a string (IEEE polynomial)
@@ -37,25 +38,6 @@ const crc32 = (str) => {
 };
 
 /**
- * Flatten a JSON object to get all leaf key-value pairs
- */
-const flattenKeyValues = (obj, prefix = '') => {
-  const result = {};
-
-  for (const [key, value] of Object.entries(obj)) {
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      Object.assign(result, flattenKeyValues(value, fullPath));
-    } else if (typeof value === 'string') {
-      result[fullPath] = value;
-    }
-  }
-
-  return result;
-};
-
-/**
  * Load hash manifest file
  */
 const loadHashManifest = (hashFilePath) => {
@@ -71,35 +53,35 @@ const loadHashManifest = (hashFilePath) => {
 };
 
 /**
+ * Merge one member into the flattened key-value map.
+ */
+const collectKeyValue = (result, member, prefix) => {
+  const key = memberKey(member);
+  const value = member.value;
+  if (!key || !value) return;
+
+  const fullPath = joinPath(prefix, key);
+
+  if (value.type === 'Object') {
+    Object.assign(result, extractKeyValuesFromAst(value, fullPath));
+    return;
+  }
+  if (value.type === 'String') {
+    result[fullPath] = {
+      value: value.value,
+      node: value,
+    };
+  }
+};
+
+/**
  * Recursively extract key-value pairs from AST
  */
 const extractKeyValuesFromAst = (node, prefix = '') => {
   const result = {};
 
-  if (!node || node.type !== 'Object') return result;
-
-  for (const member of node.body?.members || []) {
-    if (member.type !== 'Member') continue;
-
-    const key = member.name?.type === 'String'
-      ? member.name.value
-      : member.name?.name;
-
-    if (!key) continue;
-
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-    const value = member.value;
-
-    if (!value) continue;
-
-    if (value.type === 'Object') {
-      Object.assign(result, extractKeyValuesFromAst(value, fullPath));
-    } else if (value.type === 'String') {
-      result[fullPath] = {
-        value: value.value,
-        node: value,
-      };
-    }
+  for (const member of objectMembers(node)) {
+    if (member.type === 'Member') collectKeyValue(result, member, prefix);
   }
 
   return result;

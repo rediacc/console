@@ -45,6 +45,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FREEFORM_ARG_COMMAND_PATHS as SHARED_FREEFORM } from '../lib/cli-exempt-lists.js';
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
+// Commander usage placeholders. A line like `rdc repo [options]` is printing
+// usage, not teaching positional syntax, so it must not be reported.
+const USAGE_PLACEHOLDER_RES = [
+  /^\[options\](?!\w)/,
+  /^\[command\.\.\.\](?!\w)/,
+  /^\[command\](?!\w)/,
+  /^\[komut\.\.\.\](?!\w)/,
+  /^\[seçenekler\](?!\w)/,
+];
+
+const isUsagePlaceholder = (afterPath) =>
+  USAGE_PLACEHOLDER_RES.some((re) => re.test(afterPath));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMMAND_TREE_PATH = path.resolve(
@@ -89,6 +103,28 @@ const buildPlaceholderOnlyRegex = (commandPath) => {
 let cachedLeafPaths = null;
 let cachedParentPaths = null;
 
+/** Sort one command path into the leaf set, the parent set, or neither. */
+const classifyCommandPath = (node, commandPath, leaves, parents) => {
+  if (FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) return;
+
+  const isLeaf = (node.subcommands ?? []).length === 0;
+  const takesPositional = (node.arguments ?? []).length > 0;
+  // A command that takes a positional belongs in NEITHER pass: after P4
+  // `rdc repo up <repo-ref>` is the syntax we want the help text to teach.
+  // The parent set used to be every path, which flagged that correct form.
+  if (isLeaf && !takesPositional) leaves.add(commandPath);
+  if (!isLeaf && !takesPositional) parents.add(commandPath);
+};
+
+const walkCommandTree = (node, parts, leaves, parents) => {
+  if (parts.length > 0) {
+    classifyCommandPath(node, parts.join(' '), leaves, parents);
+  }
+  for (const sub of node.subcommands ?? []) {
+    walkCommandTree(sub, [...parts, sub.name], leaves, parents);
+  }
+};
+
 const loadPathsFromTree = () => {
   if (cachedLeafPaths && cachedParentPaths) {
     return { leaves: cachedLeafPaths, parents: cachedParentPaths };
@@ -97,22 +133,7 @@ const loadPathsFromTree = () => {
   const tree = JSON.parse(raw);
   const leaves = new Set();
   const parents = new Set();
-  const walk = (node, parts) => {
-    if (parts.length > 0) {
-      const commandPath = parts.join(' ');
-      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
-        const isLeaf = (node.subcommands ?? []).length === 0;
-        const takesPositional = (node.arguments ?? []).length > 0;
-        // A command that takes a positional belongs in NEITHER pass: after P4
-        // `rdc repo up <repo-ref>` is the syntax we want the help text to teach.
-        // The parent set used to be every path, which flagged that correct form.
-        if (isLeaf && !takesPositional) leaves.add(commandPath);
-        if (!isLeaf && !takesPositional) parents.add(commandPath);
-      }
-    }
-    for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
-  };
-  walk(tree, []);
+  walkCommandTree(tree, [], leaves, parents);
   cachedLeafPaths = leaves;
   cachedParentPaths = parents;
   return { leaves, parents };
@@ -215,72 +236,73 @@ export const noPositionalCliSyntax = {
       return exemptCommandPrefixes.some((prefix) => trimmed.startsWith(prefix));
     };
 
-    const checkObject = (node, prefix = '') => {
-      if (!node || node.type !== 'Object') return;
-      const members = node.members || [];
+    const reportPositional = (value, fullPath, command) => {
+      if (command.source === 'explicit') {
+        context.report({
+          node: value,
+          messageId: 'positionalSyntaxExplicit',
+          data: {
+            key: fullPath,
+            path: command.path,
+            requiredOptions: command.requiredOptions.join(', '),
+            firstOption: command.requiredOptions[0],
+          },
+        });
+        return;
+      }
 
-      for (const member of members) {
+      context.report({
+        node: value,
+        messageId: 'positionalSyntaxDerived',
+        data: {
+          key: fullPath,
+          path: command.path,
+        },
+      });
+    };
+
+    const checkLine = (value, fullPath, line) => {
+      if (isExempt(line.trimStart())) return;
+
+      // Dedupe per-line per-rdc-position so a longer match wins.
+      const reported = new Set();
+      for (const command of allCommands) {
+        const m = command.regex.exec(line);
+        if (!m) continue;
+
+        const rdcIndex = line.indexOf('rdc ', m.index);
+        const trailing = line.slice(rdcIndex);
+        const afterPath = trailing.slice(`rdc ${command.path} `.length);
+        if (isUsagePlaceholder(afterPath)) continue;
+
+        const posKey = `${rdcIndex}`;
+        if (reported.has(posKey)) continue;
+        reported.add(posKey);
+
+        reportPositional(value, fullPath, command);
+      }
+    };
+
+    const checkStringValue = (value, fullPath) => {
+      for (const line of value.value.split(/\r?\n/)) {
+        checkLine(value, fullPath, line);
+      }
+    };
+
+    const checkObject = (node, prefix = '') => {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
 
-        const key =
-          member.name?.type === 'String' ? member.name.value : member.name?.name;
+        const key = memberKey(member);
         if (!key) continue;
 
-        const fullPath = prefix ? `${prefix}.${key}` : key;
+        const fullPath = joinPath(prefix, key);
         const value = member.value;
 
         if (value?.type === 'Object') {
           checkObject(value, fullPath);
         } else if (value?.type === 'String') {
-          const strValue = value.value;
-          const lines = strValue.split(/\r?\n/);
-          for (const line of lines) {
-            if (isExempt(line.trimStart())) continue;
-            // Dedupe per-line per-rdc-position so a longer match wins.
-            const reported = new Set();
-            for (const command of allCommands) {
-              const m = command.regex.exec(line);
-              if (!m) continue;
-              const rdcIndex = line.indexOf('rdc ', m.index);
-              // Skip Commander usage placeholders like `[options]`,
-              // `[command...]` — these aren't teaching positional syntax.
-              const trailing = line.slice(rdcIndex);
-              const afterPath = trailing.slice(`rdc ${command.path} `.length);
-              if (
-                /^\[options\](?!\w)/.test(afterPath) ||
-                /^\[command\.\.\.\](?!\w)/.test(afterPath) ||
-                /^\[command\](?!\w)/.test(afterPath) ||
-                /^\[komut\.\.\.\](?!\w)/.test(afterPath) ||
-                /^\[seçenekler\](?!\w)/.test(afterPath)
-              ) {
-                continue;
-              }
-              const posKey = `${rdcIndex}`;
-              if (reported.has(posKey)) continue;
-              reported.add(posKey);
-              if (command.source === 'explicit') {
-                context.report({
-                  node: value,
-                  messageId: 'positionalSyntaxExplicit',
-                  data: {
-                    key: fullPath,
-                    path: command.path,
-                    requiredOptions: command.requiredOptions.join(', '),
-                    firstOption: command.requiredOptions[0],
-                  },
-                });
-              } else {
-                context.report({
-                  node: value,
-                  messageId: 'positionalSyntaxDerived',
-                  data: {
-                    key: fullPath,
-                    path: command.path,
-                  },
-                });
-              }
-            }
-          }
+          checkStringValue(value, fullPath);
         }
       }
     };

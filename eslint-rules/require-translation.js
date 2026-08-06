@@ -117,6 +117,23 @@ export const requireTranslation = {
       });
     };
 
+    /**
+     * Namespaces to look the key up in: the one written into the key itself,
+     * else the one passed in t()'s options, else the one the `t` binding was
+     * created with. null when none of the three answers.
+     */
+    const resolveNamespaces = (node, namespace, optionArg) => {
+      if (namespace) return [namespace];
+
+      const nsFromOptions = extractNamespacesFromOptions(optionArg);
+      if (nsFromOptions) return nsFromOptions;
+
+      if (node.callee.type === 'Identifier') {
+        return findNamespacesForIdentifier(node.callee.name, node);
+      }
+      return null;
+    };
+
     return {
       VariableDeclarator(node) {
         if (!node.init) return;
@@ -174,23 +191,7 @@ export const requireTranslation = {
           return;
         }
 
-        let namespaces = null;
-
-        if (namespace) {
-          namespaces = [namespace];
-        } else {
-          const nsFromOptions = extractNamespacesFromOptions(optionArg);
-          if (nsFromOptions) {
-            namespaces = nsFromOptions;
-          }
-        }
-
-        if (!namespaces) {
-          if (node.callee.type === 'Identifier') {
-            namespaces = findNamespacesForIdentifier(node.callee.name, node);
-          }
-        }
-
+        const namespaces = resolveNamespaces(node, namespace, optionArg);
         if (!namespaces || namespaces.length === 0) return;
 
         const segments = keyPath.split('.').filter(Boolean);
