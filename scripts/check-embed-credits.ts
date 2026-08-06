@@ -99,8 +99,8 @@ function main(): void {
   // is only that neither can still be naming a version we no longer ship.
   for (const [base, c] of components) {
     for (const field of ['upstreamSourceUrl', 'plannedMirrorUrl'] as const) {
-      const url = (c as Record<string, unknown>)[field];
-      if (typeof url !== 'string' || url === '') continue;
+      const url = c[field];
+      if (url === '') continue;
       if (!url.includes(c.version)) {
         errors.push(
           `${base}: ${field} does not name version '${c.version}' — ${url}`
