@@ -52,6 +52,7 @@ SAFETY PROPERTIES, in the order they bite:
     failure-path fixture.
 """
 
+import contextlib
 import fcntl
 import hashlib
 import hmac
@@ -273,10 +274,8 @@ def _send_curl(cfg, blob):
         except OSError:
             resp_body = ""
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(btmp)
-            except OSError:
-                pass
         code = (r.stdout or "").strip()[-3:]
         if r.returncode != 0:
             return "curl exit %d: %s" % (r.returncode, (r.stderr or "")[:160])
@@ -286,10 +285,8 @@ def _send_curl(cfg, blob):
         return "curl: %s: %s" % (type(exc).__name__, str(exc)[:160])
     finally:
         if tmp:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp)
-            except OSError:
-                pass
     return ""
 
 
@@ -470,10 +467,8 @@ def pump(root, worklist, session_id, fold):
         marker = unconfigured_marker(worklist, session_id)
         if marker.exists():
             return ""
-        try:
+        with contextlib.suppress(OSError):
             marker.write_text(C.stamp_now(), encoding="utf-8")
-        except OSError:
-            pass
         return M.N_EMAIL_UNCONFIGURED % (env_path, len(rows))
     ledger = read_ledger(worklist)
     already = sent_keys(ledger)
@@ -503,10 +498,8 @@ def pump(root, worklist, session_id, fold):
             warn = unconfigured_marker(worklist, session_id).with_suffix(".failwarned")
             if warn.exists():
                 return ""
-            try:
+            with contextlib.suppress(OSError):
                 warn.write_text(C.stamp_now(), encoding="utf-8")
-            except OSError:
-                pass
             last_err = next(
                 (str(r.get("err", "")) for r in reversed(ledger) if r.get("ev") == "fail"),
                 "?",
@@ -550,8 +543,6 @@ def pump(root, worklist, session_id, fold):
         return M.N_EMAIL_FAIL % (len(rows), err[:300], RETRY_MIN)
     # A success clears the one-per-session skip warning so a LATER failure
     # with different credentials can warn again.
-    try:
+    with contextlib.suppress(OSError):
         unconfigured_marker(worklist, session_id).with_suffix(".failwarned").unlink()
-    except OSError:
-        pass
     return M.N_EMAIL_SENT % (len(rows), cfg["to"], COOLDOWN_MIN)

@@ -43,6 +43,7 @@ PEP 668. time.monotonic() for the deadline, never the wall clock, so an NTP step
 cannot cut a wait short or extend it forever.
 """
 
+import contextlib
 import json
 import os
 import pathlib
@@ -372,10 +373,8 @@ def nudge(event):
 
     np = nudge_path(worklist, me)
     n = nudges_ignored(worklist, me) + 1
-    try:
+    with contextlib.suppress(OSError):
         np.write_text("%d %s\n" % (n, C.stamp_now()), encoding="utf-8")
-    except OSError:
-        pass
     import worklist_messages as M  # noqa: PLC0415
 
     print(json.dumps({

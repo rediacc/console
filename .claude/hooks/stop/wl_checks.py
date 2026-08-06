@@ -7,6 +7,7 @@ load-bearing throughout -- emit() exits the process, so anything after a
 block never runs -- and every WHY comment travels with its check.
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -308,12 +309,10 @@ def bank_pollbase(worklist, session_id, sig):
     recognise that nothing changed. The moment real work lands, the signature
     moves and the battery returns on its own.
     """
-    try:
+    with contextlib.suppress(OSError):
         pollbase_path(worklist, session_id).write_text(
             json.dumps({"sig": sig, "at": C.stamp_now()}), encoding="utf-8"
         )
-    except OSError:
-        pass
 
 
 # ---- stuck detection --------------------------------------------------------
@@ -407,13 +406,11 @@ def stuck_rounds(worklist, session_id, tasks, head, exempt, supervised=False, ow
     elif hit:
         why = "tasks-only" if 0 in hit else "tasks+head"
     fired = bool(hit)
-    try:
+    with contextlib.suppress(OSError):
         p.write_text(
             "%s %s %d %d"
             % (sigs[0], sigs[1], *[0 if i in hit else counts[i] for i in (0, 1)])
         )
-    except OSError:
-        pass
     return max(counts), fired, why
 
 
@@ -622,10 +619,8 @@ def cron_memory(worklist, session_id, live_count, declared_done=False):
     except (OSError, ValueError):
         remembered = 0
     if live_count > remembered:
-        try:
+        with contextlib.suppress(OSError):
             p.write_text(str(live_count))
-        except OSError:
-            pass
         remembered = live_count
     if declared_done and live_count == 0 and remembered >= 1:
         # FORGET the high-water mark, do not merely skip this one stop. Without
@@ -634,10 +629,8 @@ def cron_memory(worklist, session_id, live_count, declared_done=False):
         # exactly what happened to the session that found this. A loop declared
         # finished is finished; if a new one starts, live_count climbs above 0
         # again and the mark rebuilds itself on its own.
-        try:
+        with contextlib.suppress(OSError):
             p.write_text("0")
-        except OSError:
-            pass
         return False, remembered
     return (remembered >= 1 and live_count == 0), remembered
 
@@ -1706,13 +1699,11 @@ def run_stop(event, event_ok, worklist, hook_file):
     # live_bg is computed above, beside classify_items, since v14 gap 4.
     # Keep the raw event: when a check fires wrongly the first question is always
     # "what did the hook actually receive", and that is unanswerable afterwards.
-    try:
+    with contextlib.suppress(OSError):
         worklist.with_suffix(".lastevent-%s.json" % me8).write_text(
             json.dumps({k: v for k, v in event.items() if k != "transcript"}, indent=2),
             encoding="utf-8",
         )
-    except OSError:
-        pass
     briefs = S.read_briefs(worklist)
     bstate, bage, others_briefs = S.brief_state(worklist, session_id, briefs)
     lstate, lnext, llabel, _others_loops, lcrons = S.loop_state(worklist, session_id)
