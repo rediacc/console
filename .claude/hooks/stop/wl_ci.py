@@ -4,6 +4,7 @@ branch here is paid for by an observed failure, so nothing was "simplified"
 in the extraction.
 """
 
+import contextlib
 import datetime
 import hashlib
 import json
@@ -112,7 +113,7 @@ def pr_body_freshness(root):
 
     def parse(ts):
         try:
-            return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return datetime.datetime.fromisoformat(ts)
         except ValueError:
             return None
 
@@ -501,7 +502,7 @@ def ci_queue_state(root, worklist, session_id):
                 if i == 0:
                     try:
                         created = datetime.datetime.fromisoformat(
-                            (r.get("created_at") or "").replace("Z", "+00:00")
+                            (r.get("created_at") or "")
                         )
                         age = (
                             datetime.datetime.now(datetime.UTC) - created
@@ -523,13 +524,11 @@ def ci_queue_state(root, worklist, session_id):
                 }
             else:
                 state = "clear"
-    try:
+    with contextlib.suppress(OSError, TypeError):
         cache_p.write_text(
             json.dumps({"at": time.time(), "state": state, "detail": detail}),
             encoding="utf-8",
         )
-    except (OSError, TypeError):
-        pass
     return state, detail
 
 
@@ -618,16 +617,14 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
     detail = {"info": info, "hard": hard, "soft": soft, "live": live, "acked": acked, "n": blocks}
     if acked or blocks >= CI_MAX_BLOCKS:
         return "downgraded", detail
-    try:
+    with contextlib.suppress(OSError):
         marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
-    except OSError:
-        pass
     detail["n"] = blocks + 1
     return "trouble", detail
 
 
 def _ci_cache_write(path, sha, state, info, steps, final):
-    try:
+    with contextlib.suppress(OSError, TypeError):
         path.write_text(
             json.dumps(
                 {"sha": sha, "at": time.time(), "state": state, "info": info,
@@ -635,8 +632,6 @@ def _ci_cache_write(path, sha, state, info, steps, final):
             ),
             encoding="utf-8",
         )
-    except (OSError, TypeError):
-        pass
 
 
 def ci_rows_text(rows, info):

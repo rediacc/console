@@ -21,6 +21,7 @@ file, because half-parsed fixsets silently resurrect a blocked question as
 settled.
 """
 
+import contextlib
 import glob
 import hashlib
 import json
@@ -91,10 +92,8 @@ def load_reggate(path):
 def save_reggate(path, state):
     # Whole-file rewrite is correct here for the same reason as the handover:
     # the marker is per-session, so there is no second writer to race.
-    try:
+    with contextlib.suppress(OSError):
         path.write_text(json.dumps(state, indent=1), encoding="utf-8")
-    except OSError:
-        pass
 
 
 def _tick_id(line):

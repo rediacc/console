@@ -883,7 +883,7 @@ def main():
         if not rest:
             rest = ["--list", "--unread"]
         elif rest[0] not in wl_report.MODES:
-            rest = ["--list"] + rest
+            rest = ["--list", *rest]
         sys.exit(wl_report.main(rest))
     if sys.argv[1:2] == ["--wait"]:
         import wl_wait
