@@ -28,7 +28,15 @@ JUDGE_MODEL = os.environ.get("WORKLIST_JUDGE_MODEL", "claude-haiku-4-5-20251001"
 # same prompt in the judge's isolated workdir cost $0.0205. $0.25 leaves room for
 # the real prompt (finding + context) without being open-ended.
 JUDGE_BUDGET_USD = os.environ.get("WORKLIST_JUDGE_BUDGET_USD", "0.25")
-JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "120"))
+# 240, raised from 120 on 2026-08-06 after a live timeout that BLOCKED a stop.
+# The judge blocking on failure is correct and deliberate -- a judge that fails
+# open is an escape hatch -- which is exactly why the budget must fit the
+# WORST case rather than the typical one. Measured on this machine: a bare
+# `reply OK` answers in 3.9s, while the real schema-constrained judge call took
+# 30s (3 turns, stop_reason tool_use) with two Opus sub-agents running, and had
+# exceeded 120s minutes earlier under heavier load. A stop happens precisely
+# when the session is busiest, so the typical-case budget was the wrong one.
+JUDGE_TIMEOUT_S = int(os.environ.get("WORKLIST_JUDGE_TIMEOUT_S", "240"))
 JUDGE_DISABLED = os.environ.get("WORKLIST_JUDGE") == "off"
 
 # v10 VERDICT CACHE. The judge is the dominant cost of a quiet-but-tracked
