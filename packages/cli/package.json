@@ -25,7 +25,7 @@
     "rdc": "./dist/cli-bundle.cjs"
   },
   "dependencies": {
-    "@hono/node-server": "^2.0.12",
+    "@hono/node-server": "^2.1.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@opentelemetry/api-logs": "^0.221.0",
     "@opentelemetry/core": "^2.10.0",
