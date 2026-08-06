@@ -311,6 +311,43 @@ jobs:
       # 7 days because this is a debugging aid, not a record.
       # `if-no-files-found: ignore` keeps a skipped or crashed review from
       # failing the job over a missing artifact.
+      # THE PR HANDOFF, and it exists because SHA inference cannot work here.
+      # Review Status is a SECOND-ORDER workflow_run (Console CI -> Claude
+      # Review -> Review Status), and GitHub stamps a workflow_run-triggered
+      # run with the DEFAULT BRANCH tip. So review-status.sh received main's
+      # SHA, found no PR for it, and exited 0 silently -- leaving the required
+      # review check absent while every visible check was green. (Naming that
+      # check literally here would trip the cycle gate in test-review-status.sh,
+      # which forbids any other workflow referencing it. The gate is right: a
+      # comment is not a dependency, but the string is what it can see.)
+      # Measured 2026-08-06: every Claude Review run on this path carried
+      # head_branch=main and pull_requests=[]. It had never once resolved a PR.
+      #
+      # The gate above already knows the answer, so hand it over instead of
+      # re-deriving it downstream.
+      #
+      # CONDITIONED ON pr_number, NOT ON go. Deliberate, and it fixes a second
+      # live failure: a submodule-pointer-only push makes the gate emit
+      # go=false (no review needed) while still resolving the PR. Review Status
+      # must still post for that head -- deciding whether to REVIEW and deciding
+      # whether the head is COVERED are different questions.
+      #
+      # Its presence is also the discriminator that makes loudness safe: a push
+      # to main legitimately has no PR and writes no artifact, so Review Status
+      # can stay silent there while treating a PRESENT artifact it cannot honour
+      # as a hard error.
+      - name: Hand the resolved PR number to Review Status
+        if: always() && steps.gate.outputs.pr_number != ''
+        run: echo "${{ steps.gate.outputs.pr_number }}" > "${RUNNER_TEMP}/review-target.txt"
+
+      - name: Upload the review target
+        if: always() && steps.gate.outputs.pr_number != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: review-target
+          path: ${{ runner.temp }}/review-target.txt
+          if-no-files-found: error
+
       - name: Preserve the review execution file
         if: always() && steps.gate.outputs.go == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -392,10 +429,3 @@ jobs:
       # reusable is also called from the private submodule repos, where
       # github.repository reads rediacc/account or similar, but
       # review-status.yml exists only in console.
-      - name: Nudge review-status.yml with the resolved PR
-        if: always() && steps.gate.outputs.go == 'true' && github.event_name == 'workflow_dispatch'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh workflow run review-status.yml --repo rediacc/console --ref main \
-            -f pr_number="${{ steps.gate.outputs.pr_number }}"

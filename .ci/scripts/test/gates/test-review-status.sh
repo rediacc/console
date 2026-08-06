@@ -101,6 +101,27 @@ case "$path" in
     # size-tiered budget untestable.
     pr) key="pr-size" ;;
     */commits/*/pulls) key="commit-pulls" ;;
+    # The workflow_run PR handoff. Two calls: list the run's artifacts, then
+    # download the zip. The zip route writes a REAL zip so the script's
+    # `unzip -p` runs for real rather than against a stub -- the extraction is
+    # part of what can break.
+    */actions/runs/*/artifacts) key="run-artifacts" ;;
+    */actions/artifacts/*/zip)
+        # A REAL zip on stdout, built with python3 because `zip` is not
+        # installed on this box (only unzip is) and the suite already requires
+        # python3. The script's `unzip -p` therefore runs for real: extraction
+        # is part of what can break, so stubbing it away would leave the most
+        # fragile step untested.
+        if [ -f "$GH_FIXTURES/review-target.txt" ]; then
+            python3 -c 'import sys,zipfile,io
+buf = io.BytesIO()
+with zipfile.ZipFile(buf, "w") as z:
+    z.write(sys.argv[1], "review-target.txt")
+sys.stdout.buffer.write(buf.getvalue())' "$GH_FIXTURES/review-target.txt"
+            exit 0
+        fi
+        exit 1
+        ;;
     */commits/*/check-runs) key="check-runs" ;;
     */issues/*/comments) key="comments" ;;
     */compare/*) key="compare" ;;
@@ -217,6 +238,10 @@ posted() {
 }
 
 captured_method() {
+    # `[ -f ]` guard, not an assumption: a test that asserts NOTHING was posted
+    # leaves no capture file at all, and sed erroring on the missing path would
+    # make "correctly silent" look like a harness fault.
+    [ -f "$1/capture.txt" ] || return 0
     sed -n 's/^METHOD=\([A-Z]*\) .*/\1/p' "$1/capture.txt" | tail -n 1
 }
 
@@ -297,7 +322,12 @@ test_gitlink_only_succeeds() {
 test_cancelled_review_run_is_not_a_failure() {
     local t="$1"
     setup "$t"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=cancelled \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=cancelled \
         WR_HTML_URL=https://example.invalid/run/1
     assert_eq "$(posted "$t" '.conclusion')" success \
         "a superseded (cancelled) review run must not fail the head"
@@ -360,7 +390,12 @@ test_wrong_marker_prefix_is_seen_as_unreviewed() {
 test_failed_review_run_fails() {
     local t="$1"
     setup "$t"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=failure \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=failure \
         WR_HTML_URL=https://example.invalid/run/7
     assert_eq "$(posted "$t" '.conclusion')" failure "the review produced no verdict"
     assert_contains "$(posted "$t" '.output.summary')" "https://example.invalid/run/7" \
@@ -479,7 +514,12 @@ test_anchors_to_current_head_not_event_sha() {
     marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
     echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
         >"$t/fixtures/compare.json"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$OLD_SHA" WR_CONCLUSION=success \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=success \
         WR_HTML_URL=https://example.invalid/run/9
     assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" \
         "the check-run is anchored to the PR head, not the event's SHA"
@@ -606,17 +646,60 @@ test_workflow_dispatch_resolves_pr_directly() {
     log_pass "workflow_dispatch (PLANTED: empty commit-pulls) still resolves PR #42 via PR_NUMBER"
 }
 
-test_workflow_run_with_unassociated_sha_reports_nothing() {
+# THIS TEST USED TO ASSERT THE BUG AS THE SPECIFICATION.
+#
+# It was `test_workflow_run_with_unassociated_sha_reports_nothing`, and it drove
+# EVENT_NAME=workflow_run with main's SHA expecting silent success -- codifying
+# the exact no-op that left the REQUIRED `Review Complete` check unposted on
+# every PR. Its log line even argued the lookup could not be fixed and a
+# separate dispatch path was the answer. Measured 2026-08-06: that arm had never
+# resolved a PR in production, so the suite was green on a path that never
+# worked.
+#
+# The three tests below replace it, and they split the case the old one
+# conflated: no artifact (a push to main, legitimately PR-less) must stay
+# silent, while an artifact that exists and cannot be honoured must be LOUD.
+test_workflow_run_without_artifact_is_silent() {
     local t="$1"
     setup "$t"
-    # The dispatch ref's SHA belongs to no open PR -- commits/.../pulls returns [].
-    echo '[]' >"$t/fixtures/commit-pulls.json"
-    local MAIN_SHA="3333333333333333333333333333333333333333"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$MAIN_SHA" WR_CONCLUSION=success \
-        WR_HTML_URL=https://example.invalid/run/dispatch
-    assert_exit_code 0 "$LAST_RC" "an unresolvable PR is a no-op, not an error"
-    assert_eq "$(captured_method "$t")" "" "nothing is posted when workflow_run's head_sha resolves to no PR"
-    log_pass "CONTROL: workflow_run path genuinely cannot resolve a dispatch-ref SHA (this is why F1 adds a separate workflow_dispatch path rather than 'fixing' this lookup)"
+    # No review-target artifact: the triggering run had no PR. This is the
+    # main-push case and silence is correct -- reddening it would redden every
+    # push to main.
+    echo '{"artifacts": []}' >"$t/fixtures/run-artifacts.json"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9001 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9001
+    assert_exit_code 0 "$LAST_RC" "a PR-less triggering run is a no-op, not an error"
+    assert_eq "$(captured_method "$t")" "" "nothing is posted when no review-target artifact exists"
+    log_pass "workflow_run with no artifact stays silent (main-push safe)"
+}
+
+test_workflow_run_with_artifact_posts_the_check() {
+    local t="$1"
+    setup "$t"
+    # The artifact names PR 42, which setup() wires as open at NEW_SHA.
+    echo '{"artifacts": [{"id": 77, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9002 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9002
+    assert_exit_code 0 "$LAST_RC" "a resolvable PR reports normally"
+    assert_eq "$(captured_method "$t")" "POST" "FIRE: the check-run is posted for the handed-over PR"
+    assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" "anchored to the PR's live head, not the triggering run's"
+    log_pass "FIRE: workflow_run resolves the PR from the artifact and posts (the case that never worked)"
+}
+
+test_workflow_run_with_unhonourable_artifact_is_loud() {
+    local t="$1"
+    setup "$t"
+    # The artifact EXISTS but carries no PR number. Under the old code every
+    # failure to resolve exited 0; here presence makes it binding, so this must
+    # be a non-zero exit rather than another silent success.
+    echo '{"artifacts": [{"id": 78, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    printf '\n' >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9003 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9003
+    assert_exit_code 1 "$LAST_RC" "an artifact that cannot be honoured is a REPORTER failure, not silence"
+    assert_eq "$(captured_method "$t")" "" "nothing is posted when the handoff is malformed"
+    log_pass "CONTROL: the loud path is reachable -- a present-but-empty artifact exits non-zero"
 }
 
 test_workflow_dispatch_requires_pr_number() {
@@ -1170,7 +1253,9 @@ with_temp_dir test_cancelled_review_run_is_not_a_failure
 with_temp_dir test_draft_is_neutral
 
 with_temp_dir test_workflow_dispatch_resolves_pr_directly
-with_temp_dir test_workflow_run_with_unassociated_sha_reports_nothing
+with_temp_dir test_workflow_run_without_artifact_is_silent
+with_temp_dir test_workflow_run_with_artifact_posts_the_check
+with_temp_dir test_workflow_run_with_unhonourable_artifact_is_loud
 with_temp_dir test_workflow_dispatch_requires_pr_number
 with_temp_dir test_hygiene_only_failure_title_says_reviewed
 with_temp_dir test_unreviewed_head_title_unchanged
