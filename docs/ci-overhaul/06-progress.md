@@ -2384,3 +2384,39 @@ gate. Not-executed is a third state.
 **Honest status: not reproducible in six executions, cause unknown.** That is a
 characterisation, not a mechanism.
 
+## 2026-08-06 — the reachability gate, and its own first defect
+
+`check:ci-scope-scripts-reachability` exists because the scope split's two
+carve-outs (`scripts/drills/`, `generate-third-party-licenses.ts`) were traced BY
+HAND at one commit. Nothing stopped the next file becoming reachable from a gated
+job and being narrowed silently — a job skipped on the very delta that changed
+its dependency, which reads as a faster green rather than a gap.
+
+**It shipped with the defect it exists to catch, and review found it.** The scan
+read run.sh's drill arm with `grep -A 12`. One line short: run.sh dispatches
+THREE drills and `scripts/drills/license.sh` at :1995 fell outside the window, so
+`check_path` was never invoked for it. The gate reported "every reachable path
+forces full" having never looked at one. Inert only because `scripts/drills/`
+carries an independent full-prefix rule — the stated invariant was already
+narrower than its claim.
+
+**Two wrong fixes, both worth recording:**
+- A bigger window. `-A 16` passes today and breaks on the fourth drill.
+- Reading each arm to its closing `;;`. run.sh NESTS case statements and
+  terminates arms inline (`stop) account_stop ;;`), so the block scan ran past
+  `account)` and mis-attributed `scripts/dev/worktree.sh` to it. One silent miss
+  became one loud false positive.
+
+The fix attributes each dispatch to its nearest preceding TOP-LEVEL case label,
+which needs no model of arm termination at all.
+
+**A near-miss worth naming**: the first rewrite used `sub` as an awk variable.
+That is a gawk BUILTIN, and the scan returned nothing. It failed loudly, which is
+the only reason it was caught — silently it would have been another green that
+checked zero paths.
+
+**Method note.** Both the original gate and the fix were verified by planting a
+real invocation of a narrowed path in `.ci/scripts/build` and observing rc=1,
+then removing it for rc=0. The proof was RE-RUN after the rewrite rather than
+assumed to survive it.
+
