@@ -34,7 +34,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { VIDEO_LANGS } from '../src/utils/solution-video.ts';
 import { listSlugs, slugRendersVideo } from './check-solution-videos.ts';
-import type { VideoManifest } from './lib/update-video-manifest.js';
+import type { SparseVideoManifest } from './lib/update-video-manifest.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const manifestPath = path.join(scriptDir, '..', 'src', 'data', 'video-manifest.json');
@@ -50,9 +50,15 @@ const CURRENT_ENGINE = 'voxcpm2';
 
 export type EngineFinding = { slug: string; lang: string; engine: string | null };
 
+/** Sort `[key, value]` entry pairs by key, ascending, by code unit. */
+const byKeyAsc = <T>([a]: [string, T], [b]: [string, T]): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** How a finding with no recorded engine is labelled in the grouped report. */
+const NO_ENGINE_LABEL = '(no engine recorded)';
+
 /** Slug x locale pairs whose narration is not on `expected`. `null` = no engine recorded. */
 export function findStaleNarrations(
-  manifest: VideoManifest,
+  manifest: SparseVideoManifest,
   slugs: string[],
   langs: readonly string[],
   expected: string = CURRENT_ENGINE
@@ -73,12 +79,12 @@ export function findStaleNarrations(
   return out;
 }
 
-function loadManifest(): VideoManifest {
+function loadManifest(): SparseVideoManifest {
   if (!fs.existsSync(manifestPath)) {
     console.error(`✗ Manifest not found at ${manifestPath}`);
     process.exit(1);
   }
-  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as VideoManifest;
+  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as SparseVideoManifest;
 }
 
 function main(): number {
@@ -105,7 +111,7 @@ function main(): number {
 
   const byEngine = new Map<string, EngineFinding[]>();
   for (const f of stale) {
-    const k = f.engine ?? '(no engine recorded)';
+    const k = f.engine ?? NO_ENGINE_LABEL;
     if (!byEngine.has(k)) byEngine.set(k, []);
     byEngine.get(k)!.push(f);
   }
@@ -113,14 +119,14 @@ function main(): number {
   console.error(
     `✗ ${stale.length} of ${checked} solution narration(s) are not on ${CURRENT_ENGINE}:\n`
   );
-  for (const [engine, list] of [...byEngine.entries()].sort()) {
+  for (const [engine, list] of [...byEngine.entries()].sort(byKeyAsc)) {
     const byLang = new Map<string, string[]>();
     for (const f of list) {
       if (!byLang.has(f.lang)) byLang.set(f.lang, []);
       byLang.get(f.lang)!.push(f.slug);
     }
     console.error(`[${engine}] ${list.length} pair(s)`);
-    for (const [lang, ss] of [...byLang.entries()].sort()) {
+    for (const [lang, ss] of [...byLang.entries()].sort(byKeyAsc)) {
       console.error(
         `  ${lang}: ${ss.length} slug(s) — ${ss.slice(0, 4).join(', ')}${ss.length > 4 ? ', …' : ''}`
       );
@@ -168,7 +174,7 @@ function selftest(): number {
     }
   };
   const mk = (solutions: unknown) =>
-    ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as VideoManifest;
+    ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as SparseVideoManifest;
   const asset = (engine?: string) => ({
     path: 'p',
     size: 1,

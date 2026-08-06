@@ -79,7 +79,7 @@ function getFilesForLanguage(collection, lang) {
   }
 
   const files = [];
-  const exclusions = EXCLUSIONS[collection] || [];
+  const exclusions = EXCLUSIONS[collection] ?? [];
 
   function walkDir(dir, relativePath = '') {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -194,7 +194,7 @@ function validateContent(_strict = false) {
           }
 
           // Check required fields
-          const requiredFields = REQUIRED_FIELDS[collection] || [];
+          const requiredFields = REQUIRED_FIELDS[collection] ?? [];
           for (const field of requiredFields) {
             if (!frontmatter[field]) {
               errors.push({
@@ -208,7 +208,7 @@ function validateContent(_strict = false) {
           }
 
           // Check enum fields
-          const enumFields = ENUM_VALUES[collection] || {};
+          const enumFields = ENUM_VALUES[collection] ?? {};
           for (const [field, validValues] of Object.entries(enumFields)) {
             if (frontmatter[field] && !validValues.includes(frontmatter[field])) {
               errors.push({
@@ -222,7 +222,7 @@ function validateContent(_strict = false) {
           }
 
           // Check array fields are non-empty
-          const arrayFields = ARRAY_FIELDS[collection] || [];
+          const arrayFields = ARRAY_FIELDS[collection] ?? [];
           for (const field of arrayFields) {
             if (
               frontmatter[field] &&
@@ -247,7 +247,7 @@ function validateContent(_strict = false) {
       const relativeFile = `${collection}/${SOURCE_LANGUAGE}/${file.relativePath}`;
 
       if (frontmatter) {
-        const requiredFields = REQUIRED_FIELDS[collection] || [];
+        const requiredFields = REQUIRED_FIELDS[collection] ?? [];
         for (const field of requiredFields) {
           if (!frontmatter[field]) {
             errors.push({
@@ -261,7 +261,7 @@ function validateContent(_strict = false) {
         }
 
         // Check enum fields for English
-        const enumFields = ENUM_VALUES[collection] || {};
+        const enumFields = ENUM_VALUES[collection] ?? {};
         for (const [field, validValues] of Object.entries(enumFields)) {
           if (frontmatter[field] && !validValues.includes(frontmatter[field])) {
             errors.push({
@@ -275,7 +275,7 @@ function validateContent(_strict = false) {
         }
 
         // Check array fields for English
-        const arrayFields = ARRAY_FIELDS[collection] || [];
+        const arrayFields = ARRAY_FIELDS[collection] ?? [];
         for (const field of arrayFields) {
           if (
             frontmatter[field] &&
@@ -303,9 +303,7 @@ function validateContent(_strict = false) {
 function groupByRule(issues) {
   const grouped = {};
   for (const issue of issues) {
-    if (!grouped[issue.rule]) {
-      grouped[issue.rule] = [];
-    }
+    grouped[issue.rule] ??= [];
     grouped[issue.rule].push(issue);
   }
   return grouped;

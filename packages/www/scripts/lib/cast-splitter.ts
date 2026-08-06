@@ -1,7 +1,12 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
 interface CastHeader {
-  version: 2;
+  /**
+   * asciicast format version. NOT the literal `2`: this is parsed straight off
+   * disk, v1 and v3 files exist, and typing it `2` makes the version guard in
+   * `parseCast` read as dead code the moment someone hands it one.
+   */
+  version: number;
   width: number;
   height: number;
   timestamp?: number;
@@ -104,7 +109,7 @@ export function writeRestreamedSegment(
       continue;
     }
     const origGap = Math.max(0, t - prevOrig);
-    const lineCount = (d.match(/\n/g) || []).length;
+    const lineCount = (d.match(/\n/g) ?? []).length;
     clock += Math.max(Math.min(origGap, opts.maxGapSec), lineCount * opts.lineCadenceSec);
     out.push(JSON.stringify([Number(clock.toFixed(6)), k, d]));
     prevOrig = t;
@@ -209,18 +214,20 @@ export function countDisplayRows(
  *
  * Returns null if no prompt found in the window.
  */
+/** The shell prompt the tutorial recordings print; its last occurrence marks "command done". */
+const PROMPT_MARKER = 'user@rediacc';
+
 export function findLastPromptTime(
   cast: ParsedCast,
   startSec: number,
   endSec: number
 ): number | null {
-  const PROMPT_PATTERN = /user@rediacc/;
   let lastTime: number | null = null;
   for (const [t, kind, data] of cast.events) {
     if (kind !== 'o') continue;
     if (t <= startSec) continue;
     if (t >= endSec) break;
-    if (data.includes('user@rediacc')) {
+    if (data.includes(PROMPT_MARKER)) {
       lastTime = t;
     }
   }

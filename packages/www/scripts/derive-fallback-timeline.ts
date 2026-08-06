@@ -143,7 +143,10 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
   // and carries word timings was produced by a real synthesis run, and nothing derived
   // ever has both.
   if (fs.existsSync(outPath)) {
-    const existing = readJson<Timeline & { provider?: string }>(outPath);
+    // Partial<>: this is `JSON.parse(…) as T`, which promises a shape rather than
+    // checking one. A half-written timeline with no `steps` must not crash the
+    // guard that exists to REFUSE overwriting native narration.
+    const existing = readJson<Partial<Timeline> & { provider?: string }>(outPath);
     const hasOwnAudio = typeof existing.provider === 'string' && existing.provider.length > 0;
     const hasWordTimings = (existing.steps ?? []).some(
       (s) =>

@@ -249,9 +249,7 @@ function main() {
   const byFile = {};
   for (const cls of unusedClasses) {
     const relativePath = path.relative(ROOT_DIR, cls.file);
-    if (!byFile[relativePath]) {
-      byFile[relativePath] = [];
-    }
+    byFile[relativePath] ??= [];
     byFile[relativePath].push(cls);
   }
 

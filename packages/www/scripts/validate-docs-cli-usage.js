@@ -182,9 +182,9 @@ function getTargetSlugs() {
     const fullPath = path.join(DOCS_DIR, 'en', slug);
     const raw = fs.readFileSync(fullPath, 'utf-8');
     const parsed = matter(raw);
-    const category = parsed.data?.category;
+    const category = parsed.data.category;
     // Skip auto-generated docs (validated by validate-cli-docs.js)
-    if (parsed.data?.generated) continue;
+    if (parsed.data.generated) continue;
     if (typeof category === 'string' && TARGET_DOC_CATEGORIES.has(category)) {
       slugs.push(slug);
     }
@@ -195,6 +195,9 @@ function getTargetSlugs() {
 function addError(errors, rule, file, line, message, commandText, suggestion) {
   errors.push({ rule, file, line, message, commandText, suggestion });
 }
+
+/** Stand-in when the CLI parser rejects a command without naming a reason. */
+const UNKNOWN_REASON = 'unknown';
 
 function formatError(parsed) {
   switch (parsed.reason) {
@@ -213,7 +216,7 @@ function formatError(parsed) {
     case 'missing-mandatory-option':
       return `Missing mandatory option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
-      return `Invalid command usage (${parsed.reason || 'unknown'})`;
+      return `Invalid command usage (${parsed.reason ?? UNKNOWN_REASON})`;
   }
 }
 

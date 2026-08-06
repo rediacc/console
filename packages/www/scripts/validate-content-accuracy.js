@@ -160,6 +160,9 @@ function validateRdcCommands(commands, errors, rule) {
   }
 }
 
+/** Stand-in when the CLI parser rejects a command without naming a reason. */
+const UNKNOWN_REASON = 'unknown';
+
 function formatParseError(parsed) {
   switch (parsed.reason) {
     case 'unknown-global-option':
@@ -169,7 +172,7 @@ function formatParseError(parsed) {
     case 'unknown-option':
       return `Unknown option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
-      return `Invalid command (${parsed.reason || 'unknown'})`;
+      return `Invalid command (${parsed.reason ?? UNKNOWN_REASON})`;
   }
 }
 

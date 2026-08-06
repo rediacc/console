@@ -89,7 +89,7 @@ function extractTitle(filePath) {
  */
 function parsePath(urlPath) {
   const segments = urlPath.split('/').filter(Boolean);
-  const lang = segments[0] || '';
+  const lang = segments[0] ?? '';
   const rest = segments.slice(1);
 
   // Determine section (docs, blog, solutions, or empty)

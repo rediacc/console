@@ -237,7 +237,7 @@ async function main(): Promise<number> {
 
 main()
   .then((code) => process.exit(code))
-  .catch((err) => {
+  .catch((err: unknown) => {
     console.error(err);
     process.exit(1);
   });

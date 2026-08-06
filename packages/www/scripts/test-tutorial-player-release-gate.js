@@ -13,7 +13,10 @@ const artifactsRoot = path.join(repoRoot, 'artifacts', 'tutorial-player-release-
 const stamp = new Date().toISOString().replaceAll(/[:.]/g, '-');
 const runDir = path.join(artifactsRoot, stamp);
 const session = `tutorial-player-gate-${Date.now()}`;
-const port = Number(process.env.TUTORIAL_PLAYER_GATE_PORT || '4511');
+/** Port the gate's throwaway static server listens on when none is given. */
+const DEFAULT_GATE_PORT = '4511';
+
+const port = Number(process.env.TUTORIAL_PLAYER_GATE_PORT ?? DEFAULT_GATE_PORT);
 const baseUrl = `http://127.0.0.1:${port}`;
 
 fs.mkdirSync(runDir, { recursive: true });
@@ -26,6 +29,10 @@ function log(message) {
   process.stdout.write(`${message}\n`);
 }
 
+/**
+ * @param {string} message
+ * @param {unknown} [details] structured context dumped alongside the failure
+ */
 function fail(message, details = null) {
   failures.push({ message, details });
   process.stderr.write(`✗ ${message}\n`);
@@ -83,6 +90,11 @@ function readConsole() {
   return runAgent(['console']).messages ?? [];
 }
 
+/**
+ * @param {unknown} condition
+ * @param {string} message
+ * @param {unknown} [details]
+ */
 function assertCondition(condition, message, details = null) {
   if (!condition) fail(message, details);
 }
