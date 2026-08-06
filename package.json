@@ -73,6 +73,7 @@
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
+    "check:ci-i18n-value-types": ".ci/scripts/quality/check_i18n_value_types.py",
     "check:ci-actionlint": ".ci/scripts/security/actionlint.sh",
     "check:ci-scope-scripts-reachability": ".ci/scripts/quality/check-scope-scripts-reachability.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",

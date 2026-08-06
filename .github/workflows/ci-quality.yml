@@ -649,6 +649,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-e2e-coverage.sh
 
+      - name: i18n value types match English
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_i18n_value_types.py
+
       # Static half of the zero-skip contract: every topology subdir of tests/
       # must be excluded by the base playwright.config.ts, so the E2E Workers
       # job never collects-then-skips a foreign-topology suite. The runtime half

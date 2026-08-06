@@ -94,6 +94,10 @@ REGISTRY=(
     # that into a loud refusal. Its own detector controls run first and abort
     # separately, so a control failure cannot masquerade as this one.
     ".ci/scripts/quality/check_inline_python.py|VACUOUS INPUT"
+    # Against an empty tree there are no locale files at all, so every comparison
+    # is over an empty set and the gate would exit 0 reporting that every value
+    # matches. The MIN_PAIRS floor turns that into a loud refusal.
+    ".ci/scripts/quality/check_i18n_value_types.py|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
