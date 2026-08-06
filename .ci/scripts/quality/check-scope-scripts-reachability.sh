@@ -135,10 +135,35 @@ for f in "${GATED_FILES[@]}"; do
     [[ -f "$f" ]] || continue
     while IFS= read -r sub; do
         [[ -n "$sub" ]] || continue
+        subq="$sub"
         while IFS= read -r ref; do
             [[ -n "$ref" ]] && check_path "$ref" "$f ($sub)"
-        done < <(grep -A 12 -E "^[[:space:]]*\"?${sub}\"?\)" "$f" 2>/dev/null |
-            grep -oE 'scripts/[A-Za-z0-9_./-]+' | sort -u)
+        done < <(awk -v subcmd="$subq" '
+            # NEAREST PRECEDING TOP-LEVEL LABEL, not a block scan.
+            #
+            # This was `grep -A 12` and review found it one line short: run.sh
+            # drill dispatches THREE targets and the window ended at :1994, so
+            # scripts/drills/license.sh at :1995 was never checked. A scan that
+            # stops early is exactly the under-match this gate exists to catch,
+            # so a bigger magic number is the wrong fix -- 16 works today and
+            # breaks on the fourth drill.
+            #
+            # Trying to read the arm to its closing `;;` was worse: run.sh nests
+            # case statements and its arms terminate inline (`stop) account_stop
+            # ;;`), so the block scan ran PAST `account)` and mis-attributed
+            # scripts/dev/worktree.sh to it.
+            #
+            # Attribution by nearest preceding TOP-LEVEL label needs no
+            # understanding of arm termination at all: every dispatch belongs to
+            # the last subcommand label seen at the outermost indentation.
+            /^        [A-Za-z0-9_"|-]+\)/ {
+                lbl = $0
+                gsub(/^[[:space:]]*"?/, "", lbl)
+                gsub(/"?\).*$/, "", lbl)
+                cur = lbl
+            }
+            cur == subcmd { print }
+        ' "$f" 2>/dev/null | grep -oE 'scripts/[A-Za-z0-9_./-]+' | sort -u)
     done < <(ci_invoked_runsh_subcommands)
 done
 
