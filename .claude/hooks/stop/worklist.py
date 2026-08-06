@@ -443,7 +443,16 @@ def _item_cli(argv, worklist):
         # it. Both are the stale claim the rung exists to prevent, arrived at by
         # following the rung's own instructions.
         if argv[3] in ("release", "none", "-"):
-            _rid = argv[2]
+            # `item_id`, NOT a second read of argv[2]. Review finding on PR #551:
+            # this branch used the raw argument while every other verb in this
+            # function goes through the `.lstrip("#")` at the top, so
+            # `--lease #abc123 release` -- copied straight from this tool's OWN
+            # output, which prints ids as `#abc123` -- appended an unlease event
+            # for an id matching nothing, printed "released ##abc123", and left
+            # the item [>]. A verb that reports success while changing nothing is
+            # the defect this whole file exists to catch, and it shipped inside
+            # the fix for a different silent no-op.
+            _rid = item_id
             S.append_events(worklist, [{
                 "ev": "unlease", "id": _rid, "at": C.stamp_now(), "by": me,
                 "t": " ".join(argv[4:]).strip() or "worker finished; no successor rides this",

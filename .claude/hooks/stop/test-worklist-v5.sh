@@ -7829,6 +7829,44 @@ else
     fail "190b CONTROL: the age gate refuses even a real phantom (rc=$RC): ${OUT:0:300}"
 fi
 
+echo "== 190c. --lease <id> release accepts the # this tool's own output prints =="
+# REVIEW FINDING, PR #551: the release branch read argv[2] raw while every other
+# verb goes through the .lstrip("#") at the top of _item_cli. So an id copied
+# straight from this tool's OWN output -- it prints ids as `#abc123` -- appended
+# an unlease event matching nothing, printed "released ##abc123", and left the
+# item [>]. A verb that reports success while changing nothing is precisely what
+# this suite exists to catch, and it shipped inside the fix for a different
+# silent no-op.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+RID=$(reqcli --add deadbeef "item for the hash-prefix release case" | grep -oE "#[0-9a-f]+" | head -1 | tr -d '#')
+reqcli --lease deadbeef "$RID" +30 worker:probe-worker "riding a probe" >/dev/null 2>&1
+OUT=$(reqcli --lease deadbeef "#$RID" release "released with the hash form" 2>&1)
+if grep -qF "released #$RID" <<<"$OUT" && ! grep -qF "##$RID" <<<"$OUT"; then
+    pass "190c FIRE: the # form is accepted and echoed back singly"
+else
+    fail "190c FIRE: the # form was mangled: ${OUT:0:200}"
+fi
+STATE=$(reqcli --list --open deadbeef 2>&1 | grep -oE "\- \[.\] #$RID" | head -1)
+if [[ "$STATE" == "- [ ] #$RID" ]]; then
+    pass "190c FIRE: the item actually returned to open, not just a success message"
+else
+    fail "190c FIRE: reported success but the state is '$STATE'"
+fi
+# CONTROL: the bare form must keep working, so the fix is a widening and not a swap.
+reqcli --lease deadbeef "$RID" +30 worker:probe-worker "riding again" >/dev/null 2>&1
+reqcli --lease deadbeef "$RID" release "released with the bare form" >/dev/null 2>&1
+STATE=$(reqcli --list --open deadbeef 2>&1 | grep -oE "\- \[.\] #$RID" | head -1)
+if [[ "$STATE" == "- [ ] #$RID" ]]; then
+    pass "190c CONTROL: the bare id form still releases"
+else
+    fail "190c CONTROL: the bare form broke: '$STATE'"
+fi
+
+
 echo "== 190a. CONTROL: --reassign refuses a session that HAS stopped =="
 # The rule that stops this verb becoming a way to steal a live peer's items.
 setup
