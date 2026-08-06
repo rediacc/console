@@ -877,9 +877,10 @@ def main(argv):
             return 0
         for e in entries:
             age = C.stamp_age_min(e.get("at"))
-            print("%-12s %s %-18s %-10s %s%s%s" % (
+            print("%-12s %s (%s) %-18s %-10s %s%s%s" % (
                 e["id"],
                 e.get("at", "?"),
+                "?" if age is None else "%dm" % age,
                 str(e.get("agent"))[:18],
                 e.get("branch", "?"),
                 "[read] " if str(e["id"]) in marks else "",

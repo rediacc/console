@@ -406,7 +406,8 @@ def emit(obj):
 def _git(root, *args):
     try:
         r = subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20
+            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20,
+            check=False,
         )
         return r.stdout.strip() if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
@@ -449,6 +450,7 @@ def git_branch(root):
                 capture_output=True,
                 text=True,
                 timeout=5,
+                check=False,
             )
             b = r.stdout if r.returncode == 0 else ""
         except (OSError, subprocess.SubprocessError):

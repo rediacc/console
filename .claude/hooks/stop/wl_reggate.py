@@ -251,6 +251,7 @@ def prove_new_gate(root, scripts, state):
                     capture_output=True,
                     text=True,
                     timeout=REGGATE_TIMEOUT_S,
+                    check=False,
                 )
                 code = pr.returncode
             except subprocess.TimeoutExpired:
