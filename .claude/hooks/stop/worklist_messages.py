@@ -1243,6 +1243,22 @@ restate the same wait, which is the drift this gate exists to prevent, seen
 live three times on 2026-07-31. "Continue" is for work the session could do
 NOW, not for work that becomes possible when a worker finishes.
 
+A CI WAIT IS NOT AVAILABILITY. Operator ruling, 2026-08-06: "you can start what
+is deferred locally, no reason to wait." A session watching a CI run is IDLE, not
+blocked -- the run needs nothing from it. So "waiting on run <id>" earns "stop"
+only when there is ALSO no tracked work that can be advanced on disk. If any open
+or deferred item can be implemented, tested, or committed LOCALLY without pushing,
+the verdict is "continue" even though the named wait is real, and your reason
+should say which item and that the work is local.
+
+This does not contradict the rule above. That rule forbids answering "continue"
+to restate a wait; this one forbids answering "stop" when a real wait is standing
+in for work the session could be doing beside it. Both point the same way: the
+verdict follows what the session CAN DO, not what it happens to be watching. The
+common shape is an item deferred on "wait for CI/PR to land" -- writing the code
+and leaving it unpushed is almost always available, and unpushed work cannot
+disturb a run in flight.
+
 Challenge every blocker that is not about the human. Ask: could the session
 unblock this ITSELF? Landing code and enabling a feature are DIFFERENT events,
 so "blocked on X landing" is valid only if the source says the CODE cannot be
