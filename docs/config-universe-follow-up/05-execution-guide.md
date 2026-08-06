@@ -82,3 +82,30 @@
    13 languages.
 3. Wave 3: drills scripted; cluster verbs covered; concurrency tests green; final
    ledger delivered.
+
+## Found-not-fixed: ToS clusters wording (2026-08-06)
+
+**Dropped from wave 0804-1 by an executed default, not forgotten.** The public
+Terms of Service has no clusters section: `pages.terms` in
+`packages/www/src/i18n/translations/en.json` contains no `subsections.clusters`,
+and the word "cluster" does not appear anywhere under `pages.terms`. Spec 05
+routes the section-5 draft (Cluster/Node definitions, the ceiling-in-the-order
+clause) through operator approval before translation, so no session should write
+it unasked; the operator was asked and the autonomy window closed unanswered.
+
+The half that WAS owed is already done, verified key by key rather than assumed:
+`pages.pricing.faq.items[12]` is "How are cluster nodes counted?" in English, and
+all 12 locales carry 13 items with `[12].question` DIFFERING from the English
+string (so they are naturalized, not copied). `npm run check:i18n` exits 0. It
+landed in `fc24769cf`.
+
+Why this is safe to leave: English and the 12 locales must move together --
+planting one English-only key flips `check:i18n` from rc=0 to rc=1 with
+"Translation hash check FAILED" -- so a partial ToS landing is not possible
+anyway, and the pricing surface already documents cluster-node counting for
+anyone reading about what they are billed for. What is missing is contractual
+definition, not user-facing explanation.
+
+To pick this up: get the operator's approved wording, add it under
+`pages.terms.subsections.clusters`, run `npm run i18n:generate-hashes`, then the
+12-locale delta via `private/growth/i18n_pipeline`.
