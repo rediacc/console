@@ -8,49 +8,53 @@ from flask import Flask, jsonify, render_template_string
 
 app = Flask(__name__)
 
+
 def get_db_connection():
     try:
-        return sqlite3.connect('/app/data/database.db')
+        return sqlite3.connect("/app/data/database.db")
     except sqlite3.Error as e:
         print(f"Error connecting to SQLite: {e}")
         return None
+
 
 @app.before_request
 def initialize_database():
     conn = get_db_connection()
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute('''
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS records (
                 ID INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
                 InsertTime DATETIME NOT NULL
             )
-        ''')
+        """)
         conn.commit()
         cursor.close()
         conn.close()
 
-@app.route('/api', methods=['GET'])
+
+@app.route("/api", methods=["GET"])
 def merge_records():
     alphabet = string.ascii_uppercase + string.digits
-    name = ''.join(secrets.choice(alphabet) for _ in range(10))
+    name = "".join(secrets.choice(alphabet) for _ in range(10))
     insert_time = datetime.now(UTC)
     conn = get_db_connection()
     if conn is not None:
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO records (Name, InsertTime) VALUES (?, ?)', (name, insert_time))
+        cursor.execute("INSERT INTO records (Name, InsertTime) VALUES (?, ?)", (name, insert_time))
         conn.commit()
-        cursor.execute('SELECT ID, Name, InsertTime FROM records ORDER BY ID DESC')
+        cursor.execute("SELECT ID, Name, InsertTime FROM records ORDER BY ID DESC")
         records = cursor.fetchall()
         cursor.close()
         conn.close()
-        return jsonify([{'ID': x[0], 'Name': x[1], 'InsertTime': str(x[2])} for x in records])
+        return jsonify([{"ID": x[0], "Name": x[1], "InsertTime": str(x[2])} for x in records])
     return jsonify(error="Database connection failed"), 500
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    return render_template_string('''
+    return render_template_string("""
         <!doctype html>
         <html lang="en">
           <head>
@@ -81,7 +85,8 @@ def index():
             </script>
           </body>
         </html>
-    ''')
+    """)
 
-if __name__ == '__main__':
-    app.run(debug=os.environ.get('FLASK_DEBUG') == '1')
+
+if __name__ == "__main__":
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")

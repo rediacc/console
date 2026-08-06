@@ -64,8 +64,13 @@ JUDGE_SCHEMA = {
                 "instruction": {"type": "string", "maxLength": 300},
             },
             "required": [
-                "applicable", "blind_spot", "existing_gate", "recurring",
-                "gate_needed", "gate_proven", "instruction",
+                "applicable",
+                "blind_spot",
+                "existing_gate",
+                "recurring",
+                "gate_needed",
+                "gate_proven",
+                "instruction",
             ],
             "additionalProperties": False,
         },
@@ -182,11 +187,17 @@ def run_triage(finding, context):
     try:
         proc = subprocess.run(
             [
-                exe, "-p", prompt,
-                "--output-format", "json",
-                "--json-schema", json.dumps(TRIAGE_SCHEMA),
-                "--model", JUDGE_MODEL,
-                "--max-budget-usd", JUDGE_BUDGET_USD,
+                exe,
+                "-p",
+                prompt,
+                "--output-format",
+                "json",
+                "--json-schema",
+                json.dumps(TRIAGE_SCHEMA),
+                "--model",
+                JUDGE_MODEL,
+                "--max-budget-usd",
+                JUDGE_BUDGET_USD,
             ],
             capture_output=True,
             text=True,
@@ -282,7 +293,9 @@ def bank_stop_verdict(state_doc, sig, message, reason):
     }
 
 
-def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=None, extra="", traps=None):
+def run_judge(
+    remaining_lines, leases, message, streak, loop_desc, citations=None, extra="", traps=None
+):
     """(verdict_dict, error_string). Exactly one is non-None."""
     exe = resolve_claude()
     if not exe or not os.path.exists(exe):
@@ -308,11 +321,17 @@ def run_judge(remaining_lines, leases, message, streak, loop_desc, citations=Non
     try:
         proc = subprocess.run(
             [
-                exe, "-p", prompt,
-                "--output-format", "json",
-                "--json-schema", json.dumps(JUDGE_SCHEMA),
-                "--model", JUDGE_MODEL,
-                "--max-budget-usd", JUDGE_BUDGET_USD,
+                exe,
+                "-p",
+                prompt,
+                "--output-format",
+                "json",
+                "--json-schema",
+                json.dumps(JUDGE_SCHEMA),
+                "--model",
+                JUDGE_MODEL,
+                "--max-budget-usd",
+                JUDGE_BUDGET_USD,
             ],
             capture_output=True,
             text=True,

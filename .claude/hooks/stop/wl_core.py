@@ -24,10 +24,14 @@ import time
 # blocked on that agent's work. Non-prefix labels now parse as owners and are
 # reported-never-blocking for everyone (including the labeler: only a tag that
 # is a PREFIX of your session id binds you).
-ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+ITEM = re.compile(
+    r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
+)
 # Same shape but INCLUDING tombstones, for the md-sync pass which must see a
 # `[~]` flip as a deletion rather than as an unparseable line.
-ITEM_ANY = re.compile(r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+ITEM_ANY = re.compile(
+    r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
+)
 LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 # worker:<background-task-id> on a lease line names the OS-checkable delegate.
 WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
@@ -72,7 +76,7 @@ def parse_justification(text):
         key = m.group(1)
         if key == "DEFAULT":
             continue
-        val = text[m.end():end].strip()
+        val = text[m.end() : end].strip()
         if val:
             out[key.lower()] = val
     return out
@@ -91,9 +95,7 @@ def stamp_ahead(minutes):
     bound (the background check-in's next-earliest time): a claimed latch a
     reader cannot check from the message alone is not a latch, it is a
     slogan."""
-    return (utcnow() + datetime.timedelta(minutes=minutes)).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    return (utcnow() + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def parse_stamp(stamp):
@@ -221,9 +223,7 @@ def resolve_session_id():
     response to that is to say nothing, not to accuse.
     """
     return str(
-        os.environ.get("WORKLIST_SESSION_ID")
-        or os.environ.get("CLAUDE_CODE_SESSION_ID")
-        or ""
+        os.environ.get("WORKLIST_SESSION_ID") or os.environ.get("CLAUDE_CODE_SESSION_ID") or ""
     ).strip()
 
 
@@ -276,8 +276,11 @@ def check_me(me):
         # self, and an exact match to an explicit declaration is not a guess.
         # A bare short `me` with no declaration is still refused, which is the
         # case the floor was built for.
-        return False, _identity_msg(me, sid, "it is shorter than %d characters, so it "
-                                    "does not identify one session" % ME_MIN_LEN)
+        return False, _identity_msg(
+            me,
+            sid,
+            "it is shorter than %d characters, so it does not identify one session" % ME_MIN_LEN,
+        )
     if not sid.startswith(me):
         return False, _identity_msg(me, sid, "this session is %s" % sid)
     return True, ""
@@ -286,7 +289,9 @@ def check_me(me):
 def _identity_msg(me, sid, why):
     """The refusal text. Names the variable it read, because the next session to
     hit this needs the mechanism to be inspectable, not just the verdict."""
-    src = "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
+    src = (
+        "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
+    )
     return (
         "identity mismatch: you passed <me>=%s but %s (%s).\n"
         "Writing as one identity and reading as another gives you two inboxes "
@@ -406,7 +411,10 @@ def emit(obj):
 def _git(root, *args):
     try:
         r = subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20,
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=20,
             check=False,
         )
         return r.stdout.strip() if r.returncode == 0 else ""
@@ -526,8 +534,11 @@ def cron_next(schedule, now=None):
             dom_hit = day.day in doms
             dow_hit = ((day.weekday() + 1) % 7) in dows
             # Both restricted -> OR; otherwise the starred one is vacuous.
-            day_ok = (dom_hit or dow_hit) if (not dom_star and not dow_star) \
+            day_ok = (
+                (dom_hit or dow_hit)
+                if (not dom_star and not dow_star)
                 else (dom_hit if not dom_star else dow_hit if not dow_star else True)
+            )
             if day_ok:
                 for h in hours:
                     for m in mins:
@@ -567,9 +578,7 @@ def pending_tasks(session_id):
             except (OSError, ValueError):
                 continue
             if t.get("status") in ("pending", "in_progress"):
-                out.append(
-                    (str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status"))
-                )
+                out.append((str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status")))
     except OSError:
         return []
     out.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 1 << 30)

@@ -196,9 +196,11 @@ def wait(me, timeout_min, start):
             # would match --poll's empty-inbox contract, but a check whose
             # running you cannot see is worthless, and this is the only evidence
             # that the waiter ran at all rather than dying silently at launch.
-            print("INBOX-WAIT: %dm elapsed, nothing new for %s. RELAUNCH to keep "
-                  "listening: python3 %s %s --timeout %d"
-                  % (timeout_min, me, pathlib.Path(__file__).resolve(), me, timeout_min))
+            print(
+                "INBOX-WAIT: %dm elapsed, nothing new for %s. RELAUNCH to keep "
+                "listening: python3 %s %s --timeout %d"
+                % (timeout_min, me, pathlib.Path(__file__).resolve(), me, timeout_min)
+            )
             hb.unlink(missing_ok=True)
             return 0
         time.sleep(min(TICK_S, remaining))
@@ -225,9 +227,7 @@ def wait(me, timeout_min, start):
         now_ix = _stat(ix)
         if now_ix != seen["ix"]:
             seen["ix"] = now_ix
-            woke_ix = [
-                e for e in RPT.unread(store, branch, me) if e["id"] not in base["reports"]
-            ]
+            woke_ix = [e for e in RPT.unread(store, branch, me) if e["id"] not in base["reports"]]
 
         to_me, bcast, answered = woke_rq
         if not (to_me or bcast or answered or woke_ix):
@@ -238,10 +238,15 @@ def wait(me, timeout_min, start):
         if woke_ix:
             print("NEW SUB-AGENT REPORT(S) on branch %s:" % branch)
             for e in woke_ix:
-                print("  %s%-12s %-20s %s" % (
-                    "[SILENT] " if e.get("silent") else "",
-                    e["id"], str(e.get("agent"))[:20],
-                    e.get("title") or "(stopped without reporting)"))
+                print(
+                    "  %s%-12s %-20s %s"
+                    % (
+                        "[SILENT] " if e.get("silent") else "",
+                        e["id"],
+                        str(e.get("agent"))[:20],
+                        e.get("title") or "(stopped without reporting)",
+                    )
+                )
             print("    read one:  python3 %s --show <id>" % RPT.__file__)
             print("    mark read: python3 %s --read %s <id> [<id>...]" % (RPT.__file__, me))
         # THE WAITER FIRES ONCE AND IS THEN GONE. Nothing relaunches it, and a
@@ -250,9 +255,11 @@ def wait(me, timeout_min, start):
         # answered at 16:16, and the answer was never seen. So the exit line
         # carries the relaunch command, and the PostToolUse nudge below is the
         # belt to this braces.
-        print("RELAUNCH THE WAITER NOW (background task), or you stop hearing "
-              "anything: python3 %s %s --timeout %d"
-              % (pathlib.Path(__file__).resolve(), me, timeout_min))
+        print(
+            "RELAUNCH THE WAITER NOW (background task), or you stop hearing "
+            "anything: python3 %s %s --timeout %d"
+            % (pathlib.Path(__file__).resolve(), me, timeout_min)
+        )
         hb.unlink(missing_ok=True)
         return 0
 
@@ -363,9 +370,9 @@ def nudge(event):
 
     dead_min = float(os.environ.get("WORKLIST_REQUEST_DEAD_MIN", "180"))
     peers = [
-        k for k in S.read_briefs(worklist)
-        if not C.same_session(k, me)
-        and (S.brief_age_min(worklist, k) or dead_min + 1) <= dead_min
+        k
+        for k in S.read_briefs(worklist)
+        if not C.same_session(k, me) and (S.brief_age_min(worklist, k) or dead_min + 1) <= dead_min
     ]
     if not peers:
         return
@@ -376,14 +383,17 @@ def nudge(event):
         np.write_text("%d %s\n" % (n, C.stamp_now()), encoding="utf-8")
     import worklist_messages as M  # noqa: PLC0415
 
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PostToolUse",
-            "additionalContext": M.N_WAITER_NUDGE % (
-                len(peers), pathlib.Path(__file__).resolve(), me,
-                int(DEFAULT_TIMEOUT_MIN)),
-        },
-    }))
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PostToolUse",
+                    "additionalContext": M.N_WAITER_NUDGE
+                    % (len(peers), pathlib.Path(__file__).resolve(), me, int(DEFAULT_TIMEOUT_MIN)),
+                },
+            }
+        )
+    )
 
 
 def main(argv):

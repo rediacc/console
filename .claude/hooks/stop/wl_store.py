@@ -95,6 +95,7 @@ def _flock(handle, flags):
         )
     fcntl.flock(handle, flags)
 
+
 SESSION_BRIEF_MAX = 200
 SESSION_BRIEF_STALE_MIN = int(os.environ.get("WORKLIST_BRIEF_STALE_MIN", "90"))
 
@@ -152,6 +153,8 @@ def agent_state_max_chars(text):
     """The effective cap for THIS body: the per-session budget times the
     number of session blocks in it."""
     return AGENT_STATE_MAX_CHARS * agent_state_blocks(text)
+
+
 # A second session arriving on a branch has no recorded signature for a
 # document the first session wrote. The old pure-age fallback would order it
 # rewritten immediately, reproducing the exact churn the redesign fixes, so an
@@ -187,6 +190,7 @@ DEFER_AUDIT_BATCH = int(os.environ.get("WORKLIST_DEFER_AUDIT_BATCH", "4"))
 
 
 # ---- paths ------------------------------------------------------------------
+
 
 def events_path(worklist):
     return worklist.with_suffix(".events.jsonl")
@@ -286,6 +290,7 @@ def requests_path(worklist):
 
 # ---- per-session state doc --------------------------------------------------
 
+
 def load_state(worklist, session_id):
     """The v10 per-session doc. A corrupt or missing doc is the empty default:
     every consumer treats absent keys as first sight, which can delay a nudge
@@ -311,6 +316,7 @@ def save_state(worklist, session_id, doc):
 
 # ---- the event log ----------------------------------------------------------
 
+
 def _append_lines(path, lock_path, payloads):
     """Append JSONL lines under a blocking flock, healing a torn tail first.
 
@@ -326,9 +332,9 @@ def _append_lines(path, lock_path, payloads):
             blob = b""
             if size and os.pread(fd, 1, size - 1) != b"\n":
                 blob = b"\n"
-            blob += "".join(
-                json.dumps(p, separators=(",", ":")) + "\n" for p in payloads
-            ).encode("utf-8")
+            blob += "".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads).encode(
+                "utf-8"
+            )
             os.write(fd, blob)
         finally:
             os.close(fd)
@@ -390,7 +396,7 @@ def parse_md_items(md_bytes):
         if state == "~":
             continue
         owner = m.group("owner")
-        text = line[m.end():].strip()
+        text = line[m.end() :].strip()
         out[item_key(owner, text)] = {"s": state, "o": owner, "t": text}
     return out
 
@@ -648,9 +654,7 @@ def load(worklist, sync=True):
                         ev["del"] = dele
                     # Append INSIDE the held lock via the raw writer (the
                     # public append_events would deadlock re-taking it).
-                    fd = os.open(
-                        events_path(worklist), os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644
-                    )
+                    fd = os.open(events_path(worklist), os.O_RDWR | os.O_CREAT | os.O_APPEND, 0o644)
                     try:
                         size = os.fstat(fd).st_size
                         blob = b"" if not size or os.pread(fd, 1, size - 1) == b"\n" else b"\n"
@@ -664,8 +668,14 @@ def load(worklist, sync=True):
             add, chg, dele = diff(records, md_keys, parsed, at)
             for a in add:
                 records[a["k"]] = {
-                    "id": a["k"], "state": a["s"], "md_s": a["s"], "owner": a["o"],
-                    "text": a["t"], "first": at, "upd": at, "origin": "md",
+                    "id": a["k"],
+                    "state": a["s"],
+                    "md_s": a["s"],
+                    "owner": a["o"],
+                    "text": a["t"],
+                    "first": at,
+                    "upd": at,
+                    "origin": "md",
                 }
                 md_keys.add(a["k"])
             for c in chg:
@@ -687,19 +697,28 @@ def load(worklist, sync=True):
 
 # ---- item verbs (CLI-origin events) ----------------------------------------
 
+
 def add_item(worklist, by, text, state=" ", owner=None):
     rid = new_item_id(text)
     append_events(
         worklist,
-        [{"ev": "add", "id": rid, "at": C.stamp_now(), "by": by,
-          "s": state, "o": owner if owner is not None else by, "t": text}],
+        [
+            {
+                "ev": "add",
+                "id": rid,
+                "at": C.stamp_now(),
+                "by": by,
+                "s": state,
+                "o": owner if owner is not None else by,
+                "t": text,
+            }
+        ],
     )
     return rid
 
 
 def set_state(worklist, by, item_id, state, note="", extra=None):
-    ev = {"ev": "state", "id": item_id, "at": C.stamp_now(), "by": by,
-          "s": state, "note": note}
+    ev = {"ev": "state", "id": item_id, "at": C.stamp_now(), "by": by, "s": state, "note": note}
     if extra:
         ev.update(extra)
     append_events(worklist, [ev])
@@ -720,8 +739,14 @@ def triage_item(worklist, by, item_id, verdict, reason, plan=""):
     claim a verdict it did not produce. `plan` is the committed plan path and
     is meaningful for 'plan-subagent' alone.
     """
-    ev = {"ev": "triage", "id": item_id, "at": C.stamp_now(), "by": by,
-          "v": verdict, "reason": reason}
+    ev = {
+        "ev": "triage",
+        "id": item_id,
+        "at": C.stamp_now(),
+        "by": by,
+        "v": verdict,
+        "reason": reason,
+    }
     if plan:
         ev["plan"] = plan
     append_events(worklist, [ev])
@@ -730,8 +755,17 @@ def triage_item(worklist, by, item_id, verdict, reason, plan=""):
 def lease_item(worklist, by, item_id, until, worker, note=""):
     append_events(
         worklist,
-        [{"ev": "lease", "id": item_id, "at": C.stamp_now(), "by": by,
-          "until": until, "worker": worker, "note": note}],
+        [
+            {
+                "ev": "lease",
+                "id": item_id,
+                "at": C.stamp_now(),
+                "by": by,
+                "until": until,
+                "worker": worker,
+                "note": note,
+            }
+        ],
     )
 
 
@@ -755,6 +789,7 @@ def deferral_justification(rec):
 
 
 # ---- classification ---------------------------------------------------------
+
 
 def classify_items(fold, session_id, live_worker_ids=None):
     """(open_items, others, deferred, in_flight) as display strings / recs,
@@ -789,23 +824,19 @@ def classify_items(fold, session_id, live_worker_ids=None):
             ls = C.lease_state(line)
             if ls == "fresh":
                 in_flight.append(rec)
-            elif (
-                ls == "expired"
-                and rec.get("worker")
-                and rec["worker"] in (live_worker_ids or ())
-            ):
+            elif ls == "expired" and rec.get("worker") and rec["worker"] in (live_worker_ids or ()):
                 rec["lease_tolerated"] = True
                 in_flight.append(rec)
             else:
                 # Fail closed: an expired or malformed lease is an open item.
                 open_items.append(
-                    "%s   <- [>] lease %s; finish it, renew the lease, or tick it"
-                    % (disp, ls)
+                    "%s   <- [>] lease %s; finish it, renew the lease, or tick it" % (disp, ls)
                 )
     return open_items, others, deferred, in_flight
 
 
 # ---- dead-session cleanup (v4, extended to CLI items) -----------------------
+
 
 def owner_age_hours(owner, projects_dir):
     """Hours since the owner's newest transcript write, or None if no
@@ -845,10 +876,15 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
         if age is None or age < dead_h:
             continue
         if rec["state"] == "x" or age >= archive_h:
-            tomb_item(worklist, (session_id or "unknown")[:8], rec["id"],
-                      "owner %s dead ~%dh" % (owner, age))
-            archived.append("%s   (was [%s], owner %s dead ~%dh)"
-                            % (rec["line"], rec["state"], owner, age))
+            tomb_item(
+                worklist,
+                (session_id or "unknown")[:8],
+                rec["id"],
+                "owner %s dead ~%dh" % (owner, age),
+            )
+            archived.append(
+                "%s   (was [%s], owner %s dead ~%dh)" % (rec["line"], rec["state"], owner, age)
+            )
             changed = True
         else:
             orphaned.append("%s   (owner dead ~%dh)" % (rec["line"], age))
@@ -873,7 +909,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             if age is None or age < dead_h:
                 continue  # unknown or alive
             bracket = raw.find(b"[")
-            if bracket < 0 or raw[bracket + 1: bracket + 2] != state.encode():
+            if bracket < 0 or raw[bracket + 1 : bracket + 2] != state.encode():
                 continue
             if state == "x" or age >= archive_h:
                 flips.append((line_start + bracket + 1, state.encode(), line.strip(), owner, age))
@@ -892,7 +928,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
                         # Re-verify under the lock: offsets of existing lines
                         # never move (no-truncate invariant), but another
                         # cleaner may have flipped this byte already.
-                        if len(current) > pos and current[pos: pos + 1] == expected:
+                        if len(current) > pos and current[pos : pos + 1] == expected:
                             os.pwrite(f.fileno(), b"~", pos)
                             archived.append(
                                 "%s   (was [%s], owner %s dead ~%dh)"
@@ -912,6 +948,7 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
 
 
 # ---- compact ----------------------------------------------------------------
+
 
 def compact(worklist):
     """Operator-run. Drops `[~]` markdown lines (the v5 behavior, verbatim:
@@ -966,17 +1003,35 @@ def compact(worklist):
         out = []
         md_add = [
             {"k": r["id"], "s": r["state"], "o": r["owner"], "t": r["text"], "at": r["first"]}
-            for r in fold.items if r["origin"] == "md"
+            for r in fold.items
+            if r["origin"] == "md"
         ]
         out.append({"ev": "md", "at": at, "h": fold.md_hash, "add": md_add})
         for r in fold.items:
             if r["origin"] != "cli":
                 continue
-            out.append({"ev": "add", "id": r["id"], "at": r["first"], "by": "compact",
-                        "s": r["state"], "o": r["owner"], "t": r["text"]})
+            out.append(
+                {
+                    "ev": "add",
+                    "id": r["id"],
+                    "at": r["first"],
+                    "by": "compact",
+                    "s": r["state"],
+                    "o": r["owner"],
+                    "t": r["text"],
+                }
+            )
             if r.get("until") or r.get("worker"):
-                out.append({"ev": "lease", "id": r["id"], "at": r["upd"], "by": "compact",
-                            "until": r.get("until", ""), "worker": r.get("worker", "")})
+                out.append(
+                    {
+                        "ev": "lease",
+                        "id": r["id"],
+                        "at": r["upd"],
+                        "by": "compact",
+                        "until": r.get("until", ""),
+                        "worker": r.get("worker", ""),
+                    }
+                )
         fd, tmp = tempfile.mkstemp(dir=str(ep.parent), prefix=ep.name)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in out:
@@ -986,6 +1041,7 @@ def compact(worklist):
 
 
 # ---- briefs / loop / agent-state (.agent/<branch>/STATE.md) ------------------
+
 
 def read_briefs(worklist):
     """{prefix: (datetime_or_None, text)} from <worklist>.sessions.
@@ -1196,6 +1252,7 @@ def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
 
 # ---- world signature --------------------------------------------------------
 
+
 def world_sig(root, worklist, session_id, fold=None):
     """THIS SESSION's world: task statuses + HEAD + the structure of the items
     it owns + the requests that involve it. Keyed by the poll fast path (has
@@ -1230,8 +1287,10 @@ def world_sig(root, worklist, session_id, fold=None):
     try:
         f = fold if fold is not None else load(worklist, sync=False)
         items = "|".join(
-            "%s:%s:%s" % (
-                r["id"], r["state"],
+            "%s:%s:%s"
+            % (
+                r["id"],
+                r["state"],
                 hashlib.sha1(
                     str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
                 ).hexdigest()[:8],
@@ -1316,8 +1375,11 @@ def state_world_sig(root, worklist, session_id, fold=None):
     try:
         f = fold if fold is not None else load(worklist, sync=False)
         items = "|".join(
-            "%s:%s:%s:%s" % (
-                r["id"], r["state"], r.get("owner") or "",
+            "%s:%s:%s:%s"
+            % (
+                r["id"],
+                r["state"],
+                r.get("owner") or "",
                 hashlib.sha1(
                     str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
                 ).hexdigest()[:8],

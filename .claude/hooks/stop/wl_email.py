@@ -132,11 +132,7 @@ def read_ledger(worklist):
 
 
 def _newest_age_min(rows, ev):
-    ages = [
-        C.stamp_age_min(str(r.get("at", "")))
-        for r in rows
-        if r.get("ev") == ev
-    ]
+    ages = [C.stamp_age_min(str(r.get("at", ""))) for r in rows if r.get("ev") == ev]
     ages = [a for a in ages if a is not None]
     return min(ages) if ages else None
 
@@ -146,6 +142,7 @@ def sent_keys(rows):
 
 
 # ---- credentials -----------------------------------------------------------
+
 
 def credentials(root):
     """(cfg, path). cfg is None when the channel is not configured.
@@ -256,13 +253,23 @@ def _send_curl(cfg, blob):
         bfd, btmp = tempfile.mkstemp(prefix="wl-mail-resp-", suffix=".json")
         os.close(bfd)
         cmd = [
-            "curl", "-sS", "-X", "POST", endpoint(cfg["region"]),
-            "--aws-sigv4", "aws:amz:%s:ses" % cfg["region"],
-            "-H", "Content-Type: application/json",
-            "--data", "@" + tmp,
-            "-K", "-",
-            "-o", btmp,
-            "-w", "%{http_code}",
+            "curl",
+            "-sS",
+            "-X",
+            "POST",
+            endpoint(cfg["region"]),
+            "--aws-sigv4",
+            "aws:amz:%s:ses" % cfg["region"],
+            "-H",
+            "Content-Type: application/json",
+            "--data",
+            "@" + tmp,
+            "-K",
+            "-",
+            "-o",
+            btmp,
+            "-w",
+            "%{http_code}",
         ]
         r = subprocess.run(
             cmd,
@@ -345,7 +352,9 @@ def _send_urllib(cfg, blob):
         return "refusing a non-https SES endpoint: %s" % url[:80]
     host = "email.%s.amazonaws.com" % cfg["region"]
     req = urllib.request.Request(  # noqa: S310 -- scheme is asserted https above
-        url, data=blob, method="POST",
+        url,
+        data=blob,
+        method="POST",
         headers=sigv4_headers(cfg, blob, host, "/v2/email/outbound-emails"),
     )
     try:
@@ -362,7 +371,7 @@ def _send_urllib(cfg, blob):
 
 
 def send(cfg, subject, body):
-    """"" on success, a short error string on failure. Never raises."""
+    """ "" on success, a short error string on failure. Never raises."""
     blob = json.dumps(payload_for(cfg, subject, body)).encode("utf-8")
     transport = os.environ.get("WORKLIST_EMAIL_TRANSPORT", "")
     if transport.startswith("file:"):
@@ -373,6 +382,7 @@ def send(cfg, subject, body):
 
 
 # ---- candidates and the digest ---------------------------------------------
+
 
 def candidates(worklist, fold):
     """[(key, kind, text)] for everything the operator has not been mailed
@@ -450,6 +460,7 @@ def digest(me8, root, rows):
 
 
 # ---- the pump --------------------------------------------------------------
+
 
 def pump(root, worklist, session_id, fold):
     """Send at most one digest, return the note that rides the stop report.
@@ -540,17 +551,16 @@ def pump(root, worklist, session_id, fold):
         if err:
             # keyid (last 6 of the access key) makes the failure attributable
             # to a CREDENTIAL: fresh credentials re-arm the skipped channel.
-            payloads = [{"ev": "fail", "at": stamp, "err": err[:300], "by": me8,
-                         "keyid": cfg["key"][-6:]}]
+            payloads = [
+                {"ev": "fail", "at": stamp, "err": err[:300], "by": me8, "keyid": cfg["key"][-6:]}
+            ]
         else:
             payloads = [
                 {"ev": "sent", "at": stamp, "kind": kind, "key": key, "by": me8}
                 for key, kind, _t in rows
             ]
         with open(ledger_path(worklist), "a", encoding="utf-8") as f:
-            f.write(
-                "".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads)
-            )
+            f.write("".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads))
     if err:
         return M.N_EMAIL_FAIL % (len(rows), err[:300], RETRY_MIN)
     # A success clears the one-per-session skip warning so a LATER failure

@@ -93,6 +93,7 @@ def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False):
 
 # ---- process inspection -----------------------------------------------------
 
+
 def _proc_table_linux():
     """[(pid, ppid, cmdline)] for every readable /proc entry. A few ms for a
     few hundred processes; never raises."""
@@ -124,7 +125,10 @@ def _proc_table_ps():
     try:
         r = subprocess.run(
             ["ps", "-axo", "pid=,ppid=,args="],
-            capture_output=True, text=True, timeout=10, check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -257,9 +261,7 @@ def verify_background(event_bg, table=None, ancestors=None):
         if not needle or table is None or not ancestors:
             out[tid] = "unverifiable"
             continue
-        hit = any(
-            ppid in ancestors and needle in cmd for _pid, ppid, cmd in table
-        )
+        hit = any(ppid in ancestors and needle in cmd for _pid, ppid, cmd in table)
         out[tid] = "confirmed" if hit else "suspect"
     return out
 
@@ -483,6 +485,7 @@ def worker_facts(event, session_id):
 
 # ---- the ladder -------------------------------------------------------------
 
+
 def _age_min(stamp):
     a = C.stamp_age_min(stamp)
     return a if a is not None else 0.0
@@ -521,7 +524,14 @@ def ladder(fold, session_id, event, state_doc):
         wid = rec.get("worker") or (wm.group(1) if wm else "")
         gone = bool(wid) and wid not in now_bg
         subjects.append(
-            ("item:" + rec["id"], rec["line"][:110], _age_min(rec.get("upd", "")), rec.get("upd", ""), gone, wid)
+            (
+                "item:" + rec["id"],
+                rec["line"][:110],
+                _age_min(rec.get("upd", "")),
+                rec.get("upd", ""),
+                gone,
+                wid,
+            )
         )
     for tid, (status, subject) in sorted(C.task_statuses(event.get("session_id", "")).items()):
         prev = tasks_seen.get(tid)
@@ -531,7 +541,14 @@ def ladder(fold, session_id, event, state_doc):
             prev = tasks_seen[tid]
         if status == "in_progress":
             subjects.append(
-                ("task:" + tid, "task #%s %s" % (tid, subject), _age_min(prev.get("since", "")), prev.get("since", ""), False, "")
+                (
+                    "task:" + tid,
+                    "task #%s %s" % (tid, subject),
+                    _age_min(prev.get("since", "")),
+                    prev.get("since", ""),
+                    False,
+                    "",
+                )
             )
 
     _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below

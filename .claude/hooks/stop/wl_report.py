@@ -82,11 +82,15 @@ SCAN_LOOKBACK_DAYS = float(os.environ.get("WORKLIST_REPORT_SCAN_LOOKBACK_DAYS", 
 # Transcripts here already reach 1.4 MB and nothing bounds them. Read at most
 # this much (the tail, where the report is) so neither the stop hook nor a scan
 # can be wedged by one pathological file.
-TRANSCRIPT_MAX_BYTES = int(os.environ.get("WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES", str(16 * 1024 * 1024)))
+TRANSCRIPT_MAX_BYTES = int(
+    os.environ.get("WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES", str(16 * 1024 * 1024))
+)
 # How much of the index the hook paths read. See read_index: the file is read on
 # every stop and never pruned, so the read is bounded to its recent tail. 4 MB is
 # roughly 20 000 reports, well past any window a session cares about.
-INDEX_READ_MAX_BYTES = int(os.environ.get("WORKLIST_REPORT_INDEX_READ_MAX_BYTES", str(4 * 1024 * 1024)))
+INDEX_READ_MAX_BYTES = int(
+    os.environ.get("WORKLIST_REPORT_INDEX_READ_MAX_BYTES", str(4 * 1024 * 1024))
+)
 # Bodies are pruned; index lines are kept forever. The index is the history and
 # it is small (~200 B a line); the bodies are what actually costs disk.
 RETENTION_DAYS = float(os.environ.get("WORKLIST_REPORT_RETENTION_DAYS", "30"))
@@ -100,6 +104,7 @@ _FS_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
 # ---- locations --------------------------------------------------------------
+
 
 def store_root(start):
     """`$HOME/.claude/agent-reports/<repo-slug>/`, or `WORKLIST_REPORTS_DIR`.
@@ -148,6 +153,7 @@ def _fs_safe(text, fallback):
 
 # ---- the index --------------------------------------------------------------
 
+
 def _append_line(path, obj):
     """ONE `os.write` of ONE line on an O_APPEND handle. No lock (see module
     docstring). O_BINARY where it exists, so Windows does not rewrite the `\\n`
@@ -177,11 +183,17 @@ def _fit(obj):
     """
     for shrink in (TITLE_MAX, 80, 40, 20, 0):
         obj["title"] = obj["title"][:shrink]
-        if len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) < INDEX_LINE_MAX:
+        if (
+            len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+            < INDEX_LINE_MAX
+        ):
             return obj
     for shrink in (200, 80, 0):
         obj["transcript"] = obj["transcript"][-shrink:] if shrink else ""
-        if len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) < INDEX_LINE_MAX:
+        if (
+            len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+            < INDEX_LINE_MAX
+        ):
             return obj
     # LAST RESORT: the remaining fields are not "pathological id/agent" only --
     # `branch` is attacker-shaped in the ordinary sense that a git branch name
@@ -195,7 +207,10 @@ def _fit(obj):
         val = obj.get(field)
         if isinstance(val, str) and len(val) > keep:
             obj[field] = val[:keep]
-            if len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")) < INDEX_LINE_MAX:
+            if (
+                len(json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8"))
+                < INDEX_LINE_MAX
+            ):
                 return obj
     return obj
 
@@ -240,8 +255,11 @@ def read_index(store, max_bytes=INDEX_READ_MAX_BYTES):
     p = index_path(store)
     out = []
     try:
-        lines = _bounded_lines(p, max_bytes) if max_bytes else \
-            p.read_text(encoding="utf-8", errors="replace").splitlines()
+        lines = (
+            _bounded_lines(p, max_bytes)
+            if max_bytes
+            else p.read_text(encoding="utf-8", errors="replace").splitlines()
+        )
     except OSError:
         return out
     retired = set()
@@ -363,8 +381,23 @@ def resolve(store, ident):
 
 # ---- capture ----------------------------------------------------------------
 
-def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
-            transcript, source="hook", at=None, title=None, sends=0, tx="ok"):
+
+def capture(
+    store,
+    branch,
+    *,
+    agent_id,
+    agent_type,
+    agent_name,
+    session,
+    body,
+    transcript,
+    source="hook",
+    at=None,
+    title=None,
+    sends=0,
+    tx="ok",
+):
     """Write the body whole, then append one index line. Returns the entry, or
     None when the id is already indexed (so the hook and `--scan` can both run
     over the same agent without producing a duplicate)."""
@@ -391,10 +424,19 @@ def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
         "agent_id: %s\nagent_type: %s\nagent_name: %s\nsession: %s\nbranch: %s\n"
         "at: %s\nsource: %s\nsends: %d\ntranscript: %s%s\nbytes: %d\n"
         "---\n\n"
-        % (agent_id, agent_type or "", name, session or "", branch, stamp, source,
-           sends, transcript or "(none)",
-           "" if tx == "ok" else "   <- DID NOT EXIST AT CAPTURE TIME",
-           len(body.encode("utf-8")))
+        % (
+            agent_id,
+            agent_type or "",
+            name,
+            session or "",
+            branch,
+            stamp,
+            source,
+            sends,
+            transcript or "(none)",
+            "" if tx == "ok" else "   <- DID NOT EXIST AT CAPTURE TIME",
+            len(body.encode("utf-8")),
+        )
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(front + body, encoding="utf-8")
@@ -405,44 +447,47 @@ def capture(store, branch, *, agent_id, agent_type, agent_name, session, body,
             if line.strip():
                 title = line.strip()[:TITLE_MAX]
                 break
-    entry = _fit({
-        "ev": "report",
-        "id": rid,
-        "at": stamp,
-        "branch": branch,
-        "agent": str(name)[:48],
-        "type": str(agent_type or "")[:48],
-        "session": str(session or "")[:8],
-        "body": rel,
-        "bytes": len(body.encode("utf-8")),
-        # THE WHOLE POINT OF (A) IS THIS FIELD. "Reported substantively" and
-        # "went idle saying nothing" stop being indistinguishable the moment one
-        # of them is recorded, at the moment it happens, from the harness's own
-        # account of what the agent said.
-        # A SendMessage payload is a report even when it is short, so any send at
-        # all rules out `silent`. Without this an agent that delivered 8 KB by
-        # SendMessage and signed off with "Done." would be indexed as having said
-        # nothing -- inverting the exact distinction this field exists to draw.
-        "silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,
-        "sends": sends,
-        # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A
-        # stored path that silently does not exist is worse than a null: every
-        # reader treats it as readable and quietly gets nothing, which is the
-        # vacuous-check class -- a lookup that cannot succeed and never says so.
-        # Found live: a stop fired with a well-formed path to a file that was
-        # never written, and the SendMessage harvest read nothing from it
-        # without anybody being able to tell that from an agent that simply
-        # sent nothing.
-        "tx": tx,
-        "title": title,
-        "transcript": str(transcript or ""),
-        "src": source,
-    })
+    entry = _fit(
+        {
+            "ev": "report",
+            "id": rid,
+            "at": stamp,
+            "branch": branch,
+            "agent": str(name)[:48],
+            "type": str(agent_type or "")[:48],
+            "session": str(session or "")[:8],
+            "body": rel,
+            "bytes": len(body.encode("utf-8")),
+            # THE WHOLE POINT OF (A) IS THIS FIELD. "Reported substantively" and
+            # "went idle saying nothing" stop being indistinguishable the moment one
+            # of them is recorded, at the moment it happens, from the harness's own
+            # account of what the agent said.
+            # A SendMessage payload is a report even when it is short, so any send at
+            # all rules out `silent`. Without this an agent that delivered 8 KB by
+            # SendMessage and signed off with "Done." would be indexed as having said
+            # nothing -- inverting the exact distinction this field exists to draw.
+            "silent": sends == 0 and len(body.strip()) < SILENT_FLOOR,
+            "sends": sends,
+            # WHETHER THE TRANSCRIPT PATH ACTUALLY RESOLVED, checked at capture. A
+            # stored path that silently does not exist is worse than a null: every
+            # reader treats it as readable and quietly gets nothing, which is the
+            # vacuous-check class -- a lookup that cannot succeed and never says so.
+            # Found live: a stop fired with a well-formed path to a file that was
+            # never written, and the SendMessage harvest read nothing from it
+            # without anybody being able to tell that from an agent that simply
+            # sent nothing.
+            "tx": tx,
+            "title": title,
+            "transcript": str(transcript or ""),
+            "src": source,
+        }
+    )
     _append_line(index_path(store), entry)
     return entry
 
 
 # ---- hook modes -------------------------------------------------------------
+
 
 def _stdin_event():
     try:
@@ -524,16 +569,20 @@ def surface_block(store, branch, hook_path, reader):
         "durable across restart and compaction." % (len(items), branch)
     ]
     if len(items) > len(shown):
-        lines.append("  (%d older not shown; %s --list --unread for all)"
-                     % (len(items) - len(shown), hook_path))
+        lines.append(
+            "  (%d older not shown; %s --list --unread for all)"
+            % (len(items) - len(shown), hook_path)
+        )
     for e in shown:
         age = C.stamp_age_min(e.get("at"))
         age_s = "%dm" % age if age is not None else "?"
         flag = "SILENT " if e.get("silent") else ""
-        title = e.get("title") or ("(no body: this agent stopped without reporting)"
-                                   if e.get("silent") else "(untitled)")
-        lines.append("  %s%-12s %5s  %-22s %s"
-                     % (flag, e["id"], age_s, str(e.get("agent"))[:22], title))
+        title = e.get("title") or (
+            "(no body: this agent stopped without reporting)" if e.get("silent") else "(untitled)"
+        )
+        lines.append(
+            "  %s%-12s %5s  %-22s %s" % (flag, e["id"], age_s, str(e.get("agent"))[:22], title)
+        )
     lines.append("  read one:  %s --show <id>" % hook_path)
     # The prefix is BAKED IN rather than left as a placeholder: read marks are
     # per-reader now, so a command copied without it would record a mark under
@@ -551,18 +600,21 @@ def handle_surface(event, hook_event, hook_path):
         return
     start = C.project_start(event)
     store = store_root(start)
-    block = surface_block(
-        store, _branch_of(start), hook_path, reader_id(event.get("session_id"))
-    )
+    block = surface_block(store, _branch_of(start), hook_path, reader_id(event.get("session_id")))
     if not block:
         return
-    print(json.dumps({
-        "systemMessage": block.splitlines()[0],
-        "hookSpecificOutput": {"hookEventName": hook_event, "additionalContext": block},
-    }))
+    print(
+        json.dumps(
+            {
+                "systemMessage": block.splitlines()[0],
+                "hookSpecificOutput": {"hookEventName": hook_event, "additionalContext": block},
+            }
+        )
+    )
 
 
 # ---- scan (self-healing capture) --------------------------------------------
+
 
 def _projects_dir():
     base = os.environ.get("CLAUDE_CONFIG_DIR")
@@ -657,12 +709,14 @@ def harvest_transcript(jsonl):
                 if not isinstance(msg, str):
                     msg = json.dumps(msg, ensure_ascii=False)
                 if str(msg).strip():
-                    sends.append({
-                        "to": str(inp.get("to") or "?"),
-                        "at": str(r.get("timestamp") or ""),
-                        "summary": str(inp.get("summary") or ""),
-                        "message": str(msg),
-                    })
+                    sends.append(
+                        {
+                            "to": str(inp.get("to") or "?"),
+                            "at": str(r.get("timestamp") or ""),
+                            "summary": str(inp.get("summary") or ""),
+                            "message": str(msg),
+                        }
+                    )
         if texts:
             final = "\n".join(texts)
     return sends, final, rec
@@ -820,8 +874,16 @@ def prune(store):
 
 # The verbs main() dispatches on. Exported so worklist.py's `--reports` door can
 # tell a MODE from a MODIFIER without duplicating the list.
-MODES = ("--subagent-stop", "--session-start", "--post-compact",
-         "--list", "--show", "--read", "--scan", "--retire-phantoms")
+MODES = (
+    "--subagent-stop",
+    "--session-start",
+    "--post-compact",
+    "--list",
+    "--show",
+    "--read",
+    "--scan",
+    "--retire-phantoms",
+)
 
 
 def _hook_path():
@@ -831,10 +893,12 @@ def _hook_path():
 def main(argv):
     if not argv:
         print(__doc__.strip().splitlines()[0], file=sys.stderr)
-        print("usage: wl_report.py --subagent-stop | --session-start | --post-compact"
-              " | --list [--unread|--all] [--as <me>] | --show <id>"
-              " | --read <me> <id>... | --scan | --retire-phantoms [--dry-run]",
-              file=sys.stderr)
+        print(
+            "usage: wl_report.py --subagent-stop | --session-start | --post-compact"
+            " | --list [--unread|--all] [--as <me>] | --show <id>"
+            " | --read <me> <id>... | --scan | --retire-phantoms [--dry-run]",
+            file=sys.stderr,
+        )
         return 2
     mode = argv[0]
 
@@ -858,9 +922,11 @@ def main(argv):
         rest = set(argv[1:])
         # --all reads the WHOLE index, unbounded: it is the history door, and a
         # tail-bounded history is not a history.
-        entries = read_index(store, None) if "--all" in rest else [
-            e for e in read_index(store) if str(e.get("branch", "")) == branch
-        ]
+        entries = (
+            read_index(store, None)
+            if "--all" in rest
+            else [e for e in read_index(store) if str(e.get("branch", "")) == branch]
+        )
         explicit = argv[argv.index("--as") + 1] if "--as" in argv[1:-1] else None
         if explicit:
             # Only the EXPLICIT one is checked. The env default is correct by
@@ -879,16 +945,19 @@ def main(argv):
             return 0
         for e in entries:
             age = C.stamp_age_min(e.get("at"))
-            print("%-12s %s (%s) %-18s %-10s %s%s%s" % (
-                e["id"],
-                e.get("at", "?"),
-                "?" if age is None else "%dm" % age,
-                str(e.get("agent"))[:18],
-                e.get("branch", "?"),
-                "[read] " if str(e["id"]) in marks else "",
-                "[SILENT] " if e.get("silent") else "",
-                e.get("title") or "",
-            ))
+            print(
+                "%-12s %s (%s) %-18s %-10s %s%s%s"
+                % (
+                    e["id"],
+                    e.get("at", "?"),
+                    "?" if age is None else "%dm" % age,
+                    str(e.get("agent"))[:18],
+                    e.get("branch", "?"),
+                    "[read] " if str(e["id"]) in marks else "",
+                    "[SILENT] " if e.get("silent") else "",
+                    e.get("title") or "",
+                )
+            )
         return 0
 
     if mode == "--show":
@@ -903,9 +972,11 @@ def main(argv):
         try:
             sys.stdout.write(body.read_text(encoding="utf-8", errors="replace"))
         except OSError:
-            print("report %s is indexed but its body is gone (pruned after %d days); "
-                  "transcript: %s" % (e["id"], int(RETENTION_DAYS), e.get("transcript") or "unknown"),
-                  file=sys.stderr)
+            print(
+                "report %s is indexed but its body is gone (pruned after %d days); "
+                "transcript: %s" % (e["id"], int(RETENTION_DAYS), e.get("transcript") or "unknown"),
+                file=sys.stderr,
+            )
             return 2
         return 0
 
@@ -935,13 +1006,16 @@ def main(argv):
             if e is None:
                 print("no report %r here; not marking it read" % ident, file=sys.stderr)
                 continue
-            _append_line(read_path(store), {
-                "ev": "read",
-                "id": e["id"],
-                "by": me[:32],  # a SCOPING key since the per-reader decision
-                "at": C.stamp_now(),
-                "branch": branch,
-            })
+            _append_line(
+                read_path(store),
+                {
+                    "ev": "read",
+                    "id": e["id"],
+                    "by": me[:32],  # a SCOPING key since the per-reader decision
+                    "at": C.stamp_now(),
+                    "branch": branch,
+                },
+            )
             marked += 1
         if not marked:
             return 2
@@ -959,31 +1033,54 @@ def main(argv):
             print("nothing to retire (%d live record(s))" % len(entries))
             return 0
         for e in doomed:
-            print("%s %-10s %s%s" % (
-                e["id"], e.get("agent") or "?",
-                "[would retire] " if dry else "[retired] ",
-                (e.get("title") or "")[:70]))
+            print(
+                "%s %-10s %s%s"
+                % (
+                    e["id"],
+                    e.get("agent") or "?",
+                    "[would retire] " if dry else "[retired] ",
+                    (e.get("title") or "")[:70],
+                )
+            )
             if not dry:
-                _append_line(index_path(store), {
-                    "ev": "retire", "id": e["id"], "at": C.stamp_now(),
-                    "why": "phantom: main-loop turn, not a sub-agent report",
-                })
+                _append_line(
+                    index_path(store),
+                    {
+                        "ev": "retire",
+                        "id": e["id"],
+                        "at": C.stamp_now(),
+                        "why": "phantom: main-loop turn, not a sub-agent report",
+                    },
+                )
                 body = store / str(e.get("body") or "")
                 try:
                     if body.is_file():
                         body.unlink()
                 except OSError:
                     pass
-        print("%s %d of %d record(s); %d real report(s) untouched"
-              % ("would retire" if dry else "retired", len(doomed), len(entries),
-                 len(entries) - len(doomed)))
+        print(
+            "%s %d of %d record(s); %d real report(s) untouched"
+            % (
+                "would retire" if dry else "retired",
+                len(doomed),
+                len(entries),
+                len(entries) - len(doomed),
+            )
+        )
         return 0
 
     if mode == "--scan":
         added, pruned = scan(store, start)
         for e in added:
-            print("indexed %s %s %s%s" % (
-                e["id"], e.get("agent"), "[SILENT] " if e.get("silent") else "", e.get("title") or ""))
+            print(
+                "indexed %s %s %s%s"
+                % (
+                    e["id"],
+                    e.get("agent"),
+                    "[SILENT] " if e.get("silent") else "",
+                    e.get("title") or "",
+                )
+            )
         if pruned:
             print("pruned %d body file(s) past %d days" % (len(pruned), int(RETENTION_DAYS)))
         if not added and not pruned:
