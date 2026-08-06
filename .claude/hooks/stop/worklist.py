@@ -525,6 +525,32 @@ def _reassign_cli(argv):
     if worklist.with_suffix(".lastevent-%s.json" % phantom[:8]).exists():
         _die2(M.CLI_REASSIGN_ALIVE % (phantom, phantom))
     fold = S.load(worklist, sync=True)
+    # AGE GATE, and without it the guarantee above is not delivered. The
+    # `.lastevent-` file is written exactly once, when the Stop hook first runs
+    # for a session. A session that is mid-turn -- it has added items but has
+    # not yet reached its first stop -- has no such file either, so the check
+    # above cannot tell it from a genuine phantom. Any session can read a peer's
+    # prefix out of `--list --open` output, and concurrent sessions in one tree
+    # are routine here, so without this a peer's OPEN items and request routing
+    # could be moved onto the caller WHILE that peer was actively working on
+    # them. The docstring and the refusal message both promise this cannot
+    # happen; this is the code that makes the promise true.
+    #
+    # Same threshold and same derivation as the advisory backstop
+    # (wl_checks.phantom_identities), deliberately: two different answers to
+    # "is this identity a phantom" is how the two drift apart.
+    _first = ""
+    for _ev in S._read_events(worklist):
+        _by, _at = str(_ev.get("by") or ""), str(_ev.get("at") or "")
+        if _by and _at and C.same_session(_by, phantom) and (not _first or _at < _first):
+            _first = _at
+    _age = C.stamp_age_min(_first)
+    if _age is None:
+        # No events at all under that prefix: there is nothing to move, and
+        # saying "too young" would misdescribe it as a live peer.
+        _die2(M.CLI_REASSIGN_EMPTY % (phantom, phantom))
+    if _age < CK.PHANTOM_MIN:
+        _die2(M.CLI_REASSIGN_YOUNG % (phantom, _age, CK.PHANTOM_MIN, phantom))
     stamp = C.stamp_now()
     moved_items = [
         rec["id"] for rec in fold.items

@@ -386,6 +386,21 @@ CLI_REASSIGN_USAGE = (
     "events still record who wrote them.\n"
 )
 
+CLI_REASSIGN_EMPTY = (
+    "REFUSED: %s has written no events at all, so there is nothing of its to "
+    "move and no way to tell a dead session from a name that never existed.\n"
+    "Check the prefix; if it is right, %s has no open work to take over.\n"
+)
+CLI_REASSIGN_YOUNG = (
+    "REFUSED: %s's earliest event is %.0f minutes old, under the %.0f-minute "
+    "floor, so it may be a session mid-turn rather than a phantom.\n"
+    "The .lastevent- file is written at a session's FIRST STOP, so a peer that "
+    "has added items and not yet stopped looks exactly like a dead one. Moving "
+    "its OPEN items and request routing now would take work from someone still "
+    "doing it.\n"
+    "Wait until it is past the same age the advisory backstop uses, or confirm "
+    "with the operator that %s is genuinely gone.\n"
+)
 CLI_REASSIGN_ALIVE = (
     "REFUSED: %s has a .lastevent-%s.json, so a Stop hook HAS run under it -- "
     "it is a real session, not a phantom. Taking its open work would be exactly "
