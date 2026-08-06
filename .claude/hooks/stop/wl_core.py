@@ -303,12 +303,83 @@ def _identity_msg(me, sid, why):
 
 def project_root(start):
     """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
-    FILE, not a directory, so test existence rather than is_dir()."""
+    FILE, not a directory, so test existence rather than is_dir().
+
+    Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
+    from a repo nested inside one, and it must not try -- see project_start(),
+    which is what every caller should be pointing it at.
+    """
     p = pathlib.Path(start).resolve()
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
             return candidate
     return p
+
+
+# <repo>/.claude/hooks/stop/wl_core.py -> parents[3] is <repo>.
+_HOOK_ROOT_DEPTH = 3
+
+
+def hook_repo_root():
+    """The repo this hook FILE lives in, or None if it does not look like one.
+
+    Immune to cwd by construction, which is the whole point: settings.json
+    invokes every hook as "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so this
+    answers the same thing the env var does at hook time, and keeps answering
+    it when a human runs the CLI from a subdirectory with no env var set.
+    """
+    try:
+        cand = pathlib.Path(__file__).resolve().parents[_HOOK_ROOT_DEPTH]
+    except (IndexError, OSError):
+        return None
+    if (cand / ".git").exists() and (cand / ".claude" / "hooks" / "stop").is_dir():
+        return cand
+    return None
+
+
+def project_start(event=None):
+    """Where root resolution STARTS. cwd is the LAST resort, never the first.
+
+    WHY THIS EXISTS, measured 2026-08-06. The Stop event's cwd is wherever the
+    session last worked, and this tree has repos INSIDE the repo: submodules
+    (private/renet) and gitignored non-submodule siblings (private/growth).
+    Resolving from cwd walked project_root() straight into one of those and
+    read ITS branch -- a session on 0804-1 was told to bootstrap `.agent/main/`
+    because private/growth happened to be on main. Confirmed twice, on both
+    kinds of nested repo, so it is not a submodule quirk.
+
+    The ladder, and the reason for each rung:
+
+    1. CLAUDE_PROJECT_DIR. Guaranteed present for hooks -- .claude/settings.json
+       spells every hook command "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so an
+       unset var would make every hook fail to launch, not merely misresolve.
+       It is also how both test suites pin a fixture root, which is why it must
+       stay ABOVE the file-derived rung.
+    2. This hook file's own repo. Covers the CLI case: a shell has no
+       CLAUDE_PROJECT_DIR (verified: unset in this session's Bash), so `cd
+       private/growth && ../../.claude/hooks/stop/worklist.py --list` used to
+       read a DIFFERENT store than the same command one directory up.
+    3. The event's cwd, then getcwd(). Kept only as a floor for a copy of these
+       hooks living somewhere that is not a repo.
+
+    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a
+    `.git` file pointing into `/modules/`. This repo is ITSELF a submodule
+    (`gitdir: ../.git/modules/console`), so that walks PAST console, changes
+    the store slug from home_muhammed_monorepo_console to
+    home_muhammed_monorepo, and orphans every open item in one step. Tried and
+    reverted. Anchoring the START is the fix; the WALK is fine as it is.
+    """
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return env
+    hook_root = hook_repo_root()
+    if hook_root is not None:
+        return str(hook_root)
+    if event:
+        cwd = event.get("cwd")
+        if cwd:
+            return cwd
+    return os.getcwd()
 
 
 def worklist_for(start):

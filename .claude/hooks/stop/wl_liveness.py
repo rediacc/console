@@ -325,7 +325,7 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
 
     fresh_min = TEAMMATE_FRESH_MIN if fresh_min is None else fresh_min
-    proj = RPT._projects_dir() / RPT._munged(C.project_root(cwd or os.getcwd()))
+    proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
     if not proj.is_dir():
         return None  # cannot tell: NOT the same as zero, and callers must differ
     # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` --

@@ -343,7 +343,7 @@ def nudge(event):
     me = str(event.get("session_id") or "")[:8]
     if not me:
         return
-    start = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    start = C.project_start(event)
     worklist = C.worklist_for(start)
 
     if _fresh(nudge_path(worklist, me), NUDGE_EVERY_S):
@@ -432,7 +432,7 @@ def main(argv):
     if timeout_min <= 0:
         print("--timeout must be positive", file=sys.stderr)
         return 2
-    start = os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    start = C.project_start()
     try:
         return wait(me, timeout_min, start)
     except KeyboardInterrupt:
