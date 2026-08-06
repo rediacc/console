@@ -2300,3 +2300,47 @@ manual `gh` sweep by an owner-token human.
 Gate: `.ci/scripts/test/gates/test-worklist-hooks.sh` runs BOTH stop-hook
 harnesses (569 + 115 = 684). It previously parsed only the last summary, so the
 first harness could fail unnoticed.
+
+## 2026-08-06 — the scope map stops running ceph for an attribution string
+
+**The scripts/ harness rule was too coarse, and it fired for real.** Commit
+`bcc4f1ee1` changed one file — an Apache-2.0 attribution-URL check — and the
+resolved plan recorded `"full_reasons": ["harness:scripts/check-embed-credits.ts"]`,
+running the whole E2E/ceph/k8s/OPS matrix. Measured across three runs, dropping
+the infra matrix saves **19-43 min wallclock (28-47%)**, and the new tail is
+`Validate Promotion` at ~47-52 min in all three, so it also converts a 66-93 min
+variable pipeline into a predictable ~50 min one.
+
+**The old comment gave the WRONG reason, and that is the more useful finding.**
+It said quality lanes "must stay immune to scoping by construction" and concluded
+`full`. Gate immunity is real but the engine guarantees it independently:
+`ci-quality.yml` contains **zero** `run_` references, so no quality lane is among
+the 18 keys the engine can switch off. A `scripts/` rule cannot scope out a gate
+because gates are not scopeable at all. A conservative rule defended by a wrong
+reason is one that gets removed for bad reasons later.
+
+**Two subsets stay full**, found by tracing execution rather than reading names:
+`scripts/drills/` (ct-tests.yml:1730 → run.sh:1987) and
+`generate-third-party-licenses.ts`, which runs inside the SEA build and whose
+output SHIPS in the CLI binary — a silently-wrong credits file is caught only by
+gated jobs. Everything else is a zero-job `gates` module.
+
+**Honest expected value: ~1.28% of commits** (29 of 2263). 75% of
+`scripts/`-touching commits also drag `package.json`/`.ci/`/`.github/`, which
+force full independently. The reason to land it is not the minutes; it is that
+"an attribution-string check ran a ceph fork test" makes the engine look
+untrustworthy even when it is working correctly. Full analysis:
+`docs/agent/0804-1/PLAN-scope-gates-split.md`.
+
+**A CI wait is no longer a legitimate stop.** Operator ruling: a session watching
+a run is idle, not blocked, because the run needs nothing from it. The stop-gate
+judge now earns "stop" from a named CI wait only when no tracked item can be
+advanced locally. Unpushed work cannot disturb a run in flight, so "wait for the
+PR to land" almost never justifies not writing the code.
+
+**Mutation discipline, unchanged and still earning its keep.** Four mutations on
+the scope rules; M4 (swap `modules: ['gates']` for `['cli']`) is the one that
+matters — it still reports `reduced` while dragging the matrix back, so without
+that assertion a future edit giving `gates` a job surface would silently undo the
+change while every test row still read `reduced`.
+
