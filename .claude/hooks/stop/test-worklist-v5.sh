@@ -7866,7 +7866,6 @@ else
     fail "190c CONTROL: the bare form broke: '$STATE'"
 fi
 
-
 echo "== 190a. CONTROL: --reassign refuses a session that HAS stopped =="
 # The rule that stops this verb becoming a way to steal a live peer's items.
 setup
