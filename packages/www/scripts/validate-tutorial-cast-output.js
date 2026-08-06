@@ -53,9 +53,19 @@ const MARKER_HACK_PATTERNS = [
   { pattern: /\btimeout\s+[\d.]+/, message: 'typed command is wrapped in "timeout"' },
 ];
 
+// Built from named char codes rather than written as `\x1b` literals: raw
+// control characters inside a regex are exactly what no-control-regex exists to
+// catch, and these two are the only place the gate legitimately needs them.
+const ESC = String.fromCharCode(0x1b);
+const BEL = String.fromCharCode(0x07);
+/** CSI sequence: ESC [ params final-byte (colours, cursor moves). */
+const ANSI_CSI_RE = new RegExp(`${ESC}\\[[0-9;]*[a-zA-Z]`, 'g');
+/** OSC sequence: ESC ] ... BEL (window title and friends). */
+const ANSI_OSC_RE = new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g');
+
 /** Strip ANSI escape sequences and OSC sequences from text. */
 function stripAnsi(text) {
-  return text.replaceAll(/\x1b\[[0-9;]*[a-zA-Z]/g, '').replaceAll(/\x1b\][^\x07]*\x07/g, '');
+  return text.replaceAll(ANSI_CSI_RE, '').replaceAll(ANSI_OSC_RE, '');
 }
 
 function pushError(errors, file, message, suggestion) {

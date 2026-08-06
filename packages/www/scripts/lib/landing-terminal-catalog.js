@@ -11,13 +11,13 @@ const INDEX_PAGE_PATH = path.join(WWW_ROOT, 'src', 'pages', '[lang]', 'index.ast
 const LANGUAGES = SITE_LOCALES;
 
 function normalizeCommandText(text) {
-  return String(text || '')
+  return String(text ?? '')
     .trim()
     .replaceAll(/\s+/g, ' ');
 }
 
 function getCommandFromLine(line) {
-  if (!line || line.type !== 'command') return null;
+  if (line?.type !== 'command') return null;
 
   const assembled = [line.cmd, line.flag, line.value]
     .filter((value) => typeof value === 'string' && value.trim().length > 0)
@@ -77,7 +77,7 @@ export function getTranslationTerminalCommands(lang) {
   for (const terminal of terminals) {
     for (let i = 0; i < terminal.lines.length; i += 1) {
       const line = terminal.lines[i];
-      if (!line || line.type !== 'command') continue;
+      if (line?.type !== 'command') continue;
 
       const commandText = getCommandFromLine(line);
       results.push({

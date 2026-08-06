@@ -7,7 +7,10 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, '../../..');
-const pythonBin = process.env.QWEN_TTS_PYTHON_BIN || 'python3';
+/** Interpreter used when the environment names none. */
+const DEFAULT_PYTHON_BIN = 'python3';
+
+const pythonBin = process.env.QWEN_TTS_PYTHON_BIN ?? DEFAULT_PYTHON_BIN;
 const backendSrc = path.join(repoRoot, 'private', 'generative', 'src');
 
 const args = ['-m', 'tutorial_tts.cli', '--repo-root', repoRoot, ...process.argv.slice(2)];

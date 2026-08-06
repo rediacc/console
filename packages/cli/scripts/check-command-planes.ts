@@ -87,25 +87,25 @@ const { createDescriptionResolver, loadLocale, walkContractCommands } = await im
  * src/cli.ts. A domain with no entry here fails the run: a new command family
  * must state where it is registered so its plane claims can be checked.
  */
-const DOMAIN_MODULES: Record<string, string> = {
-  backup: 'commands/backup.ts',
-  cluster: 'commands/cluster/index.ts',
-  config: 'commands/config.ts',
-  credits: 'commands/credits.ts',
-  datastore: 'commands/datastore.ts',
-  doctor: 'commands/doctor.ts',
-  job: 'commands/job.ts',
-  machine: 'commands/machine/index.ts',
-  mcp: 'commands/mcp/index.ts',
-  ops: 'commands/ops/index.ts',
-  repo: 'commands/repo.ts',
-  serve: 'commands/serve.ts',
-  storage: 'commands/storage.ts',
-  subscription: 'commands/subscription.ts',
-  term: 'commands/term.ts',
-  update: 'commands/update.ts',
-  vscode: 'commands/vscode.ts',
-};
+const DOMAIN_MODULES = new Map<string, string>([
+  ['backup', 'commands/backup.ts'],
+  ['cluster', 'commands/cluster/index.ts'],
+  ['config', 'commands/config.ts'],
+  ['credits', 'commands/credits.ts'],
+  ['datastore', 'commands/datastore.ts'],
+  ['doctor', 'commands/doctor.ts'],
+  ['job', 'commands/job.ts'],
+  ['machine', 'commands/machine/index.ts'],
+  ['mcp', 'commands/mcp/index.ts'],
+  ['ops', 'commands/ops/index.ts'],
+  ['repo', 'commands/repo.ts'],
+  ['serve', 'commands/serve.ts'],
+  ['storage', 'commands/storage.ts'],
+  ['subscription', 'commands/subscription.ts'],
+  ['term', 'commands/term.ts'],
+  ['update', 'commands/update.ts'],
+  ['vscode', 'commands/vscode.ts'],
+]);
 
 /**
  * Domains whose import-graph verdict is wrong because the graph is
@@ -115,18 +115,21 @@ const DOMAIN_MODULES: Record<string, string> = {
  * Keep this list empty unless a domain genuinely cannot be classified from its
  * imports. Every entry here is a rule this gate stops enforcing.
  */
-const OVERRIDES: Record<string, { expectMachineTouching: boolean; reason: string }> = {
-  doctor: {
-    expectMachineTouching: false,
-    reason:
-      'Graph says machine-touching via commands/doctor.ts -> services/account/license.ts -> ' +
-      'remote/sftp. license.ts is one module holding two unrelated things: the account-server ' +
-      'HTTPS license report (fetchSubscriptionLicenseReport, the only thing doctor calls) and ' +
-      'the SFTP license-push that the subscription domain uses. Module granularity cannot split ' +
-      'them, so doctor inherits an SFTP edge it never traverses. Drop this override if license.ts ' +
-      'is ever split into an HTTPS half and an SSH half.',
-  },
-};
+const OVERRIDES = new Map<string, { expectMachineTouching: boolean; reason: string }>([
+  [
+    'doctor',
+    {
+      expectMachineTouching: false,
+      reason:
+        'Graph says machine-touching via commands/doctor.ts -> services/account/license.ts -> ' +
+        'remote/sftp. license.ts is one module holding two unrelated things: the account-server ' +
+        'HTTPS license report (fetchSubscriptionLicenseReport, the only thing doctor calls) and ' +
+        'the SFTP license-push that the subscription domain uses. Module granularity cannot split ' +
+        'them, so doctor inherits an SFTP edge it never traverses. Drop this override if license.ts ' +
+        'is ever split into an HTTPS half and an SSH half.',
+    },
+  ],
+]);
 
 // ---------- Check ----------
 
@@ -148,8 +151,11 @@ for (const cmd of commands) {
 
 const violations: string[] = [];
 
-for (const [domain, paths] of [...byDomain].sort()) {
-  const moduleRel = DOMAIN_MODULES[domain];
+/** Sort `[key, value]` entry pairs by key, ascending, by code unit. */
+const byKey = <T>([a]: [string, T], [b]: [string, T]): number => (a < b ? -1 : a > b ? 1 : 0);
+
+for (const [domain, paths] of [...byDomain].sort(byKey)) {
+  const moduleRel = DOMAIN_MODULES.get(domain);
   if (!moduleRel) {
     violations.push(
       `Domain "${domain}" has no entry in DOMAIN_MODULES (check-command-planes.ts).\n` +
@@ -165,7 +171,7 @@ for (const [domain, paths] of [...byDomain].sort()) {
   }
 
   const reach = reachability(entry);
-  const override = OVERRIDES[domain];
+  const override = OVERRIDES.get(domain);
   const machineTouching = override ? override.expectMachineTouching : reach.machineTouching;
 
   const machineLeaves = paths.filter((p) => getCommandPlane(p) === 'machine');
@@ -230,7 +236,7 @@ for (const cmd of commands) {
 
 if (report) {
   console.log('\n--- per-leaf (Rule 3): modules registering machine-plane leaves ---');
-  for (const [moduleRel, paths] of [...leavesByModule].sort()) {
+  for (const [moduleRel, paths] of [...leavesByModule].sort(byKey)) {
     const machineLeaves = paths.filter((p) => getCommandPlane(p) === 'machine');
     const flag = reachOf(moduleRel).machineTouching ? 'machine-touching' : 'isolated';
     console.log(
@@ -240,7 +246,7 @@ if (report) {
 }
 
 // Overrides must carry a real reason, and must not outlive their cause.
-for (const [domain, override] of Object.entries(OVERRIDES)) {
+for (const [domain, override] of OVERRIDES) {
   if (override.reason.trim().length < 30) {
     violations.push(`OVERRIDES["${domain}"] reason is too short — explain why the graph is wrong.`);
   }

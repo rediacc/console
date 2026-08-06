@@ -40,6 +40,21 @@ const colors = {
   bold: (s) => `\x1b[1m${s}\x1b[0m`,
 };
 
+/**
+ * Text for a human-readable report line, or a placeholder.
+ *
+ * Deliberately NOT `??`: a reference item with `text: ""`, or an empty page
+ * list joined to `''`, means "nothing to show" exactly as an absent one does,
+ * and the placeholder has to win in both cases.
+ *
+ * @param {string | undefined} value
+ * @param {string} placeholder
+ * @returns {string}
+ */
+function displayText(value, placeholder) {
+  return value === undefined || value === '' ? placeholder : value;
+}
+
 function addError(errors, rule, file, line, message, matchedText, suggestion) {
   errors.push({ rule, file, line, message, matchedText, suggestion });
 }
@@ -68,7 +83,7 @@ function validateOffline(translations, errors) {
     if (!comparison?.features) continue;
 
     const references = pageData?.references;
-    const refItems = references?.items || [];
+    const refItems = references?.items ?? [];
     const file = `solutionPages.${pageKey}`;
 
     for (let fi = 0; fi < comparison.features.length; fi++) {
@@ -140,7 +155,7 @@ function validateOffline(translations, errors) {
               featurePath,
               0,
               `Feature "${feature.name}" refs[${ri}] = ${ref} → references.items[${ref - 1}] has no url`,
-              item?.text || '(empty)',
+              displayText(item?.text, '(empty)'),
               'Add a publicly accessible URL to this reference item'
             );
           }
@@ -153,7 +168,7 @@ function validateOffline(translations, errors) {
     // feature-specific evidence. The same URL may appear in multiple reference items with
     // different text descriptions — that is the correct way to cite the same source for
     // different claims.
-    const numCols = comparison.features[0]?.values?.length || 0;
+    const numCols = comparison.features[0]?.values?.length ?? 0;
     for (let col = 0; col < numCols - 1; col++) {
       // skip last column (Rediacc)
       const refToFeatures = new Map(); // ref index → [feature names]
@@ -173,7 +188,7 @@ function validateOffline(translations, errors) {
             file,
             0,
             `Column ${col} reuses ref [${ref}] across ${features.length} features: ${features.map((f) => `"${f}"`).join(', ')}`,
-            `ref [${ref}]: "${refItem?.text?.slice(0, 80) || '(unknown)'}"`,
+            `ref [${ref}]: "${displayText(refItem?.text?.slice(0, 80), '(unknown)')}"`,
             'Each check cell needs its own reference item with a feature-specific claim text'
           );
         }
@@ -193,7 +208,7 @@ async function validateOnline(translations, errors) {
   // Collect all unique URLs from reference items across all pages
   const urlMap = new Map(); // url → { pages[], text }
   for (const [pageKey, pageData] of Object.entries(solutionPages)) {
-    const refItems = pageData?.references?.items || [];
+    const refItems = pageData?.references?.items ?? [];
     for (let i = 0; i < refItems.length; i++) {
       const item = refItems[i];
       if (!item?.url) continue;
@@ -211,7 +226,7 @@ async function validateOnline(translations, errors) {
   for (const [, pageData] of Object.entries(solutionPages)) {
     const comparison = pageData?.comparison;
     if (!comparison?.features) continue;
-    const refItems = pageData?.references?.items || [];
+    const refItems = pageData?.references?.items ?? [];
     for (const feature of comparison.features) {
       if (!feature.refs) continue;
       for (const ref of feature.refs) {
@@ -294,7 +309,7 @@ async function validateOnline(translations, errors) {
   for (const result of results) {
     if (!result.ok) {
       const info = urlMap.get(result.url);
-      const pages = info?.pages?.join(', ') || 'unknown';
+      const pages = displayText(info?.pages?.join(', '), 'unknown');
       const statusMsg = result.error ? `Network error: ${result.error}` : `HTTP ${result.status}`;
       addError(
         errors,
@@ -423,4 +438,7 @@ Rules (--online only):
   process.exit(printSummary(errors, warnings));
 }
 
-main();
+main().catch((/** @type {unknown} */ err) => {
+  console.error(err);
+  process.exit(1);
+});

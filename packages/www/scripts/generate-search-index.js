@@ -6,6 +6,24 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 
+/** Locale an index entry belongs to when it carries none (the flat, pre-i18n layout). */
+const DEFAULT_LANG = 'en';
+
+/**
+ * The first of `value` / `fallback` that actually has content.
+ *
+ * Deliberately NOT `??`: a frontmatter field that is present but empty
+ * (`description: ""`) means "nothing here", so it has to fall back exactly like
+ * an absent one, and a stripped markdown section body is routinely `''`.
+ *
+ * @param {unknown} value
+ * @param {string} fallback
+ * @returns {unknown}
+ */
+function withContent(value, fallback) {
+  return value === undefined || value === null || value === '' ? fallback : value;
+}
+
 /**
  * Generate searchable index from en.json and markdown collections (blog, docs)
  * Recursively extracts all text content and auto-categorizes it
@@ -16,11 +34,8 @@ function generateSearchIndex() {
     const searchIndex = [];
     let idCounter = 0;
 
-    // Part 1: Index translations from en.json - DISABLED
-    // (Only indexing blog and docs for better search results)
-    // console.log('📄 Indexing translations...');
-    // indexTranslations(searchIndex, idCounter);
-    // idCounter = searchIndex.length;
+    // Translations are deliberately NOT indexed: indexing them buried the blog
+    // and docs hits under hundreds of UI-string matches.
 
     // Part 2: Index blog posts
     console.log('📝 Indexing blog posts...');
@@ -55,7 +70,7 @@ function generateSearchIndex() {
     // as a byte-identical copy of the English file for backward compat.
     const byLang = new Map();
     for (const entry of searchIndex) {
-      const lang = entry.language || 'en';
+      const lang = entry.language ?? DEFAULT_LANG;
       if (!byLang.has(lang)) byLang.set(lang, []);
       byLang.get(lang).push(entry);
     }
@@ -68,7 +83,7 @@ function generateSearchIndex() {
       }
     }
 
-    const langs = [...byLang.keys()].sort();
+    const langs = [...byLang.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
     for (const lang of langs) {
       const entries = byLang.get(lang);
       const outPath = path.join(publicDir, `search-index-${lang}.json`);
@@ -95,56 +110,6 @@ function generateSearchIndex() {
   } catch (error) {
     console.error('✗ Failed to generate search index:', error.message);
     return false;
-  }
-}
-
-/**
- * Index translations from en.json
- * Currently unused but kept for future use
- */
-function _indexTranslations(searchIndex, startingId) {
-  try {
-    const translationsPath = path.join(projectRoot, 'src/i18n/translations/en.json');
-    const translations = JSON.parse(fs.readFileSync(translationsPath, 'utf-8'));
-
-    let idCounter = startingId;
-
-    function traverse(obj, keyPath = '', parentKey = 'root') {
-      if (typeof obj === 'string' && obj.trim().length > 0 && !keyPath.includes('meta')) {
-        const id = `search-${idCounter++}`;
-        const category = categorizeByPath(keyPath);
-        const page = detectPage(keyPath);
-        const priority = calculatePriority(keyPath);
-
-        const cleanContent = obj.replaceAll(/\{\{.*?\}\}/g, '').trim();
-
-        if (cleanContent.length > 0) {
-          searchIndex.push({
-            id,
-            content: cleanContent,
-            excerpt: truncateExcerpt(cleanContent, 150),
-            category,
-            page,
-            path: keyPath,
-            priority,
-          });
-        }
-      } else if (Array.isArray(obj)) {
-        obj.forEach((item, index) => {
-          const newKeyPath = keyPath ? `${keyPath}[${index}]` : `[${index}]`;
-          traverse(item, newKeyPath, parentKey);
-        });
-      } else if (obj !== null && typeof obj === 'object') {
-        Object.entries(obj).forEach(([key, value]) => {
-          const newKeyPath = keyPath ? `${keyPath}.${key}` : key;
-          traverse(value, newKeyPath, key);
-        });
-      }
-    }
-
-    traverse(translations);
-  } catch (error) {
-    console.warn('⚠ Warning: Could not index translations:', error.message);
   }
 }
 
@@ -190,7 +155,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
             searchIndex.push({
               id: `search-${idCounter++}`,
               content: frontmatter.title,
-              excerpt: frontmatter.description || truncateExcerpt(content, 150),
+              excerpt: withContent(frontmatter.description, truncateExcerpt(content, 150)),
               category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
               path: `${urlPrefix}.${slug}.title`,
@@ -235,7 +200,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           // Each section produces ONE index entry whose `body` is the full
           // stripped section text — that's what makes buried terms searchable.
           const slug = file.replace(/\.mdx?$/, '');
-          const sections = splitIntoSections(content, frontmatter.title || slug);
+          const sections = splitIntoSections(content, withContent(frontmatter.title, slug));
 
           for (const section of sections) {
             const body = stripMarkdown(section.body);
@@ -245,7 +210,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
               id: `search-${idCounter++}`,
               content: section.heading,
               body,
-              excerpt: truncateExcerpt(body || section.heading, 150),
+              excerpt: truncateExcerpt(withContent(body, section.heading), 150),
               category,
               page: `/${langDir}/${urlPrefix}/${slug}`,
               path: `${urlPrefix}.${slug}.content`,
@@ -272,7 +237,7 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
           searchIndex.push({
             id: `search-${idCounter++}`,
             content: frontmatter.title,
-            excerpt: frontmatter.description || truncateExcerpt(content, 150),
+            excerpt: withContent(frontmatter.description, truncateExcerpt(content, 150)),
             category,
             page: `/${urlPrefix}/${slug}`,
             path: `${urlPrefix}.${slug}.title`,
@@ -289,54 +254,6 @@ function indexCollectionType(searchIndex, startingId, collectionDir, category, u
   } catch (error) {
     console.warn(`⚠ Warning: Could not index ${category}:`, error.message);
   }
-}
-
-/**
- * Categorize content based on key path (for translations)
- */
-function categorizeByPath(keyPath) {
-  if (keyPath.startsWith('hero')) return 'Hero';
-  if (keyPath.startsWith('solutions')) return 'Solutions';
-  if (keyPath.startsWith('problem')) return 'Problem';
-  if (keyPath.startsWith('earlyAccess')) return 'Early Access';
-  if (keyPath.startsWith('pages.contact')) return 'Contact';
-  if (keyPath.startsWith('pages.home')) return 'Home';
-  if (keyPath.startsWith('pages')) return 'Pages';
-  if (keyPath.startsWith('navigation')) return 'Navigation';
-  if (keyPath.startsWith('footer')) return 'Footer';
-  if (keyPath.startsWith('common')) return 'Common';
-  return 'Other';
-}
-
-/**
- * Detect which page this content belongs to
- */
-function detectPage(keyPath) {
-  if (keyPath.includes('pages.contact')) return '/contact';
-  if (keyPath.includes('pages.notFound')) return '/404';
-  return '/';
-}
-
-/**
- * Calculate priority for ranking (for translations)
- * 1 = highest, 3 = lowest
- */
-function calculatePriority(keyPath) {
-  if (
-    keyPath.startsWith('hero.title') ||
-    keyPath.startsWith('solutions.title') ||
-    keyPath.startsWith('problem.title')
-  ) {
-    return 1;
-  }
-  if (
-    keyPath.includes('description') ||
-    keyPath.includes('benefits') ||
-    keyPath.includes('subtitle')
-  ) {
-    return 2;
-  }
-  return 3;
 }
 
 /**

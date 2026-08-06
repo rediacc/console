@@ -61,6 +61,46 @@ export interface VideoManifest {
   solutions: Record<string, Record<string, Record<string, ManifestAsset>>>;
 }
 
+/**
+ * Every level of the manifest is SPARSE at read time. A cast key, a locale
+ * under it, or a single field can all simply be absent — that is the normal
+ * state while a locale is still being published, and detecting it is exactly
+ * what the gate scripts exist for.
+ *
+ * `VideoManifest` above describes what a WRITER produces, so its levels are
+ * total. A reader that trusts that gets code TypeScript believes cannot fail:
+ * every `if (!entry)` guard reads as dead while the runtime still hands back
+ * `undefined`. src/utils/solution-video.ts had to re-widen the shape by hand
+ * after one such lookup threw "Cannot read properties of undefined" and failed
+ * a whole CDN build rather than degrading one player.
+ */
+export type SparseManifestTree = Record<
+  string,
+  Record<string, Record<string, ManifestAsset | undefined> | undefined> | undefined
+>;
+
+export interface SparseVideoManifest {
+  generatedAt: string;
+  baseUrl: string;
+  /**
+   * Optional at the TOP level too, and for the same reason as the levels below:
+   * a reader gets this out of `JSON.parse(...) as …`, which promises a shape
+   * rather than checking one. A manifest missing a whole section is what the
+   * `?? {}` / `?.` guards in the gate scripts are for.
+   */
+  tutorials?: SparseManifestTree;
+  solutions?: SparseManifestTree;
+}
+
+/**
+ * Widen a manifest to the shape a reader actually gets. Purely type-level: a
+ * total `Record<string, T>` is assignable to `Record<string, T | undefined>`,
+ * so this needs no cast and copies nothing.
+ */
+export function asSparse(manifest: VideoManifest): SparseVideoManifest {
+  return manifest;
+}
+
 export function loadManifest(): VideoManifest {
   if (!existsSync(MANIFEST_PATH)) {
     return {

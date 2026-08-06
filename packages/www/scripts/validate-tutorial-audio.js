@@ -59,6 +59,9 @@ const AUDIO_LANGUAGES = SITE_LOCALES;
 // so the alternative (a done-marker file written by the producer) would be a weaker
 // claim about the same thing.
 function parseCliArgs(argv) {
+  // Typed: without it TypeScript infers `null` from the initializer and every
+  // `opts.langs ? …` guard below reads as dead code, though `--lang` fills it in.
+  /** @type {{ langs: Set<string> | null; casts: Set<string> | null; quiet: boolean }} */
   const opts = { langs: null, casts: null, quiet: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -140,7 +143,7 @@ function hashText(text) {
   return crypto
     .createHash('sha256')
     .update(
-      String(text || '')
+      String(text ?? '')
         .replaceAll(/\s+/g, ' ')
         .trim()
     )
@@ -152,7 +155,7 @@ function hashTranscript(transcript) {
     id: ev.id,
     markerIndex: ev.markerIndex,
     at: ev.at,
-    text: String(ev.text || '')
+    text: String(ev.text ?? '')
       .replaceAll(/\s+/g, ' ')
       .trim(),
   }));
@@ -360,7 +363,7 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
     }
 
     const textHash = hashText(event.text);
-    if (!textHash || textHash.length !== 64) {
+    if (textHash.length !== 64) {
       pushError(
         errors,
         relativeTimeline,

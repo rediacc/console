@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { execSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,6 +7,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import matter from 'gray-matter';
 
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
+import {
+  detectChangedFiles,
+  getFileAtCommit,
+  getLatestCommitForFile,
+} from './lib/translation-freshness-git.js';
+
+export { detectChangedFiles };
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 
@@ -82,101 +89,7 @@ export function computeSourceHash(frontmatter, body) {
 function parseMarkdown(filePath) {
   const raw = fs.readFileSync(filePath, 'utf-8');
   const parsed = matter(raw);
-  return {
-    data: parsed.data ?? {},
-    content: parsed.content ?? '',
-  };
-}
-
-function getEnvChangedFiles() {
-  const raw = process.env.TRANSLATION_FRESHNESS_CHANGED_FILES;
-  if (!raw) {
-    return null;
-  }
-
-  return raw
-    .split(/\r?\n/)
-    .map((x) => x.trim())
-    .filter(Boolean);
-}
-
-function git(args, cwd) {
-  return execSync(`git ${args.join(' ')}`, {
-    cwd,
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
-    .split(/\r?\n/)
-    .map((x) => x.trim())
-    .filter(Boolean);
-}
-
-function tryFetchBaseRef(repoRoot, baseRef) {
-  if (!baseRef) {
-    return;
-  }
-
-  try {
-    execSync(
-      `git fetch --no-tags --depth=50 origin +refs/heads/${baseRef}:refs/remotes/origin/${baseRef}`,
-      {
-        cwd: repoRoot,
-        stdio: ['ignore', 'ignore', 'ignore'],
-      }
-    );
-  } catch {
-    // Best effort only. Local/dev environments may not have network access.
-  }
-}
-
-export function detectChangedFiles(repoRoot, baseRefArg) {
-  const fromEnv = getEnvChangedFiles();
-  if (fromEnv) {
-    return fromEnv;
-  }
-
-  const baseRef = baseRefArg || process.env.GITHUB_BASE_REF || 'main';
-  tryFetchBaseRef(repoRoot, baseRef);
-  const candidates = [`origin/${baseRef}`, baseRef];
-
-  // Untracked files are always included so that new translation files
-  // (not yet staged/committed) are recognized as "changed in this PR".
-  let untracked = [];
-  try {
-    untracked = git(['ls-files', '--others', '--exclude-standard', '--full-name'], repoRoot);
-  } catch {
-    // best effort
-  }
-
-  for (const candidate of candidates) {
-    try {
-      git(['rev-parse', '--verify', candidate], repoRoot);
-      const mergeBase = git(['merge-base', 'HEAD', candidate], repoRoot)[0];
-      const committed = git(['diff', '--name-only', `${mergeBase}...HEAD`], repoRoot);
-      const staged = git(['diff', '--name-only', '--cached'], repoRoot);
-      const unstaged = git(['diff', '--name-only'], repoRoot);
-      return Array.from(new Set([...committed, ...staged, ...unstaged, ...untracked]));
-    } catch {
-      // try next strategy
-    }
-  }
-
-  try {
-    const committed = git(['diff', '--name-only', 'HEAD^...HEAD'], repoRoot);
-    const staged = git(['diff', '--name-only', '--cached'], repoRoot);
-    const unstaged = git(['diff', '--name-only'], repoRoot);
-    return Array.from(new Set([...committed, ...staged, ...unstaged, ...untracked]));
-  } catch {
-    // fallback below
-  }
-
-  try {
-    const staged = git(['diff', '--name-only', '--cached'], repoRoot);
-    const unstaged = git(['diff', '--name-only'], repoRoot);
-    return Array.from(new Set([...staged, ...unstaged, ...untracked]));
-  } catch {
-    return untracked;
-  }
+  return { data: parsed.data, content: parsed.content };
 }
 
 function getAllEnglishContentPaths(repoRoot) {
@@ -208,48 +121,6 @@ function getAllEnglishContentPaths(repoRoot) {
   }
 
   return result;
-}
-
-// ─── Git-based diff helpers ─────────────────────────────────────────
-
-/**
- * Get file content at a specific git commit.
- */
-function getFileAtCommit(repoRoot, commit, filePath) {
-  try {
-    return execSync(`git show ${commit}:${filePath}`, {
-      cwd: repoRoot,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-  } catch {
-    // Try deepening clone
-    try {
-      execSync('git fetch --deepen=100', { cwd: repoRoot, stdio: 'ignore' });
-      return execSync(`git show ${commit}:${filePath}`, {
-        cwd: repoRoot,
-        encoding: 'utf-8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-    } catch {
-      return null;
-    }
-  }
-}
-
-/**
- * Get the latest commit that touched a file.
- */
-function getLatestCommitForFile(repoRoot, filePath) {
-  try {
-    return execSync(`git log -1 --format=%H -- ${filePath}`, {
-      cwd: repoRoot,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -288,7 +159,7 @@ function computeEnglishDiff(repoRoot, sourceCommit, enRel, currentParsed) {
   let oldParsed;
   try {
     const parsed = matter(oldRaw);
-    oldParsed = { data: parsed.data ?? {}, content: parsed.content ?? '' };
+    oldParsed = { data: parsed.data, content: parsed.content };
   } catch {
     return null;
   }

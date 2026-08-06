@@ -169,7 +169,7 @@ export function extractOption(opt: Option, resolver: DescriptionResolver): Optio
   return {
     flags: opt.flags,
     descriptionKey: resolver.findDescriptionKey(opt.description),
-    mandatory: opt.mandatory ?? false,
+    mandatory: opt.mandatory,
     defaultValue: serialiseDefault(opt.defaultValue),
   };
 }
@@ -205,7 +205,9 @@ export function extractContractPositional(
   arg: Argument,
   resolver: DescriptionResolver
 ): WalkedPositional {
-  const description = (arg as Argument & { description?: string }).description ?? '';
+  // Commander declares `description: string` on Argument (always a string, empty
+  // when undescribed), so no cast and no `?? ''` fallback are needed.
+  const description = arg.description;
   return {
     name: arg.name(),
     required: arg.required,

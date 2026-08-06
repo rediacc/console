@@ -59,7 +59,7 @@ interface TokenSpan {
 function tokenizeForTiming(text: string): TokenSpan[] {
   if (!isCjkDominant(text)) {
     return Array.from(text.matchAll(/\S+/g)).map((m) => ({
-      index: m.index ?? 0,
+      index: m.index,
       length: m[0].length,
     }));
   }
@@ -320,7 +320,8 @@ interface CollectArgs {
   storyboard: Storyboard;
   timeline: Timeline;
   transcript: Transcript | null;
-  sceneTiming: Record<string, SceneTiming>;
+  /** Absolute timing per scene id. Sparse: a scene may carry none. */
+  sceneTiming: Record<string, SceneTiming | undefined>;
   castTimingBySceneId: Map<string, CastNarratedDebug>;
 }
 
@@ -450,7 +451,8 @@ export function emitWordTimingsJson(args: WordTimingsArgs): void {
 interface ChaptersArgs {
   outPath: string;
   storyboard: Storyboard;
-  sceneTiming: Record<string, SceneTiming>;
+  /** Absolute timing per scene id. Sparse: a scene may carry none. */
+  sceneTiming: Record<string, SceneTiming | undefined>;
   /** Per-language transcript. Reads chapters[scene.id] for the localized label. */
   transcript: Record<string, unknown> | null;
   /** English transcript, used as fallback when the per-lang map is missing keys. */

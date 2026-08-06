@@ -45,18 +45,10 @@ function shouldSkipTemplate(templatePath, skipList) {
   return skipList.includes(templatePath);
 }
 
-// Escape string for JSON
-function jsonEscape(str) {
-  if (!str) return '';
-  return str
-    .replaceAll('\\', '\\\\')
-    .replaceAll('"', '\\"')
-    .replaceAll('\n', '\\n')
-    .replaceAll('\r', '\\r')
-    .replaceAll('\t', '\\t');
-}
-
 // Get file type based on extension
+/** Content type reported for an extension the map does not name. */
+const DEFAULT_FILE_TYPE = 'text';
+
 function getFileType(filename) {
   const ext = path.extname(filename).toLowerCase().slice(1);
   const typeMap = {
@@ -68,7 +60,7 @@ function getFileType(filename) {
     env: 'environment',
     dockerfile: 'dockerfile',
   };
-  return typeMap[ext] || 'text';
+  return typeMap[ext] ?? DEFAULT_FILE_TYPE;
 }
 
 // Extract template metadata from README
@@ -232,7 +224,7 @@ function generateCatalogJson(templatesDir, outputFile, skipList) {
     }
   }
 
-  catalog.categories = Array.from(categoriesSet).sort();
+  catalog.categories = Array.from(categoriesSet).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
   // Write catalog JSON
   fs.writeFileSync(outputFile, JSON.stringify(catalog, null, 2));
@@ -323,7 +315,7 @@ function minifyJsonFiles(outputDir) {
 }
 
 // Main function
-async function main() {
+function main() {
   console.log('========================================');
   console.log('JSON Config Generator (Node.js)');
   console.log('========================================');
@@ -435,7 +427,9 @@ async function main() {
 }
 
 // Run
-main().catch((error) => {
+try {
+  main();
+} catch (error) {
   console.error('Generation failed:', error);
   process.exit(1);
-});
+}

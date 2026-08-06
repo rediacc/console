@@ -31,7 +31,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { isSiteLocale } from '@rediacc/locales';
 import { VIDEO_LANGS } from '../src/utils/solution-video.ts';
-import type { VideoManifest } from './lib/update-video-manifest.js';
+import type { SparseVideoManifest } from './lib/update-video-manifest.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');
@@ -40,11 +40,11 @@ const manifestPath = path.join(wwwRoot, 'src', 'data', 'video-manifest.json');
 
 const REQUIRED_FIELDS = ['mp4', 'vertical', 'poster'] as const;
 
-function loadManifest(): VideoManifest {
+function loadManifest(): SparseVideoManifest {
   if (!fs.existsSync(manifestPath)) {
     return { generatedAt: '', baseUrl: '', tutorials: {}, solutions: {} };
   }
-  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as VideoManifest;
+  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as SparseVideoManifest;
 }
 
 /**
@@ -66,8 +66,11 @@ function loadManifest(): VideoManifest {
 // `declaredLangs` is injectable ONLY so the self-test can exercise the readyToFlip branch:
 // it cannot fire in production while VIDEO_LANGS === SITE_LOCALES, and an untestable branch
 // is one that silently rots until the day a 14th locale needs it.
+/** Sort `[key, value]` entry pairs by key, ascending, by code unit. */
+const byKeyAsc = <T>([a]: [string, T], [b]: [string, T]): number => (a < b ? -1 : a > b ? 1 : 0);
+
 export function reverseFindings(
-  manifest: VideoManifest,
+  manifest: SparseVideoManifest,
   required: string[],
   allSlugs: string[],
   declaredLangs: readonly string[] = VIDEO_LANGS
@@ -145,8 +148,12 @@ export function slugRendersVideo(slug: string): boolean {
   return /['"]video['"]/.test(sections[1]);
 }
 
-function missingManifestFields(manifest: VideoManifest, slug: string, lang: string): string[] {
-  const entry = manifest.solutions[slug]?.[lang];
+function missingManifestFields(
+  manifest: SparseVideoManifest,
+  slug: string,
+  lang: string
+): string[] {
+  const entry = manifest.solutions?.[slug]?.[lang];
   if (!entry) {
     return REQUIRED_FIELDS.map((field) => `${slug}.${lang}.${field} (no manifest entry)`);
   }
@@ -230,7 +237,7 @@ function main(): number {
     if (!byLang.has(m.lang)) byLang.set(m.lang, []);
     byLang.get(m.lang)!.push(m);
   }
-  for (const [lang, list] of [...byLang.entries()].sort()) {
+  for (const [lang, list] of [...byLang.entries()].sort(byKeyAsc)) {
     console.error(`[${lang}]`);
     for (const m of list) {
       console.error(`  ${m.slug}`);
@@ -272,7 +279,7 @@ function selftest(): number {
   const F = ['mp4', 'vertical', 'poster'] as const;
   const full = () => Object.fromEntries(F.map((f) => [f, { path: `x.${f}` }]));
   const mk = (solutions: unknown) =>
-    ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as VideoManifest;
+    ({ generatedAt: '', baseUrl: '', tutorials: {}, solutions }) as unknown as SparseVideoManifest;
   let fails = 0;
   const chk = (name: string, got: unknown, want: unknown) => {
     if (JSON.stringify(got) === JSON.stringify(want)) console.log(`  PASS  ${name}`);
