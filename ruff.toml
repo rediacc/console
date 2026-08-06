@@ -1,0 +1,109 @@
+# Python lint + format config. Enforced by .ci/scripts/quality/check-python-lint.sh
+# (npm run check:ci-python-lint), which is reachable from `npm run ci`.
+#
+# WHY THIS EXISTS. Until 2026-08-06 this repo had 91 `check:ci-*` gates covering
+# TypeScript, shell and Go, and ZERO covering Python -- while 13 of its 15 tracked
+# .py files are the Stop-hook program that gates every agent turn. The hook
+# modules already carried `# noqa: BLE001` and `# noqa: PLC0415`, so ruff had been
+# run against them once, by hand, and nothing had enforced it since: suppressions
+# with no gate behind them.
+#
+# The first thing this config caught was a live NameError in wl_checks.guided_slice
+# (F821, fixed in 6e3957e9d) that BOTH hook suites -- 584 and 118 assertions --
+# passed straight over, because reaching it needs root=None and a plan-subagent
+# triage at once. It then failed SOFT into a bare except that replaced the whole
+# worklist guide with an apology. That is the exact class this gate is for.
+#
+# `select = ["ALL"]` is deliberate: new ruff rules opt IN automatically, and every
+# exclusion below is stated here rather than sprinkled as per-line noqa. Nothing is
+# silenced to get past a finding -- `RUF100` (unused-noqa) stays ON, so if an ignore
+# here ever orphans an existing suppression the gate says so.
+target-version = "py312"
+line-length = 100
+
+# private/ holds submodules and gitignored sibling repos with their own CI. The
+# gate also passes an explicit file list from `git ls-files`, so this is a
+# backstop against someone running bare `ruff check .`.
+extend-exclude = ["private"]
+
+[lint]
+select = ["ALL"]
+ignore = [
+    # -- Annotations and docstring style. ~810 ANN + ~250 D findings, all churn.
+    #    The hook docstrings are load-bearing PROSE that records why a line is
+    #    the way it is; D209/D205/D401 would rewrite the prose to satisfy a
+    #    shape rule. Type annotations on 12.4k lines of untyped code buy 5 real
+    #    findings (measured with mypy --strict: 1061 errors, 96.7% of them
+    #    no-untyped-def/no-untyped-call).
+    "ANN",
+    "D",
+    "DOC",
+    "CPY001",
+    "INP001", # .claude/hooks/stop is deliberately not an importable package
+
+    # -- Owned by the formatter, or documented by ruff as conflicting with it.
+    "E501",
+    "COM812",
+    "ISC001",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+
+    # -- 373 hits and zero bug yield: "%s" % x is this program's house style,
+    #    used consistently across every message catalogue.
+    "UP031",
+
+    # -- A Stop hook's stdout IS its interface; the harness parses it.
+    "T201",
+    "T203",
+
+    # -- Complexity metrics. 95 findings that demand RESTRUCTURING code whose
+    #    behaviour is pinned by 702 assertions. Refactoring a hook to satisfy a
+    #    metric is the failure mode those suites exist to catch.
+    "C901",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0914",
+    "PLR0915",
+    "PLR0917",
+    "PLR2004",
+
+    # -- Signature and naming churn across an API the suites pin by name.
+    "FBT001",
+    "FBT002",
+    "FBT003",
+    "N812",
+    "SLF001",
+    "PTH", # ~60 os.path -> pathlib rewrites, zero bug yield
+
+    # -- Exception-message and try/except style preferences, not defects.
+    "TRY003",
+    "TRY300",
+    "TRY301",
+    "TRY400",
+    "EM101",
+    "EM102",
+    "EM103",
+
+    # -- bandit rules that are false positives FOR THIS PROGRAM specifically.
+    "S324", # sha1 here is a cache/dedup key, never a security primitive
+    "S603", # list-arg subprocess of git/gh is the design, not an injection
+    "S607",
+    "S108", # /tmp paths are the harness's own documented scratch contract
+    "S110", # duplicates SIM105, and its "log it" advice is wrong for a hook
+    #         whose silence on a poll stop is a deliberate context economy
+
+    # -- Commented-out-code and unicode-confusable heuristics. ERA001 cannot
+    #    tell prose from code in a file this heavily commented; the RUF00x
+    #    confusables fire on legitimate non-ASCII in user-facing strings.
+    "ERA001",
+    "PERF203",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[format]
+docstring-code-format = false

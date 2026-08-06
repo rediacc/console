@@ -71,6 +71,7 @@
     "check:ci-security-audit": ".ci/scripts/security/audit.sh",
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
+    "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-actionlint": ".ci/scripts/security/actionlint.sh",
     "check:ci-scope-scripts-reachability": ".ci/scripts/quality/check-scope-scripts-reachability.sh",
     "check:ci-shell-lint": ".ci/scripts/security/shellcheck.sh",
