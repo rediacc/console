@@ -44,12 +44,12 @@ export const REWRITABLE_TYPES = [
   'application/javascript',
   'text/javascript',
   'text/css',
-];
+] as const;
 
 // Install scripts are served with content-types outside REWRITABLE_TYPES
 // (application/x-sh, or no content-type for .ps1). Bypass the MIME check
 // so the channel default is still rewritten on preview hosts.
-export const REWRITABLE_PATHS = ['/install.sh', '/install.ps1'];
+export const REWRITABLE_PATHS = ['/install.sh', '/install.ps1'] as const;
 
 export function shouldRewrite(contentType: string | null, pathname: string): boolean {
   if (REWRITABLE_PATHS.includes(pathname)) return true;
@@ -59,7 +59,7 @@ export function shouldRewrite(contentType: string | null, pathname: string): boo
 
 /** Extract release channel from hostname (pr-420 | edge | stable). */
 export function getChannel(hostname: string): string {
-  const match = hostname.match(/^([^.]+)\.rediacc\./);
+  const match = /^([^.]+)\.rediacc\./.exec(hostname);
   return match ? match[1] : 'stable';
 }
 
@@ -161,12 +161,12 @@ export function normalizePath(pathname: string): { path: string; changed: boolea
   p = p.replace(/\.(html|md)$/i, '');
 
   // Collapse double slashes
-  p = p.replace(/\/{2,}/g, '/');
+  p = p.replaceAll(/\/{2,}/g, '/');
 
   // Lowercase outside percent-encoded sequences only. A %XX triple is
   // case-insensitive per RFC 3986 but ASSETS normalizes to uppercase;
   // lowercasing the whole string would loop.
-  p = p.replace(/(%[0-9a-fA-F]{2})|([^%]+)/g, (_, enc, plain) =>
+  p = p.replaceAll(/(%[0-9a-fA-F]{2})|([^%]+)/g, (_, enc, plain) =>
     enc ? enc : (plain as string).toLowerCase()
   );
 
@@ -178,7 +178,7 @@ export function normalizePath(pathname: string): { path: string; changed: boolea
  * If no language prefix, returns { lang: null, pathWithoutLang: path }.
  */
 export function detectLanguage(path: string): { lang: string | null; pathWithoutLang: string } {
-  const m = path.match(/^\/([a-z]{2})(\/.*|$)/);
+  const m = /^\/([a-z]{2})(\/.*|$)/.exec(path);
   if (m && (SUPPORTED_LANGUAGES as readonly string[]).includes(m[1])) {
     return { lang: m[1], pathWithoutLang: m[2] || '/' };
   }

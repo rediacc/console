@@ -66,11 +66,11 @@ function extractTitle(filePath) {
 
   // Decode HTML entities (&amp; -> &, &#38; -> &, etc.)
   let title = match[1]
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
+    .replaceAll(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replaceAll('&amp;', '&')
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&quot;', '"')
     .trim();
 
   for (const suffix of BRAND_SUFFIXES) {

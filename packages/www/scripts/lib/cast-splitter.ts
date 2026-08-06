@@ -189,8 +189,8 @@ export function countDisplayRows(
   // Strip CSI / OSC escape sequences so they don't count toward visible width.
   // Regexes built from String.fromCharCode so no literal control char appears.
   const clean = text
-    .replace(new RegExp(`${ESC}\\[[0-9;?]*[a-zA-Z]`, 'g'), '')
-    .replace(new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g'), '');
+    .replaceAll(new RegExp(`${ESC}\\[[0-9;?]*[a-zA-Z]`, 'g'), '')
+    .replaceAll(new RegExp(`${ESC}\\][^${BEL}]*${BEL}`, 'g'), '');
   let rows = 0;
   for (const rawLine of clean.split('\n')) {
     // A carriage return rewrites the line in place; the widest segment wins.
@@ -220,7 +220,7 @@ export function findLastPromptTime(
     if (kind !== 'o') continue;
     if (t <= startSec) continue;
     if (t >= endSec) break;
-    if (PROMPT_PATTERN.test(data)) {
+    if (data.includes('user@rediacc')) {
       lastTime = t;
     }
   }

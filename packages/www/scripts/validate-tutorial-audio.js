@@ -141,7 +141,7 @@ function hashText(text) {
     .createHash('sha256')
     .update(
       String(text || '')
-        .replace(/\s+/g, ' ')
+        .replaceAll(/\s+/g, ' ')
         .trim()
     )
     .digest('hex');
@@ -153,7 +153,7 @@ function hashTranscript(transcript) {
     markerIndex: ev.markerIndex,
     at: ev.at,
     text: String(ev.text || '')
-      .replace(/\s+/g, ' ')
+      .replaceAll(/\s+/g, ' ')
       .trim(),
   }));
   return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex');

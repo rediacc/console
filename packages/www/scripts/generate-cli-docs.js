@@ -67,7 +67,7 @@ function validateCommandOrder(commands) {
 
 // Convert camelCase to kebab-case for CLI command syntax
 function toKebab(str) {
-  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  return str.replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
 /**
@@ -214,7 +214,7 @@ function buildEnrichedSyntax(group, ...subParts) {
 function emitOptionsTable(group, ...subParts) {
   const key = getCommandTreeKey(group, ...subParts);
   const node = commandTreeLookup[key];
-  if (!node || !node.options || node.options.length === 0) return [];
+  if (!node?.options || node.options.length === 0) return [];
   const tableLines = [];
   tableLines.push('');
   tableLines.push(
@@ -238,7 +238,7 @@ function emitOptionsTable(group, ...subParts) {
  * YAML-safe quote: wraps value in double quotes, escaping inner double quotes
  */
 function yamlQuote(value) {
-  return `"${value.replace(/"/g, '\\"')}"`;
+  return `"${value.replaceAll('"', '\\"')}"`;
 }
 
 /**

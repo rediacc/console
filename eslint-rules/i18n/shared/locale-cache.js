@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
-let cachedResources = new Map();
-let cachedAllKeys = new Map();
+const cachedResources = new Map();
+const cachedAllKeys = new Map();
 
 /**
  * Load all JSON locale files from a directory

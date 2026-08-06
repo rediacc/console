@@ -9,7 +9,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded locale data
-let localeCache = new Map();
+const localeCache = new Map();
 
 /**
  * Get all supported language directories

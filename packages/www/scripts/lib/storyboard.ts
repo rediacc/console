@@ -269,7 +269,7 @@ export function resolveCastEndpoint(
   if (typeof ref === 'number') return ref;
   if (ref === 'start') return 0;
   if (ref === 'end') return castEndSec;
-  const m = ref.match(/^marker-(\d+)$/);
+  const m = /^marker-(\d+)$/.exec(ref);
   if (!m) throw new Error(`Unparseable cast endpoint: ${ref}`);
   const idx = Number(m[1]);
   if (idx < 0 || idx >= markers.length)

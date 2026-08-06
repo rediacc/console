@@ -66,7 +66,7 @@ export const seoDescriptionLength = {
           checkObject(value, fullPath);
         } else if (value.type === 'String' && isMetaDescriptionKey(fullPath) && !isExempt(fullPath)) {
           const str = value.value;
-          const rendered = str.replace(/\{\{[^}]+\}\}/g, 'placeholder');
+          const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
           const len = rendered.length;
 
           if (len < minLength) {

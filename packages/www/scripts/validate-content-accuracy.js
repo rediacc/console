@@ -145,7 +145,7 @@ function validateRdcCommands(commands, errors, rule) {
 
     // Skip if the command position has angle-bracket placeholder (e.g. "rdc --flag <command>")
     const firstNonFlag = tokens.slice(1).find((t) => !t.startsWith('-'));
-    if (firstNonFlag && firstNonFlag.startsWith('<')) continue;
+    if (firstNonFlag?.startsWith('<')) continue;
 
     // Allow commands that exist but aren't in the command tree export
     const rootCmd = tokens.find((t) => !t.startsWith('-') && t !== 'rdc');

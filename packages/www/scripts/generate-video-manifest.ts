@@ -64,7 +64,7 @@ function scanTutorials(manifest: VideoManifest): { files: number } {
     const mp4s = entries.filter((f) => f.endsWith('.mp4'));
     for (const mp4 of mp4s) {
       const castKey = mp4.slice(0, -'.mp4'.length);
-      const fields: Array<[string, string]> = [
+      const fields: [string, string][] = [
         ['mp4', `${castKey}.mp4`],
         ['poster', `${castKey}.${lang}.poster.jpg`],
         ['vtt', `${castKey}.${lang}.vtt`],
@@ -94,7 +94,7 @@ function scanSolutions(manifest: VideoManifest): { files: number } {
     const mp4s = entries.filter((f) => f.endsWith('.mp4') && !f.endsWith('.vertical.mp4'));
     for (const mp4 of mp4s) {
       const slug = mp4.slice(0, -'.mp4'.length);
-      const fields: Array<[string, string]> = [
+      const fields: [string, string][] = [
         ['mp4', `${slug}.mp4`],
         ['vertical', `${slug}.vertical.mp4`],
         ['poster', `${slug}.poster.jpg`],

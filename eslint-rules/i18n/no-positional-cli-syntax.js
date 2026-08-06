@@ -54,7 +54,7 @@ const COMMAND_TREE_PATH = path.resolve(
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Build a detection regex for a command path. Matches when the command path
@@ -179,7 +179,7 @@ export const noPositionalCliSyntax = {
       source: 'explicit',
     }));
 
-    let derivedCommands = [];
+    const derivedCommands = [];
     if (autoDerive) {
       const { leaves, parents } = loadPathsFromTree();
       // Leaf-command pass: reject ANY non-flag next token. Sorted

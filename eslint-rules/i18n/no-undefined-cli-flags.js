@@ -80,7 +80,7 @@ export const loadValidFlags = () => {
   // reference too (e.g. "Implies --infra" when `--no-infra` is the option).
   for (const f of [...flags]) {
     const m = f.match(/^--no-(.+)$/);
-    if (m) flags.add('--' + m[1]);
+    if (m) flags.add(`--${  m[1]}`);
   }
   cachedFlags = flags;
   return flags;

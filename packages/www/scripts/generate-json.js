@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -49,11 +49,11 @@ function shouldSkipTemplate(templatePath, skipList) {
 function jsonEscape(str) {
   if (!str) return '';
   return str
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
+    .replaceAll('\\', '\\\\')
+    .replaceAll('"', '\\"')
+    .replaceAll('\n', '\\n')
+    .replaceAll('\r', '\\r')
+    .replaceAll('\t', '\\t');
 }
 
 // Get file type based on extension
@@ -83,7 +83,7 @@ function extractTemplateMetadata(templateDir) {
     const content = fs.readFileSync(readmePath, 'utf-8');
 
     // Extract title (first header)
-    const titleMatch = content.match(/^#[^#]\s*(.+)$/m);
+    const titleMatch = /^#[^#]\s*(.+)$/m.exec(content);
     if (titleMatch) {
       title = titleMatch[1].trim();
     }
@@ -92,7 +92,7 @@ function extractTemplateMetadata(templateDir) {
     const lines = content.split('\n');
     let foundTitle = false;
     for (const line of lines) {
-      if (line.match(/^#[^#]/)) {
+      if (/^#[^#]/.exec(line)) {
         foundTitle = true;
         continue;
       }
@@ -132,7 +132,7 @@ function generateTemplateJson(templateDir, outputFile) {
     id: templateId,
     name: metadata.title,
     description: metadata.description,
-    category: category,
+    category,
     tags: [category, templateName],
     files: [],
     readme: readFileContent(path.join(templateDir, 'README.md')),
@@ -156,7 +156,7 @@ function generateTemplateJson(templateDir, outputFile) {
       name: filename,
       path: `${templateName}/${filename}`,
       type: getFileType(filename),
-      content: content,
+      content,
     });
   }
 
@@ -220,12 +220,12 @@ function generateCatalogJson(templatesDir, outputFile, skipList) {
         id: templateId,
         name: metadata.title,
         description: metadata.description,
-        category: category,
+        category,
         tags: [category, templateName],
         file_count: fileCount,
         has_readme: hasReadme,
         has_docker: hasDocker,
-        status: status,
+        status,
         download_url: `templates/${templateId}.json`,
         readme: readFileContent(path.join(templateDir, 'README.md')),
       });

@@ -97,14 +97,14 @@ interface TranscriptEvent {
 
 interface Transcript {
   events?: TranscriptEvent[];
-  narrations?: Array<{ id?: string; text?: string }>;
+  narrations?: { id?: string; text?: string }[];
 }
 
 function parseArgs(argv: string[]): { lang?: FallbackLang } {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--lang') {
       const v = argv[++i];
-      if (!FALLBACK_LANGUAGES.includes(v as FallbackLang)) {
+      if (!FALLBACK_LANGUAGES.includes(v)) {
         throw new Error(
           FALLBACK_LANGUAGES.length === 0
             ? `No locale falls back to English audio any more — all 13 are natively ` +
@@ -114,7 +114,7 @@ function parseArgs(argv: string[]): { lang?: FallbackLang } {
             : `--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`
         );
       }
-      return { lang: v as FallbackLang };
+      return { lang: v };
     }
   }
   return {};

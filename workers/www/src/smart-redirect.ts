@@ -40,7 +40,7 @@ import { SITE_LOCALES } from '../../../packages/locales/index.js';
 const SUPPORTED_LANGUAGES = SITE_LOCALES;
 const REDIRECT_THRESHOLD = 50;
 const FILE_EXT_RE = /\.\w{2,5}$/;
-const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'];
+const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'] as const;
 
 // ---------------------------------------------------------------------------
 // Manifest cache
@@ -54,7 +54,7 @@ async function loadManifest(assets: Fetcher): Promise<RouteEntry[]> {
   try {
     const response = await assets.fetch('https://assets.local/route-manifest.json');
     if (!response.ok) return [];
-    manifestCache = (await response.json()) as RouteEntry[];
+    manifestCache = (await response.json());
   } catch {
     manifestCache = [];
   }
@@ -88,7 +88,7 @@ function parseRequestPath(pathname: string): ParsedRequest {
   }
 
   const slug = slugParts.join('/');
-  const pathWithoutLang = '/' + rest.join('/');
+  const pathWithoutLang = `/${  rest.join('/')}`;
   const keywords = slug.split(/[-/]/).filter((k) => k.length > 2);
 
   return { lang, pathWithoutLang, section, slug, keywords };

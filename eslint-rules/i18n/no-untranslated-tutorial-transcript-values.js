@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-let englishCache = new Map();
+const englishCache = new Map();
 
 function loadEnglishTranscript(transcriptsDir, castFile) {
   const cacheKey = `${transcriptsDir}:${castFile}`;

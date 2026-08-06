@@ -136,12 +136,10 @@ export function createDescriptionResolver(cliJson: Record<string, unknown>): Des
     for (const [key, value] of flat) {
       strings.set(key, value);
       if (value.includes('{{')) {
-        const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const pattern = new RegExp('^' + escaped.replace(/\\\{\\\{.*?\\\}\\\}/g, '.*') + '$');
+        const escaped = value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp('^' + escaped.replaceAll(/\\\{\\\{.*?\\\}\\\}/g, '.*') + '$');
         interpolated.push({ pattern, key });
-      } else {
-        if (!exact.has(value)) exact.set(value, key);
-      }
+      } else if (!exact.has(value)) exact.set(value, key);
     }
   }
 

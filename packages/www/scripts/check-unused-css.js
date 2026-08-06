@@ -173,7 +173,7 @@ function findClassUsage(className, sourceFiles) {
  * Escape special regex characters
  */
 function escapeRegex(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**

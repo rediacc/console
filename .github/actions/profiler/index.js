@@ -33,7 +33,7 @@ const SAMPLER = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'sample
 const PANEL = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'panel.sh');
 
 function input(name, fallback) {
-  const key = 'INPUT_' + name.toUpperCase().replace(/ /g, '_');
+  const key = `INPUT_${  name.toUpperCase().replaceAll(' ', '_')}`;
   const v = process.env[key];
   return v === undefined || v === '' ? fallback : v.trim();
 }
@@ -77,7 +77,7 @@ function alive(pid) {
 function tail(file, bytes) {
   try {
     const data = fs.readFileSync(file, 'utf8');
-    return data.slice(-bytes).trim().replace(/\s+/g, ' ');
+    return data.slice(-bytes).trim().replaceAll(/\s+/g, ' ');
   } catch {
     return '';
   }
@@ -155,10 +155,7 @@ function runPost() {
   // were the whole job.
   const wasAlive = pid > 0 && alive(pid);
   let note = '';
-  if (!wasAlive) {
-    const why = tail(log, 400);
-    note = `the sampler was no longer running when the job ended${why ? ` (last log: ${why})` : ''}`;
-  } else {
+  if (wasAlive) {
     try {
       process.kill(pid, 'SIGTERM');
     } catch (err) {
@@ -173,6 +170,9 @@ function runPost() {
       }
       note = 'the sampler had to be SIGKILLed; the final sample may be truncated';
     }
+  } else {
+    const why = tail(log, 400);
+    note = `the sampler was no longer running when the job ended${why ? ` (last log: ${why})` : ''}`;
   }
 
   const wallS = start > 0 ? Math.round((Date.now() - start) / 1000) : 0;

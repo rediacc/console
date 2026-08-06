@@ -220,10 +220,10 @@ function lookupNextTutorialTitle(wwwPublicRoot: string, lang: string, nextKey: s
     }
   };
   const langDoc = tryRead(lang);
-  if (isAuthored(langDoc?.title)) return (langDoc!.title as string).trim();
+  if (isAuthored(langDoc?.title)) return (langDoc.title).trim();
   if (lang !== 'en') {
     const enDoc = tryRead('en');
-    if (isAuthored(enDoc?.title)) return (enDoc!.title as string).trim();
+    if (isAuthored(enDoc?.title)) return (enDoc.title).trim();
   }
   return '';
 }
@@ -244,13 +244,13 @@ function readEvents(doc: TranscriptDoc | null): TranscriptEvent[] {
  * pairs rendered as title-card sub-items. Capped at SUB_ITEM_SLOTS — any tutorial
  * with more cast-narrated steps silently truncates (the SVG only has 8 slots).
  */
-function buildSubItems(ctx: SceneContext): Array<{ label: string; command: string }> {
+function buildSubItems(ctx: SceneContext): { label: string; command: string }[] {
   const events = readEvents(ctx.transcript);
   const eventsEn = readEvents(ctx.transcriptEn);
-  const items: Array<{ label: string; command: string }> = [];
+  const items: { label: string; command: string }[] = [];
   for (const scene of ctx.storyboard.scenes) {
     if (scene.type !== 'cast-narrated') continue;
-    const castNarrated = scene as CastNarratedScene;
+    const castNarrated = scene;
     const label = lookupCardLabel(events, eventsEn, castNarrated.markerIndex);
     // Cards show the FULL command (wrapped onto two lines when long) — the
     // recorded marker text, with `card.command` as an authored override.

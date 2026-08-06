@@ -53,7 +53,7 @@ const TODO_BARE = /^TODO: translate (.+?)\s*$/;
 
 interface TodoSlot {
   /** JSON path components from the root, used to set the translated value back. */
-  pathSteps: Array<string | number>;
+  pathSteps: (string | number)[];
   /** Field kind for the prompt: cardLabel, chapter, title, narration, after-text, prose, event, etc. */
   kind: string;
   /** English value to translate (if discoverable) or empty if we only have the kind. */
@@ -72,7 +72,7 @@ function parseTodo(s: string): { kind: string; en: string } | null {
   return null;
 }
 
-function findTodos(node: unknown, slots: TodoSlot[], pathSteps: Array<string | number> = []): void {
+function findTodos(node: unknown, slots: TodoSlot[], pathSteps: (string | number)[] = []): void {
   if (Array.isArray(node)) {
     node.forEach((item, i) => findTodos(item, slots, [...pathSteps, i]));
     return;
@@ -93,7 +93,7 @@ function findTodos(node: unknown, slots: TodoSlot[], pathSteps: Array<string | n
 
 function setByPath(
   root: Record<string, unknown> | unknown[],
-  pathSteps: Array<string | number>,
+  pathSteps: (string | number)[],
   value: string
 ): void {
   let cursor: unknown = root;
@@ -167,7 +167,7 @@ ${JSON.stringify(input, null, 2)}`;
   }
 
   // Extract the JSON array. Tolerate optional code-fence wrapping.
-  const cleaned = text.trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+  const cleaned = text.trim().replaceAll(/^```(?:json)?\s*|\s*```$/g, '');
   const parsed = JSON.parse(cleaned);
   if (!Array.isArray(parsed)) {
     throw new Error(`Expected JSON array, got ${typeof parsed}`);

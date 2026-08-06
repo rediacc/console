@@ -8,7 +8,7 @@ const allLiveTargets = new Set<string>([...manifestPaths, ...ALLOWED_NON_MANIFES
 
 describe('EXACT redirect rules', () => {
   test('every 301 target is a live page', () => {
-    const broken: Array<{ from: string; to: string }> = [];
+    const broken: { from: string; to: string }[] = [];
     for (const [from, rule] of Object.entries(EXACT)) {
       if (rule.status === 301 && rule.to !== null) {
         if (!allLiveTargets.has(rule.to)) {
@@ -31,7 +31,7 @@ describe('EXACT redirect rules', () => {
     // is added in the same step), no chain is actually traversed.
     //
     // We only flag genuine chains: A -> B where B -> C with C !== B.
-    const chains: Array<{ from: string; to: string; via: string }> = [];
+    const chains: { from: string; to: string; via: string }[] = [];
     for (const [from, rule] of Object.entries(EXACT)) {
       if (rule.status !== 301 || rule.to === null || rule.to === from) continue;
       const next = EXACT[rule.to];
@@ -55,7 +55,7 @@ describe('EXACT redirect rules', () => {
         expect(rule.to).toBeNull();
       } else {
         expect(rule.to).not.toBeNull();
-        expect(rule.to!.startsWith('/')).toBe(true);
+        expect(rule.to.startsWith('/')).toBe(true);
       }
     }
   });

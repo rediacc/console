@@ -254,12 +254,12 @@ async function main(): Promise<void> {
   // visiting a PR preview download the stable CLI instead of the preview
   // build — the exact regression this test exists to catch.
   const expectedChannel = extractChannel(PREVIEW_URL!);
-  if (!expectedChannel) {
-    fail('Channel extraction', new Error(`Could not parse channel from ${PREVIEW_URL}`));
-  } else {
+  if (expectedChannel) {
     await checkInstallSh(expectedChannel);
     await checkInstallPs1(expectedChannel);
     await checkMarketingHtml(expectedChannel);
+  } else {
+    fail('Channel extraction', new Error(`Could not parse channel from ${PREVIEW_URL}`));
   }
 
   // Summary
