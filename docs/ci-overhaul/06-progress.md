@@ -2344,3 +2344,43 @@ matters — it still reports `reduced` while dragging the matrix back, so withou
 that assertion a future edit giving `gates` a job surface would silently undo the
 change while every test row still read `reduced`.
 
+## 2026-08-06 — the 12 CI-only stop-suite failures: not reproducible, not diagnosed
+
+**Left here rather than in a worklist item, because the worklist item had no
+executable action left and a blocked item that nobody can advance is worse than a
+record somebody can read.**
+
+`test-worklist-v5.sh` reported **563 passed / 12 failed** in CI run
+`31055389610` (`Quality / Security`) while giving **575/0** locally. It has not
+recurred in **six** subsequent executions of the battery (`31065302651`,
+`31069411195`, `31073312222`, `31075240744`, `31077151139`, `31078369416`).
+
+**The twelve were never NAMED.** `2f509ccf8` fixed the reporter that hid them —
+it used `tail -20`, and in a 575-case suite the last twenty lines are PASS lines
+plus the summary, so every FAIL line scrolled past. That fix has never had a red
+to fire on. If this returns, the next red names the cases, and that is the single
+most valuable thing to read.
+
+**Seven hypotheses falsified**, so a recurrence starts narrower:
+1. `HOME` — an empty one still gives 575/0.
+2. Sibling fixtures from the `wl_liveness` session-scoping — case 163v is the
+   only v5 case creating `subagents` dirs.
+3. Wall-clock sensitivity — only 3 time deps exist, all in 163v, bounded by 10
+   hours or set-to-now, nothing crosses a threshold.
+4. Shared-store collision — the harness pins `TMPDIR=$BASE/tmp` under
+   `mktemp -d`, so concurrent runs cannot collide in `/tmp/claude-worklist`.
+5. Blind `proc_table` — 569/8, not 12.
+6. Blind `harness_ancestors` — 571/6, not 12.
+7. **Their union — 569/8, IDENTICAL to (5) alone**, because `harness_ancestors`
+   consumes `proc_table`. That puts a **ceiling of 8** on the entire
+   OS-visibility family, which therefore cannot explain 12. This killed the
+   leading theory, and it is the most useful of the seven.
+
+**The measurement error worth not repeating** is recorded in
+`docs/agent/TRAPS.md`: three rounds were initially counted as "did not recur"
+when the battery had never executed, because the run was cancelled by an earlier
+gate. Not-executed is a third state.
+
+**Honest status: not reproducible in six executions, cause unknown.** That is a
+characterisation, not a mechanism.
+

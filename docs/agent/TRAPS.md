@@ -143,3 +143,40 @@ clean tree.
 The trap is not the error. The trap is concluding from it that the package's
 lint is broken, and going to fix `eslint.config.js` -- the config is right, the
 invocation is wrong.
+
+## A cancelled run is not a passed run, and it is not a failed one either
+
+The watchdog force-cancels a CI run on the first job failure. So a run that died
+on an unrelated red looks, through the usual filter, exactly like a run where
+everything you cared about passed:
+
+```
+gh api .../jobs --paginate --jq '.jobs[]|select(.conclusion=="failure")|.name'
+```
+
+Both print nothing new about your job. The run-level conclusion says
+`cancelled` in both cases.
+
+**Measured cost, 2026-08-06.** A flaky suite was being tracked across CI rounds
+to see whether it recurred. Three consecutive rounds were counted as "did not
+recur" when in fact the battery **never executed** — each run was cancelled by an
+earlier gate (a dependency red, an embed-pin red, a TypeScript cast). The tally
+said one-in-four; the truth was one-in-one, because three of the four rounds had
+measured nothing at all. Not-executed is a THIRD state, and collapsing it into
+"passed" inflates confidence exactly when evidence is scarcest.
+
+The fix is one line in the watch, and it is worth the noise:
+
+```
+gh api .../jobs --paginate --jq '.jobs[]|select(.name=="<your job>")|"job: \(.conclusion)"'
+```
+
+Report the job's OWN conclusion, never the run's. Within one round of adding it,
+a run that read `cancelled` at run level reported `battery: success` — a real
+data point that would otherwise have been discarded.
+
+The same shape hides in `gh pr checks`: `Review Complete` appears there as a
+failing job with a `/runs/` URL, but it is a check-run posted by a separate
+workflow. Read `.output.summary` on the commit's check-runs to see what it
+actually says.
+
