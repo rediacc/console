@@ -153,9 +153,12 @@ export const interpolationMatch = {
       },
     ],
     messages: {
-      missingVariable: 'Translation "{{key}}" expects variable "{{variable}}" but it was not provided in the t() call. See docs/i18n/CONVENTIONS.md.',
-      extraVariable: 'Variable "{{variable}}" provided to t("{{key}}") but not used in the translation string. See docs/i18n/CONVENTIONS.md.',
-      unknownKey: 'Translation key "{{key}}" not found in namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
+      missingVariable:
+        'Translation "{{key}}" expects variable "{{variable}}" but it was not provided in the t() call. See docs/i18n/CONVENTIONS.md.',
+      extraVariable:
+        'Variable "{{variable}}" provided to t("{{key}}") but not used in the translation string. See docs/i18n/CONVENTIONS.md.',
+      unknownKey:
+        'Translation key "{{key}}" not found in namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -165,7 +168,7 @@ export const interpolationMatch = {
     const absoluteLocaleDir = resolveRequiredDirOption(
       'i18n-source/interpolation-match',
       'localeDir',
-      options.localeDir,
+      options.localeDir
     );
 
     const translations = loadTranslations(absoluteLocaleDir);

@@ -143,7 +143,9 @@ const RULES = [
     name: 'workflows',
     match: matchPrefix('.github/workflows/'),
     full: (p, ctx) =>
-      ctx.workflowClosure && ctx.workflowClosure.has(p) ? 'workflow-closure' : 'workflow-non-closure',
+      ctx.workflowClosure && ctx.workflowClosure.has(p)
+        ? 'workflow-closure'
+        : 'workflow-non-closure',
   },
 
   // Composite actions (setup-workspace, app-token) run in nearly every job.

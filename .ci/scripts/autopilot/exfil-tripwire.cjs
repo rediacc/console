@@ -38,7 +38,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const { EXPECTED_JOB_NAMES, matchJobName } = require(path.join(__dirname, '..', 'ci', 'skip-plan-reconcile.cjs'));
+const { EXPECTED_JOB_NAMES, matchJobName } = require(
+  path.join(__dirname, '..', 'ci', 'skip-plan-reconcile.cjs')
+);
 const { JOB_SURFACES } = require(path.join(__dirname, '..', 'ci', 'scope-map.cjs'));
 
 const OUT_OF_SCOPE_BYTES_MAX = 32 * 1024;
@@ -120,11 +122,15 @@ function evaluate(files, totalBytes, prefixes) {
   const outOfScopePaths = [];
   for (const [p, info] of files) {
     if (info.isBinary) {
-      tripped.push(`binary-unmeasurable: '${p}' carries a binary payload whose added bytes cannot be bounded`);
+      tripped.push(
+        `binary-unmeasurable: '${p}' carries a binary payload whose added bytes cannot be bounded`
+      );
       continue;
     }
     if (info.isNew && info.addedBytes > NEW_FILE_BYTES_MAX) {
-      tripped.push(`new-file-over-8kb: '${p}' is a new file adding ${info.addedBytes} bytes (cap ${NEW_FILE_BYTES_MAX}, applies regardless of prefix)`);
+      tripped.push(
+        `new-file-over-8kb: '${p}' is a new file adding ${info.addedBytes} bytes (cap ${NEW_FILE_BYTES_MAX}, applies regardless of prefix)`
+      );
     }
     const inScope = [...prefixes].some((pre) => p.startsWith(pre));
     if (!inScope) {

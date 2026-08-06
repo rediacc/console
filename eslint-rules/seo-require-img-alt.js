@@ -50,19 +50,13 @@ function isDecorativeImage(node) {
 
 function isAltAttribute(attr) {
   return (
-    attr.type === 'JSXAttribute' &&
-    attr.name?.type === 'JSXIdentifier' &&
-    attr.name.name === 'alt'
+    attr.type === 'JSXAttribute' && attr.name?.type === 'JSXIdentifier' && attr.name.name === 'alt'
   );
 }
 
 /** alt="" or alt="   " (empty or whitespace-only string literal). */
 function isEmptyLiteralAlt(value) {
-  return (
-    value?.type === 'Literal' &&
-    typeof value.value === 'string' &&
-    value.value.trim() === ''
-  );
+  return value?.type === 'Literal' && typeof value.value === 'string' && value.value.trim() === '';
 }
 
 /** alt={""}, alt={null}, alt={undefined}. */
@@ -108,8 +102,7 @@ export const seoRequireImgAlt = {
 
     return {
       JSXOpeningElement(node) {
-        const name =
-          node.name?.type === 'JSXIdentifier' ? node.name.name : '';
+        const name = node.name?.type === 'JSXIdentifier' ? node.name.name : '';
         if (name === 'img' || name === 'Image') {
           checkElement(node);
         }

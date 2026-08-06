@@ -39,7 +39,13 @@ const MAX_HANDOFF_BYTES = 65536;
 // to protect, and a "fix" touching them is indistinguishable from an attack.
 const DENY_GITHUB = ['.github'];
 const DENY_BLOCKED_PREFIXES = ['.claude', '.husky'];
-const DENY_BLOCKED_EXACT = ['.mcp.json', '.claude.json', 'CLAUDE.md', 'CLAUDE.local.md', '.gitmodules'];
+const DENY_BLOCKED_EXACT = [
+  '.mcp.json',
+  '.claude.json',
+  'CLAUDE.md',
+  'CLAUDE.local.md',
+  '.gitmodules',
+];
 
 // ---------------------------------------------------------------------------
 // Minimal interpreter for the subset of JSON Schema handoff.schema.json uses.
@@ -69,7 +75,8 @@ function validateNode(value, schema, ptr, errors) {
     if (!Array.isArray(value)) return void errors.push(`${ptr}: must be an array`);
     if (schema.maxItems !== undefined && value.length > schema.maxItems)
       errors.push(`${ptr}: more than ${schema.maxItems} items`);
-    if (schema.items) value.forEach((v, i) => validateNode(v, schema.items, `${ptr}[${i}]`, errors));
+    if (schema.items)
+      value.forEach((v, i) => validateNode(v, schema.items, `${ptr}[${i}]`, errors));
     return;
   }
   if (schema.type === 'object') {
@@ -138,7 +145,10 @@ function validate(raw, opts) {
   const fail = (cls, msg) => reasons.push(`${cls}: ${msg}`);
 
   if (raw === null) {
-    fail('handoff-missing', `no handoff at '${opts.handoffPath}' - the model exited without leaving one; a wedged model must be visible, never a silent no-op`);
+    fail(
+      'handoff-missing',
+      `no handoff at '${opts.handoffPath}' - the model exited without leaving one; a wedged model must be visible, never a silent no-op`
+    );
     return { ok: false, reasons };
   }
   if (raw.length > MAX_HANDOFF_BYTES) {
@@ -153,8 +163,15 @@ function validate(raw, opts) {
     return { ok: false, reasons };
   }
   const schema = JSON.parse(fs.readFileSync(SCHEMA_FILE, 'utf8'));
-  if (!handoff || typeof handoff !== 'object' || handoff.schema !== schema.properties.schema.const) {
-    fail('schema-unknown', `expected schema '${schema.properties.schema.const}', got '${handoff && handoff.schema}'`);
+  if (
+    !handoff ||
+    typeof handoff !== 'object' ||
+    handoff.schema !== schema.properties.schema.const
+  ) {
+    fail(
+      'schema-unknown',
+      `expected schema '${schema.properties.schema.const}', got '${handoff && handoff.schema}'`
+    );
     return { ok: false, reasons };
   }
 
@@ -165,7 +182,8 @@ function validate(raw, opts) {
   // Conditional rules the schema subset cannot express.
   const files = Array.isArray(handoff.files) ? handoff.files : [];
   if (handoff.outcome === 'push') {
-    if (files.length === 0) fail('schema-violation', 'handoff.files: outcome push requires a non-empty files[]');
+    if (files.length === 0)
+      fail('schema-violation', 'handoff.files: outcome push requires a non-empty files[]');
     if (typeof handoff.commit_message !== 'string' || handoff.commit_message.length === 0)
       fail('schema-violation', 'handoff.commit_message: outcome push requires a commit message');
   }
@@ -174,13 +192,22 @@ function validate(raw, opts) {
   }
   // block-commit-meta.sh bans attribution trailers repo-wide; refusing them
   // here keeps the harness from minting a commit its own hooks would reject.
-  if (typeof handoff.commit_message === 'string' && /co-authored-by/i.test(handoff.commit_message)) {
-    fail('commit-meta-banned', 'commit_message carries an attribution trailer (banned repo-wide by block-commit-meta.sh)');
+  if (
+    typeof handoff.commit_message === 'string' &&
+    /co-authored-by/i.test(handoff.commit_message)
+  ) {
+    fail(
+      'commit-meta-banned',
+      'commit_message carries an attribution trailer (banned repo-wide by block-commit-meta.sh)'
+    );
   }
   if (reasons.length > 0) return { ok: false, reasons };
 
   if (handoff.base_head !== opts.baseHead) {
-    fail('base-head-mismatch', `handoff built against ${handoff.base_head}, harness checked out ${opts.baseHead}`);
+    fail(
+      'base-head-mismatch',
+      `handoff built against ${handoff.base_head}, harness checked out ${opts.baseHead}`
+    );
     return { ok: false, reasons };
   }
 
@@ -205,11 +232,20 @@ function validate(raw, opts) {
       continue;
     }
     if (DENY_GITHUB.some((b) => underPrefix(norm, b))) {
-      fail('denylist-github', `${norm} - workflow-surface changes are never pushed by the harness; escalating with the proposed patch attached as data (03-v2-autonomy.md wall 2)`);
+      fail(
+        'denylist-github',
+        `${norm} - workflow-surface changes are never pushed by the harness; escalating with the proposed patch attached as data (03-v2-autonomy.md wall 2)`
+      );
       continue;
     }
-    if (DENY_BLOCKED_PREFIXES.some((b) => underPrefix(norm, b)) || DENY_BLOCKED_EXACT.includes(norm)) {
-      fail('denylist-blocked', `${norm} - agent-config surface; blocked outright, quarantine for inspection as data (wall 4)`);
+    if (
+      DENY_BLOCKED_PREFIXES.some((b) => underPrefix(norm, b)) ||
+      DENY_BLOCKED_EXACT.includes(norm)
+    ) {
+      fail(
+        'denylist-blocked',
+        `${norm} - agent-config surface; blocked outright, quarantine for inspection as data (wall 4)`
+      );
       continue;
     }
     if (!resolvesInsideRoot(opts.root, norm)) {
@@ -226,7 +262,8 @@ function validate(raw, opts) {
   // Staged-set equality, the other direction: an edit the model did not
   // declare is a red flag, not a rounding error.
   for (const d of dirty) {
-    if (!declared.has(d)) fail('undeclared-dirty', `${d} changed in the tree but is not declared in files[]`);
+    if (!declared.has(d))
+      fail('undeclared-dirty', `${d} changed in the tree but is not declared in files[]`);
   }
 
   if (reasons.length > 0) return { ok: false, reasons };
@@ -260,7 +297,9 @@ function main(argv) {
     }
   }
   if (!opts.handoff || !opts.root || !opts.baseHead || !opts.status) {
-    process.stderr.write('usage: validate-handoff.cjs --handoff <file> --root <dir> --base-head <sha> --status <file>\n');
+    process.stderr.write(
+      'usage: validate-handoff.cjs --handoff <file> --root <dir> --base-head <sha> --status <file>\n'
+    );
     return 2;
   }
   let raw = null;
@@ -273,7 +312,9 @@ function main(argv) {
   try {
     statusBuf = fs.readFileSync(opts.status);
   } catch (e) {
-    process.stderr.write(`ESCALATE: status-capture-missing: cannot read '${opts.status}': ${e.message}\n`);
+    process.stderr.write(
+      `ESCALATE: status-capture-missing: cannot read '${opts.status}': ${e.message}\n`
+    );
     return 1;
   }
   const result = validate(raw, {
@@ -284,7 +325,9 @@ function main(argv) {
   });
   if (!result.ok) {
     for (const r of result.reasons) process.stderr.write(`ESCALATE: ${r}\n`);
-    process.stderr.write('validate-handoff: handoff REJECTED - the harness must escalate, not push.\n');
+    process.stderr.write(
+      'validate-handoff: handoff REJECTED - the harness must escalate, not push.\n'
+    );
     return 1;
   }
   process.stdout.write(`${JSON.stringify(result.verdict)}\n`);

@@ -53,9 +53,12 @@ export const noEmptyTranslations = {
     },
     schema: [],
     messages: {
-      emptyValue: 'Empty translation value for key "{{key}}". All translations must have content. See docs/i18n/CONVENTIONS.md.',
-      whitespaceOnly: 'Translation for key "{{key}}" contains only whitespace. See docs/i18n/CONVENTIONS.md.',
-      nullValue: 'Null translation value for key "{{key}}". Use a string value instead. See docs/i18n/CONVENTIONS.md.',
+      emptyValue:
+        'Empty translation value for key "{{key}}". All translations must have content. See docs/i18n/CONVENTIONS.md.',
+      whitespaceOnly:
+        'Translation for key "{{key}}" contains only whitespace. See docs/i18n/CONVENTIONS.md.',
+      nullValue:
+        'Null translation value for key "{{key}}". Use a string value instead. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

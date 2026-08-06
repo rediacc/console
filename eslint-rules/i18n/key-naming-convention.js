@@ -48,8 +48,10 @@ export const keyNamingConvention = {
       },
     ],
     messages: {
-      invalidFormat: 'Key "{{key}}" does not follow {{format}} naming convention. Full path: "{{path}}". See docs/i18n/CONVENTIONS.md.',
-      tooDeep: 'Key path "{{path}}" exceeds maximum nesting depth of {{max}}. See docs/i18n/CONVENTIONS.md.',
+      invalidFormat:
+        'Key "{{key}}" does not follow {{format}} naming convention. Full path: "{{path}}". See docs/i18n/CONVENTIONS.md.',
+      tooDeep:
+        'Key path "{{path}}" exceeds maximum nesting depth of {{max}}. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

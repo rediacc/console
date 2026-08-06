@@ -224,10 +224,10 @@ function lookupNextTutorialTitle(wwwPublicRoot: string, lang: string, nextKey: s
     }
   };
   const langDoc = tryRead(lang);
-  if (isAuthored(langDoc?.title)) return (langDoc.title).trim();
+  if (isAuthored(langDoc?.title)) return langDoc.title.trim();
   if (lang !== 'en') {
     const enDoc = tryRead('en');
-    if (isAuthored(enDoc?.title)) return (enDoc.title).trim();
+    if (isAuthored(enDoc?.title)) return enDoc.title.trim();
   }
   return '';
 }

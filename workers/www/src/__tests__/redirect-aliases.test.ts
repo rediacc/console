@@ -2,7 +2,13 @@ import { describe, test, expect } from 'vitest';
 import { EXACT, PATTERNS, ALLOWED_NON_MANIFEST_TARGETS, applyRedirect } from '../redirect-aliases';
 import manifest from '../../../../packages/www/dist/route-manifest.json' with { type: 'json' };
 
-type ManifestEntry = { path: string; title: string; section: string; slug: string; keywords: string[] };
+type ManifestEntry = {
+  path: string;
+  title: string;
+  section: string;
+  slug: string;
+  keywords: string[];
+};
 const manifestPaths = new Set((manifest as ManifestEntry[]).map((e) => e.path));
 const allLiveTargets = new Set<string>([...manifestPaths, ...ALLOWED_NON_MANIFEST_TARGETS]);
 

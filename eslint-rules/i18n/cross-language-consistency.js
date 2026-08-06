@@ -17,9 +17,7 @@ const localeCache = new Map();
 const getLanguageDirectories = (localesDir) => {
   try {
     const entries = fs.readdirSync(localesDir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
   }
@@ -88,8 +86,10 @@ export const crossLanguageConsistency = {
       },
     ],
     messages: {
-      missingInLanguage: 'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
-      extraInLanguage: 'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
+      missingInLanguage:
+        'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
+      extraInLanguage:
+        'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -101,7 +101,7 @@ export const crossLanguageConsistency = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/cross-language-consistency',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info
@@ -115,8 +115,9 @@ export const crossLanguageConsistency = {
     }
 
     // Get all language directories
-    const languages = getLanguageDirectories(absoluteLocalesDir)
-      .filter((lang) => lang !== sourceLanguage);
+    const languages = getLanguageDirectories(absoluteLocalesDir).filter(
+      (lang) => lang !== sourceLanguage
+    );
 
     /**
      * Report both directions of the key-set difference for one language.

@@ -44,10 +44,7 @@ import { fileURLToPath } from 'node:url';
 import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 // Root/global options the program registers (these are filtered out of per-command
 // nodes in command-tree.json, so they must be added explicitly) plus Commander
@@ -81,7 +78,7 @@ export const loadValidFlags = () => {
   // reference too (e.g. "Implies --infra" when `--no-infra` is the option).
   for (const f of [...flags]) {
     const m = f.match(/^--no-(.+)$/);
-    if (m) flags.add(`--${  m[1]}`);
+    if (m) flags.add(`--${m[1]}`);
   }
   cachedFlags = flags;
   return flags;
@@ -109,8 +106,7 @@ export const noUndefinedCliFlags = {
           exemptKeyPrefixes: {
             type: 'array',
             items: { type: 'string' },
-            description:
-              'Locale key prefixes to skip entirely (e.g. cloud/legacy command groups).',
+            description: 'Locale key prefixes to skip entirely (e.g. cloud/legacy command groups).',
           },
         },
         additionalProperties: false,
@@ -128,15 +124,12 @@ export const noUndefinedCliFlags = {
     const exemptKeyPrefixes = options.exemptKeyPrefixes || [];
     const validFlags = loadValidFlags();
 
-    const isExemptKey = (key) =>
-      exemptKeyPrefixes.some((prefix) => key.startsWith(prefix));
+    const isExemptKey = (key) => exemptKeyPrefixes.some((prefix) => key.startsWith(prefix));
 
     /** Extract the leading `--flag` from a whitespace-delimited token, after
      *  stripping surrounding markdown/quote/punctuation characters. */
     const flagOf = (token) => {
-      const cleaned = token
-        .replace(LEADING_TOKEN_CHARS, '')
-        .replace(TRAILING_TOKEN_CHARS, '');
+      const cleaned = token.replace(LEADING_TOKEN_CHARS, '').replace(TRAILING_TOKEN_CHARS, '');
       const m = cleaned.match(/^(--[a-z][a-z0-9-]*)/);
       return m ? m[1] : null;
     };

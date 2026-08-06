@@ -290,7 +290,7 @@ export function addSilentAudio(mp4InPath: string, mp4OutPath: string): void {
 }
 
 export function concatMp4(inputs: string[], outPath: string, listPath: string): void {
-  const body = inputs.map((p) => `file '${p.replaceAll('\'', "'\\''")}'`).join('\n');
+  const body = inputs.map((p) => `file '${p.replaceAll("'", "'\\''")}'`).join('\n');
   writeFileSync(listPath, `${body}\n`);
   run(FFMPEG_BIN, [
     '-y',

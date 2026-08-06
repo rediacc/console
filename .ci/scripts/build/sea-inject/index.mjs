@@ -20,20 +20,21 @@ import { injectPe } from './pe.mjs';
 
 /** Detect the executable format from the first bytes. */
 export function detectFormat(binaryPath) {
-    const fd = fs.openSync(binaryPath, 'r');
-    try {
-        const magic = Buffer.alloc(4);
-        fs.readSync(fd, magic, 0, 4, 0);
-        if (magic.toString('latin1') === '\x7fELF') return 'elf';
-        const u32 = magic.readUInt32LE(0);
-        // Mach-O thin (both endiannesses) and fat/universal.
-        if (u32 === 0xfeedfacf || u32 === 0xcffaedfe || u32 === 0xfeedface || u32 === 0xcefaedfe) return 'macho';
-        if (u32 === 0xcafebabe || u32 === 0xbebafeca) return 'macho'; // fat; backend rejects
-        if (magic.toString('latin1', 0, 2) === 'MZ') return 'pe';
-        throw new Error(`unrecognized executable format (magic ${magic.toString('hex')})`);
-    } finally {
-        fs.closeSync(fd);
-    }
+  const fd = fs.openSync(binaryPath, 'r');
+  try {
+    const magic = Buffer.alloc(4);
+    fs.readSync(fd, magic, 0, 4, 0);
+    if (magic.toString('latin1') === '\x7fELF') return 'elf';
+    const u32 = magic.readUInt32LE(0);
+    // Mach-O thin (both endiannesses) and fat/universal.
+    if (u32 === 0xfeedfacf || u32 === 0xcffaedfe || u32 === 0xfeedface || u32 === 0xcefaedfe)
+      return 'macho';
+    if (u32 === 0xcafebabe || u32 === 0xbebafeca) return 'macho'; // fat; backend rejects
+    if (magic.toString('latin1', 0, 2) === 'MZ') return 'pe';
+    throw new Error(`unrecognized executable format (magic ${magic.toString('hex')})`);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 /**
@@ -41,15 +42,15 @@ export function detectFormat(binaryPath) {
  * (NODE_SEA_BLOB) and flip the SEA sentinel `fuse`. Mutates the binary in place.
  */
 export function inject({ binaryPath, resourceName, blobPath, fuse }) {
-    const args = { binaryPath, resourceName, blobPath, fuse };
-    switch (detectFormat(binaryPath)) {
-        case 'elf':
-            return injectElf(args);
-        case 'macho':
-            return injectMacho(args);
-        case 'pe':
-            return injectPe(args);
-        default:
-            throw new Error('unreachable');
-    }
+  const args = { binaryPath, resourceName, blobPath, fuse };
+  switch (detectFormat(binaryPath)) {
+    case 'elf':
+      return injectElf(args);
+    case 'macho':
+      return injectMacho(args);
+    case 'pe':
+      return injectPe(args);
+    default:
+      throw new Error('unreachable');
+  }
 }

@@ -57,14 +57,10 @@ const USAGE_PLACEHOLDER_RES = [
   /^\[seçenekler\](?!\w)/,
 ];
 
-const isUsagePlaceholder = (afterPath) =>
-  USAGE_PLACEHOLDER_RES.some((re) => re.test(afterPath));
+const isUsagePlaceholder = (afterPath) => USAGE_PLACEHOLDER_RES.some((re) => re.test(afterPath));
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 

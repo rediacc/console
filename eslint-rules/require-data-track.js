@@ -62,9 +62,7 @@ export const requireDataTrack = {
      * Check if element has a specific attribute
      */
     function hasAttribute(attributes, name) {
-      return attributes.some(
-        (attr) => attr.type === 'JSXAttribute' && attr.name?.name === name,
-      );
+      return attributes.some((attr) => attr.type === 'JSXAttribute' && attr.name?.name === name);
     }
 
     /**

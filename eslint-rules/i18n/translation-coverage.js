@@ -16,9 +16,7 @@ const coverageCache = new Map();
 const getLanguageDirectories = (localesDir) => {
   try {
     const entries = fs.readdirSync(localesDir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
   }
@@ -137,8 +135,10 @@ export const translationCoverage = {
       },
     ],
     messages: {
-      lowCoverage: '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%. See docs/i18n/CONVENTIONS.md.',
-      missingFile: '{{language}} is missing translation file for namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
+      lowCoverage:
+        '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%. See docs/i18n/CONVENTIONS.md.',
+      missingFile:
+        '{{language}} is missing translation file for namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -151,7 +151,7 @@ export const translationCoverage = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/translation-coverage',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info

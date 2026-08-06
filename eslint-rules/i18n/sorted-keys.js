@@ -76,7 +76,8 @@ export const sortedKeys = {
       },
     ],
     messages: {
-      unsorted: 'Keys should be sorted alphabetically. "{{current}}" should come before "{{previous}}". See docs/i18n/CONVENTIONS.md.',
+      unsorted:
+        'Keys should be sorted alphabetically. "{{current}}" should come before "{{previous}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 

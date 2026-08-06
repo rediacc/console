@@ -50,13 +50,14 @@ module.exports = async ({ github, context, core }) => {
   const warnings = [];
 
   // Check PR title format (Conventional Commits)
-  const titlePattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
+  const titlePattern =
+    /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .+/;
   if (!titlePattern.test(pr.title)) {
     errors.push(
       'PR title must follow Conventional Commits format:\n' +
-      'type(scope): description\n\n' +
-      'Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n' +
-      'Example: feat(ui): add dark mode toggle'
+        'type(scope): description\n\n' +
+        'Types: feat, fix, docs, style, refactor, perf, test, chore, ci, build, revert\n' +
+        'Example: feat(ui): add dark mode toggle'
     );
   }
 
@@ -67,7 +68,8 @@ module.exports = async ({ github, context, core }) => {
   }
 
   // Check for linked issues (warning only)
-  const issuePattern = /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
+  const issuePattern =
+    /(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|ref|refs)\s+#\d+/i;
   if (!issuePattern.test(body)) {
     warnings.push('PR does not reference any issues. Consider linking related issues.');
   }
@@ -84,10 +86,14 @@ module.exports = async ({ github, context, core }) => {
   const fileCount = files.length;
 
   if (totalChanges > 1000) {
-    warnings.push(`Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`);
+    warnings.push(
+      `Large PR detected (${totalChanges} lines changed). Consider breaking it into smaller PRs.`
+    );
   }
   if (fileCount > 30) {
-    warnings.push(`Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`);
+    warnings.push(
+      `Many files changed (${fileCount} files). Consider breaking it into smaller PRs.`
+    );
   }
 
   // Note: Merge conflicts and rebase checks are handled by Quality / Branch job
@@ -101,7 +107,7 @@ module.exports = async ({ github, context, core }) => {
 
   if (warnings.length > 0) {
     summary += `### Warnings\n`;
-    warnings.forEach(w => {
+    warnings.forEach((w) => {
       core.warning(w);
       summary += `- ⚠️ ${w}\n`;
     });
@@ -110,7 +116,7 @@ module.exports = async ({ github, context, core }) => {
 
   if (errors.length > 0) {
     summary += `### Errors\n`;
-    errors.forEach(e => summary += `- ❌ ${e}\n`);
+    errors.forEach((e) => (summary += `- ❌ ${e}\n`));
     core.summary.addRaw(summary).write();
     core.setFailed(errors.join('\n\n'));
   } else {

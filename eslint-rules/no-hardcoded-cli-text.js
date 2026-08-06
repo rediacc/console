@@ -91,8 +91,7 @@ const isMethodCall = (callee, names) =>
   names.includes(callee.property.name);
 
 /** A bare call `<name>(...)` for one of `names`. */
-const isPlainCall = (callee, names) =>
-  callee.type === 'Identifier' && names.includes(callee.name);
+const isPlainCall = (callee, names) => callee.type === 'Identifier' && names.includes(callee.name);
 
 /**
  * Call shapes whose Nth argument is a user-facing string. addHelpText is NOT
@@ -100,10 +99,26 @@ const isPlainCall = (callee, names) =>
  */
 const ARGUMENT_CHECKS = [
   { matches: (callee) => isOutputServiceCall(callee), argIndex: 0, messageId: 'hardcodedOutput' },
-  { matches: (callee) => isPlainCall(callee, ['withSpinner']), argIndex: 0, messageId: 'hardcodedSpinner' },
-  { matches: (callee) => isPlainCall(callee, PROMPT_FNS), argIndex: 0, messageId: 'hardcodedPrompt' },
-  { matches: (callee) => isMethodCall(callee, ['description']), argIndex: 0, messageId: 'hardcodedDescription' },
-  { matches: (callee) => isMethodCall(callee, OPTION_METHODS), argIndex: 1, messageId: 'hardcodedOption' },
+  {
+    matches: (callee) => isPlainCall(callee, ['withSpinner']),
+    argIndex: 0,
+    messageId: 'hardcodedSpinner',
+  },
+  {
+    matches: (callee) => isPlainCall(callee, PROMPT_FNS),
+    argIndex: 0,
+    messageId: 'hardcodedPrompt',
+  },
+  {
+    matches: (callee) => isMethodCall(callee, ['description']),
+    argIndex: 0,
+    messageId: 'hardcodedDescription',
+  },
+  {
+    matches: (callee) => isMethodCall(callee, OPTION_METHODS),
+    argIndex: 1,
+    messageId: 'hardcodedOption',
+  },
 ];
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -116,20 +131,13 @@ export const noHardcodedCliText = {
     },
     schema: [],
     messages: {
-      hardcodedText:
-        'Hardcoded text "{{text}}" should use t() translation function.',
-      hardcodedDescription:
-        'Command description should use t() translation function.',
-      hardcodedOption:
-        'Option description should use t() translation function.',
-      hardcodedSpinner:
-        'Spinner text should use t() translation function.',
-      hardcodedPrompt:
-        'Prompt message should use t() translation function.',
-      hardcodedError:
-        'Error message should use t() translation function.',
-      hardcodedOutput:
-        'Output message should use t() translation function.',
+      hardcodedText: 'Hardcoded text "{{text}}" should use t() translation function.',
+      hardcodedDescription: 'Command description should use t() translation function.',
+      hardcodedOption: 'Option description should use t() translation function.',
+      hardcodedSpinner: 'Spinner text should use t() translation function.',
+      hardcodedPrompt: 'Prompt message should use t() translation function.',
+      hardcodedError: 'Error message should use t() translation function.',
+      hardcodedOutput: 'Output message should use t() translation function.',
       hardcodedHelpText:
         'Help text "{{text}}" in addHelpText() should use t() translation function.',
     },
