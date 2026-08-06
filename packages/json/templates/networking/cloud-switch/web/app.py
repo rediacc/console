@@ -1,7 +1,8 @@
-import random
+import os
+import secrets
 import sqlite3
 import string
-from datetime import datetime
+from datetime import UTC, datetime
 
 from flask import Flask, jsonify, render_template_string
 
@@ -32,8 +33,9 @@ def initialize_database():
 
 @app.route('/api', methods=['GET'])
 def merge_records():
-    name = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-    insert_time = datetime.now()
+    alphabet = string.ascii_uppercase + string.digits
+    name = ''.join(secrets.choice(alphabet) for _ in range(10))
+    insert_time = datetime.now(UTC)
     conn = get_db_connection()
     if conn is not None:
         cursor = conn.cursor()
@@ -82,4 +84,4 @@ def index():
     ''')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=os.environ.get('FLASK_DEBUG') == '1')

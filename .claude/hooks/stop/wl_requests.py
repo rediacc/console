@@ -28,6 +28,7 @@ Dead recipients cannot black-hole a request: liveness comes from the
 under a flock, into an operator-visible `- [?]` item owned by the asker.
 """
 
+import contextlib
 import hashlib
 import json
 import os
@@ -477,12 +478,11 @@ def poll_cli(worklist, me, hook_path):
     if not ok:
         print(why, file=sys.stderr)
         sys.exit(1)
-    try:
+    # No marker means no fast path: the safe direction.
+    with contextlib.suppress(OSError):
         worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(
             C.stamp_now(), encoding="utf-8"
         )
-    except OSError:
-        pass  # no marker means no fast path: the safe direction
     to_me, bcast, answered, _mine = classify_requests(read_requests(worklist), me)
     if not (to_me or bcast or answered):
         sys.exit(0)  # print NOTHING: the operator's contract for this mode

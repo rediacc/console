@@ -48,6 +48,7 @@ Stdlib only, no sibling imports beyond `wl_core` (which is itself stdlib-only an
 fcntl-free). Portable to linux, macOS and Windows on amd64 and arm64.
 """
 
+import contextlib
 import datetime
 import json
 import os
@@ -770,7 +771,10 @@ def scan(store, start, idle_min=None):
                     sends=len(sends),
                     tx="ok",  # scan globbed this file, so it resolves by construction
                 )
-            except Exception:
+            except Exception:  # noqa: BLE001, S112 -- deliberate, see the comment above:
+                # one bad agent must not abort the whole pass, and a narrower
+                # tuple would let an unforeseen shape kill every entry sorted
+                # after it.
                 continue
             if entry:
                 known.add(entry["id"])
@@ -835,17 +839,15 @@ def main(argv):
     mode = argv[0]
 
     if mode == "--subagent-stop":
-        try:
+        # Swallowed on purpose -- see handle_subagent_stop's docstring.
+        with contextlib.suppress(Exception):
             handle_subagent_stop(_stdin_event())
-        except Exception:  # noqa: BLE001 -- see handle_subagent_stop's docstring
-            pass
         return 0
     if mode in ("--session-start", "--post-compact"):
         hook_event = "SessionStart" if mode == "--session-start" else "PostCompact"
-        try:
+        # Surfacing must never block a start, so every failure is swallowed.
+        with contextlib.suppress(Exception):
             handle_surface(_stdin_event(), hook_event, _hook_path())
-        except Exception:  # noqa: BLE001 -- surfacing must never block a start
-            pass
         return 0
 
     start = C.project_start()

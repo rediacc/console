@@ -510,7 +510,7 @@ def ci_queue_state(root, worklist, session_id):
                 if i == 0:
                     try:
                         created = datetime.datetime.fromisoformat(
-                            (r.get("created_at") or "")
+                            r.get("created_at") or ""
                         )
                         age = (
                             datetime.datetime.now(datetime.UTC) - created

@@ -161,8 +161,8 @@ def credentials(root):
     vals = {}
     try:
         with open(p, encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
+            for raw_line in fh:
+                line = raw_line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, _, v = line.partition("=")
@@ -185,26 +185,28 @@ def credentials(root):
 
 # ---- transport -------------------------------------------------------------
 
-_curl_probe = None
+# A one-slot cache rather than a module global rebound through `global`. Same
+# once-per-process semantics, but the name is only ever READ at module scope,
+# so nothing else can silently rebind the probe out from under a caller.
+_CURL_PROBE = {}
 
 
 def curl_usable():
     """True when curl exists and is new enough for --aws-sigv4. Probed ONCE
     per process: the hook may call send() several times in a run, and a
     subprocess per call to ask the same question is pure latency."""
-    global _curl_probe
-    if _curl_probe is None:
-        _curl_probe = False
+    if "ok" not in _CURL_PROBE:
+        _CURL_PROBE["ok"] = False
         try:
             r = subprocess.run(
                 ["curl", "--version"], capture_output=True, text=True, timeout=5, check=False
             )
             m = CURL_VERSION_RE.match((r.stdout or "").strip())
             if r.returncode == 0 and m:
-                _curl_probe = (int(m.group(1)), int(m.group(2))) >= CURL_MIN
+                _CURL_PROBE["ok"] = (int(m.group(1)), int(m.group(2))) >= CURL_MIN
         except (OSError, subprocess.SubprocessError, ValueError):
-            _curl_probe = False
-    return _curl_probe
+            _CURL_PROBE["ok"] = False
+    return _CURL_PROBE["ok"]
 
 
 def payload_for(cfg, subject, body):
@@ -271,7 +273,8 @@ def _send_curl(cfg, blob):
             check=False,
         )
         try:
-            resp_body = open(btmp, encoding="utf-8", errors="replace").read(200)
+            with open(btmp, encoding="utf-8", errors="replace") as bf:
+                resp_body = bf.read(200)
         except OSError:
             resp_body = ""
         finally:
@@ -334,13 +337,21 @@ def sigv4_headers(cfg, blob, host, path, service="ses"):
 
 def _send_urllib(cfg, blob):
     url = endpoint(cfg["region"])
+    # endpoint() hard-codes the https:// prefix, so this cannot fail today. It
+    # is here because urlopen honours file:// and every other scheme urllib
+    # knows, and the day someone makes the endpoint configurable this guard is
+    # the difference between a config typo and reading a local file.
+    if not url.startswith("https://"):
+        return "refusing a non-https SES endpoint: %s" % url[:80]
     host = "email.%s.amazonaws.com" % cfg["region"]
-    req = urllib.request.Request(
+    req = urllib.request.Request(  # noqa: S310 -- scheme is asserted https above
         url, data=blob, method="POST",
         headers=sigv4_headers(cfg, blob, host, "/v2/email/outbound-emails"),
     )
     try:
-        with urllib.request.urlopen(req, timeout=SEND_TIMEOUT_S) as resp:
+        with urllib.request.urlopen(  # noqa: S310 -- scheme is asserted https above
+            req, timeout=SEND_TIMEOUT_S
+        ) as resp:
             if resp.status // 100 != 2:
                 return "SES HTTP %s" % resp.status
     except urllib.error.HTTPError as exc:

@@ -625,8 +625,7 @@ def load(worklist, sync=True):
                 rec = records.get(k) or {}
                 if rec.get("md_s") != it["s"]:
                     chg.append({"k": k, "s": it["s"]})
-        for k in md_keys - set(parsed):
-            dele.append(k)
+        dele.extend(md_keys - set(parsed))
         return add, chg, dele
 
     parsed = parse_md_items(md_bytes)
