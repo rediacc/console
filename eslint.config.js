@@ -192,7 +192,6 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       '*.config.cjs',
-      'packages/cli/bundle.mjs',
       // Ignore .d.ts files (generated type declarations)
       '**/*.d.ts',
       // Ignore generated JS companions for TypeScript source/test files
@@ -1360,7 +1359,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['.ci/**/*.{js,cjs,mjs,ts}', 'eslint-rules/**/*.js', '.github/actions/**/*.js'],
+    files: [
+      '.ci/**/*.{js,cjs,mjs,ts}',
+      'eslint-rules/**/*.js',
+      '.github/actions/**/*.js',
+      // The bundler and this config itself: root tooling, outside every
+      // tsconfig, and previously ignored outright. The bundler produced only
+      // no-undef on node globals; this file only a parse error. Both are
+      // exactly the two classes the block above exists for.
+      'packages/cli/bundle.mjs',
+      'eslint.config.js',
+    ],
     languageOptions: {
       ecmaVersion: 'latest',
       parser: tseslint.parser,
