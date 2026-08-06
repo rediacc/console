@@ -572,7 +572,9 @@ function main(argv) {
         const head = (runRows[i] && runRows[i].headSha ? runRows[i].headSha : '').slice(0, 8);
         note(`  ${String(t.run_id).padEnd(13)} ${head.padEnd(9)} ${t.reason}`);
       }
-      note(`greenlight[${key}] VERDICT: ${verdict.greenlit ? 'GREENLIT' : 'no'} (${verdict.reason})`);
+      note(
+        `greenlight[${key}] VERDICT: ${verdict.greenlit ? 'GREENLIT' : 'no'} (${verdict.reason})`
+      );
     }
 
     if (verdict.greenlit) {

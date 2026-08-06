@@ -53,9 +53,11 @@ SPECIMENS = {
     ),
     "i18n/seo-no-duplicate-h1-title": (
         "tr.json",
-        '{\n  "pages": {\n    "x": {\n      "meta": {\n        "title": "Yedekleme Cozumu"\n'
-        '      },\n      "hero": {\n        "title": "Yedekleme Cozumu"\n'
-        "      }\n    }\n  }\n}\n",
+        (
+            '{\n  "pages": {\n    "x": {\n      "meta": {\n        "title": "Yedekleme Cozumu"\n'
+            '      },\n      "hero": {\n        "title": "Yedekleme Cozumu"\n'
+            "      }\n    }\n  }\n}\n"
+        ),
     ),
     # The five that were inert. They are 'off' today by an explicit, documented
     # decision (see eslint.config.js), so this gate does not require them to
@@ -127,9 +129,10 @@ def fires(root, rule, filename, content):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--selftest", action="store_true")
-    args = parser.parse_args(argv)
+    # No --selftest flag: the controls are not a separate mode, they run inline
+    # on EVERY invocation (see the sorted-keys negative control below). A mode
+    # nobody remembers to run is how a control stops controlling anything.
+    argparse.ArgumentParser(description=__doc__).parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[3]
     probe = "packages/www/src/i18n/translations/tr.json"

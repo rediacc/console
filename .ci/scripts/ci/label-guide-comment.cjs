@@ -105,7 +105,8 @@ const parseLabels = (text, source) => {
     const field = /^[ \t]+([A-Za-z_]+):[ \t]*(.*)$/.exec(line);
     if (field) {
       const [, key, value] = field;
-      if (labels.length === 0) bad(line, lineNo, `field '${key}' appears before any '- name:' entry`);
+      if (labels.length === 0)
+        bad(line, lineNo, `field '${key}' appears before any '- name:' entry`);
       if (!['name', 'color', 'description', 'guide'].includes(key)) {
         bad(line, lineNo, `unknown field '${key}' (expected name, color, description or guide)`);
       }
@@ -162,7 +163,9 @@ const renderBody = (labels) => {
       `only ${shown.length} of ${labels.length} label(s) are marked for the guide (floor: ${MIN_GUIDE_LABELS}). An empty or near-empty guide is a broken read of the 'guide' field, not a deliberate state.`
     );
   }
-  const rows = shown.map((l) => `| \`${l.name}\` | ${String(l.description).replace(/\|/g, '\\|')} |`);
+  const rows = shown.map(
+    (l) => `| \`${l.name}\` | ${String(l.description).replace(/\|/g, '\\|')} |`
+  );
   return [
     MARKER,
     '### Label guide',
@@ -208,14 +211,21 @@ const postLabelGuide = async ({ github, context, core }) => {
   const body = renderBody(labels);
 
   const comments = await github.paginate(github.rest.issues.listComments, {
-    owner, repo, issue_number: prNumber, per_page: 100,
+    owner,
+    repo,
+    issue_number: prNumber,
+    per_page: 100,
   });
 
-  const existing = comments.filter((c) => String(c.body || '').startsWith(MARKER) && isBotAuthored(c));
+  const existing = comments.filter(
+    (c) => String(c.body || '').startsWith(MARKER) && isBotAuthored(c)
+  );
 
   if (existing.length === 0) {
     await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
-    console.log(`Posted the label guide on #${prNumber} (${visibleLabels(labels).length} of ${labels.length} labels listed).`);
+    console.log(
+      `Posted the label guide on #${prNumber} (${visibleLabels(labels).length} of ${labels.length} labels listed).`
+    );
     return 'created';
   }
 
@@ -231,7 +241,8 @@ const postLabelGuide = async ({ github, context, core }) => {
 
   await github.rest.issues.updateComment({ owner, repo, comment_id: current.id, body });
   console.log(`Updated the label guide on #${prNumber} (${labels.length} labels).`);
-  if (core && typeof core.info === 'function') core.info('Label guide refreshed from .github/labels.yml.');
+  if (core && typeof core.info === 'function')
+    core.info('Label guide refreshed from .github/labels.yml.');
   return 'updated';
 };
 

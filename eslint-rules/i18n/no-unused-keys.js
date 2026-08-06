@@ -34,7 +34,8 @@ export const noUnusedKeys = {
       },
     ],
     messages: {
-      unusedKey: 'Translation key "{{key}}" is not used in any source file. See docs/i18n/CONVENTIONS.md.',
+      unusedKey:
+        'Translation key "{{key}}" is not used in any source file. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -46,7 +47,7 @@ export const noUnusedKeys = {
     const absoluteSourceDir = resolveRequiredDirOption(
       'i18n/no-unused-keys',
       'sourceDir',
-      options.sourceDir,
+      options.sourceDir
     );
 
     // Get namespace from filename
@@ -75,7 +76,7 @@ export const noUnusedKeys = {
 
       // Check if this is a parent of a used key
       for (const usedKey of usedKeys) {
-        if (usedKey.startsWith(`${key  }.`)) {
+        if (usedKey.startsWith(`${key}.`)) {
           return true;
         }
       }

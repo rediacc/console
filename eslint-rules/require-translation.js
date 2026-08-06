@@ -26,8 +26,7 @@ const extractNamespacesFromOptions = (node) => {
   if (!node || node.type !== 'ObjectExpression') return null;
   for (const prop of node.properties) {
     if (prop.type !== 'Property') continue;
-    const keyName =
-      prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
+    const keyName = prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
     if (keyName !== 'ns') continue;
     return extractNamespaces(prop.value);
   }
@@ -38,8 +37,7 @@ const hasDefaultValue = (node) => {
   if (!node || node.type !== 'ObjectExpression') return false;
   return node.properties.some((prop) => {
     if (prop.type !== 'Property') return false;
-    const keyName =
-      prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
+    const keyName = prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
     return keyName === 'defaultValue';
   });
 };
@@ -73,7 +71,7 @@ export const requireTranslation = {
       'custom/require-translation',
       'localeDir',
       options.localeDir,
-      ROOT_DIR,
+      ROOT_DIR
     );
     const ignoreDefaultValue = options.ignoreDefaultValue === true;
     const resources = getResources(localeDir);
@@ -103,8 +101,7 @@ export const requireTranslation = {
       if (candidates.length === 0) return null;
       // Prefer the smallest scope to handle shadowing.
       candidates.sort(
-        (a, b) =>
-          a.scopeRange[1] - a.scopeRange[0] - (b.scopeRange[1] - b.scopeRange[0])
+        (a, b) => a.scopeRange[1] - a.scopeRange[0] - (b.scopeRange[1] - b.scopeRange[0])
       );
       return candidates[0].namespaces;
     };
@@ -197,9 +194,7 @@ export const requireTranslation = {
         const segments = keyPath.split('.').filter(Boolean);
         if (segments.length === 0) return;
 
-        const exists = namespaces.some((ns) =>
-          hasPath(resources.get(ns), segments)
-        );
+        const exists = namespaces.some((ns) => hasPath(resources.get(ns), segments));
         if (!exists) {
           reportMissingKey(keyNode, keyValue);
         }

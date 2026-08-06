@@ -33,7 +33,7 @@ const SAMPLER = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'sample
 const PANEL = path.join(REPO_ROOT, '.ci', 'scripts', 'ci', 'profiler', 'panel.sh');
 
 function input(name, fallback) {
-  const key = `INPUT_${  name.toUpperCase().replaceAll(' ', '_')}`;
+  const key = `INPUT_${name.toUpperCase().replaceAll(' ', '_')}`;
   const v = process.env[key];
   return v === undefined || v === '' ? fallback : v.trim();
 }

@@ -63,7 +63,11 @@ export function getChannel(hostname: string): string {
   return match ? match[1] : 'stable';
 }
 
-export async function rewriteOrigin(response: Response, url: URL, channel: string): Promise<Response> {
+export async function rewriteOrigin(
+  response: Response,
+  url: URL,
+  channel: string
+): Promise<Response> {
   if (!shouldRewrite(response.headers.get('content-type'), url.pathname)) return response;
 
   let body = await response.text();
@@ -83,7 +87,10 @@ export async function rewriteOrigin(response: Response, url: URL, channel: strin
 
   // Rewrite channel references in website HTML (install commands baked at build time)
   for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
-    body = body.replaceAll(`releases.rediacc.com/${format}/stable`, `releases.rediacc.com/${format}/${channel}`);
+    body = body.replaceAll(
+      `releases.rediacc.com/${format}/stable`,
+      `releases.rediacc.com/${format}/${channel}`
+    );
   }
   body = body.replaceAll('rdc:stable', `rdc:${channel}`);
 
@@ -168,8 +175,9 @@ export function normalizePath(pathname: string): { path: string; changed: boolea
   // lowercasing the whole string would loop.
   // `enc` is either a full 3-char %XX triple or undefined when that alternative
   // did not participate — never the empty string, so ?? and ?: agree here.
-  p = p.replaceAll(/(%[0-9a-fA-F]{2})|([^%]+)/g, (_, enc, plain) =>
-    (enc as string | undefined) ?? (plain as string).toLowerCase()
+  p = p.replaceAll(
+    /(%[0-9a-fA-F]{2})|([^%]+)/g,
+    (_, enc, plain) => (enc as string | undefined) ?? (plain as string).toLowerCase()
   );
 
   return { path: p, changed: p !== pathname };
@@ -349,10 +357,20 @@ async function serveWithSmartRedirect(
   if (response.status === 404) {
     const redirect = await findSmartRedirect(url.pathname, env.ASSETS);
     if (redirect) {
-      console.warn(JSON.stringify({ event: 'smart-redirect', from: url.pathname, to: redirect.url, score: redirect.score }));
+      console.warn(
+        JSON.stringify({
+          event: 'smart-redirect',
+          from: url.pathname,
+          to: redirect.url,
+          score: redirect.score,
+        })
+      );
       return new Response(null, {
         status: 301,
-        headers: { Location: new URL(redirect.url, url.origin).toString(), 'X-Redirect-Reason': 'smart-404' },
+        headers: {
+          Location: new URL(redirect.url, url.origin).toString(),
+          'X-Redirect-Reason': 'smart-404',
+        },
       });
     }
     // Log unmatched 404s for future alias-table maintenance.

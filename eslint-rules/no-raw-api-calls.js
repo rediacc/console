@@ -43,8 +43,7 @@ export const noRawApiCalls = {
     messages: {
       useTypedApi:
         "Use typedApi.{{procedure}}() instead of apiClient.{{method}}('{{endpoint}}'). Raw API calls bypass type safety.",
-      rawApiCall:
-        'Raw apiClient.{{method}}() call detected. Use typedApi for type-safe API calls.',
+      rawApiCall: 'Raw apiClient.{{method}}() call detected. Use typedApi for type-safe API calls.',
     },
     schema: [
       {

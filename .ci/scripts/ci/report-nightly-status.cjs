@@ -67,18 +67,28 @@ const report = async ({ github, context, core }) => {
   // `.pull_request` filter: GitHub's issues API returns PULL REQUESTS as issues.
   // A PR that happened to carry this label would otherwise be treated as the
   // tracking issue and get commented on, or closed on the next green nightly.
-  const open = (await github.paginate(github.rest.issues.listForRepo, {
-    owner, repo, state: 'open', labels: ISSUE_LABEL, per_page: 100,
-  })).filter(i => !i.pull_request);
+  const open = (
+    await github.paginate(github.rest.issues.listForRepo, {
+      owner,
+      repo,
+      state: 'open',
+      labels: ISSUE_LABEL,
+      per_page: 100,
+    })
+  ).filter((i) => !i.pull_request);
 
   if (isGreen(conclusion)) {
     if (open.length === 0) {
-      console.log(`Nightly ${runId} is green and no ${ISSUE_LABEL} issue is open -- nothing to do.`);
+      console.log(
+        `Nightly ${runId} is green and no ${ISSUE_LABEL} issue is open -- nothing to do.`
+      );
       return;
     }
     for (const issue of open) {
       await github.rest.issues.createComment({
-        owner, repo, issue_number: issue.number,
+        owner,
+        repo,
+        issue_number: issue.number,
         body: `Nightly CI is green again: [run ${runId}](${url}). Closing automatically.`,
       });
       await github.rest.issues.update({ owner, repo, issue_number: issue.number, state: 'closed' });
@@ -92,7 +102,10 @@ const report = async ({ github, context, core }) => {
   let failedList = '_(could not read the job list)_';
   try {
     const page = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-      owner, repo, run_id: Number(runId), per_page: 100,
+      owner,
+      repo,
+      run_id: Number(runId),
+      per_page: 100,
     });
 
     // SHAPE-AGNOSTIC on purpose. `github.paginate` sometimes yields the flattened
@@ -102,15 +115,22 @@ const report = async ({ github, context, core }) => {
     // element lacked `.conclusion`, so the filter matched zero of NINE failed
     // jobs and the issue said no job had failed. Normalise instead of assuming.
     const jobs = Array.isArray(page)
-      ? page.flatMap(entry => (entry && Array.isArray(entry.jobs) ? entry.jobs : [entry]))
-      : Array.isArray(page?.jobs) ? page.jobs : [];
+      ? page.flatMap((entry) => (entry && Array.isArray(entry.jobs) ? entry.jobs : [entry]))
+      : Array.isArray(page?.jobs)
+        ? page.jobs
+        : [];
 
-    const usable = jobs.filter(j => j && typeof j.conclusion !== 'undefined');
-    const bad = usable.filter(j => j.conclusion && j.conclusion !== 'success' && j.conclusion !== 'skipped');
+    const usable = jobs.filter((j) => j && typeof j.conclusion !== 'undefined');
+    const bad = usable.filter(
+      (j) => j.conclusion && j.conclusion !== 'success' && j.conclusion !== 'skipped'
+    );
 
     if (bad.length > 0) {
       failedList = bad
-        .map(j => `- **${j.name}** -- \`${j.conclusion}\`${j.html_url ? ` ([log](${j.html_url}))` : ''}`)
+        .map(
+          (j) =>
+            `- **${j.name}** -- \`${j.conclusion}\`${j.html_url ? ` ([log](${j.html_url}))` : ''}`
+        )
         .join('\n');
     } else if (usable.length === 0) {
       // ANTI-VACUITY. Zero readable jobs is not evidence that nothing failed, it
@@ -118,7 +138,9 @@ const report = async ({ github, context, core }) => {
       // conclusion" there is the same defect this whole programme is about:
       // reporting empty data as clean data. Fail toward "I could not tell".
       failedList = `_(could not read the job list: the API returned ${jobs.length} entr${jobs.length === 1 ? 'y' : 'ies'}, none carrying a conclusion. The run itself concluded \`${conclusion}\`.)_`;
-      console.log(`Job list for run ${runId} was unreadable (${jobs.length} entries, none with a conclusion).`);
+      console.log(
+        `Job list for run ${runId} was unreadable (${jobs.length} entries, none with a conclusion).`
+      );
     } else {
       // Genuinely readable and genuinely all-green at job level. This does
       // happen: a run can conclude `failure` because a job was cancelled by the
@@ -161,9 +183,12 @@ const report = async ({ github, context, core }) => {
     if (!alreadyReported) {
       try {
         const comments = await github.paginate(github.rest.issues.listComments, {
-          owner, repo, issue_number: issue.number, per_page: 100,
+          owner,
+          repo,
+          issue_number: issue.number,
+          per_page: 100,
         });
-        alreadyReported = comments.some(c => String(c.body || '').includes(runMarker));
+        alreadyReported = comments.some((c) => String(c.body || '').includes(runMarker));
       } catch (e) {
         // Fail toward reporting: a duplicate comment is noise, a missing one is
         // the silence this whole workflow exists to break.
@@ -189,7 +214,10 @@ const report = async ({ github, context, core }) => {
   } catch {
     try {
       await github.rest.issues.createLabel({
-        owner, repo, name: ISSUE_LABEL, color: 'b60205',
+        owner,
+        repo,
+        name: ISSUE_LABEL,
+        color: 'b60205',
         description: 'The scheduled nightly CI run is failing (opened and closed automatically)',
       });
       console.log(`Created the ${ISSUE_LABEL} label.`);
@@ -199,7 +227,11 @@ const report = async ({ github, context, core }) => {
   }
 
   const created = await github.rest.issues.create({
-    owner, repo, title: ISSUE_TITLE, labels: ISSUE_LABELS, body,
+    owner,
+    repo,
+    title: ISSUE_TITLE,
+    labels: ISSUE_LABELS,
+    body,
   });
   console.log(`Opened #${created.data.number}: the nightly is red.`);
   core.warning(`Nightly CI is red (${conclusion}); opened issue #${created.data.number}.`);

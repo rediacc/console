@@ -30,8 +30,7 @@ export const memberKey = (member) =>
   member.name?.type === 'String' ? member.name.value : member.name?.name;
 
 /** The members of an Object node; [] for a missing node or any other type. */
-export const objectMembers = (node) =>
-  node?.type === 'Object' ? node.members || [] : [];
+export const objectMembers = (node) => (node?.type === 'Object' ? node.members || [] : []);
 
 /** Dot-join a key onto its parent path ("" parent yields the bare key). */
 export const joinPath = (path, key) => (path ? `${path}.${key}` : key);

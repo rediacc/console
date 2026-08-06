@@ -228,7 +228,7 @@ const version = readArg('version', 'dev');
 const registryByName = new Map(COMMAND_REGISTRY.map((c) => [c.name, c]));
 
 function resolveGroup(domain: string): CommandGroup | null {
-  return (registryByName.get(domain)?.domain) ?? null;
+  return registryByName.get(domain)?.domain ?? null;
 }
 
 // ---------- Options ----------

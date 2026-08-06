@@ -15,7 +15,8 @@ export const seoDescriptionLength = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce SEO-friendly meta description lengths (50-160 chars) in translation files',
+      description:
+        'Enforce SEO-friendly meta description lengths (50-160 chars) in translation files',
       recommended: true,
     },
     schema: [

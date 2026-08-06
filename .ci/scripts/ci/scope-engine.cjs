@@ -55,7 +55,17 @@ function unquoteCPath(quoted) {
   if (quoted.length < 2 || !quoted.startsWith('"') || !quoted.endsWith('"')) return null;
   const inner = quoted.slice(1, -1);
   const bytes = [];
-  const SIMPLE = { n: 0x0a, t: 0x09, r: 0x0d, f: 0x0c, b: 0x08, v: 0x0b, a: 0x07, '"': 0x22, '\\': 0x5c };
+  const SIMPLE = {
+    n: 0x0a,
+    t: 0x09,
+    r: 0x0d,
+    f: 0x0c,
+    b: 0x08,
+    v: 0x0b,
+    a: 0x07,
+    '"': 0x22,
+    '\\': 0x5c,
+  };
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
     if (ch !== '\\') {
@@ -305,7 +315,9 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
       return refuse(`jobs-unreadable:${msg(e)}`);
     }
     const observed = Array.isArray(payload) ? payload : payload && payload.jobs;
-    const list = Array.isArray(observed) ? observed.filter((j) => j && typeof j.name === 'string') : null;
+    const list = Array.isArray(observed)
+      ? observed.filter((j) => j && typeof j.name === 'string')
+      : null;
     // An EMPTY job list is unusable evidence, not a clean bill of health: it
     // is what an unreadable payload and a run that never materialised both
     // look like, and reconcile() would happily report ok on it.
@@ -653,7 +665,14 @@ function parseJsonStream(text) {
   return values;
 }
 
-function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
+function createRepoIo({
+  repoRoot,
+  repo,
+  branch = null,
+  workflow = 'Console CI',
+  artifactName = 'ci-skip-plan',
+  run = defaultRun,
+}) {
   const git = (...args) => run('git', ['-C', repoRoot, ...args]);
   const gh = (...args) => run('gh', args);
 
@@ -723,8 +742,20 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
   // against the one-shot listing below, where a candidate costs zero calls.
   const runsForShaViaGh = (sha) =>
     JSON.parse(
-      gh('run', 'list', '--repo', repo, '--workflow', workflow, '--commit', sha,
-        '--json', 'databaseId,conclusion,status', '-L', '5'),
+      gh(
+        'run',
+        'list',
+        '--repo',
+        repo,
+        '--workflow',
+        workflow,
+        '--commit',
+        sha,
+        '--json',
+        'databaseId,conclusion,status',
+        '-L',
+        '5'
+      )
     );
 
   // One paginated listing of the branch's runs, joined locally. This is what
@@ -749,7 +780,7 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
       for (let page = 1; page <= RUNS_LIST_MAX_PAGES; page++) {
         const text = gh(
           'api',
-          `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`,
+          `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`
         );
         const payload = JSON.parse(text);
         const runs = (payload && payload.workflow_runs) || [];
@@ -805,7 +836,13 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
     // No green run at all: report the red one and download nothing. A run
     // that failed cannot be a baseline whatever its plan says, so paying
     // for the artifact would buy an answer nobody reads.
-    return { sha, conclusion: done[0].conclusion, runId: done[0].databaseId, plan: null, attestsTried: 0 };
+    return {
+      sha,
+      conclusion: done[0].conclusion,
+      runId: done[0].databaseId,
+      plan: null,
+      attestsTried: 0,
+    };
   };
 
   return {
@@ -932,7 +969,7 @@ function main(argv) {
         limit: Number.isFinite(opts.limit) ? opts.limit : DEFAULT_CANDIDATE_LIMIT,
         workflowClosure: computeWorkflowClosure(repoRoot),
       },
-      io,
+      io
     );
     process.stdout.write(
       `${JSON.stringify(
@@ -945,8 +982,8 @@ function main(argv) {
           baseline_notes: result.notes,
         },
         null,
-        2,
-      )}\n`,
+        2
+      )}\n`
     );
     return 0;
   }

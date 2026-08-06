@@ -100,7 +100,14 @@ async function tunnelRequest(
     headers['Content-Type'] = 'application/json';
   }
 
-  const { envelope, aesKey } = await sealRequest(serverKey, keyId, method, path, headers, body ?? null);
+  const { envelope, aesKey } = await sealRequest(
+    serverKey,
+    keyId,
+    method,
+    path,
+    headers,
+    body ?? null
+  );
 
   const resp = await fetch(`${PREVIEW_URL}/account/api/v1/tunnel`, {
     method: 'POST',
@@ -219,7 +226,9 @@ async function stepIssueLicense({
       }
     );
     if (status >= 400) throw new Error(`Inner HTTP ${status}: ${JSON.stringify(data)}`);
-    const result = data as { license?: { payload: string; signature: string; publicKeyId: string } };
+    const result = data as {
+      license?: { payload: string; signature: string; publicKeyId: string };
+    };
     if (!result.license?.payload) throw new Error('Missing license.payload');
     if (!result.license?.signature) throw new Error('Missing license.signature');
     if (!result.license?.publicKeyId) throw new Error('Missing license.publicKeyId');
@@ -253,9 +262,17 @@ function stepValidatePayload(signedLicense: SignedSubscriptionBlob): void {
       ['repositoryGuid', payload.repositoryGuid === TEST_REPO_GUID],
       ['kind', payload.kind === 'grand'],
       ['planCode', typeof payload.planCode === 'string' && (payload.planCode as string).length > 0],
-      ['hardExpiresAt', typeof payload.hardExpiresAt === 'string' && new Date(payload.hardExpiresAt as string).getTime() > Date.now()],
+      [
+        'hardExpiresAt',
+        typeof payload.hardExpiresAt === 'string' &&
+          new Date(payload.hardExpiresAt as string).getTime() > Date.now(),
+      ],
       ['issuedAt', typeof payload.issuedAt === 'string'],
-      ['maxRepositorySizeGb', typeof payload.maxRepositorySizeGb === 'number' && (payload.maxRepositorySizeGb as number) > 0],
+      [
+        'maxRepositorySizeGb',
+        typeof payload.maxRepositorySizeGb === 'number' &&
+          (payload.maxRepositorySizeGb as number) > 0,
+      ],
     ] as const;
     const failures = checks.filter(([, ok]) => !ok).map(([name]) => name);
     if (failures.length > 0) throw new Error(`Invalid fields: ${failures.join(', ')}`);

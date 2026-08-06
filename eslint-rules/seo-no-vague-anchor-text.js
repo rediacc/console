@@ -69,7 +69,7 @@ export const seoNoVagueAnchorText = {
 
         // Must have href
         const hasHref = node.attributes.some(
-          (attr) => attr.type === 'JSXAttribute' && attr.name?.name === 'href',
+          (attr) => attr.type === 'JSXAttribute' && attr.name?.name === 'href'
         );
         if (!hasHref) return;
 

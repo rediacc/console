@@ -203,7 +203,14 @@ const CT_TESTS_LEAF_KEYS = [
 const PREEXISTING_CONDITIONS = {
   pointer_bump_only: {
     activeWhen: true,
-    keys: [...CT_TESTS_LEAF_KEYS, 'ops', 'elite_run', 'update_flow', 'package_tests', 'install_methods'],
+    keys: [
+      ...CT_TESTS_LEAF_KEYS,
+      'ops',
+      'elite_run',
+      'update_flow',
+      'package_tests',
+      'install_methods',
+    ],
   },
   full_suite: {
     activeWhen: false,
@@ -256,7 +263,8 @@ function validateConditionTable(conditions, order, names) {
       throw new Error(`CONDITION_ORDER omits '${cond}', so it would never be evaluated`);
     }
     for (const key of spec.keys) {
-      if (!names[key]) throw new Error(`PREEXISTING_CONDITIONS.${cond} names unknown plan key '${key}'`);
+      if (!names[key])
+        throw new Error(`PREEXISTING_CONDITIONS.${cond} names unknown plan key '${key}'`);
     }
   }
   for (const cond of order) {
@@ -515,7 +523,9 @@ function readJson(file, missingReason) {
   try {
     return { value: JSON.parse(fs.readFileSync(file, 'utf8')) };
   } catch (e) {
-    return { error: `${missingReason}: ${e.message} (the reconciler degrades to red, not to green)` };
+    return {
+      error: `${missingReason}: ${e.message} (the reconciler degrades to red, not to green)`,
+    };
   }
 }
 
@@ -532,7 +542,9 @@ function main(argv) {
     }
   }
   if (!opts.plan || !opts.jobs || !opts.runId) {
-    process.stderr.write(`skip-plan-reconcile: --plan, --jobs and --run-id are all required\n${usage()}\n`);
+    process.stderr.write(
+      `skip-plan-reconcile: --plan, --jobs and --run-id are all required\n${usage()}\n`
+    );
     return 2;
   }
 
@@ -568,7 +580,9 @@ function main(argv) {
   }
 
   if (!result.ok) {
-    process.stderr.write('skip-plan reconciliation FAILED: the run skipped work the plan attested to.\n');
+    process.stderr.write(
+      'skip-plan reconciliation FAILED: the run skipped work the plan attested to.\n'
+    );
     return 1;
   }
   const planned = planRead.value.jobs ? Object.keys(planRead.value.jobs).length : 0;

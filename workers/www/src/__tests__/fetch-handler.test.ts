@@ -24,7 +24,11 @@ function mkEnv(
   return { ASSETS, ACCOUNT: mkFetcher(accountResponder) };
 }
 
-function hit(path: string, env: ReturnType<typeof mkEnv>, host = 'www.rediacc.com'): Promise<Response> {
+function hit(
+  path: string,
+  env: ReturnType<typeof mkEnv>,
+  host = 'www.rediacc.com'
+): Promise<Response> {
   const req = new Request(`https://${host}${path}`);
   return worker.fetch(req, env as unknown as Parameters<typeof worker.fetch>[1]);
 }
@@ -91,7 +95,10 @@ describe('detectLanguage', () => {
     expect(detectLanguage('/en/docs/foo')).toEqual({ lang: 'en', pathWithoutLang: '/docs/foo' });
   });
   test('detects /ja/ prefix', () => {
-    expect(detectLanguage('/ja/solutions/x')).toEqual({ lang: 'ja', pathWithoutLang: '/solutions/x' });
+    expect(detectLanguage('/ja/solutions/x')).toEqual({
+      lang: 'ja',
+      pathWithoutLang: '/solutions/x',
+    });
   });
   test('unrecognized 2-letter prefix is not a language', () => {
     // "xx" is not in SUPPORTED_LANGUAGES
@@ -225,7 +232,8 @@ describe('fetch handler — 404 recovery integration', () => {
   test('live page passes through: /en/docs/installation -> 200 from ASSETS', async () => {
     const liveEnv = mkEnv((req) => {
       const url = new URL(req.url);
-      if (url.pathname === '/en/docs/installation') return new Response('live page', { status: 200 });
+      if (url.pathname === '/en/docs/installation')
+        return new Response('live page', { status: 200 });
       return new Response('not found', { status: 404 });
     });
     const res = await hit('/en/docs/installation', liveEnv);
@@ -251,7 +259,11 @@ describe('fetch handler — static asset paths (case-preserving)', () => {
       captured.push(new URL(req.url).pathname);
       return new Response('asset', { status: 200 });
     });
-    return { env, captured, run: () => hit(pathname, env).then((r) => ({ res: r, captured, expectedUrl })) };
+    return {
+      env,
+      captured,
+      run: () => hit(pathname, env).then((r) => ({ res: r, captured, expectedUrl })),
+    };
   }
 
   test('/assets/<mixed-case-hash>.js preserves case', async () => {

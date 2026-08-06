@@ -15,7 +15,8 @@ export const requireTestId = {
     },
     messages: {
       missingTestId: '{{element}} should have a data-testid attribute for E2E testing.',
-      missingTestIdModal: 'Modal should have a data-testid attribute. Use data-testid="{{suggested}}".',
+      missingTestIdModal:
+        'Modal should have a data-testid attribute. Use data-testid="{{suggested}}".',
     },
     schema: [
       {
@@ -37,7 +38,16 @@ export const requireTestId = {
           formElements: {
             type: 'array',
             items: { type: 'string' },
-            default: ['Input', 'Input.Password', 'Input.Search', 'Select', 'Checkbox', 'Radio', 'Switch', 'Upload'],
+            default: [
+              'Input',
+              'Input.Password',
+              'Input.Search',
+              'Select',
+              'Checkbox',
+              'Radio',
+              'Switch',
+              'Upload',
+            ],
           },
           // Ignore patterns for dynamic testids (template literals are OK)
           allowTemplateLiterals: {
@@ -55,9 +65,22 @@ export const requireTestId = {
     const requiredElements = options.requiredElements || ['Modal', 'Drawer'];
     const interactiveElements = options.interactiveElements || ['Button'];
     const formElements = options.formElements || [
-      'Input', 'Input.Password', 'Input.Search', 'Input.TextArea',
-      'Select', 'Checkbox', 'Radio', 'Switch', 'Upload', 'DatePicker',
-      'TimePicker', 'Slider', 'Rate', 'Transfer', 'TreeSelect', 'Cascader',
+      'Input',
+      'Input.Password',
+      'Input.Search',
+      'Input.TextArea',
+      'Select',
+      'Checkbox',
+      'Radio',
+      'Switch',
+      'Upload',
+      'DatePicker',
+      'TimePicker',
+      'Slider',
+      'Rate',
+      'Transfer',
+      'TreeSelect',
+      'Cascader',
     ];
     const allowTemplateLiterals = options.allowTemplateLiterals !== false;
 

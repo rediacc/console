@@ -184,7 +184,7 @@ export const noUnawaitedDrizzleTerminator = {
     schema: [],
     messages: {
       missingAwait:
-        "Unawaited Drizzle .{{method}}() call. The Database type is async at runtime (D1) — wrap with `await` (or use the dbRun helper for .run()) to avoid silent data loss in production.",
+        'Unawaited Drizzle .{{method}}() call. The Database type is async at runtime (D1) — wrap with `await` (or use the dbRun helper for .run()) to avoid silent data loss in production.',
     },
   },
 

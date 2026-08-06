@@ -100,7 +100,8 @@ export const requireCommandSummary = {
           excludeFromMinDescription: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Command names to exclude from minimum description length check (e.g., experimental cloud-only commands)',
+            description:
+              'Command names to exclude from minimum description length check (e.g., experimental cloud-only commands)',
           },
         },
         additionalProperties: false,
@@ -152,7 +153,11 @@ export const requireCommandSummary = {
 
       // Check 2: Top-level command description must be >= minDescription chars
       const cmdName = i18nKey.split('.')[1];
-      if (isTopLevelCommandDescription(i18nKey) && resolved.length < minDescription && !excludeFromMinDescription.has(cmdName)) {
+      if (
+        isTopLevelCommandDescription(i18nKey) &&
+        resolved.length < minDescription &&
+        !excludeFromMinDescription.has(cmdName)
+      ) {
         context.report({
           node,
           messageId: 'descriptionTooShort',

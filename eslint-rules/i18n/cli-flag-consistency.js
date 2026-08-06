@@ -46,9 +46,7 @@ const englishCache = new Map();
 const extractFlags = (str) => {
   const set = new Set();
   for (const token of str.split(/\s+/)) {
-    const cleaned = token
-      .replace(LEADING_TOKEN_CHARS, '')
-      .replace(TRAILING_TOKEN_CHARS, '');
+    const cleaned = token.replace(LEADING_TOKEN_CHARS, '').replace(TRAILING_TOKEN_CHARS, '');
     const m = cleaned.match(/^(--[a-z][a-z0-9-]*)/);
     if (m) set.add(m[1]);
   }
@@ -115,7 +113,7 @@ export const cliFlagConsistency = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/cli-flag-consistency',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     const namespace = path.basename(context.filename, '.json');

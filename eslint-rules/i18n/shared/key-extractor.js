@@ -111,7 +111,7 @@ const recordUsedKey = (usedKeys, fullKey) => {
 export const extractUsedKeys = (sourceDir) => {
   // Check cache
   const now = Date.now();
-  if (extractedKeysCache && (now - cacheTimestamp) < CACHE_TTL) {
+  if (extractedKeysCache && now - cacheTimestamp < CACHE_TTL) {
     return extractedKeysCache;
   }
 
@@ -152,7 +152,7 @@ export const isKeyUsed = (sourceDir, namespace, key) => {
   // Check if any used key is a prefix of this key (for nested objects)
   // e.g., if t('dashboard.widgets') is used, dashboard.widgets.title is considered used
   for (const usedKey of namespaceKeys) {
-    if (key.startsWith(`${usedKey  }.`) || usedKey.startsWith(`${key  }.`)) {
+    if (key.startsWith(`${usedKey}.`) || usedKey.startsWith(`${key}.`)) {
       return true;
     }
   }

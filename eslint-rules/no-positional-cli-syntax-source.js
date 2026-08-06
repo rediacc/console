@@ -25,10 +25,7 @@ import {
 } from './lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
@@ -125,16 +122,15 @@ export const noPositionalCliSyntaxSource = {
 
   create(context) {
     const options = context.options[0] || {};
-    const exemptPrefixes = [
-      ...DEFAULT_EXEMPT_PREFIXES,
-      ...(options.exemptCommandPrefixes || []),
-    ];
+    const exemptPrefixes = [...DEFAULT_EXEMPT_PREFIXES, ...(options.exemptCommandPrefixes || [])];
 
     const { leaves, parents } = loadPathsFromTree();
-    const leafEntries = [...leaves].sort((a, b) => b.length - a.length).map((p) => ({
-      path: p,
-      regex: buildCommandRegex(p),
-    }));
+    const leafEntries = [...leaves]
+      .sort((a, b) => b.length - a.length)
+      .map((p) => ({
+        path: p,
+        regex: buildCommandRegex(p),
+      }));
     const parentEntries = [...parents]
       .sort((a, b) => b.length - a.length)
       .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));

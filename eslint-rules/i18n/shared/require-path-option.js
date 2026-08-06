@@ -17,11 +17,16 @@ import path from 'node:path';
  * @param {string} projectRoot - Base for resolving relative values
  * @returns {string} Absolute, verified directory path
  */
-export const resolveRequiredDirOption = (ruleName, optionName, value, projectRoot = process.cwd()) => {
+export const resolveRequiredDirOption = (
+  ruleName,
+  optionName,
+  value,
+  projectRoot = process.cwd()
+) => {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(
       `${ruleName}: the "${optionName}" option is required and must be a non-empty string. ` +
-        `Set it explicitly in eslint.config.js, e.g. { ${optionName}: 'packages/cli/src/i18n/locales' }.`,
+        `Set it explicitly in eslint.config.js, e.g. { ${optionName}: 'packages/cli/src/i18n/locales' }.`
     );
   }
 
@@ -31,7 +36,7 @@ export const resolveRequiredDirOption = (ruleName, optionName, value, projectRoo
     throw new Error(
       `${ruleName}: the "${optionName}" option resolves to "${absolute}", which is not an existing directory. ` +
         'A path that does not exist would make this rule read nothing and silently report no problems. ' +
-        'Fix the path in eslint.config.js.',
+        'Fix the path in eslint.config.js.'
     );
   }
 

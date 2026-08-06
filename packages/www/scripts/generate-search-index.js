@@ -284,7 +284,7 @@ function splitIntoSections(markdown, fallbackHeading) {
   };
 
   for (const line of lines) {
-    if (line.startsWith("```")) {
+    if (line.startsWith('```')) {
       inFence = !inFence;
       currentBody.push(line);
       continue;

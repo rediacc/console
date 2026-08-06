@@ -118,7 +118,8 @@ export const noUntranslatedValues = {
       },
     ],
     messages: {
-      untranslated: 'Value for key "{{key}}" is identical to English. Translate it naturally and idiomatically (not literal/word-for-word): "{{value}}". See docs/i18n/CONVENTIONS.md.',
+      untranslated:
+        'Value for key "{{key}}" is identical to English. Translate it naturally and idiomatically (not literal/word-for-word): "{{value}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -131,7 +132,7 @@ export const noUntranslatedValues = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/no-untranslated-values',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info
@@ -177,7 +178,7 @@ export const noUntranslatedValues = {
           messageId: 'untranslated',
           data: {
             key: fullPath,
-            value: strValue.length > 50 ? `${strValue.slice(0, 47)  }...` : strValue,
+            value: strValue.length > 50 ? `${strValue.slice(0, 47)}...` : strValue,
           },
         });
       }

@@ -16,7 +16,7 @@ const englishCache = new Map();
  */
 const extractPlaceholders = (str) => {
   const matches = str.match(/\{\{[^}]+\}\}/g) || [];
-  return new Set(matches.map(m => m.trim()));
+  return new Set(matches.map((m) => m.trim()));
 };
 
 /**
@@ -84,8 +84,10 @@ export const interpolationConsistency = {
       },
     ],
     messages: {
-      missingPlaceholder: 'Translation for "{{key}}" is missing placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
-      extraPlaceholder: 'Translation for "{{key}}" has extra placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
+      missingPlaceholder:
+        'Translation for "{{key}}" is missing placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
+      extraPlaceholder:
+        'Translation for "{{key}}" has extra placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -95,7 +97,7 @@ export const interpolationConsistency = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/interpolation-consistency',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info

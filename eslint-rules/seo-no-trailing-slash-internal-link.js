@@ -67,7 +67,7 @@ function stripFragmentAndQuery(value) {
 function hasTrailingSlashIssue(raw) {
   if (typeof raw !== 'string') return false;
   if (raw.includes('://')) return false; // external URL
-  if (raw === '/') return false;          // bare root is fine
+  if (raw === '/') return false; // bare root is fine
   const path = stripFragmentAndQuery(raw);
   if (path === '/' || path === '') return false;
   // Must start with `/` followed by a lowercase letter or template-literal
@@ -145,8 +145,7 @@ export const seoNoTrailingSlashInternalLink = {
     return {
       // <a href={...}> / <Link to={...}> / <img src={...}>
       JSXAttribute(node) {
-        const name =
-          node.name?.type === 'JSXIdentifier' ? node.name.name : null;
+        const name = node.name?.type === 'JSXIdentifier' ? node.name.name : null;
         if (!name || !URL_ATTR_NAMES.has(name)) return;
         const value = node.value;
         if (!value) return;
