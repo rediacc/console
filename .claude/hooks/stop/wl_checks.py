@@ -1163,7 +1163,12 @@ def guided_slice(fold, session_id, verdicts=None, me=None, root=None, full=False
         plan = tri.get("plan", "") if tri.get("v") == "plan-subagent" else ""
         if plan and st in (" ", ">"):
             if root is None:
-                root = C.project_root(C.project_start(event))
+                # No event in scope here -- guided_slice takes none. Passing one
+                # was a NameError that failed SOFT: the caller wraps this in a
+                # bare except and replaces the whole guide with "WORKLIST GUIDE
+                # unavailable", so the operator's entire worklist surface would
+                # have degraded silently on any triaged-BIG item.
+                root = C.project_root(C.project_start())
             if not os.path.exists(os.path.join(root, plan)):
                 rows.append((0, "  - [%s] #%s (upd %s) %s\n        TRIAGED BIG, plan file missing: %s\n        NEXT: write the plan (Plan agent) or re-triage: --triage %s --id %s <finding>"
                              % (st, rid, age, txt, plan, me_arg, rid)))
