@@ -55,6 +55,7 @@ try:
     import fcntl
 except ImportError:  # Windows: no POSIX advisory locking
     fcntl = None
+import glob as _glob
 import hashlib
 import json
 import os
@@ -812,7 +813,6 @@ def owner_age_hours(owner, projects_dir):
     transcript matches (unknown owner: word label, foreign machine). The
     newest match wins so a short prefix matching several sessions reads as
     the LIVELIEST of them -- the conservative direction."""
-    import glob as _glob
     if not owner or not projects_dir:
         return None
     matches = _glob.glob(os.path.join(projects_dir, owner + "*.jsonl"))
