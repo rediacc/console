@@ -2557,6 +2557,7 @@ ARITY = {
     "CLI_ASK_UNKNOWN_RECIPIENT": ("to", "a, b"),
     # v19: runtime caller identity (L1 refusal, L2 backstop, L3 repair).
     "CLI_REASSIGN_USAGE": None, "CLI_REASSIGN_ALIVE": ("p", "p"),
+    "CLI_REASSIGN_YOUNG": ("p", 5, 30, "p"), "CLI_REASSIGN_EMPTY": ("p", "p"),
     "CLI_REASSIGN_DONE": ("p", "m", "i", "r", "m", "m"),
     "N_PHANTOM_IDENTITY": (1, "rows", "p", "m"), "N_PHANTOM_BLIND": ("why",),
     "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
@@ -7784,6 +7785,48 @@ if grep -q '"by": *"phantom1"' "${WL%.md}.events.jsonl" ||
     pass "190: the event log still records phantom1 as the writer"
 else
     fail "190: --reassign rewrote history instead of appending to it"
+fi
+
+echo "== 190b. CONTROL: --reassign refuses a peer that is FRESH but has never stopped =="
+# THE REVIEW FINDING THIS PINS (medium, PR #551). The `.lastevent-` guard alone
+# does not deliver the guarantee the docstring claims. That file is written at a
+# session's FIRST STOP, so a peer that has added items and not yet stopped has
+# no file either and is indistinguishable from a genuine phantom. Any session can
+# read a peer's prefix out of `--list --open`, and concurrent sessions in one
+# tree are routine here, so without an age gate a peer's OPEN items and request
+# routing could be moved onto the caller WHILE that peer was working on them.
+#
+# Case 190 (the FIRE) ages its target 90 minutes and 190a's target has already
+# stopped; NEITHER covers a merely-fresh, still-working target, so the untested
+# path was the vulnerable one.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+# 2 minutes old and NO .lastevent- file: exactly the mid-first-turn peer.
+phantom_store fresh999 2
+OUT=$(reqcli --reassign deadbeef fresh999 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "mid-turn" <<<"$OUT"; then
+    pass "190b CONTROL: a fresh peer that never stopped cannot be harvested"
+else
+    fail "190b CONTROL: took over a live peer's work (rc=$RC): ${OUT:0:300}"
+fi
+# CONTROL ON THE CONTROL: the SAME prefix, aged past the floor, still moves --
+# so 190b proves an age gate and not a blanket refusal.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store fresh999 90
+OUT=$(reqcli --reassign deadbeef fresh999 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "reassigned fresh999" <<<"$OUT"; then
+    pass "190b CONTROL: the same prefix aged past the floor still reassigns"
+else
+    fail "190b CONTROL: the age gate refuses even a real phantom (rc=$RC): ${OUT:0:300}"
 fi
 
 echo "== 190a. CONTROL: --reassign refuses a session that HAS stopped =="
