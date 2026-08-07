@@ -185,6 +185,13 @@ jobs:
 
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
+      # FIRST, before any gate reports: the trees they read must be here.
+      # Three gates were measured returning 0 about a submodule that was not on
+      # disk, so this converts twelve quiet partial scans into one loud failure.
+      - name: Scope completeness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_scope_completeness.py
+
       - name: Secret reachability
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_secret_reachability.py
