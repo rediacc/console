@@ -30,4 +30,4 @@ export type { SSHTestResult } from './sshTestResult';
 // SSH test parsing
 export { parseSshTestResult } from './sshTestResult';
 // Version comparison
-export { compareVersions } from './version';
+export { compareVersions, isValidVersion, InvalidVersionError } from './version';

@@ -15,6 +15,7 @@ import {
   isUpdateDisabled,
   STAGED_UPDATE_DIR,
 } from '../../utils/platform.js';
+import { debugLog } from '../../utils/debug.js';
 import { VERSION } from '../../version.js';
 import { readAccountPointer } from '../account/account-pointer.js';
 import { telemetryService } from '../telemetry/telemetry.js';
@@ -214,8 +215,23 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     result.releaseNotesUrl = manifest.releaseNotesUrl;
     result.manifest = manifest;
     result.updateAvailable = compareVersions(VERSION, manifest.version) < 0;
-  } catch {
-    // Silent failure - never interfere with CLI operation
+  } catch (err) {
+    // Still silent to the USER — a background update check must never
+    // interfere with CLI operation, and that part was always right.
+    //
+    // But it was silent to US as well, and that is new harm. compareVersions
+    // now throws on a malformed version instead of quietly returning 0
+    // ("equal"), so a manifest advertising a broken version used to leave
+    // every client reporting "up to date" forever, and now throws into a bare
+    // catch and leaves them reporting exactly the same thing. Same outcome,
+    // still invisible from both directions.
+    //
+    // Debug-only, so the user's experience is unchanged, but a broken manifest
+    // stops being undiagnosable.
+    debugLog(
+      `update check failed: ${err instanceof Error ? err.message : String(err)}`,
+      'update',
+    );
   }
 
   return result;
