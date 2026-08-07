@@ -107,6 +107,10 @@ REGISTRY=(
     # every completeness comparison is over an empty set -- which would read
     # exactly like "all submodules present". The MIN_SUBMODULES floor refuses.
     ".ci/scripts/quality/check_scope_completeness.py|VACUOUS INPUT"
+    # Against an empty tree there is no .claude/settings.json, so no hook command
+    # is parsed and every reference check is over an empty set -- which reads
+    # exactly like "every hook resolves". The MIN_COMMANDS floor refuses.
+    ".ci/scripts/quality/check_hooks_resolvable.py|VACUOUS INPUT"
     # Against an empty tree there are no workflows, so no secret is referenced
     # and the gate would report that every reference is reachable. The
     # MIN_REFERENCES floor turns that into a loud refusal.
