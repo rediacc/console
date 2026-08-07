@@ -83,6 +83,11 @@ fi
 
 MARKER_PREFIX="$(sed -n "s/^MARKER_PREFIX='\(.*\)'[[:space:]]*$/\1/p" "$GATE_SCRIPT")"
 MARKER_PREFIX="${MARKER_PREFIX%%$'\n'*}"
+# The cap is measured against posted reports PLUS spent attempts, so this script
+# needs the attempt prefix too. Parsed from the gate exactly like MARKER_PREFIX:
+# a second hard-coded copy is the drift this file exists to prevent.
+ATTEMPT_PREFIX="$(sed -n "s/^ATTEMPT_PREFIX='\(.*\)'[[:space:]]*$/\1/p" "$GATE_SCRIPT")"
+ATTEMPT_PREFIX="${ATTEMPT_PREFIX%%$'\n'*}"
 # The cap is no longer a constant in the gate script: it is sized to the diff by
 # review_cap_for() in ../lib/common.sh, which BOTH scripts source. That is the
 # whole point -- sed-parsing a number out of the other file was always one edit
@@ -90,6 +95,18 @@ MARKER_PREFIX="${MARKER_PREFIX%%$'\n'*}"
 if [[ -z "$MARKER_PREFIX" ]]; then
     log_error "could not parse MARKER_PREFIX out of $GATE_SCRIPT"
     log_error "  Fix: keep it as a plain top-level assignment there, or update this parser."
+    exit 1
+fi
+if [[ -z "$ATTEMPT_PREFIX" ]]; then
+    log_error "could not parse ATTEMPT_PREFIX out of $GATE_SCRIPT"
+    log_error "  Fix: keep it as a plain top-level assignment there, or update this parser."
+    log_error "  Without it the cap reads LOWER here than in the gate, and the deadlock"
+    log_error "  guard below cannot fire on a capped PR -- the #553 failure mode."
+    exit 1
+fi
+if ! declare -F review_spend_total >/dev/null; then
+    log_error "review_spend_total() is missing from ../lib/common.sh"
+    log_error "  Fix: restore it there; the gate and this script must share ONE numerator."
     exit 1
 fi
 if ! declare -F review_cap_for >/dev/null; then
@@ -293,7 +310,10 @@ else
     fi
 fi
 
-review_count="$(review_report_count "$pr")"
+# Posted reports PLUS spent attempts -- the same total the gate caps on. Counting
+# posted reports alone made this script read 0/3 while the gate read 3/3 on the
+# SAME PR, which is why the deadlock guard below never fired. See common.sh.
+review_count="$(review_spend_total "$pr" "$ATTEMPT_PREFIX")"
 review_count="${review_count//[[:space:]]/}"
 # Y in "X/Y" is sized to THIS PR's diff, via the shared table in ../lib/common.sh.
 pr_loc="$(pr_diff_loc "$pr")"
