@@ -1260,7 +1260,29 @@ jobs:
     name: Validate Promotion
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 60, not 30, because on `main` this job has been running within MINUTES of
+    # its own ceiling for weeks and has now blown through it twice. Measured
+    # durations of the `main` push runs, newest last:
+    #   30249144168 21m57s   30289599104 27m20s   30324286856 CANCELLED 31m03s
+    #   30528112416 28m35s   30596539903 24m09s   30621380078 24m56s
+    #   30692838860 24m01s   31143504009 CANCELLED 30m51s
+    # The second cancellation blocked the 0804-1 release: validate-promote is
+    # soft-required in assert-ci-complete.sh, which forgives `skipped` but NOT
+    # `cancelled`, so CI Complete and Pipeline Sentinel both failed and the
+    # finalize step never dispatched cd-v2.yml. Nothing was wrong with the code.
+    #
+    # A PR CANNOT CATCH THIS, which is why the fix lands directly on main. PR
+    # runs promote the tiny per-PR channel (pr-551 finished in 7m19s on run
+    # 31136715318); `main` promotes the full `edge` channel, and that channel
+    # grows with every release, so the trend is upward -- 21m57s on 2026-07-27
+    # to over 30m on 2026-08-07. A PR check here goes green while proving
+    # nothing about the path that actually breaks.
+    #
+    # 60 buys headroom, it does not fix the growth. The real defect is that
+    # promotion validation is O(channel size) and re-copies the whole channel
+    # each run; if this creeps past 60 too, make the copy incremental rather
+    # than raising the number again.
+    timeout-minutes: 60
     # THIRD INSTANCE OF THE EMPTY-CHANNEL CLASS, and the gate is copied verbatim
     # from how cd-stage.yml already solved it (see its "Build package
     # repositories" step). `initialize` derives channel="" for anything that is
