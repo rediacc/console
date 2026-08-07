@@ -2733,16 +2733,25 @@ Three attempts at a budget that cannot finish leaves a PR unreviewable forever.
 forbids granting N attempts at a budget guaranteed to starve. That coupling is
 the next thing worth gating.
 
-### New gates
+### The gates that close this, and where they live
 
-- `check:ci-review-turn-capacity` -- monotonic, total, density-where-achievable,
-  ceiling-beyond, plus the measured regression point. Control collapses
-  turns-per-KLOC and requires the assertions to fail.
-- `check:ci-review-cap-coherence` -- both scripts take the numerator from
-  `review_spend_total()` and the denominator from `review_cap_for()`, neither
-  redefines them locally, and -- the behavioural half -- with numerator == cap the
-  deadlock guard is the branch that actually runs.
-- `check:ci-gate-reachability-coverage` -- guards the Stop hook's own probe,
-  which returned False for ALL 191 registered gates because it walked `npm run`
-  edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts` with zero such
-  edges. It had been telling sessions their wired gates were unwired.
+**NOT on this branch.** `check:ci-review-turn-capacity`,
+`check:ci-review-cap-coherence` and `check:ci-gate-reachability-coverage` were
+built on `0807-2` and land with it. Naming them here as shipped would be exactly
+the drift this directory exists to prevent -- a reader grepping for them on this
+branch finds nothing.
+
+What THIS branch carries is the numerator fix alone, plus the gate-test case that
+reproduces the #553 shape,
+`test-review-status.sh::test_cap_reached_by_spent_attempts_alone`. That case is
+mutation-proven against the scripts as they exist on main, where it reports the
+live incident verbatim: `expected 'success', got 'failure'`. Its sibling case --
+which reaches the cap with three POSTED reports -- passes under either numerator,
+which is why 46 existing assertions never caught this.
+
+When 0807-2 lands, those three gates cover the turn budget (monotonic, total,
+density-where-achievable, ceiling-beyond), the cap coherence (one numerator, one
+denominator, and the deadlock guard reachable AT the cap), and the Stop hook's own
+reachability probe -- which returned False for all 191 registered gates because it
+walked `npm run` edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts` with
+zero such edges.
