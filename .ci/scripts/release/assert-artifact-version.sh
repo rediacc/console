@@ -46,10 +46,9 @@ CI_RUN_ID="${CI_RUN_ID:?assert-artifact-version.sh: CI_RUN_ID must be set}"
 : "${GITHUB_REPOSITORY:?assert-artifact-version.sh: GITHUB_REPOSITORY must be set}"
 
 mkdir -p /tmp/cd-artifact-check
-# The CLI manifest artifact is named "cli-manifest" by cd-stage.yml.
-# Tolerate a missing artifact (e.g. older CI runs predating this
-# check) by emitting a warning instead of failing -- once the
-# check is established for a few cycles, harden to a hard fail.
+# The CLI manifest artifact is named "cli-manifest" and is uploaded on its own
+# by cd-stage.yml. It did not exist until 2026-08-07, which is why this check
+# spent its whole life taking the not-found branch.
 if ! gh run download "$CI_RUN_ID" --repo "${GITHUB_REPOSITORY}" \
     --name cli-manifest --dir /tmp/cd-artifact-check 2>/dev/null; then
     echo "::error::cli-manifest artifact not found on CI run ${CI_RUN_ID}, so the artifact version CANNOT be compared."
