@@ -17,7 +17,6 @@
  */
 
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -132,8 +131,26 @@ function main(): void {
     process.exit(1);
   }
 
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'keyusage-'));
+  // The probe MUST be written into the real www source tree, not a tmpdir: the gate under
+  // test scans WWW_SRC, so a probe anywhere else would be invisible to it and every case
+  // would report "ignored" -- a control that passes its negative cases while measuring
+  // nothing. There was an unused `mkdtempSync` scratch dir here whose only other mention was
+  // its own rmSync; it implied a sandbox that never existed and is gone.
+  //
+  // Residual risk, stated rather than papered over: each write is unlink'd in a `finally`,
+  // so ordinary failures clean up, but a SIGKILL mid-run can leave __control_probe__.tsx in
+  // real source. The name is deliberately unmistakable, and the guard below refuses to run
+  // against a leftover probe rather than folding it into the measurement.
   const probeDir = path.join(WWW_SRC, 'components');
+  const stale = path.join(probeDir, '__control_probe__.tsx');
+  if (fs.existsSync(stale)) {
+    console.error(
+      `VACUOUS: a leftover ${stale} is already present.\n` +
+        '  A previous run was killed mid-probe. Remove it and re-run; leaving it would\n' +
+        '  fold one case\'s source into every later case.',
+    );
+    process.exit(1);
+  }
   let failures = 0;
 
   for (const c of CASES) {
@@ -180,8 +197,6 @@ function main(): void {
   } else {
     console.log(`  ok   all ${inUse.length} in-use namespace names resolve: ${inUse.join(', ')}`);
   }
-
-  fs.rmSync(scratch, { recursive: true, force: true });
 
   if (failures > 0) {
     console.error(
