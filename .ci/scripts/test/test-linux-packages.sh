@@ -29,6 +29,62 @@ TEST_VERSION="99.0.0"
 DOCKER_NETWORK=""
 
 # =============================================================================
+# Version assertions
+# =============================================================================
+#
+# This file carried the same unanchored-grep idiom that let a 1.2.16 binary
+# verify as 1.2.17 in the release path (see verify_version in
+# test-install-methods.sh), in two shapes:
+#
+#   ${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}'
+#   echo "$info" | grep -q "Version: ${TEST_VERSION}"
+#
+# SEVERITY HERE IS LOW, stated plainly so nobody later reads this change as an
+# urgent fix: TEST_VERSION is hardcoded to 99.0.0 at the top of this file and
+# the binary under test is a dummy shell script written by
+# phase1_build_dummy_binary, so there is no real version here that could drift
+# out from under the check. The change exists to stop the IDIOM being copied
+# into a place where a real version is at stake, and to keep one exact-match
+# spelling in the tree instead of three near-misses.
+#
+# Empty is refused for the same reason verify_version refuses it: an empty
+# expectation makes `grep -q ""` match everything, so the guard would report a
+# pass having established nothing.
+[[ -n "$TEST_VERSION" ]] || {
+    log_error "TEST_VERSION is empty; every version assertion below would pass vacuously"
+    exit 1
+}
+
+# An ERE matching the version as a whole token: dots escaped, and not flanked by
+# another digit or dot, so 99.0.0 does not match 99.0.01 or 199.0.0.
+version_token_re() {
+    local v="${1#v}"
+    printf '(^|[^0-9.])v?%s([^0-9.]|$)' "${v//./\\.}"
+}
+TEST_VERSION_RE="$(version_token_re "$TEST_VERSION")"
+
+# assert_version_field <text> <label>
+#
+# The named metadata field must carry EXACTLY TEST_VERSION. `grep -q "Version:
+# 99.0.0"` was satisfied by "Version: 99.0.01" as well; this compares the parsed
+# field value, so it cannot be.
+assert_version_field() {
+    local text="$1" label="$2"
+    local line
+    line="$(printf '%s\n' "$text" | grep -E "^[[:space:]]*${label}[[:space:]]*:" | head -1)"
+    if [[ -z "$line" ]]; then
+        log_error "no '${label}' field found in package metadata"
+        return 1
+    fi
+    local value
+    value="$(printf '%s\n' "$line" | sed -E "s/^[[:space:]]*${label}[[:space:]]*:[[:space:]]*//")"
+    if [[ "$value" != "$TEST_VERSION" ]]; then
+        log_error "${label} mismatch: expected '${TEST_VERSION}', got '${value}'"
+        return 1
+    fi
+}
+
+# =============================================================================
 # Test Helpers
 # =============================================================================
 
@@ -150,7 +206,7 @@ phase1_validate_deb_metadata() {
 
     # Check required fields
     echo "$info" | grep -q "Package: ${PKG_NAME}" || return 1
-    echo "$info" | grep -q "Version: ${TEST_VERSION}" || return 1
+    assert_version_field "$info" "Version" || return 1
     echo "$info" | grep -q "Architecture: amd64" || return 1
     echo "$info" | grep -q "Maintainer:" || return 1
     log_info "  DEB fields validated: Package, Version, Architecture, Maintainer"
@@ -165,7 +221,7 @@ phase1_validate_rpm_metadata() {
 
     # Check required fields
     echo "$info" | grep -q "Name.*: ${PKG_NAME}" || return 1
-    echo "$info" | grep -q "Version.*: ${TEST_VERSION}" || return 1
+    assert_version_field "$info" "Version" || return 1
     echo "$info" | grep -q "Architecture: x86_64" || return 1
     log_info "  RPM fields validated: Name, Version, Architecture"
 }
@@ -186,7 +242,7 @@ test_deb_install() {
     docker_run "$image" "
         dpkg -i /packages/packages/${PKG_NAME}_${TEST_VERSION}_amd64.deb && \
         test -x /usr/local/bin/${PKG_BINARY_NAME} && \
-        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>&1 | grep -qE '${TEST_VERSION_RE}' && \
         echo 'Install verified on $label'
     "
 }
@@ -207,7 +263,7 @@ test_rpm_install() {
     docker_run "$image" "
         rpm -i /packages/packages/${PKG_NAME}-${TEST_VERSION}-1.x86_64.rpm && \
         test -x /usr/local/bin/${PKG_BINARY_NAME} && \
-        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>&1 | grep -qE '${TEST_VERSION_RE}' && \
         echo 'Install verified on $label'
     "
 }
@@ -228,7 +284,7 @@ test_apk_install() {
     docker_run "$image" "
         apk add --no-cache --allow-untrusted /packages/packages/${PKG_NAME}-${TEST_VERSION}-r1-amd64.apk && \
         test -x /usr/local/bin/${PKG_BINARY_NAME} && \
-        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>&1 | grep -qE '${TEST_VERSION_RE}' && \
         echo 'Install verified on $label'
     "
 }
@@ -249,7 +305,7 @@ test_archlinux_install() {
     docker_run "$image" "
         pacman -U --noconfirm /packages/packages/${PKG_NAME}-${TEST_VERSION}-1-x86_64.pkg.tar.zst && \
         test -x /usr/local/bin/${PKG_BINARY_NAME} && \
-        /usr/local/bin/${PKG_BINARY_NAME} --version 2>/dev/null | grep -q '${TEST_VERSION}' && \
+        /usr/local/bin/${PKG_BINARY_NAME} --version 2>&1 | grep -qE '${TEST_VERSION_RE}' && \
         echo 'Install verified on $label'
     "
 }
