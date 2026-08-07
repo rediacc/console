@@ -183,6 +183,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-review-turn-capacity
 
+      # The gate and review-status must cap on the SAME numerator. When they did
+      # not, the gate stopped reviewing while review-status kept demanding one,
+      # and PR #553 became green, ready and permanently unmergeable.
+      - name: Review cap is measured coherently
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-review-cap-coherence
+
       # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
       # pipefail` script on empty input. Written after three such outages in
       # one day.
