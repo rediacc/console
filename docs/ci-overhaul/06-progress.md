@@ -2659,3 +2659,90 @@ checks out submodules. Measured before the fix:
 Both follow the same pattern as the older gates here: a committed baseline, a
 `--refresh` that carries the only network access, a vacuity floor, and controls
 that fire in both directions before any real read.
+
+## A required check that could not pass, and a guard that could not fire (2026-08-07)
+
+Two defects of the same shape, found hours apart, both in the machinery that
+decides whether a PR may merge. Neither was a missed bug: both were checks
+producing confident WRONG answers, which is more expensive, because the work they
+create looks legitimate.
+
+### 1. The review deadlock: two numerators, one cap
+
+PR #553 reached green CI, ready, zero unresolved threads -- and became
+PERMANENTLY UNMERGEABLE. Its required `Review Complete` was red and no action
+could clear it.
+
+`review-status.sh` has an explicit DEADLOCK GUARD for exactly that state: once
+the review cap is reached the reviewed-SHA marker can never advance, so failing
+would strand the PR "through no fault of its author". It passes loudly instead.
+
+It never fired, because the two scripts measured different numerators against the
+same denominator:
+
+| script | numerator | #553 |
+|---|---|---|
+| `claude-review-gate.sh:449` | posted reports + spent attempts | **3/3** -> refuses to review |
+| `review-status.sh:296` | posted reports only | **0/3** -> guard mute |
+
+The gate stopped reviewing because the budget was gone; review-status could not
+see the cap as reached and demanded a review that could never happen.
+
+`.ci/scripts/lib/common.sh` exists precisely to stop this drift, and it
+half-worked: it shared `review_cap_for()` (the DENOMINATOR) while the NUMERATOR
+stayed split across two files, one of which did not know spent attempts existed.
+**Sharing a file is not sharing the computation.** Both callers now use
+`review_spend_total()` from that file; the gate's local counter is deleted rather
+than left as a second copy.
+
+**This fix could not be validated on the PR that made it.** `review-status.yml`
+checks out `.ci/scripts` from the DEFAULT BRANCH -- deliberately, so a PR cannot
+edit the logic judging it -- so the fix is inert until it is on `main`. Breaking
+the circularity needed a separate tiny branch (0807-3, PR #554). Any future
+session touching review-cap logic must expect the same: **your fix will not act
+on your own PR.**
+
+### 2. The turn budget, and why a green retry proves nothing
+
+The same PR starved its entire review budget first: three passes, all
+`error_max_turns`, zero findings posted. Sonnet twice, then opus-5 -- the model
+was never the constraint.
+
+Measured, same day, same reviewer, both in the old 50-turn tier:
+
+| PR | diff | outcome |
+|---|---|---|
+| #552 | 2270 lines / 39 files | completed, full report (22.0 turns/KLOC) |
+| #553 | 2802 lines / 36 files | starved, nothing posted (17.8 turns/KLOC) |
+
+File count does not discriminate (39 passed where 36 failed); lines do. The
+50-turn tier stretched to 5000 lines, so a 4999-line diff got 10 turns/KLOC.
+
+The first fix -- moving the rung from 5000 to 2000 -- was WRONG, and the new
+`check-review-turn-capacity.sh` gate caught it immediately: it left a
+2000..29999 tier whose top edge got 2.6 turns/KLOC, the same hole fifteen times
+wider. **Rungs starve at their top by construction.** The budget is now
+continuous (25 turns/KLOC, floor 50, ceiling 140).
+
+### The generalisable trap
+
+A starved review is the EXPENSIVE outcome, not the cheap one: it burns its whole
+budget, posts nothing, and still spends an attempt against a finite per-PR cap.
+Three attempts at a budget that cannot finish leaves a PR unreviewable forever.
+`REVIEW_CAP_TIERS` and the turn budget are still tuned independently -- nothing
+forbids granting N attempts at a budget guaranteed to starve. That coupling is
+the next thing worth gating.
+
+### New gates
+
+- `check:ci-review-turn-capacity` -- monotonic, total, density-where-achievable,
+  ceiling-beyond, plus the measured regression point. Control collapses
+  turns-per-KLOC and requires the assertions to fail.
+- `check:ci-review-cap-coherence` -- both scripts take the numerator from
+  `review_spend_total()` and the denominator from `review_cap_for()`, neither
+  redefines them locally, and -- the behavioural half -- with numerator == cap the
+  deadlock guard is the branch that actually runs.
+- `check:ci-gate-reachability-coverage` -- guards the Stop hook's own probe,
+  which returned False for ALL 191 registered gates because it walked `npm run`
+  edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts` with zero such
+  edges. It had been telling sessions their wired gates were unwired.
