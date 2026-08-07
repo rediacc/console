@@ -103,6 +103,14 @@ REGISTRY=(
     # having compared nothing -- indistinguishable from full coverage. Both the
     # missing-file path and the too-few-jobs floor say VACUOUS INPUT.
     ".ci/scripts/quality/check_job_timeout_headroom.py|VACUOUS INPUT"
+    # Against an empty tree there is no .gitmodules, so nothing is declared and
+    # every completeness comparison is over an empty set -- which would read
+    # exactly like "all submodules present". The MIN_SUBMODULES floor refuses.
+    ".ci/scripts/quality/check_scope_completeness.py|VACUOUS INPUT"
+    # Against an empty tree there are no workflows, so no secret is referenced
+    # and the gate would report that every reference is reachable. The
+    # MIN_REFERENCES floor turns that into a loud refusal.
+    ".ci/scripts/quality/check_secret_reachability.py|VACUOUS INPUT"
     # Against an empty tree the probe locale file is absent, so no rule set can
     # be resolved at all and the gate would otherwise report that zero enabled
     # rules are healthy -- which is what a healthy repo looks like too.
