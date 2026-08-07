@@ -237,6 +237,28 @@ jobs:
             dist/packages/
           retention-days: 1
 
+      # The manifest ALONE, ~1 KB, under the exact name cd-v2.yml's
+      # assert-artifact-version.sh looks for.
+      #
+      # That guard has been dead since it was written. It downloads an artifact
+      # named `cli-manifest`, and nothing ever produced one -- the manifest was
+      # only ever inside release-artifacts-<sha>, which is ~7 GB and far too
+      # heavy for an init-job check to pull. So the guard hit its
+      # "artifact not found -> warn -> exit 0" branch on EVERY release and
+      # silently passed. On 2026-08-07 that let a second release publish
+      # 1.2.16 binaries under the label 1.2.17; the mismatch surfaced only in
+      # post-publish install validation, fifteen minutes and one edge deploy
+      # later. Uploading the manifest separately is what makes the guard able
+      # to fire at all.
+      - name: Upload CLI manifest for the CD artifact-version assertion
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: cli-manifest
+          path: dist/cli/manifest.json
+          retention-days: 1
+          if-no-files-found: error
+
       # Pages artifact no longer needed -- cd-deploy-worker.yml builds from source.
 
       # -----------------------------------------------------------------------
