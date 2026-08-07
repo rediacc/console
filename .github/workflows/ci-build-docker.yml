@@ -45,6 +45,17 @@ jobs:
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # RELEASE GATE. next_version is `required: false` and every consumer below
+      # spells its own `|| '0.0.0-dev'`, so a release run whose version never
+      # resolved would publish a placeholder-versioned bundle and npm tarball in
+      # silence. This makes inject-env.sh --strict reachable on the only event
+      # whose artifacts CD promotes; PR runs skip it and keep the dev fallback.
+      - name: Require a real version on the release path
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ inputs.next_version }}
+        run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
       - name: Apply version bump
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: .ci/scripts/version/bump.sh --version ${{ inputs.next_version }}
@@ -90,6 +101,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Same release gate as build-cli: the www footer stamps this version into
+      # a published artifact, and `|| 'dev'` would swallow an unresolved one.
+      - name: Require a real version on the release path
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ inputs.next_version }}
+        run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'

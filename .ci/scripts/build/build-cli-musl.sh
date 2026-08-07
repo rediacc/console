@@ -70,6 +70,21 @@ fi
 
 require_cmd docker
 
+# Same release seam as build-cli-executables.sh (which this script runs inside
+# the container): on the publishable path a version is mandatory and must be a
+# real one. Checked here as well as in the container so a release build fails in
+# seconds instead of after an `npm ci` inside Alpine.
+if [[ "${RELEASE_BUILD:-}" == "true" ]]; then
+    if [[ -z "${CLI_VERSION:-}" ]]; then
+        log_error "RELEASE_BUILD=true but CLI_VERSION is empty; refusing to build a publishable artifact without a version"
+        exit 1
+    fi
+    if ! "$SCRIPT_DIR/../version/inject-env.sh" --version "$CLI_VERSION" --strict --print >/dev/null; then
+        log_error "Release build refused: CLI_VERSION='$CLI_VERSION' is not a publishable version"
+        exit 1
+    fi
+fi
+
 # Select Docker platform for cross-arch builds
 DOCKER_PLATFORM=""
 case "$ARCH" in
@@ -92,6 +107,7 @@ docker run --rm \
     -w /workspace \
     -e CI="${CI:-}" \
     -e CLI_VERSION="${CLI_VERSION:-0.0.0-dev}" \
+    -e RELEASE_BUILD="${RELEASE_BUILD:-}" \
     node:22-alpine sh -c '
 set -e
 
