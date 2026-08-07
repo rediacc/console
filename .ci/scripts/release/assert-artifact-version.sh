@@ -9,9 +9,15 @@
 # mismatch hours later. This fails loud and fast in the init job, before any
 # registry mutation happens.
 #
-# Tolerated (warn + exit 0) rather than failed: a missing cli-manifest artifact,
-# a manifest without .version. Those shapes exist on CI runs that predate the
-# check; once it has been established for a few cycles, harden to a hard fail.
+# HARDENED 2026-08-07. This used to warn and exit 0 when the artifact or the
+# .version field was missing, "until the check has been established for a few
+# cycles". It was never established: nothing in the repo produced an artifact
+# named `cli-manifest`, so EVERY release took the not-found branch and passed
+# without comparing anything. The cost showed up the day two releases ran
+# back to back -- the second published 1.2.16 binaries as 1.2.17, and the only
+# thing that noticed was post-publish install validation, after edge had
+# already been deployed. cd-stage.yml now uploads the manifest under that
+# name, so absence means something is genuinely wrong and is a hard failure.
 #
 # Usage:
 #   .ci/scripts/release/assert-artifact-version.sh
@@ -46,17 +52,19 @@ mkdir -p /tmp/cd-artifact-check
 # check is established for a few cycles, harden to a hard fail.
 if ! gh run download "$CI_RUN_ID" --repo "${GITHUB_REPOSITORY}" \
     --name cli-manifest --dir /tmp/cd-artifact-check 2>/dev/null; then
-    echo "::warning::cli-manifest artifact not found on CI run ${CI_RUN_ID}; skipping artifact-version assertion. Re-run CI on the current main HEAD to produce the manifest."
-    exit 0
+    echo "::error::cli-manifest artifact not found on CI run ${CI_RUN_ID}, so the artifact version CANNOT be compared."
+    echo "::error::Refusing to publish on an unverified version. cd-stage.yml uploads this artifact on every push run, so its absence means the CI run is older than that change, was not a push run, or its artifacts expired (retention is 1 day)."
+    echo "::error::Dispatch again with no ci_run_id to auto-derive the latest green CI on main, or re-run CI on current main."
+    exit 1
 fi
 if [[ ! -f /tmp/cd-artifact-check/manifest.json ]]; then
-    echo "::warning::cli-manifest artifact present but manifest.json missing; skipping assertion."
-    exit 0
+    echo "::error::cli-manifest artifact present but manifest.json missing; refusing to publish unverified."
+    exit 1
 fi
 ARTIFACT_VERSION="$(jq -r '.version // empty' /tmp/cd-artifact-check/manifest.json)"
 if [[ -z "$ARTIFACT_VERSION" ]]; then
-    echo "::warning::manifest.json has no .version field; skipping assertion."
-    exit 0
+    echo "::error::manifest.json has no .version field; refusing to publish unverified."
+    exit 1
 fi
 # Normalise: artifact may or may not carry a leading v.
 ARTIFACT_VERSION="${ARTIFACT_VERSION#v}"
