@@ -236,8 +236,23 @@ test_binary_download() {
         cp "$local_binary" "$download_dir/$binary_name"
         chmod +x "$download_dir/$binary_name"
 
+        # Sibling of the download path's Windows hole, fixed in the same pass.
+        # This used to `return 0` after copying, so on a Windows runner it
+        # asserted nothing about the binary, and on a Linux runner it turned
+        # "cannot check" into "passed". Now: verify when powershell is
+        # actually present, and SKIP loudly (77) when it is not. A skip is
+        # visible in the summary; a bare success is not.
         if [[ "$platform" == "win" ]]; then
-            log_info "Local binary copied: $local_binary"
+            if ! command -v powershell.exe &>/dev/null; then
+                log_warn "Local Windows binary copied but no powershell.exe to run it; SKIPPING the version assertion rather than reporting a pass."
+                return 77
+            fi
+            local win_output
+            win_output=$(powershell.exe -Command ".\\$download_dir\\$binary_name --version" 2>&1 || true)
+            if ! verify_version "$win_output" "$VERSION"; then
+                log_error "Version mismatch: expected '$VERSION', got '$win_output'"
+                return 1
+            fi
             return 0
         fi
 
@@ -306,7 +321,22 @@ test_binary_download() {
         # Download with curl (Git-bash on the Windows runner ships it) for real
         # stall detection, then run the .exe through PowerShell to validate it.
         curl "${dl_flags[@]}" "$url" -o "$binary_name"
-        powershell.exe -Command ".\\$binary_name --version"
+
+        # The output is CAPTURED and COMPARED, which it was not until
+        # 2026-08-07. This line used to be a bare `powershell.exe -Command
+        # ".\rdc.exe --version"`, so it asserted only that the binary could be
+        # executed -- any version it printed was accepted. Both Windows
+        # platforms therefore reported PASS on release run 31154305287 while
+        # Linux and macOS correctly failed the same artifact with
+        # "expected 1.2.17, got 1.2.16". A check that cannot fail on the thing
+        # it exists to catch is worse than no check: it produced two green
+        # ticks that argued the artifact was fine.
+        local output
+        output=$(powershell.exe -Command ".\\$binary_name --version" 2>&1 || true)
+        if ! verify_version "$output" "$VERSION"; then
+            log_error "Version mismatch: expected '$VERSION', got '$output'"
+            return 1
+        fi
     else
         # Linux/macOS test
         if [[ "$DRY_RUN" == "true" ]]; then
