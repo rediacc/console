@@ -107,10 +107,22 @@ emit_review_turns() {
     local changed
     changed=$(gh pr view "$1" --repo "$GITHUB_REPOSITORY" \
         --json additions,deletions --jq '.additions + .deletions' 2>/dev/null) || changed=0
+    # The 50-turn floor stretched to 5000 lines and that was too far. Measured on this
+    # wave, same day, same reviewer, both at the 50-turn tier:
+    #
+    #   PR #552  2270 lines / 39 files  -> completed, full report with findings
+    #   PR #553  2802 lines / 36 files  -> error_max_turns, ZERO findings posted
+    #
+    # So the wall sits under 3000 lines, not 5000, and file count does not discriminate
+    # (39 passed, 36 failed). A starved review is the expensive outcome, not the cheap one:
+    # it burns its whole budget, posts nothing, and still records a SPENT ATTEMPT against a
+    # finite allowance -- strictly worse than having paid for more turns up front. The new
+    # 2000 rung is set below the observed failure with margin rather than at it, because the
+    # boundary is only bracketed to somewhere in 2270..2802 and turn use is not deterministic.
     local turns=50
     if [[ "${changed:-0}" -ge 30000 ]]; then
         turns=140
-    elif [[ "${changed:-0}" -ge 5000 ]]; then
+    elif [[ "${changed:-0}" -ge 2000 ]]; then
         turns=80
     fi
     echo "review_turns=$turns" >>"$GITHUB_OUTPUT"
