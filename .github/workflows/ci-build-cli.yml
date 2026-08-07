@@ -86,12 +86,30 @@ jobs:
         with:
           build-packages: 'true'
 
+      # RELEASE GATE. next_version is declared `required: false`, and both build
+      # steps below used to spell `${{ inputs.next_version || '0.0.0-dev' }}`,
+      # so a release run whose version never resolved would build and upload a
+      # placeholder-versioned SEA and nothing would object. This step makes the
+      # --strict path of inject-env.sh reachable: on push-to-main -- the only
+      # event whose artifacts CD ever promotes -- an empty, placeholder, or
+      # malformed version fails the job before anything is built. PR runs skip
+      # it and keep the 0.0.0-dev fallback.
+      - name: Require a real version on the release path
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          NEXT_VERSION: ${{ inputs.next_version }}
+        run: .ci/scripts/version/inject-env.sh --version "$NEXT_VERSION" --strict --print
+
       - name: Build CLI SEA executable
         if: matrix.platform != 'linux-musl'
         shell: bash
         run: .ci/scripts/build/build-cli-executables.sh --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
+          # Makes the build script re-check the version with --strict and refuse
+          # a placeholder, right where the bytes are stamped.
+          RELEASE_BUILD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       # Musl build (runs entire build inside Alpine Docker container)
       - name: Build CLI SEA executable (musl)
@@ -100,6 +118,7 @@ jobs:
         run: .ci/scripts/build/build-cli-musl.sh --arch ${{ matrix.arch }}
         env:
           CLI_VERSION: ${{ inputs.next_version || '0.0.0-dev' }}
+          RELEASE_BUILD: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:

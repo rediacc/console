@@ -19,12 +19,27 @@
 #   4. "0.0.0-dev"                        (local dev fallback)
 #
 # Flags:
-#   --strict    fail non-zero if version resolves to 0.0.0-dev (required in CI)
-#   --version   explicit version override
+#   --strict    fail non-zero unless the version is a real, publishable version
+#   --version   explicit version override (an EMPTY value is always an error)
 #   --print     print resolved version to stdout (for standalone use)
 #
-# In CI (env CI=true), callers should pass --strict so a missed resolver
-# returns exit 1 instead of silently shipping 0.0.0-dev.
+# WHO PASSES --strict, and why it is not "everyone". Until 2026-08-07 nothing
+# passed it at all: every build boundary spelled its own `|| '0.0.0-dev'` or
+# `${CLI_VERSION:-0.0.0-dev}` inline, so the one guard against building a
+# placeholder version into a publishable artifact had zero callers and could
+# not fire. The seam is now the RELEASE PATH, not "CI":
+#
+#   push-to-main  -> ci-build-cli.yml / ci-build-docker.yml run a preflight
+#                    `inject-env.sh --version "$NEXT_VERSION" --strict --print`,
+#                    and build-cli-executables.sh / build-cli-musl.sh source
+#                    this file with --strict via RELEASE_BUILD=true. These are
+#                    the only artifacts CD ever promotes.
+#   PR CI, forks, local `./rdc.sh --native`
+#                 -> no --strict, 0.0.0-dev fallback intact, no ceremony.
+#
+# --strict rejects three things, not one: the 0.0.0-dev placeholder, an EMPTY
+# version (the original check compared only against the literal string, so ""
+# sailed through it), and anything that is not a dotted numeric version.
 #
 # This file is meant to be sourced. All logic is wrapped in a function so
 # `set -euo pipefail` stays scoped to this script and does not leak into the
@@ -38,6 +53,7 @@ _inject_env_main() {
     _ie_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     local _ie_version_override=""
+    local _ie_version_given=false
     local _ie_strict=false
     local _ie_print=false
 
@@ -49,6 +65,7 @@ _inject_env_main() {
                     return 1
                 fi
                 _ie_version_override="$2"
+                _ie_version_given=true
                 shift 2
                 ;;
             --strict)
@@ -66,20 +83,44 @@ _inject_env_main() {
         esac
     done
 
+    # An explicitly-supplied empty version is never a version. Falling through
+    # to the resolver here is what let a release-path caller whose next_version
+    # was empty quietly pick up the CURRENT tag (the version already published)
+    # instead of the one it meant to build.
+    if [[ "$_ie_version_given" == "true" && -z "$_ie_version_override" ]]; then
+        echo "inject-env.sh: --version was given an empty value" >&2
+        return 1
+    fi
+
     local _ie_resolved
     if [[ -n "$_ie_version_override" ]]; then
         _ie_resolved="$_ie_version_override"
     elif [[ -n "${VERSION:-}" ]]; then
         _ie_resolved="$VERSION"
-    elif _ie_resolved="$("$_ie_dir/resolve-version.sh" --current 2>/dev/null)"; then
+    elif _ie_resolved="$("$_ie_dir/resolve-version.sh" --current 2>/dev/null)" && [[ -n "$_ie_resolved" ]]; then
         :
     else
+        # Covers both a failing resolver and one that exits 0 printing nothing.
+        # The second case used to propagate an EMPTY version through --strict.
         _ie_resolved="0.0.0-dev"
     fi
 
-    if [[ "$_ie_strict" == "true" && "$_ie_resolved" == "0.0.0-dev" ]]; then
-        echo "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)" >&2
-        return 1
+    if [[ "$_ie_strict" == "true" ]]; then
+        if [[ -z "$_ie_resolved" ]]; then
+            echo "inject-env.sh: version is empty under --strict" >&2
+            return 1
+        fi
+        if [[ "$_ie_resolved" == "0.0.0-dev" ]]; then
+            echo "inject-env.sh: version resolved to 0.0.0-dev under --strict (did the checkout include tags?)" >&2
+            return 1
+        fi
+        # A publishable version is dotted-numeric, optionally v-prefixed, with
+        # an optional pre-release/build suffix. Anything else (a curl error
+        # page, "none", "latest") must not reach a build define.
+        if [[ ! "$_ie_resolved" =~ ^v?[0-9]+(\.[0-9]+)*([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "inject-env.sh: version '$_ie_resolved' is not a dotted numeric version, refusing under --strict" >&2
+            return 1
+        fi
     fi
 
     export APP_VERSION="$_ie_resolved"

@@ -172,17 +172,27 @@ jobs:
       # surface the mismatch hours later. This step fails loud + fast in
       # the init job, before any registry mutation happens.
       #
-      # Skipped in retry/workers-only modes: retry uses the latest tag's
-      # version (which the artifacts already match by definition); workers-
-      # only doesn't promote artifacts at all.
+      # RETRY MODE RUNS THIS TOO, and the comment that used to excuse it away
+      # was wrong. It claimed "retry uses the latest tag's version, which the
+      # artifacts already match by definition". They do not match by
+      # definition: retry takes its VERSION from resolve-version.sh --current
+      # (the "Resolve version (retry/workers-only mode)" step above) but takes
+      # its ARTIFACTS from resolve-ci-run.sh, which with no ci_run_id supplied
+      # picks the LATEST GREEN CI RUN ON MAIN -- not the run that cut the
+      # current tag. A retry dispatched after any newer CI went green therefore
+      # republishes those newer artifacts under the older tag, which is exactly
+      # the mismatch this assertion exists to catch, with the assertion off.
+      #
+      # Still skipped for workers-only: it doesn't promote artifacts at all.
       - name: Assert artifact version matches promotion target
         if: >-
           steps.skip-check.outputs.skip_release != 'true' &&
-          steps.skip-check.outputs.retry_mode != 'true' &&
           steps.skip-check.outputs.workers_only != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERSION: ${{ steps.init.outputs.next_version }}
+          # Same precedence as the job's next_version output: the retry/
+          # workers-only step wins when it ran, otherwise initialize.sh's.
+          VERSION: ${{ steps.version.outputs.next_version || steps.init.outputs.next_version }}
           CI_RUN_ID: ${{ steps.resolve.outputs.ci_run_id }}
         run: .ci/scripts/release/assert-artifact-version.sh
 
