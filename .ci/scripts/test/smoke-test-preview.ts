@@ -62,11 +62,46 @@ function fail(name: string, error: unknown): void {
 
 // ── Step 1: Health check ─────────────────────────────────────────────
 
-async function checkHealth(): Promise<void> {
+// Retried, because a single sample of a globally-propagated Worker is not a
+// measurement of whether it is healthy.
+//
+// Measured on run 31193040761: wait-for-preview-worker.sh had just declared
+// "health + server-info both serving, 3 consecutive probes", and this call --
+// the very next step, seconds later, to the SAME endpoint -- returned HTTP 400.
+// Probing it by hand afterwards returned 200 with {"status":"ok"}. Cloudflare
+// was mid-propagation, and one unlucky sample failed the whole job, since the
+// caller exits on a health failure.
+//
+// This does NOT weaken the check: the assertion is unchanged and a worker that
+// is genuinely unhealthy still fails, three times over, in ~6 seconds. It
+// removes a single-sample flake, which is the opposite of a suppression --
+// a one-shot probe of an eventually-consistent edge was the weak version.
+const HEALTH_ATTEMPTS = 3;
+const HEALTH_RETRY_MS = 2000;
+
+// One probe. The assertion, unchanged and unretried.
+async function probeHealth(): Promise<void> {
   const resp = await fetch(`${PREVIEW_URL}/account/api/v1/health`);
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const body = (await resp.json()) as { status: string };
   if (body.status !== 'ok') throw new Error(`status: ${body.status}`);
+}
+
+async function checkHealth(): Promise<void> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= HEALTH_ATTEMPTS; attempt++) {
+    try {
+      await probeHealth();
+      return;
+    } catch (e) {
+      last = e;
+      if (attempt < HEALTH_ATTEMPTS) await new Promise((r) => setTimeout(r, HEALTH_RETRY_MS));
+    }
+  }
+  throw new Error(
+    `${last instanceof Error ? last.message : String(last)} ` +
+      `(after ${HEALTH_ATTEMPTS} attempts ${HEALTH_RETRY_MS}ms apart)`
+  );
 }
 
 // ── Step 2: Server-info ──────────────────────────────────────────────
