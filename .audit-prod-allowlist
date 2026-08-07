@@ -41,3 +41,19 @@
 # paths that do not exist in a static export. Drop once the site migrates to astro v7.
 1120912
 1120917
+
+# js-yaml 3.x quadratic CPU in !!omap resolution (GHSA-5p4m-2wfm-xmqj,
+# CVE-2026-59870). The 4.x half of this advisory was FIXED, not allowlisted:
+# the root override moved >=4.2.0 <5.0.0 -> >=4.3.1 <5.0.0, which cleared
+# sibling id 1138115 and every 4.x consumer (astro, @astrojs/markdown-remark,
+# @marp-team/marpit all resolve 4.3.1 now). Only the 3.x instance is left.
+# BLOCKER: no patched 3.x exists — the advisory states the fix was NOT
+# backported — and the single consumer cannot move to 4.x: gray-matter@4.0.3
+# binds yaml.safeLoad/safeDump (lib/engines.js:16-17), both REMOVED in js-yaml
+# 4, which is why the nested "gray-matter": {"js-yaml": "^3.15.0"} override
+# already exists. Not reachable as a DoS either: gray-matter is a build-time
+# dependency of packages/www only (npm ls shows @rediacc/www as its sole
+# parent), it parses frontmatter of our own committed content, and www is
+# output: 'static' (astro.config.mjs:144) so no server evaluates YAML at
+# request time. Re-check when gray-matter ships a js-yaml 4 engine.
+1138114
