@@ -99,8 +99,7 @@ def job_timeouts(root):
         raise WorkflowUnreadableError(
             "parsed 0 job name/timeout-minutes pairs out of %d workflow file(s) -- "
             "they moved, were reformatted, or the indentation assumption is wrong. "
-            "Refusing a verdict rather than reporting that every job is fine."
-            % len(files)
+            "Refusing a verdict rather than reporting that every job is fine." % len(files)
         )
     return found
 
@@ -117,8 +116,7 @@ def verdicts(baseline_jobs, timeouts):
                 "renamed (update the baseline key) or it has NO ceiling anywhere -- "
                 "note a job that `uses:` a reusable workflow cannot carry "
                 "timeout-minutes itself, so check the CALLED file too. With none, "
-                "it runs to GitHub's 360-minute default."
-                % (job, "any workflow")
+                "it runs to GitHub's 360-minute default." % (job, "any workflow")
             )
             continue
         needed = observed * MIN_HEADROOM
@@ -129,7 +127,15 @@ def verdicts(baseline_jobs, timeouts):
                 "minutes, or make the job cheaper. A job that overruns is reported "
                 "as `cancelled`, which assert-ci-complete.sh does NOT forgive, so "
                 "this blocks the release rather than just failing a check."
-                % (job, limit, limit * 60, observed, (limit * 60) / observed, MIN_HEADROOM, -(-int(needed) // 60))
+                % (
+                    job,
+                    limit,
+                    limit * 60,
+                    observed,
+                    (limit * 60) / observed,
+                    MIN_HEADROOM,
+                    -(-int(needed) // 60),
+                )
             )
     return out
 
@@ -159,10 +165,29 @@ def controls(timeouts):
 def refresh(root, baseline_path, limit):
     """Rewrite observed_max_seconds from the Actions API. Network lives HERE."""
     runs = subprocess.run(
-        ["gh", "run", "list", "--repo", "rediacc/console", "--branch", "main",
-         "--workflow", "Console CI", "--event", "push", "--limit", str(limit),
-         "--json", "databaseId", "--jq", ".[].databaseId"],
-        capture_output=True, text=True, cwd=str(root), check=False,
+        [
+            "gh",
+            "run",
+            "list",
+            "--repo",
+            "rediacc/console",
+            "--branch",
+            "main",
+            "--workflow",
+            "Console CI",
+            "--event",
+            "push",
+            "--limit",
+            str(limit),
+            "--json",
+            "databaseId",
+            "--jq",
+            ".[].databaseId",
+        ],
+        capture_output=True,
+        text=True,
+        cwd=str(root),
+        check=False,
     )
     ids = [x for x in runs.stdout.split() if x.isdigit()]
     if not ids:
@@ -172,9 +197,17 @@ def refresh(root, baseline_path, limit):
     seen = {}
     for run_id in ids:
         out = subprocess.run(
-            ["gh", "api", "repos/rediacc/console/actions/runs/%s/jobs?per_page=100" % run_id,
-             "--jq", '.jobs[]|select(.conclusion=="success")|"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)"'],
-            capture_output=True, text=True, cwd=str(root), check=False,
+            [
+                "gh",
+                "api",
+                "repos/rediacc/console/actions/runs/%s/jobs?per_page=100" % run_id,
+                "--jq",
+                '.jobs[]|select(.conclusion=="success")|"\\(.name)\\t\\(.started_at)\\t\\(.completed_at)"',
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            check=False,
         )
         for line in out.stdout.splitlines():
             parts = line.split("\t")
@@ -182,8 +215,11 @@ def refresh(root, baseline_path, limit):
                 continue
             name, start, end = parts
             try:
-                secs = int((dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
-                            - dt.datetime.fromisoformat(start.replace("Z", "+00:00"))).total_seconds())
+                secs = int(
+                    (
+                        dt.datetime.fromisoformat(end) - dt.datetime.fromisoformat(start)
+                    ).total_seconds()
+                )
             except ValueError:
                 continue
             # A job called through a REUSABLE workflow is reported by the API
@@ -205,13 +241,19 @@ def refresh(root, baseline_path, limit):
             rec.pop("observed_note", None)
             updated += 1
         else:
-            print("  WARNING: %r matched no job in the sampled runs; its number is "
-                  "UNCHANGED and may be stale" % name, file=sys.stderr)
+            print(
+                "  WARNING: %r matched no job in the sampled runs; its number is "
+                "UNCHANGED and may be stale" % name,
+                file=sys.stderr,
+            )
     if not updated:
-        print("refresh matched NONE of the baseline jobs; refusing to stamp "
-              "refreshed_at on numbers nothing verified", file=sys.stderr)
+        print(
+            "refresh matched NONE of the baseline jobs; refusing to stamp "
+            "refreshed_at on numbers nothing verified",
+            file=sys.stderr,
+        )
         return 1
-    data["refreshed_at"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    data["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     print("baseline refreshed from %d run(s); %d job duration(s) observed" % (len(ids), len(seen)))
     return 0
@@ -219,8 +261,12 @@ def refresh(root, baseline_path, limit):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--refresh", action="store_true", help="rewrite the baseline from the Actions API (network)")
-    ap.add_argument("--runs", type=int, default=8, help="how many main push runs to sample when refreshing")
+    ap.add_argument(
+        "--refresh", action="store_true", help="rewrite the baseline from the Actions API (network)"
+    )
+    ap.add_argument(
+        "--runs", type=int, default=8, help="how many main push runs to sample when refreshing"
+    )
     args = ap.parse_args(argv)
 
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -228,7 +274,10 @@ def main(argv=None):
     workflow_path = root / WORKFLOW
 
     if not baseline_path.is_file() or not workflow_path.is_file():
-        print("VACUOUS INPUT: baseline or workflow missing, so nothing can be compared", file=sys.stderr)
+        print(
+            "VACUOUS INPUT: baseline or workflow missing, so nothing can be compared",
+            file=sys.stderr,
+        )
         return 1
 
     if args.refresh:
@@ -264,9 +313,7 @@ def main(argv=None):
 
     stale = None
     try:
-        age = dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(
-            baseline["refreshed_at"].replace("Z", "+00:00")
-        )
+        age = dt.datetime.now(dt.UTC) - dt.datetime.fromisoformat(baseline["refreshed_at"])
         if age.days > MAX_BASELINE_AGE_DAYS:
             stale = age.days
     except (KeyError, ValueError):
@@ -277,7 +324,11 @@ def main(argv=None):
         problems.append(
             "the baseline itself is stale (%s), so these numbers no longer describe\n"
             "  reality. Refresh it: npm run check:ci-timeout-headroom -- --refresh"
-            % ("refreshed_at is missing or unparseable" if stale < 0 else "%d days old, limit %d" % (stale, MAX_BASELINE_AGE_DAYS))
+            % (
+                "refreshed_at is missing or unparseable"
+                if stale < 0
+                else "%d days old, limit %d" % (stale, MAX_BASELINE_AGE_DAYS)
+            )
         )
 
     if problems:
