@@ -72,6 +72,7 @@
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
     "check:ci-review-turn-capacity": ".ci/scripts/quality/check-review-turn-capacity.sh",
     "check:ci-review-cap-coherence": ".ci/scripts/quality/check-review-cap-coherence.sh",
+    "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",

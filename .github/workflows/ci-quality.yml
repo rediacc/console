@@ -190,6 +190,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-review-cap-coherence
 
+      # The Stop hook's reachability probe once returned False for all 191 gates,
+      # telling sessions their wired gates were unwired. Keeps it honest.
+      - name: Gate-reachability probe agrees with registrations
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-gate-reachability-coverage
+
       # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
       # pipefail` script on empty input. Written after three such outages in
       # one day.
