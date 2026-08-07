@@ -116,9 +116,7 @@ def main(argv=None):
 
     problems = verdicts(root, paths)
     if problems:
-        print(
-            "Quality gates would run against an incomplete tree:", file=sys.stderr
-        )
+        print("Quality gates would run against an incomplete tree:", file=sys.stderr)
         for p in problems:
             print(f"  - {p}", file=sys.stderr)
         print(
