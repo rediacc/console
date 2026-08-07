@@ -62,9 +62,7 @@ export const requireDataTrack = {
      * Check if element has a specific attribute
      */
     function hasAttribute(attributes, name) {
-      return attributes.some(
-        (attr) => attr.type === 'JSXAttribute' && attr.name?.name === name,
-      );
+      return attributes.some((attr) => attr.type === 'JSXAttribute' && attr.name?.name === name);
     }
 
     /**
@@ -115,6 +113,49 @@ export const requireDataTrack = {
       return false;
     }
 
+    /** True when the element is exempt for reasons unrelated to its tag. */
+    const isExemptElement = (node, attributes) => {
+      // Skip if already has data-track
+      if (hasAttribute(attributes, 'data-track')) return true;
+
+      // Skip elements passed as prop values
+      if (isPassedAsProp(node)) return true;
+
+      // Skip decorative / non-interactive elements
+      if (hasAttribute(attributes, 'aria-hidden')) return true;
+
+      // Skip inside exempt parent components
+      return isInsideExemptParent(node);
+    };
+
+    // --- Element-specific checks ---
+
+    const checkAnchor = (node, attributes) => {
+      // Only check <a> with href
+      if (!hasAttribute(attributes, 'href')) return;
+
+      // Skip anchor links (href="#section")
+      const href = getAttributeStringValue(attributes, 'href');
+      if (href !== null && href.startsWith('#')) return;
+
+      context.report({
+        node,
+        messageId: 'missingDataTrack',
+        data: { element: 'a', attr: 'href' },
+      });
+    };
+
+    const checkButton = (node, attributes) => {
+      // Only check <button> with onClick (submit buttons tracked via form events)
+      if (!hasAttribute(attributes, 'onClick')) return;
+
+      context.report({
+        node,
+        messageId: 'missingDataTrack',
+        data: { element: 'button', attr: 'onClick' },
+      });
+    };
+
     return {
       JSXOpeningElement(node) {
         const elementName = getElementName(node.name);
@@ -123,46 +164,10 @@ export const requireDataTrack = {
         // Only check configured elements
         if (!elements.includes(elementName)) return;
 
-        // Skip if already has data-track
-        if (hasAttribute(attributes, 'data-track')) return;
+        if (isExemptElement(node, attributes)) return;
 
-        // Skip elements passed as prop values
-        if (isPassedAsProp(node)) return;
-
-        // Skip decorative / non-interactive elements
-        if (hasAttribute(attributes, 'aria-hidden')) return;
-
-        // Skip inside exempt parent components
-        if (isInsideExemptParent(node)) return;
-
-        // --- Element-specific checks ---
-
-        if (elementName === 'a') {
-          // Only check <a> with href
-          if (!hasAttribute(attributes, 'href')) return;
-
-          // Skip anchor links (href="#section")
-          const href = getAttributeStringValue(attributes, 'href');
-          if (href !== null && href.startsWith('#')) return;
-
-          context.report({
-            node,
-            messageId: 'missingDataTrack',
-            data: { element: 'a', attr: 'href' },
-          });
-          return;
-        }
-
-        if (elementName === 'button') {
-          // Only check <button> with onClick (submit buttons tracked via form events)
-          if (!hasAttribute(attributes, 'onClick')) return;
-
-          context.report({
-            node,
-            messageId: 'missingDataTrack',
-            data: { element: 'button', attr: 'onClick' },
-          });
-        }
+        if (elementName === 'a') checkAnchor(node, attributes);
+        if (elementName === 'button') checkButton(node, attributes);
       },
     };
   },

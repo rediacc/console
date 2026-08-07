@@ -3,11 +3,19 @@
 Create named datastores, attach them to machines, snapshot them, and fork them
 copy-on-write.
 
-**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with Ceph VMs), and
-worker machines must have `ceph-common` installed with `/etc/ceph/ceph.conf` and keyring in
-place. The ops provisioner handles this automatically. All commands run over SSH; see
-[SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for SSH key
-configuration.
+**Prerequisites**: the `rbd` backend needs a Ceph cluster (`rdc ops up` with
+`VM_CEPH_NODES` SET IN THE ENVIRONMENT; without it the Ceph VMs come up as bare OS
+images and `rbd create` fails with "command not found"; bootstrap explicitly with `renet ops ceph provision` under the same env), and worker machines must have
+`ceph-common` installed with `/etc/ceph/ceph.conf` and keyring in place; the ops
+provisioner handles that only during a Ceph-enabled `ops up`. All commands run over
+SSH; see [SKILL.md prerequisites](SKILL.md#prerequisites-for-ops-vms-read-first) for
+SSH key configuration.
+
+**Agent sessions**: every datastore verb here is blocked unless
+`REDIACC_ALLOW_CLUSTER_OPS` (usually `*`, since creation has no existing cluster) was
+exported in the operator's terminal BEFORE the session started; the check is
+ancestry-verified and an in-session export is rejected. Creating repos inside a
+datastore additionally needs `REDIACC_ALLOW_GRAND_REPO`.
 
 ## Background
 
@@ -31,7 +39,10 @@ even on its own machine. Repositories inside it fork one at a time by BTRFS refl
 grow with the size of the pool.
 
 Refs follow the same grammar as repos: `name` for the datastore, `name:tag` for a fork
-(e.g. `ds-prod:exp`).
+(e.g. `ds-prod:exp`). On the machine, a named datastore mounts at
+`/mnt/rediacc-ds/<name>` but a FORK mounts at `/mnt/rediacc-ds/<parent>-<tag>`
+(hyphen, not colon) — when a renet verb needs the fork's path, read `mountPath`
+from `renet datastore list --json` rather than deriving it from the ref.
 
 ## Commands
 

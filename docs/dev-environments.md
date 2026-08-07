@@ -92,12 +92,29 @@ Dev builds of renet are compiled with the `nolicense` tag by default (no enforce
 To reproduce license-flow bugs locally, rebuild with enforcement:
 
 ```bash
-ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)" \
+ACCOUNT_ED25519_PUBLIC_KEY="<paste the value>" \
 RDC_RENET_LICENSE=1 ./rdc.sh --config <name> ...
 ```
 
 `ACCOUNT_ED25519_PUBLIC_KEY` must match the server that signs the licenses you are
 testing against; it is baked in at build time (runtime setting has no effect).
+
+**Paste the value; there is no URL to fetch it from.** This block used to read
+`"$(curl -fsS https://www.rediacc.com/api/public/account-key)"`. That endpoint
+returns 404 -- verified again 2026-08-05 -- and the account API is not served
+from `www.rediacc.com` at all. Because the substitution is not checked, `curl -f`
+exits 22 and the variable is assigned the EMPTY string, the build succeeds, and
+every prod-signed license then fails as `invalid_signature`: precisely the
+symptom this variable exists to prevent. Drop the `-f` and it is worse, since the
+404's HTML body gets baked into `keys.ProductionPublicKey` via ldflags.
+
+Never pipe an unchecked HTTP response into this variable. CI does not need to:
+`ACCOUNT_ED25519_PUBLIC_KEY` already exists as an organisation secret, so a
+workflow references it directly. Locally the value must be pasted -- GitHub
+secrets are write-only, so no command can fetch it, and the old one-liner was not
+merely pointing at a dead URL but at a shape of solution that cannot exist for a
+secret. Same correction as `CLAUDE.md`'s licensing section, which fixed its own
+copy on 2026-07-29 while this one was missed.
 
 ## Remote config store and offline behavior
 

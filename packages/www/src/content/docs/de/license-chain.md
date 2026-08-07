@@ -4,8 +4,8 @@ description: "Manipulationssichere Lizenzausstellung, delegiertes Signieren für
 category: "Guides"
 order: 8
 language: de
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Lizenz-Chain & Delegation
@@ -22,7 +22,7 @@ Jede von einem Account-Server ausgestellte Lizenz wird in einem Append-Only-Ledg
 
 ## Wie eine Lizenz ausgestellt wird
 
-Wenn die CLI eine Maschinenaktivierung oder Repo-Lizenz anfordert, führt der Account-Server folgende Schritte aus:
+Wenn die CLI eine Repo-Lizenz anfordert, führt der Account-Server folgende Schritte aus:
 
 1. Den aktuellen Kettenkopf (letzte Sequenz und Hash) für das Abonnement lesen.
 2. Den Lizenzpayload mit der nächsten Sequenznummer und dem vorherigen Chain-Hash erstellen.
@@ -33,16 +33,65 @@ Wenn die CLI eine Maschinenaktivierung oder Repo-Lizenz anfordert, führt der Ac
 
 `sequence` und `prevChainHash` befinden sich im signierten Payload (können also nicht verändert werden, ohne die Signatur zu entwerten). `chainHash` befindet sich auf dem Envelope (nach dem Signieren berechnet, um eine zirkulare Abhängigkeit zu vermeiden).
 
+## Wie eine Lizenz erneuert wird
+
+Die Ausstellung läuft von Ihrer Workstation aus, authentifiziert als Sie. Die Erneuerung läuft von der Maschine aus, die überhaupt keine Account-Zugangsdaten hält. Sie braucht eine andere Tür:
+
+```
+POST /licenses/renew
+{ license: <der installierte signierte Blob>, machineId, clusterId? }
+```
+
+**Die vorgelegte Lizenz ist der Berechtigungsnachweis.** An diesem Endpunkt gibt es kein API-Token. Der Server prüft die Ed25519-Signatur des Blobs, und über das Delegierungszertifikat, wenn der Blob eines mitbringt, genau so, wie Renet es auf der Maschine tut. Eine gültig signierte Lizenz für ein Repository zu besitzen ist der Nachweis der Berechtigung, und eine Maschine, die eine hat, hat sie bereits einmal zugesprochen bekommen.
+
+Die vollständige URL dieses Endpunkts reist als `renewalUrl` in jeder Lizenz mit, die der Server ausstellt oder erneuert. Eine Maschine liest die Adresse ihres eigenen Account-Servers aus ihrer eigenen Lizenz, statt damit konfiguriert zu werden, und genau das erlaubt es einer Maschine, die zwei Account-Universen bedient, gegen beide zu erneuern.
+
+Der erneuerte Blob behält die Repository-GUID, die Grand-GUID und die Art des vorgelegten Blobs, nimmt die nächste Sequenz aus demselben Ledger mitsamt dem daraus folgenden Chain-Hash und erhält frisch berechnete Gültigkeitsfenster. Die Maschinen-ID wird neu an die Maschine gebunden, die den Blob vorgelegt hat, und so heilt sich eine VM-Migration innerhalb der 40-Tage-Kulanzfrist von selbst. Die Speicheridentität (die LUKS-UUID oder der Speicherfingerabdruck) wird unverändert übernommen, denn ein Netzwerkaufruf kann die Festplatte, die er beschreibt, nicht neu einlesen.
+
+### Ablehnungen
+
+| Code | Status | Bedeutung |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | Die Signatur des Blobs ließ sich nicht verifizieren, oder sein Chain-Hash passt bei dieser Sequenz nicht zum Ledger des Servers |
+| `INVALID_LICENSE_PAYLOAD` | 400 | Der Blob ist fehlerhaft aufgebaut |
+| `DELEGATION_CERT_INVALID` | 403 | Das beigefügte Zertifikat hat eine Beschränkung oder seine Master-Key-Signatur nicht erfüllt |
+| `DELEGATION_CERT_EXPIRED` | 403 | Das beigefügte Zertifikat liegt außerhalb seines Gültigkeitsfensters |
+| `DELEGATION_CERT_REVOKED` | 403 | Das beigefügte Zertifikat wurde vorgelagert widerrufen |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | Die vorlegende Maschine ist nicht die lizenzierte, und die 40-Tage-Kulanzfrist ist vorbei |
+| `SUBSCRIPTION_LAPSED` | 403 | Das Abonnement ist abgelaufen oder ausgesetzt |
+| `GRACE_PERIOD_ENDED` | 403 | Die Kulanzfrist des Abonnements ist vorüber |
+| `TRIAL_REQUIRED` | 403 | Das Abonnement braucht eine aktive Testphase oder einen aktiven Plan |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | Die Repository-GUID gehört zu einem anderen Abonnement |
+| `LICENSE_RENEWAL_FAILED` | 500 | Alles, was sich nicht einordnen lässt |
+
+Eine Ablehnung lässt die installierte Lizenz unangetastet. Die Maschine läuft mit dem weiter, was sie hat, bis diese Lizenz hart abläuft.
+
+### Erneuerung und der Maschinenplatz
+
+Eine erfolgreiche Erneuerung rührt an die Aktivierungszeile der Maschine: Sie beansprucht einen Platz, wenn die Maschine keinen hatte, und frischt ihn auf, wenn sie einen hatte. Anders als die Ausstellung wird sie nie wegen Überschreitung des Limits abgelehnt. Die Antwort führt `overLimit` mit, und die Aktivierung wird markiert, damit das Portal, der License-Status-Endpunkt und `rdc subscription status` es anzeigen können. Eine wirklich neue Lizenz auszustellen blockiert weiterhin hart an der Obergrenze. Die Begründung steht unter [Abonnement & Lizenzierung - Maschinenplätze](/de/docs/subscription-licensing).
+
+### Reihenfolge beim Ausrollen
+
+Account-Server werden vor den CLI- und Renet-Agent-Builds ausgerollt, die auf die oben genannten Felder angewiesen sind. Ein Renet Agent, der in einer Lizenz keine `renewalUrl` findet, überspringt dieses Repository und sagt das auch, statt fehlzuschlagen. Eine ältere Lizenz funktioniert also weiter, bis eine Aktualisierung von der Workstation aus das Feld nachträgt. In der umgekehrten Reihenfolge bekommen Sie Maschinen, die nach einem Endpunkt fragen, den es noch nicht gibt.
+
 ## Wie Renet validiert
 
-Jede Maschine mit Renet speichert ihren letzten bekannten Kettenzustand unter `{licenseDir}/chain-state.json` (also `/var/lib/rediacc/license/chain-state.json`, ein Geschwisterverzeichnis des Pro-Repo-Verzeichnisses `repos/`). Der Kettenzustand ist pro Signierschlüssel und Abonnement abgegrenzt, mit dem Schlüssel `"<keyId>:<subscriptionId>"`, sodass Universen, die mit unterschiedlichen Schlüsseln signiert sind, ihre Sequenzen unabhängig voneinander verfolgen. Bei jeder Lizenzvalidierung prüft Renet:
+Jede Maschine mit Renet speichert ihren letzten bekannten Kettenzustand unter `{licenseDir}/chain-state.json` (also `/var/lib/rediacc/license/chain-state.json`, ein Geschwisterverzeichnis des Pro-Repo-Verzeichnisses `repos/`). Der Kettenzustand ist pro Signierschlüssel, Abonnement, Repository und Datastore abgegrenzt, mit dem Schlüssel `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (der Datastore-Anteil bleibt leer für ein Repository auf dem Standard-Datastore der Maschine).
+
+Der Repository- und der Datastore-Anteil dieses Schlüssels sind tragend. Sequenznummern sind auf dem Server pro Abonnement vergeben. Auf einer Maschine mit mehreren Repositories unter einem Abonnement läge ein für Repository B festgehaltener Kettenkopf also vor der Lizenz, die Repository A gerade vorlegen will, und Repository A würde als Replay abgelehnt, mit dem es nichts zu tun hat. Ein Datastore-Fork verschärft dasselbe Problem: Der Klon behält die GUID des Repositories, nur seine Datastore-Identität wird neu vergeben. Ohne den Datastore-Anteil würde die frischere Lizenz des Forks also einen Kopf fortschreiben, gegen den das Original weiterhin validiert. Den festgehaltenen Kopf auf das Repository und den Datastore zu begrenzen, die die Lizenz nennt, beseitigt beides. Einträge, die ein älterer Renet Agent in einem kürzeren Schlüsselformat geschrieben hat, werden beim ersten Speichern des Zustands verworfen, und die nächste Validierung setzt den Kopf neu.
+
+Der Kettenzustand wird nur bei den Operationen gelesen und fortgeschrieben, die auf der vollen Stufe validieren. Die Betriebsstufe liest ihn weder noch schreibt sie ihn fort, das Starten eines Repositories kann einen Kopf also nie verschieben.
+
+Bei jeder Lizenzvalidierung prüft Renet:
 
 | Prüfung | Fehler bedeutet |
 |---|---|
 | Ed25519-Signatur ist gültig | Lizenz wurde gefälscht oder manipuliert |
-| `sequence > lastKnownSequence` | Server hat die Kette zurückgesetzt (Replay-Angriff) |
+| `sequence >= lastKnownSequence` | Server hat die Kette zurückgesetzt (Replay-Angriff) |
+| Eine Wiederholung von `lastKnownSequence` trägt denselben `chainHash` | Eine abgezweigte Kette hat eine Sequenznummer wiederverwendet |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | Chain-Eintrag wurde verändert |
-| `issuedAt >= lastKnownIssuedAt` | Uhrenmanipulation (Serveruhr zurückgestellt) |
+
+Die bereits installierte Lizenz erneut zu validieren ist kein Rückschritt: Dieselbe Sequenz mit demselben Chain-Hash wird akzeptiert, und genau das erlaubt es einer Maschine, bei jedem Start eines Repositories dieselbe Datei zu validieren.
 
 Schlägt eine Prüfung fehl, wird die Lizenz abgelehnt und der Fehlergrund gemeldet.
 

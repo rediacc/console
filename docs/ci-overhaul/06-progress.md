@@ -1104,6 +1104,14 @@ LATER run adopt a round that greenlit its way out of a suite as a full
 baseline. That is the evidence-chaining failure the scope engine already
 refuses, arriving by a different door.
 
+> **Half-corrected on 2026-08-05.** The flip stays; the conclusion drawn from it
+> did not survive contact with the traffic. Because these two closures change
+> rarely, the flip fired on nearly every console run, so every later walk
+> refused its own parent and the engine never reduced a round at all. The
+> baseline reader now asks per key whether the work was COVERED rather than
+> reading this aggregate label. See "the scope engine had never reduced a
+> round" below.
+
 The kill switches need no new wiring. `FULL_CI` and the `full-ci` label
 short-circuit `scope-shadow.sh` before any of this runs, and the step is
 `pull_request`-only, so the nightly stays full by construction.
@@ -1179,3 +1187,1342 @@ while cases 1 to 6 ALL still passed, so a weakened pointer rule is invisible
 to every other property in the file and visible to that one. The engine was
 restored after each and re-verified byte-identical (md5
 `8b35c56e7f5ca90c959f90ac7db029b9` before and after both).
+
+## `check:ci-renet-tiers`: the tier-map tests get a local leg (2026-08-04)
+
+New gate id `check:ci-renet-tiers`, script
+`.ci/scripts/quality/check-renet-tier-map.sh`, manifest entry beside
+`check:ci-renet-types`. It runs the seven Go tests that prove renet's licence
+tier map covers the function registry and drives dispatch
+(`TestTierMapCoversRegistry`, `TestTierMapHasNoOrphans`, `TestTierMapGateCanFail`,
+`TestPendingBacklogIsReported`, `TestTierMapDrivesDispatch`,
+`TestOperateTierSurvivesExpiry`, `TestTierProbeMatchesTheMap`).
+
+WHY IT IS WORTH A LOCAL LEG. Those tests already run in CI, inside
+`ct-tests.yml` job `test-renet` step "Run renet tests", which is renet's whole
+`go test ./...`. But `npm run ci` had no leg for them, so a tier-map regression
+was only visible after a push, and it stopped being a renet-only concern this
+same session: the CLI now DERIVES which functions are licence-issuance-relevant
+from that map, through
+`packages/shared/src/renet-contract/data/license-tiers.generated.ts` and the new
+accessor in `packages/cli/src/services/renet/renet-license-contract.ts`. A
+function registered with no tier is now a console defect as well as a renet one.
+
+`ci` is declared `local-only`, NOT a step pointer at `test-renet`, and that is a
+measured decision rather than a shortcut. The parity oracle compares LEAVES:
+that step resolves to `.ci/scripts/private/run-renet.sh` and never to this
+script, so a `step` pointer fails R3 with "the pointer names a step that runs
+something else". That is the oracle working. The BLOCKER names the CI job that
+does cover the property. Registered in
+`.ci/scripts/test/gates/test-gate-anti-vacuity.sh` as
+`|required`, since with `private/renet` absent the gate would otherwise run zero
+tests and report that the map is complete.
+
+PROVE-IT-FIRES, three planted defects against a scratch copy of `private/renet`
+(the gate takes a `RENET_DIR` override so the real submodule is never touched):
+
+1. Registering `planted_defect_untiered_function` in the copy's command registry
+   turned it RED with `1 registered function(s) have no tier decision`, exit 1;
+   removing it returned exit 0.
+2. Renaming `TestTierProbeMatchesTheMap` turned it RED at the phase-1 instrument
+   check ("The tier-map test selection has drifted"). This is the failure mode
+   the phase exists for: `go test -run` exits 0 with "no tests to run" when its
+   regex matches nothing, so a rename would otherwise have silently retired the
+   gate while leaving it green.
+3. Planting `t.Skip` in `TestOperateTierSurvivesExpiry` left `go test` exiting 0
+   with `ok`, and the gate still went RED at the phase-3 PASS accounting:
+   "These tier-map tests never reported PASS". A green exit code is not evidence
+   that the tests ran.
+
+## 2026-08-04 -- `check:ci-locale-de-contamination`
+
+`scripts/check-locale-de-contamination.ts`, chained into
+`check:ci-i18n-cross-locale` in `package.json` so it inherits that gate's real CI
+home (`ci-quality.yml`, job `quality-i18n`, step "i18n cross-locale"). Its
+manifest entry declares that same step, and the chained parent's `leaves` now
+lists both scripts, which is what the parity oracle's hygiene rule compares
+against.
+
+Chaining rather than `local-only` was the point. The defect it catches is live in
+the tree right now: 94-95 German values sitting in each of account-web's `ar`,
+`ja`, `ru` and `zh`. A gate no CI step invokes would not have stopped the next
+batch, and the operator's own review would still be the only instrument.
+
+WHY IT IS A SECOND GATE AND NOT A WIDENED FIRST ONE.
+`scripts/check-i18n-cross-locale.ts` identifies a string's LANGUAGE from function
+words, which is the right tool for telling French from German but structurally
+cannot look at a locale it has no word list for (`if (!STOPWORDS[locale])
+continue` -- de/fr/es/it/pt/tr only). Arabic, Japanese, Korean, Russian, Chinese
+and Estonian were never scanned by anything: every other i18n check in the repo
+compares a locale against ENGLISH, and German is not English. This gate keys on
+byte equality with the German value instead, so it reads exactly the locales the
+other one skips.
+
+Equality alone is far too loose -- 699 hits, nearly all of them units ("200 GB"),
+localised numbers ("2,4 TB") and product names ("Rediacc (btrfs CoW)"). Three
+filters, each added because dropping it produced a false positive that is named
+in the script's header comment, bring it to 379 findings with none in
+`packages/www` or `packages/cli`: the value must hold two real words after
+placeholders and markup are stripped; it must not be shared by the crowd (a
+citation every locale carries is language-neutral, not a leak); and it must carry
+language evidence chosen per script -- for a non-Latin locale, a value with not
+one character of that locale's own script IS the evidence, while a Latin-script
+locale needs German markers.
+
+BASELINE THAT ONLY SHRINKS. `scripts/data/locale-de-contamination-baseline.json`
+holds the 379 known findings so the gate lands green today. A baselined finding
+that is no longer contaminated is a hard ERROR telling the caller to re-run
+`--write-baseline`, so fixing keys forces the file down and it cannot rot into a
+permanent suppression list. The 12-locale naturalization pass drains it.
+
+Registered in `.ci/scripts/test/gates/test-gate-anti-vacuity.sh` as
+`|Refusing to run`: with the locale trees absent it would find zero contamination
+AND see all 379 baselined findings as fixed, so an unguarded version could fail
+for entirely the wrong reason.
+
+PROVE-IT-FIRES, against a scratch copy of the four locale trees so the real files
+were never touched:
+
+1. Copying the German `activity.emptyMessage` into `ko/admin.json` and the German
+   pricing-FAQ question into `et.json` turned it RED naming both, exit 1. Both
+   locales are invisible to the stopword gate, which is the whole reason this one
+   exists.
+2. Reverting those two and instead FIXING one baselined key (`ar` /
+   `admin.json:activity.emptyMessage`) turned it RED with "1 baselined finding(s)
+   are already fixed", exit 1. The shrink-only property is enforced, not
+   documented.
+3. The seven inline self-test cases run on every invocation, not behind a flag.
+   Three of them are the false-positive controls (a shared unit, an English
+   citation every locale carries, a shared product name) and one pins the flat
+   `packages/www` layout, where the German values live in `de.json` rather than in
+   a same-named file -- getting that lookup wrong finds nothing while looking
+   perfectly healthy.
+
+## 2026-08-04 -- the i18n gates could not see three whole defect classes
+
+The operator asked why pre-existing translation defects were never caught. The
+answer was not "no gate covers translations". Four gates did. Each one had a
+hole, and every hole had the same shape: a code path that reports NOTHING is
+indistinguishable, in the output, from a code path that finds nothing.
+
+### 1. `check-i18n-cross-locale.ts` skipped six of its twelve locales
+
+`if (locale === SOURCE_LOCALE || !STOPWORDS[locale]) continue` walked past every
+locale with no function-word list -- `ar`, `ja`, `ko`, `ru`, `zh` and `et`. Those
+are precisely where the damage was: 379 German values sat in account-web's `ar`,
+`ja`, `ru` and `zh` while this gate printed a checkmark.
+
+MEASURED, not argued. A scratch copy of `private/account/web/src/i18n/locales`
+with 1,576 real German values planted into `ar/ja/ru/zh`:
+
+* the gate as it stood at `HEAD`: `No cross-locale contamination across 1 locale
+  root(s)`, exit 0;
+* the same tree after this change: `236 value(s)`, 59 per locale, exit 1.
+
+A stopword list is a Latin-alphabet instrument and cannot be built for these five,
+so they get a second instrument instead: a value holding not one character of its
+own writing system is not a translation into it. It is paired with the existing
+function-word signal rather than used alone, so a Latin PRODUCT NAME standing by
+itself scores zero and is not reported.
+
+There is no `continue` left. A locale directory the gate cannot model by either
+instrument is a hard error naming the locale.
+
+### 2. There was no `en` stopword list, so English residue was undetectable
+
+Every other i18n check compares a locale against English, so it can see a value
+that IS English. None could see a value that is MOSTLY English -- the ordinary
+residue of a half-finished translation pass. Adding `en` (and `et`) closes it:
+2,364 real English values planted across `fr/es/it/pt/tr/et` produce 316 findings
+in all six locales; the clean tree produces zero.
+
+While adding it, `more` was found sitting in the SPANISH stopword list. It is an
+English word, it was that list's only non-Spanish entry, and it scored every
+English string one point towards "this is Spanish". Removed.
+
+`packages/www` was measured for inclusion and deliberately left out: 1,060
+findings, essentially all of them English CITATIONS that all twelve locales carry
+verbatim ("IBM Security, Cost of a Data Breach Report 2024"). Those are
+language-neutral content, not contamination, and admitting them would need the
+crowd filter from `check-locale-de-contamination.ts`, which already scans that
+tree.
+
+### 3. Nothing at all validated renet's locale VALUES
+
+`private/renet/.ci/scripts/quality/i18n.sh` scans Go SOURCE for hardcoded strings.
+The catalogs in `pkg/i18n/locales/*.go` were checked for key alignment, exact
+identity with English, and format parity -- structure, never content. So this
+shipped and stayed green:
+
+    ru  "Zadachi dobavleny v ochered"   for  "Added tasks to queue"
+
+Twenty-six `ru` values are Russian written in LATIN TRANSLITERATION. They are not
+English, every key aligns, every format verb matches, so every existing class
+passed them, and a Russian user reads romanized gibberish.
+
+`pkg/i18n/locale_quality_test.go` adds three rules, each provable rather than a
+judgement call: the value IS English; three CONSECUTIVE English function words
+(one is noise and two is arguable, three in a row is a clause); and for
+`ar/ja/ko/ru/zh`, prose carrying not one character of its own script. Findings are
+held in a shrink-only baseline, and a baselined finding that is no longer detected
+FAILS, so a fix forces its removal.
+
+It does NOT reuse `localeHomographs` from `rules.go`. That map was widened until
+the advisory fragment rule stopped producing noise, which left entries that are
+not homographs at all -- `the` is in both the German and the French lists, and
+`is`, `of`, `to`, `at`, `it` and `was` in the German one. Borrowing it would score
+"because the socket is" as a run of ONE.
+
+### 4. The renet i18n gate could retire itself in one line
+
+    ./bin/renet i18n extract ... 2>/dev/null || { log_warn "...skipping"; exit 0; }
+
+A crashed extractor produced a WARNING and a GREEN gate -- and because `exit 0`
+came before them, it took the locale validation and the hash-manifest check with
+it. Proven on a fixture whose `bin/renet` exits 3: the `HEAD` script prints
+`i18n extraction failed or not implemented, skipping` and exits 0; the new one
+prints the crash and exits 1.
+
+The six `jq ... 2>/dev/null || echo "0"` reads were the same defect one layer
+down, because `0` is the value that means clean. With `jq` off `PATH` and
+`validate` reporting 99 certain defects over ZERO locales, the `HEAD` script
+printed `All 12 locales clean`. They now go through a `read_stat` helper that
+refuses to substitute a default, `jq` is a `require_cmd`, and the locale count is
+pinned at 12 so a moved catalog directory cannot make every total a vacuous zero.
+The two fixed `/tmp/findings.json` and `/tmp/validate.json` paths, which two
+concurrent runs shared, are now a per-run `mktemp -d`.
+
+The new Go tests already run in CI's test stage via `go test ./pkg/...`. They are
+also invoked from `i18n.sh` using the three-phase pattern of
+`check-renet-tier-map.sh` -- confirm `-list` selects exactly the expected names,
+run with `-count=1`, then assert each reported `--- PASS` -- so neither a rename
+nor a `t.Skip` can retire one silently, the control included.
+
+### Registered
+
+`check-i18n-cross-locale.ts` joins `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`
+as `|Refusing to run`. Its three locale-root constants are root pattern 1, and it
+was previously unregistered while carrying a second vacuity inside itself. The
+harness copies `scripts/` and `.ci/scripts/` only, so renet's `i18n.sh` cannot be
+registered there; the submodule-absent case is already pinned through
+`.ci/scripts/private/run-renet.sh`.
+
+## 2026-08-04 (later) -- the locale SET becomes derived, and two more hidden classes
+
+Four follow-ups to the section above, three of them defects the first pass did not reach.
+
+### 5. Both locale gates hand-maintained their own implicit locale universe
+
+`check-i18n-cross-locale.ts` decided which locales existed from `readdirSync` plus the
+keys of its own `STOPWORDS` map. That is the root of the original hole: the set of
+locales the gate KNEW about and the set it could JUDGE were the same object, so a locale
+with no detection data was not a gap, it simply was not a locale.
+
+Both gates now derive the universe from `@rediacc/locales`, the same declaration the rest
+of the repo builds against, and cross-check the tree against it in both directions:
+
+* a directory that is not a site locale is a hard error naming it;
+* a site locale with no directory is a hard error, because comparing it against nothing
+  reports no contamination, which is the same checkmark as finding none;
+* every non-English site locale must have a function-word list OR a writing system, and
+  that is asserted AT MODULE LOAD, before a single file is opened. A fourteenth locale
+  added to `packages/locales/index.js` turns both gates red immediately, with no tree
+  needed to trigger it;
+* every key of the detection data must itself be a site locale, so `NATIVE_SCRIPT.jp`
+  fails loudly instead of silently never matching the `ja` directory.
+
+Both selftests now build fixtures with all thirteen locales, and each rule above has a
+case that plants the failure and requires the throw.
+
+Found while wiring it: `packages/www/src/i18n/translations` holds
+`.naturalized-hashes.json` and `.translation-hashes.json`, 2.2 MB of CRC sidecars that
+the de-contamination gate had been reading and flattening as two extra LOCALES on every
+run. No finding came from them, but they counted towards `targets`, which is the
+denominator of the crowd filter, so its exemption threshold was computed against fourteen
+locales where twelve exist. Dot-prefixed entries are now excluded.
+
+### 6. The crowd-exclusion filter was hiding shared CORRUPTION
+
+`check-locale-de-contamination.ts` exempted any value that most other locales also carry,
+on the reasoning that a string every locale shares belongs to no language -- a citation, a
+product name. Sound for citations, wrong in general, and it hid 59 genuinely corrupted
+keys: most of account-web's `team.json` was German across `ar`, `ja`, `ru` and `zh`
+IDENTICALLY, which the filter read as language-neutral when it was one bad translation
+pass writing the same German into four files.
+
+The two cases are told apart by evidence the gate already computed and simply did not
+consult: shared corruption looks German, a citation does not. Crowd-exclusion now applies
+only when `looksGerman` is false.
+
+MEASURED against the real tree, with 280 real German values planted identically into seven
+locales of account-web's `team.json` (seven, because the exemption needs
+`shared * 2 >= targets - 1` and four locales never reached it):
+
+* unconditional filter, everything else identical: `No new German contamination across 4
+  locale root(s)`, exit 0;
+* conditioned on the German evidence: 147 findings, exit 1.
+
+The English-citation control still passes, which is the whole point of conditioning rather
+than deleting.
+
+### 7. A translation pasted over a run of unrelated keys
+
+Found live in `ja.go`: 64 clusters covering 255 keys where DISTINCT English strings had all
+been collapsed onto the SAME Japanese value. Larger than every other class combined, and
+invisible to every per-value rule -- each value on its own is fluent Japanese, differs from
+English, aligns on keys and keeps its format verbs. The defect exists only in the
+RELATIONSHIP between keys.
+
+`duplicate-cluster` groups a locale's values and reports any value shared by three or more
+keys whose English sources are pairwise DIFFERENT. The one-directional signal is what makes
+it precise: locales do legitimately collapse short labels, but when they do the English
+side is identical too, so requiring distinct English exempts every legitimate case without
+a list to maintain.
+
+Its substance floor is measured in LETTERS, not words. A four-WORD threshold silently
+exempted every CJK value, because Japanese writes a whole clause with no spaces in it and
+so scores two tokens -- and CJK is the one locale family where the defect was actually
+found. Caught by a control that expected four planted keys and got zero, not by reading.
+
+### 8. `localeHomographs` in rules.go listed words that are not words
+
+The map suppresses English function words on the grounds that they are also ordinary words
+in the target language. It had been widened until the advisory fragment rule stopped
+producing noise, which is a different criterion, and it let through entries that belong to
+no language involved: `the`, `is`, `of`, `to`, `at`, `it`, `be`, `are`, `do`, `must`, `has`
+and `not` were all listed as GERMAN, and `the`, `in` and `it` as FRENCH.
+
+Each entry is a word the fragment rule can no longer see. Pruned to words a native speaker
+would confirm, with `error` ADDED for Spanish (spelled exactly as in English, which is the
+only thing that ever justifies an entry). Zero new findings on the current tree, so this is
+pure sharpening; `TestHomographListHoldsOnlyRealWords` pins it, and restoring the original
+German list makes that test fail on seven words.
+
+NOT fixed, reported instead: `detectWordBlends` skips wholly-ASCII tokens, so an
+ASCII-only corruption like `"Listeer available images"` is caught by neither it nor
+`detectEnglishFragments` (which only counts KNOWN English words). Making it ASCII-aware
+would fire on every legitimate `Starting`/`Running` in twelve locales and needs a
+false-positive measurement pass per locale. That is a rework, not a cheap hardening.
+
+### Renet's locale set is already derived, and stays that way
+
+No `@rediacc/locales` change is needed on the renet side and none was made. Renet's
+catalogs register themselves through `pkg/i18n/locales/registry.go`, and
+`GetAllLocaleFiles` derives the locale list from the generated files rather than from a
+hand-written list, which is the same property `@rediacc/locales` provides on the console
+side. The Go test asserts that list is exactly 12 non-English catalogs and that each
+yields at least 200 keys, so a moved or renamed catalog is a hard failure rather than a
+scan over nothing.
+
+## 2026-08-04 -- two dark coverage assets get CI legs: the drills, and suite 24's ACCOUNT tier
+
+Both were written, both passed on an operator's box, and neither had ever executed in CI.
+This wires them, with the scope engine's 18th key and one new job script. UNCOMMITTED: the
+workflow edits land locally and the operator pushes, so **the first real CI run is the
+operator's push** -- everything below was proven locally or is named as unproven.
+
+### `test-drills`, a new ct-tests leaf (scope key `drills`)
+
+Runs `./run.sh drill universe` then `./run.sh drill transfer`. Both drive the real
+`./rdc.sh` against a real `./run.sh account dev` gateway and assert on stdout and stderr
+SEPARATELY, which is the surface no unit test sees and the surface each drill's header
+says it was written to catch defects in.
+
+Proven locally before the wiring, not after: universe 42/42 in 31s, transfer 33/33 in 32s,
+both on this checkout with Docker up (transfer needs the RustFS container, so it is a real
+prerequisite rather than a nicety). No org secrets are involved -- `account_ensure_env`
+generates `private/account/.env` with fresh throwaway ed25519/x25519 keys on first use.
+
+The Go toolchain, the Docker Hub login and the embed-assets cache on this leg all exist
+for ONE reason, and it is worth stating because none of them look like a drill's business:
+`rdc.sh:188` calls `ensure_renet_built` unconditionally, which runs `build.sh dev` ->
+`embed_assets`. With the cache warm the receipt check makes staging a verified no-op; on a
+miss it falls back to the Docker extraction, which is what the 30-minute budget covers.
+Neither drill touches renet.
+
+**`www` is deliberately NOT in the `drills` surface**, and this is the one judgement call
+in the key. `account_dev` starts the Astro dev server from `packages/www` and exits
+non-zero if it does not come up, so www is a literal dependency of the harness. It is
+still excluded: a www change cannot change what these drills ASSERT, only whether the
+harness stands, and carrying www would run a ~15-minute leg on every i18n or marketing PR
+-- the most common change shape in this repo. Accepted cost, stated so the next reader does
+not think it was an oversight: a www change that breaks `astro dev` while still building
+clean surfaces as a red drills leg on the NEXT cli/account PR.
+
+The drills' own source needs no module: `scripts/` hits the `scripts-harness` rule => full
+CI, so editing a drill always runs the leg. Same shape as `license_enforcement` under
+`.ci/`.
+
+### The 18th key costs five tables, not one
+
+Adding a `JOB_SURFACES` key is not a one-file edit, and every one of these fails CLOSED,
+which is why they were found by running rather than by reading:
+
+- `scope-map.cjs` -- `drills: ['cli', 'shared', 'account']`.
+- `ci.yml` -- an `initialize` output and a `with:` pass-through. A key missing here is
+  silently DROPPED by the outputs block.
+- `ct-tests.yml` -- the `run_drills` input plus the leaf's `!= 'false'` clause.
+- `skip-plan-reconcile.cjs` -- `EXPECTED_JOB_NAMES` (validateNameTable THROWS AT LOAD on a
+  surface key with no name) and `CT_TESTS_LEAF_KEYS` (without it the leaf is not exempted
+  under `full_suite`/`pointer_bump_only` and reds every push-to-main).
+- three gate fixtures under `.ci/scripts/test/gates/` that carry a second, independent copy
+  of the job list on purpose.
+
+Instrument check rather than assertion-reading: `buildPlan` was driven over single-path
+deltas and the key discriminates in both directions -- `packages/cli/**` and
+`private/account/**` and `packages/shared/**` => `run:true reason:modules:*`,
+`packages/www/**` and `private/renet/**` => `run:false reason:out-of-scope`,
+`scripts/drills/**` => full.
+
+### Suite 24: the ACCOUNT tier runs, the VM tier is excluded (not skipped)
+
+`.ci/scripts/test/start-account-for-e2e.sh` starts a TEST_MODE node account server with
+throwaway keys, seeds a PROFESSIONAL subscription, and mints a token over the COOKIE
+session only -- the CLI must be the token's first user, because a token binds to the client
+IP on first use and the CLI's E2E tunnel presents a different one (the drill lib paid an
+hour for that; violating it answers 403 and the CLI misreports it as a passkey requirement).
+`CLUSTER_LICENSING_SUITE=1` on the multinode leg lights project `k8s-multinode-24`.
+
+**The VM tier cannot run here, and the brief's assumption that it could was checked and is
+wrong.** Three independent blockers, any one of them sufficient:
+
+1. it adopts an EXISTING cluster named by `E2E_CLUSTER_NAME`; the only cluster this job
+   builds is suite 17's `mnprod`, which suite 17's own last test and its `afterAll` tear
+   down completely (kube uninstall, datastore detach + delete, ceph pool delete). Project
+   `k8s-multinode-24` runs after project `k8s-multinode-17`, so there is nothing left;
+2. suite 17 builds that cluster through raw `renet` over the bridge, so no rdc config ever
+   holds a `clusters` entry for it -- `cluster fork mnprod` could not resolve it even if it
+   still stood;
+3. every renet on this fleet is `--nolicense`, so the on-machine licence blobs the tier's
+   test 1 asserts on do not exist by construction.
+
+So the tier is removed from the RUN with `--grep-invert "licensing on the fleet"` (its
+describe title; suite 17's titles do not contain it), AND `E2E_EXPECT_NO_CLUSTER_VMS` is
+declared. The pair is deliberate and the ordering is the whole point: a declared skip is
+still a SKIP, and this leg carries `--fail-on-skip`, so declaring alone would red the job.
+`--grep-invert` filters at collection so nothing is reported as skipped, while the
+declaration keeps the omission loud on stderr and keeps the suite fail-closed if the grep
+is ever dropped.
+
+### Four things this touched that were not obviously in scope
+
+- **`account: 'true'` is back on the multinode leg**, reversing part of the eight-job strip
+  documented above `test-e2e-workers`. That comment's reason (no E2E suite touches
+  private/account) is no longer true for this one job. The cost it names is real and
+  accepted: this job's setup cache key now hashes the three account lockfiles.
+- **The E2E run line must stay ON ONE LINE.** `check-e2e-coverage`'s registry self-check
+  scans workflows line by line and only pairs a `--config` with a `run-e2e.sh` on the SAME
+  line. Folding the invocation across lines with `>-` made the gate report
+  `'playwright.k8s-multinode.config.ts' is in LIVE_CONFIG_REGISTRY but NO workflow runs
+  it`, and silently set `bareDefaultSeen` from a line that is not a bare invocation. Loud
+  and fail-closed, so not repaired; noted at the call site so the next folder is not
+  puzzled.
+- **`CLUSTER_LICENSING_SUITE` in `CI_LEG_ENABLE_FLAGS` over-counts by design and it was
+  checked, not assumed.** Config expansion resolves FILES, so the flag counts the whole of
+  suite 24 as live while `--grep-invert` runs only half of it. Inert today: the only bridge
+  method suite 24 calls is `executeViaBridge`, which dispatches no renet verb and is in the
+  method map for none, so the file confers no verb coverage in either tier. The gate's
+  expansion moved `playwright.k8s-multinode.config.ts` from 1 file to 2, which is the
+  instrument check that the flag does something.
+- **`npx` forks, so `$!` is not the server.** The first cut of the start script recorded
+  `$!` and used `kill -0` on it as a startup liveness check. Measured: launch pid 1155097,
+  tsx 1155113, listener 1155124 -- the recorded pid was already gone while the server was
+  healthy, so that check was a false red waiting on scheduling. Readiness is now the PORT
+  for the full budget, and the pid is resolved from the listening socket afterwards
+  (verified: recorded pid == listener pid, and killing it stops the server).
+
+### What is NOT proven, and cannot be from here
+
+The suite-24 ACCOUNT tier's own assertions were not executed. `subscription login --token`
+and `subscription status` were driven against the throwaway server and print the exact
+lines the suite parses (`Machine slots: 0/5`, `Monthly repo license issuances: 0/2000`),
+and E2E key discovery against a non-production server works when `REDIACC_ACCOUNT_SERVER`
+is set -- but `cluster create` is gate class D and `assertCommandPolicy` refuses it inside
+an agent session unless the operator exported `REDIACC_ALLOW_CLUSTER_OPS` before the
+session started. It refused, verbatim: `Cluster command "cluster create" is blocked in
+agent mode`. CI has no agent ancestor so the override is legitimate there, and suite 24's
+test 1 detects exactly this case and says so rather than failing obscurely eight tests
+later. The pre-flight's refusal text and exit code are therefore first proven on the
+operator's push.
+
+## 2026-08-05 -- the scope engine had never reduced a round, in five days live
+
+Reported as "run 30983418337 is running the whole test matrix for a commit that
+is documentation and agent tooling". The push `1d172438f..208c8a2d9` carried
+four files: `.claude/agents/pr-babysitter.md`, `.claude/commands/pr-babysit.md`,
+`.claude/hooks/stop/wl_judge.py`, and a report under `docs/agent/main/`. Every
+one classifies to the `docs` module, which appears in no `JOB_SURFACES` entry,
+so the table would skip all eighteen keys. It skipped none.
+
+### The measurement, before any hypothesis
+
+The plan artifact is uploaded per run, so the verdict is readable rather than
+inferable. Twenty-five recent `pull_request` runs, fourteen of which still had
+their `ci-skip-plan` artifact:
+
+```
+30983418337  mode=reduced full_reasons=["baseline:merge-base-reached"] skipped=2 out-of-scope=0
+30975223299  mode=reduced full_reasons=["baseline:merge-base-reached"] skipped=1 out-of-scope=0
+...  (12 more, identical shape)
+30944973190  mode=full    full_reasons=["baseline:no-candidates"]      skipped=0 out-of-scope=0
+```
+
+Every walk died at the merge parent or found no candidates, and **not one job
+in any run was ever skipped with reason `out-of-scope`**. Both skips visible
+above came from the cross-PR greenlight, not from scope. The engine went live
+on 2026-07-31 (D-1) and had, by its own artifacts, never once reduced a round.
+
+### Why the reduction path was unreachable rather than unlucky
+
+Four properties compose into a closed loop:
+
+1. the walk is fenced at the merge parent, so only the PR's OWN commits are
+   candidates. A one-commit PR therefore has none;
+2. a candidate must be green, its plan `mode: 'full'`, and its outcome
+   reconciled;
+3. every superseded push is `cancelled`, which reads as `not-green`, and a
+   babysit loop supersedes constantly;
+4. the surviving green run had its plan's `mode` flipped to `reduced` by the
+   greenlight the moment it skipped a single key -- and `renet` /
+   `account_e2e` closures change rarely, so this fired almost every time.
+
+Run 30983418337's own trail says it in one line: 28 candidates `not-green`, and
+the one green one (`1d172438f`, run 30975223299) refused as `reduced-baseline`.
+That run had executed seventeen of eighteen keys and held greenlight evidence
+for the eighteenth.
+
+### Two changes were designed. ONE LANDS; the other is held for a soak
+
+**LANDED -- baseline usability is read per key, not from the mode label**
+(`planCoverageIsFull`). A key covers if it was planned to RUN -- the reconciler
+then proves it actually ran -- or if it was skipped with a `greenlight:<run-id>`
+reason, whose evidence is a different run that executed that job's exact input
+closure green. A key skipped as `out-of-scope` covers nothing, so case 1 stands:
+scope evidence still cannot chain. This makes `reason` load-bearing where the
+reconciler ignores it, which adds no trust: it arrives in the same artifact as
+`mode`, `run` and `base_sha`, all already load-bearing. What stays derived
+rather than declared is `reconciled`, per `attestPlan`'s doctrine.
+
+This is the change that answers the report, and it answers it alone: run
+30975223299 becomes a usable baseline, so run 30983418337 resolves one instead
+of walking off the fence. It fixes pushes 2..N of every PR, which is the large
+majority of pushes.
+
+**HELD -- no usable baseline classifies the merge-parent delta instead of
+forcing full** (`noBaseline`). Designed, implemented and gated, then deliberately
+NOT landed on 2026-08-05. Kept here rather than deleted, because the design is
+sound and the reason for holding it is about the state of `main`, not about the
+mechanism.
+
+The design: `diff(merge-parent, head)` is a SUPERSET of any baseline delta (the
+baseline is an ancestor of head and a descendant of the merge parent), and it is
+the evidence GitHub's own `paths:` filters run on, so a job whose surface is
+disjoint from it would execute byte-identical inputs to the ones main already
+carries. `decideBaseMove` already trusts this exact diff for the case-5 fold. It
+would be offered ONLY for the "no usable baseline" family -- a shallow clone, a
+throwing walk, a throwing diff and an over-cap diff all still force full,
+because there the instrument is what is broken and a second reading from it
+proves nothing.
+
+Why it is held:
+
+1. **It reduces against a baseline nobody verified was green.** `ci.yml:276` and
+   `:327` are both `if: github.event_name == 'pull_request'`, so a main commit
+   never uploads a plan. Push #1 of every PR therefore has no baseline BY
+   CONSTRUCTION -- not by accident -- and the fallback would reduce that round
+   against whatever the merge parent happens to be. Right now that parent is a
+   `[skip ci]` commit with no run at all, and main's last four scheduled runs
+   are all failure. A docs-only PR would skip all eighteen heavy keys against a
+   red main.
+2. **It buys the smallest share of the win and carries all of the risk.** The
+   landed change already covers pushes 2..N; the fallback only adds push #1.
+
+What it would need before landing: a shadow soak that records what the fallback
+WOULD have decided, alongside a main that is green often enough for the
+merge-parent to be worth anything as evidence.
+
+### The API-outage boundary, which the existing gates were right to guard
+
+Recorded with the held change, because it is the boundary that change has to
+respect and the reasoning does not expire.
+
+`test-scope-gate-outputs.sh` asserts that an engine which cannot reach the API
+must not skip a single job, and the fallback would have broken it: git still
+works under a `gh` outage, so the delta would classify and the round would
+reduce. Two reasons that is wrong, and only the second is decisive. "No green
+ancestor" derived from an API that answered nothing is an absence of
+measurement, not a finding; and a round that reduces must be RECONCILED against
+that same API at the end of the pipeline, so it would trade a full round for a
+red required check. The held implementation handled this by marking an
+unreadable candidate in `candidateFor` and declining the fallback with the note
+`merge-parent-classify-declined:run-history-unreadable` when every candidate was
+unreadable. An EMPTY walk is not that case: a one-commit PR legitimately has no
+ancestor inside the fence.
+
+### The hardening the landed change needed
+
+`planCoverageIsFull` first asked `run !== false`, which is the wrong polarity
+for this predicate. The two verdicts are not symmetric: reading a malformed
+entry as coverage reduces a round on evidence nobody checked, while reading it
+as a gap costs one full round, and only the second is recoverable. Driven
+against the real predicate, `{run absent, reason:"out-of-scope"}`, `{run:"false"}`
+and `{run:0}` all answered COVERS. The first is the dangerous one -- a dropped
+`run` key beside an out-of-scope skip is precisely the scope-chaining case 1
+forbids, wearing a shape that looks benign.
+
+It now asks `run === true` for an executed key and `run === false` plus a
+well-formed `greenlight:<digits>` reason for an evidenced one, matching
+`skip-plan-reconcile.cjs:408,428` (`planned.run === true`) and the strict
+booleans `scope-map.cjs:325-332` always writes. An array `jobs` is refused
+explicitly, since `Object.values` would otherwise walk a shape no producer emits.
+
+The hardening costs the fix nothing on real evidence: run 30975223299's
+downloaded plan still answers `planCoverageIsFull = true` under the strict form,
+its single non-run key being exactly `{"run":false,"reason":"greenlight:30968082228"}`.
+
+### Evidence, both directions
+
+Classification of the real deltas, through the real CLI (`--classify` over
+stdin), re-run after the split:
+
+| delta | mode | heavy keys running |
+|---|---|---|
+| `docs/ci-overhaul/06-progress.md` | reduced | 0 of 18 |
+| `packages/cli/src/commands/repo.ts` | reduced | 14 of 18 |
+| `.audit-allowlist` | full | 18 (`root-manifest:`) |
+| `.ci/lib/common.sh` | full | 18 (`harness:`) |
+
+The last two rows are the honest part of the answer: for PR #551 the full matrix
+was CORRECT, because the branch also touches those surfaces. What was wrong is
+that the mechanism which should have noticed the last push changed nothing
+relevant had never been able to fire.
+
+And the claim that it fires now, checked against the real artifacts rather than
+asserted: run 30975223299's plan artifact was downloaded and attested against
+that run's real Jobs API payload (96 jobs), and answers
+`planCoverageIsFull = true`, `reconciled = true` DERIVED (the artifact carries no
+`reconciled` field at all), and `full-green-attested`. So run 30983418337 would
+have taken it as its baseline -- with the fallback held and playing no part.
+
+### Gates
+
+`test-scope-engine.sh` gains four cases pinning greenlight-only versus
+scope-reduced baselines (including a forged `greenlight:probably-fine` reason
+and an empty jobs vector), plus four more for the malformed entries the
+hardening refuses. `test-scope-baseline-attest.sh`'s case (i) now mutates a real
+skipped key rather than only the label -- a fixture that relabelled alone would
+be asserting the thing that no longer decides.
+
+Mutation-proven both directions against a copy of the tree carrying the
+pre-hardening predicate: all four malformed entries answered
+`full-green-attested` there and `reduced-baseline` here, while five controls
+(greenlight skip, scope skip, forged reason, empty jobs, `mode: full`) answer
+identically under both, so the hardening refuses exactly the malformed shapes
+and nothing else.
+
+### The classification regression table
+
+Added the same day, because everything above tests the engine's decision
+MACHINERY and nothing pinned the ANSWER for a representative delta -- which is
+the half the operator actually experienced. Seven rows in
+`test_representative_deltas_classify_to_pinned_verdicts`, asserted through the
+real `--classify` path: docs-only, agent-tooling-only, THE REPORTED PUSH (the
+exact four paths behind run 30983418337), cli, renet and account source each
+against their named key SET, and docs-plus-one-cli-file, which is the row that
+catches an over-eager skip. The three forced-full surfaces
+(`.github/workflows/**`, `.audit-allowlist`, `.ci/lib/**`) are asserted
+structurally -- mode, every key running, the pinned reason -- rather than as a
+literal eighteen-name list, so adding a job key is not an eighteen-line diff in
+a file that is not about the key list.
+
+SETS, NEVER COUNTS, and that distinction was proven rather than asserted:
+swapping `cli` from the `drills` surface onto `renet` leaves the count at
+fourteen, so a count-based assertion still passes, while the set assertion goes
+red with `missing: drills | unexpected: renet`. Dropping `cli` from `drills`
+alone is caught the same way and by nothing else in the file. The failure
+message names the row and the exact symmetric difference, deliberately: a
+regression test that is a puzzle to update gets suppressed instead of updated.
+
+The block runs LAST, and that is load-bearing. `test-gate-anti-vacuity.sh`
+registers this file with the pattern `closure`, meaning the empty-tree run must
+fail saying "closure" -- which is the seventh test, and `log_fail` exits on the
+first failure. A table placed ahead of it would fail first with a message
+carrying no "closure" and silently retire that registration. Verified by running
+the anti-vacuity gate before and after. The block also carries its own inline
+vacuity control, since it cannot borrow the file's registered one: a dead engine
+answers `ENGINE-PRODUCED-NOTHING` rather than an empty key list, which would
+otherwise read as "no keys to run" and pass every zero-key row.
+
+Gate counts after the split and the table: `test-scope-engine.sh` 97 assertion
+call sites plus 7 classification rows (counted separately so the table cannot
+shrink unnoticed), `test-scope-baseline-attest.sh` 128; both green, as are
+`test-scope-gate-outputs.sh`, `test-skip-plan-reconcile.sh` and
+`test-gate-anti-vacuity.sh`.
+
+---
+
+## 2026-08-05 -- the `no-cancel-failure` label is deleted, engine and all
+
+Operator instruction, and the reason is the whole point: the label made CI
+iterations slower. It suppressed the watchdog's force-cancel so a red run ran to
+completion and reported every failure at once, which on this pipeline means
+waiting out the 44-minute E2E and OPS legs before the round ends. On a branch
+being driven to green that cost is paid every round.
+
+**What it gated, both halves, because deleting one and leaving the other is how a
+flag removal goes wrong.** `skipCancellationOnFailure` was consumed in exactly
+two places: branch 2 of the failure handler (`core.setFailed` and keep
+monitoring, instead of cancelling), and one term of `evaluateNoRetryCancel`,
+where it suppressed the Quality/no-retry force-cancel. Both are gone; the
+no-retry decision is now `isFailure && matchesNoRetry`, with no suppression
+argument at all, and the branch chain renumbers 3/4/5 to 2/3/4.
+
+The third thing keyed off the label was `LABEL_IMMUNE_PATTERNS`, and it does NOT
+die with it -- it had a second job. `['Review Gate']` is also the set excluded
+from the sibling drain (`pendingNoRetryJobs`) and the set whose force-cancel
+fires instantly rather than waiting, so deleting it would have silently made a
+Review Gate failure wait on every `Quality / *` lane. It survives, renamed
+`NO_DRAIN_PATTERNS` after what it actually does, with `labelImmune` on the
+verdict renamed `noDrain`.
+
+The schedule/dispatch cancel exemption (`evaluateCancelExemption`) is untouched:
+it never read the label, only cited it in prose to explain why the nightly could
+not use one. Those paragraphs now say the same thing without naming a dead label.
+
+**What replaces the label's purpose.** Nothing needed to: the Quality drain
+landed after it and covers the deterministic half properly. A no-retry failure
+holds its cancel until every sibling no-retry lane is terminal (90s cap), and
+`forceCancel` re-fetches the job list so the annotation names every job that had
+failed by then. What the label added on top was holding the run open for the
+EXPENSIVE legs, which is precisely the cost being removed. A long job that keeps
+being cancelled before it reports is verified by running its gate locally
+(`npx tsx scripts/ci-runner/run.ts --only '<gate-id>'`), not by keeping a red run
+alive.
+
+**Gate.** `test-watchdog-cancel-label.sh` was not deleted: seven of its twelve
+cases test the branch ordering and the drain, which outlived the label. It is
+reduced and renamed `test-watchdog-no-retry-cancel.sh` (manifest id
+`gate-test:watchdog-no-retry-cancel`), keeping the anti-vacuity read of the real
+`WATCHDOG_NO_RETRY_PATTERNS`, and gains a case asserting that passing the old
+suppression flag changes nothing -- so a half-reverted removal cannot pass
+silently. Twelve assertions, green, and proven able to fire: four mutants run
+against a mirrored copy (drop the cancel, re-introduce the suppression term,
+empty `NO_DRAIN_PATTERNS`, treat a cancellation as a failure) each turn it red on
+a different named case, with the unmutated copy green as the control.
+
+## External drift leaves the nightly's verdict: `external_quality` (2026-08-05)
+
+Five of the eight nightlies before 2026-08-04 were red on nothing but external
+drift (a new rclone release, freshly published npm advisories, a new action
+version): main's head had not changed for three of those nights. The
+`no-external-quality` label could never help, because the nightly fires on
+`schedule` where no PR label is readable, and push-to-main skips quality
+entirely, so the one suite that validates main was the one place the escape
+hatch could not reach. Worse, the guard existed in three spellings across five
+sites, one gate (`check:ci-embed-asset-freshness`, the one that actually
+reddened 3 consecutive nightlies) had NO guard at all, and `quality-security`'s
+guard was job-level, silently skipping four fully offline gates alongside the
+one external step it aimed at.
+
+**The shape that landed.** ONE three-state initialize output,
+`external_quality` (`hard` normal PR / `skip` labelled PR / `soft`
+schedule+dispatch), passed to ci-quality.yml as a `workflow_call` input and
+consumed by every external step the same way: `inputs.external_quality !=
+'skip'` in the `if:`, command routed through
+`.ci/scripts/quality/run-external-gate.sh` with `EXTERNAL_QUALITY_MODE`. In
+soft mode the wrapper downgrades a failure to `::warning::` + step summary +
+exit 0, which is exactly what the nightly-red machinery needs: it judges the
+whole-run conclusion, so #544 stops crying wolf and closes on the first green
+nightly. `audit.sh` deliberately keeps only the skip half (operator decision:
+a new advisory against an unchanged lockfile is a real signal about main).
+`check:deps` gains schedule execution it never had (its old guard was
+positive-form PR-only).
+
+**Why a wrapper and not `continue-on-error`:** check-workflows.sh BANS
+continue-on-error repo-wide, and the repo's precedent for non-blocking is the
+script-internal soft-fail (check-embed-asset-freshness.ts). The wrapper is that
+precedent factored out once. It fails closed: unset mode is hard, an unknown
+mode refuses (exit 2) even around a passing command.
+
+**Proofs run, not reasoned.** test-external-gate-wrapper.sh pins all four
+directions (soft-fail green + warning, hard-fail keeps the child's exit code,
+unset->hard, unknown->refuse) plus the step-summary write. check-ci-parity
+initially reported all six converted pointers as "runs something else" -- the
+resolver read the wrapper as the leaf -- so resolveLeaves gained wrapper
+transparency, pinned by two new cases: the wrapped gate counts as covered
+(planted-defect proven: removing transparency fails exactly that case), and an
+UNKNOWN wrapper does NOT count (the transparency cannot leak into generic
+indirection). check-workflow-gates CHECK 2 held the input/with pair together;
+actionlint, check-workflows, shellcheck, shfmt all green.
+
+## Labels: four kill switches existed only in code (2026-08-05)
+
+The sweep behind the external_quality work found that `.github/labels.yml` had
+ZERO consumers (nothing created labels from it, nothing checked drift), and
+four labels referenced by running code did not exist on the repo at all:
+`full-ci` (the scope engine's documented kill switch, which
+scope-reconcile-shadow.sh literally tells the operator to apply), `autopilot`
+and `autopilot-blocked` (hard-required by autopilot-gate.sh), and `rollback` --
+the nastiest, because promote-stable.yml's `label:rollback` search returns
+zero PRs for a nonexistent label, so the rollback promotion-block was silently
+FAIL-OPEN.
+
+All four are now created live and declared in labels.yml, alongside
+declarations for `nightly-red`, `bug` and `automated` (consumed by
+report-nightly-status.cjs; nightly-red stays self-creating on first fire, the
+declaration is inventory). The mechanism that stops the fifth unreachable
+label: `check:ci-label-refs` (.ci/scripts/quality/check-label-references.sh)
+sweeps `.github` and `.ci` with ten curated extraction patterns (one per
+consumption shape in the tree: workflow contains(), gh api labels[]=, search
+filters, cjs includes()/consts/arrays, jq --arg, the AUTOPILOT_LABEL defaults
+in both yml and sh spellings, and detect-bump-type's grep -qx) and fails on
+any reference labels.yml does not declare. Every extractor self-tests against
+a planted sample BEFORE the sweep, and a distinct-labels floor refuses a dead
+sweep outright -- the check-silent-failure-patterns lesson (a green gate that
+scanned zero files for weeks) designed in from the start. The gate's own test
+drives all ten shapes through fixtures, proves the fail direction names label
+AND site, proves declared-but-unreferenced stays legal, and runs the real gate
+seam-free so the sweep provably executes in CI.
+
+## Autopilot: dispatch-campaign arming, model plumbing, hold-open debug (2026-08-05)
+
+**Arming is no longer label-only.** `gh workflow run Autopilot -f pr_number=N`
+is now itself the arming act: round 1 runs off the dispatch, and that round's
+state-comment write records a CAMPAIGN on the metadata line, which gained three
+fields (`campaign: open|closed|none | model: <id> | rounds_max: N`). Later
+`workflow_run` rounds re-arm from the campaign while it is open and rounds
+remain, so the loop no longer depends on a label existing. The label path is
+untouched and still works; `autopilot-blocked` is checked before all three
+paths and beats all three. Stop story, three scopes: cancel the run kills one
+round, `autopilot-blocked` kills the loop, `AUTOPILOT_ENABLED` kills everything.
+
+The carry-over parser in state-comment.sh deliberately drops unknown content
+(anti-tamper), so the new fields ride the metadata line, which is re-rendered
+from validated values every round rather than copied forward. Every value is
+normalized on read AND on write: campaign is one of three literals, model
+matches a tight identifier shape, rounds_max is a small integer, and anything
+else collapses to its sentinel. The gate does not re-parse that line -- it calls
+the new `state-comment.sh fields` subcommand, so the format has exactly one
+reader and one writer, and a round-trip case (render -> classify) is what would
+go red if they ever diverged. The 400-char line cap and 55 KB compaction are
+untouched.
+
+**Campaign termination is real, not aspirational.** The model job only runs for
+fix and review-response, so it can never observe mode `done`; a campaign closed
+only there would stay open forever and re-arm on every later CI completion. The
+finish job therefore got a `Close the campaign` step (same `AUTOPILOT_ALLOW_STATE`
+flag, same render call, `--campaign closed`). The round cap is the second
+terminator: the campaign path will not re-arm once `ROUNDS_DONE >= MAX_ROUNDS`.
+
+**Model and effort plumbing.** The model job's `claude_args` no longer hardcodes
+`--model claude-sonnet-5`. The gate resolves the effective model as dispatch
+input > campaign field > `claude-sonnet-5`, validates it against a two-entry
+allowlist (an unknown value is a typo, not an instruction: it falls back rather
+than failing the round after paying for the runner), and emits it as a decision
+output. Round caps resolve the same way with `AUTOPILOT_MAX_ROUNDS` as the third
+fallback and 25 as the fourth. The argument list is assembled in one env-routed
+step output, so there is a single copy of it.
+
+**The `effort` input is wired, and the forwarding was verified rather than
+assumed.** Evidence, at the pinned action SHA `fa7e2f0a` (v1.0.180): the action
+leaves every unrecognised `claude_args` flag in `extraArgs`
+(`base-action/src/parse-sdk-options.ts` extracts only model, add-dir,
+allowed/disallowed-tools, mcp-config and setting-sources, and passes the rest
+through); `@anthropic-ai/claude-agent-sdk` (dependency `^0.3.217`, current
+0.3.222) emits every `extraArgs` entry to the CLI verbatim as `--<key> <value>`
+(`sdk.mjs`: `for (let [W, Se] of Object.entries(Zt)) ... $w(H, W, Se)`, with the
+intervening filter a pass-through that only touches sandbox/settings); and the
+CLI accepts `--effort <level>` -- the SDK emits exactly that flag for its own
+`effort` option (`if (this.options.effort) H.push("--effort", this.options.effort)`),
+its types declare `'low'|'medium'|'high'|'xhigh'|'max'|number`, and the local
+CLI 2.1.222 `--help` lists it. So the lever is live, not decorative. It is
+dispatch-ONLY on purpose: unlike model and max_rounds it is not recorded in the
+campaign, because raising effort is a decision about one hard failure rather
+than a property of the whole run.
+
+**Hold-open debug session, and why it sits where it sits.** A dispatch may now
+carry `debug-shell` and hold the runner open behind a quick Cloudflare tunnel
+with a tmate shell, driven by the vendored `.ci/breakpoint/scripts/`. The steps
+sit strictly BETWEEN "Assert the model left HEAD alone" and "Mint post-model app
+token", and that placement is the whole security argument: it is the only window
+where the workspace holds the round's entire result and no write credential
+exists anywhere on the runner. Two steps later `Wire push authentication` writes
+the app token into `.git/config`, and a human on the box after that line holds a
+repo-write bearer token. Three conditions gate every step: the input, the event
+being `workflow_dispatch` (an autonomous round must never hold a runner open),
+and the gate's new `dispatch_trusted` output. That third one is not redundant --
+a round can be armed by the LABEL, whose trust check is the label applier, so
+without it anyone with dispatch rights could get a shell on a runner holding the
+repo source by dispatching an already-armed PR.
+
+Three further calls, each deliberate: a credential SCRUB with an assertion runs
+before the tunnel (a scrub whose result is never checked is a claim, not a
+control); the breakpoint scripts are invoked from `$RUNNER_TEMP/harness`, the
+trusted copy staged before the PR head landed, because running `.ci/breakpoint`
+out of the workspace would execute PR-authored shell; and the Cloudflare token
+is deliberately NOT in any of these steps' env. Quick mode never reads it
+(`start-tunnel.sh` requires it only in `start_named`) and `stop-breakpoint.sh`
+skips its whole account-side block without it, so passing a tunnel-edit +
+`rediacc.io` DNS-edit token into the one step sequence whose purpose is to put a
+human on the runner would hand that human the token for nothing. This is a
+deliberate deviation from a literal reading of the brief, called out here rather
+than buried. The tunnel URL is not a step output and appears in no `env:` block,
+for the reason breakpoint learned in run 30254567365. The job timeout is
+`350 || 30` by expression -- 350 rather than 360 for breakpoint's reason, and a
+choice between two constants because Actions expressions have no arithmetic.
+
+**New gate: `check:ci-autopilot-bp-align`.** breakpoint.yml is frozen in
+MANIFEST.sha256 and GitHub has no include mechanism for workflow inputs, so the
+three debug inputs are hand-copied -- and hand-copied shapes drift silently. The
+gate extracts breakpoint's `duration` option list and the two booleans'
+type+default and compares them to autopilot's copies (breakpoint is canonical;
+the gate never asks anyone to edit the frozen file). Descriptions are
+deliberately not compared: breakpoint's duration text is about named-mode Access
+logins, which the quick-tunnel autopilot does not have. Anti-vacuity is the
+point of most of its code: a missing file, a missing input block, a missing
+field, or an options list under five entries all exit 1, because
+empty-equals-empty is this gate's only real failure mode. Its test proves the
+real tree, unmutated copies through the env seams, a removed duration option, a
+flipped `send-email` default, both missing-file directions, a renamed input
+block, and the short-list floor.
+
+**Also fixed while in here.** `Build event fixture` used to end in a bare
+`jq -e '.workflow_run.id'`, so a dispatch aimed at a head whose CI had not
+finished died with exit 1 and nothing on stdout explaining it. It now sets a
+`ready` output, emits a `::notice::` naming the head and telling the operator to
+dispatch again after CI completes, and the two downstream steps that need the
+event fixture are gated on it -- a no-go with a reason instead of a red step.
+
+**claude-review model input.** `claude-review-reusable.yml` gained an optional
+`model` workflow_call input (default `claude-sonnet-5`) consumed at BOTH
+hardcode sites through ONE job-level `REVIEW_MODEL` env var: the real
+`claude_args` and the `CLAUDE_ARGS_SENT` log echo were two independent copies of
+the same string, which is a log that can lie about the run it describes. The
+console caller gained a matching `workflow_dispatch` choice input; submodule
+callers are untouched and get the default.
+
+**Gates run:** test-autopilot-harness (216 assertions), test-autopilot-workflow-invariants
+(30, still "4 jobs scanned" -- no new job), test-autopilot-breakpoint-alignment (23),
+test-gate-paths-exist, test-gate-anti-vacuity, test-ci-parity, plus
+check:ci-autopilot-workflow, check:ci-autopilot-bp-align, check:ci-parity,
+check:ci-workflows, check:ci-actionlint, check:ci-shell-lint, check:ci-label-refs
+and `shfmt -i 4 -ci -d` on every touched script. Two planted defects, not
+reasoned: removing one `duration` option from a fixture copy fires the alignment
+gate with its pinned diagnostic, and disabling the gate's dispatch-arming branch
+fails exactly the dispatch case in the harness test (restored md5-identical,
+green again afterwards).
+
+---
+
+## 2026-08-05 -- review-gate blind spots, a review-budget undercount, and a durable agent report inbox
+
+Landed on branch `0804-1` (console PR #551). Everything below touches `.ci/`,
+`.github/` or `.claude/`, which is why it belongs in this log rather than only in
+the wave's own plan file.
+
+### Both review gates were blind to the larger half of a review
+
+`check-review-comments.sh` read only `pulls/{PR}/comments`, so the reviewer's
+TOP-LEVEL verdict -- the comment carrying the severity-ordered defects, the nits
+and the coverage map -- could go unanswered with CI green. Only the top findings
+are ever mirrored inline (capped at 20, and any whose line is outside the diff is
+dropped), so the summary is strictly the larger surface. It now also reads
+`issues/{PR}/comments`.
+
+`check-review-report-replies.sh` had the same class of defect for a different
+reason: its selector AND-ed the report header with `json:review-findings` OR
+`### Review`, a guess about the report's WORDING that no producer emits.
+`--post-report` wraps whatever the model's closing text happened to be, which on
+this PR carried neither marker, so the gate found no report and passed
+vacuously. It now keys on the `**Claude finished` header alone.
+
+The rule both fixes follow: **key on what the producer actually writes, never on
+a description of it.** The header and the findings fence are constants the
+pipeline emits verbatim, so a rename breaks posting in the same commit instead of
+silently blinding a gate.
+
+The two gates are complementary rather than duplicate -- different producer
+constants, different comments from the same pass -- so their reply thresholds are
+asserted equal, and `test_one_reply_clears_both_gates` proves one reply satisfies
+both. That property has since held twice on live data.
+
+**Gate self-demonstration:** the new gate went red on this very PR, on its own
+author, for an unanswered verdict that would have passed silently a day earlier.
+
+### The review budget was undercounting, and the cap could never be reached
+
+`review_report_count()` carried the same defective qualifier in its two remaining
+call sites. Measured against live PRs before the change, counted versus actually
+posted: **#551 0 of 1**, #550 5 of 7, #546 3 of 7, #543 1 of 9. So a completed,
+marked review registered as never having happened, the cap never advanced, and
+every subsequent green push paid for another full review -- the exact
+"pays again forever" failure the spent-attempt path exists to prevent.
+
+The function also existed as two identical copies. It now lives in
+`.ci/scripts/lib/common.sh` beside `review_cap_for()`, so numerator and
+denominator come from one place. Counts after: 1, 7, 7, 9.
+
+### A typecheck target that had never run
+
+`scripts/tsconfig.json` had covered 70 files since January with nothing invoking
+it, and `.ci/scripts/**/*.ts` had no tsconfig at all -- a config that read as
+coverage and provided none. Corrected and extended, it reports 0 errors across 71
+files (512 as written, ~99% of it noise from settings nobody had executed). It
+surfaced two real bugs: a fifth argument passed to a four-parameter function, so
+a "cloud-only context detection" silently did nothing (deleted, not implemented --
+the cloud adapter was removed deliberately), and a `snippet` field set on a type
+that has no such field and requires `command`, so that reporter printed
+`in: undefined`.
+
+Wiring it into `check:types` needs `package.json` and is left as a one-line
+operator decision against a provably green target.
+
+### Preview readiness required a streak, and previews stopped lying about themselves
+
+`wait-for-preview-worker.sh` declared ready on a SINGLE successful probe. Two
+prior fixes had changed WHICH endpoint was probed; neither changed how many
+times, so the failure returned a third time. The deploy flaps by construction --
+the per-PR D1 database is recreated on every push and `server-info` is the first
+endpoint touching it. Readiness now requires 3 consecutive successes, control-
+proven both directions (a flapping stub passes at streak 1 and fails at streak 3).
+
+Separately, preview workers self-identified as **production**: `envSchema`
+defaults `ENVIRONMENT` to `production` and `wrangler.preview.toml` never set it,
+so a preview served `updateChannel` `stable` while the `install.sh` it served
+baked in channel `pr-N`. Fixed in the preview heredoc only; production deploys
+unchanged.
+
+### Durable sub-agent report inbox and a push-based waiter
+
+Sub-agent reports reached the lead session only as a message in its context, so a
+compaction lost them and an agent that reported substantively was
+indistinguishable from one that went idle silently. Investigation inverted the
+premise: reports are ALREADY durable -- every sub-agent writes a transcript --
+so the gap was discovery, addressing and unread-ness, and the `SubagentStop`
+hook that would capture them had never been wired.
+
+`.claude/settings.json` now wires `SubagentStop` plus a second `SessionStart` and
+`PostCompact` group (two groups on one event both deliver their context --
+probed, not assumed). New `wl_report.py` captures and surfaces; new `wl_wait.py`
+blocks until something new arrives and exits, so its EXIT is the notification and
+a waiting session costs zero turns. A `--scan` back-filled 132 previously
+unrecoverable reports.
+
+Four findings worth carrying:
+
+- **`last_assistant_message` is the SIGN-OFF, not the report.** A teammate
+  delivers by SendMessage and then says "Released. Task complete." Measured on one
+  agent: 24 characters handed over against payloads of 8,646 and 6,331. Building
+  to spec would have marked that agent `silent`, inverting the one distinction
+  the feature exists to draw. Bodies are harvested from the payloads instead.
+- **A waiter EXITS every time it fires**, so "no waiter running right now" is true
+  exactly when a session is behaving correctly. A force-a-waiter check keyed on
+  that broke 16 harness cases. It is now a grace count over unacted `PostToolUse`
+  nudges, resetting the moment a waiter appears.
+- **`PostToolUse` carries no `background_tasks`**, so the nudge cannot see the task
+  table; it uses a heartbeat the waiter re-touches, since a marker written once at
+  launch becomes a lie the moment the process dies.
+- **Phantom captures.** 44 of 181 records had neither an agent type nor a
+  resolving transcript -- not sub-agent reports at all. The store partitioned
+  exactly, with no mixed case, and 1885 sidecars confirmed no real agent kind
+  lacks a type. Discarded only when BOTH fail (AND-on-reject is more permissive
+  than either predicate alone; the OR form drops real reports and turns seven
+  assertions red). The 44 were retired by APPENDING retire events, preserving the
+  append-only property the lock-free design rests on.
+
+### Gates run
+
+`test-worklist-v5.sh` 432 -> 460, new `test-report-inbox.sh` 113,
+`test-claude-hooks.sh` 541, `test-review-status.sh` 26 -> 44,
+`test-gate-paths-exist.sh` 4, `test-swallowed-failures.sh` 22, plus
+`check:ci-parity`, `check:ci-suppression-liveness` (82 entries, 0 findings),
+`check:ci-external-links`, `check:ci-shell-lint`, `check:ci-shell-format` and
+`shfmt -i 4 -ci -d` on every touched script.
+
+`gate-test:worklist-hooks` now runs BOTH stop-hook harnesses, parsing each one's
+own summary -- the wrapper previously used `tail -1`, which would have read only
+the second. No `manifest.ts` change was needed for that (the gate is already
+registered); `test-preview-readiness.sh` DID need one, correcting a claim from the
+preceding commit that glob discovery made an entry unnecessary: `run-all.sh`
+globs for CI, but `npm run ci` schedules from the manifest, so a glob-only gate
+runs on one side and `check-ci-parity` catches it.
+
+Mutations, not reasoning: nine against the report inbox, six against the gate
+wrapper, three against the phantom filter, and one per review-gate assertion.
+Two tests were found passing for the WRONG reason and fixed rather than accepted --
+one asserted an outer layer while appearing to assert an inner one, and one read
+the real report store because an unset env var is not neutral.
+
+## 2026-08-05 — identity, latching, and three gates that could not fail
+
+Eleven commits touched `.ci`, `.github` and `.claude` after the entry above. What
+a new session needs from them:
+
+**The stop hook now validates WHO is calling it.** Every `<me>` was previously
+accepted on SHAPE alone, so a session that copied a sub-agent's namespace token
+out of a tool result used the wrong identity for 26 hours: 219 calls under it,
+20 under the right one, from one process. Every call SUCCEEDED — writes and reads
+key off the same unvalidated string, so one typo splits a session into two
+internally-consistent halves and nothing downstream can tell. A peer's message
+sat unread for 34 hours while it auto-escalated. `wl_core.py::check_me` compares
+`<me>` against `CLAUDE_CODE_SESSION_ID` (that name is verified against a live
+child's environment; `CLAUDE_SESSION_ID` DOES NOT EXIST and would resolve to ""
+forever, which every caller treats as pass). Three layers: refusal, a phantom
+backstop that names orphaned identities, and `--reassign` that moves open work
+without rewriting history. `WORKLIST_SESSION_ID` is the declared override, an
+identity ASSERTION rather than a suppression flag.
+
+Its own control landed by accident and is the clearest evidence in the file:
+`--list --open <session>` answered "no actionable items" while that session held
+22 open items and a request.
+
+**A gate keyed on a description of what a producer emits, rather than the
+constant the producer writes, cannot fail.** Six instances this day, across
+review-comment checks, the sidecar gate, and a suite harness reading only the
+last of two summaries. The sidecar gate shipped WITH the defect it was written to
+prevent (it swallowed `git ls-files`'s exit status, so an unreadable tree read as
+a clean one), caught by `test-swallowed-failures.sh`. Standing lesson: derive the
+gate from the constant, and prove it fires by planting the defect.
+
+**Latched, never silenced.** The SUBMODULE POINTER MOVED warning re-fired every
+stop until push, including after a deliberate decision to keep a pointer local —
+which is how a real warning becomes wallpaper. It is now latched per
+(path, target sha) for `SUBMODULE_LATCH_MIN` (15). TIME-BOXED on purpose: a
+permanent acknowledgement would go silent on a pointer somebody forgot, and
+silence there is indistinguishable from correctness.
+
+**Housekeeping Phase 6 is dead by design, and now says so.** Deleting a pr-*
+environment OBJECT needs Administration:write, which `check-no-app-admin-perm.sh`
+deliberately forbids the App so a leaked token cannot delete edge/stable. The
+comment used to read as a pending upgrade. The real mechanism is a periodic
+manual `gh` sweep by an owner-token human.
+
+Gate: `.ci/scripts/test/gates/test-worklist-hooks.sh` runs BOTH stop-hook
+harnesses (569 + 115 = 684). It previously parsed only the last summary, so the
+first harness could fail unnoticed.
+
+## 2026-08-06 — the scope map stops running ceph for an attribution string
+
+**The scripts/ harness rule was too coarse, and it fired for real.** Commit
+`bcc4f1ee1` changed one file — an Apache-2.0 attribution-URL check — and the
+resolved plan recorded `"full_reasons": ["harness:scripts/check-embed-credits.ts"]`,
+running the whole E2E/ceph/k8s/OPS matrix. Measured across three runs, dropping
+the infra matrix saves **19-43 min wallclock (28-47%)**, and the new tail is
+`Validate Promotion` at ~47-52 min in all three, so it also converts a 66-93 min
+variable pipeline into a predictable ~50 min one.
+
+**The old comment gave the WRONG reason, and that is the more useful finding.**
+It said quality lanes "must stay immune to scoping by construction" and concluded
+`full`. Gate immunity is real but the engine guarantees it independently:
+`ci-quality.yml` contains **zero** `run_` references, so no quality lane is among
+the 18 keys the engine can switch off. A `scripts/` rule cannot scope out a gate
+because gates are not scopeable at all. A conservative rule defended by a wrong
+reason is one that gets removed for bad reasons later.
+
+**Two subsets stay full**, found by tracing execution rather than reading names:
+`scripts/drills/` (ct-tests.yml:1730 → run.sh:1987) and
+`generate-third-party-licenses.ts`, which runs inside the SEA build and whose
+output SHIPS in the CLI binary — a silently-wrong credits file is caught only by
+gated jobs. Everything else is a zero-job `gates` module.
+
+**Honest expected value: ~1.28% of commits** (29 of 2263). 75% of
+`scripts/`-touching commits also drag `package.json`/`.ci/`/`.github/`, which
+force full independently. The reason to land it is not the minutes; it is that
+"an attribution-string check ran a ceph fork test" makes the engine look
+untrustworthy even when it is working correctly. Full analysis:
+`docs/agent/0804-1/PLAN-scope-gates-split.md`.
+
+**A CI wait is no longer a legitimate stop.** Operator ruling: a session watching
+a run is idle, not blocked, because the run needs nothing from it. The stop-gate
+judge now earns "stop" from a named CI wait only when no tracked item can be
+advanced locally. Unpushed work cannot disturb a run in flight, so "wait for the
+PR to land" almost never justifies not writing the code.
+
+**Mutation discipline, unchanged and still earning its keep.** Four mutations on
+the scope rules; M4 (swap `modules: ['gates']` for `['cli']`) is the one that
+matters — it still reports `reduced` while dragging the matrix back, so without
+that assertion a future edit giving `gates` a job surface would silently undo the
+change while every test row still read `reduced`.
+
+## 2026-08-06 — the 12 CI-only stop-suite failures: not reproducible, not diagnosed
+
+**Left here rather than in a worklist item, because the worklist item had no
+executable action left and a blocked item that nobody can advance is worse than a
+record somebody can read.**
+
+`test-worklist-v5.sh` reported **563 passed / 12 failed** in CI run
+`31055389610` (`Quality / Security`) while giving **575/0** locally. It has not
+recurred in **six** subsequent executions of the battery (`31065302651`,
+`31069411195`, `31073312222`, `31075240744`, `31077151139`, `31078369416`).
+
+**The twelve were never NAMED.** `2f509ccf8` fixed the reporter that hid them —
+it used `tail -20`, and in a 575-case suite the last twenty lines are PASS lines
+plus the summary, so every FAIL line scrolled past. That fix has never had a red
+to fire on. If this returns, the next red names the cases, and that is the single
+most valuable thing to read.
+
+**Seven hypotheses falsified**, so a recurrence starts narrower:
+1. `HOME` — an empty one still gives 575/0.
+2. Sibling fixtures from the `wl_liveness` session-scoping — case 163v is the
+   only v5 case creating `subagents` dirs.
+3. Wall-clock sensitivity — only 3 time deps exist, all in 163v, bounded by 10
+   hours or set-to-now, nothing crosses a threshold.
+4. Shared-store collision — the harness pins `TMPDIR=$BASE/tmp` under
+   `mktemp -d`, so concurrent runs cannot collide in `/tmp/claude-worklist`.
+5. Blind `proc_table` — 569/8, not 12.
+6. Blind `harness_ancestors` — 571/6, not 12.
+7. **Their union — 569/8, IDENTICAL to (5) alone**, because `harness_ancestors`
+   consumes `proc_table`. That puts a **ceiling of 8** on the entire
+   OS-visibility family, which therefore cannot explain 12. This killed the
+   leading theory, and it is the most useful of the seven.
+
+**The measurement error worth not repeating** is recorded in
+`docs/agent/TRAPS.md`: three rounds were initially counted as "did not recur"
+when the battery had never executed, because the run was cancelled by an earlier
+gate. Not-executed is a third state.
+
+**Honest status: not reproducible in six executions, cause unknown.** That is a
+characterisation, not a mechanism.
+
+## 2026-08-06 — the reachability gate, and its own first defect
+
+`check:ci-scope-scripts-reachability` exists because the scope split's two
+carve-outs (`scripts/drills/`, `generate-third-party-licenses.ts`) were traced BY
+HAND at one commit. Nothing stopped the next file becoming reachable from a gated
+job and being narrowed silently — a job skipped on the very delta that changed
+its dependency, which reads as a faster green rather than a gap.
+
+**It shipped with the defect it exists to catch, and review found it.** The scan
+read run.sh's drill arm with `grep -A 12`. One line short: run.sh dispatches
+THREE drills and `scripts/drills/license.sh` at :1995 fell outside the window, so
+`check_path` was never invoked for it. The gate reported "every reachable path
+forces full" having never looked at one. Inert only because `scripts/drills/`
+carries an independent full-prefix rule — the stated invariant was already
+narrower than its claim.
+
+**Two wrong fixes, both worth recording:**
+- A bigger window. `-A 16` passes today and breaks on the fourth drill.
+- Reading each arm to its closing `;;`. run.sh NESTS case statements and
+  terminates arms inline (`stop) account_stop ;;`), so the block scan ran past
+  `account)` and mis-attributed `scripts/dev/worktree.sh` to it. One silent miss
+  became one loud false positive.
+
+The fix attributes each dispatch to its nearest preceding TOP-LEVEL case label,
+which needs no model of arm termination at all.
+
+**A near-miss worth naming**: the first rewrite used `sub` as an awk variable.
+That is a gawk BUILTIN, and the scan returned nothing. It failed loudly, which is
+the only reason it was caught — silently it would have been another green that
+checked zero paths.
+
+**Method note.** Both the original gate and the fix were verified by planting a
+real invocation of a narrowed path in `.ci/scripts/build` and observing rc=1,
+then removing it for rc=0. The proof was RE-RUN after the rewrite rather than
+assumed to survive it.
+
+
+## 2026-08-06 — Python was ungated, and the first thing the gate caught was ours
+
+Operator ask: "we have too much linting and tidy-up thingy for js/ts but we don't
+have for python! Especially for hook program."
+
+The premise held exactly. `package.json` carried **91** `check:ci-*` gates
+covering TypeScript, shell and Go and **zero** covering Python, while 13 of the
+15 tracked `.py` files are the Stop-hook program that gates every agent turn.
+There was no `ruff.toml`, `pyproject.toml`, `setup.cfg`, `.flake8` or `mypy.ini`
+anywhere — yet the hook modules already carried `# noqa: BLE001` and
+`# noqa: PLC0415`. Someone had run ruff against them once, by hand, and nothing
+had enforced it since: **suppressions with no gate behind them**, which is worse
+than neither, because the annotations read as evidence that something checks.
+
+### `check:ci-python-lint`
+
+`.ci/scripts/quality/check-python-lint.sh` + `ruff.toml`, `select = ["ALL"]` with
+every exclusion stated in config rather than sprinkled as per-line noqa, so new
+ruff rules opt IN automatically. Wired at all four points, three of which are
+silent when missing: the package.json key, the `manifest.ts` GateSpec, the
+`ci-quality.yml` step it names, and a pinned+verified ruff install step beside
+the shfmt one. `check-ci-parity.ts` green in both directions.
+
+**Control-first, because there are two ways this gate could be green while
+proving nothing.** (1) `ruff check` with no paths exits 0, so a broken glob or a
+run outside a work tree reads exactly like a clean repo — the file list is
+counted against a floor, and that check runs BEFORE ruff is resolved, so an
+empty-tree failure is about vacuity rather than a missing binary. (2) A wrong
+config path or a dropped rule also looks like a clean tree — so a synthetic
+`F821` is planted in a scratch dir outside the repo and ruff must report it.
+`F821` specifically, because that is the rule that caught the real bug: if a
+future config change disables it, the gate fails loudly instead of going quietly
+blind to the defect it was built for. Registered in `test-gate-anti-vacuity.sh`
+and observed rejecting an empty tree.
+
+### mypy was measured and rejected
+
+Default mode finds exactly **2** things, both the deliberate sibling-import shim
+`worklist.py` documents as an invariant. `--strict` finds **1061**, of which
+96.7% is `no-untyped-def`/`no-untyped-call` annotation churn, for 5 real
+findings. It does not earn a gate. That is a measurement, not a preference.
+
+### 97 findings → 0, five of them real
+
+- **`F821` in `wl_checks.guided_slice`** — a `NameError` introduced by this same
+  session's root-anchoring sweep an hour earlier. Both hook suites (584 and 118
+  assertions) passed straight over it, because reaching the branch needs
+  `root=None` AND a plan-subagent triage at once. It then failed **soft** into a
+  bare `except` that replaced the operator's whole worklist guide with an
+  apology. The gate caught it before it had landed.
+- A leaked SES response-body handle (`SIM115`): the `finally` unlinked the temp
+  file and never closed the reader. CPython refcounting hid it.
+- `ci_queue_state` unpacked the `gh` error and dropped it, so a **failed API call
+  and a genuinely quiet queue both surfaced as a bare "unknown"** — the exact
+  blindness `worklist.py`'s own invariants forbid.
+- `worker_facts` took a `session_id` parameter, ignored it, and re-read the same
+  value from the event.
+- `app.run(debug=True)` in a Flask **template** whose purpose is to be copied.
+
+**Nothing was baselined and no rule was disabled to reach zero.** Where a
+finding was genuinely deliberate it is annotated AT THE SITE with its reason
+(4 lazy sibling imports, 2 urlopen calls behind a runtime https guard, one
+blanket except whose 11-line comment already explained itself). The other 3
+`PLC0415` were lazy for no reason and were hoisted, so those findings are gone
+rather than documented.
+
+**The 6 `B023` are false positives and were fixed anyway**: `fire_once` is only
+called inside the iteration that defines it. Binding the loop variables as
+default args is free and provably equivalent, and it keeps `B023` ENABLED for
+sites where it would be real. Disabling a rule to clear six known-safe uses is
+how the next genuine late-binding bug ships unnoticed.
+
+### A trap that nearly cost 50 deliberate suppressions
+
+`ruff check --select RUF100` **replaces** the rule set. `BLE001` switches off,
+and every one of the 50 deliberate `# noqa: BLE001` in the tree reports as an
+unused directive — all marked `[*] fixable`. Auto-fixing that would have
+stripped the suppressions guarding the fail-closed exception handlers, whose
+whole job is to stop a crashing hook from reading as ALLOW. **Only the
+full-config run is authoritative**; under it there is no `RUF100` at all. Never
+judge noqa health from a narrowed `--select`.
+
+### `check_inline_python.py` — the blind spot the ruff gate leaves
+
+A `.py` gate lints tracked `.py` files. Python inside a JS/TS string literal is
+invisible to it, and that is not hypothetical:
+`packages/cli/src/remote/vscode/bootstrap.ts` held a **130-line, 4871-character
+Python program** in a template literal, executed on a remote host over SSH. Four
+of its six interpolations were unescaped, and `ast.parse` says what that means —
+a `universalUser` of `'; import os; os.system('id'); x='` **parses cleanly** and
+turns the middle into executable Python, under `sudo -u` on the user-switch
+path. Escaping fixed separately; the program itself still needs to move.
+
+The detector is narrow on purpose. Of 999 tracked JS/TS files, four match
+`/python3?/` and **three are innocent** — an interpreter binary name, the word
+"python" in a word list, and the string `"check:ci-python-lint"`. A rule that
+flagged those would be switched off within a week. So it flags only a quoted
+region carrying two or more Python STATEMENT shapes at line starts, or a
+`python -c` handed source assembled in the same file. Controls run in both
+directions before any real file is read, and a control failure aborts without a
+verdict.
+
+Written in Python so the ruff gate polices it — it had 10 findings on its first
+run. Committed **unwired**: the tree cannot pass it until `bootstrap.ts` is
+migrated, and wiring a gate the tree fails is landing a red gate, not a fix.

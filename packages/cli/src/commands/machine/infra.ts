@@ -101,7 +101,9 @@ function registerInfraCore(infra: Command, program: Command): void {
         const format = program.opts().output as OutputFormat;
 
         if (!machine.infra) {
-          outputService.info(t('commands.machine.infra.show.noInfra', { name: machineName }));
+          if (format === 'table')
+            outputService.info(t('commands.machine.infra.show.noInfra', { name: machineName }));
+          else outputService.print(null, format);
           return;
         }
 

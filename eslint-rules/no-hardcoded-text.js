@@ -49,7 +49,7 @@ const DEFAULT_IGNORE_COMPONENTS = ['Trans', 'code', 'pre', 'kbd', 'samp'];
 
 const hasLetters = (text) => /\p{L}/u.test(text);
 
-const normalizeText = (text) => text.replace(/\s+/g, ' ').trim();
+const normalizeText = (text) => text.replaceAll(/\s+/g, ' ').trim();
 
 const getElementName = (node) => {
   if (!node) return '';

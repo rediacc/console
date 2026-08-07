@@ -37,6 +37,9 @@ const SETTLE_MS = 400;
 
 type SessionWidth = 'full' | 'half';
 
+/** Viewport share a session claims when its spec does not ask for a split. */
+const DEFAULT_SESSION_WIDTH: SessionWidth = 'full';
+
 interface SceneMarks {
   startMs: number;
   endMs: number;
@@ -80,13 +83,13 @@ export interface SessionManager {
     outMp4: string,
     padFilter?: string
   ): { durSec: number };
-  debugInfo(): Array<{
+  debugInfo(): {
     name: string;
     webmDurSec: number;
     wallSpanSec: number;
     headGapSec: number;
-    scenes: Array<{ id: string; videoStartSec: number; videoEndSec: number }>;
-  }>;
+    scenes: { id: string; videoStartSec: number; videoEndSec: number }[];
+  }[];
 }
 
 function paneSize(width: SessionWidth): { w: number; h: number } {
@@ -120,7 +123,7 @@ export function createSessionManager(opts: {
     sceneId: string,
     lastUseSceneIndex: number
   ): Promise<LiveSession> {
-    const width: SessionWidth = spec.width ?? 'full';
+    const width: SessionWidth = spec.width ?? DEFAULT_SESSION_WIDTH;
     const { w, h } = paneSize(width);
     const scale = spec.recordScale && spec.recordScale > 1 ? spec.recordScale : 1;
     // Record at the (possibly reduced) viewport size — Playwright never
@@ -134,7 +137,7 @@ export function createSessionManager(opts: {
       viewport,
       deviceScaleFactor: 1,
       recordVideo: {
-        dir: path.join(opts.tmp, 'sessions', name.replace(/[^\w.-]+/g, '_')),
+        dir: path.join(opts.tmp, 'sessions', name.replaceAll(/[^\w.-]+/g, '_')),
         size: viewport,
       },
     });
@@ -219,7 +222,7 @@ export function createSessionManager(opts: {
     async acquire(name, need, sceneId) {
       const spec = opts.storyboard.sessions?.[name];
       if (!spec) throw new Error(`scene "${sceneId}": unknown session "${name}"`);
-      const want: SessionWidth = spec.width ?? 'full';
+      const want: SessionWidth = spec.width ?? DEFAULT_SESSION_WIDTH;
       if (want !== need) {
         throw new Error(
           `scene "${sceneId}" needs a '${need}' pane but session "${name}" is '${want}' — declare a separate ${need}-width session`
@@ -274,7 +277,7 @@ export function createSessionManager(opts: {
 
     async closeAll() {
       for (const session of [...live.values()]) {
-        await close(session).catch((err) => {
+        await close(session).catch((err: unknown) => {
           console.error(`[video] session ${session.name} close failed: ${String(err)}`);
         });
       }
@@ -286,7 +289,7 @@ export function createSessionManager(opts: {
         throw new Error(`cutSegment: session "${sessionName}" has no closed recording`);
       }
       const marks = session.marks.get(sceneId);
-      if (!marks || !marks.endMs) {
+      if (!marks?.endMs) {
         throw new Error(`cutSegment: session "${sessionName}" has no marks for scene "${sceneId}"`);
       }
       const start = videoTime(session, marks.startMs);
@@ -301,7 +304,7 @@ export function createSessionManager(opts: {
       if (opts.debugFramesDir) {
         // Sanitize ':' (and other Windows-illegal chars) from scene IDs like
         // 'vscode-versions:left' so debug frame filenames never break checkout.
-        const safeId = sceneId.replace(/[:<>"|?*]/g, '-');
+        const safeId = sceneId.replaceAll(/[:<>"|?*]/g, '-');
         extractPosterJpg(
           session.result.webm,
           start,

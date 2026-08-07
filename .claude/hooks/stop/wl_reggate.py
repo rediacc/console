@@ -21,6 +21,7 @@ file, because half-parsed fixsets silently resurrect a blocked question as
 settled.
 """
 
+import contextlib
 import glob
 import hashlib
 import json
@@ -91,10 +92,8 @@ def load_reggate(path):
 def save_reggate(path, state):
     # Whole-file rewrite is correct here for the same reason as the handover:
     # the marker is per-session, so there is no second writer to race.
-    try:
+    with contextlib.suppress(OSError):
         path.write_text(json.dumps(state, indent=1), encoding="utf-8")
-    except OSError:
-        pass
 
 
 def _tick_id(line):
@@ -152,7 +151,9 @@ def fix_signals(root, lines, session_id, state):
             sha, _, subj = row.partition("\t")
             if not FIX_SUBJECT.match(subj):
                 continue
-            files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
+            files = C._git(
+                root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha
+            ).splitlines()
             if files and all(f.startswith("docs/") or f.endswith(".md") for f in files):
                 continue
             commits.append((sha, "%s %s" % (sha[:7], subj)))
@@ -241,8 +242,7 @@ def prove_new_gate(root, scripts, state):
                 state["gate_runs"][rel] = {"hash": digest, "exit": -2, "at": stamp}
                 notes.append(
                     "%s: %s is defined but NOT reachable from `npm run ci` "
-                    "(defined-but-never-run is the check-gate-reachability failure)"
-                    % (rel, key)
+                    "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
             try:
@@ -252,6 +252,7 @@ def prove_new_gate(root, scripts, state):
                     capture_output=True,
                     text=True,
                     timeout=REGGATE_TIMEOUT_S,
+                    check=False,
                 )
                 code = pr.returncode
             except subprocess.TimeoutExpired:
@@ -285,8 +286,13 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
       real coverage is incoherent and blocks too; the REBUT exit lets the
       judge re-answer coherently next stop."""
     fields = (
-        "applicable", "blind_spot", "existing_gate", "recurring",
-        "gate_needed", "gate_proven", "instruction",
+        "applicable",
+        "blind_spot",
+        "existing_gate",
+        "recurring",
+        "gate_needed",
+        "gate_proven",
+        "instruction",
     )
     if not isinstance(rg, dict) or any(k not in rg for k in fields):
         return "malformed", "regression_gate missing or incomplete: %r" % (rg,), ""

@@ -23,6 +23,26 @@
  * string is reported only when another language's function words are present AND the
  * locale's own are not — two independent signals, so a shared loanword cannot trip it.
  *
+ * WHY IT COVERS ALL TWELVE LOCALES NOW. The first version carried
+ * `if (!STOPWORDS[locale]) continue`, which meant ar, ja, ko, ru, zh and et were walked
+ * past in silence — and that is precisely where the damage was: 379 German values sat in
+ * account-web's ar, ja, ru and zh while this gate printed a checkmark. A skip is
+ * indistinguishable from a pass in the output, so there is no longer a skip. Every locale
+ * directory on disk must be modellable, by one of two instruments:
+ *
+ *   FUNCTION WORDS, for Latin-script locales (de/es/et/fr/it/pt/tr). Unchanged.
+ *   WRITING SYSTEM, for ar/ja/ko/ru/zh. A stopword list is a Latin-alphabet instrument
+ *     and cannot be built for these; instead, a value holding not one character of its
+ *     own script is not a translation into it. Paired with the function-word signal, so
+ *     a Latin product name standing alone still scores zero and is not reported.
+ *
+ * A locale that fits neither is a HARD ERROR naming the locale, never a skip.
+ *
+ * ENGLISH IS NOW A DETECTABLE SOURCE TOO. There was no `en` stopword list, so English
+ * left sitting in a translated locale — the ordinary residue of a half-finished
+ * translation pass — was invisible by construction, the same shape of blindness the
+ * missing locales had.
+ *
  * Usage:
  *   tsx scripts/check-i18n-cross-locale.ts [--root <dir>] [--selftest]
  */
@@ -31,6 +51,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { DEFAULT_LOCALE, NON_ENGLISH_LOCALES, SITE_LOCALES, isSiteLocale } from '@rediacc/locales';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -41,11 +62,69 @@ const LOCALE_ROOTS = [
   'private/account/src/i18n/locales',
 ];
 
-const SOURCE_LOCALE = 'en';
+const SOURCE_LOCALE = DEFAULT_LOCALE;
 /** Short strings carry too few function words to identify a language from. */
 const MIN_LENGTH = 12;
 
 type Finding = { root: string; locale: string; detected: string; file: string; key: string; value: string };
+
+/**
+ * A locale directory on disk that is not a site locale. Thrown, never skipped.
+ *
+ * The locale universe is `@rediacc/locales`, not whatever `readdirSync` happens to
+ * return. A directory outside that set is either a typo or a locale someone added
+ * without declaring it, and both must be loud: the gate would otherwise judge it with
+ * whatever detection data it happened to have, or none.
+ */
+class UnknownLocaleDirError extends Error {
+  constructor(readonly locale: string, readonly root: string) {
+    super(
+      `Directory "${locale}" under ${root} is not a site locale.\n` +
+        `Site locales come from @rediacc/locales: ${SITE_LOCALES.join(', ')}.\n` +
+        `If this is a new locale, declare it in packages/locales/index.js (and index.d.ts) ` +
+        `and give it detection data here. If it is not a locale, it does not belong in a ` +
+        `locale root.`
+    );
+    this.name = 'UnknownLocaleDirError';
+  }
+}
+
+/** A site locale whose directory is missing from a root the gate is scanning. */
+class MissingLocaleDirError extends Error {
+  constructor(readonly locales: string[], readonly root: string) {
+    super(
+      `${root} is missing a directory for ${locales.length} site locale(s): ${locales.join(', ')}.\n` +
+        `The gate would scan zero files for them and report nothing, which is the same ` +
+        `checkmark as finding nothing. Add the directory, or remove the locale from ` +
+        `packages/locales/index.js.`
+    );
+    this.name = 'MissingLocaleDirError';
+  }
+}
+
+/**
+ * A site locale with no way to judge it. Thrown AT STARTUP, before any scanning.
+ *
+ * WHY STARTUP AND NOT PER-VALUE. The skip this replaces (`if (!STOPWORDS[locale])
+ * continue`) is how 379 German values lived in account-web's ar, ja, ru and zh while
+ * this gate reported a checkmark. Checking coverage lazily, as each locale is reached,
+ * has the same shape of hole: a locale absent from every tree on the day would never
+ * reach the check. Deriving the requirement from @rediacc/locales and asserting it before
+ * the first file is opened makes "we shipped a fourteenth locale and forgot its detection
+ * data" a red gate on day one, with no tree needed to trigger it.
+ */
+class UnmodelledLocaleError extends Error {
+  constructor(readonly locales: string[]) {
+    super(
+      `${locales.length} site locale(s) have no detection data: ${locales.join(', ')}.\n` +
+        `Every non-English site locale needs a function-word list in STOPWORDS (Latin ` +
+        `script) or a writing system in NATIVE_SCRIPT (non-Latin).\n` +
+        `Skipping a locale silently is how ar/ja/ru/zh carried 379 German values through ` +
+        `a green gate.`
+    );
+    this.name = 'UnmodelledLocaleError';
+  }
+}
 
 /**
  * Function words that are frequent in one language and rare in the others we ship.
@@ -56,13 +135,103 @@ type Finding = { root: string; locale: string; detected: string; file: string; k
  * values produced 136 false positives on the es/pt pair alone.
  */
 const STOPWORDS: Record<string, string[]> = {
+  // `en` is never scanned as a TARGET (it is SOURCE_LOCALE), only ever as a DETECTED
+  // language. Without it, English left sitting in a translated locale — the single most
+  // common failure of a half-finished translation pass — was undetectable by
+  // construction, exactly like German was before the de/fr/es/it/pt/tr lists existed.
+  en: ['the', 'and', 'you', 'your', 'this', 'that', 'these', 'those', 'with', 'from', 'have', 'has', 'been', 'will', 'not', 'are', 'was', 'were', 'they', 'their', 'there', 'which', 'when', 'while', 'because', 'before', 'after', 'about', 'into', 'only', 'also', 'than', 'then', 'each', 'both', 'such', 'please', 'cannot', 'should', 'would', 'could', 'must'],
   de: ['nach', 'nicht', 'oder', 'wird', 'werden', 'einen', 'eine', 'sie', 'ihre', 'mit', 'für', 'sind', 'auf', 'aus', 'kann', 'muss', 'noch', 'wenn', 'durch', 'bitte', 'keine', 'dieser', 'diese'],
   fr: ['vous', 'votre', 'les', 'des', 'une', 'est', 'pas', 'pour', 'avec', 'dans', 'sur', 'par', 'que', 'qui', 'aux', 'ete', 'sont', 'cette', 'plus'],
-  es: ['los', 'las', 'una', 'para', 'con', 'por', 'que', 'del', 'esta', 'este', 'son', 'como', 'more', 'pero', 'todos'],
+  // 'more' used to sit here. It is an ENGLISH word, and it was the Spanish list's only
+  // non-Spanish entry, so an English string anywhere scored one point towards "this is
+  // Spanish". With an `en` list now present it would also have been pruned as
+  // non-discriminative, silently weakening both lists. Removed rather than deduplicated.
+  es: ['los', 'las', 'una', 'para', 'con', 'por', 'que', 'del', 'esta', 'este', 'son', 'como', 'pero', 'todos'],
   it: ['gli', 'una', 'per', 'con', 'che', 'del', 'della', 'sono', 'questo', 'questa', 'nel', 'alla'],
   pt: ['dos', 'das', 'uma', 'para', 'com', 'por', 'que', 'nao', 'sao', 'este', 'esta', 'pelo'],
   tr: ['ve', 'bir', 'icin', 'ile', 'bu', 'olarak', 'veya', 'daha', 'gerekli'],
+  // Estonian. Deliberately excludes 'on' and 'see', which are ordinary English words:
+  // an English string carrying them would have scored towards Estonian and been reported
+  // under the wrong source language, blunting the diagnostic the operator acts on.
+  et: ['ja', 'ei', 'ning', 'kõik', 'peab', 'saab', 'tuleb', 'palun', 'juba', 'ainult', 'nende', 'selle', 'kuid', 'või', 'siis', 'ega', 'pole', 'oma', 'kas', 'sest'],
 };
+
+/**
+ * The writing system each non-Latin locale is supposed to use.
+ *
+ * These five have no function-word list and cannot get a useful one: a stopword list is
+ * a Latin-alphabet instrument, and the words that would populate it are written in a
+ * script the tokenizer does not split on. For them the evidence runs the other way — a
+ * value holding not one character of its own script is not a translation into it, whatever
+ * language it turns out to be. Same predicate as check-locale-de-contamination.ts, which
+ * proved it against the 379 real findings; here it is paired with the function-word
+ * signal so a Latin PRODUCT NAME standing alone cannot trip it.
+ */
+const NATIVE_SCRIPT: Record<string, RegExp> = {
+  ar: /[؀-ۿݐ-ݿ]/,
+  ja: /[぀-ヿ一-鿿]/,
+  ko: /[가-힯ᄀ-ᇿ]/,
+  ru: /[Ѐ-ӿ]/,
+  zh: /[一-鿿]/,
+};
+
+/**
+ * Terms that legitimately stay in Latin script in every locale. They are stripped BEFORE
+ * function words are counted, because several of them tokenize into words that also sit
+ * in a stopword list — "Copy-on-Write" and "Restart=on-failure" both yield "on", and a
+ * value made of nothing but product syntax must score zero, not two.
+ */
+const TECHNICAL_TERMS = new Set([
+  'rediacc', 'renet', 'docker', 'compose', 'btrfs', 'luks', 'ceph', 'rbd', 'osd', 'mon', 'mgr',
+  'k3s', 'kubernetes', 'kubectl', 'systemd', 'ssh', 'sftp', 'rsync', 'rclone', 'criu', 'traefik',
+  'http', 'https', 'tcp', 'udp', 'dns', 'tls', 'ssl', 'json', 'yaml', 'toml', 'api', 'url', 'uri',
+  'cli', 'sdk', 'guid', 'uuid', 'sha', 'crc', 'pem', 'vlan', 'nat', 'wireguard', 'vpn', 'cpu',
+  'gpu', 'ram', 'ssd', 'nvme', 'iops', 'linux', 'windows', 'macos', 'ubuntu', 'debian', 'fedora',
+  'github', 'gitlab', 'nextcloud', 'postgres', 'postgresql', 'mysql', 'redis', 'mongodb', 'nginx',
+  'copy', 'write', 'read', 'root', 'sudo', 'bash', 'git', 'npm', 'node', 'python', 'golang',
+]);
+
+/**
+ * Every non-English site locale must be judgeable by one instrument or the other, and
+ * every piece of detection data must name a real site locale.
+ *
+ * Runs AT MODULE LOAD, so it fires with no locale tree present at all. That is the point:
+ * the locale universe comes from `@rediacc/locales`, which is the same declaration the
+ * rest of the repo builds against, so adding a fourteenth locale there turns this gate red
+ * immediately rather than the next time someone happens to look.
+ */
+export function assertDetectionCoverage(
+  stopwords: Record<string, string[]>,
+  nativeScript: Record<string, RegExp>
+): void {
+  // A typo in a detection key is silent otherwise: `NATIVE_SCRIPT.jp` would simply never
+  // match the `ja` directory, and the locale would read as covered while being skipped.
+  for (const key of [...Object.keys(stopwords), ...Object.keys(nativeScript)]) {
+    if (!isSiteLocale(key)) {
+      throw new Error(
+        `Detection data names "${key}", which is not a site locale.\n` +
+          `Known: ${SITE_LOCALES.join(', ')}. Fix the typo, or declare the locale in ` +
+          `packages/locales/index.js.`
+      );
+    }
+  }
+  const uncovered = NON_ENGLISH_LOCALES.filter((l) => !stopwords[l] && !nativeScript[l]);
+  if (uncovered.length > 0) throw new UnmodelledLocaleError([...uncovered]);
+}
+
+/** Drop every span that carries no natural language, then every protected technical term. */
+function stripNonLanguage(value: string): string {
+  return value
+    .replace(/\{\{[^}]*\}\}/g, ' ')
+    .replace(/%[-+ #0]*[\d.*]*(?:\[\d+\])?[a-zA-Z]/g, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/(?:^|[^\w-])--?[A-Za-z][\w-]*/g, ' ')
+    .replace(/[A-Za-z_][\w.]*=[^\s,)]+/g, ' ')
+    .replace(/[A-Za-z]\w*(?:-\w+)+/g, ' ')
+    .replace(/\d+/g, ' ');
+}
 
 function flatten(obj: unknown, prefix = '', out: Record<string, string> = {}): Record<string, string> {
   if (obj && typeof obj === 'object') {
@@ -94,12 +263,22 @@ const DISCRIMINATIVE: Record<string, Set<string>> = (() => {
   );
 })();
 
+// STARTUP, not lazily. Nothing below this line runs if a site locale is unmodellable.
+assertDetectionCoverage(STOPWORDS, NATIVE_SCRIPT);
+
 const norm = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+/** The prose words of a value: markup, syntax and protected technical terms removed. */
+function contentWords(text: string): string[] {
+  return norm(text)
+    .split(/[^a-z]+/)
+    .filter((w) => w.length > 1 && !TECHNICAL_TERMS.has(w));
+}
+
 /** Score how strongly a string looks like each language. Returns the best match, or null. */
-function identify(value: string): { lang: string; score: number } | null {
-  const words = norm(value).split(/[^a-z]+/).filter((w) => w.length > 1);
+function identify(text: string): { lang: string; score: number } | null {
+  const words = contentWords(text);
   if (words.length < 3) return null;
   const set = new Set(words);
   let best: { lang: string; score: number } | null = null;
@@ -117,9 +296,23 @@ export function findCrossLocaleContamination(root: string): Finding[] {
     .filter((d) => fs.statSync(path.join(root, d)).isDirectory())
     .sort();
 
+  // Cross-check the tree against the DECLARED locale set, in both directions. Deriving
+  // the universe from readdirSync alone is how a gate ends up quietly scanning whatever
+  // happens to be on disk: a stray directory gets judged with no detection data, and a
+  // declared locale with no directory gets scanned zero times and reports nothing.
+  for (const locale of locales) {
+    if (!isSiteLocale(locale)) throw new UnknownLocaleDirError(locale, root);
+  }
+  const present = new Set(locales);
+  const absent = SITE_LOCALES.filter((l) => !present.has(l));
+  if (absent.length > 0) throw new MissingLocaleDirError([...absent], root);
+
   const findings: Finding[] = [];
   for (const locale of locales) {
-    if (locale === SOURCE_LOCALE || !STOPWORDS[locale]) continue;
+    if (locale === SOURCE_LOCALE) continue;
+    // Coverage itself was asserted at startup against @rediacc/locales, so by here every
+    // site locale has one instrument or the other and there is no skip left to take.
+    const native = NATIVE_SCRIPT[locale];
     for (const file of fs.readdirSync(path.join(root, locale))) {
       if (!file.endsWith('.json')) continue;
       let flat: Record<string, string>;
@@ -134,16 +327,23 @@ export function findCrossLocaleContamination(root: string): Finding[] {
       }
       for (const [key, value] of Object.entries(flat)) {
         if (value.length < MIN_LENGTH) continue;
-        const id = identify(value);
-        // Only report when another language's function words are present AND this
-        // locale's own are not — two clear signals, so a shared loanword cannot trip it.
+        const text = stripNonLanguage(value);
+        const id = identify(text);
+        // SIGNAL ONE, for every locale: another language's function words are present.
+        // Two of them, so a single shared loanword cannot trip it.
         if (!id || id.lang === locale || id.score < 2) continue;
-        // Require the locale's OWN discriminative words to be entirely absent. Two
-        // independent signals — foreign words present, native words absent — is what keeps
-        // a shared loanword or a cognate from tripping the gate.
-        const words = new Set(norm(value).split(/[^a-z]+/));
-        const own = [...(DISCRIMINATIVE[locale] ?? [])].filter((w) => words.has(norm(w))).length;
-        if (own > 0) continue;
+        // SIGNAL TWO, chosen per script. Both forms answer the same question — "is any
+        // of this locale's own language actually here?" — and requiring the answer to be
+        // no is what keeps a cognate, a loanword or a Latin product name from firing.
+        if (native) {
+          // A value written in the locale's own script is a translation into it, whatever
+          // Latin words it also carries. A Chinese string naming "Rediacc" is Chinese.
+          if (native.test(text)) continue;
+        } else {
+          const words = new Set(norm(text).split(/[^a-z]+/));
+          const own = [...(DISCRIMINATIVE[locale] ?? [])].filter((w) => words.has(norm(w))).length;
+          if (own > 0) continue;
+        }
         findings.push({
           root,
           locale,
@@ -167,41 +367,138 @@ function selftest(): void {
       failures.push(name);
     }
   };
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'i18n-cross-'));
-  const write = (l: string, o: unknown) => {
-    fs.mkdirSync(path.join(root, l), { recursive: true });
-    fs.writeFileSync(path.join(root, l, 'app.json'), JSON.stringify(o));
-  };
 
   const GERMAN = 'Bitte wählen Sie eine Option aus der Liste';
   const FRENCH = 'Veuillez choisir une option dans la liste pour vous';
   const SPANISH = 'Por favor elija una de las opciones para este cliente';
   const PORTUGUESE = 'Por favor escolha uma das opcoes para este cliente';
+  const ENGLISH = 'Please choose an option from the list of machines';
 
-  // The real bug: German text sitting in the French file.
-  write('en', { pick: 'Please choose an option from the list' });
-  write('de', { pick: GERMAN });
+  /**
+   * One fixture carrying ALL THIRTEEN site locales, correctly translated.
+   *
+   * It has to be all thirteen: the gate now cross-checks the tree against
+   * `@rediacc/locales` in both directions, so a fixture holding five locales is a
+   * MissingLocaleDirError rather than a scan. That is the property under test, not an
+   * inconvenience — a partial tree is exactly the shape that used to scan nothing and
+   * report a checkmark.
+   */
+  const CLEAN: Record<string, string> = {
+    en: ENGLISH,
+    de: GERMAN,
+    es: SPANISH,
+    fr: FRENCH,
+    ja: 'リストからマシンを選択してください',
+    ar: 'الرجاء اختيار خيار من قائمة الأجهزة',
+    ru: 'Пожалуйста, выберите вариант из списка машин',
+    tr: 'Lütfen makine listesinden bir seçenek seçin',
+    zh: '请从机器列表中选择一个选项',
+    et: 'Palun vali nimekirjast üks masin, kõik seaded salvestatakse',
+    ko: '목록에서 시스템을 선택하십시오',
+    pt: PORTUGUESE,
+    it: 'Si prega di scegliere una delle opzioni per questo cliente',
+  };
+
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'i18n-cross-'));
+  const write = (l: string, o: unknown) => {
+    fs.mkdirSync(path.join(root, l), { recursive: true });
+    fs.writeFileSync(path.join(root, l, 'app.json'), JSON.stringify(o));
+  };
+  const reseed = () => {
+    for (const [l, v] of Object.entries(CLEAN)) write(l, { pick: v });
+  };
+  const pairs = () => findCrossLocaleContamination(root).map((f) => `${f.locale}<-${f.detected}`);
+
+  reseed();
+  check('all thirteen site locales, correctly translated, report nothing (control)',
+    findCrossLocaleContamination(root).length, 0);
+
+  // ---------------------------------------------------------------------------------
+  // Latin-script detection: function words. The original bug was German in the French
+  // file, invisible to every other gate because it is not English.
+  // ---------------------------------------------------------------------------------
   write('fr', { pick: GERMAN });
-  write('es', { pick: SPANISH });
-  const found = findCrossLocaleContamination(root);
-  check(
-    'detects German text sitting in the French file',
-    found.map((f) => `${f.locale}<-${f.detected}:${f.key}`),
-    ['fr<-de:pick']
-  );
-
-  // Control: correct French must NOT be reported.
-  write('fr', { pick: FRENCH });
-  check('correct French is not reported (control)', findCrossLocaleContamination(root).length, 0);
+  check('German text sitting in the French file is reported', pairs(), ['fr<-de']);
+  reseed();
 
   // Control: es and pt legitimately share near-identical strings. The first version of
-  // this gate reported 136 of these; it must report none.
-  write('pt', { pick: PORTUGUESE });
-  check(
-    'es/pt near-identical strings are not reported (control)',
-    findCrossLocaleContamination(root).filter((f) => f.locale === 'pt' || f.locale === 'es').length,
-    0
+  // this gate reported 136 of these; it must report none. Both are in CLEAN already, so
+  // the clean-tree control above covers it — this pins the specific pair.
+  check('es/pt near-identical strings are not reported (control)',
+    findCrossLocaleContamination(root).filter((f) => f.locale === 'pt' || f.locale === 'es').length, 0);
+
+  write('fr', { pick: ENGLISH });
+  check('English mash in the French file is reported', pairs(), ['fr<-en']);
+  reseed();
+
+  // ---------------------------------------------------------------------------------
+  // Script-evidence detection: the six locales the old `!STOPWORDS[locale] continue`
+  // walked past in silence. Every planted defect below was UNDETECTABLE before this
+  // file grew a second instrument.
+  // ---------------------------------------------------------------------------------
+  write('ja', { pick: GERMAN });
+  check('German planted in the Japanese file is reported', pairs(), ['ja<-de']);
+  reseed();
+
+  write('ru', { pick: ENGLISH });
+  check('English planted in the Russian file is reported', pairs(), ['ru<-en']);
+  reseed();
+
+  // Control for the script signal. A Chinese value naming Latin products IS Chinese, and
+  // a value that is nothing but product syntax carries no function words to score with.
+  // Without both, the script rule would report every brand string in five locales.
+  write('zh', {
+    pick: '请在 Rediacc 控制台中选择 Copy-on-Write 快照',
+    bare: 'Rediacc Copy-on-Write BTRFS',
+  });
+  check('Latin product names inside Chinese are not reported (control)',
+    findCrossLocaleContamination(root).length, 0);
+  reseed();
+
+  // ---------------------------------------------------------------------------------
+  // THE LOCALE SET ITSELF. The universe is @rediacc/locales, never readdirSync and never
+  // the STOPWORDS keys — hand-maintaining an implicit locale set is what produced the
+  // original hole. All three failures below are hard errors, never skips.
+  // ---------------------------------------------------------------------------------
+  const throwsWith = (fn: () => unknown): unknown => {
+    try {
+      fn();
+      return null;
+    } catch (e) {
+      return e;
+    }
+  };
+
+  write('nl', { pick: 'Kies een optie uit de lijst met machines' });
+  check('a directory that is not a site locale is a hard error',
+    throwsWith(() => findCrossLocaleContamination(root)) instanceof UnknownLocaleDirError, true);
+  fs.rmSync(path.join(root, 'nl'), { recursive: true, force: true });
+
+  fs.rmSync(path.join(root, 'it'), { recursive: true, force: true });
+  const missing = throwsWith(() => findCrossLocaleContamination(root));
+  check('a site locale with no directory is a hard error, not a silent zero-file scan',
+    missing instanceof MissingLocaleDirError && missing.locales.join(',') === 'it', true);
+  reseed();
+
+  // The startup assertion, driven with doctored data so a REAL gap and a TEST gap take
+  // the identical code path. Removing a list must fail; this is the "we shipped a
+  // fourteenth locale and forgot its detection data" case, and it must be red on day one
+  // rather than the next time someone looks at a locale tree.
+  const withoutKorean = Object.fromEntries(
+    Object.entries(NATIVE_SCRIPT).filter(([l]) => l !== 'ko')
   );
+  const gap = throwsWith(() => assertDetectionCoverage(STOPWORDS, withoutKorean));
+  check('a site locale with no detection data is a hard error at startup',
+    gap instanceof UnmodelledLocaleError && gap.locales.join(',') === 'ko', true);
+
+  // A typo in a detection key is silent otherwise: NATIVE_SCRIPT.jp would never match the
+  // `ja` directory, and `ja` would read as covered while being skipped.
+  check('detection data naming a non-site locale is a hard error at startup',
+    throwsWith(() => assertDetectionCoverage({ ...STOPWORDS, nl: ['de', 'het'] }, NATIVE_SCRIPT)) instanceof Error, true);
+
+  // The real data must satisfy the real assertion, or every case above is theatre.
+  check('the shipped detection data covers every non-English site locale',
+    throwsWith(() => assertDetectionCoverage(STOPWORDS, NATIVE_SCRIPT)), null);
 
   fs.rmSync(root, { recursive: true, force: true });
   if (failures.length) {
@@ -236,7 +533,24 @@ function main(): void {
     process.exit(1);
   }
 
-  const findings = roots.flatMap(findCrossLocaleContamination);
+  let findings: Finding[];
+  try {
+    findings = roots.flatMap(findCrossLocaleContamination);
+  } catch (e) {
+    // An unmodelled locale is a defect in THIS gate's coverage, so it gets its own clean
+    // diagnostic rather than a stack trace: the reader has to know which locale, and what
+    // to add, without opening the file.
+    // A locale-set mismatch is a defect in THIS gate's coverage, so it gets a clean
+    // diagnostic rather than a stack trace: the reader has to know which locale and what
+    // to add without opening the file.
+    const known =
+      e instanceof UnknownLocaleDirError ||
+      e instanceof MissingLocaleDirError ||
+      e instanceof UnmodelledLocaleError;
+    if (!known) throw e;
+    console.error(`✗ ${(e as Error).message}`);
+    process.exit(1);
+  }
   if (findings.length === 0) {
     console.log(`✓ No cross-locale contamination across ${roots.length} locale root(s).`);
     return;

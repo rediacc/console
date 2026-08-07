@@ -23,6 +23,41 @@ interface PasswordEnrollResponse {
 }
 
 /**
+ * Turn a 403 from `POST /configs/password-enroll` into an actionable message.
+ *
+ * Six unrelated causes share that status, and only one of them is the passkey
+ * policy that this code used to blame for all of them. The account server sends
+ * them as bare `HTTPException`s, so the envelope is `{"error":"<message>"}` with
+ * NO machine-readable `code` (see private/account/src/middleware/error-handler.ts
+ * and src/middleware/api-token.ts) and `accountServerFetch` therefore leaves
+ * `error.code` undefined. Matching the server's text is the only discriminator
+ * available today; `code` is preferred whenever the server starts sending one.
+ *
+ * Anything unrecognised repeats the server's own words rather than guessing.
+ */
+function describeEnrollForbidden(error: unknown): string {
+  const { code, message } = error as { code?: string; message?: string };
+  const serverMessage = message ?? '';
+
+  if (code === 'REQUIRE_PASSKEY' || serverMessage.includes('requires a passkey')) {
+    return t('commands.config.remote.enable.passwordRequirePasskey');
+  }
+  if (serverMessage.includes('bound to a different IP')) {
+    return t('commands.config.remote.enable.passwordIpBound');
+  }
+  if (serverMessage.includes('Missing required scope')) {
+    return t('commands.config.remote.enable.passwordMissingScope');
+  }
+  if (serverMessage.includes('team is no longer available')) {
+    return t('commands.config.remote.enable.passwordTeamGone');
+  }
+  if (serverMessage.includes('no associated user') || serverMessage.includes('no organization')) {
+    return t('commands.config.remote.enable.passwordTokenNotEnrollable');
+  }
+  return t('commands.config.remote.enable.passwordForbidden', { error: serverMessage });
+}
+
+/**
  * Resolve the config master password for a headless password enrollment.
  * Order mirrors requireMasterPassword: REDIACC_CONFIG_PASSWORD env → interactive
  * prompt. There is nothing to verify it against locally — a wrong password fails
@@ -70,7 +105,7 @@ export async function enablePassword(
   } catch (error) {
     const status = (error as { status?: number }).status;
     if (status === 403) {
-      throw new ValidationError(t('commands.config.remote.enable.passwordRequirePasskey'));
+      throw new ValidationError(describeEnrollForbidden(error));
     }
     if (status === 404) {
       throw new ValidationError(t('commands.config.remote.enable.passwordNoSlot'));

@@ -73,7 +73,6 @@
 //                                 as an artifact. Unset = no capture.
 //
 // Labels (PR context only):
-//   no-cancel-failure  - Skip cancellation on job failure (workflow continues)
 //   no-auto-retry      - Skip AI + retry entirely (force-cancel immediately)
 //
 // Usage (from actions/github-script):
@@ -83,14 +82,16 @@
 // stale CDN download (transient). It is a corrupt build only when no platform's
 // install validation survives it. The classifier prompt says as much, but a
 // prompt is advice; this signature + cross-job check is the enforcement.
-const BINARY_EXEC_FAILURE_RE = /is not a valid application for this OS platform|cannot execute binary file|Exec format error/i;
+const BINARY_EXEC_FAILURE_RE =
+  /is not a valid application for this OS platform|cannot execute binary file|Exec format error/i;
 
-const matchesPatterns = (name, patterns) => patterns.some(p => name.includes(p));
+const matchesPatterns = (name, patterns) => patterns.some((p) => name.includes(p));
 
-// Jobs whose force-cancel `no-cancel-failure` may NOT suppress. Per CLAUDE.md a
-// Review Gate failure means review feedback is outstanding, not that code is
-// broken, so it is never something to label past. Nothing else is immune.
-const LABEL_IMMUNE_PATTERNS = ['Review Gate'];
+// Jobs whose force-cancel fires INSTANTLY, without waiting for the drain below.
+// Per CLAUDE.md a Review Gate failure means review feedback is outstanding, not
+// that code is broken: there is no sibling verdict worth collecting, so holding
+// the run open for one buys nothing. Nothing else skips the drain.
+const NO_DRAIN_PATTERNS = ['Review Gate'];
 
 // Run events the watchdog must never cancel.
 //
@@ -129,11 +130,10 @@ const CANCEL_EXEMPT_EVENTS = ['schedule', 'workflow_dispatch'];
  * noticed, because the run-level rollup said `cancelled`. The individual gate
  * breaks were the symptom; this laundering is why they survived twelve days.
  *
- * WHY NOT THE EXISTING LABEL. `no-cancel-failure` already means "record the
- * failure, do not cancel". It cannot help here: labels live on a PR, and a
- * `schedule` run has no PR, so `prNumber` is null and the label block never
- * runs. The nightly is structurally incapable of wearing the one escape hatch
- * that would have saved it.
+ * WHY IT LIVES IN CODE AND NOT IN A LABEL. Labels are read from the PR, and a
+ * `schedule` run has no PR: `prNumber` is null and the label block never runs.
+ * The nightly is structurally incapable of wearing a PR-side escape hatch, so
+ * the only place this exemption can live is here.
  *
  * FAIL-CLOSED DIRECTION. An unknown or unreadable event is NOT exempt, so it
  * cancels exactly as it does today. The exemption only ever fires on a positive
@@ -220,7 +220,7 @@ async function hasNewerRun({ github, context, run }) {
       branch: run.head_branch,
       per_page: 20,
     });
-    return (data.workflow_runs || []).some(r => r.id !== run.id && r.run_number > run.run_number);
+    return (data.workflow_runs || []).some((r) => r.id !== run.id && r.run_number > run.run_number);
   } catch (e) {
     console.log(`[supersession] newer-run lookup failed, assuming NOT superseded: ${e.message}`);
     return false;
@@ -228,22 +228,28 @@ async function hasNewerRun({ github, context, run }) {
 }
 
 /**
- * Should a failed job force-cancel the run immediately, before any label or
- * retry handling downstream?
+ * Should a failed job force-cancel the run, before any retry handling
+ * downstream?
+ *
+ * A no-retry job (Quality, Review Gate) that genuinely FAILED cancels: a lint
+ * or type error is deterministic, so there is nothing to classify and nothing
+ * to retry. A CANCELLATION of the same job is not a verdict about the code, so
+ * it falls through -- see the branch comment at the call site.
+ *
+ * `noDrain` rides along because the two questions share the pattern lists: a
+ * Review Gate failure cancels the instant it is seen, while everything else
+ * waits for its sibling no-retry lanes to settle so one round reports every
+ * failing lane (see pendingNoRetryJobs).
  *
  * Extracted and exported so the ordering is testable against the REAL
- * WATCHDOG_NO_RETRY_PATTERNS rather than a copy. The bug this replaces was pure
- * ordering: the no-retry branch returned before the `no-cancel-failure` check,
- * and the pattern list is 'Quality,Review Gate', so the label was unreachable
- * for every Quality job -- the entire class it exists for -- while still being
- * detected and logged as honoured. Run 29825013399.
+ * WATCHDOG_NO_RETRY_PATTERNS rather than a copy.
  */
-function evaluateNoRetryCancel({ jobName, isFailure, skipCancellationOnFailure, noRetryPatterns }) {
-  const labelImmune = matchesPatterns(jobName, LABEL_IMMUNE_PATTERNS);
+function evaluateNoRetryCancel({ jobName, isFailure, noRetryPatterns }) {
+  const noDrain = matchesPatterns(jobName, NO_DRAIN_PATTERNS);
   const matchesNoRetry = matchesPatterns(jobName, noRetryPatterns);
   return {
-    cancel: Boolean(isFailure) && matchesNoRetry && (labelImmune || !skipCancellationOnFailure),
-    labelImmune,
+    cancel: Boolean(isFailure) && matchesNoRetry,
+    noDrain,
     matchesNoRetry,
   };
 }
@@ -315,9 +321,7 @@ function evaluateRetryEligibility({
   // install-validation job matches the current allowlist, so this is defence in
   // depth rather than a live conflict, and it stays correct if either list moves.
   const allowlistOverridesVerdict =
-    Boolean(isFailure) &&
-    !guardForced &&
-    matchesPatterns(jobName, retryAllowlistPatterns || []);
+    Boolean(isFailure) && !guardForced && matchesPatterns(jobName, retryAllowlistPatterns || []);
 
   if (classification === 'code-change' && confidence >= threshold) {
     if (allowlistOverridesVerdict) {
@@ -366,13 +370,13 @@ function evaluateRetryEligibility({
   const allowlisted = matchesPatterns(jobName, retryAllowlistPatterns || []);
   return allowlisted
     ? {
-      retry: true,
-      reason: `classifier unavailable, but "${jobName}" is on the known-flaky retry allowlist (boots VMs or pulls images), so one retry is warranted`,
-    }
+        retry: true,
+        reason: `classifier unavailable, but "${jobName}" is on the known-flaky retry allowlist (boots VMs or pulls images), so one retry is warranted`,
+      }
     : {
-      retry: false,
-      reason: `classifier unavailable and "${jobName}" is not on the known-flaky retry allowlist -- failing fast rather than retrying blind`,
-    };
+        retry: false,
+        reason: `classifier unavailable and "${jobName}" is not on the known-flaky retry allowlist -- failing fast rather than retrying blind`,
+      };
 }
 
 /**
@@ -392,17 +396,19 @@ function evaluateRetryEligibility({
  * state. The expensive jobs the cancel exists to stop -- the E2E and OPS legs --
  * are not in this set, so they still die at the same moment they used to.
  *
- * Label-immune jobs (Review Gate) are excluded: CLAUDE.md specifies those fail
- * immediately, full stop, and an outstanding review is not something to wait on.
+ * NO_DRAIN_PATTERNS jobs (Review Gate) are excluded: CLAUDE.md specifies those
+ * fail immediately, full stop, and an outstanding review is not something to
+ * wait on.
  *
  * Pure so the ordering is testable against the REAL pattern list.
  */
 function pendingNoRetryJobs({ jobs, noRetryPatterns, excludePatterns = [] }) {
-  return jobs.filter(j =>
-    j.status !== 'completed' &&
-    !excludePatterns.some(p => j.name.includes(p)) &&
-    matchesPatterns(j.name, noRetryPatterns) &&
-    !matchesPatterns(j.name, LABEL_IMMUNE_PATTERNS)
+  return jobs.filter(
+    (j) =>
+      j.status !== 'completed' &&
+      !excludePatterns.some((p) => j.name.includes(p)) &&
+      matchesPatterns(j.name, noRetryPatterns) &&
+      !matchesPatterns(j.name, NO_DRAIN_PATTERNS)
   );
 }
 
@@ -422,10 +428,9 @@ function formatFailureRoster(failedJobs, { owner, repo, runId }) {
     lines.push(`  ✗ "${j.name}"${j.id ? `  ${jobUrl(j)}` : ''}`);
   }
   lines.push('#'.repeat(70));
-  const names = failedJobs.map(j => `"${j.name}"`).join(', ');
-  const summary = failedJobs.length === 1
-    ? `Job failed: ${names}`
-    : `${failedJobs.length} jobs failed: ${names}`;
+  const names = failedJobs.map((j) => `"${j.name}"`).join(', ');
+  const summary =
+    failedJobs.length === 1 ? `Job failed: ${names}` : `${failedJobs.length} jobs failed: ${names}`;
   return { lines, summary };
 }
 
@@ -438,24 +443,36 @@ function evaluateBinaryExecGuard({ job, logTail, jobs, installPatterns }) {
   if (!installPatterns.length || !matchesPatterns(job.name, installPatterns)) return null;
   if (!logTail || !BINARY_EXEC_FAILURE_RE.test(logTail)) return null;
 
-  const installJobs = jobs.filter(j => matchesPatterns(j.name, installPatterns));
+  const installJobs = jobs.filter((j) => matchesPatterns(j.name, installPatterns));
 
-  const passed = installJobs.filter(j => j.conclusion === 'success');
+  const passed = installJobs.filter((j) => j.conclusion === 'success');
   if (passed.length > 0) {
-    return { override: false, reason: `binary-exec failure in "${job.name}", but ${passed.length} install-validation job(s) passed (${passed.map(j => j.name).join(', ')}) -- the build executes elsewhere, treating as a download flake` };
+    return {
+      override: false,
+      reason: `binary-exec failure in "${job.name}", but ${passed.length} install-validation job(s) passed (${passed.map((j) => j.name).join(', ')}) -- the build executes elsewhere, treating as a download flake`,
+    };
   }
 
-  const unfinished = installJobs.filter(j => j.status !== 'completed');
+  const unfinished = installJobs.filter((j) => j.status !== 'completed');
   if (unfinished.length > 0) {
-    return { defer: true, reason: `binary-exec failure in "${job.name}", but ${unfinished.length} install-validation job(s) have not finished (${unfinished.map(j => j.name).join(', ')}) -- deferring until the matrix settles` };
+    return {
+      defer: true,
+      reason: `binary-exec failure in "${job.name}", but ${unfinished.length} install-validation job(s) have not finished (${unfinished.map((j) => j.name).join(', ')}) -- deferring until the matrix settles`,
+    };
   }
 
-  const nonFailures = installJobs.filter(j => j.conclusion !== 'failure');
+  const nonFailures = installJobs.filter((j) => j.conclusion !== 'failure');
   if (nonFailures.length > 0) {
-    return { override: false, reason: `binary-exec failure in "${job.name}", but ${nonFailures.length} install-validation job(s) did not fail (${nonFailures.map(j => `${j.name}=${j.conclusion}`).join(', ')})` };
+    return {
+      override: false,
+      reason: `binary-exec failure in "${job.name}", but ${nonFailures.length} install-validation job(s) did not fail (${nonFailures.map((j) => `${j.name}=${j.conclusion}`).join(', ')})`,
+    };
   }
 
-  return { override: true, reason: `every install-validation job (${installJobs.length}) failed to execute the downloaded binary -- corrupt cross-platform build, not a CDN flake` };
+  return {
+    override: true,
+    reason: `every install-validation job (${installJobs.length}) failed to execute the downloaded binary -- corrupt cross-platform build, not a CDN flake`,
+  };
 }
 
 const monitor = async ({ github, context, core }) => {
@@ -481,7 +498,8 @@ const monitor = async ({ github, context, core }) => {
   // module runnable un-chained against its own run, which is what the gate
   // tests and any ad-hoc github-script invocation exercise.
   const targetRunId = Number(process.env.WATCHDOG_TARGET_RUN_ID || 0) || context.runId;
-  const prNumber = Number(process.env.WATCHDOG_PR_NUMBER || 0) || context.payload.pull_request?.number || null;
+  const prNumber =
+    Number(process.env.WATCHDOG_PR_NUMBER || 0) || context.payload.pull_request?.number || null;
   const deadlineMs = Number(process.env.WATCHDOG_DEADLINE_SECONDS || 0) * 1000;
   // How long a quality force-cancel may be held while its siblings drain.
   // 90s catches a near-simultaneous second failure (the roster the drain
@@ -490,39 +508,51 @@ const monitor = async ({ github, context, core }) => {
   let pendingRerun = process.env.WATCHDOG_PENDING_RERUN === 'true';
   const skipRerun = process.env.WATCHDOG_SKIP_RERUN === 'true';
 
-  const pollInterval = 30000;  // 30 seconds (was 15s; halved API quota per generation)
+  const pollInterval = 30000; // 30 seconds (was 15s; halved API quota per generation)
   const maxRuntime = 10800000; // 3 hours
-  const minRuntime = 30000;    // 30 seconds minimum before allowing exit
+  const minRuntime = 30000; // 30 seconds minimum before allowing exit
   const startTime = Date.now();
 
   const MAX_ATTEMPTS = 2;
 
   // Grace period: wait N consecutive polls with all jobs complete before exiting.
   // Prevents premature exit during partial reruns where new jobs haven't appeared yet.
-  const GRACE_POLLS = 3;     // 3 polls × 30s = 90 seconds grace period
+  const GRACE_POLLS = 3; // 3 polls × 30s = 90 seconds grace period
   let allCompleteStreak = 0;
 
   // Jobs to exclude from monitoring (required env var)
-  if (!process.env.WATCHDOG_EXCLUDE_PATTERNS || !process.env.WATCHDOG_NO_RETRY_PATTERNS || !process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS) {
-    throw new Error('WATCHDOG_EXCLUDE_PATTERNS, WATCHDOG_NO_RETRY_PATTERNS and WATCHDOG_INSTALL_VALIDATION_PATTERNS env vars are required');
+  if (
+    !process.env.WATCHDOG_EXCLUDE_PATTERNS ||
+    !process.env.WATCHDOG_NO_RETRY_PATTERNS ||
+    !process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS
+  ) {
+    throw new Error(
+      'WATCHDOG_EXCLUDE_PATTERNS, WATCHDOG_NO_RETRY_PATTERNS and WATCHDOG_INSTALL_VALIDATION_PATTERNS env vars are required'
+    );
   }
   // Required too, and deliberately so: defaulting it would let a config drift
   // silently restore retry-everything, which is the behaviour issue #537 is
   // about. Missing config must be loud, not permissive.
   if (!process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS) {
-    throw new Error('WATCHDOG_RETRY_ALLOWLIST_PATTERNS env var is required (see evaluateRetryEligibility)');
+    throw new Error(
+      'WATCHDOG_RETRY_ALLOWLIST_PATTERNS env var is required (see evaluateRetryEligibility)'
+    );
   }
-  const excludePatterns = process.env.WATCHDOG_EXCLUDE_PATTERNS.split(',').map(s => s.trim());
+  const excludePatterns = process.env.WATCHDOG_EXCLUDE_PATTERNS.split(',').map((s) => s.trim());
 
   // Jobs that should not trigger auto-retry (failures are never transient)
-  const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map(s => s.trim());
+  const noRetryPatterns = process.env.WATCHDOG_NO_RETRY_PATTERNS.split(',').map((s) => s.trim());
 
   // Jobs that download and execute a released binary; subject to the binary-exec guard
-  const installValidationPatterns = process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS.split(',').map(s => s.trim()).filter(Boolean);
+  const installValidationPatterns = process.env.WATCHDOG_INSTALL_VALIDATION_PATTERNS.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   // Jobs whose failures may still be retried when the classifier cannot speak.
   // See evaluateRetryEligibility.
-  const retryAllowlistPatterns = process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS.split(',').map(s => s.trim()).filter(Boolean);
+  const retryAllowlistPatterns = process.env.WATCHDOG_RETRY_ALLOWLIST_PATTERNS.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   // Track jobs already handled to avoid re-logging the same failure every poll
   const handledJobs = new Set();
@@ -563,7 +593,7 @@ const monitor = async ({ github, context, core }) => {
       await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs', {
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: targetRunId
+        run_id: targetRunId,
       });
       console.log(`Rerun of failed jobs triggered for run ${targetRunId}`);
       return true;
@@ -657,10 +687,14 @@ const monitor = async ({ github, context, core }) => {
       // Job names carry slashes, spaces and parentheses ("Tests + Infra / E2E
       // Workers (opensuse-16.0)"), none of which belong in a filename. The id
       // keeps it unique when two legs sanitise to the same string.
-      const safeName = String(job.name).replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120);
+      const safeName = String(job.name)
+        .replace(/[^A-Za-z0-9._-]+/g, '_')
+        .slice(0, 120);
       const file = path.join(LOG_CAPTURE_DIR, `${safeName}-${job.id}.log`);
       fs.writeFileSync(file, fullText);
-      console.log(`[logs] captured the full log for "${job.name}" (${fullText.length} bytes) before any retry`);
+      console.log(
+        `[logs] captured the full log for "${job.name}" (${fullText.length} bytes) before any retry`
+      );
     } catch (e) {
       console.log(`[logs] could not capture the log for "${job.name}": ${e.message}`);
     }
@@ -674,9 +708,15 @@ const monitor = async ({ github, context, core }) => {
         job_id: job.id,
       });
       const lines = String(response.data).split('\n');
-      // Strip timestamp prefixes and ANSI escape codes
-      const stripped = lines.map(l =>
-        l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(/\x1b\[[0-9;]*m/g, '')
+      // Strip timestamp prefixes and ANSI escape codes.
+      // ESC is built from its char code rather than written literally: a raw
+      // control character in a regex is what no-control-regex exists to catch,
+      // and spelling it out keeps the rule ENABLED for the accidental cases.
+      // Same shape as packages/www/scripts/validate-tutorial-cast-output.js.
+      const ESC = String.fromCharCode(0x1b);
+      const ANSI_SGR_RE = new RegExp(`${ESC}\\[[0-9;]*m`, 'g');
+      const stripped = lines.map((l) =>
+        l.replace(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z\s?/, '').replace(ANSI_SGR_RE, '')
       );
       // Persist the WHOLE log, not the excerpt below. The excerpt is tuned for
       // the classifier's context window; a human debugging afterwards wants
@@ -693,9 +733,11 @@ const monitor = async ({ github, context, core }) => {
       // cleanup). Consecutive ##[error] lines belong to the same annotation.
       // No marker (rare) falls back to the tail. The binary-exec guard reads
       // this same excerpt, so the anchor un-blinds it too.
-      let end = stripped.findIndex(l => l.startsWith('##[error]'));
+      let end = stripped.findIndex((l) => l.startsWith('##[error]'));
       if (end >= 0) {
-        do { end++; } while (end < stripped.length && stripped[end].startsWith('##[error]'));
+        do {
+          end++;
+        } while (end < stripped.length && stripped[end].startsWith('##[error]'));
       } else {
         end = stripped.length;
       }
@@ -724,14 +766,18 @@ const monitor = async ({ github, context, core }) => {
   // tier) rather than as a low-confidence one.
   function parseClassifierVerdict(rawText) {
     try {
-      const cleaned = String(rawText).trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const cleaned = String(rawText)
+        .trim()
+        .replace(/^```(?:json)?\n?/, '')
+        .replace(/\n?```$/, '');
       const parsed = JSON.parse(cleaned);
       if (!['transient', 'code-change'].includes(parsed.classification)) return null;
-      if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1) return null;
+      if (typeof parsed.confidence !== 'number' || parsed.confidence < 0 || parsed.confidence > 1)
+        return null;
       return {
         classification: parsed.classification,
         confidence: parsed.confidence,
-        reason: String(parsed.reason || '').slice(0, 200)
+        reason: String(parsed.reason || '').slice(0, 200),
       };
     } catch {
       return null;
@@ -754,22 +800,24 @@ const monitor = async ({ github, context, core }) => {
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         // No `model` field: the /ai/run route names the model in the URL, unlike
         // the OpenAI-compatible /ai/v1 route this used to call.
         body: JSON.stringify({
           messages: [
             { role: 'system', content: systemPrompt },
-            { role: 'user', content: logTail }
+            { role: 'user', content: logTail },
           ],
           max_tokens: AI_MAX_TOKENS,
-          temperature: 0.1
+          temperature: 0.1,
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeout);
       if (!response.ok) {
-        console.log(`[AI] Cloudflare classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
+        console.log(
+          `[AI] Cloudflare classifier returned HTTP ${response.status}: ${await errorBody(response)}`
+        );
         return null;
       }
       const data = await response.json();
@@ -787,7 +835,9 @@ const monitor = async ({ github, context, core }) => {
         console.log(`[AI] Cloudflare unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
         return null;
       }
-      return parseClassifierVerdict(typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse));
+      return parseClassifierVerdict(
+        typeof aiResponse === 'string' ? aiResponse : JSON.stringify(aiResponse)
+      );
     } catch (e) {
       clearTimeout(timeout);
       console.log(`[AI] Cloudflare ${e.name === 'AbortError' ? 'request timed out' : e.message}`);
@@ -817,7 +867,7 @@ const monitor = async ({ github, context, core }) => {
 
     const headers = {
       'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
+      'anthropic-version': '2023-06-01',
     };
     if (apiKey) {
       headers['x-api-key'] = apiKey;
@@ -837,19 +887,24 @@ const monitor = async ({ github, context, core }) => {
           max_tokens: AI_MAX_TOKENS,
           temperature: 0.1,
           system: systemPrompt,
-          messages: [{ role: 'user', content: logTail }]
+          messages: [{ role: 'user', content: logTail }],
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
       clearTimeout(timeout);
       if (!response.ok) {
-        console.log(`[AI] Claude classifier returned HTTP ${response.status}: ${await errorBody(response)}`);
+        console.log(
+          `[AI] Claude classifier returned HTTP ${response.status}: ${await errorBody(response)}`
+        );
         return null;
       }
       const data = await response.json();
       // Messages API shape: content is a list of blocks; take the text ones.
       const text = Array.isArray(data.content)
-        ? data.content.filter(b => b && b.type === 'text').map(b => b.text).join('')
+        ? data.content
+            .filter((b) => b && b.type === 'text')
+            .map((b) => b.text)
+            .join('')
         : '';
       if (!text) {
         console.log(`[AI] Claude unexpected response: ${JSON.stringify(data).slice(0, 200)}`);
@@ -889,7 +944,7 @@ const monitor = async ({ github, context, core }) => {
   // provider, which is worse than having no label at all.
   const CLASSIFIER_PROVIDERS = [
     { name: `cloudflare/${AI_MODEL}`, call: callCloudflareClassifier },
-    { name: 'anthropic/claude', call: callClaudeClassifier }
+    { name: 'anthropic/claude', call: callClaudeClassifier },
   ];
 
   async function callClassifierModel(logTail) {
@@ -899,7 +954,9 @@ const monitor = async ({ github, context, core }) => {
     for (const provider of CLASSIFIER_PROVIDERS) {
       const verdict = await provider.call(logTail, systemPrompt);
       if (verdict) {
-        console.log(`[AI] verdict from ${provider.name}: ${verdict.classification} (${verdict.confidence})`);
+        console.log(
+          `[AI] verdict from ${provider.name}: ${verdict.classification} (${verdict.confidence})`
+        );
         return { ...verdict, provider: provider.name };
       }
       console.log(`[AI] ${provider.name} did not answer; trying the next tier`);
@@ -912,10 +969,16 @@ const monitor = async ({ github, context, core }) => {
   // Only install-validation jobs can trigger the guard, so no other job pays
   // for a log fetch here.
   async function evaluateGuard(job, jobs) {
-    if (!installValidationPatterns.length || !matchesPatterns(job.name, installValidationPatterns)) return null;
+    if (!installValidationPatterns.length || !matchesPatterns(job.name, installValidationPatterns))
+      return null;
     const logTail = await getLogTail(job);
     if (!logTail) return null;
-    return evaluateBinaryExecGuard({ job, logTail, jobs, installPatterns: installValidationPatterns });
+    return evaluateBinaryExecGuard({
+      job,
+      logTail,
+      jobs,
+      installPatterns: installValidationPatterns,
+    });
   }
 
   async function classifyFailure(job, guard) {
@@ -935,13 +998,16 @@ const monitor = async ({ github, context, core }) => {
     if (!logTail) return { ...fallback, reason: 'no job log available to classify' };
 
     const ai = await callClassifierModel(logTail);
-    if (!ai) console.log(`[AI] Classification failed for "${job.name}" -- the classifier did not answer`);
+    if (!ai)
+      console.log(`[AI] Classification failed for "${job.name}" -- the classifier did not answer`);
     const result = ai ? { ...ai, classifierAvailable: true } : fallback;
 
     if (guard) {
       console.log(`[guard] ${guard.reason}`);
       if (guard.override) {
-        console.log(`[guard] Overriding "${result.classification}" (${result.confidence}) with code-change -- no retry`);
+        console.log(
+          `[guard] Overriding "${result.classification}" (${result.confidence}) with code-change -- no retry`
+        );
         // The guard is a deterministic cross-job check, not a model call, so it
         // counts as an available verdict even when the classifier was down.
         // guardForced marks this verdict as SYNTHESISED by a deterministic
@@ -950,7 +1016,13 @@ const monitor = async ({ github, context, core }) => {
         // 2026-07-30) but must never override this one, so the distinction has
         // to travel with the verdict rather than be inferred from confidence:
         // a real classifier can also answer 1.0.
-        return { classification: 'code-change', confidence: 1, reason: guard.reason, classifierAvailable: true, guardForced: true };
+        return {
+          classification: 'code-change',
+          confidence: 1,
+          reason: guard.reason,
+          classifierAvailable: true,
+          guardForced: true,
+        };
       }
     }
     return result;
@@ -963,7 +1035,9 @@ const monitor = async ({ github, context, core }) => {
     console.log('='.repeat(70));
     console.log(msg);
     if (job.id) {
-      console.log(`   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${targetRunId}/job/${job.id}`);
+      console.log(
+        `   Job URL: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${targetRunId}/job/${job.id}`
+      );
     }
     console.log(`   Run attempt: ${runAttempt}/${MAX_ATTEMPTS}`);
     console.log('='.repeat(70));
@@ -993,10 +1067,10 @@ const monitor = async ({ github, context, core }) => {
       const jobsNow = await github.paginate(
         github.rest.actions.listJobsForWorkflowRun,
         { owner: context.repo.owner, repo: context.repo.repo, run_id: targetRunId, per_page: 100 },
-        response => response.data
+        (response) => response.data
       );
-      const failedNow = jobsNow.filter(j =>
-        j.conclusion === 'failure' && !excludePatterns.some(p => j.name.includes(p))
+      const failedNow = jobsNow.filter(
+        (j) => j.conclusion === 'failure' && !excludePatterns.some((p) => j.name.includes(p))
       );
       if (failedNow.length > 0) {
         const { lines, summary } = formatFailureRoster(failedNow, {
@@ -1009,14 +1083,16 @@ const monitor = async ({ github, context, core }) => {
         failureMsg = summary;
       }
     } catch (e) {
-      console.log(`Warning: could not build the full failure roster (${e.message}); reporting the driving job only.`);
+      console.log(
+        `Warning: could not build the full failure roster (${e.message}); reporting the driving job only.`
+      );
     }
 
     // The cancel-exemption check sits AFTER the roster build (an exempt run
     // still gets the full "here is everything that failed" banner) and BEFORE
     // the critical-job drain (there is nothing to drain for if nothing is being
     // cancelled). This is the single chokepoint: all five call sites route
-    // through forceCancel, including the label-immune Review Gate path, so the
+    // through forceCancel, including the no-drain Review Gate path, so the
     // exemption cannot be bypassed by adding a sixth.
     const exemption = evaluateCancelExemption({ runEvent: targetRunEvent });
     if (exemption.exempt) {
@@ -1025,12 +1101,17 @@ const monitor = async ({ github, context, core }) => {
       console.log(`NOT cancelling run ${targetRunId}: ${exemption.reason}`);
       console.log('Leaving the run to finish so GitHub reports its true conclusion.');
       console.log('#'.repeat(70));
-      core.setFailed('PIPELINE FAILED (run left uncancelled so it concludes as "failure"): ' + failureMsg);
+      core.setFailed(
+        'PIPELINE FAILED (run left uncancelled so it concludes as "failure"): ' + failureMsg
+      );
       return false;
     }
 
     const waitPatternsRaw = process.env.WATCHDOG_WAIT_PATTERNS || '';
-    const waitPatterns = waitPatternsRaw.split(',').map(s => s.trim()).filter(Boolean);
+    const waitPatterns = waitPatternsRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     if (waitPatterns.length > 0) {
       const maxWait = 300000; // 5 minutes
@@ -1041,20 +1122,27 @@ const monitor = async ({ github, context, core }) => {
         try {
           const allJobs = await github.paginate(
             github.rest.actions.listJobsForWorkflowRun,
-            { owner: context.repo.owner, repo: context.repo.repo, run_id: targetRunId, per_page: 100 },
-            response => response.data
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: targetRunId,
+              per_page: 100,
+            },
+            (response) => response.data
           );
-          const criticalRunning = allJobs.filter(j =>
-            j.status === 'in_progress' && waitPatterns.some(p => j.name.includes(p))
+          const criticalRunning = allJobs.filter(
+            (j) => j.status === 'in_progress' && waitPatterns.some((p) => j.name.includes(p))
           );
           if (criticalRunning.length === 0) break;
           const elapsed = Math.round((Date.now() - waitStart) / 1000);
-          console.log(`Waiting for critical jobs (${elapsed}s): ${criticalRunning.map(j => j.name).join(', ')}`);
+          console.log(
+            `Waiting for critical jobs (${elapsed}s): ${criticalRunning.map((j) => j.name).join(', ')}`
+          );
         } catch (e) {
           console.log(`Warning: failed to check critical jobs: ${e.message}`);
           break; // Don't block cancellation on API errors
         }
-        await new Promise(r => setTimeout(r, waitPoll));
+        await new Promise((r) => setTimeout(r, waitPoll));
       }
     }
 
@@ -1063,7 +1151,7 @@ const monitor = async ({ github, context, core }) => {
       await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/force-cancel', {
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: targetRunId
+        run_id: targetRunId,
       });
     } catch (e) {
       // Fallback to regular cancel if force-cancel not available
@@ -1071,35 +1159,32 @@ const monitor = async ({ github, context, core }) => {
       await github.rest.actions.cancelWorkflowRun({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: targetRunId
+        run_id: targetRunId,
       });
     }
     core.setFailed('PIPELINE CANCELLED: ' + failureMsg);
     return true;
   }
 
-  // Check for skip-cancellation and skip-auto-retry labels.
+  // Check for the skip-auto-retry label.
   // Labels are fetched LIVE from the API: the event payload's label list is
   // frozen at the event that created the run, so a label added afterwards
-  // (e.g. no-cancel-failure added right before rerunning failed jobs) would
-  // be invisible in context.payload and silently ignored.
-  let skipCancellationOnFailure = false;
+  // (e.g. no-auto-retry added right before rerunning failed jobs) would be
+  // invisible in context.payload and silently ignored.
   let skipAutoRetry = false;
   if (prNumber) {
-    let labels = context.payload.pull_request?.labels.map(l => l.name) || [];
+    let labels = context.payload.pull_request?.labels.map((l) => l.name) || [];
     try {
       const liveLabels = await github.rest.issues.listLabelsOnIssue({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        issue_number: prNumber
+        issue_number: prNumber,
       });
-      labels = liveLabels.data.map(l => l.name);
+      labels = liveLabels.data.map((l) => l.name);
     } catch (e) {
-      console.log(`Could not fetch live PR labels (${e.message}) - falling back to event payload labels`);
-    }
-    skipCancellationOnFailure = labels.includes('no-cancel-failure');
-    if (skipCancellationOnFailure) {
-      console.log('Label "no-cancel-failure" detected - will not cancel on job failures');
+      console.log(
+        `Could not fetch live PR labels (${e.message}) - falling back to event payload labels`
+      );
     }
     skipAutoRetry = labels.includes('no-auto-retry');
     if (skipAutoRetry) {
@@ -1117,7 +1202,9 @@ const monitor = async ({ github, context, core }) => {
   }
 
   console.log('Watchdog started - monitoring jobs for failures...');
-  console.log(`Target run: ${targetRunId}${deadlineMs ? ` | generation deadline: ${deadlineMs / 60000}m` : ''}`);
+  console.log(
+    `Target run: ${targetRunId}${deadlineMs ? ` | generation deadline: ${deadlineMs / 60000}m` : ''}`
+  );
   console.log(`Exclude patterns: ${excludePatterns.join(', ')}`);
   console.log(`No-retry patterns: ${noRetryPatterns.join(', ')}`);
   console.log(`Install-validation patterns: ${installValidationPatterns.join(', ')}`);
@@ -1132,7 +1219,9 @@ const monitor = async ({ github, context, core }) => {
     if (!j.started_at || !j.completed_at) return 0;
     return Math.round((new Date(j.completed_at) - new Date(j.started_at)) / 60000);
   };
-  console.log(`Stuck-threshold: ${STUCK_THRESHOLD_MIN}m (cancellations after this are not retried)`);
+  console.log(
+    `Stuck-threshold: ${STUCK_THRESHOLD_MIN}m (cancellations after this are not retried)`
+  );
 
   while (Date.now() - startTime < maxRuntime) {
     const elapsed = Date.now() - startTime;
@@ -1142,7 +1231,9 @@ const monitor = async ({ github, context, core }) => {
     // kill this job mid-decision. Reaching here means no terminal path fired
     // (those all return without the output), so the run is still live.
     if (deadlineMs && elapsed >= deadlineMs) {
-      console.log(`[${elapsedMin}m] Generation deadline reached with the run still live - handing off to the next watchdog generation${pendingRerun ? ' (rerun still pending)' : ''}`);
+      console.log(
+        `[${elapsedMin}m] Generation deadline reached with the run still live - handing off to the next watchdog generation${pendingRerun ? ' (rerun still pending)' : ''}`
+      );
       core.setOutput('continue', 'true');
       core.setOutput('pending_rerun', pendingRerun ? 'true' : 'false');
       return;
@@ -1154,7 +1245,7 @@ const monitor = async ({ github, context, core }) => {
       ({ data: run } = await github.rest.actions.getWorkflowRun({
         owner: context.repo.owner,
         repo: context.repo.repo,
-        run_id: targetRunId
+        run_id: targetRunId,
       }));
       // Refreshed every poll rather than captured once: a rerun keeps the same
       // run id and the same event, so this is stable, but re-reading it means
@@ -1163,62 +1254,80 @@ const monitor = async ({ github, context, core }) => {
 
       if (!announcedExemption && evaluateCancelExemption({ runEvent: targetRunEvent }).exempt) {
         announcedExemption = true;
-        console.log(`Run event "${targetRunEvent}" is cancel-exempt - failures are recorded and the run is left to conclude on its own`);
+        console.log(
+          `Run event "${targetRunEvent}" is cancel-exempt - failures are recorded and the run is left to conclude on its own`
+        );
       }
 
-      allJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
-        owner: context.repo.owner,
-        repo: context.repo.repo,
-        run_id: targetRunId,
-        per_page: 100
-      }, response => response.data);
+      allJobs = await github.paginate(
+        github.rest.actions.listJobsForWorkflowRun,
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          run_id: targetRunId,
+          per_page: 100,
+        },
+        (response) => response.data
+      );
     } catch (e) {
       console.log(`[${elapsedMin}m] API error (will retry next poll): ${e.message}`);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
       continue;
     }
 
     // Filter out excluded jobs
-    const monitoredJobs = allJobs.filter(j =>
-      !excludePatterns.some(pattern => j.name.includes(pattern))
+    const monitoredJobs = allJobs.filter(
+      (j) => !excludePatterns.some((pattern) => j.name.includes(pattern))
     );
 
-    const completed = monitoredJobs.filter(j => j.status === 'completed');
-    const inProgress = monitoredJobs.filter(j => j.status === 'in_progress');
-    const queued = monitoredJobs.filter(j => j.status === 'queued');
-    const failed = monitoredJobs.filter(j => j.conclusion === 'failure');
-    const cancelled = monitoredJobs.filter(j => j.conclusion === 'cancelled');
+    const completed = monitoredJobs.filter((j) => j.status === 'completed');
+    const inProgress = monitoredJobs.filter((j) => j.status === 'in_progress');
+    const queued = monitoredJobs.filter((j) => j.status === 'queued');
+    const failed = monitoredJobs.filter((j) => j.conclusion === 'failure');
+    const cancelled = monitoredJobs.filter((j) => j.conclusion === 'cancelled');
 
-    console.log(`[${elapsedMin}m] Run: ${run.status} | Jobs: ${completed.length} done, ${inProgress.length} running, ${queued.length} queued, ${failed.length} failed, ${cancelled.length} cancelled`);
+    console.log(
+      `[${elapsedMin}m] Run: ${run.status} | Jobs: ${completed.length} done, ${inProgress.length} running, ${queued.length} queued, ${failed.length} failed, ${cancelled.length} cancelled`
+    );
 
     // A held quality force-cancel fires as soon as its siblings settle. This sits
     // BEFORE every other exit path in the loop: the all-jobs-complete branch
     // below would otherwise return first and the run would end with no
     // cancellation annotation naming the failures at all.
     if (pendingQualityCancel) {
-      const stillRunning = pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
+      const stillRunning = pendingNoRetryJobs({
+        jobs: monitoredJobs,
+        noRetryPatterns,
+        excludePatterns,
+      });
       const heldSec = heldSince ? Math.round((Date.now() - heldSince) / 1000) : 0;
       const expired = heldSec >= HELD_CANCEL_MAX_SECONDS;
       if (stillRunning.length === 0 || expired) {
         if (expired) {
           console.log(
             `Held force-cancel EXPIRED after ${heldSec}s with ${stillRunning.length} sibling(s) still running. ` +
-            'The drain collects a full roster; it does not keep a known-red run alive behind one slow lane.'
+              'The drain collects a full roster; it does not keep a known-red run alive behind one slow lane.'
           );
         } else {
-          console.log('All no-retry jobs are terminal - firing the held force-cancel with the full roster');
+          console.log(
+            'All no-retry jobs are terminal - firing the held force-cancel with the full roster'
+          );
         }
         if (await forceCancel(heldQualityFailureMsg)) return;
         pendingQualityCancel = false; // exempt run: recorded, not cancelled; keep monitoring
       } else {
-        console.log(`[${elapsedMin}m] Force-cancel held ${heldSec}s/${HELD_CANCEL_MAX_SECONDS}s: ` +
-          `waiting on ${stillRunning.length} no-retry job(s)`);
+        console.log(
+          `[${elapsedMin}m] Force-cancel held ${heldSec}s/${HELD_CANCEL_MAX_SECONDS}s: ` +
+            `waiting on ${stillRunning.length} no-retry job(s)`
+        );
       }
     }
 
     // Check if workflow was externally cancelled (mass cancellation)
     if (cancelled.length > 0 && cancelled.length >= completed.length / 2) {
-      console.log(`Workflow externally cancelled (${cancelled.length}/${completed.length} jobs cancelled) - exiting`);
+      console.log(
+        `Workflow externally cancelled (${cancelled.length}/${completed.length} jobs cancelled) - exiting`
+      );
       return;
     }
 
@@ -1232,8 +1341,8 @@ const monitor = async ({ github, context, core }) => {
     // Stuck jobs go straight to force-cancel with no retry.
     // (STUCK_THRESHOLD_MIN + jobElapsedMin hoisted above the loop as
     // loop-invariants.)
-    const stuckCancellations = cancelled.filter(j => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
-    const normalCancellations = cancelled.filter(j => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
+    const stuckCancellations = cancelled.filter((j) => jobElapsedMin(j) >= STUCK_THRESHOLD_MIN);
+    const normalCancellations = cancelled.filter((j) => jobElapsedMin(j) < STUCK_THRESHOLD_MIN);
 
     // Supersession check, and it must come BEFORE the classification below.
     // Once a cancelled job reaches classifyFailure the damage is already done:
@@ -1260,7 +1369,7 @@ const monitor = async ({ github, context, core }) => {
         console.log(`[supersession] ${verdict.reason} - exiting without classifying or failing`);
         core.notice(
           `Run ${targetRunId} was superseded by a newer run on "${run.head_branch}". ` +
-          `${normalCancellations.length} job(s) cancelled, 0 failed. This is not a pipeline failure.`
+            `${normalCancellations.length} job(s) cancelled, 0 failed. This is not a pipeline failure.`
         );
         return;
       }
@@ -1276,7 +1385,9 @@ const monitor = async ({ github, context, core }) => {
     // In pending-rerun mode classification stops entirely: the retry decision
     // is already made, every failed job gets rerun at completion anyway, and
     // the old exit-after-dispatch design never classified late failures either.
-    const newFailures = pendingRerun ? [] : failedOrCancelled.filter(j => !handledJobs.has(j.name));
+    const newFailures = pendingRerun
+      ? []
+      : failedOrCancelled.filter((j) => !handledJobs.has(j.name));
 
     // The binary-exec guard can defer an install-validation failure whose
     // sibling platforms are still running: until the matrix settles, the same
@@ -1294,7 +1405,9 @@ const monitor = async ({ github, context, core }) => {
         if (!deferredJobs.has(candidate.name)) {
           deferredJobs.add(candidate.name);
           console.log(`[guard] ${guard.reason}`);
-          console.log(`[guard] install matrix unfinished; deferring "${candidate.name}" until it completes`);
+          console.log(
+            `[guard] install matrix unfinished; deferring "${candidate.name}" until it completes`
+          );
         }
         continue;
       }
@@ -1321,12 +1434,12 @@ const monitor = async ({ github, context, core }) => {
       // together loses the evidence exactly where it matters most.
       //
       // It used to happen as a side effect of classifyFailure, which is only
-      // reached on branch 5. Every earlier branch -- a no-retry Quality
-      // failure, the `no-cancel-failure` label, a cancel-exempt scheduled run,
-      // max-attempts -- returned or continued without ever fetching a log. So
-      // the NIGHTLY, which now takes the exempt path by construction, captured
-      // nothing at all. Caught by test-watchdog-log-capture.sh's scheduled-run
-      // case, which expected one captured file and found zero.
+      // reached on the last branch. Every earlier branch -- a no-retry Quality
+      // failure, a cancel-exempt scheduled run, max-attempts -- returned or
+      // continued without ever fetching a log. So the NIGHTLY, which now takes
+      // the exempt path by construction, captured nothing at all. Caught by
+      // test-watchdog-log-capture.sh's scheduled-run case, which expected one
+      // captured file and found zero.
       //
       // Cached in logTails, so the later classification does not re-fetch.
       await getLogTail(job);
@@ -1335,8 +1448,12 @@ const monitor = async ({ github, context, core }) => {
       // once, retrying would just hang again. Force-cancel and surface a
       // loud annotation so the operator investigates the root cause.
       if (isStuck) {
-        console.log(`"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`);
-        core.error(`Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`);
+        console.log(
+          `"${job.name}" exceeded ${STUCK_THRESHOLD_MIN}m cancellation threshold -- treating as stuck, no retry`
+        );
+        core.error(
+          `Job '${job.name}' ran ${jobMin}m before cancellation, exceeding the ${STUCK_THRESHOLD_MIN}m stuck-threshold. The job's declared timeout-minutes (or GitHub's 6h default) likely expired. Investigate the underlying step before re-running.`
+        );
         if (await forceCancel(failureMsg)) return;
 
         // Cancel-exempt run (the nightly): the failure is recorded but the run is
@@ -1345,7 +1462,7 @@ const monitor = async ({ github, context, core }) => {
         // must not fall through into the branches below.
         //
         // Falling through was a real regression, introduced when forceCancel
-        // began returning a boolean and caught in review of PR #541. Branch 5
+        // began returning a boolean and caught in review of PR #541. Branch 4
         // would be reached with `isFailure: failed.includes(job)` === false --
         // correct, it IS a cancellation -- and evaluateRetryEligibility's
         // "non-stuck cancellation is a runner/infra flake" path would resolve it
@@ -1355,7 +1472,7 @@ const monitor = async ({ github, context, core }) => {
         //
         // sleep+continue rather than a bare `continue`, matching the drain path
         // above: skipping the poll interval would busy-loop.
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
@@ -1363,40 +1480,31 @@ const monitor = async ({ github, context, core }) => {
       // Only for real FAILURES: a Quality failure (lint/type error) is deterministic,
       // so retrying is pointless and we force-cancel fast. A non-stuck CANCELLATION of
       // a Quality job, by contrast, is a runner/infra flake (not a code error) -- nuking
-      // a 0-failure run for it is wrong. Let cancellations fall through to the label /
+      // a 0-failure run for it is wrong. Let cancellations fall through to the
       // retry handling below so a flaky-cancelled job can be re-run instead.
       //
-      // The label check is INSIDE this branch's condition, not after it. Without
-      // that, this branch returns before the label handling below, and
-      // WATCHDOG_NO_RETRY_PATTERNS is 'Quality,Review Gate' -- so
-      // `no-cancel-failure` was unreachable for every Quality job, which is the
-      // entire class the label exists to hold the run open for. Worse, the label
-      // was still detected and logged ("will not cancel on job failures") two
-      // minutes before the run was force-cancelled, so the log asserted the
-      // opposite of what happened. Observed on run 29825013399.
+      // The full roster still reaches the operator in ONE round: the drain below
+      // holds this cancel until every sibling no-retry lane is terminal, and
+      // forceCancel re-fetches the job list so the annotation names every job
+      // that failed by then.
       //
-      // Honouring the label here does NOT reintroduce retries: the label branch
-      // below records the failure via core.setFailed and keeps monitoring; it
-      // never dispatches a rerun. "Do not retry" and "do not cancel" are
-      // compatible.
-      //
-      // LABEL_IMMUNE_PATTERNS is the exception. CLAUDE.md specifies that Review
-      // Gate fails immediately and force-cancels, full stop -- an outstanding
-      // review is not a red to be raced past by labelling the PR. Nothing else
-      // is immune.
+      // NO_DRAIN_PATTERNS is the exception. CLAUDE.md specifies that Review Gate
+      // fails immediately and force-cancels, full stop -- there is no sibling
+      // verdict worth waiting for when the red means "reply to the review".
       const noRetryVerdict = evaluateNoRetryCancel({
         jobName: job.name,
         isFailure: failed.includes(job),
-        skipCancellationOnFailure,
         noRetryPatterns,
       });
       if (noRetryVerdict.cancel) {
-        console.log(`"${job.name}" matches no-retry pattern${noRetryVerdict.labelImmune ? ' (label-immune)' : ''}`);
+        console.log(
+          `"${job.name}" matches no-retry pattern${noRetryVerdict.noDrain ? ' (no drain)' : ''}`
+        );
 
-        // Drain before cancelling (see pendingNoRetryJobs). Label-immune jobs
-        // keep the old instant kill; everything else waits for its siblings so
-        // one round reports every failing lane instead of the first one.
-        const stillRunning = noRetryVerdict.labelImmune
+        // Drain before cancelling (see pendingNoRetryJobs). No-drain jobs keep
+        // the instant kill; everything else waits for its siblings so one round
+        // reports every failing lane instead of the first one.
+        const stillRunning = noRetryVerdict.noDrain
           ? []
           : pendingNoRetryJobs({ jobs: monitoredJobs, noRetryPatterns, excludePatterns });
         if (stillRunning.length > 0) {
@@ -1408,9 +1516,9 @@ const monitor = async ({ github, context, core }) => {
           heldQualityFailureMsg = heldQualityFailureMsg || failureMsg;
           console.log(
             `Holding the force-cancel until ${stillRunning.length} sibling no-retry job(s) finish: ` +
-            stillRunning.map(j => `"${j.name}"`).join(', ')
+              stillRunning.map((j) => `"${j.name}"`).join(', ')
           );
-          await new Promise(resolve => setTimeout(resolve, pollInterval));
+          await new Promise((resolve) => setTimeout(resolve, pollInterval));
           continue;
         }
 
@@ -1418,33 +1526,27 @@ const monitor = async ({ github, context, core }) => {
 
         // Cancel-exempt run: recorded, not cancelled, and this branch has
         // already reached its verdict -- a no-retry job never retries, by
-        // definition. Falling through would hand it to branch 5, which
+        // definition. Falling through would hand it to branch 4, which
         // independently re-derives "no retry" for a real failure and so reaches
         // the same answer, but only after paying for a classifyFailure call (a
         // billed Workers AI request) and emitting duplicate log lines. Same
         // outcome, wasted work, noisier log. Flagged as a non-blocking nit in
         // review of PR #541; skipping is both cheaper and clearer.
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
-      // 2. Label: no-cancel-failure -- let everything finish
-      if (skipCancellationOnFailure) {
-        console.log('NOTICE: Skipping cancellation due to "no-cancel-failure" label');
-        core.setFailed(failureMsg + ' (cancellation skipped)');
-        // DON'T return -- keep monitoring
-      }
-      // 3. Label: no-auto-retry -- force-cancel immediately
-      else if (skipAutoRetry) {
+      // 2. Label: no-auto-retry -- force-cancel immediately
+      if (skipAutoRetry) {
         console.log('Force-cancel due to "no-auto-retry" label');
         if (await forceCancel(failureMsg)) return;
       }
-      // 4. Max attempts reached -- force-cancel
+      // 3. Max attempts reached -- force-cancel
       else if (run.run_attempt >= MAX_ATTEMPTS) {
         console.log(`Attempt ${run.run_attempt}/${MAX_ATTEMPTS} -- no more retries`);
         if (await forceCancel(failureMsg)) return;
       }
-      // 5. First failure: AI classifies.
+      // 4. First failure: AI classifies.
       // Transient -> hold a PENDING RERUN and keep monitoring. The chain waits
       // for the run to complete, reruns every failed job from this attempt
       // itself, and keeps watching attempt 2. Further failures are not
@@ -1474,20 +1576,24 @@ const monitor = async ({ github, context, core }) => {
         if (ai.classifierAvailable === false) {
           core.warning(
             `Failure classifier unavailable for "${job.name}" (${ai.reason}). ` +
-            `EVERY provider in the chain declined to answer: ` +
-            `${CLASSIFIER_PROVIDERS.map(p => p.name).join(' then ')}. ` +
-            `Retry policy fell back to the known-flaky allowlist (a safety net, not a classifier): ` +
-            `${eligibility.retry ? 'retrying' : 'failing fast'}. ` +
-            `See issue #537.`
+              `EVERY provider in the chain declined to answer: ` +
+              `${CLASSIFIER_PROVIDERS.map((p) => p.name).join(' then ')}. ` +
+              `Retry policy fell back to the known-flaky allowlist (a safety net, not a classifier): ` +
+              `${eligibility.retry ? 'retrying' : 'failing fast'}. ` +
+              `See issue #537.`
           );
         }
 
         if (!eligibility.retry) {
-          console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          console.log(
+            `[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`
+          );
           console.log(`No retry: ${eligibility.reason}`);
           if (await forceCancel(failureMsg)) return;
         } else {
-          console.log(`[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`);
+          console.log(
+            `[AI] "${job.name}" -> ${ai.classification} (${ai.confidence}): ${ai.reason}`
+          );
           // The rerun covers every failed job from this attempt, so name
           // them all in the annotation too (not just the classified one).
           if (failed.length > 1) {
@@ -1497,10 +1603,14 @@ const monitor = async ({ github, context, core }) => {
               runId: targetRunId,
             });
             failureMsg = summary;
-            console.log(`Will retry all ${failed.length} failed jobs: ${failed.map(j => `"${j.name}"`).join(', ')}`);
+            console.log(
+              `Will retry all ${failed.length} failed jobs: ${failed.map((j) => `"${j.name}"`).join(', ')}`
+            );
           }
           console.log(`Retrying: ${eligibility.reason}`);
-          console.log('Holding a pending rerun; the chain reruns the failed jobs once the run completes.');
+          console.log(
+            'Holding a pending rerun; the chain reruns the failed jobs once the run completes.'
+          );
           pendingRerun = true;
           core.setFailed(failureMsg);
           // DON'T return -- keep monitoring until completion, then rerun below.
@@ -1513,7 +1623,9 @@ const monitor = async ({ github, context, core }) => {
     // Checked BEFORE the completed-exit below, which would end the chain.
     if (pendingRerun && run.status === 'completed') {
       if (run.run_attempt >= MAX_ATTEMPTS) {
-        console.log(`Run ${targetRunId} completed but already at attempt ${run.run_attempt}/${MAX_ATTEMPTS} - ending the chain without retry`);
+        console.log(
+          `Run ${targetRunId} completed but already at attempt ${run.run_attempt}/${MAX_ATTEMPTS} - ending the chain without retry`
+        );
         return;
       }
       if (await executeRerun()) {
@@ -1528,7 +1640,9 @@ const monitor = async ({ github, context, core }) => {
 
     // Exit when workflow run is externally completed
     if (run.status === 'completed' && elapsed >= minRuntime) {
-      console.log(`Workflow run completed (conclusion: ${run.conclusion}) - exiting watchdog (after ${elapsedMin}m)`);
+      console.log(
+        `Workflow run completed (conclusion: ${run.conclusion}) - exiting watchdog (after ${elapsedMin}m)`
+      );
       return;
     }
 
@@ -1538,18 +1652,27 @@ const monitor = async ({ github, context, core }) => {
     // exit prevented -- the in-run watchdog being the only job keeping
     // run.status in_progress -- no longer exists in chained mode, but the
     // grace period still smooths job-list lag around attempt transitions.)
-    if (!pendingRerun && monitoredJobs.length > 0 && completed.length === monitoredJobs.length && elapsed >= minRuntime) {
+    if (
+      !pendingRerun &&
+      monitoredJobs.length > 0 &&
+      completed.length === monitoredJobs.length &&
+      elapsed >= minRuntime
+    ) {
       allCompleteStreak++;
       if (allCompleteStreak >= GRACE_POLLS) {
-        console.log(`All ${monitoredJobs.length} monitored jobs completed for ${allCompleteStreak} consecutive polls - exiting watchdog (after ${elapsedMin}m)`);
+        console.log(
+          `All ${monitoredJobs.length} monitored jobs completed for ${allCompleteStreak} consecutive polls - exiting watchdog (after ${elapsedMin}m)`
+        );
         return;
       }
-      console.log(`[${elapsedMin}m] All jobs complete (${allCompleteStreak}/${GRACE_POLLS} polls) - waiting for possible rerun...`);
+      console.log(
+        `[${elapsedMin}m] All jobs complete (${allCompleteStreak}/${GRACE_POLLS} polls) - waiting for possible rerun...`
+      );
     } else {
       allCompleteStreak = 0;
     }
 
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
   // Timeout reached
@@ -1563,7 +1686,7 @@ module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
 module.exports.formatFailureRoster = formatFailureRoster;
 module.exports.evaluateNoRetryCancel = evaluateNoRetryCancel;
 module.exports.pendingNoRetryJobs = pendingNoRetryJobs;
-module.exports.LABEL_IMMUNE_PATTERNS = LABEL_IMMUNE_PATTERNS;
+module.exports.NO_DRAIN_PATTERNS = NO_DRAIN_PATTERNS;
 module.exports.evaluateCancelExemption = evaluateCancelExemption;
 module.exports.CANCEL_EXEMPT_EVENTS = CANCEL_EXEMPT_EVENTS;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;

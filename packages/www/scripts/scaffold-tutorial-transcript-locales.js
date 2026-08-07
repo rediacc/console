@@ -193,9 +193,14 @@ for (const file of files) {
         return { id: src.id, text: `TODO: translate narration ${src.id}` };
       });
       // Detect drift: id-set difference or count change
+      // Boolean(): the transcripts come out of JSON.parse, so `existing` is `any`
+      // and `.some()` on it is typed `any` too. Coercing states the obvious — this
+      // is a drift PREDICATE — and keeps `||` from reading as a value fallback.
       const idsDiffer =
         sourceNarrations.length !== existingNarrations.length ||
-        existingNarrations.some((n) => n && typeof n.id === 'string' && !sourceIDs.has(n.id)) ||
+        Boolean(
+          existingNarrations.some((n) => n && typeof n.id === 'string' && !sourceIDs.has(n.id))
+        ) ||
         sourceNarrations.some((n, i) => existingNarrations[i]?.id !== n?.id);
       if (sourceNarrations.length > 0 && (existingNarrations.length === 0 || idsDiffer)) {
         existing.narrations = nextNarrations;

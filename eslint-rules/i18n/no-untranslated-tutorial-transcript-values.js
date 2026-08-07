@@ -5,8 +5,9 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { memberKey, objectMembers } from './shared/json-ast.js';
 
-let englishCache = new Map();
+const englishCache = new Map();
 
 function loadEnglishTranscript(transcriptsDir, castFile) {
   const cacheKey = `${transcriptsDir}:${castFile}`;
@@ -27,6 +28,10 @@ function loadEnglishTranscript(transcriptsDir, castFile) {
     return new Map();
   }
 }
+
+// Rule-option default: values shorter than this are too small to judge as
+// "identical to English" (product names, "OK", punctuation).
+const DEFAULT_MIN_LENGTH = 3;
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUntranslatedTutorialTranscriptValues = {
@@ -61,7 +66,7 @@ export const noUntranslatedTutorialTranscriptValues = {
   create(context) {
     const options = context.options[0] || {};
     const transcriptsDir = options.transcriptsDir || 'packages/www/src/data/tutorial-transcripts';
-    const minLength = options.minLength ?? 3;
+    const minLength = options.minLength ?? DEFAULT_MIN_LENGTH;
 
     const projectRoot = process.cwd();
     const absoluteTranscriptsDir = path.isAbsolute(transcriptsDir)
@@ -77,9 +82,7 @@ export const noUntranslatedTutorialTranscriptValues = {
     const englishEvents = loadEnglishTranscript(absoluteTranscriptsDir, castFile);
 
     function visitObjectNode(node, onMember) {
-      if (!node || node.type !== 'Object') return;
-      const members = node.members || [];
-      for (const member of members) {
+      for (const member of objectMembers(node)) {
         if (member.type === 'Member') onMember(member);
       }
     }
@@ -87,48 +90,58 @@ export const noUntranslatedTutorialTranscriptValues = {
     function getStringMemberValue(objNode, keyName) {
       let result = null;
       visitObjectNode(objNode, (member) => {
-        const key = member.name?.type === 'String' ? member.name.value : member.name?.name;
-        if (key !== keyName) return;
+        if (memberKey(member) !== keyName) return;
         if (member.value?.type === 'String') result = member.value.value;
       });
       return result;
+    }
+
+    /** The `events` array of a transcript document, or null. */
+    function findEventsArray(objNode) {
+      let eventsArray = null;
+      visitObjectNode(objNode, (member) => {
+        if (memberKey(member) === 'events' && member.value?.type === 'Array') {
+          eventsArray = member.value;
+        }
+      });
+      return eventsArray;
+    }
+
+    /** Report one event whose text is byte-identical to the English cast. */
+    function checkEvent(element, index) {
+      // @eslint/json wraps every array entry in an `Element` node whose
+      // `value` is the real node. Comparing the WRAPPER against 'Object' made
+      // this rule inert: `element.type` is 'Element' for every entry, so the
+      // walk returned before it ever looked at an event.
+      const eventNode = element?.type === 'Element' ? element.value : element;
+      if (!eventNode || eventNode.type !== 'Object') return;
+
+      const text = getStringMemberValue(eventNode, 'text');
+      if (typeof text !== 'string' || text.trim().length < minLength) return;
+
+      const enText = englishEvents.get(index);
+      if (typeof enText !== 'string' || enText.trim().length < minLength) return;
+
+      if (text.trim() !== enText.trim()) return;
+
+      context.report({
+        node: eventNode,
+        messageId: 'untranslated',
+        data: {
+          index: String(index),
+          value: text.length > 50 ? `${text.slice(0, 47)}...` : text,
+        },
+      });
     }
 
     return {
       Document(node) {
         if (!node?.body || node.body.type !== 'Object') return;
 
-        let eventsArray = null;
-        visitObjectNode(node.body, (member) => {
-          const key = member.name?.type === 'String' ? member.name.value : member.name?.name;
-          if (key === 'events' && member.value?.type === 'Array') {
-            eventsArray = member.value;
-          }
-        });
-
+        const eventsArray = findEventsArray(node.body);
         if (!eventsArray || !Array.isArray(eventsArray.elements)) return;
 
-        for (let i = 0; i < eventsArray.elements.length; i += 1) {
-          const eventNode = eventsArray.elements[i];
-          if (!eventNode || eventNode.type !== 'Object') continue;
-
-          const text = getStringMemberValue(eventNode, 'text');
-          if (typeof text !== 'string' || text.trim().length < minLength) continue;
-
-          const enText = englishEvents.get(i);
-          if (typeof enText !== 'string' || enText.trim().length < minLength) continue;
-
-          if (text.trim() === enText.trim()) {
-            context.report({
-              node: eventNode,
-              messageId: 'untranslated',
-              data: {
-                index: String(i),
-                value: text.length > 50 ? `${text.slice(0, 47)}...` : text,
-              },
-            });
-          }
-        }
+        eventsArray.elements.forEach(checkEvent);
       },
     };
   },

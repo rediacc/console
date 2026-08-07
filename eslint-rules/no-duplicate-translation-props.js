@@ -28,7 +28,7 @@ export const noDuplicateTranslationProps = {
     },
     messages: {
       duplicateTranslationProps:
-        'Multiple TypedTFunction props detected ({{props}}). Use a single "t" prop with namespace prefixes instead (e.g., t(\'common:...\'), t(\'system:...\')).',
+        "Multiple TypedTFunction props detected ({{props}}). Use a single \"t\" prop with namespace prefixes instead (e.g., t('common:...'), t('system:...')).",
     },
     schema: [],
   },

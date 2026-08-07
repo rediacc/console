@@ -23,6 +23,7 @@ import type {
   OptionTier,
   ResourceKind,
 } from '../../../shared/src/cli-contract/types.js';
+import { at } from './table.js';
 
 // ---------- Resource-kind binding (console pick-or-type combobox) ----------
 
@@ -264,12 +265,12 @@ export function resolveOptionKinds(
   long: string,
   valueTaking: boolean
 ): readonly ResourceKind[] | undefined {
-  const override = OPTION_KIND_OVERRIDES[overrideKey(pathKey, long)];
+  const override = at(OPTION_KIND_OVERRIDES, overrideKey(pathKey, long));
   if (override !== undefined) {
     return 'waived' in override ? undefined : override;
   }
   if (!valueTaking) return undefined;
-  return OPTION_KINDS_BY_NAME[long];
+  return at(OPTION_KINDS_BY_NAME, long);
 }
 
 /** The rendering hint for an option's value, or undefined (plain text box). */
@@ -303,7 +304,7 @@ export function resolveOptionTier(
 
 type GateCommand = {
   readonly pathKey: string;
-  readonly options: ReadonlyArray<Pick<ContractOption, 'long' | 'valueTaking' | 'mandatory'>>;
+  readonly options: readonly Pick<ContractOption, 'long' | 'valueTaking' | 'mandatory'>[];
 };
 
 /**
@@ -404,8 +405,8 @@ export function collectClassificationProblems(commands: readonly GateCommand[]):
       if (!opt.valueTaking) continue;
       if (!RESOURCE_NOUN_GATE.has(opt.long)) continue;
       const key = overrideKey(cmd.pathKey, opt.long);
-      if (OPTION_KIND_OVERRIDES[key] !== undefined) continue;
-      if (OPTION_KINDS_BY_NAME[opt.long] !== undefined) continue;
+      if (at(OPTION_KIND_OVERRIDES, key) !== undefined) continue;
+      if (at(OPTION_KINDS_BY_NAME, opt.long) !== undefined) continue;
       problems.push(
         `${cmd.pathKey} --${opt.long}: resource-noun option is unclassified — add kinds via OPTION_KINDS_BY_NAME or OPTION_KIND_OVERRIDES, or waive it with { waived: '<why this long binds no resource here>' }`
       );

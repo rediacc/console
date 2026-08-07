@@ -59,25 +59,24 @@ export function registerSSHCommands(config: Command, program: Command): void {
         const cfg = await configService.getCurrent();
         const format = program.opts().output as OutputFormat;
 
-        if (!cfg) {
-          outputService.info(t('commands.config.ssh.show.noKey'));
-          return;
-        }
-
         let hasEmbedded = false;
-        try {
-          const state = await configService.getResourceState();
-          hasEmbedded = state.getSSH()?.privateKey != null;
-        } catch {
-          // No resource state available
+        if (cfg) {
+          try {
+            const state = await configService.getResourceState();
+            hasEmbedded = state.getSSH()?.privateKey != null;
+          } catch {
+            // No resource state available
+          }
         }
 
-        if (!hasEmbedded) {
+        // "No key" is an answer, not an absence of one: table mode gets the hint,
+        // every machine-readable format gets the same envelope shape as a hit.
+        if (!hasEmbedded && format === 'table') {
           outputService.info(t('commands.config.ssh.show.noKey'));
           return;
         }
 
-        outputService.print({ embedded: 'yes' }, format);
+        outputService.print({ embedded: hasEmbedded ? 'yes' : 'no' }, format);
       } catch (error) {
         handleError(error);
       }

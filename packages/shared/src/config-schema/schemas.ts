@@ -92,6 +92,21 @@ const resourceName = z
   );
 
 /**
+ * A datastore registry key: `name` for a datastore, `name:tag` for a fork.
+ * Unlike repositories (families, 06 §6.4), datastore forks are FLAT entries
+ * with a `parent` backref, mirroring the machine-side registry which keys a
+ * fork as `<parent>:<tag>` (renet pkg/datastore/registry.go).
+ */
+const datastoreRef = z
+  .string()
+  .min(1, 'Name cannot be empty')
+  .max(127, 'Ref must be 127 characters or fewer')
+  .regex(
+    /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(:[a-z0-9]([a-z0-9-]*[a-z0-9])?)?$/,
+    'Must be lowercase alphanumeric with hyphens (name or name:tag)'
+  );
+
+/**
  * Structural repository tag. ':' and '@' are structurally impossible in a key
  * that matches this regex, which is the create-time validation for the tag
  * position (06 §6.4) — composite `name:tag` keys can no longer exist.
@@ -262,7 +277,7 @@ const RepoRecordSchema = z.object({
 
 // Placement (R2-F1): the two `repo create` flags, one-to-one.
 const PlacementSchema = z.union([
-  z.object({ datastore: resourceName }), // a NAMED datastore (registry entry)
+  z.object({ datastore: datastoreRef }), // a NAMED datastore or fork (registry entry)
   z.object({ machine: resourceName }), // that machine's IMPLICIT default datastore
 ]);
 
@@ -470,7 +485,7 @@ const CredentialsSchema = z.object({
 
 const ResourcesSchema = z.object({
   machines: z.record(resourceName, MachineConfigSchema).optional(),
-  datastores: z.record(resourceName, DatastoreConfigSchema).optional(),
+  datastores: z.record(datastoreRef, DatastoreConfigSchema).optional(),
   storages: z.record(resourceName, StorageConfigSchema).optional(),
   repositories: z.record(resourceName, RepoFamilySchema).optional(),
   deletedRepositories: z.array(ArchivedRepositorySchema).optional(),

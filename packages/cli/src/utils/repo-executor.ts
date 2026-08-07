@@ -33,8 +33,12 @@ export interface RepoFunctionMessages {
  *
  * Placement lives on the repo FAMILY, not the per-tag record, so a fork resolves to
  * its parent's datastore, which is exactly where its reflinked data is.
+ *
+ * Exported for `repo fork`, which does NOT flow through executeRepoFunction below:
+ * it drives the executor directly (two legs, streamed events, a shared lease), so
+ * it was the one verb this derivation could not reach.
  */
-async function recordedDatastoreMount(repoKey: string): Promise<string | undefined> {
+export async function recordedDatastoreMount(repoKey: string): Promise<string | undefined> {
   const family = repoKey.split(':')[0];
   const config = await configService.getCurrent();
   const placement = config?.resources?.repositories?.[family]?.placement;

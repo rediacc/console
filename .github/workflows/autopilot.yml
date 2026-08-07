@@ -1,13 +1,30 @@
 name: Autopilot
 
 # The v2 GitHub-side autonomy loop (docs/ci-overhaul/03-v2-autonomy.md).
-# Apply the arming label and this workflow babysits the PR across CI rounds:
+# This workflow babysits a PR across CI rounds:
 # gate -> (model fix/review-response round -> harness push) -> finish, with
 # every write performed by the deterministic harness in .ci/scripts/autopilot/
 # AFTER the model step exits. THE MODEL NEVER HOLDS A WRITE TOKEN: the only
 # app-token mint in the model job sits after the model step, and the
 # invariants gate (.ci/scripts/security/check-autopilot-workflow-invariants.sh)
 # pins that ordering statically.
+#
+# ARMING (three paths, one latch; autopilot-gate.sh checks them in this order):
+#   dispatch  `gh workflow run Autopilot -f pr_number=N` -- THE DISPATCH IS
+#             THE ARMING ACT. Round 1 runs straight off it, and the
+#             post-model state-comment write records a CAMPAIGN (campaign
+#             open + the chosen model + the round cap) so the workflow_run
+#             rounds that follow continue without a label existing at all.
+#   campaign  the trusted state comment says `campaign: open` and rounds
+#             remain. This is how the loop survives between dispatches.
+#   label     the arming label, unchanged and still supported: apply it and
+#             the same loop runs off the label instead of a campaign.
+# STOPPING, three scopes: cancel the run kills ONE round; the
+# `autopilot-blocked` label kills the LOOP (checked before every arming path);
+# AUTOPILOT_ENABLED kills everything, repo-wide.
+#
+# The dispatch also carries the round's model, its reasoning effort, and an
+# optional hold-open debug session (see the model job).
 #
 # STAGE FLAGS, all repo VARIABLES, all fail closed (ABSENT MEANS OFF).
 # None of them exist yet, so this workflow lands INERT; enabling a stage is a
@@ -35,9 +52,58 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to arm, resume, or stage-test'
+        description: 'PR number to arm, resume, or stage-test. Providing it IS the arming act: round 1 runs off this dispatch and opens a campaign.'
         required: false
         type: string
+
+      model:
+        description: 'Model for this round, recorded in the campaign so later rounds keep it.'
+        required: false
+        type: choice
+        default: 'claude-sonnet-5'
+        options: ['claude-sonnet-5', 'claude-opus-5']
+
+      # DISPATCH-ONLY, deliberately: unlike model and max_rounds this is NOT
+      # recorded in the campaign, so the autonomous rounds that follow run at
+      # the model's own default. Raising effort is a per-round decision about
+      # one hard failure, not a property of the whole campaign.
+      effort:
+        description: 'Reasoning effort for this round only (default = do not pass the flag).'
+        required: false
+        type: choice
+        default: 'default'
+        options: ['default', 'low', 'medium', 'high', 'xhigh', 'max']
+
+      max_rounds:
+        description: 'Round cap for the campaign. Empty uses the AUTOPILOT_MAX_ROUNDS variable, or 25.'
+        required: false
+        type: string
+        default: ''
+
+      # The three inputs below are COPIED FROM .ci/breakpoint/workflow/breakpoint.yml
+      # and held to it by .ci/scripts/quality/check-autopilot-breakpoint-alignment.sh:
+      # `hold-duration` mirrors breakpoint's `duration` option list exactly, and
+      # the two booleans mirror its types and defaults. A debug session that
+      # behaves differently here than in the tool people already know is a trap,
+      # so the shapes are gated rather than merely intended to match.
+      debug-shell:
+        description: 'Hold the runner open with a tmate SSH/web shell after the model step. workflow_dispatch only.'
+        required: false
+        type: boolean
+        default: false
+
+      hold-duration:
+        description: 'Minutes to hold the box open when debug-shell is on.'
+        required: false
+        type: choice
+        default: '30'
+        options: ['5', '10', '15', '30', '45', '60', '90', '120', '180', '240', '300']
+
+      send-email:
+        description: 'Email the access details. ON by default: on a public repo the URL is a bearer credential and the log is world-readable. Turning this off PRINTS the URL instead.'
+        required: false
+        type: boolean
+        default: true
 
 # Never kill a round mid-push: a queued duplicate exits at the gate's
 # (run_id, attempt) dedup instead (03-v2-autonomy.md section 2).
@@ -72,6 +138,10 @@ jobs:
       mode: ${{ steps.decide.outputs.mode }}
       reason: ${{ steps.decide.outputs.reason }}
       round: ${{ steps.decide.outputs.round }}
+      model: ${{ steps.decide.outputs.model }}
+      rounds_max: ${{ steps.decide.outputs.rounds_max }}
+      campaign: ${{ steps.decide.outputs.campaign }}
+      dispatch_trusted: ${{ steps.decide.outputs.dispatch_trusted }}
       pr_number: ${{ steps.pr.outputs.number }}
       head_branch: ${{ steps.prcore.outputs.head_branch }}
       head_sha: ${{ steps.prcore.outputs.head_sha }}
@@ -116,18 +186,36 @@ jobs:
           echo "head_sha=$(jq -r '.head_sha' "$RUNNER_TEMP/fx/pr-core.json")" >>"$GITHUB_OUTPUT"
           echo "head_branch=$(jq -r '.head_branch' "$RUNNER_TEMP/fx/pr-core.json")" >>"$GITHUB_OUTPUT"
 
+      # On dispatch the payload is SYNTHESIZED from the head's completed CI
+      # run, plus one key the real payload never carries: autopilot_dispatch.
+      # Its presence is what tells the gate this round was armed by a
+      # dispatch, and it is built with `jq --arg` from env so no input value
+      # is ever shell text (the invariants gate catches github.event.*, not
+      # inputs.*, so this discipline is on the author).
+      #
+      # A head with no completed CI run is a NO-GO WITH A REASON, not a dead
+      # step: the bare `jq -e` that used to close this block exited 1 and
+      # painted the gate red with nothing on stdout explaining it, which is
+      # exactly what a dispatch made a minute too early produces.
       - name: Build event fixture
+        id: ev
         if: steps.pr.outputs.number != ''
         env:
           EVENT_NAME: ${{ github.event_name }}
           HEAD_SHA: ${{ steps.prcore.outputs.head_sha }}
+          DISPATCH_ACTOR: ${{ github.actor }}
+          DISPATCH_PR: ${{ inputs.pr_number }}
+          DISPATCH_MODEL: ${{ inputs.model }}
+          DISPATCH_MAX_ROUNDS: ${{ inputs.max_rounds }}
         run: |
           if [ "$EVENT_NAME" = "workflow_run" ]; then
             cp "$GITHUB_EVENT_PATH" "$RUNNER_TEMP/fx/event.json"
           else
-            gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&status=completed&per_page=1" --jq '{workflow_run: (.workflow_runs[0] | {conclusion, id, run_attempt, head_sha, head_repository: {full_name: .head_repository.full_name}}), repository: {full_name: env.REPO}}' >"$RUNNER_TEMP/fx/event.json"
+            gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$HEAD_SHA&status=completed&per_page=1" --jq '{workflow_run: (.workflow_runs[0] | {conclusion, id, run_attempt, head_sha, head_repository: {full_name: .head_repository.full_name}}), repository: {full_name: env.REPO}}' | jq --arg a "$DISPATCH_ACTOR" --arg p "$DISPATCH_PR" --arg m "$DISPATCH_MODEL" --arg r "$DISPATCH_MAX_ROUNDS" '. + {autopilot_dispatch: {actor: $a, pr_input: $p, model: $m, max_rounds: $r}}' >"$RUNNER_TEMP/fx/event.json"
           fi
-          jq -e '.workflow_run.id' "$RUNNER_TEMP/fx/event.json" >/dev/null
+          jq -e '.workflow_run.id' "$RUNNER_TEMP/fx/event.json" >/dev/null 2>&1 && r=true || r=false
+          echo "ready=$r" >>"$GITHUB_OUTPUT"
+          [ "$r" = "true" ] || echo "::notice::autopilot gate: head $HEAD_SHA has no completed Console CI run yet, so there is nothing to classify; dispatch again once CI finishes. No-go, zero cost."
 
       - name: Build PR fixture signals
         if: steps.pr.outputs.number != ''
@@ -143,7 +231,7 @@ jobs:
           jq --arg a "$applier" --argjson t "$threads" --argjson r "$red" '. + {label_applier: $a, unresolved_threads: $t, review_gate_red: $r}' "$RUNNER_TEMP/fx/pr-core.json" >"$RUNNER_TEMP/fx/pr.json"
 
       - name: Build failed-jobs and watchdog fixtures
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.number != '' && steps.ev.outputs.ready == 'true'
         run: |
           run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
           gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" --paginate --jq '.jobs[] | select(.conclusion == "failure") | .name' >"$RUNNER_TEMP/fx/failed-jobs.txt"
@@ -167,7 +255,7 @@ jobs:
       # on a go decision (03-v2-autonomy.md section 2).
       - name: Gate decision
         id: decide
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.number != '' && steps.ev.outputs.ready == 'true'
         env:
           AUTOPILOT_ENABLED: ${{ vars.AUTOPILOT_ENABLED }}
           AUTOPILOT_ALLOW_PUSH: ${{ vars.AUTOPILOT_ALLOW_PUSH }}
@@ -179,7 +267,7 @@ jobs:
           .ci/scripts/autopilot/autopilot-gate.sh --classify --event "$RUNNER_TEMP/fx/event.json" --pr "$RUNNER_TEMP/fx/pr.json" --state "$RUNNER_TEMP/fx/state.txt" --failed-jobs "$RUNNER_TEMP/fx/failed-jobs.txt" --watchdog "$RUNNER_TEMP/fx/watchdog.txt" >"$RUNNER_TEMP/fx/decision.json"
           cat "$RUNNER_TEMP/fx/decision.json"
           cat "$RUNNER_TEMP/fx/decision.json" >>"$GITHUB_STEP_SUMMARY"
-          for k in decision mode reason round; do
+          for k in decision mode reason round model rounds_max campaign dispatch_trusted; do
             echo "$k=$(jq -r ".$k" "$RUNNER_TEMP/fx/decision.json")" >>"$GITHUB_OUTPUT"
           done
 
@@ -202,7 +290,14 @@ jobs:
       (needs.gate.outputs.mode == 'fix' || needs.gate.outputs.mode == 'review-response') &&
       vars.AUTOPILOT_MODEL == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 for a normal round. A debug-shell dispatch holds the runner open for
+    # up to `hold-duration` (300) AFTER the round, so it needs its own
+    # ceiling: 350, not 360, because 360 is exactly GitHub's hosted-job cap
+    # and declaring it makes the platform kill race the declared timeout --
+    # the reasoning is breakpoint.yml's, and so is the number. Actions
+    # expressions have NO ARITHMETIC, so this is a choice between two
+    # constants rather than duration + slack.
+    timeout-minutes: ${{ (github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true') && 350 || 30 }}
     # contents:read is the WHOLE grant while the model runs. The push, the
     # state comment and the escalation label all use the app token minted
     # AFTER the model step below.
@@ -308,6 +403,33 @@ jobs:
           } >"$RUNNER_TEMP/prompt.md"
           { echo 'prompt<<AUTOPILOT_PROMPT_EOF'; cat "$RUNNER_TEMP/prompt.md"; echo 'AUTOPILOT_PROMPT_EOF'; } >>"$GITHUB_OUTPUT"
 
+      # claude_args is assembled HERE, from env, rather than interpolated at
+      # the call site: the model is now a dispatch input carried in the
+      # campaign, and two hardcoded copies of an argument list drift (the
+      # review pipeline paid for exactly that with a log line that claimed a
+      # model the run had not used). The gate has already constrained
+      # needs.gate.outputs.model to its allowlist, so nothing arbitrary can
+      # reach the flag.
+      #
+      # --effort rides the same list. It IS forwarded: claude-code-action
+      # leaves every unrecognised claude_args flag in `extraArgs`
+      # (base-action/src/parse-sdk-options.ts at the pinned SHA), and the
+      # agent SDK emits every extraArgs entry to the CLI verbatim as
+      # `--<key> <value>`, which is the same path the SDK uses for its own
+      # `effort` option. 'default' means: do not pass the flag at all.
+      - name: Resolve the round's model arguments
+        id: margs
+        env:
+          MODEL: ${{ needs.gate.outputs.model }}
+          MODE: ${{ needs.gate.outputs.mode }}
+          EFFORT: ${{ inputs.effort }}
+        run: |
+          turns=60
+          if [ "$MODE" = "fix" ]; then turns=80; fi
+          args="--model $MODEL"$'\n'"--max-turns $turns"$'\n'"--disallowed-tools Task,Agent"
+          if [ -n "$EFFORT" ] && [ "$EFFORT" != "default" ]; then args="$args"$'\n'"--effort $EFFORT"; fi
+          { echo 'args<<AUTOPILOT_ARGS_EOF'; printf '%s\n' "$args"; echo 'AUTOPILOT_ARGS_EOF'; } >>"$GITHUB_OUTPUT"
+
       # NO WRITE TOKEN: github_token carries this job's contents:read grant,
       # comments and pushes are impossible from inside the model, and the app
       # token does not exist yet. track_progress stays 'false': it hard-errors
@@ -335,10 +457,7 @@ jobs:
                 ]
               }
             }
-          claude_args: |
-            --model claude-sonnet-5
-            --max-turns ${{ needs.gate.outputs.mode == 'fix' && '80' || '60' }}
-            --disallowed-tools Task,Agent
+          claude_args: ${{ steps.margs.outputs.args }}
 
       # The handoff contract says the model edits files and never commits;
       # a moved HEAD means it minted commits anyway, and nothing it did can
@@ -351,6 +470,119 @@ jobs:
             echo "::error::HEAD moved during the model step; refusing to touch the result"
             exit 1
           fi
+
+      # =====================================================================
+      # HOLD-OPEN DEBUG SESSION (workflow_dispatch + debug-shell only)
+      # =====================================================================
+      # PLACEMENT IS THE SECURITY DECISION, and it is why this sits here
+      # rather than at the end of the job where a debug step naturally wants
+      # to live. The window between "the model exited" and "the app token is
+      # minted" is the only point where the workspace holds the round's whole
+      # result AND no write credential exists anywhere on the runner. Two
+      # steps later, `Wire push authentication` writes the app token into
+      # .git/config -- a human on this box after that line has a repo-write
+      # bearer token, which is a different feature with a different blast
+      # radius. Never move these steps down.
+      #
+      # Autonomous rounds can never reach any of it: `github.event_name ==
+      # 'workflow_dispatch'` is checked alongside the input, so a workflow_run
+      # round cannot hold a runner open even if the inputs context leaked a
+      # truthy value.
+      #
+      # `dispatch_trusted` is the third condition and it is NOT redundant with
+      # the gate's go decision. A round can be armed by the LABEL, whose trust
+      # check is the label applier -- a different person from whoever pressed
+      # Run workflow. Without this condition, anyone with workflow-dispatch
+      # rights could get an interactive shell on a runner holding the repo
+      # source by dispatching an already-label-armed PR. The gate reports the
+      # DISPATCHER's allowlist membership separately for exactly this step.
+      #
+      # Machinery is the vendored breakpoint tool (.ci/breakpoint), invoked
+      # from $RUNNER_TEMP/harness -- the TRUSTED copy staged before the PR
+      # head landed. Calling .ci/breakpoint out of $GITHUB_WORKSPACE would
+      # execute PR-authored shell, which is the whole thing wall 4 exists to
+      # prevent.
+
+      # A debug shell is a human reading this disk, and the model step may
+      # have left OAuth material on it. Scrub, then ASSERT: a scrub whose
+      # result is never checked is a claim, not a control.
+      - name: Scrub agent credentials before the debug session
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        run: |
+          rm -rf "$HOME/.claude/.credentials.json" "$HOME/.claude.json" "$HOME/.claude/statsig"
+          find "$HOME/.claude" "$RUNNER_TEMP" -name '*credential*' -exec rm -rf {} + 2>/dev/null || true
+          left="$(find "$HOME/.claude" "$RUNNER_TEMP" -name '*credential*' 2>/dev/null | head -5)"
+          [ -z "$left" ] || { echo "::error::credential material survived the scrub: $left"; exit 1; }
+          echo "no credential files remain under \$HOME/.claude or \$RUNNER_TEMP"
+
+      - name: Start the debug origin
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/start-origin.sh" --port 8080 --services none --desktop none >/dev/null
+
+      - name: Start the debug shell
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/start-shell.sh" --timeout 90
+
+      # QUICK MODE ONLY, and therefore NO CLOUDFLARE CREDENTIAL IN THIS
+      # STEP'S env. start-tunnel.sh reads BREAKPOINT_TUNNEL_TOKEN and
+      # CLOUDFLARE_ACCOUNT_ID only in start_named(); quick mode never touches
+      # them, and stop-breakpoint.sh skips its whole account-side block when
+      # they are absent (it is written to be mode-agnostic for exactly this).
+      # Passing an unused Cloudflare token (tunnel edit + rediacc.io DNS edit)
+      # into the one step sequence whose PURPOSE is to put a human on this
+      # runner would hand that human the token for nothing.
+      #
+      # The tunnel URL is DELIBERATELY not a step output and appears in no
+      # env: block. The runner prints a step's env: before the step runs, so
+      # a URL routed that way is published seconds before ::add-mask:: can
+      # cover it -- the live leak in run 30254567365. It travels in the
+      # session state file instead, which publish-endpoints.sh reads.
+      #
+      # --label rdc-ci, not 'autopilot': derive-descriptor.sh validates the
+      # label against BREAKPOINT_TUNNEL_LABELS (a CLOSED set, so the orphan
+      # sweeper can only reap names it can match) and exits 4 on anything
+      # else, which would kill the tunnel step outright.
+      - name: Start the debug tunnel
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/start-tunnel.sh" --mode quick --origin http://localhost:8080 --label rdc-ci --run-id "$GITHUB_RUN_ID" >/dev/null
+
+      # Email-first, per breakpoint's access rules: on a public repo the URL
+      # is a bearer credential, so send-email defaults to true and the logs
+      # channel is the loud fallback that warns about the exposure.
+      - name: Publish the debug session details
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_SES_ACCESS_KEY_ID_EU }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SES_SECRET_ACCESS_KEY_EU }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_SES_REGION_EU }}
+          SES_FROM: ${{ vars.AWS_SES_FROM }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          BP_SEND_EMAIL: ${{ inputs.send-email }}
+          BP_DURATION: ${{ inputs.hold-duration }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/publish-endpoints.sh" --send-email "$BP_SEND_EMAIL" --duration "$BP_DURATION"
+
+      - name: Hold the runner open
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        env:
+          BP_DURATION: ${{ inputs.hold-duration }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/hold-breakpoint.sh" --duration-min "$BP_DURATION" --origin http://localhost:8080
+
+      # always(), because the session that FAILED is the one that most needs
+      # its tunnel and its shell taken down. One script call, not a chain: a
+      # cancelled run gets only a short grace before SIGKILL.
+      - name: Tear down the debug session
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.debug-shell && needs.gate.outputs.dispatch_trusted == 'true' }}
+        env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          "$RUNNER_TEMP/harness/.ci/breakpoint/scripts/stop-breakpoint.sh" --label rdc-ci --run-id "$GITHUB_RUN_ID"
 
       # INVARIANT 1 (03-v2-autonomy.md section 0): the FIRST app-token mint in
       # this job sits AFTER the model step, so no write token ever exists in
@@ -405,6 +637,12 @@ jobs:
       # THE LEDGER IS NEVER OPTIONAL (03-v2-autonomy.md section 0): autopilot
       # commits are attributed to the operator, and this comment is the audit
       # trail recording every round's run and commit.
+      #
+      # It is also where a dispatch-armed round RECORDS THE CAMPAIGN. The
+      # gate resolved campaign/model/rounds_max; writing them here is what
+      # lets the next workflow_run round re-arm itself without a label. The
+      # write is still gated on AUTOPILOT_ALLOW_STATE (S2), so a campaign
+      # cannot outlive the stage flag that permits recording it.
       - name: Update state comment
         if: success() && vars.AUTOPILOT_ALLOW_STATE == 'true'
         env:
@@ -412,12 +650,14 @@ jobs:
           PR: ${{ needs.gate.outputs.pr_number }}
           COMMENT_ID: ${{ needs.gate.outputs.comment_id }}
           ROUND: ${{ needs.gate.outputs.round }}
-          MAX_ROUNDS: ${{ vars.AUTOPILOT_MAX_ROUNDS || '25' }}
+          MAX_ROUNDS: ${{ needs.gate.outputs.rounds_max }}
+          CAMPAIGN: ${{ needs.gate.outputs.campaign }}
+          MODEL: ${{ needs.gate.outputs.model }}
         run: |
           run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
           attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
           ledger="$(jq -r '.ledger_line' "$GITHUB_WORKSPACE/handoff.json")"
-          body="$("$RUNNER_TEMP/harness/.ci/scripts/autopilot/state-comment.sh" render --body "$RUNNER_TEMP/fx/state.txt" --state waiting-ci --round "$ROUND/$MAX_ROUNDS" --head "$(git rev-parse HEAD)" --last-run "$run_id/$attempt handled" --ledger "$ledger")"
+          body="$("$RUNNER_TEMP/harness/.ci/scripts/autopilot/state-comment.sh" render --body "$RUNNER_TEMP/fx/state.txt" --state waiting-ci --round "$ROUND/$MAX_ROUNDS" --head "$(git rev-parse HEAD)" --last-run "$run_id/$attempt handled" --ledger "$ledger" --campaign "$CAMPAIGN" --model "$MODEL" --rounds-max "$MAX_ROUNDS")"
           endpoint="repos/$REPO/issues/$PR/comments" && method=POST
           [ -n "$COMMENT_ID" ] && endpoint="repos/$REPO/issues/comments/$COMMENT_ID" && method=PATCH
           gh api --method "$method" "$endpoint" -f body="$body" >/dev/null
@@ -495,6 +735,29 @@ jobs:
           jq '{ci_green: true, draft, unresolved_threads, reviewed: (.review_gate_red | not)}' "$RUNNER_TEMP/fx/pr.json" >"$RUNNER_TEMP/done.json"
           .ci/scripts/autopilot/finish.sh check-done --pr "$RUNNER_TEMP/done.json"
           echo "::notice::autopilot: done-conditions hold for PR #$PR"
+
+      # A campaign that is never closed is a loop with no terminating state:
+      # every later workflow_run would re-arm off `campaign: open` and land
+      # back here. The model job cannot do this -- it only runs for fix and
+      # review-response -- so done's closure belongs to the finish job, which
+      # already holds the token and the fixtures. Same stage flag as every
+      # other state write.
+      - name: Close the campaign
+        if: needs.gate.outputs.mode == 'done' && vars.AUTOPILOT_ALLOW_STATE == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app_token.outputs.token }}
+          COMMENT_ID: ${{ needs.gate.outputs.comment_id }}
+          ROUND: ${{ needs.gate.outputs.round }}
+          MAX_ROUNDS: ${{ needs.gate.outputs.rounds_max }}
+          CAMPAIGN: ${{ needs.gate.outputs.campaign }}
+          MODEL: ${{ needs.gate.outputs.model }}
+          HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+        run: |
+          [ -n "$COMMENT_ID" ] || exit 0
+          run_id="$(jq -r '.workflow_run.id' "$RUNNER_TEMP/fx/event.json")"
+          attempt="$(jq -r '.workflow_run.run_attempt // 1' "$RUNNER_TEMP/fx/event.json")"
+          body="$(.ci/scripts/autopilot/state-comment.sh render --body "$RUNNER_TEMP/fx/state.txt" --state "done" --round "$ROUND/$MAX_ROUNDS" --head "$HEAD_SHA" --last-run "$run_id/$attempt handled" --campaign "$CAMPAIGN" --model "$MODEL" --rounds-max "$MAX_ROUNDS")"
+          gh api --method PATCH "repos/$REPO/issues/comments/$COMMENT_ID" -f body="$body" >/dev/null
 
   sweeper:
     name: Autopilot Sweeper

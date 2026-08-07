@@ -52,6 +52,11 @@ permissions:
   checks: write
   pull-requests: read
   issues: read
+  # READ-ONLY, and only to fetch the `review-target` artifact from the Claude
+  # Review run that triggered this one. Deliberately NOT actions:write -- the
+  # deleted nudge step wanted that in order to dispatch a workflow, which is a
+  # far larger grant for a job that handles model output.
+  actions: read
 
 # Latest event wins: every run recomputes the verdict from live API state, so
 # superseding an in-flight run loses nothing.
@@ -93,7 +98,11 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           WR_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          WR_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          # The RUN ID, not the head SHA. A second-order workflow_run is
+          # stamped with the default-branch tip, so head_sha named main and
+          # the PR was unresolvable. The run id lets the script fetch the
+          # `review-target` artifact Claude Review now uploads.
+          WR_RUN_ID: ${{ github.event.workflow_run.id }}
           WR_HTML_URL: ${{ github.event.workflow_run.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number || inputs.pr_number }}
         run: .ci/scripts/review/review-status.sh

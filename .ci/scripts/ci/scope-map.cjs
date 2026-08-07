@@ -34,6 +34,16 @@ const KNOWN_MODULES = [
   'workers', // workers/ (Cloudflare workers: preview + smoke surface)
   'tutorials', // .ci/tutorials scripts + the www tutorial docs that order them
   'devcontainer', // .devcontainer (built by build-docker-fast, no test surface)
+  // Quality-gate sources under scripts/, minus the two subsets a gated job
+  // actually EXECUTES (see scripts-drills and scripts-license-gen below). A
+  // ZERO-JOB module, like docs and devcontainer: no JOB_SURFACES entry names
+  // it, so it pulls nothing into scope. That is correct rather than lazy --
+  // every consumer of these files is a quality lane, and quality lanes carry no
+  // run_* gate at all (ci-quality.yml contains zero `run_` references, so the
+  // engine cannot turn one off even if a rule tried). Deliberately NOT reusing
+  // `docs`: a future edit that gives docs a job surface must not silently drag
+  // the gate sources with it.
+  'gates',
   'renet', // private/renet submodule
   'account', // private/account submodule
   'elite', // private/elite submodule
@@ -133,7 +143,9 @@ const RULES = [
     name: 'workflows',
     match: matchPrefix('.github/workflows/'),
     full: (p, ctx) =>
-      ctx.workflowClosure && ctx.workflowClosure.has(p) ? 'workflow-closure' : 'workflow-non-closure',
+      ctx.workflowClosure && ctx.workflowClosure.has(p)
+        ? 'workflow-closure'
+        : 'workflow-non-closure',
   },
 
   // Composite actions (setup-workspace, app-token) run in nearly every job.
@@ -169,11 +181,43 @@ const RULES = [
 
   { name: 'devcontainer', match: matchPrefix('.devcontainer/'), modules: ['devcontainer'] },
 
-  // Quality-gate sources and lint machinery: quality lanes are never
-  // path-filtered (registry gates must stay immune to scoping by
-  // construction), but these also feed hooks and dev flows whose surface is
-  // unmapped. Conservative full.
-  { name: 'scripts-harness', match: matchPrefix('scripts/'), full: 'harness' },
+  // Quality-gate sources and lint machinery.
+  //
+  // THE OLD COMMENT HERE GAVE THE WRONG REASON, and a conservative rule
+  // defended by a wrong reason is one that gets removed for bad reasons later.
+  // It said quality lanes "must stay immune to scoping by construction" and
+  // concluded `full`. Gate immunity is real but the engine already guarantees
+  // it independently: ci-quality.yml contains ZERO `run_` references, so no
+  // quality lane is among the 18 keys the engine can switch off. A scripts/
+  // rule cannot scope out a gate because gates are not scopeable at all.
+  //
+  // The load-bearing half was the second clause -- "these also feed hooks and
+  // dev flows whose surface is unmapped" -- so the surface was mapped
+  // (2026-08-06, tracing execution rather than reading names). Exactly two
+  // subsets are reachable from a gated job; they are carved out below and the
+  // rest becomes a zero-job module.
+  //
+  // scripts/drills/*.sh are EXECUTED by the gated Drills job:
+  // ct-tests.yml:1730 -> ./run.sh drill universe|transfer (:1787,:1801)
+  // -> run.sh:1987,:1991 -> these files. Mapping them to a module would need
+  // `drills` in a surface, and that surface (cli, shared, account) would drag
+  // the whole VM matrix in anyway; full is both cheaper and honest.
+  { name: 'scripts-drills', match: matchPrefix('scripts/drills/'), full: 'harness' },
+
+  // Runs INSIDE the executable build (.ci/scripts/build/prepare-cli-assets.sh:190,
+  // reached from build-cli-executables.sh:123) and its output ships in the CLI
+  // binary. A throw reds the ungated build job, but a silently-WRONG credits
+  // file is only caught by install_methods/package_tests, which ARE gated.
+  {
+    name: 'scripts-license-gen',
+    match: (p) => p === 'scripts/generate-third-party-licenses.ts',
+    full: 'harness',
+  },
+
+  // Everything else under scripts/: the check-* gates, their shared libs and
+  // data snapshots, the local ci-runner, and operator tooling. Traced
+  // 2026-08-06: nothing here is reachable from any of the 18 scoped keys.
+  { name: 'scripts-gates', match: matchPrefix('scripts/'), modules: ['gates'] },
   { name: 'eslint-harness', match: matchPrefix('eslint-rules/'), full: 'harness' },
   { name: 'compose-harness', match: matchPrefix('compose/'), full: 'harness' },
 
@@ -229,6 +273,24 @@ const JOB_SURFACES = {
   // full CI, so it needs no separate module.
   license_enforcement: ['renet'],
   account_e2e: ['account', 'shared'],
+  // The drills leg runs `./run.sh drill universe` + `drill transfer`: the CLI's
+  // own config resolution (`packages/cli`), the shared package both it and the
+  // account server build against, and a live `./run.sh account dev` gateway
+  // (`private/account`) the assertions log in to.
+  //
+  // The drills' OWN source (scripts/drills/*.sh) is not a module: `scripts/`
+  // hits the `scripts-harness` rule => full CI, so an edit to a drill always
+  // runs this leg. Same shape as license_enforcement's harness under `.ci/`.
+  //
+  // `www` is DELIBERATELY ABSENT even though `account_dev` starts the Astro dev
+  // server from packages/www and exits non-zero if it does not come up. A www
+  // change cannot change what these drills ASSERT (config isolation, per-config
+  // tokens, config-storage seed/offline/fail-closed): it can only break the
+  // harness. Carrying www here would run a ~15-minute leg on every marketing or
+  // i18n PR, which is the single most common change shape in this repo. The
+  // accepted cost: a www change that breaks `astro dev` while still building
+  // clean would surface as a red drills leg on the NEXT cli/account PR.
+  drills: ['cli', 'shared', 'account'],
   ops: ['cli', 'shared', 'provisioning', 'json', 'renet', 'account', 'tutorials'],
   elite_run: ['elite', 'renet'],
   update_flow: ['cli', 'shared', 'json', 'renet'],

@@ -32,7 +32,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import type { VideoManifest } from './lib/update-video-manifest.js';
+import type { SparseVideoManifest } from './lib/update-video-manifest.js';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const wwwRoot = path.resolve(scriptDir, '..');
@@ -41,12 +41,15 @@ const manifestPath = path.join(wwwRoot, 'src', 'data', 'video-manifest.json');
 
 const REQUIRED_FIELDS = ['mp4', 'poster', 'vtt', 'chaptersVtt', 'wordsJson'] as const;
 
-function loadManifest(): VideoManifest {
+function loadManifest(): SparseVideoManifest {
   if (!fs.existsSync(manifestPath)) {
     return { generatedAt: '', baseUrl: '', tutorials: {}, solutions: {} };
   }
-  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as VideoManifest;
+  return JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as SparseVideoManifest;
 }
+
+/** Sort `[key, value]` entry pairs by key, ascending, by code unit. */
+const byKeyAsc = <T>([a]: [string, T], [b]: [string, T]): number => (a < b ? -1 : a > b ? 1 : 0);
 
 interface Miss {
   locale: string;
@@ -96,8 +99,12 @@ function extractCastKeys(mdContent: string): string[] {
   return [...keys];
 }
 
-function missingManifestFields(manifest: VideoManifest, locale: string, castKey: string): string[] {
-  const entry = manifest.tutorials[castKey]?.[locale];
+function missingManifestFields(
+  manifest: SparseVideoManifest,
+  locale: string,
+  castKey: string
+): string[] {
+  const entry = manifest.tutorials?.[castKey]?.[locale];
   if (!entry) {
     return REQUIRED_FIELDS.map((field) => `${castKey}.${locale}.${field} (no manifest entry)`);
   }
@@ -107,7 +114,7 @@ function missingManifestFields(manifest: VideoManifest, locale: string, castKey:
 }
 
 function checkLocaleTutorial(
-  manifest: VideoManifest,
+  manifest: SparseVideoManifest,
   locale: string,
   castKey: string,
   docFile: string
@@ -159,7 +166,7 @@ function main(): number {
   console.error(
     `✗ Locale tutorial assets missing (${misses.length} broken pairs across ${byLocale.size} locales)\n`
   );
-  for (const [locale, list] of [...byLocale.entries()].sort()) {
+  for (const [locale, list] of [...byLocale.entries()].sort(byKeyAsc)) {
     console.error(`[${locale}]`);
     for (const m of list) {
       console.error(`  ${m.docFile} → ${m.castKey}`);

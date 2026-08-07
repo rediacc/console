@@ -430,4 +430,130 @@ describe('refreshRepoLicensesBatch', () => {
       expect(execCommands.some((c) => c.includes(REPO_DIR))).toBe(false);
     });
   });
+
+  describe('datastore scoping, datastoreId and clusterId', () => {
+    const DS_ID = '7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f';
+    const NAMED_REPO = '550e8400-e29b-41d4-a716-446655440000';
+
+    /** Seed the scan so the tracked repo lives in a NAMED datastore. */
+    function seedDatastoreResidentRepo(): void {
+      mockExec.mockReset();
+      mockExec
+        .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
+        .mockResolvedValueOnce(
+          JSON.stringify([
+            {
+              repositoryGuid: NAMED_REPO,
+              requestedSizeGb: 4,
+              luksUuid: '550e8400-e29b-41d4-a716-446655440001',
+              datastoreId: DS_ID,
+              datastorePath: '/mnt/rediacc-ds/fast',
+            },
+          ])
+        )
+        .mockResolvedValueOnce(JSON.stringify([]))
+        .mockResolvedValue('');
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [
+          {
+            repositoryGuid: NAMED_REPO,
+            status: 'issued',
+            license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
+          },
+        ],
+      });
+    }
+
+    it('scans every datastore, not just the machine primary', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
+
+      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+      const scan = mockExec.mock.calls
+        .map((c) => c[0] as string)
+        .find((c) => c.includes('license-scan'));
+      // Without this flag a repo in a named datastore is invisible to refresh:
+      // it still expires and still blocks backups, it is just never looked at.
+      expect(scan).toContain('--all-datastores');
+    });
+
+    it('sends the datastore identity so the signed payload is bound to it', async () => {
+      seedDatastoreResidentRepo();
+
+      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+      const body = mockAccountServerFetch.mock.calls[0][1] as {
+        body: { repos: { datastoreId?: string }[] };
+      };
+      expect(body.body.repos[0].datastoreId).toBe(DS_ID);
+    });
+
+    it('installs a datastore-resident licence into that datastore’s population', async () => {
+      seedDatastoreResidentRepo();
+
+      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+      // renet reads ONE population per repo and treats the other as absent, so
+      // an unscoped write here would read back as `missing`, trigger a reissue,
+      // and loop forever burning the monthly issuance quota.
+      const scopedDir = `/var/lib/rediacc/license/datastores/${DS_ID}/repos/${NAMED_REPO}`;
+      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
+      const teeCommands = mockExecStreaming.mock.calls.map((c) => c[0] as string);
+      expect(execCommands).toContain(`sudo mkdir -p "${scopedDir}"`);
+      expect(teeCommands).toContain(`sudo tee "${scopedDir}/${VALID_KEY_ID}.json" > /dev/null`);
+      expect(
+        execCommands.some((c) => c.includes(`/var/lib/rediacc/license/repos/${NAMED_REPO}/`))
+      ).toBe(false);
+    });
+
+    it('keeps the legacy unscoped path for a repo with no datastore identity', async () => {
+      mockAccountServerFetch.mockResolvedValueOnce({
+        results: [
+          {
+            repositoryGuid: NAMED_REPO,
+            status: 'issued',
+            license: { payload: 'a', signature: 'b', publicKeyId: VALID_KEY_ID },
+          },
+        ],
+      });
+
+      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+      // The plain default datastore carries no descriptor, so renet keeps
+      // reading repos/<guid>/ for it. Scoping those would orphan every
+      // existing licence on every existing machine.
+      const execCommands = mockExec.mock.calls.map((c) => c[0] as string);
+      expect(execCommands).toContain(
+        `sudo mkdir -p "/var/lib/rediacc/license/repos/${NAMED_REPO}"`
+      );
+      expect(execCommands.some((c) => c.includes('/license/datastores/'))).toBe(false);
+    });
+
+    it('sends the cluster the machine belongs to, and omits it when it belongs to none', async () => {
+      const clustered: MachineConfig = { ...machine, cluster: { cluster: 'prod', pool: 'k8s' } };
+      mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
+
+      await refreshRepoLicensesBatch(clustered, 'dummy-key', '/usr/bin/renet');
+
+      const body = mockAccountServerFetch.mock.calls[0][1] as {
+        body: { clusterId?: string; repos: { clusterId?: string }[] };
+      };
+      expect(body.body.clusterId).toBe('prod');
+      expect(body.body.repos[0].clusterId).toBe('prod');
+
+      mockAccountServerFetch.mockClear();
+      mockExec.mockClear();
+      mockExec
+        .mockResolvedValueOnce('3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b\n')
+        .mockResolvedValueOnce(JSON.stringify([{ repositoryGuid: NAMED_REPO, requestedSizeGb: 4 }]))
+        .mockResolvedValueOnce(JSON.stringify([]))
+        .mockResolvedValue('');
+      mockAccountServerFetch.mockResolvedValueOnce({ results: [] });
+
+      await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+      const plain = mockAccountServerFetch.mock.calls[0][1] as { body: { clusterId?: string } };
+      expect(plain.body.clusterId).toBeUndefined();
+    });
+  });
 });

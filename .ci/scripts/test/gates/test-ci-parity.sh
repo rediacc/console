@@ -432,6 +432,40 @@ YAML
     log_pass "the parity surface is computed by uses: iteration, not by naming files"
 }
 
+test_external_wrapper_is_transparent() {
+    # run-external-gate.sh executes its arguments and only changes what a
+    # failure MEANS (soft on schedule, hard on a PR). The resolver must see
+    # through it to the wrapped gate, or every external gate's CI pointer
+    # breaks the moment it adopts the wrapper (the exact finding set this
+    # feature's first parity run produced: 6 pointers "run something else").
+    local d="$1"
+    scaffold "$d" '      - name: Alpha
+        run: .ci/scripts/quality/run-external-gate.sh npm run check:ci-alpha'
+    manifest "$d" "$MANIFEST_ALPHA"
+
+    local rc=0
+    run_gate "$d" || rc=$?
+    assert_exit_code 0 "$rc" "a gate wrapped in run-external-gate.sh must still count as CI-covered"
+    log_pass "run-external-gate.sh is transparent to leaf resolution"
+}
+
+test_unknown_wrapper_is_not_transparent() {
+    # CONTROL for the case above: transparency is specific to the known
+    # wrapper. An arbitrary wrapper script hiding the same command must still
+    # fail the pointer check, or any indirection would count as coverage.
+    local d="$1"
+    scaffold "$d" '      - name: Alpha
+        run: .ci/scripts/quality/run-mystery-wrapper.sh npm run check:ci-alpha'
+    touch "$d/.ci/scripts/quality/run-mystery-wrapper.sh"
+    manifest "$d" "$MANIFEST_ALPHA"
+
+    local rc=0
+    run_gate "$d" || rc=$?
+    assert_exit_code 1 "$rc" "an unknown wrapper must not count as running the wrapped gate"
+    assert_contains "$LAST_OUT" "runs something else" "reports the pointer mismatch"
+    log_pass "an unknown wrapper is not transparent (the transparency cannot leak)"
+}
+
 test_battery_equality_is_enforced() {
     # Without this, flattening run-all.sh recreates #549 once per test: a new
     # test would run in CI via the battery and never locally.
@@ -488,6 +522,8 @@ with_temp_dir test_empty_manifest_refuses
 with_temp_dir test_empty_workflow_tree_refuses
 with_temp_dir test_missing_entry_job_collapses_the_surface
 with_temp_dir test_parity_surface_is_computed_not_named
+with_temp_dir test_external_wrapper_is_transparent
+with_temp_dir test_unknown_wrapper_is_not_transparent
 with_temp_dir test_battery_equality_is_enforced
 echo ""
 log_pass "all tests passed"

@@ -173,7 +173,7 @@ function findClassUsage(className, sourceFiles) {
  * Escape special regex characters
  */
 function escapeRegex(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**
@@ -249,9 +249,7 @@ function main() {
   const byFile = {};
   for (const cls of unusedClasses) {
     const relativePath = path.relative(ROOT_DIR, cls.file);
-    if (!byFile[relativePath]) {
-      byFile[relativePath] = [];
-    }
+    byFile[relativePath] ??= [];
     byFile[relativePath].push(cls);
   }
 

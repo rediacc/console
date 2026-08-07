@@ -55,7 +55,17 @@ function unquoteCPath(quoted) {
   if (quoted.length < 2 || !quoted.startsWith('"') || !quoted.endsWith('"')) return null;
   const inner = quoted.slice(1, -1);
   const bytes = [];
-  const SIMPLE = { n: 0x0a, t: 0x09, r: 0x0d, f: 0x0c, b: 0x08, v: 0x0b, a: 0x07, '"': 0x22, '\\': 0x5c };
+  const SIMPLE = {
+    n: 0x0a,
+    t: 0x09,
+    r: 0x0d,
+    f: 0x0c,
+    b: 0x08,
+    v: 0x0b,
+    a: 0x07,
+    '"': 0x22,
+    '\\': 0x5c,
+  };
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
     if (ch !== '\\') {
@@ -153,6 +163,70 @@ function computeWorkflowClosure(repoRoot, entry = 'ci.yml') {
 // cannot prove what it ran (case 2: pre-engine or expired artifact reads as
 // absent, case 3), or on a plan whose jobs were skipped by a watchdog rerun
 // rather than by scope (case 4: intent is not outcome).
+// A greenlit skip is written by scope-shadow.sh's apply_greenlight as
+// `greenlight:<run-id>`; nothing else in the pipeline produces a reason of
+// that shape (buildPlan writes 'full', 'modules:<...>' and 'out-of-scope').
+const GREENLIGHT_REASON_RE = /^greenlight:\d+$/;
+
+// planCoverageIsFull(plan) -> did that run cover every key, by execution or by
+// evidence? THE MODE LABEL IS NOT THE ANSWER, and reading it as one is what
+// kept this engine from ever reducing a round.
+//
+// scope-shadow.sh flips `mode` to 'reduced' whenever the cross-PR greenlight
+// skips a single key, and it is right to: the plan no longer describes a round
+// that executed everything. But `renet` and `account_e2e` closures change
+// rarely, so on this repo the flip fires on nearly every run, and a run that
+// executed sixteen of eighteen keys and held greenlight EVIDENCE for the other
+// two was refused as a baseline exactly like a run that skipped its way to
+// green. Measured over the 14 console PR runs from 30944973190 to 30983418337:
+// every single walk died at the merge parent, and no job was ever skipped with
+// reason 'out-of-scope'.
+//
+// So the question is asked per key instead of per label. A key covers if it
+// was planned to RUN (the reconciler, which every caller of this predicate
+// runs afterwards, then proves it actually ran) or if it was skipped on a
+// greenlight, whose evidence is a DIFFERENT run in which that job's exact
+// input closure executed green (greenlight.cjs's rule 1: "asks whether the job
+// RAN, not what the plan intended"). A key skipped as 'out-of-scope' does not
+// cover, which is case 1 intact: scope evidence still cannot chain.
+//
+// This makes `reason` load-bearing where the reconciler deliberately ignores
+// it. That adds no trust: the reason string arrives in the same artifact as
+// `mode`, `run` and `base_sha`, all already load-bearing, so a plan able to
+// lie here could lie by claiming mode 'full' today. What stays derived rather
+// than declared is the part that matters -- `reconciled` is still recomputed by
+// the reader, per attestPlan's doctrine.
+//
+// EVERY MALFORMED SHAPE READS AS "NOT COVERED", because the two verdicts are
+// not symmetric: reading garbage as coverage reduces a round on evidence that
+// was never checked, while reading it as a gap costs one full round. Only the
+// second is recoverable, so the predicate is written to reach `true` from
+// exactly the two shapes the producers emit, and from nothing else.
+function planCoverageIsFull(plan) {
+  if (!plan || typeof plan !== 'object') return false;
+  if (plan.mode === 'full') return true;
+  if (plan.mode !== 'reduced') return false;
+  // An ARRAY is refused outright rather than tolerated. buildPlan writes a map
+  // keyed by job id and every reader indexes it by key, so Object.values on an
+  // array would quietly succeed on a shape no producer emits and no consumer
+  // could use.
+  if (!plan.jobs || typeof plan.jobs !== 'object' || Array.isArray(plan.jobs)) return false;
+  const jobs = Object.values(plan.jobs);
+  // An empty jobs vector proves nothing about anything.
+  if (jobs.length === 0) return false;
+  // STRICT BOOLEANS ON BOTH SIDES, never `run !== false`. scope-map.cjs's
+  // buildPlan writes real booleans and skip-plan-reconcile.cjs already reads
+  // them strictly (`planned.run === true`), so `run` absent, `"false"` or `0`
+  // are malformed entries rather than dialects. `run` ABSENT is the one that
+  // decides the form: paired with reason 'out-of-scope' it is precisely the
+  // skip case 1 forbids, and `!== false` would have called it coverage.
+  return jobs.every(
+    (j) =>
+      j &&
+      (j.run === true || (j.run === false && GREENLIGHT_REASON_RE.test(String(j.reason || ''))))
+  );
+}
+
 function evaluateBaselineCandidate(candidate) {
   if (!candidate || candidate.conclusion !== 'success') {
     return { usable: false, reason: 'not-green' };
@@ -160,7 +234,7 @@ function evaluateBaselineCandidate(candidate) {
   if (!candidate.plan) {
     return { usable: false, reason: 'no-skip-plan' };
   }
-  if (candidate.plan.mode !== 'full') {
+  if (!planCoverageIsFull(candidate.plan)) {
     return { usable: false, reason: 'reduced-baseline' };
   }
   if (candidate.plan.reconciled !== true) {
@@ -216,10 +290,11 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
 
   try {
     // Cheapest first, and the order is a cost decision, not a style one.
-    // A non-full plan can never be a baseline whatever the reconciler says
-    // (case 1: evidence does not chain across reduced rounds), so asking the
-    // Jobs API about it would be a round trip spent on a foregone conclusion.
-    if (plan.mode !== 'full') return refuse('not-full-plan');
+    // A plan that did not cover every key can never be a baseline whatever the
+    // reconciler says (case 1: evidence does not chain across SCOPE-reduced
+    // rounds), so asking the Jobs API about it would be a round trip spent on a
+    // foregone conclusion. Coverage, not the mode label: see planCoverageIsFull.
+    if (!planCoverageIsFull(plan)) return refuse('not-full-plan');
     // Case 30 again, but at READ time: a plan that does not name the run we
     // downloaded it from is stale or substituted evidence.
     // The `!plan.run_id` half is load-bearing: without it a plan carrying NO
@@ -240,7 +315,9 @@ function attestPlan({ plan, jobs, runId, sha, reconcile }) {
       return refuse(`jobs-unreadable:${msg(e)}`);
     }
     const observed = Array.isArray(payload) ? payload : payload && payload.jobs;
-    const list = Array.isArray(observed) ? observed.filter((j) => j && typeof j.name === 'string') : null;
+    const list = Array.isArray(observed)
+      ? observed.filter((j) => j && typeof j.name === 'string')
+      : null;
     // An EMPTY job list is unusable evidence, not a clean bill of health: it
     // is what an unreadable payload and a run that never materialised both
     // look like, and reconcile() would happily report ok on it.
@@ -588,7 +665,14 @@ function parseJsonStream(text) {
   return values;
 }
 
-function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', artifactName = 'ci-skip-plan', run = defaultRun }) {
+function createRepoIo({
+  repoRoot,
+  repo,
+  branch = null,
+  workflow = 'Console CI',
+  artifactName = 'ci-skip-plan',
+  run = defaultRun,
+}) {
   const git = (...args) => run('git', ['-C', repoRoot, ...args]);
   const gh = (...args) => run('gh', args);
 
@@ -658,8 +742,20 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
   // against the one-shot listing below, where a candidate costs zero calls.
   const runsForShaViaGh = (sha) =>
     JSON.parse(
-      gh('run', 'list', '--repo', repo, '--workflow', workflow, '--commit', sha,
-        '--json', 'databaseId,conclusion,status', '-L', '5'),
+      gh(
+        'run',
+        'list',
+        '--repo',
+        repo,
+        '--workflow',
+        workflow,
+        '--commit',
+        sha,
+        '--json',
+        'databaseId,conclusion,status',
+        '-L',
+        '5'
+      )
     );
 
   // One paginated listing of the branch's runs, joined locally. This is what
@@ -684,7 +780,7 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
       for (let page = 1; page <= RUNS_LIST_MAX_PAGES; page++) {
         const text = gh(
           'api',
-          `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`,
+          `repos/${repo}/actions/runs?head_branch=${encodeURIComponent(branch)}&per_page=100&page=${page}`
         );
         const payload = JSON.parse(text);
         const runs = (payload && payload.workflow_runs) || [];
@@ -740,7 +836,13 @@ function createRepoIo({ repoRoot, repo, branch = null, workflow = 'Console CI', 
     // No green run at all: report the red one and download nothing. A run
     // that failed cannot be a baseline whatever its plan says, so paying
     // for the artifact would buy an answer nobody reads.
-    return { sha, conclusion: done[0].conclusion, runId: done[0].databaseId, plan: null, attestsTried: 0 };
+    return {
+      sha,
+      conclusion: done[0].conclusion,
+      runId: done[0].databaseId,
+      plan: null,
+      attestsTried: 0,
+    };
   };
 
   return {
@@ -867,7 +969,7 @@ function main(argv) {
         limit: Number.isFinite(opts.limit) ? opts.limit : DEFAULT_CANDIDATE_LIMIT,
         workflowClosure: computeWorkflowClosure(repoRoot),
       },
-      io,
+      io
     );
     process.stdout.write(
       `${JSON.stringify(
@@ -880,8 +982,8 @@ function main(argv) {
           baseline_notes: result.notes,
         },
         null,
-        2,
-      )}\n`,
+        2
+      )}\n`
     );
     return 0;
   }
@@ -915,6 +1017,7 @@ module.exports = {
   parseFileList,
   computeWorkflowClosure,
   evaluateBaselineCandidate,
+  planCoverageIsFull,
   attestPlan,
   parseJsonStream,
   isBaseUnchanged,

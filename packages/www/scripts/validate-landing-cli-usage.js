@@ -151,7 +151,7 @@ function buildTranslationCommandMap(lang) {
   const map = new Map();
   const commands = getTranslationTerminalCommands(lang);
   for (const entry of commands) {
-    map.set(entry.sourceId, entry.commandText || '');
+    map.set(entry.sourceId, entry.commandText ?? '');
   }
   return map;
 }

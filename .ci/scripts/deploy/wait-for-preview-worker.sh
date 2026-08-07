@@ -2,22 +2,37 @@
 # Block until the per-PR preview Worker answers its health endpoint.
 #
 # Cloudflare propagates a new Worker version asynchronously, so the deploy step
-# returning is not the same as the Worker serving. 30 attempts, 2s apart.
+# returning is not the same as the Worker serving.
 #
 # Usage:
 #   PR_NUMBER=123 .ci/scripts/deploy/wait-for-preview-worker.sh
 #
 # Required env:
 #   PR_NUMBER   preview worker is named pr-<PR_NUMBER>
+#               (not required when PREVIEW_URL_OVERRIDE is set)
+#
+# Test-only env. CI sets NONE of these; the defaults below are the real policy.
+# They exist so .ci/scripts/test/gates/test-preview-readiness.sh can drive this
+# script against a local stub in seconds instead of copying it through sed --
+# which is how it had to be tested before, and a script you must fork to test is
+# a script that stops being tested.
+#   PREVIEW_URL_OVERRIDE     probe this base URL instead of deriving one
+#   REQUIRED_STREAK          consecutive good probes demanded (default 3)
+#   MAX_ATTEMPTS             probe budget (default 60)
+#   PROBE_INTERVAL_SECONDS   spacing between probes (default 2)
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
 require_cmd curl
-: "${PR_NUMBER:?PR_NUMBER is required}"
 
-PREVIEW_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev"
+if [[ -n "${PREVIEW_URL_OVERRIDE:-}" ]]; then
+    PREVIEW_URL="$PREVIEW_URL_OVERRIDE"
+else
+    : "${PR_NUMBER:?PR_NUMBER is required}"
+    PREVIEW_URL="https://pr-${PR_NUMBER}.rediacc.workers.dev"
+fi
 
 # READINESS MUST PROBE WHAT THE CALLER ACTUALLY NEEDS, not the cheapest
 # endpoint that answers.
@@ -59,14 +74,50 @@ ready() {
         grep -q '"publicKeySpki"' || return 1
 }
 
-for i in $(seq 1 30); do
+# CHANGING *WHICH* ENDPOINT IS PROBED IS NOT THE FIX. THAT HAS BEEN TRIED TWICE.
+#
+# Commit 8b7840ed4 ("wait for the endpoint the smoke test needs, not the
+# cheapest one") added the server-info probe; commit cefa43ca7 ("repair a
+# vacuous preview-readiness gate") corrected the body assertion it grepped for.
+# Both changed WHAT is probed. Neither changed HOW MANY TIMES, so the same
+# failure came back a third time in runs 30968082228 and 30995469629: this
+# script logged "ready" at 10:26:41.557 and smoke-test-preview.ts got HTTP 500
+# from the very same server-info URL at 10:26:42.86, 1.3 seconds later. Probing
+# the URL by hand afterwards returned 200 fifteen times out of fifteen.
+#
+# A single success cannot distinguish "up" from "flapping", and this deployment
+# flaps by construction: deploy-www.sh deletes and recreates the per-PR D1
+# database on EVERY push, and server-info is the first endpoint that touches D1
+# (private/account/src/app.ts queries version_policies), while /health touches
+# nothing. So the endpoint alternates while the fresh database propagates, and a
+# first-success probe simply samples whichever answer it happened to catch.
+#
+# Hence a STREAK: the endpoints must hold for REQUIRED_STREAK consecutive probes,
+# and any single failure resets the count to zero. If this fires falsely again,
+# raise the streak or the budget. Do not go looking for a better endpoint.
+REQUIRED_STREAK="${REQUIRED_STREAK:-3}"
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"
+PROBE_INTERVAL_SECONDS="${PROBE_INTERVAL_SECONDS:-2}"
+
+streak=0
+for i in $(seq 1 "$MAX_ATTEMPTS"); do
     if ready; then
-        log_info "Preview worker is ready (health + server-info both serving)"
-        exit 0
+        streak=$((streak + 1))
+        if [[ "$streak" -ge "$REQUIRED_STREAK" ]]; then
+            log_info "Preview worker is ready (health + server-info both serving, ${REQUIRED_STREAK} consecutive probes)"
+            exit 0
+        fi
+        log_info "Preview worker answered ($streak/$REQUIRED_STREAK consecutive)... (attempt $i/$MAX_ATTEMPTS)"
+    else
+        if [[ "$streak" -gt 0 ]]; then
+            log_warn "Preview worker flapped after $streak consecutive success(es); streak reset (attempt $i/$MAX_ATTEMPTS)"
+        else
+            log_info "Waiting for preview worker... (attempt $i/$MAX_ATTEMPTS)"
+        fi
+        streak=0
     fi
-    log_info "Waiting for preview worker... (attempt $i/30)"
-    sleep 2
+    sleep "$PROBE_INTERVAL_SECONDS"
 done
 
-log_error "Preview worker did not become ready"
+log_error "Preview worker did not become ready (never held for $REQUIRED_STREAK consecutive probes)"
 exit 1

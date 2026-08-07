@@ -46,7 +46,7 @@
  * learns to exempt Estonian, its findings for `et` are expected output, not defects.
  */
 import process from 'node:process';
-import type { VideoManifest } from './lib/update-video-manifest.js';
+import type { SparseVideoManifest } from './lib/update-video-manifest.js';
 
 import { SITE_LOCALES } from '@rediacc/locales';
 const manifestUrl = new URL('../src/data/video-manifest.json', import.meta.url);
@@ -97,9 +97,9 @@ interface Target {
   url: string;
 }
 
-async function loadManifest(): Promise<VideoManifest> {
+async function loadManifest(): Promise<SparseVideoManifest> {
   const fs = await import('node:fs');
-  return JSON.parse(fs.readFileSync(manifestUrl, 'utf8')) as VideoManifest;
+  return JSON.parse(fs.readFileSync(manifestUrl, 'utf8')) as SparseVideoManifest;
 }
 
 /**
@@ -137,12 +137,15 @@ const FLAT_TIMING_EXEMPT = new Set(['et']);
  */
 const MAX_FLAT_CUE_SHARE = 0.25;
 
-function collectTargets(manifest: VideoManifest): Target[] {
+/** Sort `[key, value]` entry pairs by key, ascending, by code unit. */
+const byKeyAsc = <T>([a]: [string, T], [b]: [string, T]): number => (a < b ? -1 : a > b ? 1 : 0);
+
+function collectTargets(manifest: SparseVideoManifest): Target[] {
   const targets: Target[] = [];
-  for (const [slug, byLang] of Object.entries(manifest.tutorials)) {
+  for (const [slug, byLang] of Object.entries(manifest.tutorials ?? {})) {
     for (const lang of AUDIO_LANGUAGES) {
       if (FLAT_TIMING_EXEMPT.has(lang)) continue;
-      const entry = byLang[lang]?.wordsJson;
+      const entry = byLang?.[lang]?.wordsJson;
       if (!entry?.path) continue; // covered by check-locale-tutorial-assets.ts
       targets.push({ slug, lang, url: `${manifest.baseUrl}/${entry.path}` });
     }
@@ -302,7 +305,7 @@ async function main(): Promise<number> {
       `\n✗ ${flatByTutorial.size} tutorial x language combo(s) have flat/estimated word ` +
         `timing (captions render but aren't synced to audio):\n`
     );
-    for (const [key, flatCues] of [...flatByTutorial.entries()].sort()) {
+    for (const [key, flatCues] of [...flatByTutorial.entries()].sort(byKeyAsc)) {
       const [slug, lang] = key.split('\t');
       console.error(
         `[${slug} / ${lang}] ${flatCues.length} flat cue(s), e.g. "${flatCues[0].text}"`
@@ -318,7 +321,7 @@ async function main(): Promise<number> {
 
 main()
   .then((code) => process.exit(code))
-  .catch((e) => {
+  .catch((e: unknown) => {
     console.error('check-tutorial-caption-sync crashed:', e);
     process.exit(1);
   });

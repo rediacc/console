@@ -16,9 +16,19 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 ## Mode
 
-- If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `bg`** → **Delegate mode** (below); the remainder of `$ARGUMENTS` seeds the intent summary. Bare `/pr-babysit bg` is valid (intent comes from the session survey + cold-start questions).
-- Anything else — including no arguments — → **Default mode**: you run the loop in this session; `$ARGUMENTS` seeds the intent summary. (`bg` must be the entire first token: a summary that merely starts with those letters, e.g. "bgp fix", is NOT delegate mode.)
-- Model note: the agent file's `model: opus` applies only to the delegated teammate; in default mode the loop runs on the session model.
+- **Default — including no arguments — is Inline mode** (below): you run the loop in THIS session per the agent file; `$ARGUMENTS` seeds the intent summary.
+- If the **first whitespace-delimited token of `$ARGUMENTS` is exactly `bg`** → **Delegate mode**: spawn a background pr-babysitter teammate and supervise it as team lead; the remainder of `$ARGUMENTS` seeds the intent summary.
+
+**WHY THE DEFAULT WENT BACK TO INLINE (operator directive, 2026-08-05.)** Delegation was
+tried as the default on the 0804-1 wave and the wave did not finish: CI reached green at
+05:35Z and the babysitter never saw it, because its wake-up watches died repeatedly
+(four separate deaths across the night, each needing a lead ping to recover) and the
+last one took the terminal verdict with it. The PR was still sitting in DRAFT hours
+later with every check green. The delegated loop's failure mode is that NOBODY is
+watching the watcher: a dropped watch is invisible to the babysitter by construction,
+and the lead can only detect it by polling a round log. Running in-session puts the
+loop on the same wake-ups as the rest of the session, where a stall is visible
+immediately. `bg` remains available for genuinely multi-day waves.
 
 ## Preflight (both modes)
 
@@ -43,37 +53,13 @@ For each one found:
 - Reading ahead/behind: `git rev-list --left-right --count origin/main...HEAD` prints `<on main only> <on branch only>`. The **second** number is the branch's own unmerged commits. Misreading it as "behind" turns weeks of unmerged work into "stale checkout, ignore it" — this has actually happened.
 
 
-- **One babysit at a time.** Check the task board for a live babysit task and, in default mode, that you are not about to push alongside an existing background babysitter — a second pusher triggers the cancel-old-ci race and the shared-tree hazard. If one is live, stop and say so.
+- **One babysit at a time.** Check the task board for a live babysit task and, in inline mode, that you are not about to push alongside an existing background babysitter — a second pusher triggers the cancel-old-ci race and the shared-tree hazard. If one is live, stop and say so.
 - **Resume detection**: if PRs already exist for this branch (state block above), the loop resumes at CI/reviews — record that in the wave header/briefing; nothing is re-created.
 - **On resume, read the console PR's review state too**: note whether it is still a draft or already flipped ready, and whether a `<!-- claude-reviewed: <sha> -->` marker comment matches the current head. That determines whether the loop resumes pre-review (still driving CI green under a draft) or post-review (ready, addressing Claude's threads).
 - **Stacking decision — made here, not mid-loop**: new `MMDD-N` branch from main, or stack onto an existing branch/PRs? Stack when the work depends on unmerged prerequisites (precedent: a follow-up wave stacked onto its predecessor's open PRs because main lacked the base). Record the decision and rationale in the wave header/briefing.
 - **Cold-start rule**: if you lack session context to fill the wave header's first four slots (intent, deliberate renames, sanctioned reds, frozen surfaces — spec in the agent file's round-log section), survey the diff, fill what you can, and **ask the user the unfillable questions before starting** — sanctioned reds? deliberate renames? stack or new branch? Three questions up front beat a wrong round 1.
 
-## Default mode: run the loop here
-
-**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here — that file is the single source of truth for the loop, the tier system, the round-log format, and the gotchas.
-
-- Compose the **wave header** at the top of the round log (`reports/pr-babysit-<branch>.md`) per the agent file's slot spec — there is no separate briefing file in this mode.
-- **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.
-- **Every turn that leaves a CI run in flight ends with an armed terminal-state watch** (agent file, wake-up section). Nobody else is watching the run.
-- **Arm a 1-HOUR HEARTBEAT LOOP at the start of the wave, and keep it running until the finish line.** The terminal-state watch is the primary wake-up; the heartbeat is what survives it. A background watch **can and does drop silently** — observed: a run went terminal with a red and the babysitter never woke, and the round log sat frozen for 18 minutes. **A watch that never fires is indistinguishable from a run that never finished**, so without a second, independent timer a dropped watch ends the wave silently and nobody notices until morning.
-  - Create it with `CronCreate` (precedent: the orchestration-watchdog tick) or the `loop` skill, on a ~60-minute interval.
-  - **Its first act on every tick is to re-check the run** (`gh api .../actions/runs/<id>`) rather than assume the watch still holds it, then re-arm the watch if the run is still in flight. Re-arming costs nothing; a dropped watch costs the whole night.
-  - It is also the stuck-detector: if the STATUS block's timestamp has not moved across a tick during which the run demonstrably changed state, the loop is wedged — restart it from the round log.
-  - **Tear it down at the finish line** (and say so in the final report), so it does not keep firing after the wave is done.
-- **AUTONOMOUS MODE — do NOT ask the user questions.** There is no tier-3 stop in default mode: decide every call yourself, take the safest reversible option, and keep the loop moving. Never use AskUserQuestion; never end a turn waiting on a ruling.
-  - Record each tier-3-class decision in the round log under **DECISIONS (post-hoc review)**: what you chose, the alternative, and why — so the user can veto afterwards instead of being interrupted mid-loop.
-  - Tie-breakers, in order: (1) prefer the option that cannot destroy data or weaken a check; (2) prefer completing an already-ruled intent over re-litigating it; (3) prefer the smallest change that makes the gate honest; (4) if genuinely 50/50, pick one, log it, and move on.
-  - Only exception: a change that would be **irreversible outside the PR** (pushing main, merging, releasing, deleting remote data). Those stay forbidden outright — not escalated, just not done.
-- **FIX IT. DO NOT FILE IT.** Opening a GitHub issue for a red you hit is **not** an outcome — it is the loop refusing to run. Never respond to a failing check by writing it up and handing it back; investigate it, fix it, commit, push, and go round again. If you have already opened an issue for something you then fix, close it with a comment explaining the fix. (Real case: a babysitter met a broken review pipeline, produced a well-evidenced issue, and stopped — turning a night of autonomous work into a ticket. The operator's response was "STOP opening new issues.")
-- **"It's not my change" is never a reason to stop.** Whether a red came from your diff, from `main`, from a submodule, or from infrastructure somebody else broke an hour ago is **diagnostic information, not an exit condition**. The finish line is a green PR, and a red you inherited blocks it exactly as hard as one you wrote. Provenance belongs in the round log; it never belongs in a decision to stand down. The same goes for "pre-existing", "environmental" and "flaky" — each is a claim that must be *proved* (see the agent file's clean-room rule) and, once proved, still has to be routed around or repaired.
-- **Shared/CI infrastructure is IN SCOPE when it blocks the finish line.** Reviewing, gates, workflows, the release path: if it stands between this PR and green, fixing it is the job. Blast radius raises the bar for *evidence and verification*, not for whether you act. Take the smallest correct fix, verify it with the thing that decides (run the gate, run actionlint, read the script the gate uses), and log it as a DECISION for post-hoc veto.
-- **Default to farming bulky fix implementation out to worker sub-agents** (agent file, "Workers" section — Sonnet for i18n/mechanical sweeps, Opus for code fixes). That is what keeps a long in-context loop affordable; you keep diagnosis, commits, and pushes. For a hard cross-cutting fix, hand a worker the **completed diagnosis + file scope + the exact acceptance command**, then verify its work yourself before staging.
-- **Absorb the operator's uncommitted work too.** The snapshot takes the whole tree, and the operator may keep adding to it while you run. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.)
-- **Overnight/unattended runs are the normal case, not the exception.** Assume nobody will answer until morning. Budget rounds accordingly, keep the round log current enough that a cold reader could take over, and never end the night on "waiting for a ruling" — decide, log, and keep the loop alive.
-- Scoping honesty: for a wave you expect to run **multi-day**, `bg` is usually the right call — the 0707 babysitter itself died of context exhaustion mid-campaign. The default is a default, not a dogma.
-
-## Delegate mode (bg): spawn and supervise
+## Delegate mode (`bg` only): spawn and supervise
 
 You are the **team lead**. Your job is the four things only you can do: compose the briefing, hand over the tree, rule on escalations, verify the end. Your real work while it runs is *the remaining task list* — if you have nothing to do but watch CI, the wave was mis-scoped.
 
@@ -83,10 +69,14 @@ Write it to `~/.claude/projects/-home-muhammed-monorepo-console/reports/pr-babys
 ### 2. Hand over the tree, register, spawn
 - **The primary working tree belongs to the babysitter** until green (it needs node_modules, builds, `rdc.sh`). Other implementation teammates you spawn use `isolation: "worktree"`. Do not edit tracked files in the primary tree; if you must (a fix only you can make), tell the babysitter the exact paths and that they are yours — it stages surgically and will otherwise treat them as a leak.
 - `TaskCreate` a babysit task so the board and your watchdog cover it.
-- Spawn in the background (`subagent_type: pr-babysitter` if registered, else general-purpose with an instruction to read `.claude/agents/pr-babysitter.md` as its role definition), initial prompt = briefing path + branch + PR links + anything time-critical.
+- Spawn in the background with a **name** (e.g. `babysit-<branch>`) so SendMessage routing works both ways: `subagent_type: pr-babysitter` if registered, else general-purpose with an instruction to read `.claude/agents/pr-babysitter.md` as its role definition. Initial prompt = briefing path + branch + PR links + anything time-critical + the instruction that **you, the lead, are its principal and its SendMessage target for every tier-3 question and every report**.
+
+### Messaging protocol (the operator-directed channel)
+- The babysitter's **tier-3 escalations and its reports (round milestones, the green report, the final report) arrive as SendMessage** to you. The round log stays its deep-state artifact; the message is the interrupt. Reply with SendMessage to its name — rulings, absorb-these-paths instructions, and supersede-briefing pointers all travel that way.
+- An idle notification without a report is NOT a report: if the babysitter goes idle silently mid-wave, that is either the armed-watch design (STATUS fresh — leave it alone) or a dead driver (STATUS stale across observed state change — ping once, then replace).
 
 ### 3. ⛔ You do not read CI
-From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log — not once, not "just to check" — and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification — it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the round log's **STATUS block**; if it does not say what you need, ask the babysitter — do not go look.
+From spawn until it reports green, you do not run `gh run watch/view/list` or fetch a job log — not once, not "just to check" — and you do not diagnose a red. The failure mode is not the lead ignoring CI; it is the lead **shadowing** it: two agents burning full context to produce one answer. (Real case: lead and babysitter independently root-caused the same compile break, the same crashing gate, and fell into the same stale-`tsbuildinfo` trap. Everything correct, everything doubled.) **Two agents agreeing is not verification — it is the same answer, paid for twice.** Verification is the babysitter testing a claim against the live system. Your status channel is the babysitter's messages plus the round log's **STATUS block**; if neither says what you need, ask the babysitter — do not go look.
 
 ### 4. Rule on escalations (the interrupt handler)
 - Each arrives structured: gate, log, candidate fixes, recommendation. Verify a load-bearing claim **in the code**, not by re-running CI. **Rule on the question asked; do not adopt the red** — "helping" by diagnosing it yourself is the shadowing failure wearing a helpful face.
@@ -101,6 +91,16 @@ From spawn until it reports green, you do not run `gh run watch/view/list` or fe
 
 ### 6. Verify once, then close
 - On the green report: **verify independently, ONCE** — check every PR's checks via `gh`, spot-run the local battery. Never accept "all green" on report; require run URLs. **This is the only time you touch the GitHub API during a babysit** — a per-round habit is exactly how the lead drifts back into shadowing.
-- Confirm debugging aids are off (e.g. a `no-cancel-failure` label) and files you told it to leave alone are still uncommitted.
+- Confirm debugging aids are off (e.g. a `no-auto-retry` label, a temporarily loosened gate) and files you told it to leave alone are still uncommitted.
 - Distill the round log into a `pr-babysit-<branch>` memory file (the previous one demonstrably saved rounds on the next wave).
 - Report PR links + headline results. **Do NOT merge, do NOT push `main`** — `/pr-merge` is the user's call.
+
+## Inline mode (default): run the loop here
+
+**Read `/home/muhammed/monorepo/console/.claude/agents/pr-babysitter.md` in full and execute it as written. You are the babysitter; the principal is the user.** No mechanics are restated here — that file is the single source of truth for the loop, the tier system, the wake-up/heartbeat rules, Rule 2 (fix it, don't file it; "not my change" is not an exit), the workers contract, and the round-log format. Only the deltas that exist because the loop runs in THIS session are listed below.
+
+- Compose the **wave header** at the top of the round log (`reports/pr-babysit-<branch>.md`) per the agent file's slot spec — there is no separate briefing file in this mode.
+- **The round log is your compaction insurance.** After any context compaction or session restart, re-read the agent file + wave header + STATUS block before touching anything.
+- **AUTONOMOUS — never ask the user.** The agent file's in-context tier-3 rule applies as written: decide, log under DECISIONS (post-hoc review), keep the loop moving; irreversible-outside-the-PR actions stay forbidden outright.
+- **Absorb the operator's uncommitted work too.** The snapshot takes the whole tree, and the operator may keep adding to it while you run. Re-check `git status` each round; when new uncommitted paths appear that are plainly part of the same wave, commit them rather than stepping around them. (This is the OPPOSITE of delegated mode's never-absorb-by-inference rule, on purpose: here the principal IS the person editing the tree.) Guard unchanged: never `git add` a non-submodule repo under `private/`, and leave `.claude/settings.local.json` alone.
+- Scoping honesty: inline is the default because a delegated loop can die silently (see the Mode note above). The counter-risk is real too: the 0707 in-session babysitter died of context exhaustion mid-campaign. For a genuinely multi-day wave, `bg` is still the right call — just watch the round log yourself, because nothing else will.

@@ -4,10 +4,44 @@
 # WORKLIST_TASKS_DIR and the project root are all isolated fixtures.
 set -uo pipefail
 
+# AMBIENT SCRUB, before a single case runs. The hook reads ~65 WORKLIST_* knobs
+# and setup() resets only the ones cases set, so anything exported in the shell
+# that launches this suite silently retuned it: a developer who set
+# WORKLIST_BG_REPORT_MIN or WORKLIST_QUIET_WAKES while debugging would get a
+# different suite from CI's, and the difference would look like flakiness rather
+# than like configuration. The fixtures were always isolated on DISK (TMPDIR,
+# WORKLIST_TASKS_DIR, the project root); this makes them isolated in the
+# ENVIRONMENT too. WORKLIST_AGENT_BRANCH and the rest are exported by setup()
+# and the cases themselves, after this point, so nothing the suite needs is lost.
+#
+# CLAUDE_CODE_SESSION_ID IS SCRUBBED TOO, and it is not decoration -- one
+# omission here produced two OPPOSITE failures. Since v19 every `<me>` argument
+# is checked against the real session id (wl_core.check_me), which resolves
+# WORKLIST_SESSION_ID first and CLAUDE_CODE_SESSION_ID second. Run from inside
+# a Claude session with the ambient id live, every fixture prefix mismatches and
+# ~110 call sites refuse: mass breakage that looks like a broken feature. Run in
+# CI with it unset, check_me takes its silent-pass path and every identity case
+# passes VACUOUSLY -- a green suite proving nothing, inside the very change
+# meant to close a cannot-fire gap. The second is the dangerous one, because it
+# is green. Scrubbing makes the suite behave identically in both places, and
+# case 200's meta-control below is what proves the scrub actually happened.
+while IFS='=' read -r _k _; do
+    case "$_k" in
+        WORKLIST_* | CLAUDE_CODE_SESSION_ID | CLAUDE_SESSION_ID) unset "$_k" ;;
+    esac
+done < <(env)
+unset _k
+
 HOOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/worklist.py"
 BASE="$(mktemp -d)/hookfix"
 trap 'rm -rf "$(dirname "$BASE")"' EXIT
 SID="deadbeef-1111-2222-3333-444444444444"
+# ARMED, suite-wide, immediately after the scrub. Every case that drives the CLI
+# passes `deadbeef` as its `<me>`, which is a prefix of SID, so one export arms
+# the identity check for all of them instead of ~110 edits that would drift. The
+# handful of cases modelling a PEER session declare that peer's id per call (see
+# as_peer). Exported, not assigned, because the CLI is a child process.
+export WORKLIST_SESSION_ID="$SID"
 PASS=0
 FAIL=0
 
@@ -31,6 +65,16 @@ setup() {
     # case sees and turn a real regression into a green run. Cases that need a
     # wider drain export it AFTER their setup call.
     unset WORKLIST_REPORT_PER_STOP WORKLIST_OUTQ_MAX
+    # The background-wait knobs. WORKLIST_BG_OUTPUT_DIR and WORKLIST_HARNESS_PID
+    # were exported by individual cases and unset by only SOME of them, so both
+    # leaked forward -- a case downstream of 163f pointed the stream reader at a
+    # deleted fixture directory and gave the OS verifier a stale ancestor pid.
+    # That was survivable while verify_background ran only on a due check-in; it
+    # stopped being survivable in v17, which reads it on every pure-wait stop and
+    # feeds the verdict into the no-op streak. WORKLIST_QUIET_WAKES is here for
+    # the AMBIENT case rather than the leak: it is a real knob, so a value in the
+    # operator's own shell would silently retune the streak under the suite.
+    unset WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID WORKLIST_QUIET_WAKES
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
     # where 30 cases came back with empty output and read as failures.
@@ -42,6 +86,12 @@ setup() {
     # the whole suite -- a gate that never fires in its own tests. The env
     # override exists in wl_core.git_branch for exactly this.
     export WORKLIST_AGENT_BRANCH=agenttest
+    # PINNED INTO THE FIXTURE, for the same reason TMPDIR is. Unset, the v18
+    # unread-reports surface reads the OPERATOR'S REAL report store on every
+    # stop in this suite. That happened to stay green only because the fixture
+    # branch is `agenttest` and no real report carries it -- a hermetic suite
+    # must not depend on a branch name never colliding.
+    export WORKLIST_REPORTS_DIR="$BASE/reports"
     mkdir -p "$BASE/proj/.agent/agenttest"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
     : >"$WL"
@@ -110,8 +160,59 @@ reqcli() { # drive the request CLI against the fixture worklist
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" "$@"
 }
 
+peer_id() { # the full session id a fixture PREFIX stands for
+    printf '%s-1111-2222-3333-444444444444' "$1"
+}
+
+as_peer() { # as_peer <prefix> <cmd...> -- drive a helper as ANOTHER session
+    # A SUBSHELL, not a `WORKLIST_SESSION_ID=... reqcli ...` prefix assignment.
+    #
+    # NOT because the prefix form leaks here -- it does not, and an earlier
+    # version of this comment claimed it did. Measured on this machine rather
+    # than recalled: bash 5.2 in default mode, bash 5.2 under `set -o posix`,
+    # and dash all DISCARD the assignment when the function returns. The rule
+    # that does persist is POSIX's rule for SPECIAL BUILTINS (eval, export,
+    # set), which a function is not.
+    #
+    # The real reason is portability of the CONSTRUCT. That persistence rule has
+    # genuinely differed across shells and modes, this helper is the kind of
+    # thing that gets copied into contexts its author does not control, and the
+    # failure it would cause is invisible: a leaked peer id disarms the identity
+    # check for every later case while the suite stays green. A subshell cannot
+    # leak under ANY shell. Choose the construct that cannot fail over the one
+    # that happens not to fail here -- the same leaked-knob class the setup()
+    # comment above documents, arriving through a different door.
+    (
+        local sid
+        sid="$(peer_id "$1")"
+        export WORKLIST_SESSION_ID="$sid"
+        shift
+        "$@"
+    )
+}
+
 askid() { # askid <from> <to> <text...> -> prints the new request id
     reqcli --ask "$@" | sed -n 's/.*#\([0-9a-f]\{8\}\).*/\1/p' | head -n1
+}
+
+askid_as() { # askid for a request sent BY another session: askid_as <from> <to> ...
+    as_peer "$1" askid "$@"
+}
+
+phantom_store() { # plant <n> events by <prefix> at <age-minutes>, owning one open item
+    local pfx="$1" age="$2" at
+    at=$(python3 -c "
+import datetime,sys
+print((datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=float(sys.argv[1]))).strftime('%Y-%m-%dT%H:%M:%SZ'))" "$age")
+    python3 - "${WL%.md}.events.jsonl" "$pfx" "$at" <<'PYEOF'
+import json, sys
+path, pfx, at = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path, "a", encoding="utf-8") as fh:
+    for i in range(3):
+        fh.write(json.dumps({"ev": "add", "id": "ph%s%d" % (pfx[:4], i), "at": at,
+                             "by": pfx, "s": " ", "o": pfx,
+                             "t": "phantom-owned item %d" % i}) + "\n")
+PYEOF
 }
 
 brief_other() { # brief_other <prefix> -- a fresh brief for another live session
@@ -619,6 +720,35 @@ refuse() { # refuse <label> <body-producing-command...>
     fi
 }
 refuse "an over-long body" python3 -c "print('## Next action: go ' + 'x'*4100)"
+# The cap is PER SESSION but the document is PER BRANCH: with a flat 4000 a
+# second session got `4000 minus the neighbour's block` and was refused eleven
+# times in one session, and its cheapest remedy was DELETING the other block --
+# the very loss this document exists to prevent. So the cap scales with the
+# number of `## SESSION` headings. This body would be refused under a flat cap
+# and must be ACCEPTED now; the control immediately after proves the scaled cap
+# still refuses, so this is not a blanket lift.
+two_session_body() {
+    python3 -c "
+print('## SESSION A')
+print('a'*3000)
+print('## SESSION B')
+print('b'*2500)
+print('## Next action')
+print('carry on')"
+}
+if two_session_body | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null 2>&1; then
+    pass "a 2-session body over the flat cap is accepted (the cap scales per block)"
+else
+    fail "the scaled cap regressed: a 2-session body under 2x4000 was refused"
+fi
+refuse "a 2-session body over the SCALED cap" python3 -c "
+print('## SESSION A')
+print('a'*4200)
+print('## SESSION B')
+print('b'*4200)
+print('## Next action')
+print('go')"
 refuse "a stub body" printf 'wip'
 refuse "an aimless body (no Next action section)" python3 -c "print('y'*400)"
 # CONTROL: a well-shaped body must still be written, or the guard is just a
@@ -640,6 +770,53 @@ if cmp -s "$BASE/state.good" "$STATE_FILE"; then
     pass "a refused rewrite leaves the good STATE.md byte-identical"
 else
     fail "a refused rewrite MUTATED the previous STATE.md"
+fi
+
+echo "== 29e. a SHORT or body-less --state refuses instead of HANGING =="
+# REGRESSION GATE for the defect session 4c3e095a reported as #7c1c2629 and
+# this session fixed by hand. `--state` used to require argv[2] to enter its
+# own branch at all (`len(sys.argv) > 2`), so a BARE `--state` matched nothing
+# and fell through to the Stop-HOOK path, which reads the hook event from
+# stdin and therefore BLOCKED FOREVER on a terminal. It cost the reporter a
+# ten-minute tool timeout, and no test could see it: every existing --state
+# case pipes a body in, which is exactly the shape that does NOT reproduce it.
+#
+# The timeout IS the assertion. A regression re-hangs, `timeout` returns 124,
+# and the case fails loudly instead of stalling the suite forever -- which is
+# what a naive assert-on-exit-code test would have done.
+bare_out="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+    timeout 15 python3 "$HOOK" --state 2>&1)"
+bare_rc=$?
+if [[ "$bare_rc" -eq 124 ]]; then
+    fail "a bare --state HUNG again (rc=124): the argv-length guard regressed"
+elif [[ "$bare_rc" -ne 0 ]] && grep -qF "usage: worklist.py --state" <<<"$bare_out"; then
+    pass "a bare --state refuses with usage instead of hanging (rc=$bare_rc)"
+else
+    fail "a bare --state did not refuse with usage: rc=$bare_rc '${bare_out:0:160}'"
+fi
+# The second half of the same report: the body is read from STDIN, so passing
+# it as argv left the body EMPTY and the shape check said `thin: 0 chars`.
+# "Too short" and "never arrived" are different diagnoses, and the reporter
+# chased the wrong one twice. Empty stdin must say so in its own words.
+argv_out="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+    timeout 15 python3 "$HOOK" --state deadbeef "a body passed as an argument" </dev/null 2>&1)"
+argv_rc=$?
+if [[ "$argv_rc" -eq 124 ]]; then
+    fail "--state with an argv body HUNG (rc=124)"
+elif grep -qF "no body arrived on stdin" <<<"$argv_out" && grep -qF "extra argument" <<<"$argv_out"; then
+    pass "an argv-passed body is diagnosed as absent stdin, naming the extra argument"
+else
+    fail "--state mis-diagnosed an argv body: rc=$argv_rc '${argv_out:0:200}'"
+fi
+# CONTROL: the empty-stdin message must NOT be a blanket response. A body that
+# genuinely IS too short has to keep saying `thin`, or the new branch has just
+# swallowed the old diagnosis.
+thin_out="$(printf 'wip' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_AGENT_BRANCH=agenttest timeout 15 python3 "$HOOK" --state deadbeef 2>&1)"
+if grep -qF "thin" <<<"$thin_out" && ! grep -qF "no body arrived" <<<"$thin_out"; then
+    pass "CONTROL: a genuinely short body still reports thin, not absent-stdin"
+else
+    fail "the absent-stdin branch swallowed the thin diagnosis: '${thin_out:0:200}'"
 fi
 
 echo "== 29c. a clobbered STATE.md is RECOVERABLE from the backup =="
@@ -665,7 +842,7 @@ printf '%s' "$VICTIM" |
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-        python3 "$HOOK" --state cafe1234 2>&1)"
+        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 2>&1)"
 if [[ "$(cat "$BACKUP" 2>/dev/null)" == "$VICTIM" ]]; then
     pass "the clobbered body is byte-recoverable from the backup"
 else
@@ -718,14 +895,14 @@ printf '%s' "$VICT_A" |
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
-        python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
 mkdir -p "$BASE/proj/.agent/otherbranch"
 printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
         python3 "$HOOK" --state deadbeef >/dev/null 2>&1
 printf '%s' "$VICT_A" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
-        python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
+        WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
 if [[ "$(cat "$BACKUP_A" 2>/dev/null)" == "$VICT_A" ]] &&
     [[ "$(cat "$BACKUP_B" 2>/dev/null)" == "$STATE_BODY" ]]; then
     pass "29d: each branch keeps its own backup; a write elsewhere cannot destroy it"
@@ -1314,7 +1491,7 @@ echo "== 65. v6: a request addressed to ME blocks my stop =="
 setup
 say "done for now"
 brief_now
-RID=$(askid cafe1234 deadbeef "regenerate the caption media and republish")
+RID=$(askid_as cafe1234 deadbeef "regenerate the caption media and republish")
 check "a direct request to this session blocks" block "waiting on you"
 
 echo "== 65b. the block carries the WHOLE payload, both directions =="
@@ -1327,7 +1504,7 @@ setup
 say "done for now"
 brief_now
 LONGASK="$(python3 -c "print('caption combos: ' + 'x' * 320 + ' CRUCIAL-ASK: republish then rerun check:ci-tutorial-caption-sync')")"
-RID=$(askid cafe1234 deadbeef "$LONGASK")
+RID=$(askid_as cafe1234 deadbeef "$LONGASK")
 check "the tail of a long request body survives into the block" block "CRUCIAL-ASK: republish then rerun"
 LONGANS="$(python3 -c "print('context: ' + 'y' * 320 + ' CRUCIAL-ANSWER: the media session already republished at 14:02Z')")"
 reqcli --answer deadbeef "$RID" "$LONGANS" >/dev/null
@@ -1347,7 +1524,7 @@ setup
 say "done for now"
 brief_now
 brief_other cafe1234
-askid aaaa1111 cafe1234 "please do Y" >/dev/null
+askid_as aaaa1111 cafe1234 "please do Y" >/dev/null
 check "someone else's request does not block a bystander" allow ""
 
 echo "== 67. CONTROL: my own OPEN request never blocks me, and is reported =="
@@ -1368,7 +1545,7 @@ echo "== 68. answering releases the recipient =="
 setup
 say "done for now"
 brief_now
-RID=$(askid cafe1234 deadbeef "do X")
+RID=$(askid_as cafe1234 deadbeef "do X")
 check "unanswered, it blocks" block "waiting on you"
 reqcli --answer deadbeef "$RID" "done: X is finished, gate green" >/dev/null
 check "answered, it releases the recipient" allow ""
@@ -1377,7 +1554,7 @@ echo "== 69. a decline MUST carry a reason; an unanswered ack is refused =="
 setup
 say "done for now"
 brief_now
-RID=$(askid cafe1234 deadbeef "do X")
+RID=$(askid_as cafe1234 deadbeef "do X")
 if reqcli --decline deadbeef "$RID" >/dev/null 2>&1; then
     echo "  FAIL: a reasonless decline was accepted"
     FAIL=$((FAIL + 1))
@@ -1392,7 +1569,7 @@ else
     echo "  PASS: the refusal wrote nothing"
     PASS=$((PASS + 1))
 fi
-if reqcli --ack cafe1234 "$RID" >/dev/null 2>&1; then
+if as_peer cafe1234 reqcli --ack cafe1234 "$RID" >/dev/null 2>&1; then
     echo "  FAIL: acking an unanswered request was accepted"
     FAIL=$((FAIL + 1))
 else
@@ -1406,7 +1583,7 @@ say "done for now"
 brief_now
 brief_other cafe1234
 RID=$(askid deadbeef cafe1234 "which session owns caption regen")
-reqcli --answer cafe1234 "$RID" "the media session owns it; rerun your gate after publish" >/dev/null
+as_peer cafe1234 reqcli --answer cafe1234 "$RID" "the media session owns it; rerun your gate after publish" >/dev/null
 check "an unacked answer blocks the asker WITH the answer text" block "the media session owns it"
 reqcli --ack deadbeef "$RID" >/dev/null
 check "after --ack the answer never re-blocks" allow ""
@@ -1417,7 +1594,7 @@ say "done for now"
 brief_now
 brief_other cafe1234
 RID=$(askid deadbeef cafe1234 "please also do Z")
-reqcli --decline cafe1234 "$RID" "out of scope: Z belongs to the GPU session" >/dev/null
+as_peer cafe1234 reqcli --decline cafe1234 "$RID" "out of scope: Z belongs to the GPU session" >/dev/null
 check "the decline reason reaches the asker as a block" block "out of scope: Z belongs to the GPU session"
 reqcli --ack deadbeef "$RID" >/dev/null
 check "an acked decline is silent" allow ""
@@ -1426,7 +1603,7 @@ echo "== 72. a BROADCAST blocks each live session only until IT responds =="
 setup
 say "done for now"
 brief_now
-RID=$(askid cafe1234 '*' "who owns tutorial caption regeneration")
+RID=$(askid_as cafe1234 '*' "who owns tutorial caption regeneration")
 check "an unanswered broadcast blocks a session that has not responded" block "broadcast"
 reqcli --decline deadbeef "$RID" "not my area: I only touch the stop hook" >/dev/null
 check "declining a broadcast releases the decliner" allow ""
@@ -1484,14 +1661,14 @@ echo "== 75. CONTROL: the request block no-ops under GITHUB_ACTIONS =="
 setup
 say "done for now"
 brief_now
-askid cafe1234 deadbeef "do X" >/dev/null
+askid_as cafe1234 deadbeef "do X" >/dev/null
 check "off a runner the request still blocks" block "waiting on you"
 GHA=true check "GITHUB_ACTIONS=true never blocks a runner on a request" allow ""
 
 echo "== 76. RACE: concurrent writers lose nothing =="
 setup
 for i in $(seq 1 16); do
-    reqcli --ask "s$i" cafe1234 "concurrent probe $i" >/dev/null 2>&1 &
+    as_peer "sess000$i" reqcli --ask "sess000$i" cafe1234 "concurrent probe $i" >/dev/null 2>&1 &
 done
 wait
 RQ="${WL%.md}.requests"
@@ -1524,7 +1701,7 @@ import json, sys
 print(sorted(json.loads(l)["id"] for l in open(sys.argv[1]) if l.strip())[0])
 ' "$RQ")
 for i in $(seq 1 8); do
-    reqcli --answer "a$i" "$RID" "answer $i" >/dev/null 2>&1 &
+    as_peer "answ000$i" reqcli --answer "answ000$i" "$RID" "answer $i" >/dev/null 2>&1 &
 done
 wait
 NANS=$(grep -c "\"ev\":\"answer\",\"id\":\"$RID\"" "$RQ")
@@ -1543,14 +1720,14 @@ echo "== 77. an over-length body is REFUSED, never silently truncated =="
 setup
 say "done for now"
 brief_now
-if reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1000)")" >/dev/null 2>&1; then
+if as_peer cafe1234 reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1000)")" >/dev/null 2>&1; then
     echo "  PASS: a body exactly at the 1000-char limit is accepted"
     PASS=$((PASS + 1))
 else
     echo "  FAIL: an at-limit body was refused"
     FAIL=$((FAIL + 1))
 fi
-if reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1100)")" >/dev/null 2>"$BASE/asklen.err"; then
+if as_peer cafe1234 reqcli --ask cafe1234 deadbeef "$(python3 -c "print('x' * 1100)")" >/dev/null 2>"$BASE/asklen.err"; then
     echo "  FAIL: an over-length ask was accepted"
     FAIL=$((FAIL + 1))
 elif grep -qF "REFUSED rather than silently truncated" "$BASE/asklen.err" &&
@@ -1578,7 +1755,7 @@ echo "== 78. --compact never touches the requests sidecar; blocking survives it 
 setup
 say "done for now"
 brief_now
-askid cafe1234 deadbeef "must survive compaction" >/dev/null
+askid_as cafe1234 deadbeef "must survive compaction" >/dev/null
 printf -- '- [ ] (deadbeef) live item that must survive compaction, exit 0\n' >>"$WL"
 printf -- '- [~] (cafe1234) archived tombstone line\n' >>"$WL"
 # Force the EVENTS FILE to exist before compacting: the event-log compaction
@@ -1625,7 +1802,7 @@ echo "== 79. requests survive the worklist file being deleted entirely =="
 setup
 say "done for now"
 brief_now
-RID=$(askid cafe1234 deadbeef "still here after the worklist dies")
+RID=$(askid_as cafe1234 deadbeef "still here after the worklist dies")
 rm -f "$WL"
 check "deleting the worklist does not delete the obligation" block "waiting on you"
 reqcli --answer deadbeef "$RID" "done regardless of the worklist" >/dev/null
@@ -2003,7 +2180,7 @@ say "answer
 - #7 thing (pending)"
 task 7 pending "thing"
 CRONS='[{"id":"w","schedule":"17 * * * *"}]'
-check "a work cron without the poll cron blocks" block "5-MINUTE INBOX POLL"
+check "a work cron without the poll cron blocks" block "NOTHING LISTENING FOR CROSS-SESSION MAIL"
 
 echo "== 102. two poll crons block (one is the shape) =="
 setup
@@ -2090,7 +2267,12 @@ setup
 brief_now
 hand_now
 brief_other cafe1234
-XRID=$(askid cafe1234 beef9999 "between two other sessions")
+# BOTH peers brief, and the second one is not decoration: since v19 --ask
+# refuses a recipient that has never briefed here, and this fixture's whole
+# premise is that beef9999 is a REAL other session. Without it the ask is
+# refused, XRID is empty, and the case degrades into testing an empty citation.
+brief_other beef9999
+XRID=$(askid_as cafe1234 beef9999 "between two other sessions")
 task 7 pending "thing"
 say "answer
 
@@ -2104,7 +2286,7 @@ brief_now
 hand_now
 brief_other cafe1234
 XRID=$(askid deadbeef cafe1234 "please confirm the regen path")
-reqcli --answer cafe1234 "$XRID" "confirmed: regen goes via the media session" >/dev/null
+as_peer cafe1234 reqcli --answer cafe1234 "$XRID" "confirmed: regen goes via the media session" >/dev/null
 task 7 pending "thing"
 say "answer
 
@@ -2196,7 +2378,7 @@ say "answer
 ## Remaining
 - the flag decision, deferred with a default"
 check "baseline stop" allow ""
-XRID=$(askid cafe1234 deadbeef "please rebuild the docs index")
+XRID=$(askid_as cafe1234 deadbeef "please rebuild the docs index")
 POLLOUT="$(reqcli --poll deadbeef)"
 RC=$?
 if [[ "$RC" -eq 0 ]] && grep -qF "INBOX #$XRID" <<<"$POLLOUT" &&
@@ -2312,13 +2494,20 @@ ARITY = {
     "V_CI_RED": ("9", 1, "q", "rows", 2, 1, "m"), "V_CI_UNREADABLE": ("d",),
     "CI_NOTE_RETRYABLE": ("9", 1, "pats", "rows"),
     "CI_NOTE_DOWNGRADED": ("9", 1, 2, "", "rows"),
-    "V_NO_POLL_CRON": ("m",), "V_MANY_WORK_CRONS": (2, "l"),
+    "V_NO_POLL_CRON": ("m", "m"), "V_NO_WAITER": (2, "p", "m"),
+    "N_WAITER_NUDGE": (2, "p", "m", 60), "V_MANY_WORK_CRONS": (2, "l"),
     "V_MANY_POLL_CRONS": (2,),
     "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
+    "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
+    "CLI_REAP_USAGE": (), "CLI_REAP_UNKNOWN": ("t", "l"),
+    "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
+    "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
-    "V_DOCS_DRIFT": (3, "s", "d"), "N_WAKEUPS": ("rows",), "V_UNCONFIRMED": ("#1",),
+    "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
+    "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
+    "V_BROKEN_SCHEDULE": (2, "rows"),
     "GUIDE_HEADER": None, "GUIDE_EMPTY": None, "GUIDE_TRUNCATED": (3, 12),
     "V_DEFER_EXPIRED": (2, 120, "rows", "", "m"),
     "V_UNJUSTIFIED": (2, 30, "rows", "", "m", "m"),
@@ -2336,6 +2525,8 @@ ARITY = {
     "N_OUTQ_MORE": (3,),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
+    "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),
+    "N_QUIET_WAKE_CAPPED": (7, 60),
     "CLI_ITEM_USAGE": None, "CLI_TICK_NO_EVIDENCE": ("id",),
     # v16: the triage verb, the tick door gate and the plan-file convention.
     "CLI_TICK_ISSUE_DOOR": ("id",),
@@ -2358,15 +2549,22 @@ ARITY = {
     "R_BLOCK": (1, "v", "f"), "R_BLOCK_FOCUS": ("v", "m", "f"),
     "R_FOCUS_MORE": (2,), "R_FOCUS_ONLY": None,
     "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
-    "N_EMAIL_SKIPPED": (1, "err"), "V_BG_REPORT": (2, "rows"),
+    "N_EMAIL_SKIPPED": (1, "err"),
+    "V_BG_REPORT": ("never", "2026-01-01T00:15:00Z", 15, 2, "rows"),
     "N_EMAIL_SENT": (2, "to@x", 120), "N_EMAIL_FAIL": (2, "err", 15),
     "N_EMAIL_UNCONFIGURED": ("p", 2),
     "CLI_ASK_OPERATOR_NO_DEFAULT": None,
+    "CLI_ASK_UNKNOWN_RECIPIENT": ("to", "a, b"),
+    # v19: runtime caller identity (L1 refusal, L2 backstop, L3 repair).
+    "CLI_REASSIGN_USAGE": None, "CLI_REASSIGN_ALIVE": ("p", "p"),
+    "CLI_REASSIGN_YOUNG": ("p", 5, 30, "p"), "CLI_REASSIGN_EMPTY": ("p", "p"),
+    "CLI_REASSIGN_DONE": ("p", "m", "i", "r", "m", "m"),
+    "N_PHANTOM_IDENTITY": (1, "rows", "p", "m"), "N_PHANTOM_BLIND": ("why",),
     "R_JUDGE_UNAVAILABLE": ("e", "f", "m"),
     "R_REGGATE_MALFORMED": ("p", "f"), "R_JUDGE_CONTINUE": ("r", "n", "t"),
     "R_REGGATE_BLOCK": ("b", "i", "", "", "m", "t"),
     "R_REGGATE_HALLUCINATED": ("g",), "CLI_REQUEST_USAGE": None,
-    "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("d", "l", ""),
+    "CLI_BODY_REFUSED": ("b", 1200, 1000), "CTX_SESSION_START": ("s", "d", "l", ""),
     "CTX_SESSION_START_STALE": (3, "s"),
     "CTX_POSTCOMPACT_MISSING": ("p", "b", "m"),
     "CTX_POSTCOMPACT_NO_BRANCH": ("t",),
@@ -2869,7 +3067,7 @@ fi
 echo "== 135. RACE: concurrent --add writers lose nothing =="
 setup
 for i in $(seq 1 16); do
-    reqcli --add "s$i" "concurrent item $i" >/dev/null 2>&1 &
+    as_peer "sess000$i" reqcli --add "sess000$i" "concurrent item $i" >/dev/null 2>&1 &
 done
 wait
 OUT=$(
@@ -3305,19 +3503,58 @@ else
     fail "focused block carried the guide or lost the item: ${out:0:300}"
 fi
 
-# (c) ZERO actionable: a short honest line, never ambiguous silence.
+# (c) ZERO actionable: SILENT since v18. This case used to assert the
+# opposite -- "a short honest line, never ambiguous silence" -- and the
+# operator overruled it (2026-08-04, quoting a stop whose whole output was
+# that line plus the wakeup times): "silent when there is nothing to act on...
+# let's go for efficient ai context usage". The ambiguity the old line guarded
+# against is also gone, because the poll fast path already exits silently many
+# times an hour, so zero bytes is the session's familiar "nothing to do".
 setup
 brief_now
 hand_now
 say "all done"
 out="$(run)"
-got="$(python3 -c 'import json,sys
-raw=sys.stdin.read().strip()
-print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
-if [[ "$got" == "allow" ]] && grep -qF "no actionable items in the store" <<<"$out"; then
-    pass "an empty store says so plainly on an otherwise clean allow"
+if ! grep -qF "no actionable items in the store" <<<"$out"; then
+    pass "an empty store no longer announces its own emptiness"
 else
-    fail "empty-store guide wrong (got=$got): ${out:0:260}"
+    fail "the empty-guide line survived: ${out:0:260}"
+fi
+# This fixture is NOT silent, and it should not be: a repo with no request
+# traffic at all trips the poll-backoff advisory, which is a real thing to act
+# on. Pinning that here keeps the zero-byte case below honest -- it proves the
+# silence there comes from having nothing to say, not from a muted report.
+if grep -qF "INBOX HAS BEEN QUIET" <<<"$out"; then
+    pass "and the one section that DID have something to say still speaks"
+else
+    fail "the backoff advisory was swallowed with the guide: ${out:0:260}"
+fi
+# NOW the zero-byte case: one fresh request in the log (between two OTHER
+# sessions, so it never reaches this inbox) resets the quiet clock and silences
+# the backoff advisory, leaving a stop with genuinely nothing to report.
+askid_as cafe1234 beefcafe "a question between two other sessions" >/dev/null
+newturn
+say "all done"
+out="$(run)"
+rc=$?
+if [[ "$rc" -eq 0 && -z "$out" ]]; then
+    pass "a clean stop with nothing to act on emits ZERO bytes"
+else
+    fail "the nothing-to-report stop was not silent (rc=$rc): ${out:0:260}"
+fi
+# CONTROL, so the silence above is the guide standing down and not the battery
+# being skipped: the SAME fixture plus one real item speaks up immediately.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+newturn
+say "all done
+
+## Remaining
+- the flag decision, deferred with a default"
+out="$(run)"
+if grep -qF "WORKLIST GUIDE" <<<"$out" && grep -qF "keep the flag?" <<<"$out"; then
+    pass "CONTROL: one actionable item brings the guide straight back"
+else
+    fail "CONTROL: the guide stayed silent with a real item: ${out:0:260}"
 fi
 
 # (d) TRUNCATION is loud: 15 open items show 12 and SAY 3 were held back.
@@ -3386,6 +3623,29 @@ if grep -qF -- "--tick deadbeef" <<<"$OPEN" && grep -qF "open thing" <<<"$OPEN" 
     pass "--list --open shows the hook's slice; plain --list keeps the history"
 else
     fail "CLI slice mismatch: OPEN=${OPEN:0:200} FULL=${FULL:0:120}"
+fi
+
+# (f2) the CLI slice is UNCAPPED. GUIDE_TRUNCATED (case (d)) tells the reader
+# to run this exact command "for the full slice", and until the full= flag the
+# command re-rendered the same 12 rows -- advice that looped back onto itself.
+# 15 open items must all appear here, with NO truncation footer. The 12-line
+# cap stays on the Stop path, which case (d) pins; this case and that one are
+# each other's control, so a regression that lifts the cap everywhere (or
+# restores it here) fails one of the two.
+setup
+for i in $(seq 1 15); do
+    echo "- [ ] (deadbeef) uncapped backlog item number $i" >>"$WL"
+done
+OPEN="$(reqcli --list --open deadbeef)"
+NSHOWN=$(grep -cF "do it, then --tick" <<<"$OPEN")
+MISS=""
+for i in $(seq 1 15); do
+    grep -qF "uncapped backlog item number $i" <<<"$OPEN" || MISS="$MISS $i"
+done
+if [[ "$NSHOWN" == "15" && -z "$MISS" ]] && ! grep -qF "HELD BACK" <<<"$OPEN"; then
+    pass "--list --open lifts the 12-line cap: all 15 items, no truncation footer"
+else
+    fail "CLI slice still capped (shown=$NSHOWN missing=[$MISS]): ${OPEN:0:300}"
 fi
 
 # ---------------------------------------------------------------------------
@@ -3965,31 +4225,41 @@ else
     fail "T12 CONTROL: the moved world stayed silent"
 fi
 
-echo "== 154. NEXT WAKEUPS: call moments computed from the live cron expansion =="
-# Operator, 2026-07-30: the event carries the FULL expansion of every scheduled
-# task (schedule + prompt) and the hook was reporting the loop from the stale
-# hand-declared sidecar instead. The wakeup section must (a) appear on ALLOW
-# stops, (b) appear on BLOCK stops, (c) carry the prompt's own first line as
-# the label, (d) name an unparseable schedule rather than skip it, and (e) be
-# absent when no crons exist -- the silent control that keeps (a)-(d) honest.
+echo "== 154. v18: NEXT WAKEUPS is GONE, and a broken schedule still warns =="
+# Operator, 2026-08-04: "we don't need to print next wakeup times. We should
+# just track the hook moments and notify/warn when needed. let's go for
+# efficient ai context usage." The section printed every task's next firing on
+# every full stop. This case is what remains of the old case 154: the display
+# must be absent on BOTH emit paths, and the one actionable row it used to
+# carry -- a schedule the hook cannot parse -- must still fire on its own.
 setup
 brief_now
 hand_now
 CRONS='[{"id":"w","schedule":"17 * * * *","prompt":"HOURLY LOOP fixture: advance the campaign."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
+# A real item, so this stop has a guide to print: without one the whole report
+# would be silent (v18) and the absence assertion below would pass vacuously.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
 say "answer
 
 ## Remaining
-- #7 thing (pending)"
+- #7 thing (pending)
+- the flag decision, deferred with a default"
 task 7 pending "thing"
 OUT="$(run)"
-if grep -qF "NEXT WAKEUPS" <<<"$OUT" && grep -qF "HOURLY LOOP fixture: advance the campaign." <<<"$OUT" &&
-    grep -qF "INBOX POLL fixture." <<<"$OUT" && grep -qF "(17 * * * *)" <<<"$OUT"; then
-    pass "154a: allow stop carries the wakeup rows with prompt-derived labels"
+if ! grep -qF "NEXT WAKEUPS" <<<"$OUT" && ! grep -qF "HOURLY LOOP fixture" <<<"$OUT" &&
+    ! grep -qF "INBOX POLL fixture" <<<"$OUT"; then
+    pass "154a: the allow stop prints no wakeup times and no cron prompt labels"
 else
-    fail "154a: wakeup section wrong on allow: ${OUT:0:260}"
+    fail "154a: the wakeup display survived on allow: ${OUT:0:260}"
 fi
-# BLOCK path: v13's focused block drops the wakeup section (it rides the
-# guide, and the guide leaves blocks); the FOCUS=off dump-all block keeps it.
+# CONTROL that 154a is not vacuous: the stop DID produce its normal report, so
+# the absence above is the section being gone rather than the hook being mute.
+if grep -qF "WORKLIST GUIDE" <<<"$OUT" && grep -qF "keep the flag?" <<<"$OUT"; then
+    pass "154a CONTROL: the stop still emitted its guide, so the absence is real"
+else
+    fail "154a CONTROL: the stop emitted nothing at all: ${OUT:0:260}"
+fi
+# The FOCUS=off dump-all block carried the section too; it must not any more.
 touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
 task 8 pending "moved"
 newturn
@@ -4001,25 +4271,13 @@ say "answer
 export WORKLIST_FOCUS=off
 OUT="$(run)"
 unset WORKLIST_FOCUS
-if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154b: FOCUS=off block stop carries the wakeup rows too"
-else
-    fail "154b: wakeup section missing on FOCUS=off block: ${OUT:0:220}"
-fi
-# And the focused block is wakeup-free by design.
-newturn
-say "answer
-
-## Remaining
-- #7 thing (pending)
-- #8 moved (pending)"
-OUT="$(run)"
 if grep -qF '"decision": "block"' <<<"$OUT" && ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154b2: the focused block drops the wakeup section"
+    pass "154b: the FOCUS=off block carries no wakeup section either"
 else
-    fail "154b2: focused block carried NEXT WAKEUPS: ${OUT:0:220}"
+    fail "154b: the wakeup section survived on the dump-all block: ${OUT:0:220}"
 fi
-# Unparseable schedule is NAMED, never silently dropped.
+# THE SURVIVING WARNING. An unparseable schedule is invisible to every other
+# cron check, so deleting the display must not delete this.
 setup
 brief_now
 hand_now
@@ -4030,31 +4288,27 @@ say "answer
 - #7 thing (pending)"
 task 7 pending "thing"
 OUT="$(run)"
-if grep -qF "unparseable schedule" <<<"$OUT" && grep -qF "BROKEN fixture." <<<"$OUT"; then
-    pass "154c: an unparseable schedule is reported by name"
+if grep -qF "CANNOT PARSE" <<<"$OUT" && grep -qF "BROKEN fixture." <<<"$OUT"; then
+    pass "154c: an unparseable schedule is still named, on its own warning"
 else
-    fail "154c: broken schedule silently dropped: ${OUT:0:220}"
+    fail "154c: a broken schedule went silent with the section: ${OUT:0:260}"
 fi
-# SILENT control: no crons, no section. In-flight lease keeps V_IDLE quiet so
-# the only variable is the cron list itself.
+# CONTROL: with every schedule valid the warning is silent, so it reports a
+# real defect rather than firing on any cron list at all.
 setup
 brief_now
 hand_now
-CRONS='[]'
-NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
-printf '{"ev":"add","id":"aaaa4444","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated"}\n{"ev":"lease","id":"aaaa4444","at":"%s","by":"deadbeef","until":"%s","worker":"bw9"}\n' \
-    "$NOW" "$NOW" "$UNTIL" >>"${WL%.md}.events.jsonl"
-BG='[{"id":"bw9","type":"shell","status":"running","description":"w","command":"sleep 9"}]'
+CRONS='[{"id":"w","schedule":"17 * * * *","prompt":"HOURLY LOOP fixture."},{"id":"p","schedule":"*/5 * * * *","prompt":"INBOX POLL fixture."}]'
 say "answer
 
 ## Remaining
-- the delegated item (in flight)"
+- #7 thing (pending)"
+task 7 pending "thing"
 OUT="$(run)"
-if ! grep -qF "NEXT WAKEUPS" <<<"$OUT"; then
-    pass "154d CONTROL: no crons, no wakeup section"
+if ! grep -qF "CANNOT PARSE" <<<"$OUT"; then
+    pass "154c CONTROL: valid schedules raise no warning"
 else
-    fail "154d: a wakeup section appeared with zero crons: ${OUT:0:200}"
+    fail "154c CONTROL: the warning fired on a healthy cron list: ${OUT:0:260}"
 fi
 
 echo "== 155. supervised MUST correlate to the live worker, not just be fresh =="
@@ -4982,6 +5236,584 @@ else
     fail "163 CONTROL: the check-in drumbeat: ${OUT:0:250}"
 fi
 
+echo "== 163z. v18: a CONFIRMED inbox waiter owes no check-in and needs no poll cron =="
+# The waiter blocks until something new arrives for this session and then EXITS,
+# and its exit is the harness notification that wakes the session. Its liveness
+# IS its report, so the two supervision demands that exist to make a session
+# account for a silent background job do not apply to it. Both relaxations are
+# keyed on `confirmed` and on nothing weaker.
+#
+# A REAL wl_wait.py process, not a fake command string: `confirmed` means the OS
+# can see a live descendant carrying the command, so a fixture that only claims
+# the command would prove the string match and not the verdict.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+WAITER_CMD="python3 $(dirname "$HOOK")/wl_wait.py deadbeef --timeout 3"
+TMPDIR="$BASE/waittmp" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+WAITER_PID=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter"}]))
+PYEOF
+)"
+# Premise, asserted rather than assumed: if the verdict is not `confirmed` this
+# whole case is vacuous and would "pass" for the wrong reason.
+VERDICT=$(
+    cd "$BASE" && python3 - "$(dirname "$HOOK")" "$WAITER_CMD" <<'PYEOF'
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import wl_liveness as L
+bg = [{"id": "wt1", "type": "shell", "status": "running", "command": sys.argv[2]}]
+print(L.verify_background(bg, ancestors={int(os.environ["WORKLIST_HARNESS_PID"])}).get("wt1"))
+PYEOF
+)
+if [[ "$VERDICT" == "confirmed" ]]; then
+    pass "163z premise: the live waiter verifies as confirmed"
+else
+    fail "163z premise: waiter verdict is '$VERDICT', not confirmed -- this case is vacuous"
+fi
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+task 7 pending "waiting on the inbox"
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}  # 15 minutes overdue
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z: an overdue check-in is SUPPRESSED when the only live task is a confirmed waiter"
+else
+    fail "163z: the check-in fired at a waiter: ${OUT:0:250}"
+fi
+# The needle is lifted VERBATIM from V_NO_POLL_CRON. The first draft of this
+# line grepped for "no inbox poll" and "poll cron", neither of which appears in
+# that message at all -- so the assertion could never fail and passed for a
+# reason unrelated to the waiter.
+if ! grep -qF "NOTHING LISTENING FOR CROSS-SESSION MAIL" <<<"$OUT"; then
+    pass "163z: a work cron with NO poll cron is accepted beside a confirmed waiter"
+else
+    fail "163z: no-poll fired despite the waiter: ${OUT:0:250}"
+fi
+kill "$WAITER_PID" 2>/dev/null
+wait "$WAITER_PID" 2>/dev/null
+
+echo "== 163v. a roster the session cannot verify is reaped, but only where certain =="
+# THE BUG: after a compaction, or an operator reopening the session, the harness
+# still reports every teammate ever spawned as `running`. Measured live: 20
+# claimed, exactly 1 transcript still growing. That roster drives _in_pure_wait,
+# the 15-minute check-in and confirmed_waiters, so a stale one means a session is
+# told it supervises twenty workers forever and confirms phantoms every quarter
+# hour.
+#
+# There is NO JOIN from a task id to an agent -- a task carries only {id, type,
+# status, description}, the description is the prompt truncated to ~50 chars, and
+# that prefix is provably not unique (10 of 19 collided on a live roster). So the
+# automatic reap fires only where it is a CERTAINTY: not one teammate transcript
+# fresh means every teammate task is dead, whatever its id.
+setup
+brief_now
+hand_now
+# A projects store with a teammate transcript that is STALE (hours old).
+python3 - "$BASE" "$SID" <<'MKSTORE'
+import json, os, pathlib, re, sys, time
+B = pathlib.Path(sys.argv[1])
+SID = sys.argv[2]
+root = B / "claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(B / "proj"))
+def mate(sess, name, age_min):
+    d = root / sess / "subagents"
+    d.mkdir(parents=True, exist_ok=True)
+    aid = "a%s-1111222233334444" % name
+    (d / ("agent-%s.meta.json" % aid)).write_text(json.dumps(
+        {"agentType": name, "name": name, "taskKind": "in_process_teammate"}))
+    j = d / ("agent-%s.jsonl" % aid)
+    j.write_text(json.dumps({"type": "assistant", "message": {"content": []}}) + "\n")
+    old = time.time() - age_min * 60
+    os.utime(j, (old, old))
+# THIS session's own teammate, stale by hours: the roster is genuinely dead.
+# The directory is named for the SESSION ID, which is the real convention --
+# it used to be a literal "s1", which meant the scoped lookup could not resolve
+# and the case was really exercising the unscoped glob.
+mate(SID, "oldmate", 600)
+# A DIFFERENT session in the same project, with a FRESH teammate. This is the
+# cross-session contamination the review found: unscoped, this one transcript
+# made fresh > 0 for EVERY session in the project, so a session whose own roster
+# was 100% phantom was told it still had live workers and the auto-reap never
+# fired. Concurrent sessions in one tree are routine here, so this was the
+# common case rather than an edge one.
+mate("bystander-9999-8888-7777-666666666666", "freshmate", 0)
+MKSTORE
+export CLAUDE_CONFIG_DIR="$BASE/claude"
+BG='[{"id":"tm1","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."},{"id":"tm2","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."}]'
+task 7 pending "waiting on the teammates"
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+run >/dev/null # establishes the state doc
+# THE CLOCK MUST BE OVERDUE BEFORE THIS PROVES ANYTHING. Asserting on a seeding
+# stop is vacuous: the check-in does not fire on first sight of the wait state
+# whether or not the roster was pruned, so the assertion passed with the pruning
+# removed entirely (mutation Mk). With the clock overdue the two cases diverge:
+# pruned -> the roster is empty, so it is not a pure wait and nothing is owed;
+# unpruned -> the check-in fires for two phantoms.
+python3 - "$WL" <<'SEED0'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+d = json.loads(p.read_text()) if p.exists() else {}
+d["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(d))
+SEED0
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v: with zero fresh transcripts the phantom roster is dropped"
+else
+    fail "163v: still supervising phantoms: ${OUT:0:250}"
+fi
+# CONTROL: make one transcript FRESH and the same roster is kept -- the drop is
+# the certainty branch, not a blanket "teammates never count".
+python3 -c '
+import glob, os, sys, time
+# THIS SESSIONS OWN transcript, not glob()[0]. With a bystander session in the
+# fixture, [0] could pick the other sessions file -- which is already fresh --
+# leaving this sessions mate stale, so the control would silently assert the
+# opposite of what it means.
+hits = glob.glob(sys.argv[1] + "/claude/projects/*/" + sys.argv[2] + "/subagents/*.jsonl")
+assert hits, "control fixture missing: no transcript for this session"
+os.utime(hits[0], (time.time(), time.time()))' "$BASE" "$SID"
+python3 - "$WL" <<'SEED'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+d = json.loads(p.read_text()) if p.exists() else {}
+d["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(d))
+SEED
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the teammates (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v CONTROL: one fresh transcript keeps the roster and the check-in"
+else
+    fail "163v CONTROL: a live teammate was reaped: ${OUT:0:250}"
+fi
+# ...and because 2 are claimed while only 1 is fresh, the overclaim is REPORTED
+# rather than guessed at.
+if grep -qF "ROSTER OVERCLAIMS" <<<"$OUT"; then
+    pass "163v: the unresolvable remainder is surfaced, not silently kept"
+else
+    fail "163v: the overclaim was hidden: ${OUT:0:300}"
+fi
+unset CLAUDE_CONFIG_DIR
+
+echo "== 163v-c1. --reap retires an id, and refuses one the hook never saw =="
+setup
+brief_now
+hand_now
+BG='[{"id":"tm1","type":"teammate","status":"running","description":"a teammate"}]'
+task 7 pending "waiting"
+say "answer
+
+## Remaining
+- #7 waiting (pending)"
+run >/dev/null # banks the lastevent the CLI validates against
+if reqcli --reap deadbeef nosuchid >/dev/null 2>"$BASE/reap.err"; then
+    fail "163v-c1: an unknown task id was accepted"
+else
+    if grep -qF "not in the last background-task list" "$BASE/reap.err"; then
+        pass "163v-c1: an id the hook never saw is REFUSED, not recorded"
+    else
+        fail "163v-c1: refusal was unclear: $(head -c 120 "$BASE/reap.err")"
+    fi
+fi
+if [ ! -f "${WL%.md}.reaped-deadbeef" ]; then
+    pass "163v-c1: the refused reap wrote nothing"
+else
+    fail "163v-c1: a rejected reap still recorded an id"
+fi
+# CONTROL: a REAL id from that same roster is accepted and takes effect.
+OUT="$(reqcli --reap deadbeef tm1 2>&1)"
+assert_c1=$?
+if grep -qF "reaped 1 task" <<<"$OUT"; then
+    pass "163v-c1 CONTROL: a known id is accepted"
+else
+    fail "163v-c1 CONTROL: a valid reap was refused: ${OUT:0:150}"
+fi
+newturn
+say "answer
+
+## Remaining
+- #7 waiting (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163v-c1: the reaped task no longer counts as running"
+else
+    fail "163v-c1: the reap had no effect: ${OUT:0:200}"
+fi
+
+echo "== 163w. v18: a session that IGNORES the waiter nudges is blocked =="
+# The operator asked to "force contexts to run in background". The trigger is
+# deliberately NOT "no confirmed waiter right now": a waiter EXITS every time it
+# fires, so that condition is true in exactly the window the session is supposed
+# to be in, and keying on it blocked correct behaviour and broke 16 cases here.
+# It keys on the count of PostToolUse nudges the session has been given and not
+# acted on, which only grows over half an hour of being asked.
+setup
+brief_now
+hand_now
+brief_other peer1234
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+say "answer"
+# Below the grace threshold: asked twice, not yet blocked.
+printf '2 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w: under the grace count the session is not blocked yet"
+else
+    fail "163w: blocked too early: ${OUT:0:200}"
+fi
+# At the threshold: three unheeded nudges is half an hour of being asked.
+printf '3 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+OUT="$(run)"
+if grep -qF "AND IS NOT LISTENING" <<<"$OUT" && grep -qF "wl_wait.py" <<<"$OUT"; then
+    pass "163w: three ignored nudges blocks, and the block carries the command"
+else
+    fail "163w: did not block at the threshold: ${OUT:0:250}"
+fi
+
+echo "== 163w-c1. CONTROL: a CONFIRMED waiter silences it =="
+# Same ignored count, same peer, same loop -- only a live waiter differs.
+setup
+brief_now
+hand_now
+brief_other peer1234
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+WAITER_CMD="python3 $(dirname "$HOOK")/wl_wait.py deadbeef --timeout 3"
+TMPDIR="$BASE/wt1" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+W163W=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '9 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c1 CONTROL: a confirmed waiter silences it even at nine ignored nudges"
+else
+    fail "163w-c1 CONTROL: blocked despite a live waiter: ${OUT:0:250}"
+fi
+kill "$W163W" 2>/dev/null
+wait "$W163W" 2>/dev/null
+
+echo "== 163w-c2. CONTROL: an UNVERIFIABLE waiter does NOT satisfy it =="
+# The case that could silently pass for the wrong reason. Same command string,
+# dead process, so the verdict is `suspect` rather than `confirmed`. A waiter
+# nobody can see on the OS is worth nothing: the whole argument is that its EXIT
+# wakes you.
+setup
+brief_now
+hand_now
+brief_other peer1234
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+export WORKLIST_HARNESS_PID=$$
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter (dead)"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '3 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c2 CONTROL: a dead (unverifiable) waiter still blocks"
+else
+    fail "163w-c2 CONTROL: an unseeable waiter satisfied the check: ${OUT:0:250}"
+fi
+unset WORKLIST_HARNESS_PID
+
+echo "== 163w-c3. CONTROL: no live peer, no block =="
+# The harm of not listening is TO SOMEBODY. With no peer there is nobody whose
+# request could go unseen, so the check has no victim and must stay silent --
+# this is the condition that makes blocking safe at all.
+setup
+brief_now
+hand_now
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"},{"id":"p","schedule":"*/5 * * * *"}]'
+printf '9 2026-01-01T00:00:00Z\n' >"${WL%.md}.waiternudge-deadbeef"
+say "answer"
+OUT="$(run)"
+if ! grep -qF "AND IS NOT LISTENING" <<<"$OUT"; then
+    pass "163w-c3 CONTROL: with no live peer the check stays silent"
+else
+    fail "163w-c3 CONTROL: blocked with nobody to hear from: ${OUT:0:250}"
+fi
+
+echo "== 163x. NO CLI verb may fall through to the Stop battery (the phantom stop) =="
+# THE DEFECT, measured on HEAD before the fix, not theorised. A verb whose guard
+# put the arity check INSIDE the condition (`len(argv) > 3 and argv[1] ==
+# "--loop"`) did not fail on too few arguments -- it fell through to the hook
+# path, which runs the whole battery against an EMPTY event. With stdin closed
+# that returned a genuine `"decision": "block"` at EXIT 0 and wrote six
+# `*-unknown` sidecars for a session id that does not exist; with stdin left open
+# it hung forever in json.load(sys.stdin). Both reproduced.
+#
+# The fix is the CLASS, not the three verbs anyone noticed: any argv[1] with a
+# leading dash that matched no verb is refused. A typo must not be able to emit a
+# verdict or hang.
+setup
+for _bad in "--loop x" "--brief" "--tpyo" "--state"; do
+    # shellcheck disable=SC2086
+    OUT="$(reqcli $_bad </dev/null 2>&1)"
+    RC=$?
+    if [[ "$RC" == "2" ]] && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+        pass "163x: '$_bad' is refused (exit 2) and emits NO verdict"
+    else
+        fail "163x: '$_bad' rc=$RC verdict=${OUT:0:120}"
+    fi
+done
+# It must not hang either. stdin is a pipe that STAYS OPEN, and the timeout is on
+# the interpreter itself -- NOT on a shell wrapping a `sleep`, which is what made
+# the first measurement of this read 124 for the sleep rather than for python.
+if timeout 8 env TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    python3 "$HOOK" --tpyo < <(sleep 15) >/dev/null 2>&1; then
+    fail "163x: an unknown verb succeeded, which it must not"
+elif [[ "$?" != "124" ]]; then
+    pass "163x: an unknown verb does not hang on an open stdin"
+else
+    fail "163x: an unknown verb still hangs reading stdin"
+fi
+# CONTROL 1: the legitimate forms still work, so the guards refuse arity and not
+# the verb.
+setup
+if as_peer looppfx1 reqcli --loop looppfx1 2026-01-01T00:00:00Z 1 label </dev/null 2>&1 | grep -qF "loop declared"; then
+    pass "163x CONTROL: a well-formed --loop still declares"
+else
+    fail "163x CONTROL: --loop broke for valid input"
+fi
+if as_peer briefpf1 reqcli --brief briefpf1 some text </dev/null 2>&1 | grep -qF "brief recorded"; then
+    pass "163x CONTROL: a well-formed --brief still records"
+else
+    fail "163x CONTROL: --brief broke for valid input"
+fi
+# CONTROL 2, THE LOAD-BEARING ONE: the real Stop hook takes NO arguments, so the
+# leading-dash catch-all must not be able to swallow it. If this regressed, every
+# stop in the repo would exit 2 instead of running any check at all.
+setup
+brief_now
+hand_now
+say "answer"
+task 7 pending "something"
+OUT="$(run)"
+if grep -qF '"decision"' <<<"$OUT" || [[ -n "$OUT" ]]; then
+    pass "163x CONTROL: a bare (no-argv) invocation still runs the battery"
+else
+    fail "163x CONTROL: the catch-all swallowed the real hook: '${OUT:0:200}'"
+fi
+
+echo "== 163y. v18: unread sub-agent reports are surfaced on an ORDINARY stop =="
+# SessionStart and PostCompact are covered by wl_report's own hooks. This is the
+# commoner case they miss: a long-running session whose teammate finished twenty
+# minutes ago and whose SendMessage has scrolled out of reach. Report-only: an
+# unread report is information, not an obligation, and there is no honest
+# evidence a stop could demand for "I read it".
+setup
+brief_now
+hand_now
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+(store / "agenttest").mkdir(parents=True, exist_ok=True)
+(store / "agenttest" / "r.md").write_text("SUBSTANTIVE FINDING FROM A TEAMMATE\nbody")
+(store / "index.jsonl").write_text(json.dumps({
+    "ev": "report", "id": "abcdef123456", "at": "2026-08-05T10:00:00Z",
+    "branch": "agenttest", "agent": "some-teammate", "type": "some-teammate",
+    "session": "deadbeef", "body": "agenttest/r.md", "bytes": 900,
+    "silent": False, "sends": 1, "title": "SUBSTANTIVE FINDING FROM A TEAMMATE",
+    "transcript": "", "src": "hook"}) + "\n")
+PYEOF
+say "all done, nothing outstanding"
+OUT="$(run)"
+if grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT" && grep -qF "SUBSTANTIVE FINDING FROM A TEAMMATE" <<<"$OUT"; then
+    pass "163y: an unread report is surfaced on an ordinary stop, with its title"
+else
+    fail "163y: no unread-report section: ${OUT:0:300}"
+fi
+if ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "163y: it is REPORT-ONLY and does not block the stop"
+else
+    fail "163y: an unread report blocked the stop: ${OUT:0:300}"
+fi
+# CONTROL: marked read, the section is gone. Without this the assertion above is
+# satisfied by any section that is simply always emitted.
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+(store / "read.jsonl").write_text(json.dumps({
+    "ev": "read", "id": "abcdef123456", "by": "deadbeef",
+    "at": "2026-08-05T10:05:00Z", "branch": "agenttest"}) + "\n")
+PYEOF
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "UNREAD SUB-AGENT REPORTS" <<<"$OUT"; then
+    pass "163y CONTROL: once marked read, the section is gone"
+else
+    fail "163y CONTROL: a read report is still surfaced: ${OUT:0:300}"
+fi
+# CONTROL: a report on ANOTHER branch is not this branch's business.
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+with (store / "index.jsonl").open("a") as f:
+    f.write(json.dumps({
+        "ev": "report", "id": "999999999999", "at": "2026-08-05T10:00:00Z",
+        "branch": "some-other-branch", "agent": "elsewhere", "type": "elsewhere",
+        "session": "deadbeef", "body": "x/y.md", "bytes": 900, "silent": False,
+        "sends": 1, "title": "FROM ANOTHER BRANCH", "transcript": "",
+        "src": "hook"}) + "\n")
+PYEOF
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "FROM ANOTHER BRANCH" <<<"$OUT"; then
+    pass "163y CONTROL: another branch's report is not surfaced here"
+else
+    fail "163y CONTROL: a foreign branch's report leaked in: ${OUT:0:300}"
+fi
+
+echo "== 163z-c1. CONTROL: a waiter that is NOT confirmed buys nothing =="
+# Same fixture, same command string, but the process is DEAD -- so the verdict is
+# `suspect`. Without this control, 163z would equally pass if the code had simply
+# stopped running either check at all.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+export WORKLIST_HARNESS_PID=$$
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
+                   "command": sys.argv[1], "description": "inbox waiter (dead)"}]))
+PYEOF
+)"
+CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
+task 7 pending "waiting on the inbox"
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on the inbox (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z-c1 CONTROL: an unconfirmed waiter still owes the check-in"
+else
+    fail "163z-c1 CONTROL: the check-in was skipped for a DEAD waiter: ${OUT:0:250}"
+fi
+
+echo "== 163z-c2. CONTROL: a waiter does not silence a REAL job running beside it =="
+# Relaxing on "any waiter present" would let one waiter suppress supervision of
+# everything else. The suppression requires EVERY live task to be a confirmed
+# waiter, and this is the case that pins that word.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+TMPDIR="$BASE/waittmp2" CLAUDE_PROJECT_DIR="$BASE" $WAITER_CMD >/dev/null 2>&1 &
+WAITER_PID=$!
+export WORKLIST_HARNESS_PID=$$
+sleep 1
+BG="$(
+    python3 - "$WAITER_CMD" <<'PYEOF'
+import json, sys
+print(json.dumps([
+    {"id": "wt1", "type": "shell", "status": "running", "command": sys.argv[1],
+     "description": "inbox waiter"},
+    {"id": "bw1", "type": "shell", "status": "running", "command": "sleep 999",
+     "description": "long CI watch"},
+]))
+PYEOF
+)"
+task 7 pending "waiting on both"
+say "answer
+
+## Remaining
+- #7 waiting on both (pending)"
+run >/dev/null
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 waiting on both (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "163z-c2 CONTROL: a real job beside the waiter still gets its check-in"
+else
+    fail "163z-c2 CONTROL: one waiter silenced supervision of a real job: ${OUT:0:250}"
+fi
+kill "$WAITER_PID" 2>/dev/null
+wait "$WAITER_PID" 2>/dev/null
+unset WORKLIST_HARNESS_PID
+
 echo "== 163b. a stale output stream is flagged POSSIBLY STUCK =="
 setup
 brief_now
@@ -5272,7 +6104,7 @@ fi
 echo "== 166. --triage --id refuses another session's item =="
 setup
 EVENTS="${WL%.md}.events.jsonl"
-NID=$(reqcli --add other123 "their finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
+NID=$(as_peer other123 reqcli --add other123 "their finding" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p')
 OUT=$(triage off deadbeef --id "$NID" "my take on their finding" 2>&1)
 RC=$?
 if [[ "$RC" -ne 0 ]] && grep -qF "is owned by other123" <<<"$OUT"; then
@@ -5287,7 +6119,7 @@ else
 fi
 # The same item, triaged by its OWNER, reaches the degraded printout: the
 # refusal is about ownership and not about --id being broken.
-OUT=$(triage off other123 --id "$NID" "their own finding" 2>&1)
+OUT=$(as_peer other123 triage off other123 --id "$NID" "their own finding" 2>&1)
 if [[ $? -eq 0 ]] && grep -qF "TRIAGE, SELF-ASSESSED (#$NID)" <<<"$OUT"; then
     pass "166 CONTROL: the OWNER triages the same item fine"
 else
@@ -5558,7 +6390,7 @@ outq_fixture
 OUT="$(run)"
 # FOUR, not three: an orphaned item is by construction another session's OPEN
 # item, so it always drags the other-session count along with it.
-if [[ "$(outq_seen "$OUT")" -eq 1 ]] && grep -qF "WORKLIST GUIDE" <<<"$OUT" &&
+if [[ "$(outq_seen "$OUT")" -eq 1 ]] &&
     grep -qF "(3 more report section(s) queued" <<<"$OUT"; then
     pass "173: exactly one of four sections is released, and the tail counts the rest"
 else
@@ -5805,6 +6637,1329 @@ else
     fail "177: the changed reason kept reprinting: ${out:0:400}"
 fi
 unset WORKLIST_JUDGE_CACHE_MIN WORKLIST_STUCK_ROUNDS
+
+echo "== 178. v17: the poll baseline is SESSION-scoped, not repo-scoped =="
+# THE BUG this fixes: world_sig hashed the BYTES of the shared markdown, event
+# log and requests file, so one teammate's --add broke every other session's
+# baseline and forfeited their silent poll. Measured on the live store before
+# the fix: 32 of 32 events in a 3-hour window were foreign, polluting 18 of 36
+# five-minute windows.
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "178 baseline: the full stop banks the poll baseline" allow "operator may answer"
+# A DIFFERENT session tracks its own work. Nothing about this session moved.
+as_peer cafe1234 reqcli --add cafe1234 "a teammate's own finding" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -z "$OUT" ]]; then
+    pass "178: another session's worklist event does NOT forfeit the silent poll"
+else
+    fail "178: a foreign event paid the full battery: ${OUT:0:200}"
+fi
+# CONTROL: the signature is not simply dead -- this session's OWN store write
+# still forfeits, which is the whole point of having a baseline.
+reqcli --add deadbeef "my own new finding" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "OPEN worklist item" <<<"$OUT"; then
+    pass "178 CONTROL: this session's own store write still forfeits the silence"
+else
+    fail "178 CONTROL: an own item went silent: ${OUT:0:200}"
+fi
+
+echo "== 178b. a foreign REQUEST to someone else is invisible; to me it is not =="
+setup
+brief_now
+hand_now
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+say "answer
+
+## Remaining
+- the flag decision, deferred with a default"
+check "178b baseline" allow "operator may answer"
+askid_as cafe1234 beefcafe "a question between two OTHER sessions" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -z "$OUT" ]]; then
+    pass "178b: a request between two other sessions keeps the silence"
+else
+    fail "178b: a foreign request forfeited: ${OUT:0:200}"
+fi
+askid_as cafe1234 deadbeef "please rebuild the docs index" >/dev/null
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]] && grep -qF "rebuild the docs index" <<<"$OUT"; then
+    pass "178b CONTROL: a request addressed to ME still forfeits and delivers"
+else
+    fail "178b CONTROL: a request to me was swallowed: ${OUT:0:200}"
+fi
+
+echo "== 179. v17: the bgwait latch RESETS when the wait ends =="
+# THE BUG: the clock was only written inside the wait state, so leaving it
+# froze the stamp. Re-entering an hour later found it 60 minutes old and fired
+# the roster demand on the FIRST stop back -- "you started waiting, report",
+# the exact thing the silent seed exists to prevent.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bw9.output"
+BGON='[{"id":"bw9","type":"shell","status":"running","description":"long watch"}]'
+BG="$BGON"
+task 7 pending "waiting on the nightly"
+say "answer
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+run >/dev/null # seeds the wait clock
+age_bgwait() {
+    python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc.setdefault("bgwait", {})["at"] = "2026-01-01T00:00:00Z"
+p.write_text(json.dumps(doc))
+PYEOF
+}
+has_bgwait() {
+    python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+try:
+    doc = json.loads(p.read_text())
+except OSError:
+    doc = {}
+print("present" if doc.get("bgwait") else "absent")
+PYEOF
+}
+age_bgwait
+# The wait ENDS: the workers are gone.
+BG='[]'
+newturn
+say "the watch finished
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+run >/dev/null
+if [[ "$(has_bgwait)" == "absent" ]]; then
+    pass "179: leaving the wait state clears the check-in clock"
+else
+    fail "179: the stale clock survived the end of the wait"
+fi
+# And a LATER wait re-seeds silently instead of firing on arrival.
+BG="$BGON"
+newturn
+say "started a new watch
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "179: re-entering a wait re-seeds the clock instead of firing on arrival"
+else
+    fail "179: the check-in fired on the first stop of a NEW wait: ${OUT:0:250}"
+fi
+# CONTROL: the latch is not simply disabled -- aged INSIDE a live wait it fires.
+age_bgwait
+newturn
+say "still waiting
+
+## Remaining
+- #7 waiting on the nightly (pending)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
+    pass "179 CONTROL: aged inside a live wait, the check-in still fires"
+else
+    fail "179 CONTROL: the check-in never fires at all now: ${OUT:0:250}"
+fi
+# v17 requirement 3: the bound is VISIBLE, so a reader can verify the latch
+# from the message alone.
+if grep -qF "Last delivered:" <<<"$OUT" && grep -qF "Next one no earlier than" <<<"$OUT"; then
+    pass "179: the check-in carries its last-fired and next-earliest stamps"
+else
+    fail "179: the check-in still only CLAIMS a bound: ${OUT:0:300}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180. v17: three no-op wakes collapse the whole stop to ONE line =="
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwq.output"
+BG='[{"id":"bwq","type":"shell","status":"running","description":"long watch"}]'
+task 7 pending "waiting on the nightly"
+# A real deferral, so the NON-collapsed report has a guide in it. Since v18 an
+# empty guide is silent, and the reset control below needs a full report it can
+# actually see coming back.
+echo '- [?] (deadbeef) keep the flag? DEFAULT: keep it' >>"$WL"
+quiet_turn() {
+    newturn
+    say "still waiting on the nightly
+
+## Remaining
+- #7 waiting on the nightly (pending)
+- the flag decision, deferred with a default"
+}
+quiet_turn
+OUT1="$(run)"
+quiet_turn
+OUT2="$(run)"
+quiet_turn
+OUT3="$(run)"
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT3"; then
+    pass "180: the third consecutive no-op wake fires the reschedule message"
+else
+    fail "180: no collapse after three quiet wakes: ${OUT3:0:300}"
+fi
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT1" && ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT2"; then
+    pass "180: and NOT before three (one quiet wake proves nothing)"
+else
+    fail "180: fired too early: 1='${OUT1:0:120}' 2='${OUT2:0:120}'"
+fi
+if grep -qF '*/10 * * * *' <<<"$OUT3"; then
+    pass "180: it names the next rung up from */5"
+else
+    fail "180: no next rung in the message: ${OUT3:0:300}"
+fi
+# THE FOCUS REQUIREMENT: this is the ENTIRE output. The worker roster, the
+# guide and the advisory sections are all gone.
+if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT3" &&
+    ! grep -qF "bwq (long watch)" <<<"$OUT3" &&
+    ! grep -qF "WORKLIST GUIDE" <<<"$OUT3"; then
+    pass "180: the quiet wake emits ONLY the one-liner (no roster, no guide)"
+else
+    fail "180: the collapsed stop still carried other sections: ${OUT3:0:400}"
+fi
+# CONTROL: a real event -- new bytes on a worker's stream -- resets the streak.
+printf 'the worker printed something new\n' >>"$BASE/bgout/bwq.output"
+quiet_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT" && grep -qF "WORKLIST GUIDE" <<<"$OUT"; then
+    pass "180 CONTROL: new worker output resets the streak and restores the full report"
+else
+    fail "180 CONTROL: the collapse survived a real event: ${OUT:0:300}"
+fi
+# ... and the count starts again from zero rather than resuming where it was.
+quiet_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180 CONTROL: the streak restarts from zero, it does not resume"
+else
+    fail "180 CONTROL: the streak resumed after a real event: ${OUT:0:300}"
+fi
+
+echo "== 180b. a HARD check is never suppressed by the quiet collapse =="
+# The whole risk of collapsing output is hiding something that matters. Get a
+# session into the collapsed state, then plant an open item: it must BLOCK.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwh.output"
+BG='[{"id":"bwh","type":"shell","status":"running","description":"long watch"}]'
+task 7 pending "waiting"
+for _ in 1 2 3; do
+    newturn
+    say "still waiting
+
+## Remaining
+- #7 waiting (pending)"
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180b setup: the session is in the collapsed quiet state"
+else
+    fail "180b setup: never reached the collapsed state: ${OUT:0:250}"
+fi
+echo '- [ ] (deadbeef) a real finding that must not be swallowed' >>"$WL"
+newturn
+say "still waiting
+
+## Remaining
+- #7 waiting (pending)"
+check "180b: an open item BLOCKS even from inside the quiet collapse" block "OPEN worklist item"
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180c. the rung ladder escalates 5->10->20->40->60 and CAPS =="
+OUT=$(
+    python3 - "$(dirname "$HOOK")" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+import wl_checks as CK
+fail = 0
+want = [("*/5 * * * *", "*/10 * * * *"), ("*/10 * * * *", "*/20 * * * *"),
+        ("*/20 * * * *", "*/40 * * * *"), ("*/40 * * * *", "0 * * * *")]
+for cur, nxt in want:
+    note = CK.quiet_wake_note([{"id": "p", "schedule": cur}], 3)
+    if nxt not in note:
+        print("rung %s did not recommend %s: %r" % (cur, nxt, note[:120])); fail += 1
+cap = CK.quiet_wake_note([{"id": "p", "schedule": "0 * * * *"}], 9)
+if "cap" not in cap or "0 * * * *" in cap.split("cap")[1]:
+    print("the top rung did not cap cleanly: %r" % cap[:160]); fail += 1
+# No recognisable poll cron -> no collapse at all, so the report is never
+# replaced by an instruction the session cannot act on.
+for crons in ([], [{"id": "p", "schedule": "*/7 * * * *"}],
+              [{"id": "p", "schedule": "*/5 * * * *"}, {"id": "q", "schedule": "*/5 * * * *"}]):
+    if CK.quiet_wake_note(crons, 5) != "":
+        print("collapsed on an unusable cron shape: %r" % crons); fail += 1
+print("ladder failures=%d" % fail)
+sys.exit(1 if fail else 0)
+PYEOF
+)
+if [[ $? -eq 0 ]]; then
+    pass "180c: every rung recommends the next, the top rung caps, odd shapes decline"
+else
+    fail "180c: $OUT"
+fi
+
+echo "== 180d. this session's OWN progress note is a real event =="
+# Found by the suite, not by design: with the streak keyed on item STRUCTURE
+# alone, a session dutifully renewing its lease and posting --update notes
+# looked quiet, and case 172's advisory got collapsed away. Doing what the
+# liveness ladder asks is movement.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'stream\n' >"$BASE/bgout/bwu.output"
+BG='[{"id":"bwu","type":"shell","status":"running","description":"the watch"}]'
+UID180=$(reqcli --add deadbeef "carry the CI watch to green" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --lease deadbeef "$UID180" +60 worker:bwu "watching the run" >/dev/null
+upd_turn() {
+    newturn
+    say "watching.
+
+## Remaining
+- #$UID180 carry the CI watch to green (in flight)"
+}
+for _ in 1 2 3; do
+    upd_turn
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180d setup: three untouched wakes do collapse"
+else
+    fail "180d setup: never collapsed: ${OUT:0:250}"
+fi
+reqcli --update deadbeef "$UID180" "still watching, run pending" >/dev/null
+upd_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180d: an --update on this session's own item resets the streak"
+else
+    fail "180d: a progress note was treated as silence: ${OUT:0:300}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR
+
+echo "== 180e. a worker DYING is never silenced by the streak =="
+# The one change a byte-level view cannot see: the stream is identical, the
+# event still lists the task as running, and the only difference is that the
+# OS process is gone. If the streak counter could hide that, the collapse
+# would be actively dangerous rather than merely quiet.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'old content\n' >"$BASE/bgout/bwd.output"
+touch -d '25 minutes ago' "$BASE/bgout/bwd.output"
+sleep 3717171718 &
+PROBE180E=$!
+export WORKLIST_HARNESS_PID=$$
+BG='[{"id":"bwd","type":"shell","status":"running","description":"silent watch","command":"sleep 3717171718"}]'
+task 7 pending "thing"
+dead_turn() {
+    newturn
+    say "answer
+
+## Remaining
+- #7 thing (pending)"
+}
+for _ in 1 2 3 4; do
+    dead_turn
+    OUT="$(run)"
+done
+if grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT"; then
+    pass "180e setup: a live, silent worker collapses into the quiet state"
+else
+    fail "180e setup: never collapsed with a live worker: ${OUT:0:250}"
+fi
+kill "$PROBE180E" 2>/dev/null
+wait "$PROBE180E" 2>/dev/null
+# The check-in window is opened too, so this case asserts BOTH halves: the
+# streak breaks, AND the report that the break makes room for actually
+# carries the accusation. Without the ageing it would only ever prove the
+# first half, and a half-proof of a safety property is not one.
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc.setdefault("bgwait", {})["at"] = "2026-01-01T00:00:00Z"
+p.write_text(json.dumps(doc))
+PYEOF
+dead_turn
+OUT="$(run)"
+if ! grep -qF "CONSECUTIVE QUIET WAKES" <<<"$OUT" && grep -qF -- "<- POSSIBLY STUCK" <<<"$OUT"; then
+    pass "180e: the worker's death breaks the streak and delivers the accusation"
+else
+    fail "180e: a dead worker stayed hidden behind the streak: ${OUT:0:400}"
+fi
+BG='[]'
+unset WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID
+
+echo "== 181. ISOLATION: the suite can never reach the live worklist =="
+# Raised by the team lead after a run of this suite came back with failures a
+# clean tree could not reproduce, on the hypothesis that fixture state and live
+# session state were mixing. They were not mixing on DISK -- every invocation
+# passes TMPDIR -- but the check belongs here rather than in anyone's memory,
+# because the cost of being wrong is a suite that tests the operator's real
+# store. Two halves: the store path resolves inside the fixture, and the
+# ENVIRONMENT the hook reads carries no ambient knob.
+setup
+RESOLVED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+if [[ "$RESOLVED" == "$BASE/tmp/"* ]]; then
+    pass "181: the fixture store resolves inside the fixture, not beside the live one"
+else
+    fail "181: fixture store escaped to '$RESOLVED'"
+fi
+# CONTROL: without the fixture TMPDIR the SAME command resolves somewhere else
+# entirely, so the assertion above is about TMPDIR doing the work and not about
+# the path being unconditionally fixture-shaped.
+ELSEWHERE="$(TMPDIR=/var/tmp CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+if [[ "$ELSEWHERE" != "$RESOLVED" && "$ELSEWHERE" == /var/tmp/* ]]; then
+    pass "181 CONTROL: TMPDIR is what pins it; a different one moves the store"
+else
+    fail "181 CONTROL: TMPDIR did not move the store ('$ELSEWHERE')"
+fi
+# The env half. Every WORKLIST_* knob the operator's shell might carry is
+# scrubbed at suite start, and setup() re-scrubs the ones cases set, so a stop
+# here runs on the suite's own configuration whatever the launching shell had.
+LEAKED=""
+for _v in WORKLIST_QUIET_WAKES WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID \
+    WORKLIST_BG_REPORT_MIN WORKLIST_REPORT_PER_STOP WORKLIST_FOCUS \
+    WORKLIST_STUCK_ROUNDS WORKLIST_JUDGE_CACHE_MIN; do
+    [[ -n "${!_v:-}" ]] && LEAKED="$LEAKED $_v=${!_v}"
+done
+if [[ -z "$LEAKED" ]]; then
+    pass "181: no ambient WORKLIST_* knob survives into a case"
+else
+    fail "181: ambient knobs leaked into the suite:$LEAKED"
+fi
+# The report store is pinned rather than scrubbed: an UNSET WORKLIST_REPORTS_DIR
+# is not neutral, it points wl_report at the operator's real store under $HOME.
+if [[ "${WORKLIST_REPORTS_DIR:-}" == "$BASE/reports" ]]; then
+    pass "181: the report store is pinned inside the fixture"
+else
+    fail "181: report store is '${WORKLIST_REPORTS_DIR:-<unset -- reads the REAL store>}'"
+fi
+
+echo "== 182. SessionStart source=compact does NOT re-inject the docs blurb =="
+# THE BUG (operator, 2026-08-04): a long-running licensing session compacted,
+# Claude Code fired SessionStart with source=compact, and the session was handed
+# "N design doc(s) in docs/ci-overhaul" plus an order to read all of them --
+# material belonging to an unrelated program, injected mid-task. Compaction is
+# handle_post_compact's job (cases 20, 21, 171): it already re-points at the
+# design docs AND hands back the branch's plans, so SessionStart must stay quiet.
+setup
+mkdir -p "$BASE/proj/docs/ci-overhaul" "$BASE/proj/docs/agent/agenttest"
+printf '# doc\nbody\n' >"$BASE/proj/docs/ci-overhaul/01-design.md"
+printf '# PLAN: a\nStatus: draft\nOwner: t\nUpdated: 2026-08-04\n\nbody\n' \
+    >"$BASE/proj/docs/agent/agenttest/PLAN-a.md"
+ss_out() { # ss_out <source-json-fragment>
+    printf '{"session_id":"%s","cwd":"%s","hook_event_name":"SessionStart"%s}' \
+        "$SID" "$BASE/proj" "$1" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+            python3 "$HOOK" --session-start 2>/dev/null
+}
+out="$(ss_out ',"source":"compact"')"
+if [[ -z "$out" ]]; then
+    pass "a compact-sourced SessionStart says nothing at all"
+else
+    fail "compact still injects context: ${out:0:300}"
+fi
+# THE CONTROL, because a check that can only pass is not a check: the very same
+# fixture must still speak on a genuinely new session, and on an event with no
+# source field at all (the shape every older case in this suite feeds).
+out="$(ss_out ',"source":"startup"')"
+if grep -qF "READ ALL OF THEM" <<<"$out" && grep -qF "READ EVERY NON-DONE PLAN" <<<"$out"; then
+    pass "182 CONTROL: source=startup still gets the docs AND the plans"
+else
+    fail "182 CONTROL: startup lost its context: ${out:0:300}"
+fi
+out="$(ss_out '')"
+if grep -qF "READ ALL OF THEM" <<<"$out"; then
+    pass "182 CONTROL: an event with no source field is not treated as compact"
+else
+    fail "182 CONTROL: a missing source silenced the hook: ${out:0:300}"
+fi
+# The marker the judge stamp rides on is set BEFORE the compact return, so a
+# compacted session still gets the full approval reason on its next judged stop.
+rm -f "$BASE"/tmp/claude-worklist/*.state-*.json
+ss_out ',"source":"compact"' >/dev/null
+if python3 - "$BASE" <<'PY'; then
+import glob, json, sys
+docs = [json.load(open(p)) for p in glob.glob(sys.argv[1] + "/tmp/claude-worklist/*.state-*.json")]
+sys.exit(0 if any(d.get("ctx_fresh", {}).get("why", "").startswith("session-start") for d in docs) else 1)
+PY
+    pass "182: compact still marks the context fresh for the judge stamp"
+else
+    fail "182: the compact path stopped marking ctx_fresh"
+fi
+
+echo "== 183. a failed judge child explains ITSELF, not an empty stderr =="
+# THE BUG (2026-08-05): the Stop gate blocked with "judge exited 1: " and nothing
+# after the colon, which is unactionable. wl_judge reported proc.stderr on a
+# non-zero exit, but the claude CLI writes its error ENVELOPE TO STDOUT -- stderr
+# is empty -- and the is_error branch that would have explained it sits behind
+# returncode == 0, so it was unreachable exactly when needed. The real cause was
+# error_max_budget_usd at $0.1025 against a $0.10 cap. A gate that cannot say why
+# it failed is an escape hatch wearing a gate's clothes: the same swallowed-
+# failure class this repo scans for, inside the thing that audits it.
+if python3 - "$(dirname "$HOOK")" <<'JUDGEDIAG'; then
+import sys, json
+sys.path.insert(0, sys.argv[1])
+import wl_judge
+
+class P:
+    def __init__(self, rc, out, err):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+# Derive the over-budget cost from the CURRENT constant rather than hardcoding
+# the 0.1025 that was measured against a $0.10 default. The first draft of this
+# case pinned the literal and went red the moment the default was raised to
+# $0.25 -- a test coupled to a constant it does not own, caught by running it.
+budget = float(wl_judge.JUDGE_BUDGET_USD)
+envelope = json.dumps({
+    "is_error": True, "subtype": "error_max_budget_usd",
+    "stop_reason": "tool_use", "total_cost_usd": budget + 0.01,
+})
+msg = wl_judge._explain_failed_exit("judge", P(1, envelope, ""))
+# The cause must be NAMED. Asserting merely "non-empty" would have passed on the
+# original defect too, whose message was also non-empty.
+assert "error_max_budget_usd" in msg, msg
+assert "cost=" in msg, msg
+assert "BUDGET EXHAUSTED" in msg, msg
+
+# CONTROL 0: a failure UNDER budget must NOT cry budget. Without this, a message
+# that always shouted BUDGET EXHAUSTED would satisfy the assertion above.
+under = json.dumps({"is_error": True, "subtype": "error_during_execution",
+                    "total_cost_usd": budget / 2})
+m0 = wl_judge._explain_failed_exit("judge", P(1, under, ""))
+assert "BUDGET EXHAUSTED" not in m0, m0
+assert "error_during_execution" in m0, m0
+
+# CONTROL 1: unparseable stdout must still say something concrete rather than
+# falling back to the empty stderr that started all this.
+m2 = wl_judge._explain_failed_exit("judge", P(1, "segfault", ""))
+assert "segfault" in m2, m2
+
+# CONTROL 2: a populated stderr must still be surfaced, so the fix did not trade
+# one blind spot for another.
+m3 = wl_judge._explain_failed_exit("triage", P(2, "", "boom: no such model"))
+assert "no such model" in m3, m3
+
+# CONTROL 3: the label distinguishes the two call sites, which is how an operator
+# knows whether triage or the judge died.
+assert m3.startswith("triage exited 2"), m3
+
+# CONTROL 4 -- THE ONE THAT MATTERS, and it was missing from the first draft.
+# Everything above exercises the HELPER. The defect lived in the CALL SITES, which
+# formatted their own message from an empty stderr. Reverting a call site leaves
+# the helper perfect and the bug fully restored, and the planted-defect proof
+# showed exactly that: the case passed with the original defect back in place.
+# A test that cannot see the regression it was written for is the ninth instance
+# of the probe-tests-the-wrong-thing class in this campaign. So assert the wiring,
+# not just the function.
+import pathlib
+src = pathlib.Path(sys.argv[1], "wl_judge.py").read_text(encoding="utf-8")
+code = "\n".join(
+    ln for ln in src.splitlines() if not ln.lstrip().startswith("#")
+)
+assert code.count("_explain_failed_exit(") >= 3, (
+    "both non-zero-exit call sites must route through the helper "
+    "(definition + 2 uses); found %d" % code.count("_explain_failed_exit(")
+)
+assert "exited %d: %s" not in code, (
+    "a call site is formatting its own exit message again -- that is the "
+    "2026-08-05 defect, which reports an EMPTY stderr because the CLI writes "
+    "its error envelope to stdout"
+)
+JUDGEDIAG
+    pass "183: a failed judge child names its own cause (budget, stdout, stderr, label)"
+else
+    fail "183: wl_judge._explain_failed_exit no longer explains a failed child"
+fi
+
+# ---------------------------------------------------------------------------
+# v19: RUNTIME CALLER IDENTITY. Every <me> argument used to be accepted on SHAPE
+# alone (PREFIX_RE), and nothing had ever compared one to reality.
+# ---------------------------------------------------------------------------
+
+echo "== 184. v19 L1: every verb taking a <me> refuses an identity this session is not =="
+# THE DEFECT, replayed verbatim. A session copied a SUB-AGENT's namespace token
+# out of a Task-spawn tool result (`agent_id: search-renet2@session-4c3e095a`)
+# and passed it as its own <me> for 26 hours: 219 calls under 4c3e095a and 20
+# under its real id, from ONE process. Every call SUCCEEDED, because writes and
+# reads key off the same unvalidated string -- so one typo splits a session into
+# two internally-consistent halves, and a peer's message waited 34 hours in the
+# half nobody was reading.
+#
+# THREE CONTROLS PER VERB, each differing from FIRE in ONE planted fact:
+#   A  the prefix is this session's        -> accepted, and the effect HAPPENS
+#   B  the environment cannot say who I am -> accepted (the deliberate silent
+#      pass), which also proves FIRE was caused by the CHECK and not by an
+#      unrelated failure in the same command
+#   C  the prefix is too short             -> refused by the length floor
+setup
+brief_now
+brief_other cafe1234
+mkdir -p "$BASE/reports/agenttest"
+python3 - "$BASE/reports" <<'PYEOF'
+import json, pathlib, sys
+store = pathlib.Path(sys.argv[1])
+(store / "agenttest").mkdir(parents=True, exist_ok=True)
+(store / "agenttest" / "l1.md").write_text("L1 FIXTURE REPORT\nbody")
+(store / "index.jsonl").write_text(json.dumps({
+    "ev": "report", "id": "l1report0001", "at": "2026-08-05T10:00:00Z",
+    "branch": "agenttest", "agent": "l1-teammate", "type": "l1-teammate",
+    "session": "deadbeef", "body": "agenttest/l1.md", "bytes": 900,
+    "silent": False, "sends": 1, "title": "L1 FIXTURE REPORT",
+    "transcript": "", "src": "hook"}) + "\n")
+PYEOF
+
+l1run() { # the CLI under the fixture; STATE body on stdin so --state is drivable
+    printf '%s' "$STATE_BODY" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_JUDGE=off \
+            python3 "$HOOK" "$@" 2>&1
+}
+
+# Fixtures the write verbs need. Built as deadbeef, which is this suite's own
+# identity, so building them exercises CONTROL A's path before the table runs.
+mkitem() { l1run --add deadbeef "$1" | sed -n 's/^added #\([0-9a-f]*\).*/\1/p'; }
+I_TICK=$(mkitem l1-tick-item)
+I_DEFER=$(mkitem l1-defer-item)
+I_UPDATE=$(mkitem l1-update-item)
+I_LEASE=$(mkitem l1-lease-item)
+mkitem l1-list-item >/dev/null # the --list row asserts on the TEXT, not the id
+R_ANSWER=$(askid_as cafe1234 deadbeef l1-answer-me)
+R_DECLINE=$(askid_as cafe1234 deadbeef l1-decline-me)
+R_ACK=$(l1run --ask deadbeef cafe1234 l1-ack-me | sed -n 's/.*#\([0-9a-f]\{8\}\).*/\1/p' | head -n1)
+as_peer cafe1234 l1run --answer cafe1234 "$R_ACK" l1-their-answer >/dev/null
+# A phantom for the --reassign row: three aged events under an identity that has
+# never stopped, owning open items. Case 184 runs no Stop hook, so no
+# .lastevent- file exists for anybody here, which is exactly the phantom shape.
+phantom_store phantom1 90
+
+# label | args (@ME@ is substituted) | needle proving the effect happened
+L1_TABLE=(
+    "--add|--add @ME@ l1-table-add|added #"
+    "--triage|--triage @ME@ l1-table-finding|triaging #"
+    "--tick|--tick @ME@ $I_TICK https://ci.invalid/run/1|ticked #"
+    "--defer|--defer @ME@ $I_DEFER q DEFAULT: do-it WHY: needs-an-operator-ruling HOW: operator-answers|deferred #"
+    "--update|--update @ME@ $I_UPDATE moved-a-bit|updated #"
+    "--lease|--lease @ME@ $I_LEASE +30 worker:l1bg|leased #"
+    "--list|--list --open @ME@|l1-list-item"
+    "--state|--state @ME@|STATE.md written"
+    "--loop|--loop @ME@ 2099-01-01T00:00:00Z 1 l1-label|loop declared"
+    "--brief|--brief @ME@ l1-brief-text|brief recorded"
+    "--reap|--reap @ME@ l1task9|reaped 1 task"
+    "--ask|--ask @ME@ cafe1234 l1-table-ask|request #"
+    "--answer|--answer @ME@ $R_ANSWER l1-my-answer|answered #"
+    "--decline|--decline @ME@ $R_DECLINE l1-my-decline|declined #"
+    "--ack|--ack @ME@ $R_ACK|acked #"
+    "--poll|--poll @ME@|"
+    "--reports|--reports --read @ME@ l1report0001|marked 1 report"
+    "--reports|--reports --list --as @ME@|L1 FIXTURE REPORT"
+    "--reassign|--reassign @ME@ phantom1|reassigned phantom1 -> deadbeef"
+)
+COVERED="$BASE/l1covered"
+: >"$COVERED"
+L1_FAIL=0
+for row in "${L1_TABLE[@]}"; do
+    IFS='|' read -r verb tmpl needle <<<"$row"
+    echo "$verb" >>"$COVERED"
+    read -ra FIREARGS <<<"${tmpl//@ME@/4c3e095a}"
+    read -ra GOODARGS <<<"${tmpl//@ME@/deadbeef}"
+    read -ra SHORTARGS <<<"${tmpl//@ME@/dead}"
+
+    # FIRE: the exact literal from the incident, against this suite's own id.
+    OUT=$(l1run "${FIREARGS[@]}")
+    RC=$?
+    if [[ "$RC" -ne 0 ]] && grep -qF "identity mismatch" <<<"$OUT" &&
+        grep -qF "deadbeef" <<<"$OUT"; then
+        pass "184 FIRE $verb: a foreign <me> is refused, naming the real session"
+    else
+        fail "184 FIRE $verb: accepted a foreign <me> (rc=$RC): ${OUT:0:200}"
+        L1_FAIL=$((L1_FAIL + 1))
+    fi
+
+    # CONTROL A: one planted fact changed -- the prefix -- and the effect lands.
+    OUT=$(l1run "${GOODARGS[@]}")
+    RC=$?
+    if [[ "$RC" -eq 0 ]] && { [[ -z "$needle" ]] || grep -qF "$needle" <<<"$OUT"; }; then
+        pass "184 CONTROL A $verb: this session's own prefix works, effect included"
+    else
+        fail "184 CONTROL A $verb: the check broke the verb (rc=$RC, needle '$needle'): ${OUT:0:200}"
+        L1_FAIL=$((L1_FAIL + 1))
+    fi
+
+    # CONTROL B: the instrument BLIND. No id anywhere, so the check cannot know
+    # and must say nothing -- and the FIRE command then succeeds, which is what
+    # proves FIRE was the check firing rather than the command failing anyway.
+    OUT=$(env -u CLAUDE_CODE_SESSION_ID -u WORKLIST_SESSION_ID bash -c '
+        printf "%s" "$1"; shift
+        TMPDIR="$2/tmp" CLAUDE_PROJECT_DIR="$2/proj" WORKLIST_JUDGE=off \
+            python3 "$3" "${@:4}" 2>&1' _ "" "$STATE_BODY" "$BASE" "$HOOK" "${FIREARGS[@]}" </dev/null)
+    if ! grep -qF "identity mismatch" <<<"$OUT"; then
+        pass "184 CONTROL B $verb: an unresolvable environment accuses nobody"
+    else
+        fail "184 CONTROL B $verb: accused a caller it could not verify: ${OUT:0:200}"
+        L1_FAIL=$((L1_FAIL + 1))
+    fi
+
+    # CONTROL C: the length floor, generalised from --poll's. `dead` IS a prefix
+    # of this session's id, so only the floor can refuse it -- which is the
+    # whole point: same_session's symmetry would have accepted `--add d`.
+    OUT=$(l1run "${SHORTARGS[@]}")
+    RC=$?
+    if [[ "$RC" -ne 0 ]]; then
+        pass "184 CONTROL C $verb: a promiscuously short prefix is refused"
+    else
+        fail "184 CONTROL C $verb: accepted a 4-char <me>: ${OUT:0:200}"
+        L1_FAIL=$((L1_FAIL + 1))
+    fi
+done
+# --poll's effect is a FILE, not a line: an empty inbox prints nothing by
+# contract, so CONTROL A above can only check the exit code for it.
+if [[ -f "${WL%.md}.pollmark-deadbeef" ]]; then
+    pass "184 CONTROL A --poll: the marker was actually written"
+else
+    fail "184 CONTROL A --poll: exit 0 but no marker; the verb did nothing"
+fi
+
+echo "== 184w. --wait is on the same rule, and it is the one that BLOCKS on the answer =="
+# Separate because it is a different entry point (wl_wait.py, not worklist.py)
+# and because getting it wrong is expensive in a way the others are not: a
+# waiter armed against the wrong slice blocks for MINUTES on an inbox that is
+# not its own, then reports nothing new.
+WAITBIN="$(dirname "$HOOK")/wl_wait.py"
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    python3 "$WAITBIN" 4c3e095a --timeout 0.02 2>&1)
+RC=$?
+echo "--wait" >>"$COVERED"
+if [[ "$RC" -ne 0 ]] && grep -qF "identity mismatch" <<<"$OUT"; then
+    pass "184w FIRE: the waiter refuses to listen as another session"
+else
+    fail "184w FIRE: the waiter armed against a foreign identity (rc=$RC): ${OUT:0:200}"
+fi
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    python3 "$WAITBIN" deadbeef --timeout 0.02 2>&1)
+RC=$?
+# The heartbeat is UNLINKED on a clean timeout exit (wl_wait.py:202), so the
+# effect to assert is the report line naming the session it actually listened
+# for -- a waiter armed against the wrong slice would name that one.
+if [[ "$RC" -eq 0 ]] && grep -qF "nothing new for deadbeef" <<<"$OUT"; then
+    pass "184w CONTROL A: its own prefix waits, and listens on its OWN inbox"
+else
+    fail "184w CONTROL A: the check broke the waiter (rc=$RC): ${OUT:0:200}"
+fi
+
+echo "== 185. ANTI-VACUITY: the verb list is DERIVED from the source, not typed here =="
+# THE MOST IMPORTANT CASE IN THIS CHANGE. The defect's shape is "a rule applied
+# to some call sites and not others", so a hand-written table is the same bug
+# one layer up: add verb 14 next month, forget the table, and the suite stays
+# green over a reopened hole. So the verb list comes from worklist.py's OWN
+# dispatch, and every me-taking verb must have been DRIVEN above -- proven by
+# the coverage file the loop wrote at runtime, not by grepping this file, which
+# would pass on a case that never ran.
+OUT=$(
+    python3 - "$(dirname "$HOOK")" "$COVERED" <<'PYEOF'
+import pathlib, re, sys
+d = pathlib.Path(sys.argv[1])
+src = (d / "worklist.py").read_text(encoding="utf-8")
+verbs = set()
+verbs.update(re.findall(r'sys\.argv\[1:2\] == \["(--[a-z-]+)"\]', src))
+verbs.update(re.findall(r'sys\.argv\[1\] == "(--[a-z-]+)"', src))
+for tup in re.findall(r'sys\.argv\[1\] in \(([^)]*)\)', src):
+    verbs.update(re.findall(r'"(--?[a-z-]+)"', tup))
+# Verbs that take NO <me>, each for a stated reason. Adding to this list is a
+# deliberate act; forgetting to add a NEW me-taking verb is not, which is the
+# asymmetry that makes this check work.
+NO_ME = {
+    "--help", "-h", "help",   # prints the catalogue
+    "--path", "--compact",    # store-level queries, no identity
+    "--requests",             # unfiltered listing of everybody's requests
+    "--session-start", "--post-compact",  # harness hooks; identity is in the event
+    "--reports",              # a CONTAINER: its me-taking sub-modes are driven
+                              # explicitly as `--reports --read` and
+                              # `--reports --list --as`, and it is recorded
+                              # covered by both.
+}
+covered = {ln.strip() for ln in pathlib.Path(sys.argv[2]).read_text().splitlines() if ln.strip()}
+# The derivation's own control. An empty or broken regex would produce an empty
+# `verbs` and this whole case would pass by finding nothing to check -- exactly
+# the can't-fail shape it exists to prevent.
+if not {"--add", "--tick", "--ask", "--poll", "--state", "--brief"} <= verbs:
+    print("DERIVATION BROKEN: the dispatch scan found %s" % sorted(verbs))
+    sys.exit(1)
+gap = sorted((verbs - NO_ME) - covered)
+if gap:
+    print("UNCOVERED me-taking verb(s), add a row to L1_TABLE: %s" % gap)
+    sys.exit(1)
+print("derived=%d covered=%d" % (len(verbs - NO_ME), len(covered)))
+PYEOF
+)
+if [[ $? -eq 0 ]]; then
+    pass "185: every verb the dispatch offers with a <me> was actually driven ($OUT)"
+else
+    fail "185: $OUT"
+fi
+
+echo "== 186. META-CONTROL: the ambient scrub at the top of this file really happened =="
+# A CHECK ON A CHECK, and it is not redundant. Everything above depends on
+# WORKLIST_SESSION_ID being the ONLY identity in the environment. If the scrub
+# at line 16 ever stops stripping CLAUDE_CODE_SESSION_ID, this suite splits in
+# two: run from inside a Claude session every fixture prefix mismatches and ~110
+# sites refuse, and run in CI the variable is unset, check_me silently passes,
+# and every identity case above passes VACUOUSLY. The second is the dangerous
+# one, because it is green.
+#
+# The probe: unset WORKLIST_SESSION_ID ONLY, then issue a command that would
+# FIRE against any real session id, and require it to PASS. It can only pass if
+# there is no ambient id left to compare against.
+OUT=$(env -u WORKLIST_SESSION_ID bash -c '
+    TMPDIR="$1/tmp" CLAUDE_PROJECT_DIR="$1/proj" \
+        python3 "$2" --add 4c3e095a scrub-probe 2>&1' _ "$BASE" "$HOOK" </dev/null)
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF "identity mismatch" <<<"$OUT"; then
+    pass "186: no ambient CLAUDE_CODE_SESSION_ID survives the scrub"
+else
+    fail "186: an ambient session id leaked past the scrub, so case 184 is measuring the SHELL, not the check: ${OUT:0:200}"
+fi
+# CONTROL: force one back in and the same command must FIRE. Without this,
+# case 186 is satisfied by a check that never runs at all.
+OUT=$(CLAUDE_CODE_SESSION_ID="beef0000-9999-8888-7777-666666666666" \
+    env -u WORKLIST_SESSION_ID bash -c '
+    TMPDIR="$1/tmp" CLAUDE_PROJECT_DIR="$1/proj" \
+        python3 "$2" --add 4c3e095a scrub-probe 2>&1' _ "$BASE" "$HOOK" </dev/null)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "beef0000" <<<"$OUT"; then
+    pass "186 CONTROL: with an ambient id present the same command FIRES, so 186 measures something"
+else
+    fail "186 CONTROL: CLAUDE_CODE_SESSION_ID is not read at all (rc=$RC): ${OUT:0:200}"
+fi
+
+echo "== 184x. a SHORT <me> that exactly matches an explicit declaration is honoured =="
+# REGRESSION, from a defect the floor itself caused (26d7814c5). Legacy
+# sub-agents tagged items with their NAME rather than a session prefix, and
+# `w2s-en` is 6 characters. The floor refused it even WITH the override
+# declared, and the refusal then advised "rerun with <me>=w2s-en" -- the exact
+# value it had just rejected. An instruction to retry the thing it refused
+# leaves no next move: the listing path was closed, so the only way to see
+# those items was to reassign them BLIND, which is the opposite of
+# inspect-then-decide. A capability reachable only by acting blind is not
+# reachable.
+#
+# The floor guards against an UNDER-SPECIFIED GUESS about self. An exact match
+# to an explicit declaration is not a guess, so it is honoured -- and the three
+# controls below are what keep that from being a loophole.
+#
+# PLACED HERE, not beside case 184, deliberately: setup() does `rm -rf $BASE`,
+# which would wipe the coverage file case 185 reads. Do not move it up.
+setup
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --add w2s-en "a legacy agent-named item" 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "added #" <<<"$OUT"; then
+    pass "184x FIRE: a 6-char <me> matching its declaration exactly is accepted"
+else
+    fail "184x FIRE: the floor still refuses a declared short identity (rc=$RC): ${OUT:0:200}"
+fi
+# ...and the path that was actually closed: READING before deciding ownership.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --list --open w2s-en 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "a legacy agent-named item" <<<"$OUT"; then
+    pass "184x FIRE: its items can be INSPECTED, so ownership is a decision and not a gamble"
+else
+    fail "184x FIRE: the listing path is still closed: ${OUT:0:200}"
+fi
+# CONTROL A: one planted fact -- no declaration at all. This is the case the
+# floor was built for, and it must still refuse.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    CLAUDE_CODE_SESSION_ID=w2s-en-1111-2222 python3 "$HOOK" --add w2s-en "x" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "shorter than 8 characters" <<<"$OUT"; then
+    pass "184x CONTROL A: a bare short <me> with no declaration is still refused"
+else
+    fail "184x CONTROL A: the escape swallowed the whole floor (rc=$RC): ${OUT:0:200}"
+fi
+# CONTROL B: a declaration that does not EXACTLY match. A prefix relationship is
+# not enough -- that is what makes this an exact-match rule rather than a second
+# way to express the guess the floor exists to refuse.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_SESSION_ID=w2s-en-1111-2222 python3 "$HOOK" --add w2s-en "x" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "shorter than 8 characters" <<<"$OUT"; then
+    pass "184x CONTROL B: a declaration the value merely prefixes is not an exact match"
+else
+    fail "184x CONTROL B: near-enough counted as exact (rc=$RC): ${OUT:0:200}"
+fi
+# CONTROL C: THE PROPERTY THAT MAKES THE ESCAPE SAFE, and nothing else asserts
+# it. --poll and --wait key SIDECAR FILENAMES off <me>[:8], so a short prefix
+# there names a different marker than the Stop hook derives from the full
+# session id and silently disables the fast path. Those two carry their own
+# floor, ahead of check_me, and the escape must not reach them.
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$HOOK" --poll w2s-en 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "8-char" <<<"$OUT"; then
+    pass "184x CONTROL C: --poll keeps its own floor; the escape does not reach the sidecar verbs"
+else
+    fail "184x CONTROL C: a declared short prefix reached the poll marker (rc=$RC): ${OUT:0:200}"
+fi
+OUT=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_SESSION_ID=w2s-en \
+    python3 "$(dirname "$HOOK")/wl_wait.py" w2s-en --timeout 0.01 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "8-char" <<<"$OUT"; then
+    pass "184x CONTROL C: --wait keeps its own floor too"
+else
+    fail "184x CONTROL C: a declared short prefix armed the waiter (rc=$RC): ${OUT:0:200}"
+fi
+
+echo "== 187. --ask refuses a recipient that has never briefed here =="
+# The same defect from the SENDER'S side, and it cost the same incident 34
+# hours: peers addressed `4c3e095a`, an identity that never existed, and the
+# request sat until it auto-escalated with "recipient silent for 2062min".
+setup
+brief_now
+brief_other cafe1234
+OUT=$(reqcli --ask deadbeef 4c3e095a "into the void" 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "has never briefed" <<<"$OUT" && grep -qF "cafe1234" <<<"$OUT"; then
+    pass "187 FIRE: an ask to a never-briefed prefix is refused, listing who is real"
+else
+    fail "187 FIRE: posted into an inbox nobody reads (rc=$RC): ${OUT:0:200}"
+fi
+# CONTROL A: one planted fact -- the recipient HAS briefed.
+OUT=$(reqcli --ask deadbeef cafe1234 "a real recipient" 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "request #" <<<"$OUT"; then
+    pass "187 CONTROL A: a briefed recipient is accepted"
+else
+    fail "187 CONTROL A: the check refused a real session: ${OUT:0:200}"
+fi
+# CONTROL B: '*' and 'operator' are not roster entries and never will be.
+if reqcli --ask deadbeef '*' "broadcast" >/dev/null 2>&1 &&
+    reqcli --ask deadbeef operator "a question DEFAULT: proceed as planned" >/dev/null 2>&1; then
+    pass "187 CONTROL B: '*' and 'operator' bypass the roster check"
+else
+    fail "187 CONTROL B: the roster check swallowed a broadcast or an operator ask"
+fi
+# CONTROL C: the INSTRUMENT BLIND. An empty roster means the check has no data
+# -- a fresh worktree, a wiped TMPDIR -- and refusing every ask there would
+# break the mechanism exactly where nothing is wrong.
+setup
+OUT=$(reqcli --ask deadbeef nobody99 "no roster at all" 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "request #" <<<"$OUT"; then
+    pass "187 CONTROL C: with an EMPTY roster the check abstains instead of refusing everything"
+else
+    fail "187 CONTROL C: an empty roster refused every ask: ${OUT:0:200}"
+fi
+
+echo "== 188. 'operator' is exempt, and the exemption is narrow =="
+# wl_email mails the HUMAN `worklist.py --answer operator <id> '<words>'`. They
+# run it in whatever shell is open, and if that is a Claude session's Bash the
+# identity check would refuse the one command the mail exists to get run.
+# "operator" is a name, not a session prefix, and was never verifiable.
+setup
+brief_now
+brief_other cafe1234
+RID=$(askid_as cafe1234 deadbeef "for the operator to answer")
+OUT=$(reqcli --answer operator "$RID" "the human's answer" 2>&1)
+if [[ $? -eq 0 ]] && grep -qF "answered #" <<<"$OUT"; then
+    pass "188: the operator's mailed reply command still works inside a session"
+else
+    fail "188: the identity check broke the operator's reply path: ${OUT:0:200}"
+fi
+# CONTROL: the exemption is ONE literal, not "any non-session word".
+OUT=$(reqcli --answer operator2 "$RID" "an impostor" 2>&1)
+if [[ $? -ne 0 ]] && grep -qF "identity mismatch" <<<"$OUT"; then
+    pass "188 CONTROL: a lookalike is not exempt"
+else
+    fail "188 CONTROL: the exemption is wider than one literal: ${OUT:0:200}"
+fi
+
+echo "== 189. v19 L2: an identity that WRITES here and has never stopped is reported =="
+# The backstop for what L1 cannot reach: history already written, and the
+# deliberate silent-pass where the environment cannot name the caller. The
+# signature is exact and binary -- `.lastevent-<prefix>.json` is written at
+# exactly ONE place (run_stop), so no file means no Stop hook has ever run under
+# that identity, and a real session always stops.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null # one real stop, so a .lastevent-deadbeef.json exists
+phantom_store phantom1 90
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if grep -qF "PHANTOM IDENTITY IN THE STORE" <<<"$OUT" && grep -qF "phantom1" <<<"$OUT" &&
+    grep -qF -- "--reassign deadbeef" <<<"$OUT"; then
+    pass "189 FIRE: the phantom is named, with the exact repair verb"
+else
+    fail "189 FIRE: no phantom section: ${OUT:0:400}"
+fi
+if ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "189: it is REPORT-ONLY and never blocks"
+else
+    fail "189: the phantom report blocked a stop it is not this session's job to fix"
+fi
+
+echo "== 189a. CONTROL: a .lastevent- file means it DID stop, so it is a real session =="
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store phantom1 90
+printf '{"session_id":"phantom1-x"}' >"${WL%.md}.lastevent-phantom1.json"
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "PHANTOM IDENTITY" <<<"$OUT"; then
+    pass "189a CONTROL: one planted fact -- the .lastevent- file -- and it goes silent"
+else
+    fail "189a CONTROL: flagged an identity that has stopped: ${OUT:0:300}"
+fi
+
+echo "== 189b. CONTROL: a brand-new session writes before its first stop =="
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store phantom1 2 # younger than WORKLIST_PHANTOM_MIN (30)
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "PHANTOM IDENTITY" <<<"$OUT"; then
+    pass "189b CONTROL: a 2-minute-old writer is not yet a phantom"
+else
+    fail "189b CONTROL: accused a session that has not had time to stop: ${OUT:0:300}"
+fi
+
+echo "== 189c. CONTROL: a phantom that owns NOTHING is not worth a word =="
+# This is the gate that keeps `state-spotchk1`/`state-spotchk2` -- real test
+# residue in the operator's live store -- silent.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store phantom1 90
+# tick every phantom-owned item: it still WROTE the events, it just owns nothing open
+python3 - "${WL%.md}.events.jsonl" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+ids = [json.loads(l)["id"] for l in open(path) if l.strip()
+       and json.loads(l).get("by") == "phantom1"]
+with open(path, "a", encoding="utf-8") as fh:
+    for i in ids:
+        fh.write(json.dumps({"ev": "state", "id": i, "at": "2026-08-05T00:00:00Z",
+                             "by": "phantom1", "s": "x", "note": "done"}) + "\n")
+PYEOF
+newturn
+say "all done, nothing outstanding"
+OUT="$(run)"
+if ! grep -qF "PHANTOM IDENTITY" <<<"$OUT"; then
+    pass "189c CONTROL: a phantom owning no open work stays silent"
+else
+    fail "189c CONTROL: flagged an identity with nothing outstanding: ${OUT:0:300}"
+fi
+
+echo "== 189d. CONTROL: with ZERO .lastevent- files the check says it is BLIND =="
+# Asserting silence here would be indistinguishable from the check not running.
+# With no .lastevent-* anywhere the signature cannot discriminate -- it
+# recognises a phantom by the ABSENCE of one -- and it would indict every
+# identity at once, so it must report the blindness in words and flag nobody.
+#
+# DRIVEN AS A LIBRARY CALL, not through a Stop event, and that is a real fact
+# about the code rather than test convenience: run_stop writes its OWN
+# .lastevent-<me8>.json before this check runs, so on the Stop path the set is
+# never empty. The branch guards a store where that write FAILED (an unwritable
+# TMPDIR) and any future caller that has not just written one. 189e is its
+# control: same call, one file present, and the phantom is named.
+setup
+brief_now
+hand_now
+phantom_store phantom1 90
+rm -f "${WL%.md}".lastevent-*.json
+probe_phantom() { # probe_phantom -> "BLIND: <reason>" or "FLAGGED: <prefixes>"
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 - "$(dirname "$HOOK")" "$WL" <<'PYEOF'
+import pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import wl_checks as CK, wl_store as S, wl_requests as R
+wl = pathlib.Path(sys.argv[2])
+found, blind = CK.phantom_identities(wl, "deadbeef-1111-2222-3333-444444444444",
+                                     S.load(wl, sync=False), R.read_requests(wl))
+print("BLIND: %s" % blind if blind else "FLAGGED: %s" % ",".join(f[0] for f in found))
+PYEOF
+}
+OUT=$(probe_phantom)
+if [[ "$OUT" == BLIND:* ]] && grep -qF "is BLIND this stop" <<<"$OUT"; then
+    pass "189d CONTROL: blindness is stated out loud, and nobody is accused"
+else
+    fail "189d CONTROL: a blind check answered anyway: ${OUT:0:300}"
+fi
+
+echo "== 189e. CONTROL for 189d: one .lastevent- file and the same call FLAGS =="
+# Without this, 189d is satisfied by a function that never looks at anything.
+printf '{"session_id":"deadbeef-x"}' >"${WL%.md}.lastevent-deadbeef.json"
+OUT=$(probe_phantom)
+if [[ "$OUT" == "FLAGGED: phantom1" ]]; then
+    pass "189e CONTROL: one planted file, and the blindness turns into a verdict"
+else
+    fail "189e CONTROL: the probe cannot flag at all, so 189d proves nothing: ${OUT:0:300}"
+fi
+
+echo "== 190. v19 L3: --reassign moves the OPEN work and leaves the history alone =="
+# BEFORE AND AFTER in one run. The before-assert is the control: without it the
+# test passes on a store that already contained the item and the request.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store phantom1 90
+# a request the phantom sent, and one sent TO it -- the incident's real damage
+# was in .requests, so a repair that leaves those unreachable fixes the symptom
+# nobody complained about and skips the one they did
+brief_other phantom1
+askid_as phantom1 deadbeef "the message that was lost" >/dev/null
+brief_other cafe1234
+PRID_TO=$(askid_as cafe1234 phantom1 "a question nobody read")
+BEFORE_LIST=$(reqcli --list --open deadbeef 2>&1)
+BEFORE_POLL=$(reqcli --poll deadbeef 2>&1)
+if ! grep -qF "phantom-owned item" <<<"$BEFORE_LIST" && ! grep -qF "$PRID_TO" <<<"$BEFORE_POLL"; then
+    pass "190 BEFORE: neither the items nor the unread request are visible to deadbeef"
+else
+    fail "190 BEFORE: the fixture already showed them, so the after-assert proves nothing"
+fi
+OUT=$(reqcli --reassign deadbeef phantom1 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "reassigned phantom1 -> deadbeef" <<<"$OUT"; then
+    pass "190: --reassign reports what it moved"
+else
+    fail "190: --reassign failed (rc=$RC): ${OUT:0:300}"
+fi
+AFTER_LIST=$(reqcli --list --open deadbeef 2>&1)
+AFTER_POLL=$(reqcli --poll deadbeef 2>&1)
+if grep -qF "phantom-owned item" <<<"$AFTER_LIST"; then
+    pass "190 AFTER: the phantom's open items are now in this session's slice"
+else
+    fail "190 AFTER: the items did not move: ${AFTER_LIST:0:300}"
+fi
+if grep -qF "$PRID_TO" <<<"$AFTER_POLL"; then
+    pass "190 AFTER: the request nobody was reading is now in this session's inbox"
+else
+    fail "190 AFTER: the lost request is still unreachable: ${AFTER_POLL:0:300}"
+fi
+# The history must still say the phantom wrote them. A tidy log that lies about
+# who did what is worse than an untidy one.
+if grep -q '"by": *"phantom1"' "${WL%.md}.events.jsonl" ||
+    grep -q '"by":"phantom1"' "${WL%.md}.events.jsonl"; then
+    pass "190: the event log still records phantom1 as the writer"
+else
+    fail "190: --reassign rewrote history instead of appending to it"
+fi
+
+echo "== 190b. CONTROL: --reassign refuses a peer that is FRESH but has never stopped =="
+# THE REVIEW FINDING THIS PINS (medium, PR #551). The `.lastevent-` guard alone
+# does not deliver the guarantee the docstring claims. That file is written at a
+# session's FIRST STOP, so a peer that has added items and not yet stopped has
+# no file either and is indistinguishable from a genuine phantom. Any session can
+# read a peer's prefix out of `--list --open`, and concurrent sessions in one
+# tree are routine here, so without an age gate a peer's OPEN items and request
+# routing could be moved onto the caller WHILE that peer was working on them.
+#
+# Case 190 (the FIRE) ages its target 90 minutes and 190a's target has already
+# stopped; NEITHER covers a merely-fresh, still-working target, so the untested
+# path was the vulnerable one.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+# 2 minutes old and NO .lastevent- file: exactly the mid-first-turn peer.
+phantom_store fresh999 2
+OUT=$(reqcli --reassign deadbeef fresh999 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "mid-turn" <<<"$OUT"; then
+    pass "190b CONTROL: a fresh peer that never stopped cannot be harvested"
+else
+    fail "190b CONTROL: took over a live peer's work (rc=$RC): ${OUT:0:300}"
+fi
+# CONTROL ON THE CONTROL: the SAME prefix, aged past the floor, still moves --
+# so 190b proves an age gate and not a blanket refusal.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store fresh999 90
+OUT=$(reqcli --reassign deadbeef fresh999 2>&1)
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "reassigned fresh999" <<<"$OUT"; then
+    pass "190b CONTROL: the same prefix aged past the floor still reassigns"
+else
+    fail "190b CONTROL: the age gate refuses even a real phantom (rc=$RC): ${OUT:0:300}"
+fi
+
+echo "== 190c. --lease <id> release accepts the # this tool's own output prints =="
+# REVIEW FINDING, PR #551: the release branch read argv[2] raw while every other
+# verb goes through the .lstrip("#") at the top of _item_cli. So an id copied
+# straight from this tool's OWN output -- it prints ids as `#abc123` -- appended
+# an unlease event matching nothing, printed "released ##abc123", and left the
+# item [>]. A verb that reports success while changing nothing is precisely what
+# this suite exists to catch, and it shipped inside the fix for a different
+# silent no-op.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+RID=$(reqcli --add deadbeef "item for the hash-prefix release case" | grep -oE "#[0-9a-f]+" | head -1 | tr -d '#')
+reqcli --lease deadbeef "$RID" +30 worker:probe-worker "riding a probe" >/dev/null 2>&1
+OUT=$(reqcli --lease deadbeef "#$RID" release "released with the hash form" 2>&1)
+if grep -qF "released #$RID" <<<"$OUT" && ! grep -qF "##$RID" <<<"$OUT"; then
+    pass "190c FIRE: the # form is accepted and echoed back singly"
+else
+    fail "190c FIRE: the # form was mangled: ${OUT:0:200}"
+fi
+STATE=$(reqcli --list --open deadbeef 2>&1 | grep -oE "\- \[.\] #$RID" | head -1)
+if [[ "$STATE" == "- [ ] #$RID" ]]; then
+    pass "190c FIRE: the item actually returned to open, not just a success message"
+else
+    fail "190c FIRE: reported success but the state is '$STATE'"
+fi
+# CONTROL: the bare form must keep working, so the fix is a widening and not a swap.
+reqcli --lease deadbeef "$RID" +30 worker:probe-worker "riding again" >/dev/null 2>&1
+reqcli --lease deadbeef "$RID" release "released with the bare form" >/dev/null 2>&1
+STATE=$(reqcli --list --open deadbeef 2>&1 | grep -oE "\- \[.\] #$RID" | head -1)
+if [[ "$STATE" == "- [ ] #$RID" ]]; then
+    pass "190c CONTROL: the bare id form still releases"
+else
+    fail "190c CONTROL: the bare form broke: '$STATE'"
+fi
+
+echo "== 190a. CONTROL: --reassign refuses a session that HAS stopped =="
+# The rule that stops this verb becoming a way to steal a live peer's items.
+setup
+brief_now
+hand_now
+say "all done, nothing outstanding"
+run >/dev/null
+phantom_store cafe1234 90
+printf '{"session_id":"cafe1234-x"}' >"${WL%.md}.lastevent-cafe1234.json"
+OUT=$(reqcli --reassign deadbeef cafe1234 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "it is a real session" <<<"$OUT"; then
+    pass "190a CONTROL: a peer that has stopped cannot be harvested"
+else
+    fail "190a CONTROL: took over a live session's work (rc=$RC): ${OUT:0:300}"
+fi
+# And <me> itself faces the same identity check, so you cannot reassign TO a
+# fiction and make the problem worse.
+OUT=$(reqcli --reassign 4c3e095a phantom1 2>&1)
+RC=$?
+if [[ "$RC" -ne 0 ]] && grep -qF "identity mismatch" <<<"$OUT"; then
+    pass "190a CONTROL: you cannot reassign work TO an identity you are not"
+else
+    fail "190a CONTROL: --reassign accepted a foreign <me> (rc=$RC): ${OUT:0:200}"
+fi
+
+echo "== 191. root resolution must not walk into a repo NESTED in the repo =="
+# THE DEFECT, measured live on 2026-08-06: the Stop event's cwd is wherever the
+# session last worked, and this tree holds repos INSIDE the repo -- submodules
+# (private/renet) and gitignored non-submodule siblings (private/growth). Every
+# root resolution started from that cwd, so project_root() stopped at the NESTED
+# repo and the branch check read ITS branch: a session on 0804-1 was ordered to
+# bootstrap .agent/main/ because private/growth happened to be on main.
+#
+# CONTROL FIRST, and it is the pre-fix expression itself rather than a mutation:
+# if `event.cwd or getcwd()` does NOT resolve to the nested repo on this
+# fixture, the fixture is not reproducing the bug and the FIRE below proves
+# nothing.
+setup
+NESTBASE="$BASE/nesting"
+rm -rf "$NESTBASE"
+mkdir -p "$NESTBASE/outer/.claude/hooks/stop" "$NESTBASE/outer/nested"
+: >"$NESTBASE/outer/.git" # a FILE, as a worktree or submodule writes it
+: >"$NESTBASE/outer/nested/.git"
+OUT=$(
+    export CLAUDE_PROJECT_DIR="$NESTBASE/outer" HOOKDIR
+    HOOKDIR="$(dirname "$HOOK")"
+    export NESTBASE
+    python3 - <<'PYEOF'
+import os
+import sys
+
+sys.path.insert(0, os.environ["HOOKDIR"])
+import wl_core as C
+
+base = os.environ["NESTBASE"]
+nested = os.path.join(base, "outer", "nested")
+event = {"cwd": nested}
+print("CONTROL", C.project_root(event.get("cwd") or os.getcwd()))
+print("FIRE", C.project_root(C.project_start(event)))
+# Rung 2: with no CLAUDE_PROJECT_DIR at all, a CLI run must anchor on the hook
+# FILE's own repo, not on wherever the shell happens to be standing.
+del os.environ["CLAUDE_PROJECT_DIR"]
+os.chdir(nested)
+print("CLI", C.project_start(), C.hook_repo_root())
+PYEOF
+)
+if grep -qF "CONTROL $NESTBASE/outer/nested" <<<"$OUT"; then
+    pass "191 CONTROL: the pre-fix ladder does resolve to the nested repo"
+else
+    fail "191 CONTROL: fixture does not reproduce the bug, so FIRE proves nothing: ${OUT:0:300}"
+fi
+if grep -qF "FIRE $NESTBASE/outer" <<<"$OUT" && ! grep -qF "FIRE $NESTBASE/outer/nested" <<<"$OUT"; then
+    pass "191 FIRE: project_start anchors on the outer repo, not the nested one"
+else
+    fail "191 FIRE: still resolving into the nested repo: ${OUT:0:300}"
+fi
+CLI_LINE=$(grep "^CLI " <<<"$OUT")
+CLI_START=$(awk '{print $2}' <<<"$CLI_LINE")
+CLI_HOOK=$(awk '{print $3}' <<<"$CLI_LINE")
+if [[ -n "$CLI_HOOK" && "$CLI_START" == "$CLI_HOOK" ]]; then
+    pass "191 FIRE: with no CLAUDE_PROJECT_DIR the anchor is the hook file's repo"
+else
+    fail "191 FIRE: a CLI run still anchors on cwd (start=$CLI_START hook=$CLI_HOOK)"
+fi
+# The store path is the thing a wrong root DESTROYS: it is slugged from the
+# root, so a root that moves orphans every open item in the old file. Pin it.
+PATH_OUTER=$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$NESTBASE/outer" python3 "$HOOK" --path)
+PATH_NESTED=$(cd "$NESTBASE/outer/nested" && TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$NESTBASE/outer" python3 "$HOOK" --path)
+if [[ "$PATH_OUTER" == "$PATH_NESTED" ]]; then
+    pass "191 FIRE: --path is identical from the outer repo and from inside the nested one"
+else
+    fail "191 FIRE: --path moved with cwd ($PATH_OUTER vs $PATH_NESTED)"
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"

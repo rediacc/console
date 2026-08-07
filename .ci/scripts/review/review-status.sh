@@ -109,15 +109,8 @@ last_marker_sha() {
         sed -n 's/.*claude-reviewed: \([0-9a-f]\{40\}\).*/\1/p' | tail -n 1 || true
 }
 
-# Finished review reports posted so far -- the same signature the gate script
-# counts against MAX_REVIEWS_PER_PR, so both files agree on "cap reached".
-review_report_count() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.user.login | contains(\"github-actions\"))
-                  | select(.body | startswith(\"**Claude finished\"))
-                  | select((.body | contains(\"json:review-findings\")) or (.body | contains(\"### Review\")))
-                  | .id" 2>/dev/null | wc -l || true
-}
+# review_report_count() lives in ../lib/common.sh beside review_cap_for(), so the
+# numerator this file reports and the denominator it reads come from one place.
 
 # --- resolve the pull request -----------------------------------------------
 log_step "Review Complete: resolving the PR (event: ${EVENT_NAME:-unset})"
@@ -125,13 +118,45 @@ log_step "Review Complete: resolving the PR (event: ${EVENT_NAME:-unset})"
 pr=""
 case "${EVENT_NAME:-}" in
     workflow_run)
-        require_var WR_HEAD_SHA
-        # The commit->PRs endpoint, not the branch: a workflow_run payload's
-        # head_branch can belong to several PRs, and the SHA is the fact we
-        # actually hold. The PR's CURRENT head is re-read below regardless, so
-        # a superseded push is detected rather than assumed away.
-        pr="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${WR_HEAD_SHA}/pulls" \
-            --jq '[.[] | select(.state == "open")] | first | .number // empty')"
+        require_var WR_RUN_ID
+        # THE ARTIFACT, not the SHA, and the difference is the whole bug this
+        # replaced. Review Status is a SECOND-ORDER workflow_run (Console CI ->
+        # Claude Review -> Review Status). GitHub stamps a workflow_run-triggered
+        # run with the DEFAULT BRANCH tip, so `workflow_run.head_sha` was main's
+        # SHA, `commits/<main>/pulls` returned [], and this arm exited 0 silently
+        # printing a checkmark. The REQUIRED `Review Complete` check was
+        # therefore never posted on the primary path, and every PR sat BLOCKED
+        # with all checks green. Measured 2026-08-06: ten consecutive Claude
+        # Review runs, all head_branch=main, all pull_requests=[]. This arm had
+        # never resolved a PR since it was written.
+        #
+        # The old comment claimed "the SHA is the fact we actually hold". The
+        # SHA we held was main's, and so was the branch -- neither could work.
+        # Claude Review's gate resolves the PR authoritatively, so it now hands
+        # the number over in a `review-target` artifact.
+        #
+        # ABSENT IS SILENT, PRESENT IS BINDING. A push to main also runs this
+        # chain and legitimately has no PR; it writes no artifact and we exit 0
+        # exactly as before. An artifact that EXISTS but cannot be honoured is a
+        # reporter failure and must be loud, which is the case that used to be
+        # indistinguishable from the main-push case.
+        artifact_pr=""
+        if gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name == "review-target") | .id' 2>/dev/null | grep -q .; then
+            art_id="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${WR_RUN_ID}/artifacts" \
+                --jq '[.artifacts[] | select(.name == "review-target")] | first | .id')"
+            tmp_zip="$(mktemp -d)/review-target.zip"
+            if ! gh api "repos/${GITHUB_REPOSITORY}/actions/artifacts/${art_id}/zip" >"$tmp_zip" 2>/dev/null; then
+                log_error "review-target artifact ${art_id} exists on run ${WR_RUN_ID} but could not be downloaded"
+                exit 1
+            fi
+            artifact_pr="$(unzip -p "$tmp_zip" review-target.txt 2>/dev/null | tr -dc '0-9')"
+            if [[ -z "$artifact_pr" ]]; then
+                log_error "review-target artifact on run ${WR_RUN_ID} is present but carries no PR number"
+                exit 1
+            fi
+            pr="$artifact_pr"
+        fi
         ;;
     pull_request_review | pull_request_review_comment | issue_comment | workflow_dispatch)
         require_var PR_NUMBER
@@ -144,7 +169,11 @@ case "${EVENT_NAME:-}" in
 esac
 
 if [[ -z "$pr" ]]; then
-    log_info "no open PR for ${WR_HEAD_SHA:-?}; nothing to report"
+    # Reachable only when no review-target artifact was written, i.e. the
+    # triggering run had no PR at all (a push to main). Greppable on purpose:
+    # if this line ever appears for a run that DID have a PR, the handoff broke
+    # and the silence is the bug, not the verdict.
+    log_info "no review-target artifact on run ${WR_RUN_ID:-?}; no PR to report on"
     exit 0
 fi
 

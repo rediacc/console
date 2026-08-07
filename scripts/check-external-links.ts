@@ -64,6 +64,14 @@ const ALLOWLISTED_DOMAINS = new Set([
   'www.meity.gov.in',  // India MeitY - intermittent fetch failures from CI runners (Azure US-East), reachable from browsers
   'eur-lex.europa.eu', // EU EUR-Lex - returns 403 to CI runners (Cloudflare/anti-scraping), reachable from browsers
   'www.ftc.gov',       // US FTC - returns 503/403 to CI runners (Akamai anti-bot), reachable from browsers
+  // Debian securing-debian-manual - `fetch failed` from GitHub-hosted runners
+  // on 2026-08-05 (run 30990002964), after this checker's own two retries AND
+  // its last-chance GET, so not a one-shot blip. Measured rather than assumed:
+  // the same URL answers 200 six times out of six (three HEAD, three GET) from
+  // a non-datacenter IP, in ~0.6s. The page is live; debian.org simply does not
+  // answer this runner. Recheck by removing this line -- if the host starts
+  // answering CI again the gate will pass without it.
+  'www.debian.org',
   'www.dataprotection.ie', // Ireland DPC - whole domain unreachable from CI/datacenter IPs (connection fails at site root, not just deep links); the Meta-fine press release resolves from browsers
   // Brazil Planalto (LGPD, Lei 13.709/2018 full text) - ECONNRESET to
   // GitHub-hosted runners, reported by this checker as `fetch failed`.
@@ -111,32 +119,40 @@ const KNOWN_BROKEN = new Map<string, string>([
   ['https://www.electron.build/code-signing-windows.html', 'electron-builder docs rewrite; replace with https://www.electron.build/win in docs/code-signing-guide.md:252'],
   ['https://www.electron.build/hooks.html', 'electron-builder docs rewrite; no live equivalent, drop the link in docs/code-signing-guide.md:601'],
   // A DEAD COMMAND, not just a dead link, and the widened scan is what found
-  // it. docs/dev-environments.md:95 (and CLAUDE.md:371, same snippet) tell the
-  // operator to run:
+  // it. Both docs used to tell the operator to run:
   //   ACCOUNT_ED25519_PUBLIC_KEY="$(curl -fsS https://www.rediacc.com/api/public/account-key)"
-  // Measured 2026-07-29: that path is 404 on www, edge, eu, us and asia, and
-  // the string "account-key" appears nowhere in private/account/src, so the
-  // route does not exist rather than having moved. www.rediacc.com no longer
-  // serves the account API at all -- /account/api/v1/** answers 410 with
-  // "Account API is served by regional workers (eu/us/asia.rediacc.com)".
-  // Because of `-f`, the documented command exits non-zero and the variable
-  // ends up empty, which is precisely the RDC_RENET_LICENSE=1 repro that
-  // CLAUDE.md sells as the way to reproduce license bugs. There is no
-  // drop-in replacement: the live regional endpoint
+  // Measured 2026-07-29 and again 2026-08-05: that path is 404 on www, edge,
+  // eu, us and asia, and the string "account-key" appears nowhere in
+  // private/account/src, so the route does not exist rather than having moved.
+  // www.rediacc.com no longer serves the account API at all -- /account/api/v1/**
+  // answers 410 with "Account API is served by regional workers
+  // (eu/us/asia.rediacc.com)". Because of `-f`, the documented command exits 22
+  // and the variable is assigned the EMPTY string, so the build succeeds and
+  // every prod-signed license fails as invalid_signature -- precisely the
+  // failure the RDC_RENET_LICENSE=1 repro exists to diagnose.
+  //
+  // BOTH CALL SITES ARE NOW FIXED, which is why this reason no longer names a
+  // line number: CLAUDE.md corrected its copy 2026-07-29, and
+  // docs/dev-environments.md was corrected 2026-08-05 (it had been missed, and
+  // still shipped the failing one-liner for a week after the other was fixed).
+  // The answer was not a replacement URL but the absence of one: the value is a
+  // GitHub organisation secret, which is write-only, so it must be pasted
+  // locally and referenced directly in CI. There is no live endpoint to point
+  // at -- the regional
   // https://eu.rediacc.com/account/api/v1/.well-known/server-info (200)
-  // publishes the X25519 config key, not the Ed25519 signing key. The docs
-  // owner has to decide what to publish. Neither file is owned here.
-  ['https://www.rediacc.com/api/public/account-key', 'route does not exist on any host (404 on www/edge/eu/us/asia); docs/dev-environments.md:95 and CLAUDE.md:371 document a curl -fsS that always fails'],
+  // publishes the X25519 config key, not the Ed25519 signing key.
+  //
+  // The entry STAYS because both files still name the dead URL in prose, while
+  // explaining why not to call it. Removing it would re-red the link check.
+  ['https://www.rediacc.com/api/public/account-key', 'route does not exist on any host (404 on www/edge/eu/us/asia); both docs now cite it only to warn against it, never as a command'],
   // The whole domain, not just the page, is unreachable -- a connection
   // timeout on both http and https, not a 404. Measured 2026-07-30 from two
   // independent networks (this repo's dev sandbox and, per the CI run that
   // surfaced this, a GitHub Actions runner: "BROKEN [fetch failed]" on
   // 30578925361). Referenced from docs/code-signing-guide.md:457 and :608.
-  // No replacement URL verified: fetching docs.appimage.org itself timed out
   // the same way, so there is nothing live to point at yet. Re-check when the
   // site is confirmed back (WARN tier will catch a 200 automatically) rather
   // than guessing a successor URL now.
-  ['https://docs.appimage.org/packaging-guide/optional/signatures.html', 'docs.appimage.org (the whole domain) is unreachable: connection timeout, not a 404, confirmed from two independent networks 2026-07-30. docs/code-signing-guide.md:457 and :608. No replacement verified yet.'],
 ]);
 
 // Patterns matched against the RAW regex capture, before any punctuation

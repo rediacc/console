@@ -207,7 +207,10 @@ function registerList(machine: Command, program: Command): void {
         const machines = await configService.listMachines();
         const format = program.opts().output as OutputFormat;
 
-        if (machines.length === 0) {
+        // The hint is a table-mode courtesy. Every machine-readable format falls
+        // through to print() so a consumer gets {"success":true,"data":[]} rather
+        // than zero bytes on stdout.
+        if (machines.length === 0 && format === 'table') {
           outputService.info(t('commands.machine.list.noMachines'));
           return;
         }

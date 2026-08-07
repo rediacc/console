@@ -122,7 +122,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
         const providers = await configService.listCloudProviders();
         const format = program.opts().output as OutputFormat;
 
-        if (providers.length === 0) {
+        if (providers.length === 0 && format === 'table') {
           outputService.info(t('commands.machine.provider.list.noProviders'));
           return;
         }

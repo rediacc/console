@@ -28,12 +28,18 @@ import { shellQuote } from '../../utils/shell-quote.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
 import {
+  isDatastoreScopedId,
   issueRepoLicense,
   type RepoBatchRecoveryFailureMode,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
 } from '../account/license.js';
-import { clusterKubeconfigRemotePath } from '../cluster/cluster-target.js';
+import {
+  isMachineSlotLimitError,
+  machineSlotLimitMessage,
+  readMachineSlotStatus,
+} from '../account/license-preflight.js';
+import { clusterKubeconfigRemotePath, namedDatastoreMount } from '../cluster/cluster-target.js';
 import { configService } from '../config/config-resources.js';
 import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
@@ -48,9 +54,11 @@ import {
   verifyMachineSetup,
 } from '../renet/renet-execution.js';
 import {
+  isRepoProvisioningFunction,
   parseRenetLicenseFailure,
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
+  usesTagAsProvisioningTarget,
 } from '../renet/renet-license-contract.js';
 import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from './output-lines.js';
 import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
@@ -110,8 +118,20 @@ interface RepoLicenseContext {
   grandGuid?: string;
   kind: 'grand' | 'fork';
   requestedSizeGb: number;
-  luksUuid?: string;
-  storageFingerprint?: string;
+  /**
+   * Identity of the NAMED datastore the repo is being provisioned into, absent
+   * when it lands on the machine's implicit default datastore. It scopes both
+   * the signed payload and the on-machine store path, and it has to be resolved
+   * BEFORE issuance because a pre-provisioning mint has no repo to scan.
+   */
+  datastoreId?: string;
+  /**
+   * Mount of the datastore holding the repo's image, from its recorded
+   * placement. Carried so the post-create identity refresh measures the same
+   * place the pre-issuance probe did, instead of falling back to the machine
+   * default inside `refreshRepoLicenseIdentity`.
+   */
+  datastoreMount: string;
 }
 
 async function resolveKnownHosts(machineKnownHosts: string | undefined): Promise<string> {
@@ -204,29 +224,154 @@ function parseSizeToGb(size: string): number {
   return Math.max(1, Math.ceil(value / 1024));
 }
 
+/** The two fields this file needs from one `renet datastore list --json` row. */
+interface RemoteDatastoreRow {
+  name?: unknown;
+  datastoreId?: unknown;
+}
+
+interface DatastoreScopeOptions {
+  remoteRenetPath?: string;
+  /**
+   * Whether an unresolvable identity is fatal.
+   *
+   * True on the PRE-ISSUANCE path, where the identity is the only thing that
+   * decides where a license nobody has minted yet will land, and a wrong guess
+   * spends an activation on an unreadable blob. False on the POST-CREATE
+   * refresh, where renet's own scan is the authority and this resolution is
+   * only a fallback for a scan that cannot answer — refusing there would fail
+   * an operation that has already succeeded.
+   */
+  required: boolean;
+}
+
+/**
+ * The datastore identity a PRE-PROVISIONING repo license must carry, or
+ * undefined when the repo lands on the machine's implicit default datastore.
+ *
+ * This is the one thing the pre-issuance path cannot learn the way every later
+ * touch does. `refreshRepoLicenseIdentity` reads the identity out of renet's
+ * own license scan, which walks repos that exist; here the repo is about to be
+ * created and the scan is empty by construction. The DATASTORE, however, does
+ * exist, and it is the thing that carries the identity — so we ask the machine
+ * registry for it.
+ *
+ * Getting this wrong is expensive and silent, and it happened live: `repo
+ * create --datastore <d>` minted the license (slot claimed, meter moved) and
+ * wrote it to the unscoped `repos/<guid>/` path, while renet's create-tier
+ * check for a datastore-resident repo reads ONLY
+ * `datastores/<id>/repos/<guid>/` — a clean break, no dual read. renet exited
+ * 10 LICENSE_REQUIRED and the repo rolled back, having spent an issuance on a
+ * blob nothing would ever read.
+ *
+ * So an unresolvable identity FAILS THE CREATE instead of issuing unscoped and
+ * hoping. Every attached plain datastore has an identity (renet lazy-mints one
+ * at read-write attach, pkg/datastore identity_attach_test.go), so an empty or
+ * malformed answer means the datastore's own identity is broken, and that is
+ * worth a refusal the operator can act on rather than a burned slot. The
+ * refusal costs nothing: it runs before issuance.
+ *
+ * The registry mirrors the on-datastore descriptor, which is authoritative and
+ * travels with the bytes; attach refuses to mount a datastore whose two copies
+ * disagree, so for an attached datastore (and a repo cannot be created into a
+ * detached one) reading the registry is reading the descriptor.
+ */
+async function resolveProvisioningDatastoreId(
+  repo: RepositoryConfig | null | undefined,
+  sftp: SFTPClient,
+  scope: DatastoreScopeOptions
+): Promise<string | undefined> {
+  const placement = repo?.placement;
+  // The `{machine}` arm is the machine's implicit default datastore, which
+  // carries no descriptor and therefore no identity: unscoped is CORRECT there,
+  // and it is what renet reads. Same for a config that predates placement.
+  if (!placement || !('datastore' in placement)) return undefined;
+
+  const name = placement.datastore;
+  const renetPath = scope.remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
+  const refuse = (reason: string): undefined => {
+    if (!scope.required) return undefined;
+    throw new ValidationError(unresolvedDatastoreIdMessage(name, reason));
+  };
+
+  let rows: RemoteDatastoreRow[];
+  try {
+    const parsed: unknown = JSON.parse(await sftp.exec(`sudo ${renetPath} datastore list --json`));
+    if (!Array.isArray(parsed)) throw new Error('expected a JSON array of datastore records');
+    rows = parsed as RemoteDatastoreRow[];
+  } catch (error) {
+    return refuse(
+      `"${renetPath} datastore list --json" did not return a readable datastore registry ` +
+        `(${error instanceof Error ? error.message : String(error)}).`
+    );
+  }
+
+  const row = rows.find((r) => r.name === name);
+  if (!row) {
+    return refuse(`the machine's datastore registry has no entry named "${name}".`);
+  }
+  const datastoreId = typeof row.datastoreId === 'string' ? row.datastoreId : undefined;
+  if (!isDatastoreScopedId(datastoreId)) {
+    return refuse(
+      `datastore "${name}" reports no usable identity (${JSON.stringify(row.datastoreId)}).`
+    );
+  }
+  return datastoreId;
+}
+
+/** The refusal above, with the reason varying and the remedy fixed. */
+function unresolvedDatastoreIdMessage(datastore: string, reason: string): string {
+  return (
+    `Cannot license a repository on datastore "${datastore}": ${reason} ` +
+    `A repository in a named datastore is licensed under that datastore's identity, and ` +
+    `issuing without it would spend an activation on a license the machine cannot read. ` +
+    `Nothing was provisioned. Re-attach the datastore to mint its identity ` +
+    `("rdc datastore attach ${datastore} --to <machine>"), then retry.`
+  );
+}
+
 async function resolveRepoLicenseContext(
   functionName: string,
   machineName: string,
   params: Record<string, unknown>,
-  sftp: SFTPClient
+  sftp: SFTPClient,
+  scope: DatastoreScopeOptions
 ): Promise<RepoLicenseContext | null> {
   const resolved = await resolveRepoLicenseInputs(functionName, machineName, params);
   if (!resolved) return null;
   const { repo, machine } = resolved;
 
-  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+  const datastoreMount = repoImageDatastoreMount(repo, machine);
   const requestedSizeGb = await resolveRequestedSizeGb(
     functionName,
     params,
     repo?.repositoryGuid,
-    datastore,
+    datastoreMount,
     sftp
   );
   if (requestedSizeGb === null) return null;
-  const targetGuid = resolveTargetGuid(functionName, params, repo?.repositoryGuid);
-  const identity = await resolveRepoIdentity(functionName, targetGuid, datastore, sftp);
 
-  return buildRepoLicenseContext(functionName, params, repo, requestedSizeGb, identity);
+  // No identity proofs here, by construction. This context is only ever built
+  // for provisioning verbs, whose target repo does not exist on disk yet, so
+  // there is nothing to fingerprint; the proofs arrive afterwards, when
+  // refreshRepoLicenseIdentity reissues from renet's own licence scan.
+  //
+  // A `stat`-based fingerprint used to be computed on this path and it was
+  // dead code that was ALSO wrong: `storageFingerprint` is a signed payload
+  // field whose exact bytes renet re-derives (pkg/license/identity.go,
+  // `kind:size:mtime:mode` over Go's FileMode), and no `stat -c` format string
+  // produces them. One producer of those bytes now, and it is renet's scan.
+  //
+  // The datastore identity is the exception, and it is resolved here rather
+  // than scanned: see resolveProvisioningDatastoreId. For a tag-targeted verb
+  // (fork, commit) the placement read is the SOURCE repo's, which is the right
+  // one — a fork lands in the datastore its parent lives in, and placement is a
+  // property of the family, not of the tag.
+  const built = buildRepoLicenseContext(functionName, params, repo, requestedSizeGb);
+  if (!built) return null;
+  const ctx: RepoLicenseContext = { ...built, datastoreMount };
+  const datastoreId = await resolveProvisioningDatastoreId(repo, sftp, scope);
+  return datastoreId === undefined ? ctx : { ...ctx, datastoreId };
 }
 
 async function resolveRepoLicenseInputs(
@@ -239,14 +384,17 @@ async function resolveRepoLicenseInputs(
 } | null> {
   if (!functionName.startsWith('repository_')) return null;
   const repoName = typeof params.repository === 'string' ? params.repository : '';
-  if (!repoName && functionName !== 'repository_fork') return null;
+  // For a tag-targeted verb `params.repository` names the SOURCE, and the
+  // licence target is `params.tag`; a missing source is not fatal here because
+  // buildRepoLicenseContext decides what it can build without one.
+  if (!repoName && !usesTagAsProvisioningTarget(functionName)) return null;
   // Try bare name first, then composite key (e.g., "my-app" → "my-app:latest")
   let repo = await configService.getRepository(repoName);
   if (!repo && !repoName.includes(':')) {
     repo = await configService.getRepository(`${repoName}:latest`);
   }
   const machine = await configService.getLocalMachine(machineName);
-  if (!repo && functionName !== 'repository_fork') return null;
+  if (!repo && !usesTagAsProvisioningTarget(functionName)) return null;
   return { repo, machine };
 }
 
@@ -254,18 +402,22 @@ function buildRepoLicenseContext(
   functionName: string,
   params: Record<string, unknown>,
   repo: Awaited<ReturnType<typeof configService.getRepository>> | null,
-  requestedSizeGb: number,
-  identity: Pick<RepoLicenseContext, 'luksUuid' | 'storageFingerprint'>
-): RepoLicenseContext | null {
-  if (functionName === 'repository_fork') {
-    const forkGuid = typeof params.tag === 'string' ? params.tag : '';
-    if (!repo || !forkGuid) return null;
+  requestedSizeGb: number
+): Omit<RepoLicenseContext, 'datastoreMount'> | null {
+  // fork and commit both mint against `params.tag`, and both are derived
+  // snapshots of the source repo rather than new lineages, so both are kind
+  // 'fork' rooted at the source's grand. `repo commit` registers the commit
+  // object with exactly that lineage (repo-branching.ts handleCommit sets
+  // grandGuid: cfg.grandGuid ?? cfg.repositoryGuid), so the batch refresh path
+  // classifies it the same way on every later touch.
+  if (usesTagAsProvisioningTarget(functionName)) {
+    const targetGuid = typeof params.tag === 'string' ? params.tag : '';
+    if (!repo || !targetGuid) return null;
     return {
-      repositoryGuid: forkGuid,
+      repositoryGuid: targetGuid,
       grandGuid: repo.grandGuid ?? repo.repositoryGuid,
       kind: 'fork',
       requestedSizeGb,
-      ...identity,
     };
   }
   if (!repo) return null;
@@ -274,9 +426,47 @@ function buildRepoLicenseContext(
     grandGuid: repo.grandGuid,
     kind: repo.grandGuid && repo.grandGuid !== repo.repositoryGuid ? 'fork' : 'grand',
     requestedSizeGb,
-    ...identity,
   };
 }
+
+/**
+ * The datastore mount the repo's image actually lives under.
+ *
+ * The machine's default datastore is the answer ONLY for a `{machine}`
+ * placement. A repo created with `repo create --datastore <d>` lives at
+ * `/mnt/rediacc-ds/<d>/repositories/<guid>`, and reading the machine default
+ * for it is the same #74 mistake the dispatch path made: the config records one
+ * place and the machine is asked about another. It was still live here, on the
+ * size probe below, and it failed SILENTLY rather than loudly — the stat found
+ * nothing, the old `|| echo ${REPO_SIZE_PROBE_UNKNOWN}` turned that into 0 bytes, and every fork or
+ * commit of a named-datastore repo was pre-issued a licence for the 1 GB floor
+ * regardless of the repo's real size. Neither verb exposes `--size`, so that
+ * estimate was not a fallback for them; it was the only number they ever sent.
+ *
+ * Placement is a property of the FAMILY, and the flat per-tag records carry a
+ * copy of it (resource-state.ts flattening), so `repo.placement` answers for a
+ * fork's parent as well — which is the repo this probe measures.
+ */
+function repoImageDatastoreMount(
+  repo: RepositoryConfig | null | undefined,
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>
+): string {
+  const placement = repo?.placement;
+  if (placement && 'datastore' in placement) return namedDatastoreMount(placement.datastore);
+  return machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
+}
+
+/**
+ * Printed by the size probe when `stat` could not answer. Deliberately not a
+ * number: a failed probe and a real measurement must not be the same bytes.
+ */
+const REPO_SIZE_PROBE_UNKNOWN = 'rediacc-size-unknown';
+
+/**
+ * Floor for a licence size request. renet compares `requested > contract limit`,
+ * so the floor never over-claims against a contract.
+ */
+const MIN_REQUESTED_SIZE_GB = 1;
 
 async function resolveRequestedSizeGb(
   functionName: string,
@@ -288,43 +478,56 @@ async function resolveRequestedSizeGb(
   if (typeof params.size === 'string' && params.size.trim()) {
     return parseSizeToGb(params.size);
   }
-  const statGuid = functionName === 'repository_fork' ? repositoryGuid : repositoryGuid;
-  if (!statGuid) return null;
-  const bytesOutput = await sftp.exec(
-    `stat -c %s '${datastore}/repositories/${statGuid}' 2>/dev/null || echo 0`
+  // Sized from the PARENT image in every case, fork included: a fork has no
+  // image of its own yet, and it starts as a reflink of its parent.
+  if (!repositoryGuid) return null;
+  const imagePath = `${datastore}/repositories/${repositoryGuid}`;
+  // A sentinel, not `|| echo 0`. Under the old probe a stat that failed for ANY
+  // reason — wrong datastore, unreadable mount, missing image — produced the
+  // same bytes as a genuinely tiny image, and the caller then reported the 1 GB
+  // floor with the confidence of a measurement. The sentinel keeps "we did not
+  // measure" expressible, which is the whole point of the distinction.
+  const probe = (
+    await sftp.exec(
+      `stat -c %s ${shellQuote(imagePath)} 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}`
+    )
+  ).trim();
+  if (!/^\d+$/.test(probe)) {
+    warnUnmeasuredRepoSize(functionName, imagePath);
+    return MIN_REQUESTED_SIZE_GB;
+  }
+  return Math.max(
+    MIN_REQUESTED_SIZE_GB,
+    Math.ceil(Number.parseInt(probe, 10) / (1024 * 1024 * 1024))
   );
-  const bytes = Number.parseInt(bytesOutput.trim(), 10);
-  return Math.max(1, Math.ceil(bytes / (1024 * 1024 * 1024)));
 }
 
-function resolveTargetGuid(
-  functionName: string,
-  params: Record<string, unknown>,
-  repositoryGuid: string | undefined
-): string {
-  if (functionName === 'repository_fork') {
-    return typeof params.tag === 'string' ? params.tag : '';
-  }
-  return repositoryGuid ?? '';
-}
-
-async function resolveRepoIdentity(
-  functionName: string,
-  targetGuid: string,
-  datastore: string,
-  sftp: SFTPClient
-): Promise<Pick<RepoLicenseContext, 'luksUuid' | 'storageFingerprint'>> {
-  if (!targetGuid || functionName === 'repository_create' || functionName === 'repository_fork') {
-    return {};
-  }
-  const identityOutput = await sftp.exec(
-    `sudo sh -lc 'p="${datastore}/repositories/${targetGuid}"; if cryptsetup luksUUID "$p" >/dev/null 2>&1; then cryptsetup luksUUID "$p"; else stat -c "%F:%d:%i:%s:%Y" "$p" 2>/dev/null || true; fi'`
+/**
+ * Say out loud that the licence size is a floor rather than a measurement —
+ * but only where the image was supposed to be there to measure.
+ *
+ * For `repository_create` the probe targets a repo that does not exist yet by
+ * construction (the config record is written before renet runs), so an
+ * unanswerable stat is the NORMAL case and warning on it would train the
+ * operator to ignore this line. `repository_fork` and `repository_commit` take
+ * their size from the SOURCE repo, which must already exist; there, an
+ * unanswerable stat means the CLI looked in the wrong place or the machine
+ * cannot read its own datastore, and both are worth a line on stderr.
+ *
+ * Warn rather than throw, deliberately: this runs on `repo fork`, `repo commit`
+ * and their post-create identity refresh, and refusing on a probe that is only
+ * ever an ESTIMATE would turn a cosmetic under-report into a failed
+ * provisioning run. renet re-checks the real size against the contract on the
+ * machine, so the floor cannot smuggle an over-limit repo past enforcement.
+ */
+function warnUnmeasuredRepoSize(functionName: string, imagePath: string): void {
+  if (!usesTagAsProvisioningTarget(functionName)) return;
+  outputService.warn(
+    `Could not measure the source repository image at ${imagePath}, so its license is being ` +
+      `requested at the ${MIN_REQUESTED_SIZE_GB} GB minimum instead of its real size. ` +
+      `If this repository lives on a named datastore, check that its recorded placement ` +
+      `matches where the image actually is ("rdc config reconcile").`
   );
-  const trimmed = identityOutput.trim();
-  if (!trimmed) {
-    return {};
-  }
-  return /^[0-9a-f-]{36}$/i.test(trimmed) ? { luksUuid: trimmed } : { storageFingerprint: trimmed };
 }
 
 /**
@@ -970,11 +1173,9 @@ class LocalExecutorService {
     // fails because the license was issued for the source, not the destination,
     // and the destination's repository_up recovery never tried to issue.
 
-    // For create/fork, re-issue the pre-provisioning repo license
-    if (
-      options.functionName === 'repository_create' ||
-      options.functionName === 'repository_fork'
-    ) {
+    // For provisioning verbs (create-tier, per renet's tier map), re-issue the
+    // pre-provisioning repo license
+    if (isRepoProvisioningFunction(options.functionName)) {
       try {
         await this.ensureRepoLicenseForProvisioning(
           options,
@@ -1090,7 +1291,8 @@ class LocalExecutorService {
   }
 
   /**
-   * Pre-flight for repository_create / repository_fork:
+   * Pre-flight for the repo-provisioning verbs (isRepoProvisioningFunction,
+   * i.e. create-tier in renet's map: repository_create / repository_fork):
    * Ensure subscription token exists (trigger device-code auth if needed)
    * and pre-issue a repo license (without identity proofs since the repo
    * doesn't exist yet). The server enforces machine slot limits during
@@ -1124,26 +1326,71 @@ class LocalExecutorService {
       options.functionName,
       options.machineName,
       options.params ?? {},
-      sftp!
+      sftp!,
+      { remoteRenetPath, required: true }
     );
     if (!repoLicenseCtx) {
       throw new Error(t('errors.subscription.activationFailed'));
     }
 
-    const issued = await issueRepoLicense(
+    const issued = await this.issueOrExplainSlotLimit(
       machine,
       sshPrivateKey,
-      {
-        repositoryGuid: repoLicenseCtx.repositoryGuid,
-        grandGuid: repoLicenseCtx.grandGuid,
-        kind: repoLicenseCtx.kind,
-        requestedSizeGb: repoLicenseCtx.requestedSizeGb,
-      },
+      repoLicenseCtx,
       remoteRenetPath,
       sftp
     );
     if (!issued) {
       throw new Error(t('errors.subscription.activationFailed'));
+    }
+  }
+
+  /**
+   * Issue, and answer the server's machine-slot refusal in the same words the
+   * pre-flight uses.
+   *
+   * A single-machine `repo create` never reaches the multi-machine pre-flight,
+   * so this is where the wall is first seen for it. The raw server message says
+   * the limit was reached; what the operator needs on top of that is that the
+   * repository was NOT created and that a slot frees itself on the 5-hour
+   * float, which is often the whole remedy.
+   */
+  private async issueOrExplainSlotLimit(
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    repoLicenseCtx: RepoLicenseContext,
+    remoteRenetPath: string,
+    sftp?: SFTPClient
+  ): Promise<boolean> {
+    try {
+      return await issueRepoLicense(
+        machine,
+        sshPrivateKey,
+        {
+          repositoryGuid: repoLicenseCtx.repositoryGuid,
+          grandGuid: repoLicenseCtx.grandGuid,
+          kind: repoLicenseCtx.kind,
+          requestedSizeGb: repoLicenseCtx.requestedSizeGb,
+          // Both halves of the scope, from one resolution: the server embeds it
+          // in the signed payload and the writer puts the blob on the path
+          // renet reads for this datastore. Sending one without the other is
+          // how the license ends up somewhere nothing looks.
+          datastoreId: repoLicenseCtx.datastoreId,
+        },
+        remoteRenetPath,
+        sftp
+      );
+    } catch (error) {
+      if (!isMachineSlotLimitError(error)) throw error;
+      const slots = await readMachineSlotStatus();
+      const detail = slots
+        ? machineSlotLimitMessage({
+            needed: 1,
+            active: slots.activeMachineCount,
+            max: slots.maxMachines,
+          })
+        : (error as Error).message;
+      throw new ValidationError(`${detail} ${t('errors.license.nothingProvisioned')}`);
     }
   }
 
@@ -1274,17 +1521,13 @@ class LocalExecutorService {
     sftp: SFTPClient
   ): Promise<void> {
     if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
-    if (
-      options.functionName !== 'repository_create' &&
-      options.functionName !== 'repository_fork'
-    ) {
-      return;
-    }
+    if (!isRepoProvisioningFunction(options.functionName)) return;
     const repoLicense = await resolveRepoLicenseContext(
       options.functionName,
       options.machineName,
       options.params ?? {},
-      sftp
+      sftp,
+      { remoteRenetPath, required: false }
     );
     if (repoLicense) {
       await refreshRepoLicenseIdentity(machine, sshPrivateKey, repoLicense, remoteRenetPath, sftp);
@@ -1309,7 +1552,8 @@ class LocalExecutorService {
         functionName,
         machineName,
         params,
-        lease.sftp
+        lease.sftp,
+        { required: false }
       );
       if (repoLicense) {
         await refreshRepoLicenseIdentity(
@@ -1650,10 +1894,7 @@ class LocalExecutorService {
       });
     };
 
-    if (
-      options.functionName === 'repository_create' ||
-      options.functionName === 'repository_fork'
-    ) {
+    if (isRepoProvisioningFunction(options.functionName)) {
       // License issuance only needs the provisioned renet binary, not the
       // verified machine setup — run it concurrently with verification.
       const runLicense = async () => {

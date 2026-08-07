@@ -9,7 +9,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded locale data
-let localeCache = new Map();
+const localeCache = new Map();
 
 /**
  * Get all supported language directories
@@ -17,9 +17,7 @@ let localeCache = new Map();
 const getLanguageDirectories = (localesDir) => {
   try {
     const entries = fs.readdirSync(localesDir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
   }
@@ -88,8 +86,10 @@ export const crossLanguageConsistency = {
       },
     ],
     messages: {
-      missingInLanguage: 'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
-      extraInLanguage: 'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
+      missingInLanguage:
+        'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
+      extraInLanguage:
+        'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -101,7 +101,7 @@ export const crossLanguageConsistency = {
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/cross-language-consistency',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info
@@ -115,8 +115,46 @@ export const crossLanguageConsistency = {
     }
 
     // Get all language directories
-    const languages = getLanguageDirectories(absoluteLocalesDir)
-      .filter((lang) => lang !== sourceLanguage);
+    const languages = getLanguageDirectories(absoluteLocalesDir).filter(
+      (lang) => lang !== sourceLanguage
+    );
+
+    /**
+     * Report both directions of the key-set difference for one language.
+     * Reports land on the Document node -- the offending key lives in another
+     * file, so there is no position in this one to point at.
+     */
+    const reportKeySetDiff = (node, lang, englishKeys, langKeys) => {
+      // Find keys missing in this language
+      for (const key of englishKeys) {
+        if (!langKeys.has(key)) {
+          context.report({
+            node,
+            messageId: 'missingInLanguage',
+            data: {
+              key,
+              source: sourceLanguage,
+              language: lang,
+            },
+          });
+        }
+      }
+
+      // Find extra keys in this language (not in English)
+      for (const key of langKeys) {
+        if (!englishKeys.has(key)) {
+          context.report({
+            node,
+            messageId: 'extraInLanguage',
+            data: {
+              key,
+              source: sourceLanguage,
+              language: lang,
+            },
+          });
+        }
+      }
+    };
 
     return {
       Document(node) {
@@ -135,38 +173,7 @@ export const crossLanguageConsistency = {
             continue;
           }
 
-          const langKeys = loadLocaleKeys(langFilePath);
-
-          // Find keys missing in this language
-          for (const key of englishKeys) {
-            if (!langKeys.has(key)) {
-              // Report on the Document node since we can't pinpoint the exact location
-              context.report({
-                node,
-                messageId: 'missingInLanguage',
-                data: {
-                  key,
-                  source: sourceLanguage,
-                  language: lang,
-                },
-              });
-            }
-          }
-
-          // Find extra keys in this language (not in English)
-          for (const key of langKeys) {
-            if (!englishKeys.has(key)) {
-              context.report({
-                node,
-                messageId: 'extraInLanguage',
-                data: {
-                  key,
-                  source: sourceLanguage,
-                  language: lang,
-                },
-              });
-            }
-          }
+          reportKeySetDiff(node, lang, englishKeys, loadLocaleKeys(langFilePath));
         }
       },
     };

@@ -32,6 +32,7 @@ import { t } from '../i18n/index.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { shellQuote } from '../utils/shell-quote.js';
 
@@ -96,6 +97,9 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_logs',
             machineName,
+            // #74: the container lives in the repo's compose project, which renet
+            // resolves through the repo's mount — the machine default is not it.
+            datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,
               ...(container && { container }),
@@ -145,6 +149,9 @@ export function registerRepoContainerCommands(repo: Command): void {
           const result = await getExecutor().execute({
             functionName: 'container_exec',
             machineName,
+            // #74: same as container_logs — the exec target is resolved through
+            // the repo's mount, so the recorded datastore has to travel.
+            datastore: await recordedDatastoreMount(repoKey),
             params: {
               repository: repoKey,
               ...(container && { container }),

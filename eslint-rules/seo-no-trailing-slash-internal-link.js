@@ -67,7 +67,7 @@ function stripFragmentAndQuery(value) {
 function hasTrailingSlashIssue(raw) {
   if (typeof raw !== 'string') return false;
   if (raw.includes('://')) return false; // external URL
-  if (raw === '/') return false;          // bare root is fine
+  if (raw === '/') return false; // bare root is fine
   const path = stripFragmentAndQuery(raw);
   if (path === '/' || path === '') return false;
   // Must start with `/` followed by a lowercase letter or template-literal
@@ -91,6 +91,13 @@ function templateLiteralRaw(node) {
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
+/** Static property key as a string, or null for anything not statically named. */
+function propertyKeyName(key) {
+  if (key?.type === 'Identifier') return key.name;
+  if (key?.type === 'Literal') return key.value;
+  return null;
+}
+
 export const seoNoTrailingSlashInternalLink = {
   meta: {
     type: 'problem',
@@ -138,8 +145,7 @@ export const seoNoTrailingSlashInternalLink = {
     return {
       // <a href={...}> / <Link to={...}> / <img src={...}>
       JSXAttribute(node) {
-        const name =
-          node.name?.type === 'JSXIdentifier' ? node.name.name : null;
+        const name = node.name?.type === 'JSXIdentifier' ? node.name.name : null;
         if (!name || !URL_ATTR_NAMES.has(name)) return;
         const value = node.value;
         if (!value) return;
@@ -153,12 +159,7 @@ export const seoNoTrailingSlashInternalLink = {
       // { href: '/en/', url: `/${lang}/`, to: ... }
       Property(node) {
         if (node.computed) return;
-        const keyName =
-          node.key?.type === 'Identifier'
-            ? node.key.name
-            : node.key?.type === 'Literal'
-              ? node.key.value
-              : null;
+        const keyName = propertyKeyName(node.key);
         if (!keyName || !URL_PROP_KEYS.has(keyName)) return;
         checkValueNode(node.value);
       },

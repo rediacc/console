@@ -365,6 +365,20 @@ function extractRenetFunctions(): string[] {
 const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
   CI: '1',
   FULL_INTEGRATION: '1',
+  // Suite 24 (cluster licensing). Set by the `Run E2E Tests (K8s Multinode)`
+  // step in ct-tests.yml, which starts an account server for it.
+  //
+  // WHAT THIS FLAG DOES NOT CLAIM. That step also passes
+  // `--grep-invert "licensing on the fleet"`, so suite 24's VM tier is excluded
+  // from the run while its ACCOUNT tier executes. Config expansion resolves
+  // FILES, not test titles, so this list cannot express that split: it counts
+  // the whole file as live. That over-count is inert TODAY and was checked
+  // rather than assumed: the only bridge method suite 24 calls is
+  // `executeViaBridge`, which dispatches no renet verb and appears in the method
+  // map for none, so the file confers no verb coverage in either tier. If the VM
+  // tier ever grows a `w1.<verb>Method(` call, that call would start counting as
+  // covered by a run that never executes it, and this entry must be revisited.
+  CLUSTER_LICENSING_SUITE: '1',
 };
 
 async function main(): Promise<void> {

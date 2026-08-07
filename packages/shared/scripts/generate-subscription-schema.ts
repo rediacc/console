@@ -165,7 +165,7 @@ function generateSchema(): SubscriptionSchema {
       degradedPlan: SUBSCRIPTION_CONFIG.degradedPlan,
       schemaVersion: SUBSCRIPTION_CONFIG.schemaVersion,
       checkInIntervalHours: SUBSCRIPTION_CONFIG.checkInIntervalHours,
-      planResources: PLAN_LIMITS as unknown as Record<string, Record<string, number>>,
+      planResources: PLAN_LIMITS,
       planFeatures: PLAN_FEATURES as unknown as Record<string, Record<string, boolean>>,
     },
   };

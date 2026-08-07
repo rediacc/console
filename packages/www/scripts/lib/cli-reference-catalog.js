@@ -70,7 +70,7 @@ function getCommandTree() {
 
 function toKebab(str) {
   return String(str)
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2')
     .toLowerCase();
 }
 
@@ -79,7 +79,7 @@ function isCommandNode(node) {
 }
 
 function collectDocumentedPaths(node, parts, out) {
-  for (const [key, value] of Object.entries(node || {})) {
+  for (const [key, value] of Object.entries(node ?? {})) {
     if (key === 'description') continue;
     if (!isCommandNode(value)) continue;
     const next = [...parts, toKebab(key)];
@@ -126,7 +126,7 @@ function extractFlagNames(flags) {
 }
 
 function optionExpectsValue(flag, optionDefs) {
-  for (const option of optionDefs || []) {
+  for (const option of optionDefs ?? []) {
     const names = extractFlagNames(option.flags);
     if (!names.includes(flag)) continue;
     return /<.+?>/.test(option.flags) || /\[.+?\]/.test(option.flags);
@@ -135,7 +135,7 @@ function optionExpectsValue(flag, optionDefs) {
 }
 
 function optionIsVariadic(flag, optionDefs) {
-  for (const option of optionDefs || []) {
+  for (const option of optionDefs ?? []) {
     const names = extractFlagNames(option.flags);
     if (!names.includes(flag)) continue;
     return /<[^>]*\.\.\.>|\[[^\]]*\.\.\.\]/.test(option.flags);
@@ -148,8 +148,8 @@ function walkCommands(node, pathParts, out) {
   if (commandPath) {
     const group = pathParts[0];
     const scope = getGroupScope();
-    const rootOptionDefs = getCommandTree().options || [];
-    const commandOptionDefs = node.options || [];
+    const rootOptionDefs = getCommandTree().options ?? [];
+    const commandOptionDefs = node.options ?? [];
     const allowedFlags = new Set([...GLOBAL_ALWAYS_VALID]);
 
     for (const option of rootOptionDefs) {
@@ -169,11 +169,11 @@ function walkCommands(node, pathParts, out) {
       rootOptionDefs,
       commandOptionDefs,
       allowedFlags,
-      args: node.arguments || [],
+      args: node.arguments ?? [],
     });
   }
 
-  for (const sub of node.subcommands || []) {
+  for (const sub of node.subcommands ?? []) {
     walkCommands(sub, [...pathParts, sub.name], out);
   }
 }
@@ -183,7 +183,7 @@ function getCliReferenceCatalog() {
   const map = new Map();
   const documentedPaths = getDocumentedReferencePaths();
   const tree = getCommandTree();
-  for (const sub of tree.subcommands || []) {
+  for (const sub of tree.subcommands ?? []) {
     walkCommands(sub, [sub.name], map);
   }
   for (const [key, entry] of map.entries()) {
@@ -195,11 +195,11 @@ function getCliReferenceCatalog() {
 
 function findCommand(tokensAfterRoot) {
   const tree = getCommandTree();
-  let node = { subcommands: tree.subcommands || [] };
+  let node = { subcommands: tree.subcommands ?? [] };
   const matched = [];
 
   for (const token of tokensAfterRoot) {
-    const next = (node.subcommands || []).find((sub) => sub.name === token);
+    const next = (node.subcommands ?? []).find((sub) => sub.name === token);
     if (!next) break;
     matched.push(token);
     node = next;
@@ -319,7 +319,7 @@ export function rdcCommandPath(commandText) {
   if (tokens[0] !== 'rdc') return null;
 
   // Skip global options (and their values) before the subcommand path begins.
-  const rootOptionDefs = getCommandTree().options || [];
+  const rootOptionDefs = getCommandTree().options ?? [];
   let index = 1;
   while (index < tokens.length && tokens[index].startsWith('-')) {
     const token = tokens[index];
@@ -343,7 +343,7 @@ export function parseRdcCommand(commandText) {
   }
 
   const tree = getCommandTree();
-  const rootOptionDefs = tree.options || [];
+  const rootOptionDefs = tree.options ?? [];
   const rootFlags = new Set([...GLOBAL_ALWAYS_VALID]);
   for (const option of rootOptionDefs) {
     for (const name of extractFlagNames(option.flags)) rootFlags.add(name);
@@ -383,7 +383,7 @@ export function parseRdcCommand(commandText) {
     };
   }
 
-  const commandOptionDefs = found.node.options || [];
+  const commandOptionDefs = found.node.options ?? [];
   const validFlags = new Set([...GLOBAL_ALWAYS_VALID]);
   for (const option of rootOptionDefs) {
     for (const name of extractFlagNames(option.flags)) validFlags.add(name);
@@ -392,7 +392,7 @@ export function parseRdcCommand(commandText) {
     for (const name of extractFlagNames(option.flags)) validFlags.add(name);
   }
 
-  const args = found.node.arguments || [];
+  const args = found.node.arguments ?? [];
   const variadicIndex = args.findIndex((arg) => arg.variadic);
 
   let positionals = 0;

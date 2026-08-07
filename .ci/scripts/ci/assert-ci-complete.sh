@@ -29,8 +29,14 @@ HARD_REQUIRED=(INITIALIZE BUILD_DOCKER BUILD_DOCKER_FAST BUILD_CLI)
 # (github.event_name != 'push'), so it legitimately skips on push-to-main.
 # Soft still blocks on "failure" -- which is what matters, because a failing
 # lifecycle test means the debug box's teardown cannot be trusted.
+# LABEL_GUIDE is SOFT: the job is gated on `github.event_name == 'pull_request'`
+# (it comments on a PR, and a push-to-main has none), so it legitimately skips on
+# every non-PR event. Soft still blocks on "failure", which is the half that
+# matters here: a commenter that throws means .github/labels.yml stopped parsing,
+# and that same file feeds the label-inventory gate.
 SOFT_REQUIRED=(
     QUALITY REVIEW_GATE STRIPE_SANDBOX PACKAGE_TESTS STAGE_ARTIFACTS
+    LABEL_GUIDE
     VALIDATE_INSTALL VALIDATE_PROMOTE TESTS ELITE_RUN_TEST OPS_TESTS
     UPDATE_FLOW_TEST DEPLOY_PREVIEW SMOKE_TEST_PREVIEW BREAKPOINT_LIFECYCLE
     CHECK_RELEASE_STATE

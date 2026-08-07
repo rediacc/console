@@ -2,14 +2,37 @@ import { describe, test, expect } from 'vitest';
 import { EXACT, PATTERNS, ALLOWED_NON_MANIFEST_TARGETS, applyRedirect } from '../redirect-aliases';
 import manifest from '../../../../packages/www/dist/route-manifest.json' with { type: 'json' };
 
-type ManifestEntry = { path: string; title: string; section: string; slug: string; keywords: string[] };
+type ManifestEntry = {
+  path: string;
+  title: string;
+  section: string;
+  slug: string;
+  keywords: string[];
+};
 const manifestPaths = new Set((manifest as ManifestEntry[]).map((e) => e.path));
 const allLiveTargets = new Set<string>([...manifestPaths, ...ALLOWED_NON_MANIFEST_TARGETS]);
 
+// redirect-aliases.ts casts redirects.json to a discriminated union where
+// status 301 implies `to: string` and status 410 implies `to: null`. That cast
+// is an assertion about the JSON, not a proof of it — and this file is where
+// the assertion gets proved. Read through the union type instead and TS
+// narrows every check below into dead code (which is exactly what
+// @typescript-eslint/no-unnecessary-condition reported), so the tests would
+// pass on data that violates the invariant they exist to enforce.
+interface RawRule {
+  to: string | null;
+  status: number;
+  rationale: string;
+}
+const RULES: Record<string, RawRule | undefined> = EXACT;
+// `| undefined` above models a lookup MISS (used by the chain test). Iteration
+// only ever yields values that are present.
+const RULE_ENTRIES = Object.entries(RULES) as [string, RawRule][];
+
 describe('EXACT redirect rules', () => {
   test('every 301 target is a live page', () => {
-    const broken: Array<{ from: string; to: string }> = [];
-    for (const [from, rule] of Object.entries(EXACT)) {
+    const broken: { from: string; to: string }[] = [];
+    for (const [from, rule] of RULE_ENTRIES) {
       if (rule.status === 301 && rule.to !== null) {
         if (!allLiveTargets.has(rule.to)) {
           broken.push({ from, to: rule.to });
@@ -31,11 +54,11 @@ describe('EXACT redirect rules', () => {
     // is added in the same step), no chain is actually traversed.
     //
     // We only flag genuine chains: A -> B where B -> C with C !== B.
-    const chains: Array<{ from: string; to: string; via: string }> = [];
-    for (const [from, rule] of Object.entries(EXACT)) {
+    const chains: { from: string; to: string; via: string }[] = [];
+    for (const [from, rule] of RULE_ENTRIES) {
       if (rule.status !== 301 || rule.to === null || rule.to === from) continue;
-      const next = EXACT[rule.to];
-      if (next && next.status === 301 && next.to !== null && next.to !== rule.to) {
+      const next = RULES[rule.to];
+      if (next?.status === 301 && next.to !== null && next.to !== rule.to) {
         chains.push({ from, to: rule.to, via: next.to });
       }
     }
@@ -43,19 +66,19 @@ describe('EXACT redirect rules', () => {
   });
 
   test('all rules have non-empty rationale', () => {
-    for (const [from, rule] of Object.entries(EXACT)) {
+    for (const [from, rule] of RULE_ENTRIES) {
       expect(rule.rationale.length).toBeGreaterThan(10);
       expect(from.startsWith('/')).toBe(true);
     }
   });
 
   test('410 entries have to=null, 301 entries have non-null to', () => {
-    for (const [from, rule] of Object.entries(EXACT)) {
+    for (const [, rule] of RULE_ENTRIES) {
       if (rule.status === 410) {
         expect(rule.to).toBeNull();
       } else {
         expect(rule.to).not.toBeNull();
-        expect(rule.to!.startsWith('/')).toBe(true);
+        expect(rule.to?.startsWith('/')).toBe(true);
       }
     }
   });

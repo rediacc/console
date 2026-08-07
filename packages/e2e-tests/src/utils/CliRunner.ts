@@ -64,18 +64,45 @@ export interface CliResult {
 /** The isolated e2e config namespace — NEVER the user's default config. */
 const E2E_CLI_CONFIG = 'e2e-cli';
 
+/** Knobs a suite may need. Every default reproduces the original behaviour. */
+export interface CliRunnerOptions {
+  /**
+   * Config namespace, default `e2e-cli`. A second suite running against the
+   * same fleet needs its OWN namespace: the config records machine placement
+   * and host keys, and two suites sharing one file interleave their
+   * mutations.
+   */
+  readonly configName?: string;
+  /**
+   * Keep CLI-side license issuance and recovery ENABLED.
+   *
+   * The default sets `REDIACC_SKIP_MACHINE_ACTIVATION=1`, which is right for
+   * every suite that only wants the fleet to work — but it does not merely
+   * quieten licensing, it removes it: `ensureRepoLicenseForProvisioning`
+   * returns immediately (`local-executor.ts:1095-1097`), so no slot is ever
+   * claimed, and `needsLicenseRecovery` refuses to act on renet's exit 10
+   * (`local-executor.ts:760`), so nothing is ever reissued. A licensing suite
+   * that inherited the default would assert against a system with the
+   * behaviour under test switched off.
+   */
+  readonly licensing?: boolean;
+  /** Extra environment for the spawned CLI (e.g. REDIACC_ALLOW_CLUSTER_OPS). */
+  readonly env?: NodeJS.ProcessEnv;
+}
+
 export class CliRunner {
   private constructor(
     private readonly bin: string,
     private readonly binPrefixArgs: string[],
     private readonly env: NodeJS.ProcessEnv,
     /** Absolute dev renet to pin into the config (undefined in CI / SEA). */
-    private readonly devRenetPath?: string
+    private readonly devRenetPath?: string,
+    private readonly configName: string = E2E_CLI_CONFIG
   ) {}
 
-  /** Path of the isolated e2e-cli config file. */
-  private static configFilePath(): string {
-    return path.join(os.homedir(), '.config', 'rediacc', `${E2E_CLI_CONFIG}.json`);
+  /** Path of an isolated e2e config file. */
+  private static configFilePath(configName: string = E2E_CLI_CONFIG): string {
+    return path.join(os.homedir(), '.config', 'rediacc', `${configName}.json`);
   }
 
   /**
@@ -83,19 +110,24 @@ export class CliRunner {
    * every e2e job), so prefer `rdc` on PATH there; locally fall back to the
    * built bundle via node. `E2E_CLI_BIN` overrides both.
    */
-  static create(): CliRunner {
+  static create(options: CliRunnerOptions = {}): CliRunner {
+    const configName = options.configName ?? E2E_CLI_CONFIG;
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       // License-less ops VMs (07 §2). CI shells have no agent ancestor, so the
       // REDIACC_ALLOW_* ancestry checks never trigger (07 §6).
-      REDIACC_SKIP_MACHINE_ACTIVATION: '1',
+      ...(options.licensing ? {} : { REDIACC_SKIP_MACHINE_ACTIVATION: '1' }),
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
+      ...options.env,
     };
+    // An inherited value would defeat `licensing: true` silently, since the
+    // spread above only omits the key rather than clearing it.
+    if (options.licensing) delete env.REDIACC_SKIP_MACHINE_ACTIVATION;
 
     if (process.env.E2E_CLI_BIN) {
-      return new CliRunner(process.env.E2E_CLI_BIN, [], env);
+      return new CliRunner(process.env.E2E_CLI_BIN, [], env, undefined, configName);
     }
 
     // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves its
@@ -122,11 +154,11 @@ export class CliRunner {
     }
 
     if (process.env.CI) {
-      return new CliRunner('rdc', [], env, devRenetPath);
+      return new CliRunner('rdc', [], env, devRenetPath, configName);
     }
     // packages/e2e-tests/src/utils -> packages/cli/dist/cli-bundle.cjs
     const bundle = path.resolve(__dirname, '../../../cli/dist/cli-bundle.cjs');
-    return new CliRunner(process.execPath, [bundle], env, devRenetPath);
+    return new CliRunner(process.execPath, [bundle], env, devRenetPath, configName);
   }
 
   /** Spawn the CLI with the given argv verbatim (no --config injected). */
@@ -147,9 +179,19 @@ export class CliRunner {
     }
   }
 
-  /** Run `rdc --config e2e-cli <args>`. */
+  /** Run `rdc --config <namespace> <args>`. */
   async run(args: string[]): Promise<CliResult> {
-    return this.exec(['--config', E2E_CLI_CONFIG, ...args]);
+    return this.exec(['--config', this.configName, ...args]);
+  }
+
+  /** The config namespace this runner drives (for messages and file reads). */
+  get config(): string {
+    return this.configName;
+  }
+
+  /** Absolute path of this runner's config file. */
+  get configPath(): string {
+    return CliRunner.configFilePath(this.configName);
   }
 
   /** Run with the global `-o json` output format and JSON.parse stdout. */
@@ -172,10 +214,8 @@ export class CliRunner {
    * preflight red while the bridge-side probes were green). Callers recreate
    * from scratch each run; registration is cheap.
    */
-  static async resetConfig(): Promise<void> {
-    await rm(path.join(os.homedir(), '.config', 'rediacc', `${E2E_CLI_CONFIG}.json`), {
-      force: true,
-    });
+  static async resetConfig(configName: string = E2E_CLI_CONFIG): Promise<void> {
+    await rm(CliRunner.configFilePath(configName), { force: true });
   }
 
   /**
@@ -185,12 +225,12 @@ export class CliRunner {
    * resetConfig(): a config outliving the fleet is stale, not reusable.
    */
   async initConfig(sshKeyPath: string): Promise<CliResult> {
-    const result = await this.exec(['config', 'init', E2E_CLI_CONFIG, '--ssh-key', sshKeyPath]);
+    const result = await this.exec(['config', 'init', this.configName, '--ssh-key', sshKeyPath]);
     // Pin the dev renet as an ABSOLUTE top-level renetPath (host-local field,
     // unencrypted per config sensitivity rules) so the CLI never PATH-guesses
     // and downgrades the fleet to the host's production binary. See create().
     if (this.devRenetPath) {
-      const file = CliRunner.configFilePath();
+      const file = CliRunner.configFilePath(this.configName);
       const cfg = JSON.parse(readFileSync(file, 'utf8')) as { renetPath?: string };
       cfg.renetPath = this.devRenetPath;
       writeFileSync(file, `${JSON.stringify(cfg, null, 2)}\n`);

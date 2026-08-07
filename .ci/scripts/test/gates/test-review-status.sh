@@ -101,6 +101,27 @@ case "$path" in
     # size-tiered budget untestable.
     pr) key="pr-size" ;;
     */commits/*/pulls) key="commit-pulls" ;;
+    # The workflow_run PR handoff. Two calls: list the run's artifacts, then
+    # download the zip. The zip route writes a REAL zip so the script's
+    # `unzip -p` runs for real rather than against a stub -- the extraction is
+    # part of what can break.
+    */actions/runs/*/artifacts) key="run-artifacts" ;;
+    */actions/artifacts/*/zip)
+        # A REAL zip on stdout, built with python3 because `zip` is not
+        # installed on this box (only unzip is) and the suite already requires
+        # python3. The script's `unzip -p` therefore runs for real: extraction
+        # is part of what can break, so stubbing it away would leave the most
+        # fragile step untested.
+        if [ -f "$GH_FIXTURES/review-target.txt" ]; then
+            python3 -c 'import sys,zipfile,io
+buf = io.BytesIO()
+with zipfile.ZipFile(buf, "w") as z:
+    z.write(sys.argv[1], "review-target.txt")
+sys.stdout.buffer.write(buf.getvalue())' "$GH_FIXTURES/review-target.txt"
+            exit 0
+        fi
+        exit 1
+        ;;
     */commits/*/check-runs) key="check-runs" ;;
     */issues/*/comments) key="comments" ;;
     */compare/*) key="compare" ;;
@@ -217,6 +238,10 @@ posted() {
 }
 
 captured_method() {
+    # `[ -f ]` guard, not an assumption: a test that asserts NOTHING was posted
+    # leaves no capture file at all, and sed erroring on the missing path would
+    # make "correctly silent" look like a harness fault.
+    [ -f "$1/capture.txt" ] || return 0
     sed -n 's/^METHOD=\([A-Z]*\) .*/\1/p' "$1/capture.txt" | tail -n 1
 }
 
@@ -297,7 +322,12 @@ test_gitlink_only_succeeds() {
 test_cancelled_review_run_is_not_a_failure() {
     local t="$1"
     setup "$t"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=cancelled \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=cancelled \
         WR_HTML_URL=https://example.invalid/run/1
     assert_eq "$(posted "$t" '.conclusion')" success \
         "a superseded (cancelled) review run must not fail the head"
@@ -360,7 +390,12 @@ test_wrong_marker_prefix_is_seen_as_unreviewed() {
 test_failed_review_run_fails() {
     local t="$1"
     setup "$t"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$NEW_SHA" WR_CONCLUSION=failure \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=failure \
         WR_HTML_URL=https://example.invalid/run/7
     assert_eq "$(posted "$t" '.conclusion')" failure "the review produced no verdict"
     assert_contains "$(posted "$t" '.output.summary')" "https://example.invalid/run/7" \
@@ -479,7 +514,12 @@ test_anchors_to_current_head_not_event_sha() {
     marker_comment "$OLD_SHA" | jq -s '.' >"$t/fixtures/comments.json"
     echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
         >"$t/fixtures/compare.json"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$OLD_SHA" WR_CONCLUSION=success \
+    # The PR handoff Claude Review now uploads; without it the resolver is
+    # correctly silent, so every workflow_run test needs it to reach the
+    # behaviour it is actually asserting.
+    echo '{"artifacts": [{"id": 42, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=4242 WR_CONCLUSION=success \
         WR_HTML_URL=https://example.invalid/run/9
     assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" \
         "the check-run is anchored to the PR head, not the event's SHA"
@@ -606,17 +646,60 @@ test_workflow_dispatch_resolves_pr_directly() {
     log_pass "workflow_dispatch (PLANTED: empty commit-pulls) still resolves PR #42 via PR_NUMBER"
 }
 
-test_workflow_run_with_unassociated_sha_reports_nothing() {
+# THIS TEST USED TO ASSERT THE BUG AS THE SPECIFICATION.
+#
+# It was `test_workflow_run_with_unassociated_sha_reports_nothing`, and it drove
+# EVENT_NAME=workflow_run with main's SHA expecting silent success -- codifying
+# the exact no-op that left the REQUIRED `Review Complete` check unposted on
+# every PR. Its log line even argued the lookup could not be fixed and a
+# separate dispatch path was the answer. Measured 2026-08-06: that arm had never
+# resolved a PR in production, so the suite was green on a path that never
+# worked.
+#
+# The three tests below replace it, and they split the case the old one
+# conflated: no artifact (a push to main, legitimately PR-less) must stay
+# silent, while an artifact that exists and cannot be honoured must be LOUD.
+test_workflow_run_without_artifact_is_silent() {
     local t="$1"
     setup "$t"
-    # The dispatch ref's SHA belongs to no open PR -- commits/.../pulls returns [].
-    echo '[]' >"$t/fixtures/commit-pulls.json"
-    local MAIN_SHA="3333333333333333333333333333333333333333"
-    run_status "$t" EVENT_NAME=workflow_run WR_HEAD_SHA="$MAIN_SHA" WR_CONCLUSION=success \
-        WR_HTML_URL=https://example.invalid/run/dispatch
-    assert_exit_code 0 "$LAST_RC" "an unresolvable PR is a no-op, not an error"
-    assert_eq "$(captured_method "$t")" "" "nothing is posted when workflow_run's head_sha resolves to no PR"
-    log_pass "CONTROL: workflow_run path genuinely cannot resolve a dispatch-ref SHA (this is why F1 adds a separate workflow_dispatch path rather than 'fixing' this lookup)"
+    # No review-target artifact: the triggering run had no PR. This is the
+    # main-push case and silence is correct -- reddening it would redden every
+    # push to main.
+    echo '{"artifacts": []}' >"$t/fixtures/run-artifacts.json"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9001 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9001
+    assert_exit_code 0 "$LAST_RC" "a PR-less triggering run is a no-op, not an error"
+    assert_eq "$(captured_method "$t")" "" "nothing is posted when no review-target artifact exists"
+    log_pass "workflow_run with no artifact stays silent (main-push safe)"
+}
+
+test_workflow_run_with_artifact_posts_the_check() {
+    local t="$1"
+    setup "$t"
+    # The artifact names PR 42, which setup() wires as open at NEW_SHA.
+    echo '{"artifacts": [{"id": 77, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    echo "42" >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9002 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9002
+    assert_exit_code 0 "$LAST_RC" "a resolvable PR reports normally"
+    assert_eq "$(captured_method "$t")" "POST" "FIRE: the check-run is posted for the handed-over PR"
+    assert_eq "$(posted "$t" '.head_sha')" "$NEW_SHA" "anchored to the PR's live head, not the triggering run's"
+    log_pass "FIRE: workflow_run resolves the PR from the artifact and posts (the case that never worked)"
+}
+
+test_workflow_run_with_unhonourable_artifact_is_loud() {
+    local t="$1"
+    setup "$t"
+    # The artifact EXISTS but carries no PR number. Under the old code every
+    # failure to resolve exited 0; here presence makes it binding, so this must
+    # be a non-zero exit rather than another silent success.
+    echo '{"artifacts": [{"id": 78, "name": "review-target"}]}' >"$t/fixtures/run-artifacts.json"
+    printf '\n' >"$t/fixtures/review-target.txt"
+    run_status "$t" EVENT_NAME=workflow_run WR_RUN_ID=9003 WR_CONCLUSION=success \
+        WR_HTML_URL=https://example.invalid/run/9003
+    assert_exit_code 1 "$LAST_RC" "an artifact that cannot be honoured is a REPORTER failure, not silence"
+    assert_eq "$(captured_method "$t")" "" "nothing is posted when the handoff is malformed"
+    log_pass "CONTROL: the loud path is reachable -- a present-but-empty artifact exits non-zero"
 }
 
 test_workflow_dispatch_requires_pr_number() {
@@ -657,6 +740,496 @@ test_unreviewed_head_title_unchanged() {
     log_pass "CONTROL: unreviewed head keeps 'Review is not complete for this head', unaffected by F2"
 }
 
+# ===========================================================================
+# check-review-comments.sh -- the TOP-LEVEL review summary.
+#
+# The tests above stub the three hygiene scripts, so nothing here had ever
+# driven the real one. That mattered: until 2026-08-05 check-review-comments.sh
+# read ONLY repos/{REPO}/pulls/{PR}/comments (the inline review threads), and
+# the review's actual verdict is posted as a TOP-LEVEL comment on
+# repos/{REPO}/issues/{PR}/comments. So the reviewer could post a full verdict
+# with findings, nobody answer it, and this gate report the PR clean.
+#
+# Live proof, PR #551: issue comment 5189236393, github-actions[bot], 8141
+# chars, opening "## Review verdict: approve with one correctness finding to
+# fix", sat unanswered while the Review Gate went green.
+#
+# These cases drive the REAL script (no stub) against a routing fake `gh`,
+# separate from the one above so the review-status fixtures stay untouched --
+# the review-status fake maps `*/pulls/*` to the PR object, which is the wrong
+# body for the inline-comments endpoint.
+# ===========================================================================
+
+REVIEW_COMMENTS_GATE="$REPO_ROOT/.ci/scripts/quality/check-review-comments.sh"
+
+# The needle the gate keys off to recognise a review summary, and the file that
+# must keep emitting it. Asserted below so the two cannot silently drift apart.
+FINDINGS_FENCE_KEY="json:review-findings"
+
+write_fake_gh_comments() {
+    local dir="$1"
+    mkdir -p "$dir/bin"
+    cat >"$dir/bin/gh" <<'FAKE'
+#!/bin/bash
+# Routing fake for the two comment endpoints check-review-comments.sh reads.
+# Anything else is an error, never an empty list: a silently-served [] is the
+# exact shape of blindness these tests exist to catch.
+set -uo pipefail
+for a in "$@"; do
+    case "$a" in
+        */issues/*/comments)
+            [ -f "$GH_FIXTURES/issue-comments.json" ] || { echo "missing issue-comments fixture" >&2; exit 4; }
+            exec cat "$GH_FIXTURES/issue-comments.json" ;;
+        */pulls/*/comments)
+            [ -f "$GH_FIXTURES/inline-comments.json" ] || { echo "missing inline-comments fixture" >&2; exit 4; }
+            exec cat "$GH_FIXTURES/inline-comments.json" ;;
+    esac
+done
+echo "fake gh: unrouted: $*" >&2
+exit 3
+FAKE
+    chmod +x "$dir/bin/gh"
+}
+
+# summary_comment <id> <created_at> [body-override]
+# The real shape: bot author, plus the machine-readable findings fence that
+# claude-review-gate.sh --post-findings uses to locate this very comment.
+# The fence delimiter is assembled from a variable rather than written inline:
+# three literal backticks inside a shell string are a parsing hazard for no
+# benefit.
+TICKS='```'
+summary_comment() {
+    local id="$1" created="$2" body="${3:-}"
+    if [[ -z "$body" ]]; then
+        body="$(printf '%s\n' \
+            '## Review verdict: approve with one correctness finding to fix' \
+            '' \
+            'The CLI datastore path is stat-ed against the machine default.' \
+            '' \
+            '<details><summary>machine-readable findings</summary>' \
+            '' \
+            "${TICKS}${FINDINGS_FENCE_KEY}" \
+            '[{"path": "a.ts", "line": 4, "severity": "medium", "title": "t", "body": "b"}]' \
+            "${TICKS}" \
+            '' \
+            '</details>')"
+    fi
+    jq -n --argjson id "$id" --arg created "$created" --arg body "$body" \
+        '{id: $id, created_at: $created, user: {login: "github-actions[bot]"}, body: $body}'
+}
+
+# chatter_comment <id> <created_at> <author> <body>
+chatter_comment() {
+    jq -n --argjson id "$1" --arg created "$2" --arg author "$3" --arg body "$4" \
+        '{id: $id, created_at: $created, user: {login: $author}, body: $body}'
+}
+
+# A per-finding answer of the shape the operator actually posted on #551
+# (2856 chars, no id citation) -- long-form, by a human.
+human_answer_body() {
+    printf 'The finding was correct and is fixed. The datastore-scoped stat now resolves the named datastore mount before measuring, mirroring recordedDatastoreMount, so a fork out of a named datastore is metered against its real size rather than the 1 GB floor. The nit about the duplicated jq expression is deferred to the follow-up worklist item; the coverage map lists the translation bundles as unreviewed, which is acceptable because they are generated.'
+}
+
+# comments_fixture <dir> <json-object...>  -- assemble the issue-comment list
+comments_fixture() {
+    local dir="$1"
+    shift
+    printf '%s\n' "$@" | jq -s '.' >"$dir/fixtures/issue-comments.json"
+}
+
+setup_comments() {
+    local t="$1"
+    mkdir -p "$t/fixtures"
+    write_fake_gh_comments "$t"
+    # No inline threads by default: the top-level path must work on its own,
+    # and it used to be unreachable because an empty inline list exited 0 early.
+    echo '[]' >"$t/fixtures/inline-comments.json"
+    echo '[]' >"$t/fixtures/issue-comments.json"
+}
+
+run_comments_gate() {
+    local t="$1"
+    shift
+    local rc=0
+    LAST_OUT="$(env PATH="$t/bin:$PATH" GH_FIXTURES="$t/fixtures" GH_TOKEN=fake \
+        GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
+        "$@" bash "$REVIEW_COMMENTS_GATE" 2>&1)" || rc=$?
+    LAST_RC="$rc"
+    return 0
+}
+
+# ANTI-VACUITY. The gate recognises the summary by the fence the review
+# pipeline emits. If that key is ever renamed in the pipeline and not here, the
+# gate goes permanently blind while still reporting "OK" -- the original defect,
+# regrown. Assert the key still exists in BOTH producers.
+test_findings_fence_key_is_shared_with_the_pipeline() {
+    grep -qF -- "$FINDINGS_FENCE_KEY" "$REAL_GATE" ||
+        log_fail "claude-review-gate.sh no longer emits/parses '$FINDINGS_FENCE_KEY'; check-review-comments.sh keys off it and just went blind"
+    grep -qF -- "$FINDINGS_FENCE_KEY" "$REVIEW_COMMENTS_GATE" ||
+        log_fail "check-review-comments.sh no longer keys off '$FINDINGS_FENCE_KEY'; it cannot recognise a review summary"
+    grep -qF -- "$FINDINGS_FENCE_KEY" "$REPO_ROOT/.ci/scripts/review/prompts/initial.md" ||
+        log_fail "the review prompt no longer mandates the '$FINDINGS_FENCE_KEY' block, so summaries will stop carrying the marker the gate needs"
+    log_pass "the review-findings fence is emitted by the prompt, parsed by the review gate, and keyed off by the comment gate"
+}
+
+test_unreplied_summary_blocks() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" "$(summary_comment 900 2026-08-05T08:06:53Z)"
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "an unanswered top-level review verdict must BLOCK"
+    assert_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" "the block names the class"
+    assert_contains "$LAST_OUT" "issuecomment-900" "and links the exact comment"
+    # Autofix guidance is part of the contract, not decoration: a future agent
+    # must be able to act from this output with no rediscovery.
+    assert_contains "$LAST_OUT" "gh api repos/rediacc/console/issues/42/comments -X POST" \
+        "the output carries the exact command that posts an answer"
+    assert_contains "$LAST_OUT" "Re: review summary 900" "pre-filled with the comment id"
+    assert_contains "$LAST_OUT" "comments/900/replies" \
+        "and warns about the replies endpoints that 404 for an issue comment"
+    log_pass "PLANTED unanswered review summary => BLOCKS, with a copy-pasteable answer command"
+}
+
+test_answered_summary_passes() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" \
+        "$(summary_comment 900 2026-08-05T08:06:53Z)" \
+        "$(chatter_comment 903 2026-08-05T10:29:55Z mfbayraktar "$(human_answer_body)")"
+    run_comments_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "a per-finding human answer addresses the summary"
+    assert_contains "$LAST_OUT" "answered by comment 903" "and the pass says which comment answered it"
+    log_pass "a substantive human answer => PASSES (the live shape of PR #551 today)"
+}
+
+test_ordinary_chatter_is_ignored() {
+    local t="$1"
+    setup_comments "$t"
+    # CONTROL: issues/{PR}/comments carries every kind of PR chatter. None of
+    # it is a review verdict, so none of it may block. A gate that blocked here
+    # would be suppressed within a day.
+    comments_fixture "$t" \
+        "$(chatter_comment 800 2026-08-05T07:00:00Z github-actions\[bot\] "Deploy preview is ready: https://pr-42.example.invalid and the bundle grew by 3 kB since the last push, which is within budget.")" \
+        "$(chatter_comment 801 2026-08-05T07:10:00Z github-actions\[bot\] "<!-- claude-reviewed: 2222222222222222222222222222222222222222 -->
+Automated Claude review completed for commit 2222222. Cost: \$4.66")" \
+        "$(chatter_comment 802 2026-08-05T07:20:00Z mfbayraktar "Rebased onto main to pick up the label fix; rerunning the failed jobs now rather than pushing an empty commit.")"
+    run_comments_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "ordinary PR chatter is not a review verdict"
+    assert_contains "$LAST_OUT" "No top-level review summary found" "and the gate says it found none"
+    assert_not_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" "nothing was blocked on"
+    log_pass "CONTROL: deploy notes, the reviewed-SHA marker and operator notes are all IGNORED"
+}
+
+test_second_bot_comment_is_not_a_reply() {
+    local t="$1"
+    setup_comments "$t"
+    # THE TRAP. The pipeline posts several comments in a row under one
+    # identity: on #551 the marker comment landed 14 SECONDS after the summary,
+    # and the "**Claude finished" wrapper 10 seconds after it. Both are long
+    # enough to clear every substance test. If author were ignored, the review
+    # would "answer" itself on every PR and this gate could never fire once.
+    comments_fixture "$t" \
+        "$(summary_comment 900 2026-08-05T08:06:53Z)" \
+        "$(chatter_comment 901 2026-08-05T08:07:03Z github-actions\[bot\] "**Claude finished the automated review of 208c8a2**
+
+---
+
+Posted the review. Verdict: approve with one correctness finding. I read the CLI datastore paths deeply and skimmed the generated bundles, which is recorded in the coverage map above.")" \
+        "$(chatter_comment 902 2026-08-05T08:07:07Z github-actions\[bot\] "<!-- claude-reviewed: 2222222222222222222222222222222222222222 -->
+Automated Claude review completed for commit 208c8a2. Cost: \$4.6617 (claude-sonnet-5 35771out) | 84 turns | 21m3s")"
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "the reviewer's own follow-up comments are not an answer to its verdict"
+    assert_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" "still reported as unanswered"
+    assert_contains "$LAST_OUT" "second comment from the reviewer is not an answer" \
+        "and the output says why those two did not count"
+    log_pass "PLANTED bot self-replies (report + marker, both substantial) => still BLOCKS"
+}
+
+test_low_effort_answer_does_not_clear_the_summary() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" \
+        "$(summary_comment 900 2026-08-05T08:06:53Z)" \
+        "$(chatter_comment 903 2026-08-05T09:00:00Z mfbayraktar "Acknowledged, all addressed.")"
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "a stock acknowledgement does not address a multi-finding verdict"
+    log_pass "PLANTED low-effort human answer => still BLOCKS"
+}
+
+test_summary_check_survives_an_empty_inline_list() {
+    local t="$1"
+    setup_comments "$t"
+    # REGRESSION GUARD for the shape of the original defect. The gate used to
+    # `exit 0` the moment pulls/{PR}/comments came back empty, which is the
+    # commonest case: most reviews post a verdict and no inline comment at all.
+    # The summary check must run regardless.
+    echo '[]' >"$t/fixtures/inline-comments.json"
+    comments_fixture "$t" "$(summary_comment 900 2026-08-05T08:06:53Z)"
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "an empty inline list must not short-circuit the summary check"
+    assert_contains "$LAST_OUT" "No inline review comments found" "the inline path still reports its own emptiness"
+    assert_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" "and the summary is still judged"
+    log_pass "PLANTED empty inline list + unanswered summary => BLOCKS (no early exit)"
+}
+
+test_inline_thread_behaviour_is_unchanged() {
+    local t="$1"
+    setup_comments "$t"
+    # The inline path is correct today and must stay bit-for-bit correct. Both
+    # directions in one case: comment 10 has a substantive reply, comment 20 has
+    # none. Only 20 may be reported.
+    jq -n '[
+      {id: 10, in_reply_to_id: null, path: "packages/cli/src/a.ts", line: 4,
+       user: {login: "github-actions[bot]"}, body: "**[HIGH]** - stat targets the wrong path"},
+      {id: 11, in_reply_to_id: 10, path: "packages/cli/src/a.ts", line: 4,
+       user: {login: "mfbayraktar"}, body: "Fixed by resolving the named datastore mount first."},
+      {id: 20, in_reply_to_id: null, path: "packages/cli/src/b.ts", line: 9,
+       user: {login: "github-actions[bot]"}, body: "**[MEDIUM]** - unchecked exit code"}
+    ]' >"$t/fixtures/inline-comments.json"
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "an unreplied inline thread still blocks"
+    assert_contains "$LAST_OUT" "UNREPLIED COMMENTS (1)" "exactly one thread is unreplied"
+    assert_contains "$LAST_OUT" "packages/cli/src/b.ts:9" "and it is the one with no reply"
+    assert_not_contains "$LAST_OUT" "packages/cli/src/a.ts:4" "the answered thread is not reported"
+    assert_contains "$LAST_OUT" "comments/{COMMENT_ID}/replies" "the inline autofix guidance is intact"
+    assert_not_contains "$LAST_OUT" "UNANSWERED REVIEW SUMMARY" "and no summary was invented"
+    log_pass "CONTROL: inline-thread behaviour unchanged (replied thread quiet, unreplied thread reported)"
+}
+
+test_unreadable_issue_comments_fail_closed() {
+    local t="$1"
+    setup_comments "$t"
+    rm -f "$t/fixtures/issue-comments.json" # the issues endpoint is unavailable
+    run_comments_gate "$t"
+    if [[ "$LAST_RC" -eq 0 ]]; then
+        log_fail "an unfetchable issue-comment list must block, not read as 'the review posted no summary'"
+    fi
+    assert_contains "$LAST_OUT" "Failing closed" "the abort says it is failing closed"
+    log_pass "PLANTED unreadable issues/{PR}/comments => FAILS CLOSED (not a silent clean PR)"
+}
+
+# ===========================================================================
+# check-review-report-replies.sh -- the pipeline's REPORT WRAPPER.
+#
+# The second half of the same blind spot. That gate matched the report by its
+# "**Claude finished" header AND-ed with "carries the findings fence or a
+# '### Review' heading". The header is a producer constant; the second clause
+# is a guess about WORDING that no producer emits. On #551 the wrapper
+# (5189238220) carried neither marker, so the gate found no report and exited 0
+# vacuously while an 8141-char verdict sat unanswered -- it passed that PR
+# silently for the same reason check-review-comments.sh did.
+#
+# The two gates key off two DIFFERENT producer constants (the fence vs the
+# header) and own two DIFFERENT comments, so they are complementary. What makes
+# that coverage rather than a tax is that they share one reply rule, proven by
+# test_one_reply_clears_both_gates below.
+# ===========================================================================
+
+REPORT_REPLIES_GATE="$REPO_ROOT/.ci/scripts/quality/check-review-report-replies.sh"
+
+# The header the pipeline writes and this gate matches on.
+REPORT_PREFIX_KEY='**Claude finished'
+
+# report_comment <id> <created_at> [body]
+# Default body is the LIVE #551 SHAPE: the header, then the model's short
+# wrap-up. No findings fence, no "### Review" heading -- the exact shape the
+# old selector could not see.
+report_comment() {
+    local id="$1" created="$2" body="${3:-}"
+    if [[ -z "$body" ]]; then
+        body="$(printf '%s\n' \
+            "${REPORT_PREFIX_KEY} the automated review of 208c8a2**" \
+            '' \
+            '---' \
+            '' \
+            'Posted the review. Summary of what I did:' \
+            '' \
+            'Verdict: approve with one correctness finding. I read the CLI datastore paths deeply and skimmed the generated bundles.')"
+    fi
+    jq -n --argjson id "$id" --arg created "$created" --arg body "$body" \
+        '{id: $id, created_at: $created, user: {login: "github-actions[bot]"}, body: $body}'
+}
+
+marker_issue_comment() {
+    chatter_comment "$1" "$2" 'github-actions[bot]' "<!-- claude-reviewed: 2222222222222222222222222222222222222222 -->
+Automated Claude review completed for commit 208c8a2. Cost: \$4.6617 (claude-sonnet-5 35771out) | 84 turns | 21m3s"
+}
+
+run_report_gate() {
+    local t="$1"
+    shift
+    local rc=0
+    LAST_OUT="$(env PATH="$t/bin:$PATH" GH_FIXTURES="$t/fixtures" GH_TOKEN=fake \
+        GITHUB_REPOSITORY=rediacc/console PR_NUMBER=42 NO_COLOR=1 \
+        "$@" bash "$REPORT_REPLIES_GATE" 2>&1)" || rc=$?
+    LAST_RC="$rc"
+    return 0
+}
+
+# ANTI-VACUITY, same shape as the fence test: the header must still be a
+# constant BOTH the producer and this consumer carry.
+test_report_prefix_is_shared_with_the_pipeline() {
+    grep -qF -- "$REPORT_PREFIX_KEY" "$REAL_GATE" ||
+        log_fail "claude-review-gate.sh no longer writes '$REPORT_PREFIX_KEY'; check-review-report-replies.sh keys off it and just went blind"
+    grep -qF -- "$REPORT_PREFIX_KEY" "$REPORT_REPLIES_GATE" ||
+        log_fail "check-review-report-replies.sh no longer keys off '$REPORT_PREFIX_KEY'; it cannot recognise a report"
+    log_pass "the report header is a constant the pipeline writes and the report gate reads"
+}
+
+# THE REGRESSION PIN. This is the exact live shape that slipped through: a real
+# finished report with neither the fence nor a "### Review" heading.
+test_report_without_fence_or_heading_blocks() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" "$(report_comment 901 2026-08-05T08:07:03Z)"
+    run_report_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "a finished report must be gated on its HEADER, not on whether its prose happens to contain a fence or a '### Review' heading"
+    assert_contains "$LAST_OUT" "issuecomment-901" "the block links the exact report"
+    assert_contains "$LAST_OUT" "gh api repos/rediacc/console/issues/42/comments -X POST" \
+        "and carries the exact command that posts an answer"
+    assert_contains "$LAST_OUT" "comments/901/replies" \
+        "and warns about the replies endpoints that 404 for an issue comment"
+    log_pass "PLANTED live #551 report shape (no fence, no '### Review') => BLOCKS"
+}
+
+test_report_answered_passes() {
+    local t="$1"
+    setup_comments "$t"
+    comments_fixture "$t" \
+        "$(report_comment 901 2026-08-05T08:07:03Z)" \
+        "$(chatter_comment 903 2026-08-05T10:29:55Z mfbayraktar "$(human_answer_body)")"
+    run_report_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "a per-finding human answer addresses the report"
+    assert_contains "$LAST_OUT" "answered by comment 903" "and the pass says which comment answered it"
+    log_pass "report + substantive human answer => PASSES"
+}
+
+test_report_bot_self_reply_does_not_count() {
+    local t="$1"
+    setup_comments "$t"
+    # On #551 the reviewed-SHA marker landed 4 SECONDS after the report and is
+    # long enough to clear every substance test. Same identity, so it must not
+    # count -- otherwise the pipeline answers itself on every PR.
+    comments_fixture "$t" \
+        "$(report_comment 901 2026-08-05T08:07:03Z)" \
+        "$(marker_issue_comment 902 2026-08-05T08:07:07Z)"
+    run_report_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "the pipeline's own marker comment is not an answer to its report"
+    assert_contains "$LAST_OUT" "second comment from the pipeline is not an answer" \
+        "and the output says why it did not count"
+    log_pass "PLANTED bot self-reply (the reviewed-SHA marker) => still BLOCKS"
+}
+
+test_report_ordinary_chatter_is_ignored() {
+    local t="$1"
+    setup_comments "$t"
+    # CONTROL: no comment carries the report header, so nothing may block.
+    comments_fixture "$t" \
+        "$(chatter_comment 800 2026-08-05T07:00:00Z github-actions\[bot\] "Deploy preview is ready: https://pr-42.example.invalid and the bundle grew by 3 kB, which is within budget.")" \
+        "$(chatter_comment 802 2026-08-05T07:20:00Z mfbayraktar "Rebased onto main to pick up the label fix; rerunning the failed jobs now.")"
+    run_report_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "ordinary PR chatter is not a review report"
+    assert_contains "$LAST_OUT" "No finished review report found" "and the gate says it found none"
+    log_pass "CONTROL: deploy notes and operator notes are IGNORED by the report gate"
+}
+
+test_report_unreadable_comments_fail_closed() {
+    local t="$1"
+    setup_comments "$t"
+    rm -f "$t/fixtures/issue-comments.json"
+    run_report_gate "$t"
+    if [[ "$LAST_RC" -eq 0 ]]; then
+        log_fail "an unfetchable comment list must block, not read as 'no report was posted'"
+    fi
+    assert_contains "$LAST_OUT" "Failing closed" "the abort says it is failing closed"
+    log_pass "PLANTED unreadable issues/{PR}/comments => FAILS CLOSED (report gate)"
+}
+
+# ---------------------------------------------------------------------------
+# THE PROPERTY THAT MAKES TWO GATES DEFENSIBLE.
+#
+# One review pass leaves two top-level comments, and the two gates own one
+# each. That is only worth having if answering the pass ONCE clears both --
+# otherwise the second gate is a tax on the operator and gets suppressed. Both
+# scripts are driven here against ONE fixture in the live #551 arrangement, in
+# both directions.
+# ---------------------------------------------------------------------------
+test_one_reply_clears_both_gates() {
+    local t="$1"
+    setup_comments "$t"
+    # The #551 arrangement: reviewer's own summary (fence), then the pipeline's
+    # wrapper (header, no fence), then the marker -- all within 14 seconds.
+    local unanswered=(
+        "$(summary_comment 900 2026-08-05T08:06:53Z)"
+        "$(report_comment 901 2026-08-05T08:07:03Z)"
+        "$(marker_issue_comment 902 2026-08-05T08:07:07Z)"
+    )
+    comments_fixture "$t" "${unanswered[@]}"
+
+    run_comments_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "unanswered: the summary gate must block"
+    run_report_gate "$t"
+    assert_exit_code 1 "$LAST_RC" "unanswered: the report gate must block too"
+
+    # ONE reply, posted after all three, by a human. Nothing else changes.
+    comments_fixture "$t" "${unanswered[@]}" \
+        "$(chatter_comment 903 2026-08-05T10:29:55Z mfbayraktar "$(human_answer_body)")"
+
+    run_comments_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "one reply must clear the summary gate"
+    assert_contains "$LAST_OUT" "answered by comment 903" "summary gate credits that reply"
+    run_report_gate "$t"
+    assert_exit_code 0 "$LAST_RC" "the SAME reply must clear the report gate; a second required reply would be a tax, not coverage"
+    assert_contains "$LAST_OUT" "answered by comment 903" "report gate credits the same reply"
+    log_pass "ONE reply clears BOTH gates (and its absence blocks both) -- the two keys are coverage, not duplication"
+}
+
+# Anti-drift for the property above: the shared rule is spelled out in two
+# files, so the thresholds must be asserted equal. If one file is tuned and the
+# other is not, a reply can satisfy one gate and not the other, and the
+# property test above would start failing for a reason nobody could see.
+test_reply_thresholds_match_across_both_gates() {
+    local name a b
+    for name in SUMMARY_MIN_CHARS SUMMARY_LONGFORM_CHARS; do
+        a="$(sed -n "s/^${name}=\([0-9]*\)[[:space:]]*$/\1/p" "$REVIEW_COMMENTS_GATE" | head -n 1)"
+        b="$(sed -n "s/^${name}=\([0-9]*\)[[:space:]]*$/\1/p" "$REPORT_REPLIES_GATE" | head -n 1)"
+        [[ -n "$a" ]] || log_fail "$name is not parseable out of check-review-comments.sh; the two gates can no longer be proven to agree"
+        [[ -n "$b" ]] || log_fail "$name is not parseable out of check-review-report-replies.sh; the two gates can no longer be proven to agree"
+        assert_eq "$b" "$a" "$name must be identical in both gates so one reply clears both"
+    done
+    log_pass "both top-level gates carry identical reply thresholds ($(sed -n 's/^SUMMARY_MIN_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1)/$(sed -n 's/^SUMMARY_LONGFORM_CHARS=\([0-9]*\)[[:space:]]*$/\1/p' "$REVIEW_COMMENTS_GATE" | head -n 1))"
+}
+
+test_review_report_count_is_shared_and_unqualified() {
+    # The numerator in "X/Y reviews used". Two failures are pinned here because
+    # both actually happened.
+    #
+    # ONE DEFINITION. It existed as identical copies in claude-review-gate.sh
+    # (which counts) and review-status.sh (which reports the fraction). Two
+    # copies of a numerator drift, and the denominator already lives in
+    # common.sh for exactly that reason.
+    local lib="$REPO_ROOT/.ci/scripts/lib/common.sh"
+    local defs
+    defs="$(grep -rlE '^review_report_count\(\)' "$REPO_ROOT/.ci/scripts/" 2>/dev/null | sort)"
+    [[ "$defs" == "$lib" ]] ||
+        log_fail "review_report_count() must be defined ONLY in .ci/scripts/lib/common.sh, found in: ${defs:-<nowhere>}"
+
+    # NO CONTENT QUALIFIER. Both copies used to AND the header with
+    # (json:review-findings OR "### Review"), a guess about the report's wording
+    # that no producer emits. Measured live when it was removed: #551 counted 0
+    # of 1 -- a completed, marked review registering as never having happened,
+    # so the cap never advanced and every push re-reviewed at full price.
+    local body
+    body="$(sed -n '/^review_report_count()/,/^}/p' "$lib")"
+    [[ -n "$body" ]] || log_fail "could not extract review_report_count() from common.sh"
+    grep -q 'startswith(\\"\*\*Claude finished' <<<"$body" ||
+        log_fail "review_report_count() no longer keys on the **Claude finished header, which is the producer constant claude-review-gate.sh writes verbatim"
+    if grep -qE 'json:review-findings|### Review' <<<"$body"; then
+        log_fail "review_report_count() has regained a content qualifier; that undercounts real reviews and makes the cap unreachable -- exclude on something the producer emits on purpose, not on its prose"
+    fi
+    log_pass "review_report_count() is defined once, in common.sh, and keys on the header alone"
+}
+
 test_review_status_has_workflow_dispatch_with_pr_number() {
     local wf="$REPO_ROOT/.github/workflows/review-status.yml"
     grep -qE '^  workflow_dispatch:[[:space:]]*$' "$wf" ||
@@ -680,7 +1253,9 @@ with_temp_dir test_cancelled_review_run_is_not_a_failure
 with_temp_dir test_draft_is_neutral
 
 with_temp_dir test_workflow_dispatch_resolves_pr_directly
-with_temp_dir test_workflow_run_with_unassociated_sha_reports_nothing
+with_temp_dir test_workflow_run_without_artifact_is_silent
+with_temp_dir test_workflow_run_with_artifact_posts_the_check
+with_temp_dir test_workflow_run_with_unhonourable_artifact_is_loud
 with_temp_dir test_workflow_dispatch_requires_pr_number
 with_temp_dir test_hygiene_only_failure_title_says_reviewed
 with_temp_dir test_unreviewed_head_title_unchanged
@@ -699,3 +1274,23 @@ with_temp_dir test_below_cap_the_same_state_fails
 
 with_temp_dir test_anchors_to_current_head_not_event_sha
 with_temp_dir test_existing_check_run_is_patched
+
+test_findings_fence_key_is_shared_with_the_pipeline
+with_temp_dir test_unreplied_summary_blocks
+with_temp_dir test_answered_summary_passes
+with_temp_dir test_ordinary_chatter_is_ignored
+with_temp_dir test_second_bot_comment_is_not_a_reply
+with_temp_dir test_low_effort_answer_does_not_clear_the_summary
+with_temp_dir test_summary_check_survives_an_empty_inline_list
+with_temp_dir test_inline_thread_behaviour_is_unchanged
+with_temp_dir test_unreadable_issue_comments_fail_closed
+
+test_report_prefix_is_shared_with_the_pipeline
+test_reply_thresholds_match_across_both_gates
+test_review_report_count_is_shared_and_unqualified
+with_temp_dir test_report_without_fence_or_heading_blocks
+with_temp_dir test_report_answered_passes
+with_temp_dir test_report_bot_self_reply_does_not_count
+with_temp_dir test_report_ordinary_chatter_is_ignored
+with_temp_dir test_report_unreadable_comments_fail_closed
+with_temp_dir test_one_reply_clears_both_gates

@@ -61,6 +61,86 @@ async function dispatch(
   return res.stdout ?? '';
 }
 
+/**
+ * A datastore's registry record as the machine that holds it reports it.
+ *
+ * `renet datastore list --json` emits each row as the flattened Record plus its
+ * `name`, which is the shape `datastore adopt --record-b64` reads back, so this
+ * one call is both the lookup and the ferry payload.
+ */
+async function captureDatastoreRecord(
+  machineName: string,
+  ref: string,
+  debug?: boolean
+): Promise<{ name: string; backend?: string; fork?: unknown }> {
+  const stdout = await dispatch('datastore_list', machineName, {}, { debug, capture: true });
+  const records = parseCapturedJson<{ name: string; backend?: string; fork?: unknown }[]>(stdout);
+  const record = records.find((r) => r.name === ref);
+  if (!record) {
+    throw new ValidationError(
+      `Datastore "${ref}" is not in ${machineName}'s registry, so there is no record to move. ` +
+        `Nothing has been changed.`
+    );
+  }
+  return record;
+}
+
+/**
+ * Copy a datastore's registry row from the machine that holds it to the machine
+ * about to attach it.
+ *
+ * The registry is PER-MACHINE, and it is the only place a datastore's ceph pool
+ * and image are written down. A machine that has never seen the datastore cannot
+ * attach a name it does not know: the attach died with `datastore "<ref>" is not
+ * registered on this machine`, and in the relocation case it died AFTER the
+ * detach, leaving the datastore attached NOWHERE (found live by
+ * `./run.sh drill license --legs b`, 2026-08-04). This is the same
+ * `datastore_adopt` the cluster paths use (cluster-fork.ts, repo-replicate.ts;
+ * findings #14 and #18), whose `--plain` half exists for exactly this non-fork
+ * move.
+ *
+ * EVERYTHING NON-DESTRUCTIVE HAPPENS FIRST, which is why callers ferry before
+ * they detach rather than merely before they attach. renet's own Adopt doc
+ * states the ordering rule for this case (adopt.go:22-28: "adopts it BEFORE
+ * anything destructive, so a registry miss can never strand a downed source"),
+ * and adopt earns it: one registry row, no disk work, idempotent on a name
+ * already present (adopt.go:61-62), so a resumed relocation converges. With the
+ * adopt last, a malformed record or an unreachable target still strands the
+ * datastore attached nowhere — the same bug, one step later.
+ */
+async function ferryDatastoreRecord(
+  from: string,
+  to: string,
+  ref: string,
+  debug?: boolean
+): Promise<void> {
+  const record = await captureDatastoreRecord(from, ref, debug);
+  // A local-backend datastore's bytes never leave their machine, so relocating
+  // one is not something that can be half-done — it is something that must not
+  // start. renet refuses it too (adopt.go:44-46), but only after this command
+  // would already have detached.
+  if (record.backend !== 'ceph') {
+    const backend = record.backend ?? DEFAULTS.DATASTORE.BACKEND;
+    throw new ValidationError(
+      `Datastore "${ref}" is ${backend}-backed, so its bytes live on ` +
+        `${from} alone and ${to} cannot reach them. Only a ceph-backed datastore ` +
+        `relocates. Nothing has been changed.`
+    );
+  }
+  await dispatch(
+    'datastore_adopt',
+    to,
+    {
+      name: ref,
+      record_b64: Buffer.from(JSON.stringify(record)).toString('base64'),
+      // renet refuses a fork record under --plain and a plain record without it,
+      // so the shape is read off the record, not guessed from the ref.
+      ...(record.fork ? {} : { plain: true }),
+    },
+    { debug }
+  );
+}
+
 function registerCreate(datastore: Command): void {
   datastore
     .command('create')
@@ -280,7 +360,16 @@ function registerAttach(datastore: Command): void {
             outputService.info(
               t('commands.datastore.attach.relocating', { ref, from: current, to: options.to })
             );
+            await ferryDatastoreRecord(current, options.to, ref, options.debug);
             await dispatch('datastore_detach', current, { name: ref }, { debug: options.debug });
+          } else if (entry?.lastHolder && entry.lastHolder !== options.to) {
+            // DETACHED relocation. Nothing holds the datastore, so there is no
+            // detach to do — but the registry row still exists only on the machine
+            // that last had it, so the attach below would fail "not registered"
+            // exactly as the attached case used to. `lastHolder` is recorded at
+            // detach time for this arm alone; without it the CLI has no idea which
+            // registry to ferry from, and guessing is how you fence a live holder.
+            await ferryDatastoreRecord(entry.lastHolder, options.to, ref, options.debug);
           }
 
           await dispatch(
@@ -298,6 +387,10 @@ function registerAttach(datastore: Command): void {
           await setDatastoreState(ref, {
             attachedTo: options.to,
             ...(options.writes && { writes: options.writes }),
+            // Carried, not dropped: the schema's contract is that lastHolder is
+            // never cleared, only overwritten by the next detach. Attaching does
+            // not make the previous holder's registry row untrue.
+            ...(entry?.lastHolder && { lastHolder: entry.lastHolder }),
             mounted: true,
             attachedAt: new Date().toISOString(),
           });
@@ -350,7 +443,16 @@ function registerAttach(datastore: Command): void {
           { name: ref, ...(options.discard && { discard: true }) },
           { debug: options.debug }
         );
-        await setDatastoreState(ref, undefined);
+        // Remember WHO held it. renet's registry row — the ceph pool/image record
+        // a later relocation has to ferry — survives only on that machine, so a
+        // detached datastore that forgets its last holder cannot be attached
+        // anywhere else: `datastore attach --to <other>` fails "not registered on
+        // this machine" and the CLI has nowhere to fetch the row from. The whole
+        // entry is replaced rather than merged because every OTHER field describes
+        // an attachment that no longer exists. A --discard detach drops this again
+        // a line below: forgetDatastore clears both halves, which is right, since
+        // there is no longer a datastore to relocate.
+        await setDatastoreState(ref, { lastHolder: host });
         if (options.discard) {
           await forgetDatastore(ref);
         }

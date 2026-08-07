@@ -304,6 +304,8 @@
         "optionMasterPassword": "Cifra le risorse con una password principale",
         "success": "Configurazione \"{{name}}\" inizializzata",
         "bareForm": "La configurazione predefinita viene creata automaticamente; usa 'config init <nome>' per una configurazione con nome, oppure passa un flag (--ssh-key, --server, ...) per impostare un'opzione su quella predefinita.",
+        "serverKeyMissing": "Il server account {{server}} non ha annunciato una chiave di cifratura. Verrà scoperta alla prima richiesta riuscita.",
+        "serverKeyUnreachable": "Impossibile contattare il server account {{server}} per sincronizzare la sua chiave di cifratura ({{error}}). Verrà scoperta alla prima richiesta riuscita.",
         "examples": {
           "basic": "Crea un profilo di configurazione con nome.",
           "withServer": "Crea un profilo puntato a un account server specifico."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "La configurazione \"{{config}}\" è ancora in conflitto con un altro dispositivo dopo 3 tentativi. Esegui di nuovo il comando.",
         "passkeySecretMissing": "Segreto della passkey non trovato nel keyring del sistema operativo. Autenticati di nuovo con: rdc config remote enable",
         "staleSlot": "Il tuo key slot non è aggiornato (la chiave di cifratura della config è stata ruotata). Ripeti l'iscrizione con: rdc config remote enable",
+        "undecryptableIdentity": "La config {{configId}} nello store {{storeId}} è stata cifrata con una chiave diversa da quella nel tuo slot, quindi questo dispositivo non può leggerla. Succede quando lo store contiene già una config da un'altra iscrizione. Recupera quella config da un dispositivo già iscritto e verifica a quale config ti riferivi, oppure chiedi a un amministratore di condividere di nuovo la chiave dello store con questo dispositivo dal portale (Config Storage > key slots).",
+        "undecryptableSession": "La config {{configId}} si è sbloccata con la tua chiave, ma il livello di sessione del server si è rifiutato di aprirla ({{detail}}). Riprova il comando; se continua a fallire, reiscriviti con: rdc config remote enable",
+        "handoffUndecryptable": "Il browser ha inviato un handoff che questo dispositivo non può aprire ({{error}}). Di solito significa che una vecchia scheda 'config remote enable' è ancora aperta e ha pubblicato sulla sessione sbagliata. Chiudi tutte le schede del portale rediacc, poi esegui di nuovo il comando.",
         "enable": {
           "description": "Collega questa configurazione allo storage cifrato remoto",
           "optionHeadless": "Usa il flusso device code (per server headless)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "Password master della config:",
           "passwordNonInteractive": "È richiesta una password master della config. Imposta REDIACC_CONFIG_PASSWORD, oppure esegui il comando senza --password in un terminale interattivo.",
           "passwordRequirePasskey": "Questa organizzazione richiede una passkey per sbloccare il config storage; l'iscrizione con password è disabilitata. Iscriviti da un browser con: rdc config remote enable",
+          "passwordIpBound": "Il token API in REDIACC_TOKEN è associato a un indirizzo IP client diverso. Un token si lega all'indirizzo da cui viene usato per la prima volta, quindi un token creato altrove non può iscriversi da questa macchina. Emetti un nuovo token dal portale web e riprova.",
+          "passwordMissingScope": "Il token API in REDIACC_TOKEN non porta lo scope config:enroll. Emetti un token con quello scope dal portale web e riprova.",
+          "passwordTeamGone": "Il team a cui appartiene questo token API è stato archiviato o rimosso. Emetti un nuovo token per un team attivo dal portale web e riprova.",
+          "passwordTokenNotEnrollable": "Questo token API non può iscrivere un config slot perché non è legato a un utente all'interno di un'organizzazione. Emetti un token personale dal tuo account nel portale web e riprova.",
+          "passwordForbidden": "Il server account ha rifiutato l'iscrizione della config: {{error}}",
           "passwordNoSlot": "Nessun password slot è provisionato per il tuo config storage. Aggiungine uno dal portale (Config Storage > key slots), poi riprova.",
           "passwordWrong": "Impossibile sbloccare la config con quella password. Verifica REDIACC_CONFIG_PASSWORD (o la password inserita) e riprova.",
           "optionForce": "Sostituisci il contenuto locale differente con la copia del server senza conferma",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "Scrittura dell'alias SSH non riuscita (non bloccante): {{error}}",
-          "sshConfigWritten": "Alias SSH rediacc--{{name}} scritto in ~/.ssh/config_rediacc"
+          "sshConfigWritten": "Alias SSH rediacc--{{name}} scritto in {{path}}"
         },
         "remove": {
           "sshConfigCleared": "Alias SSH rediacc--{{name}} rimosso"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "Mostra lo stato completo di una macchina.",
           "containers": "Mostra solo i container in esecuzione su una macchina."
-        }
+        },
+        "licenseBackupBlocked": "\nBACKUP BLOCCATI: {{repositoryGuid}} è stato rifiutato dal sistema di licenze dal {{at}} ({{reason}}). {{message}}\nI backup pianificati per questo repository non sono in esecuzione. Riemetti con: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "Token validato",
         "validating": "Validazione token in corso...",
         "waitingApproval": "In attesa dell'autorizzazione del browser...",
-        "edgeSeparator": "Canale Edge"
+        "edgeSeparator": "Canale Edge",
+        "machinesOverLimit": "  {{count}} slot macchina oltre il limite."
       },
       "logout": {
         "description": "Cancella il token di abbonamento memorizzato",
@@ -1686,7 +1698,11 @@
           "empty": "  Nessuna licenza repository installata",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (scadenza definitiva: {{effectiveHardExpiry}})",
-          "header": "\nLicenze repository: ({{machineName}})"
+          "header": "\nLicenze repository: ({{machineName}})",
+          "datastoreSuffix": " [datastore: {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: i backup sono BLOCCATI dal sistema di licenze dal {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Esegui 'rdc subscription refresh -m {{machineName}}' per riemettere; il marcatore si cancella al prossimo rinnovo riuscito.",
+          "lastRenewal": "    ultimo rinnovo: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  Piano:     {{plan}}",
         "remoteRepoLicenseIssuances": "  Emissioni mensili licenze repository: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Licenze repository: {{totalTrackedRepos}} tracciate, {{validCount}} valide, {{refreshRecommendedCount}} da aggiornare, {{hardExpiredCount}} scadute definitivamente",
-        "remoteStatus": "  Stato:     {{status}}"
+        "remoteStatus": "  Stato:     {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (visto l'ultima volta: {{lastSeen}}) OLTRE IL LIMITE",
+        "overLimitSummary": "  {{count}} macchina/e sono soft-riservate oltre il limite di slot macchina. I rinnovi continuano a funzionare; i NUOVI repository non possono essere licenziati finché non liberi uno slot o alzi il limite."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "Sono stati trovati repository su {{machine}}, ma nessuno è tracciato nella configurazione locale. Elenca i tuoi repository tracciati con `rdc repo list`, poi riprova.",
       "recoveryFailedServerRejected": "Il server account ha rifiutato l'emissione della licenza per il repository su \"{{machine}}\". Primo errore: {{error}}. Esegui: rdc subscription refresh --repo <repo-ref> per i dettagli.",
       "recoveryFailedTokenNotReady": "Il token di abbonamento non è pronto. Esegui: rdc subscription login, poi riprova.",
-      "skipActivationHint": "Su una macchina usa e getta puoi saltare completamente l'attivazione con REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "skipActivationHint": "Su una macchina usa e getta puoi saltare completamente l'attivazione con REDIACC_SKIP_MACHINE_ACTIVATION=1.",
+      "machineSlotLimit": "Questo posizionamento richiede {{needed}} slot macchina in più, e l'abbonamento ne ha {{free}} liberi ({{active}} su {{max}} in uso). Uno slot si libera automaticamente 5 ore dopo l'ultima attività di quella macchina, o subito quando la macchina viene rimossa. Alza il limite passando a un piano superiore, oppure contatta le vendite per un limite macchine Enterprise o partner negoziato.",
+      "partialPlacement": "Il posizionamento si è interrotto a metà: {{placed}} macchina/e completate ({{placedNames}}) e {{remaining}} mai avviate ({{remainingNames}}). Non è stato eseguito alcun rollback, quindi le macchine completate mantengono i loro repository e i loro slot. Libera uno slot o alza il limite, poi riesegui: {{command}}",
+      "nothingProvisioned": "Non è stato effettuato alcun provisioning: il repository non è stato creato."
     },
     "machineNotFound": "Macchina \"{{name}}\" non trovata",
     "machineRequired": "Nome macchina obbligatorio. Usa --machine <name>",

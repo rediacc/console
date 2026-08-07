@@ -16,6 +16,21 @@
  * await apiClient.logout();
  */
 
+/**
+ * The endpoint string of an apiClient call's first argument, or '' when it is
+ * not statically known (a variable, or an interpolated template).
+ */
+const endpointOf = (firstArg) => {
+  if (firstArg?.type === 'Literal' && typeof firstArg.value === 'string') {
+    return firstArg.value;
+  }
+  // Handle simple template literals like `/Procedure`
+  if (firstArg?.type === 'TemplateLiteral' && firstArg.quasis.length === 1) {
+    return firstArg.quasis[0].value.cooked || '';
+  }
+  return '';
+};
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const noRawApiCalls = {
   meta: {
@@ -28,8 +43,7 @@ export const noRawApiCalls = {
     messages: {
       useTypedApi:
         "Use typedApi.{{procedure}}() instead of apiClient.{{method}}('{{endpoint}}'). Raw API calls bypass type safety.",
-      rawApiCall:
-        'Raw apiClient.{{method}}() call detected. Use typedApi for type-safe API calls.',
+      rawApiCall: 'Raw apiClient.{{method}}() call detected. Use typedApi for type-safe API calls.',
     },
     schema: [
       {
@@ -103,19 +117,9 @@ export const noRawApiCalls = {
         // Report CRUD methods
         if (crudMethods.has(method)) {
           // Try to extract procedure name from first argument for better error message
-          const firstArg = node.arguments[0];
-          let endpoint = '';
-          let procedure = '';
-
-          if (firstArg?.type === 'Literal' && typeof firstArg.value === 'string') {
-            endpoint = firstArg.value;
-            // Extract procedure name (remove leading /)
-            procedure = endpoint.replace(/^\//, '');
-          } else if (firstArg?.type === 'TemplateLiteral' && firstArg.quasis.length === 1) {
-            // Handle simple template literals like `/Procedure`
-            endpoint = firstArg.quasis[0].value.cooked || '';
-            procedure = endpoint.replace(/^\//, '');
-          }
+          const endpoint = endpointOf(node.arguments[0]);
+          // Extract procedure name (remove leading /)
+          const procedure = endpoint.replace(/^\//, '');
 
           context.report({
             node,

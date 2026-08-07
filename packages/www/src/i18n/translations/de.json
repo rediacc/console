@@ -2671,6 +2671,10 @@
           {
             "answer": "Kündigen Sie während der 14-tägigen Testphase, wird Ihnen nichts berechnet. Kündigen Sie einen bezahlten Plan später, behalten Sie dessen Funktionen bis zum Ende des Abrechnungszeitraums, danach wechselt Ihr Konto automatisch zum kostenlosen Community-Plan. Ihre Repositories laufen die ganze Zeit weiter.",
             "question": "Was passiert, wenn ich kündige?"
+          },
+          {
+            "answer": "Jeder Knoten in einem Cluster ist eine Maschine, und jede zählt als Maschine. Es gibt kein gemeinsames Cluster-Kontingent und keinen Rabatt dafür, Server zusammenzufassen. Ein Knoten belegt erst einen Platz, wenn ein Repository darauf landet, sodass der Aufbau des Clusters selbst nichts kostet. Clustering wird über unsere Partner als Teil einer Enterprise-Vereinbarung verkauft, und Ihre Knotenanzahl wird bei der Bestellung vereinbart.",
+            "question": "Wie werden Cluster-Knoten gezählt?"
           }
         ]
       },
@@ -4081,19 +4085,19 @@
           "statCallouts": [
             {
               "number": "194 Tage",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "durchschnittliche Zeit zur Identifizierung einer Datenpanne"
             },
             {
               "number": "180%",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Verizon DBIR 2024",
               "text": "Anstieg der Schwachstellenausnutzung als initialer Angriffsvektor"
             },
             {
               "number": "$4,88M",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             }
@@ -4544,19 +4548,19 @@
           "statCallouts": [
             {
               "number": "204 Tage",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "durchschnittliche Zeit zur Identifizierung einer Datenpanne"
             },
             {
               "number": ">1/3",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "der Datenpannen betreffen Schattendaten, was die forensische Untersuchung erschwert"
             },
             {
               "number": "$1,76M",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "zusaetzliche Kosten bei Datenpannen, wenn Personalluecken in der Sicherheit die Reaktion verzoegern"
             }
@@ -5985,19 +5989,19 @@
           "statCallouts": [
             {
               "number": "364 Tage",
-              "ref": "",
+              "ref": 0,
               "source": "Industry standard: 365 days minus testing window",
               "text": "Exposition zwischen jaehrlichen Pentests"
             },
             {
               "number": "30.6 days",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Qualys TruRisk Research Report 2023",
               "text": "durchschnittliche Zeit zur Behebung waffenfaehiger Schwachstellen"
             },
             {
               "number": "$4,88M",
-              "ref": "[2]",
+              "ref": 2,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "durchschnittliche Kosten einer Datenpanne"
             }
@@ -6924,19 +6928,19 @@
           "statCallouts": [
             {
               "number": "Nur 8%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
               "text": "der Organisationen verschluesseln 80%+ ihrer Cloud-Daten"
             },
             {
               "number": "$4,88M",
-              "ref": "[2]",
+              "ref": 2,
               "source": "IBM Cost of Data Breach 2024",
               "text": "durchschnittliche Kosten einer Datenpanne weltweit"
             },
             {
               "number": "57%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
               "text": "der Organisationen nutzen 5+ Schluesselverwaltungssysteme, was Verschluesselungs-Blindstellen schafft"
             }
@@ -11846,19 +11850,19 @@
           "statCallouts": [
             {
               "number": "24 Tage",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Coveware Quarterly Report",
               "text": "durchschnittliche Wiederherstellungszeit"
             },
             {
               "number": "$9,000",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Splunk/Oxford Economics 2024",
               "text": "pro Minute Ausfallzeit"
             },
             {
               "number": "80%",
-              "ref": "[3]",
+              "ref": 3,
               "source": "Cybereason 2022",
               "text": "der Opfer, die bezahlt haben, werden erneut angegriffen"
             }
@@ -13398,19 +13402,19 @@
           "statCallouts": [
             {
               "number": "27%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Flexera 2024 State of the Cloud Report",
               "text": "der Cloud-IaaS/PaaS-Ausgaben werden organisationsuebergreifend verschwendet"
             },
             {
               "number": "17%",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Flexera 2025 State of the Cloud Report",
               "text": "durchschnittliche Cloud-Budgetueberschreitung durch Organisationen"
             },
             {
               "number": "$0,09/GB",
-              "ref": "[3]",
+              "ref": 3,
               "source": "AWS/Azure/GCP Pricing 2024",
               "text": "Egress-Gebuehren, die das Verlassen absichtlich teuer machen"
             }
@@ -14397,10 +14401,10 @@
           ],
           "id": "subscriptions",
           "items": [
-            "<strong>Community</strong> (kostenlos) — Begrenzt auf 2 Maschinenaktivierungen, Kernfunktionen, Community-Support",
-            "<strong>Professional</strong> — Bis zu 5 Maschinenaktivierungen, Audit-Protokollierung, Prioritaets-Support, individuelles Branding",
-            "<strong>Business</strong> — Bis zu 20 Maschinenaktivierungen, verteilter Speicher, erweiterte Analysen, dedizierter Erfolgsmanager",
-            "<strong>Enterprise</strong> — Bis zu 50 Maschinenaktivierungen, dedizierte Infrastruktur, individuelle Integrationen, 24/7-Support"
+            "<strong>Community</strong> (kostenlos): 1 Maschinenaktivierung, Kernfunktionen, Community-Support. Dies ist der Standardplan, auf den Ihr Konto nach Ablauf einer Testphase oder eines bezahlten Abonnements zurückfällt.",
+            "<strong>Professional</strong>: 1 Maschinenaktivierung, Audit-Protokollierung, Prioritäts-Support, individuelles Branding",
+            "<strong>Business</strong>: 1 Maschinenaktivierung, verteilter Speicher, erweiterte Analysen, dedizierter Erfolgsmanager",
+            "<strong>Enterprise</strong>: dedizierte Infrastruktur, individuelle Integrationen, 24/7-Support und eine in Ihrer Bestellung festgelegte Maschinenaktivierungs-Obergrenze. Wird keine Obergrenze vereinbart, gelten 25 Maschinenaktivierungen. Enterprise wird über unsere Partner verkauft."
           ],
           "subsections": {
             "billing": {
@@ -14410,6 +14414,15 @@
                 "Wir behalten uns das Recht vor, unsere Preise mit einer Frist von dreissig (30) Tagen zu aendern. Preisaenderungen wirken sich nicht auf Ihren aktuellen Abrechnungszeitraum aus. Wenn Sie einer Preisaenderung nicht zustimmen, koennen Sie Ihr Abonnement vor dem naechsten Abrechnungszeitraum kuendigen."
               ],
               "title": "5.1 Billing"
+            },
+            "clusters": {
+              "content": [
+                "Ein <strong>\"Cluster\"</strong> bezeichnet zwei oder mehr Maschinen, die Sie gemeinsam als einen einzigen Pool für Speicher oder Rechenleistung mithilfe der Services betreiben. Ein <strong>\"Knoten\"</strong> bezeichnet eine Maschine, die Mitglied eines Clusters ist. Ein Knoten ist für alle Zwecke dieser Bedingungen eine Maschine, und jeder Knoten verbraucht eine Maschinenaktivierung. Cluster werden nicht gebündelt oder rabattiert: Ein Cluster aus fünf Knoten verbraucht fünf Maschinenaktivierungen.",
+                "Ihre <strong>Maschinenaktivierungs-Obergrenze</strong> ist die Höchstzahl an Maschinen, die gleichzeitig eine Aktivierung halten dürfen. Sie wird in Ihrem Abonnement erfasst und richtet sich nach Ihrer Bestellung. Die oben aufgeführten Stufenwerte sind die Standard-Vorgaben ohne Verhandlung; eine in einer Bestellung oder Partnervereinbarung vereinbarte Obergrenze ersetzt die Vorgabe für dieses Abonnement. Clustering ist nur im Rahmen von Enterprise- und Partnervereinbarungen verfügbar.",
+                "Eine Maschinenaktivierung wird verbraucht, wenn ein Repository auf einer Maschine erstellt, kopiert oder platziert wird, und wird nach einer Phase der Inaktivität automatisch freigegeben. Der reine Aufbau von Infrastruktur, einschließlich der Erstellung eines Clusters und des Beitritts von Knoten dazu, verbraucht keine Aktivierung.",
+                "Wenn bereits jede Aktivierung in Gebrauch ist, kann Rediacc die Aktivierung einer weiteren Maschine verweigern. Maschinen, die bereits eine Aktivierung halten, arbeiten weiter und können ihre bestehenden Lizenzen verlängern, und Rediacc kann solche Verlängerungen als Überschreitung Ihrer Obergrenze verzeichnen. Rediacc kann Sie kontaktieren, um Ihr Abonnement abzustimmen, wenn eine Maschinenaktivierungs-Obergrenze fortlaufend überschritten wird."
+              ],
+              "title": "5.5 Maschinenaktivierungen, Cluster und Knoten"
             },
             "gracePeriod": {
               "content": [

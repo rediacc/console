@@ -86,6 +86,10 @@ on:
         type: string
         required: false
         default: ''
+      run_drills:
+        type: string
+        required: false
+        default: ''
     secrets:
       APP_PRIVATE_KEY:
         required: false
@@ -118,7 +122,7 @@ jobs:
   # Jobs: migration-test, test-unit, test-e2e-workers, test-e2e-ceph,
   #       test-e2e-ceph-workers, test-e2e-k8s, test-e2e-k8s-ceph,
   #       test-e2e-k8s-multinode, test-e2e-migrate, test-fork-isolation,
-  #       test-renet, test-account-e2e
+  #       test-renet, test-account-e2e, test-drills
   # ============================================================================
 
   # Validates that D1 migrations apply cleanly against a production data clone.
@@ -940,7 +944,9 @@ jobs:
     name: E2E K8s Multinode
     if: inputs.full_suite == 'true' && inputs.run_e2e_k8s_multinode != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # 90 -> 100: the cluster-licensing suite's account server start plus its
+    # five ACCOUNT-tier assertions ride on the end of an already-long job.
+    timeout-minutes: 100
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
@@ -989,8 +995,18 @@ jobs:
           docker system prune -af 2>/dev/null || true
           echo "=== Disk usage after cleanup ==="
           df -h / || true
+      # `account: 'true'` is BACK here, and only here, of the eight VM/E2E jobs
+      # the comment above test-e2e-workers stripped it from. That comment's
+      # reason was that no E2E suite touches private/account -- true when it was
+      # written, and no longer true for this job: the cluster-licensing suite
+      # (24) needs a real account server, which the step below starts from
+      # private/account. The cost the comment names is real and accepted here:
+      # this job's setup cache key now hashes the three account lockfiles, so an
+      # account-side dependency change invalidates it. That is the honest
+      # dependency, not an accident.
       - uses: ./.github/actions/setup-workspace
         with:
+          account: 'true'
           build-packages: 'true'
       - run: .ci/scripts/build/build-cli.sh
       - name: Install CLI Globally
@@ -1050,8 +1066,52 @@ jobs:
             --vm-ram-ceph "$VM_RAM_CEPH" \
             --ceph-osd-memory-target "$CEPH_OSD_MEMORY_TARGET"
 
+      # Suite 24's ACCOUNT tier: an account server and a subscription token, no
+      # VMs. Its assertions are all pre-flight refusals (`assertMachineSlotsAvailable`
+      # runs BEFORE anything is provisioned), so the whole tier costs a server
+      # start and spends nothing on the fleet.
+      #
+      # LOUD, NEVER SKIPPED. The script exits non-zero with the server log
+      # attached on every path that does not produce a token, and suite 24's own
+      # `declaredSkip` gate turns an unsatisfied ACCOUNT tier into a RED test
+      # rather than a skip. There is no arrangement here where the tier silently
+      # does not run.
+      - name: Start account server for the cluster-licensing suite
+        run: .ci/scripts/test/start-account-for-e2e.sh --port 4900
+
+      # --grep-invert excludes suite 24's VM TIER by its describe title, and the
+      # reason is not squeamishness about cost:
+      #
+      #   * that tier adopts an EXISTING cluster named by E2E_CLUSTER_NAME. The
+      #     only cluster this job builds is suite 17's `mnprod`, which suite 17's
+      #     last test and its afterAll tear down completely (kube uninstall,
+      #     datastore detach + delete, ceph pool delete). By the time project
+      #     `k8s-multinode-24` runs there is nothing to adopt.
+      #   * suite 17 builds it through raw `renet` over the bridge, so no rdc
+      #     config ever holds a `clusters` entry for it; `cluster fork mnprod`
+      #     could not resolve it even if the cluster still stood.
+      #   * every renet on this fleet is built --nolicense, so the on-machine
+      #     licence blobs its test 1 asserts on do not exist by construction.
+      #
+      # E2E_EXPECT_NO_CLUSTER_VMS is set anyway, and the pair is deliberate:
+      # --grep-invert keeps the tier out of the RUN (a declared skip would still
+      # be a skip, and --fail-on-skip forbids those), while the declaration makes
+      # the omission loud on stderr and keeps the suite fail-closed if the grep
+      # is ever removed.
       - name: Run E2E Tests (K8s Multinode)
-        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts --fail-on-skip
+        env:
+          # Lights project `k8s-multinode-24` in playwright.k8s-multinode.config.ts.
+          CLUSTER_LICENSING_SUITE: '1'
+          E2E_EXPECT_NO_CLUSTER_VMS: >-
+            suite 17 tears its cluster down in its own last test, and this fleet
+            runs --nolicense renet, so there is no licensed cluster to adopt;
+            the VM tier is excluded from the run rather than skipped inside it.
+        # ONE LINE, deliberately. check-e2e-coverage's registry self-check scans
+        # workflows line by line and only pairs a `--config` with a `run-e2e.sh`
+        # on the SAME line; folding this across lines makes it read the call as a
+        # bare default-config invocation and fail with "playwright.k8s-multinode
+        # .config.ts is in LIVE_CONFIG_REGISTRY but NO workflow runs it".
+        run: .ci/scripts/test/run-e2e.sh --workers 1 --config playwright.k8s-multinode.config.ts --grep-invert "licensing on the fleet" --fail-on-skip
 
       - if: always()
         run: .ci/scripts/signal/create-complete.sh --name "e2e-k8s-multinode" --status ${{ job.status }}
@@ -1062,6 +1122,7 @@ jobs:
           name: test-e2e-k8s-multinode-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/account-for-e2e.log
             packages/e2e-tests/reports/bridge-k8s-multinode/
             packages/e2e-tests/reports/bridge-k8s-multinode-logs/
           retention-days: 3
@@ -1620,3 +1681,138 @@ jobs:
             private/account/e2e/reports/e2e/
             private/account/e2e/test-results/
           retention-days: 3
+
+  # ============================================================================
+  # DRILLS: the two headless campaign drills (`./run.sh drill <name>`), which
+  # until now only ever ran on an operator's box.
+  #
+  #   universe  the config-as-a-universe battery: source labels, --config vs
+  #             REDIACC_CONFIG precedence, cross-config isolation asserted by
+  #             md5, per-config token files created and removed by login/logout.
+  #             42 assertions, 31s locally.
+  #   transfer  the config-storage battery: seed-on-enable, offline read from
+  #             the encrypted cache with the staleness warning on STDERR, the
+  #             fail-CLOSED write, and a second device enrolling through the
+  #             password slot over the real two-factor challenge.
+  #             33 assertions, 32s locally.
+  #
+  # WHY A JOB AND NOT A GATE. Both drive the REAL `./rdc.sh` against a REAL
+  # `./run.sh account dev` gateway and assert on its stdout/stderr separately.
+  # That is precisely the surface unit tests cannot see, and it is the surface
+  # both drills were written to catch defects in (each one's header names the
+  # bugs it found). Nothing in CI executed either of them before this leg.
+  #
+  # COST. No VMs, no privileged operations. The two drills themselves are ~65s;
+  # the wall time is dominated by the gateway (each drill restarts it, because
+  # tsx does not hot-reload) and by the renet build `./rdc.sh` performs before
+  # it will run anything.
+  #
+  # THE RENET BUILD IS NOT OPTIONAL, and it is why this leg carries the Go
+  # toolchain and the embed-assets cache it otherwise would not need: `rdc.sh`
+  # calls ensure_renet_built unconditionally (rdc.sh:188), which runs
+  # `build.sh dev` -> embed_assets. With the cache warm the receipt check makes
+  # staging a verified no-op; on a miss it falls back to the Docker extraction,
+  # which is what the 30-minute budget covers. Same key as ci-build-renet.yml,
+  # restore-only: this leg must not be the writer of a cache the VM legs depend
+  # on. Neither drill touches renet.
+  #
+  # DOCKER is a REAL prerequisite, not a nicety: `drill transfer` needs the
+  # RustFS container `./run.sh account dev` starts, because the config store is
+  # backed by it. Without Docker that drill fails fast rather than reporting a
+  # green that skipped everything (transfer.sh:26-30).
+  #
+  # NO ORG SECRETS. `account_ensure_env` generates private/account/.env with
+  # fresh throwaway ed25519/x25519 keys, API_KEY and JWT_SECRET on first use, so
+  # this leg needs the app token for the submodules and nothing else.
+  # ============================================================================
+  test-drills:
+    name: Drills
+    if: inputs.full_suite == 'true' && inputs.run_drills != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      # account: the drills log in against `./run.sh account dev`, which serves
+      # the gateway from private/account and the portal from private/account/web.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          natives: 'true'
+          build-packages: 'true'
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      # Only reached on an embed-assets cache miss, where staging pulls the
+      # renet image. Anonymous pulls are rate-limited; a 429 here would read as
+      # a drill failure.
+      - name: Login to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+
+      # Each drill restarts the gateway itself (drill_gateway_restart), so the
+      # two runs are independent and the second is not measuring the first's
+      # server. `set -o pipefail` is load-bearing: GitHub runs `bash -e`, not
+      # `-eo pipefail`, so without it `tee` would swallow a red drill.
+      # `--keep-work` is load-bearing for the collector below, and an env var
+      # cannot replace it: lib.sh assigns DRILL_KEEP_WORK=0 at script level,
+      # overwriting anything inherited, so only the flag survives. Without it
+      # drill_teardown rm -rf's the work dir on EXIT and the gateway log is gone
+      # before any later step can read it. The runner is ephemeral, so keeping
+      # the dir costs nothing.
+      - name: drill universe
+        run: |
+          set -o pipefail
+          ./run.sh drill universe --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-universe.log"
+
+      # DECLARED, not skipped silently. Every phase of this drill enrolls a
+      # device, and enrollment writes its slot secret to the OS keyring
+      # (secure-storage.ts uses keyctl @u, for the password method as much as for
+      # passkeys). A runner job has no accessible session keyring, so the CLI
+      # fails with `keyctl_read_alloc: Permission denied` four assertions deep
+      # and blames the config store. Without this declaration the drill REDS
+      # rather than passing quietly — that is the point of the variable.
+      - name: drill transfer
+        env:
+          DRILL_EXPECT_NO_KEYRING: >-
+            GitHub runners give the job no accessible session keyring, so
+            keyctl @u is unwritable and device enrollment cannot run here
+        run: |
+          set -o pipefail
+          ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
+
+      - name: collect drill diagnostics
+        if: failure()
+        run: .ci/scripts/test/collect-drill-diagnostics.sh
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        if: failure()
+        with:
+          name: test-drills-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/drill-universe.log
+            ${{ runner.temp }}/drill-transfer.log
+            ${{ runner.temp }}/drill-diagnostics
+          retention-days: 3
+          if-no-files-found: ignore

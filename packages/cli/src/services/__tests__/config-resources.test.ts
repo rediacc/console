@@ -27,8 +27,16 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
 const mockAddMachineSSHConfigEntry = vi.fn();
 const mockRemoveMachineSSHConfigEntry = vi.fn();
 
+// A Windows-home path, i.e. what getSSHConfigPath() actually resolves to under
+// WSL. The sshConfigWritten message must repeat THIS, never a literal ~/.ssh/…
+const SSH_CONFIG_PATH = '/mnt/c/Users/tester/.ssh/config_rediacc';
+
 vi.mock('../../remote/vscode/index.js', () => ({
-  addMachineSSHConfigEntry: (...args: unknown[]) => mockAddMachineSSHConfigEntry(...args),
+  // Returns the file it wrote, which is what the message must repeat.
+  addMachineSSHConfigEntry: (...args: unknown[]) => {
+    mockAddMachineSSHConfigEntry(...args);
+    return SSH_CONFIG_PATH;
+  },
   removeMachineSSHConfigEntry: (...args: unknown[]) => mockRemoveMachineSSHConfigEntry(...args),
 }));
 
@@ -43,9 +51,12 @@ vi.mock('../core/output.js', () => ({
   },
 }));
 
-// Stub i18n t() to return the key so assertions are key-based.
+// Stub i18n t() to return the key so assertions are key-based. Interpolation
+// params are recorded separately so a test can pin them.
+const mockT = vi.fn((key: string, _opts?: unknown) => key);
+
 vi.mock('../../i18n/index.js', () => ({
-  t: (key: string, _opts?: unknown) => key,
+  t: (key: string, opts?: unknown) => mockT(key, opts),
 }));
 
 // Mock the base class.
@@ -95,6 +106,7 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
     mockRemoveMachineSSHConfigEntry.mockReset();
     mockOutputInfo.mockReset();
     mockOutputWarn.mockReset();
+    mockT.mockClear();
   });
 
   it('addMachine writes an SSH config entry', async () => {
@@ -110,6 +122,16 @@ describe('configService.addMachine — SSH config side effect', { timeout: 30000
       })
     );
     expect(mockOutputInfo).toHaveBeenCalledWith('commands.config.machine.add.sshConfigWritten');
+  });
+
+  it('reports the SSH config path it actually wrote, not a hardcoded ~/.ssh', async () => {
+    const { configService } = await import('../config/config-resources.js');
+    await configService.addMachine('m1', { ip: '1.2.3.4', user: 'u1', port: 22 });
+
+    expect(mockT).toHaveBeenCalledWith('commands.config.machine.add.sshConfigWritten', {
+      name: 'm1',
+      path: SSH_CONFIG_PATH,
+    });
   });
 
   it('addMachine does not throw if SSH config write fails', async () => {

@@ -100,7 +100,8 @@ export const requireCommandSummary = {
           excludeFromMinDescription: {
             type: 'array',
             items: { type: 'string' },
-            description: 'Command names to exclude from minimum description length check (e.g., experimental cloud-only commands)',
+            description:
+              'Command names to exclude from minimum description length check (e.g., experimental cloud-only commands)',
           },
         },
         additionalProperties: false,
@@ -125,6 +126,60 @@ export const requireCommandSummary = {
     const cwd = context.cwd ?? process.cwd();
     const locale = loadLocale(cwd);
 
+    /** The translated text behind `.description(t('KEY'))`, or null. */
+    const resolveArgument = (node) => {
+      const i18nKey = extractI18nKey(node.arguments[0]);
+      if (!i18nKey || !locale) return null;
+
+      const resolved = resolveKey(locale, i18nKey);
+      if (!resolved) return null;
+
+      return { i18nKey, resolved };
+    };
+
+    const checkDescription = (node) => {
+      const found = resolveArgument(node);
+      if (!found) return;
+      const { i18nKey, resolved } = found;
+
+      // Check 1: Long description must have .summary()
+      if (resolved.length > threshold && !hasSummaryInChain(node)) {
+        context.report({
+          node,
+          messageId: 'missingSummary',
+          data: { length: String(resolved.length) },
+        });
+      }
+
+      // Check 2: Top-level command description must be >= minDescription chars
+      const cmdName = i18nKey.split('.')[1];
+      if (
+        isTopLevelCommandDescription(i18nKey) &&
+        resolved.length < minDescription &&
+        !excludeFromMinDescription.has(cmdName)
+      ) {
+        context.report({
+          node,
+          messageId: 'descriptionTooShort',
+          data: { length: String(resolved.length), min: String(minDescription) },
+        });
+      }
+    };
+
+    const checkSummary = (node) => {
+      const found = resolveArgument(node);
+      if (!found) return;
+
+      // Check 3: Summary must be <= maxSummary chars
+      if (found.resolved.length > maxSummary) {
+        context.report({
+          node,
+          messageId: 'summaryTooLong',
+          data: { length: String(found.resolved.length), max: String(maxSummary) },
+        });
+      }
+    };
+
     return {
       CallExpression(node) {
         if (node.callee.type !== 'MemberExpression') return;
@@ -132,50 +187,10 @@ export const requireCommandSummary = {
         const methodName = node.callee.property?.name;
 
         // Check .description(t('KEY')) calls
-        if (methodName === 'description') {
-          const i18nKey = extractI18nKey(node.arguments[0]);
-          if (!i18nKey || !locale) return;
-
-          const resolved = resolveKey(locale, i18nKey);
-          if (!resolved) return;
-
-          // Check 1: Long description must have .summary()
-          if (resolved.length > threshold && !hasSummaryInChain(node)) {
-            context.report({
-              node,
-              messageId: 'missingSummary',
-              data: { length: String(resolved.length) },
-            });
-          }
-
-          // Check 2: Top-level command description must be >= minDescription chars
-          const cmdName = i18nKey.split('.')[1];
-          if (isTopLevelCommandDescription(i18nKey) && resolved.length < minDescription && !excludeFromMinDescription.has(cmdName)) {
-            context.report({
-              node,
-              messageId: 'descriptionTooShort',
-              data: { length: String(resolved.length), min: String(minDescription) },
-            });
-          }
-        }
+        if (methodName === 'description') checkDescription(node);
 
         // Check .summary(t('KEY')) calls
-        if (methodName === 'summary') {
-          const i18nKey = extractI18nKey(node.arguments[0]);
-          if (!i18nKey || !locale) return;
-
-          const resolved = resolveKey(locale, i18nKey);
-          if (!resolved) return;
-
-          // Check 3: Summary must be <= maxSummary chars
-          if (resolved.length > maxSummary) {
-            context.report({
-              node,
-              messageId: 'summaryTooLong',
-              data: { length: String(resolved.length), max: String(maxSummary) },
-            });
-          }
-        }
+        if (methodName === 'summary') checkSummary(node);
       },
     };
   },

@@ -214,6 +214,9 @@ export const LOCALE_DEFAULTS = {
 export const DATASTORE_DEFAULTS = {
   /** RADOS pool a `--backend rbd` datastore lands in when `--pool` is not given. */
   RBD_POOL: 'rbd',
+
+  /** Backend a datastore record reports when it carries no explicit one. */
+  BACKEND: 'local',
 } as const;
 
 export const STATUS_DEFAULTS = {

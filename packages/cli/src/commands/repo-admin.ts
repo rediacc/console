@@ -19,7 +19,7 @@ function registerArchive(admin: Command, program: Command): void {
         const archived = await configService.listArchivedRepositories();
         const format = program.opts().output as OutputFormat;
 
-        if (archived.length === 0) {
+        if (archived.length === 0 && format === 'table') {
           outputService.info(t('commands.repo.admin.archive.list.noArchived'));
           return;
         }

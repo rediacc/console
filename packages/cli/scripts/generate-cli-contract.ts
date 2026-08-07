@@ -46,6 +46,8 @@ import {
   loadLocale,
   walkContractCommands,
 } from './lib/command-tree-lib.js';
+import { parseExampleValues } from './lib/example-parse.js';
+import { at } from './lib/table.js';
 import {
   collectClassificationProblems,
   resolveOptionFormat,
@@ -143,6 +145,12 @@ const POSITIONAL_KIND_BY_NAME: Record<string, PositionalKind> = {
 };
 
 /**
+ * What an argument name the table does not classify falls back to: a plain
+ * free-text token, binding no console picker.
+ */
+const DEFAULT_POSITIONAL_KIND: PositionalKind = 'plain';
+
+/**
  * Machine-domain commands whose `<name>` positional names a machine (or
  * provider) that does NOT exist yet, so it must NOT bind the console's machine
  * picker. Everything else on the `machine` domain named `name` references an
@@ -176,7 +184,7 @@ function classifyPositional(pathKey: string, domain: string, name: string): Posi
   if (domain === 'machine' && name === 'name' && !MACHINE_NAME_CREATORS.has(pathKey)) {
     return 'machine';
   }
-  return POSITIONAL_KIND_BY_NAME[name] ?? 'plain';
+  return POSITIONAL_KIND_BY_NAME[name] ?? DEFAULT_POSITIONAL_KIND;
 }
 
 /** Why a command that reaches a machine still cannot be proxied. */
@@ -220,7 +228,7 @@ const version = readArg('version', 'dev');
 const registryByName = new Map(COMMAND_REGISTRY.map((c) => [c.name, c]));
 
 function resolveGroup(domain: string): CommandGroup | null {
-  return (registryByName.get(domain)?.domain as CommandGroup | undefined) ?? null;
+  return registryByName.get(domain)?.domain ?? null;
 }
 
 // ---------- Options ----------
@@ -260,7 +268,7 @@ function toContractOption(
   // them constrains what the CLI accepts.
   const long = stripDashes(opt.long);
   const valueTaking = opt.required || opt.optional;
-  const mandatory = opt.mandatory ?? false;
+  const mandatory = opt.mandatory;
   const kinds = resolveOptionKinds(pathKey, long, valueTaking);
   const format = valueTaking ? resolveOptionFormat(pathKey, long) : undefined;
   const sensitive = resolveOptionSensitive(pathKey, long);
@@ -404,187 +412,24 @@ if (staleRegistryKeys.length > 0) {
  */
 const curationProblems: string[] = [];
 
-/** Split an example command line into shell-ish tokens (quote-aware). */
-function tokenizeExampleCommand(command: string): string[] | null {
-  const tokens: string[] = [];
-  let current = '';
-  let hasCurrent = false;
-  let quote: '"' | "'" | null = null;
-
-  for (const ch of command) {
-    if (quote) {
-      if (ch === quote) quote = null;
-      else current += ch;
-      continue;
-    }
-    if (ch === '"' || ch === "'") {
-      quote = ch;
-      hasCurrent = true;
-      continue;
-    }
-    if (ch === ' ' || ch === '\t') {
-      if (hasCurrent || current.length > 0) {
-        tokens.push(current);
-        current = '';
-        hasCurrent = false;
-      }
-      continue;
-    }
-    current += ch;
-  }
-  if (quote) return null;
-  if (hasCurrent || current.length > 0) tokens.push(current);
-  return tokens;
-}
-
-/**
- * Parse one curated example against the command's OWN declared surface and
- * derive its click-to-fill `values` map: positionals by declared order (a
- * trailing variadic collects), flags by long name, booleans as 'true'.
- *
- * The parse doubles as the example-validity gate: a stale pathKey (checked by
- * longest-prefix match against the live tree), an unknown flag, bad arity, an
- * out-of-choices value, a missing required positional, or a missing mandatory
- * option all fail generation. Global options (-o/--output, --lang, --context)
- * are tolerated but never enter `values` — they are not form fields.
- */
-function parseExampleValues(
-  pathKey: string,
-  exampleCommand: string,
-  options: ContractOption[],
-  positionals: ContractPositional[]
-): Record<string, string> {
-  const fail = (message: string): Record<string, string> => {
-    curationProblems.push(
-      `COMMAND_EXAMPLES["${pathKey}"]: ${JSON.stringify(exampleCommand)} — ${message}`
-    );
-    return {};
-  };
-
-  const tokens = tokenizeExampleCommand(exampleCommand);
-  if (!tokens) return fail('unterminated quote');
-  if (tokens[0] !== 'rdc') return fail('must start with "rdc"');
-
-  // Longest-prefix pathKey match: the tokens after `rdc` must resolve to THIS
-  // command, so an example filed under the wrong key cannot slip through.
-  let matched = '';
-  for (let i = 1; i < tokens.length; i++) {
-    const candidate = tokens.slice(1, i + 1).join(' ');
-    if (livePathKeys.has(candidate)) matched = candidate;
-  }
-  if (!matched) return fail('names no live command');
-  if (matched !== pathKey) return fail(`parses as "${matched}" but is filed under "${pathKey}"`);
-
-  const byLong = new Map(options.map((o) => [o.long, o]));
-  const byShort = new Map(options.filter((o) => o.short).map((o) => [o.short as string, o]));
-  const globalShorts: Record<string, string> = { '-o': '--output', '-l': '--lang' };
-
-  const values: Record<string, string> = {};
-  let posIndex = 0;
-  const rest = tokens.slice(1 + matched.split(' ').length);
-
-  for (let i = 0; i < rest.length; i++) {
-    const token = rest[i];
-
-    // End-of-options: everything after `--` belongs to the trailing variadic
-    // positional verbatim, so no later token may be read as a flag. NOTE the
-    // `values` map does NOT retain the `--` itself; a consumer rebuilding a
-    // command line from `values` must re-insert it before that positional.
-    if (token === '--') {
-      const trailing = positionals[positionals.length - 1];
-      if (!trailing?.variadic) {
-        return fail('`--` needs a trailing variadic positional to collect into');
-      }
-      const remainder = rest.slice(i + 1);
-      if (remainder.length === 0) return fail('`--` is missing the command that follows it');
-      const joined = remainder.join(' ');
-      values[trailing.name] =
-        values[trailing.name] === undefined ? joined : `${values[trailing.name]} ${joined}`;
-      break;
-    }
-
-    if (token.startsWith('-') && token.length > 1) {
-      let flag = token;
-      let inlineValue: string | undefined;
-      const eq = token.indexOf('=');
-      if (eq !== -1) {
-        flag = token.slice(0, eq);
-        inlineValue = token.slice(eq + 1);
-      }
-
-      const globalLong = GLOBAL_OPTION_LONGS.has(flag) ? flag : globalShorts[flag];
-      if (globalLong) {
-        if (globalLong === '--version' || globalLong === '--help') {
-          return fail(`${globalLong} has no place in a worked example`);
-        }
-        // --output/--lang/--context take a value; consume it, keep it out of
-        // `values` — global options are not form fields.
-        if (inlineValue === undefined) i++;
-        continue;
-      }
-
-      const opt = flag.startsWith('--') ? byLong.get(flag.slice(2)) : byShort.get(flag.slice(1));
-      if (!opt) return fail(`unknown flag ${flag}`);
-
-      if (!opt.valueTaking) {
-        if (inlineValue !== undefined) return fail(`boolean --${opt.long} takes no value`);
-        if (values[opt.long] !== undefined) return fail(`--${opt.long} given twice`);
-        values[opt.long] = 'true';
-        continue;
-      }
-
-      const value = inlineValue ?? rest[++i];
-      if (value === undefined) return fail(`--${opt.long} is missing its value`);
-      if (opt.choices && !opt.choices.includes(value)) {
-        return fail(
-          `--${opt.long} value "${value}" is not one of its choices (${opt.choices.join(', ')})`
-        );
-      }
-      if (values[opt.long] !== undefined) {
-        if (!opt.variadic) return fail(`--${opt.long} given twice`);
-        values[opt.long] += ` ${value}`;
-      } else {
-        values[opt.long] = value;
-      }
-      continue;
-    }
-
-    const positional = positionals[posIndex];
-    if (!positional) {
-      return fail(
-        `too many positional tokens (expected ${positionals.length}, "${token}" is extra)`
-      );
-    }
-    values[positional.name] =
-      values[positional.name] === undefined ? token : `${values[positional.name]} ${token}`;
-    if (!positional.variadic) posIndex++;
-  }
-
-  for (const p of positionals) {
-    if (p.required && values[p.name] === undefined) {
-      return fail(`missing required positional <${p.name}>`);
-    }
-  }
-  for (const o of options) {
-    if (o.mandatory && values[o.long] === undefined) {
-      return fail(`missing mandatory option --${o.long}`);
-    }
-  }
-
-  return values;
-}
-
 /** Curated examples for a command, parsed into contract shape (or undefined). */
 function buildCommandExamples(
   pathKey: string,
   options: ContractOption[],
   positionals: ContractPositional[]
 ): CommandExample[] | undefined {
-  const defs = COMMAND_EXAMPLES[pathKey];
+  const defs = at(COMMAND_EXAMPLES, pathKey);
   if (!defs || defs.length === 0) return undefined;
 
   return defs.map((def) => {
-    const values = parseExampleValues(pathKey, def.command, options, positionals);
+    const values = parseExampleValues(
+      pathKey,
+      def.command,
+      options,
+      positionals,
+      GLOBAL_OPTION_LONGS,
+      { livePathKeys, problems: curationProblems }
+    );
     if (!/^commands\..+\.examples\.[a-zA-Z0-9-]+$/.test(def.descriptionKey)) {
       curationProblems.push(
         `COMMAND_EXAMPLES["${pathKey}"]: descriptionKey "${def.descriptionKey}" does not follow commands.<path>.examples.<slug>`
@@ -602,7 +447,7 @@ function buildCommandExamples(
 
 /** Curated keywords, gated to lowercase-ascii palette tokens. */
 function buildCommandKeywords(pathKey: string): string[] | undefined {
-  const keywords = COMMAND_KEYWORDS[pathKey];
+  const keywords = at(COMMAND_KEYWORDS, pathKey);
   if (!keywords) return undefined;
   if (keywords.length === 0) {
     curationProblems.push(`COMMAND_KEYWORDS["${pathKey}"]: entry is empty — delete it instead`);
@@ -619,7 +464,7 @@ function buildCommandKeywords(pathKey: string): string[] | undefined {
 
 /** Curated output hints, gated so primaryKey is always one of columns. */
 function buildCommandOutput(pathKey: string): OutputHints | undefined {
-  const hints = COMMAND_OUTPUT_HINTS[pathKey];
+  const hints = at(COMMAND_OUTPUT_HINTS, pathKey);
   if (!hints) return undefined;
   if (hints.columns.length === 0) {
     curationProblems.push(`COMMAND_OUTPUT_HINTS["${pathKey}"]: columns is empty`);
@@ -633,7 +478,7 @@ function buildCommandOutput(pathKey: string): OutputHints | undefined {
 
 const commands: ContractCommand[] = walked.map((w) => {
   const domain = w.path[0];
-  const meta = COMMAND_METADATA[w.pathKey];
+  const meta = at(COMMAND_METADATA, w.pathKey);
   const mcp = meta?.mcp;
   const plane = getCommandPlane(w.pathKey);
   const interactive = isInteractiveCommand(w.pathKey);
@@ -781,7 +626,7 @@ console.log(`\x1b[32m✓\x1b[0m Wrote CLI contract to ${outputDir}`);
 console.log(`  Commands:      ${commands.length}`);
 console.log(
   `  Planes:        ${Object.entries(planeCounts)
-    .sort()
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([k, v]) => `${k}=${v}`)
     .join(' ')}`
 );

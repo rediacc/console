@@ -67,7 +67,7 @@ function validateCommandOrder(commands) {
 
 // Convert camelCase to kebab-case for CLI command syntax
 function toKebab(str) {
-  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  return str.replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
 
 /**
@@ -118,6 +118,18 @@ function getNestedValue(obj, dotPath) {
  */
 function hasSupplementKey(docsSupplements, supplementPath) {
   return getNestedValue(docsSupplements, supplementPath) !== undefined;
+}
+
+/**
+ * Append one supplement block, plus the blank line that separates it, when the
+ * English cli.json actually carries that key. No-op otherwise.
+ */
+function pushSupplement(lines, docsSupplements, commandPath, type) {
+  const supplement = emitSupplement(docsSupplements, commandPath, type);
+  if (supplement) {
+    lines.push(supplement.trim());
+    lines.push('');
+  }
 }
 
 /**
@@ -180,7 +192,7 @@ try {
 function buildCommandLookup(tree, prefix = '') {
   const lookup = {};
   const recurse = (node, p) => {
-    for (const sub of node.subcommands || []) {
+    for (const sub of node.subcommands ?? []) {
       const key = p ? `${p}.${sub.name}` : sub.name;
       lookup[key] = sub;
       recurse(sub, key);
@@ -200,7 +212,7 @@ function buildEnrichedSyntax(group, ...subParts) {
   const node = commandTreeLookup[key];
   if (!node) return base;
   let suffix = '';
-  for (const arg of node.arguments || []) {
+  for (const arg of node.arguments ?? []) {
     if (arg.variadic) {
       suffix += arg.required ? ` <${arg.name}...>` : ` [${arg.name}...]`;
     } else {
@@ -214,7 +226,7 @@ function buildEnrichedSyntax(group, ...subParts) {
 function emitOptionsTable(group, ...subParts) {
   const key = getCommandTreeKey(group, ...subParts);
   const node = commandTreeLookup[key];
-  if (!node || !node.options || node.options.length === 0) return [];
+  if (!node?.options || node.options.length === 0) return [];
   const tableLines = [];
   tableLines.push('');
   tableLines.push(
@@ -238,7 +250,7 @@ function emitOptionsTable(group, ...subParts) {
  * YAML-safe quote: wraps value in double quotes, escaping inner double quotes
  */
 function yamlQuote(value) {
-  return `"${value.replace(/"/g, '\\"')}"`;
+  return `"${value.replaceAll('"', '\\"')}"`;
 }
 
 /**
@@ -413,12 +425,9 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
               lines.push('');
 
               // Supplements for deeply nested
-              const deepTip = emitSupplement(docsSupplements, commandPath, 'tip');
-              if (deepTip) lines.push(deepTip.trim()), lines.push('');
-              const deepWarning = emitSupplement(docsSupplements, commandPath, 'warning');
-              if (deepWarning) lines.push(deepWarning.trim()), lines.push('');
-              const deepNote = emitSupplement(docsSupplements, commandPath, 'note');
-              if (deepNote) lines.push(deepNote.trim()), lines.push('');
+              pushSupplement(lines, docsSupplements, commandPath, 'tip');
+              pushSupplement(lines, docsSupplements, commandPath, 'warning');
+              pushSupplement(lines, docsSupplements, commandPath, 'note');
             }
           } else {
             // Leaf command within a sub-group
@@ -445,12 +454,9 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
             lines.push('');
 
             // Supplements
-            const tipSup = emitSupplement(docsSupplements, commandPath, 'tip');
-            if (tipSup) lines.push(tipSup.trim()), lines.push('');
-            const warnSup = emitSupplement(docsSupplements, commandPath, 'warning');
-            if (warnSup) lines.push(warnSup.trim()), lines.push('');
-            const noteSup = emitSupplement(docsSupplements, commandPath, 'note');
-            if (noteSup) lines.push(noteSup.trim()), lines.push('');
+            pushSupplement(lines, docsSupplements, commandPath, 'tip');
+            pushSupplement(lines, docsSupplements, commandPath, 'warning');
+            pushSupplement(lines, docsSupplements, commandPath, 'note');
           }
         }
       } else {
@@ -476,20 +482,15 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
         lines.push('');
 
         // Supplements
-        const tipSup = emitSupplement(docsSupplements, commandPath, 'tip');
-        if (tipSup) lines.push(tipSup.trim()), lines.push('');
-        const warnSup = emitSupplement(docsSupplements, commandPath, 'warning');
-        if (warnSup) lines.push(warnSup.trim()), lines.push('');
-        const noteSup = emitSupplement(docsSupplements, commandPath, 'note');
-        if (noteSup) lines.push(noteSup.trim()), lines.push('');
+        pushSupplement(lines, docsSupplements, commandPath, 'tip');
+        pushSupplement(lines, docsSupplements, commandPath, 'warning');
+        pushSupplement(lines, docsSupplements, commandPath, 'note');
       }
     }
 
     // Group-level tip/warning supplements (applied after all sub-commands)
-    const groupTip = emitSupplement(docsSupplements, group, 'tip');
-    if (groupTip) lines.push(groupTip.trim()), lines.push('');
-    const groupWarning = emitSupplement(docsSupplements, group, 'warning');
-    if (groupWarning) lines.push(groupWarning.trim()), lines.push('');
+    pushSupplement(lines, docsSupplements, group, 'tip');
+    pushSupplement(lines, docsSupplements, group, 'warning');
 
     lines.push('---');
     lines.push('');

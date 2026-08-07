@@ -8,7 +8,7 @@ import path from 'node:path';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for locale coverage data
-let coverageCache = new Map();
+const coverageCache = new Map();
 
 /**
  * Get all supported language directories
@@ -16,9 +16,7 @@ let coverageCache = new Map();
 const getLanguageDirectories = (localesDir) => {
   try {
     const entries = fs.readdirSync(localesDir, { withFileTypes: true });
-    return entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name);
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch {
     return [];
   }
@@ -100,6 +98,10 @@ const calculateCoverage = (localesDir, namespace, sourceLanguage) => {
   return { sourceCount, languages: coverage };
 };
 
+// Rule-option default: percentage of source-language keys a locale must carry
+// before the rule reports it as under-translated.
+const DEFAULT_MINIMUM_COVERAGE = 80;
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const translationCoverage = {
   meta: {
@@ -133,21 +135,23 @@ export const translationCoverage = {
       },
     ],
     messages: {
-      lowCoverage: '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%. See docs/i18n/CONVENTIONS.md.',
-      missingFile: '{{language}} is missing translation file for namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
+      lowCoverage:
+        '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%. See docs/i18n/CONVENTIONS.md.',
+      missingFile:
+        '{{language}} is missing translation file for namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 
   create(context) {
     const options = context.options[0] || {};
     const sourceLanguage = options.sourceLanguage || 'en';
-    const minimumCoverage = options.minimumCoverage ?? 80;
+    const minimumCoverage = options.minimumCoverage ?? DEFAULT_MINIMUM_COVERAGE;
 
     // Resolve paths
     const absoluteLocalesDir = resolveRequiredDirOption(
       'i18n/translation-coverage',
       'localesDir',
-      options.localesDir,
+      options.localesDir
     );
 
     // Get current file info

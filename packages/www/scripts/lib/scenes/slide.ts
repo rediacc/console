@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { ParsedCast } from '../cast-splitter.ts';
 import { makeFreezeMp4, makeSilentFreezeMp4, PAD_FILTER_CENTER } from '../ffmpeg-video.ts';
-import type { CastNarratedScene, OutroScene, SlideScene, TitleScene } from '../storyboard.ts';
+import type { OutroScene, SlideScene, TitleScene } from '../storyboard.ts';
 import type { SceneContext, TranscriptDoc } from './index.ts';
 import { escapeXmlText, rasterizeSvgTo1080p } from './svg-render.ts';
 
@@ -22,13 +22,17 @@ const COMMAND_LINE_DY = 30;
 const STEP_CARD_ACTIVE_OPACITY = '1';
 const STEP_CARD_INACTIVE_OPACITY = '0.30';
 
+/** Card artwork used when a title/outro scene names no `src`. */
+const TITLE_CARD_SVG = 'title-card.svg';
+const OUTRO_CARD_SVG = 'outro-card.svg';
+
 export function compileSlide(scene: SlideScene, ctx: SceneContext): string {
   const svgPath = path.join(ctx.wwwPublicRoot, 'img', 'tutorials', ctx.tutorial, scene.src);
   return renderSvgSlide(svgPath, scene.id, scene.narrationKey, ctx);
 }
 
 export function compileTitle(scene: TitleScene, ctx: SceneContext): string {
-  const svgPath = resolveCardSvg(scene.src ?? 'title-card.svg', 'title-card.svg', ctx);
+  const svgPath = resolveCardSvg(scene.src ?? TITLE_CARD_SVG, TITLE_CARD_SVG, ctx);
   // Intro card: activeIndex=null => all rows at full opacity.
   const { subs, raw } = buildTitleCardSubs(ctx, null);
   return renderSvgSlide(svgPath, scene.id, scene.narrationKey, ctx, subs, raw);
@@ -142,7 +146,7 @@ function buildCommandMarkup(command: string): string {
 }
 
 export function compileOutro(scene: OutroScene, ctx: SceneContext): string {
-  const svgPath = resolveCardSvg(scene.src ?? 'outro-card.svg', 'outro-card.svg', ctx);
+  const svgPath = resolveCardSvg(scene.src ?? OUTRO_CARD_SVG, OUTRO_CARD_SVG, ctx);
   const nextKey = ctx.storyboard.nextTutorialKey ?? '';
   const nextTitle = nextKey ? lookupNextTutorialTitle(ctx.wwwPublicRoot, ctx.lang, nextKey) : '';
   const nextHref = nextKey ? `/${ctx.lang}/docs/${nextKey}` : '';
@@ -220,10 +224,10 @@ function lookupNextTutorialTitle(wwwPublicRoot: string, lang: string, nextKey: s
     }
   };
   const langDoc = tryRead(lang);
-  if (isAuthored(langDoc?.title)) return (langDoc!.title as string).trim();
+  if (isAuthored(langDoc?.title)) return langDoc.title.trim();
   if (lang !== 'en') {
     const enDoc = tryRead('en');
-    if (isAuthored(enDoc?.title)) return (enDoc!.title as string).trim();
+    if (isAuthored(enDoc?.title)) return enDoc.title.trim();
   }
   return '';
 }
@@ -244,13 +248,13 @@ function readEvents(doc: TranscriptDoc | null): TranscriptEvent[] {
  * pairs rendered as title-card sub-items. Capped at SUB_ITEM_SLOTS — any tutorial
  * with more cast-narrated steps silently truncates (the SVG only has 8 slots).
  */
-function buildSubItems(ctx: SceneContext): Array<{ label: string; command: string }> {
+function buildSubItems(ctx: SceneContext): { label: string; command: string }[] {
   const events = readEvents(ctx.transcript);
   const eventsEn = readEvents(ctx.transcriptEn);
-  const items: Array<{ label: string; command: string }> = [];
+  const items: { label: string; command: string }[] = [];
   for (const scene of ctx.storyboard.scenes) {
     if (scene.type !== 'cast-narrated') continue;
-    const castNarrated = scene as CastNarratedScene;
+    const castNarrated = scene;
     const label = lookupCardLabel(events, eventsEn, castNarrated.markerIndex);
     // Cards show the FULL command (wrapped onto two lines when long) — the
     // recorded marker text, with `card.command` as an authored override.

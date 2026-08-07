@@ -31,16 +31,65 @@ When the CLI requests a repo license, the account server:
 
 The `sequence` and `prevChainHash` are inside the signed payload (so they cannot be modified without invalidating the signature). The `chainHash` is on the envelope (computed after signing to avoid a circular dependency).
 
+## How a License is Renewed
+
+Issuance runs from your workstation, authenticated as you. Renewal runs from the machine, which holds no account credentials at all. It needs a different door:
+
+```
+POST /licenses/renew
+{ license: <the installed signed blob>, machineId, clusterId? }
+```
+
+**The presented license is the credential.** There is no API token on this endpoint. The server verifies the blob's Ed25519 signature, and through the delegation cert when the blob carries one, exactly as Renet does on the machine. Holding a validly signed license for a repository is the proof of entitlement, and a machine that has one already had it granted.
+
+The full URL of this endpoint travels inside every license the server issues or renews, as `renewalUrl`. A machine reads its own account server's address out of its own license rather than being configured with it, which is what lets a machine serving two account universes renew against both.
+
+The renewed blob keeps the repository GUID, the grand GUID, and the kind of the one presented, takes the next sequence from the same ledger with the chain hash that follows from it, and gets freshly computed validity windows. The machine ID is re-bound to the machine that presented the blob, which is how a VM migration heals itself inside the 40-day grace. Storage identity (the LUKS UUID or storage fingerprint) is carried over unchanged, because a network call cannot re-scan the disk it is describing.
+
+### Refusals
+
+| Code | Status | Meaning |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | The blob's signature did not verify, or its chain hash does not match the server's ledger at that sequence |
+| `INVALID_LICENSE_PAYLOAD` | 400 | The blob is malformed |
+| `DELEGATION_CERT_INVALID` | 403 | The attached cert failed a constraint or its master-key signature |
+| `DELEGATION_CERT_EXPIRED` | 403 | The attached cert is outside its validity window |
+| `DELEGATION_CERT_REVOKED` | 403 | The attached cert was revoked upstream |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | The presenting machine is not the licensed one and the 40-day grace has passed |
+| `SUBSCRIPTION_LAPSED` | 403 | The subscription has expired or is suspended |
+| `GRACE_PERIOD_ENDED` | 403 | The subscription's grace period is over |
+| `TRIAL_REQUIRED` | 403 | The subscription needs an active trial or plan |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | The repository GUID belongs to a different subscription |
+| `LICENSE_RENEWAL_FAILED` | 500 | Anything unclassified |
+
+A refusal leaves the installed license untouched. The machine keeps running on what it has until that license hard-expires.
+
+### Renewal and the machine slot
+
+A successful renewal touches the machine's activation row: it claims a slot if the machine had none and refreshes it if it did. Unlike issuance, it is never refused for being over the limit. The response carries `overLimit`, and the activation is flagged so the portal, the license status endpoint, and `rdc subscription status` can show it. Issuing a genuinely new license still blocks hard at the ceiling. The reasoning is in [Subscription & Licensing - Machine slots](/en/docs/subscription-licensing).
+
+### Deploy order
+
+Account servers deploy before the CLI and Renet Agent builds that depend on the fields above. A Renet Agent that finds no `renewalUrl` in a license skips that repository and says so rather than failing, so an older license keeps working until a workstation-side refresh seeds the field. Running it the other way around gives you machines asking for an endpoint that is not there yet.
+
 ## How Renet Validates
 
-Each machine running Renet stores its last-known chain state at `{licenseDir}/chain-state.json` (that is `/var/lib/rediacc/license/chain-state.json`, a sibling of the per-repo `repos/` directory). Chain state is scoped per signing key and subscription, keyed as `"<keyId>:<subscriptionId>"`, so universes signed by different keys track their sequences independently. On every license validation, Renet checks:
+Each machine running Renet stores its last-known chain state at `{licenseDir}/chain-state.json` (that is `/var/lib/rediacc/license/chain-state.json`, a sibling of the per-repo `repos/` directory). Chain state is scoped per signing key, subscription, repository, and datastore, keyed as `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (the datastore part is empty for a repository on the machine's default datastore).
+
+The repository and datastore parts of that key are load-bearing. Sequence numbers on the server are per subscription, so on a machine holding several repositories under one subscription a chain head recorded for repository B would sit ahead of the license repository A is about to present, and repository A would be rejected as a replay it had nothing to do with. A datastore fork sharpens the same problem: the clone keeps the repository's GUID and only its datastore identity is re-minted, so without the datastore part the fork's fresher license would advance a head the parent still validates against. Scoping the recorded head to the repository and datastore the license names removes both. Entries written by an older Renet Agent under a shorter key format are dropped the first time the state is saved, and the next validation reseeds the head.
+
+Chain state is only read and advanced on the operations that validate at the full tier. The operate tier neither reads nor advances it, so starting a repository can never move a head.
+
+On every license validation, Renet checks:
 
 | Check | Failure means |
 |---|---|
 | Ed25519 signature is valid | License was forged or tampered |
-| `sequence > lastKnownSequence` | Server rolled back the chain (replay attack) |
+| `sequence >= lastKnownSequence` | Server rolled back the chain (replay attack) |
+| A repeat of `lastKnownSequence` carries the same `chainHash` | A forked chain reused a sequence number |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | Chain entry was modified |
-| `issuedAt >= lastKnownIssuedAt` | Clock manipulation (server clock set backwards) |
+
+Re-validating the license already installed is not a regression: the same sequence with the same chain hash is accepted, which is what lets a machine validate the same file every time it starts a repository.
 
 If any check fails, the license is rejected and the failure reason is reported.
 

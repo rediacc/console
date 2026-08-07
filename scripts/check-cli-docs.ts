@@ -423,7 +423,11 @@ function checkI18nCommandExamples(out: Violation[]): void {
         message:
           `"${key}" names a command English does not. A command name is never translated, so a ` +
           `locale can only be stale or inventing here.\n${detail}`,
-        snippet: key,
+        // `command`, not `snippet`: Violation has no `snippet` field, and the
+        // reporter at the bottom of this file prints `in: ${v.command}`. Written
+        // as `snippet` this violation reached that line with command undefined
+        // and printed "in: undefined".
+        command: key,
       });
     }
   }

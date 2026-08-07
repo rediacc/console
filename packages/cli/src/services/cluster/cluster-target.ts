@@ -21,9 +21,13 @@ import { controlDatastoreMount, NAMED_DS_BASE } from './cluster-kube.js';
  * union), whether it is a docker-tiering datastore or the k8s data datastore a
  * cluster repo is forked from (the #38 fix: a cluster repo lands on its DATA
  * datastore, not the control datastore replicate excludes).
+ *
+ * A datastore FORK ref (`name:tag`) mounts at `<name>-<tag>` — renet derives
+ * the mount name with a hyphen (pkg/datastore/fork.go mountName), never with
+ * the ref's colon.
  */
 export function namedDatastoreMount(datastore: string): string {
-  return `${NAMED_DS_BASE}/${datastore}`;
+  return `${NAMED_DS_BASE}/${datastore.replace(':', '-')}`;
 }
 
 export interface ExecutionTarget {

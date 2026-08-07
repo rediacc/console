@@ -304,6 +304,8 @@
         "optionMasterPassword": "Krüpteeri ressursid peaparooliga",
         "success": "Konfiguratsioon \"{{name}}\" lähtestatud",
         "bareForm": "Vaikimisi konfiguratsioon luuakse automaatselt; kasuta 'config init <name>' nimega konfiguratsiooni jaoks, või anna lipp (--ssh-key, --server, ...), et seada vaikeväärtusele valik.",
+        "serverKeyMissing": "Kontoserver {{server}} ei teatanud krüptovõtmest. See avastatakse esimese õnnestunud päringu käigus.",
+        "serverKeyUnreachable": "Kontoserveriga {{server}} ei saanud ühendust, et sünkroonida selle krüptovõtit ({{error}}). See avastatakse esimese õnnestunud päringu käigus.",
         "examples": {
           "basic": "Loo nimeline konfiguratsiooniprofiil.",
           "withServer": "Loo profiil, mis viitab kindlale kontoserverile."
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "Konfiguratsioon \"{{config}}\" on 3 katse järel endiselt konfliktis teise seadmega. Käivita käsk uuesti.",
         "passkeySecretMissing": "Pääsuvõtme saladust ei leitud OS-i võtmehoidlast. Autentimine uuesti: rdc config remote enable",
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
+        "undecryptableIdentity": "Konfiguratsioon {{configId}} hoidlas {{storeId}} on krüptitud teise võtmega, kui sinu pesa omab, seega see seade ei saa seda lugeda. See juhtub, kui hoidla sisaldab juba teisest registreerimisest pärit konfiguratsiooni. Tõmba see konfiguratsioon juba registreeritud seadmelt ja kontrolli, millist konfiguratsiooni silmas pidasid, või palu administraatoril jagada hoidla võti selle seadmega uuesti portaalist (Config Storage > key slots).",
+        "undecryptableSession": "Konfiguratsioon {{configId}} avanes sinu võtmega, kuid serveri seansikiht ei tahtnud seda avada ({{detail}}). Proovi käsku uuesti; kui see ikka ebaõnnestub, registreeru uuesti käsuga: rdc config remote enable",
+        "handoffUndecryptable": "Brauser saatis üleandmise, mida see seade ei saa avada ({{error}}). Tavaliselt tähendab see, et vanem 'config remote enable' vahekaart on veel avatud ja saatis andmed valesse seanssi. Sulge kõik rediacc portaali vahekaardid ja käivita käsk uuesti.",
         "enable": {
           "description": "Seo see konfiguratsioon kaugega krüpteeritud salvestusega",
           "optionHeadless": "Kasuta seadmekoodi voogu (päiseta serveritele)",
@@ -369,6 +374,11 @@
           "passwordPrompt": "Konfiguratsiooni peaparool:",
           "passwordNonInteractive": "Vajalik on konfiguratsiooni peaparool. Määra REDIACC_CONFIG_PASSWORD või käivita ilma --password liputa interaktiivses terminalis.",
           "passwordRequirePasskey": "See organisatsioon nõuab konfiguratsioonihoidla avamiseks passkey't; parooliga registreerimine on keelatud. Registreeru brauserist käsuga: rdc config remote enable",
+          "passwordIpBound": "REDIACC_TOKEN-is olev API-token on seotud teise kliendi IP-aadressiga. Token seotakse aadressiga, kust seda esimest korda kasutati, seega mujal loodud tokeniga ei saa sellest masinast registreeruda. Väljasta portaalist uus token ja proovi uuesti.",
+          "passwordMissingScope": "REDIACC_TOKEN-is olev API-token ei kanna config:enroll õigust. Väljasta portaalist token, millel see õigus on, ja proovi uuesti.",
+          "passwordTeamGone": "Meeskond, kellele see API-token kuulub, on arhiveeritud või eemaldatud. Väljasta portaalist uus token aktiivse meeskonna jaoks ja proovi uuesti.",
+          "passwordTokenNotEnrollable": "See API-token ei saa config slot'i registreerida, kuna see ei ole seotud kasutajaga organisatsioonis. Väljasta portaalist oma konto isiklik token ja proovi uuesti.",
+          "passwordForbidden": "Kontoserver keeldus konfiguratsiooni registreerimisest: {{error}}",
           "passwordNoSlot": "Sinu konfiguratsioonihoidla jaoks pole password slot'i jagatud. Lisa see portaalist (Config Storage > key slots) ja proovi uuesti.",
           "passwordWrong": "Konfiguratsiooni ei õnnestunud selle parooliga avada. Kontrolli REDIACC_CONFIG_PASSWORD väärtust (või sisestatud parooli) ja proovi uuesti.",
           "optionForce": "Asenda erinev kohalik sisu serveri koopiaga ilma kinnituseta",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "SSH-aliase kirjutamine ebaõnnestus (mittekriitiline): {{error}}",
-          "sshConfigWritten": "SSH-alias rediacc--{{name}} kirjutatud faili ~/.ssh/config_rediacc"
+          "sshConfigWritten": "SSH-alias rediacc--{{name}} kirjutatud faili {{path}}"
         },
         "remove": {
           "sshConfigCleared": "SSH-alias rediacc--{{name}} eemaldatud"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "Kuva masina täielik olek.",
           "containers": "Kuva ainult masinal töötavad konteinerid."
-        }
+        },
+        "licenseBackupBlocked": "\nVARUNDUS BLOKEERITUD: {{repositoryGuid}} on litsentsimise poolt tagasi lükatud alates {{at}} ({{reason}}). {{message}}\nSelle repositooriumi plaanitud varundused ei tööta. Väljasta uuesti käsuga: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "Token valideeritud",
         "validating": "Tokenit valideeritakse...",
         "waitingApproval": "Brauseri autoriseerimist oodatakse...",
-        "edgeSeparator": "Edge kanal"
+        "edgeSeparator": "Edge kanal",
+        "machinesOverLimit": "  {{count}} masinakoht(a) ületab limiiti."
       },
       "logout": {
         "description": "Kustutab salvestatud tellimuse tokeni",
@@ -1686,7 +1698,11 @@
           "empty": "  Repositooriumi litsentsid puuduvad",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": " (lõplik aegumine: {{effectiveHardExpiry}})",
-          "header": "\nRepositooriumi litsentsid: ({{machineName}})"
+          "header": "\nRepositooriumi litsentsid: ({{machineName}})",
+          "datastoreSuffix": " [andmehoidla {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: varundus on litsentsimise poolt BLOKEERITUD alates {{at}} ({{reason}}). {{message}}",
+          "blockedBackupRemedy": "  Käivita uuesti väljastamiseks 'rdc subscription refresh -m {{machineName}}'; märge kustub järgmisel õnnestunud uuendamisel.",
+          "lastRenewal": "    viimane uuendamine: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  Plaan:    {{plan}}",
         "remoteRepoLicenseIssuances": "  Igakuised repositooriumi litsentside väljastamised: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repositooriumi litsentsid: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
-        "remoteStatus": "  Olek:     {{status}}"
+        "remoteStatus": "  Olek:     {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}… (viimati nähtud: {{lastSeen}}) ÜLE LIMIIDI",
+        "overLimitSummary": "  {{count}} masin(at) on soft-hõivatud üle masinakohtade limiidi. Uuendamine töötab endiselt; UUSI repositooriume ei saa litsentsida enne, kui vabastate koha või tõstate limiiti."
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "Masinal {{machine}} leiti hoidlaid, kuid ükski neist ei ole sinu kohalikus konfiguratsioonis jälgitud. Kuva jälgitavad hoidlad käsuga `rdc repo list`, seejärel proovi uuesti.",
       "recoveryFailedServerRejected": "Kontoserver lükkas hoidla litsentsi väljastamise tagasi masinal \"{{machine}}\". Esimene viga: {{error}}. Käivita: rdc subscription refresh --repo <repo-ref> üksikasjade saamiseks.",
       "recoveryFailedTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login, seejärel proovi uuesti.",
-      "skipActivationHint": "Äravisataval masinal saad aktiveerimise täielikult vahele jätta lipuga REDIACC_SKIP_MACHINE_ACTIVATION=1."
+      "skipActivationHint": "Äravisataval masinal saad aktiveerimise täielikult vahele jätta lipuga REDIACC_SKIP_MACHINE_ACTIVATION=1.",
+      "machineSlotLimit": "See paigutus vajab veel {{needed}} masinakoht(a) ja tellimusel on vaba {{free}} ({{active}} / {{max}} kasutusel). Koht vabaneb automaatselt 5 tundi pärast selle masina viimast aktiivsust või kohe, kui masin eemaldatakse. Tõsta limiiti paketti uuendades või võta ühendust müügiga, et leppida kokku Enterprise'i või partneri masinalimiit.",
+      "partialPlacement": "Paigutus katkes poole peal: {{placed}} masin(at) lõpetatud ({{placedNames}}) ja {{remaining}} jäi käivitamata ({{remainingNames}}). Midagi ei võetud tagasi, seega lõpetatud masinad säilitavad oma repositooriumid ja kohad. Vabasta koht või tõsta limiiti ning käivita uuesti: {{command}}",
+      "nothingProvisioned": "Midagi ei loodud: repositooriumi ei loodud."
     },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
     "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",

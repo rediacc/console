@@ -4,6 +4,7 @@ branch here is paid for by an observed failure, so nothing was "simplified"
 in the extraction.
 """
 
+import contextlib
 import datetime
 import hashlib
 import json
@@ -93,7 +94,11 @@ def pr_body_freshness(root):
     try:
         out = subprocess.run(
             ["gh", "api", "graphql", "-f", "query=" + query],
-            capture_output=True, text=True, timeout=25, cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=25,
+            cwd=str(root),
+            check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return "unreadable", str(exc)[:120]
@@ -112,7 +117,7 @@ def pr_body_freshness(root):
 
     def parse(ts):
         try:
-            return datetime.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return datetime.datetime.fromisoformat(ts)
         except ValueError:
             return None
 
@@ -195,7 +200,12 @@ def _gh_json(root, args, timeout=25):
     every caller can report blindness instead of guessing."""
     try:
         out = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, timeout=timeout, cwd=str(root)
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=str(root),
+            check=False,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return None, str(exc)[:160]
@@ -206,8 +216,10 @@ def _gh_json(root, args, timeout=25):
     except ValueError:
         return None, "non-JSON from `gh %s`: %r" % (" ".join(args[:2]), out.stdout[:80])
     # GraphQL reports field errors with exit 0 and an `errors` array.
-    if isinstance(data, dict) and data.get("errors") and not (data.get("data") or {}).get(
-        "repository"
+    if (
+        isinstance(data, dict)
+        and data.get("errors")
+        and not (data.get("data") or {}).get("repository")
     ):
         return None, json.dumps(data["errors"])[:160]
     return data, ""
@@ -350,7 +362,7 @@ CI_WATCH_RE = re.compile(
     r"|actions/runs/\d+"
     r"|\bci\b[^\n]{0,40}\bwatch|\bwatch\w*\b[^\n]{0,40}\bci\b"
     r"|\bwatch\w*\b[^\n]{0,40}\b\d{9,}\b|\b\d{9,}\b[^\n]{0,40}\bwatch\w*\b",
-    re.I,
+    re.IGNORECASE,
 )
 
 
@@ -368,7 +380,8 @@ def ci_watch_only(live_bg):
         blob = "%s %s" % (b.get("command") or "", b.get("description") or "")
         if CI_WATCH_RE.search(blob):
             names.append(
-                "%s: %s" % (b.get("id") or "?", (b.get("description") or b.get("command") or "")[:60])
+                "%s: %s"
+                % (b.get("id") or "?", (b.get("description") or b.get("command") or "")[:60])
             )
         else:
             return False, ""
@@ -418,7 +431,9 @@ def ci_steps(root, info, rows, cached):
         if data is None:
             continue
         steps = data.get("steps") or []
-        bad = [s.get("name") for s in steps if (s.get("conclusion") or "") in ("failure", "timed_out")]
+        bad = [
+            s.get("name") for s in steps if (s.get("conclusion") or "") in ("failure", "timed_out")
+        ]
         if not bad:
             bad = [s.get("name") for s in steps if (s.get("conclusion") or "") == "cancelled"]
         row["step"] = bad[0] if bad else ""
@@ -455,7 +470,9 @@ def ciqueue_path(worklist, session_id):
 def ci_queue_state(root, worklist, session_id):
     """(state, detail) -- is the publish ref's CI queue saturated?
 
-    state: unset | clear | saturated | unknown. `detail` for saturated is
+    state: unset | clear | saturated | unknown. `detail` on unknown carries
+    {"ref", "error"} when the gh call itself failed, so a blind read is
+    distinguishable from a quiet queue. `detail` for saturated is
     {"ref", "queued", "newest_age_min"}.
 
     Reads `actions/runs?branch=` rather than the head-commit rollup ON PURPOSE:
@@ -492,6 +509,11 @@ def ci_queue_state(root, worklist, session_id):
             timeout=20,
         )
         runs = (data or {}).get("workflow_runs") if isinstance(data, dict) else None
+        if runs is None and err:
+            # SAY WHY, rather than reporting a bare "unknown". A failed gh call
+            # and a genuinely empty queue used to be indistinguishable here,
+            # which is the blindness this program refuses everywhere else.
+            detail = {"ref": ref, "error": err}
         if isinstance(runs, list):
             queued, newest_age = 0, None
             for i, r in enumerate(runs):
@@ -500,12 +522,8 @@ def ci_queue_state(root, worklist, session_id):
                     queued += 1
                 if i == 0:
                     try:
-                        created = datetime.datetime.fromisoformat(
-                            (r.get("created_at") or "").replace("Z", "+00:00")
-                        )
-                        age = (
-                            datetime.datetime.now(datetime.timezone.utc) - created
-                        ).total_seconds() / 60.0
+                        created = datetime.datetime.fromisoformat(r.get("created_at") or "")
+                        age = (datetime.datetime.now(datetime.UTC) - created).total_seconds() / 60.0
                     except ValueError:
                         age = None
                     if status in _QUEUED_STATUSES:
@@ -523,13 +541,11 @@ def ci_queue_state(root, worklist, session_id):
                 }
             else:
                 state = "clear"
-    try:
+    with contextlib.suppress(OSError, TypeError):
         cache_p.write_text(
             json.dumps({"at": time.time(), "state": state, "detail": detail}),
             encoding="utf-8",
         )
-    except (OSError, TypeError):
-        pass
     return state, detail
 
 
@@ -618,25 +634,27 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text):
     detail = {"info": info, "hard": hard, "soft": soft, "live": live, "acked": acked, "n": blocks}
     if acked or blocks >= CI_MAX_BLOCKS:
         return "downgraded", detail
-    try:
+    with contextlib.suppress(OSError):
         marker_p.write_text(json.dumps({"sig": sig, "blocks": blocks + 1}), encoding="utf-8")
-    except OSError:
-        pass
     detail["n"] = blocks + 1
     return "trouble", detail
 
 
 def _ci_cache_write(path, sha, state, info, steps, final):
-    try:
+    with contextlib.suppress(OSError, TypeError):
         path.write_text(
             json.dumps(
-                {"sha": sha, "at": time.time(), "state": state, "info": info,
-                 "steps": steps, "final": bool(final)}
+                {
+                    "sha": sha,
+                    "at": time.time(),
+                    "state": state,
+                    "info": info,
+                    "steps": steps,
+                    "final": bool(final),
+                }
             ),
             encoding="utf-8",
         )
-    except (OSError, TypeError):
-        pass
 
 
 def ci_rows_text(rows, info):
@@ -702,9 +720,12 @@ def submodule_pointer_moves(root):
         elif on_default:
             where = "on origin/%s (an ordinary bump)" % default
         else:
-            where = "only on %s, NOT on origin/%s, so this adds that branch's PR to the merge chain" % (
-                ", ".join(names[:3]),
-                default,
+            where = (
+                "only on %s, NOT on origin/%s, so this adds that branch's PR to the merge chain"
+                % (
+                    ", ".join(names[:3]),
+                    default,
+                )
             )
         moves.append((path, recorded[:9], live[:9], where))
     return moves

@@ -15,6 +15,7 @@ import {
   readRuntimeRepoLicenseStatuses,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
+  type RuntimeRepoLicenseStatus,
 } from '../services/account/license.js';
 import {
   getSubscriptionScopeMismatch,
@@ -25,6 +26,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet/renet-execution.js';
 import { ValidationError } from '../utils/errors.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import {
@@ -155,11 +157,25 @@ function outputRemoteStatus(status: Awaited<ReturnType<typeof fetchSubscriptionL
     })
   );
   for (const machine of status.machineSlots.machines) {
+    const key = machine.overLimit
+      ? 'commands.subscription.status.remoteMachineOverLimit'
+      : 'commands.subscription.status.remoteMachine';
     outputService.info(
-      t('commands.subscription.status.remoteMachine', {
+      t(key, {
         id: machine.machineId.slice(0, 12),
         lastSeen: machine.lastSeenAt,
       })
+    );
+  }
+
+  // Soft-claim (design decision 2): a renewal never fails for being over the
+  // cap, it just flags the row. Nothing else would tell the operator that the
+  // fleet has outgrown its plan until the next NEW repository is refused, so
+  // the count is called out rather than left to be spotted row by row.
+  const overLimitCount = status.machineSlots.machines.filter((m) => m.overLimit).length;
+  if (overLimitCount > 0) {
+    outputService.warn(
+      t('commands.subscription.status.overLimitSummary', { count: overLimitCount })
     );
   }
 }
@@ -192,9 +208,90 @@ async function renderRepoLicenseTable(
               effectiveHardExpiry,
             })
           : '',
+      }) +
+        (entry.datastoreId
+          ? t('commands.subscription.repo.status.datastoreSuffix', {
+              datastoreId: entry.datastoreId,
+            })
+          : '')
+    );
+    renderLastRenewal(entry);
+  }
+
+  renderBlockedBackups(machineName, entries);
+}
+
+/**
+ * renet's per-blob verdicts (pkg/license/renew.go). `renewed` and the two
+ * `skipped_*` values are healthy; the other two mean this repo's licence is no
+ * longer being kept alive and will hard-expire on its own schedule.
+ */
+const FAILED_RENEWAL_OUTCOMES = new Set(['refused', 'error']);
+
+/**
+ * The renewal detail line. `code` leads because it is the stable, branchable
+ * identity of the failure (SUBSCRIPTION_LAPSED, DELEGATION_CERT_REVOKED, ...)
+ * while `message` is display prose the server may reword; showing both means
+ * the operator can search for the code and read the sentence.
+ */
+function renewalDetail(renewal: NonNullable<RuntimeRepoLicenseStatus['lastRenewal']>): string {
+  const parts = [renewal.code, renewal.message].filter(Boolean);
+  if (parts.length > 0) return ` (${parts.join(': ')})`;
+  if (renewal.newSequence) return ` (seq ${renewal.newSequence})`;
+  return '';
+}
+
+/**
+ * What the last unattended renewal did for this repo, when there was one.
+ *
+ * A refused or errored renewal is rendered as a WARNING, not as another info
+ * line. Unattended renewal is the only thing keeping a 7-day fork licence
+ * alive, so a repo whose last renewal was refused is on a countdown to a dead
+ * licence and, after that, to blocked backups. By the time the marker in
+ * renderBlockedBackups appears it has already cost a backup window; this is the
+ * same failure caught one step earlier.
+ */
+function renderLastRenewal(entry: RuntimeRepoLicenseStatus): void {
+  const renewal = entry.lastRenewal;
+  if (!renewal) return;
+  const line = t('commands.subscription.repo.status.lastRenewal', {
+    outcome: renewal.outcome,
+    detail: renewalDetail(renewal),
+  });
+  if (FAILED_RENEWAL_OUTCOMES.has(renewal.outcome)) {
+    outputService.warn(line);
+    return;
+  }
+  outputService.info(line);
+}
+
+/**
+ * The blocked-backup markers, rendered LAST and as errors.
+ *
+ * A marker means renet's backup gate refused a scheduled backup on licensing
+ * grounds, and it persists until a renewal clears it. That is the one failure
+ * in this table nobody is watching for: the backup timer keeps firing, systemd
+ * keeps reporting whatever the unit reports, and the data silently stops being
+ * copied. It gets its own block at the bottom, styled as an error, so it cannot
+ * be lost in a long list of healthy repos.
+ */
+function renderBlockedBackups(machineName: string, entries: RuntimeRepoLicenseStatus[]): void {
+  const blocked = entries.filter((entry) => entry.blockedBackup);
+  if (blocked.length === 0) return;
+
+  for (const entry of blocked) {
+    const marker = entry.blockedBackup;
+    if (!marker) continue;
+    outputService.error(
+      t('commands.subscription.repo.status.blockedBackup', {
+        repositoryGuid: entry.repositoryGuid,
+        at: marker.at,
+        reason: marker.reason,
+        message: marker.message,
       })
     );
   }
+  outputService.error(t('commands.subscription.repo.status.blockedBackupRemedy', { machineName }));
 }
 
 /**
@@ -294,6 +391,14 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
       const sshPrivateKey =
         localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
+      // #74: declare the datastore the repo is RECORDED on. This is the only
+      // caller that passes no requestedSizeGb, so it is the one that reaches
+      // the size probe — and without this it measured the machine's default
+      // datastore for a repo that lives on a named one, found nothing, and
+      // reissued at the 1 GB floor. Undefined for a {machine} placement, which
+      // correctly leaves the machine's own default in place.
+      const datastoreMount = await recordedDatastoreMount(repoKey);
+
       const refreshed = await refreshRepoLicenseIdentity(machine, sshPrivateKey, {
         repositoryGuid: repoConfig.repositoryGuid,
         grandGuid: repoConfig.grandGuid,
@@ -301,6 +406,7 @@ export async function executeRepoLicenseRefresh(ref: string): Promise<void> {
           repoConfig.grandGuid && repoConfig.grandGuid !== repoConfig.repositoryGuid
             ? 'fork'
             : 'grand',
+        ...(datastoreMount !== undefined && { datastoreMount }),
       });
       if (!refreshed) {
         throw new ValidationError(t('commands.subscription.refresh.repo.failed'));

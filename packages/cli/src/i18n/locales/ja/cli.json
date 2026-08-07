@@ -304,6 +304,8 @@
         "optionMasterPassword": "マスターパスワードでリソースを暗号化する",
         "success": "設定 \"{{name}}\" が初期化されました",
         "bareForm": "デフォルト設定は自動的に作成される。名前付き設定を作るには 'config init <name>' を使用するか、デフォルト設定にオプションを設定するにはフラグ（--ssh-key、--server など）を渡す",
+        "serverKeyMissing": "アカウントサーバー {{server}} は暗号化キーを通知しませんでした。最初のリクエストが成功した時点で検出されます。",
+        "serverKeyUnreachable": "アカウントサーバー {{server}} に接続できず、暗号化キーを同期できませんでした（{{error}}）。最初のリクエストが成功した時点で検出されます。",
         "examples": {
           "basic": "名前付きの設定プロファイルを作成する",
           "withServer": "特定のアカウントサーバーを指すプロファイルを作成する"
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "設定 \"{{config}}\" は3回試行しても他のデバイスとの競合が解消されません。コマンドを再実行してください。",
         "passkeySecretMissing": "OSキーリングにパスキーシークレットが見つかりません。再認証してください: rdc config remote enable",
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
+        "undecryptableIdentity": "ストア {{storeId}} 内の設定 {{configId}} はあなたのスロットが持つキーとは異なるキーで暗号化されているため、このデバイスでは読み取れません。これはストアが別の登録による設定を既に保持している場合に発生します。既に登録済みのデバイスでその設定を取得し、意図した設定を確認するか、管理者にポータル（Config Storage > key slots）からこのデバイスにストアのキーを再共有してもらってください。",
+        "undecryptableSession": "設定 {{configId}} はあなたのキーで復号されましたが、サーバーのセッション層が開けませんでした（{{detail}}）。コマンドを再試行してください。失敗が続く場合は次のコマンドで再登録してください: rdc config remote enable",
+        "handoffUndecryptable": "ブラウザがこのデバイスで開けないハンドオフを送信しました（{{error}}）。これは通常、古い 'config remote enable' タブがまだ開いていて、誤ったセッションに送信されたことを意味します。rediacc ポータルのタブをすべて閉じてから、コマンドを再実行してください。",
         "enable": {
           "description": "この設定をリモート暗号化ストレージにリンク",
           "optionHeadless": "デバイスコードフローを使用（ヘッドレスサーバー用）",
@@ -369,6 +374,11 @@
           "passwordPrompt": "設定のマスターパスワード:",
           "passwordNonInteractive": "設定のマスターパスワードが必要です。REDIACC_CONFIG_PASSWORD を設定するか、対話的なターミナルで --password を付けずに実行してください。",
           "passwordRequirePasskey": "この組織では、設定ストレージのロック解除にパスキーが必須であり、パスワードによる登録は無効です。次のコマンドでブラウザから登録してください: rdc config remote enable",
+          "passwordIpBound": "REDIACC_TOKEN のAPIトークンは別のクライアントIPアドレスに紐づいています。トークンは最初に使用されたアドレスに紐づくため、別の場所で作成されたトークンはこのマシンから登録できません。Webポータルから新しいトークンを発行し、もう一度お試しください。",
+          "passwordMissingScope": "REDIACC_TOKEN のAPIトークンには config:enroll スコープがありません。Webポータルからそのスコープを持つトークンを発行し、もう一度お試しください。",
+          "passwordTeamGone": "このAPIトークンが属するチームはアーカイブまたは削除されました。Webポータルから有効なチーム用の新しいトークンを発行し、もう一度お試しください。",
+          "passwordTokenNotEnrollable": "このAPIトークンは組織内のユーザーに紐づいていないため、設定スロットを登録できません。Webポータルで自分のアカウントから個人用トークンを発行し、もう一度お試しください。",
+          "passwordForbidden": "アカウントサーバーが設定の登録を拒否しました: {{error}}",
           "passwordNoSlot": "設定ストレージ用のパスワードスロットがプロビジョニングされていません。ポータル（Config Storage > key slots）から追加してから、もう一度お試しください。",
           "passwordWrong": "そのパスワードでは設定のロックを解除できませんでした。REDIACC_CONFIG_PASSWORD（または入力したパスワード）を確認して、もう一度お試しください。",
           "optionForce": "確認なしでローカルの相違内容をサーバーのコピーで置き換える",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "SSH エイリアスの書き込みに失敗しました（非致命的）: {{error}}",
-          "sshConfigWritten": "SSH エイリアス rediacc--{{name}} を ~/.ssh/config_rediacc に書き込みました"
+          "sshConfigWritten": "SSH エイリアス rediacc--{{name}} を {{path}} に書き込みました"
         },
         "remove": {
           "sshConfigCleared": "SSH エイリアス rediacc--{{name}} を削除しました"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "マシンの完全なステータスを表示する",
           "containers": "マシン上で実行中のコンテナのみを表示する"
-        }
+        },
+        "licenseBackupBlocked": "\nバックアップがブロックされています: {{repositoryGuid}} は {{at}} からライセンス認証によって拒否されています（{{reason}}）。{{message}}\nこのリポジトリのスケジュールされたバックアップは実行されていません。次のコマンドで再発行してください: rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "トークン検証済み",
         "validating": "トークンを検証中...",
         "waitingApproval": "ブラウザでの認証を待っています...",
-        "edgeSeparator": "Edge チャンネル"
+        "edgeSeparator": "Edge チャンネル",
+        "machinesOverLimit": "  {{count}} 件のマシンスロットが上限を超えています。"
       },
       "logout": {
         "description": "保存されたサブスクリプショントークンを削除する",
@@ -1686,7 +1698,11 @@
           "empty": "  インストール済みのリポジトリライセンスはありません",
           "entry": "  - {{repositoryGuid}}: {{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": "（有効期限: {{effectiveHardExpiry}}）",
-          "header": "\nリポジトリライセンス:（{{machineName}}）"
+          "header": "\nリポジトリライセンス:（{{machineName}}）",
+          "datastoreSuffix": " [データストア {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}: バックアップは {{at}} からライセンス認証によってブロックされています（{{reason}}）。{{message}}",
+          "blockedBackupRemedy": "  再発行するには 'rdc subscription refresh -m {{machineName}}' を実行してください。マーカーは次回の更新が成功すると解除されます。",
+          "lastRenewal": "    直近の更新: {{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  プラン:     {{plan}}",
         "remoteRepoLicenseIssuances": "  フローティングライセンス要求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
-        "remoteStatus": "  ステータス: {{status}}"
+        "remoteStatus": "  ステータス: {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}…（最終確認: {{lastSeen}}）上限超過",
+        "overLimitSummary": "  {{count}} 台のマシンがマシンスロットの上限を超えてソフト保持されています。更新は引き続き成功しますが、新規リポジトリはスロットを解放するか上限を引き上げるまでライセンスを取得できません。"
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。",
-      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_MACHINE_ACTIVATION=1 で有効化を完全にスキップできます"
+      "skipActivationHint": "使い捨てのマシンでは、REDIACC_SKIP_MACHINE_ACTIVATION=1 で有効化を完全にスキップできます",
+      "machineSlotLimit": "この配置にはあと {{needed}} 個のマシンスロットが必要ですが、サブスクリプションの空きは {{free}} 個です（{{max}} 個中 {{active}} 個使用中）。スロットはそのマシンの最終アクティビティから5時間後に自動的に解放されるか、マシンが削除されると即座に解放されます。プランをアップグレードして上限を引き上げるか、Enterprise または パートナーのマシン上限について営業にご相談ください。",
+      "partialPlacement": "配置は途中で停止しました: {{placed}} 台のマシンが完了し（{{placedNames}}）、{{remaining}} 台は開始されませんでした（{{remainingNames}}）。ロールバックは行われていないため、完了したマシンはそのリポジトリとスロットを保持します。スロットを解放するか上限を引き上げてから、再実行してください: {{command}}",
+      "nothingProvisioned": "何もプロビジョニングされませんでした: リポジトリは作成されていません。"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",

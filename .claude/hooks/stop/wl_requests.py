@@ -28,7 +28,7 @@ Dead recipients cannot black-hole a request: liveness comes from the
 under a flock, into an operator-visible `- [?]` item owned by the asker.
 """
 
-import fcntl
+import contextlib
 import hashlib
 import json
 import os
@@ -95,6 +95,16 @@ def read_requests(worklist):
                 r["acked"] = True
             elif kind == "escalate" and not r["escalated"]:
                 r["escalated"] = str(ev.get("why", "escalated"))
+            elif kind == "reassign":
+                # v19: rebind a phantom identity's side of the request onto a
+                # session that actually reads its inbox. APPENDED like every
+                # other state change here, so the `ask` event still records who
+                # really sent it -- the log stays truthful about history and
+                # only the routing moves.
+                if ev.get("from"):
+                    r["from"] = str(ev["from"])
+                if ev.get("to"):
+                    r["to"] = str(ev["to"])
     return reqs
 
 
@@ -177,9 +187,7 @@ def escalate_requests(worklist, session_id, dry_run=False):
         others = {k for k in live if not C.same_session(k, r["from"])}
         if not others:
             return "no other live session to answer"
-        if all(
-            any(C.same_session(str(d.get("by", "")), k) for d in r["declines"]) for k in others
-        ):
+        if all(any(C.same_session(str(d.get("by", "")), k) for d in r["declines"]) for k in others):
             return "every live session declined"
         return ""
 
@@ -192,7 +200,11 @@ def escalate_requests(worklist, session_id, dry_run=False):
     escalated = []
     with open(str(S.requests_path(worklist)) + ".lock", "w") as lock:
         try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # S._flock, not a direct fcntl import: this module is imported by the
+            # read-only inbox surfaces (the report index and the waiter), which
+            # take no lock at all, so a module-scope `import fcntl` here would
+            # kill them on Windows over a call they never make.
+            S._flock(lock, S.LOCK_EX | S.LOCK_NB)
         except OSError:
             return []  # another stop is escalating; it wins, next stop retries
         current = read_requests(worklist)  # re-read under the lock
@@ -262,6 +274,24 @@ def classify_requests(reqs, session_id):
     return to_me, bcast, answered_mine, open_mine
 
 
+def _briefed(worklist, to):
+    """Has `to` ever briefed in this store? None when the ROSTER ITSELF is empty.
+
+    Three values, not two, because the blind case is not the negative case. An
+    empty `.sessions` means the check has no data at all (a fresh worktree, a
+    wiped TMPDIR), and refusing every ask there would break the mechanism in
+    exactly the situation where nothing is wrong. A check that cannot answer
+    must say so rather than answer no.
+
+    same_session, not ==: a brief is filed under a short prefix and an asker may
+    hold the full uuid, and either side of that comparison can be either.
+    """
+    briefs = S.read_briefs(worklist)
+    if not briefs:
+        return None
+    return any(C.same_session(k, to) for k in briefs)
+
+
 def request_cli(argv, worklist):
     """--ask / --answer / --decline / --ack / --requests. Exits non-zero on
     misuse, so a session cannot mistake a rejected post for a delivered one.
@@ -270,7 +300,7 @@ def request_cli(argv, worklist):
     read-only --requests listing) keep working when worklist_messages.py is
     broken; the two die() sites that need it fail into the crash handler,
     naming the catalogue, which is the fail-closed direction."""
-    import worklist_messages as M
+    import worklist_messages as M  # noqa: PLC0415 -- lazy on purpose: a broken catalogue must fail into the crash handler, not at import time
 
     def die(msg):
         print(msg, file=sys.stderr)
@@ -295,16 +325,27 @@ def request_cli(argv, worklist):
             return
         for r in sorted(reqs.values(), key=lambda x: x["at"]):
             state = (
-                "acked" if r["acked"]
-                else "answered" if request_resolved(r)
-                else "escalated" if r["escalated"]
+                "acked"
+                if r["acked"]
+                else "answered"
+                if request_resolved(r)
+                else "escalated"
+                if r["escalated"]
                 else "open"
             )
-            print("#%s %s %s -> %s [%s] %s" % (r["id"], r["at"], r["from"], r["to"], state, r["body"]))
+            print(
+                "#%s %s %s -> %s [%s] %s" % (r["id"], r["at"], r["from"], r["to"], state, r["body"])
+            )
             for a in r["answers"]:
-                print("    answer by %s at %s: %s" % (a.get("by", "?"), a.get("at", "?"), a.get("body", "")))
+                print(
+                    "    answer by %s at %s: %s"
+                    % (a.get("by", "?"), a.get("at", "?"), a.get("body", ""))
+                )
             for d in r["declines"]:
-                print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
+                print(
+                    "    decline by %s at %s: %s"
+                    % (d.get("by", "?"), d.get("at", "?"), d.get("reason", ""))
+                )
             if r["escalated"]:
                 print("    escalated: %s" % r["escalated"])
         return
@@ -313,15 +354,32 @@ def request_cli(argv, worklist):
     me = argv[1]
     if not C.PREFIX_RE.match(me):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _ok, _why = C.check_me(me)
+    if not _ok:
+        die(_why)
     if mode == "--ask":
         to = argv[2]
         if to != "*" and not C.PREFIX_RE.match(to):
-            die("bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast" % to)
+            die(
+                "bad recipient %r: a session prefix from the .sessions briefs, or * to broadcast"
+                % to
+            )
         if to != "*" and C.same_session(me, to):
             die("that request is addressed to yourself; use the worklist for your own items")
+        # THE SAME DEFECT FROM THE SENDER'S SIDE. The recipient was validated by
+        # SHAPE only, so a prefix no session has ever briefed accepted the post
+        # and nobody ever read it. That is not hypothetical: peers asked
+        # `4c3e095a` -- an identity that never existed -- and the request sat
+        # until it auto-escalated with "recipient silent for 2062min", 34 hours
+        # late. A NEVER-EXISTED check, not a staleness check: an idle peer still
+        # has a brief, so this cannot fire on one that is merely quiet.
+        if to not in ("*", "operator") and _briefed(worklist, to) is False:
+            die(M.CLI_ASK_UNKNOWN_RECIPIENT % (to, ", ".join(sorted(S.read_briefs(worklist)))))
         body = request_body("request body")
         if not body:
-            die("an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered")
+            die(
+                "an empty request asks nothing: say what you need, why, and a DEFAULT: if unanswered"
+            )
         if to == "operator" and not C.DEFAULT_TOKEN.search(body):
             # Same rule the escalation retrofit applies below, enforced at the
             # door instead. An operator request is answered by a human who may
@@ -394,18 +452,24 @@ def request_cli(argv, worklist):
     if mode == "--answer":
         if not body:
             die("an empty answer answers nothing")
-        append_request_event(worklist, {"ev": "answer", "id": rid, "by": me, "at": stamp, "body": body})
+        append_request_event(
+            worklist, {"ev": "answer", "id": rid, "by": me, "at": stamp, "body": body}
+        )
         print("answered #%s; %s is blocked on acting on it at their next stop" % (rid, r["from"]))
         return
     if mode == "--decline":
         if not body:
             die("a decline without a reason is a stall, not an answer: say why not")
-        append_request_event(worklist, {"ev": "decline", "id": rid, "by": me, "at": stamp, "reason": body})
+        append_request_event(
+            worklist, {"ev": "decline", "id": rid, "by": me, "at": stamp, "reason": body}
+        )
         print(
             "declined #%s%s"
             % (
                 rid,
-                " (broadcast: this releases only you)" if r["to"] == "*" else "; the asker gets your reason",
+                " (broadcast: this releases only you)"
+                if r["to"] == "*"
+                else "; the asker gets your reason",
             )
         )
         return
@@ -418,24 +482,38 @@ def poll_cli(worklist, me, hook_path):
     context. Non-empty: the full payloads plus the exact commands. Either way
     it drops the single-use poll marker that lets the Stop hook recognise
     this turn structurally."""
-    if not C.PREFIX_RE.match(me or "") or len(me or "") < 8:
+    if not C.PREFIX_RE.match(me or "") or len(me or "") < C.ME_MIN_LEN:
         # A short prefix would name a DIFFERENT marker than the Stop hook
         # derives from the full session id, silently disabling the fast
-        # path, so misuse is refused rather than half-working.
+        # path, so misuse is refused rather than half-working. This floor is
+        # where C.ME_MIN_LEN comes from; check_me now applies it -- and the
+        # identity check this verb never had -- to every verb taking a <me>.
         print(
             "usage: --poll <your-8-char-session-id-prefix> (got %r)" % me,
             file=sys.stderr,
         )
         sys.exit(1)
-    try:
-        worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(
-            C.stamp_now(), encoding="utf-8"
-        )
-    except OSError:
-        pass  # no marker means no fast path: the safe direction
+    ok, why = C.check_me(me)
+    if not ok:
+        print(why, file=sys.stderr)
+        sys.exit(1)
+    # No marker means no fast path: the safe direction.
+    with contextlib.suppress(OSError):
+        worklist.with_suffix(".pollmark-%s" % me[:8]).write_text(C.stamp_now(), encoding="utf-8")
     to_me, bcast, answered, _mine = classify_requests(read_requests(worklist), me)
     if not (to_me or bcast or answered):
         sys.exit(0)  # print NOTHING: the operator's contract for this mode
+    print_inbox(to_me, bcast, answered, me, hook_path)
+    sys.exit(0)
+
+
+def print_inbox(to_me, bcast, answered, me, hook_path):
+    """The inbox rendering, shared by `--poll` and by the blocking waiter.
+
+    Factored out rather than copied because the payload and the exact
+    --answer/--decline/--ack command lines are the whole product of both modes:
+    a second copy would drift, and the copy that drifts is the one a session
+    reads at 3am when it cannot remember the verb."""
     for r in to_me + bcast:
         print(
             "INBOX #%s from %s (%s, asked %s): %s"
@@ -452,8 +530,13 @@ def poll_cli(worklist, me, hook_path):
     for r in answered:
         print("ANSWERED #%s (you asked: %s)" % (r["id"], r["body"][:120]))
         for a in r["answers"]:
-            print("    answer by %s at %s: %s" % (a.get("by", "?"), a.get("at", "?"), a.get("body", "")))
+            print(
+                "    answer by %s at %s: %s"
+                % (a.get("by", "?"), a.get("at", "?"), a.get("body", ""))
+            )
         for d in r["declines"]:
-            print("    decline by %s at %s: %s" % (d.get("by", "?"), d.get("at", "?"), d.get("reason", "")))
+            print(
+                "    decline by %s at %s: %s"
+                % (d.get("by", "?"), d.get("at", "?"), d.get("reason", ""))
+            )
         print("    ack when acted on: %s --ack %s %s" % (hook_path, me, r["id"]))
-    sys.exit(0)

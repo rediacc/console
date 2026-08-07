@@ -275,6 +275,42 @@ describe('generateServiceUnit', () => {
     expect(execIdx).toBeGreaterThan(timeoutIdx);
   });
 
+  it('renews licences before the backup, and never lets that renewal block it', async () => {
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'hourly-hot',
+      { schedule: '0 * * * *', mode: 'hot', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    // The '-' prefix is the whole point: a refused renewal (one lapsed repo, a
+    // network blip) and an older renet that does not know the `license` verb
+    // must both leave the backup running.
+    expect(serviceContent).toContain('ExecStartPre=-/usr/bin/renet license renew --jitter 45s');
+    const preIdx = serviceContent.indexOf('ExecStartPre=');
+    const execIdx = serviceContent.indexOf('ExecStart=/usr/bin/renet backup');
+    expect(preIdx).toBeGreaterThanOrEqual(0);
+    expect(execIdx).toBeGreaterThan(preIdx);
+  });
+
+  it('uses the same renet path for the renewal as for the backup itself', async () => {
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'nightly-cold',
+      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
+      [{ name: 'dest', storage: 'microsoft' }],
+      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      '/mnt/rediacc',
+      '/opt/rediacc/bin/renet'
+    );
+    expect(serviceContent).toContain(
+      'ExecStartPre=-/opt/rediacc/bin/renet license renew --jitter 45s'
+    );
+    expect(serviceContent).not.toContain('ExecStartPre=-/usr/bin/renet');
+  });
+
   it('throws on conflicting env vars across destinations', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>

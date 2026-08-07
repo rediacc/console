@@ -187,6 +187,34 @@ export function buildBackupCommands(
   return { commands, envVars };
 }
 
+/**
+ * Jitter for the pre-backup renewal. A fleet of machines whose timers all fire
+ * on the hour would otherwise arrive at the account server as one burst; 45s
+ * spreads them without meaningfully delaying a backup that routinely runs for
+ * hours.
+ */
+const LICENSE_RENEW_JITTER = '45s';
+
+/**
+ * The best-effort licence renewal that runs before every scheduled backup.
+ *
+ * Scheduled backups validate at the strict Full tier and the machine holds no
+ * account credentials, so before self-renewal existed a fork licence simply
+ * hard-expired after 7 days and the unattended backup died silently. `renet
+ * license renew` presents the installed blob as its own bearer credential, so
+ * the machine can refresh without ever holding a token.
+ *
+ * The `-` prefix on ExecStartPre is doing two jobs and both are load-bearing:
+ *   - a renewal the server refuses (one lapsed repo, a network blip) must never
+ *     stop the backup of every OTHER repo on the machine;
+ *   - a renet older than this feature exits non-zero on the unknown `license`
+ *     command, and without the prefix that would take out backups on every
+ *     machine whose binary has not been re-provisioned yet.
+ */
+function licenseRenewCommand(remoteRenetPath: string): string {
+  return `-${remoteRenetPath} license renew --jitter ${LICENSE_RENEW_JITTER}`;
+}
+
 interface ServiceUnitBuild {
   /** Full systemd .service file content. */
   serviceContent: string;
@@ -217,6 +245,7 @@ export function generateServiceUnit(
   const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
   const envFileLine =
     Object.keys(envVars).length > 0 ? `EnvironmentFile=${envFilePath(strategyName)}\n` : '';
+  const renewLine = `ExecStartPre=${licenseRenewCommand(remoteRenetPath)}\n`;
 
   // TimeoutStartSec=infinity: backups can legitimately take > 24 h for a
   // first full seed of a large repo. Any finite cap eventually bites.
@@ -231,7 +260,7 @@ After=network-online.target
 Type=oneshot
 TimeoutStartSec=infinity
 TimeoutStopSec=90
-${envFileLine}${execLines.join('\n')}
+${envFileLine}${renewLine}${execLines.join('\n')}
 
 [Install]
 WantedBy=multi-user.target

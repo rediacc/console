@@ -21,12 +21,12 @@ jobs:
     strategy:
       # fail-fast: false, and the reason is diagnostic rather than stylistic.
       # GitHub's matrix fail-fast cancels every sibling the moment one leg fails,
-      # BEFORE the watchdog is ever consulted, so the `no-cancel-failure` label
-      # cannot reach it. On a branch being driven to green that turns each round
-      # into one failure instead of the whole surface, which is the exact
-      # serialisation this program is trying to remove. Its siblings
-      # ci-build-docker.yml and ci-build-renet.yml already set it; these two were
-      # the odd ones out.
+      # BEFORE the watchdog is ever consulted, so a cancelled sibling never
+      # reaches a verdict and never appears in the watchdog's failure roster. On
+      # a branch being driven to green that turns each round into one failure
+      # instead of the whole surface, which is the exact serialisation this
+      # program is trying to remove. Its siblings ci-build-docker.yml and
+      # ci-build-renet.yml already set it; these two were the odd ones out.
       fail-fast: false
       matrix:
         include:

@@ -23,6 +23,14 @@ const tagName = z
   .max(63)
   .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/);
 
+// `name` for a datastore, `name:tag` for a datastore fork (flat entries,
+// matching the machine-side registry key `<parent>:<tag>`).
+const datastoreRef = z
+  .string()
+  .min(1)
+  .max(127)
+  .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(:[a-z0-9]([a-z0-9-]*[a-z0-9])?)?$/);
+
 const absolutePath = z.string().refine((v) => v.startsWith('/'), 'Must be an absolute path');
 
 const AcmeCertCacheSchema = z.object({
@@ -114,9 +122,15 @@ const CanarySetSchema = z.object({
 export const StateSchema = z.object({
   datastores: z
     .record(
-      resourceName,
+      datastoreRef,
       z.object({
         attachedTo: resourceName.optional(),
+        // The machine that last held this datastore, recorded at detach.
+        // renet's registry row (the ceph pool/image record a relocation must
+        // ferry) survives only on that machine, so without this a DETACHED
+        // datastore cannot be attached anywhere else — the ferry has no
+        // source. Never cleared, only overwritten by the next detach.
+        lastHolder: resourceName.optional(),
         writes: z.enum(['ceph', 'local']).optional(),
         mounted: z.boolean().optional(),
         mountPath: absolutePath.optional(),

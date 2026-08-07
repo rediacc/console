@@ -165,7 +165,10 @@ def _selftest() -> int:
 
     chk("loads a non-empty site set", len(SITE_LOCALES) > 0)
     chk("default locale is a member", DEFAULT_LOCALE in SITE_LOCALES)
-    chk("non-english excludes exactly the default", len(NON_ENGLISH_LOCALES) == len(SITE_LOCALES) - 1)
+    chk(
+        "non-english excludes exactly the default",
+        len(NON_ENGLISH_LOCALES) == len(SITE_LOCALES) - 1,
+    )
     chk("non-english omits the default", DEFAULT_LOCALE not in NON_ENGLISH_LOCALES)
     chk("order is preserved from the JSON", SITE_LOCALES[0] == "en")
     chk("is_site_locale accepts a member", is_site_locale(SITE_LOCALES[-1]))
@@ -195,7 +198,9 @@ def _selftest() -> int:
     # reject a typo. If the first of these ever fails, someone has coupled a capability
     # list to the site set.
     try:
-        assert_covered_by_site("capability", ["en", "de", "es", "fr", "ja", "ru", "zh", "ko", "pt", "it", "tr", "ar"])
+        assert_covered_by_site(
+            "capability", ["en", "de", "es", "fr", "ja", "ru", "zh", "ko", "pt", "it", "tr", "ar"]
+        )
         chk("a 12-code capability list is accepted, et absent (control)", True)
     except ValueError:
         chk("a 12-code capability list is accepted, et absent (control)", False)

@@ -84,6 +84,12 @@ export function getWindowsHomeInWSL(): string | null {
  * Gets the home directory for SSH-related files.
  * In WSL, returns the Windows user home (accessible as /mnt/c/Users/...)
  * so that SSH config and keys are accessible to Windows VS Code/SSH.
+ *
+ * The WSL branch is deliberate and must stay: Windows-side VS Code Remote SSH
+ * reads remote.SSH.configFile (see vscode/settings.ts getSSHConfigFileSetting),
+ * and it cannot resolve a path inside the Linux $HOME. Consequence for callers:
+ * this is NOT $HOME on WSL, so never print a hardcoded "~/.ssh/..." to the user.
+ * Interpolate the resolved path instead.
  */
 export function getSSHHome(): string {
   if (isWSL()) {

@@ -197,7 +197,7 @@ async function main() {
   // Group errors by rule
   const grouped = {};
   for (const err of errors) {
-    if (!grouped[err.rule]) grouped[err.rule] = [];
+    grouped[err.rule] ??= [];
     grouped[err.rule].push(err);
   }
 
@@ -223,4 +223,7 @@ async function main() {
   process.exit(1);
 }
 
-main();
+main().catch((/** @type {unknown} */ err) => {
+  console.error(err);
+  process.exit(1);
+});

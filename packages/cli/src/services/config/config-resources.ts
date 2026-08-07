@@ -157,20 +157,23 @@ class ConfigService extends ConfigServiceBase {
    * materializeClusterMachines (whose member names legitimately match their own
    * cluster's projection, so they must not trip the check).
    */
-  private async writeMachine(machineName: string, config: MachineConfig): Promise<void> {
+  private async writeMachine(name: string, config: MachineConfig): Promise<void> {
     const state = await this.getResourceState();
     const machines = state.getMachines();
-    machines[machineName] = config;
+    machines[name] = config;
     await state.setMachines(machines);
     try {
-      addMachineSSHConfigEntry({
-        machineName,
+      // Report the path actually written, never a hardcoded ~/.ssh/config_rediacc:
+      // under WSL getSSHHome() deliberately resolves to the WINDOWS home (see its
+      // doc comment), so the old message sent WSL users to the wrong file.
+      const path = addMachineSSHConfigEntry({
+        machineName: name,
         host: config.ip,
         port: config.port ?? DEFAULTS.SSH.PORT,
         sshUser: config.user,
         datastore: config.datastore,
       });
-      outputService.info(t('commands.config.machine.add.sshConfigWritten', { name: machineName }));
+      outputService.info(t('commands.config.machine.add.sshConfigWritten', { name, path }));
     } catch (err) {
       outputService.warn(t('commands.config.machine.add.sshConfigFailed', { error: String(err) }));
     }

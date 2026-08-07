@@ -4,8 +4,8 @@ description: "Kurcalamaya karşı kanıt lisans düzenleme, yerinde yetkilendiri
 category: "Guides"
 order: 8
 language: tr
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Lisans Zinciri ve Yetkilendirme
@@ -22,7 +22,7 @@ Bir hesap sunucusu tarafından düzenlenen her lisans, salt ekleme yapılan bir 
 
 ## Lisans Nasıl Düzenlenir
 
-CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu:
+CLI bir depo lisansı talep ettiğinde, hesap sunucusu:
 
 1. Abonelik için mevcut zincir başını (son sıra ve hash) okur.
 2. Sonraki sıra numarasını ve önceki zincir hash'ini içeren lisans yükünü oluşturur.
@@ -33,16 +33,65 @@ CLI bir makine aktivasyonu veya depo lisansı talep ettiğinde, hesap sunucusu:
 
 `sequence` ve `prevChainHash`, imzalı yükün içindedir (dolayısıyla imzayı geçersiz kılmadan değiştirilemezler). `chainHash` zarfın üzerindedir (döngüsel bağımlılıktan kaçınmak için imzalamadan sonra hesaplanır).
 
+## Lisans Nasıl Yenilenir
+
+Düzenleme, sizin kimliğinizle iş istasyonunuzdan yapılır. Yenileme ise hiçbir hesap kimlik bilgisi taşımayan makinenin kendisinden yapılır, bu yüzden ayrı bir kapıya ihtiyaç duyar:
+
+```
+POST /licenses/renew
+{ license: <the installed signed blob>, machineId, clusterId? }
+```
+
+**Sunulan lisansın kendisi kimlik bilgisidir.** Bu uç noktada API tokeni yoktur. Sunucu, blob'un Ed25519 imzasını, blob bir yetkilendirme sertifikası taşıyorsa onun üzerinden de, tıpkı Renet'in makinede yaptığı gibi doğrular. Bir depo için geçerli şekilde imzalanmış bir lisansa sahip olmak, hakkın kanıtıdır: elinde böyle bir lisans bulunan makineye bu hak zaten daha önce verilmiştir.
+
+Bu uç noktanın tam URL'si, sunucunun düzenlediği veya yenilediği her lisansın içinde `renewalUrl` alanında taşınır. Makine, kendi hesap sunucusunun adresini ayarlardan değil kendi lisansından okur; iki hesap evrenine birden hizmet eden bir makinenin her ikisine karşı da yenileme yapabilmesini sağlayan şey budur.
+
+Yenilenen blob, sunulan blob'un depo GUID'ini, grand GUID'ini ve türünü korur, aynı defterden bir sonraki sıra numarasını ve ondan türeyen zincir hash'ini alır ve yeniden hesaplanmış geçerlilik pencereleri kazanır. Makine kimliği, blob'u sunan makineye yeniden bağlanır; bir VM geçişinin 40 günlük ek süre içinde kendi kendini onarması bu sayede olur. Depolama kimliği (LUKS UUID veya depolama parmak izi) olduğu gibi taşınır, çünkü bir ağ çağrısı tarif ettiği diski yeniden tarayamaz.
+
+### Retler
+
+| Kod | Durum | Anlamı |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | Blob'un imzası doğrulanmadı veya zincir hash'i sunucunun o sıradaki defter kaydıyla eşleşmiyor |
+| `INVALID_LICENSE_PAYLOAD` | 400 | Blob bozuk |
+| `DELEGATION_CERT_INVALID` | 403 | Ekli sertifika bir kısıtlamayı veya ana anahtar imzasını karşılamadı |
+| `DELEGATION_CERT_EXPIRED` | 403 | Ekli sertifika geçerlilik penceresinin dışında |
+| `DELEGATION_CERT_REVOKED` | 403 | Ekli sertifika yukarı akışta iptal edilmiş |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | Lisansı sunan makine lisanslı makine değil ve 40 günlük ek süre dolmuş |
+| `SUBSCRIPTION_LAPSED` | 403 | Aboneliğin süresi dolmuş veya abonelik askıya alınmış |
+| `GRACE_PERIOD_ENDED` | 403 | Aboneliğin ek süresi bitmiş |
+| `TRIAL_REQUIRED` | 403 | Abonelik aktif bir deneme veya plan gerektiriyor |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | Depo GUID'i başka bir aboneliğe ait |
+| `LICENSE_RENEWAL_FAILED` | 500 | Sınıflandırılamayan her şey |
+
+Bir ret, yüklü lisansa dokunmaz. Makine, o lisansın kesin son kullanma tarihine kadar elindekiyle çalışmaya devam eder.
+
+### Yenileme ve makine slotu
+
+Başarılı bir yenileme, makinenin aktivasyon kaydına dokunur: makinenin slotu yoksa bir slot alır, varsa mevcut slotu tazeler. Düzenlemeden farklı olarak, limit aşıldı diye asla reddedilmez. Yanıt `overLimit` bilgisini taşır ve aktivasyon işaretlenir; böylece portal, lisans durumu uç noktası ve `rdc subscription status` bunu gösterebilir. Gerçekten yeni bir lisans düzenlemek ise tavanda hâlâ kesin olarak engellenir. Gerekçesi [Abonelik ve Lisanslama - Makine slotları](/tr/docs/subscription-licensing) sayfasındadır.
+
+### Dağıtım sırası
+
+Hesap sunucuları, yukarıdaki alanlara bağlı olan CLI ve Renet Agent derlemelerinden önce dağıtılır. Bir lisansta `renewalUrl` bulamayan bir Renet Agent, başarısız olmak yerine o depoyu atlar ve durumu bildirir; böylece iş istasyonu tarafından yapılacak bir yenileme alanı doldurana kadar eski lisans çalışmaya devam eder. Sırayı tersine çevirmek, size henüz var olmayan bir uç noktayı arayan makineler bırakır.
+
 ## Renet Nasıl Doğrular
 
-Renet çalıştıran her makine, son bilinen zincir durumunu `{licenseDir}/chain-state.json` adresinde saklar (yani depo başına `repos/` dizininin bir kardeşi olan `/var/lib/rediacc/license/chain-state.json`). Zincir durumu, `"<keyId>:<subscriptionId>"` şeklinde anahtarlanarak imzalama anahtarı ve abonelik başına kapsamlandırılır; böylece farklı anahtarlarla imzalanan evrenler sıralarını birbirinden bağımsız olarak takip eder. Her lisans doğrulamasında Renet şunları kontrol eder:
+Renet çalıştıran her makine, son bilinen zincir durumunu `{licenseDir}/chain-state.json` adresinde saklar (yani depo başına `repos/` dizininin bir kardeşi olan `/var/lib/rediacc/license/chain-state.json`). Zincir durumu, `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` şeklinde anahtarlanarak imzalama anahtarı, abonelik, depo ve veri deposu başına kapsamlandırılır (veri deposu kısmı, makinenin varsayılan veri deposundaki bir depo için boş kalır).
+
+Bu anahtarın depo ve veri deposu kısımları taşıyıcı bir rol üstlenir. Sunucudaki sıra numaraları abonelik başına verildiğinden, tek bir abonelik altında birden fazla depo barındıran bir makinede B deposu için kaydedilmiş bir zincir başı, A deposunun az sonra sunacağı lisansın ilerisinde kalır ve A deposu, hiç ilgisi olmayan bir tekrar oynatma sanılarak reddedilir. Bir veri deposu fork'u aynı sorunu keskinleştirir: klon, deponun GUID'ini korur ve yalnızca veri deposu kimliği yeniden basılır; bu yüzden veri deposu kısmı olmadan fork'un daha yeni lisansı, orijinalin hâlâ karşı doğrulama yaptığı bir başı ileri taşır. Kaydedilen başın, lisansın adını taşıdığı depoya ve veri deposuna göre kapsamlandırılması bu iki sorunu da ortadan kaldırır. Daha eski bir Renet Agent tarafından daha kısa bir anahtar biçiminde yazılmış girdiler, durum ilk kez kaydedildiğinde atılır ve bir sonraki doğrulama başı yeniden oluşturur.
+
+Zincir durumu yalnızca tam katmanda doğrulanan işlemlerde okunur ve ilerletilir. İşletim katmanı onu ne okur ne de ilerletir; dolayısıyla bir depoyu başlatmak hiçbir zaman bir başı hareket ettiremez.
+
+Her lisans doğrulamasında Renet şunları kontrol eder:
 
 | Kontrol | Başarısızlık anlamı |
 |---|---|
 | Ed25519 imzası geçerli | Lisans sahte veya kurcalanmış |
-| `sequence > lastKnownSequence` | Sunucu zinciri geri aldı (tekrar oynatma saldırısı) |
+| `sequence >= lastKnownSequence` | Sunucu zinciri geri aldı (tekrar oynatma saldırısı) |
+| `lastKnownSequence` tekrarı aynı `chainHash` değerini taşıyor | Çatallanmış bir zincir aynı sıra numarasını yeniden kullandı |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | Zincir girdisi değiştirilmiş |
-| `issuedAt >= lastKnownIssuedAt` | Saat manipülasyonu (sunucu saati geriye ayarlandı) |
+
+Zaten yüklü olan lisansı yeniden doğrulamak bir gerileme sayılmaz: aynı sıra numarası aynı zincir hash'iyle birlikte kabul edilir ve bir makinenin her depo başlatışında aynı dosyayı doğrulayabilmesini sağlayan da budur.
 
 Herhangi bir kontrol başarısız olursa, lisans reddedilir ve başarısızlık nedeni raporlanır.
 
