@@ -56,7 +56,7 @@ def declared(root):
     gm = root / ".gitmodules"
     if not gm.is_file():
         return []
-    return re.findall(r"^\s*path\s*=\s*(.+?)\s*$", gm.read_text(encoding="utf-8"), re.M)
+    return re.findall(r"^\s*path\s*=\s*(.+?)\s*$", gm.read_text(encoding="utf-8"), re.MULTILINE)
 
 
 def verdicts(root, paths):
