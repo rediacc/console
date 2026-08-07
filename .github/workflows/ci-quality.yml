@@ -192,6 +192,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/check-commands.sh
 
+      # A review that runs out of turns posts NOTHING and still spends an attempt against a
+      # finite allowance, so an under-resourced budget is the expensive failure, not the
+      # cheap one. Asserts the budget cannot starve any diff size it is willing to route.
+      - name: Review turn budget cannot starve a routed review
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-review-turn-capacity
+
       # Catches `aws s3 ls | wc -l`-style pipelines that abort a `set -eo
       # pipefail` script on empty input. Written after three such outages in
       # one day.
