@@ -2653,6 +2653,10 @@
           {
             "answer": "在 14 天试用期内取消，不会产生任何费用。之后取消付费方案，你可以继续使用其功能，直到当前计费周期结束，账户才会转为免费的 Community 方案。你的仓库全程正常运行。",
             "question": "如果我取消订阅会怎样？"
+          },
+          {
+            "answer": "集群中的每个节点都是一台机器，每台都按机器计数。集群没有共享额度，也不会因为把多台服务器组合在一起而打折。只有当仓库部署到节点上时，该节点才会占用一个名额，因此搭建集群本身不产生任何费用。集群功能通过我们的合作伙伴作为 Enterprise 协议的一部分出售，节点数量在下单时商定。",
+            "question": "集群节点如何计数？"
           }
         ]
       },
@@ -4040,19 +4044,19 @@
           "statCallouts": [
             {
               "number": "194 days",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "识别数据泄露的平均时间"
             },
             {
               "number": "180%",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Verizon DBIR 2024",
               "text": "漏洞利用作为初始入侵向量的增长"
             },
             {
               "number": "$4.88M",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "数据泄露的平均成本"
             }
@@ -4503,19 +4507,19 @@
           "statCallouts": [
             {
               "number": "204 days",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "识别数据泄露的平均时间"
             },
             {
               "number": ">1/3",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "的数据泄露涉及影子数据，导致取证调查复杂化"
             },
             {
               "number": "$1.76M",
-              "ref": "[1]",
+              "ref": 1,
               "source": "IBM Cost of Data Breach 2024",
               "text": "安全人员不足延迟响应所产生的额外泄露成本"
             }
@@ -5944,19 +5948,19 @@
           "statCallouts": [
             {
               "number": "364 days",
-              "ref": "",
+              "ref": 0,
               "source": "Industry standard: 365 days minus testing window",
               "text": "年度渗透测试之间的暴露期"
             },
             {
               "number": "30.6 days",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Qualys TruRisk Research Report 2023",
               "text": "武器化漏洞的平均修复时间"
             },
             {
               "number": "$4.88M",
-              "ref": "[2]",
+              "ref": 2,
               "source": "IBM Cost of a Data Breach 2024",
               "text": "数据泄露的平均成本"
             }
@@ -6879,19 +6883,19 @@
           "statCallouts": [
             {
               "number": "Only 8%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
               "text": "的组织加密了 80% 以上的云数据"
             },
             {
               "number": "$4.88M",
-              "ref": "[2]",
+              "ref": 2,
               "source": "IBM Cost of Data Breach 2024",
               "text": "全球数据泄露的平均成本"
             },
             {
               "number": "57%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Thales 2025 Cloud Security Study",
               "text": "的组织使用 5 个以上的密钥管理系统，导致加密盲区"
             }
@@ -11801,19 +11805,19 @@
           "statCallouts": [
             {
               "number": "24 days",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Coveware Quarterly Report",
               "text": "平均恢复时间"
             },
             {
               "number": "$9,000",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Splunk/Oxford Economics 2024",
               "text": "每分钟宕机成本"
             },
             {
               "number": "80%",
-              "ref": "[3]",
+              "ref": 3,
               "source": "Cybereason 2022",
               "text": "付了赎金的受害者再次被攻击的比例"
             }
@@ -13353,19 +13357,19 @@
           "statCallouts": [
             {
               "number": "27%",
-              "ref": "[1]",
+              "ref": 1,
               "source": "Flexera 2024 State of the Cloud Report",
               "text": "的云 IaaS/PaaS 支出被浪费"
             },
             {
               "number": "17%",
-              "ref": "[2]",
+              "ref": 2,
               "source": "Flexera 2025 State of the Cloud Report",
               "text": "组织平均云预算超支比例"
             },
             {
               "number": "$0.09/GB",
-              "ref": "[3]",
+              "ref": 3,
               "source": "AWS/Azure/GCP Pricing 2024",
               "text": "设计上让离开变得昂贵的出站流量费"
             }
@@ -14346,10 +14350,10 @@
           ],
           "id": "subscriptions",
           "items": [
-            "<strong>社区版</strong>（免费）——限 2 台机器激活，核心功能，社区支持",
-            "<strong>专业版</strong>——最多 5 台机器激活，审计日志，优先支持，自定义品牌",
-            "<strong>商业版</strong>——最多 20 台机器激活，分布式存储，高级分析，专属客户成功经理",
-            "<strong>企业版</strong>——最多 50 台机器激活，专用基础设施，自定义集成，7×24 小时支持"
+            "<strong>Community</strong>（免费）：1 个机器激活，核心功能，社区支持。这是试用期或付费订阅结束后，您的账户回落到的默认计划。",
+            "<strong>Professional</strong>：1 个机器激活，审计日志，优先支持，自定义品牌",
+            "<strong>Business</strong>：1 个机器激活，分布式存储，高级分析，专属客户成功经理",
+            "<strong>Enterprise</strong>：专属基础设施，定制集成，24/7 支持，以及在订单中设定的机器激活上限。如未协商上限，则默认适用 25 个机器激活。Enterprise 通过我们的合作伙伴销售。"
           ],
           "subsections": {
             "billing": {
@@ -14359,6 +14363,15 @@
                 "我们保留在提前三十 (30) 天通知的情况下更改价格的权利。价格变更不会影响您当前的计费周期。如果您不同意价格变更，可以在下一个计费周期之前取消订阅。"
               ],
               "title": "5.1 Billing"
+            },
+            "clusters": {
+              "content": [
+                "<strong>\"集群\"</strong>指您使用本服务共同运营、作为单一存储或计算资源池的两台或更多机器。<strong>\"节点\"</strong>指作为集群成员的一台机器。就本条款而言，节点在所有用途上均视为机器，每个节点消耗一个机器激活。集群不进行合并计算，也不享受折扣：由五个节点组成的集群将消耗五个机器激活。",
+                "您的<strong>机器激活上限</strong>是指同一时间可持有激活的机器的最大数量。该上限记录在您的订阅中，并由您的订单决定。上文列出的各层级数值是标准的、不可协商的默认值；订单或合作伙伴协议中约定的上限将取代该订阅的默认值。集群功能仅在 Enterprise 及合作伙伴协议下提供。",
+                "当仓库在某台机器上被创建、复制或放置时，将消耗一个机器激活，并在一段不活跃期后自动释放。仅搭建基础设施（包括创建集群以及将节点加入集群）不会消耗激活。",
+                "当所有激活均已被占用时，Rediacc 可拒绝激活额外的机器。已持有激活的机器可继续运行，并可续订其现有许可证，Rediacc 可将此类续订记录为超出您的上限。当机器激活上限持续被超出时，Rediacc 可与您联系以协调您的订阅。"
+              ],
+              "title": "5.5 机器激活、集群与节点"
             },
             "gracePeriod": {
               "content": [

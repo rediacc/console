@@ -47,6 +47,23 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 REGISTRY=(
     "check-translation-hashes.ts|locale"
     "check-translation-completeness.ts|locale"
+    # The probe gate's subject is a single library file. Against an empty tree
+    # that file is absent, and "nothing to check" must be a FAILURE: a liveness
+    # gate that silently passes when it cannot reach the probe would recreate
+    # the very class it exists to catch (a check that cannot tell absent from
+    # present). It also refuses when python3 is missing, because its control
+    # listener could not fire.
+    ".ci/scripts/quality/check-account-probes.sh|nothing to check"
+    # NOT registered: .ci/scripts/quality/check-drill-verdicts.sh. Its sibling
+    # above IS, and the asymmetry is real rather than an oversight. The probe
+    # gate's subject is .ci/lib/account.sh, which this harness's fixture does
+    # NOT copy, so an empty tree genuinely starves it. The drill-verdict gate's
+    # subject is scripts/drills/lib.sh, and the fixture DOES copy scripts/ — so
+    # on the "empty" tree its subject is present, all four verdict assertions
+    # run for real, and it correctly exits 0. Registering it asserted that a
+    # gate must fail when its input exists, which is backwards; the meta-gate
+    # caught exactly that on the first run. Its own missing-subject branch is
+    # real but unreachable from here.
     # Against an empty tree every oracle is unavailable, so the run is vacuous
     # and must FAIL rather than report "every entry is still load-bearing".
     "check-suppression-liveness.ts|vacuous"
@@ -54,6 +71,40 @@ REGISTRY=(
     # to `exit 0` when private/renet was absent, silently taking govulncheck,
     # deadcode and golangci-lint with it.
     ".ci/scripts/private/run-renet.sh|required"
+    # Same submodule, same failure mode: with private/renet absent it would run
+    # `go test` over nothing and report that the licence tier map covers the
+    # function registry. The CLI now derives its licence-issuance class from
+    # that map, so a vacuous green here would launder a console defect too.
+    ".ci/scripts/quality/check-renet-tier-map.sh|required"
+    # Same shape again: `require_submodule ... || exit 0` becomes a hard fail
+    # under CI=true (which this harness sets), so an empty tree is a loud
+    # "required in CI but missing" rather than a green diff of nothing.
+    ".ci/scripts/quality/check-renet-types.sh|required"
+    # Python lint. Against an empty tree `git ls-files` enumerates nothing and
+    # `ruff check` with no paths exits 0 -- indistinguishable from a clean repo,
+    # which is the exact shape this harness exists to catch. The input floor is
+    # therefore checked BEFORE the linter is even resolved, so the empty-tree
+    # failure is about VACUITY and not about a missing binary: an absent ruff
+    # would be an ENVIRONMENT failure wearing a vacuity failure's exit code, and
+    # pinning that would assert nothing about the gate.
+    ".ci/scripts/quality/check-python-lint.sh|VACUOUS INPUT"
+    # Same shape, different subject: against an empty tree `git ls-files` returns
+    # no JS/TS at all and the detector would report "no inline Python" over zero
+    # files -- indistinguishable from a clean repo. The MIN_FILES floor turns
+    # that into a loud refusal. Its own detector controls run first and abort
+    # separately, so a control failure cannot masquerade as this one.
+    ".ci/scripts/quality/check_inline_python.py|VACUOUS INPUT"
+    # Against an empty tree there are no locale files at all, so every comparison
+    # is over an empty set and the gate would exit 0 reporting that every value
+    # matches. The MIN_PAIRS floor turns that into a loud refusal.
+    ".ci/scripts/quality/check_i18n_value_types.py|VACUOUS INPUT"
+    # Against an empty tree the probe locale file is absent, so no rule set can
+    # be resolved at all and the gate would otherwise report that zero enabled
+    # rules are healthy -- which is what a healthy repo looks like too.
+    ".ci/scripts/quality/check_lint_rule_liveness.py|VACUOUS INPUT"
+    # An empty tree tracks no js/ts at all, so "every file reaches a linter" is
+    # trivially true over zero files -- indistinguishable from full coverage.
+    ".ci/scripts/quality/check_lint_scope_coverage.py|VACUOUS INPUT"
     # NOT registered here: .ci/breakpoint/scripts/check-breakpoint-drift.sh.
     # This harness's fixture copies scripts/ and .ci/scripts/ but not
     # .ci/breakpoint/, so the drift gate would fail with "No such file or
@@ -110,6 +161,19 @@ REGISTRY=(
     # printed "All external links are valid". Measured on the empty fixture
     # before the guard was added, not inferred from reading it.
     "check-external-links.ts|Refusing to run"
+    # Root pattern 1 with a baseline bolted on, which makes it worse: with the locale
+    # trees absent it finds zero contamination AND every one of its 379 baselined
+    # findings looks fixed, so an unguarded version would either print a checkmark or
+    # fail for the wrong reason. It must refuse instead.
+    "check-locale-de-contamination.ts|Refusing to run"
+    # Its sibling, and root pattern 1 again: three hardcoded locale-root constants, so a
+    # tree without any of them made it walk zero locales and print a checkmark. It was
+    # NOT registered here while it carried a second, subtler vacuity inside itself --
+    # `if (!STOPWORDS[locale]) continue` silently skipped ar/ja/ko/ru/zh/et, which is how
+    # 379 German values lived in account-web's ar/ja/ru/zh under a green gate. That skip
+    # is now a hard error naming the locale, so the only way left to make this gate
+    # assert nothing is to take its input away -- which is exactly what this entry pins.
+    "check-i18n-cross-locale.ts|Refusing to run"
     # NOT registered here: .ci/scripts/test/gates/test-skip-plan-reconcile.sh.
     # Measured, not assumed: it passes all 55 assertions against the empty tree,
     # because it is a pure unit test that builds every fixture it needs (its
@@ -197,8 +261,15 @@ run_against_empty_tree() {
     # deliberately soften to a warning locally (require_submodule in
     # .ci/scripts/lib/common.sh does exactly that, so a fresh clone without
     # --recursive stays workable while CI still fails loudly).
+    # .sh and .py are repo-root-relative and run directly; everything else is a
+    # .ts under scripts/, run via tsx. The else-branch used to be the ONLY
+    # alternative to .sh, which silently resolved any new language to
+    # "scripts/<path>" and failed as a stale-registry error rather than as an
+    # unsupported one -- the first .py entry hit exactly that.
     if [[ "$script" == *.sh ]]; then
         out="$(cd "$TEMP" && CI=true bash "$script" 2>&1)" || rc=$?
+    elif [[ "$script" == *.py ]]; then
+        out="$(cd "$TEMP" && CI=true python3 "$script" 2>&1)" || rc=$?
     else
         out="$(cd "$TEMP" && CI=true npx tsx "scripts/$script" 2>&1)" || rc=$?
     fi
@@ -236,8 +307,9 @@ test_registry_entries_exist() {
     local entry script
     for entry in "${REGISTRY[@]}"; do
         script="${entry%%|*}"
-        # .sh entries are repo-root-relative; .ts entries are relative to scripts/.
-        if [[ "$script" == *.sh ]]; then
+        # .sh and .py entries are repo-root-relative; .ts entries are relative
+        # to scripts/.
+        if [[ "$script" == *.sh || "$script" == *.py ]]; then
             [[ -f "$REPO_ROOT/$script" ]] ||
                 log_fail "registry names $script, which does not exist -- the registry has gone stale"
         elif [[ ! -f "$REPO_ROOT/scripts/$script" ]]; then

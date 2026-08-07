@@ -5,6 +5,7 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
@@ -12,16 +13,69 @@ import { getSubscriptionTokenState } from './subscription-auth.js';
 
 const LICENSE_DIR = '/var/lib/rediacc/license';
 const REPO_LICENSE_DIR = `${LICENSE_DIR}/repos`;
+const DATASTORE_LICENSE_DIR = `${LICENSE_DIR}/datastores`;
 const CLIENT_MACHINE_ID_PATH = '/etc/machine-id';
 const DEFAULT_DATASTORE = '/mnt/rediacc';
 
+/**
+ * What renet accepts as a datastore identity path segment, copied from
+ * `datastoreIDPattern` in renet's pkg/license/store.go. Anything else is
+ * treated as "no identity" (unscoped) on both sides, so a corrupt descriptor
+ * degrades to the legacy layout instead of making the store unwritable.
+ */
+const DATASTORE_ID_PATTERN = /^[0-9a-fA-F-]{8,64}$/;
+
+/**
+ * Whether a datastore identity is usable as a license-store scope, mirroring
+ * renet's `IsDatastoreScoped` (pkg/license/store.go).
+ *
+ * Exported because the ISSUANCE side has to answer the same question BEFORE it
+ * spends anything: a caller that resolves an identity it believes will scope
+ * the write, only for `repoLicenseDirFor` to reject it as malformed and fall
+ * back to the unscoped path, has burned a slot on a blob renet will never read.
+ * One predicate, asked in both places.
+ */
+export function isDatastoreScopedId(datastoreId: string | undefined): datastoreId is string {
+  return !!datastoreId && DATASTORE_ID_PATTERN.test(datastoreId);
+}
+
 interface RemoteRepoLicenseScanEntry {
   repositoryGuid: string;
+  /**
+   * Identity of the datastore holding this repo, minted at datastore create
+   * and REMINTED at fork. It scopes both the signed payload and the on-machine
+   * license store, which is what makes a same-node datastore fork re-meter.
+   * Absent for the plain default datastore, which carries no descriptor.
+   */
+  datastoreId?: string;
+  datastorePath?: string;
   requestedSizeGb: number;
   luksUuid?: string;
   storageFingerprint?: string;
   currentRefreshRecommendedAt?: string;
   currentHardExpiresAt?: string;
+}
+
+/** The persistent marker renet's backup gate writes when licensing refuses a backup. */
+interface RepoLicenseBlockedBackup {
+  repositoryGuid: string;
+  code: string;
+  reason: string;
+  message: string;
+  at: string;
+  source: string;
+}
+
+/** One repo's slice of the last unattended `renet license renew` run. */
+interface RepoLicenseRenewal {
+  repositoryGuid: string;
+  datastoreId?: string;
+  keyId: string;
+  outcome: string;
+  newKeyId?: string;
+  newSequence?: number;
+  code?: string;
+  message?: string;
 }
 
 export type RepoBatchRecoveryFailureMode =
@@ -61,7 +115,14 @@ export interface SubscriptionLicenseReport {
   machineSlots: {
     active: number;
     max: number;
-    machines: { machineId: string; lastSeenAt: string; activatedAt?: string }[];
+    machines: {
+      machineId: string;
+      lastSeenAt: string;
+      activatedAt?: string;
+      /** A renewal soft-claimed this slot beyond the machine-slot limit. */
+      overLimit?: boolean;
+      clusterId?: string;
+    }[];
   };
   repoLicenseIssuances: RepoLicenseIssuancesUsage;
   repoLicenses: {
@@ -104,6 +165,11 @@ export interface RuntimeRepoLicenseStatus {
   machineId?: string;
   kind?: string;
   grandGuid?: string;
+  datastoreId?: string;
+  datastorePath?: string;
+  /** Present = unattended backups for this repo have been failing on licensing. */
+  blockedBackup?: RepoLicenseBlockedBackup;
+  lastRenewal?: RepoLicenseRenewal;
 }
 
 async function readRemoteMachineId(sftp: SFTPClient, remoteRenetPath?: string): Promise<string> {
@@ -170,38 +236,69 @@ async function readLocalMachineId(): Promise<string> {
   return (await readFile(CLIENT_MACHINE_ID_PATH, 'utf-8')).trim();
 }
 
-async function readRepoIdentity(
-  sftp: SFTPClient,
-  datastore: string,
-  repositoryGuid: string
-): Promise<{ luksUuid?: string; storageFingerprint?: string }> {
-  const repoPath = `${datastore}/repositories/${repositoryGuid}`;
-  const luksUuid = (
-    await sftp.exec(`sudo sh -lc 'cryptsetup luksUUID "${repoPath}" 2>/dev/null || true'`)
-  ).trim();
-  if (luksUuid) {
-    return { luksUuid };
-  }
+/**
+ * Printed by the size probe when it could not measure the image. Deliberately
+ * not a number: `else echo 0` made a missing image and a real zero the same
+ * bytes, so the caller reported the 1 GB floor as though it had measured it.
+ */
+const REPO_SIZE_PROBE_UNKNOWN = 'rediacc-size-unknown';
 
-  const storageFingerprint = (
-    await sftp.exec(
-      `sudo sh -lc 'if [ -e "${repoPath}" ]; then stat -c "%F:%d:%i:%s:%Y" "${repoPath}"; fi'`
-    )
-  ).trim();
-  return storageFingerprint ? { storageFingerprint } : {};
-}
+/** Floor for a size request. renet compares `requested > limit`, so it never over-claims. */
+const MIN_REQUESTED_SIZE_GB = 1;
 
+/**
+ * Measure a repo's image, or answer `null` when it could not be measured.
+ *
+ * `null` rather than a number, because the two are genuinely different facts
+ * and the old signature could not express the second one. The caller decides
+ * what an unmeasurable image is worth; this only reports what it saw.
+ */
 async function readRepoSizeGb(
   sftp: SFTPClient,
   datastore: string,
   repositoryGuid: string
-): Promise<number> {
+): Promise<number | null> {
   const repoPath = `${datastore}/repositories/${repositoryGuid}`;
   const bytesOutput = await sftp.exec(
-    `sudo sh -lc 'if [ -e "${repoPath}" ]; then stat -c %s "${repoPath}" 2>/dev/null; else echo 0; fi'`
+    `sudo sh -lc 'if [ -e "${repoPath}" ]; then stat -c %s "${repoPath}" 2>/dev/null || echo ${REPO_SIZE_PROBE_UNKNOWN}; else echo ${REPO_SIZE_PROBE_UNKNOWN}; fi'`
   );
-  const bytes = Number.parseInt(bytesOutput.trim(), 10);
-  return Math.max(1, Math.ceil((Number.isFinite(bytes) ? bytes : 0) / (1024 * 1024 * 1024)));
+  const probe = bytesOutput.trim();
+  if (!/^\d+$/.test(probe)) return null;
+  return Math.max(
+    MIN_REQUESTED_SIZE_GB,
+    Math.ceil(Number.parseInt(probe, 10) / (1024 * 1024 * 1024))
+  );
+}
+
+/**
+ * Measure the repo image across the candidate mounts, best answer first, and
+ * say so out loud if none of them could answer.
+ *
+ * A list rather than one path because the three sources genuinely disagree in
+ * rank: the machine's own scan knows where the repo lives, the caller knows
+ * what placement it recorded, and the machine default is a guess that is only
+ * right for a default-datastore repo. Trying them in order costs one extra
+ * `stat` in the rare case where the better source is absent, and it removes the
+ * failure mode that made this worth fixing — measuring the wrong mount and
+ * reporting the floor as though it were a measurement.
+ */
+async function measureRepoSizeGb(
+  sftp: SFTPClient,
+  repositoryGuid: string,
+  candidateMounts: (string | undefined)[]
+): Promise<number> {
+  const mounts = [...new Set(candidateMounts.filter((m): m is string => !!m))];
+  for (const mount of mounts) {
+    const measured = await readRepoSizeGb(sftp, mount, repositoryGuid);
+    if (measured !== null) return measured;
+  }
+  outputService.warn(
+    `Could not measure repository ${repositoryGuid} on ${mounts.join(', ') || 'any datastore'}, ` +
+      `so its license is being requested at the ${MIN_REQUESTED_SIZE_GB} GB minimum instead of ` +
+      `its real size. If this repository lives on a named datastore, check that its recorded ` +
+      `placement matches where the image actually is ("rdc config reconcile").`
+  );
+  return MIN_REQUESTED_SIZE_GB;
 }
 
 export async function readMachineActivationStatus(
@@ -239,15 +336,30 @@ export async function readMachineActivationStatus(
   );
 }
 
+/**
+ * `--all-datastores` on every scan, and it is a correctness fix rather than a
+ * convenience: without it a scan sees only the machine's primary datastore, so
+ * every repo living in a NAMED datastore was invisible to `subscription
+ * refresh` and to the license table. Those repos still expire, still block
+ * backups, and still need renewal; they were simply never looked at. renet
+ * folds the primary and every attached named datastore into one array, tagging
+ * each entry with the datastore it came from.
+ */
+function licenseScanCommand(
+  verb: 'license-scan' | 'license-status',
+  renetPath: string,
+  datastore: string
+): string {
+  return `sudo ${renetPath} repository ${verb} --datastore '${datastore}' --all-datastores --output json`;
+}
+
 async function scanRemoteLicenseStatuses(
   sftp: SFTPClient,
   datastore: string,
   remoteRenetPath?: string
 ): Promise<RuntimeRepoLicenseStatus[]> {
   const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(
-    `sudo ${renetPath} repository license-status --datastore '${datastore}' --output json`
-  );
+  const output = await sftp.exec(licenseScanCommand('license-status', renetPath, datastore));
   const parsed = JSON.parse(output) as unknown;
   return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
 }
@@ -268,6 +380,21 @@ export async function readRuntimeRepoLicenseStatuses(
   );
 }
 
+/**
+ * The cluster this machine belongs to, for the informational `clusterId` that
+ * rides every issuance and renewal. It exists so support and analytics can see
+ * cluster context; it carries no enforcement semantics.
+ *
+ * KNOWN LIMITATION: the design names the cluster CA fingerprint as the value,
+ * but no CLI surface exposes that fingerprint yet, so this sends the cluster
+ * NAME from the config. Names are unique within a config and stable in
+ * practice, which is enough for the telemetry this field is for; swapping in
+ * the fingerprint is a one-line change here once it has a reader.
+ */
+function clusterIdFor(machine: MachineConfig): string | undefined {
+  return machine.cluster?.cluster;
+}
+
 export async function issueRepoLicense(
   machine: MachineConfig,
   sshPrivateKey: string,
@@ -278,6 +405,7 @@ export async function issueRepoLicense(
     requestedSizeGb: number;
     luksUuid?: string;
     storageFingerprint?: string;
+    datastoreId?: string;
   },
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
@@ -308,13 +436,69 @@ export async function issueRepoLicense(
             requestedSizeGb: params.requestedSizeGb,
             luksUuid: params.luksUuid,
             storageFingerprint: params.storageFingerprint,
+            datastoreId: params.datastoreId,
+            clusterId: clusterIdFor(machine),
           },
         }
       );
-      await writeRepoLicense(sftp, params.repositoryGuid, license);
+      // The blob must land in the population renet reads for THIS datastore,
+      // which is the same identity that was just stamped into the payload.
+      await writeRepoLicense(sftp, params.repositoryGuid, license, params.datastoreId);
       return true;
     }
   );
+}
+
+/**
+ * Identity proofs, size and datastore identity for ONE repo, read from renet's
+ * own license scan.
+ *
+ * The scan is the source rather than a `stat` of our own, and that is a
+ * correctness requirement, not a tidiness one. `storageFingerprint` is a signed
+ * payload field whose exact bytes renet re-derives and compares
+ * (pkg/license/identity.go); its format is `kind:size:mtime:mode` with Go's
+ * FileMode bits, which no `stat -c` format string reproduces. The CLI used to
+ * mint `%F:%d:%i:%s:%Y` here, a string that can never equal renet's, so every
+ * non-LUKS repo (kube repos are directories, not LUKS images) carried a
+ * fingerprint that would fail the moment renet's comparison started firing.
+ * Reading the scan means there is exactly one producer of those bytes.
+ *
+ * It also answers WHICH datastore the repo lives in, which the machine's
+ * primary-datastore path cannot: a repo in a named datastore needs that
+ * datastore's identity both in the payload and in the store path.
+ */
+async function readRepoLicenseInputs(
+  sftp: SFTPClient,
+  datastore: string,
+  repositoryGuid: string,
+  remoteRenetPath?: string
+): Promise<{
+  luksUuid?: string;
+  storageFingerprint?: string;
+  datastoreId?: string;
+  datastorePath?: string;
+  requestedSizeGb?: number;
+}> {
+  try {
+    const scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
+    const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
+    if (entry) {
+      return {
+        luksUuid: entry.luksUuid,
+        storageFingerprint: entry.storageFingerprint,
+        datastoreId: entry.datastoreId,
+        // The mount the machine itself reports for this repo. Better than
+        // anything the client can derive, and it is the datastore the size
+        // probe below must measure when the scan could not price the repo.
+        datastorePath: entry.datastorePath,
+        requestedSizeGb: entry.requestedSizeGb,
+      };
+    }
+  } catch {
+    // An older renet, or a scan that cannot read a datastore, must not stop a
+    // reissue: an unproven license still beats no license.
+  }
+  return {};
 }
 
 export async function refreshRepoLicenseIdentity(
@@ -325,6 +509,28 @@ export async function refreshRepoLicenseIdentity(
     grandGuid?: string;
     kind: 'grand' | 'fork';
     requestedSizeGb?: number;
+    /**
+     * The datastore identity the CALLER already resolved (the placement it just
+     * provisioned into). A fallback, not an override: the scan below is the
+     * better answer because it reads the repo's actual home. It matters when
+     * the scan cannot answer at all — an older renet, or a datastore it failed
+     * to read — where dropping to no identity would write the reissue to the
+     * unscoped path that renet does not read for a datastore-resident repo.
+     */
+    datastoreId?: string;
+    /**
+     * Mount of the datastore this repo's image lives on, as the CALLER recorded
+     * it (`repo.placement`). A fallback, on the same terms as `datastoreId`
+     * above: the scan reports the machine's own `datastorePath` and that wins.
+     *
+     * It matters when the scan cannot price the repo — no licence installed
+     * yet, or a scan that failed — and the size probe has to measure the image
+     * itself. The machine's DEFAULT datastore is the wrong guess there for any
+     * repo created with `repo create --datastore <d>`: the image is at
+     * `/mnt/rediacc-ds/<d>/repositories/<guid>`, the probe found nothing, and
+     * the reissue silently asked for the 1 GB floor.
+     */
+    datastoreMount?: string;
   },
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
@@ -336,20 +542,38 @@ export async function refreshRepoLicenseIdentity(
     sharedSftp,
     sftpConfigForMachine(machine, sshPrivateKey),
     async (sftp) => {
+      // The PRIMARY datastore for the scan below, not the repo's home: the scan
+      // command passes --all-datastores, so it walks every attached named
+      // datastore too and reports each repo tagged with its own datastorePath.
+      // That is why the scan half of this function was never the bug.
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-      const [identity, requestedSizeGb] = await Promise.all([
-        readRepoIdentity(sftp, datastore, params.repositoryGuid),
-        params.requestedSizeGb
-          ? Promise.resolve(params.requestedSizeGb)
-          : readRepoSizeGb(sftp, datastore, params.repositoryGuid),
-      ]);
+      const scanned = await readRepoLicenseInputs(
+        sftp,
+        datastore,
+        params.repositoryGuid,
+        remoteRenetPath
+      );
+      const { datastoreMount, ...issueParams } = params;
+      const requestedSizeGb =
+        params.requestedSizeGb ??
+        scanned.requestedSizeGb ??
+        (await measureRepoSizeGb(sftp, params.repositoryGuid, [
+          // Most authoritative first: the machine's own answer, then the
+          // placement the caller recorded, then the machine default — which is
+          // right only for a repo that really is on the default datastore.
+          scanned.datastorePath,
+          datastoreMount,
+          datastore,
+        ]));
       return issueRepoLicense(
         machine,
         sshPrivateKey,
         {
-          ...params,
+          ...issueParams,
           requestedSizeGb,
-          ...identity,
+          luksUuid: scanned.luksUuid,
+          storageFingerprint: scanned.storageFingerprint,
+          datastoreId: scanned.datastoreId ?? params.datastoreId,
         },
         remoteRenetPath,
         sftp
@@ -358,10 +582,33 @@ export async function refreshRepoLicenseIdentity(
   );
 }
 
+/**
+ * Where a repo's license files live on the machine, mirroring THE SCOPE RULE in
+ * renet's `RepoLicenseBaseDir` (pkg/license/store.go):
+ *
+ *   - no datastore identity (the plain default datastore, which carries no
+ *     descriptor) → the legacy unscoped `repos/<guid>/` population;
+ *   - an identity → ONLY `datastores/<id>/repos/<guid>/`.
+ *
+ * Getting this wrong is silent and expensive rather than loud: renet reads one
+ * population and one only, so a license written to the other path reads as
+ * `missing`, the CLI auto-reissues, and the pair spins reissuing forever while
+ * burning the monthly issuance quota. A malformed identity degrades to unscoped
+ * exactly as renet's does, so both sides agree on where a corrupt descriptor
+ * puts the file.
+ */
+function repoLicenseDirFor(repositoryGuid: string, datastoreId?: string): string {
+  if (!isDatastoreScopedId(datastoreId)) {
+    return `${REPO_LICENSE_DIR}/${repositoryGuid}`;
+  }
+  return `${DATASTORE_LICENSE_DIR}/${datastoreId}/repos/${repositoryGuid}`;
+}
+
 async function writeRepoLicense(
   sftp: SFTPClient,
   repositoryGuid: string,
-  license: unknown
+  license: unknown,
+  datastoreId?: string
 ): Promise<void> {
   // The license is written under a per-signer name so licenses signed by
   // different account universes (each with its own baked key in renet)
@@ -379,7 +626,7 @@ async function writeRepoLicense(
     );
   }
 
-  const repoDir = `${REPO_LICENSE_DIR}/${repositoryGuid}`;
+  const repoDir = repoLicenseDirFor(repositoryGuid, datastoreId);
   const repoLicenseFile = `${repoDir}/${publicKeyId}.json`;
   await sftp.exec(`sudo mkdir -p "${repoDir}"`);
   await sftp.execStreaming(`sudo tee "${repoLicenseFile}" > /dev/null`, {
@@ -387,7 +634,11 @@ async function writeRepoLicense(
   });
   await sftp.exec(`sudo chmod 640 "${repoLicenseFile}"`);
   // GC the legacy flat file only. Files for other keyIds are never touched —
-  // that no-clobber property is what lets universes coexist.
+  // that no-clobber property is what lets universes coexist. The flat file
+  // predates both the per-key layout and datastore scoping, so it is removed
+  // from the unscoped root regardless of which population we just wrote to:
+  // renet reads it in neither case, and leaving it behind only confuses the
+  // next person to look in that directory.
   await sftp.exec(`sudo rm -f "${REPO_LICENSE_DIR}/${repositoryGuid}.json"`);
 }
 
@@ -397,9 +648,7 @@ async function scanRemoteRepoLicenses(
   remoteRenetPath?: string
 ): Promise<RemoteRepoLicenseScanEntry[]> {
   const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(
-    `sudo ${renetPath} repository license-scan --datastore '${datastore}' --output json`
-  );
+  const output = await sftp.exec(licenseScanCommand('license-scan', renetPath, datastore));
   const parsed = JSON.parse(output) as RemoteRepoLicenseScanEntry[];
   return Array.isArray(parsed) ? parsed : [];
 }
@@ -437,7 +686,8 @@ async function applyBatchRefreshResults(
     license?: unknown;
     error?: string;
   }[],
-  failures: { repositoryGuid: string; error: string }[]
+  failures: { repositoryGuid: string; error: string }[],
+  datastoreIdByGuid: Map<string, string | undefined>
 ): Promise<{ issued: number; refreshed: number; unchanged: number; failed: number }> {
   let issued = 0;
   let refreshed = 0;
@@ -445,7 +695,12 @@ async function applyBatchRefreshResults(
   let failed = failures.length;
 
   for (const result of results) {
-    const counts = await applySingleBatchRefreshResult(sftp, result, failures);
+    const counts = await applySingleBatchRefreshResult(
+      sftp,
+      result,
+      failures,
+      datastoreIdByGuid.get(result.repositoryGuid)
+    );
     issued += counts.issued;
     refreshed += counts.refreshed;
     unchanged += counts.unchanged;
@@ -463,10 +718,11 @@ async function applySingleBatchRefreshResult(
     license?: unknown;
     error?: string;
   },
-  failures: { repositoryGuid: string; error: string }[]
+  failures: { repositoryGuid: string; error: string }[],
+  datastoreId: string | undefined
 ): Promise<{ issued: number; refreshed: number; unchanged: number; failed: number }> {
   if ((result.status === 'issued' || result.status === 'refreshed') && result.license) {
-    await writeRepoLicense(sftp, result.repositoryGuid, result.license);
+    await writeRepoLicense(sftp, result.repositoryGuid, result.license, datastoreId);
   }
   if (result.status === 'issued') {
     return { issued: 1, refreshed: 0, unchanged: 0, failed: 0 };
@@ -598,6 +854,7 @@ async function runRepoLicenseBatch(
     body: {
       machineId,
       clientMachineId,
+      clusterId: clusterIdFor(machine),
       repos: knownRemoteRepos.map((repo) => {
         const forceReissue = forceReissueGuids.has(repo.repositoryGuid);
         return {
@@ -609,6 +866,8 @@ async function runRepoLicenseBatch(
           requestedSizeGb: repo.requestedSizeGb,
           luksUuid: repo.luksUuid,
           storageFingerprint: repo.storageFingerprint,
+          datastoreId: repo.datastoreId,
+          clusterId: clusterIdFor(machine),
           currentRefreshRecommendedAt: forceReissue ? undefined : repo.currentRefreshRecommendedAt,
           currentHardExpiresAt: forceReissue ? undefined : repo.currentHardExpiresAt,
         };
@@ -616,12 +875,22 @@ async function runRepoLicenseBatch(
     },
   });
 
+  // Each blob goes back to the population its repo was scanned from. Two repos
+  // in a batch can legitimately carry the SAME guid on one machine (a same-node
+  // datastore fork does not remint guids), which is exactly why the store is
+  // scoped by datastore and why this map is keyed the way the server keys its
+  // results.
+  const datastoreIdByGuid = new Map(
+    knownRemoteRepos.map((repo) => [repo.repositoryGuid, repo.datastoreId])
+  );
+
   const failures: { repositoryGuid: string; error: string }[] = [...unknownRepoFailures];
   const serverFailuresBefore = failures.length;
   const { issued, refreshed, unchanged, failed } = await applyBatchRefreshResults(
     sftp,
     body.results,
-    failures
+    failures,
+    datastoreIdByGuid
   );
 
   const validCount = issued + refreshed + unchanged;

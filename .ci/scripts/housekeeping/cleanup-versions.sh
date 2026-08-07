@@ -694,15 +694,27 @@ cleanup_cf_pages() {
 # PHASE 6: GITHUB ENVIRONMENTS (PR previews)
 # =============================================================================
 
-# Deleting an environment OBJECT requires Administration:write (it is a
-# repo-settings operation; see the GitHub Apps permissions reference), which
-# the housekeeping token deliberately does not carry. This phase therefore
-# only succeeds if the App is ever granted admin; until then it bails out on
-# the first 403 instead of spamming a warning per environment. The visible
-# cleanup (Deployments view) is already handled by Phase 4, which deletes the
-# closed-PR deployment RECORDS with plain deployments:write; leftover empty
-# environment objects only appear under Settings -> Environments and hold no
-# secrets or rules.
+# THIS PHASE CAN NEVER SUCCEED, AND THAT IS DELIBERATE. Deleting an environment
+# OBJECT requires Administration:write (a repo-settings operation; see the
+# GitHub Apps permissions reference). This comment used to say the phase "only
+# succeeds if the App is ever granted admin", which reads as a pending upgrade.
+# It is not: `.ci/scripts/quality/check-no-app-admin-perm.sh` is a BLOCKING gate
+# that forbids granting Administration:write to the rediacc-ci-cd App, precisely
+# so a leaked App token cannot delete the edge/stable environments. The gate and
+# this phase cannot both get what they want, and the gate is the one that is
+# right -- a permission that lets housekeeping tidy Settings also lets a stolen
+# token destroy production.
+#
+# So the honest shape is: the phase is a no-op that reports itself, and the real
+# mechanism for reaping empty environment objects is a periodic manual `gh`
+# sweep by a human with an owner token. One such sweep on 2026-08-05 removed 13
+# stale pr-* environments; production survived, verified by name AND by id.
+#
+# The visible cleanup (Deployments view) is already handled by Phase 4, which
+# deletes closed-PR deployment RECORDS with plain deployments:write. Leftover
+# empty environment objects appear only under Settings -> Environments and hold
+# no secrets and no rules, which is why leaving them is acceptable rather than
+# merely tolerated.
 cleanup_environments() {
     log_step "Phase 6: Cleaning up stale GitHub preview environments"
 
@@ -759,7 +771,12 @@ cleanup_environments() {
                 else
                     # Same token for every environment, so one failure means
                     # they all fail -- warn once and stop.
-                    log_warn "  Cannot delete environment $env_name (token lacks Administration:write); skipping remaining environments"
+                    # log_info, not log_warn: this 403 is the DESIGNED outcome, not a
+                    # fault. check-no-app-admin-perm.sh guarantees the token never
+                    # carries Administration:write, so warning on every run trains
+                    # readers to ignore this script's warnings -- and the one that
+                    # matters next will be ignored too.
+                    log_info "  Environment $env_name left in place (by design: the App is barred from Administration:write). Reap with a manual gh sweep."
                     break
                 fi
             fi

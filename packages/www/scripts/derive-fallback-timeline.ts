@@ -97,14 +97,14 @@ interface TranscriptEvent {
 
 interface Transcript {
   events?: TranscriptEvent[];
-  narrations?: Array<{ id?: string; text?: string }>;
+  narrations?: { id?: string; text?: string }[];
 }
 
 function parseArgs(argv: string[]): { lang?: FallbackLang } {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--lang') {
       const v = argv[++i];
-      if (!FALLBACK_LANGUAGES.includes(v as FallbackLang)) {
+      if (!FALLBACK_LANGUAGES.includes(v)) {
         throw new Error(
           FALLBACK_LANGUAGES.length === 0
             ? `No locale falls back to English audio any more — all 13 are natively ` +
@@ -114,7 +114,7 @@ function parseArgs(argv: string[]): { lang?: FallbackLang } {
             : `--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`
         );
       }
-      return { lang: v as FallbackLang };
+      return { lang: v };
     }
   }
   return {};
@@ -143,7 +143,10 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
   // and carries word timings was produced by a real synthesis run, and nothing derived
   // ever has both.
   if (fs.existsSync(outPath)) {
-    const existing = readJson<Timeline & { provider?: string }>(outPath);
+    // Partial<>: this is `JSON.parse(…) as T`, which promises a shape rather than
+    // checking one. A half-written timeline with no `steps` must not crash the
+    // guard that exists to REFUSE overwriting native narration.
+    const existing = readJson<Partial<Timeline> & { provider?: string }>(outPath);
     const hasOwnAudio = typeof existing.provider === 'string' && existing.provider.length > 0;
     const hasWordTimings = (existing.steps ?? []).some(
       (s) =>

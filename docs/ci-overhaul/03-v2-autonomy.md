@@ -163,6 +163,26 @@ point and matches the shape the review pipeline already proves.
 Concurrency: `group: autopilot-<head_branch>`, `cancel-in-progress: false`. Never kill a round
 mid-push; the queued run's gate then sees "already handled" and exits.
 
+> **Correction, 2026-08-05 (operator ruling): dispatch-campaign arming supersedes
+> label-only arming.** The text above and check 4 below describe the label as the
+> ONLY way in. It is now one of three, and no longer the primary one:
+> `gh workflow run Autopilot -f pr_number=N` **is** the arming act. Round 1 runs
+> straight off the dispatch, and that round's state-comment write records a
+> **campaign** on the metadata line (`campaign: open | model: <id> | rounds_max: N`).
+> Every later `workflow_run` round re-arms itself from that campaign while it is
+> open and rounds remain. The label still arms, unchanged, for anyone who prefers
+> it. `autopilot-blocked` is checked before all three and beats all three.
+>
+> Trust follows the arming path: label -> the label applier (check 4 below),
+> dispatch -> the dispatching actor against the same allowlist, campaign ->
+> nothing further, because a state comment is only read at all when its AUTHOR is
+> the autopilot app. The gate also reports `dispatch_trusted` separately from the
+> arming decision, because a round can be armed by a LABEL while the person who
+> pressed Run workflow is nobody in particular -- and that person must not be able
+> to open the model job's hold-open debug shell on the runner. Section 8's
+> land-then-observe staging is unchanged; a campaign cannot outlive
+> `AUTOPILOT_ALLOW_STATE`, which is what permits recording it.
+
 **The gate checks all of these before the model is ever invoked**, so a no-go costs zero
 model tokens:
 1. Stage flags as repo **variables** (`AUTOPILOT_ENABLED`, `AUTOPILOT_ALLOW_PUSH`,

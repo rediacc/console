@@ -4,8 +4,8 @@ description: "Emisión de licencias con evidencia de manipulación, firma delega
 category: "Guides"
 order: 8
 language: es
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Cadena de Licencias y Delegación
@@ -22,7 +22,7 @@ Cada licencia emitida por un servidor de cuentas se registra en un libro de cont
 
 ## Cómo se Emite una Licencia
 
-Cuando el CLI solicita una activación de máquina o una licencia de repositorio, el servidor de cuentas:
+Cuando el CLI solicita una licencia de repositorio, el servidor de cuentas:
 
 1. Lee el encabezado de la cadena actual (última secuencia + hash) para la suscripción.
 2. Construye el payload de la licencia con el siguiente número de secuencia y el hash de cadena anterior incorporados.
@@ -33,16 +33,65 @@ Cuando el CLI solicita una activación de máquina o una licencia de repositorio
 
 El `sequence` y `prevChainHash` están dentro del payload firmado (por lo que no pueden modificarse sin invalidar la firma). El `chainHash` está en el sobre (calculado después de firmar para evitar una dependencia circular).
 
+## Cómo se Renueva una Licencia
+
+La emisión se ejecuta desde tu estación de trabajo, autenticada como tú. La renovación se ejecuta desde la máquina, que no guarda ninguna credencial de cuenta. Necesita otra puerta:
+
+```
+POST /licenses/renew
+{ license: <el blob firmado instalado>, machineId, clusterId? }
+```
+
+**La licencia presentada es la credencial.** En este endpoint no hay token de API. El servidor verifica la firma Ed25519 del blob, y a través del certificado de delegación cuando el blob lleva uno, exactamente igual que hace Renet en la máquina. Tener una licencia válidamente firmada para un repositorio es la prueba del derecho, y a una máquina que la tiene ya se le concedió en su momento.
+
+La URL completa de este endpoint viaja dentro de cada licencia que el servidor emite o renueva, como `renewalUrl`. La máquina lee la dirección de su propio servidor de cuenta de su propia licencia en lugar de venir configurada con ella, y eso es lo que permite que una máquina que sirve a dos universos de cuenta renueve contra ambos.
+
+El blob renovado conserva el GUID del repositorio, el GUID grand y el tipo del que se presentó, toma la siguiente secuencia del mismo libro de contabilidad con el hash de cadena que le corresponde, y recibe ventanas de validez recién calculadas. El ID de máquina se revincula a la máquina que presentó el blob, y así es como una migración de VM se cura sola dentro del margen de 40 días. La identidad de almacenamiento (el UUID de LUKS o la huella de almacenamiento) se traslada sin cambios, porque una llamada de red no puede volver a escanear el disco que está describiendo.
+
+### Rechazos
+
+| Código | Estado | Significado |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | La firma del blob no verificó, o su hash de cadena no coincide con el libro de contabilidad del servidor en esa secuencia |
+| `INVALID_LICENSE_PAYLOAD` | 400 | El blob está mal formado |
+| `DELEGATION_CERT_INVALID` | 403 | El certificado adjunto incumplió una restricción o su firma de clave maestra |
+| `DELEGATION_CERT_EXPIRED` | 403 | El certificado adjunto está fuera de su ventana de validez |
+| `DELEGATION_CERT_REVOKED` | 403 | El certificado adjunto fue revocado upstream |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | La máquina que lo presenta no es la licenciada y el margen de 40 días ha pasado |
+| `SUBSCRIPTION_LAPSED` | 403 | La suscripción ha caducado o está suspendida |
+| `GRACE_PERIOD_ENDED` | 403 | El período de gracia de la suscripción ha terminado |
+| `TRIAL_REQUIRED` | 403 | La suscripción necesita una prueba o un plan activo |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | El GUID del repositorio pertenece a otra suscripción |
+| `LICENSE_RENEWAL_FAILED` | 500 | Cualquier caso sin clasificar |
+
+Un rechazo deja intacta la licencia instalada. La máquina sigue funcionando con lo que tiene hasta que esa licencia expira de forma dura.
+
+### La renovación y la ranura de máquina
+
+Una renovación correcta toca la fila de activación de la máquina: reclama una ranura si la máquina no tenía ninguna y la refresca si ya la tenía. A diferencia de la emisión, nunca se rechaza por exceder el límite. La respuesta lleva `overLimit`, y la activación se marca para que el portal, el endpoint de estado de licencias y `rdc subscription status` puedan mostrarlo. Emitir una licencia genuinamente nueva sigue bloqueándose de forma dura en el tope. El razonamiento está en [Suscripción y Licencias - Ranuras de máquina](/es/docs/subscription-licensing).
+
+### Orden de despliegue
+
+Los servidores de cuenta se despliegan antes que las compilaciones de la CLI y del Renet Agent que dependen de los campos anteriores. Un Renet Agent que no encuentra `renewalUrl` en una licencia se salta ese repositorio y lo dice, en lugar de fallar, así que una licencia antigua sigue funcionando hasta que una actualización desde la estación de trabajo rellena el campo. Hacerlo al revés te deja máquinas pidiendo un endpoint que todavía no existe.
+
 ## Cómo Valida Renet
 
-Cada máquina que ejecuta Renet almacena su último estado de cadena conocido en `{licenseDir}/chain-state.json` (es decir, `/var/lib/rediacc/license/chain-state.json`, un directorio hermano del `repos/` por repositorio). El estado de la cadena está delimitado por clave de firma y suscripción, indexado como `"<keyId>:<subscriptionId>"`, de modo que los universos firmados por claves distintas rastrean sus secuencias de forma independiente. En cada validación de licencia, Renet verifica:
+Cada máquina que ejecuta Renet almacena su último estado de cadena conocido en `{licenseDir}/chain-state.json` (es decir, `/var/lib/rediacc/license/chain-state.json`, un directorio hermano del `repos/` por repositorio). El estado de la cadena está delimitado por clave de firma, suscripción, repositorio y datastore, indexado como `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (la parte del datastore queda vacía para un repositorio en el datastore predeterminado de la máquina).
+
+Las partes del repositorio y del datastore en esa clave son esenciales. En el servidor los números de secuencia son por suscripción, así que en una máquina con varios repositorios bajo una misma suscripción un cabezal de cadena registrado para el repositorio B quedaría por delante de la licencia que el repositorio A está a punto de presentar, y el repositorio A sería rechazado como una repetición con la que no tenía nada que ver. Un fork de datastore agrava el mismo problema: el clon conserva el GUID del repositorio y solo se acuña de nuevo su identidad de datastore, así que sin la parte del datastore la licencia más reciente del fork avanzaría un cabezal contra el que el original todavía valida. Delimitar el cabezal registrado al repositorio y al datastore que nombra la licencia elimina ambos casos. Las entradas escritas por un Renet Agent antiguo con un formato de clave más corto se descartan la primera vez que se guarda el estado, y la siguiente validación vuelve a sembrar el cabezal.
+
+El estado de la cadena solo se lee y se avanza en las operaciones que validan en el nivel completo. El nivel de operación ni lo lee ni lo avanza, así que arrancar un repositorio nunca puede mover un cabezal.
+
+En cada validación de licencia, Renet verifica:
 
 | Verificación | El fallo significa |
 |---|---|
 | La firma Ed25519 es válida | La licencia fue falsificada o manipulada |
-| `sequence > lastKnownSequence` | El servidor retrotrajo la cadena (ataque de repetición) |
+| `sequence >= lastKnownSequence` | El servidor retrotrajo la cadena (ataque de repetición) |
+| Una repetición de `lastKnownSequence` lleva el mismo `chainHash` | Una cadena bifurcada reutilizó un número de secuencia |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | La entrada de la cadena fue modificada |
-| `issuedAt >= lastKnownIssuedAt` | Manipulación del reloj (reloj del servidor retrasado) |
+
+Volver a validar la licencia ya instalada no es una regresión: la misma secuencia con el mismo hash de cadena se acepta, y eso es lo que permite que una máquina valide el mismo archivo cada vez que arranca un repositorio.
 
 Si alguna verificación falla, la licencia se rechaza y se reporta el motivo del fallo.
 

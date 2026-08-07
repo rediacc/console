@@ -1,0 +1,65 @@
+name: Runner Profiler
+description: >
+  Sample this job's CPU / RAM / disk / network and append a per-minute profile
+  to the job's summary panel, so runner sizing is a measurement rather than a
+  guess.
+
+  WHY. Standard runners are free and unlimited on this public repo, so an
+  oversized runner costs no money and roughly 4x the core-minutes: a job that
+  uses ~1 core on a 4-vCPU ubuntu-latest VM burns four cores' worth of the
+  world's electricity to do one core's work. ubuntu-slim is 1 vCPU / 5 GB /
+  14 GB disk with a HARD 15-minute job cap, and the point of this action is to
+  find every job that fits it.
+
+  MECHANISM. `runs.post` is JavaScript-actions-only (composite actions have no
+  equivalent) and `post-if` defaults to always(), so `main` starts a detached
+  bash sampler and `post` stops it and writes the panel EVEN WHEN THE JOB
+  FAILS. The action carries no npm dependencies at all: it runs on the runner's
+  own bundled node using stdlib only.
+
+  PLACEMENT. A summary panel's title is the job's `name:`, and all of a job's
+  step summaries concatenate into that one panel, so this APPENDS a section to
+  the job's own panel. It cannot create a separately-titled one.
+
+inputs:
+  interval:
+    description: >
+      Seconds between samples. The default is deliberately at the slow end of
+      the 5-10s band: on a 1-vCPU slim runner the profiler competes with the
+      work it is measuring, and a profiler that perturbs its subject is
+      measuring itself.
+    required: false
+    default: '10'
+  strict:
+    description: >
+      'true' makes a degenerate profile FAIL the job. A degenerate profile means
+      nothing was sampled, every CPU reading was zero, every RAM reading was
+      identical, or the sampler read host-sized limits from inside a container
+      (HOST_LEAK) -- each of which would otherwise print a clean-looking zero
+      profile that someone could move a job on.
+
+      Default false. The repo bans the step keyword that swallows a failure, so
+      soft behaviour has to be a real input rather than a shrug in the workflow,
+      and a bug in a brand-new observability tool must not turn CI red. It flips
+      to true once the profiler has run clean across the job matrix; until then
+      the findings are ::warning:: annotations.
+    required: false
+    default: 'false'
+  runner-label:
+    description: >
+      The runner label this job actually requested, e.g. ubuntu-slim. This ARMS
+      the HOST_LEAK check: inside slim's unprivileged container `nproc` and
+      /proc/meminfo report the HOST, so a failed cgroup read yields 4 cores /
+      16 GB on a 1-core / 5 GB runner, and every conclusion drawn from it is
+      wrong in the dangerous direction. With the label present the sampler
+      refuses to profile at all; without it the check cannot fire, so pass it.
+    required: false
+    default: ''
+
+runs:
+  using: node20
+  main: index.js
+  # Explicit even though always() is the default: this hook exists precisely to
+  # profile the runs that fail, and a silent default is not worth relying on.
+  post: index.js
+  post-if: always()

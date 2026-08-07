@@ -37,22 +37,22 @@
       "kind": "embedded-binary",
       "asset": "k3s",
       "name": "k3s",
-      "version": "1.36.2+k3s1",
+      "version": "1.36.3+k3s1",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.2+k3s1/k3s-1.36.2+k3s1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.2+k3s1.tar.gz",
+      "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.36.3+k3s1/k3s-1.36.3+k3s1.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.36.3+k3s1.tar.gz",
       "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
       "kind": "embedded-binary",
       "asset": "rclone",
       "name": "rclone",
-      "version": "1.74.4",
+      "version": "1.75.0",
       "spdx": "MIT",
       "license": "MIT License (Copyright (C) 2012 by Nick Craig-Wood); conveyed as a binary.",
-      "upstreamSourceUrl": "https://github.com/rclone/rclone/archive/v1.74.4/rclone-1.74.4.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rclone-1.74.4.tar.gz"
+      "upstreamSourceUrl": "https://github.com/rclone/rclone/archive/v1.75.0/rclone-1.75.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rclone-1.75.0.tar.gz"
     },
     {
       "kind": "embedded-binary",
@@ -79,11 +79,11 @@
       "kind": "embedded-binary",
       "asset": "zot",
       "name": "zot",
-      "version": "2.1.18",
+      "version": "2.1.20",
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Zot Authors); conveyed as an unmodified upstream binary (full build, with the sync extension), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
-      "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.18/zot-2.1.18.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.18.tar.gz",
+      "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.20/zot-2.1.20.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.20.tar.gz",
       "notes": "This is the FULL zot build (zot-linux-<arch>), NOT the -minimal variant. Do not 'optimize' to the minimal build: the pull-through cache depends on the sync extension (sync.onDemand), and zot compiles extensions ONLY into the full binary. The minimal build is distribution-spec-only and cannot mirror upstreams, which defeats the entire purpose (D8)."
     },
     {

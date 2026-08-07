@@ -38,18 +38,12 @@
 # independently documented in package.json's brace-expansion@^1.1.7
 # override BLOCKER comment; only the advisory database's own range
 # metadata has been unstable across two consecutive audit windows.
-
-# BLOCKER: brace-expansion GHSA-mh99-v99m-4gvg (id 1130588, DoS via unbounded
-# expansion LENGTH -> OOM). DEV-ONLY: the six eslint/minimatch@3 edges
-# (eslint-plugin-import/jsx-a11y/react, @eslint/config-array,
-# @eslint/eslintrc, eslint itself) pinned to 1.1.16 by the
-# brace-expansion@^1.1.7 override (package.json). NO UPGRADE PATH EXISTS,
-# verified rather than assumed: forcing those edges to the root override's
-# 5.0.8 crashes eslint, because brace-expansion v5 is ESM-only with a NAMED
-# export (`{ expand, EXPANSION_MAX }`) while minimatch@3's
-# `var expand = require('brace-expansion'); expand(pattern)` needs the
-# callable default export 1.x still provides -- documented verbatim in the
-# override's own BLOCKER comment (package.json:250). EXPOSURE: the DoS
-# needs attacker-controlled brace patterns; these copies only ever expand
-# our own lint globs, in a dev-time tool that is not on any runtime path.
-1130588
+#
+# 2026-08-04: 1130588 removed again, this time because the TREE moved, not
+# the advisory: GHSA-rgw5-rvv9-x895 (the incomplete-mitigation follow-up)
+# forced the brace-expansion@^1.1.7 override from 1.1.16 up to 1.1.18, so
+# the six eslint/minimatch@3 edges now resolve to a version outside every
+# published range and the advisory no longer fires. The v5 export-shape
+# constraint that justified pinning the 1.x LINE (not a specific patch
+# version) still holds and stays documented in the override's BLOCKER
+# comment in package.json.

@@ -26,8 +26,7 @@ const extractNamespacesFromOptions = (node) => {
   if (!node || node.type !== 'ObjectExpression') return null;
   for (const prop of node.properties) {
     if (prop.type !== 'Property') continue;
-    const keyName =
-      prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
+    const keyName = prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
     if (keyName !== 'ns') continue;
     return extractNamespaces(prop.value);
   }
@@ -38,8 +37,7 @@ const hasDefaultValue = (node) => {
   if (!node || node.type !== 'ObjectExpression') return false;
   return node.properties.some((prop) => {
     if (prop.type !== 'Property') return false;
-    const keyName =
-      prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
+    const keyName = prop.key.type === 'Identifier' ? prop.key.name : prop.key.value;
     return keyName === 'defaultValue';
   });
 };
@@ -73,7 +71,7 @@ export const requireTranslation = {
       'custom/require-translation',
       'localeDir',
       options.localeDir,
-      ROOT_DIR,
+      ROOT_DIR
     );
     const ignoreDefaultValue = options.ignoreDefaultValue === true;
     const resources = getResources(localeDir);
@@ -103,8 +101,7 @@ export const requireTranslation = {
       if (candidates.length === 0) return null;
       // Prefer the smallest scope to handle shadowing.
       candidates.sort(
-        (a, b) =>
-          a.scopeRange[1] - a.scopeRange[0] - (b.scopeRange[1] - b.scopeRange[0])
+        (a, b) => a.scopeRange[1] - a.scopeRange[0] - (b.scopeRange[1] - b.scopeRange[0])
       );
       return candidates[0].namespaces;
     };
@@ -115,6 +112,23 @@ export const requireTranslation = {
         messageId: 'missingKey',
         data: { key },
       });
+    };
+
+    /**
+     * Namespaces to look the key up in: the one written into the key itself,
+     * else the one passed in t()'s options, else the one the `t` binding was
+     * created with. null when none of the three answers.
+     */
+    const resolveNamespaces = (node, namespace, optionArg) => {
+      if (namespace) return [namespace];
+
+      const nsFromOptions = extractNamespacesFromOptions(optionArg);
+      if (nsFromOptions) return nsFromOptions;
+
+      if (node.callee.type === 'Identifier') {
+        return findNamespacesForIdentifier(node.callee.name, node);
+      }
+      return null;
     };
 
     return {
@@ -174,31 +188,13 @@ export const requireTranslation = {
           return;
         }
 
-        let namespaces = null;
-
-        if (namespace) {
-          namespaces = [namespace];
-        } else {
-          const nsFromOptions = extractNamespacesFromOptions(optionArg);
-          if (nsFromOptions) {
-            namespaces = nsFromOptions;
-          }
-        }
-
-        if (!namespaces) {
-          if (node.callee.type === 'Identifier') {
-            namespaces = findNamespacesForIdentifier(node.callee.name, node);
-          }
-        }
-
+        const namespaces = resolveNamespaces(node, namespace, optionArg);
         if (!namespaces || namespaces.length === 0) return;
 
         const segments = keyPath.split('.').filter(Boolean);
         if (segments.length === 0) return;
 
-        const exists = namespaces.some((ns) =>
-          hasPath(resources.get(ns), segments)
-        );
+        const exists = namespaces.some((ns) => hasPath(resources.get(ns), segments));
         if (!exists) {
           reportMissingKey(keyNode, keyValue);
         }

@@ -1,14 +1,22 @@
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
 /**
  * ESLint rule to enforce SEO-friendly meta description lengths in translation JSON files.
  * Descriptions (keys matching *.meta.description) must be 50-160 characters.
  */
+
+// Rule-option defaults: the SERP snippet window for a meta description.
+// Below the minimum the snippet reads thin; above the maximum Google truncates.
+const DEFAULT_MIN_LENGTH = 50;
+const DEFAULT_MAX_LENGTH = 160;
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoDescriptionLength = {
   meta: {
     type: 'suggestion',
     docs: {
-      description: 'Enforce SEO-friendly meta description lengths (50-160 chars) in translation files',
+      description:
+        'Enforce SEO-friendly meta description lengths (50-160 chars) in translation files',
       recommended: true,
     },
     schema: [
@@ -36,8 +44,8 @@ export const seoDescriptionLength = {
 
   create(context) {
     const options = context.options[0] || {};
-    const minLength = options.minLength ?? 50;
-    const maxLength = options.maxLength ?? 160;
+    const minLength = options.minLength ?? DEFAULT_MIN_LENGTH;
+    const maxLength = options.maxLength ?? DEFAULT_MAX_LENGTH;
     const exemptKeys = options.exemptKeys || [];
 
     function isMetaDescriptionKey(path) {
@@ -48,41 +56,42 @@ export const seoDescriptionLength = {
       return exemptKeys.some((exempt) => path.includes(exempt));
     }
 
-    const checkObject = (node, path = '') => {
-      if (!node || node.type !== 'Object') return;
+    const checkValue = (value, fullPath) => {
+      if (value.type === 'Object') {
+        checkObject(value, fullPath);
+        return;
+      }
+      if (value.type !== 'String') return;
+      if (!isMetaDescriptionKey(fullPath) || isExempt(fullPath)) return;
 
-      for (const member of node.members || []) {
+      const str = value.value;
+      const rendered = str.replaceAll(/\{\{[^}]+\}\}/g, 'placeholder');
+      const len = rendered.length;
+
+      if (len < minLength) {
+        context.report({
+          node: value,
+          messageId: 'tooShort',
+          data: { key: fullPath, length: String(len), min: String(minLength) },
+        });
+      } else if (len > maxLength) {
+        context.report({
+          node: value,
+          messageId: 'tooLong',
+          data: { key: fullPath, length: String(len), max: String(maxLength) },
+        });
+      }
+    };
+
+    const checkObject = (node, path = '') => {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
 
-        const key =
-          member.name?.type === 'String' ? member.name.value : member.name?.name;
-        if (!key) continue;
-
-        const fullPath = path ? `${path}.${key}` : key;
+        const key = memberKey(member);
         const value = member.value;
-        if (!value) continue;
+        if (!key || !value) continue;
 
-        if (value.type === 'Object') {
-          checkObject(value, fullPath);
-        } else if (value.type === 'String' && isMetaDescriptionKey(fullPath) && !isExempt(fullPath)) {
-          const str = value.value;
-          const rendered = str.replace(/\{\{[^}]+\}\}/g, 'placeholder');
-          const len = rendered.length;
-
-          if (len < minLength) {
-            context.report({
-              node: value,
-              messageId: 'tooShort',
-              data: { key: fullPath, length: String(len), min: String(minLength) },
-            });
-          } else if (len > maxLength) {
-            context.report({
-              node: value,
-              messageId: 'tooLong',
-              data: { key: fullPath, length: String(len), max: String(maxLength) },
-            });
-          }
-        }
+        checkValue(value, joinPath(path, key));
       }
     };
 

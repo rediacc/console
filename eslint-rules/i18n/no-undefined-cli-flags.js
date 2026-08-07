@@ -41,12 +41,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../../packages/cli/scripts/command-tree.json');
 
 // Root/global options the program registers (these are filtered out of per-command
 // nodes in command-tree.json, so they must be added explicitly) plus Commander
@@ -80,7 +78,7 @@ export const loadValidFlags = () => {
   // reference too (e.g. "Implies --infra" when `--no-infra` is the option).
   for (const f of [...flags]) {
     const m = f.match(/^--no-(.+)$/);
-    if (m) flags.add('--' + m[1]);
+    if (m) flags.add(`--${m[1]}`);
   }
   cachedFlags = flags;
   return flags;
@@ -108,8 +106,7 @@ export const noUndefinedCliFlags = {
           exemptKeyPrefixes: {
             type: 'array',
             items: { type: 'string' },
-            description:
-              'Locale key prefixes to skip entirely (e.g. cloud/legacy command groups).',
+            description: 'Locale key prefixes to skip entirely (e.g. cloud/legacy command groups).',
           },
         },
         additionalProperties: false,
@@ -127,46 +124,47 @@ export const noUndefinedCliFlags = {
     const exemptKeyPrefixes = options.exemptKeyPrefixes || [];
     const validFlags = loadValidFlags();
 
-    const isExemptKey = (key) =>
-      exemptKeyPrefixes.some((prefix) => key.startsWith(prefix));
+    const isExemptKey = (key) => exemptKeyPrefixes.some((prefix) => key.startsWith(prefix));
 
     /** Extract the leading `--flag` from a whitespace-delimited token, after
      *  stripping surrounding markdown/quote/punctuation characters. */
     const flagOf = (token) => {
-      const cleaned = token
-        .replace(LEADING_TOKEN_CHARS, '')
-        .replace(TRAILING_TOKEN_CHARS, '');
+      const cleaned = token.replace(LEADING_TOKEN_CHARS, '').replace(TRAILING_TOKEN_CHARS, '');
       const m = cleaned.match(/^(--[a-z][a-z0-9-]*)/);
       return m ? m[1] : null;
     };
 
+    /** Report every unregistered `--flag` token in one locale string. */
+    const checkStringValue = (value, fullPath) => {
+      if (isExemptKey(fullPath)) return;
+
+      const reported = new Set();
+      for (const token of value.value.split(/\s+/)) {
+        const flag = flagOf(token);
+        if (!flag) continue;
+        if (validFlags.has(flag) || exemptFlags.has(flag)) continue;
+        if (reported.has(flag)) continue;
+        reported.add(flag);
+        context.report({
+          node: value,
+          messageId: 'undefinedFlag',
+          data: { key: fullPath, flag },
+        });
+      }
+    };
+
     const checkObject = (node, prefix = '') => {
-      if (!node || node.type !== 'Object') return;
-      for (const member of node.members || []) {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
-        const key =
-          member.name?.type === 'String' ? member.name.value : member.name?.name;
+        const key = memberKey(member);
         if (!key) continue;
-        const fullPath = prefix ? `${prefix}.${key}` : key;
+        const fullPath = joinPath(prefix, key);
         const value = member.value;
 
         if (value?.type === 'Object') {
           checkObject(value, fullPath);
         } else if (value?.type === 'String') {
-          if (isExemptKey(fullPath)) continue;
-          const reported = new Set();
-          for (const token of value.value.split(/\s+/)) {
-            const flag = flagOf(token);
-            if (!flag) continue;
-            if (validFlags.has(flag) || exemptFlags.has(flag)) continue;
-            if (reported.has(flag)) continue;
-            reported.add(flag);
-            context.report({
-              node: value,
-              messageId: 'undefinedFlag',
-              data: { key: fullPath, flag },
-            });
-          }
+          checkStringValue(value, fullPath);
         }
       }
     };

@@ -47,7 +47,11 @@ export const seoNoHashBreadcrumbUrl = {
       const value = prop.value;
 
       // Check string literals: url: '/#solutions'
-      if (value?.type === 'Literal' && typeof value.value === 'string' && value.value.includes('#')) {
+      if (
+        value?.type === 'Literal' &&
+        typeof value.value === 'string' &&
+        value.value.includes('#')
+      ) {
         context.report({ node: value, messageId: 'hashUrl', data: { value: value.value } });
         return;
       }

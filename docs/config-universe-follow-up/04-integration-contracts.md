@@ -42,12 +42,18 @@ Wave-2 change names which contract it touches and adds the cross-side test with 
 
 ## C4. On-machine artifacts (renet owns the read side, CLI owns the write side)
 
-- License files: `/var/lib/rediacc/license/repos/<guid>/<keyId>.json`, chmod 640,
-  written atomically; the ONLY file the CLI may delete is the legacy flat
-  `<guid>.json` (the no-clobber property is test-pinned). Renewal (renet-side writes)
-  must follow the same atomicity and never touch other keyIds' files.
+- License files: unscoped population `/var/lib/rediacc/license/repos/<guid>/<keyId>.json`
+  for the implicit default datastore, datastore-scoped population
+  `/var/lib/rediacc/license/datastores/<dsId>/repos/<guid>/<keyId>.json` for named
+  datastores (landed Wave 2); chmod 640, written atomically; the ONLY file the CLI may
+  delete is the legacy flat `<guid>.json` (the no-clobber property is test-pinned).
+  Renewal (renet-side writes) must follow the same atomicity and never touch other
+  keyIds' files.
 - Chain state: `/var/lib/rediacc/license/chain-state.json`, composite
-  `"<keyId>:<subscriptionId>"` keys only.
+  `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` keys (repository part
+  landed with the P1 fix; datastore part landed after the drill's S8d leg caught a
+  datastore fork — same repo GUID, re-minted dsId — regressing its parent's head.
+  datastoreId is empty for default-datastore repos; older key shapes self-GC on save).
 - New in Wave 2: the license-blocked failure marker directory (02 section 3) and the
   fork-identity descriptor write (02 section 2). Both get explicit owners: renet
   writes markers and descriptors; the CLI only reads them.

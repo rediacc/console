@@ -8,6 +8,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { compositeKey, parseRepoRef } from '../utils/config-schema.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
 import { handleForkAction } from './repo-fork.js';
 
@@ -68,6 +69,10 @@ async function handleCommit(
       functionName: 'repository_commit',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
+      // #74: renet resolves the image from the machine vault, so the datastore
+      // the repo is RECORDED on has to be declared or the commit is written
+      // against the machine's default.
+      datastore: await recordedDatastoreMount(repoKey),
       params: {
         repository: repoKey,
         tag: commitGuid,
@@ -216,6 +221,9 @@ async function handleLog(ref: string, options: { debug?: boolean }): Promise<voi
       functionName: 'repository_log',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
+      // #74: `tip` is a commit GUID inside this repo's family, so the family's
+      // recorded placement is where renet must look for it.
+      datastore: await recordedDatastoreMount(repoKey),
       params: { repository: tip },
       debug: options.debug,
     });
@@ -294,6 +302,9 @@ async function handleMerge(
       functionName: 'repository_merge',
       machineName,
       ...(kubeCluster !== undefined && { kubeCluster }),
+      // #74: merge reads BOTH sides from one datastore — `--from` names a GUID
+      // in the same family, which is why the target's placement covers it.
+      datastore: await recordedDatastoreMount(repoKey),
       params: {
         repository: repoKey,
         from: sourceCfg.repositoryGuid,

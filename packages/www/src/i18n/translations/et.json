@@ -2673,6 +2673,10 @@
           {
             "answer": "Kui tühistad 14-päevase prooviperioodi jooksul, ei võeta sinult kunagi tasu. Kui tühistad tasulise plaani hiljem, säilivad selle funktsioonid kuni arveldusperioodi lõpuni ning seejärel langeb sinu konto tagasi tasuta Community versioonile. Sinu hoidlad töötavad kogu selle aja katkematult.",
             "question": "Mis juhtub, kui tühistan?"
+          },
+          {
+            "answer": "Igas klastris on iga sõlm eraldi masin ja loetakse masinana. Klastril puudub jagatud kvoot ja serverite kokkupanemise eest soodustust ei ole. Sõlm hõivab koha alles siis, kui sinna paigutatakse repositoorium, seega klastri ülesehitamine iseenesest ei maksa midagi. Klastrite loomist müüakse meie partnerite kaudu Enterprise'i lepingu osana, ja sõlmede arv lepitakse kokku tellimisel.",
+            "question": "Kuidas loetakse klastri sõlmi?"
           }
         ]
       },
@@ -14407,10 +14411,10 @@
           "content": ["Rediacc pakub mitmeid tellimuse pakette:"],
           "id": "subscriptions",
           "items": [
-            "<strong>Kogukond</strong> (tasuta) - piiratud 2 masina aktiveerimisega, põhifunktsioonid, kogukonna tugi",
-            "<strong>Professional</strong> - kuni 5 masina aktiveerimist, auditi logimine, prioriteetne tugi, kohandatud kujundus",
-            "<strong>Äri</strong> - kuni 20 masina aktiveerimist, hajutatud salvestus, täiustatud analüütika, pühendatud edukuse haldur",
-            "<strong>Enterprise</strong> - kuni 50 masina aktiveerimist, pühendatud infrastruktuur, kohandatud integratsioonid, ööpäevaringne tugi"
+            "<strong>Community</strong> (tasuta): 1 masina aktiveerimine, põhifunktsioonid, kogukonna tugi. See on vaikeplaan, kuhu teie konto langeb tagasi pärast prooviperioodi või tasulise Tellimuse lõppemist.",
+            "<strong>Professional</strong>: 1 masina aktiveerimine, auditi logimine, prioriteetne tugi, kohandatud bränding",
+            "<strong>Business</strong>: 1 masina aktiveerimine, hajutatud salvestus, täiustatud analüütika, pühendatud edukonsultant",
+            "<strong>Enterprise</strong>: pühendatud infrastruktuur, kohandatud integratsioonid, 24/7 tugi ja teie tellimuses kokku lepitud masina aktiveerimise lagi. Kui lage ei lepita kokku, kehtib 25 masina aktiveerimist. Enterprise't müüakse meie partnerite kaudu."
           ],
           "subsections": {
             "billing": {
@@ -14420,6 +14424,15 @@
                 "Jätame endale õiguse muuta oma hinnakujundust kolmekümne (30) päeva etteteatamisega. Hinnamuutused ei mõjuta teie praegust arvestusperioodi. Kui te ei nõustu hinnamuutusega, võite oma tellimuse tühistada enne järgmist arvestusperioodi."
               ],
               "title": "5.1 Arveldamine"
+            },
+            "clusters": {
+              "content": [
+                "<strong>\"Klaster\"</strong> tähendab kahte või enamat Masinat, mida käitate koos Teenuste kaudu ühtse salvestus- või arvutusressursi kogumina. <strong>\"Sõlm\"</strong> tähendab üht Masinat, mis on Klastri liige. Sõlm on nende Tingimuste kõigil eesmärkidel Masin, ja iga Sõlm kulutab ühe masina aktiveerimise. Klastreid ei koondata ega diskonteerita: viiest Sõlmest koosnev Klaster kulutab viis masina aktiveerimist.",
+                "Teie <strong>masina aktiveerimise lagi</strong> on maksimaalne arv Masinaid, mis võivad korraga aktiveeringut hoida. See on kirjas teie Tellimuses ja selle määrab teie tellimus. Ülalnimetatud paketiarvud on standardsed, läbiräägitamata vaikeväärtused; tellimuses või partnerlepingus kokkulepitud lagi asendab vaikeväärtuse selle Tellimuse puhul. Klastrite loomine on saadaval vaid Enterprise'i ja partnerlepingute alusel.",
+                "Masina aktiveerimine kulub, kui Repositoorium luuakse, kopeeritakse või paigutatakse Masinale, ja see vabastatakse automaatselt pärast tegevusetuse perioodi. Ainult infrastruktuuri ülesehitamine, sealhulgas Klastri loomine ja Sõlmede sellega ühendamine, ei kuluta aktiveeringut.",
+                "Kui kõik aktiveeringud on juba kasutuses, võib Rediacc keelduda täiendava Masina aktiveerimisest. Masinad, mis juba hoiavad aktiveeringut, jätkavad tööd ja võivad oma olemasolevaid litsentse uuendada, ning Rediacc võib selliseid uuendusi registreerida teie lae ületamisena. Rediacc võib teiega ühendust võtta, et teie Tellimust kooskõlastada, kui masina aktiveerimise lagi on püsivalt ületatud."
+              ],
+              "title": "5.5 Masina aktiveerimine, klastrid ja sõlmed"
             },
             "gracePeriod": {
               "content": [

@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
 import type { ClusterConfig, ClusterPool } from '../../types/index.js';
+import { assertMachineSlotsAvailable } from '../account/license-preflight.js';
 import {
   getCluster,
   materializeClusterMachines,
@@ -456,6 +457,13 @@ export async function createCluster(
   const cluster = await getCluster(clusterName);
   const sshUser = options.sshUser ?? DEFAULTS.CLOUD.SSH_USER;
 
+  // Slots are claimed per machine at the first repo issuance, so a cluster
+  // whose node count exceeds the ceiling provisions fine and then fails one
+  // repo at a time, after the VMs exist. Ask before spending anything.
+  await assertMachineSlotsAvailable({
+    machineCount: cluster.pools.reduce((total, pool) => total + pool.count, 0),
+  });
+
   let members: ResolvedMember[];
   if (isKvmProvider(cluster.provider)) {
     const provisioned = await provisionKvmCluster(clusterName, cluster);
@@ -607,6 +615,8 @@ export async function scaleCluster(
   // Materialize new member machine records before joining (scale-up), or leave
   // records for the operator to prune after draining (scale-down).
   if (targetCount > currentCount) {
+    // Only the added nodes cost slots; the existing ones already hold theirs.
+    await assertMachineSlotsAvailable({ machineCount: targetCount - currentCount });
     await growPool(clusterName, cluster, pool, targetCount, currentCount);
   }
   await scaleK8sPool(clusterName, pool, targetCount, currentCount, options.debug);

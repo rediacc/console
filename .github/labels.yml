@@ -1,11 +1,30 @@
+# Every label a workflow or .ci script references by name MUST be declared
+# here: check:ci-label-refs sweeps the code for label literals and fails on
+# any reference this file does not carry. Declaring is not creating -- new
+# labels still need one `gh label create` -- but the gate is what stopped
+# `full-ci` (the scope engine's documented kill switch), `autopilot`,
+# `autopilot-blocked` and `rollback` from being referenced by merged code for
+# weeks while not existing at all (rollback's absence made promote-stable's
+# label search silently FAIL-OPEN: a search for a nonexistent label returns
+# zero PRs, so the promotion block never fired).
+#
+# EVERY label that EXISTS on the repo must also be declared here, in the other
+# direction: check:ci-label-inventory reconciles this file against the live
+# label list both ways, so a label created by hand is a failure too (it would
+# otherwise never reach the PR label-guide comment).
+#
+# `guide: false` means "declared, but do NOT list it in the per-PR guide
+# comment". It is for labels a human never usefully applies here: GitHub's
+# stock defaults that came with the repo, bot-applied labels, and the three
+# this repo's own inventory records as having ZERO consumers in code
+# (docs/ci-overhaul/01-verified-context.md:320). The guide exists because the
+# roster got too long to remember; padding it with `duplicate` and
+# `good first issue` would recreate the problem it solves. Absent means true.
+
 # CI Control Labels
 - name: no-cancel-push
   color: "FEF2C0"
   description: "Prevents watchdog from force-cancelling older same-PR runs"
-
-- name: no-cancel-failure
-  color: "FEF2C0"
-  description: "Prevents watchdog from canceling workflow on job failure"
 
 - name: no-auto-retry
   color: "FEF2C0"
@@ -15,6 +34,37 @@
   color: "FEF2C0"
   description: "Skips externally-dependent quality checks (npm deps, security audit, Go deps)"
 
+- name: full-ci
+  color: "FEF2C0"
+  description: "Forces an unconditional full CI round, bypassing the scope engine's job skips"
+
+# Autopilot (per-PR babysit loop)
+- name: autopilot
+  color: "1D76DB"
+  description: "Arms the autopilot babysit loop for this PR (manual arming path; workflow dispatch is the other)"
+
+- name: autopilot-blocked
+  color: "B60205"
+  description: "Escalation latch: the autopilot refuses further rounds on this PR until a human removes this"
+
+# Release control
+- name: rollback
+  color: "D93F0B"
+  description: "Marks a merged PR as rolled back; blocks stable promotion while one exists inside the soak window"
+
+# Automation / triage (referenced by report-nightly-status.cjs)
+- name: bug
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: automated
+  color: "0E8A16"
+  description: "Automated pull request"
+
+- name: nightly-red
+  color: "b60205"
+  description: "The scheduled nightly CI run is failing (opened and closed automatically)"
+
 # Version Bump Labels
 - name: bump-major
   color: "D93F0B"
@@ -23,3 +73,85 @@
 - name: bump-minor
   color: "FBCA04"
   description: "Triggers a minor version bump (X.Y+1.0) on merge to main"
+
+# ---------------------------------------------------------------------------
+# Declared so the inventory gate is green, kept OUT of the per-PR guide.
+# ---------------------------------------------------------------------------
+
+# Bot-applied: dependabot sets these itself, a human never should.
+- name: dependencies
+  color: "0366d6"
+  description: "Pull requests that update dependencies"
+  guide: false
+
+- name: github-actions
+  color: "000080"
+  description: "Pull requests that update GitHub Actions"
+  guide: false
+
+- name: translation
+  color: "ffaaf0"
+  description: "Missing or wrong translation"
+  guide: false
+
+# ZERO consumers in code, verified twice: check:ci-label-refs finds no
+# reference to any of the three, and 01-verified-context.md:320 records the
+# same. `release` in particular DESCRIBES itself as triggering CD, which is not
+# true -- CD is dispatched unconditionally from finalize-release-sentinel
+# (ci.yml) and reads no label. Kept declared rather than deleted because 28
+# merged PRs carry `release` and deleting a label strips it from their history.
+- name: release
+  color: "0E8A16"
+  description: "Historical only: CD reads no label, it is dispatched unconditionally"
+  guide: false
+
+- name: description-current
+  color: "0E8A16"
+  description: "Historical only: the PR-description gate reads lastEditedAt, not this label"
+  guide: false
+
+- name: codex
+  color: "ededed"
+  description: "Historical only: no consumer in code"
+  guide: false
+
+# GitHub's stock defaults, unused here. Declared for inventory completeness.
+- name: documentation
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+  guide: false
+
+- name: duplicate
+  color: "cfd3d7"
+  description: "This issue or pull request already exists"
+  guide: false
+
+- name: enhancement
+  color: "a2eeef"
+  description: "New feature or request"
+  guide: false
+
+- name: good first issue
+  color: "7057ff"
+  description: "Good for newcomers"
+  guide: false
+
+- name: help wanted
+  color: "008672"
+  description: "Extra attention is needed"
+  guide: false
+
+- name: invalid
+  color: "e4e669"
+  description: "This doesn't seem right"
+  guide: false
+
+- name: question
+  color: "d876e3"
+  description: "Further information is requested"
+  guide: false
+
+- name: wontfix
+  color: "ffffff"
+  description: "This will not be worked on"
+  guide: false

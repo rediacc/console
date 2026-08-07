@@ -13,6 +13,7 @@ const {
   mockGetRepository,
   mockResolveRepoRef,
   mockGetTeam,
+  mockGetCurrent,
   mockReadSSHKey,
   mockProvisionRenetToRemote,
   mockGetSubscriptionServerUrl,
@@ -21,6 +22,7 @@ const {
   mockOutputInfo,
   mockOutputWarn,
   mockOutputSuccess,
+  mockOutputError,
   mockWithSpinner,
   mockReadAccountPointer,
   mockDiscoverRegions,
@@ -38,6 +40,7 @@ const {
   mockGetRepository: vi.fn(),
   mockResolveRepoRef: vi.fn(),
   mockGetTeam: vi.fn(),
+  mockGetCurrent: vi.fn(),
   mockReadSSHKey: vi.fn(),
   mockProvisionRenetToRemote: vi.fn(),
   mockGetSubscriptionServerUrl: vi.fn(() => 'http://localhost:4800'),
@@ -51,6 +54,7 @@ const {
   mockOutputInfo: vi.fn(),
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
+  mockOutputError: vi.fn(),
   mockWithSpinner: vi.fn(),
   mockReadAccountPointer: vi.fn(() => ({ accountServer: 'http://localhost:4800' })),
   mockDiscoverRegions: vi.fn(),
@@ -104,6 +108,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getLocalMachine: mockGetLocalMachine,
     getRepository: mockGetRepository,
     getTeam: mockGetTeam,
+    getCurrent: mockGetCurrent,
   },
 }));
 
@@ -117,6 +122,7 @@ vi.mock('../../services/core/output.js', () => ({
     info: mockOutputInfo,
     warn: mockOutputWarn,
     success: mockOutputSuccess,
+    error: mockOutputError,
   },
 }));
 
@@ -327,6 +333,93 @@ describe('subscription command helpers', () => {
     expect(mockFetchSubscriptionLicenseReport).not.toHaveBeenCalled();
   });
 
+  it('status -m shouts about a blocked backup instead of listing it as another row', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-blocked',
+        status: 'expired',
+        runtimeValid: false,
+        installed: true,
+        blockedBackup: {
+          repositoryGuid: 'repo-blocked',
+          code: 'LICENSE_REQUIRED',
+          reason: 'expired',
+          message: 'the installed license expired',
+          at: '2026-08-01T03:00:00Z',
+          source: 'backup_gate',
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    // Error-styled, not info: a machine whose scheduled backups have silently
+    // stopped copying data is the one line in this table nobody is watching for.
+    expect(mockOutputError).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.blockedBackup:repo-blocked:2026-08-01T03:00:00Z:expired:the installed license expired'
+    );
+    expect(mockOutputError).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.blockedBackupRemedy:hostinger'
+    );
+  });
+
+  it('status -m warns on a refused renewal and leads with the server’s code', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-refused',
+        status: 'valid',
+        runtimeValid: true,
+        installed: true,
+        lastRenewal: {
+          repositoryGuid: 'repo-refused',
+          keyId: 'fc6a12b178711e65',
+          outcome: 'refused',
+          code: 'SUBSCRIPTION_LAPSED',
+          message: 'the subscription is no longer active',
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    // A refused renewal means this licence is no longer being kept alive, so it
+    // is a warning; the code leads because it is what the operator acts on.
+    expect(mockOutputWarn).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.lastRenewal:refused: (SUBSCRIPTION_LAPSED: the subscription is no longer active)'
+    );
+  });
+
+  it('status -m reports a healthy renewal as information, with its sequence', async () => {
+    mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([
+      {
+        repositoryGuid: 'repo-ok',
+        status: 'valid',
+        runtimeValid: true,
+        installed: true,
+        datastoreId: '7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f',
+        lastRenewal: {
+          repositoryGuid: 'repo-ok',
+          keyId: 'fc6a12b178711e65',
+          outcome: 'renewed',
+          newSequence: 42,
+        },
+      },
+    ]);
+
+    await executeMachineStatus('hostinger');
+
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      'commands.subscription.repo.status.lastRenewal:renewed: (seq 42)'
+    );
+    expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('lastRenewal'));
+    // The datastore a licence is scoped to rides on the entry line.
+    expect(mockOutputInfo).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'commands.subscription.repo.status.datastoreSuffix:7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f'
+      )
+    );
+  });
+
   it('status -m still renders the repo table when the activation lookup fails', async () => {
     mockReadMachineActivationStatus.mockRejectedValue(new Error('account unreachable'));
     mockReadRuntimeRepoLicenseStatuses.mockResolvedValue([]);
@@ -401,6 +494,52 @@ describe('subscription command helpers', () => {
     expect(mockOutputSuccess).toHaveBeenCalledWith(
       'commands.subscription.refresh.repo.success:shop:test'
     );
+  });
+
+  // #74. This is the ONLY caller that passes no requestedSizeGb, so it is the
+  // one that reaches the size probe inside refreshRepoLicenseIdentity. Without
+  // the mount, that probe measures the machine's default datastore for a repo
+  // that lives on a named one, finds nothing, and reissues at the 1 GB floor.
+  it('refresh --repo declares the datastore the repo is recorded on', async () => {
+    mockGetCurrent.mockResolvedValue({
+      resources: {
+        repositories: {
+          shop: { grand: 'latest', tags: { latest: {} }, placement: { datastore: 'tier1' } },
+        },
+      },
+    });
+
+    await executeRepoLicenseRefresh('shop:test');
+
+    expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      expect.objectContaining({ machineName: 'hostinger' }),
+      'PRIVATE_KEY',
+      {
+        repositoryGuid: 'repo-guid',
+        grandGuid: 'grand-guid',
+        kind: 'fork',
+        datastoreMount: '/mnt/rediacc-ds/tier1',
+      }
+    );
+    // The control: rewriting the expected mount must not match.
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalledWith(
+      expect.anything(),
+      'PRIVATE_KEY',
+      expect.objectContaining({ datastoreMount: '/mnt/rediacc-ds/tier1-mutated' })
+    );
+  });
+
+  // CONTROL, other direction: a repo on the machine's implicit default declares
+  // nothing, leaving the machine's own datastore in place.
+  it('refresh --repo sends no mount for a repo with no named-datastore placement', async () => {
+    mockGetCurrent.mockResolvedValue({
+      resources: { repositories: { shop: { grand: 'latest', tags: { latest: {} } } } },
+    });
+
+    await executeRepoLicenseRefresh('shop:test');
+
+    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][2] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('datastoreMount');
   });
 
   it('refresh --repo fails when the ref is not a repository in this config', async () => {

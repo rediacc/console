@@ -1,9 +1,11 @@
 # PLAN: stop-report output queue (one section per stop, priority + FIFO)
-Status: executing
+Status: done
 Owner: queue-plan agent, branch 0731-2
 Updated: 2026-07-31
 
 ## Status
+
+Implemented in full; header flipped 2026-08-05 after verification (see git log b389ac305 / b685cd590). Everything below is the plan as written at design time and is superseded by this line.
 
 Design complete, nothing implemented. Every line number below was read on
 2026-07-31 against the working tree at `.claude/hooks/stop/`. The suite stands

@@ -1,11 +1,11 @@
 ---
 title: "Catena di Licenze e Delega"
-description: "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork. La catena è verificata crittograficamente a ogni avvio, così la sicurezza è garantita."
+description: "Emissione di licenze a prova di manomissione, firma delegata per on-premise e rilevamento dei fork."
 category: "Guides"
 order: 8
 language: it
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Catena di Licenze e Delega
@@ -33,16 +33,65 @@ Quando la CLI richiede una licenza per un repository, il server account:
 
 `sequence` e `prevChainHash` sono all'interno del payload firmato (non possono essere modificati senza invalidare la firma). `chainHash` è nell'envelope (calcolato dopo la firma per evitare una dipendenza circolare).
 
+## Come Viene Rinnovata una Licenza
+
+L'emissione parte dalla tua workstation, autenticata come te. Il rinnovo parte invece dalla macchina, che non conserva alcuna credenziale dell'account. Serve quindi una porta diversa:
+
+```
+POST /licenses/renew
+{ license: <il blob firmato installato>, machineId, clusterId? }
+```
+
+**La licenza presentata è la credenziale.** Su questo endpoint non c'è alcun token API. Il server verifica la firma Ed25519 del blob, e attraverso il certificato di delega quando il blob ne porta uno, esattamente come fa Renet sulla macchina. Possedere una licenza validamente firmata per un repository è già la prova del diritto, e una macchina che ne ha una se l'è vista concedere in precedenza.
+
+L'URL completo di questo endpoint viaggia dentro ogni licenza che il server emette o rinnova, nel campo `renewalUrl`. Una macchina legge l'indirizzo del proprio server account dalla propria licenza invece di esserne configurata, ed è questo che permette a una macchina che serve due universi account di rinnovare presso entrambi.
+
+Il blob rinnovato mantiene il GUID del repository, il GUID grand e il tipo di quello presentato, prende la sequenza successiva dallo stesso registro con l'hash della catena che ne deriva, e ottiene finestre di validità ricalcolate. L'ID macchina viene rilegato alla macchina che ha presentato il blob, ed è così che una migrazione di VM si ripara da sola entro la grazia di 40 giorni. L'identità dello storage (l'UUID LUKS o il fingerprint dello storage) viene riportata invariata, perché una chiamata di rete non può ri-scansionare il disco che sta descrivendo.
+
+### Rifiuti
+
+| Code | Status | Significato |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | La firma del blob non è stata verificata, oppure il suo hash della catena non corrisponde al registro del server a quella sequenza |
+| `INVALID_LICENSE_PAYLOAD` | 400 | Il blob è malformato |
+| `DELEGATION_CERT_INVALID` | 403 | Il certificato allegato ha violato un vincolo o la firma della sua chiave master |
+| `DELEGATION_CERT_EXPIRED` | 403 | Il certificato allegato è fuori dalla sua finestra di validità |
+| `DELEGATION_CERT_REVOKED` | 403 | Il certificato allegato è stato revocato a monte |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | La macchina che presenta la licenza non è quella licenziata e la grazia di 40 giorni è scaduta |
+| `SUBSCRIPTION_LAPSED` | 403 | L'abbonamento è scaduto o è sospeso |
+| `GRACE_PERIOD_ENDED` | 403 | Il periodo di grazia dell'abbonamento è terminato |
+| `TRIAL_REQUIRED` | 403 | L'abbonamento richiede una prova o un piano attivo |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | Il GUID del repository appartiene a un altro abbonamento |
+| `LICENSE_RENEWAL_FAILED` | 500 | Qualsiasi caso non classificato |
+
+Un rifiuto lascia intatta la licenza installata. La macchina continua a funzionare con quello che ha fino alla scadenza hard di quella licenza.
+
+### Rinnovo e slot macchina
+
+Un rinnovo riuscito tocca la riga di attivazione della macchina: occupa uno slot se la macchina non ne aveva, e lo aggiorna se ne aveva già uno. A differenza dell'emissione, non viene mai rifiutato per superamento del limite. La risposta porta `overLimit`, e l'attivazione viene contrassegnata perché il portale, l'endpoint di stato della licenza e `rdc subscription status` possano mostrarla. L'emissione di una licenza davvero nuova, invece, si blocca sempre contro il tetto. Il ragionamento è spiegato in [Abbonamento e licenze - Slot macchina](/it/docs/subscription-licensing).
+
+### Ordine di deployment
+
+I server account vengono distribuiti prima delle build della CLI e dell'agente Renet che dipendono dai campi qui sopra. Un agente Renet che non trova alcun `renewalUrl` in una licenza salta quel repository e lo segnala invece di fallire, così una licenza più vecchia continua a funzionare finché un aggiornamento dalla workstation non popola il campo. Farlo nell'ordine inverso lascia macchine che chiedono un endpoint non ancora esistente.
+
 ## Come Renet Valida
 
-Ogni macchina che esegue Renet memorizza il suo ultimo stato della catena noto in `{licenseDir}/chain-state.json` (cioè `/var/lib/rediacc/license/chain-state.json`, una directory gemella della `repos/` per repository). Lo stato della catena ha scope per chiave di firma e abbonamento, con chiave nel formato `"<keyId>:<subscriptionId>"`, cosicché gli universi firmati da chiavi diverse tracciano le proprie sequenze in modo indipendente. A ogni validazione della licenza, Renet verifica:
+Ogni macchina che esegue Renet memorizza il suo ultimo stato della catena noto in `{licenseDir}/chain-state.json` (cioè `/var/lib/rediacc/license/chain-state.json`, una directory gemella della `repos/` per repository). Lo stato della catena ha scope per chiave di firma, abbonamento, repository e datastore, con chiave nel formato `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (la parte del datastore resta vuota per un repository sul datastore predefinito della macchina).
+
+Le parti relative al repository e al datastore di quella chiave sono determinanti. Sul server i numeri di sequenza sono per abbonamento, quindi su una macchina che ospita più repository sotto un solo abbonamento una testa della catena registrata per il repository B si troverebbe più avanti della licenza che il repository A sta per presentare, e il repository A verrebbe rifiutato come un replay con cui non c'entrava nulla. Un fork del datastore acuisce lo stesso problema: il clone mantiene il GUID del repository e viene coniata di nuovo solo la sua identità di datastore, quindi senza la parte del datastore la licenza più recente del fork farebbe avanzare una testa contro cui l'originale valida ancora. Ancorare la testa registrata al repository e al datastore indicati dalla licenza elimina entrambi i casi. Le voci scritte da un agente Renet più vecchio in un formato di chiave più corto vengono eliminate al primo salvataggio dello stato, e la validazione successiva ricostruisce la testa.
+
+Lo stato della catena viene letto e fatto avanzare solo sulle operazioni validate al livello completo. Il livello operativo non lo legge né lo fa avanzare, quindi avviare un repository non può mai spostare una testa.
+
+A ogni validazione della licenza, Renet verifica:
 
 | Verifica | Il fallimento significa |
 |---|---|
 | La firma Ed25519 è valida | La licenza è stata contraffatta o manomessa |
-| `sequence > lastKnownSequence` | Il server ha fatto rollback della catena (attacco di replay) |
+| `sequence >= lastKnownSequence` | Il server ha fatto rollback della catena (attacco di replay) |
+| Una ripetizione di `lastKnownSequence` porta lo stesso `chainHash` | Una catena forkata ha riutilizzato un numero di sequenza |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | La voce della catena è stata modificata |
-| `issuedAt >= lastKnownIssuedAt` | Manipolazione dell'orologio (orologio del server impostato indietro) |
+
+Rivalidare la licenza già installata non è una regressione: la stessa sequenza con lo stesso hash della catena viene accettata, ed è questo che permette a una macchina di validare lo stesso file a ogni avvio di un repository.
 
 Se una qualsiasi verifica fallisce, la licenza viene rifiutata e viene segnalato il motivo del fallimento.
 
@@ -321,7 +370,7 @@ Tutti i template email e l'API email pubblica sono identici tra i trasporti.
 
 ## Documentazione Correlata
 
-- [Installazione On-Premise](/en/docs/on-premise) -- come distribuire il server on-premise
-- [Abbonamento e Licenze](/en/docs/subscription-licensing) -- limiti del piano e slot macchina
-- [Canali di Rilascio](/en/docs/release-channels) -- canali edge vs stable
-- [Regioni dei Dati](/en/docs/data-regions) -- residenza dei dati regionale
+- [Installazione On-Premise](/it/docs/on-premise) -- come distribuire il server on-premise
+- [Abbonamento e Licenze](/it/docs/subscription-licensing) -- limiti del piano e slot macchina
+- [Canali di Rilascio](/it/docs/release-channels) -- canali edge vs stable
+- [Regioni dei Dati](/it/docs/data-regions) -- residenza dei dati regionale

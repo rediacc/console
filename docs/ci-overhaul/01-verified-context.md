@@ -295,7 +295,8 @@ commit is newer, not whose work it is**.
   required-check trap.
 - **`ci.yml:6-7` is `pull_request: types: [opened, synchronize]`.** `labeled` is absent, so a
   `full-ci` label cannot retrigger CI. Label gating on `synchronize` does work:
-  `no-external-quality` is the precedent (ci-quality.yml:777 and steps 540/544/553/893).
+  `no-external-quality` is the precedent (since 2026-08-05 read at ONE site, ci.yml's
+  initialize `external_quality` output, instead of five inline step expressions).
 - **Static gates constraining your YAML:** `check-workflows.sh` caps inline `run:` logic at
   `INLINE_MAX_LOGIC=8` lines, so detector logic goes in `.ci/scripts/ci/`.
   `.ci/scripts/security/check-workflow-gates.sh` CHECK 1 requires any job-level `if:`
@@ -321,9 +322,15 @@ dispatched unconditionally from `finalize-release-sentinel`, ci.yml:1023), `desc
 (the PR-description gate reads `lastEditedAt`), `codex`, and six unused GitHub defaults
 (`good first issue`, `help wanted`, `wontfix`, `duplicate`, `invalid`, `question`).
 
-**Alive, machine-read:** `no-external-quality` (5 workflow references), `no-cancel-push`,
-`no-cancel-failure`, `no-auto-retry`, `bump-minor`, `bump-major`, `automated`, `dependencies`,
+**Alive, machine-read:** `no-external-quality` (since 2026-08-05: one reference, ci.yml's
+`external_quality` initialize output), `no-cancel-push`,
+`no-auto-retry`, `bump-minor`, `bump-major`, `automated`, `dependencies`,
 `github-actions`.
+
+`no-cancel-failure` was machine-read at the time of this inventory and was
+**deleted on 2026-08-05**, label and consumers together: holding a red run open
+to collect a full roster meant waiting out the E2E and OPS legs on every
+iteration. See `docs/ci-overhaul/06-progress.md`.
 
 **Alive, triage:** `enhancement` (29), `bug` (23), `translation` (13), `documentation` (1).
 

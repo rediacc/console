@@ -43,6 +43,7 @@ could write pinned a session all night):
     45 minutes per long-running delegate; it rides the report instead.
 """
 
+import json
 import os
 import re
 import subprocess
@@ -92,6 +93,7 @@ def blocking_rung_due(state_doc, key, age_min, stampkey, gone=False):
 
 # ---- process inspection -----------------------------------------------------
 
+
 def _proc_table_linux():
     """[(pid, ppid, cmdline)] for every readable /proc entry. A few ms for a
     few hundred processes; never raises."""
@@ -123,7 +125,10 @@ def _proc_table_ps():
     try:
         r = subprocess.run(
             ["ps", "-axo", "pid=,ppid=,args="],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
         )
     except (OSError, subprocess.SubprocessError):
         return None
@@ -180,8 +185,8 @@ def _needle(command):
     STUCK (2026-07-31)."""
     best = ""
     for line in (command or "").splitlines():
-        for seg in re.split(r"['\"]", line):
-            seg = seg.strip()
+        for raw_seg in re.split(r"['\"]", line):
+            seg = raw_seg.strip()
             if len(seg) > len(best):
                 best = seg
     return best if len(best) >= 12 else ""
@@ -256,11 +261,159 @@ def verify_background(event_bg, table=None, ancestors=None):
         if not needle or table is None or not ancestors:
             out[tid] = "unverifiable"
             continue
-        hit = any(
-            ppid in ancestors and needle in cmd for _pid, ppid, cmd in table
-        )
+        hit = any(ppid in ancestors and needle in cmd for _pid, ppid, cmd in table)
         out[tid] = "confirmed" if hit else "suspect"
     return out
+
+
+# The inbox waiter (wl_wait.py) launched as a background shell task. Matched on
+# the SCRIPT NAME in the declared command, which is the only stable marker: the
+# task id is per-launch and the description is free text.
+WAITER_MARK = "wl_wait.py"
+
+
+def waiter_tasks(live_bg):
+    """Running background tasks that are inbox waiters."""
+    return [
+        b
+        for b in live_bg or []
+        if isinstance(b, dict)
+        and b.get("type") == "shell"
+        and WAITER_MARK in str(b.get("command") or "")
+    ]
+
+
+def confirmed_waiters(live_bg, verdicts):
+    """Waiters whose liveness the OS has CONFIRMED, never merely claimed.
+
+    Both callers in wl_checks trade a supervision demand for this verdict, so
+    `confirmed` is the only verdict that may buy the trade. A waiter that is
+    `suspect` or `unverifiable` is treated exactly as any other background task:
+    it still owes the check-in and it still does not substitute for a poll cron.
+    That is the safe direction -- the whole argument for relaxing those checks is
+    that this process's EXIT is itself the wake-up, which is worth nothing if
+    nobody can see the process.
+    """
+    return [
+        b
+        for b in waiter_tasks(live_bg)
+        if (verdicts or {}).get(str(b.get("id") or "")) == "confirmed"
+    ]
+
+
+TEAMMATE_FRESH_MIN = float(os.environ.get("WORKLIST_TEAMMATE_FRESH_MIN", "15"))
+
+
+def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
+    """How many in-process teammates have a transcript that is still growing.
+
+    THE ONLY AUTOMATIC LIVENESS SIGNAL THAT EXISTS FOR TEAMMATES, and it exists
+    because `verify_background` cannot help: it returns `unverifiable` for
+    anything whose type is not "shell", and a teammate has no OS process of its
+    own to find. A teammate that is working writes to its transcript; one that
+    stopped does not.
+
+    Deliberately a COUNT and not a mapping. There is no join from a background
+    task id to an agent: the task carries only {id, type, status, description},
+    the description is the PROMPT truncated to ~50 characters, and that prefix is
+    provably not unique -- measured on a live roster, 10 of 19 teammate tasks
+    collided on it ("You are an Opus writer sub-agent in /home/muh..." matched
+    five different agents). The disambiguating text is exactly what the
+    truncation removes, so no amount of care recovers it.
+
+    Reads the filesystem, never the session's memory, so it is unaffected by a
+    compaction -- which is the case this exists for.
+    """
+    import wl_report as RPT  # noqa: PLC0415 -- stdlib-only sibling, no cycle
+
+    fresh_min = TEAMMATE_FRESH_MIN if fresh_min is None else fresh_min
+    proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
+    if not proj.is_dir():
+        return None  # cannot tell: NOT the same as zero, and callers must differ
+    # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` --
+    # every session directory under the project -- so ANY unrelated session with
+    # a teammate transcript touched in the last fresh_min made `fresh > 0` here,
+    # for a session whose own roster might be 100% phantom. That silently
+    # defeated the certainty branch in prune_background (fresh == 0 is what
+    # licenses the auto-reap) in exactly the situation it was built for: a
+    # session resumed after compaction, which is when OTHER sessions are most
+    # likely to be active in the same tree. It also deflated the `unknown`
+    # overclaim count reported to the operator. This tree runs concurrent
+    # sessions as a matter of course, so the collision was routine, not exotic.
+    scope = proj / session_id / "subagents" if session_id else None
+    if scope is not None and not scope.is_dir():
+        # FAIL TO "CANNOT TELL", NEVER TO ZERO. Zero is the value that licenses
+        # reaping the whole teammate roster, so a session id that does not
+        # resolve to a directory (a prefix instead of a full uuid, a store not
+        # yet created) must not be read as "no teammates are alive".
+        return None
+    metas = scope.glob("*.meta.json") if scope is not None else proj.glob("*/subagents/*.meta.json")
+    now, fresh = time.time(), 0
+    for meta in metas:
+        try:
+            info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(info, dict) or info.get("taskKind") != "in_process_teammate":
+            continue
+        jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
+        try:
+            if (now - jsonl.stat().st_mtime) / 60.0 <= fresh_min:
+                fresh += 1
+        except OSError:
+            continue
+    return fresh
+
+
+def reaped_path(worklist, session_id):
+    return worklist.with_suffix(".reaped-%s" % (session_id or "unknown")[:8])
+
+
+def read_reaped(worklist, session_id):
+    """Task ids this session has declared dead. Append-only, one id per line."""
+    try:
+        return {
+            ln.strip()
+            for ln in reaped_path(worklist, session_id)
+            .read_text(encoding="utf-8", errors="replace")
+            .splitlines()
+            if ln.strip()
+        }
+    except OSError:
+        return set()
+
+
+def prune_background(event_bg, worklist, session_id, cwd):
+    """(live, dropped, unknown) -- the roster with provably-dead entries removed.
+
+    TWO MECHANISMS, and the split is the whole safety argument.
+
+    AUTOMATIC, and only where it is a CERTAINTY: when NOT ONE teammate transcript
+    is fresh, every teammate task in the roster is dead, whatever its id. No join
+    is needed to know that, and nothing live can be hidden by it -- if even one
+    teammate were working, its transcript would be growing and this branch would
+    not be taken. This is the compaction case: a session reopened hours later
+    inherits a roster of twenty and none of them exist.
+
+    MANUAL for the in-between. With some transcripts fresh but fewer than the
+    roster claims, at least (claimed - fresh) are dead and NOTHING CAN SAY WHICH.
+    Guessing there would mean dropping a live worker's supervision, which is
+    worse than a stale entry, so those are KEPT and reported as `unknown` -- and
+    the session can retire specific ids by hand with `worklist.py --reap`.
+    """
+    bg = [b for b in (event_bg or []) if isinstance(b, dict)]
+    reaped = read_reaped(worklist, session_id)
+    bg = [b for b in bg if str(b.get("id") or "") not in reaped]
+    mates = [b for b in bg if b.get("type") == "teammate"]
+    if not mates:
+        return bg, [], 0
+    fresh = live_teammate_transcripts(cwd, session_id=session_id)
+    if fresh is None:
+        return bg, [], 0  # cannot see the store: claim nothing, change nothing
+    if fresh == 0:
+        return [b for b in bg if b.get("type") != "teammate"], mates, 0
+    unknown = max(0, len(mates) - fresh)
+    return bg, [], unknown
 
 
 def output_quiet_min(session_id, task_id):
@@ -307,7 +460,10 @@ def worker_facts(event, session_id):
     for b in live_bg:
         tid = str(b.get("id") or "?")
         v = verdicts.get(tid, "unverifiable")
-        quiet = output_quiet_min(event.get("session_id", ""), tid)
+        # The PARAMETER, not a second read of the event. Both carry the same
+        # value today (wl_checks.py:1471 derives it from this very event), but
+        # one source at the call boundary cannot drift from the other.
+        quiet = output_quiet_min(session_id, tid)
         if v == "confirmed":
             osword = "OS process confirmed"
         elif v == "suspect":
@@ -328,6 +484,7 @@ def worker_facts(event, session_id):
 
 
 # ---- the ladder -------------------------------------------------------------
+
 
 def _age_min(stamp):
     a = C.stamp_age_min(stamp)
@@ -367,7 +524,14 @@ def ladder(fold, session_id, event, state_doc):
         wid = rec.get("worker") or (wm.group(1) if wm else "")
         gone = bool(wid) and wid not in now_bg
         subjects.append(
-            ("item:" + rec["id"], rec["line"][:110], _age_min(rec.get("upd", "")), rec.get("upd", ""), gone, wid)
+            (
+                "item:" + rec["id"],
+                rec["line"][:110],
+                _age_min(rec.get("upd", "")),
+                rec.get("upd", ""),
+                gone,
+                wid,
+            )
         )
     for tid, (status, subject) in sorted(C.task_statuses(event.get("session_id", "")).items()):
         prev = tasks_seen.get(tid)
@@ -377,7 +541,14 @@ def ladder(fold, session_id, event, state_doc):
             prev = tasks_seen[tid]
         if status == "in_progress":
             subjects.append(
-                ("task:" + tid, "task #%s %s" % (tid, subject), _age_min(prev.get("since", "")), prev.get("since", ""), False, "")
+                (
+                    "task:" + tid,
+                    "task #%s %s" % (tid, subject),
+                    _age_min(prev.get("since", "")),
+                    prev.get("since", ""),
+                    False,
+                    "",
+                )
             )
 
     _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below
@@ -385,7 +556,15 @@ def ladder(fold, session_id, event, state_doc):
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
-        def fire_once(rung):
+        # The loop variables are bound as DEFAULTS, not closed over. B023 is a
+        # false positive at this particular site -- fire_once is only ever
+        # called inside the same iteration that defines it, never stored or
+        # deferred, so the late-binding bug it warns about cannot happen here.
+        # Binding them anyway is free and provably equivalent, and it keeps
+        # B023 enabled for the sites where the warning WOULD be real; turning
+        # the rule off to clear six known-safe uses is how the next genuine
+        # late-binding bug ships unnoticed.
+        def fire_once(rung, rung_rec=rung_rec, stampkey=stampkey, key=key):
             nonlocal changed
             if rung_rec.get(rung) == stampkey:
                 return False

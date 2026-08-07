@@ -35,8 +35,8 @@
 // every push-to-main, `pointer_bump_only` cuts the entire expensive pipeline on
 // a submodule-pointer PR, and `is_bot` cuts the staging chain. A plan that says
 // only "scope wants unit to run" is therefore an incomplete prediction: on a
-// pointer-bump PR every one of the 17 keys is planned `run: true` and every one
-// of them skips, so a live gate would report seventeen `planned-run-but-skipped`
+// pointer-bump PR every one of the 18 keys is planned `run: true` and every one
+// of them skips, so a live gate would report eighteen `planned-run-but-skipped`
 // failures on a run where nothing whatsoever went wrong. The plan now carries
 // the observed condition values (`plan.conditions`) and the reconciler derives
 // the exemption itself, per PREEXISTING_CONDITIONS below.
@@ -94,6 +94,7 @@ const EXPECTED_JOB_NAMES = {
   renet: ['Tests + Infra / Renet'],
   license_enforcement: ['Tests + Infra / License Enforcement'],
   account_e2e: ['Tests + Infra / Account E2E'],
+  drills: ['Tests + Infra / Drills'],
   ops: ['OPS Tests / OPS Provision', 'OPS Tests / OPS Check'],
   elite_run: ['Elite Run'],
   update_flow: ['Tests + Infra / Update Flow / Update flow'],
@@ -130,16 +131,16 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 // Missing information must never widen an exemption.
 //
 // Every entry is derived from the tree, with the gate that performs the skip
-// named. Ten of the seventeen keys are cut TRANSITIVELY, by a caller or a build
+// named. Ten of the eighteen keys are cut TRANSITIVELY, by a caller or a build
 // job going `skipped`, which is why this cannot be read off the leaf's own
-// `if:` (the twelve ct-tests leaves mention only `full_suite`, and never
-// `pointer_bump_only`, yet all twelve skip on a pointer bump).
+// `if:` (the thirteen ct-tests leaves mention only `full_suite`, and never
+// `pointer_bump_only`, yet all thirteen skip on a pointer bump).
 //
 //   full_suite   ci.yml:118, `github.event_name != 'push'`. FALSE only on
 //                push-to-main.
-//     - the 12 ct-tests leaves: each carries its own `inputs.full_suite ==
+//     - the 13 ct-tests leaves: each carries its own `inputs.full_suite ==
 //       'true'` clause. Cited by CLAUSE rather than by line number on purpose:
-//       the twelve line numbers that used to sit here went stale the moment
+//       the thirteen line numbers that used to sit here went stale the moment
 //       ct-tests.yml gained the run_* inputs, and a stale citation is worse
 //       than none because it sends the next reader to the wrong job. Find them
 //       with `grep -n "full_suite" .github/workflows/ct-tests.yml`.
@@ -153,9 +154,9 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 //   pointer_bump_only  ci.yml:123 <- initialize.sh:85/131-133 and
 //                detect-pointer-bump.sh:185. TRUE only on a pull_request whose
 //                every commit moves nothing but tree-identical gitlinks.
-//                Cuts ALL SEVENTEEN keys:
+//                Cuts ALL EIGHTEEN keys:
 //     - build-renet skips (ci.yml:493) and everything below it inherits:
-//       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 12 leaves;
+//       build-docker-fast (ci.yml:532) -> tests (ci.yml:687) -> the 13 leaves;
 //       build-cli (ci.yml:553) -> update_flow (ci.yml:568);
 //       build-docker (ci.yml:512) -> stage-artifacts (ci.yml:658) ->
 //       install_methods (ci.yml:1083); build-docker-fast -> elite_run
@@ -168,7 +169,7 @@ const FLAT_JOB_KEYS = new Set(['package_tests']);
 //   is_bot       ci.yml:105 <- initialize.sh:67-82. TRUE only for a push
 //                authored by github-actions[bot] or dependabot[bot].
 //     - install_methods ONLY, via stage-artifacts (ci.yml:658). The other
-//       sixteen need no entry: is_bot can only be true on a `push`, where
+//       seventeen need no entry: is_bot can only be true on a `push`, where
 //       full_suite is already false and already exempts them. Listing them
 //       would be a second, redundant reason for the same skip and would make
 //       the annotation order load-bearing for no gain.
@@ -196,12 +197,20 @@ const CT_TESTS_LEAF_KEYS = [
   'renet',
   'license_enforcement',
   'account_e2e',
+  'drills',
 ];
 
 const PREEXISTING_CONDITIONS = {
   pointer_bump_only: {
     activeWhen: true,
-    keys: [...CT_TESTS_LEAF_KEYS, 'ops', 'elite_run', 'update_flow', 'package_tests', 'install_methods'],
+    keys: [
+      ...CT_TESTS_LEAF_KEYS,
+      'ops',
+      'elite_run',
+      'update_flow',
+      'package_tests',
+      'install_methods',
+    ],
   },
   full_suite: {
     activeWhen: false,
@@ -254,7 +263,8 @@ function validateConditionTable(conditions, order, names) {
       throw new Error(`CONDITION_ORDER omits '${cond}', so it would never be evaluated`);
     }
     for (const key of spec.keys) {
-      if (!names[key]) throw new Error(`PREEXISTING_CONDITIONS.${cond} names unknown plan key '${key}'`);
+      if (!names[key])
+        throw new Error(`PREEXISTING_CONDITIONS.${cond} names unknown plan key '${key}'`);
     }
   }
   for (const cond of order) {
@@ -286,7 +296,7 @@ function preexistingSkip(key, conditions) {
 //
 // Only real booleans are recorded. A condition the caller could not determine
 // is OMITTED rather than defaulted, because both defaults are wrong: defaulting
-// `full_suite` to false would exempt sixteen keys on no evidence at all.
+// `full_suite` to false would exempt seventeen keys on no evidence at all.
 function annotatePlan(plan, conditions) {
   if (!plan || typeof plan !== 'object') return plan;
   const observed = {};
@@ -333,7 +343,7 @@ function parseJobsPayload(payload) {
 //   - THE BASELINE READER (scope-engine.cjs's attestPlan, which calls this
 //     module's reconcile() over a plan downloaded from an EARLIER run) must not
 //     accept such a run as proof. A baseline is "the last run where everything
-//     passed"; a pointer-bump run where all seventeen keys skipped passed
+//     passed"; a pointer-bump run where all eighteen keys skipped passed
 //     nothing, and treating it as a baseline would let the delta since then go
 //     unvalidated. It passes nothing, so it gets the strict reading and refuses
 //     the candidate with `reconcile:planned-run-but-skipped` exactly as before.
@@ -513,7 +523,9 @@ function readJson(file, missingReason) {
   try {
     return { value: JSON.parse(fs.readFileSync(file, 'utf8')) };
   } catch (e) {
-    return { error: `${missingReason}: ${e.message} (the reconciler degrades to red, not to green)` };
+    return {
+      error: `${missingReason}: ${e.message} (the reconciler degrades to red, not to green)`,
+    };
   }
 }
 
@@ -530,7 +542,9 @@ function main(argv) {
     }
   }
   if (!opts.plan || !opts.jobs || !opts.runId) {
-    process.stderr.write(`skip-plan-reconcile: --plan, --jobs and --run-id are all required\n${usage()}\n`);
+    process.stderr.write(
+      `skip-plan-reconcile: --plan, --jobs and --run-id are all required\n${usage()}\n`
+    );
     return 2;
   }
 
@@ -566,7 +580,9 @@ function main(argv) {
   }
 
   if (!result.ok) {
-    process.stderr.write('skip-plan reconciliation FAILED: the run skipped work the plan attested to.\n');
+    process.stderr.write(
+      'skip-plan reconciliation FAILED: the run skipped work the plan attested to.\n'
+    );
     return 1;
   }
   const planned = planRead.value.jobs ? Object.keys(planRead.value.jobs).length : 0;

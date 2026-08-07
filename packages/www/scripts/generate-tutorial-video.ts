@@ -364,7 +364,10 @@ async function main(): Promise<void> {
     }
 
     const EDGE_LEAD = 1.0;
-    const sceneTimingAbs: Record<string, { start: number; end: number }> = {};
+    // Value typed `| undefined`: `noUncheckedIndexedAccess` is off repo-wide, so
+    // without it every lookup below reads as guaranteed-present. It is not — the
+    // debug sidecar keys some of them off debugCollector, not off storyboard.scenes.
+    const sceneTimingAbs: Record<string, { start: number; end: number } | undefined> = {};
     for (const s of storyboard.scenes) {
       sceneTimingAbs[s.id] = {
         start: (sceneAbsStart[s.id] ?? 0) + EDGE_LEAD,
@@ -411,8 +414,9 @@ async function main(): Promise<void> {
         ? (sceneTimingAbs[firstCastNarrated.id]?.start ?? 1.0) + 0.5
         : 1.0;
       const posterPath = path.join(outDir, `${tutorial}.${lang}.poster.jpg`);
-      // captions-only reuses the published mp4 in place; a full render reads its stage file.
-      extractPosterJpg(captionsOnly ? outPath : stagePath, posterAtSec, posterPath);
+      // Only a full render reaches here (the enclosing branch excludes
+      // captions-only), so the frame always comes out of the stage file.
+      extractPosterJpg(stagePath, posterAtSec, posterPath);
       console.log(`[video] poster    → ${posterPath} (at ${posterAtSec.toFixed(2)}s)`);
     }
 
@@ -420,7 +424,7 @@ async function main(): Promise<void> {
       for (const entry of debugCollector.castNarrated) {
         const dstPng = path.join(
           debugFramesDir,
-          `${entry.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+          `${entry.sceneId.replaceAll(/[:<>"|?*]/g, '-')}.lastframe.png`
         );
         try {
           copyFileSync(entry.lastFramePngSrc, dstPng);
@@ -436,18 +440,18 @@ async function main(): Promise<void> {
         scenes: storyboard.scenes.map((s) => ({
           id: s.id,
           type: s.type,
-          mp4StartSec: sceneTimingAbs[s.id].start,
-          mp4EndSec: sceneTimingAbs[s.id].end,
+          mp4StartSec: sceneTimingAbs[s.id]?.start ?? null,
+          mp4EndSec: sceneTimingAbs[s.id]?.end ?? null,
         })),
         castNarrated: debugCollector.castNarrated.map((d) => ({
           ...d,
           lastFramePngSrc: undefined,
           lastFramePng: path.join(
             debugFramesDir,
-            `${d.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+            `${d.sceneId.replaceAll(/[:<>"|?*]/g, '-')}.lastframe.png`
           ),
-          mp4StartSec: sceneTimingAbs[d.sceneId].start,
-          mp4EndSec: sceneTimingAbs[d.sceneId].end,
+          mp4StartSec: sceneTimingAbs[d.sceneId]?.start ?? null,
+          mp4EndSec: sceneTimingAbs[d.sceneId]?.end ?? null,
         })),
         sessions: sessions.debugInfo(),
       };
@@ -474,7 +478,7 @@ async function main(): Promise<void> {
     }
     // Sessions hold chromium instances and tunnel processes pointed at
     // resources teardownCommand may destroy — release them first.
-    await sessions.closeAll().catch((err) => {
+    await sessions.closeAll().catch((err: unknown) => {
       console.error(`[video] session cleanup failed: ${String(err)}`);
     });
     if (storyboard.teardownCommand && needsLab) {
@@ -495,7 +499,7 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err instanceof Error ? (err.stack ?? err.message) : err);
   process.exit(1);
 });

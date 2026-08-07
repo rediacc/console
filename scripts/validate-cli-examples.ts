@@ -293,9 +293,7 @@ function extractFromMarkdown(
     mergedCommand = normaliseInvocation(mergedCommand);
     i = merged.endIndex;
 
-    // Pass surrounding lines for cloud-only context detection
-    const ctx = lines.slice(Math.max(0, i - 10), i + 1);
-    validateCommand(mergedCommand, filePath, i + 1, violations, ctx);
+    validateCommand(mergedCommand, filePath, i + 1, violations);
   }
 }
 

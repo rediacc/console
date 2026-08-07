@@ -4,8 +4,8 @@ description: "Émission de licences inviolable, signature déléguée pour l'on-
 category: "Guides"
 order: 8
 language: fr
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Chaîne de licence et délégation
@@ -22,7 +22,7 @@ Chaque licence émise par un serveur de compte est enregistrée dans un registre
 
 ## Comment une licence est émise
 
-Lorsque la CLI demande une activation de machine ou une licence de dépôt, le serveur de compte :
+Lorsque la CLI demande une licence de dépôt, le serveur de compte :
 
 1. Lit la tête de chaîne actuelle (dernière séquence + hachage) pour l'abonnement.
 2. Construit la charge utile de licence avec le numéro de séquence suivant et le hachage de chaîne précédent intégrés.
@@ -33,16 +33,65 @@ Lorsque la CLI demande une activation de machine ou une licence de dépôt, le s
 
 La `sequence` et `prevChainHash` se trouvent dans la charge utile signée (elles ne peuvent pas être modifiées sans invalider la signature). Le `chainHash` se trouve sur l'enveloppe (calculé après la signature pour éviter une dépendance circulaire).
 
+## Comment une licence est renouvelée
+
+L'émission part de votre station de travail, authentifiée en votre nom. Le renouvellement, lui, part de la machine, qui ne détient aucun identifiant de compte. Il lui faut donc une autre porte d'entrée :
+
+```
+POST /licenses/renew
+{ license: <le blob signé installé>, machineId, clusterId? }
+```
+
+**La licence présentée sert d'identifiant.** Ce point de terminaison n'attend aucun token API. Le serveur vérifie la signature Ed25519 du blob, et passe par le certificat de délégation quand le blob en porte un, exactement comme le fait Renet sur la machine. Détenir une licence valablement signée pour un dépôt prouve le droit d'usage, et une machine qui en détient une se l'est forcément déjà vu accorder.
+
+L'URL complète de ce point de terminaison voyage à l'intérieur de chaque licence que le serveur émet ou renouvelle, dans le champ `renewalUrl`. Une machine lit l'adresse de son propre serveur de comptes dans sa propre licence au lieu d'être configurée avec, ce qui permet à une machine desservant deux univers de compte de se renouveler auprès des deux.
+
+Le blob renouvelé conserve le GUID du dépôt, le GUID grand et le type de celui qui a été présenté, prend la séquence suivante dans le même registre avec le hachage de chaîne qui en découle, et reçoit des fenêtres de validité recalculées. L'ID de machine est relié à la machine qui a présenté le blob, ce qui permet à une migration de VM de se réparer d'elle-même dans la fenêtre de grâce de 40 jours. L'identité de stockage (l'UUID LUKS ou l'empreinte de stockage) est reprise telle quelle, car un appel réseau ne peut pas ré-analyser le disque qu'il décrit.
+
+### Refus
+
+| Code | Statut | Signification |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | La signature du blob n'a pas pu être vérifiée, ou son hachage de chaîne ne correspond pas au registre du serveur à cette séquence |
+| `INVALID_LICENSE_PAYLOAD` | 400 | Le blob est mal formé |
+| `DELEGATION_CERT_INVALID` | 403 | Le certificat joint a violé une contrainte ou la signature de sa clé maître |
+| `DELEGATION_CERT_EXPIRED` | 403 | Le certificat joint est hors de sa fenêtre de validité |
+| `DELEGATION_CERT_REVOKED` | 403 | Le certificat joint a été révoqué en amont |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | La machine qui présente la licence n'est pas celle sous licence et la grâce de 40 jours est écoulée |
+| `SUBSCRIPTION_LAPSED` | 403 | L'abonnement a expiré ou est suspendu |
+| `GRACE_PERIOD_ENDED` | 403 | La période de grâce de l'abonnement est terminée |
+| `TRIAL_REQUIRED` | 403 | L'abonnement nécessite un essai ou un plan actif |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | Le GUID du dépôt appartient à un autre abonnement |
+| `LICENSE_RENEWAL_FAILED` | 500 | Tout ce qui n'est pas classé |
+
+Un refus laisse la licence installée intacte. La machine continue de fonctionner avec ce qu'elle a jusqu'à l'expiration définitive de cette licence.
+
+### Renouvellement et slot de machine
+
+Un renouvellement réussi touche la ligne d'activation de la machine : il réclame un slot si la machine n'en avait pas, et le rafraîchit si elle en avait un. Contrairement à l'émission, il n'est jamais refusé pour dépassement de limite. La réponse porte `overLimit`, et l'activation est signalée pour que le portail, le point de terminaison de statut de licence et `rdc subscription status` puissent l'afficher. L'émission d'une licence véritablement nouvelle, elle, bute toujours sur le plafond. Le raisonnement est détaillé dans [Abonnement et licences - Slots de machine](/fr/docs/subscription-licensing).
+
+### Ordre de déploiement
+
+Les serveurs de comptes se déploient avant les builds de la CLI et de l'agent Renet qui dépendent des champs ci-dessus. Un agent Renet qui ne trouve aucun `renewalUrl` dans une licence ignore ce dépôt et le signale plutôt que d'échouer, si bien qu'une licence plus ancienne continue de fonctionner jusqu'à ce qu'un rafraîchissement depuis la station de travail renseigne le champ. Dans l'autre sens, vous vous retrouvez avec des machines qui réclament un point de terminaison qui n'existe pas encore.
+
 ## Comment Renet valide
 
-Chaque machine exécutant Renet stocke son dernier état de chaîne connu dans `{licenseDir}/chain-state.json` (c'est-à-dire `/var/lib/rediacc/license/chain-state.json`, un répertoire frère du `repos/` propre à chaque dépôt). L'état de la chaîne est délimité par clé de signature et par abonnement, indexé sous la forme `"<keyId>:<subscriptionId>"`, de sorte que les univers signés par des clés différentes suivent leurs séquences indépendamment. À chaque validation de licence, Renet vérifie :
+Chaque machine exécutant Renet stocke son dernier état de chaîne connu dans `{licenseDir}/chain-state.json` (c'est-à-dire `/var/lib/rediacc/license/chain-state.json`, un répertoire frère du `repos/` propre à chaque dépôt). L'état de la chaîne est délimité par clé de signature, par abonnement, par dépôt et par datastore, indexé sous la forme `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (la partie datastore reste vide pour un dépôt sur le datastore par défaut de la machine).
+
+Les parties « dépôt » et « datastore » de cette clé sont essentielles. Côté serveur, les numéros de séquence sont attribués par abonnement : sur une machine hébergeant plusieurs dépôts sous un même abonnement, une tête de chaîne enregistrée pour le dépôt B se retrouverait en avance sur la licence que le dépôt A s'apprête à présenter, et le dépôt A serait rejeté comme un rejeu alors qu'il n'y est pour rien. Un fork de datastore aggrave le même problème : le clone conserve le GUID du dépôt, seule son identité de datastore est réémise, donc sans la partie datastore la licence plus récente du fork ferait avancer une tête contre laquelle le dépôt d'origine valide encore. Rattacher la tête enregistrée au dépôt et au datastore que la licence nomme supprime les deux cas. Les entrées écrites par un agent Renet plus ancien dans un format de clé plus court sont supprimées au premier enregistrement de l'état, et la validation suivante réamorce la tête.
+
+L'état de chaîne n'est lu et avancé que sur les opérations validées au niveau complet. Le niveau d'exploitation ne le lit ni ne l'avance, de sorte que démarrer un dépôt ne peut jamais déplacer une tête.
+
+À chaque validation de licence, Renet vérifie :
 
 | Vérification | Échec signifie |
 |---|---|
 | La signature Ed25519 est valide | La licence a été falsifiée ou altérée |
-| `sequence > lastKnownSequence` | Le serveur a effectué un rollback de la chaîne (attaque par rejeu) |
+| `sequence >= lastKnownSequence` | Le serveur a effectué un rollback de la chaîne (attaque par rejeu) |
+| Une répétition de `lastKnownSequence` porte le même `chainHash` | Une chaîne forkée a réutilisé un numéro de séquence |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | L'entrée de chaîne a été modifiée |
-| `issuedAt >= lastKnownIssuedAt` | Manipulation d'horloge (horloge serveur reculée) |
+
+Revalider la licence déjà installée n'est pas une régression : la même séquence avec le même hachage de chaîne est acceptée, ce qui permet à une machine de valider le même fichier à chaque démarrage d'un dépôt.
 
 Si l'une des vérifications échoue, la licence est rejetée et la raison de l'échec est signalée.
 

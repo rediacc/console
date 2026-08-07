@@ -14,6 +14,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 # `- [ ] (5546d4bb) do the thing`  ->  state " ", owner "5546d4bb"
@@ -23,10 +24,14 @@ import time
 # blocked on that agent's work. Non-prefix labels now parse as owners and are
 # reported-never-blocking for everyone (including the labeler: only a tag that
 # is a PREFIX of your session id binds you).
-ITEM = re.compile(r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+ITEM = re.compile(
+    r"^\s*-\s*\[(?P<state>[ x?>])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
+)
 # Same shape but INCLUDING tombstones, for the md-sync pass which must see a
 # `[~]` flip as a deletion rather than as an unparseable line.
-ITEM_ANY = re.compile(r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?")
+ITEM_ANY = re.compile(
+    r"^\s*-\s*\[(?P<state>[ x?>~])\]\s*(?:\((?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)\)\s*)?"
+)
 LEASE = re.compile(r"until:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)Z")
 # worker:<background-task-id> on a lease line names the OS-checkable delegate.
 WORKER = re.compile(r"worker:([A-Za-z0-9._-]{1,40})")
@@ -46,7 +51,7 @@ VAGUE_WHY_RE = re.compile(
     r"\b(did ?not get (to|around)|didn'?t get (to|around)|no time|not yet"
     r"|too busy|later|low priority|will (do|get to)|have?n'?t (had|gotten"
     r"|got around))\b",
-    re.I,
+    re.IGNORECASE,
 )
 # Same charset the worklist owner tag accepts, so a request's from/to can be
 # written into a `- [?]` line on escalation without re-validation.
@@ -71,25 +76,33 @@ def parse_justification(text):
         key = m.group(1)
         if key == "DEFAULT":
             continue
-        val = text[m.end():end].strip()
+        val = text[m.end() : end].strip()
         if val:
             out[key.lower()] = val
     return out
 
 
 def utcnow():
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(datetime.UTC)
 
 
 def stamp_now():
     return utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def stamp_ahead(minutes):
+    """An ISO8601Z stamp `minutes` from now. Used where a message promises a
+    bound (the background check-in's next-earliest time): a claimed latch a
+    reader cannot check from the message alone is not a latch, it is a
+    slogan."""
+    return (utcnow() + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def parse_stamp(stamp):
     """datetime or None from an ISO8601Z stamp (seconds optional)."""
     for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ"):
         try:
-            return datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+            return datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
         except (TypeError, ValueError):
             continue
     return None
@@ -110,7 +123,7 @@ def lease_state(line):
     stamp = m.group(1)
     fmt = "%Y-%m-%dT%H:%M:%S" if stamp.count(":") == 2 else "%Y-%m-%dT%H:%M"
     try:
-        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.timezone.utc)
+        until = datetime.datetime.strptime(stamp, fmt).replace(tzinfo=datetime.UTC)
     except ValueError:
         return "invalid"
     now = utcnow()
@@ -138,9 +151,169 @@ def same_session(a, b):
     return bool(a) and bool(b) and (a.startswith(b) or b.startswith(a))
 
 
+# The identity a `<me>` argument may name without being checked against the
+# environment. "operator" is the HUMAN's reply handle: wl_email mails
+# `worklist.py --answer operator <id> '<words>'` to a person who runs it in
+# whatever shell they have open, and if that shell happens to be a Claude
+# session's Bash the env check would refuse the one command the mail exists to
+# get run. It is a name, not a session prefix, and it was never verifiable.
+#
+# THE HOLE THIS LEAVES, ACCEPTED AND UNDECIDABLE. Because "operator" is exempt,
+# a session can run `--answer operator <its-own-request-id>` and answer its own
+# question, slipping past the self-answer refusal in wl_requests (which compares
+# `me` to the asker). This is PRE-EXISTING -- it was true before any identity
+# checking existed and is not a regression from it -- and it is recorded here
+# rather than fixed because both obvious fixes are worse than the hole:
+#
+#   * "refuse when a session id IS resolvable" breaks the exact case the
+#     exemption exists for. The documented path is a human pasting the mailed
+#     command into a Claude session's Bash, and that process has a perfectly
+#     resolvable CLAUDE_CODE_SESSION_ID. The fix would refuse the operator.
+#   * "refuse when the answering session is the asker" fails too: the operator
+#     may legitimately paste the answer into the very session that asked, which
+#     is the commonest way it happens.
+#
+# There is no narrower rule, and the reason is structural rather than a gap in
+# imagination: from inside this process, a session forging an operator answer
+# and the operator answering through that session's shell are the SAME syscall,
+# from the same pid, with the same environment. Nothing observable separates
+# them. Any check would be inferring intent from evidence that does not carry
+# it -- which is the shape of validation that produced the incident this module
+# exists to prevent.
+#
+# If this is ever worth closing, the honest mechanism is a SHARED SECRET carried
+# in the mail (a per-request token wl_email generates and --answer requires),
+# not an inference. That makes the operator's answer provable instead of
+# assumed. Until someone wants that, an operator answer is trusted by
+# construction, and this comment is why.
+UNCHECKED_ME = ("operator",)
+# A `<me>` must be at least this long. GENERALISED from --poll/--wait, which
+# have carried the floor since they were written for a reason that applies
+# everywhere: a short prefix names a DIFFERENT sidecar than the Stop hook
+# derives from the full session id, so it half-works instead of failing. It
+# also closes the hole `same_session`'s symmetry would leave open -- `--add d`
+# would otherwise be accepted by every session whose id starts with "d".
+ME_MIN_LEN = 8
+
+
+def resolve_session_id():
+    """This process's TRUE session id, or "" when the environment cannot say.
+
+    ONE definition, deliberately: two answers to "who am I" is how the drift
+    this function exists to catch starts again.
+
+    WORKLIST_SESSION_ID first, and it is an identity ASSERTION rather than a
+    suppression flag -- the test suite declares its fixture id with it, and an
+    operator acting for a dead session declares that session's id. A boolean
+    bypass was rejected: it would suppress the check without stating a claim,
+    which is the exact shape docs/agent/suppressions.md exists to prevent, and
+    it would be reachable by a session trying to get past its own mistake.
+
+    CLAUDE_CODE_SESSION_ID, not CLAUDE_SESSION_ID. The latter DOES NOT EXIST;
+    the name was verified against a live Bash-tool child's environment rather
+    than guessed, and a wrong name here resolves to "" forever, which every
+    caller treats as pass -- a check that cannot fire, wearing the costume of
+    one that works. The harness injects it per child spawn and rotates it on
+    /clear, so it is "current id", not "id at startup", and it is
+    platform-neutral (no /proc, no filesystem assumption). Sub-agents inherit
+    the PARENT's value, which is why a sub-agent tagging items with the parent
+    prefix is correct and this check does not fire on the sub-agent fleet.
+
+    Returns "" rather than raising. "" means CANNOT VERIFY, and the honest
+    response to that is to say nothing, not to accuse.
+    """
+    return str(
+        os.environ.get("WORKLIST_SESSION_ID") or os.environ.get("CLAUDE_CODE_SESSION_ID") or ""
+    ).strip()
+
+
+def check_me(me):
+    """(ok, message) for a `<me>` argument: is this session really that one?
+
+    THE DEFECT THIS CLOSES, in one paragraph because the fix is only obvious
+    once you have seen it. Every `<me>` in this CLI was accepted on SHAPE alone
+    (PREFIX_RE), and nothing had ever compared one to reality. A session copied
+    a SUB-AGENT's namespace token out of a Task-spawn tool result
+    (`agent_id: search-renet2@session-4c3e095a`) and used it as its own `<me>`
+    for 26 hours: 219 calls under the wrong identity and 20 under the right one,
+    from the same process. Every individual operation SUCCEEDED, because writes
+    and reads key off the same unvalidated string -- so one typo splits a session
+    into two half-sessions, each internally consistent, and nothing downstream
+    can tell. The cost was a peer's message sitting unread in the other half's
+    inbox for 34 hours while it auto-escalated.
+
+    ASYMMETRIC on purpose: `sid.startswith(me)`, not `same_session(me, sid)`.
+    On the CLI `me` is always a claim about SELF, never a peer id, so the
+    symmetry that makes same_session right for peer comparisons is exactly what
+    would let a one-character `me` through here. same_session is NOT changed;
+    its other callers compare peers, where symmetry is correct.
+
+    REFUSES rather than warns (operator decision). A warning beside a
+    successful command is what the failing session skimmed past for a day:
+    shape-only validation passing silently is what let this through in the
+    first place, and a warning would be read past the same way. A non-zero exit
+    costs one turn and the message carries the copy-paste fix.
+    """
+    me = me or ""
+    if me in UNCHECKED_ME:
+        return True, ""
+    sid = resolve_session_id()
+    if not sid:
+        # UNVERIFIABLE, so silent. A plain operator terminal has no session id
+        # and must not be accused of impersonating one.
+        return True, ""
+    if len(me) < ME_MIN_LEN and os.environ.get("WORKLIST_SESSION_ID") != me:
+        # The floor is skipped ONLY on an exact declared match, and that
+        # exception is a bug fix, not a loophole. Legacy sub-agents tagged items
+        # with their NAME (`w2s-en`, 6 chars), and those items still need
+        # reading and reassigning. Without this, `WORKLIST_SESSION_ID=w2s-en
+        # --list --open w2s-en` was REFUSED and then advised to "rerun with
+        # <me>=w2s-en" -- the value it had just rejected. An instruction that
+        # tells you to retry the thing it refused leaves no next move at all,
+        # and it made two real items unreadable.
+        #
+        # Safe because the floor guards against an UNDER-SPECIFIED guess about
+        # self, and an exact match to an explicit declaration is not a guess.
+        # A bare short `me` with no declaration is still refused, which is the
+        # case the floor was built for.
+        return False, _identity_msg(
+            me,
+            sid,
+            "it is shorter than %d characters, so it does not identify one session" % ME_MIN_LEN,
+        )
+    if not sid.startswith(me):
+        return False, _identity_msg(me, sid, "this session is %s" % sid)
+    return True, ""
+
+
+def _identity_msg(me, sid, why):
+    """The refusal text. Names the variable it read, because the next session to
+    hit this needs the mechanism to be inspectable, not just the verdict."""
+    src = (
+        "WORKLIST_SESSION_ID" if os.environ.get("WORKLIST_SESSION_ID") else "CLAUDE_CODE_SESSION_ID"
+    )
+    return (
+        "identity mismatch: you passed <me>=%s but %s (%s).\n"
+        "Writing as one identity and reading as another gives you two inboxes "
+        "and neither of them is complete: every call succeeds, the halves stay "
+        "internally consistent, and a peer's message waits in the one you are "
+        "not reading.\n"
+        "  rerun with <me>=%s\n"
+        "If you really mean to act as another session, declare it rather than "
+        "assert it by hand:\n"
+        "  WORKLIST_SESSION_ID=<that session's id> worklist.py ..."
+        % (me, why, src, sid[:ME_MIN_LEN])
+    )
+
+
 def project_root(start):
     """Nearest ancestor holding .git. This repo uses worktrees, where .git is a
-    FILE, not a directory, so test existence rather than is_dir()."""
+    FILE, not a directory, so test existence rather than is_dir().
+
+    Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
+    from a repo nested inside one, and it must not try -- see project_start(),
+    which is what every caller should be pointing it at.
+    """
     p = pathlib.Path(start).resolve()
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
@@ -148,8 +321,82 @@ def project_root(start):
     return p
 
 
+# <repo>/.claude/hooks/stop/wl_core.py -> parents[3] is <repo>.
+_HOOK_ROOT_DEPTH = 3
+
+
+def hook_repo_root():
+    """The repo this hook FILE lives in, or None if it does not look like one.
+
+    Immune to cwd by construction, which is the whole point: settings.json
+    invokes every hook as "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so this
+    answers the same thing the env var does at hook time, and keeps answering
+    it when a human runs the CLI from a subdirectory with no env var set.
+    """
+    try:
+        cand = pathlib.Path(__file__).resolve().parents[_HOOK_ROOT_DEPTH]
+    except (IndexError, OSError):
+        return None
+    if (cand / ".git").exists() and (cand / ".claude" / "hooks" / "stop").is_dir():
+        return cand
+    return None
+
+
+def project_start(event=None):
+    """Where root resolution STARTS. cwd is the LAST resort, never the first.
+
+    WHY THIS EXISTS, measured 2026-08-06. The Stop event's cwd is wherever the
+    session last worked, and this tree has repos INSIDE the repo: submodules
+    (private/renet) and gitignored non-submodule siblings (private/growth).
+    Resolving from cwd walked project_root() straight into one of those and
+    read ITS branch -- a session on 0804-1 was told to bootstrap `.agent/main/`
+    because private/growth happened to be on main. Confirmed twice, on both
+    kinds of nested repo, so it is not a submodule quirk.
+
+    The ladder, and the reason for each rung:
+
+    1. CLAUDE_PROJECT_DIR. Guaranteed present for hooks -- .claude/settings.json
+       spells every hook command "$CLAUDE_PROJECT_DIR/.claude/hooks/...", so an
+       unset var would make every hook fail to launch, not merely misresolve.
+       It is also how both test suites pin a fixture root, which is why it must
+       stay ABOVE the file-derived rung.
+    2. This hook file's own repo. Covers the CLI case: a shell has no
+       CLAUDE_PROJECT_DIR (verified: unset in this session's Bash), so `cd
+       private/growth && ../../.claude/hooks/stop/worklist.py --list` used to
+       read a DIFFERENT store than the same command one directory up.
+    3. The event's cwd, then getcwd(). Kept only as a floor for a copy of these
+       hooks living somewhere that is not a repo.
+
+    THE FIX THAT LOOKS RIGHT AND IS NOT: teaching project_root() to skip a
+    `.git` file pointing into `/modules/`. This repo is ITSELF a submodule
+    (`gitdir: ../.git/modules/console`), so that walks PAST console, changes
+    the store slug from home_muhammed_monorepo_console to
+    home_muhammed_monorepo, and orphans every open item in one step. Tried and
+    reverted. Anchoring the START is the fix; the WALK is fine as it is.
+    """
+    env = os.environ.get("CLAUDE_PROJECT_DIR")
+    if env:
+        return env
+    hook_root = hook_repo_root()
+    if hook_root is not None:
+        return str(hook_root)
+    if event:
+        cwd = event.get("cwd")
+        if cwd:
+            return cwd
+    return os.getcwd()
+
+
 def worklist_for(start):
-    d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
+    # TMPDIR first, then tempfile's search. NOT a bare gettempdir(): on POSIX
+    # that also honours TEMP and TMP, so a machine with TEMP set and TMPDIR
+    # unset would resolve a DIFFERENT worklist path than the old expression did
+    # and silently orphan every live session's open items. This spelling is
+    # byte-identical to `os.environ.get("TMPDIR", "/tmp")` wherever TMPDIR is
+    # set or absent-with-/tmp-present (verified on this machine), and it is what
+    # gives Windows -- which sets TEMP/TMP and never TMPDIR -- a real temp dir
+    # instead of a literal "/tmp" it cannot create.
+    d = pathlib.Path(os.environ.get("TMPDIR") or tempfile.gettempdir()) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
     root = project_root(start)
     slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(root)).strip("_")
@@ -164,7 +411,11 @@ def emit(obj):
 def _git(root, *args):
     try:
         r = subprocess.run(
-            ["git", "-C", str(root), *args], capture_output=True, text=True, timeout=20
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
         )
         return r.stdout.strip() if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
@@ -207,6 +458,7 @@ def git_branch(root):
                 capture_output=True,
                 text=True,
                 timeout=5,
+                check=False,
             )
             b = r.stdout if r.returncode == 0 else ""
         except (OSError, subprocess.SubprocessError):
@@ -219,8 +471,8 @@ def _cron_field(spec, lo, hi):
     shape this parser does not understand (the caller treats None as
     unparseable and skips the cron rather than guessing)."""
     vals = set()
-    for part in spec.split(","):
-        part = part.strip()
+    for raw_part in spec.split(","):
+        part = raw_part.strip()
         step = 1
         if "/" in part:
             part, _, s = part.partition("/")
@@ -282,8 +534,11 @@ def cron_next(schedule, now=None):
             dom_hit = day.day in doms
             dow_hit = ((day.weekday() + 1) % 7) in dows
             # Both restricted -> OR; otherwise the starred one is vacuous.
-            day_ok = (dom_hit or dow_hit) if (not dom_star and not dow_star) \
+            day_ok = (
+                (dom_hit or dow_hit)
+                if (not dom_star and not dow_star)
                 else (dom_hit if not dom_star else dow_hit if not dow_star else True)
+            )
             if day_ok:
                 for h in hours:
                     for m in mins:
@@ -323,9 +578,7 @@ def pending_tasks(session_id):
             except (OSError, ValueError):
                 continue
             if t.get("status") in ("pending", "in_progress"):
-                out.append(
-                    (str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status"))
-                )
+                out.append((str(t.get("id", "?")), str(t.get("subject", ""))[:70], t.get("status")))
     except OSError:
         return []
     out.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 1 << 30)

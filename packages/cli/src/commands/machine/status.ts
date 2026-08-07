@@ -16,6 +16,7 @@ import {
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
+import type { RuntimeRepoLicenseStatus } from '../../services/account/license.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
@@ -154,6 +155,7 @@ function formatBytesShort(bytes: number | undefined): string {
 function getSections(
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
+  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
   baseDomain?: string,
   machineName?: string
 ): SectionRenderer[] {
@@ -288,16 +290,61 @@ function getSections(
       title: 'Licenses',
       getData: (r) => {
         const currentMachineId = r.system?.machine_id;
-        return getLicenseStatuses(r).map((l) => ({
-          repository: resolve(l.repositoryGuid),
-          status: l.status,
-          issued: l.issuedAt ? relativeTime(l.issuedAt) : '-',
-          expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
-          machine_match: getMachineMatch(currentMachineId, l.machineId),
-        }));
+        return getLicenseStatuses(r).map((l) => {
+          const extra = licenseDetail.get(l.repositoryGuid);
+          return {
+            repository: resolve(l.repositoryGuid),
+            status: l.status,
+            issued: l.issuedAt ? relativeTime(l.issuedAt) : '-',
+            expires: l.hardExpiresAt ? relativeTime(l.hardExpiresAt) : '-',
+            machine_match: getMachineMatch(currentMachineId, l.machineId),
+            datastore: extra?.datastoreId?.slice(0, 8) ?? '-',
+            // The whole reason this column exists: a blocked-backup marker
+            // means unattended backups have been failing on licensing since
+            // that timestamp, and nothing else in this output says so.
+            backups: extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok',
+            renewed: formatRenewalOutcome(extra?.lastRenewal),
+          };
+        });
       },
     },
   ];
+}
+
+/**
+ * The `renewed` cell. A bare `refused` tells the operator that unattended
+ * renewal is failing but not why, and the why is what decides the next move: a
+ * lapsed subscription is a billing problem, a revoked delegation cert is an
+ * on-prem problem. The server's `code` is the stable identifier for that, so it
+ * rides in the cell; the prose stays in `subscription status -m <machine>`.
+ */
+function formatRenewalOutcome(renewal: RuntimeRepoLicenseStatus['lastRenewal']): string {
+  if (!renewal) return '-';
+  if (!renewal.code) return renewal.outcome;
+  return `${renewal.outcome}: ${renewal.code}`;
+}
+
+/**
+ * Blocked-backup markers, printed under the table as errors.
+ *
+ * A column alone is not enough for this one. The marker is the only signal that
+ * a machine's scheduled backups have silently stopped copying data, and a
+ * single cell in a wide table on a machine with thirty repos is exactly where
+ * that gets missed.
+ */
+function renderBlockedBackupAlerts(licenseDetail: Map<string, RuntimeRepoLicenseStatus>): void {
+  for (const entry of licenseDetail.values()) {
+    const marker = entry.blockedBackup;
+    if (!marker) continue;
+    outputService.error(
+      t('commands.machine.status.licenseBackupBlocked', {
+        repositoryGuid: entry.repositoryGuid,
+        at: marker.at,
+        reason: marker.reason,
+        message: marker.message,
+      })
+    );
+  }
 }
 
 function getMachineMatch(
@@ -454,9 +501,16 @@ function renderTableMode(
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
+  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
   machineName?: string
 ): void {
-  const tableSections = getSections(resolve, repoName, infra?.baseDomain, machineName);
+  const tableSections = getSections(
+    resolve,
+    repoName,
+    licenseDetail,
+    infra?.baseDomain,
+    machineName
+  );
   printSummary(listResult);
 
   if (machineConfig) {
@@ -504,6 +558,7 @@ function buildEnrichedJson(
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
+  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
   machineName: string
 ): Record<string, unknown> {
   const baseDomain = infra?.baseDomain;
@@ -533,6 +588,13 @@ function buildEnrichedJson(
     services: resolveGuids(getServices(listResult), resolve, 'repository'),
     infra: infra ?? null,
     storage: deriveStorageSummary(listResult.system),
+    // Scripted consumers get the marker and the datastore scope too; a
+    // `machine status -o json | jq` health check should not have to shell out
+    // to renet separately to learn that backups are blocked.
+    license_statuses: getLicenseStatuses(listResult).map((l) => ({
+      ...l,
+      ...(licenseDetail.get(l.repositoryGuid) ?? {}),
+    })),
   };
 }
 
@@ -566,6 +628,52 @@ async function resolveStatusMachine(name: string | undefined): Promise<string> {
   );
 }
 
+/**
+ * Everything `machine status` reads, fetched concurrently.
+ *
+ * The licence detail rides along whenever the Licenses section will be rendered
+ * (no section flags = every section). It answers what `renet list` cannot:
+ * which datastore holds each licence, whether a scheduled backup is blocked,
+ * and what the last unattended renewal did.
+ */
+async function gatherStatus(
+  machineName: string,
+  sections: string[],
+  debug: boolean | undefined
+): Promise<{
+  listResult: ListResult;
+  guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
+  machineConfig: MachineConfig | undefined;
+  licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
+}> {
+  const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
+    '../../services/machine/machine-status.js'
+  );
+  const wantsLicenses = sections.length === 0 || sections.includes('licenses');
+
+  const [listResult, guidMap, machineConfig, licenseEntries] = await Promise.all([
+    withSpinner(
+      t('commands.machine.status.fetching', { machine: machineName }),
+      () =>
+        fetchMachineStatus(machineName, {
+          debug,
+          sections: sections.length > 0 ? sections : undefined,
+        }),
+      t('commands.machine.status.fetched')
+    ),
+    loadGuidMap(),
+    configService.getLocalMachine(machineName).catch(() => undefined),
+    wantsLicenses ? fetchRepoLicenseDetail(machineName) : Promise.resolve([]),
+  ]);
+
+  return {
+    listResult,
+    guidMap,
+    machineConfig,
+    licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
+  };
+}
+
 export function registerStatusCommand(machine: Command, program: Command): void {
   machine
     .command('status')
@@ -593,21 +701,11 @@ export function registerStatusCommand(machine: Command, program: Command): void 
 
         const sections = collectSections(options);
 
-        const { fetchMachineStatus } = await import('../../services/machine/machine-status.js');
-
-        const [listResult, guidMap, machineConfig] = await Promise.all([
-          withSpinner(
-            t('commands.machine.status.fetching', { machine: machineName }),
-            () =>
-              fetchMachineStatus(machineName, {
-                debug: options.debug,
-                sections: sections.length > 0 ? sections : undefined,
-              }),
-            t('commands.machine.status.fetched')
-          ),
-          loadGuidMap(),
-          configService.getLocalMachine(machineName).catch(() => undefined),
-        ]);
+        const { listResult, guidMap, machineConfig, licenseDetail } = await gatherStatus(
+          machineName,
+          sections,
+          options.debug
+        );
 
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
@@ -639,11 +737,21 @@ export function registerStatusCommand(machine: Command, program: Command): void 
             infra,
             resolve,
             repoName,
+            licenseDetail,
             machineName
           );
           outputService.print(enriched, format);
         } else {
-          renderTableMode(listResult, machineConfig, infra, resolve, repoName, machineName);
+          renderTableMode(
+            listResult,
+            machineConfig,
+            infra,
+            resolve,
+            repoName,
+            licenseDetail,
+            machineName
+          );
+          renderBlockedBackupAlerts(licenseDetail);
         }
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

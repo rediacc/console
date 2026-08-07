@@ -516,6 +516,35 @@ review_cap_for() {
     echo 3
 }
 
+# review_report_count <pr> -> how many review passes have been posted.
+#
+# This is the numerator in "X/Y reviews used", so an undercount means the cap
+# never arrives and every subsequent push pays for another full review. It lived
+# in claude-review-gate.sh and review-status.sh as two identical copies, which is
+# the drift this file exists to prevent -- it sits beside review_cap_for() so the
+# numerator and the denominator cannot disagree.
+#
+# KEY ON THE HEADER ALONE. Both copies used to AND this with
+# (contains "json:review-findings" OR contains "### Review"), and that clause was
+# a guess about the report's WORDING that no producer emits: --post-report wraps
+# whatever the model's closing text happened to be, which is routinely a short
+# wrap-up carrying neither marker. Measured against live PRs, the qualifier
+# undercounted every one of them -- #551 counted 0 of 1 (a completed, marked
+# review costing $4.66 registering as never having happened), #550 5 of 7, #546
+# 3 of 7, #543 1 of 9. The header is different in kind: claude-review-gate.sh
+# writes it verbatim, so it is a producer constant rather than a description of
+# one, and a rename breaks posting in the same commit instead of silently
+# zeroing the counter.
+#
+# Never re-add a content qualifier here. If a future report must be excluded,
+# exclude it on something its producer emits on purpose.
+review_report_count() {
+    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+        --jq ".[] | select(.user.login | contains(\"github-actions\"))
+                  | select(.body | startswith(\"**Claude finished\"))
+                  | .id" 2>/dev/null | wc -l || true
+}
+
 # pr_diff_loc <pr> -> additions + deletions, or 0 when it cannot be read.
 # Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the
 # conservative direction: it spends fewer review passes, never more.

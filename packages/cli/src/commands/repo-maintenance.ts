@@ -5,6 +5,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /**
@@ -50,26 +51,59 @@ function reachableCommits(repos: RepoEntry[]): Set<string> {
   return reachable;
 }
 
-/** GUIDs of objects physically present on the machine, with mount state. */
-async function machineObjects(machine: string): Promise<Map<string, { mounted: boolean }>> {
-  const result = await getExecutor().execute({
-    functionName: 'repository_list',
-    machineName: machine,
-    params: {},
-    captureOutput: true,
-  });
+/**
+ * Every datastore these repos are recorded on, plus the machine's default (#74).
+ *
+ * `repository_list` enumerates ONE datastore — there is no `--all-datastores` on
+ * it the way there is on the licence verbs — so a single call sees only the
+ * machine's default. gc and fsck compare that listing against the WHOLE config,
+ * so a repo family living on a named datastore read as "not present on the
+ * machine": fsck reported its refs as dangling, and gc could never collect its
+ * unreachable commits. Asking each recorded mount in turn needs no new renet
+ * surface. `undefined` is in the set on purpose — it is the default datastore.
+ */
+async function recordedMounts(repos: RepoEntry[]): Promise<(string | undefined)[]> {
+  const mounts = new Set<string | undefined>([undefined]);
+  for (const { name } of repos) {
+    mounts.add(await recordedDatastoreMount(name));
+  }
+  return [...mounts];
+}
+
+/**
+ * GUIDs of objects physically present on the machine, with mount state, across
+ * every datastore the config places these repos on.
+ *
+ * A mount that is not attached here simply contributes nothing: the dispatch
+ * fails or returns an empty listing, and both are already tolerated. That
+ * matters for gc, which only ever deletes objects it found PRESENT — a datastore
+ * it could not read yields no candidates rather than a wrong deletion.
+ */
+async function machineObjects(
+  machine: string,
+  repos: RepoEntry[]
+): Promise<Map<string, { mounted: boolean }>> {
   const objects = new Map<string, { mounted: boolean }>();
-  if (!result.success || !result.stdout) return objects;
-  try {
-    const entries = parseRepositoryListOutput(result.stdout) as {
-      name?: string;
-      mounted?: boolean;
-    }[];
-    for (const e of entries) {
-      if (e.name) objects.set(e.name, { mounted: !!e.mounted });
+  for (const datastore of await recordedMounts(repos)) {
+    const result = await getExecutor().execute({
+      functionName: 'repository_list',
+      machineName: machine,
+      datastore,
+      params: {},
+      captureOutput: true,
+    });
+    if (!result.success || !result.stdout) continue;
+    try {
+      const entries = parseRepositoryListOutput(result.stdout) as {
+        name?: string;
+        mounted?: boolean;
+      }[];
+      for (const e of entries) {
+        if (e.name) objects.set(e.name, { mounted: !!e.mounted });
+      }
+    } catch {
+      /* tolerate non-array stdout: treat as no objects */
     }
-  } catch {
-    /* tolerate non-array stdout: treat as no objects */
   }
   return objects;
 }
@@ -83,7 +117,7 @@ async function handleGc(options: {
   try {
     const repos = await configService.listRepositories();
     const reachable = reachableCommits(repos);
-    const present = await machineObjects(options.machine);
+    const present = await machineObjects(options.machine, repos);
 
     // Candidates: immutable commits, present on the machine, unreachable from any
     // ref, and not currently mounted (a mounted object is in use). Working forks
@@ -112,6 +146,9 @@ async function handleGc(options: {
       const result = await getExecutor().execute({
         functionName: 'repository_delete',
         machineName: options.machine,
+        // #74: the candidate's OWN recorded datastore, not the machine default —
+        // gc deletes objects it found by enumerating those same mounts above.
+        datastore: await recordedDatastoreMount(c.name),
         params: { repository: guid },
         debug: options.debug,
       });
@@ -149,7 +186,7 @@ function findDanglingRefs(
 async function handleFsck(options: { machine: string }): Promise<void> {
   try {
     const repos = await configService.listRepositories();
-    const present = await machineObjects(options.machine);
+    const present = await machineObjects(options.machine, repos);
     const reachable = reachableCommits(repos);
 
     const dangling = findDanglingRefs(repos, present);

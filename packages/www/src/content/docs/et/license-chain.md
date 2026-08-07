@@ -4,8 +4,8 @@ description: "Võltsimiskindel litsentside väljastamine, delegeeritud allkirjas
 category: "Guides"
 order: 8
 language: et
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Litsentsiahelad ja delegeerimine
@@ -33,16 +33,65 @@ Kui CLI taotleb hoidla litsentsi, teeb kontoserver järgmist:
 
 `sequence` ja `prevChainHash` on allkirjastatud koormas (nii et neid ei saa muuta allkirja tühistamata). `chainHash` on ümbrisel (arvutatud pärast allkirjastamist, et vältida ringlussõltuvust).
 
+## Kuidas litsentsi uuendatakse
+
+Väljastamine käib sinu tööjaamast ja on autenditud sinuna. Uuendamine aga käib masinast, millel ei ole ühtegi konto mandaati. Seepärast vajab see teist ust:
+
+```
+POST /licenses/renew
+{ license: <paigaldatud allkirjastatud plokk>, machineId, clusterId? }
+```
+
+**Esitatud litsents ongi mandaat.** Sellel lõpp-punktil ei ole API-tokenit. Server kontrollib ploki Ed25519 allkirja ja, kui plokk kannab delegeerimissertifikaati, ka selle kaudu, täpselt nagu Renet seda masinas teeb. Kehtivalt allkirjastatud repositooriumilitsentsi omamine ongi õiguse tõend, ja masinale, kellel see olemas on, on see juba varem antud.
+
+Selle lõpp-punkti täielik URL liigub kaasas iga litsentsiga, mille server väljastab või uuendab, väljal `renewalUrl`. Masin loeb oma account-serveri aadressi omaenda litsentsist, selle asemel et see talle eraldi seadistada, ja just tänu sellele saab kahte konto-universumit teenindav masin end mõlemas uuendada.
+
+Uuendatud plokk säilitab esitatud ploki repositooriumi GUID-i, grand-GUID-i ja tüübi, võtab samast registrist järgmise järjekorranumbri koos sellest tuleneva ahela räsiga ning saab värskelt arvutatud kehtivusaknad. Masina ID seotakse uuesti selle masinaga, kes ploki esitas, ja just nii paraneb VM-i migratsioon 40-päevase tähtajaperioodi jooksul ise. Salvestuse identiteet (LUKS UUID või salvestuse sõrmejälg) kantakse muutmata kujul üle, sest võrgupäring ei saa üle vaadata ketast, mida ta kirjeldab.
+
+### Keeldumised
+
+| Kood | Olek | Tähendus |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | Ploki allkirja ei õnnestunud kontrollida või selle ahela räsi ei ühti serveri registriga sellel järjekorranumbril |
+| `INVALID_LICENSE_PAYLOAD` | 400 | Plokk on vigase kujuga |
+| `DELEGATION_CERT_INVALID` | 403 | Kaasas olev sert ei vastanud mõnele piirangule või selle peamise võtme allkirjale |
+| `DELEGATION_CERT_EXPIRED` | 403 | Kaasas olev sert on väljaspool oma kehtivusakent |
+| `DELEGATION_CERT_REVOKED` | 403 | Kaasas olev sert on ülesvoolu tühistatud |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | Litsentsi esitav masin ei ole litsentsitud masin ja 40-päevane tähtajaperiood on möödas |
+| `SUBSCRIPTION_LAPSED` | 403 | Tellimus on aegunud või peatatud |
+| `GRACE_PERIOD_ENDED` | 403 | Tellimuse tähtajaperiood on läbi |
+| `TRIAL_REQUIRED` | 403 | Tellimus vajab aktiivset prooviperioodi või plaani |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | Repositooriumi GUID kuulub teisele tellimusele |
+| `LICENSE_RENEWAL_FAILED` | 500 | Kõik klassifitseerimata juhtumid |
+
+Keeldumine jätab paigaldatud litsentsi puutumata. Masin töötab olemasoleva litsentsiga edasi kuni selle kõva aegumiseni.
+
+### Uuendamine ja masina koht
+
+Edukas uuendamine puudutab masina aktiveerimise kirjet: kui masinal kohta ei olnud, võtab see koha, ja kui oli, värskendab seda. Erinevalt väljastamisest ei keelduta sellest kunagi limiidi ületamise pärast. Vastus kannab välja `overLimit` ja aktiveering märgistatakse, nii et portaal, litsentsi oleku lõpp-punkt ja `rdc subscription status` saavad seda näidata. Päris uue litsentsi väljastamine seevastu põrkab endiselt kõvasti lae vastu. Põhjendust vaata jaotisest [Tellimus ja litsentsid - masina kohad](/et/docs/subscription-licensing).
+
+### Juurutamise järjekord
+
+Account-serverid juurutatakse enne neid CLI ja Renet'i agendi ehitusi, mis ülalkirjeldatud väljadest sõltuvad. Renet'i agent, mis litsentsist `renewalUrl` välja ei loe, jätab selle repositooriumi vahele ja ütleb seda välja, selle asemel et nurjuda, nii et vanem litsents töötab edasi, kuni tööjaama poolne värskendus välja täidab. Vastupidises järjekorras juurutades jäävad masinad küsima lõpp-punkti, mida veel ei ole.
+
 ## Kuidas Renet valideerib
 
-Iga Renet'i käitav masin talletab oma viimati teada ahela oleku aadressil `{licenseDir}/chain-state.json` (see tähendab `/var/lib/rediacc/license/chain-state.json`, mis asub hoidla-põhise `repos/` kataloogi kõrval). Ahela olek on piiritletud allkirjastamisvõtme ja tellimuse kaupa, võtmega `"<keyId>:<subscriptionId>"`, nii et eri võtmetega allkirjastatud universumid jälgivad oma järjekorranumbreid sõltumatult. Iga litsentsi valideerimisel kontrollib Renet:
+Iga Renet'i käitav masin talletab oma viimati teada ahela oleku aadressil `{licenseDir}/chain-state.json` (see tähendab `/var/lib/rediacc/license/chain-state.json`, mis asub hoidla-põhise `repos/` kataloogi kõrval). Ahela olek on piiritletud allkirjastamisvõtme, tellimuse, repositooriumi ja andmesalve kaupa, võtmega `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (andmesalve osa jääb tühjaks repositooriumi puhul, mis asub masina vaikimisi andmesalves).
+
+Selle võtme repositooriumi- ja andmesalve-osa on hädavajalikud. Serveripoolsed järjekorranumbrid on tellimuse kaupa, nii et masinal, kus on ühe tellimuse all mitu repositooriumi, jääks repositooriumi B jaoks salvestatud ahela pea ettepoole litsentsist, mida repositoorium A esitama hakkab, ja repositoorium A lükataks tagasi kordusründena, millega tal midagi pistmist ei ole. Andmesalve kahvel teravdab sama probleemi: kahvel säilitab repositooriumi GUID-i ja ainult tema andmesalve identiteet vermitakse uuesti, nii et ilma andmesalve osata viiks kahvli värskem litsents pea edasi, mille vastu algne repositoorium ikka veel valideerib. Salvestatud pea sidumine just selle repositooriumi ja andmesalvega, mille litsents nimetab, kaotab mõlemad probleemid. Kirjed, mille vanem Renet'i agent kirjutas lühemas võtmevormingus, kustutatakse esimesel oleku salvestamisel ja järgmine valideerimine seab pea uuesti paika.
+
+Ahela olekut loetakse ja edendatakse ainult nendel toimingutel, mis valideeritakse täies mahus. Käitustase seda ei loe ega edenda, seega repositooriumi käivitamine ei saa kunagi pead liigutada.
+
+Iga litsentsi valideerimisel kontrollib Renet:
 
 | Kontroll | Tõrge tähendab |
 |---|---|
 | Ed25519 allkiri on kehtiv | Litsents on võltsitud või võltsimisega muudetud |
-| `sequence > lastKnownSequence` | Server pööras ahela tagasi (kordusrünne) |
+| `sequence >= lastKnownSequence` | Server pööras ahela tagasi (kordusrünne) |
+| `lastKnownSequence` kordus kannab sama `chainHash` väärtust | Hargnenud ahel kasutas järjekorranumbrit uuesti |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | Ahela kirjet on muudetud |
-| `issuedAt >= lastKnownIssuedAt` | Kella manipuleerimine (serveri kell seatud tagasi) |
+
+Juba paigaldatud litsentsi uuesti valideerimine ei ole regressioon: sama järjekorranumber sama ahela räsiga võetakse vastu, ja just see lubab masinal sama faili iga repositooriumi käivitamise juures üle kontrollida.
 
 Kui mõni kontroll ebaõnnestub, lükatakse litsents tagasi ja esitatakse tõrke põhjus.
 
@@ -321,7 +370,7 @@ Kõik e-posti mallid ja avalik e-posti API on transpordite lõikes identsed.
 
 ## Seotud dokumentatsioon
 
-- [Kohapealne installatsioon](/en/docs/on-premise) -- kuidas juurutada kohapealset serverit
-- [Tellimus ja litsentsimine](/en/docs/subscription-licensing) -- plaani piirangud ja masina pesad
-- [Väljalaskekanalid](/en/docs/release-channels) -- edge vs stable kanalid
-- [Andmeregioonid](/en/docs/data-regions) -- piirkondlik andmete residentsus
+- [Kohapealne installatsioon](/et/docs/on-premise) -- kuidas juurutada kohapealset serverit
+- [Tellimus ja litsentsimine](/et/docs/subscription-licensing) -- plaani piirangud ja masina pesad
+- [Väljalaskekanalid](/et/docs/release-channels) -- edge vs stable kanalid
+- [Andmeregioonid](/et/docs/data-regions) -- piirkondlik andmete residentsus

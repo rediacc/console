@@ -41,6 +41,11 @@ declare -A BASELINE_RESULTS=(
     # pass while a release-state assertion failed on main.
     [RESULT_CHECK_RELEASE_STATE]=success
     [RESULT_STAGE_ARTIFACTS]=success
+    # Added with the label-guide job (2026-08-05). An absent RESULT_ reads as
+    # `<unset>` and fails BOTH tiers, which is the correct direction -- a job
+    # ci.yml forgot to thread through is a wiring bug, not a pass -- so every
+    # new job in the soft tier has to appear in this fixture too.
+    [RESULT_LABEL_GUIDE]=success
     [RESULT_VALIDATE_INSTALL]=success
     [RESULT_VALIDATE_PROMOTE]=success
     [RESULT_TESTS]=success
@@ -86,6 +91,8 @@ FASTPATH_SKIPS=(
     RESULT_SMOKE_TEST_PREVIEW=skipped
     RESULT_STRIPE_SANDBOX=skipped
     RESULT_PACKAGE_TESTS=skipped
+    # label-guide is PR-gated, so a pointer-bump run skips it like the rest.
+    RESULT_LABEL_GUIDE=skipped
     # breakpoint-lifecycle's if: excludes pointer_bump_only, so it skips here too
     RESULT_BREAKPOINT_LIFECYCLE=skipped
 )

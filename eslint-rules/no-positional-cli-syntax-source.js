@@ -25,16 +25,13 @@ import {
 } from './lib/cli-exempt-lists.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const COMMAND_TREE_PATH = path.resolve(
-  __dirname,
-  '../packages/cli/scripts/command-tree.json'
-);
+const COMMAND_TREE_PATH = path.resolve(__dirname, '../packages/cli/scripts/command-tree.json');
 
 const FREEFORM_ARG_COMMAND_PATHS = new Set(SHARED_FREEFORM);
 
 const DEFAULT_EXEMPT_PREFIXES = SHARED_EXEMPT_PREFIXES;
 
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildCommandRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
@@ -59,6 +56,29 @@ const buildPlaceholderOnlyRegex = (commandPath) => {
 let cachedLeafPaths = null;
 let cachedParentPaths = null;
 
+/** Sort one command path into the leaf set, the parent set, or neither. */
+const classifyCommandPath = (node, commandPath, leaves, parents) => {
+  if (FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) return;
+
+  const isLeaf = (node.subcommands ?? []).length === 0;
+  const takesPositional = (node.arguments ?? []).length > 0;
+  // A command that takes a positional belongs in NEITHER pass: after P4
+  // `rdc repo up <repo-ref>` is the syntax we want taught. This set used to
+  // be every path, which flagged the correct form and claimed the command
+  // "accepts zero positional arguments" — false, and it blocked the reshape.
+  if (isLeaf && !takesPositional) leaves.add(commandPath);
+  if (!isLeaf && !takesPositional) parents.add(commandPath);
+};
+
+const walkCommandTree = (node, parts, leaves, parents) => {
+  if (parts.length > 0) {
+    classifyCommandPath(node, parts.join(' '), leaves, parents);
+  }
+  for (const sub of node.subcommands ?? []) {
+    walkCommandTree(sub, [...parts, sub.name], leaves, parents);
+  }
+};
+
 const loadPathsFromTree = () => {
   if (cachedLeafPaths && cachedParentPaths) {
     return { leaves: cachedLeafPaths, parents: cachedParentPaths };
@@ -67,23 +87,7 @@ const loadPathsFromTree = () => {
   const tree = JSON.parse(raw);
   const leaves = new Set();
   const parents = new Set();
-  const walk = (node, parts) => {
-    if (parts.length > 0) {
-      const commandPath = parts.join(' ');
-      if (!FREEFORM_ARG_COMMAND_PATHS.has(commandPath)) {
-        const isLeaf = (node.subcommands ?? []).length === 0;
-        const takesPositional = (node.arguments ?? []).length > 0;
-        // A command that takes a positional belongs in NEITHER pass: after P4
-        // `rdc repo up <repo-ref>` is the syntax we want taught. This set used to
-        // be every path, which flagged the correct form and claimed the command
-        // "accepts zero positional arguments" — false, and it blocked the reshape.
-        if (isLeaf && !takesPositional) leaves.add(commandPath);
-        if (!isLeaf && !takesPositional) parents.add(commandPath);
-      }
-    }
-    for (const sub of node.subcommands ?? []) walk(sub, [...parts, sub.name]);
-  };
-  walk(tree, []);
+  walkCommandTree(tree, [], leaves, parents);
   cachedLeafPaths = leaves;
   cachedParentPaths = parents;
   return { leaves, parents };
@@ -118,16 +122,15 @@ export const noPositionalCliSyntaxSource = {
 
   create(context) {
     const options = context.options[0] || {};
-    const exemptPrefixes = [
-      ...DEFAULT_EXEMPT_PREFIXES,
-      ...(options.exemptCommandPrefixes || []),
-    ];
+    const exemptPrefixes = [...DEFAULT_EXEMPT_PREFIXES, ...(options.exemptCommandPrefixes || [])];
 
     const { leaves, parents } = loadPathsFromTree();
-    const leafEntries = [...leaves].sort((a, b) => b.length - a.length).map((p) => ({
-      path: p,
-      regex: buildCommandRegex(p),
-    }));
+    const leafEntries = [...leaves]
+      .sort((a, b) => b.length - a.length)
+      .map((p) => ({
+        path: p,
+        regex: buildCommandRegex(p),
+      }));
     const parentEntries = [...parents]
       .sort((a, b) => b.length - a.length)
       .map((p) => ({ path: p, regex: buildPlaceholderOnlyRegex(p) }));

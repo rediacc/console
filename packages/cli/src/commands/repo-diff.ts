@@ -6,6 +6,7 @@ import { outputService } from '../services/core/output.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 
 interface DiffEntry {
@@ -275,6 +276,9 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
     functionName: 'repository_diff',
     machineName,
     ...(kubeCluster !== undefined && { kubeCluster }),
+    // #74: both sides of the diff are GUIDs inside this family, so the family's
+    // recorded placement is the datastore renet must read them from.
+    datastore: await recordedDatastoreMount(repoKey),
     params: { repository: repoKey, ...params },
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,

@@ -37,6 +37,81 @@ STATE_AIMLESS="$(python3 -c "print('x'*300)")"
 WF_FAT=$'      - name: Big\n        run: |\n          echo 1\n          echo 2\n          echo 3\n          echo 4\n          echo 5\n          echo 6\n          echo 7\n          echo 8\n          echo 9'
 WF_THIN=$'      - name: Thin\n        run: |\n          echo hi\n          bash .ci/scripts/quality/x.sh'
 
+# --- WIRING: what is on disk and what settings.json registers must match ---
+# Every case in this file drives a hook by literal path, which proves the
+# script behaves and says NOTHING about whether Claude ever invokes it. Two
+# failures are invisible to the whole suite: a hook file nobody registered
+# (dead code that tests green and never guards anything), and a registration
+# pointing at a file that no longer exists (a hook that silently never fires).
+# settings.json is READ here, never written.
+
+# hook_files <hooks-root> -- relative path of every hook script, lib/ excluded
+hook_files() {
+    local root="$1"
+    find "$root" -type f -name '*.sh' -not -path '*/lib/*' 2>/dev/null |
+        sed "s|^$root/||" |
+        grep -E '^(pre-bash|pre-edit|post-bash)/' | sort -u
+}
+
+# hook_registrations <settings-file> -- the same relative paths, as named by
+# the hook command strings in settings.json
+hook_registrations() {
+    jq -r '.hooks // {} | to_entries[] | .value[]? | .hooks[]? | .command // empty' "$1" 2>/dev/null |
+        grep -oE '(pre-bash|pre-edit|post-bash)/[A-Za-z0-9._-]+\.sh' | sort -u
+}
+
+# check_wiring <settings-file> <hooks-root> -- 0 when the two sets agree, 1
+# otherwise, naming every offender on stdout.
+check_wiring() {
+    local settings="$1" root="$2" rc=0 unwired dangling
+    unwired="$(comm -23 <(hook_files "$root") <(hook_registrations "$settings"))"
+    dangling="$(comm -13 <(hook_files "$root") <(hook_registrations "$settings"))"
+    if [[ -n "$unwired" ]]; then
+        rc=1
+        while read -r f; do printf 'UNWIRED (on disk, not in settings): %s\n' "$f"; done <<<"$unwired"
+    fi
+    if [[ -n "$dangling" ]]; then
+        rc=1
+        while read -r f; do printf 'DANGLING (in settings, not on disk): %s\n' "$f"; done <<<"$dangling"
+    fi
+    return "$rc"
+}
+
+# wiring_case <expected-exit> <settings> <hooks-root> <label> [<must-name>...]
+wiring_case() {
+    local expected="$1" settings="$2" root="$3" label="$4" out rc miss="" needle
+    shift 4
+    out="$(check_wiring "$settings" "$root" 2>&1)"
+    rc=$?
+    for needle in "$@"; do
+        grep -qF -- "$needle" <<<"$out" || miss="$miss $needle"
+    done
+    if [[ "$rc" == "$expected" && -z "$miss" ]]; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got exit %s, unnamed:%s)\n' "$expected" "$label" "$rc" "${miss:- -}"
+        sed 's/^/       /' <<<"$out"
+    fi
+}
+
+wiring_case 0 "$DIR/../settings.json" "$DIR" "wiring: every hook on disk is registered, every registration exists"
+
+# CONTROL, so the green above is agreement and not a check that cannot fire:
+# one fixture drops a real registration, the other invents one. Each must fail
+# AND name the offender -- a bare non-zero would pass either fixture.
+WIRE_TMP="$(mktemp -d)"
+jq '(.hooks[]?[]?.hooks) |= map(select((.command // "") | contains("block-worktree-add.sh") | not))' \
+    "$DIR/../settings.json" >"$WIRE_TMP/unwired.json"
+wiring_case 1 "$WIRE_TMP/unwired.json" "$DIR" "wiring CONTROL: a dropped registration is caught as UNWIRED" \
+    "UNWIRED (on disk, not in settings): pre-bash/block-worktree-add.sh"
+jq '(.hooks[]?[]?.hooks) |= . + [{"type":"command","command":"bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-bash/block-nonexistent-ghost.sh\""}]' \
+    "$DIR/../settings.json" >"$WIRE_TMP/dangling.json"
+wiring_case 1 "$WIRE_TMP/dangling.json" "$DIR" "wiring CONTROL: a registration with no file is caught as DANGLING" \
+    "DANGLING (in settings, not on disk): pre-bash/block-nonexistent-ghost.sh"
+rm -rf "$WIRE_TMP"
+
 # --- should BLOCK (exit 2) ---
 check 2 pre-bash/block-protected-files.sh "$(bash_json 'git checkout .claude/settings.json')" "protected-files"
 check 2 pre-bash/block-commit-meta.sh "$(bash_json 'git commit -m msg Co-Authored-By: bot')" "commit-meta"
@@ -50,6 +125,10 @@ check 2 pre-bash/block-long-sleep.sh "$(bash_json 'sleep 30')" "long-sleep"
 check 2 pre-bash/block-git-amend.sh "$(bash_json 'git commit --amend')" "git-amend"
 check 2 pre-bash/block-git-force-push.sh "$(bash_json 'git push --force')" "git-force-push"
 check 2 pre-bash/block-git-empty-commit.sh "$(bash_json 'git commit --allow-empty -m x')" "git-empty-commit"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree add ../foo -b bar')" "worktree-add"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'git -C /some/path worktree add ../x main')" "worktree-add: -C before the subcommand"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'sh -c "git worktree add ../x"')" "worktree-add: sh -c wrapper bypass"
+check 2 pre-bash/block-worktree-add.sh "$(bash_json 'echo start; git worktree add ../x')" "worktree-add: after a command separator"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
@@ -146,6 +225,10 @@ check 0 pre-bash/block-ci-polling.sh "$(bash_json "$WATCH")" "ci-polling: termin
 check 0 pre-bash/block-ci-reverse-poll.sh "$(bash_json "$WATCH")" "ci-reverse-poll: terminal-state watch ok"
 check 0 pre-bash/block-long-sleep.sh "$(bash_json "$WATCH")" "long-sleep: terminal-state watch ok"
 check 0 pre-bash/block-git-force-push.sh "$(bash_json 'git push')" "force-push: plain push ok"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree list')" "worktree-add: list ok"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree remove ../foo')" "worktree-add: remove ok"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git status')" "worktree-add: unrelated git command ok"
+check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "lets talk about git worktree add sometime"')" "worktree-add: quoted prose mention ignored"
 check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressions: clean"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write passes"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/RULES.md new_string sharpen)" "agent-state: RULES.md edits untouched"
@@ -187,7 +270,17 @@ if [[ -x "$STOP_SUITE" ]]; then
     else
         FAIL=$((FAIL + 1))
         echo "FAIL [1] stop/test-worklist-v5.sh"
-        sed 's/^/       /' <<<"$out" | tail -20
+        # THE FAILING CASES FIRST, then context. This used to be `tail -20`,
+        # which prints the LAST twenty lines -- in a 575-case suite those are
+        # almost always PASS lines plus the summary, so the FAIL lines scroll
+        # past and CI reports "12 failed" while naming none of them. A failure
+        # report that hides the failures forces a re-run to learn anything, and
+        # when the failure only reproduces in CI (as this one did) there is no
+        # local run to fall back on.
+        echo "       --- failing cases ---"
+        grep -E "^\s*(FAIL|  - )" <<<"$out" | sed 's/^/       /' | head -40
+        echo "       --- tail for context ---"
+        sed 's/^/       /' <<<"$out" | tail -12
     fi
 else
     FAIL=$((FAIL + 1))

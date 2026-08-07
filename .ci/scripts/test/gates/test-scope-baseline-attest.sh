@@ -104,6 +104,7 @@ const healthyJobs = () => [
   S('Tests + Infra / Renet'),
   S('Tests + Infra / License Enforcement'),
   S('Tests + Infra / Account E2E'),
+  S('Tests + Infra / Drills'),
   S('Tests + Infra / Migration Test'),
   S('OPS Tests / OPS Provision (linux-amd64)'),
   S('OPS Tests / OPS Check (linux-arm64)'),
@@ -470,11 +471,33 @@ test_reduced_baseline_refused_before_any_jobs_call() {
     # can never be a baseline however perfectly it reconciles, so asking the
     # Jobs API about it would be a round trip spent on a foregone conclusion.
     # This asserts the ORDERING, which bounds the cost of every attestation.
-    assert_eq "$(drive 'f.plans["1001"].mode = "reduced"')" "0" "a reduced plan answers"
+    #
+    # THE MUTATION SETS A SKIPPED KEY, not just the mode label, and since
+    # 2026-08-05 that is the load-bearing half: coverage is read per key, so a
+    # plan whose every key still ran is full coverage whatever its label says
+    # (see planCoverageIsFull, and the greenlight pair below). A fixture that
+    # only relabelled would be asserting the label, which is no longer the
+    # thing that decides.
+    local scope_reduced='f.plans["1001"].mode = "reduced";
+        f.plans["1001"].jobs.unit = { run: false, reason: "out-of-scope" }'
+    assert_eq "$(drive "$scope_reduced")" "0" "a scope-reduced plan answers"
     assert_eq "$(rget 'r.reason0')" "reduced-baseline" "and is refused as reduced-baseline"
     assert_eq "$(rget 'r.jobsCalls')" "0" \
         "with ZERO Jobs API calls: the cheap checks come first"
     assert_eq "$(rget 'r.downloadCalls')" "1" "though the plan itself was read"
+
+    # THE PAIR THAT SEPARATES THE TWO KINDS OF SKIP. Identical mode, identical
+    # shape, and the only difference is WHY the key did not run: greenlight
+    # evidence (another run executed that job's exact input closure green) is
+    # coverage, an out-of-scope skip is not. Refusing both is what kept this
+    # engine from ever reducing a round; accepting both would let scope
+    # evidence chain, which is case 1.
+    local greenlit='f.plans["1001"].mode = "reduced";
+        f.plans["1001"].jobs.renet = { run: false, reason: "greenlight:30968082228" }'
+    assert_eq "$(drive "$greenlit")" "0" "a greenlight-only reduced plan answers"
+    assert_eq "$(rget 'r.reason0')" "full-green-attested" \
+        "and IS a usable baseline: every key either ran or holds greenlight evidence"
+    assert_eq "$(rget 'r.mode')" "reduced" "so the round reduces off it"
     # CONTROL: the same fixture in full mode DOES make the call, so the zero
     # above is an ordering decision rather than a Jobs API that never fires.
     assert_eq "$(drive)" "0" "control runs"

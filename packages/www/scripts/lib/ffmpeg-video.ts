@@ -1,9 +1,15 @@
 import { spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
+import { probeDurationSec, videoDimensions } from './ffprobe.ts';
+import { stdio } from './spawn-stdio.ts';
+
+export { probeDurationSec, videoDimensions };
 
 const AGG_BIN = process.env.AGG_BIN ?? `${process.env.HOME}/.local/bin/agg`;
-const FFMPEG_BIN = process.env.FFMPEG_BIN ?? 'ffmpeg';
-const FFPROBE_BIN = process.env.FFPROBE_BIN ?? 'ffprobe';
+/** Binaries as found on PATH when the environment does not point elsewhere. */
+const DEFAULT_FFMPEG_BIN = 'ffmpeg';
+
+const FFMPEG_BIN = process.env.FFMPEG_BIN ?? DEFAULT_FFMPEG_BIN;
 
 export const VIDEO_W = 1920;
 export const VIDEO_H = 1080;
@@ -15,7 +21,7 @@ const PAD_FILTER = PAD_FILTER_CENTER;
 function run(bin: string, args: string[]): void {
   const res = spawnSync(bin, args, { encoding: 'utf8' });
   if (res.status !== 0) {
-    const tail = (res.stderr ?? '').slice(-400);
+    const tail = stdio(res.stderr).slice(-400);
     throw new Error(
       `${bin} ${args.slice(0, 4).join(' ')} ... failed (exit ${res.status}): ${tail}`
     );
@@ -44,12 +50,12 @@ let nvencAvailable: boolean | undefined;
 function hasNvenc(): boolean {
   if (nvencAvailable !== undefined) return nvencAvailable;
   const res = spawnSync(FFMPEG_BIN, ['-hide_banner', '-encoders'], { encoding: 'utf8' });
-  nvencAvailable = res.status === 0 && /\bh264_nvenc\b/.test(res.stdout ?? '');
+  nvencAvailable = res.status === 0 && /\bh264_nvenc\b/.test(res.stdout);
   return nvencAvailable;
 }
 
 let hwencWarned = false;
-function useHwEnc(): boolean {
+function hwEncEnabled(): boolean {
   if (process.env.RDC_TUTORIAL_HWENC !== '1') return false;
   if (hasNvenc()) return true;
   if (!hwencWarned) {
@@ -69,7 +75,7 @@ function useHwEnc(): boolean {
  * the caller; this only swaps the `-c:v ...` quality block.
  */
 export function videoCodecArgs(): string[] {
-  if (useHwEnc()) {
+  if (hwEncEnabled()) {
     // `-b:v 0` puts NVENC in pure constant-quality VBR (target = -cq), the
     // closest analogue to x264's CRF.
     return [
@@ -97,7 +103,7 @@ export function renderCastToGif(
   gifPath: string,
   cols: number,
   rows: number,
-  lastFrameHoldSec: number = 0
+  lastFrameHoldSec = 0
 ): void {
   run(AGG_BIN, [
     '--theme',
@@ -147,28 +153,6 @@ export function encodeAnimMp4Raw(gifPath: string, mp4Path: string): void {
     '-an',
     mp4Path,
   ]);
-}
-
-/** ffprobe the pixel width/height of the first video/image stream. */
-export function videoDimensions(filePath: string): { width: number; height: number } {
-  const res = spawnSync(
-    FFPROBE_BIN,
-    [
-      '-v',
-      'error',
-      '-select_streams',
-      'v:0',
-      '-show_entries',
-      'stream=width,height',
-      '-of',
-      'csv=s=x:p=0',
-      filePath,
-    ],
-    { encoding: 'utf8' }
-  );
-  if (res.status !== 0) throw new Error(`ffprobe dims failed: ${res.stderr.slice(-300)}`);
-  const [width, height] = res.stdout.trim().split('x').map(Number);
-  return { width, height };
 }
 
 /**
@@ -306,7 +290,7 @@ export function addSilentAudio(mp4InPath: string, mp4OutPath: string): void {
 }
 
 export function concatMp4(inputs: string[], outPath: string, listPath: string): void {
-  const body = inputs.map((p) => `file '${p.replace(/'/g, "'\\''")}'`).join('\n');
+  const body = inputs.map((p) => `file '${p.replaceAll("'", "'\\''")}'`).join('\n');
   writeFileSync(listPath, `${body}\n`);
   run(FFMPEG_BIN, [
     '-y',
@@ -535,7 +519,7 @@ export function assembleWithTransitions(
   fadeAfter: boolean[],
   outPath: string,
   tmpDir: string,
-  fadeSec: number = 0.3
+  fadeSec = 0.3
 ): void {
   // Partition into runs of chunks connected by flagged boundaries.
   const groups: number[][] = [];
@@ -625,22 +609,4 @@ export function extractPosterJpg(mp4Path: string, atSec: number, jpgPath: string
     '3',
     jpgPath,
   ]);
-}
-
-export function probeDurationSec(path: string): number {
-  const res = spawnSync(
-    FFPROBE_BIN,
-    [
-      '-v',
-      'error',
-      '-show_entries',
-      'format=duration',
-      '-of',
-      'default=noprint_wrappers=1:nokey=1',
-      path,
-    ],
-    { encoding: 'utf8' }
-  );
-  if (res.status !== 0) throw new Error(`ffprobe failed: ${res.stderr.slice(-400)}`);
-  return Number(res.stdout.trim());
 }

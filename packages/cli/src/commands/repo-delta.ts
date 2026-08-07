@@ -97,6 +97,9 @@ async function syncCommitMetaToTarget(
     await getExecutor().execute({
       functionName: 'repository_commit_meta',
       machineName: machine,
+      // NO datastore on purpose (#74): `machine` here is the PUSH TARGET, and the
+      // image landed wherever that machine's own vault record points. The source
+      // repo's named mount is a path on a different host.
       params: {
         repository: repoConfig.repositoryGuid,
         ...(repoConfig.commitMessage ? { message: repoConfig.commitMessage } : {}),

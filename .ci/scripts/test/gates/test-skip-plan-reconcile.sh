@@ -96,6 +96,7 @@ const jobs = [
   S("Tests + Infra / Renet"),
   S("Tests + Infra / License Enforcement"),
   S("Tests + Infra / Account E2E"),
+  S("Tests + Infra / Drills"),
   S("Tests + Infra / Migration Test"),
   S("OPS Tests / OPS Provision (linux-amd64)"),
   S("OPS Tests / OPS Provision (macos-intel)"),
@@ -489,9 +490,9 @@ test_warnings_never_mask_failures() {
 test_pointer_bump_exempts_every_key() {
     # THE case this whole extension exists for. On a pointer-bump PR
     # `build-renet` skips (ci.yml:493) and the entire expensive pipeline goes
-    # with it, so all seventeen planned keys skip while nothing is wrong. The
+    # with it, so all eighteen planned keys skip while nothing is wrong. The
     # plan predicted `run: true` for every one of them, so an unannotated plan
-    # reports seventeen failures on a perfectly healthy run.
+    # reports eighteen failures on a perfectly healthy run.
     mutate "$WORK/jobs.json" "$WORK/jobs-pointer-bump.json" \
         'data.jobs.forEach((j) => { j.conclusion = "skipped"; })'
     # SHAPE first: the silence below is only meaningful if the skips are real.
@@ -516,12 +517,12 @@ test_pointer_bump_exempts_every_key() {
     assert_contains "$(out)" "pre-existing skips (not scope decisions, not verified by this run)" \
         "and the excused keys are printed, so a vacuous pass is visible"
     assert_contains "$(out)" "unit (pointer_bump_only)" "naming the key and the condition"
-    assert_contains "$(out)" "0 of 17 planned keys verified" \
+    assert_contains "$(out)" "0 of 18 planned keys verified" \
         "and the headline counts VERIFIED keys, not planned ones: this pass proves nothing"
-    log_pass "pointer_bump_only exempts all 17 keys; the same run reds without the annotation"
+    log_pass "pointer_bump_only exempts all 18 keys; the same run reds without the annotation"
 }
 
-test_full_suite_exempts_sixteen_but_never_install_methods() {
+test_full_suite_exempts_seventeen_but_never_install_methods() {
     # The condition sets are NOT interchangeable, and this is the pair that
     # proves it. `validate-install` (ci.yml:1081-1083) hangs off
     # `stage-artifacts`, which carries no full_suite clause (ci.yml:658), so the
@@ -536,8 +537,8 @@ test_full_suite_exempts_sixteen_but_never_install_methods() {
         'data.jobs.forEach((j) => {
            if (!j.name.startsWith("Validate Install Methods")) j.conclusion = "skipped";
          })'
-    assert_eq "$(skipped_count "$WORK/jobs-push.json")" "32" \
-        "the push fixture skips all 32 non-install jobs and leaves the four install legs"
+    assert_eq "$(skipped_count "$WORK/jobs-push.json")" "33" \
+        "the push fixture skips all 33 non-install jobs and leaves the four install legs"
     assert_eq "$(run_reconcile "$WORK/plan-push.json" "$WORK/jobs-push.json")" "0" \
         "a push-to-main shape reconciles clean once full_suite is recorded"
     assert_contains "$(out)" "unit (full_suite)" "excusing unit under full_suite"
@@ -553,7 +554,7 @@ test_full_suite_exempts_sixteen_but_never_install_methods() {
         "a skipped install matrix on push-to-main is a REAL finding and must fire"
     assert_contains "$(err)" "planned-run-but-skipped: 'install_methods'" "naming install_methods"
     assert_not_contains "$(err)" "planned-run-but-skipped: 'unit'" \
-        "while the sixteen full_suite really gates stay excused"
+        "while the seventeen full_suite really gates stay excused"
 
     # And pointer_bump_only DOES cover it, on the identical payload. Two
     # conditions, two different key sets, same jobs: the table discriminates
@@ -562,12 +563,12 @@ test_full_suite_exempts_sixteen_but_never_install_methods() {
         '{"pointer_bump_only":true,"full_suite":true,"is_bot":false}'
     assert_eq "$(run_reconcile "$WORK/plan-pb2.json" "$WORK/jobs-push-install-skipped.json")" "0" \
         "the same skipped install matrix is excused under pointer_bump_only"
-    log_pass "full_suite exempts 16 keys and never install_methods; pointer_bump_only exempts all 17"
+    log_pass "full_suite exempts 17 keys and never install_methods; pointer_bump_only exempts all 18"
 }
 
 test_is_bot_exempts_exactly_one_key() {
     # is_bot (ci.yml:105) reaches only install_methods, via stage-artifacts
-    # (ci.yml:658). It needs no entry for the other sixteen because it can only
+    # (ci.yml:658). It needs no entry for the other seventeen because it can only
     # be true on a `push`, where full_suite already covers them. A narrow
     # exemption must stay narrow, so plant a skip OUTSIDE it.
     annotate "$WORK/plan.json" "$WORK/plan-bot.json" \
@@ -665,7 +666,7 @@ test_strict_mode_is_the_module_default() {
         "and says WHY, since attestPlan only ever surfaces the first failure string"
     assert_contains "$strict" "this run is not proof that it ran" "in those words"
     assert_contains "$lenient" "true|" "while the gate, which opts in, passes the same input"
-    assert_contains "$lenient" "exempt=17" "having excused all seventeen keys"
+    assert_contains "$lenient" "exempt=18" "having excused all eighteen keys"
 
     # CONTROL: the flag is not a blanket mute. On the healthy fixture, where no
     # condition is active, both modes agree and both pass.
@@ -758,8 +759,8 @@ const r = require(process.argv[1]);
 const n = (c) => r.PREEXISTING_CONDITIONS[c].keys.length;
 process.stdout.write(`pb=${n("pointer_bump_only")} fs=${n("full_suite")} bot=${n("is_bot")}`);
 ' "$RECONCILE")"
-    assert_eq "$sizes" "pb=17 fs=16 bot=1" \
-        "pointer_bump_only cuts all 17, full_suite 16 (not install_methods), is_bot 1"
+    assert_eq "$sizes" "pb=18 fs=17 bot=1" \
+        "pointer_bump_only cuts all 18, full_suite 17 (not install_methods), is_bot 1"
     log_pass "the condition table cannot rot or widen silently"
 }
 
@@ -788,7 +789,7 @@ test_name_table_parity_with_scope_map
 test_jobs_payload_forms_and_absence
 test_warnings_never_mask_failures
 test_pointer_bump_exempts_every_key
-test_full_suite_exempts_sixteen_but_never_install_methods
+test_full_suite_exempts_seventeen_but_never_install_methods
 test_is_bot_exempts_exactly_one_key
 test_exemption_needs_a_real_boolean
 test_annotation_must_agree_with_the_conditions

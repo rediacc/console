@@ -1741,6 +1741,13 @@ TEST COMMANDS:
   test bridge [opts]  Run bridge tests (requires VMs)
   test all            Run all tests
 
+DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
+  drill universe      Config isolation, source labels, per-config tokens (headless)
+  drill transfer      Config-storage battery vs ./run.sh account dev (headless)
+  drill license       Live licensing battery on the ops VMs (declares its VM cost)
+  drill <name> --selftest
+                      Plant one failing assertion; the run MUST exit non-zero
+
 BUILD COMMANDS:
   build cli           Build CLI application
   build renet         Build renet binary (Go, with embedded assets)
@@ -1963,6 +1970,34 @@ main() {
                     log_error "Unknown test command: ${1:-}"
                     echo ""
                     echo "Usage: ./run.sh test [unit|bridge|all]"
+                    exit 1
+                    ;;
+            esac
+            ;;
+
+        # Drills: the campaign's manual walkthroughs, scripted. Each one owns
+        # its setup, numbered assertions and teardown, and exits non-zero on any
+        # failed assertion. Dispatched by literal path (not "$1.sh") so
+        # check-dead-bash.ts can see each file is referenced.
+        drill)
+            shift
+            case "${1:-}" in
+                universe)
+                    shift
+                    "$ROOT_DIR/scripts/drills/universe.sh" "$@"
+                    ;;
+                transfer)
+                    shift
+                    "$ROOT_DIR/scripts/drills/transfer.sh" "$@"
+                    ;;
+                license)
+                    shift
+                    "$ROOT_DIR/scripts/drills/license.sh" "$@"
+                    ;;
+                *)
+                    log_error "Unknown drill: ${1:-}"
+                    echo ""
+                    echo "Usage: ./run.sh drill [universe|transfer|license] [--selftest]"
                     exit 1
                     ;;
             esac

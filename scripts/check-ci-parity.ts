@@ -187,6 +187,16 @@ function resolveLeaves(
       continue;
     }
 
+    // Transparent wrapper: run-external-gate.sh executes its arguments and
+    // only changes what a FAILURE means (soft on schedule vs hard on a PR),
+    // never what runs. The leaf is the wrapped command; reporting the wrapper
+    // itself would make every external gate's CI pointer "run something else"
+    // the moment it adopted the wrapper.
+    if (prog.endsWith('run-external-gate.sh')) {
+      out.push(...resolveLeaves(rest.join(' '), u, curScope, seen));
+      continue;
+    }
+
     out.push(scoped(prog, curScope));
   }
   return [...new Set(out)];

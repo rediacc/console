@@ -304,6 +304,8 @@
         "optionMasterPassword": "使用主密码加密资源",
         "success": "配置 \"{{name}}\" 已初始化",
         "bareForm": "默认配置会自动创建；如需命名配置，请使用 'config init <name>'，或传入标志（--ssh-key、--server 等）为默认配置设置选项。",
+        "serverKeyMissing": "账户服务器 {{server}} 未公布加密密钥。将在首次成功请求时发现。",
+        "serverKeyUnreachable": "无法连接账户服务器 {{server}} 以同步其加密密钥（{{error}}）。将在首次成功请求时发现。",
         "examples": {
           "basic": "创建一个命名的配置文件。",
           "withServer": "创建一个指向特定账户服务器的配置文件。"
@@ -354,6 +356,9 @@
         "conflictRetryExhausted": "配置 \"{{config}}\" 在 3 次尝试后仍与另一台设备冲突。请重新运行该命令。",
         "passkeySecretMissing": "在系统密钥链中未找到通行密钥。请重新认证: rdc config remote enable",
         "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
+        "undecryptableIdentity": "存储 {{storeId}} 中的配置 {{configId}} 使用了与你的槽位所持密钥不同的密钥加密，因此此设备无法读取它。当存储中已经保存了来自另一次注册的配置时会发生这种情况。请在已注册的设备上拉取该配置并确认你指的是哪个配置，或者请管理员从门户（Config Storage > key slots）重新向此设备共享存储密钥。",
+        "undecryptableSession": "配置 {{configId}} 已用你的密钥解锁，但服务器会话层拒绝打开它（{{detail}}）。请重试该命令；如果持续失败，请使用以下命令重新注册：rdc config remote enable",
+        "handoffUndecryptable": "浏览器发送了此设备无法打开的交接信息（{{error}}）。这通常意味着旧的 'config remote enable' 标签页仍处于打开状态，并发送到了错误的会话。请关闭所有 rediacc 门户标签页，然后重新运行该命令。",
         "enable": {
           "description": "将此配置链接到远程加密存储",
           "optionHeadless": "使用设备代码流程（用于无界面服务器）",
@@ -369,6 +374,11 @@
           "passwordPrompt": "配置主密码：",
           "passwordNonInteractive": "需要配置主密码。请设置 REDIACC_CONFIG_PASSWORD，或在交互式终端中不带 --password 运行。",
           "passwordRequirePasskey": "该组织要求使用 passkey 才能解锁配置存储；密码注册已被禁用。请在浏览器中使用以下命令注册：rdc config remote enable",
+          "passwordIpBound": "REDIACC_TOKEN 中的 API 令牌已绑定到不同的客户端 IP 地址。令牌会绑定到首次使用它的地址，因此在别处创建的令牌无法从此机器注册。请从网页门户签发新令牌后重试。",
+          "passwordMissingScope": "REDIACC_TOKEN 中的 API 令牌不携带 config:enroll 权限范围。请从网页门户签发具有该权限范围的令牌后重试。",
+          "passwordTeamGone": "此 API 令牌所属的团队已被归档或移除。请从网页门户为活跃团队签发新令牌后重试。",
+          "passwordTokenNotEnrollable": "此 API 令牌未关联组织内的用户，因此无法注册配置槽位。请在网页门户使用你自己的账户签发个人令牌后重试。",
+          "passwordForbidden": "账户服务器拒绝了配置注册：{{error}}",
           "passwordNoSlot": "你的配置存储尚未配置密码槽位。请从门户（Config Storage > key slots）添加一个，然后重试。",
           "passwordWrong": "无法使用该密码解锁配置。请检查 REDIACC_CONFIG_PASSWORD（或你输入的密码）后重试。",
           "optionForce": "无需确认，直接用服务器副本替换不同的本地内容",
@@ -456,7 +466,7 @@
       "machine": {
         "add": {
           "sshConfigFailed": "写入 SSH 别名失败（非致命）：{{error}}",
-          "sshConfigWritten": "已将 SSH 别名 rediacc--{{name}} 写入 ~/.ssh/config_rediacc"
+          "sshConfigWritten": "已将 SSH 别名 rediacc--{{name}} 写入 {{path}}"
         },
         "remove": {
           "sshConfigCleared": "已移除 SSH 别名 rediacc--{{name}}"
@@ -874,7 +884,8 @@
         "examples": {
           "basic": "显示一台机器的完整状态。",
           "containers": "仅显示机器上正在运行的容器。"
-        }
+        },
+        "licenseBackupBlocked": "\n备份已阻止：{{repositoryGuid}} 自 {{at}} 起被许可系统拒绝（{{reason}}）。{{message}}\n该仓库的计划备份未在运行。请使用以下命令重新签发：rdc subscription refresh"
       }
     },
     "mcp": {
@@ -1654,7 +1665,8 @@
         "validated": "令牌已验证",
         "validating": "正在验证令牌...",
         "waitingApproval": "等待浏览器授权...",
-        "edgeSeparator": "Edge 频道"
+        "edgeSeparator": "Edge 频道",
+        "machinesOverLimit": "  {{count}} 个机器名额超出限制。"
       },
       "logout": {
         "description": "清除已存储的订阅令牌",
@@ -1686,7 +1698,11 @@
           "empty": "  未安装仓库许可证",
           "entry": "  - {{repositoryGuid}}：{{freshness}}{{hardExpirySuffix}}",
           "hardExpirySuffix": "（到期时间：{{effectiveHardExpiry}}）",
-          "header": "\n仓库许可证：（{{machineName}}）"
+          "header": "\n仓库许可证：（{{machineName}}）",
+          "datastoreSuffix": " [数据存储 {{datastoreId}}]",
+          "blockedBackup": "  ! {{repositoryGuid}}：备份自 {{at}} 起被许可系统阻止（{{reason}}）。{{message}}",
+          "blockedBackupRemedy": "  运行 'rdc subscription refresh -m {{machineName}}' 重新签发；下一次续期成功后标记会自动清除。",
+          "lastRenewal": "    最近一次续期：{{outcome}}{{detail}}"
         }
       },
       "status": {
@@ -1702,7 +1718,9 @@
         "remotePlan": "  计划:     {{plan}}",
         "remoteRepoLicenseIssuances": "  浮动许可证请求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  仓库许可证: 已跟踪 {{totalTrackedRepos}}，有效 {{validCount}}，建议刷新 {{refreshRecommendedCount}}，彻底过期 {{hardExpiredCount}}",
-        "remoteStatus": "  状态:     {{status}}"
+        "remoteStatus": "  状态:     {{status}}",
+        "remoteMachineOverLimit": "    - {{id}}…（最后一次活动：{{lastSeen}}）超出限制",
+        "overLimitSummary": "  {{count}} 台机器被软占用，超出了机器名额限制。续期仍会成功；在释放名额或提高限制之前，无法为新仓库签发许可证。"
       }
     },
     "sync": {
@@ -2070,7 +2088,10 @@
       "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc repo list` 列出已追踪的仓库，然后重试。",
       "recoveryFailedServerRejected": "账户服务器拒绝为 \"{{machine}}\" 上的仓库签发许可证。首个错误：{{error}}。请运行：rdc subscription refresh --repo <repo-ref> 获取详情。",
       "recoveryFailedTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login，然后重试。",
-      "skipActivationHint": "在一次性机器上，可以使用 REDIACC_SKIP_MACHINE_ACTIVATION=1 完全跳过激活。"
+      "skipActivationHint": "在一次性机器上，可以使用 REDIACC_SKIP_MACHINE_ACTIVATION=1 完全跳过激活。",
+      "machineSlotLimit": "此次部署还需要 {{needed}} 个机器名额，而订阅仅剩 {{free}} 个空闲名额（已使用 {{active}} / {{max}}）。名额会在该机器最后一次活动 5 小时后自动释放，或在机器被移除时立即释放。可通过升级套餐提高限制，或联系销售洽谈 Enterprise 或合作伙伴的机器限额。",
+      "partialPlacement": "部署中途停止：已完成 {{placed}} 台机器（{{placedNames}}），{{remaining}} 台从未启动（{{remainingNames}}）。没有执行任何回滚，因此已完成的机器保留其仓库和名额。请释放名额或提高限制，然后重新运行：{{command}}",
+      "nothingProvisioned": "未创建任何资源：仓库未被创建。"
     },
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",

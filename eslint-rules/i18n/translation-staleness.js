@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
 /**
  * Calculate CRC32 hash of a string (IEEE polynomial)
@@ -37,25 +38,6 @@ const crc32 = (str) => {
 };
 
 /**
- * Flatten a JSON object to get all leaf key-value pairs
- */
-const flattenKeyValues = (obj, prefix = '') => {
-  const result = {};
-
-  for (const [key, value] of Object.entries(obj)) {
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      Object.assign(result, flattenKeyValues(value, fullPath));
-    } else if (typeof value === 'string') {
-      result[fullPath] = value;
-    }
-  }
-
-  return result;
-};
-
-/**
  * Load hash manifest file
  */
 const loadHashManifest = (hashFilePath) => {
@@ -71,35 +53,35 @@ const loadHashManifest = (hashFilePath) => {
 };
 
 /**
+ * Merge one member into the flattened key-value map.
+ */
+const collectKeyValue = (result, member, prefix) => {
+  const key = memberKey(member);
+  const value = member.value;
+  if (!key || !value) return;
+
+  const fullPath = joinPath(prefix, key);
+
+  if (value.type === 'Object') {
+    Object.assign(result, extractKeyValuesFromAst(value, fullPath));
+    return;
+  }
+  if (value.type === 'String') {
+    result[fullPath] = {
+      value: value.value,
+      node: value,
+    };
+  }
+};
+
+/**
  * Recursively extract key-value pairs from AST
  */
 const extractKeyValuesFromAst = (node, prefix = '') => {
   const result = {};
 
-  if (!node || node.type !== 'Object') return result;
-
-  for (const member of node.body?.members || []) {
-    if (member.type !== 'Member') continue;
-
-    const key = member.name?.type === 'String'
-      ? member.name.value
-      : member.name?.name;
-
-    if (!key) continue;
-
-    const fullPath = prefix ? `${prefix}.${key}` : key;
-    const value = member.value;
-
-    if (!value) continue;
-
-    if (value.type === 'Object') {
-      Object.assign(result, extractKeyValuesFromAst(value, fullPath));
-    } else if (value.type === 'String') {
-      result[fullPath] = {
-        value: value.value,
-        node: value,
-      };
-    }
+  for (const member of objectMembers(node)) {
+    if (member.type === 'Member') collectKeyValue(result, member, prefix);
   }
 
   return result;
@@ -127,9 +109,12 @@ export const translationStaleness = {
       },
     ],
     messages: {
-      staleTranslation: 'Translation outdated: "{{key}}". English value changed (stored: {{storedHash}}, current: {{currentHash}}). Regenerate hashes, then re-naturalize ONLY the changed keys (delta), not everything. See docs/i18n/CONVENTIONS.md.',
-      missingHashFile: 'Hash manifest file not found: {{path}}. Run: npm run i18n:generate-hashes. See docs/i18n/CONVENTIONS.md.',
-      newKey: 'New translation key: "{{key}}" (hash: {{currentHash}}). Run: npm run i18n:update-hashes. See docs/i18n/CONVENTIONS.md.',
+      staleTranslation:
+        'Translation outdated: "{{key}}". English value changed (stored: {{storedHash}}, current: {{currentHash}}). Regenerate hashes, then re-naturalize ONLY the changed keys (delta), not everything. See docs/i18n/CONVENTIONS.md.',
+      missingHashFile:
+        'Hash manifest file not found: {{path}}. Run: npm run i18n:generate-hashes. See docs/i18n/CONVENTIONS.md.',
+      newKey:
+        'New translation key: "{{key}}" (hash: {{currentHash}}). Run: npm run i18n:update-hashes. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -179,11 +164,11 @@ export const translationStaleness = {
           // For web package, keys in hashes are prefixed with namespace
           // For CLI package, they're flat (single file)
           // Check both formats for compatibility
-          const fullKey = namespace !== 'cli' ? `${namespace}.${key}` : key;
+          const fullKey = namespace === 'cli' ? key : `${namespace}.${key}`;
           const currentHash = crc32(value);
 
           // Try full key first, then bare key
-          let storedHash = storedHashes[fullKey] || storedHashes[key];
+          const storedHash = storedHashes[fullKey] || storedHashes[key];
 
           if (storedHash === undefined) {
             // New key that doesn't exist in hash manifest

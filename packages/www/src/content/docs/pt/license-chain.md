@@ -4,8 +4,8 @@ description: "Emissão de licenças à prova de adulteração, assinatura delega
 category: "Guides"
 order: 8
 language: pt
-sourceHash: "2e2ff813fabf2422"
-sourceCommit: "66c13dba56dc939bd70e2ec04c7acb90a891b206"
+sourceHash: "6486263bfb9ebf98"
+sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
 ---
 
 # Cadeia de Licenças e Delegação
@@ -33,16 +33,65 @@ Quando a CLI solicita uma licença de repositório, o servidor de conta:
 
 A `sequence` e o `prevChainHash` estão dentro do payload assinado (por isso não podem ser modificados sem invalidar a assinatura). O `chainHash` está no envelope (calculado após a assinatura para evitar uma dependência circular).
 
+## Como uma Licença é Renovada
+
+A emissão corre a partir da sua estação de trabalho, autenticada como si. A renovação corre a partir da máquina, que não guarda credenciais de conta nenhumas. Precisa de uma porta diferente:
+
+```
+POST /licenses/renew
+{ license: <o blob assinado instalado>, machineId, clusterId? }
+```
+
+**A licença apresentada é a credencial.** Não há token de API neste endpoint. O servidor verifica a assinatura Ed25519 do blob, e através do certificado de delegação quando o blob traz um, exatamente como o Renet faz na máquina. Deter uma licença validamente assinada para um repositório é a prova do direito de uso, e uma máquina que a tem já a recebeu em devido tempo.
+
+O URL completo deste endpoint viaja dentro de cada licença que o servidor emite ou renova, como `renewalUrl`. A máquina lê o endereço do seu próprio servidor de conta a partir da sua própria licença, em vez de o ter configurado, e é isso que permite a uma máquina que serve dois universos de conta renovar contra ambos.
+
+O blob renovado mantém o GUID do repositório, o GUID grand e o tipo daquele que foi apresentado, tira a sequência seguinte do mesmo livro-razão com o hash de cadeia que dela decorre, e recebe janelas de validade calculadas de novo. O ID da máquina é revinculado à máquina que apresentou o blob, que é como uma migração de VM se resolve sozinha dentro da graça de 40 dias. A identidade de armazenamento (o UUID LUKS ou a impressão digital de armazenamento) é transportada sem alterações, porque uma chamada de rede não consegue voltar a analisar o disco que está a descrever.
+
+### Recusas
+
+| Código | Estado | Significado |
+|---|---|---|
+| `INVALID_LICENSE_SIGNATURE` | 403 | A assinatura do blob não foi verificada, ou o seu hash de cadeia não corresponde ao livro-razão do servidor naquela sequência |
+| `INVALID_LICENSE_PAYLOAD` | 400 | O blob está malformado |
+| `DELEGATION_CERT_INVALID` | 403 | O certificado anexado falhou uma restrição ou a sua assinatura de chave mestra |
+| `DELEGATION_CERT_EXPIRED` | 403 | O certificado anexado está fora da sua janela de validade |
+| `DELEGATION_CERT_REVOKED` | 403 | O certificado anexado foi revogado a montante |
+| `LICENSE_IDENTITY_MISMATCH` | 403 | A máquina que apresenta o blob não é a licenciada e a graça de 40 dias já passou |
+| `SUBSCRIPTION_LAPSED` | 403 | A subscrição expirou ou está suspensa |
+| `GRACE_PERIOD_ENDED` | 403 | O período de graça da subscrição terminou |
+| `TRIAL_REQUIRED` | 403 | A subscrição precisa de um teste ou plano ativo |
+| `REPO_GUID_OWNERSHIP_CONFLICT` | 403 | O GUID do repositório pertence a outra subscrição |
+| `LICENSE_RENEWAL_FAILED` | 500 | Tudo o que não se enquadre nos anteriores |
+
+Uma recusa deixa a licença instalada intacta. A máquina continua a correr com aquilo que tem até essa licença atingir a expiração dura.
+
+### A renovação e o slot de máquina
+
+Uma renovação bem-sucedida mexe na linha de ativação da máquina: reclama um slot se a máquina não tinha nenhum e renova-o se já tinha. Ao contrário da emissão, nunca é recusada por estar acima do limite. A resposta traz `overLimit`, e a ativação fica marcada para que o portal, o endpoint de estado de licenças e o `rdc subscription status` a possam mostrar. Emitir uma licença genuinamente nova continua a ser bloqueado com firmeza no teto. O raciocínio está em [Assinatura e Licenciamento - Slots de máquina](/pt/docs/subscription-licensing).
+
+### Ordem de implantação
+
+Os servidores de conta são implantados antes das builds da CLI e do Renet Agent que dependem dos campos acima. Um Renet Agent que não encontre `renewalUrl` numa licença ignora esse repositório e di-lo, em vez de falhar, por isso uma licença mais antiga continua a funcionar até uma atualização feita do lado da estação de trabalho semear o campo. Fazê-lo pela ordem inversa dá-lhe máquinas a pedir um endpoint que ainda não existe.
+
 ## Como o Renet Valida
 
-Cada máquina que corre o Renet armazena o seu último estado conhecido da cadeia em `{licenseDir}/chain-state.json` (ou seja, `/var/lib/rediacc/license/chain-state.json`, um irmão do diretório `repos/` por repositório). O estado da cadeia tem âmbito por chave de assinatura e subscrição, indexado como `"<keyId>:<subscriptionId>"`, pelo que universos assinados por chaves diferentes seguem as suas sequências de forma independente. Em cada validação de licença, o Renet verifica:
+Cada máquina que corre o Renet armazena o seu último estado conhecido da cadeia em `{licenseDir}/chain-state.json` (ou seja, `/var/lib/rediacc/license/chain-state.json`, um irmão do diretório `repos/` por repositório). O estado da cadeia tem âmbito por chave de assinatura, subscrição, repositório e datastore, indexado como `"<keyId>:<subscriptionId>:<repositoryGuid>:<datastoreId>"` (a parte do datastore fica vazia para um repositório no datastore predefinido da máquina).
+
+As partes do repositório e do datastore nessa chave são determinantes. Os números de sequência no servidor são por subscrição, por isso numa máquina que detém vários repositórios sob uma mesma subscrição o topo de cadeia registado para o repositório B ficaria à frente da licença que o repositório A está prestes a apresentar, e o repositório A seria rejeitado como uma repetição com a qual nada tinha a ver. Um fork de datastore agrava o mesmo problema: o clone mantém o GUID do repositório e apenas a sua identidade de datastore é reatribuída, por isso, sem a parte do datastore, a licença mais recente do fork faria avançar um topo contra o qual o original ainda valida. Limitar o topo registado ao repositório e ao datastore que a licença nomeia elimina ambos os casos. As entradas escritas por um Renet Agent mais antigo num formato de chave mais curto são descartadas na primeira vez que o estado é gravado, e a validação seguinte volta a semear o topo.
+
+O estado da cadeia só é lido e avançado nas operações que validam no nível completo. O nível de operação não o lê nem o avança, por isso arrancar um repositório nunca pode mexer num topo de cadeia.
+
+Em cada validação de licença, o Renet verifica:
 
 | Verificação | Falha significa |
 |---|---|
 | A assinatura Ed25519 é válida | A licença foi falsificada ou adulterada |
-| `sequence > lastKnownSequence` | O servidor reverteu a cadeia (ataque de repetição) |
+| `sequence >= lastKnownSequence` | O servidor reverteu a cadeia (ataque de repetição) |
+| Uma repetição de `lastKnownSequence` traz o mesmo `chainHash` | Uma cadeia bifurcada reutilizou um número de sequência |
 | `chainHash == SHA256(prevChainHash + ":" + payload)` | A entrada da cadeia foi modificada |
-| `issuedAt >= lastKnownIssuedAt` | Manipulação do relógio (relógio do servidor definido para trás) |
+
+Voltar a validar a licença que já está instalada não é uma regressão: a mesma sequência com o mesmo hash de cadeia é aceite, e é isso que permite a uma máquina validar o mesmo ficheiro sempre que arranca um repositório.
 
 Se alguma verificação falhar, a licença é rejeitada e o motivo da falha é reportado.
 

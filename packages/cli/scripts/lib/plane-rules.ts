@@ -21,7 +21,7 @@ export const MACHINE_MARKERS = [
   'remote/sftp',
   'remote/ssh',
   'services/tofu',
-];
+] as const;
 
 /**
  * Reaching this means `--background` can actually detach the command.
@@ -32,7 +32,7 @@ export const MACHINE_MARKERS = [
  * a silent no-op there — which is exactly what the contract used to advertise
  * as `detachable: true`.
  */
-export const DETACH_SEAM_MARKERS = ['services/executor/executor-factory'];
+export const DETACH_SEAM_MARKERS = ['services/executor/executor-factory'] as const;
 
 export interface Reach {
   /** Whether any marker was reached (the marker set decides which question). */
@@ -82,7 +82,7 @@ export function createReachability(
       seen.add(file);
       if (!fs.existsSync(file)) continue;
 
-      const rel = path.relative(src, file).replace(/\\/g, '/');
+      const rel = path.relative(src, file).replaceAll('\\', '/');
       const nextChain = [...chain, rel];
 
       if (markers.some((marker) => rel.includes(marker))) {
@@ -116,11 +116,11 @@ export function instrumentRegistration(src: string): Map<Command, string> {
 
   const innermostSrcFrame = (): string | null => {
     for (const line of (new Error().stack ?? '').split('\n').slice(1)) {
-      const match = line.match(/\(?((?:\/|file:\/\/)[^):]+\.tsx?)[:)]/);
+      const match = /\(?((?:\/|file:\/\/)[^):]+\.tsx?)[:)]/.exec(line);
       if (!match) continue;
       const file = match[1].replace(/^file:\/\//, '');
       if (!file.startsWith(src)) continue;
-      return path.relative(src, file).replace(/\\/g, '/');
+      return path.relative(src, file).replaceAll('\\', '/');
     }
     return null;
   };

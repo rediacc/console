@@ -75,6 +75,24 @@ describe('addMachineSSHConfigEntry', () => {
     expect(content).not.toContain('HostName 1.2.3.4');
   });
 
+  it('returns the file it wrote, resolved through getSSHHome', () => {
+    // Under WSL getSSHHome() is the WINDOWS home, not $HOME, so callers must
+    // report this return value rather than assuming ~/.ssh/config_rediacc.
+    const winHome = join(tmpdir(), `sshconfig-winhome-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(winHome, { recursive: true });
+    mockGetSSHHome.mockReturnValue(winHome);
+
+    const written = addMachineSSHConfigEntry({
+      machineName: 'm1',
+      host: '1.2.3.4',
+      port: 22,
+      sshUser: 'u1',
+    });
+
+    expect(written).toBe(join(winHome, '.ssh', 'config_rediacc'));
+    expect(existsSync(written)).toBe(true);
+  });
+
   it('removes the block', () => {
     addMachineSSHConfigEntry({ machineName: 'm1', host: '1.2.3.4', port: 22, sshUser: 'u1' });
     removeMachineSSHConfigEntry('m1');

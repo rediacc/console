@@ -40,7 +40,7 @@ import { SITE_LOCALES } from '../../../packages/locales/index.js';
 const SUPPORTED_LANGUAGES = SITE_LOCALES;
 const REDIRECT_THRESHOLD = 50;
 const FILE_EXT_RE = /\.\w{2,5}$/;
-const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'];
+const SKIP_PREFIXES = ['/account', '/assets', '/fonts', '/_astro', '/api', '/json'] as const;
 
 // ---------------------------------------------------------------------------
 // Manifest cache
@@ -54,7 +54,7 @@ async function loadManifest(assets: Fetcher): Promise<RouteEntry[]> {
   try {
     const response = await assets.fetch('https://assets.local/route-manifest.json');
     if (!response.ok) return [];
-    manifestCache = (await response.json()) as RouteEntry[];
+    manifestCache = await response.json();
   } catch {
     manifestCache = [];
   }
@@ -88,7 +88,7 @@ function parseRequestPath(pathname: string): ParsedRequest {
   }
 
   const slug = slugParts.join('/');
-  const pathWithoutLang = '/' + rest.join('/');
+  const pathWithoutLang = `/${rest.join('/')}`;
   const keywords = slug.split(/[-/]/).filter((k) => k.length > 2);
 
   return { lang, pathWithoutLang, section, slug, keywords };
@@ -175,18 +175,25 @@ function scoreCandidate(req: ParsedRequest, candidate: RouteEntry): number {
 // Public API
 // ---------------------------------------------------------------------------
 
+/**
+ * File-like paths (CSS, JS, images, fonts) and non-content prefixes never get
+ * a fuzzy redirect — a missing hashed asset must stay a 404.
+ */
+function isRedirectCandidate(pathname: string): boolean {
+  if (FILE_EXT_RE.test(pathname)) return false;
+
+  const lower = pathname.toLowerCase();
+  for (const prefix of SKIP_PREFIXES) {
+    if (lower.startsWith(prefix)) return false;
+  }
+  return true;
+}
+
 export async function findSmartRedirect(
   pathname: string,
   assets: Fetcher
 ): Promise<SmartRedirectResult | null> {
-  // Guard: skip file-like paths (CSS, JS, images, fonts)
-  if (FILE_EXT_RE.test(pathname)) return null;
-
-  // Guard: skip non-content paths
-  const lower = pathname.toLowerCase();
-  for (const prefix of SKIP_PREFIXES) {
-    if (lower.startsWith(prefix)) return null;
-  }
+  if (!isRedirectCandidate(pathname)) return null;
 
   const manifest = await loadManifest(assets);
   if (manifest.length === 0) return null;

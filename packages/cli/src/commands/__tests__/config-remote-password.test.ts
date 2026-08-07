@@ -277,17 +277,82 @@ describe('config remote enable --password', () => {
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
   });
 
-  it('maps a 403 to the requirePasskey message and writes nothing', async () => {
+  // Six unrelated server conditions share HTTP 403 on password-enroll and the
+  // CLI used to render all of them as "requires a passkey". The server sends
+  // them as bare HTTPExceptions with no error code (see
+  // private/account/src/middleware/api-token.ts and routes/configs.ts), so the
+  // message text is the only discriminator; these cases quote it verbatim.
+  const forbiddenCases: { name: string; serverMessage: string; expected: RegExp }[] = [
+    {
+      name: 'the passkey-only store policy',
+      serverMessage: 'This config store requires a passkey; other unlock methods are disabled.',
+      expected: /requires a passkey to unlock config storage/,
+    },
+    {
+      name: 'an api token bound to a different client IP',
+      serverMessage: 'Token is bound to a different IP address',
+      expected: /bound to a different client IP address/,
+    },
+    {
+      name: 'a token missing the config:enroll scope',
+      serverMessage: 'Missing required scope: config:enroll',
+      expected: /does not carry the config:enroll scope/,
+    },
+    {
+      name: 'an archived team',
+      serverMessage: 'Token team is no longer available',
+      expected: /archived or removed/,
+    },
+    {
+      name: 'a token with no user',
+      serverMessage: 'This token has no associated user and cannot enroll a config slot.',
+      expected: /not tied to a user in an organization/,
+    },
+    {
+      name: 'a token with no organization',
+      serverMessage: 'Enroll token has no organization',
+      expected: /not tied to a user in an organization/,
+    },
+  ];
+
+  for (const { name, serverMessage, expected } of forbiddenCases) {
+    it(`maps the 403 for ${name} to its own message and writes nothing`, async () => {
+      mockAccountServerFetch.mockRejectedValue(
+        Object.assign(new Error(serverMessage), { status: 403 })
+      );
+      process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+
+      await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(expected);
+      expect(secureMem.size).toBe(0);
+      expect(tokenMem.size).toBe(0);
+    });
+  }
+
+  it('quotes an unrecognised 403 verbatim rather than guessing', async () => {
     mockAccountServerFetch.mockRejectedValue(
-      Object.assign(new Error('Forbidden'), { status: 403 })
+      Object.assign(new Error('Some future policy said no'), { status: 403 })
+    );
+    process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
+
+    await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
+      /refused the config enrollment: Some future policy said no/
+    );
+    expect(secureMem.size).toBe(0);
+    expect(tokenMem.size).toBe(0);
+  });
+
+  it('prefers an explicit server error code over the message text', async () => {
+    mockAccountServerFetch.mockRejectedValue(
+      Object.assign(new Error('wording the server may change at will'), {
+        status: 403,
+        code: 'REQUIRE_PASSKEY',
+      })
     );
     process.env.REDIACC_CONFIG_PASSWORD = PASSWORD;
 
     await expect(enablePassword(API_URL, CONFIG_NAME)).rejects.toThrow(
       /requires a passkey to unlock config storage/
     );
-    expect(secureMem.size).toBe(0);
-    expect(tokenMem.size).toBe(0);
   });
 
   it('maps a 404 to the "no password slot provisioned" message', async () => {

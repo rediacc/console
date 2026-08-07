@@ -18,7 +18,6 @@ import {
   makeScrollPanSilent,
   makeSilentFreezeMp4,
   muxNarratedSegment,
-  probeDurationSec,
   renderCastToGif,
   trimMp4Duration,
   videoDimensions,
@@ -77,13 +76,18 @@ export function computeCastDurationDry(scene: CastScene, ctx: SceneContext): num
  * Extracting this once means the two paths can never drift apart -- there
  * is only one place this branching logic lives.
  */
+/** Seconds trimmed off the tail of a cast slice when the scene does not say. */
+const DEFAULT_AFTER_TRIM_SEC = 2.5;
+/** Seconds a finished slice holds on its last frame when the scene does not say. */
+const DEFAULT_HOLD_SEC = 0.6;
+
 function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) {
   const startSec = ctx.markers[scene.markerIndex];
   const rawEndSec =
     scene.markerIndex + 1 < ctx.markers.length ? ctx.markers[scene.markerIndex + 1] : ctx.castEnd;
 
   const minSliceDur = 1.0;
-  const trim = scene.afterTrimSec ?? 2.5;
+  const trim = scene.afterTrimSec ?? DEFAULT_AFTER_TRIM_SEC;
 
   // The recording prints a fresh empty prompt after each command finishes (see
   // tutorial-helpers.sh::run_cmd). That prompt is the "command done" cue.
@@ -127,7 +131,7 @@ function computeCastNarratedTiming(scene: CastNarratedScene, ctx: SceneContext) 
   const narration = ctx.narrations.get(narrationKey);
   const audioPath = ctx.narrations.resolvePath(narration.audioSrc);
   const audioDur = narration.audioDurationSec ?? 0;
-  const hold = scene.holdSec ?? 0.6;
+  const hold = scene.holdSec ?? DEFAULT_HOLD_SEC;
   const tailExtra = Math.max(0, audioDur - (hold + mainAnimDur));
 
   // Tall-output detection. If the command output is taller than the recorded
@@ -246,7 +250,7 @@ export function computeCastNarratedDurationDry(
   const t = computeCastNarratedTiming(scene, ctx);
   let durationSec = STEP_CARD_DURATION_SEC + t.mainCoreDuration;
   if (t.afterAudio) {
-    durationSec += t.readPauseSec + (t.afterAudio.audioDurationSec ?? 0);
+    durationSec += t.readPauseSec + t.afterAudio.audioDurationSec;
   }
   const debug: CastNarratedDebug = {
     sceneId: scene.id,
@@ -259,7 +263,7 @@ export function computeCastNarratedDurationDry(
     mainAnimDur: t.mainAnimDur,
     readPauseSec: t.readPauseSec,
     mainAudioDurSec: t.audioDur,
-    afterAudioDurSec: t.afterAudio ? (t.afterAudio.audioDurationSec ?? null) : null,
+    afterAudioDurSec: t.afterAudio ? t.afterAudio.audioDurationSec : null,
     // Not extracted in dry mode (no frames rendered) -- only used for
     // --debug's frame-copy step, which --captions-only does not support.
     lastFramePngSrc: '',
@@ -431,7 +435,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
   const afterMp4 = path.join(ctx.tmp, `${scene.id}.after.mp4`);
   const finalMp4 = path.join(ctx.tmp, `${scene.id}.final.mp4`);
   const afterAudioPath = ctx.narrations.resolvePath(afterAudio.audioSrc);
-  const afterAudioDur = afterAudio.audioDurationSec ?? 0;
+  const afterAudioDur = afterAudio.audioDurationSec;
   extractLastFrame(animSilentFull, lastFrame);
 
   if (useMainPan) {
@@ -484,7 +488,7 @@ export function compileCastNarrated(scene: CastNarratedScene, ctx: SceneContext)
       mainAnimDur,
       readPauseSec,
       mainAudioDurSec: audioDur,
-      afterAudioDurSec: afterAudio.audioDurationSec ?? null,
+      afterAudioDurSec: afterAudio.audioDurationSec,
       lastFramePngSrc: lastFrame,
     });
   }

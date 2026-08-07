@@ -100,9 +100,38 @@ function i18nLocaleConfigs({
       ...jsonBase,
       rules: {
         'json/no-duplicate-keys': 'error',
-        'i18n/no-empty-translations': 'error',
-        'i18n/sorted-keys': 'error',
-        'i18n/key-naming-convention': ['error', {
+        // ---- THE FIVE RULES THAT WERE INERT FROM BIRTH ------------------
+        // Until 2026-08-06 these five read `node.body?.members` on an
+        // @eslint/json Object node, which carries `members` DIRECTLY. They
+        // walked an empty list and COULD NOT REPORT, while sitting at
+        // 'error' the whole time. The access is fixed now (one helper,
+        // eslint-rules/i18n/shared/json-ast.js::objectMembers) and no rule
+        // spells the walk inline any more.
+        //
+        // They are OFF rather than on, and that is a deliberate, reviewable
+        // choice instead of the silent inertness it replaces. Measured the
+        // moment they woke: 7245 findings after excluding the generated hash
+        // sidecars (which were themselves being linted as content - a second
+        // scoping bug this exposed, worth 4265 of an initial 11510).
+        //   no-unused-keys        3773
+        //   sorted-keys           2172
+        //   key-naming-convention 1261
+        //   no-empty-translations   39
+        // None of it is mechanically fixable: sorted-keys declares
+        // `fixable: 'code'` but its fixer DOES NOT CONVERGE - five --fix
+        // passes over packages/cli/src/i18n/locales/en/cli.json left 1589
+        // findings unchanged while rewriting 3930 lines. So a fourth defect
+        // sits inside these rules, and turning them on means auditing
+        // thousands of translation keys by hand, including deletions that
+        // no-unused-keys cannot prove are unused (it sees no dynamic key
+        // construction).
+        //
+        // Turning them on is its own wave, on its own branch, with the
+        // conventions re-decided first: the tree has never conformed to them,
+        // so 'error' was never a tested setting. Tracked, not forgotten.
+        'i18n/no-empty-translations': 'off',
+        'i18n/sorted-keys': 'off',
+        'i18n/key-naming-convention': ['off', {
           keyFormat: 'camelCase',
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
@@ -120,9 +149,9 @@ function i18nLocaleConfigs({
       rules: {
         'i18n/cross-language-consistency': ['error', { localesDir, sourceLanguage: 'en' }],
         'i18n/translation-coverage': ['error', { localesDir, sourceLanguage: 'en', minimumCoverage: 100 }],
-        'i18n/translation-staleness': ['error', { hashFileName: '.translation-hashes.json' }],
+        'i18n/translation-staleness': ['off', { hashFileName: '.translation-hashes.json' }],
         ...(sourceDir && unusedKeyIgnores ? {
-          'i18n/no-unused-keys': ['error', { sourceDir, ignorePatterns: unusedKeyIgnores }],
+          'i18n/no-unused-keys': ['off', { sourceDir, ignorePatterns: unusedKeyIgnores }],
         } : {}),
         // Flags are language-invariant, so this only runs on the en source locale
         // (this block is scoped to `${localesDir}/en/**`). Avoids translation-only
@@ -163,7 +192,6 @@ export default tseslint.config(
       '*.config.js',
       '*.config.ts',
       '*.config.cjs',
-      'packages/cli/bundle.mjs',
       // Ignore .d.ts files (generated type declarations)
       '**/*.d.ts',
       // Ignore generated JS companions for TypeScript source/test files
@@ -171,13 +199,16 @@ export default tseslint.config(
       'packages/*/src/**/*.js.map',
       'packages/*/tests/**/*.js',
       'packages/*/tests/**/*.js.map',
+      // Hash SIDECARS are key->hash maps, not translations. Only www's pair was
+      // excluded (in the per-block ignores far below), so the identical files
+      // under packages/cli and private/account/web were linted as content --
+      // invisible until the five dead i18n rules were repaired on 2026-08-06,
+      // at which point they produced 4008 of the 11510 findings between them.
+      '**/.translation-hashes.json',
+      '**/.naturalized-hashes.json',
       // Ignore www public assets — the search-index-*.json files are large
       // generated artifacts that don't need linting and slow eslint to a crawl.
       'packages/www/public/**',
-      // Ignore custom eslint rules (plain JS)
-      'eslint-rules/**',
-      // Ignore package-level scripts (plain JS utilities)
-      'packages/*/scripts/**',
       // Ignore Playwright report artifacts (generated trace viewer files)
       'packages/e2e-tests/reports/**',
       // Ignore private submodules except account (which has i18n enforcement)
@@ -191,8 +222,6 @@ export default tseslint.config(
       'workers/account/dist/**',
       // Ignore Astro build artifacts
       'packages/www/.astro/**',
-      // Ignore CI scripts (shell scripts linted by shellcheck, JS scripts are github-script glue)
-      '.ci/**',
       // Ignore CLI template files (embedded into the CLI binary, not source code)
       'packages/cli/templates/**',
     ]
@@ -1154,8 +1183,9 @@ export default tseslint.config(
     language: 'json/json',
     rules: {
       'json/no-duplicate-keys': 'error',
-      'i18n/no-empty-translations': 'error',
-      'i18n/sorted-keys': 'error',
+      // see the banner at the top block: inert since birth, now OFF by choice
+      'i18n/no-empty-translations': 'off',
+      'i18n/sorted-keys': 'off',
       'i18n/seo-title-length': ['error', {
         minLength: 30,
         maxLength: 60,
@@ -1182,7 +1212,7 @@ export default tseslint.config(
     language: 'json/json',
     rules: {
       'json/no-duplicate-keys': 'error',
-      'i18n/no-empty-translations': 'error',
+      'i18n/no-empty-translations': 'off',  // see the banner above
       'i18n/no-untranslated-tutorial-transcript-values': ['error', {
         transcriptsDir: 'packages/www/src/data/tutorial-transcripts',
         minLength: 3,
@@ -1287,6 +1317,86 @@ export default tseslint.config(
     rules: {
       'sonarjs/cognitive-complexity': 'off',
     },
+  },
+
+
+  // ---- Node tooling trees: .ci scripts, the repo's own eslint rules, GitHub
+  // Actions glue --------------------------------------------------------------
+  //
+  // These were EXCLUDED rather than configured, and the two ignore comments said
+  // why: "custom eslint rules (plain JS)" and "JS scripts are github-script
+  // glue". The first was a PARSER workaround -- the repo-wide block is type-aware
+  // via projectService, and a file no tsconfig covers fails to PARSE there, which
+  // looks like 45 fatal errors rather than like a missing config. The second
+  // premise is stale: .ci/ holds 7247 lines of JS/TS including the live CI scope
+  // engine, which is not glue.
+  //
+  // Measured before writing this. Lifting the exclusions with NO config gave 385
+  // errors, of which 290 were no-undef (console 108, process 91, module 36,
+  // require 27, setTimeout 8, __dirname 7) and 45 were "not found by the project
+  // service" -- 87% of the total was this block's absence, not defects.
+  // packages/*/scripts/** are the SAME KIND OF THING as scripts/**/*.ts, which
+  // already has this exact relaxation twenty lines up: build and utility scripts
+  // whose stdout IS their interface. They were excluded rather than configured
+  // ("package-level scripts (plain JS utilities)"), and that exclusion was never
+  // a parser workaround -- these files ARE tsconfig-covered and parse fine, which
+  // is why lifting it yields 115 real findings and zero fatals.
+  //
+  // It also hid the gates from themselves: package.json implements TEN check:ci-*
+  // gates out of this tree, among them check:ci-command-planes,
+  // check:ci-tutorial-parity and check:ci-tutorial-casts.
+  {
+    files: ['packages/*/scripts/**/*.{js,cjs,mjs,ts}'],
+    rules: {
+      // stdout is the interface, exactly as for scripts/**/*.ts above.
+      'no-console': 'off',
+      'sonarjs/cognitive-complexity': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/no-negated-condition': 'off',
+      'no-nested-ternary': 'off',
+      'prefer-template': 'off',
+      'no-regex-spaces': 'off',
+    },
+  },
+  {
+    files: [
+      '.ci/**/*.{js,cjs,mjs,ts}',
+      'eslint-rules/**/*.js',
+      '.github/actions/**/*.js',
+      // The bundler and this config itself: root tooling, outside every
+      // tsconfig, and previously ignored outright. The bundler produced only
+      // no-undef on node globals; this file only a parse error. Both are
+      // exactly the two classes the block above exists for.
+      'packages/cli/bundle.mjs',
+      'eslint.config.js',
+    ],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      parser: tseslint.parser,
+      // projectService is explicitly CLEARED. These files are deliberately
+      // outside every tsconfig, so type-aware linting cannot apply to them;
+      // leaving it inherited is what produced the parse errors.
+      parserOptions: { projectService: false, project: false },
+      globals: { ...globals.node, ...globals.es2021 },
+    },
+    rules: {
+      // Type-aware rules cannot run without type information.
+      ...tseslint.configs.disableTypeChecked.rules,
+      // These ARE command-line tools and CI steps. stdout is their interface.
+      'no-console': 'off',
+    },
+  },
+  {
+    // .cjs is CommonJS. require/module/exports are the module system here, not
+    // a legacy habit to lint away -- and the repo-wide block's glob
+    // (**/*.{js,jsx,ts,tsx}) never matched .cjs at all, which is why these files
+    // had no globals and every `process` read as undefined.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { ...globals.node, ...globals.es2021 },
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
 
 );

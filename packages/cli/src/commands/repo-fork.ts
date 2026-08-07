@@ -32,6 +32,7 @@ import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { debugEnabled } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
@@ -217,6 +218,19 @@ interface ForkPlan {
   startedAt: number;
   options: ForkActionOptions;
   lease: MachineConnectionLease;
+  /**
+   * Mount path of the datastore the PARENT is recorded on (#74), undefined for a
+   * repo on a machine's implicit default.
+   *
+   * The parent's datastore, not the fork's, because that is the question renet
+   * is actually asking: `renet repository fork` resolves the parent image under
+   * `--datastore`, and the reflink lands beside it. It reads that flag from the
+   * MACHINE VAULT, never from the params bag, so a caller that stays silent gets
+   * the machine's default docker datastore — and the fork of a repo living in a
+   * named datastore then looks for its parent somewhere the parent has never
+   * been.
+   */
+  datastoreMount?: string;
 }
 
 /** Build the repository_fork params. Compound legs add { up, grand, repo_name }. */
@@ -242,6 +256,7 @@ function executeForkLeg(
     functionName: 'repository_fork',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
+    ...(plan.datastoreMount !== undefined && { datastore: plan.datastoreMount }),
     params,
     debug: plan.options.debug,
     skipRouterRestart: plan.options.skipRouterRestart,
@@ -292,6 +307,11 @@ async function executeUpLeg(plan: ForkPlan, renetSteps: TimelineStep[]): Promise
     functionName: 'repository_up',
     machineName: plan.options.machine,
     ...(plan.options.kubeCluster !== undefined && { kubeCluster: plan.options.kubeCluster }),
+    // Same declaration as the fork leg: the fork lives in the parent's
+    // datastore, and `repository_up` resolves its image from the vault too.
+    // (The standalone `rdc repo up` gets this from executeRepoFunction; this
+    // leg bypasses that path, so it has to say so itself.)
+    ...(plan.datastoreMount !== undefined && { datastore: plan.datastoreMount }),
     params: {
       repository: plan.forkKey,
       mount: true,
@@ -504,6 +524,10 @@ export async function handleForkAction(
     );
     registered = true;
 
+    // Resolved BEFORE the lease: it is a config read, and anything between
+    // acquire() and the try/finally below escapes the release on a throw.
+    const datastoreMount = await recordedDatastoreMount(parent);
+
     // Outer lease: every SSH consumer below (key deploy, fork/up legs,
     // identity refresh, cert sync, service URLs) shares this pooled
     // connection; the last release closes it.
@@ -518,6 +542,7 @@ export async function handleForkAction(
         startedAt,
         options,
         lease,
+        ...(datastoreMount !== undefined && { datastoreMount }),
       });
     } finally {
       lease.release();

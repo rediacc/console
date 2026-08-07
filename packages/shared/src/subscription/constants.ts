@@ -248,6 +248,25 @@ export const RENEWAL_MANIFEST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 export const DELEGATION_RENEW_PATH = '/api/v1/delegation/renew' as const;
 
 /**
+ * API path (relative to the account server's base URL) of the repo-license
+ * self-renewal endpoint. Stamped into every issued license as `renewalUrl` so
+ * the machine renews against the server that issued the blob — cloud, edge, or
+ * on-premise — without carrying any server configuration of its own.
+ */
+export const LICENSE_RENEW_PATH = '/account/api/v1/licenses/renew' as const;
+
+/**
+ * How long a repo license stays valid after its machineId stops matching.
+ * Covers VM migrations that change the hardware fingerprint. Mirrored on the
+ * Go side as `license.MachineIDGracePeriod` (renet
+ * `pkg/license/types.go`); the two MUST agree, because the account server
+ * applies this window when deciding whether to re-bind a renewed license to
+ * the presented machine, and renet applies it when validating the result.
+ */
+export const MACHINE_ID_GRACE_PERIOD_DAYS = 40;
+export const MACHINE_ID_GRACE_PERIOD_MS = MACHINE_ID_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+
+/**
  * Get maximum machines for a plan code.
  * Returns COMMUNITY limit if plan code is invalid.
  */

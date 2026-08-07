@@ -106,6 +106,31 @@ function chainContainsDrizzleBuilder(callee) {
  *   - `Promise.all([chain.get(), ...])` / `Promise.race([...])` / `Promise.allSettled([...])`
  *   - The argument of an awaited call: `await Promise.all([chain.run(), ...])`
  */
+const PROMISE_HANDLERS = ['then', 'catch', 'finally'];
+const PROMISE_COMBINATORS = ['all', 'race', 'allSettled', 'any'];
+
+/** chain.run().then(...) / .catch(...) / .finally(...) */
+function isPromiseHandlerAccess(parent, node) {
+  return (
+    parent.type === 'MemberExpression' &&
+    parent.object === node &&
+    parent.property?.type === 'Identifier' &&
+    PROMISE_HANDLERS.includes(parent.property.name)
+  );
+}
+
+/** Promise.all / Promise.race / Promise.allSettled / Promise.any around an array. */
+function isPromiseCombinatorCall(grand) {
+  return (
+    grand?.type === 'CallExpression' &&
+    grand.callee.type === 'MemberExpression' &&
+    grand.callee.object?.type === 'Identifier' &&
+    grand.callee.object.name === 'Promise' &&
+    grand.callee.property?.type === 'Identifier' &&
+    PROMISE_COMBINATORS.includes(grand.callee.property.name)
+  );
+}
+
 function isSafelyConsumed(node, ancestors) {
   const parent = ancestors[ancestors.length - 1];
   if (!parent) return false;
@@ -113,17 +138,7 @@ function isSafelyConsumed(node, ancestors) {
   // await chain.run()
   if (parent.type === 'AwaitExpression') return true;
 
-  // chain.run().then(...) / .catch(...) / .finally(...)
-  if (
-    parent.type === 'MemberExpression' &&
-    parent.object === node &&
-    parent.property?.type === 'Identifier' &&
-    (parent.property.name === 'then' ||
-      parent.property.name === 'catch' ||
-      parent.property.name === 'finally')
-  ) {
-    return true;
-  }
+  if (isPromiseHandlerAccess(parent, node)) return true;
 
   // return chain.run() — assume the enclosing function is async (and will
   // be linted by the no-floating-promises chain at the caller). If the
@@ -146,29 +161,15 @@ function isSafelyConsumed(node, ancestors) {
   // We walk up to find the nearest CallExpression and check the callee.
   if (parent.type === 'ArrayExpression') {
     // Look for the enclosing call: ArrayExpression -> CallExpression(args)
-    const grand = ancestors[ancestors.length - 2];
-    if (
-      grand?.type === 'CallExpression' &&
-      grand.callee.type === 'MemberExpression' &&
-      grand.callee.object?.type === 'Identifier' &&
-      grand.callee.object.name === 'Promise' &&
-      grand.callee.property?.type === 'Identifier' &&
-      ['all', 'race', 'allSettled', 'any'].includes(grand.callee.property.name)
-    ) {
-      return true;
-    }
-  }
-
-  // Direct argument: `void chain.run()` (intentional fire-and-forget)
-  if (parent.type === 'UnaryExpression' && parent.operator === 'void') {
-    return true;
+    return isPromiseCombinatorCall(ancestors[ancestors.length - 2]);
   }
 
   // Used in a binary/logical expression like `chain.run() || somethingElse`
   // — likely intentional. Defer to no-floating-promises if available.
   // (Don't flag here — too speculative.)
 
-  return false;
+  // Direct argument: `void chain.run()` (intentional fire-and-forget)
+  return parent.type === 'UnaryExpression' && parent.operator === 'void';
 }
 
 /** @type {import('eslint').Rule.RuleModule} */
@@ -183,7 +184,7 @@ export const noUnawaitedDrizzleTerminator = {
     schema: [],
     messages: {
       missingAwait:
-        "Unawaited Drizzle .{{method}}() call. The Database type is async at runtime (D1) — wrap with `await` (or use the dbRun helper for .run()) to avoid silent data loss in production.",
+        'Unawaited Drizzle .{{method}}() call. The Database type is async at runtime (D1) — wrap with `await` (or use the dbRun helper for .run()) to avoid silent data loss in production.',
     },
   },
 

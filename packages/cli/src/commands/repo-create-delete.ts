@@ -16,6 +16,7 @@ import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { formatStepDuration } from '../utils/timeline.js';
@@ -436,6 +437,11 @@ async function handleRepoDelete(
           functionName: 'repository_delete',
           machineName,
           ...(kubeCluster !== undefined && { kubeCluster }),
+          // #74, the asymmetric half: `repository_create` above already declares
+          // the datastore it recorded, and delete said nothing — so a repo created
+          // on a named datastore could not be deleted from it, renet looking for
+          // the image on the machine's default.
+          datastore: await recordedDatastoreMount(target),
           params: { repository: target },
           debug: options.debug,
           skipRouterRestart: options.skipRouterRestart,

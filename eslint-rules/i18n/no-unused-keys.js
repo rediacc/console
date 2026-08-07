@@ -6,6 +6,7 @@
 import path from 'node:path';
 import { extractUsedKeys } from './shared/key-extractor.js';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
 
 /** @type {import('eslint').Rule.RuleModule} */
 export const noUnusedKeys = {
@@ -33,7 +34,8 @@ export const noUnusedKeys = {
       },
     ],
     messages: {
-      unusedKey: 'Translation key "{{key}}" is not used in any source file. See docs/i18n/CONVENTIONS.md.',
+      unusedKey:
+        'Translation key "{{key}}" is not used in any source file. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -45,7 +47,7 @@ export const noUnusedKeys = {
     const absoluteSourceDir = resolveRequiredDirOption(
       'i18n/no-unused-keys',
       'sourceDir',
-      options.sourceDir,
+      options.sourceDir
     );
 
     // Get namespace from filename
@@ -74,7 +76,7 @@ export const noUnusedKeys = {
 
       // Check if this is a parent of a used key
       for (const usedKey of usedKeys) {
-        if (usedKey.startsWith(key + '.')) {
+        if (usedKey.startsWith(`${key}.`)) {
           return true;
         }
       }
@@ -97,20 +99,13 @@ export const noUnusedKeys = {
     const flattenKeys = (node, prefix = '') => {
       const keys = [];
 
-      if (!node || node.type !== 'Object') return keys;
-
-      const members = node.body?.members || [];
-
-      for (const member of members) {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
 
-        const key = member.name?.type === 'String'
-          ? member.name.value
-          : member.name?.name;
-
+        const key = memberKey(member);
         if (!key) continue;
 
-        const fullPath = prefix ? `${prefix}.${key}` : key;
+        const fullPath = joinPath(prefix, key);
 
         if (member.value?.type === 'Object') {
           // Recursively check nested objects

@@ -25,6 +25,11 @@ import type {
 import type { LiveSession } from './browser-session.ts';
 import type { ChunkProducer, SceneContext } from './index.ts';
 
+/** Ceiling (and default) for how long a click waits for its target. */
+const CLICK_TIMEOUT_MS = 5000;
+/** Per-keystroke delay that makes typing legible on video. */
+const TYPE_DELAY_MS = 70;
+
 /**
  * Environment for storyboard-driven host commands (setupCommand,
  * teardownCommand, urlFromCommand). npm/npx prepends node_modules/.bin to
@@ -48,7 +53,7 @@ export function hostCommandEnv(): NodeJS.ProcessEnv {
  * values produce baffling recordings.
  */
 export function substituteEnv(value: string): string {
-  return value.replace(/\$\{([A-Z0-9_]+)\}/g, (_, name: string) => {
+  return value.replaceAll(/\$\{([A-Z0-9_]+)\}/g, (_, name: string) => {
     const v = process.env[name];
     if (v === undefined) {
       throw new Error(`browser scene references \${${name}} but it is not set in the environment`);
@@ -123,7 +128,7 @@ async function showClickIndicator(page: Page, target: Locator, timeoutMs: number
   await page
     .evaluate(
       ([cx, cy]) => {
-        let dot = document.getElementById('__tut_cursor') as HTMLElement | null;
+        let dot = document.getElementById('__tut_cursor');
         if (!dot) {
           dot = document.createElement('div');
           dot.id = '__tut_cursor';
@@ -189,7 +194,7 @@ export async function runActions(
     // Selector scope: the page itself, or — when the action targets UI
     // docked inside an iframe — that frame.
     const scope: Page | FrameLocator = action.frame
-      ? page.frameLocator(substituteEnv(action.frame)).first()
+      ? page.locator(substituteEnv(action.frame)).first().contentFrame()
       : page;
     if (action.wait) await page.waitForTimeout(action.wait);
     if (action.waitForSelector) {
@@ -233,7 +238,11 @@ export async function runActions(
       const click = typeof action.click === 'string' ? { selector: action.click } : action.click;
       const target = scope.locator(substituteEnv(click.selector));
       if (showClicks) {
-        await showClickIndicator(page, target, Math.min(click.timeoutMs ?? 5000, 5000));
+        await showClickIndicator(
+          page,
+          target,
+          Math.min(click.timeoutMs ?? CLICK_TIMEOUT_MS, CLICK_TIMEOUT_MS)
+        );
       }
       await target
         .first()
@@ -256,7 +265,7 @@ export async function runActions(
           .catch(() => undefined);
       }
       await page.keyboard.type(substituteEnv(action.type.text), {
-        delay: action.type.delayMs ?? 70,
+        delay: action.type.delayMs ?? TYPE_DELAY_MS,
       });
     }
     if (action.press) {

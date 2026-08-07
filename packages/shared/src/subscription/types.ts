@@ -126,6 +126,19 @@ export interface RepoLicense {
   maxRepositorySizeGb: number;
   luksUuid?: string;
   storageFingerprint?: string;
+  /**
+   * Identity of the datastore the repo lives in. Validated by renet exactly
+   * like luksUuid/storageFingerprint, so a same-node fork (which mints its own
+   * datastore identity) fails closed and re-meters on first touch.
+   */
+  datastoreId?: string;
+  /**
+   * Absolute URL of the issuing server's `POST /licenses/renew` endpoint. The
+   * server self-describes so renet — which holds no account credentials and
+   * knows no server address — can renew using the blob itself as the bearer.
+   * Absent on blobs issued before self-renewal existed.
+   */
+  renewalUrl?: string;
   issuedAt: string;
   refreshRecommendedAt: string;
   hardExpiresAt: string;

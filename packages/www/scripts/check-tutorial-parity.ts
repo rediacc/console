@@ -85,6 +85,9 @@ const SHORT_FLAG_LONG: Record<string, string> = {
 // use the long form. Standard shell tools (ssh, ssh-keygen, ls, cat, …) are exempt.
 // Returns the first offending flag, or null. `cmd` may be a recorded cast marker
 // or a card.commandFull string.
+/** What to suggest for a short flag with no known long spelling. */
+const LONG_FORM_SUGGESTION = 'the long form';
+
 function rdcShortFlagViolation(cmd: string): { flag: string; suggestion: string } | null {
   const tokens = cmd.trim().split(/\s+/);
   // Skip harmless leading wrappers (`timeout 2s rdc …`, `sudo rdc …`).
@@ -103,12 +106,12 @@ function rdcShortFlagViolation(cmd: string): { flag: string; suggestion: string 
     // but still hold `-c` itself to the placeholder rule first.
     if (tokens[j] === '--command') break;
     if (/^-[a-z]$/.test(tokens[j])) {
-      const value = tokens[j + 1];
-      if (value && value.startsWith('<')) {
+      const value = tokens.at(j + 1);
+      if (value?.startsWith('<')) {
         if (tokens[j] === '-c') break;
         continue; // placeholder self-documents the flag
       }
-      return { flag: tokens[j], suggestion: SHORT_FLAG_LONG[tokens[j]] ?? 'the long form' };
+      return { flag: tokens[j], suggestion: SHORT_FLAG_LONG[tokens[j]] ?? LONG_FORM_SUGGESTION };
     }
   }
   return null;
@@ -155,7 +158,7 @@ interface TranscriptDoc {
   title?: string;
   chapters?: Record<string, string>;
   events?: TranscriptEvent[];
-  narrations?: Array<{ id: string; text: string }>;
+  narrations?: { id: string; text: string }[];
 }
 
 function listStoryboards(): string[] {
@@ -209,7 +212,6 @@ function checkTutorial(slug: string, issues: Issue[]): void {
   // 4. Each markerIndex valid + unique
   const markerIndices = new Set<number>();
   for (const scene of castNarrated) {
-    if (scene.type !== 'cast-narrated') continue;
     if (markerIndices.has(scene.markerIndex)) {
       push(sbPath, `duplicate markerIndex ${scene.markerIndex} in cast-narrated scenes`);
     }
@@ -226,7 +228,6 @@ function checkTutorial(slug: string, issues: Issue[]): void {
   // copy-pasteable command rendered on the web page), and its command path must
   // match the recorded cast marker so the page can't silently drift from the video.
   for (const scene of castNarrated) {
-    if (scene.type !== 'cast-narrated') continue;
     const full = scene.card?.commandFull;
     if (!isAuthored(full)) {
       push(
@@ -235,8 +236,10 @@ function checkTutorial(slug: string, issues: Issue[]): void {
       );
       continue;
     }
-    const markerEvent = labeledMarkers[scene.markerIndex];
-    const recorded = typeof markerEvent?.[2] === 'string' ? (markerEvent[2] as string) : '';
+    // markerIndex is validated above but an out-of-range one only REPORTS; the
+    // loop keeps going, so this lookup really can miss.
+    const markerEvent = labeledMarkers.at(scene.markerIndex);
+    const recorded = typeof markerEvent?.[2] === 'string' ? markerEvent[2] : '';
     if (recorded && commandPath(full) !== commandPath(recorded)) {
       push(
         sbPath,
@@ -285,7 +288,7 @@ function checkTutorial(slug: string, issues: Issue[]): void {
     }
   }
   if (Array.isArray(trRaw.events)) {
-    for (const ev of trRaw.events as Array<Record<string, unknown>>) {
+    for (const ev of trRaw.events as Record<string, unknown>[]) {
       for (const key of Object.keys(ev)) {
         if (!PRESERVED_EVENT_KEYS.has(key)) {
           push(
@@ -432,8 +435,7 @@ function applyBaseline(issues: Issue[], baseline: Baseline): { live: Issue[]; de
     const entry = issue.drift ? baseline[issue.drift.key] : undefined;
     if (
       issue.drift &&
-      entry &&
-      entry.commandFull === issue.drift.commandFull &&
+      entry?.commandFull === issue.drift.commandFull &&
       entry.recorded === issue.drift.recorded
     ) {
       matched.add(issue.drift.key);

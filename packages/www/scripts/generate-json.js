@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
@@ -45,18 +45,10 @@ function shouldSkipTemplate(templatePath, skipList) {
   return skipList.includes(templatePath);
 }
 
-// Escape string for JSON
-function jsonEscape(str) {
-  if (!str) return '';
-  return str
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"')
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t');
-}
-
 // Get file type based on extension
+/** Content type reported for an extension the map does not name. */
+const DEFAULT_FILE_TYPE = 'text';
+
 function getFileType(filename) {
   const ext = path.extname(filename).toLowerCase().slice(1);
   const typeMap = {
@@ -68,7 +60,7 @@ function getFileType(filename) {
     env: 'environment',
     dockerfile: 'dockerfile',
   };
-  return typeMap[ext] || 'text';
+  return typeMap[ext] ?? DEFAULT_FILE_TYPE;
 }
 
 // Extract template metadata from README
@@ -83,7 +75,7 @@ function extractTemplateMetadata(templateDir) {
     const content = fs.readFileSync(readmePath, 'utf-8');
 
     // Extract title (first header)
-    const titleMatch = content.match(/^#[^#]\s*(.+)$/m);
+    const titleMatch = /^#[^#]\s*(.+)$/m.exec(content);
     if (titleMatch) {
       title = titleMatch[1].trim();
     }
@@ -92,7 +84,7 @@ function extractTemplateMetadata(templateDir) {
     const lines = content.split('\n');
     let foundTitle = false;
     for (const line of lines) {
-      if (line.match(/^#[^#]/)) {
+      if (/^#[^#]/.exec(line)) {
         foundTitle = true;
         continue;
       }
@@ -132,7 +124,7 @@ function generateTemplateJson(templateDir, outputFile) {
     id: templateId,
     name: metadata.title,
     description: metadata.description,
-    category: category,
+    category,
     tags: [category, templateName],
     files: [],
     readme: readFileContent(path.join(templateDir, 'README.md')),
@@ -156,7 +148,7 @@ function generateTemplateJson(templateDir, outputFile) {
       name: filename,
       path: `${templateName}/${filename}`,
       type: getFileType(filename),
-      content: content,
+      content,
     });
   }
 
@@ -220,19 +212,19 @@ function generateCatalogJson(templatesDir, outputFile, skipList) {
         id: templateId,
         name: metadata.title,
         description: metadata.description,
-        category: category,
+        category,
         tags: [category, templateName],
         file_count: fileCount,
         has_readme: hasReadme,
         has_docker: hasDocker,
-        status: status,
+        status,
         download_url: `templates/${templateId}.json`,
         readme: readFileContent(path.join(templateDir, 'README.md')),
       });
     }
   }
 
-  catalog.categories = Array.from(categoriesSet).sort();
+  catalog.categories = Array.from(categoriesSet).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
   // Write catalog JSON
   fs.writeFileSync(outputFile, JSON.stringify(catalog, null, 2));
@@ -323,7 +315,7 @@ function minifyJsonFiles(outputDir) {
 }
 
 // Main function
-async function main() {
+function main() {
   console.log('========================================');
   console.log('JSON Config Generator (Node.js)');
   console.log('========================================');
@@ -435,7 +427,9 @@ async function main() {
 }
 
 // Run
-main().catch((error) => {
+try {
+  main();
+} catch (error) {
   console.error('Generation failed:', error);
   process.exit(1);
-});
+}

@@ -21,8 +21,10 @@ export interface OutroScene {
 export interface CastScene {
   id: string;
   type: 'cast';
-  from: 'start' | string;
-  to: 'end' | string;
+  /** A marker label, or the sentinel `'start'`. */
+  from: string;
+  /** A marker label, or the sentinel `'end'`. */
+  to: string;
 }
 export interface CastFreezeScene {
   id: string;
@@ -195,7 +197,11 @@ export type Scene =
   | BrowserSplitScene;
 
 export interface Storyboard {
-  version: 1;
+  /**
+   * Storyboard schema version. NOT the literal `1`: this comes off disk, and
+   * typing it `1` makes the guard in `readStoryboard` read as dead code.
+   */
+  version: number;
   tutorial: string;
   /**
    * Optional shell commands run by generate-tutorial-video around scene
@@ -269,7 +275,7 @@ export function resolveCastEndpoint(
   if (typeof ref === 'number') return ref;
   if (ref === 'start') return 0;
   if (ref === 'end') return castEndSec;
-  const m = ref.match(/^marker-(\d+)$/);
+  const m = /^marker-(\d+)$/.exec(ref);
   if (!m) throw new Error(`Unparseable cast endpoint: ${ref}`);
   const idx = Number(m[1]);
   if (idx < 0 || idx >= markers.length)

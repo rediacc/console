@@ -9,14 +9,14 @@ interface NarrationEntry {
 }
 
 interface Timeline {
-  steps?: Array<{
+  steps?: {
     id: string;
     audioSrc: string;
     audioDurationSec?: number;
     narrationText?: string;
     afterAudioSrc?: string;
     afterAudioDurationSec?: number;
-  }>;
+  }[];
   narrationAudio?: NarrationEntry[];
 }
 

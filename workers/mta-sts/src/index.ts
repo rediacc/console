@@ -37,7 +37,9 @@ max_age: 604800
 `;
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  // Synchronous: the policy body is a module constant, so there is nothing to
+  // await. workerd accepts `Response | Promise<Response>` from fetch handlers.
+  fetch(request: Request): Response {
     const url = new URL(request.url);
     if (url.pathname === '/.well-known/mta-sts.txt') {
       return new Response(POLICY, {

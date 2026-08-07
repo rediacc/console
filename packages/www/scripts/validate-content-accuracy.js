@@ -145,7 +145,7 @@ function validateRdcCommands(commands, errors, rule) {
 
     // Skip if the command position has angle-bracket placeholder (e.g. "rdc --flag <command>")
     const firstNonFlag = tokens.slice(1).find((t) => !t.startsWith('-'));
-    if (firstNonFlag && firstNonFlag.startsWith('<')) continue;
+    if (firstNonFlag?.startsWith('<')) continue;
 
     // Allow commands that exist but aren't in the command tree export
     const rootCmd = tokens.find((t) => !t.startsWith('-') && t !== 'rdc');
@@ -160,6 +160,9 @@ function validateRdcCommands(commands, errors, rule) {
   }
 }
 
+/** Stand-in when the CLI parser rejects a command without naming a reason. */
+const UNKNOWN_REASON = 'unknown';
+
 function formatParseError(parsed) {
   switch (parsed.reason) {
     case 'unknown-global-option':
@@ -169,7 +172,7 @@ function formatParseError(parsed) {
     case 'unknown-option':
       return `Unknown option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
-      return `Invalid command (${parsed.reason || 'unknown'})`;
+      return `Invalid command (${parsed.reason ?? UNKNOWN_REASON})`;
   }
 }
 

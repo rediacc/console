@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: pt
-sourceHash: "bac2903bdb56e7df"
-sourceCommit: "433347c5ea4754300fe3da80c4bfcee42dd161bc"
+sourceHash: "4e7aa81c81aef1e9"
+sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
 # Assinatura e Licenciamento
@@ -43,7 +43,7 @@ O fluxo normal é assim:
 4. `rdc` escreve a licença assinada na máquina
 5. A licença é validada localmente na máquina e a operação continua
 
-Veja [rdc vs renet](/en/docs/rdc-vs-renet) para a divisão estação de trabalho versus servidor, e [Repositories](/en/docs/repositories) para o ciclo de vida do repositório em si.
+Veja [rdc vs renet](/pt/docs/rdc-vs-renet) para a divisão estação de trabalho versus servidor, e [Repositories](/pt/docs/repositories) para o ciclo de vida do repositório em si.
 
 Para automação e agentes de IA, use um token de assinatura com escopo em vez de login pelo navegador:
 
@@ -64,27 +64,59 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 O rastreamento de slots de máquina é aplicado do lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura. Todo plano self-service (Community, Professional, Business) inclui um slot de máquina; implantações multi-máquina são uma configuração Enterprise dimensionada junto com nossos parceiros. Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Como um slot só fica retido enquanto você está provisionando ativamente, um único slot ainda pode cobrir várias máquinas ao longo de um mês.
 
+O teto é lido do registo da sua assinatura, e não de uma constante fixa do plano, por isso um número de ativações negociado passa a valer assim que é definido na assinatura. O nível do plano apenas decide o valor inicial.
+
+A emissão e a renovação são aplicadas de forma diferente, e essa diferença importa:
+
+- **A emissão de uma nova licença é bloqueada no teto.** Se todos os slots estiverem ocupados, o pedido falha com `MAX_MACHINES_REACHED` e nada é provisionado.
+- **A renovação de uma licença existente nunca é bloqueada.** Uma máquina que renova enquanto todos os slots estão ocupados continua a funcionar e o seu slot fica registado como acima do limite. Pode ver isso no portal, na página Machines, em `rdc subscription status` e no campo `overLimitCount` da API de estado de licenças. A marca desaparece sozinha assim que a máquina volta a caber dentro do limite.
+
+A renovação é deliberadamente o caminho mais brando. Uma máquina que renova uma licença que já detém não é capacidade nova, e recusá-la pararia backups em infraestrutura que já foi paga. O que continua bloqueado é acrescentar capacidade.
+
 Nenhum arquivo de licença de máquina é armazenado na máquina. A aplicação de slots acontece no momento da emissão no servidor.
 
 ### Licença de repositório
 
-Uma licença de repositório é uma licença assinada para um repositório em uma máquina. É o único arquivo de licença armazenado na máquina, organizado por chave de assinatura:
+Uma licença de repositório é uma licença assinada para um repositório em uma máquina. É o único arquivo de licença armazenado na máquina, organizado por datastore e por chave de assinatura:
 
-    /var/lib/rediacc/license/repos/{guid}/{keyId}.json
+```
+/var/lib/rediacc/license/repos/{guid}/{keyId}.json
+/var/lib/rediacc/license/datastores/{datastoreId}/repos/{guid}/{keyId}.json
+```
+
+Os repositórios no armazenamento predefinido de uma máquina usam o primeiro caminho. Os repositórios num datastore com nome usam o segundo, onde `{datastoreId}` é a identidade que esse datastore recebeu quando foi criado. É esse enquadramento que faz um fork de datastore contabilizar honestamente: um datastore forkado recebe uma identidade totalmente nova, por isso os seus repositórios começam sem nenhuma licença, reportam `missing` na primeira operação licenciada e recebem as suas próprias licenças. Um repositório cuja licença aponta para um datastore diferente daquele onde está falha de imediato com `identity_mismatch` em vez de ser reemitida automaticamente, e é isso que impede que um ficheiro de licença seja copiado de lado.
 
 `{keyId}` é uma impressão digital de 16 caracteres hexadecimais (os primeiros 8 bytes de `SHA-256` da chave pública Ed25519 do servidor de assinatura). Um repositório gerido por mais de um universo de conta (por exemplo, produção e bench a implantar na mesma máquina) mantém um ficheiro por chave de assinatura sob o seu diretório `{guid}`. A compilação renet da máquina valida apenas o ficheiro que a sua chave incorporada, ou um certificado de delegação encadeado a ela, consegue verificar; os ficheiros de outros universos ficam inertes. Trocar de universo nunca invalida licenças: a primeira operação num novo universo emite a licença desse universo uma vez (um resultado `missing` emite automaticamente), e ambos coexistem depois disso.
 
 É utilizada para:
 
-- `rdc repo create` e `rdc repo fork`, validada antes do provisionamento (pré-emitida sem provas de identidade, depois re-emitida com provas de identidade após criação)
-- `rdc repo resize` e `rdc repo expand`, validação completa incluindo expiração
-- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validada com **expiração pulada**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **totalmente validada, incluindo expiração**: a transferência de backup exige um direito de uso ativo
-- autostart de repositório no reinício da máquina, validada com **expiração pulada**
+- `rdc repo create`, `rdc repo fork` e `rdc repo commit`, validadas antes do provisionamento (pré-emitidas sem provas de identidade e depois reemitidas com provas de identidade após a criação, porque o repositório ainda não existe no momento da verificação)
+- `rdc repo resize`, `rdc repo expand`, `rdc repo merge` e `rdc repo promote`, **totalmente validadas, incluindo expiração**
+- transferência de backup, **totalmente validada, incluindo expiração**: `rdc repo push`, `rdc repo pull`, `rdc repo migrate` e backups agendados
+- `rdc repo up`, `rdc repo up --all`, `rdc repo exec` e o autostart de repositórios no reinício da máquina, validados com **a expiração e a janela do certificado de delegação ambas ignoradas**
+- `rdc repo down`, `rdc repo delete` e comandos apenas de leitura, como listar repositórios, não precisam de licença nenhuma
+
+Assinaturas, vinculação de chave, vinculação de máquina, vinculação de repositório e todas as restrições do certificado de delegação são impostas em todos estes casos. O que o último grupo dispensa são apenas as duas janelas de tempo, para que uma licença expirada ou um certificado caducado nunca o impeçam de executar ou desligar os seus próprios dados.
 
 Licenças de repositório são vinculadas à máquina e ao repositório de destino. Cada licença contém o ID da máquina, GUID do repositório, ID da assinatura, limites de plano e expiração. Para repositórios criptografados, o Rediacc também verifica a identidade LUKS do volume subjacente.
 
 Múltiplas assinaturas podem coexistir na mesma máquina. Cada repositório carrega sua própria licença com seu próprio contexto de assinatura.
+
+## Clusters
+
+O clustering é vendido através dos nossos parceiros como parte de um acordo Enterprise. Não é uma opção de plano self-service, e as secções abaixo descrevem como é contabilizado, não como comprá-lo.
+
+**Um Nó é uma máquina.** Um Cluster não tem identidade de licenciamento própria. Cada Nó dentro dele é uma máquina comum com o Renet Agent instalado, e conta exatamente como uma máquina isolada.
+
+**Não há agrupamento.** Um Cluster de cinco Nós não consome um único slot de Cluster partilhado. Cada Nó reclama o seu próprio slot na primeira vez que um repositório é colocado nele, e esse slot segue o mesmo modelo flutuante de 5 horas de qualquer outro: fica retido durante 5 horas a contar da última emissão de licença de repositório nesse Nó e liberta-se sozinho depois disso.
+
+**Construir o Cluster é gratuito. O que conta é colocar repositórios.** Criar o Cluster, juntar Nós, instalar a camada de armazenamento distribuído e levantar o control plane do Kubernetes não custam nenhum slot. A contabilização começa quando um repositório aterra num Nó.
+
+**Um fork de Cluster volta a contabilizar repositório a repositório.** Fazer fork de um Cluster inteiro dá ao datastore forkado uma identidade nova, por isso cada repositório do fork recebe a sua própria licença na primeira vez que é tocado, seja qual for o Nó onde está a correr. A migração simples é o caso oposto: mover um repositório entre máquinas leva a licença consigo e continua a validar, porque nada mudou na identidade do seu armazenamento.
+
+**A renovação num Cluster segue a regra branda descrita acima.** Os Nós renovam as suas próprias licenças sem supervisão, por isso um Cluster que cresceu para além do seu número de ativações continua a funcionar e reporta os Nós acima do limite, em vez de falhar backups a meio da noite. Acrescentar um Nó novo continua a ser bloqueado no teto.
+
+Dimensionar um Cluster é uma conversa, não uma caixa a assinalar. Os números de ativações para Clusters são acordados na encomenda, e o seu parceiro define-os diretamente na assinatura. Veja [Contacto](/pt/contact) para começar essa conversa.
 
 ## Limites Padrão
 
@@ -102,7 +134,7 @@ Os limites padrão para planos pagos são:
 | Business | 1 | 500 GB | 5.000+ | 90d / 180d |
 | Enterprise | Personalizado | 1 TB+ | 15.000+ | 120d / 365d |
 
-Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/en/docs/license-chain) para as regras completas.
+Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/pt/docs/license-chain) para as regras completas.
 
 ## Teste Gratuito e o Retorno ao Community
 
@@ -110,7 +142,12 @@ Novas contas começam um teste gratuito de 14 dias no plano Professional ou Busi
 
 Community é o piso gratuito permanente. Ele não é mais uma opção de cadastro direta para novas contas; em vez disso, uma conta cai para o Community sempre que uma assinatura termina: cancelamento durante o teste, cancelamento de um plano pago depois, ou um pagamento que falhou. No Community de fallback você mantém uma máquina com 10 GB por repositório e 100 configurações por mês. Contas criadas antes do lançamento do modelo baseado em teste mantêm o acesso Community que já tinham.
 
-A aplicação continua branda onde mais importa: repositórios em execução (`up`, `down`, `delete`, autostart) continuam funcionando mesmo depois que uma assinatura termina. Já o trabalho novo (criar, fazer fork, redimensionar e renovar a licença) e a transferência de backup (`push`, `pull`, `sync`) são bloqueados sem um direito de uso ativo.
+A aplicação continua branda onde mais importa: repositórios em execução (`up`, `down`, `delete`, autostart) continuam funcionando mesmo depois que uma assinatura termina. Para além disso, aplicam-se duas regras diferentes, e confundi-las é o que faz a graça de 60 dias parecer inconsistente:
+
+- **As operações que precisam do servidor de conta** não acontecem sem uma assinatura ativa, porque o servidor recusa-se a assinar. São elas `create`, `fork` e qualquer atualização ou renovação de licença. Nada de novo é provisionado depois de a assinatura caducar.
+- **As operações que só precisam de uma licença instalada válida** continuam a funcionar até essa licença atingir a expiração dura, sem qualquer servidor pelo meio. São elas `resize` e `expand` em repositórios que já tem, e a transferência de backup (`push`, `pull`, backups agendados). A licença principal de um repositório atinge a expiração dura 60 dias depois da data de fim da assinatura, que é de onde vem a graça de 60 dias. A licença de um fork é bem mais curta, limitada a 7 dias, e é por isso que máquinas com muitos forks dependem da auto-renovação descrita abaixo.
+
+Ou seja, uma assinatura caducada impede-o de imediato de aumentar a sua frota, e 60 dias depois impede-o de aumentar os repositórios que estão nela.
 
 ## Período de Graça de Migração de VM
 
@@ -208,7 +245,59 @@ No primeiro uso, uma operação de repositório licenciado ou backup que não en
 
 Em ambientes não interativos, a CLI não aguarda aprovação do navegador. Em vez disso, ela informa para você fornecer um token com escopo usando `rdc subscription login --token ...` ou `REDIACC_TOKEN`.
 
-Para configuração inicial de máquina, veja [Machine Setup](/en/docs/setup).
+Para configuração inicial de máquina, veja [Machine Setup](/pt/docs/setup).
+
+## Auto-Renovação de Licenças
+
+Tudo o que ficou dito acima parte do princípio de que está sentado ao teclado. Os backups agendados não estão, e é para esse caso que existe a auto-renovação.
+
+Um backup agendado valida no nível estrito, por isso precisa de uma licença que não tenha expirado. E a licença de um fork está limitada a 7 dias. As suas máquinas não guardam credenciais de conta, por definição de desenho, portanto antes da auto-renovação o backup de um fork simplesmente parava uma semana depois de o fork ser criado, em silêncio, às três da manhã.
+
+### Como uma máquina renova sem guardar um token
+
+Cada licença que o Rediacc emite ou renova transporta um `renewalUrl`, o endereço completo do endpoint de renovação no servidor de conta que a assinou. A máquina lê esse endereço a partir da licença que tem instalada, por isso nunca precisa que lhe digam onde está o seu servidor de conta.
+
+Depois, a máquina apresenta a licença instalada a esse endpoint. A licença é a sua própria credencial: está assinada, o servidor verifica essa assinatura, e não há nenhum token de API envolvido em ponto algum. O servidor devolve uma licença nova com novas janelas de validade, e a máquina instala-a e volta a validá-la antes de dar a renovação por concluída.
+
+A renovação é uma operação para a máquina inteira:
+
+```bash
+sudo renet license renew
+```
+
+Os repositórios são agrupados pelo servidor que os assinou, por isso uma máquina que serve dois universos de conta contacta cada um deles uma vez. Um ficheiro de bloqueio impede que duas renovações corram ao mesmo tempo, e o `--jitter` espalha uma frota de máquinas que, de outra forma, acordariam todas à hora certa.
+
+O servidor recusa uma renovação em três casos, e cada um significa uma coisa diferente:
+
+| Recusa | O que significa |
+|---|---|
+| A assinatura caducou, está suspensa ou passou o período de graça | Faturação. A renovação recomeça sozinha assim que a assinatura voltar a estar ativa |
+| O certificado de delegação está expirado ou revogado | Configuração on-premise. Renove o certificado no seu servidor on-premise e as máquinas voltam a renovar normalmente |
+| A identidade da máquina já não corresponde e a graça de 40 dias passou | A licença pertence a uma máquina que esta não é. Reemita a partir do contexto da máquina atual |
+
+Uma recusa nunca trava a execução inteira. Um repositório caducado não impede a renovação dos restantes na mesma máquina.
+
+### Os backups agendados renovam-se sozinhos
+
+Cada unidade de backup que o Rediacc escreve corre primeiro uma renovação:
+
+```
+ExecStartPre=-<renet> license renew --jitter 45s
+```
+
+O `-` inicial marca-a como melhor esforço, e é de propósito. Uma renovação recusada, uma falha momentânea de rede ou um Renet Agent mais antigo que ainda não conhece o comando nunca podem levar o backup atrás. O backup corre, e a licença é renovada pelo caminho sempre que for possível.
+
+### Quando um backup é bloqueado
+
+Se o licenciamento chegar mesmo a recusar um backup, a máquina regista esse facto. Essa marca é o único sinal de que os backups não supervisionados deixaram de copiar dados, por isso é mostrada bem à vista:
+
+```bash
+rdc machine status <machine> --licenses
+```
+
+A coluna `backups` mostra `BLOCKED` com o motivo, e a mesma informação é impressa por baixo da tabela como erro, para não se perder no meio de trinta repositórios. A coluna `renewed` mostra como correu a última renovação não supervisionada, incluindo o código de recusa do servidor quando houve um, e é isso que lhe diz se o que tem em mãos é uma questão de faturação ou uma questão de certificado on-premise.
+
+Uma renovação bem-sucedida limpa a marca, tal como um backup que passa a sua verificação de licença. Não há nada para confirmar ou repor à mão.
 
 ## Comportamento Offline e Expiração
 
@@ -219,7 +308,7 @@ Isso significa:
 - um ambiente em execução não precisa de conectividade de conta ativa em cada comando
 - todos os repositórios sempre podem iniciar, parar e ser deletados mesmo com licenças expiradas, os usuários nunca são bloqueados de operar seus próprios repositórios
 - operações de provisionamento (`create`, `fork`) requerem uma licença de repositório pré-emitida, e operações de crescimento (`resize`, `expand`) requerem uma licença de repositório válida
-- licenças de repositório verdadeiramente expiradas devem ser atualizadas através de `rdc` antes de redimensionamento/expansão
+- licenças de repositório verdadeiramente expiradas têm de ser substituídas antes de redimensionamento/expansão, seja através de `rdc` a partir da sua estação de trabalho, seja pela própria máquina a renovar-se
 - assinaturas de licença são verificadas contra uma chave pública incorporada, verificação de assinatura não pode ser desabilitada
 
 ## Comportamento de Recuperação
@@ -238,6 +327,11 @@ A recuperação automática é intencionalmente restrita:
 
 Esses casos de falha rápida não consomem automaticamente chamadas de atualização ou emissão respaldadas por conta.
 
+Duas notas sobre como ler esta lista:
+
+- `missing` nem sempre é um problema. É também o resultado normal da primeira vez que um repositório é tocado dentro de um datastore acabado de forkar, e é exatamente o que faz esse fork contabilizar: a licença é emitida, um slot é reclamado e a operação continua. `identity_mismatch` é o oposto deliberado, para que um ficheiro de licença copiado de outro datastore falhe de imediato em vez de ser reemitido em silêncio.
+- Esta lista descreve a recuperação a partir da sua estação de trabalho. Uma máquina que se renova a si própria tem os seus próprios desfechos, reportados por `rdc machine status <machine> --licenses` em vez de levantados como falha de comando, porque um backup agendado não tem a quem contar.
+
 ## Certificados de Delegação para On-Premise
 
 Para implantações on-premise e isoladas de ar, isso fica complexo. O servidor de conta upstream emite um **certificado de delegação** que autoriza sua instalação on-premise a assinar licenças com sua própria chave Ed25519. Isso o restringe aos limites do seu plano e cria uma cadeia à prova de adulteração.
@@ -250,7 +344,7 @@ Pontos principais para proprietários de assinatura:
 - **Auto-renovação** é suportada via um bootstrap de um clique que emite um token de api com escopo `delegation:renew` para on-premise usar para chamadas de renovação upstream.
 - **Renovação isolada de ar** é suportada via um manifesto de solicitação de renovação assinado que o admin on-premise baixa, transfere offline para upstream, e upstream processa para emitir um novo certificado.
 
-Veja [On-Premise Installation - Licensing for Air-Gapped Deployments](/en/docs/on-premise) para a configuração operacional, e [License Chain & Delegation](/en/docs/license-chain) para o design criptográfico.
+Veja [On-Premise Installation - Licensing for Air-Gapped Deployments](/pt/docs/on-premise) para a configuração operacional, e [License Chain & Delegation](/pt/docs/license-chain) para o design criptográfico.
 
 ## Emissões Mensais de Licenças de Repositório
 

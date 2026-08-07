@@ -184,7 +184,37 @@ collect_dead_paths() {
     done < <(scan_targets) | sort -u
 }
 
+# The scan must be WHOLE before an empty result means anything. Every
+# assertion here reads an empty `dead` list as "no dead paths", so a scan that
+# silently walked a fraction of the tree hands back a clean bill of health from
+# an instrument that barely ran.
+#
+# THIS IS NOT HYPOTHETICAL. Inside a full 168-gate `npm run ci` on 2026-08-05
+# this suite finished in 90.6s against 210-231s whenever it was healthy, and
+# its own planted-defect control -- which writes a fixture naming a workspace
+# that has never existed and asserts the detector reports it -- came back
+# EMPTY. Alone, in a 2-gate batch, in a 3-gate batch and in a re-run of the
+# exact 4-gate batch that failed, it passed every time. The signal was never a
+# co-running gate; it was DURATION, i.e. the walk terminating around 40% of
+# the way through under whatever pressure a full fleet applies.
+#
+# The floor converts that silent truncation into a loud refusal. It is set
+# well under the ~283 files the three legs yield today (86 + 24 + 173) so
+# ordinary churn never trips it, and far above the handful a truncated walk
+# would return.
+SCAN_FLOOR="${GATE_PATHS_SCAN_FLOOR:-150}"
+
+assert_scan_is_whole() {
+    local n
+    n="$(scan_targets | wc -l)"
+    if ((n < SCAN_FLOOR)); then
+        log_fail "scan_targets yielded only $n file(s), floor $SCAN_FLOOR: the walk TRUNCATED, so an empty finding list here would be a false clean bill rather than a clean tree"
+    fi
+    log_pass "the scan is whole ($n files, floor $SCAN_FLOOR)"
+}
+
 test_no_dead_path_constants() {
+    assert_scan_is_whole
     local dead
     dead="$(collect_dead_paths)"
     if [[ -n "$dead" ]]; then
@@ -204,6 +234,12 @@ test_detector_fires_on_a_deleted_workspace() {
     trap "rm -f '$fixture'" RETURN
     printf 'const p = "packages/definitely-not-a-workspace/src/index.ts";\n' >"$fixture"
 
+    # Guard the CONTROL too, and for the sharper reason: this is the case that
+    # actually failed under load. Without the floor its failure message was
+    # "not in ''", which reads as "the detector is broken" when the truth was
+    # "the walk never reached the fixture". Diagnosing the wrong thing cost a
+    # full bisect across four batch shapes.
+    assert_scan_is_whole
     local dead
     dead="$(collect_dead_paths)"
     assert_contains "$dead" "packages/definitely-not-a-workspace" \
@@ -230,9 +266,63 @@ test_detector_ignores_runtime_and_glob_paths() {
     log_pass "runtime-built paths, globs and comments are ignored"
 }
 
+# ---------------------------------------------------------------------------
+# Same failure class, one level up: an `include` GLOB that resolves to nothing.
+#
+# A dead path constant and a dead include pattern fail identically -- both
+# produce an empty set that every downstream check reports a checkmark over.
+# scripts/tsconfig.json is the live example. It sat in the tree from creation
+# until 2026-08-05 covering 70 files that nothing type-checked, and when it was
+# finally run it produced 512 errors, ~99% of them artifacts of its own stale
+# settings. A config that LOOKS like coverage is worse than no config, because
+# it answers the question "is this tree type-checked?" with a yes.
+#
+# It now also carries `.ci/scripts/**/*.ts`, which has no other config anywhere.
+# That tree is a single file today, so a glob edit that quietly dropped it would
+# cost exactly one file and would be invisible in any error count. Hence naming
+# a known file from EACH tree rather than only counting.
+#
+# --listFilesOnly resolves the includes without type-checking (~1.7s). This is
+# deliberately a COVERAGE assertion, not the type-check itself: wiring
+# `tsc -p scripts/tsconfig.json` into check:types is a package.json edit and is
+# the operator's call, not this gate's.
+# ---------------------------------------------------------------------------
+test_scripts_tsconfig_covers_both_tooling_trees() {
+    local cfg="$REPO_ROOT/scripts/tsconfig.json"
+    [[ -f "$cfg" ]] || log_fail "scripts/tsconfig.json is gone; the tooling trees have no type-check target at all"
+
+    local listed
+    if ! listed="$(cd "$REPO_ROOT" && npx tsc -p scripts/tsconfig.json --listFilesOnly 2>/dev/null)"; then
+        log_fail "could not resolve scripts/tsconfig.json's file list; a config that cannot be loaded checks nothing"
+    fi
+    # CONTROL: an unresolvable or empty include would also produce a quiet pass
+    # below if we only grepped for absence, so assert the list is non-trivial
+    # first.
+    # Anchored at REPO_ROOT: an unanchored "/scripts/" also matches
+    # packages/www/scripts/, which allowJs pulls in, and would inflate the count
+    # with files this config is not responsible for.
+    local n_scripts n_ci
+    n_scripts="$(grep -c "^${REPO_ROOT}/scripts/.*\.ts$" <<<"$listed" || true)"
+    n_ci="$(grep -c "^${REPO_ROOT}/\.ci/scripts/.*\.ts$" <<<"$listed" || true)"
+    if [[ "$n_scripts" -lt 10 ]]; then
+        log_fail "scripts/tsconfig.json resolves only $n_scripts file(s) under scripts/; the include glob has gone empty or near-empty"
+    fi
+    if [[ "$n_ci" -lt 1 ]]; then
+        log_fail "scripts/tsconfig.json resolves NO file under .ci/scripts/; that tree has no other tsconfig, so it is now unchecked by anything"
+    fi
+    # And name one known file per tree, so a glob narrowed to a subdirectory
+    # still fails even while the counts stay healthy.
+    assert_contains "$listed" "/scripts/check-cli-docs.ts" \
+        "a known scripts/ file must be in the resolved set"
+    assert_contains "$listed" "/.ci/scripts/test/smoke-test-preview.ts" \
+        "the only .ci/scripts/ TypeScript file must be in the resolved set"
+    log_pass "scripts/tsconfig.json covers both tooling trees ($n_scripts under scripts/, $n_ci under .ci/scripts/)"
+}
+
 log_test "test-gate-paths-exist"
 test_detector_fires_on_a_deleted_workspace
 test_detector_ignores_runtime_and_glob_paths
 test_no_dead_path_constants
+test_scripts_tsconfig_covers_both_tooling_trees
 echo ""
 log_pass "all tests passed"

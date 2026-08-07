@@ -133,7 +133,7 @@ function registerList(storage: Command, program: Command): void {
         }
 
         const storages = await configService.listStorages();
-        if (storages.length === 0) {
+        if (storages.length === 0 && format === 'table') {
           outputService.info(t('commands.storage.list.noStorages'));
           return;
         }

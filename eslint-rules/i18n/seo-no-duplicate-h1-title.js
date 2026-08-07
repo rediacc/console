@@ -8,6 +8,24 @@
  * must not be a substring of the title (after stripping brand suffixes like " | Rediacc").
  */
 
+import { memberKey, objectMembers, joinPath } from './shared/json-ast.js';
+
+/**
+ * The String node of an object's `title` member, or null. Last one wins, as
+ * the original inline loop did -- duplicate keys are json/no-duplicate-keys'
+ * problem, not this rule's.
+ */
+const findTitleString = (objNode) => {
+  let found = null;
+  for (const sub of objectMembers(objNode)) {
+    if (sub.type !== 'Member') continue;
+    if (memberKey(sub) === 'title' && sub.value?.type === 'String') {
+      found = sub.value;
+    }
+  }
+  return found;
+};
+
 /** @type {import('eslint').Rule.RuleModule} */
 export const seoNoDuplicateH1Title = {
   meta: {
@@ -68,65 +86,68 @@ export const seoNoDuplicateH1Title = {
      * Walk the JSON tree, collecting hero.title and meta.title pairs within
      * each page section, then comparing them.
      */
+    /**
+     * Record the hero/meta title carried by one subobject, if it is one.
+     */
+    const captureTitles = (found, key, value, fullPath) => {
+      if (key === 'hero') {
+        const title = findTitleString(value);
+        if (title) {
+          found.heroTitle = title.value;
+          found.heroTitleNode = title;
+        }
+        return;
+      }
+
+      if (key === 'meta') {
+        const title = findTitleString(value);
+        if (title) {
+          found.metaTitle = title.value;
+          found.metaTitleKey = `${fullPath}.title`;
+        }
+      }
+    };
+
+    /** If both titles exist at this level, compare them. */
+    const reportIfDuplicate = (found, path) => {
+      if (!found.heroTitle || !found.metaTitle || !found.heroTitleNode) return;
+      if (isExempt(path)) return;
+
+      const cleanedTitle = stripBrand(found.metaTitle);
+      const cleanedH1 = found.heroTitle.trim().toLowerCase();
+      if (cleanedH1 !== cleanedTitle) return;
+
+      context.report({
+        node: found.heroTitleNode,
+        messageId: 'duplicate',
+        data: { h1: found.heroTitle, titleKey: found.metaTitleKey },
+      });
+    };
+
     const collectAndCheck = (node, path = '') => {
-      if (!node || node.type !== 'Object') return;
+      const found = {
+        heroTitle: null,
+        heroTitleNode: null,
+        metaTitle: null,
+        metaTitleKey: null,
+      };
 
-      let heroTitle = null;
-      let heroTitleNode = null;
-      let metaTitle = null;
-      let metaTitleKey = null;
-
-      for (const member of node.members || []) {
+      for (const member of objectMembers(node)) {
         if (member.type !== 'Member') continue;
 
-        const key =
-          member.name?.type === 'String' ? member.name.value : member.name?.name;
-        if (!key) continue;
-
-        const fullPath = path ? `${path}.${key}` : key;
+        const key = memberKey(member);
         const value = member.value;
-        if (!value) continue;
+        if (!key || !value || value.type !== 'Object') continue;
 
-        if (value.type === 'Object') {
-          // Check if this is the "hero" or "meta" subobject
-          if (key === 'hero') {
-            for (const sub of value.members || []) {
-              if (sub.type !== 'Member') continue;
-              const subKey = sub.name?.type === 'String' ? sub.name.value : sub.name?.name;
-              if (subKey === 'title' && sub.value?.type === 'String') {
-                heroTitle = sub.value.value;
-                heroTitleNode = sub.value;
-              }
-            }
-          } else if (key === 'meta') {
-            for (const sub of value.members || []) {
-              if (sub.type !== 'Member') continue;
-              const subKey = sub.name?.type === 'String' ? sub.name.value : sub.name?.name;
-              if (subKey === 'title' && sub.value?.type === 'String') {
-                metaTitle = sub.value.value;
-                metaTitleKey = `${fullPath}.title`;
-              }
-            }
-          }
+        const fullPath = joinPath(path, key);
+        // Check if this is the "hero" or "meta" subobject
+        captureTitles(found, key, value, fullPath);
 
-          // Always recurse
-          collectAndCheck(value, fullPath);
-        }
+        // Always recurse
+        collectAndCheck(value, fullPath);
       }
 
-      // If both exist at this level, compare them
-      if (heroTitle && metaTitle && heroTitleNode && !isExempt(path)) {
-        const cleanedTitle = stripBrand(metaTitle);
-        const cleanedH1 = heroTitle.trim().toLowerCase();
-
-        if (cleanedH1 === cleanedTitle) {
-          context.report({
-            node: heroTitleNode,
-            messageId: 'duplicate',
-            data: { h1: heroTitle, titleKey: metaTitleKey },
-          });
-        }
-      }
+      reportIfDuplicate(found, path);
     };
 
     return {

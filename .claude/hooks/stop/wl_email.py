@@ -52,6 +52,7 @@ SAFETY PROPERTIES, in the order they bite:
     failure-path fixture.
 """
 
+import contextlib
 import fcntl
 import hashlib
 import hmac
@@ -131,11 +132,7 @@ def read_ledger(worklist):
 
 
 def _newest_age_min(rows, ev):
-    ages = [
-        C.stamp_age_min(str(r.get("at", "")))
-        for r in rows
-        if r.get("ev") == ev
-    ]
+    ages = [C.stamp_age_min(str(r.get("at", ""))) for r in rows if r.get("ev") == ev]
     ages = [a for a in ages if a is not None]
     return min(ages) if ages else None
 
@@ -145,6 +142,7 @@ def sent_keys(rows):
 
 
 # ---- credentials -----------------------------------------------------------
+
 
 def credentials(root):
     """(cfg, path). cfg is None when the channel is not configured.
@@ -160,8 +158,8 @@ def credentials(root):
     vals = {}
     try:
         with open(p, encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                line = line.strip()
+            for raw_line in fh:
+                line = raw_line.strip()
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 k, _, v = line.partition("=")
@@ -184,26 +182,28 @@ def credentials(root):
 
 # ---- transport -------------------------------------------------------------
 
-_curl_probe = None
+# A one-slot cache rather than a module global rebound through `global`. Same
+# once-per-process semantics, but the name is only ever READ at module scope,
+# so nothing else can silently rebind the probe out from under a caller.
+_CURL_PROBE = {}
 
 
 def curl_usable():
     """True when curl exists and is new enough for --aws-sigv4. Probed ONCE
     per process: the hook may call send() several times in a run, and a
     subprocess per call to ask the same question is pure latency."""
-    global _curl_probe
-    if _curl_probe is None:
-        _curl_probe = False
+    if "ok" not in _CURL_PROBE:
+        _CURL_PROBE["ok"] = False
         try:
             r = subprocess.run(
-                ["curl", "--version"], capture_output=True, text=True, timeout=5
+                ["curl", "--version"], capture_output=True, text=True, timeout=5, check=False
             )
             m = CURL_VERSION_RE.match((r.stdout or "").strip())
             if r.returncode == 0 and m:
-                _curl_probe = (int(m.group(1)), int(m.group(2))) >= CURL_MIN
+                _CURL_PROBE["ok"] = (int(m.group(1)), int(m.group(2))) >= CURL_MIN
         except (OSError, subprocess.SubprocessError, ValueError):
-            _curl_probe = False
-    return _curl_probe
+            _CURL_PROBE["ok"] = False
+    return _CURL_PROBE["ok"]
 
 
 def payload_for(cfg, subject, body):
@@ -228,7 +228,7 @@ def _send_file(transport, blob):
     The directory is NOT created: a missing one is the failure-path fixture."""
     d = transport.split(":", 1)[1]
     try:
-        fd, p = tempfile.mkstemp(dir=d, prefix="mail-", suffix=".json")
+        fd, _path = tempfile.mkstemp(dir=d, prefix="mail-", suffix=".json")
         with os.fdopen(fd, "wb") as f:
             f.write(blob)
     except OSError as exc:
@@ -253,13 +253,23 @@ def _send_curl(cfg, blob):
         bfd, btmp = tempfile.mkstemp(prefix="wl-mail-resp-", suffix=".json")
         os.close(bfd)
         cmd = [
-            "curl", "-sS", "-X", "POST", endpoint(cfg["region"]),
-            "--aws-sigv4", "aws:amz:%s:ses" % cfg["region"],
-            "-H", "Content-Type: application/json",
-            "--data", "@" + tmp,
-            "-K", "-",
-            "-o", btmp,
-            "-w", "%{http_code}",
+            "curl",
+            "-sS",
+            "-X",
+            "POST",
+            endpoint(cfg["region"]),
+            "--aws-sigv4",
+            "aws:amz:%s:ses" % cfg["region"],
+            "-H",
+            "Content-Type: application/json",
+            "--data",
+            "@" + tmp,
+            "-K",
+            "-",
+            "-o",
+            btmp,
+            "-w",
+            "%{http_code}",
         ]
         r = subprocess.run(
             cmd,
@@ -267,16 +277,16 @@ def _send_curl(cfg, blob):
             capture_output=True,
             text=True,
             timeout=SEND_TIMEOUT_S,
+            check=False,
         )
         try:
-            resp_body = open(btmp, "r", encoding="utf-8", errors="replace").read(200)
+            with open(btmp, encoding="utf-8", errors="replace") as bf:
+                resp_body = bf.read(200)
         except OSError:
             resp_body = ""
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(btmp)
-            except OSError:
-                pass
         code = (r.stdout or "").strip()[-3:]
         if r.returncode != 0:
             return "curl exit %d: %s" % (r.returncode, (r.stderr or "")[:160])
@@ -286,10 +296,8 @@ def _send_curl(cfg, blob):
         return "curl: %s: %s" % (type(exc).__name__, str(exc)[:160])
     finally:
         if tmp:
-            try:
+            with contextlib.suppress(OSError):
                 os.unlink(tmp)
-            except OSError:
-                pass
     return ""
 
 
@@ -336,13 +344,23 @@ def sigv4_headers(cfg, blob, host, path, service="ses"):
 
 def _send_urllib(cfg, blob):
     url = endpoint(cfg["region"])
+    # endpoint() hard-codes the https:// prefix, so this cannot fail today. It
+    # is here because urlopen honours file:// and every other scheme urllib
+    # knows, and the day someone makes the endpoint configurable this guard is
+    # the difference between a config typo and reading a local file.
+    if not url.startswith("https://"):
+        return "refusing a non-https SES endpoint: %s" % url[:80]
     host = "email.%s.amazonaws.com" % cfg["region"]
-    req = urllib.request.Request(
-        url, data=blob, method="POST",
+    req = urllib.request.Request(  # noqa: S310 -- scheme is asserted https above
+        url,
+        data=blob,
+        method="POST",
         headers=sigv4_headers(cfg, blob, host, "/v2/email/outbound-emails"),
     )
     try:
-        with urllib.request.urlopen(req, timeout=SEND_TIMEOUT_S) as resp:
+        with urllib.request.urlopen(  # noqa: S310 -- scheme is asserted https above
+            req, timeout=SEND_TIMEOUT_S
+        ) as resp:
             if resp.status // 100 != 2:
                 return "SES HTTP %s" % resp.status
     except urllib.error.HTTPError as exc:
@@ -353,7 +371,7 @@ def _send_urllib(cfg, blob):
 
 
 def send(cfg, subject, body):
-    """"" on success, a short error string on failure. Never raises."""
+    """ "" on success, a short error string on failure. Never raises."""
     blob = json.dumps(payload_for(cfg, subject, body)).encode("utf-8")
     transport = os.environ.get("WORKLIST_EMAIL_TRANSPORT", "")
     if transport.startswith("file:"):
@@ -364,6 +382,7 @@ def send(cfg, subject, body):
 
 
 # ---- candidates and the digest ---------------------------------------------
+
 
 def candidates(worklist, fold):
     """[(key, kind, text)] for everything the operator has not been mailed
@@ -442,6 +461,7 @@ def digest(me8, root, rows):
 
 # ---- the pump --------------------------------------------------------------
 
+
 def pump(root, worklist, session_id, fold):
     """Send at most one digest, return the note that rides the stop report.
 
@@ -453,7 +473,7 @@ def pump(root, worklist, session_id, fold):
     Called from run_stop AFTER the poll fast path has exited, so a 5-minute
     no-op poll never pays for reading the ledger, let alone for a subprocess.
     """
-    import worklist_messages as M
+    import worklist_messages as M  # noqa: PLC0415 -- lazy on purpose: see the docstring above; a no-op poll must not pay for the catalogue
 
     if DISABLED:
         return ""
@@ -470,10 +490,8 @@ def pump(root, worklist, session_id, fold):
         marker = unconfigured_marker(worklist, session_id)
         if marker.exists():
             return ""
-        try:
+        with contextlib.suppress(OSError):
             marker.write_text(C.stamp_now(), encoding="utf-8")
-        except OSError:
-            pass
         return M.N_EMAIL_UNCONFIGURED % (env_path, len(rows))
     ledger = read_ledger(worklist)
     already = sent_keys(ledger)
@@ -503,10 +521,8 @@ def pump(root, worklist, session_id, fold):
             warn = unconfigured_marker(worklist, session_id).with_suffix(".failwarned")
             if warn.exists():
                 return ""
-            try:
+            with contextlib.suppress(OSError):
                 warn.write_text(C.stamp_now(), encoding="utf-8")
-            except OSError:
-                pass
             last_err = next(
                 (str(r.get("err", "")) for r in reversed(ledger) if r.get("ev") == "fail"),
                 "?",
@@ -535,23 +551,20 @@ def pump(root, worklist, session_id, fold):
         if err:
             # keyid (last 6 of the access key) makes the failure attributable
             # to a CREDENTIAL: fresh credentials re-arm the skipped channel.
-            payloads = [{"ev": "fail", "at": stamp, "err": err[:300], "by": me8,
-                         "keyid": cfg["key"][-6:]}]
+            payloads = [
+                {"ev": "fail", "at": stamp, "err": err[:300], "by": me8, "keyid": cfg["key"][-6:]}
+            ]
         else:
             payloads = [
                 {"ev": "sent", "at": stamp, "kind": kind, "key": key, "by": me8}
                 for key, kind, _t in rows
             ]
         with open(ledger_path(worklist), "a", encoding="utf-8") as f:
-            f.write(
-                "".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads)
-            )
+            f.write("".join(json.dumps(p, separators=(",", ":")) + "\n" for p in payloads))
     if err:
         return M.N_EMAIL_FAIL % (len(rows), err[:300], RETRY_MIN)
     # A success clears the one-per-session skip warning so a LATER failure
     # with different credentials can warn again.
-    try:
+    with contextlib.suppress(OSError):
         unconfigured_marker(worklist, session_id).with_suffix(".failwarned").unlink()
-    except OSError:
-        pass
     return M.N_EMAIL_SENT % (len(rows), cfg["to"], COOLDOWN_MIN)

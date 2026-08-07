@@ -80,6 +80,24 @@ CHAIN_STATE="$LICENSE_ROOT/chain-state.json"
 REPO_PREFIX="license-e2e"
 CHAIN_GUID="1ce1ce2e-0000-0000-0000-000000000001"
 
+# Wave-2 scenarios. All of these go through `repository license-status`, the
+# only modeFull vehicle that needs no real repo, so they need GUID-shaped names.
+#
+# FORK_GUID is deliberately ONE guid used in TWO datastores: a datastore fork
+# does not remint repository GUIDs, so a same-node fork really does put two live
+# repos with the same guid on one host. That collision is the thing the
+# datastore-scoped license store exists to survive.
+FORK_GUID="1ce1ce2e-0000-0000-0000-000000000002"
+SEQ_GUID_A="1ce1ce2e-0000-0000-0000-00000000000a"
+SEQ_GUID_B="1ce1ce2e-0000-0000-0000-00000000000b"
+FP_GUID="1ce1ce2e-0000-0000-0000-00000000000f"
+
+# Datastore identities. UUID-shaped because that is what `datastore create`
+# mints and what the store's path-segment guard accepts.
+PARENT_DS_ID="aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa"
+FORK_DS_ID="bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb"
+DATASTORE_LICENSE_ROOT="$LICENSE_ROOT/datastores"
+
 # The attribution line renet logs ONLY after a license validates
 # (runtime_licensed.go:77). Its presence is the positive proof that the real
 # validator ran and succeeded — a nolicense stub never emits it.
@@ -105,7 +123,9 @@ cleanup() {
     if [[ $LICENSE_ROOT_PREEXISTED -eq 0 ]]; then
         $SUDO rm -rf "$LICENSE_ROOT"
     else
-        $SUDO rm -rf "$REPO_LICENSE_ROOT/$REPO_PREFIX"-* "$REPO_LICENSE_ROOT/$CHAIN_GUID"
+        $SUDO rm -rf "$REPO_LICENSE_ROOT/$REPO_PREFIX"-* "$REPO_LICENSE_ROOT/$CHAIN_GUID" \
+            "$REPO_LICENSE_ROOT/$SEQ_GUID_A" "$REPO_LICENSE_ROOT/$SEQ_GUID_B" "$REPO_LICENSE_ROOT/$FP_GUID"
+        $SUDO rm -rf "${DATASTORE_LICENSE_ROOT:?}/$PARENT_DS_ID" "${DATASTORE_LICENSE_ROOT:?}/$FORK_DS_ID"
         if [[ -n "$CHAIN_STATE_BACKUP" && -f "$CHAIN_STATE_BACKUP" ]]; then
             $SUDO cp -p "$CHAIN_STATE_BACKUP" "$CHAIN_STATE"
         else
@@ -203,6 +223,42 @@ install_license() {
     # other repo's contents.
     $SUDO chmod a+rX "$LICENSE_ROOT" "$REPO_LICENSE_ROOT"
     $SUDO chmod -R a+rX "$REPO_LICENSE_ROOT/$repo"
+}
+
+# install_scoped_license <datastore-id> <repo-guid> — installs the staged blob
+# into the DATASTORE-SCOPED population,
+# /var/lib/rediacc/license/datastores/<dsId>/repos/<guid>/.
+#
+# Repos in an identified datastore read ONLY this population; the legacy
+# unscoped repos/<guid>/ is deliberately not consulted for them. That clean
+# break is what makes a fork's first touch report `missing` instead of finding
+# and validating the parent's blob.
+install_scoped_license() {
+    local ds_id="$1" repo="$2"
+    local dir="$DATASTORE_LICENSE_ROOT/$ds_id/repos/$repo"
+    $SUDO rm -rf "${dir:?}"
+    $SUDO mkdir -p "$dir"
+    $SUDO cp "$WORK"/stage/*.json "$dir/"
+    $SUDO chmod a+rX "$LICENSE_ROOT" "$DATASTORE_LICENSE_ROOT" \
+        "$DATASTORE_LICENSE_ROOT/$ds_id" "$DATASTORE_LICENSE_ROOT/$ds_id/repos"
+    $SUDO chmod -R a+rX "$dir"
+}
+
+# describe_datastore <path> <datastore-id> — writes the on-datastore descriptor
+# that gives a datastore its identity. Written by hand rather than by
+# `datastore create` because create wants real block storage; the descriptor is
+# a plain JSON file on the datastore's own filesystem, which is exactly why the
+# identity survives a migrate and is overwritten by a fork.
+describe_datastore() {
+    local path="$1" ds_id="$2"
+    mkdir -p "$path/.rediacc" "$path/repositories"
+    cat >"$path/.rediacc/datastore.json" <<EOF
+{
+  "name": "license-e2e",
+  "datastoreId": "$ds_id",
+  "backend": "local"
+}
+EOF
 }
 
 install_fixtures() {
@@ -308,13 +364,27 @@ assert_accepted() {
     record_pass "$id" "accepted (exit $RENET_CODE at '$tail')"
 }
 
-# license_status <binary> — the only modeFull vehicle that needs no real repo.
-# It reads <datastore>/repositories/<guid> (an empty directory is enough) and
-# runs the full validation including chain state. Runs privileged because
-# validateBlob persists chain state under $LICENSE_ROOT.
+# license_status <binary> [datastore-path] — the only modeFull vehicle that
+# needs no real repo. It reads <datastore>/repositories/<guid> (an empty
+# directory is enough) and runs the full validation including chain state and
+# the datastore-identity comparison. Runs privileged because validateBlob
+# persists chain state under $LICENSE_ROOT.
 license_status() {
-    $SUDO "$1" repository license-status --datastore "$WORK/ds-chain" --output json 2>"$WORK/stderr.txt" |
+    local bin="$1" ds="${2:-$WORK/ds-chain}"
+    $SUDO "$bin" repository license-status --datastore "$ds" --output json 2>"$WORK/stderr.txt" |
         jq -r '.[0].status'
+}
+
+# assert_status <id> <expected-status> <binary> <datastore-path> <description>
+assert_status() {
+    local id="$1" want="$2" bin="$3" ds="$4" description="$5"
+    local seen
+    seen="$(license_status "$bin" "$ds" || true)"
+    if [[ "$seen" != "$want" ]]; then
+        record_fail "$id" "$description: expected status '$want', got '$seen'"
+        return
+    fi
+    record_pass "$id" "$description (status=$want)"
 }
 
 # ---------------------------------------------------------------------------
@@ -382,6 +452,93 @@ run_battery() {
         record_pass S6b "sequence 1 refused after sequence 2 (sequence_regression)"
     fi
 
+    # ------------------------------------------------------------------
+    # S8 — FORK METERING through the datastore-scoped license store.
+    #
+    # A same-node `datastore fork` clones a datastore, and the clone's repos
+    # keep their GUIDs. Under the old flat store, parent and fork shared ONE
+    # license file per guid, so the fork's repos went on validating under the
+    # parent's licenses and never metered (and reissuing for one clobbered the
+    # other, forever). Scoping the store by DATASTORE IDENTITY is what closes
+    # that, and metering rides the existing `missing` path rather than a new
+    # failure reason.
+    # ------------------------------------------------------------------
+    mint "$FORK_GUID" -datastore-id "$PARENT_DS_ID"
+    install_scoped_license "$PARENT_DS_ID" "$FORK_GUID"
+    assert_status S8a valid "$bin" "$WORK/ds-parent" \
+        "a repo in the parent datastore validates under the parent's scope"
+
+    # The fork: SAME repo guid, datastore identity reminted. Its scope is empty,
+    # so validation reports `missing`, which the CLI already auto-recovers by
+    # reissuing. That reissue IS the metering event.
+    assert_status S8b missing "$bin" "$WORK/ds-fork" \
+        "the same guid in the FORKED datastore finds no license and must re-meter"
+
+    # Issuance for the fork lands in the fork's own scope, bound to the fork's
+    # identity.
+    mint "$FORK_GUID" -datastore-id "$FORK_DS_ID"
+    install_scoped_license "$FORK_DS_ID" "$FORK_GUID"
+    assert_status S8c valid "$bin" "$WORK/ds-fork" \
+        "a license issued for the fork validates in the fork"
+
+    # And the parent is untouched by any of it: no clobber, no flap.
+    assert_status S8d valid "$bin" "$WORK/ds-parent" \
+        "the parent's license survived the fork's issuance"
+
+    # The tamper case the scoping alone cannot see: hand-copying the PARENT's
+    # blob into the FORK's scoped directory. The payload's datastoreId defeats
+    # it, as identity_mismatch — which is fail-fast in the CLI, never
+    # auto-reissued, exactly as an anti-tamper signal should be.
+    mint "$FORK_GUID" -datastore-id "$PARENT_DS_ID"
+    install_scoped_license "$FORK_DS_ID" "$FORK_GUID"
+    assert_status S8e identity_mismatch "$bin" "$WORK/ds-fork" \
+        "a license copied from the parent into the fork is refused as tampering"
+
+    # ------------------------------------------------------------------
+    # S9 — PER-REPOSITORY chain scope. The server's sequence counter is per
+    # SUBSCRIPTION, so two repos under one subscription carry interleaved
+    # sequence numbers out of one ledger. With the chain head keyed only by
+    # (keyId, subscriptionId), validating repo B recorded B's higher sequence as
+    # THE head and the next validation of repo A was refused as
+    # sequence_regression. Live symptom: a backup on one repo kills backups on
+    # every other repo of the machine. A -> B -> A is the exact repro.
+    # ------------------------------------------------------------------
+    mint "$SEQ_GUID_A" -sequence 5 -chain-hash -subscription "$REPO_PREFIX-multi"
+    install_license "$SEQ_GUID_A"
+    mint "$SEQ_GUID_B" -sequence 9 -chain-hash -subscription "$REPO_PREFIX-multi"
+    install_license "$SEQ_GUID_B"
+
+    assert_status S9a valid "$bin" "$WORK/ds-seq-a" "repo A (sequence 5) validates"
+    assert_status S9b valid "$bin" "$WORK/ds-seq-b" "repo B (sequence 9) validates"
+    assert_status S9c valid "$bin" "$WORK/ds-seq-a" \
+        "repo A still validates after repo B advanced the subscription ledger"
+
+    # Replay protection WITHIN a repo is unchanged: rolling repo A back to an
+    # older sequence is still refused. Without this the scope change would have
+    # traded a false positive for a real hole.
+    mint "$SEQ_GUID_A" -sequence 2 -chain-hash -subscription "$REPO_PREFIX-multi"
+    install_license "$SEQ_GUID_A"
+    assert_status S9d sequence_regression "$bin" "$WORK/ds-seq-a" \
+        "rolling repo A back to an older sequence is still refused"
+
+    # ------------------------------------------------------------------
+    # S10 — the storage fingerprint actually FIRES. Minting and checking used to
+    # be two hand-written format strings that could never be equal
+    # ("dir:<size>:<mtime>:<mode>" minted, "<modeString>:<size>:<mtime>"
+    # checked), so this identity proof silently did nothing for its whole life.
+    # It is one shared function now, and `-storage-fingerprint auto:` calls that
+    # very function, so a re-introduced skew reds S10a.
+    # ------------------------------------------------------------------
+    mint "$FP_GUID" -storage-fingerprint "auto:$WORK/ds-fp/repositories/$FP_GUID"
+    install_license "$FP_GUID"
+    assert_status S10a valid "$bin" "$WORK/ds-fp" \
+        "a fingerprint minted by the shared helper is recognised by the validator"
+
+    mint "$FP_GUID" -storage-fingerprint "dir:1:2:3"
+    install_license "$FP_GUID"
+    assert_status S10b identity_mismatch "$bin" "$WORK/ds-fp" \
+        "a stale fingerprint is refused (the check is live, not dormant)"
+
     # S7 — a license minted for a different machine, past the 40-day grace.
     assert_rejected S7 machine_mismatch "${create[@]}" "$REPO_PREFIX-wrong-machine"
 
@@ -421,6 +578,18 @@ preflight
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/license-e2e.XXXXXX")"
 mkdir -p "$WORK/ds" "$WORK/ds-chain/repositories/$CHAIN_GUID"
+# S9/S10 use PLAIN datastores (no descriptor), so their repos stay in the legacy
+# unscoped population — the implicit-default case, which must keep behaving
+# exactly as it did.
+mkdir -p "$WORK/ds-seq-a/repositories/$SEQ_GUID_A" \
+    "$WORK/ds-seq-b/repositories/$SEQ_GUID_B" \
+    "$WORK/ds-fp/repositories/$FP_GUID"
+# S8 uses two datastores that DO carry identities: a parent and its fork. The
+# same repo guid lives in both, which is what a same-node datastore fork really
+# produces.
+describe_datastore "$WORK/ds-parent" "$PARENT_DS_ID"
+describe_datastore "$WORK/ds-fork" "$FORK_DS_ID"
+mkdir -p "$WORK/ds-parent/repositories/$FORK_GUID" "$WORK/ds-fork/repositories/$FORK_GUID"
 
 [[ -d "$LICENSE_ROOT" ]] && LICENSE_ROOT_PREEXISTED=1
 if [[ $LICENSE_ROOT_PREEXISTED -eq 1 && -f "$CHAIN_STATE" ]]; then

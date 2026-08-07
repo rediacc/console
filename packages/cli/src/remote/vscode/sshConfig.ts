@@ -185,8 +185,12 @@ interface AddMachineSSHConfigOptions {
  * needing to go through the VS Code flow first.
  * IdentityFile and UserKnownHostsFile are intentionally omitted here;
  * the VS Code connect flow adds them via its own `addSSHConfigEntry` call.
+ *
+ * Returns the file it wrote, so callers can report the real path instead of
+ * guessing at `~/.ssh/config_rediacc` (under WSL getSSHHome resolves to the
+ * WINDOWS home, so that guess is wrong).
  */
-export function addMachineSSHConfigEntry(opts: AddMachineSSHConfigOptions): void {
+export function addMachineSSHConfigEntry(opts: AddMachineSSHConfigOptions): string {
   const hostName = generateConnectionName(opts.teamName ?? '', opts.machineName);
   const setEnv: Record<string, string> = {
     REDIACC_MACHINE: opts.machineName,
@@ -202,6 +206,7 @@ export function addMachineSSHConfigEntry(opts: AddMachineSSHConfigOptions): void
     userKnownHostsFile: '',
     setEnv,
   });
+  return getSSHConfigPath();
 }
 
 /**
