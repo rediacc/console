@@ -73,6 +73,7 @@
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
+    "check:ci-timeout-headroom": ".ci/scripts/quality/check_job_timeout_headroom.py",
     "check:ci-i18n-value-types": ".ci/scripts/quality/check_i18n_value_types.py",
     "check:ci-lint-rule-liveness": ".ci/scripts/quality/check_lint_rule_liveness.py",
     "check:ci-lint-scope-coverage": ".ci/scripts/quality/check_lint_scope_coverage.py",
