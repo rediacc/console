@@ -431,7 +431,7 @@ attempts_spent=$(review_spent_attempt_count "$pr" "$ATTEMPT_PREFIX")
 # and when it summed differently (posted only) it read 0/3 while this script read
 # 3/3 on PR #553 -- so its deadlock guard could not fire and the PR went
 # permanently unmergeable. One numerator, in ../lib/common.sh.
-review_count=$(review_spend_total "$pr" "$ATTEMPT_PREFIX")
+review_count=$(review_spend_total "$pr" "$ATTEMPT_PREFIX" "$reports_posted" "$attempts_spent")
 pr_loc=$(pr_diff_loc "$pr")
 MAX_REVIEWS_PER_PR=$(review_cap_for "$pr_loc")
 if [[ "${review_count:-0}" -ge "$MAX_REVIEWS_PER_PR" ]]; then
