@@ -175,6 +175,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_job_timeout_headroom.py
 
+      # Offline by construction: compares the committed record against the
+      # secrets each workflow references. The network lives only in --refresh.
+      - name: Secret reachability
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_secret_reachability.py
+
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
