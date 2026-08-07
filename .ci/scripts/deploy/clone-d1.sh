@@ -72,12 +72,36 @@ fi
 # lines, which made grep -v exit 1 and kill the step with nothing to show.
 # Capture first, redact after, and report wrangler's own exit code.
 log_step "Exporting D1 database: $SOURCE_DB"
+# RETRIED, because `d1 export` stages through R2 and R2 fails transiently in
+# ways that have nothing to do with the database. Both observed on 2026-08-07,
+# on consecutive attempts of the same run, on DIFFERENT databases:
+#
+#   ERROR Could not create a presigned URL to R2                  (account-db-us)
+#   ERROR completeMultipartUpload: The specified multipart upload
+#         does not exist. (10024)                                 (account-db-eu)
+#
+# Two distinct R2 operations failing on two distinct databases is R2 being
+# unwell, not a defect here -- and one unlucky sample was failing the whole
+# migration job, taking 15 sibling jobs down with it via fail-fast.
+#
+# This does NOT hide a real export failure: a database that genuinely cannot be
+# exported still fails, three times over, and the final message carries the
+# attempt count and wrangler's own output. Only the flake is absorbed.
+EXPORT_ATTEMPTS=3
 EXPORT_RC=0
-npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" \
-    >"$TMPDIR/export.log" 2>&1 || EXPORT_RC=$?
+for attempt in $(seq 1 "$EXPORT_ATTEMPTS"); do
+    EXPORT_RC=0
+    npx wrangler d1 export "$SOURCE_DB" --remote --output="$TMPDIR/export.sql" \
+        >"$TMPDIR/export.log" 2>&1 || EXPORT_RC=$?
+    [[ "$EXPORT_RC" -eq 0 ]] && break
+    if [[ "$attempt" -lt "$EXPORT_ATTEMPTS" ]]; then
+        log_warn "wrangler d1 export $SOURCE_DB failed (exit $EXPORT_RC) on attempt $attempt/$EXPORT_ATTEMPTS; retrying in 10s"
+        sleep 10
+    fi
+done
 grep -v 'r2.cloudflarestorage.com\|valid for one hour' "$TMPDIR/export.log" || true
 if [[ "$EXPORT_RC" -ne 0 ]]; then
-    log_error "wrangler d1 export $SOURCE_DB failed (exit $EXPORT_RC); its full output is above (R2 URL redacted)"
+    log_error "wrangler d1 export $SOURCE_DB failed (exit $EXPORT_RC) after $EXPORT_ATTEMPTS attempts; its full output is above (R2 URL redacted)"
     exit "$EXPORT_RC"
 fi
 log_info "Exported $(wc -l <"$TMPDIR/export.sql") lines ($(du -h "$TMPDIR/export.sql" | cut -f1))"
