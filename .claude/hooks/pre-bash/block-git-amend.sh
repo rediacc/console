@@ -17,8 +17,16 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # Drop the bodies of cat/tee heredocs before matching.
 SCAN=$(printf '%s' "$CMD" | awk '
     # inside a strippable heredoc: emit nothing until the delimiter line
+    #
+    # `<<-` STRIPS LEADING TABS FROM THE TERMINATOR, and comparing $0 raw missed that:
+    # bash closes the heredoc at a tab-indented delimiter, so everything after it is
+    # ordinary shell again -- but this scanner stayed `inside` to EOF and swallowed it,
+    # taking any amend on those lines with it. Fail-OPEN, and the whole point of the
+    # scanner is to see past heredocs, so it undid the guard rather than degrading it.
     inside {
-        if ($0 == delim) { inside = 0 }
+        term = $0
+        if (dash) { sub(/^\t+/, "", term) }
+        if (term == delim) { inside = 0 }
         next
     }
     {
@@ -27,6 +35,7 @@ SCAN=$(printf '%s' "$CMD" | awk '
         if (line ~ /(^|[|;&[:space:]])(cat|tee)([[:space:]]|$)/ &&
             match(line, /<<-?[[:space:]]*['"'"'"]?[A-Za-z_][A-Za-z0-9_]*['"'"'"]?/)) {
             d = substr(line, RSTART, RLENGTH)
+            dash = (d ~ /^<<-/)   # remember the tab-stripping form for the terminator match
             gsub(/^<<-?[[:space:]]*/, "", d)
             gsub(/['"'"'"]/, "", d)
             delim = d
