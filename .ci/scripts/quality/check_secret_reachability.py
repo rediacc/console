@@ -83,15 +83,19 @@ OPTIONAL = {
 KNOWN_UNREACHABLE = {
     ("account", "CLAUDE_CODE_OAUTH_TOKEN"): (
         "2026-09-07",
-        "https://github.com/rediacc/account/issues/76 — org secret is visibility=selected "
-        "scoped to `console` alone, so Claude Review has never once succeeded here. "
-        "Fix is a secret operation: add the repo to the allowlist, or create a repo-level "
-        "secret as claude-review.yml:10 already assumes.",
+        (
+            "https://github.com/rediacc/account/issues/76 — org secret is visibility=selected "
+            "scoped to `console` alone, so Claude Review has never once succeeded here. "
+            "Fix is a secret operation: add the repo to the allowlist, or create a repo-level "
+            "secret as claude-review.yml:10 already assumes."
+        ),
     ),
     ("renet", "CLAUDE_CODE_OAUTH_TOKEN"): (
         "2026-09-07",
-        "https://github.com/rediacc/account/issues/76 — identical cause and identical "
-        "remedy; confirmed by checking, every Claude Review run in renet has failed too.",
+        (
+            "https://github.com/rediacc/account/issues/76 — identical cause and identical "
+            "remedy; confirmed by checking, every Claude Review run in renet has failed too."
+        ),
     ),
 }
 
@@ -105,9 +109,11 @@ class ScanError(Exception):
 def repo_roots(root):
     """This repo plus every submodule that has its own workflows."""
     out = [("console", root)]
-    for sub in sorted((root / "private").glob("*")):
-        if (sub / ".github" / "workflows").is_dir():
-            out.append((sub.name, sub))
+    out.extend(
+        (sub.name, sub)
+        for sub in sorted((root / "private").glob("*"))
+        if (sub / ".github" / "workflows").is_dir()
+    )
     return out
 
 
@@ -132,8 +138,15 @@ def refresh(root, baseline_path):
         )
         return out.stdout if out.returncode == 0 else None
 
-    listing = gh(["api", "orgs/rediacc/actions/secrets", "--paginate", "--jq",
-                  ".secrets[]|[.name,.visibility]|@tsv"])
+    listing = gh(
+        [
+            "api",
+            "orgs/rediacc/actions/secrets",
+            "--paginate",
+            "--jq",
+            ".secrets[]|[.name,.visibility]|@tsv",
+        ]
+    )
     if not listing:
         print("refresh: cannot read the org secret list (needs an admin token)", file=sys.stderr)
         return 1
@@ -149,8 +162,15 @@ def refresh(root, baseline_path):
     for name, vis in org.items():
         if vis != "selected":
             continue
-        repos = gh(["api", f"orgs/rediacc/actions/secrets/{name}/repositories",
-                    "--paginate", "--jq", ".repositories[].name"])
+        repos = gh(
+            [
+                "api",
+                f"orgs/rediacc/actions/secrets/{name}/repositories",
+                "--paginate",
+                "--jq",
+                ".repositories[].name",
+            ]
+        )
         scoped[name] = set((repos or "").split())
 
     data = {
@@ -167,8 +187,9 @@ def refresh(root, baseline_path):
     for repo_name, repo_root in repo_roots(root):
         names, _ = references(repo_root)
         gh_repo = f"rediacc/{'console' if repo_name == 'console' else repo_name}"
-        repo_own = gh(["api", f"repos/{gh_repo}/actions/secrets", "--paginate", "--jq",
-                       ".secrets[].name"])
+        repo_own = gh(
+            ["api", f"repos/{gh_repo}/actions/secrets", "--paginate", "--jq", ".secrets[].name"]
+        )
         own = set((repo_own or "").split())
         entry = {}
         for n in sorted(names):
@@ -179,7 +200,7 @@ def refresh(root, baseline_path):
                 if vis in ("all", "private"):
                     entry[n] = {"reachable": True, "via": f"org:{vis}"}
                 else:
-                    ok = gh_repo.split("/")[-1] in scoped.get(n, set())
+                    ok = gh_repo.rsplit("/", 1)[-1] in scoped.get(n, set())
                     entry[n] = {"reachable": ok, "via": "org:selected"}
             else:
                 entry[n] = {"reachable": False, "via": "absent"}
@@ -203,7 +224,7 @@ def verdicts(refs_by_repo, record):
             waiver = KNOWN_UNREACHABLE.get((repo_name, n))
             if waiver is not None:
                 expiry, why = waiver
-                if dt.date.today().isoformat() <= expiry:
+                if dt.datetime.now(dt.UTC).date().isoformat() <= expiry:
                     print(
                         f"  KNOWN, waived until {expiry}: {repo_name}/{n} — {why}",
                         file=sys.stderr,
@@ -281,6 +302,32 @@ def main(argv=None):
         return 1
 
     record = json.loads(baseline_path.read_text(encoding="utf-8"))
+
+    # THE SCAN MUST COVER EVERY REPO THE RECORD KNOWS ABOUT, or refuse.
+    #
+    # Without this the gate silently under-scans. `actions/checkout` defaults to
+    # submodules:false, so in a job that does not ask for them private/account
+    # and private/renet are empty directories with no workflows -- and this gate
+    # would scan console alone, clear its MIN_REFERENCES floor on console's 42
+    # references, and report GREEN while never looking at the two repos where
+    # the defect it exists for actually lives.
+    #
+    # Measured before this guard existed: hiding both submodules' .github
+    # produced "40 secret reference(s) across 1 repo(s) are all reachable",
+    # exit 0. The gate had the exact defect it was written to catch.
+    recorded = set(record.get("repos", {}))
+    scanned = set(refs_by_repo)
+    missing = sorted(recorded - scanned)
+    if missing:
+        print(
+            "CANNOT SEE %d repo(s) the record covers: %s\n"
+            "  Their workflows are absent, which almost always means the job checked out\n"
+            "  without submodules (actions/checkout defaults to submodules:false).\n"
+            "  Refusing a verdict rather than reporting on a subset -- a partial scan here\n"
+            "  reads exactly like a clean one." % (len(missing), ", ".join(missing)),
+            file=sys.stderr,
+        )
+        return 1
 
     broken = controls(record)
     if broken:

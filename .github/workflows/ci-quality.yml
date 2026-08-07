@@ -110,6 +110,14 @@ jobs:
     steps:
       - id: setup
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # check:ci-secret-reachability scans the SUBMODULES' workflows too --
+          # the two repos whose Claude Review had never once run are account and
+          # renet, not console. Without this the gate sees empty directories,
+          # scans console alone, and reports green on a subset. It now refuses
+          # a verdict in that case, so this input is what lets it do its job
+          # rather than what stops it lying.
+          submodules: true
 
       # Only pr-description needs a token, and only on a PR. Minting it here
       # keeps the lane at the narrowest preset any member requires.
