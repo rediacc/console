@@ -64,6 +64,13 @@ jobs:
   stage:
     name: Stage Artifacts
     runs-on: ubuntu-latest
+    # This job had NO ceiling at all -- not here, and not on the caller in
+    # ci.yml, which cannot carry one because it `uses:` this reusable workflow.
+    # It was therefore free to run to GitHub's 360-minute default while holding
+    # the release path, and it is the job that uploads to R2. Observed real
+    # durations are around 11 minutes; 45 is generous headroom that still fails
+    # fast instead of burning six hours of runner time on a wedged sync.
+    timeout-minutes: 45
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
