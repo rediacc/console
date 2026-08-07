@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Observed worst-case durations of long-running ci.yml jobs on MAIN, and the",
+    "input to check_job_timeout_headroom.py. Refresh with:",
+    "    npm run check:ci-timeout-headroom -- --refresh",
+    "which reads the GitHub Actions API. The GATE itself never touches the",
+    "network: it compares these committed numbers against the timeout-minutes",
+    "in the workflow, so `npm run ci` stays offline-safe.",
+    "",
+    "WHY THIS FILE EXISTS. On 2026-08-07 `Validate Promotion` hit its",
+    "timeout-minutes: 30 at 30m13s. A timed-out job's conclusion is `cancelled`,",
+    "and assert-ci-complete.sh forgives `skipped` but NOT `cancelled`, so CI",
+    "Complete and Pipeline Sentinel failed and the finalize step never dispatched",
+    "cd-v2.yml. The 0804-1 release did not ship, and no error message anywhere",
+    "said the word `timeout` -- the job log's only clue is `The operation was",
+    "canceled.` It had ALSO timed out on 2026-07-28 and nobody noticed, because",
+    "the ceiling was approached silently for weeks: 21m57s, 27m20s, CANCELLED",
+    "31m03s, 28m35s, 24m09s, 24m56s, 24m01s, CANCELLED 30m51s.",
+    "",
+    "A PR cannot catch this class. PR runs promote the tiny per-PR channel and",
+    "finish in ~7m; main promotes the full `edge` channel, which grows with every",
+    "release. So the check is not `did it pass` but `how much headroom is left`."
+  ],
+  "refreshed_at": "2026-08-07T04:43:12Z",
+  "refreshed_from": "last main push runs of Console CI, jobs API per_page=100",
+  "jobs": {
+    "Validate Promotion": {
+      "observed_max_seconds": 1715,
+      "samples": 8
+    },
+    "Stage Artifacts": {
+      "observed_max_seconds": 872,
+      "samples": 8
+    }
+  }
+}
