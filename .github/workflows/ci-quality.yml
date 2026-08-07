@@ -110,14 +110,6 @@ jobs:
     steps:
       - id: setup
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # check:ci-secret-reachability scans the SUBMODULES' workflows too --
-          # the two repos whose Claude Review had never once run are account and
-          # renet, not console. Without this the gate sees empty directories,
-          # scans console alone, and reports green on a subset. It now refuses
-          # a verdict in that case, so this input is what lets it do its job
-          # rather than what stops it lying.
-          submodules: true
 
       # Only pr-description needs a token, and only on a PR. Minting it here
       # keeps the lane at the narrowest preset any member requires.
@@ -185,17 +177,6 @@ jobs:
 
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
-      # FIRST, before any gate reports: the trees they read must be here.
-      # Three gates were measured returning 0 about a submodule that was not on
-      # disk, so this converts twelve quiet partial scans into one loud failure.
-      - name: Scope completeness
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_scope_completeness.py
-
-      - name: Secret reachability
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_secret_reachability.py
-
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
@@ -1044,6 +1025,24 @@ jobs:
       - name: Scope map — reachable scripts/ paths force full CI
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-scope-scripts-reachability
+
+      # These two need the SUBMODULES, so they live here rather than in
+      # quality-static: that job checks out without a token, and the private
+      # siblings cannot be cloned without one ("repository not found"). This
+      # job already checks out submodules with an app token.
+      #
+      # Scope completeness runs FIRST: three gates were measured returning 0
+      # about a submodule that was not on disk, so it converts twelve quiet
+      # partial scans into one loud failure before any verdict is trusted.
+      - name: Scope completeness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_scope_completeness.py
+
+      # Offline by construction: compares the committed record against the
+      # secrets each workflow references. The network lives only in --refresh.
+      - name: Secret reachability
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_secret_reachability.py
 
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
