@@ -319,7 +319,10 @@ review_count="${review_count//[[:space:]]/}"
 pr_loc="$(pr_diff_loc "$pr")"
 MAX_REVIEWS_PER_PR="$(review_cap_for "$pr_loc")"
 notes+=("Currency: ${currency_detail}.")
-notes+=("Review reports posted: ${review_count:-0}/${MAX_REVIEWS_PER_PR} (cap ${MAX_REVIEWS_PER_PR} for a ${pr_loc}-line diff).")
+# "spent", not "posted": this number is reports PLUS attempts that burned their
+# budget and posted nothing. Saying "3/3 posted" when zero were posted is the
+# exact #553 confusion this file now fixes the logic for.
+notes+=("Review passes spent: ${review_count:-0}/${MAX_REVIEWS_PER_PR} (posted reports + spent attempts; cap ${MAX_REVIEWS_PER_PR} for a ${pr_loc}-line diff).")
 
 if [[ "$currency_ok" == true ]]; then
     log_info "CURRENCY ok: $currency_detail"
