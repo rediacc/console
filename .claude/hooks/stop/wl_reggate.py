@@ -180,19 +180,54 @@ def package_scripts(root):
         return {}
 
 
-def gate_reachable(scripts, target):
+def _manifest_gate_ids(root):
+    """Gate ids registered in the ci-runner manifest, as a set.
+
+    The runner is the dispatcher for every `check:ci-*` in this repo, so a gate
+    listed there with `gate: true` IS run by `npm run ci` even though nothing in
+    package.json ever says `npm run <that key>`.
+    """
+    ids = set()
+    if root is None:
+        return ids
+    mf = os.path.join(str(root), "scripts", "ci-runner", "manifest.ts")
+    try:
+        with open(mf, encoding="utf-8") as fh:
+            src = fh.read()
+    except OSError:
+        return ids
+    for m in re.finditer(r"\{\s*id:\s*'([^']+)'(.*?)\}", src, re.DOTALL):
+        if "gate: true" in m.group(2):
+            ids.add(m.group(1))
+    return ids
+
+
+def gate_reachable(scripts, target, root=None):
     """Is `target` TRANSITIVELY reachable from the `ci` script via `npm run`
     references? Transitive, because ci reaches most gates through batch keys.
     NOT a substring test: a gate's name inside an `echo` is not reachability,
     and the substring version produced real false positives on this repo."""
     seen, todo = set(), ["ci"]
+    runner = False
     while todo:
         k = todo.pop()
         if k in seen or k not in scripts:
             continue
         seen.add(k)
-        todo.extend(re.findall(r"npm run\s+(?:--silent\s+)?([A-Za-z0-9:._-]+)", scripts[k]))
-    return target in seen
+        body = scripts[k]
+        # A DISPATCHER, not an npm-run chain. `ci` is `tsx scripts/ci-runner/run.ts`,
+        # whose body contains ZERO `npm run` references -- it schedules from
+        # manifest.ts instead. Walking npm-run edges alone therefore returned False
+        # for EVERY gate in this repo, check:ci-shell-commands and check:ci-dead-bash
+        # included, and reported each new gate as "defined but never run". A probe
+        # that cannot pass is the same defect as a check that cannot fail: it was
+        # rejecting correctly-wired gates and demanding they be re-wired.
+        if "ci-runner/run.ts" in body:
+            runner = True
+        todo.extend(re.findall(r"npm run\s+(?:--silent\s+)?([A-Za-z0-9:._-]+)", body))
+    if target in seen:
+        return True
+    return runner and target in _manifest_gate_ids(root)
 
 
 def prove_new_gate(root, scripts, state):
@@ -238,7 +273,7 @@ def prove_new_gate(root, scripts, state):
                 state["gate_runs"][rel] = {"hash": digest, "exit": -1, "at": stamp}
                 notes.append("%s: no check:* key runs it" % rel)
                 continue
-            if not gate_reachable(scripts, key):
+            if not gate_reachable(scripts, key, root):
                 state["gate_runs"][rel] = {"hash": digest, "exit": -2, "at": stamp}
                 notes.append(
                     "%s: %s is defined but NOT reachable from `npm run ci` "
