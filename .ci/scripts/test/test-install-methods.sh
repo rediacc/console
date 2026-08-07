@@ -193,16 +193,45 @@ get_binary_url() {
 }
 
 # Verify version output
+# There is ALWAYS a version, or this fails. Never a silent pass.
+#
+# The old body was `echo "$output" | grep -q "$expected"`, which passed in three
+# situations where nothing had actually been verified:
+#
+#   1. EMPTY EXPECTATION. `grep -q ""` matches every line, so an unset or
+#      empty $VERSION made every caller succeed unconditionally.
+#   2. EMPTY OUTPUT. A binary that failed to execute, or whose stderr was
+#      swallowed by `|| true`, produced "" — and with an empty pattern that
+#      still matched.
+#   3. SUBSTRING AND REGEX MATCH. `grep -q "1.2.1"` matches a binary reporting
+#      "1.2.16", so a patch release verified happily against the wrong build.
+#      The dots are regex wildcards too, so "1.2.1" also matches "1x2y1".
+#
+# All three now fail loudly. A caller that legitimately cannot determine a
+# version must SKIP (return 77) and say so, not hand an empty string to this.
 verify_version() {
     local output="$1"
     local expected="$2"
 
-    if [[ "$expected" == "latest" ]]; then
-        # Check that we got some version output - handles v prefix and pre-release suffixes
-        [[ -n "$output" ]] && echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
-    else
-        echo "$output" | grep -q "$expected"
+    if [[ -z "$expected" ]]; then
+        log_error "verify_version: expected version is EMPTY — refusing to report a pass. The caller failed to resolve a version."
+        return 1
     fi
+    if [[ -z "$output" ]]; then
+        log_error "verify_version: no version output captured (expected '$expected') — refusing to report a pass. The binary did not run, or its output was discarded."
+        return 1
+    fi
+
+    if [[ "$expected" == "latest" ]]; then
+        # Any well-formed semver satisfies "latest", but it must be well formed.
+        echo "$output" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'
+        return
+    fi
+
+    # Exact token match: dots escaped, and the version may not be flanked by
+    # another digit or dot, so 1.2.1 no longer matches 1.2.16 or 11.2.1.
+    local want="${expected#v}"
+    echo "$output" | grep -qE "(^|[^0-9.])v?${want//./\\.}([^0-9.]|\$)"
 }
 
 # =============================================================================
