@@ -21,6 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { globSync } from 'glob';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.join(__dirname, '../..');
@@ -83,6 +84,35 @@ const CASES: Case[] = [
   },
 ];
 
+/**
+ * Every namespace variable name the www tree ACTUALLY uses today, read from
+ * source rather than listed here.
+ *
+ * This is the anti-enumeration guard, and the distinction is the whole point.
+ * A written-down list of "valid namespace patterns" is exactly the bug this
+ * gate had: it accepted `ns` and `PAGE_KEY`, and the tree used five names -
+ * `NS`, `ctaNamespace` and `metaPath` were all invisible, not just the one
+ * that happened to surface a missing key. Any list, however carefully
+ * enumerated and however well tested against itself, goes stale the first time
+ * someone picks a sixth name, and it goes stale SILENTLY because a
+ * list-checks-its-own-list assertion passes regardless of what the code does.
+ *
+ * So this derives the set and asserts the gate resolves each member. A
+ * regression to any fixed list fails here the moment real code steps outside
+ * it, with no maintenance and no enumeration to keep current.
+ */
+function namespaceVarsInUse(): string[] {
+  const files = globSync('**/*.{astro,tsx}', { cwd: WWW_SRC, absolute: true });
+  const names = new Set<string>();
+  const re = /\bt[ao]?\(\s*`\$\{([A-Za-z_$][\w$]*)\}\./g;
+  for (const f of files) {
+    const content = fs.readFileSync(f, 'utf8');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(content)) !== null) names.add(m[1]);
+  }
+  return [...names].sort();
+}
+
 function gateReports(bad: string): boolean {
   try {
     const out = execFileSync('npx', ['tsx', GATE], { cwd: REPO, encoding: 'utf8' });
@@ -122,6 +152,33 @@ function main(): void {
         detected ? 'detected' : 'ignored'
       }`,
     );
+  }
+
+  // ── the anti-enumeration guard, derived from the tree, not from a list ──
+  const inUse = namespaceVarsInUse();
+  if (inUse.length < 2) {
+    console.error(
+      `VACUOUS: found only ${inUse.length} namespace variable(s) in www source.\n` +
+        '  Expected several. Either the scan broke or the convention changed;\n' +
+        '  either way this guard would pass while checking nothing.',
+    );
+    process.exit(1);
+  }
+  const unresolved: string[] = [];
+  for (const name of inUse) {
+    const probe = path.join(probeDir, '__control_probe__.tsx');
+    fs.writeFileSync(probe, `const ${name} = 'pages.partners.form';\nexport const C = () => <p>{t(\`\${${name}}.${BAD}\`)}</p>;\n`, 'utf8');
+    try {
+      if (!gateReports(BAD)) unresolved.push(name);
+    } finally {
+      fs.unlinkSync(probe);
+    }
+  }
+  if (unresolved.length > 0) {
+    failures += unresolved.length;
+    console.log(`  FAIL in-use namespace names the gate cannot resolve: ${unresolved.join(', ')}`);
+  } else {
+    console.log(`  ok   all ${inUse.length} in-use namespace names resolve: ${inUse.join(', ')}`);
   }
 
   fs.rmSync(scratch, { recursive: true, force: true });
