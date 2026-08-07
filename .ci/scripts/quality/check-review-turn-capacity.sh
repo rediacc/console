@@ -14,7 +14,7 @@
 # budget is survivable. That is the blind spot this gate closes: capacity, not routing.
 #
 # WHAT IT CANNOT DO, stated plainly. Whether N turns actually suffices for a given diff is
-# empirical and model-dependent; no static check can know it. So this asserts the three
+# empirical and model-dependent; no static check can know it. So this asserts the four
 # structural properties that made the incident possible, and pins the one measured fact:
 #
 #   1. MONOTONIC   -- a larger diff never receives fewer turns than a smaller one.
@@ -84,7 +84,12 @@ turns_for() {
             gh() { echo "$FAKE_SIZE"; }
             '"$fn"'
             emit_review_turns 1
-            grep -o "review_turns=[0-9]*" "$GITHUB_OUTPUT" | head -1 | cut -d= -f2
+            # `|| true`: grep exits 1 when the function emitted no review_turns at all, and
+            # that must reach the caller as an EMPTY result -- which turns_for maps to 0 and
+            # the TOTAL property then reports loudly. Letting the pipeline abort here would
+            # hide "the function produced nothing" behind a dead subshell, i.e. the exact
+            # silent-failure shape this gate exists to catch, inside the gate itself.
+            grep -o "review_turns=[0-9]*" "$GITHUB_OUTPUT" | head -1 | cut -d= -f2 || true
             rm -f "$GITHUB_OUTPUT"
         ' 2>/dev/null
     )" || out=""
@@ -156,7 +161,7 @@ evaluate() {
 # properties above still pass against that, they are not measuring what they claim.
 MUTANT="${FN//per_kloc=25/per_kloc=8}"
 if [[ "$MUTANT" == "$FN" ]]; then
-    fail "check-review-turn-capacity: the control could not plant its defect (the 2000-line rung is not where it was). Refusing to report a green that proves nothing."
+    fail "check-review-turn-capacity: the control could not plant its defect (no 'per_kloc=25' in emit_review_turns -- the budget was rewritten). Update the mutant in this gate to match the new shape. Refusing to report a green that proves nothing."
 fi
 CONTROL_OUT="$(evaluate "$MUTANT")"
 if [[ -z "$CONTROL_OUT" ]]; then
