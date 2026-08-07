@@ -70,6 +70,7 @@
     "check:ci-quality-gates": ".ci/scripts/test/run-all.sh",
     "check:ci-security-audit": ".ci/scripts/security/audit.sh",
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
+    "check:ci-review-turn-capacity": ".ci/scripts/quality/check-review-turn-capacity.sh",
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
