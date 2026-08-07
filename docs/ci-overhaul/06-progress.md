@@ -2755,3 +2755,133 @@ denominator, and the deadlock guard reachable AT the cap), and the Stop hook's o
 reachability probe -- which returned False for all 191 registered gates because it
 walked `npm run` edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts` with
 zero such edges.
+
+## The release path's own version holes, closed (2026-08-07, branch 0807-2)
+
+Companion to *"The version-check family that could not fail"* (branch 0807-1),
+which records the incident -- **v1.2.16 published under the tag v1.2.17** -- and
+the shape it kept taking. This section records what was actually closed on the
+**release path**, because that half landed on a different branch and a reader of
+one section will otherwise think the other half does not exist.
+
+The operator's rule, verbatim, governs every fix below:
+**always have a version; skip or fail; never a silent pass.**
+
+### Seven of eleven install methods never compared a version
+
+`apt`, `dnf`, `apk`, `pacman`, `npm`, `linuxbrew` and `quick` each ended their
+container heredoc with a bare `${PKG_BINARY_NAME} --version` whose output was
+never captured. `$VERSION` did not appear once inside those functions, even
+though `ci.yml` and `ct-install-methods.yml` pass `--version` into every one of
+them. The assertion was *"the binary exits 0"*. **The mislabelled artifact would
+have passed all seven.**
+
+The fix is a **container-side version fence**, not a host-side grep, and that
+distinction is the entire point: `apt-get`, `npm` and `brew` each PRINT the
+expected version while installing, so matching the transcript would accept
+
+```
+Setting up rediacc-cli (1.2.17) ...      <- from the installer's own chatter
+rdc 1.2.16                               <- what the binary actually reports
+```
+
+That is a check that cannot fail, rebuilt in a new place. The container now
+fences its own output between markers and the host compares only what is inside;
+the gate asserts **both** directions -- the fenced check refuses the noise case,
+the unfenced grep accepts it.
+
+Three smaller vacuity floors in the same script:
+
+- **A zero-total run exited 0.** `*) shift ;;` swallowed a typo'd `--method`,
+  nothing matched, and "success" meant *nothing failed* rather than *something
+  was verified*. Arguments are now validated with the valid list named, and a
+  zero-total run is fatal. **All-skipped stays acceptable** -- a skip prints its
+  reason and is counted, which is the visible half of skip-or-fail; a zero-total
+  says nothing at all.
+- **`--dry-run` counted as PASS.** It installs nothing and compares no version,
+  so `3 passed, 0 failed` was indistinguishable from three real verifications.
+  It is a SKIP now.
+- **`test_update_check`** printed the manifest version and never compared it, and
+  its structural guard passed on `"binaries": {}` because an empty object is
+  truthy in `jq`.
+
+### Six ways a wrong version could still ship
+
+| # | Hole | Why it never fired |
+|---|---|---|
+| 1 | **Retry mode published with the assertion off** | `cd-v2.yml` excluded `retry_mode` from *Assert artifact version matches promotion target*, on a comment claiming retry's artifacts "already match by definition". False: retry takes its **version** from `resolve-version.sh --current` and its **artifacts** from `resolve-ci-run.sh`, which picks the latest green CI on `main` with nothing tying it to the tag |
+| 2 | **The build's own smoke test compared nothing** | `build-cli-executables.sh` read a version out of the freshly built binary, asserted only that it was non-empty and not `null`, and clobbered the variable holding what it had been *told* to build. It is the **only** point in the pipeline that reads a version out of real bytes, and it declined to compare |
+| 3 | **The only `0.0.0-dev` guard had zero callers** | `inject-env.sh --strict` was referenced by a comment and by itself (see `01-verified-context.md` #534). An explicitly-empty `--version` fell through and picked up the **already published** current tag |
+| 4 | **Attestation verification could not fail** | Every failure became a warning and the script had no failing exit path at all; its `find` over two absent directories exited 0 having verified **zero** artifacts |
+| 5 | **A swallowed tag fetch could silently regress the version** | `2>/dev/null \|\| true` four lines before the version is computed: a failed fetch left stale tags and nothing downstream could tell |
+| 6 | **An empty version collapsed the image closure key** | One shared key let an image built at an older version be promoted |
+
+Hole 6 was judged **deliberately not a failure** -- that script legitimately runs
+where no tag is reachable -- so the fallback is now *distinguishing*
+(`untagged-<sha>`, with a warning) rather than fatal. Skip-or-fail does not mean
+everything fails; it means nothing passes **silently**.
+
+Hole 5's fetch now retries three times then hard-fails, with git's stderr
+**redacted rather than suppressed**, because the fetch URL embeds a token. Zero
+tags after a *successful* fetch is its own explicit failure.
+
+### `compareVersions` called malformed versions equal
+
+`packages/shared/src/utils/version.ts` returned `0` -- meaning **equal** -- for
+`1.2.x` against `1.2.16`, and for `x.y.z` against anything.
+
+Worth pinning precisely, because the obvious guess is wrong: **it is not the
+empty-string case.** `Number("")` is `0`, so `compareVersions("1.2.16", "")`
+correctly returns `1`. The silent-equal case is **non-numeric segments** ->
+`NaN` -> both `>` and `<` comparisons false -> the loop falls through and reports
+equality. It throws now, and exports `isValidVersion` so callers can branch
+instead of catching.
+
+### Eleven gate tests, registered
+
+Eleven new control gates (six for the release-version holes, four for the
+install-method rebuild, one for `verify_version`) are registered in
+`scripts/ci-runner/manifest.ts` as `qualityGateTest: true` entries pinned to
+`ci-quality.yml` -> `quality-security` -> *Quality-gate unit tests*. Without that
+registration `check-ci-parity.ts` fails, and -- more to the point -- a gate that
+`npm run ci` does not run is a gate nobody will notice going stale.
+
+**Every one was mutation-proven**: a planted defect watched to make the gate
+**pass**, then the fix watched to make it **fail**. The release-version set
+replays the incident's own `1.2.17`-versus-`1.2.16` through the extracted
+comparison block; the install-method set includes a copy-mutation reproducing the
+exact zero-total signature, plus a real-docker end-to-end run against alpine.
+37 assertions across the six release-version gates.
+
+The same commit deleted a comment on `assert-artifact-version.sh` that still said
+its `exit 0` branches should *"be hardened to a hard fail"* -- they already had
+been, hours earlier, and a stale TODO pointing at finished work reads as an
+invitation to undo it.
+
+### Two non-version fixes that rode along
+
+- **Two pipelines would abort silently under `pipefail`.** `grep` exits 1 when a
+  field is absent, and under `set -eo pipefail` that killed the script *before*
+  the emptiness check that reports **which** field was missing. Both now end
+  `|| true` with a comment naming the intended failure path, so the explicit
+  `log_fail` is reachable. This is the pattern's sharp edge: `pipefail` turns a
+  deliberate empty result into an abort, and the abort is quieter than the error
+  it pre-empted.
+- **`wrangler d1 export` had no retry.** It stages through R2, and on 2026-08-07
+  two *different* R2 operations failed on two *different* databases on
+  consecutive attempts of the same run (`Could not create a presigned URL to R2`
+  on `account-db-us`; `completeMultipartUpload ... does not exist (10024)` on
+  `account-db-eu`). One unlucky sample failed the whole migration job and took
+  **15 sibling jobs** with it via fail-fast. Now 3 attempts / 10s. A database
+  that genuinely cannot be exported still fails, three times over, and the final
+  message carries the attempt count and wrangler's own output.
+
+  **Both of those R2 failures were one platform incident**, confirmed after the
+  fact: `cloudflarestatus.com` reported a Minor Service Outage opened
+  `16:04:27Z`, and every red in that window sat on a Cloudflare surface (R2
+  twice, a Workers preview 400, a quick-tunnel origin route). The retry is still
+  right -- a single unretried sample of an eventually-consistent service is a
+  defect regardless of what made it flake -- but the **diagnosis should have
+  started at the platform**, not at the fourth job. When several unrelated jobs
+  redden inside one window, check the provider's status page before reading a
+  single log.
