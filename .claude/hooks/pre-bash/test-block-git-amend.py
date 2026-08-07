@@ -5,6 +5,7 @@ Both directions, because a one-sided control is satisfiable by a broken hook:
 one that always blocks passes the positive cases, one that never blocks passes
 the negative ones.
 """
+
 import json
 import subprocess
 import sys
@@ -29,8 +30,11 @@ CASES = [
 
 def run(cmd):
     p = subprocess.run(
-        ["bash", HOOK], input=json.dumps({"tool_input": {"command": cmd}}),
-        capture_output=True, text=True, check=False,
+        ["bash", HOOK],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        check=False,
     )
     return p.returncode != 0
 
@@ -40,9 +44,15 @@ for name, cmd, want in CASES:
     got = run(cmd)
     ok = got == want
     fails += not ok
-    print("%-40s want=%-9s got=%-9s %s" % (
-        name, "BLOCKED" if want else "allowed",
-        "BLOCKED" if got else "allowed", "ok" if ok else "*** FAIL ***"))
+    print(
+        "%-40s want=%-9s got=%-9s %s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
 
 print()
 print("FAILURES: %d" % fails)
