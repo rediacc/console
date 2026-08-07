@@ -71,7 +71,11 @@ TEST_VERSION_RE="$(version_token_re "$TEST_VERSION")"
 assert_version_field() {
     local text="$1" label="$2"
     local line
-    line="$(printf '%s\n' "$text" | grep -E "^[[:space:]]*${label}[[:space:]]*:" | head -1)"
+    # `|| true`: grep exits 1 when the field is absent, and under `set -eo
+    # pipefail` that aborts the whole script before the emptiness check below
+    # can report WHICH field was missing. The check two lines down is the
+    # intended failure path, so the pipeline must be allowed to yield "".
+    line="$(printf '%s\n' "$text" | grep -E "^[[:space:]]*${label}[[:space:]]*:" | head -1 || true)"
     if [[ -z "$line" ]]; then
         log_error "no '${label}' field found in package metadata"
         return 1
