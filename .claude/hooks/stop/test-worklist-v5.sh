@@ -7961,6 +7961,60 @@ else
     fail "191 FIRE: --path moved with cwd ($PATH_OUTER vs $PATH_NESTED)"
 fi
 
+# ---------------------------------------------------------------------------
+# 192 an hourly poll cron parked off :00 is still a poll cron
+#
+# THE INCIDENT (2026-08-07): CronCreate tells every session to avoid the :00 and
+# :30 marks so the fleet does not hit the API on one instant, and offers
+# "hourly -> 7 * * * *" as its example. is_poll_cron knew the hourly rung only
+# as `0 * * * *`, so a session obeying both instructions had its poll cron
+# counted as a second WORK cron, and the next stop ordered it to CronDelete the
+# cron the previous stop had ordered it to create.
+#
+# THE FIRST FIX WAS WRONG and this case exists to keep it wrong: widening the
+# schedule regex to any `<minute> * * * *` took this harness from 1 failure to
+# 168, because an hourly WORK cron is indistinguishable from an hourly poll by
+# schedule alone. Hence the negative assertions below -- they are not padding,
+# they are the guard rail that reverted change would trip.
+OUT=$(
+    cd "$(dirname "$HOOK")" && python3 - <<'PYEOF'
+import sys
+sys.path.insert(0, ".")
+import wl_checks as W
+
+POLL = {"schedule": "37 * * * *", "prompt": "run .claude/hooks/stop/worklist.py --poll d136ac61"}
+WORK = {"schedule": "17 * * * *", "prompt": "pr-babysit HEARTBEAT: check CI, fix reds"}
+
+checks = {
+    "poll-offminute": W.is_poll_cron(POLL) is True,
+    "work-hourly-not-poll": W.is_poll_cron(WORK) is False,
+    "shape-still-sufficient": W.is_poll_cron({"schedule": "*/5 * * * *"}) is True,
+    "shape-zero-still-works": W.is_poll_cron({"schedule": "0 * * * *"}) is True,
+    "no-prompt-degrades": W.is_poll_cron({"schedule": "37 * * * *"}) is False,
+    "daily-not-poll": W.is_poll_cron({"schedule": "0 9 * * *"}) is False,
+}
+bad = [k for k, v in checks.items() if not v]
+print("CLASSIFY", "OK" if not bad else "BAD:" + ",".join(bad))
+print("CANON", W.canonical_poll_schedule("37 * * * *"))
+print("TIP", repr(W.poll_backoff_tip([POLL], 9999, False)))
+PYEOF
+)
+if grep -q "^CLASSIFY OK$" <<<"$OUT"; then
+    pass "192: an off-minute hourly POLL is recognised; an hourly WORK cron still is not"
+else
+    fail "192: poll-cron classification wrong: $(grep '^CLASSIFY' <<<"$OUT")"
+fi
+if grep -q "^CANON 0 \* \* \* \*$" <<<"$OUT"; then
+    pass "192: an off-minute hourly poll canonicalises onto the ladder's top rung"
+else
+    fail "192: canonical_poll_schedule did not map :37 to the hourly rung: ${OUT:0:200}"
+fi
+if grep -q "^TIP ''$" <<<"$OUT"; then
+    pass "192: the backoff ladder treats an off-minute hourly poll as capped, not unknown"
+else
+    fail "192: poll_backoff_tip mis-handled an off-minute hourly poll: $(grep '^TIP' <<<"$OUT")"
+fi
+
 echo
 echo "  passed=$PASS failed=$FAIL"
 [[ "$FAIL" -eq 0 ]]
