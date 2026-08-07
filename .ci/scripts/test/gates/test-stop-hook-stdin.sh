@@ -54,7 +54,7 @@ HOOK="$SCRIPT_DIR/../../../../.claude/hooks/stop/worklist.py"
 # pipe, a writer that never writes) cannot be built in portable bash.
 DRIVER="$(mktemp)"
 trap 'rm -f "$DRIVER"' EXIT
-cat > "$DRIVER" <<'PYEOF'
+cat >"$DRIVER" <<'PYEOF'
 import json, os, subprocess, sys, time
 
 hook, mode, budget = sys.argv[1], sys.argv[2], float(sys.argv[3])
@@ -138,7 +138,7 @@ test_the_harness_can_actually_detect_a_crash() {
     # to be caught.
     local broken
     broken="$(mktemp --suffix=.py)"
-    cat > "$broken" <<'PYEOF'
+    cat >"$broken" <<'PYEOF'
 import json, sys
 # The pre-fix shape: only JSONDecodeError/ValueError caught, so a
 # BlockingIOError from a non-blocking read escapes as a traceback.
