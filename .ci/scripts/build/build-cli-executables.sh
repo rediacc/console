@@ -111,8 +111,35 @@ fi
 
 # Step 1: Build the CJS bundle
 log_step "Building CLI bundle..."
-export CLI_VERSION="${CLI_VERSION:-0.0.0-dev}"
-log_info "CLI version: $CLI_VERSION"
+# Version resolution goes through the single injector rather than being spelled
+# `${CLI_VERSION:-0.0.0-dev}` here, so the placeholder fallback exists in ONE
+# place and can be refused where it matters.
+#
+# THE SEAM IS THE RELEASE PATH, not "CI". ci-build-cli.yml sets
+# RELEASE_BUILD=true only on push-to-main, which is the only CI whose artifacts
+# CD ever promotes; there --strict refuses an empty, placeholder, or malformed
+# version and the build dies before a single byte is stamped. PR CI, forks and
+# local `./rdc.sh --native` leave RELEASE_BUILD unset and keep the 0.0.0-dev
+# fallback, so dev iteration needs no ceremony.
+if [[ "${RELEASE_BUILD:-}" == "true" ]]; then
+    if [[ -z "${CLI_VERSION:-}" ]]; then
+        log_error "RELEASE_BUILD=true but CLI_VERSION is empty; refusing to build a publishable artifact without a version"
+        exit 1
+    fi
+    # shellcheck source=../version/inject-env.sh
+    if ! source "$SCRIPT_DIR/../version/inject-env.sh" --version "$CLI_VERSION" --strict; then
+        log_error "Release build refused: CLI_VERSION='$CLI_VERSION' is not a publishable version"
+        exit 1
+    fi
+else
+    # shellcheck source=../version/inject-env.sh
+    source "$SCRIPT_DIR/../version/inject-env.sh" --version "${CLI_VERSION:-0.0.0-dev}"
+fi
+# The version this build was TOLD to produce. Kept in its own variable because
+# the doctor smoke test below parses a value into $CLI_VERSION and used to
+# clobber this one, leaving nothing to compare against.
+EXPECTED_CLI_VERSION="$CLI_VERSION"
+log_info "CLI version: $EXPECTED_CLI_VERSION"
 cd "$CLI_DIR"
 node bundle.mjs
 require_file "$CLI_DIR/dist/cli-bundle.cjs"
@@ -240,7 +267,7 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
 
             # Validate key checks
             INSTALL_METHOD=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Install method") | .value')
-            CLI_VERSION=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "CLI version") | .value')
+            REPORTED_CLI_VERSION=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "CLI version") | .value')
             NODE_STATUS=$(echo "$DOCTOR_OUTPUT" | jq -r '.Environment[] | select(.name == "Node.js") | .status')
 
             if [[ "$INSTALL_METHOD" == "SEA binary" ]]; then
@@ -250,12 +277,22 @@ if [[ "$PLATFORM" == "$(detect_os | sed 's/macos/mac/; s/windows/win/')" ]] &&
                 exit 1
             fi
 
-            if [[ -n "$CLI_VERSION" ]] && [[ "$CLI_VERSION" != "null" ]]; then
-                log_info "CLI version: $CLI_VERSION"
-            else
-                log_error "CLI version check failed: '$CLI_VERSION'"
+            # THE ONLY point in the whole pipeline that reads a version out of
+            # freshly built bytes. It used to assert only "non-empty and not
+            # null", so a SEA built as 0.0.0-dev -- or as any version other
+            # than the one CD would later label it -- passed with a cheerful
+            # "CLI version: 0.0.0-dev". Release 31154305287 published binaries
+            # built as 1.2.16 under the label 1.2.17 and this step said nothing.
+            # Compare, or the check is decorative.
+            if [[ -z "$REPORTED_CLI_VERSION" ]] || [[ "$REPORTED_CLI_VERSION" == "null" ]]; then
+                log_error "CLI version check failed: doctor reported '$REPORTED_CLI_VERSION'"
                 exit 1
             fi
+            if [[ "$REPORTED_CLI_VERSION" != "$EXPECTED_CLI_VERSION" ]]; then
+                log_error "CLI version mismatch: built for '$EXPECTED_CLI_VERSION' but the binary reports '$REPORTED_CLI_VERSION'"
+                exit 1
+            fi
+            log_info "CLI version: $REPORTED_CLI_VERSION (matches build version)"
 
             if [[ "$NODE_STATUS" == "ok" ]]; then
                 log_info "Node.js status: $NODE_STATUS"

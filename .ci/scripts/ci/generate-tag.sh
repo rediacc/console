@@ -311,10 +311,26 @@ elif [[ -n "$CLOSURE_NAME" ]]; then
     # needed the base tag to move, and the weekly bucket bounds it regardless.
     #
     # Failure to resolve is NOT fatal: this script also runs where no tag is
-    # reachable (a shallow clone, a fresh fork). An empty marker keeps the key
-    # well-defined and degrades to today's behaviour rather than breaking the
-    # build.
-    CLOSURE_VERSION="$("$SCRIPT_DIR/../version/resolve-version.sh" --current 2>/dev/null || echo "")"
+    # reachable (a shallow clone, a fresh fork), and it runs at initialize.sh
+    # Step 5, BEFORE that script fetches tags at all.
+    #
+    # But the old fallback was an EMPTY marker, and an empty marker COLLAPSES
+    # the key -- every version on a tagless checkout hashes to the same thing,
+    # which is precisely the failure mode the version component was added to
+    # fix. A cached image built at an older version would be reused and then
+    # promoted under a new one. Latent only because ci.yml's initialize
+    # checkout happens to pass fetch-tags: true + fetch-depth: 0; nothing in
+    # this script could tell.
+    #
+    # So the unresolved case stays non-fatal but becomes DISTINGUISHING: the
+    # commit sha is unique per build, so an unresolved version can never share
+    # a key with a resolved one, or with a different commit. And it says so out
+    # loud instead of degrading in silence.
+    if ! CLOSURE_VERSION="$("$SCRIPT_DIR/../version/resolve-version.sh" --current 2>/dev/null)" ||
+        [[ -z "$CLOSURE_VERSION" ]]; then
+        CLOSURE_VERSION="untagged-$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+        log_warn "No version tag reachable; closure key falls back to '$CLOSURE_VERSION'. Image reuse is disabled for this build."
+    fi
     CLOSURE_HASH+="version:${CLOSURE_VERSION}"
     CI_TAG="${CLOSURE_NAME}-$(printf '%s' "$CLOSURE_HASH" | sha256sum | cut -c1-12)"
     log_info "Generated closure tag ($CLOSURE_NAME): $CI_TAG" >&2
