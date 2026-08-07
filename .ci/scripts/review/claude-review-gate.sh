@@ -69,13 +69,10 @@ ATTEMPT_PREFIX='<!-- claude-review-attempt:'
 # the reason stated there: this file counts the numerator and review-status.sh
 # reports the fraction, and two copies of the numerator drifted once already.
 
-# Spent review passes that produced no report. Counted against the same cap as
-# posted reports, because the cost is identical; see the --mark spent-attempt
-# path for why they exist at all.
-spent_attempt_count() {
-    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.body | startswith(\"$ATTEMPT_PREFIX\")) | .id" 2>/dev/null | wc -l || true
-}
+# Spent review passes are counted by review_spent_attempt_count() in
+# ../lib/common.sh, beside review_report_count() and review_cap_for(). The local
+# copy that used to live here is gone deliberately: review-status.sh could not
+# see it, summed a smaller numerator, and its deadlock guard stopped firing.
 
 last_marker_sha() {
     gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
@@ -273,7 +270,7 @@ if [[ "${1:-}" == "--mark" ]]; then
     # An attempt marker is deliberately NOT a reviewed marker. It carries its own
     # prefix so `last_marker_sha` still cannot see it -- a spent attempt must
     # never suppress a later genuine review of the same SHA by pretending the
-    # code was read -- but `spent_attempt_count` does, so it consumes budget.
+    # code was read -- but `review_spent_attempt_count` does, so it consumes budget.
     # It records WHY, because "we stopped reviewing this PR" is only a
     # defensible message if it says what was spent on.
     if [[ "${REVIEW_OUTCOME:-}" != "success" ]]; then
@@ -425,11 +422,16 @@ case "${EVENT_NAME:-}" in
 esac
 
 reports_posted=$(review_report_count "$pr")
-attempts_spent=$(spent_attempt_count "$pr")
+attempts_spent=$(review_spent_attempt_count "$pr" "$ATTEMPT_PREFIX")
 # Budget is what was SPENT, not what was delivered. A pass that burned its turns
 # and posted nothing cost the same as one that posted a full report, and
 # charging only for successes is what let a failing SHA be re-reviewed forever.
-review_count=$((${reports_posted:-0} + ${attempts_spent:-0}))
+#
+# Via the SHARED helper, not a local sum: review-status.sh caps on the same total,
+# and when it summed differently (posted only) it read 0/3 while this script read
+# 3/3 on PR #553 -- so its deadlock guard could not fire and the PR went
+# permanently unmergeable. One numerator, in ../lib/common.sh.
+review_count=$(review_spend_total "$pr" "$ATTEMPT_PREFIX")
 pr_loc=$(pr_diff_loc "$pr")
 MAX_REVIEWS_PER_PR=$(review_cap_for "$pr_loc")
 if [[ "${review_count:-0}" -ge "$MAX_REVIEWS_PER_PR" ]]; then

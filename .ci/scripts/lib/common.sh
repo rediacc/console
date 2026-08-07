@@ -545,6 +545,34 @@ review_report_count() {
                   | .id" 2>/dev/null | wc -l || true
 }
 
+# review_spent_attempt_count <pr> <attempt-prefix> -> passes that produced no report.
+#
+# review_spend_total <pr> <attempt-prefix> -> what the CAP is actually measured against.
+#
+# THESE LIVE HERE FOR THE REASON STATED ABOVE, AND IT WAS LEARNED THE HARD WAY.
+# Moving review_cap_for() here fixed the DENOMINATOR drift and left the NUMERATOR
+# split: claude-review-gate.sh counted `reports_posted + attempts_spent` while
+# review-status.sh counted posted reports alone. On PR #553 (2026-08-07) that read
+# as 3/3 in the gate and 0/3 in review-status simultaneously. The gate refused to
+# review because the cap was reached; review-status could not see the cap as
+# reached, so its DEADLOCK GUARD -- written precisely so a capped PR never becomes
+# unmergeable -- did not fire, and posted a required FAILURE instead. The PR was
+# green, ready and thread-clean, and permanently unmergeable through no fault of
+# its author: exactly the outcome that guard exists to prevent.
+#
+# One numerator, one denominator, one file. Both callers use review_spend_total.
+review_spent_attempt_count() {
+    gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"${2}\")) | .id" 2>/dev/null | wc -l || true
+}
+
+review_spend_total() {
+    local posted spent
+    posted="$(review_report_count "$1")"
+    spent="$(review_spent_attempt_count "$1" "$2")"
+    echo $((${posted//[[:space:]]/} + ${spent//[[:space:]]/}))
+}
+
 # pr_diff_loc <pr> -> additions + deletions, or 0 when it cannot be read.
 # Failing to 0 puts an unreadable PR in the SMALLEST bucket, which is the
 # conservative direction: it spends fewer review passes, never more.
