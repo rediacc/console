@@ -122,17 +122,39 @@ def eslint_ignored(root, paths):
     return ignored
 
 
+class BiomeUnreadableError(Exception):
+    """biome did not answer the question at all."""
+
+
 def biome_processes(root, path):
-    """True when biome's file selection actually admits `path`."""
-    out = subprocess.run(
-        ["npx", "biome", "format", path],
-        capture_output=True,
-        text=True,
-        cwd=str(root),
-        check=False,
-    )
+    """True when biome's file selection admits `path`, False when it excludes it.
+
+    RAISES rather than guessing when biome did not run. The first version
+    returned `"No files were processed" not in output`, which quietly turned
+    "biome is missing" into "biome processed the file" -- and that is exactly
+    how it failed: green locally, and on CI it accused biome.json of a discarded
+    allowlist when the real story was that biome never executed. A probe that
+    cannot distinguish absence from a negative answer is not a probe.
+    """
+    try:
+        out = subprocess.run(
+            ["npx", "--no-install", "biome", "format", path],
+            capture_output=True,
+            text=True,
+            cwd=str(root),
+            check=False,
+        )
+    except OSError as exc:
+        raise BiomeUnreadableError("could not launch biome: %s" % exc) from exc
     blob = out.stdout + out.stderr
-    return "No files were processed" not in blob
+    if "No files were processed" in blob:
+        return False
+    if "Checked " in blob:
+        return True
+    raise BiomeUnreadableError(
+        "biome produced neither 'Checked' nor 'No files were processed' for %s\n"
+        "  exit=%s\n  output:\n%s" % (path, out.returncode, blob[:800] or "  (empty)")
+    )
 
 
 def main(argv=None):
@@ -155,7 +177,18 @@ def main(argv=None):
     # Both directions, because one alone is satisfiable by a broken config: an
     # allowlist that admits everything passes the anchor, and one that admits
     # nothing passes the canary.
-    if not biome_processes(root, BIOME_ANCHOR):
+    try:
+        anchor_in = biome_processes(root, BIOME_ANCHOR)
+        canary_in = biome_processes(root, BIOME_CANARY)
+    except BiomeUnreadableError as exc:
+        print(
+            "CANNOT PROBE BIOME, so no verdict about its scope is possible:\n  %s\n"
+            "  This is an ENVIRONMENT failure, not a config failure. Do not go\n"
+            "  editing biome.json on the strength of it." % exc,
+            file=sys.stderr,
+        )
+        return 1
+    if not anchor_in:
         print(
             "CONTROL FAILED: biome does not process %s, which is squarely inside its\n"
             "includes. Its file selection is broken, so nothing below is meaningful."
@@ -163,7 +196,7 @@ def main(argv=None):
             file=sys.stderr,
         )
         return 1
-    if biome_processes(root, BIOME_CANARY):
+    if canary_in:
         print(
             "biome is processing %s, which is EXCLUDED by biome.json.\n"
             "  Its `includes` allowlist is not in force. The usual cause is a `//`\n"
