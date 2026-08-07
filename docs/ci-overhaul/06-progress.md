@@ -2584,3 +2584,78 @@ same; the measurement is
 `gh api "repos/rediacc/console/actions/runs/<id>/jobs?per_page=100"` and
 comparing `started_at`/`completed_at` against each job's `timeout-minutes`
 (note `per_page`: the default of 30 silently truncates a 94-job run).
+
+## The version-check family that could not fail (2026-08-07)
+
+A release published CLI binaries built as **1.2.16** under the label **1.2.17**.
+Nothing user-facing broke — `tag-and-release` needs `validate-install-published`
+and so was skipped, and the channel pointers never advanced — but the incident
+exposed a family of guards that were *incapable of failing*. Thirteen in total.
+They are recorded here because the shared shape matters more than any one fix.
+
+### The shape
+
+Every one of them reported success while examining nothing:
+
+| guard | how it could not fail |
+|---|---|
+| `assert-artifact-version.sh` | downloaded an artifact named `cli-manifest` that **nothing has ever produced**; took its not-found → warn → `exit 0` branch on every release since it was written |
+| `verify_version()` | `grep -q "$expected"` passes on an empty expectation, on empty output, and on a **substring** — `1.2.1` "verified" against `1.2.16` |
+| Windows install validation | ran `--version` and **discarded the output** |
+| 7 of 11 install methods | never referenced `$VERSION` at all; the assertion was "the binary exits 0" |
+| the test script itself | `exit 0` after running **zero tests** — a typo'd `--method` was swallowed |
+| retry-mode releases | skipped the artifact assertion, justified by a comment claiming the artifacts "match by definition". They do not |
+| the build's own smoke test | asserted non-empty and not-`null`, never compared, and **clobbered** the variable it should have compared against |
+| `inject-env.sh --strict` | the only `0.0.0-dev` guard, with **zero callers** |
+| attestation verification | no failing exit path, and `find` over two absent directories exited 0 having verified nothing |
+| `compareVersions` | returned `0` — "equal" — for malformed versions (NaN segments, *not* the empty case: `Number("")` is `0`) |
+| the tag fetch | `2>/dev/null \|\| true` four lines before the version is computed |
+| the image closure key | an empty version collapsed it, so a cached image built at an older version could be promoted |
+| `check:ci-secret-reachability` | **the new gate itself**, on day one — see below |
+
+### The rule that came out of it
+
+> **Always have a version. Skip or fail — never a silent pass.**
+
+Every path must end VERIFIED, in an explicit VISIBLE skip, or in a FAILURE. A
+path that cannot determine a version and returns success *is* the defect. A skip
+that prints its reason and is counted satisfies the rule; a zero-total run does
+not, because it says nothing at all.
+
+### Three recurring traps, each of which bit more than once
+
+**A guard callers cannot reach is a guard that cannot be used.** `isValidVersion`
+existed but was never re-exported; `--strict` existed with zero callers;
+`assert-artifact-version.sh` looked for an artifact nobody produced. One disease,
+three costumes.
+
+**A green you have never watched go red proves nothing.** Every fix in this wave
+ships with a planted-defect control, and several of those controls were
+themselves wrong first — one fake `gh` read the wrong argument and made the
+all-good case pass vacuously, caught only because the one-bad case also went
+green.
+
+**A partial scan reads exactly like a clean one.** The new secret-reachability
+gate scanned console alone in CI, because `actions/checkout` defaults to
+`submodules: false`; it cleared its own vacuity floor on console's 42 references
+and reported green while never seeing the two repos the defect lived in. It now
+*refuses a verdict* when a recorded repo is unscannable, and `quality-static`
+checks out submodules. Measured before the fix:
+`40 secret reference(s) across 1 repo(s) are all reachable`, exit 0.
+
+### New gates
+
+- `check:ci-timeout-headroom` — every baselined job keeps ≥1.5x headroom under
+  its `timeout-minutes`. Offline; network only in `--refresh`. Found that
+  `Stage Artifacts`, the R2 upload on the release path, had **no ceiling at all**
+  in either the caller or the reusable workflow.
+- `check:ci-secret-reachability` — a workflow may not reference a secret its
+  repository cannot read. Found that `Claude Review` had **never once succeeded**
+  in `account` or `renet` (org secret scoped to `console` alone; see
+  rediacc/account#76, waivers expire 2026-09-07), and that
+  `secrets.AUTOPILOT_APP_ID` was a **namespace mismatch** — it is an org
+  *variable*, so `client-id` resolved empty at three app-token call sites.
+
+Both follow the same pattern as the older gates here: a committed baseline, a
+`--refresh` that carries the only network access, a vacuity floor, and controls
+that fire in both directions before any real read.
