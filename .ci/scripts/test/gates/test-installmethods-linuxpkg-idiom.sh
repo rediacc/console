@@ -35,7 +35,10 @@ extract_fn() {
 
 log_error() { :; }
 
-TEST_VERSION="$(grep -E '^TEST_VERSION=' "$TARGET" | head -1 | cut -d'"' -f2)"
+# `|| true`: grep exits 1 if the target no longer declares TEST_VERSION, and
+# under pipefail that would abort here — losing the explicit log_fail below,
+# which is the message that actually tells you the target was renamed.
+TEST_VERSION="$(grep -E '^TEST_VERSION=' "$TARGET" | head -1 | cut -d'"' -f2 || true)"
 [ -n "$TEST_VERSION" ] || log_fail "TEST_VERSION not found in $TARGET"
 
 eval "$(extract_fn version_token_re)"
