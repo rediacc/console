@@ -86,9 +86,32 @@ PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claud
 #
 # Deliberately an allowlist of the ladder rungs, not an open dial: an arbitrary `*/7` would
 # silently desynchronise from the windows that assume this shape.
+#
+# THE HOURLY RUNG AT :00 ONLY, and why widening it is WRONG (learned the hard way 2026-08-07).
+# The shape above collides with the CronCreate contract, which tells every session to avoid the
+# :00 and :30 marks so the fleet does not hit the API on the same instant, and offers
+# "hourly -> `7 * * * *`" as its example. A session that obeyed both got its poll cron counted
+# as a second WORK cron and was ordered to delete the cron the previous stop had ordered it to
+# create. Observed live with `37 * * * *`.
+#
+# The obvious fix -- accept any `<minute> * * * *` -- was tried and REVERTED: it took the
+# harness from 1 failure to 168. An hourly WORK cron (`17 * * * *`) is indistinguishable from
+# an hourly POLL cron by schedule alone, so widening turns every one of them into a phantom
+# second poll cron and the "one poll cron is the shape" check fires against itself. `:00` is
+# arbitrary but UNAMBIGUOUS, which is the property that matters here.
+#
+# The collision is instead resolved by POLL_COMMAND_RE below: an additive second signal that
+# reads what the cron RUNS. That extends the schedule-shape decision recorded above rather than
+# replacing it -- shape stays sufficient on its own, so nothing that works today stops working.
 POLL_SCHEDULE_RE = re.compile(
     os.environ.get("WORKLIST_POLL_SCHEDULE_RE", r"^(\*/(5|10|20|40)( \*){4}|0( \*){4})$")
 )
+
+#: What a poll cron RUNS. Additive second signal, see is_poll_cron.
+POLL_COMMAND_RE = re.compile(r"worklist\.py\s+--poll|--poll\s+[0-9a-f]{6,}")
+
+#: Any fixed-minute hourly schedule, i.e. the top rung wearing a different minute.
+POLL_HOURLY_RE = re.compile(r"^[0-5]?[0-9]( \*){4}$")
 
 #: The rungs, in order, for poll_backoff_tip. Minutes -> the cron schedule that expresses it.
 POLL_BACKOFF_LADDER = [
@@ -130,9 +153,14 @@ def poll_backoff_tip(live_crons, quiet_min, has_open_requests):
         return ""  # the shape checks own this case; do not pile on
     sched = " ".join(str(polls[0].get("schedule", "")).split())
     rungs = [s for _, s in POLL_BACKOFF_LADDER]
-    if sched not in rungs:
+    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an
+    # exact string compare, so an hourly poll at any minute but :00 used to fall through
+    # `not in rungs` and silently lose its ladder message -- same root cause as the
+    # classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
+    canon = canonical_poll_schedule(sched)
+    if canon not in rungs:
         return ""
-    i = rungs.index(sched)
+    i = rungs.index(canon)
     cur_min = POLL_BACKOFF_LADDER[i][0]
 
     if has_open_requests:
@@ -237,9 +265,14 @@ def quiet_wake_note(live_crons, streak):
         return ""
     sched = " ".join(str(polls[0].get("schedule", "")).split())
     rungs = [s for _, s in POLL_BACKOFF_LADDER]
-    if sched not in rungs:
+    # Match on the CANONICAL rung but DISPLAY the session's own schedule. `rungs.index` is an
+    # exact string compare, so an hourly poll at any minute but :00 used to fall through
+    # `not in rungs` and silently lose its ladder message -- same root cause as the
+    # classification bug at POLL_SCHEDULE_RE, quieter symptom: not a wrong message, no message.
+    canon = canonical_poll_schedule(sched)
+    if canon not in rungs:
         return ""
-    i = rungs.index(sched)
+    i = rungs.index(canon)
     cur_min = POLL_BACKOFF_LADDER[i][0]
     if i + 1 >= len(POLL_BACKOFF_LADDER):
         return M.N_QUIET_WAKE_CAPPED % (streak, cur_min)
@@ -278,11 +311,39 @@ def broken_schedules(event, now=None):
     return rows
 
 
+def canonical_poll_schedule(sched):
+    """A poll schedule mapped onto its POLL_BACKOFF_LADDER rung.
+
+    Only the hourly rung needs mapping: it is the one rung whose minute is a free choice, and
+    CronCreate tells sessions to spend that freedom on anything but :00. Every `*/N` rung is
+    already canonical. Returns the input unchanged when it is not an hourly shape, so a
+    non-ladder schedule still fails the caller's `in rungs` test.
+    """
+    if POLL_HOURLY_RE.match(sched):
+        return "0 * * * *"
+    return sched
+
+
 def is_poll_cron(c):
+    """True when this cron is the inbox poll.
+
+    TWO signals, OR'd, and the order matters. Schedule shape is still primary and still
+    sufficient on its own -- that decision is recorded above and this does not overturn it.
+    The command text is an ADDITIVE fallback for the one case shape cannot express: an hourly
+    poll parked off :00, as CronCreate's own contract instructs. It is safe precisely because
+    it is narrow -- a work cron does not invoke `worklist.py --poll`, whereas an hourly work
+    cron is indistinguishable from an hourly poll by schedule alone (168 harness failures
+    proved that the expensive way).
+
+    Absent a prompt in the payload this degrades to exactly the old behaviour.
+    """
     if not isinstance(c, dict):
         return False
     sched = " ".join(str(c.get("schedule", "")).split())
-    return bool(POLL_SCHEDULE_RE.match(sched))
+    if POLL_SCHEDULE_RE.match(sched):
+        return True
+    text = " ".join(str(c.get(k, "")) for k in ("prompt", "command", "task", "description"))
+    return bool(POLL_COMMAND_RE.search(text))
 
 
 def pollmark_path(worklist, prefix):
