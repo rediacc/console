@@ -57,6 +57,16 @@
     "declarationMap": false,
     "sourceMap": false
   },
-  "include": ["./**/*.ts", "../.ci/scripts/**/*.ts"],
+  "include": [
+    "./**/*.ts",
+    "../.ci/scripts/**/*.ts",
+    // Ambient module declarations must be visible to EVERY project that
+    // reaches the module that uses them. This project pulls in
+    // packages/cli/src/remote/vscode/bootstrap.ts transitively, so without
+    // this line its `import './setup-script.py'` is TS2307 here even though
+    // packages/cli's own build is clean -- which is exactly how it failed in
+    // CI while `tsc -b packages/cli` passed locally.
+    "../packages/cli/src/types/*.d.ts"
+  ],
   "exclude": ["dist"]
 }

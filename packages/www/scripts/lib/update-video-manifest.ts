@@ -74,7 +74,7 @@ export interface VideoManifest {
  * after one such lookup threw "Cannot read properties of undefined" and failed
  * a whole CDN build rather than degrading one player.
  */
-export type SparseManifestTree = Record<
+type SparseManifestTree = Record<
   string,
   Record<string, Record<string, ManifestAsset | undefined> | undefined> | undefined
 >;
