@@ -21,16 +21,16 @@
     "finish in ~7m; main promotes the full `edge` channel, which grows with every",
     "release. So the check is not `did it pass` but `how much headroom is left`."
   ],
-  "refreshed_at": "2026-08-07T04:43:12Z",
+  "refreshed_at": "2026-08-07T06:20:17Z",
   "refreshed_from": "last main push runs of Console CI, jobs API per_page=100",
   "jobs": {
     "Validate Promotion": {
-      "observed_max_seconds": 1715,
-      "samples": 8
+      "observed_max_seconds": 1914,
+      "samples": 4
     },
     "Stage Artifacts": {
-      "observed_max_seconds": 872,
-      "samples": 8
+      "observed_max_seconds": 736,
+      "samples": 4
     }
   }
 }
