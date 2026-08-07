@@ -228,10 +228,7 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
     //
     // Debug-only, so the user's experience is unchanged, but a broken manifest
     // stops being undiagnosable.
-    debugLog(
-      `update check failed: ${err instanceof Error ? err.message : String(err)}`,
-      'update',
-    );
+    debugLog(`update check failed: ${err instanceof Error ? err.message : String(err)}`, 'update');
   }
 
   return result;
