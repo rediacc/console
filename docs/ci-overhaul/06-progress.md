@@ -2611,7 +2611,7 @@ expected version while installing, so matching the transcript would accept
 
 ```
 Setting up rediacc-cli (1.2.17) ...      <- from the installer's own chatter
-rdc 1.2.16                               <- what the binary actually reports
+  version reported by the binary: 1.2.16 <- what the artifact actually is
 ```
 
 That is a check that cannot fail, rebuilt in a new place. The container now
