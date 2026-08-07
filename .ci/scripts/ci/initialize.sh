@@ -180,11 +180,48 @@ log_step "Calculating next version from git tags..."
 # Shallow CI checkout has no tags. Fetch ALL tags (not just reachable from HEAD)
 # using the app token. The --no-recurse-submodules prevents submodule ref errors.
 FETCH_URL="https://x-access-token:${GITHUB_PAT}@github.com/${GITHUB_REPOSITORY}.git"
-git fetch --tags --force --no-recurse-submodules "$FETCH_URL" 2>/dev/null || true
+# A SWALLOWED TAG FETCH IS A WRONG VERSION, NOT A MISSING ONE.
+#
+# This line used to end in `2>/dev/null || true`. A failed or rate-limited fetch
+# left whatever tags the checkout happened to bring, resolve-version.sh cannot
+# tell a stale tag list from a current one, and NEXT_VERSION three lines below
+# came out plausible and wrong. That is the case assert-artifact-version.sh
+# CANNOT catch, because CD's label and CI's label both descend from this one
+# command -- they agree with each other and disagree with reality.
+#
+# So: retry (a rate limit is usually transient), then FAIL. Never continue on a
+# tag list we could not refresh.
+TAG_FETCH_ERR="$(mktemp)"
+TAG_FETCH_OK=false
+for attempt in 1 2 3; do
+    if git fetch --tags --force --no-recurse-submodules "$FETCH_URL" 2>"$TAG_FETCH_ERR"; then
+        TAG_FETCH_OK=true
+        break
+    fi
+    log_warn "Tag fetch attempt ${attempt}/3 failed"
+    if [[ "$attempt" -lt 3 ]]; then
+        sleep $((attempt * 5))
+    fi
+done
+if [[ "$TAG_FETCH_OK" != "true" ]]; then
+    log_error "Could not fetch tags after 3 attempts; refusing to compute a version from a tag list that may be stale."
+    # FETCH_URL embeds the app token, and git echoes the remote in its errors,
+    # so git's stderr is redacted rather than printed raw.
+    sed "s|${GITHUB_PAT:-__no_github_pat_set__}|***|g" "$TAG_FETCH_ERR" >&2
+    rm -f "$TAG_FETCH_ERR"
+    exit 1
+fi
+rm -f "$TAG_FETCH_ERR"
+
 # `|| echo 'none'` never fired: git tag -l exits 0 when nothing matches, so an
 # untagged repo logged an empty value rather than the intended "none".
 LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1)"
-log_info "Latest tag: ${LATEST_TAG:-none}"
+if [[ -z "$LATEST_TAG" ]]; then
+    log_error "Tag fetch succeeded but no v* tag exists; tag-based versioning cannot derive a version here."
+    log_error "Create the initial tag (git tag -a v0.0.0 -m v0.0.0 && git push origin v0.0.0) before running CI."
+    exit 1
+fi
+log_info "Latest tag: $LATEST_TAG"
 NEXT_VERSION=$(.ci/scripts/version/resolve-version.sh --bump-type "$BUMP_TYPE")
 write_output "next_version" "$NEXT_VERSION"
 log_info "Next version: $NEXT_VERSION (from tag: $(.ci/scripts/version/resolve-version.sh --current))"
