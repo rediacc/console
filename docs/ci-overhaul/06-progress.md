@@ -2526,3 +2526,61 @@ verdict.
 Written in Python so the ruff gate polices it — it had 10 findings on its first
 run. Committed **unwired**: the tree cannot pass it until `bootstrap.ts` is
 migrated, and wiring a gate the tree fails is landing a red gate, not a fix.
+
+## `validate-promote` timed out and blocked a release (2026-08-07)
+
+The 0804-1 merge landed on `main` and then **did not release**. Console CI run
+`31143504009` ended `cancelled`, and the chain is worth stating exactly, because
+none of it was a code failure:
+
+`Validate Promotion` hit its `timeout-minutes: 30` at 30m13s -> its conclusion
+became `cancelled` -> `assert-ci-complete.sh` forgives `skipped` but **not**
+`cancelled`, so `CI Complete` failed -> `Pipeline Sentinel` failed on
+"Check finalize-release-sentinel conclusion" -> the finalize step never
+dispatched `cd-v2.yml`, so **no Release run was ever created**. The job's own
+cleanup step did run, so no R2 bytes were orphaned.
+
+### It was not transient, and the PR could not have caught it
+
+The standard triage question — *did this job run and pass on the PR run?* —
+answers **yes**, in 7m19s, and that answer is misleading here. Durations of the
+same job on `main` pushes, oldest first:
+
+| run | duration |
+|---|---|
+| 30249144168 | 21m57s |
+| 30289599104 | 27m20s |
+| 30324286856 | **CANCELLED 31m03s** (2026-07-28) |
+| 30528112416 | 28m35s |
+| 30596539903 | 24m09s |
+| 30621380078 | 24m56s |
+| 30692838860 | 24m01s |
+| 31143504009 | **CANCELLED 30m51s** (2026-08-07) |
+
+It had been running within minutes of its own ceiling for weeks and had already
+blown through it once, eleven days earlier, with nobody acting on it. The PR is
+fast because it promotes the tiny per-PR channel; `main` promotes the full
+`edge` channel, and that channel grows with every release. So this is the
+**"runs differently on main"** case, not the transient case: a PR check here
+goes green while proving nothing about the path that actually breaks. That is
+what licensed a direct-to-`main` fix (`afe143d9a`, `timeout-minutes: 30 -> 60`,
+measurements recorded at the site).
+
+### 60 is headroom, not a fix
+
+Promotion validation re-copies the whole channel every run, so its cost is
+O(channel size) and the trend is upward — 21m57s on 2026-07-27 to over 30m on
+2026-08-07. **If it creeps past 60, make the copy incremental rather than
+raising the number again.** Raising it a second time would be treating the
+symptom twice.
+
+### The generalisable trap
+
+A soft-required job that distinguishes `skipped` from `cancelled` turns a
+*timeout* into a *release blocker* with no error message anywhere naming the
+timeout. The failing job says only "The operation was canceled." Worth checking
+whether any other job in `ci.yml` sits close enough to its ceiling to do the
+same; the measurement is
+`gh api "repos/rediacc/console/actions/runs/<id>/jobs?per_page=100"` and
+comparing `started_at`/`completed_at` against each job's `timeout-minutes`
+(note `per_page`: the default of 30 silently truncates a 94-job run).
