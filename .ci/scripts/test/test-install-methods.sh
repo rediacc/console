@@ -4,12 +4,21 @@
 #   test-install-methods.sh [--dry-run] [--method <method>] [--version <ver>]
 #
 # Options:
-#   --dry-run            Print commands without executing
-#   --method <method>    Test specific method: binary, verify, update, promote, docker, apt, dnf, apk, pacman, homebrew, quick, all (default: all)
+#   --dry-run            Print commands without executing. A dry run VERIFIES
+#                        NOTHING, so every test it "runs" is counted as a SKIP,
+#                        never as a pass.
+#   --method <method>    Test specific method: binary, verify, update, promote,
+#                        docker, apt, dnf, apk, pacman, homebrew, npm, quick,
+#                        all (default: all)
 #   --version <ver>      Version to test (default: latest)
 #   --platform <plat>    Platform: linux, mac, win (default: auto-detect)
 #   --arch <arch>        Architecture: x64, arm64 (default: auto-detect)
 #   --local-artifacts DIR  Test with locally-built artifacts instead of downloading
+#
+# Every argument is validated. An unknown flag, an unknown --method/--platform/
+# --arch value, or a flag with no value is a hard error (exit 2), and a run that
+# executes zero tests is a failure (exit 1). See the notes on usage_error() and
+# on the summary block for the incidents that motivated both.
 #
 # Examples:
 #   ./test-install-methods.sh --dry-run
@@ -34,6 +43,30 @@ PLATFORM=""
 ARCH=""
 LOCAL_ARTIFACTS=""
 
+VALID_METHODS="binary verify update promote docker apt dnf apk pacman homebrew npm quick all"
+
+# Every unrecognised argument is fatal.
+#
+# The parser used to end with a bare `*) shift ;;`, which SWALLOWED anything it
+# did not recognise -- including a typo'd --method value, because METHOD was
+# assigned without ever being validated. The result was a run that matched no
+# test block, executed nothing, and exited 0. Reproduced live 2026-08-07:
+#
+#   .ci/scripts/test/test-install-methods.sh --dry-run --method bogus --version 1.2.17
+#   -> "Results: 0 passed, 0 failed, 0 skipped (total 0)"   EXIT=0
+#
+# A green tick that verified nothing is the exact failure mode this whole file
+# is being hardened against, so a mistyped invocation must stop the run and say
+# what the valid values are.
+usage_error() {
+    log_error "$1"
+    log_error "  usage: test-install-methods.sh [--dry-run] [--method <method>] [--version <ver>]"
+    log_error "                                 [--platform linux|mac|win] [--arch x64|arm64]"
+    log_error "                                 [--local-artifacts <dir>]"
+    log_error "  valid --method values: ${VALID_METHODS// /, }"
+    exit 2
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --dry-run)
@@ -41,30 +74,40 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --method)
-            METHOD="${2:-all}"
+            [[ $# -ge 2 && -n "${2:-}" ]] || usage_error "--method requires a value"
+            METHOD="$2"
             shift 2
             ;;
         --version)
-            VERSION="${2:-latest}"
+            [[ $# -ge 2 && -n "${2:-}" ]] || usage_error "--version requires a value"
+            VERSION="$2"
             shift 2
             ;;
         --platform)
-            PLATFORM="${2:-}"
+            [[ $# -ge 2 && -n "${2:-}" ]] || usage_error "--platform requires a value"
+            PLATFORM="$2"
             shift 2
             ;;
         --arch)
-            ARCH="${2:-}"
+            [[ $# -ge 2 && -n "${2:-}" ]] || usage_error "--arch requires a value"
+            ARCH="$2"
             shift 2
             ;;
         --local-artifacts)
-            LOCAL_ARTIFACTS="${2:-}"
+            [[ $# -ge 2 && -n "${2:-}" ]] || usage_error "--local-artifacts requires a value"
+            LOCAL_ARTIFACTS="$2"
             shift 2
             ;;
         *)
-            shift
+            usage_error "unknown argument: '$1'"
             ;;
     esac
 done
+
+case " $VALID_METHODS " in
+    *" $METHOD "*) ;;
+    *) usage_error "unknown --method '$METHOD'" ;;
+esac
 
 # Auto-detect platform and arch if not specified
 if [[ -z "$PLATFORM" ]]; then
@@ -79,6 +122,20 @@ fi
 if [[ -z "$ARCH" ]]; then
     ARCH="$(detect_arch)"
 fi
+
+# An unsupported platform or arch would match no test block and produce the same
+# silent zero-total run as a typo'd --method. detect_arch() genuinely returns
+# "unknown" on a machine that is neither x86_64 nor aarch64, so this also stops
+# such a host from reporting a clean run.
+case "$PLATFORM" in
+    linux | mac | win) ;;
+    *) usage_error "unknown --platform '$PLATFORM' (expected linux, mac, or win)" ;;
+esac
+
+case "$ARCH" in
+    x64 | arm64) ;;
+    *) usage_error "unknown --arch '$ARCH' (expected x64 or arm64; detect_arch reports 'unknown' on an unsupported machine)" ;;
+esac
 
 # =============================================================================
 # Configuration
@@ -122,16 +179,18 @@ run_test() {
 
     log_step "TEST: $name"
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY-RUN] Would run: $*"
-        ((PASS++)) || true
-        return 0
-    fi
-
     local exit_code=0
     "$@" || exit_code=$?
 
-    if [[ $exit_code -eq 0 ]]; then
+    if [[ $exit_code -eq 0 && "$DRY_RUN" == "true" ]]; then
+        # A dry run downloads nothing, installs nothing and compares no version.
+        # It used to be counted as a PASS, which made "N passed, 0 failed"
+        # indistinguishable from a real verification in the summary line. It is
+        # a SKIP: visible in the summary, which the rule allows, where a silent
+        # pass is not.
+        log_warn "SKIP: $name - dry-run, nothing was verified"
+        ((SKIP++)) || true
+    elif [[ $exit_code -eq 0 ]]; then
         log_info "PASS: $name"
         ((PASS++)) || true
     elif [[ $exit_code -eq 77 ]]; then
@@ -232,6 +291,83 @@ verify_version() {
     # another digit or dot, so 1.2.1 no longer matches 1.2.16 or 11.2.1.
     local want="${expected#v}"
     echo "$output" | grep -qE "(^|[^0-9.])v?${want//./\\.}([^0-9.]|\$)"
+}
+
+# =============================================================================
+# Container version fencing
+# =============================================================================
+#
+# Seven of the eleven install methods -- apt, dnf, apk, pacman, npm, linuxbrew
+# and quick -- used to end their `docker run ... set -e` heredoc with a bare
+#
+#     ${PKG_BINARY_NAME} --version
+#
+# whose output was never captured and never compared. $VERSION was referenced
+# ZERO times inside any of those functions, so the only thing asserted was "the
+# installed binary exits 0" -- which is exactly what a 1.2.16 binary published
+# under the label 1.2.17 does. Both ci.yml and ct-install-methods.yml were
+# passing `--version <next_version>` into every one of them, so the steps read
+# like version checks in the workflow and were not.
+#
+# The comparison is done on the HOST so it goes through verify_version, the one
+# primitive whose silent-pass classes are pinned by tests
+# (gates/test-verify-version.sh). That is only safe if we compare the binary's
+# own output and nothing else: `apt-get install`, `npm install -g` and
+# `brew install` all PRINT the package version themselves, so grepping the whole
+# container transcript for the expected version would pass even when the
+# installed binary reported something different -- a check that cannot fail,
+# swapped in for one that never ran.
+#
+# So the container fences its version output between two markers, and the host
+# extracts only what lies between them.
+VERSION_FENCE_BEGIN="__RDC_VERSION_BEGIN__"
+VERSION_FENCE_END="__RDC_VERSION_END__"
+
+# Emit the fenced version probe to paste into a container script. The command's
+# stderr is folded into stdout INSIDE the container: docker multiplexes stdout
+# and stderr as separate streams, so a version printed on stderr could otherwise
+# arrive outside the fence.
+version_fence_probe() {
+    printf 'echo "%s"; %s 2>&1; echo "%s"' "$VERSION_FENCE_BEGIN" "$1" "$VERSION_FENCE_END"
+}
+
+# Pull the fenced region out of a container transcript, markers removed.
+# Unanchored on purpose: install output that ends without a trailing newline
+# would otherwise leave the begin marker glued to the end of another line.
+extract_fenced_version() {
+    printf '%s\n' "$1" |
+        sed -n "/${VERSION_FENCE_BEGIN}/,/${VERSION_FENCE_END}/p" |
+        grep -v -e "$VERSION_FENCE_BEGIN" -e "$VERSION_FENCE_END" || true
+}
+
+# run_container_version_test <label> <command...>
+#
+# Runs the command (a `docker run ...` invocation whose script ends in a fenced
+# version probe), then requires the fenced output to match $VERSION exactly.
+# Fails when the container fails, when no fenced output came back at all, and
+# when the version differs. The full transcript is printed on any failure --
+# capturing it costs the live streaming the old bare invocation had, so it is
+# reprinted whenever it could matter.
+run_container_version_test() {
+    local label="$1"
+    shift
+
+    local raw rc=0
+    raw="$("$@" 2>&1)" || rc=$?
+    if [[ $rc -ne 0 ]]; then
+        log_error "$label: container exited $rc before a version could be verified"
+        printf '%s\n' "$raw" >&2
+        return 1
+    fi
+
+    local reported
+    reported="$(extract_fenced_version "$raw")"
+    if ! verify_version "$reported" "$VERSION"; then
+        log_error "$label: version mismatch - expected '$VERSION', got '$reported'"
+        printf '%s\n' "$raw" >&2
+        return 1
+    fi
+    log_info "  $label: version verified ($reported)"
 }
 
 # =============================================================================
@@ -398,6 +534,16 @@ test_update_check() {
         return 77
     fi
 
+    # Without a channel the URL below would be `.../cli//manifest.json`, a path
+    # that names nothing. Same reasoning as test_binary_download: a run that
+    # staged no artifacts has no manifest to check, and must say so rather than
+    # chase a URL that cannot exist.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: there is no channel manifest to check."
+        log_warn "  Skipping Update Check. Expected on schedule and workflow_dispatch."
+        return 77
+    fi
+
     local manifest_url="${REPO_URL}/cli/${REPO_CHANNEL}/manifest.json"
 
     if [[ "$DRY_RUN" == "true" ]]; then
@@ -412,25 +558,46 @@ test_update_check() {
         return 1
     }
 
-    if ! echo "$manifest" | jq -e '.version, .binaries' >/dev/null 2>&1; then
-        log_error "Invalid manifest structure"
+    # The old structural guard was `jq -e '.version, .binaries'`, which accepts
+    # a manifest whose binaries map is EMPTY: `{}` is truthy in jq, and jq -e
+    # only fails on false/null. A manifest that named no binary at all therefore
+    # passed the structure check, and then passed the reachability check too
+    # (see below). Require both fields to be present AND non-empty.
+    if ! echo "$manifest" |
+        jq -e '(.version | type) == "string" and ((.version | length) > 0)
+               and (.binaries | type) == "object" and ((.binaries | length) > 0)' >/dev/null 2>&1; then
+        log_error "Invalid manifest structure at $manifest_url:"
+        log_error "  .version must be a non-empty string and .binaries a non-empty object."
+        echo "$manifest" | head -40 >&2
         return 1
     fi
 
+    # The manifest version was PRINTED and never compared -- $VERSION did not
+    # appear anywhere in this function, so a channel still advertising the
+    # previous release looked identical to a correctly published one.
     local manifest_ver
     manifest_ver=$(echo "$manifest" | jq -r '.version')
-    log_info "  Manifest version: $manifest_ver"
+    if ! verify_version "$manifest_ver" "$VERSION"; then
+        log_error "Manifest version mismatch at $manifest_url: expected '$VERSION', got '$manifest_ver'"
+        return 1
+    fi
+    log_info "  Manifest version verified: $manifest_ver"
 
-    # Verify at least one binary URL is reachable
+    # This used to read the URL with `// empty` and, when it came back empty,
+    # skip the reachability check and return 0 -- "no binary listed" was
+    # reported as a pass. An update manifest that lists no linux-x64 binary is
+    # broken; say so.
     local binary_url
     binary_url=$(echo "$manifest" | jq -r '.binaries["linux-x64"].url // empty')
-    if [[ -n "$binary_url" ]]; then
-        if ! curl -fsSL -o /dev/null --head "$binary_url" 2>/dev/null; then
-            log_error "Binary URL not reachable: $binary_url"
-            return 1
-        fi
-        log_info "  Binary URL reachable: $binary_url"
+    if [[ -z "$binary_url" ]]; then
+        log_error "Manifest at $manifest_url has no .binaries[\"linux-x64\"].url"
+        return 1
     fi
+    if ! curl -fsSL -o /dev/null --head "$binary_url" 2>/dev/null; then
+        log_error "Binary URL not reachable: $binary_url"
+        return 1
+    fi
+    log_info "  Binary URL reachable: $binary_url"
 }
 
 # =============================================================================
@@ -595,7 +762,7 @@ test_apt_install() {
         return 0
     fi
 
-    docker run --rm "$distro" bash -c "
+    run_container_version_test "APT ($label)" docker run --rm "$distro" bash -c "
         set -e
         # Point apt at the Azure-hosted Ubuntu mirror. The upstream
         # archive.ubuntu.com / security.ubuntu.com mirrors routinely become
@@ -636,8 +803,9 @@ test_apt_install() {
         done
         apt-get install -y -qq ${PKG_NAME} >/dev/null 2>&1
 
-        # Verify
-        ${PKG_BINARY_NAME} --version
+        # Verify: fenced so the host compares the BINARY's output, not the
+        # version apt-get itself printed while installing the package.
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -654,7 +822,7 @@ test_dnf_install() {
         return 0
     fi
 
-    docker run --rm "$distro" bash -c "
+    run_container_version_test "DNF ($label)" docker run --rm "$distro" bash -c "
         set -e
         # Add repo
         curl -fsSL ${REPO_URL}/rpm${REPO_CHANNEL_SUFFIX}/rediacc.repo -o /etc/yum.repos.d/rediacc.repo
@@ -662,8 +830,8 @@ test_dnf_install() {
         # Install
         dnf install -y ${PKG_NAME} >/dev/null 2>&1
 
-        # Verify
-        ${PKG_BINARY_NAME} --version
+        # Verify (fenced; see run_container_version_test)
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -680,7 +848,7 @@ test_apk_install() {
         return 0
     fi
 
-    docker run --rm "$distro" sh -c "
+    run_container_version_test "APK ($label)" docker run --rm "$distro" sh -c "
         set -e
         # Add APK repository (apk appends arch automatically)
         echo '${REPO_URL}/apk${REPO_CHANNEL_SUFFIX}' >> /etc/apk/repositories
@@ -689,8 +857,8 @@ test_apk_install() {
         # Install from repo
         apk add --no-cache --allow-untrusted ${PKG_NAME}
 
-        # Verify
-        ${PKG_BINARY_NAME} --version
+        # Verify (fenced; see run_container_version_test)
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -707,7 +875,7 @@ test_pacman_install() {
         return 0
     fi
 
-    docker run --rm "$distro" bash -c "
+    run_container_version_test "Pacman ($label)" docker run --rm "$distro" bash -c "
         set -e
         # Add rediacc repository
         echo '[rediacc]' >> /etc/pacman.conf
@@ -719,8 +887,8 @@ test_pacman_install() {
         # Install from repo
         pacman -S --noconfirm ${PKG_NAME}
 
-        # Verify
-        ${PKG_BINARY_NAME} --version
+        # Verify (fenced; see run_container_version_test)
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -739,10 +907,13 @@ test_npm_install() {
 
     local npm_url="${RELEASES_BASE_URL}/npm${REPO_CHANNEL_SUFFIX}/rediacc-cli-latest.tgz"
 
-    docker run --rm "$distro" bash -c "
+    run_container_version_test "npm ($label)" docker run --rm "$distro" bash -c "
         set -e
         npm install -g '${npm_url}'
-        ${PKG_BINARY_NAME} --version
+        # Fenced: npm prints the package version itself while installing, so an
+        # unfenced grep over this transcript would match even if the installed
+        # binary reported something else.
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -766,10 +937,15 @@ test_homebrew_install() {
     brew tap rediacc/tap
     brew install "${HOMEBREW_TAP}"
 
-    # Verify
+    # Verify. This one already compared its version, but it failed MUTELY --
+    # verify_version's status was returned bare, so the summary said FAIL with
+    # no indication of which version was wrong. Every other call site names both.
     local output
     output=$("${PKG_BINARY_NAME}" --version 2>&1 || true)
-    verify_version "$output" "$VERSION"
+    if ! verify_version "$output" "$VERSION"; then
+        log_error "Version mismatch: expected '$VERSION', got '$output'"
+        return 1
+    fi
 }
 
 test_homebrew_linuxbrew() {
@@ -778,11 +954,12 @@ test_homebrew_linuxbrew() {
         return 0
     fi
 
-    docker run --rm homebrew/brew:latest bash -c "
+    run_container_version_test "Homebrew (Linuxbrew)" docker run --rm homebrew/brew:latest bash -c "
         set -e
         brew tap rediacc/tap
         brew install ${HOMEBREW_TAP}
-        ${PKG_BINARY_NAME} --version
+        # Fenced: brew prints the formula version while installing.
+        $(version_fence_probe "${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -801,7 +978,7 @@ test_quick_install() {
 
     local expected_channel="${REPO_CHANNEL:-stable}"
 
-    docker run --rm \
+    run_container_version_test "Quick Install ($label)" docker run --rm \
         -e "REDIACC_RELEASES_URL=${RELEASES_BASE_URL}" \
         -e "REDIACC_CHANNEL=${REPO_CHANNEL:-stable}" \
         "$distro" bash -c "
@@ -833,8 +1010,11 @@ test_quick_install() {
         # Run install script from channel
         echo \"\$script\" | bash
 
-        # Verify (install.sh puts binary in ~/.local/bin)
-        ~/.local/bin/${PKG_BINARY_NAME} --version
+        # Verify (install.sh puts binary in ~/.local/bin), fenced so the host
+        # compares the binary's output and not the version install.sh echoed.
+        # \$HOME rather than ~: the path is built as a string here and expanded
+        # by the container's shell, where a tilde inside a string would not.
+        $(version_fence_probe "\$HOME/.local/bin/${PKG_BINARY_NAME} --version")
     "
 }
 
@@ -889,11 +1069,19 @@ fi
 
 # Channel verification tests (binary + channel resolution + manifest)
 if [[ "$METHOD" == "verify" || "$METHOD" == "all" ]]; then
+    log_step "Channel Verification Tests"
     if [[ "$PLATFORM" == "linux" && -n "$REPO_CHANNEL" ]]; then
-        log_step "Channel Verification Tests"
         run_test "Channel Verify (${REPO_CHANNEL})" test_channel_verify
-        echo ""
+    elif [[ "$PLATFORM" != "linux" ]]; then
+        # Registering a skip rather than silently registering nothing: with
+        # `--method verify` on a non-Linux runner this block used to fall
+        # through without a single counter moving, so the run reported
+        # "total 0" and exited 0.
+        skip_test "Channel Verify" "channel verification runs on Linux only (platform: $PLATFORM)"
+    else
+        skip_test "Channel Verify" "no REPO_CHANNEL: this run staged no artifacts"
     fi
+    echo ""
 fi
 
 # Update check tests (manifest + binary URL reachability)
@@ -1022,13 +1210,31 @@ fi
 # =============================================================================
 
 echo ""
-log_step "Results: $PASS passed, $FAIL failed, $SKIP skipped (total $((PASS + FAIL + SKIP)))"
+TOTAL=$((PASS + FAIL + SKIP))
+log_step "Results: $PASS passed, $FAIL failed, $SKIP skipped (total $TOTAL)"
 
 if [[ ${#FAILED_TESTS[@]} -gt 0 ]]; then
     log_error "Failed tests:"
     for t in "${FAILED_TESTS[@]}"; do
         log_error "  - $t"
     done
+fi
+
+# Success used to be defined as "nothing failed", which is also true of a run
+# that did nothing at all -- and that is not a hypothetical: a typo'd --method
+# produced exactly that, "0 passed, 0 failed, 0 skipped (total 0)" with EXIT=0.
+# Success is "something was accounted for".
+#
+# An ALL-SKIPPED run is deliberately still a success. Every skip is printed as
+# "SKIP: <name> - <reason>" and counted in the line above, so a run that could
+# not verify anything says so where a human and the CI log both see it; that is
+# the visible-skip half of the rule. A zero-TOTAL run says nothing at all, which
+# is the half that must never pass.
+if ((TOTAL == 0)); then
+    log_error "This run executed ZERO tests, so it verified NOTHING."
+    log_error "  method='$METHOD' platform='$PLATFORM' arch='$ARCH' channel='${REPO_CHANNEL:-<empty>}'"
+    log_error "  No test block matched that combination. Refusing to report success."
+    exit 1
 fi
 
 [[ $FAIL -eq 0 ]] || exit 1
