@@ -182,6 +182,18 @@ report_comments() {
     echo "$out"
 }
 
+# Spent review passes: budget burned, NOTHING posted. Counted against the same cap
+# as a posted report, because the cost is identical.
+attempt_comments() {
+    local n="$1" i out="[]"
+    for ((i = 1; i <= n; i++)); do
+        out="$(jq --argjson id "$((200 + i))" \
+            '. + [{id: $id, user: {login: "github-actions[bot]"},
+                   body: "<!-- claude-review-attempt: deadbeef -->\nburned its turns"}]' <<<"$out")"
+    done
+    echo "$out"
+}
+
 # setup <TEMP> -- default world: open non-draft PR #42, head NEW_SHA, marker on
 # NEW_SHA, no reports, all hygiene green.
 setup() {
@@ -466,7 +478,13 @@ test_cap_reached_warns_instead_of_deadlocking() {
     jq -s 'add' "$t/comments-marker.json" "$t/comments-reports.json" >"$t/fixtures/comments.json"
     echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
         >"$t/fixtures/compare.json"
-    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap3.sh"
+    # BOTH prefixes: review-status.sh parses ATTEMPT_PREFIX as well now, because the
+    # cap counts posted reports PLUS spent attempts. It REFUSES TO RUN without it,
+    # deliberately -- a missing prefix reads the cap LOW and silently recreates the
+    # deadlock this very test asserts against. A stub carrying only MARKER_PREFIX
+    # therefore exits before posting, which is exactly what this fixture used to do.
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" \
+        "ATTEMPT_PREFIX='<!-- claude-review-attempt:'" >"$t/gate-cap3.sh"
     pr_size "$t" 900 100 # 1,000 lines -> smallest tier, cap 3
 
     run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
@@ -476,6 +494,34 @@ test_cap_reached_warns_instead_of_deadlocking() {
     assert_contains "$(posted "$t" '.output.summary')" "REVIEW CAP REACHED" \
         "the pass is loud, not silent"
     log_pass "cap reached + stale marker => success WITH A WARNING (no permanent block)"
+}
+
+# THE SHAPE THAT ACTUALLY HAPPENED, and that the case above cannot see. PR #553 hit
+# its cap with ZERO posted reports and THREE spent attempts -- three reviews that
+# burned their turn budget and posted nothing. review-status.sh counted posted
+# reports alone, read 0/3, concluded the cap was NOT reached, and posted a REQUIRED
+# failure, leaving a green, ready, thread-clean PR permanently unmergeable: exactly
+# what the guard above exists to prevent. The sibling case passes under EITHER
+# numerator, because 3 posted reports look identical to both.
+test_cap_reached_by_spent_attempts_alone() {
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" | jq -s '.' >"$t/comments-marker.json"
+    attempt_comments 3 >"$t/comments-attempts.json"
+    jq -s 'add' "$t/comments-marker.json" "$t/comments-attempts.json" >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" \
+        "ATTEMPT_PREFIX='<!-- claude-review-attempt:'" >"$t/gate-cap3.sh"
+    pr_size "$t" 900 100 # 1,000 lines -> smallest tier, cap 3
+
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap3.sh"
+    assert_eq "$(posted "$t" '.conclusion')" success \
+        "cap reached by SPENT attempts alone must stay mergeable (the #553 deadlock)"
+    assert_contains "$(posted "$t" '.output.summary')" "REVIEW CAP REACHED" \
+        "the pass is loud here too"
+    log_pass "0 posted + 3 spent => cap reached => success WITH A WARNING"
 }
 
 test_below_cap_the_same_state_fails() {
@@ -488,7 +534,13 @@ test_below_cap_the_same_state_fails() {
         >"$t/fixtures/compare.json"
     # Identical world, cap raised: the warning must become a failure. If it does
     # not, the cap value is not actually being read.
-    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" >"$t/gate-cap9.sh"
+    # BOTH prefixes: review-status.sh parses ATTEMPT_PREFIX as well now, because the
+    # cap counts posted reports PLUS spent attempts. It REFUSES TO RUN without it,
+    # deliberately -- a missing prefix reads the cap LOW and silently recreates the
+    # deadlock this very test asserts against. A stub carrying only MARKER_PREFIX
+    # therefore exits before posting, which is exactly what this fixture used to do.
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" \
+        "ATTEMPT_PREFIX='<!-- claude-review-attempt:'" >"$t/gate-cap9.sh"
     # THE POINT OF THE TIERS: identical review count, different verdict, purely
     # because the diff is large enough to earn a bigger budget.
     pr_size "$t" 60000 10000 # 70,000 lines -> top tier, cap 7
@@ -1270,6 +1322,7 @@ with_temp_dir test_missing_hygiene_dir_hard_fails
 with_temp_dir test_unparseable_constants_hard_fail
 
 with_temp_dir test_cap_reached_warns_instead_of_deadlocking
+with_temp_dir test_cap_reached_by_spent_attempts_alone
 with_temp_dir test_below_cap_the_same_state_fails
 
 with_temp_dir test_anchors_to_current_head_not_event_sha
