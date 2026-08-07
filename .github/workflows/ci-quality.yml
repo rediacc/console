@@ -172,10 +172,6 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
 
-      - name: Every source file reaches a linter
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_lint_scope_coverage.py
-
       - name: Shell commands exist on the runner image
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/check-commands.sh
@@ -477,6 +473,10 @@ jobs:
       - name: Schema coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-schema-coverage
+
+      - name: Every source file reaches a linter
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_lint_scope_coverage.py
 
       - name: Workflow banned patterns
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

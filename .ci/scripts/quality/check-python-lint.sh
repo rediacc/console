@@ -50,7 +50,12 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "  which would read exactly like a clean tree. Refusing to report a pass." >&2
     exit 1
 fi
-mapfile -t PY_FILES < <(git ls-files -- '*.py' ':!:private/**')
+# A read loop, NOT mapfile: check-commands.sh rejects mapfile as unavailable in
+# the minimal CI shell, and it is right -- the gate failed on exactly that.
+PY_FILES=()
+while IFS= read -r _f; do
+    [[ -n "$_f" ]] && PY_FILES+=("$_f")
+done < <(git ls-files -- '*.py' ':!:private/**')
 count="${#PY_FILES[@]}"
 
 # The floor is a real number, not 1. The interesting failure is a glob that

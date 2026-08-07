@@ -7911,8 +7911,10 @@ mkdir -p "$NESTBASE/outer/.claude/hooks/stop" "$NESTBASE/outer/nested"
 : >"$NESTBASE/outer/.git" # a FILE, as a worktree or submodule writes it
 : >"$NESTBASE/outer/nested/.git"
 OUT=$(
-    CLAUDE_PROJECT_DIR="$NESTBASE/outer" NESTBASE="$NESTBASE" HOOKDIR="$(dirname "$HOOK")" \
-        python3 - <<'PYEOF'
+    export CLAUDE_PROJECT_DIR="$NESTBASE/outer" HOOKDIR
+    HOOKDIR="$(dirname "$HOOK")"
+    export NESTBASE
+    python3 - <<'PYEOF'
 import os
 import sys
 
