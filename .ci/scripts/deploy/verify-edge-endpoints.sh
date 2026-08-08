@@ -44,6 +44,46 @@ set +o pipefail
 
 require_cmd curl
 require_cmd jq
+
+# ---------------------------------------------------------------------------
+# EVERY assertion below reads an EVENTUALLY-CONSISTENT surface (Cloudflare
+# Workers, R2 behind a CDN) moments after a deploy, and every one of them used
+# to sample it EXACTLY ONCE. On 2026-08-08 that lost the race: release run
+# 31234422166 deployed edge successfully, then failed
+# `edge.rediacc.com footer does not render v1.2.19` -- while edge was in fact
+# already serving v1.2.19. The cascade skipped `Tag & GitHub Release`, so a
+# perfectly good release shipped with NO git tag and NO GitHub Release.
+#
+# One unlucky sample must not be able to do that. `fetch_retry` re-reads until
+# the surface agrees or the budget runs out; a genuinely broken deploy still
+# fails, it just has to fail EVERY attempt.
+#
+# NOT a blanket `curl --retry`: that retries transport errors only, and the
+# failures here are 200-OK-but-stale, which --retry cannot see.
+EDGE_RETRIES="${EDGE_RETRIES:-6}"
+EDGE_RETRY_SLEEP="${EDGE_RETRY_SLEEP:-5}"
+
+# fetch_retry <description> <predicate-command...>
+# Runs the predicate until it succeeds or the budget is exhausted. The predicate
+# does its own fetching and matching, so a stale-but-200 response is a failure
+# it can retry -- which is the whole point.
+fetch_retry() {
+    local what="$1"
+    shift
+    local attempt=1
+    while :; do
+        if "$@"; then
+            [[ "$attempt" -gt 1 ]] && echo "  ${what}: agreed on attempt ${attempt}/${EDGE_RETRIES}"
+            return 0
+        fi
+        if [[ "$attempt" -ge "$EDGE_RETRIES" ]]; then
+            echo "  ${what}: still disagreeing after ${EDGE_RETRIES} attempts over $((EDGE_RETRIES * EDGE_RETRY_SLEEP))s" >&2
+            return 1
+        fi
+        attempt=$((attempt + 1))
+        sleep "$EDGE_RETRY_SLEEP"
+    done
+}
 VERSION="${VERSION:?verify-edge-endpoints.sh: VERSION must be set}"
 WORKERS_ONLY="${WORKERS_ONLY:-}"
 
@@ -54,8 +94,11 @@ cd "$(get_repo_root)"
 echo "Verifying edge deployment for v${VERSION}..."
 
 # Marketing worker — also verify the channel default was rewritten.
-INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh)
-if ! echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
+_install_sh_baked() {
+    INSTALL_SH=$(curl -fsSL https://edge.rediacc.com/install.sh 2>/dev/null) || return 1
+    echo "$INSTALL_SH" | grep -q 'REDIACC_CHANNEL:-edge'
+}
+if ! fetch_retry "install.sh channel" _install_sh_baked; then
     echo "::error::edge.rediacc.com/install.sh is not baked to channel=edge"
     echo "$INSTALL_SH" | grep -E 'REDIACC_CHANNEL' || true
     exit 1
@@ -86,15 +129,21 @@ S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$
 }
 echo "  worker fingerprint (redirect table): OK (/about=410)"
 
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/en?cb=$RNDB")
-[[ "$S" == "200" ]] || {
+_probe_en() {
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/en?cb=$RNDB")
+    [[ "$S" == "200" ]]
+}
+fetch_retry "en 200" _probe_en || {
     echo "::error::edge /en expected 200 (html_handling=drop-trailing-slash), got $S"
     exit 1
 }
 echo "  worker fingerprint (html_handling): OK (/en=200, no 307)"
 
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
-[[ "$S" == "200" ]] || {
+_probe_font() {
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/fonts/inter/Inter-Regular.woff2?cb=$RNDC")
+    [[ "$S" == "200" ]]
+}
+fetch_retry "font 200" _probe_font || {
     echo "::error::edge mixed-case font expected 200 (asset-path guard), got $S"
     exit 1
 }
@@ -108,9 +157,12 @@ echo "  worker fingerprint (asset-path guard): OK (Inter-Regular.woff2=200)"
 # -- the regex collapses any HTML comments between the "v" and
 # the semver before matching.
 if [[ "$WORKERS_ONLY" != "true" ]]; then
-    FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/)
-    FOOTER_NORMALIZED=$(echo "$FOOTER_HTML" | sed 's/<!--[^>]*-->//g')
-    if ! echo "$FOOTER_NORMALIZED" | grep -qE "footer-version[^<]*>v${VERSION}<"; then
+    _footer_matches() {
+        FOOTER_HTML=$(curl -fsSL https://edge.rediacc.com/en/ 2>/dev/null) || return 1
+        echo "$FOOTER_HTML" | sed 's/<!--[^>]*-->//g' |
+            grep -qE "footer-version[^<]*>v${VERSION}<"
+    }
+    if ! fetch_retry "marketing footer" _footer_matches; then
         echo "::error::edge.rediacc.com footer does not render v${VERSION}"
         echo "$FOOTER_HTML" | grep -oE 'footer-version[^<]*>[^<]*<[^>]*>[^<]*<' | head -3 || true
         exit 1

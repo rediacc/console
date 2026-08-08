@@ -70,6 +70,7 @@
     "check:ci-quality-gates": ".ci/scripts/test/run-all.sh",
     "check:ci-security-audit": ".ci/scripts/security/audit.sh",
     "check:ci-shell-commands": ".ci/scripts/security/check-commands.sh",
+    "check:ci-edge-verify-retries": ".ci/scripts/test/gates/test-edge-verify-retries.sh",
     "check:ci-review-turn-capacity": ".ci/scripts/quality/check-review-turn-capacity.sh",
     "check:ci-review-cap-coherence": ".ci/scripts/quality/check-review-cap-coherence.sh",
     "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",
