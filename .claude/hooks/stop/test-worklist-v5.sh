@@ -5262,7 +5262,7 @@ say "answer
 
 ## Remaining
 - #7 fully planned and unblocked (pending)"
-OUT="$(run)"   # seed the clock
+OUT="$(run)" # seed the clock
 python3 - "$WL" <<'PYEOF'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
@@ -5297,7 +5297,7 @@ say "answer
 ## Remaining
 - #6 the prerequisite (pending)
 - #7 parked behind 6 (pending)"
-OUT="$(run)"   # seed
+OUT="$(run)" # seed
 python3 - "$WL" <<'PYEOF'
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
@@ -5961,7 +5961,7 @@ export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 printf 'stream\n' >"$BASE/bgout/bw4.output"
 BG='[{"id":"bw4","type":"shell","status":"running","description":"watch"}]'
 task 6 in_progress "the live prerequisite"
-task 7 pending "thing" 6   # v19: blocked scenery so the pure-wait premise holds
+task 7 pending "thing" 6 # v19: blocked scenery so the pure-wait premise holds
 say "answer
 
 ## Remaining
