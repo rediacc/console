@@ -74,6 +74,15 @@ CREATE_ON_DEMAND=(
     # until the first red night, and demanding it up front would fail this gate
     # on a repo whose nightly has never gone red.
     "nightly-red|.ci/scripts/ci/report-nightly-status.cjs"
+    # BLOCKER: claude-review-gate.sh --apply-labels creates `ci` immediately
+    # before its first use, the same pattern and for the same reason: the label
+    # is brand new, and declaring it here without creating it would fail
+    # direction (a) until some human ran `gh label create`. Creating it up front
+    # instead is the ordering trap in reverse -- the applier only reaches main
+    # after this file does, so the label would sit live and undeclared for the
+    # length of one PR and fail direction (b). Create-on-demand dissolves both
+    # halves.
+    "ci|.ci/scripts/review/claude-review-gate.sh"
 )
 
 [ -f "$LABELS_FILE" ] || {

@@ -58,6 +58,24 @@ Process:
 
    severity is one of: critical, high, medium, low.
 
+7. AFTER that section, close the report with a SECOND machine-readable block
+   the workflow uses to label this PR. One JSON object, no prose inside the
+   fence:
+
+   ```json:pr-labels
+   {"bump": "patch", "kind": ["ci"], "why": "one short line"}
+   ```
+
+   - "bump" is your read of the release this PR earns: "major" for a breaking
+     change to CLI commands, config schema, or an on-disk or wire format;
+     "minor" for a new user-facing capability; "patch" for everything else.
+     Default to "patch" when unsure. A "major" verdict is a RECOMMENDATION
+     only: the workflow never applies a major bump on your word alone, so say
+     plainly in the summary why you think it is one.
+   - "kind" is 0 to 2 entries drawn from exactly: bug, feature, docs, ci. Omit
+     a kind rather than guess one. An empty array is a fine answer.
+   - "why" is one short line, for the humans reading the report.
+
 Rules:
 - Do not push commits, create branches, or modify files.
 - Do not approve or request changes; comments only.

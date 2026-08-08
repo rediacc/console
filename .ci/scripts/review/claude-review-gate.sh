@@ -21,6 +21,10 @@
 # Post-findings mode (--post-findings): turn the report's machine-readable
 #   findings block into line-anchored review comments.
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA
+# Apply-labels mode (--apply-labels): label the PR from the SAME review pass,
+#   using a second machine-readable fence in the same report plus a mechanical
+#   floor derived from the changed paths. Advisory end to end.
+#   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
 # Mark mode (--mark): upsert the marker comment after a review.
 #   Env: GH_TOKEN GITHUB_REPOSITORY PR_NUMBER HEAD_SHA EXECUTION_FILE
 #        REVIEW_OUTCOME (the review step's outcome; anything other than
@@ -47,6 +51,33 @@ MARKER_PREFIX='<!-- claude-reviewed:'
 # review budget but must never satisfy `last_marker_sha`, or a review that read
 # nothing would suppress a later real one for the same SHA.
 ATTEMPT_PREFIX='<!-- claude-review-attempt:'
+# The label ledger (--apply-labels). A THIRD distinct prefix, for the same
+# reason the second one exists: it must be invisible to last_marker_sha, to
+# review_report_count (which keys on "**Claude finished"), and to the
+# spent-attempt counter, or a bookkeeping comment would look like a review.
+LEDGER_PREFIX='<!-- claude-labels:'
+
+# THE HARD WHITELIST for --apply-labels. This is the security boundary of that
+# arm, not a tidiness rule: adding a label the repo does not carry CREATES it,
+# so an unfiltered hallucinated name would appear on the repo AND fail
+# check:ci-label-inventory for everyone until someone deleted it by hand. Model
+# output reaches the labels API only through add_desired(), which refuses
+# anything not listed here.
+#
+# `bump-major` is DELIBERATELY ABSENT (operator ruling): a wrong minor is
+# cosmetic, a wrong major is a statement to every consumer of the version
+# stream. The model may RECOMMEND one in its report; applying it stays a human
+# act, and its absence here means no code path in this arm can reach it.
+MANAGED_LABELS=(bug enhancement documentation ci bump-minor)
+
+# Created on demand immediately before its first use, the nightly-red pattern
+# (see the CREATE_ON_DEMAND allowlist in ../quality/check-label-inventory.sh).
+# The colour and description are asserted equal to .github/labels.yml by
+# test-review-labels.sh, since this file cannot read labels.yml: the post-review
+# steps run from a staged copy of .ci alone.
+CREATE_ON_DEMAND_LABEL='ci'
+CREATE_ON_DEMAND_COLOR='FEF2C0'
+CREATE_ON_DEMAND_DESC='Build system, CI workflows, or .ci tooling (applied by the automated review)'
 
 # Operator directive (2026-07-24): each review pass costs real turns/tokens,
 # and a security-critical hook file went through 5 consecutive passes each
@@ -266,6 +297,186 @@ ${fbody}" >/dev/null 2>&1; then
     exit 0
 fi
 
+if [[ "${1:-}" == "--apply-labels" ]]; then
+    # Label the PR from the review pass that just ran. Two inputs, in this
+    # order of trust:
+    #
+    #   1. A MECHANICAL FLOOR derived from the changed paths alone. It needs no
+    #      model output at all, so it still lands when the review starved and
+    #      posted nothing -- which is why the workflow runs this step under
+    #      always(), like --mark.
+    #   2. The model's verdict, carried in a ```json:pr-labels fence at the end
+    #      of the same report --post-report posts. That report text is the only
+    #      channel proven to escape the action sandbox, and it is already being
+    #      produced: this costs ZERO extra invocations, zero extra turns, and
+    #      nothing in review_spend_total.
+    #
+    # ADVISORY END TO END. Every failure below logs and exits 0. A label is
+    # never worth failing the review job or blocking a merge over.
+    require_var PR_NUMBER
+    require_var HEAD_SHA
+
+    desired=""
+
+    is_managed() {
+        local want="$1" l
+        for l in "${MANAGED_LABELS[@]}"; do
+            if [[ "$l" == "$want" ]]; then
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    add_desired() {
+        if ! is_managed "$1"; then
+            log_warn "refusing to apply '$1': not in the managed label set"
+            return 0
+        fi
+        case $'\n'"$desired" in
+            *$'\n'"$1"$'\n'*) return 0 ;;
+        esac
+        desired="${desired}${1}"$'\n'
+    }
+
+    # --- 1. the mechanical floor ------------------------------------------
+    changed=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate \
+        --jq '.[].filename' 2>/dev/null </dev/null) || changed=""
+    if [[ -z "$changed" ]]; then
+        log_warn "could not read the changed-file list for PR ${PR_NUMBER}; skipping the mechanical labels"
+    else
+        # ALL-FILES rules, conservative by construction: one stray source file
+        # and the label does not apply. "This diff is entirely docs" and "this
+        # diff is entirely CI plumbing" are facts about the file list, so they
+        # need no model to see them and no model can talk them out of them.
+        #
+        # NOT routed through scope-map.cjs, which was the obvious reuse and is
+        # the wrong tool: classify() answers "which CI jobs must run", and
+        # .github/ and .ci/ paths yield full-CI REASONS there rather than
+        # modules, so its output does not map onto PR kinds at all.
+        if ! grep -qvE '(^docs/|^packages/www/src/content/docs/|^CLAUDE\.md$|^LICENSE$|\.md$)' <<<"$changed"; then
+            add_desired documentation
+        fi
+        if ! grep -qvE '(^\.github/|^\.ci/|^scripts/ci-runner/)' <<<"$changed"; then
+            add_desired ci
+        fi
+    fi
+
+    # --- 2. the model's verdict -------------------------------------------
+    verdict=""
+    if [[ -n "${EXECUTION_FILE:-}" && -f "${EXECUTION_FILE:-}" ]]; then
+        # Same result-object shape --post-report and --mark parse.
+        report=$(jq -r '
+            (if type == "array" then [.[] | select(.type == "result")][-1] else . end) as $r
+            | select($r != null) | $r.result // empty
+        ' "$EXECUTION_FILE" 2>/dev/null) || report=""
+        # LAST fence wins, same reasoning as --post-findings: a report may quote
+        # the required format before emitting its real one.
+        verdict=$(awk '
+            /^[[:space:]]*```json:pr-labels[[:space:]]*$/ { capturing = 1; n = 0; next }
+            capturing && /^[[:space:]]*```[[:space:]]*$/ { capturing = 0; next }
+            capturing { buf[++n] = $0 }
+            END { for (i = 1; i <= n; i++) print buf[i] }
+        ' <<<"$report") || verdict=""
+    fi
+
+    if [[ -z "$verdict" ]]; then
+        log_info "no json:pr-labels block in the report; mechanical labels only"
+    elif ! jq -e '
+        type == "object"
+        and ((.bump // "patch") as $b | ["patch", "minor", "major"] | index($b) != null)
+        and ((.kind // []) | type == "array")
+        and ((.kind // []) | length <= 2)
+        and (((.kind // []) - ["bug", "feature", "docs", "ci"]) | length == 0)
+    ' <<<"$verdict" >/dev/null 2>&1; then
+        # STRICT, and malformed is treated as ABSENT rather than as a partial
+        # answer: a half-parsed verdict is how a hallucinated field would get a
+        # vote. The mechanical floor above still applies.
+        log_warn "the json:pr-labels block did not validate; treating it as absent"
+    else
+        bump=$(jq -r '.bump // "patch"' <<<"$verdict")
+        why=$(jq -r '(.why // "") | .[0:200]' <<<"$verdict")
+        log_info "review verdict: bump=${bump} kind=$(jq -rc '.kind // []' <<<"$verdict") why=${why:-<none>}"
+        case "$bump" in
+            minor) add_desired bump-minor ;;
+            major)
+                log_warn "the review RECOMMENDS a major bump (${why:-no reason given}). bump-major is never applied automatically; apply it by hand if you agree."
+                ;;
+        esac
+        while IFS= read -r kind; do
+            [[ -n "$kind" ]] || continue
+            case "$kind" in
+                bug) add_desired bug ;;
+                feature) add_desired enhancement ;;
+                docs) add_desired documentation ;;
+                ci) add_desired ci ;;
+            esac
+        done < <(jq -r '(.kind // [])[]' <<<"$verdict")
+    fi
+
+    # --- 3. reconcile against the ledger, never a blind sync ---------------
+    # The ledger records what THIS arm applied last time. Removal is scoped to
+    # that record, so a hand-applied label -- full-ci, rollback, a human's
+    # bump-minor -- is never touched no matter what the model says. It is also
+    # re-filtered through the managed set on the way out: the ledger is a PR
+    # comment, and a comment is editable by anyone with write access, so a
+    # tampered "applied:" line must not become a delete-arbitrary-label
+    # primitive.
+    prev=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"$LEDGER_PREFIX\")) | .body" 2>/dev/null </dev/null |
+        sed -n 's/^applied:[[:space:]]*//p' | tail -n 1) || prev=""
+    if [[ -n "$prev" ]]; then
+        while IFS= read -r stale; do
+            [[ -n "$stale" ]] || continue
+            case $'\n'"$desired" in
+                *$'\n'"$stale"$'\n'*) continue ;;
+            esac
+            if ! is_managed "$stale"; then
+                log_warn "ledger names '$stale', which is not in the managed set; refusing to remove it"
+                continue
+            fi
+            if gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels/${stale}" \
+                >/dev/null 2>&1 </dev/null; then
+                log_info "removed stale label '$stale'"
+            else
+                log_warn "could not remove the stale label '$stale'"
+            fi
+        done < <(tr ',' '\n' <<<"$prev" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+    fi
+
+    while IFS= read -r label; do
+        [[ -n "$label" ]] || continue
+        if [[ "$label" == "$CREATE_ON_DEMAND_LABEL" ]] &&
+            ! gh api "repos/${GITHUB_REPOSITORY}/labels/${label}" >/dev/null 2>&1 </dev/null; then
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/labels" \
+                -f name="$label" -f color="$CREATE_ON_DEMAND_COLOR" \
+                -f description="$CREATE_ON_DEMAND_DESC" >/dev/null 2>&1 </dev/null ||
+                log_warn "could not create the '$label' label"
+        fi
+        gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
+            -f "labels[]=$label" >/dev/null 2>&1 </dev/null ||
+            log_warn "could not apply the label '$label'"
+    done <<<"$desired"
+
+    applied=$(printf '%s' "$desired" | sed '/^$/d' | paste -sd, -)
+    body="${LEDGER_PREFIX} ${HEAD_SHA} -->
+applied: ${applied}"
+    ledger_id=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+        --jq ".[] | select(.body | startswith(\"$LEDGER_PREFIX\")) | .id" 2>/dev/null </dev/null |
+        tail -n 1) || ledger_id=""
+    if [[ -n "$ledger_id" ]]; then
+        gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${ledger_id}" \
+            -f body="$body" >/dev/null 2>&1 </dev/null ||
+            log_warn "could not update the label ledger comment"
+    else
+        gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            -f body="$body" >/dev/null 2>&1 </dev/null ||
+            log_warn "could not post the label ledger comment"
+    fi
+    log_info "labels for ${HEAD_SHA:0:7}: ${applied:-<none>}"
+    exit 0
+fi
+
 if [[ "${1:-}" == "--mark" ]]; then
     require_var PR_NUMBER
     require_var HEAD_SHA
@@ -317,8 +528,21 @@ Push a change to earn another pass." >/dev/null 2>&1 ||
     # this guard would refuse to mark forever (found by the automated review
     # itself, PR #531 first pass). Per-page --jq emits matches as lines;
     # wc -l totals across pages -- same pattern as last_marker_sha above.
+    #
+    # EVERY BOOKKEEPING PREFIX IS EXCLUDED, not just the marker. The guard asks
+    # "did this review produce OUTPUT", and only a report or an inline comment
+    # answers that. The attempt marker and the label ledger are written BY this
+    # pipeline about itself, so counting them lets the pipeline satisfy its own
+    # honesty guard: a review that succeeded and posted nothing (the 36-
+    # permission-denials shape) would be stamped as reviewed on the strength of
+    # a ledger comment written seconds earlier by --apply-labels. The attempt
+    # marker had the same hole already -- a spent attempt inside the same hour
+    # would vouch for the next pass -- which is why this excludes the class
+    # rather than the one new prefix.
     recent=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
         --jq ".[] | select(.body | startswith(\"$MARKER_PREFIX\") | not)
+                  | select(.body | startswith(\"$ATTEMPT_PREFIX\") | not)
+                  | select(.body | startswith(\"$LEDGER_PREFIX\") | not)
                   | select(.user.login | contains(\"github-actions\"))
                   | select(.created_at > (now - 3600 | todate)) | .id" 2>/dev/null | wc -l) || recent=0
     inline=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/comments" --paginate \
