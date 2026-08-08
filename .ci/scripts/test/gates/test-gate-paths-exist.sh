@@ -282,7 +282,9 @@ test_detector_fires_on_a_deleted_workspace() {
     # dead path under its own pid, and an unscoped assertion would pass off that
     # one -- a control that can be satisfied by somebody else's fixture is not a
     # control.
-    own="$(printf '%s\n' "$dead" | grep -F -- "-fixture.$FIXTURE_PID_SUFFIX.ts" || true)"
+    # Anchored on the full fixture basename: a suffix match ("-fixture.<pid>")
+    # also catches this pid's noise-fixture, whose name ends the same way.
+    own="$(printf '%s\n' "$dead" | grep -F -- "${FIXTURE_NAME_PREFIX}fixture.$FIXTURE_PID_SUFFIX.ts" || true)"
     assert_contains "$own" "packages/definitely-not-a-workspace" \
         "detector must report a path under a nonexistent workspace"
     log_pass "detector fires on a deleted workspace (control case)"
