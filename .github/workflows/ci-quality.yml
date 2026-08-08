@@ -192,6 +192,12 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/check-commands.sh
 
+      # 57 gate scripts follow one registration convention and NOTHING enforced it,
+      # so the 58th broke it. A reviewer caught that one; this catches the next.
+      - name: Gate registration follows the gates/ convention
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-gate-id-convention
+
       # A review that runs out of turns posts NOTHING and still spends an attempt against a
       # finite allowance, so an under-resourced budget is the expensive failure, not the
       # cheap one. Asserts the budget cannot starve any diff size it is willing to route.
