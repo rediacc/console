@@ -77,7 +77,7 @@ fetch_retry() {
             return 0
         fi
         if [[ "$attempt" -ge "$EDGE_RETRIES" ]]; then
-            echo "  ${what}: still disagreeing after ${EDGE_RETRIES} attempts over $((EDGE_RETRIES * EDGE_RETRY_SLEEP))s" >&2
+            echo "  ${what}: still disagreeing after ${EDGE_RETRIES} attempts over $(((EDGE_RETRIES - 1) * EDGE_RETRY_SLEEP))s of waiting" >&2
             return 1
         fi
         attempt=$((attempt + 1))
@@ -105,8 +105,11 @@ if ! fetch_retry "install.sh channel" _install_sh_baked; then
 fi
 echo "  marketing (install.sh): OK (channel=edge)"
 
-INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1)
-if ! echo "$INSTALL_PS1" | grep -qF '} else { "edge" }'; then
+_install_ps1_baked() {
+    INSTALL_PS1=$(curl -fsSL https://edge.rediacc.com/install.ps1 2>/dev/null) || return 1
+    echo "$INSTALL_PS1" | grep -qF '} else { "edge" }'
+}
+if ! fetch_retry "install.ps1 channel" _install_ps1_baked; then
     echo "::error::edge.rediacc.com/install.ps1 is not baked to channel=edge"
     echo "$INSTALL_PS1" | grep -F '$Channel' || true
     exit 1
@@ -122,8 +125,11 @@ echo "  marketing (install.ps1): OK (channel=edge)"
 RNDA=$RANDOM$RANDOM
 RNDB=$RANDOM$RANDOM
 RNDC=$RANDOM$RANDOM
-S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$RNDA")
-[[ "$S" == "410" ]] || {
+_probe_about() {
+    S=$(curl -sI -o /dev/null -w '%{http_code}' "https://edge.rediacc.com/about?cb=$RNDA")
+    [[ "$S" == "410" ]]
+}
+fetch_retry "about 410" _probe_about || {
     echo "::error::edge /about expected 410 (curated redirect table), got $S — old worker bundle likely live"
     exit 1
 }
@@ -175,16 +181,22 @@ fi
 # be channel-baked (done at upload time in cd-stage.yml). This
 # cross-check catches R2 upload regressions.
 if [[ "$WORKERS_ONLY" != "true" ]]; then
-    R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh)
-    if ! echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-edge'; then
+    _r2_sh_baked() {
+        R2_SH=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.sh 2>/dev/null) || return 1
+        echo "$R2_SH" | grep -q 'REDIACC_CHANNEL:-edge'
+    }
+    if ! fetch_retry "R2 install.sh channel" _r2_sh_baked; then
         echo "::error::releases.rediacc.com/cli/edge/install.sh not baked to channel=edge"
         echo "$R2_SH" | grep -E 'REDIACC_CHANNEL' || true
         exit 1
     fi
     echo "  R2 cli/edge/install.sh: OK (channel=edge)"
 
-    R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1)
-    if ! echo "$R2_PS1" | grep -qF '} else { "edge" }'; then
+    _r2_ps1_baked() {
+        R2_PS1=$(curl -fsSL https://releases.rediacc.com/cli/edge/install.ps1 2>/dev/null) || return 1
+        echo "$R2_PS1" | grep -qF '} else { "edge" }'
+    }
+    if ! fetch_retry "R2 install.ps1 channel" _r2_ps1_baked; then
         echo "::error::releases.rediacc.com/cli/edge/install.ps1 not baked to channel=edge"
         exit 1
     fi
@@ -195,7 +207,14 @@ fi
 
 # R2 releases (skip in workers-only mode -- no new version was published)
 if [[ "$WORKERS_ONLY" != "true" ]]; then
-    EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json | jq -re '.version')
+    _latest_json_readable() {
+        EDGE_VERSION=$(curl -fsSL https://releases.rediacc.com/cli/edge/latest.json 2>/dev/null | jq -re '.version') || return 1
+        [[ -n "$EDGE_VERSION" ]]
+    }
+    fetch_retry "R2 latest.json" _latest_json_readable || {
+        echo "::error::releases.rediacc.com/cli/edge/latest.json is not readable"
+        exit 1
+    }
     echo "  edge latest.json: v${EDGE_VERSION}"
 
     if [[ "$EDGE_VERSION" == "$VERSION" ]]; then
