@@ -12,6 +12,8 @@ describes actually happens. Keep the pointer line in CLAUDE.md in sync. -->
 
 The gate set lives in `scripts/ci-runner/manifest.ts`, which is also the input to `npm run check:ci-parity`. Every individual `check:*` npm key still exists and still works on its own; the manifest schedules them.
 
+The CI-side quality-gate battery (`.ci/scripts/test/run-all.sh`, the "Quality-gate unit tests" step) is ALSO parallel since 2026-08-08, with a W/S/T schedule: two tests write fixtures into the real tree, so they run as a serial chain while temp-isolated tests pool, and the real-tree scanners are held back until the writers finish. Triage notes: `RUN_ALL_JOBS=1 .ci/scripts/test/run-all.sh` reproduces the exact serial behavior through the same code path; a "no result recorded" failure means the scheduler lost a test, which is a runner bug, never a skip; and a failure that appears parallel-only but not under `RUN_ALL_JOBS=1` is a real isolation leak in that test, not battery flakiness -- see the W/S/T header in run-all.sh before touching the schedule.
+
 | Command | What it does |
 |---|---|
 | `npm run ci` | Full run at `availableParallelism() - 2` workers, keep-going |
