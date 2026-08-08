@@ -57,7 +57,9 @@ inputs:
     default: ''
 
 runs:
-  using: node20
+  # node20 is deprecated on GitHub runners (forced onto Node 24 with a warning
+  # in every job since 2025-09); declare what actually runs.
+  using: node24
   main: index.js
   # Explicit even though always() is the default: this hook exists precisely to
   # profile the runs that fail, and a silent default is not worth relying on.
