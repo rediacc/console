@@ -831,6 +831,22 @@ V_BG_REPORT = (
     "itself and the hook asks you to slow the poll cron instead."
 )
 
+V_BG_REPORT_TASKS = (
+    "BACKGROUND WAIT WITH WORKABLE TASKS. Last check-in: %s. Next no earlier "
+    "than %s (a %d-minute latch). %d background job(s) are running, but this "
+    "wait is NOT pure: %d pending task(s) on the harness list have no "
+    "unresolved blocker, and a CI wait is exactly when local work fits. "
+    "Either START one now (TaskUpdate it to in_progress and begin), or record "
+    "its real blocker with TaskUpdate addBlockedBy so this check stops naming "
+    "it -- an unblocked pending task is a claim that nothing stops you. "
+    "The workable tasks:\n%s\n"
+    "The hook's own read of each worker's output stream:\n%s\n"
+    "    Confirm each worker in one line, then act on a task in the SAME "
+    "turn. Do not reply with only a status report: the operator ordered this "
+    "check to exist because a session once idled for hours beside a fully "
+    "planned, unblocked task (2026-08-08)."
+)
+
 N_EMAIL_SKIPPED = (
     "WARNING: the operator email channel is SKIPPED (mail is optional and its "
     "last send with the current credentials failed: %s question(s) wait in the "

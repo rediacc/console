@@ -1751,7 +1751,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 1,
                 sticky=True,
             )
-        reg_cur_tasks = C.task_statuses(session_id)
+        reg_cur_tasks = C.task_statuses(session_id, event.get("transcript_path"))
         if not reg_state["head"]:
             # FAIL SAFE: first sight (or a corrupt marker just discarded)
             # initialises to the present and asks nothing this stop. Seeding
@@ -1823,7 +1823,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- gather EVERY static violation, then emit ONE block -----------------
     judged_ok = None
     verdict = None
-    tasks = C.pending_tasks(session_id)
+    tasks = C.pending_tasks(session_id, event.get("transcript_path"))
     # THE EVENT ALREADY CARRIES ALL OF THIS. Transcript parsing, a flush retry
     # and a whole-turn accumulator were built before a captured Stop payload
     # showed `last_assistant_message`, `session_crons` and `background_tasks`
@@ -1905,6 +1905,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # fire, so the check-in costs one focused block per window, never a
     # drumbeat.
     bg_facts, bgwait_due, bgwait_prev, bgwait_next = [], False, "", ""
+    _bg_actionable = []
     bg_verdicts = {}
     _in_pure_wait = False
     # v18: A CONFIRMED INBOX WAITER IS A PUSH CHANNEL, NOT A JOB TO SUPERVISE.
@@ -1939,6 +1940,14 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         if not _expired_any:
             _in_pure_wait = True
+            # v19: the wait is only PURE if the harness queue is also empty of
+            # work this session could do right now. A pending task with no
+            # unresolved blocker makes the check-in fire (even for a
+            # waiter-only roster) and name it, instead of certifying the wait.
+            try:
+                _bg_actionable = C.actionable_tasks(session_id, event.get("transcript_path"))
+            except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
+                _bg_actionable = []
             try:
                 bg_facts = wl_liveness.bg_output_facts(event.get("cwd"), session_id, live_bg)
             except Exception:  # noqa: BLE001 -- a fact-gatherer must never wedge a stop
@@ -1972,7 +1981,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # through the back door.
                 _bgw["at"] = C.stamp_now()
                 state_doc["bgwait"] = _bgw
-                if not _only_waiters:
+                if not _only_waiters or _bg_actionable:
                     bgwait_due = True
             bgwait_next = C.stamp_ahead(wl_liveness.BG_REPORT_MIN)
     if not _in_pure_wait:
@@ -2169,18 +2178,34 @@ def run_stop(event, event_ok, worklist, hook_file):
                     me8,
                 )
             )
-        vadd(
-            "bg-report",
-            True,
-            M.V_BG_REPORT
-            % (
-                bgwait_prev or "never (this is the first one of this wait)",
-                bgwait_next,
-                wl_liveness.BG_REPORT_MIN,
-                len(live_bg),
-                "\n".join(_rows),
-            ),
-        )
+        if _bg_actionable:
+            vadd(
+                "bg-report",
+                True,
+                M.V_BG_REPORT_TASKS
+                % (
+                    bgwait_prev or "never (this is the first one of this wait)",
+                    bgwait_next,
+                    wl_liveness.BG_REPORT_MIN,
+                    len(live_bg),
+                    len(_bg_actionable),
+                    "\n".join("    task #%s %s" % a for a in _bg_actionable),
+                    "\n".join(_rows),
+                ),
+            )
+        else:
+            vadd(
+                "bg-report",
+                True,
+                M.V_BG_REPORT
+                % (
+                    bgwait_prev or "never (this is the first one of this wait)",
+                    bgwait_next,
+                    wl_liveness.BG_REPORT_MIN,
+                    len(live_bg),
+                    "\n".join(_rows),
+                ),
+            )
     if stuck_fired and something_remains:
         # TIER-ACCURATE HEADLINE. This used to assert "not one task changed
         # status AND HEAD did not advance" for every tier, which is FALSE for
@@ -2348,7 +2373,10 @@ def run_stop(event, event_ok, worklist, hook_file):
         try:
             held = {t.split()[0].lstrip("#") for t in ev_tasks}
             prev_ts = reg_state.get("task_status") or {}
-            new_ts = {i: st for i, (st, _s) in C.task_statuses(session_id).items()}
+            new_ts = {
+                i: st
+                for i, (st, _s) in C.task_statuses(session_id, event.get("transcript_path")).items()
+            }
             for i in held:
                 if i in prev_ts:
                     new_ts[i] = prev_ts[i]
