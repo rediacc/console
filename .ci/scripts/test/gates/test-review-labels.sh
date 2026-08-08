@@ -623,6 +623,40 @@ test_mark_does_not_count_the_ledger_comment_as_output() {
 # ---------------------------------------------------------------------------
 # Advisory end to end
 # ---------------------------------------------------------------------------
+test_fence_only_in_posted_comment_is_found() {
+    local t="$1"
+    setup "$t"
+    # The feature's FIRST LIVE RUN (#559, run 31267699743): the model posted its
+    # summary itself and put the fence in the COMMENT; its result text back to
+    # the harness did not repeat it. The old extraction read only the result
+    # text, logged "no json:pr-labels block", and applied nothing beside a PR
+    # whose verdict comment plainly carried a verdict.
+    execution_file "$t" "$(report_with_verdict '')"
+    comments_fixture "$t" "$(jq -n --arg body "## Verdict: request changes
+
+${TICKS}json:pr-labels
+{\"bump\": \"patch\", \"kind\": [\"bug\", \"ci\"], \"why\": \"live shape\"}
+${TICKS}" '{"id": 900001, "body": $body}')"
+    run_apply "$t"
+    assert_exit_code 0 "$LAST_RC" "advisory always"
+    assert_eq "$(added "$t")" "bug ci" "the comment-borne verdict is found and applied"
+    log_pass "FIRE: a fence living only in the posted comment is found by the fallback"
+}
+
+test_result_fence_wins_over_comment_fence() {
+    local t="$1"
+    setup "$t"
+    # Priority pin: when BOTH carry a fence, the result text stays the primary
+    # source -- the comment path is a fallback, not a second voter.
+    execution_file "$t" "$(report_with_verdict '{"bump": "patch", "kind": ["ci"], "why": "from the result"}')"
+    comments_fixture "$t" "$(jq -n --arg body "${TICKS}json:pr-labels
+{\"bump\": \"minor\", \"kind\": [\"bug\"], \"why\": \"from a comment\"}
+${TICKS}" '{"id": 900002, "body": $body}')"
+    run_apply "$t"
+    assert_eq "$(added "$t")" "ci" "the result-text verdict wins; the comment fence is not consulted"
+    log_pass "FIRE: the result-text fence outranks a comment fence"
+}
+
 test_total_api_failure_is_advisory() {
     local t="$1"
     setup "$t"
@@ -701,5 +735,8 @@ with_temp_dir test_stale_ledger_label_is_removed
 with_temp_dir test_hand_applied_labels_are_never_removed
 with_temp_dir test_tampered_ledger_cannot_delete_arbitrary_labels
 with_temp_dir test_mark_does_not_count_the_ledger_comment_as_output
+
+with_temp_dir test_fence_only_in_posted_comment_is_found
+with_temp_dir test_result_fence_wins_over_comment_fence
 
 with_temp_dir test_total_api_failure_is_advisory

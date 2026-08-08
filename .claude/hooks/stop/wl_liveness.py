@@ -533,7 +533,9 @@ def ladder(fold, session_id, event, state_doc):
                 wid,
             )
         )
-    for tid, (status, subject) in sorted(C.task_statuses(event.get("session_id", "")).items()):
+    for tid, (status, subject) in sorted(
+        C.task_statuses(event.get("session_id", ""), event.get("transcript_path")).items()
+    ):
         prev = tasks_seen.get(tid)
         if prev is None or prev.get("status") != status:
             tasks_seen[tid] = {"status": status, "since": C.stamp_now()}
