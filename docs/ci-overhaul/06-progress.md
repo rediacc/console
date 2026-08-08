@@ -3093,3 +3093,82 @@ by test-shell-counter-increment.sh but never defined anywhere (silent only becau
 that file runs without -e; its finding report would have printed "command not
 found" instead of the finding), and the Stop hook's task-queue blindness described
 in the session records rode the same branch.
+
+## Phase 2 of the post-merge wave: probe answers wired in (2026-08-08)
+
+Phase 1 (read-only validation, this session, evidence on worklist tick
+#9b7741bb) dispatched `Profiler Probe` run 31252148469 and a
+schedule-equivalent Console CI run 31252149485, and settled every question
+the 2026-08-05 wave had left open. Phase 2 then landed the consequences,
+all uncommitted:
+
+**The probe's two answers, and what each changed.** (1) A JS action's
+`post:` hook FIRES when the action is invoked through a composite wrapper,
+on both ubuntu-slim and ubuntu-latest. So the profiler rollout is ONE step
+in `.github/actions/setup-workspace` (:72) plus that composite becoming the
+coverage gate's built-in wrapper default, not 26 per-job edits: coverage
+went 1/97 -> 26/97 in one change and 25 ledger lines burned (96 -> 71).
+The `runner-label` input is deliberately NOT threaded through the wrapper:
+on a cgroup tier the enforced quota substitutes for the label, and the
+label's only job (arming HOST_LEAK) does not survive a composite that
+cannot know `runs-on`. (2) GitHub's real slim container is cgroup V1 -- the
+local docker proof was v2, so the sampler's v1 fallback path is the one
+production exercises, and the probe watched it resolve cpu+memory
+correctly. Host views are container-scoped on slim (nproc=1,
+MemTotal~4.8GiB), awk AND node exist there, and a sample costs ~742us
+against the ~1ms estimate.
+
+**The nightly's last red was OUR TEST, not the release pipeline -- and the
+first fix for it was wrong, caught by a gate within the hour.** Both the
+nightly and the fresh dispatch failed only Validate Install Methods, always
+as `curl: (22) ... 404`: with the nightly's deliberately EMPTY channel the
+apt and quick-install tests fetched root urls (/apt/gpg.key,
+/cli/install.sh) that the <dir>/<channel>/ layout has never published,
+while promote-r2-to-stable.sh had published every stable file (verified
+200 live across apt/rpm/cli/apk/archlinux). Fix #1 -- default REPO_CHANNEL
+to "stable" -- made the urls resolve and BROKE the design:
+test-installmethods-args.sh failed on "an all-skipped run is a success",
+because test_binary_download:462 already documents why empty must stay
+empty (a nightly downloading stable turns MAIN's nightly red when a past
+RELEASE breaks; the two signals must not be conflated). The real defect
+was that six package-family tests (apt, dnf, apk, pacman, npm, quick)
+LACKED the channel-less `return 77` skip guard their siblings
+(binary/update/verify/promotion) have carried all along. Fix #2, the one
+that stands: the same guard on all six, placed after each DRY_RUN block so
+dry-run output is unchanged. A channel-less apt run now reports "0 passed,
+0 failed, 3 skipped" with the reason named. Two lessons, both old ones: a
+404 names the fetcher's url, not the publisher's tree; and a fix that
+makes a red go green is not right until the gates that encode the DESIGN
+agree -- the args gate paid for itself completely here.
+
+**The 2026-08-05 cold case is closed.** test-gate-paths-exist.sh planted
+FIXED-filename fixtures in tracked .ci/scripts, so two concurrent battery
+runs deleted each other's fixtures -- exactly the "control came back empty
+only during a full run" signature chased across a four-shape bisect at the
+time. The fixtures now carry the pid (FIXTURE_PID_SUFFIX), the scan scopes
+itself with a cross-pid glob, and the fix is proven by the failing scenario
+itself: two fully concurrent instances, both 7/7 green, re-run
+independently by the session lead. The SCAN_FLOOR guard stays as the
+loudness backstop. Credit: val-local's read-only sweep spotted the fixed
+filenames.
+
+**Autopilot loose ends.** AUTOPILOT_MODEL is renamed AUTOPILOT_ALLOW_MODEL
+(the S4 boolean was named like a model VALUE; `AUTOPILOT_MODEL=claude-opus-5`
+read as false and silently disarmed the model job -- no error anywhere).
+The old name survives only in 03-v2-autonomy.md's dated rename note. The
+identity comment at autopilot.yml:52-58 now states the split precisely:
+AUTOPILOT_APP_ID is an org VARIABLE (gh secret set on it appears to succeed
+while vars. stays empty -- the exact defect the operator fixed once
+already); only AUTOPILOT_PRIVATE_KEY and CLAUDE_CODE_OAUTH_TOKEN are
+secrets. FOUND, REPORTED, NOT FIXED: the sweeper enumerates only
+LABEL-armed PRs (gh pr list --label), so a campaign-armed PR that misses a
+workflow_run event stalls silently; reaching those means scanning state
+comments for `campaign: open` -- an S6-era decision, its comment corrected
+meanwhile.
+
+**Second live data point for external_quality.** The dispatch ran with
+EXTERNAL_QUALITY_MODE: soft in both wrapped Quality/Go steps and all ten
+Quality lanes green, matching the nightly. Still true and still stated
+plainly: no upstream drift existed on either data point, so the downgrade
+branch (warn + exit 0 on a REAL external failure) remains test-proven only
+until the world moves.

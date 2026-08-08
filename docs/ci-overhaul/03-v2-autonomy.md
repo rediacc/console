@@ -366,6 +366,15 @@ never needs a commit.
 
 Rollback at any stage: flip the variable (seconds) or revoke the installation (also seconds).
 
+> **2026-08-08, the S4 flag was renamed `AUTOPILOT_MODEL` -> `AUTOPILOT_ALLOW_MODEL`.** Every
+> stage flag is a boolean armed only by the literal `true`, but this one shared a name with
+> the `model` dispatch input, which is a model NAME (`claude-sonnet-5` / `claude-opus-5`).
+> Setting `AUTOPILOT_MODEL=claude-opus-5` to "pick the model" read as false at the model job's
+> `if:`, so the loop armed, decided go, and did nothing, with no error anywhere. The
+> `ALLOW_` prefix puts it in the family it belongs to (`ALLOW_STATE` / `ALLOW_FINISH` /
+> `ALLOW_PUSH`) and makes the switch-versus-value distinction visible in the name. No
+> variable of either name exists yet, so the rename cost nothing operationally.
+
 ---
 
 ## 9. Cost

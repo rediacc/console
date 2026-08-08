@@ -144,7 +144,22 @@ esac
 DOCKER_IMAGE="ghcr.io/rediacc/rdc"
 SITE_URL="${SITE_URL:-https://www.rediacc.com}"
 # RELEASES_BASE_URL is set by constants.sh (sourced via common.sh) as readonly
-# REPO_CHANNEL: optional channel path segment (e.g., "stable", "edge", or "" for staging)
+# REPO_CHANNEL: channel path segment ("stable", "edge", "pr-<n>"), or EMPTY
+# meaning THIS RUN STAGED NO ARTIFACTS (schedule / workflow_dispatch, whose
+# stage-artifacts step never writes R2).
+#
+# Empty deliberately does NOT default to "stable". That was tried on
+# 2026-08-08 to cure the nightly's apt/quick-install 404s and reverted the
+# same day: test_binary_download's comment already names the reason -- a
+# nightly downloading stable turns MAIN's nightly red when a past RELEASE
+# breaks, and those two signals must not be conflated. The 404s' actual
+# cause was that the apt and quick-install tests LACKED the channel-less
+# skip guard the binary/update/verify tests have carried all along, so
+# they fetched root urls (/apt/gpg.key, /cli/install.sh) that the
+# <dir>/<channel>/ layout has never published, while promote-r2-to-stable
+# had in fact published every stable file (verified 200 live). The fix is
+# the same `return 77` guard on those tests, not a default that changes
+# what a red nightly means.
 REPO_CHANNEL="${REPO_CHANNEL:-}"
 # Build repo URL: ${RELEASES_BASE_URL}/apt[/${REPO_CHANNEL}] etc.
 if [[ -n "$REPO_CHANNEL" ]]; then
@@ -762,6 +777,19 @@ test_apt_install() {
         return 0
     fi
 
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping APT install (expected on schedule and workflow_dispatch)."
+        return 77
+    fi
+
     run_container_version_test "APT ($label)" docker run --rm "$distro" bash -c "
         set -e
         # Point apt at the Azure-hosted Ubuntu mirror. The upstream
@@ -822,6 +850,19 @@ test_dnf_install() {
         return 0
     fi
 
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping DNF install (expected on schedule and workflow_dispatch)."
+        return 77
+    fi
+
     run_container_version_test "DNF ($label)" docker run --rm "$distro" bash -c "
         set -e
         # Add repo
@@ -846,6 +887,19 @@ test_apk_install() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would test APK install on $label"
         return 0
+    fi
+
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping APK install (expected on schedule and workflow_dispatch)."
+        return 77
     fi
 
     run_container_version_test "APK ($label)" docker run --rm "$distro" sh -c "
@@ -873,6 +927,19 @@ test_pacman_install() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would test Pacman install on $label"
         return 0
+    fi
+
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping Pacman install (expected on schedule and workflow_dispatch)."
+        return 77
     fi
 
     run_container_version_test "Pacman ($label)" docker run --rm "$distro" bash -c "
@@ -903,6 +970,19 @@ test_npm_install() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would test npm install on $label"
         return 0
+    fi
+
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping npm install (expected on schedule and workflow_dispatch)."
+        return 77
     fi
 
     local npm_url="${RELEASES_BASE_URL}/npm${REPO_CHANNEL_SUFFIX}/rediacc-cli-latest.tgz"
@@ -974,6 +1054,19 @@ test_quick_install() {
     if [[ "$DRY_RUN" == "true" ]]; then
         log_info "[DRY-RUN] Would test quick install on $label"
         return 0
+    fi
+
+    # Same channel-less case as test_binary_download: this run staged no
+    # artifacts, and the channel URL this test fetches names a path that
+    # does not exist (the layout is <dir>/<channel>/; there is no root
+    # tree). Before 2026-08-08 this family had NO such guard, so every
+    # schedule run 404ed here and the nightly stayed red for days while
+    # the release pipeline was blamed -- promote-r2-to-stable had in
+    # fact published every stable file. AFTER the DRY_RUN block on
+    # purpose: dry-run output stays unchanged for the args gate.
+    if [[ -z "$REPO_CHANNEL" ]]; then
+        log_warn "No REPO_CHANNEL: skipping quick install (expected on schedule and workflow_dispatch)."
+        return 77
     fi
 
     local expected_channel="${REPO_CHANNEL:-stable}"
