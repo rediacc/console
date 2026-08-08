@@ -85,8 +85,12 @@ fi
 # Every bare `curl` that feeds an assertion must sit inside a predicate that
 # fetch_retry drives. Counting is the cheap, robust form: the script had TWELVE
 # single-sample reads and zero retries when this incident happened.
+# The floor is 9, the number actually wrapped, NOT a token 4. A floor set below
+# the real count is a ratchet that permits silent regression: someone unwraps four
+# assertions and the gate still reports green. Raise this when more are wrapped;
+# never lower it to make a red go away.
 RETRYING="$(grep -c 'fetch_retry "' "$TARGET" || true)"
-if [[ "$RETRYING" -ge 4 ]]; then
+if [[ "$RETRYING" -ge 9 ]]; then
     log_pass "the load-bearing assertions are driven through fetch_retry ($RETRYING call sites)"
 else
     log_fail "only $RETRYING assertion(s) retry; the rest can still be failed by one sample"
@@ -95,8 +99,13 @@ fi
 # ---- CONTROL: strip the retry, assertion 1 MUST fail ------------------------
 # Collapse the loop to a single attempt. If the stale-then-correct case still
 # passes against that, this gate is not measuring what it claims.
-MUTANT="${FN//EDGE_RETRIES:-6/EDGE_RETRIES:-1}"
-MUTANT="${MUTANT//\"\$attempt\" -ge \"\$EDGE_RETRIES\"/true}"
+# ONE substitution, and it must be effective. The first version of this control
+# also tried `EDGE_RETRIES:-6 -> :-1`, which matched NOTHING: the awk range starts
+# at `fetch_retry() {` and the default assignment lives ABOVE the function, so it
+# was never in FN. The control still fired -- via the second substitution alone --
+# which is exactly the shape that hides a dead check: a mutation that appears to
+# do work, inside a control that happens to pass for another reason.
+MUTANT="${FN//\"\$attempt\" -ge \"\$EDGE_RETRIES\"/true}"
 if [[ "$MUTANT" == "$FN" ]]; then
     log_fail "CONTROL could not plant its defect (fetch_retry's shape changed); update the mutant here"
     exit 1
