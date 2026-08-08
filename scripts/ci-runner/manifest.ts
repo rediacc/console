@@ -271,9 +271,9 @@ export const GATES: readonly GateSpec[] = [
   // flattening would recreate #549 fifty-seven times over.
   //
   // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once
-// Since 2026-08-08 run-all.sh enforces this in-step: the two writers run as
-// an exclusive serial chain and the real-tree scanners are held until it
-// finishes. See its header.
+  // Since 2026-08-08 run-all.sh enforces this in-step: the two writers run as
+  // an exclusive serial chain and the real-tree scanners are held until it
+  // finishes. See its header.
   // inside the SERIAL battery and could not be reproduced standalone (plan
   // finding F8). Any red that appears only under parallelism gets a named mutex
   // group, never a retry.

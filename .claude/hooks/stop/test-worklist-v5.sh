@@ -5319,6 +5319,88 @@ else
     fail "163y CONTROL: blocker logic wrong: ${OUT:0:300}"
 fi
 
+echo "== 163x. v19: the transcript join finds a renamed task store; ambiguity refuses =="
+# Review finding on #559: the fallback in _resolve_tasks_dir had no committed
+# coverage (the original proof ran as ephemeral scratchpad python). This case
+# drives it through the REAL hook: the primary session-deadbeef dir is EMPTY
+# (setup creates it bare), the actual tasks live under a differently-named
+# session-* dir, and the only join evidence is a TaskCreate result line in the
+# transcript tail. The workable-tasks check-in naming the task proves the
+# whole chain: resolve -> actionable -> fire.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
+mkdir -p "$BASE/tasks/session-teamzzzz"
+printf '{"id":"21","status":"pending","subject":"the mismatch fixture task","blockedBy":[]}\n' \
+    >"$BASE/tasks/session-teamzzzz/21.json"
+say "Task #21 created successfully: the mismatch fixture task"
+say "answer
+
+## Remaining
+- #21 the mismatch fixture task (pending)"
+OUT="$(run)" # seed the wait clock
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #21 the mismatch fixture task (pending)"
+OUT="$(run)"
+if grep -qF "WORKABLE TASKS" <<<"$OUT" && grep -qF "task #21 the mismatch fixture task" <<<"$OUT"; then
+    pass "163x: the join resolved the renamed store off the transcript and named its task"
+else
+    fail "163x: fallback resolution failed: ${OUT:0:300}"
+fi
+# CONTROL: TWO dirs matching the same TaskCreate line -> the join refuses, no
+# task is named, the wait stays pure. Fresh setup so the durable resolution
+# cache from the fire case cannot leak in.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
+for d in teamzzzz teamyyyy; do
+    mkdir -p "$BASE/tasks/session-$d"
+    printf '{"id":"21","status":"pending","subject":"the mismatch fixture task","blockedBy":[]}\n' \
+        >"$BASE/tasks/session-$d/21.json"
+done
+say "Task #21 created successfully: the mismatch fixture task"
+say "answer
+
+## Remaining
+(nothing tracked here)"
+OUT="$(run)" # seed
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+(nothing tracked here)"
+OUT="$(run)"
+if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT" && ! grep -qF "task #21" <<<"$OUT"; then
+    pass "163x CONTROL: two candidate dirs refuse the join; no manufactured task, wait stays pure"
+else
+    fail "163x CONTROL: ambiguity did not refuse: ${OUT:0:300}"
+fi
+
 echo "== 163z. v18: a CONFIRMED inbox waiter owes no check-in and needs no poll cron =="
 # The waiter blocks until something new arrives for this session and then EXITS,
 # and its exit is the harness notification that wakes the session. Its liveness

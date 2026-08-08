@@ -380,6 +380,31 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
         ' <<<"$report") || verdict=""
     fi
 
+    # FALLBACK: the fence may live only in the POSTED COMMENT. Observed on the
+    # feature's first live run (#559, run 31267699743): the model posts its
+    # summary itself via `gh pr comment` and put the fence THERE, while its
+    # final result text back to the harness did not repeat it -- so the
+    # extraction above logged "no json:pr-labels block" beside a PR whose
+    # verdict comment plainly carried one. The result text stays the primary
+    # source (it wins when both exist); the newest fence-bearing comment is
+    # the fallback. Trust model: PR comments already carry the reviewed-SHA
+    # markers this pipeline acts on, the whitelist hard-filters every label,
+    # and bump-major is never applied automatically, so a forged fence cannot
+    # do more than a forged marker could.
+    if [[ -z "$verdict" ]]; then
+        comment_report=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '.[] | select(.body | contains("```json:pr-labels")) | .body' 2>/dev/null | tail -c 65536) || comment_report=""
+        if [[ -n "$comment_report" ]]; then
+            verdict=$(awk '
+                /^[[:space:]]*```json:pr-labels[[:space:]]*$/ { capturing = 1; n = 0; next }
+                capturing && /^[[:space:]]*```[[:space:]]*$/ { capturing = 0; next }
+                capturing { buf[++n] = $0 }
+                END { for (i = 1; i <= n; i++) print buf[i] }
+            ' <<<"$comment_report") || verdict=""
+            [[ -n "$verdict" ]] && log_info "json:pr-labels fence found in the posted report comment (absent from the result text)"
+        fi
+    fi
+
     if [[ -z "$verdict" ]]; then
         log_info "no json:pr-labels block in the report; mechanical labels only"
     elif ! jq -e '
