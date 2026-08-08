@@ -26,7 +26,7 @@ profiler-probe.yml:facts-slim
 profiler-probe.yml:post-nested-latest
 profiler-probe.yml:post-nested-slim
 
-# BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. The shape of the burn-down depends on the answer profiler-probe.yml is dispatched to get -- if a nested post: hook fires, one uses: in setup-workspace covers most of these at once and COVERING_ACTIONS in the gate grows by one line; if it does not, each job needs its own edit.
+# BLOCKER: rollout ledger for the runner profiler, which landed 2026-08-05 with one live job (profiler-probe.yml:post-direct-latest) and 90 jobs still unwired. Enumerated rather than waived so the gate is BLOCKING for every job added from today on, and so the burn-down is a visible diff instead of a habit: each line is deleted by the commit that adds the profiler step to that job, and the gate rejects the line the moment the job is covered, so a forgotten deletion is a build failure rather than dead weight. Phase 1 landed 2026-08-08 and burned 25 of these lines at once: profiler-probe.yml run 31252148469 proved on real runners that a JavaScript action's post: hook DOES fire from inside a composite, so one uses: in .github/actions/setup-workspace plus one verified wrapper in the gate covered every job that already calls it. What remains here is the jobs that do NOT call setup-workspace -- they set up their own toolchain, or run nothing that needs node -- and each of those still needs its own edit.
 #
 # autopilot.yml
 autopilot.yml:finish
@@ -45,54 +45,34 @@ cd-deploy-account.yml:read-regions
 # cd-deploy-worker.yml
 cd-deploy-worker.yml:deploy
 #
-# cd-stage.yml
-cd-stage.yml:stage
-#
 # cd-v2.yml
 cd-v2.yml:init
 cd-v2.yml:publish
 cd-v2.yml:smoke-test
 cd-v2.yml:tag-and-release
 #
-# ci-build-cli.yml
-ci-build-cli.yml:build-cli-executables
-#
 # ci-build-docker.yml
-ci-build-docker.yml:build-cli
 ci-build-docker.yml:build-cli-docker
 ci-build-docker.yml:build-cli-docker-skip
 ci-build-docker.yml:build-devcontainer-amd64
 ci-build-docker.yml:build-devcontainer-arm64
 ci-build-docker.yml:build-devcontainer-manifest
-ci-build-docker.yml:build-json
 ci-build-docker.yml:build-renet-docker
 ci-build-docker.yml:build-renet-skip
 ci-build-docker.yml:build-server-docker-amd64
 ci-build-docker.yml:build-server-docker-arm64
 ci-build-docker.yml:build-server-docker-manifest
 ci-build-docker.yml:build-server-docker-skip
-ci-build-docker.yml:build-www
 #
 # ci-build-renet.yml
 ci-build-renet.yml:build-renet
 ci-build-renet.yml:cross-compile-smoke
 ci-build-renet.yml:extract-renet
 #
-# ci-ops-test.yml
-ci-ops-test.yml:ops-platform-check
-ci-ops-test.yml:ops-vm-provision
-#
 # ci-quality.yml
 ci-quality.yml:quality-branch
-ci-quality.yml:quality-code
-ci-quality.yml:quality-content
-ci-quality.yml:quality-go
-ci-quality.yml:quality-i18n
-ci-quality.yml:quality-packages
-ci-quality.yml:quality-security
 ci-quality.yml:quality-static
 ci-quality.yml:quality-submodule-branches
-ci-quality.yml:quality-www-build
 #
 # ci.yml
 ci.yml:breakpoint-lifecycle
@@ -130,19 +110,8 @@ ct-install-methods.yml:test-linux-x64
 #
 # ct-tests.yml
 ct-tests.yml:migration-test
-ct-tests.yml:test-account-e2e
-ct-tests.yml:test-drills
-ct-tests.yml:test-e2e-ceph
-ct-tests.yml:test-e2e-ceph-workers
-ct-tests.yml:test-e2e-k8s
-ct-tests.yml:test-e2e-k8s-ceph
-ct-tests.yml:test-e2e-k8s-multinode
-ct-tests.yml:test-e2e-migrate
-ct-tests.yml:test-e2e-workers
-ct-tests.yml:test-fork-isolation
 ct-tests.yml:test-license-enforcement
 ct-tests.yml:test-renet
-ct-tests.yml:test-unit
 #
 # ct-update-flow.yml
 ct-update-flow.yml:test-linux-x64

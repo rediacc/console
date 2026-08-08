@@ -17,8 +17,14 @@
 # than general: two of these tests WRITE INTO THE REAL TREE, because the code
 # they exercise hardcodes the real tree and cannot be pointed at a fixture.
 #
-#   test-gate-paths-exist.sh   plants and deletes .ci/scripts/.gate-paths-exist{,-noise}-fixture.ts
+#   test-gate-paths-exist.sh   plants and deletes .ci/scripts/.gate-paths-exist{,-noise}-fixture.<pid>.ts
 #   test-gate-anti-vacuity.sh  plants and deletes scripts/.gate-anti-vacuity-fixture.ts
+#
+# The <pid> in the first pair is not decoration: this schedule serialises the W
+# chain within ONE battery, and two independent batteries (two sessions) used to
+# collide on fixed filenames -- each trap deleting the other's fixture, which
+# read as "the detector is broken". The pid makes those two runs disjoint; the
+# schedule below still handles the in-battery half.
 #
 # Meanwhile a good dozen other tests RECURSIVELY ENUMERATE those same two
 # directories -- `cp -r`, `find`, `grep -r`, or a gate that does one of those on

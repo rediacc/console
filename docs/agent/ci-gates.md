@@ -159,15 +159,18 @@ Two design points worth knowing before you edit a workflow:
 - **It fails CLOSED on what it cannot resolve.** `runs-on: ${{ inputs.runner }}`
   has no static answer, so the job counts as REQUIRING coverage. "We could not
   tell" costs an allowlist line with a reason; it is never silently exempt.
-- **Coverage is DIRECT.** A wrapping composite action does not count, because
-  whether a JavaScript action's `post:` hook fires when nested inside a composite
-  is the open question `profiler-probe.yml` exists to answer. It is
-  `workflow_dispatch`-only and has never been dispatched, so nobody knows yet;
-  compare the `post-direct-latest` and `post-nested-latest` job summaries after a
-  dispatch, which are identical except for the nesting precisely so "no panel"
-  can be told apart from "the action is broken". When it answers yes, set
-  `PROFILER_COVERAGE_COVERING_ACTIONS`'s default in the gate to the wrapping
-  composite and every job that already calls it is covered in one line.
+- **Coverage counts `setup-workspace` as a wrapper.** The open question this
+  bullet used to carry — does a JavaScript action's `post:` hook fire when
+  nested inside a composite? — was ANSWERED YES on 2026-08-08 by dispatching
+  `profiler-probe.yml` (run 31252148469: `Post Run ./.github/actions/profiler/
+  nest-probe: success` on both ubuntu-slim and ubuntu-latest). The profiler is
+  therefore wired as one early step in `.github/actions/setup-workspace`, that
+  composite is the gate's built-in wrapper default (`WRAPPER_DIRS`, still
+  extendable via `PROFILER_COVERAGE_WRAPPER_DIRS`), and the 25 ledger lines
+  for jobs covered that way are burned. The same probe settled the container
+  facts: GitHub's slim is cgroup **v1** (the sampler's v1 fallback resolves
+  cpu+memory), host views are container-scoped there (`nproc`=1,
+  MemTotal≈4.8 GiB), `awk` and `node` are present, and a sample costs ~742µs.
 
   **Do not flip that seam without also extending the CONFIG relation.** The
   configuration checks only inspect DIRECT uses, and a composite forwards a

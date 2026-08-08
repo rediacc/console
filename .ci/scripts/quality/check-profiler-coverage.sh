@@ -29,12 +29,21 @@
 # reason, because the alternative is a silent hole shaped exactly like the ones
 # this repo keeps finding.
 #
-# COVERAGE IS DIRECT, DELIBERATELY. A job is covered when its own steps use the
-# action. Whether a JavaScript action's `post:` hook still fires when the action
-# is nested inside a composite is the open question profiler-probe.yml exists to
-# answer; until it answers yes, counting a wrapping composite as coverage would
-# be a fail-open. When it does answer yes, add the wrapping composite to
-# COVERING_ACTIONS below (one line) and the whole rollout collapses to one edit.
+# COVERAGE IS DIRECT OR THROUGH A VERIFIED WRAPPER. A job is covered when its
+# own steps use the action, or when they use a composite that carries it.
+# Whether a JavaScript action's `post:` hook still fires when the action is
+# nested inside a composite was the open question profiler-probe.yml existed to
+# answer, and on 2026-08-08 it answered YES on real runners (run 31252148469:
+# the panel appeared on ubuntu-slim and on ubuntu-latest through a composite
+# wrapper). So ./.github/actions/setup-workspace is a wrapper from here on, and
+# the ~26 jobs that already call it are covered without an edit each.
+#
+# A WRAPPER IS VERIFIED, NOT TRUSTED. Coverage for those jobs now hangs on one
+# `uses:` line inside somebody else's file, and deleting that line would leave
+# 26 jobs reporting as profiled while profiling nothing -- a fail-open of
+# exactly the shape this gate exists to prevent. So each wrapper's own
+# action.yml must be shown to reference the profiler before it counts, and a
+# wrapper that stops doing so REFUSES rather than quietly covering nothing.
 #
 # ANTI-VACUITY. Every extractor self-tests against a planted sample before the
 # sweep, and the sweep refuses on zero workflows, zero jobs, zero declared
@@ -46,6 +55,8 @@
 #   PROFILER_COVERAGE_WORKFLOW_DIR   directory of workflow YAML to scan
 #   PROFILER_COVERAGE_ALLOWLIST      allowlist path
 #   PROFILER_COVERAGE_ACTION_DIR     directory holding the profiler action.yml
+#   PROFILER_COVERAGE_WRAPPER_DIRS   composite dirs that carry the profiler
+#                                    (each is verified; empty means none)
 #   PROFILER_COVERAGE_COVERING_ACTIONS  extra `uses:` refs that count as coverage
 #   PROFILER_COVERAGE_MIN_WORKFLOWS  floor on workflow files parsed
 #   PROFILER_COVERAGE_MIN_JOBS       floor on jobs parsed
@@ -71,14 +82,20 @@ WORKFLOW_DIR="${PROFILER_COVERAGE_WORKFLOW_DIR:-.github/workflows}"
 ALLOWLIST="${PROFILER_COVERAGE_ALLOWLIST:-.profiler-coverage-allowlist}"
 ACTION_DIR="${PROFILER_COVERAGE_ACTION_DIR:-.github/actions/profiler}"
 
-# Extra `uses:` strings that count as coverage beyond the profiler itself.
-# EMPTY, and it stays empty until profiler-probe.yml proves a nested `post:`
-# hook fires: counting a wrapper before then would be a fail-open. When it does,
-# change the default below to the wrapping composite (e.g.
-# ./.github/actions/setup-workspace) and every job that already calls it becomes
-# covered in one line. Space-separated; the env name is also the test seam that
-# proves this path works rather than leaving it dead until the day it is needed.
-read -r -a COVERING_ACTIONS <<<"${PROFILER_COVERAGE_COVERING_ACTIONS:-}"
+# Composite actions that carry the profiler on behalf of every job calling them.
+# Space-separated DIRECTORIES (not `uses:` refs): each one's action.yml is read
+# below and must be shown to reference the profiler before the wrapper counts,
+# which is what keeps this from being a one-line fail-open for ~26 jobs.
+# `${VAR-default}` rather than `${VAR:-default}` on purpose: a test that sets it
+# to the empty string means "no wrappers at all", which is the control for the
+# wrapper path.
+read -r -a WRAPPER_DIRS <<<"${PROFILER_COVERAGE_WRAPPER_DIRS-.github/actions/setup-workspace}"
+
+# Extra `uses:` strings that count as coverage, taken on trust and NOT verified.
+# Empty by default. This is the extension seam for a wrapper that lives outside
+# this repo's action tree, and it is also what test-profiler-coverage.sh drives
+# to prove the wrapper path is live code rather than a comment.
+read -r -a EXTRA_COVERING_ACTIONS <<<"${PROFILER_COVERAGE_COVERING_ACTIONS:-}"
 
 # Floors. The tree carries 28 workflows / 121 jobs / 97 Linux jobs; anything
 # far under these numbers means the parse found a layout it does not
@@ -358,6 +375,31 @@ if [ "$DECLARED_COUNT" -lt 1 ]; then
     log_error "parsed ZERO inputs from $ACTION_YML; the action declares some, so the parser is broken"
     exit 1
 fi
+
+# ---------------------------------------------------------------------------
+# The wrapper contract. A composite counts as coverage only once it is SHOWN to
+# reference the profiler, using the same matcher the job sweep uses, so the day
+# somebody edits that line out this gate goes red instead of certifying ~26 jobs
+# as profiled.
+# ---------------------------------------------------------------------------
+COVERING_ACTIONS=()
+for wdir in ${WRAPPER_DIRS[@]+"${WRAPPER_DIRS[@]}"}; do
+    [ -n "$wdir" ] || continue
+    wdir="${wdir#./}"
+    wyml="$wdir/action.yml"
+    if [ ! -f "$wyml" ]; then
+        log_error "covering wrapper '$wdir' has no action.yml at $wyml"
+        log_error "Every job counted as covered through this wrapper would be counted off a file that does not exist. Fix the path, do not drop the check."
+        exit 1
+    fi
+    if [ "$(covering_uses "$wyml" "$ACTION_REF")" -lt 1 ]; then
+        log_error "covering wrapper '$wdir' does not use $ACTION_REF"
+        log_error "It is treated as coverage for every job that calls it, so without that step those jobs are unprofiled while reporting as profiled -- the exact fail-open this gate exists to prevent."
+        exit 1
+    fi
+    COVERING_ACTIONS+=("./$wdir")
+done
+COVERING_ACTIONS+=(${EXTRA_COVERING_ACTIONS[@]+"${EXTRA_COVERING_ACTIONS[@]}"})
 
 # ---------------------------------------------------------------------------
 # The allowlist

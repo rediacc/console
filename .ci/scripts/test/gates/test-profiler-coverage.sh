@@ -407,8 +407,10 @@ YAML
 }
 
 test_nest_probe_is_not_coverage() {
-    # Coverage is DIRECT until the nest probe proves a nested post: hook fires.
-    # Counting the wrapper would be a fail-open, so assert it does not.
+    # Nesting works (run 31252148469), but that did NOT make every composite
+    # coverage: only a DECLARED, verified wrapper counts. nest-probe is the
+    # probe's own instrument and is deliberately not one, so a job carrying it
+    # is still uncovered.
     local d="$1"
     mkdir -p "$d/wf"
     cat >"$d/wf/fixture.yml" <<'YAML'
@@ -433,10 +435,11 @@ YAML
 }
 
 test_declared_wrapper_counts_as_coverage() {
-    # The extension path the header promises: the day profiler-probe.yml proves
-    # a nested post: hook fires, ONE ref in COVERING_ACTIONS covers every job
-    # that already calls the wrapper. Exercised here so it is live code rather
-    # than a comment that has never run.
+    # The UNVERIFIED extension seam, for a wrapper that lives outside this
+    # repo's action tree: a ref named in PROFILER_COVERAGE_COVERING_ACTIONS is
+    # taken on trust. Exercised here so it is live code rather than a comment
+    # that has never run. (The built-in wrapper list is the verified path, and
+    # is pinned by test_setup_workspace_is_builtin_coverage below.)
     local d="$1"
     mkdir -p "$d/wf"
     cat >"$d/wf/fixture.yml" <<'YAML'
@@ -461,6 +464,121 @@ YAML
     assert_exit_code 0 "$rc" "a declared covering wrapper must count as coverage (output: $LAST_OUT)"
     assert_contains "$LAST_OUT" "1/1 Linux job(s) profiled" "counts the wrapped job as covered"
     log_pass "a wrapper declared in COVERING_ACTIONS counts as coverage"
+}
+
+test_setup_workspace_is_builtin_coverage() {
+    # THE PHASE-1 INVARIANT. profiler-probe.yml run 31252148469 proved a nested
+    # post: hook fires, so ./.github/actions/setup-workspace carries the
+    # profiler and every job calling it is covered. Driven with NO seam at all
+    # here: if somebody reverts the built-in wrapper list to empty, or deletes
+    # the profiler step out of setup-workspace, this case goes red -- which is
+    # the only thing standing between that edit and ~26 jobs that report as
+    # profiled while profiling nothing.
+    local d="$1"
+    mkdir -p "$d/wf"
+    cat >"$d/wf/fixture.yml" <<'YAML'
+on:
+  workflow_dispatch:
+jobs:
+  fixture-wrapped:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+      - run: echo work
+YAML
+    : >"$d/allow"
+    local rc=0
+    run_gate "$d/wf" "$d/allow" 1 1 1 || rc=$?
+    assert_exit_code 0 "$rc" "a job using setup-workspace must count as covered with no seam set (output: $LAST_OUT)"
+    assert_contains "$LAST_OUT" "1/1 Linux job(s) profiled" "counts the wrapped job as covered"
+    log_pass "setup-workspace is built-in coverage, seam-free"
+}
+
+test_other_composite_is_not_coverage() {
+    # CONTROL for the case above: a DIFFERENT local composite, same shape. Only
+    # a verified wrapper counts; "uses some composite" must not.
+    local d="$1"
+    mkdir -p "$d/wf"
+    cat >"$d/wf/fixture.yml" <<'YAML'
+on:
+  workflow_dispatch:
+jobs:
+  fixture-wrapped:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: ./.github/actions/app-token
+      - run: echo work
+YAML
+    : >"$d/allow"
+    local rc=0
+    run_gate "$d/wf" "$d/allow" 1 1 1 || rc=$?
+    assert_exit_code 1 "$rc" "an unrelated composite must not count as coverage"
+    assert_contains "$LAST_OUT" "does not use ./.github/actions/profiler" "reports it as uncovered"
+    log_pass "a composite that is not a declared wrapper is not coverage"
+}
+
+test_wrapper_that_lost_the_profiler_refuses() {
+    # The fail-open this verification exists to stop: deleting one `uses:` line
+    # from setup-workspace would silently uncover every job that calls it, and
+    # the gate would still print a clean coverage line. It must REFUSE instead.
+    local d="$1"
+    mkdir -p "$d/wf" "$d/hollow-wrapper"
+    cat >"$d/wf/fixture.yml" <<'YAML'
+on:
+  workflow_dispatch:
+jobs:
+  fixture-slim:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+      - run: echo work
+YAML
+    cat >"$d/hollow-wrapper/action.yml" <<'YAML'
+name: Hollow Wrapper
+description: A composite that used to carry the profiler and no longer does.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: echo work
+YAML
+    : >"$d/allow"
+
+    local rc=0
+    LAST_OUT="$(PROFILER_COVERAGE_WORKFLOW_DIR="$d/wf" \
+        PROFILER_COVERAGE_ALLOWLIST="$d/allow" \
+        PROFILER_COVERAGE_WRAPPER_DIRS="$d/hollow-wrapper" \
+        PROFILER_COVERAGE_MIN_WORKFLOWS=1 PROFILER_COVERAGE_MIN_JOBS=1 \
+        PROFILER_COVERAGE_MIN_LINUX=1 bash "$GATE" 2>&1)" || rc=$?
+    assert_exit_code 1 "$rc" "a wrapper that does not use the profiler must refuse"
+    assert_contains "$LAST_OUT" "covering wrapper" "names the wrapper it checked"
+    assert_not_contains "$LAST_OUT" "Linux job(s) profiled" "must not print a success line"
+
+    # A wrapper directory that is not there at all is the same failure one step
+    # earlier, and must refuse rather than silently cover nothing.
+    rc=0
+    LAST_OUT="$(PROFILER_COVERAGE_WORKFLOW_DIR="$d/wf" \
+        PROFILER_COVERAGE_ALLOWLIST="$d/allow" \
+        PROFILER_COVERAGE_WRAPPER_DIRS="$d/no-such-wrapper" \
+        PROFILER_COVERAGE_MIN_WORKFLOWS=1 PROFILER_COVERAGE_MIN_JOBS=1 \
+        PROFILER_COVERAGE_MIN_LINUX=1 bash "$GATE" 2>&1)" || rc=$?
+    assert_exit_code 1 "$rc" "a wrapper directory with no action.yml must refuse"
+    assert_contains "$LAST_OUT" "has no action.yml" "names the missing contract"
+
+    # CONTROL: the REAL wrapper, named explicitly, is accepted -- so the two
+    # refusals above are the verification working, not the seam being unusable.
+    rc=0
+    LAST_OUT="$(PROFILER_COVERAGE_WORKFLOW_DIR="$d/wf" \
+        PROFILER_COVERAGE_ALLOWLIST="$d/allow" \
+        PROFILER_COVERAGE_WRAPPER_DIRS=".github/actions/setup-workspace" \
+        PROFILER_COVERAGE_MIN_WORKFLOWS=1 PROFILER_COVERAGE_MIN_JOBS=1 \
+        PROFILER_COVERAGE_MIN_LINUX=1 bash "$GATE" 2>&1)" || rc=$?
+    assert_exit_code 0 "$rc" "the real setup-workspace wrapper must verify (output: $LAST_OUT)"
+    log_pass "a wrapper is verified to carry the profiler, and refuses when it does not"
 }
 
 test_stale_allowlist_entries_fail() {
@@ -608,6 +726,9 @@ with_temp_dir test_runner_label_problems_fail
 with_temp_dir test_malformed_reference_fails
 with_temp_dir test_nest_probe_is_not_coverage
 with_temp_dir test_declared_wrapper_counts_as_coverage
+with_temp_dir test_setup_workspace_is_builtin_coverage
+with_temp_dir test_other_composite_is_not_coverage
+with_temp_dir test_wrapper_that_lost_the_profiler_refuses
 with_temp_dir test_stale_allowlist_entries_fail
 with_temp_dir test_empty_workflow_dir_refuses
 with_temp_dir test_missing_workflow_dir_refuses
