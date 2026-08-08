@@ -2885,3 +2885,103 @@ invitation to undo it.
   started at the platform**, not at the fourth job. When several unrelated jobs
   redden inside one window, check the provider's status page before reading a
   single log.
+
+## Four gates that a human reviewer had to find first (2026-08-08)
+
+The version-hole wave shipped, and the review pipeline itself turned out to hold
+the same defect class the wave was built to remove: checks that could not fail,
+and one that could not pass. Recorded because every one of them was invisible to
+the gates already in place, and three were caught by a REVIEWER rather than by CI.
+
+### The review cap deadlocked a PR that was perfectly fine
+
+`review-status.sh` carries an explicit DEADLOCK GUARD: when the review cap is
+reached the reviewed-SHA marker can never advance, so failing would strand the PR
+"through no fault of its author". It passes loudly instead.
+
+It never fired, because the two scripts measured different numerators against the
+same denominator:
+
+| script | numerator | PR #553 read |
+|---|---|---|
+| `claude-review-gate.sh` | posted reports + spent attempts | **3/3** -> refuses to review |
+| `review-status.sh` | posted reports only | **0/3** -> guard mute |
+
+`lib/common.sh` exists to stop exactly this drift and half-worked: it shared the
+DENOMINATOR while the NUMERATOR stayed split across two files, one of which did
+not know spent attempts existed. **Sharing a file is not sharing the
+computation.** Both callers now use `review_spend_total()`.
+
+**The fix could not be validated on the PR that made it.** `review-status.yml`
+checks out `.ci/scripts` from the DEFAULT BRANCH -- deliberately, so a PR cannot
+edit the logic judging it -- so it was inert until it reached `main`. Breaking the
+circularity needed a separate tiny branch. Anyone touching review-cap logic must
+expect the same: **your fix will not act on your own PR.**
+
+### The turn budget starved a review three times, and the model was not the cause
+
+Same day, same reviewer, both in the old 50-turn tier: #552 at 2270 lines
+completed; #553 at 2802 lines produced `error_max_turns` and posted nothing.
+Sonnet twice, then opus-5 -- **the model was never the constraint.**
+
+The first fix was WRONG and the new capacity gate caught it on its first run:
+moving the rung from 5000 to 2000 left a 2000..29999 tier whose TOP edge got 2.6
+turns/KLOC, the same hole fifteen times wider. **Rungs starve at their top by
+construction**, so the budget is now continuous (25 turns/KLOC, floor 50, ceiling
+140).
+
+A starved review is the EXPENSIVE outcome: it burns its whole budget, posts
+nothing, and still spends an attempt against a finite per-PR cap.
+
+### The Stop hook's reachability probe could not pass
+
+`gate_reachable()` walked `npm run X` edges from the `ci` script -- but `ci` is
+`tsx scripts/ci-runner/run.ts`, whose body has ZERO such edges, because the runner
+schedules from `manifest.ts`. It returned False for **all 191 registered gates**,
+including `check:ci-shell-commands` and `check:ci-dead-bash`.
+
+The cost was not a missed defect but a MANUFACTURED one: it told two consecutive
+sessions their correctly-wired gates were "defined but never run". **A probe that
+cannot pass is the same class as a check that cannot fail, and more expensive --
+it spends real work denying something true.**
+
+### The edge smoke test could be failed by one unlucky sample
+
+Release run 31234422166 deployed edge successfully and then failed
+`edge.rediacc.com footer does not render v1.2.19` -- while edge was ALREADY
+serving v1.2.19. One `curl` against an eventually-consistent CDN, no retry; the
+script had TWELVE such reads. The cascade skipped `Tag & GitHub Release`, so a
+good release shipped with no tag and no GitHub Release.
+
+**The reasoning that nearly left this ungated is worth more than the fix.**
+`verify-edge-endpoints.sh` runs only from `cd-v2.yml` (dispatch-only, main-only),
+so the DEPLOY genuinely cannot be exercised on a PR -- and the first conclusion
+was therefore "main-only, not PR-testable". Wrong. The defect was never "edge
+served the wrong version"; it was "the assertion samples once", which is a
+property of a shell script and can be driven against a fake predicate on any PR.
+
+> Before calling something un-testable on a PR, separate the ENVIRONMENT you
+> cannot reproduce from the LOGIC you can.
+
+### New gates from this wave
+
+| key | guards |
+|---|---|
+| `check:ci-review-turn-capacity` | monotonic, total, density-where-achievable, ceiling-beyond, plus the measured regression point |
+| `check:ci-review-cap-coherence` | one numerator, one denominator, and the deadlock guard REACHABLE at the cap |
+| `check:ci-gate-reachability-coverage` | the Stop hook's own probe agrees with how gates are registered |
+| `gate-test:edge-verify-retries` | stale-then-correct ACCEPTED, never-correct still REJECTED |
+| `check:ci-gate-id-convention` | 57 gate scripts share a registration convention nothing enforced |
+
+Every one is control-first: a planted defect watched to make it PASS before the
+fix makes it FAIL. Two of them found real defects in the very change that
+introduced them -- the capacity gate rejected its author's first tier fix, and CI
+caught a `pipefail` silent-abort inside the gate written to catch silent aborts.
+
+### The trap this wave paid for most
+
+**Resolving inline review threads is not answering the review.** A top-level
+summary has NO thread, so nothing about resolving threads addresses it, and
+`review-findings: []` does not exempt it. Missed four times here, costing three
+force-cancelled runs and fourteen killed E2E jobs. The fix is not another note: it
+is treating resolve-threads and answer-summary as ONE indivisible step.
