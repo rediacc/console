@@ -556,7 +556,78 @@ def tasks_dir(session_id):
     return os.path.join(home, "session-" + session_id[:8])
 
 
-def pending_tasks(session_id):
+# v19: THE TASK DIR IS NOT ALWAYS NAMED AFTER THE STOP EVENT'S SESSION ID.
+# On 2026-08-08 a session's tasks lived under session-6e7fb45f (the harness
+# team id) while every Stop event said session_id=d136ac61, so pending_tasks
+# read a directory that did not exist and returned [] for the whole session --
+# the exact "two queues, one supervisor, watching the empty one" failure the
+# v5 docstring below describes, reintroduced one naming scheme later, and
+# INVISIBLE because "missing dir = no evidence" is also the function's
+# legitimate no-manufactured-blocks safety.
+#
+# The join that survives the rename: the session TRANSCRIPT (whose path the
+# Stop event does carry) contains every TaskCreate result verbatim --
+# "Task #<id> created successfully: <subject>" -- and a directory holding a
+# task with that exact id whose subject matches is this session's directory.
+# Content-based, deterministic, and refuses on ambiguity (0 or 2+ matching
+# dirs resolve to None, which downstream treats as "no evidence", never a
+# manufactured block). Cached per process so the fallback's directory scan
+# runs at most once per hook invocation.
+_TASKS_DIR_CACHE = {}
+_TASK_CREATED_RE = re.compile(r"Task #(\d+) created successfully: ([^\"\\\n]{10,})")
+
+
+def _resolve_tasks_dir(session_id, transcript_path=None):
+    if not session_id:
+        return None
+    key = session_id[:8]
+    if key in _TASKS_DIR_CACHE:
+        return _TASKS_DIR_CACHE[key]
+    d = tasks_dir(session_id)
+    # An EMPTY primary dir is "no evidence", not an answer: the live failure
+    # had a zero-file session-d136ac61 relic (created 2026-07-23, before the
+    # harness renamed its task store) shadowing the real session-6e7fb45f.
+    # Only a primary dir that actually holds a task settles the question.
+    if os.path.isdir(d) and glob.glob(os.path.join(d, "*.json")):
+        _TASKS_DIR_CACHE[key] = d
+        return d
+    resolved = None
+    if transcript_path and os.path.isfile(transcript_path):
+        try:
+            with open(transcript_path, "rb") as fh:
+                fh.seek(0, os.SEEK_END)
+                size = fh.tell()
+                fh.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
+                tail = fh.read().decode("utf-8", "replace")
+            # Newest creations first: the last one is the least likely to have
+            # been deleted since. Subjects are read out of JSONL, so cut each
+            # at the first escape sequence and prefix-match on what is left.
+            matches = _TASK_CREATED_RE.findall(tail)[-5:][::-1]
+            cands = set()
+            for tid, raw_subj in matches:
+                subj = raw_subj.strip()
+                for sd in glob.glob(os.path.join(os.path.dirname(d), "session-*")):
+                    f = os.path.join(sd, tid + ".json")
+                    if not os.path.isfile(f):
+                        continue
+                    try:
+                        with open(f, encoding="utf-8") as fh:
+                            t = json.load(fh)
+                    except (OSError, ValueError):
+                        continue
+                    if str(t.get("subject", "")).strip().startswith(subj):
+                        cands.add(sd)
+                if cands:
+                    break  # the newest resolvable creation decides
+            if len(cands) == 1:
+                resolved = cands.pop()
+        except OSError:
+            resolved = None
+    _TASKS_DIR_CACHE[key] = resolved
+    return resolved
+
+
+def pending_tasks(session_id, transcript_path=None):
     """Harness Task-list items that are not done, as [(id, subject, status)].
 
     THE POINT OF v5. The hook used to see only the markdown worklist, and a
@@ -568,7 +639,7 @@ def pending_tasks(session_id):
     """
     if not session_id:
         return []
-    d = tasks_dir(session_id)
+    d = _resolve_tasks_dir(session_id, transcript_path) or tasks_dir(session_id)
     out = []
     try:
         for f in sorted(glob.glob(os.path.join(d, "*.json"))):
@@ -585,13 +656,56 @@ def pending_tasks(session_id):
     return out
 
 
-def task_statuses(session_id):
+def actionable_tasks(session_id, transcript_path=None):
+    """Pending harness tasks whose every recorded blocker is finished, as
+    [(id, subject)] -- the tasks a waiting session could be working RIGHT NOW.
+
+    v19, operator directive 2026-08-08: a session sat in "pure background
+    wait" for hours while a fully-planned task was pending and unblocked; the
+    check-in kept saying "this is not a demand for other work" because the
+    pure-wait state never consulted the harness queue. A pending task with an
+    unresolved `blockedBy` is legitimately parked; one without is not.
+    A blocker id whose file no longer exists counts as resolved (deleted
+    tasks vanish from the dir). Never raises."""
+    if not session_id:
+        return []
+    d = _resolve_tasks_dir(session_id, transcript_path)
+    if not d:
+        return []
+    all_t = {}
+    try:
+        for f in glob.glob(os.path.join(d, "*.json")):
+            try:
+                with open(f, encoding="utf-8") as fh:
+                    t = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            if t.get("id") is not None:
+                all_t[str(t["id"])] = t
+    except OSError:
+        return []
+    out = []
+    for tid, t in all_t.items():
+        if t.get("status") != "pending":
+            continue
+        unresolved = [
+            b
+            for b in (t.get("blockedBy") or [])
+            if str(b) in all_t and all_t[str(b)].get("status") != "completed"
+        ]
+        if not unresolved:
+            out.append((tid, str(t.get("subject", ""))[:70]))
+    out.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 1 << 30)
+    return out
+
+
+def task_statuses(session_id, transcript_path=None):
     """{id: (status, subject)} for ALL harness tasks, completed included.
     pending_tasks() serves the queue; this serves the completion-evidence
     check and the liveness ladder, which need TRANSITIONS, not the queue."""
     if not session_id:
         return {}
-    d = tasks_dir(session_id)
+    d = _resolve_tasks_dir(session_id, transcript_path) or tasks_dir(session_id)
     out = {}
     try:
         for f in glob.glob(os.path.join(d, "*.json")):
