@@ -113,8 +113,12 @@ open(sys.argv[2],"a").write(json.dumps(rec)+"\n")
 ' "$1" "$BASE/t.jsonl"
 }
 
-task() { # task <id> <status> <subject>
-    printf '{"id":"%s","status":"%s","subject":"%s"}\n' "$1" "$2" "$3" >"$BASE/tasks/session-deadbeef/$1.json"
+task() { # task <id> <status> <subject> [blockedBy-csv]
+    local blocked="[]"
+    if [[ -n "${4:-}" ]]; then
+        blocked=$(printf '%s' "$4" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().split(",")))')
+    fi
+    printf '{"id":"%s","status":"%s","subject":"%s","blockedBy":%s}\n' "$1" "$2" "$3" "$blocked" >"$BASE/tasks/session-deadbeef/$1.json"
 }
 
 # Plant a STATE.md DIRECTLY on disk, bypassing `--state`.
@@ -2551,6 +2555,7 @@ ARITY = {
     "N_CI_QUEUE": ("r", 2, 30, ""), "N_CI_QUEUE_PR_STALE_LINE": None,
     "N_EMAIL_SKIPPED": (1, "err"),
     "V_BG_REPORT": ("never", "2026-01-01T00:15:00Z", 15, 2, "rows"),
+    "V_BG_REPORT_TASKS": ("never", "2026-01-01T00:15:00Z", 15, 2, 1, "tasks", "rows"),
     "N_EMAIL_SENT": (2, "to@x", 120), "N_EMAIL_FAIL": (2, "err", 15),
     "N_EMAIL_UNCONFIGURED": ("p", 2),
     "CLI_ASK_OPERATOR_NO_DEFAULT": None,
@@ -5191,11 +5196,14 @@ mkdir -p "$BASE/bgout"
 export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
 BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
-task 7 pending "waiting on the nightly"
+# v19: an UNBLOCKED pending task now (correctly) makes the wait impure, so this
+# case's parked task is in_progress -- the state a watched-by-this-session job
+# actually has. The unblocked-pending behavior gets its own case 163y below.
+task 7 in_progress "waiting on the nightly"
 say "answer
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 # Stop 1 SEEDS the wait clock silently: the check-in means "you have been
 # waiting 15 minutes", never "you started waiting".
 OUT="$(run)"
@@ -5215,7 +5223,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 OUT="$(run)"
 if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT" && grep -qF "bw1 (long CI watch)" <<<"$OUT" &&
     grep -qF "output last grew" <<<"$OUT"; then
@@ -5228,12 +5236,87 @@ newturn
 say "bw1 confirmed: the long CI watch stream matches; nothing stuck.
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 OUT="$(run)"
 if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163 CONTROL: no second check-in inside the 15-minute window"
 else
     fail "163 CONTROL: the check-in drumbeat: ${OUT:0:250}"
+fi
+
+echo "== 163y. v19: an unblocked pending task makes the wait IMPURE and gets named =="
+# Operator, 2026-08-08: a session idled for hours in "pure background wait"
+# beside a fully planned, unblocked pending task; the check-in kept certifying
+# the wait because it never consulted the harness queue. Now: pending with no
+# unresolved blocker -> the check-in fires as WORKABLE-TASKS and names it;
+# pending with a live blocker -> the wait stays pure (the control).
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
+task 7 pending "fully planned and unblocked"
+say "answer
+
+## Remaining
+- #7 fully planned and unblocked (pending)"
+OUT="$(run)"   # seed the clock
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #7 fully planned and unblocked (pending)"
+OUT="$(run)"
+if grep -qF "WORKABLE TASKS" <<<"$OUT" && grep -qF "task #7 fully planned and unblocked" <<<"$OUT" &&
+    ! grep -qF "not a demand for other work" <<<"$OUT"; then
+    pass "163y: the check-in names the unblocked pending task instead of certifying the wait"
+else
+    fail "163y: workable task not named: ${OUT:0:300}"
+fi
+# CONTROL: the same task behind a LIVE blocker keeps the wait pure.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/bgout"
+export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
+printf 'worker stream content\n' >"$BASE/bgout/bw1.output"
+BG='[{"id":"bw1","type":"shell","status":"running","description":"long CI watch"}]'
+task 6 pending "the prerequisite"
+task 7 pending "parked behind 6" 6
+say "answer
+
+## Remaining
+- #6 the prerequisite (pending)
+- #7 parked behind 6 (pending)"
+OUT="$(run)"   # seed
+python3 - "$WL" <<'PYEOF'
+import json, pathlib, sys
+p = pathlib.Path(sys.argv[1].replace(".md", ".state-deadbeef.json"))
+doc = json.loads(p.read_text())
+doc["bgwait"] = {"at": "2026-01-01T00:00:00Z"}
+p.write_text(json.dumps(doc))
+PYEOF
+newturn
+say "answer
+
+## Remaining
+- #6 the prerequisite (pending)
+- #7 parked behind 6 (pending)"
+OUT="$(run)"
+if grep -qF "WORKABLE TASKS" <<<"$OUT" && grep -qF "task #6 the prerequisite" <<<"$OUT" &&
+    ! grep -qF "task #7 parked behind 6" <<<"$OUT"; then
+    pass "163y CONTROL: the blocked task stays unnamed; its live blocker is the one named"
+else
+    fail "163y CONTROL: blocker logic wrong: ${OUT:0:300}"
 fi
 
 echo "== 163z. v18: a CONFIRMED inbox waiter owes no check-in and needs no poll cron =="
@@ -5280,11 +5363,11 @@ else
     fail "163z premise: waiter verdict is '$VERDICT', not confirmed -- this case is vacuous"
 fi
 CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
-task 7 pending "waiting on the inbox"
+task 7 in_progress "waiting on the inbox"
 say "answer
 
 ## Remaining
-- #7 waiting on the inbox (pending)"
+- #7 waiting on the inbox (in_progress)"
 run >/dev/null
 python3 - "$WL" <<'PYEOF'
 import json, pathlib, sys
@@ -5297,7 +5380,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on the inbox (pending)"
+- #7 waiting on the inbox (in_progress)"
 OUT="$(run)"
 if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163z: an overdue check-in is SUPPRESSED when the only live task is a confirmed waiter"
@@ -5363,11 +5446,11 @@ mate("bystander-9999-8888-7777-666666666666", "freshmate", 0)
 MKSTORE
 export CLAUDE_CONFIG_DIR="$BASE/claude"
 BG='[{"id":"tm1","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."},{"id":"tm2","type":"teammate","status":"running","description":"You are an Opus writer sub-agent in /home..."}]'
-task 7 pending "waiting on the teammates"
+task 7 in_progress "waiting on the teammates"
 say "answer
 
 ## Remaining
-- #7 waiting on the teammates (pending)"
+- #7 waiting on the teammates (in_progress)"
 run >/dev/null # establishes the state doc
 # THE CLOCK MUST BE OVERDUE BEFORE THIS PROVES ANYTHING. Asserting on a seeding
 # stop is vacuous: the check-in does not fire on first sight of the wait state
@@ -5386,7 +5469,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on the teammates (pending)"
+- #7 waiting on the teammates (in_progress)"
 OUT="$(run)"
 if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163v: with zero fresh transcripts the phantom roster is dropped"
@@ -5415,7 +5498,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on the teammates (pending)"
+- #7 waiting on the teammates (in_progress)"
 OUT="$(run)"
 if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163v CONTROL: one fresh transcript keeps the roster and the check-in"
@@ -5736,11 +5819,11 @@ print(json.dumps([{"id": "wt1", "type": "shell", "status": "running",
 PYEOF
 )"
 CRONS='[{"id":"c1","schedule":"*/30 * * * *","prompt":"work loop"}]'
-task 7 pending "waiting on the inbox"
+task 7 in_progress "waiting on the inbox"
 say "answer
 
 ## Remaining
-- #7 waiting on the inbox (pending)"
+- #7 waiting on the inbox (in_progress)"
 run >/dev/null
 python3 - "$WL" <<'PYEOF'
 import json, pathlib, sys
@@ -5753,7 +5836,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on the inbox (pending)"
+- #7 waiting on the inbox (in_progress)"
 OUT="$(run)"
 if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163z-c1 CONTROL: an unconfirmed waiter still owes the check-in"
@@ -5786,11 +5869,11 @@ print(json.dumps([
 ]))
 PYEOF
 )"
-task 7 pending "waiting on both"
+task 7 in_progress "waiting on both"
 say "answer
 
 ## Remaining
-- #7 waiting on both (pending)"
+- #7 waiting on both (in_progress)"
 run >/dev/null
 python3 - "$WL" <<'PYEOF'
 import json, pathlib, sys
@@ -5803,7 +5886,7 @@ newturn
 say "answer
 
 ## Remaining
-- #7 waiting on both (pending)"
+- #7 waiting on both (in_progress)"
 OUT="$(run)"
 if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "163z-c2 CONTROL: a real job beside the waiter still gets its check-in"
@@ -5877,7 +5960,8 @@ mkdir -p "$BASE/bgout"
 export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 printf 'stream\n' >"$BASE/bgout/bw4.output"
 BG='[{"id":"bw4","type":"shell","status":"running","description":"watch"}]'
-task 7 pending "thing"
+task 6 in_progress "the live prerequisite"
+task 7 pending "thing" 6   # v19: blocked scenery so the pure-wait premise holds
 say "answer
 
 ## Remaining
@@ -6713,11 +6797,11 @@ export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 printf 'stream\n' >"$BASE/bgout/bw9.output"
 BGON='[{"id":"bw9","type":"shell","status":"running","description":"long watch"}]'
 BG="$BGON"
-task 7 pending "waiting on the nightly"
+task 7 in_progress "waiting on the nightly"
 say "answer
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 run >/dev/null # seeds the wait clock
 age_bgwait() {
     python3 - "$WL" <<'PYEOF'
@@ -6746,7 +6830,7 @@ newturn
 say "the watch finished
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 run >/dev/null
 if [[ "$(has_bgwait)" == "absent" ]]; then
     pass "179: leaving the wait state clears the check-in clock"
@@ -6759,7 +6843,7 @@ newturn
 say "started a new watch
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 OUT="$(run)"
 if ! grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "179: re-entering a wait re-seeds the clock instead of firing on arrival"
@@ -6772,7 +6856,7 @@ newturn
 say "still waiting
 
 ## Remaining
-- #7 waiting on the nightly (pending)"
+- #7 waiting on the nightly (in_progress)"
 OUT="$(run)"
 if grep -qF "PURE BACKGROUND WAIT" <<<"$OUT"; then
     pass "179 CONTROL: aged inside a live wait, the check-in still fires"
@@ -6797,7 +6881,7 @@ mkdir -p "$BASE/bgout"
 export WORKLIST_BG_OUTPUT_DIR="$BASE/bgout"
 printf 'stream\n' >"$BASE/bgout/bwq.output"
 BG='[{"id":"bwq","type":"shell","status":"running","description":"long watch"}]'
-task 7 pending "waiting on the nightly"
+task 7 in_progress "waiting on the nightly"
 # A real deferral, so the NON-collapsed report has a guide in it. Since v18 an
 # empty guide is silent, and the reset control below needs a full report it can
 # actually see coming back.
@@ -6807,7 +6891,7 @@ quiet_turn() {
     say "still waiting on the nightly
 
 ## Remaining
-- #7 waiting on the nightly (pending)
+- #7 waiting on the nightly (in_progress)
 - the flag decision, deferred with a default"
 }
 quiet_turn
