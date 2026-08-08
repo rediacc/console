@@ -48,6 +48,29 @@ inputs:
 runs:
   using: composite
   steps:
+    # FIRST, deliberately. The profiler's `main` starts a detached sampler and
+    # its `post` writes the panel, so everything after this line is measured --
+    # including the node setup and the cache restore, which are the very costs
+    # this action exists to cut. It consumes none of this action's inputs and
+    # produces no outputs, so it cannot perturb anything below it; a missing
+    # sampler or a non-Linux runner makes it a no-op warning rather than a
+    # failure.
+    #
+    # NESTING IS PROVEN, NOT ASSUMED. A JavaScript action's `post:` hook firing
+    # from inside a composite is what profiler-probe.yml was dispatched to
+    # settle: run 31252148469 saw the panel appear on BOTH ubuntu-slim and
+    # ubuntu-latest through a composite wrapper.
+    #
+    # NO runner-label, and it cannot be fixed here: a composite cannot read its
+    # caller's `runs-on`, and there is no RUNNER_LABEL in the runner's
+    # environment to fall back on. index.js resolves the absent input to
+    # 'unknown', which records the tier and the sample series exactly as before
+    # and only leaves HOST_LEAK unarmed (sampler-linux.sh:251-254 arms it off a
+    # '*slim*' label). That is the honest trade for one line here instead of a
+    # `runner-label:` threaded through 26 jobs, and on a cgroup tier the
+    # enforced quota already substitutes for the label.
+    - uses: ./.github/actions/profiler
+
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
       with:
         node-version: ${{ inputs.node-version }}

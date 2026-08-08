@@ -70,6 +70,34 @@ source "$SCRIPT_DIR/../lib/test-helpers.sh"
 # excludes on purpose.
 FIXTURE_DIR="$REPO_ROOT/.ci/scripts"
 
+# The fixture filenames carry THIS PROCESS's pid, and that is a correctness fix
+# rather than tidiness. They used to be fixed names, so two concurrent
+# invocations -- two sessions each running the battery, which nothing prevents
+# -- planted the same two paths and each `trap rm -f` deleted the OTHER run's
+# fixture. On 2026-08-05 that surfaced as a false "detector broken": the
+# control's collect_dead_paths came back empty because its fixture had already
+# been removed by a neighbour. run-all.sh's W chain serialises this test WITHIN
+# one battery and cannot serialise across independent processes.
+#
+# The dotfile prefix is load-bearing (it is what keeps eslint, biome and knip
+# off these files) and the `.ts` suffix is what scan_targets() globs for, so the
+# pid goes between them. FIXTURE_NAME_PREFIX is the shape both fixtures share
+# ACROSS pids: a concurrent run's fixtures are still visible to this one's scan,
+# so the assertions below scope themselves with it rather than assuming they are
+# alone in the tree.
+FIXTURE_PID_SUFFIX="$$"
+FIXTURE_NAME_PREFIX='.gate-paths-exist-'
+
+# Belt to the per-test RETURN traps' braces. A RETURN trap does not fire when
+# the shell is killed or interrupted, and this test runs for ~3 minutes, which
+# is long enough for a Ctrl-C or a `pkill` to be routine. With fixed filenames
+# an orphan was invisible (the next run overwrote it); pid-named ones ACCUMULATE
+# in a tracked directory instead, so they get cleaned here too. Scoped to this
+# pid: a concurrent run's fixtures are not ours to delete, which is the whole
+# point of the suffix.
+# BLOCKER: pid-scoped so a concurrent invocation's fixtures survive; a wildcard here would recreate the cross-process deletion this suffix exists to fix
+trap 'rm -f "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}fixture.$FIXTURE_PID_SUFFIX.ts" "$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}noise-fixture.$FIXTURE_PID_SUFFIX.ts"' EXIT INT TERM
+
 # Directory prefixes that are generated, vendored, or gitignored. A literal
 # whose path traverses one of these is skipped in Tier B.
 EPHEMERAL_SEGMENTS='/(dist|build|bin|out|coverage|node_modules|\.astro|\.backups|\.cache)(/|$)'
@@ -215,8 +243,16 @@ assert_scan_is_whole() {
 
 test_no_dead_path_constants() {
     assert_scan_is_whole
-    local dead
-    dead="$(collect_dead_paths)"
+    local all dead
+    # Two steps, not a pipeline: collect_dead_paths keeps its own failure under
+    # set -e, which a trailing `|| true` on the same pipeline would swallow.
+    #
+    # A CONCURRENT invocation of this same test plants its own control fixture,
+    # which is a deliberate dead path and would read here as a real finding.
+    # Filtering by the fixture filename shape is precise: nothing but this test
+    # writes a `.gate-paths-exist-*` file into the scanned tree.
+    all="$(collect_dead_paths)"
+    dead="$(printf '%s\n' "$all" | grep -vF -- "$FIXTURE_NAME_PREFIX" || true)"
     if [[ -n "$dead" ]]; then
         echo "$dead" >&2
         log_fail "dead path constants found (see list above)"
@@ -228,7 +264,7 @@ test_detector_fires_on_a_deleted_workspace() {
     # Control: prove the instrument can FAIL. A synthetic scan target naming a
     # workspace that has never existed must be reported, otherwise this gate is
     # exactly the vacuous check it was written to prevent.
-    local fixture="$FIXTURE_DIR/.gate-paths-exist-fixture.ts"
+    local fixture="$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}fixture.$FIXTURE_PID_SUFFIX.ts"
     # BLOCKER: expanding fixture now binds the specific path into the trap so cleanup fires even if the variable is later reassigned
     # shellcheck disable=SC2064
     trap "rm -f '$fixture'" RETURN
@@ -240,16 +276,21 @@ test_detector_fires_on_a_deleted_workspace() {
     # "the walk never reached the fixture". Diagnosing the wrong thing cost a
     # full bisect across four batch shapes.
     assert_scan_is_whole
-    local dead
+    local dead own
     dead="$(collect_dead_paths)"
-    assert_contains "$dead" "packages/definitely-not-a-workspace" \
+    # Scoped to OUR fixture by name. A concurrent invocation plants the same
+    # dead path under its own pid, and an unscoped assertion would pass off that
+    # one -- a control that can be satisfied by somebody else's fixture is not a
+    # control.
+    own="$(printf '%s\n' "$dead" | grep -F -- "-fixture.$FIXTURE_PID_SUFFIX.ts" || true)"
+    assert_contains "$own" "packages/definitely-not-a-workspace" \
         "detector must report a path under a nonexistent workspace"
     log_pass "detector fires on a deleted workspace (control case)"
 }
 
 test_detector_ignores_runtime_and_glob_paths() {
     # Shape check: the two biggest false-positive sources must stay silent.
-    local fixture="$FIXTURE_DIR/.gate-paths-exist-noise-fixture.ts"
+    local fixture="$FIXTURE_DIR/${FIXTURE_NAME_PREFIX}noise-fixture.$FIXTURE_PID_SUFFIX.ts"
     # BLOCKER: expanding fixture now binds the specific path into the trap so cleanup fires even if the variable is later reassigned
     # shellcheck disable=SC2064
     trap "rm -f '$fixture'" RETURN

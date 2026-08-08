@@ -26,21 +26,33 @@ name: Autopilot
 # The dispatch also carries the round's model, its reasoning effort, and an
 # optional hold-open debug session (see the model job).
 #
-# STAGE FLAGS, all repo VARIABLES, all fail closed (ABSENT MEANS OFF).
-# None of them exist yet, so this workflow lands INERT; enabling a stage is a
-# variable flip, never a commit (03-v2-autonomy.md section 8):
+# STAGE FLAGS, all Actions VARIABLES (repo-level, or org-level scoped to this
+# repo -- `vars.` reads both), all fail closed (ABSENT MEANS OFF). None of them
+# exist yet, so this workflow lands INERT; enabling a stage is a variable flip,
+# never a commit (03-v2-autonomy.md section 8):
 #   AUTOPILOT_ENABLED           master switch: gate runs and logs (S1+)
 #   AUTOPILOT_ALLOW_STATE       state-comment writes (S2+)
 #   AUTOPILOT_ALLOW_FINISH      deterministic ready-flip / done (S3+)
-#   AUTOPILOT_MODEL             model rounds run; pushes stay dry-run (S4+)
+#   AUTOPILOT_ALLOW_MODEL       model rounds run; pushes stay dry-run (S4+)
 #   AUTOPILOT_ALLOW_PUSH        real pushes (S5+)
 #   AUTOPILOT_ALLOW_SUBMODULES  reserved for increment 2 (S6); unread today
+# EVERY STAGE FLAG IS A BOOLEAN: the only value that arms one is the literal
+# string `true`. AUTOPILOT_ALLOW_MODEL carries the ALLOW_ prefix for that
+# reason -- it is the S4 SWITCH, never a model name. The model NAME is the
+# `model` dispatch input, recorded in the campaign. Putting a model name in
+# this flag reads as false: the model job never starts, and the loop arms,
+# decides go and does nothing with no error anywhere (renamed 2026-08-08 for
+# exactly that trap; 03-v2-autonomy.md section 8).
 # Plus configuration variables: AUTOPILOT_AUTHOR_ALLOWLIST (empty allows
 # NOBODY), AUTOPILOT_APPLIER_ALLOWLIST, AUTOPILOT_LABEL, AUTOPILOT_MAX_ROUNDS,
 # AUTOPILOT_BOT_LOGIN, AUTOPILOT_GIT_NAME, AUTOPILOT_GIT_EMAIL.
 #
-# Secrets: AUTOPILOT_APP_ID / AUTOPILOT_PRIVATE_KEY (the rediacc-autopilot
-# app, NO bypass on the console ruleset) and CLAUDE_CODE_OAUTH_TOKEN.
+# IDENTITY, and the split matters: AUTOPILOT_APP_ID is an org VARIABLE
+# (`vars.AUTOPILOT_APP_ID`, visibility scoped to console), NOT a secret. Setting
+# it with `gh secret set AUTOPILOT_APP_ID` APPEARS TO SUCCEED and leaves the
+# variable empty, which silently breaks every app-token mint below. Only
+# AUTOPILOT_PRIVATE_KEY (the rediacc-autopilot app's key; the app has NO bypass
+# on the console ruleset) and CLAUDE_CODE_OAUTH_TOKEN are secrets.
 
 on:
   workflow_run:
@@ -285,10 +297,16 @@ jobs:
     # The model runs only on a go decision for a model mode, and only when the
     # model stage is armed. Ready-flip and done are deterministic and go to
     # the finish job instead.
+    #
+    # AUTOPILOT_ALLOW_MODEL is the S4 SWITCH, not the model name: the only
+    # value that arms it is `true`. The model NAME comes from the `model`
+    # dispatch input / the campaign field, and reaches the round via
+    # needs.gate.outputs.model. Putting a model name in this variable reads as
+    # false and disarms the whole job silently.
     if: >-
       needs.gate.outputs.decision == 'go' &&
       (needs.gate.outputs.mode == 'fix' || needs.gate.outputs.mode == 'review-response') &&
-      vars.AUTOPILOT_MODEL == 'true'
+      vars.AUTOPILOT_ALLOW_MODEL == 'true'
     runs-on: ubuntu-latest
     # 30 for a normal round. A debug-shell dispatch holds the runner open for
     # up to `hold-duration` (300) AFTER the round, so it needs its own
@@ -786,10 +804,12 @@ jobs:
           preset: cd
           repositories: console
 
-      # Dispatch every armed PR unconditionally: the dispatched gate run
+      # Dispatch every LABEL-armed PR unconditionally: the dispatched gate run
       # dedups against the ledger at zero model cost, so a naive sweep is
       # cheap and the sweeper stays 4 lines instead of re-implementing the
-      # gate (03-v2-autonomy.md section 9).
+      # gate (03-v2-autonomy.md section 9). Note the scope: a PR armed only by
+      # an open CAMPAIGN carries no label, so this sweep does not reach it --
+      # campaign rounds ride their own workflow_run events.
       - name: Dispatch armed PRs
         env:
           GH_TOKEN: ${{ steps.app_token.outputs.token }}
