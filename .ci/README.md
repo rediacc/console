@@ -31,7 +31,7 @@ private/ quality/ release/ security/ setup/ signal/ test/ version/`.
 │   │   └── derive-image-tag.sh # Derive Docker image tag from branch/tag
 │   ├── version/
 │   │   ├── bump.sh            # Semantic version bump (patch/minor/major)
-│   │   ├── detect-bump-type.sh # Infer patch/minor/major from commits
+│   │   ├── detect-bump-type.sh # patch/minor/major from bump-* labels on merged PRs in <tag>..HEAD
 │   │   └── resolve-version.sh  # Resolve current/next version from git tags
 │   ├── setup/
 │   │   ├── install-deps.sh     # npm ci with platform handling
