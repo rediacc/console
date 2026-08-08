@@ -2985,3 +2985,72 @@ summary has NO thread, so nothing about resolving threads addresses it, and
 `review-findings: []` does not exempt it. Missed four times here, costing three
 force-cancelled runs and fourteen killed E2E jobs. The fix is not another note: it
 is treating resolve-threads and answer-summary as ONE indivisible step.
+
+## The 0808-2 big-bang: labels that do something, and E2E that skips honestly
+
+Two features landed together on #557 with the pointer bump and the waiter hook,
+implemented by two parallel agents with disjoint file ownership; the shared
+files (this one and manifest.ts) were integrated by the orchestrating session.
+
+### Auto-labels from the existing AI review pass
+
+The bump labels were dead. `detect-bump-type.sh` resolved the merged PR by
+grepping `(#N)` out of the HEAD commit title, which only a squash merge
+produces; this repo went rebase-merge on 2026-07-30 and 0 of the next 60
+commits on main carried that shape. Every release since took the "no PR
+numbers found" fallback and shipped patch, whatever anyone labelled. Nothing
+said so, because patch is also the right answer most of the time. It now
+resolves `<latest tag>..HEAD` through `commits/<sha>/pulls`, which follows
+rebased commits, and takes the highest-priority label across the union.
+
+The labels themselves ride the review that already runs. A second fenced block,
+`json:pr-labels`, is appended to the same report the model already writes, so
+the carrier costs zero extra invocations and zero extra turns. A mechanical
+floor read off the changed paths lands even when the review starved and posted
+nothing. A hard whitelist stands between the model and the API, because adding
+an unknown label CREATES it and would fail the inventory gate repo-wide; a
+`major` verdict is recommendation-only and `bump-major` is absent from that
+whitelist by construction.
+
+Reconciliation is ledger-based, never a blind sync: one `<!-- claude-labels: -->`
+comment records what the applier applied, and only names in that record are ever
+removed, so a hand-applied `full-ci` or `rollback` survives any verdict.
+
+Inert until main. Review scripts execute from console@main by design, so the arm
+does not exist for the PR that introduces it; the workflow step carries a
+`grep -q -- '--apply-labels'` guard that makes it a logged no-op meanwhile. The
+two gate tests are the whole pre-merge evidence, which is why they are
+control-first and mutation-proven.
+
+### Cross-PR greenlight: the expensive keys are enrolled
+
+Enrollment is a CLOSURES entry and nothing else. `apply_greenlight` derives its
+key list from `Object.keys(CLOSURES)`, every key already has a fail-open
+`!= 'false'` consumer, and all 18 are in `JOB_SURFACES`, so no workflow changed.
+The table went from 2 keys to 18, 409 declared entries.
+
+The eight VM/E2E legs share ONE closure. They check out the same four gitlinks,
+run the same setup-workspace plus build-cli plus build-renet chain, and differ
+only in env and playwright config that live inside ct-tests.yml and
+packages/e2e-tests, both of which are in the closure. Sharing it also makes the
+walk cheap: one cached directory listing answers all eight keys.
+
+The walk budget went 60 to 90 seconds, inside `bounded`'s 120s ceiling. A live
+18-key walk over 24 candidates measured 16.6s, so the headroom is real.
+
+package.json and package-lock.json are carried WHOLE by every closure that runs
+npm. The consequence is stated rather than hidden: a PR adding an npm script
+alias greenlights nothing npm-shaped. A normalized subset hash would need
+candidate-side content fetches plus a scripts-graph closure, and a wrong
+normalization is a silent wrong skip. The trail data to revisit this is free.
+
+Wrong skips have two layers of defense. `gate-test:greenlight` proves the engine
+obeys its rules and that every declared path still exists in HEAD.
+`gate-test:greenlight-closure-trace` derives, per key, the paths its defining
+workflow job block references and asserts the closure covers each one, so a
+workflow that gains a step turns a silent wrong skip into a red gate. It carries
+its own control: it re-runs the identical checker over a mutated table with one
+required entry deleted and asserts red. The trace gate paid for itself before it
+ever ran in CI: on its first run against the real table it found the live
+`renet` closure missing `.github/actions/app-token`, an edit to which would not
+have withdrawn a renet greenlight.

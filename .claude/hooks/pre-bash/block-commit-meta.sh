@@ -14,7 +14,11 @@ CMD=$(jq -r '.tool_input.command' 2>/dev/null)
 # input teaches people to reword honest messages until it stops complaining,
 # which is worse than not having the guard, because the rewording hides what
 # happened. Co-Authored-By stays unanchored: it is unambiguous anywhere.
-if echo "$CMD" | grep -qiE 'Co-Authored-By|^[[:space:]]*(.{0,4}[[:space:]]*)?Generated with\b'; then
+# The optional prefix is for quote/bullet markers ("> ", "- ") and must be
+# NON-ALPHANUMERIC: with `.` it swallowed the "Re" of "Regenerated with" and
+# blocked an ordinary PR body describing a regenerated i18n baseline
+# (2026-08-08, the third false positive from this pattern in two days).
+if echo "$CMD" | grep -qiE 'Co-Authored-By|^[[:space:]]*([^[:alnum:]]{0,4}[[:space:]]*)?Generated with\b'; then
     echo "❌ BLOCKED: Do not add Co-Authored-By or Generated with lines in commits." >&2
     exit 2
 fi
