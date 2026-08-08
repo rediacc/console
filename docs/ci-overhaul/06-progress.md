@@ -3172,3 +3172,36 @@ Quality lanes green, matching the nightly. Still true and still stated
 plainly: no upstream drift existed on either data point, so the downgrade
 branch (warn + exit 0 on a REAL external failure) remains test-proven only
 until the world moves.
+
+## First fleet-wide live profiler run, and the review-actor facts around it (2026-08-09)
+
+PR #560 (branch 0808-5) carried the wiring into a real `pull_request` run,
+31279251398, and the profiler's first fleet-wide outing on genuine jobs:
+
+- All 26 setup-workspace jobs ran the profiler main ("sampling every 10s
+  into $RUNNER_TEMP/profiler-<job>-<pid>.tsv") and every post hook concluded
+  success (~148ms each on warm jobs).
+- **Panels are proven by construction, not by page-scrape.** The run page's
+  server-rendered HTML shows annotations but lazy-loads job summaries, so an
+  unauthenticated fetch "sees" no panels. The chain that actually proves
+  them: panel.sh exits non-zero on any of its own failures and index.js
+  refuses to swallow that (`process.exitCode = res.status`); all 26 posts
+  were green; and a local drive of panel.sh with exit 0 always appends a
+  `## Runner Profile:` section to GITHUB_STEP_SUMMARY, even in the
+  degenerate no-samples case. Eyeball the run page for the rendered panels.
+- **The sample-floor guard fired in production on its first day**: one 41s
+  job got 3 samples against the 4 expected and the run carries the exact
+  annotation designed for it ("the sampler was starved or died early") —
+  a warning, not a hard fail, because strict mode is off fleet-wide.
+- The same run's deprecation banner surfaced that the action declared
+  `node20` while GitHub already force-runs it on Node 24; it now declares
+  `node24` (the repo's only JS action, so the class is one file).
+
+Two external-links facts from the same wave, for the record: the hard-mode
+PR gate caught gnupg.org answering 000 (down from two networks; the
+docs.appimage.org outage from earlier the same day had meanwhile recovered)
+— external flap, absorbed with the designed `no-external-quality` label. A
+label applied mid-PR needs a real push to take effect: `external_quality`
+is computed from the EVENT payload's label snapshot (ci.yml:129) and
+`pull_request` triggers only on [opened, synchronize], so a bare rerun
+re-reads the unlabeled payload.
