@@ -385,6 +385,36 @@ jobs:
           HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
         run: ${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh --post-findings
 
+      # Labels from the SAME review pass: a second machine-readable fence in the
+      # report the model already wrote, plus a mechanical floor read off the
+      # changed paths. Zero extra invocations, zero extra turns.
+      #
+      # `always()`, like --mark and for the same reason: the mechanical floor
+      # needs no model output, so a starved review still gets its docs/ci label.
+      #
+      # Scoped to console. The submodule repos call this same reusable, but
+      # nothing there consumes bump labels and none of them has the label
+      # inventory gates that make the managed set safe.
+      #
+      # THE grep GUARD IS LOAD-BEARING, not defensive clutter. Review scripts
+      # execute from console@main (see "Assert review tooling came from
+      # console@main"), while the WORKFLOW comes from the PR -- so a step may
+      # call only script arms that already exist on main. The identical mistake
+      # took a job red on run 30552035566 (`--record-invocation`, documented at
+      # the "Record the review invocation" step below). Until this lands on
+      # main the guard makes the step a logged no-op; after it lands the grep
+      # matches and the arm runs on every review.
+      - name: Apply PR labels
+        if: always() && steps.gate.outputs.go == 'true' && github.repository == 'rediacc/console'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.gate.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.gate.outputs.head_sha }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file || format('{0}/claude-execution-output.json', runner.temp) }}
+        run: |
+          s="${{ runner.temp }}/review-scripts/.ci/scripts/review/claude-review-gate.sh"
+          grep -q -- '--apply-labels' "$s" && "$s" --apply-labels || echo "apply-labels arm not on main yet; skipped"
+
       # Mark only AFTER a successful review step, and only when output
       # actually posted (the guard verifies; at-least-once semantics). Also
       # appends cost + token usage parsed from the execution file.
