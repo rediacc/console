@@ -296,6 +296,72 @@ process.stdout.write(`${lines.join("\n")}\n`);
 # Every failure path here returns without touching plan.json, which leaves the
 # scope engine's verdict exactly as it was: no greenlight, no change.
 # ---------------------------------------------------------------------------
+# greenlight_digest <err-file> -- one line per key, instead of the raw trail.
+#
+# WHY THIS EXISTS. The trail is what makes a non-greenlight diagnosable at all,
+# and it used to be dumped raw under `head -c 3000`. That was ample for two
+# keys. At eighteen keys against a 25-run candidate list it is ~450 rows and
+# ~30 KB, so the raw dump truncated MID-LINE inside the second key and the
+# other sixteen were simply absent from the summary. A trail nobody can read is
+# the unreadable-instrument failure this file was written to fix, arriving by
+# the back door, so the surfacing is condensed rather than the cap raised: the
+# per-key verdict and the NEWEST candidate's refusal answer "why did this not
+# greenlight" in one line, and the remaining rows are almost always the same
+# reason repeated down the list.
+#
+# Anything the digest does not recognise is passed through verbatim. A key
+# whose local inputs were unreadable, or an engine that died with a message
+# nobody anticipated, must not be filtered into silence.
+greenlight_digest() {
+    awk '
+    /^greenlight\[/ {
+        key = $0
+        sub(/^greenlight\[/, "", key)
+        sub(/\].*/, "", key)
+    }
+    # Header lines: remembered, not printed.
+    /^greenlight\[[^]]*\] jobs=/ { next }
+    /^greenlight\[[^]]*\] pins=/ { next }
+    /^greenlight\[[^]]*\] closure=/ {
+        if (!(key in seen)) { order[++n] = key; seen[key] = 1 }
+        h = $0
+        sub(/^.*closure=/, "", h)
+        sub(/ .*$/, "", h)
+        hash[key] = substr(h, 1, 12)
+        next
+    }
+    # The trail table: count every row, keep only the newest.
+    /^ +run id/ { next }
+    /^ +[0-9]+ +/ {
+        walked[key]++
+        if (!(key in newest)) {
+            row = $0
+            sub(/^ +[0-9]+ +[0-9a-f]* +/, "", row)
+            newest[key] = $1 " " row
+        }
+        next
+    }
+    /^greenlight\[[^]]*\] VERDICT: / {
+        v = $0
+        sub(/^.*VERDICT: /, "", v)
+        verdict[key] = v
+        next
+    }
+    # The per-key one-liner the engine already prints is redundant with the
+    # VERDICT line; everything else is unrecognised and survives.
+    /^greenlight\[[^]]*\]: (GREENLIT by run|no greenlight)/ { next }
+    /^[[:space:]]*$/ { next }
+    { print }
+    END {
+        for (i = 1; i <= n; i++) {
+            k = order[i]
+            printf "%-22s %-28s closure=%s walked=%d\n", k, verdict[k], hash[k], walked[k]
+            if (k in newest) printf "%-22s   newest %s\n", "", newest[k]
+        }
+    }
+    ' "$1"
+}
+
 apply_greenlight() {
     [[ -f "$GREENLIGHT" ]] || return 0
     [[ -s "$OUT_DIR/plan.json" ]] || return 0
@@ -303,6 +369,16 @@ apply_greenlight() {
     # Ask only about keys the engine still plans to RUN. A key already skipped
     # needs no second opinion, and every key asked costs API calls inside
     # `initialize`, which every other job waits on.
+    #
+    # ORDER IS COST-DESCENDING and it is CLOSURES' own key order that carries
+    # it: Object.keys over string keys is insertion-ordered by the language
+    # spec, and `filter` preserves that, so the list below arrives most
+    # expensive first (e2e_workers, five 90-minute legs) and cheapest last
+    # (unit, fourteen minutes on ubuntu-slim). That matters because the budget
+    # is per INVOCATION, not per key: a walk that runs out of time abandons the
+    # tail of this list, and the tail is where the cheap keys are. Sorting here
+    # instead would need a second copy of the cost ranking to drift out of
+    # step with the table. test-greenlight.sh pins both ends of the order.
     local pending
     pending="$(bounded node -e '
 const fs = require("fs");
@@ -324,7 +400,15 @@ process.stdout.write(pending.join(" "));
         args+=(--key "$key")
     done
 
-    if ! bounded node "$GREENLIGHT" --repo "${GITHUB_REPOSITORY:-}" --debug "${args[@]}" \
+    # --budget 90, up from the engine's own default of 60. The walk is now over
+    # eighteen keys rather than two, and while the per-candidate API cost is
+    # set by the UNION of the closures (every listing is cached per ref and
+    # shared across keys), a full candidate still costs one paginated jobs read
+    # plus roughly twenty directory listings. 60s was already the measured
+    # death of a two-key walk on a candidate list that was mostly jobs reads.
+    # 90 stays inside `bounded`'s 120s ceiling, so `initialize` gets at most
+    # ~30s slower in the worst case, against skipping up to nine VM-hours.
+    if ! bounded node "$GREENLIGHT" --repo "${GITHUB_REPOSITORY:-}" --budget 90 --debug "${args[@]}" \
         >"$OUT_DIR/greenlight.out" 2>"$OUT_DIR/greenlight.err"; then
         emit "_greenlight: the engine did not complete (timeout or crash), so no key was" \
             "greenlit and the scope verdict stands unchanged._" ""
@@ -366,7 +450,7 @@ process.stdout.write(applied.join(" "));
 ' "$OUT_DIR/plan.json" "$OUT_DIR/greenlight.out" 2>>"$OUT_DIR/greenlight.err")" || applied=""
 
     emit "**cross-PR greenlight** (asked about: ${pending})" "" '```'
-    head -c 3000 "$OUT_DIR/greenlight.err" | tee -a "$SUMMARY"
+    greenlight_digest "$OUT_DIR/greenlight.err" | tee -a "$SUMMARY"
     emit '```'
     if [[ -n "$applied" ]]; then
         emit "**greenlit, and the plan now says so**: \`${applied}\`" ""
