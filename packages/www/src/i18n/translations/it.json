@@ -1257,6 +1257,7 @@
           "email": "Email di lavoro",
           "emailPlaceholder": "tu@azienda.com",
           "howHeard": "Come ci hai conosciuto?",
+          "howHeardPlaceholder": "Seleziona un'opzione",
           "isDistributor": "Lavoriamo come distributori e rivendiamo tramite altri partner.",
           "jobTitle": "Ruolo",
           "jobTitlePlaceholder": "Il tuo ruolo",

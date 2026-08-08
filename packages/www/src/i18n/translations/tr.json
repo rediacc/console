@@ -1251,6 +1251,7 @@
           "email": "İş e-postası",
           "emailPlaceholder": "siz@sirket.com",
           "howHeard": "Bizi nereden duydunuz?",
+          "howHeardPlaceholder": "Bir seçenek seçin",
           "isDistributor": "Distribütör olarak çalışıyoruz ve diğer ortaklar aracılığıyla yeniden satış yapıyoruz.",
           "jobTitle": "Unvan",
           "jobTitlePlaceholder": "Göreviniz",

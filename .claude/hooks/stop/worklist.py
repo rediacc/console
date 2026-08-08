@@ -106,12 +106,14 @@ What still allows a stop:
      design and bounded by POLL_FULL_MAX_MIN.
 """
 
+import contextlib
 import datetime
 import fcntl
 import json
 import os
 import pathlib
 import re
+import select
 import sys
 import tempfile
 import time
@@ -252,9 +254,76 @@ def _identity_or_die(me, die):
         die(msg)
 
 
+# Bounded wait for the Stop payload. Long enough for a slow writer, short
+# enough that a missing payload fails the hook instead of stalling the session.
+STDIN_WAIT_SECONDS = 10.0
+
+
 def _read_event():
+    """Read the Stop payload from stdin, bounded, without hanging or crashing.
+
+    Two failure modes, both observed, and the naive fix for one causes the other:
+
+    1. EAGAIN. Observed 2026-08-07: the hook died with "Failed with non-blocking
+       status code: EAGAIN: resource temporarily unavailable, read". The pipe is
+       sometimes handed over in NON-BLOCKING mode with the payload not yet
+       written, and json.load() only caught JSONDecodeError/ValueError while
+       EAGAIN surfaces as BlockingIOError, an OSError. The hook crashed, so
+       EVERY stop check silently did not run.
+
+    2. HANG. The obvious fix -- os.set_blocking(fd, True) -- makes read() wait
+       forever when the writer holds the pipe open and sends nothing. Measured:
+       that version had to be SIGKILLed. A hook that hangs is worse than one
+       that crashes, because it stalls the session instead of failing it.
+
+    So: wait for readability with a DEADLINE, then read what is there. Late
+    payload → we wait for it. No payload → we give up, loudly, in bounded time.
+    """
+    deadline = time.monotonic() + STDIN_WAIT_SECONDS
     try:
-        ev = json.load(sys.stdin)
+        fd = sys.stdin.fileno()
+    except (OSError, ValueError, AttributeError):
+        fd = None
+
+    raw = ""
+    if fd is None:
+        # No real fd (pytest capture, a StringIO harness): a plain read cannot
+        # block on a pipe that does not exist.
+        try:
+            raw = sys.stdin.read()
+        except Exception:  # noqa: BLE001 - any read failure here means no event
+            return {}, False
+    else:
+        with contextlib.suppress(OSError, ValueError):
+            os.set_blocking(fd, False)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                print(
+                    "worklist.py: no Stop payload on stdin after %ss. This is a HOOK "
+                    "failure, not a clean stop -- no check ran." % STDIN_WAIT_SECONDS,
+                    file=sys.stderr,
+                )
+                return {}, False
+            try:
+                ready, _, _ = select.select([fd], [], [], min(remaining, 0.25))
+            except (OSError, ValueError):
+                break
+            if not ready:
+                continue
+            try:
+                chunk = os.read(fd, 65536)
+            except BlockingIOError:
+                continue
+            except OSError as exc:
+                print("worklist.py: could not read the Stop payload: %s" % exc, file=sys.stderr)
+                return {}, False
+            if not chunk:
+                break  # EOF: the writer closed, so we have everything
+            raw += chunk.decode("utf-8", "replace")
+
+    try:
+        ev = json.loads(raw) if raw.strip() else None
         return (ev, True) if isinstance(ev, dict) else ({}, False)
     except (json.JSONDecodeError, ValueError):
         # A malformed event used to degrade to {} silently, which quietly turns

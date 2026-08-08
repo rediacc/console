@@ -747,6 +747,7 @@
           "partnerTypes": "How do you sell? Pick all that apply.",
           "isDistributor": "We work as a distributor and resell through other partners.",
           "howHeard": "How did you hear about us?",
+          "howHeardPlaceholder": "Select an option",
           "message": "Anything else?",
           "messagePlaceholder": "Tell us about your business and the customers you serve.",
           "consent": "I agree to be contacted about the Rediacc partner program."

@@ -1255,6 +1255,7 @@
           "email": "Töö e-post",
           "emailPlaceholder": "sina@ettevote.com",
           "howHeard": "Kust sa meist kuulsid?",
+          "howHeardPlaceholder": "Vali variant",
           "isDistributor": "Töötame turustajana ja müüme edasi teiste partnerite kaudu.",
           "jobTitle": "Ametinimetus",
           "jobTitlePlaceholder": "Sinu roll",

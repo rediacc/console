@@ -168,6 +168,22 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-python-lint.sh
 
+      # Offline by construction: compares committed baseline durations against
+      # the timeout-minutes in the workflow files. The network lives only in its
+      # --refresh mode, which is not run here.
+      - name: CI job timeout headroom
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_job_timeout_headroom.py
+
+      # Offline by construction: compares the committed record against the
+      # secrets each workflow references. The network lives only in --refresh.
+      # A hook whose script has been renamed or deleted does not error — it
+      # silently stops firing, and every run afterwards looks clean. No token
+      # or submodule needed, so this belongs in the static lane.
+      - name: Hooks resolvable
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_hooks_resolvable.py
+
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
@@ -1036,6 +1052,24 @@ jobs:
       - name: Scope map — reachable scripts/ paths force full CI
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-scope-scripts-reachability
+
+      # These two need the SUBMODULES, so they live here rather than in
+      # quality-static: that job checks out without a token, and the private
+      # siblings cannot be cloned without one ("repository not found"). This
+      # job already checks out submodules with an app token.
+      #
+      # Scope completeness runs FIRST: three gates were measured returning 0
+      # about a submodule that was not on disk, so it converts twelve quiet
+      # partial scans into one loud failure before any verdict is trusted.
+      - name: Scope completeness
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_scope_completeness.py
+
+      # Offline by construction: compares the committed record against the
+      # secrets each workflow references. The network lives only in --refresh.
+      - name: Secret reachability
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_secret_reachability.py
 
       - name: Quality-gate unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

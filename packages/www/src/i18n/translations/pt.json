@@ -1262,6 +1262,7 @@
           "email": "E-mail profissional",
           "emailPlaceholder": "nome@empresa.com",
           "howHeard": "Como soube de nós?",
+          "howHeardPlaceholder": "Selecione uma opção",
           "isDistributor": "Trabalhamos como distribuidor e revendemos através de outros parceiros.",
           "jobTitle": "Cargo",
           "jobTitlePlaceholder": "A sua função",

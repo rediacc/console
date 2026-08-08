@@ -1255,6 +1255,7 @@
           "email": "E-mail professionnel",
           "emailPlaceholder": "vous@entreprise.com",
           "howHeard": "Comment avez-vous entendu parler de nous ?",
+          "howHeardPlaceholder": "Sélectionnez une option",
           "isDistributor": "Nous travaillons comme distributeur et revendons via d'autres partenaires.",
           "jobTitle": "Fonction",
           "jobTitlePlaceholder": "Votre poste",

@@ -1253,6 +1253,7 @@
           "email": "Geschäftliche E-Mail",
           "emailPlaceholder": "you@company.com",
           "howHeard": "Wie sind Sie auf uns aufmerksam geworden?",
+          "howHeardPlaceholder": "Bitte auswählen",
           "isDistributor": "Wir arbeiten als Distributor und verkaufen über andere Partner weiter.",
           "jobTitle": "Position",
           "jobTitlePlaceholder": "Ihre Rolle",

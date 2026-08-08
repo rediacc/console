@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 8468,
-    "sourceCommit": "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+    "keyCount": 8469,
+    "sourceCommit": "39af268592627bae0b2aaef086cc002b9a043482"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -761,6 +761,7 @@
     "pages.partners.form.fields.email": "7a40bb9f",
     "pages.partners.form.fields.emailPlaceholder": "324db907",
     "pages.partners.form.fields.howHeard": "2f64fdfa",
+    "pages.partners.form.fields.howHeardPlaceholder": "3d8d985a",
     "pages.partners.form.fields.isDistributor": "2fc85e02",
     "pages.partners.form.fields.jobTitle": "52eff8ac",
     "pages.partners.form.fields.jobTitlePlaceholder": "7e6578a0",

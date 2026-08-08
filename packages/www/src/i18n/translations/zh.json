@@ -1244,6 +1244,7 @@
           "email": "工作邮箱",
           "emailPlaceholder": "you@company.com",
           "howHeard": "您是如何了解到我们的？",
+          "howHeardPlaceholder": "请选择",
           "isDistributor": "我们是分销商，通过其他合作伙伴转售。",
           "jobTitle": "职位",
           "jobTitlePlaceholder": "您的职务",

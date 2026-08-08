@@ -1253,6 +1253,7 @@
           "email": "Email de trabajo",
           "emailPlaceholder": "tu@empresa.com",
           "howHeard": "¿Cómo nos conociste?",
+          "howHeardPlaceholder": "Selecciona una opción",
           "isDistributor": "Trabajamos como distribuidor y revendemos a través de otros partners.",
           "jobTitle": "Cargo",
           "jobTitlePlaceholder": "Tu puesto",

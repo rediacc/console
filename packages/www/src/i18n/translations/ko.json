@@ -1255,6 +1255,7 @@
           "email": "업무용 이메일",
           "emailPlaceholder": "you@company.com",
           "howHeard": "저희를 어떻게 알게 되셨나요?",
+          "howHeardPlaceholder": "선택하세요",
           "isDistributor": "당사는 유통업체로서 다른 파트너를 통해 재판매합니다.",
           "jobTitle": "직함",
           "jobTitlePlaceholder": "담당 업무",

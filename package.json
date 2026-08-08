@@ -75,7 +75,11 @@
     "check:ci-gate-reachability-coverage": ".ci/scripts/quality/check_gate_reachability_coverage.py",
     "check:ci-shell-format": ".ci/scripts/security/shfmt.sh",
     "check:ci-python-lint": ".ci/scripts/quality/check-python-lint.sh",
+    "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
+    "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
+    "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
+    "check:ci-timeout-headroom": ".ci/scripts/quality/check_job_timeout_headroom.py",
     "check:ci-i18n-value-types": ".ci/scripts/quality/check_i18n_value_types.py",
     "check:ci-lint-rule-liveness": ".ci/scripts/quality/check_lint_rule_liveness.py",
     "check:ci-lint-scope-coverage": ".ci/scripts/quality/check_lint_scope_coverage.py",
@@ -122,10 +126,10 @@
     "check:ci-solution-video-engine": "tsx packages/www/scripts/check-solution-video-engine.ts --selftest && tsx packages/www/scripts/check-solution-video-engine.ts",
     "check:ci-tutorial-caption-sync": "tsx packages/www/scripts/check-tutorial-caption-sync.ts",
     "check:format": "biome format packages/ private/account/",
-    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-translation-key-usage.ts && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-cli-help-render && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-docs-untranslated-text.ts && tsx scripts/check-account-email-templates.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:docs-cli-usage -w @rediacc/www && npm run validate:landing-cli-usage -w @rediacc/www && npm run validate:translation-freshness -w @rediacc/www && npm run validate:content -w @rediacc/www && npm run validate:content-accuracy -w @rediacc/www && npm run validate:comparison-refs -w @rediacc/www && tsx scripts/check-component-hardcoded-strings.ts --strict && npm run check:cli-docs && tsx scripts/check-i18n-naturalization.ts && npm run check:ci-i18n-locale-only",
+    "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-translation-key-usage.ts && tsx scripts/__tests__/check-translation-key-usage.control.ts && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-cli-help-render && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-docs-untranslated-text.ts && tsx scripts/check-account-email-templates.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:docs-cli-usage -w @rediacc/www && npm run validate:landing-cli-usage -w @rediacc/www && npm run validate:translation-freshness -w @rediacc/www && npm run validate:content -w @rediacc/www && npm run validate:content-accuracy -w @rediacc/www && npm run validate:comparison-refs -w @rediacc/www && tsx scripts/check-component-hardcoded-strings.ts --strict && npm run check:cli-docs && tsx scripts/check-i18n-naturalization.ts && npm run check:ci-i18n-locale-only",
     "check:cli-docs": "tsx scripts/check-cli-docs.ts",
     "check:i18n:completeness": "tsx scripts/check-translation-completeness.ts",
-    "check:i18n:key-usage": "tsx scripts/check-translation-key-usage.ts",
+    "check:i18n:key-usage": "tsx scripts/check-translation-key-usage.ts && tsx scripts/__tests__/check-translation-key-usage.control.ts",
     "check:i18n:components": "tsx scripts/check-component-hardcoded-strings.ts --strict",
     "check:i18n:docs": "tsx scripts/check-docs-inline-translations.ts",
     "check:i18n:hashes": "tsx scripts/check-translation-hashes.ts",
@@ -233,7 +237,7 @@
     "astro": {
       "zod": "^3.25.76"
     },
-    "js-yaml": ">=4.2.0 <5.0.0",
+    "js-yaml": ">=4.3.1 <5.0.0",
     "gray-matter": {
       "js-yaml": "^3.15.0"
     },

@@ -1251,6 +1251,7 @@
           "email": "البريد الإلكتروني للعمل",
           "emailPlaceholder": "you@company.com",
           "howHeard": "كيف سمعت عنا؟",
+          "howHeardPlaceholder": "اختر خياراً",
           "isDistributor": "نعمل كموزّع ونعيد البيع عبر شركاء آخرين.",
           "jobTitle": "المسمى الوظيفي",
           "jobTitlePlaceholder": "دورك الوظيفي",

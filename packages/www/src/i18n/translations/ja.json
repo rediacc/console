@@ -1251,6 +1251,7 @@
           "email": "会社のメールアドレス",
           "emailPlaceholder": "you@company.com",
           "howHeard": "どこで当社をお知りになりましたか？",
+          "howHeardPlaceholder": "選択してください",
           "isDistributor": "ディストリビューターとして、他のパートナー経由で販売しています。",
           "jobTitle": "役職",
           "jobTitlePlaceholder": "ご担当の役割",

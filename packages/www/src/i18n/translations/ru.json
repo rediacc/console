@@ -1251,6 +1251,7 @@
           "email": "Рабочая почта",
           "emailPlaceholder": "you@company.com",
           "howHeard": "Как вы о нас узнали?",
+          "howHeardPlaceholder": "Выберите вариант",
           "isDistributor": "Мы работаем как дистрибьютор и перепродаём через других партнёров.",
           "jobTitle": "Должность",
           "jobTitlePlaceholder": "Ваша роль",

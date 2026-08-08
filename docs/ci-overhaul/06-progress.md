@@ -2585,6 +2585,177 @@ same; the measurement is
 comparing `started_at`/`completed_at` against each job's `timeout-minutes`
 (note `per_page`: the default of 30 silently truncates a 94-job run).
 
+## The version-check family that could not fail (2026-08-07)
+
+A release published CLI binaries built as **1.2.16** under the label **1.2.17**.
+Nothing user-facing broke — `tag-and-release` needs `validate-install-published`
+and so was skipped, and the channel pointers never advanced — but the incident
+exposed a family of guards that were *incapable of failing*. Thirteen in total.
+They are recorded here because the shared shape matters more than any one fix.
+
+### The shape
+
+Every one of them reported success while examining nothing:
+
+| guard | how it could not fail |
+|---|---|
+| `assert-artifact-version.sh` | downloaded an artifact named `cli-manifest` that **nothing has ever produced**; took its not-found → warn → `exit 0` branch on every release since it was written |
+| `verify_version()` | `grep -q "$expected"` passes on an empty expectation, on empty output, and on a **substring** — `1.2.1` "verified" against `1.2.16` |
+| Windows install validation | ran `--version` and **discarded the output** |
+| 7 of 11 install methods | never referenced `$VERSION` at all; the assertion was "the binary exits 0" |
+| the test script itself | `exit 0` after running **zero tests** — a typo'd `--method` was swallowed |
+| retry-mode releases | skipped the artifact assertion, justified by a comment claiming the artifacts "match by definition". They do not |
+| the build's own smoke test | asserted non-empty and not-`null`, never compared, and **clobbered** the variable it should have compared against |
+| `inject-env.sh --strict` | the only `0.0.0-dev` guard, with **zero callers** |
+| attestation verification | no failing exit path, and `find` over two absent directories exited 0 having verified nothing |
+| `compareVersions` | returned `0` — "equal" — for malformed versions (NaN segments, *not* the empty case: `Number("")` is `0`) |
+| the tag fetch | `2>/dev/null \|\| true` four lines before the version is computed |
+| the image closure key | an empty version collapsed it, so a cached image built at an older version could be promoted |
+| `check:ci-secret-reachability` | **the new gate itself**, on day one — see below |
+
+### The rule that came out of it
+
+> **Always have a version. Skip or fail — never a silent pass.**
+
+Every path must end VERIFIED, in an explicit VISIBLE skip, or in a FAILURE. A
+path that cannot determine a version and returns success *is* the defect. A skip
+that prints its reason and is counted satisfies the rule; a zero-total run does
+not, because it says nothing at all.
+
+### Three recurring traps, each of which bit more than once
+
+**A guard callers cannot reach is a guard that cannot be used.** `isValidVersion`
+existed but was never re-exported; `--strict` existed with zero callers;
+`assert-artifact-version.sh` looked for an artifact nobody produced. One disease,
+three costumes.
+
+**A green you have never watched go red proves nothing.** Every fix in this wave
+ships with a planted-defect control, and several of those controls were
+themselves wrong first — one fake `gh` read the wrong argument and made the
+all-good case pass vacuously, caught only because the one-bad case also went
+green.
+
+**A partial scan reads exactly like a clean one.** The new secret-reachability
+gate scanned console alone in CI, because `actions/checkout` defaults to
+`submodules: false`; it cleared its own vacuity floor on console's 42 references
+and reported green while never seeing the two repos the defect lived in. It now
+*refuses a verdict* when a recorded repo is unscannable, and `quality-static`
+checks out submodules. Measured before the fix:
+`40 secret reference(s) across 1 repo(s) are all reachable`, exit 0.
+
+### New gates
+
+- `check:ci-timeout-headroom` — every baselined job keeps ≥1.5x headroom under
+  its `timeout-minutes`. Offline; network only in `--refresh`. Found that
+  `Stage Artifacts`, the R2 upload on the release path, had **no ceiling at all**
+  in either the caller or the reusable workflow.
+- `check:ci-secret-reachability` — a workflow may not reference a secret its
+  repository cannot read. Found that `Claude Review` had **never once succeeded**
+  in `account` or `renet` (org secret scoped to `console` alone; see
+  rediacc/account#76, waivers expire 2026-09-07), and that
+  `secrets.AUTOPILOT_APP_ID` was a **namespace mismatch** — it is an org
+  *variable*, so `client-id` resolved empty at three app-token call sites.
+
+Both follow the same pattern as the older gates here: a committed baseline, a
+`--refresh` that carries the only network access, a vacuity floor, and controls
+that fire in both directions before any real read.
+
+## A required check that could not pass, and a guard that could not fire (2026-08-07)
+
+Two defects of the same shape, found hours apart, both in the machinery that
+decides whether a PR may merge. Neither was a missed bug: both were checks
+producing confident WRONG answers, which is more expensive, because the work they
+create looks legitimate.
+
+### 1. The review deadlock: two numerators, one cap
+
+PR #553 reached green CI, ready, zero unresolved threads -- and became
+PERMANENTLY UNMERGEABLE. Its required `Review Complete` was red and no action
+could clear it.
+
+`review-status.sh` has an explicit DEADLOCK GUARD for exactly that state: once
+the review cap is reached the reviewed-SHA marker can never advance, so failing
+would strand the PR "through no fault of its author". It passes loudly instead.
+
+It never fired, because the two scripts measured different numerators against the
+same denominator:
+
+| script | numerator | #553 |
+|---|---|---|
+| `claude-review-gate.sh:449` | posted reports + spent attempts | **3/3** -> refuses to review |
+| `review-status.sh:296` | posted reports only | **0/3** -> guard mute |
+
+The gate stopped reviewing because the budget was gone; review-status could not
+see the cap as reached and demanded a review that could never happen.
+
+`.ci/scripts/lib/common.sh` exists precisely to stop this drift, and it
+half-worked: it shared `review_cap_for()` (the DENOMINATOR) while the NUMERATOR
+stayed split across two files, one of which did not know spent attempts existed.
+**Sharing a file is not sharing the computation.** Both callers now use
+`review_spend_total()` from that file; the gate's local counter is deleted rather
+than left as a second copy.
+
+**This fix could not be validated on the PR that made it.** `review-status.yml`
+checks out `.ci/scripts` from the DEFAULT BRANCH -- deliberately, so a PR cannot
+edit the logic judging it -- so the fix is inert until it is on `main`. Breaking
+the circularity needed a separate tiny branch (0807-3, PR #554). Any future
+session touching review-cap logic must expect the same: **your fix will not act
+on your own PR.**
+
+### 2. The turn budget, and why a green retry proves nothing
+
+The same PR starved its entire review budget first: three passes, all
+`error_max_turns`, zero findings posted. Sonnet twice, then opus-5 -- the model
+was never the constraint.
+
+Measured, same day, same reviewer, both in the old 50-turn tier:
+
+| PR | diff | outcome |
+|---|---|---|
+| #552 | 2270 lines / 39 files | completed, full report (22.0 turns/KLOC) |
+| #553 | 2802 lines / 36 files | starved, nothing posted (17.8 turns/KLOC) |
+
+File count does not discriminate (39 passed where 36 failed); lines do. The
+50-turn tier stretched to 5000 lines, so a 4999-line diff got 10 turns/KLOC.
+
+The first fix -- moving the rung from 5000 to 2000 -- was WRONG, and the new
+`check-review-turn-capacity.sh` gate caught it immediately: it left a
+2000..29999 tier whose top edge got 2.6 turns/KLOC, the same hole fifteen times
+wider. **Rungs starve at their top by construction.** The budget is now
+continuous (25 turns/KLOC, floor 50, ceiling 140).
+
+### The generalisable trap
+
+A starved review is the EXPENSIVE outcome, not the cheap one: it burns its whole
+budget, posts nothing, and still spends an attempt against a finite per-PR cap.
+Three attempts at a budget that cannot finish leaves a PR unreviewable forever.
+`REVIEW_CAP_TIERS` and the turn budget are still tuned independently -- nothing
+forbids granting N attempts at a budget guaranteed to starve. That coupling is
+the next thing worth gating.
+
+### The gates that close this, and where they live
+
+**NOT on this branch.** `check:ci-review-turn-capacity`,
+`check:ci-review-cap-coherence` and `check:ci-gate-reachability-coverage` were
+built on `0807-2` and land with it. Naming them here as shipped would be exactly
+the drift this directory exists to prevent -- a reader grepping for them on this
+branch finds nothing.
+
+What THIS branch carries is the numerator fix alone, plus the gate-test case that
+reproduces the #553 shape,
+`test-review-status.sh::test_cap_reached_by_spent_attempts_alone`. That case is
+mutation-proven against the scripts as they exist on main, where it reports the
+live incident verbatim: `expected 'success', got 'failure'`. Its sibling case --
+which reaches the cap with three POSTED reports -- passes under either numerator,
+which is why 46 existing assertions never caught this.
+
+When 0807-2 lands, those three gates cover the turn budget (monotonic, total,
+density-where-achievable, ceiling-beyond), the cap coherence (one numerator, one
+denominator, and the deadlock guard reachable AT the cap), and the Stop hook's own
+reachability probe -- which returned False for all 191 registered gates because it
+walked `npm run` edges from `ci`, and `ci` is `tsx scripts/ci-runner/run.ts` with
+zero such edges.
+
 ## The release path's own version holes, closed (2026-08-07, branch 0807-2)
 
 Companion to *"The version-check family that could not fail"* (branch 0807-1),

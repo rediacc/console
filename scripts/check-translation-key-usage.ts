@@ -67,13 +67,30 @@ interface TranslationCall {
 }
 
 /**
- * Find the value of `const ns = '...'` or `const PAGE_KEY = '...'` in file content.
+ * Every `const <IDENT> = '<dotted.string>'` in the file, as a prefix candidate.
+ *
+ * This used to accept exactly two names, `ns` and `PAGE_KEY`, and that hard-coded
+ * pair was a blind spot, not a simplification. PartnerApplicationForm.tsx declares
+ * `const NS = 'pages.partners.form'` — uppercase, neither spelling — so EVERY
+ * t(`${NS}...`) call in it was invisible here. One of those keys,
+ * pages.partners.form.fields.howHeardPlaceholder, existed in no locale at all
+ * (not even English), rendered blank in production, and logged
+ * "Translation key not found" once per page for as long as it shipped, while
+ * this gate reported success the whole time.
+ *
+ * Deriving the names from the file instead of listing them means a third
+ * convention costs nothing. The dot requirement is what keeps it honest: a
+ * namespace is always dotted, so `const TITLE = 'Partners'` is not mistaken for
+ * one.
  */
-function findNamespaceVar(content: string, varName: string): string | null {
-  // Match: const ns = 'pages.pricing'  or  const PAGE_KEY = "pages.refundPolicy"
-  const re = new RegExp(`const\\s+${varName}\\s*=\\s*['"]([^'"]+)['"]`);
-  const m = content.match(re);
-  return m ? m[1] : null;
+function findNamespaceVars(content: string): Map<string, string> {
+  const found = new Map<string, string>();
+  const re = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*['"]([^'"\s]*\.[^'"\s]*)['"]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    if (!found.has(m[1])) found.set(m[1], m[2]);
+  }
+  return found;
 }
 
 /**
@@ -88,9 +105,8 @@ function extractCalls(filePath: string, content: string): TranslationCall[] {
   const calls: TranslationCall[] = [];
   const lines = content.split('\n');
 
-  // Pre-resolve namespace variables
-  const nsValue = findNamespaceVar(content, 'ns');
-  const pageKeyValue = findNamespaceVar(content, 'PAGE_KEY');
+  // Pre-resolve namespace variables, whatever this file happens to call them
+  const nsVars = findNamespaceVars(content);
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -102,8 +118,8 @@ function extractCalls(filePath: string, content: string): TranslationCall[] {
       calls.push({ fn: m[1] as 't' | 'ta' | 'to', key: m[2], line: i + 1, file: filePath });
     }
 
-    // Pattern 2: Template literals with namespace variable — t(`${ns}.suffix`)
-    const tmplRe = /\b(t[ao]?)\(\s*`\$\{(ns|PAGE_KEY)\}\.([^`]+)`\s*[,)]/g;
+    // Pattern 2: Template literals with a namespace variable — t(`${NS}.suffix`)
+    const tmplRe = /\b(t[ao]?)\(\s*`\$\{([A-Za-z_$][\w$]*)\}\.([^`]+)`\s*[,)]/g;
     while ((m = tmplRe.exec(line)) !== null) {
       const fn = m[1] as 't' | 'ta' | 'to';
       const varName = m[2];
@@ -112,8 +128,8 @@ function extractCalls(filePath: string, content: string): TranslationCall[] {
       // Skip if suffix has more interpolations (dynamic key)
       if (hasDynamicParts(suffix)) continue;
 
-      const prefix = varName === 'ns' ? nsValue : pageKeyValue;
-      if (!prefix) continue; // Can't resolve, skip
+      const prefix = nsVars.get(varName);
+      if (!prefix) continue; // Not a dotted string constant in this file, skip
 
       calls.push({ fn, key: `${prefix}.${suffix}`, line: i + 1, file: filePath });
     }

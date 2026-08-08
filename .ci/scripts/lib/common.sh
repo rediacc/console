@@ -566,10 +566,16 @@ review_spent_attempt_count() {
         --jq ".[] | select(.body | startswith(\"${2}\")) | .id" 2>/dev/null | wc -l || true
 }
 
+# review_spend_total <pr> <attempt-prefix> [posted] [spent]
+#
+# Optional pre-fetched counts, because claude-review-gate.sh needs the two numbers
+# SEPARATELY for its log line and would otherwise pay for four paginated gh calls
+# per invocation instead of two. Passing them keeps the single definition of "what
+# the cap counts" here -- which is the whole point -- without the round trips.
 review_spend_total() {
-    local posted spent
-    posted="$(review_report_count "$1")"
-    spent="$(review_spent_attempt_count "$1" "$2")"
+    local posted="${3:-}" spent="${4:-}"
+    [[ -n "$posted" ]] || posted="$(review_report_count "$1")"
+    [[ -n "$spent" ]] || spent="$(review_spent_attempt_count "$1" "$2")"
     echo $((${posted//[[:space:]]/} + ${spent//[[:space:]]/}))
 }
 
