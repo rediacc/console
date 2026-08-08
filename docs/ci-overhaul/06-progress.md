@@ -3054,3 +3054,42 @@ required entry deleted and asserts red. The trace gate paid for itself before it
 ever ran in CI: on its first run against the real table it found the live
 `renet` closure missing `.github/actions/app-token`, an edit to which would not
 have withdrawn a renet greenlight.
+
+### Quality-gate unit tests: parallelized inside the step (W/S/T)
+
+The battery ran its 87 tests serially behind one `run-all.sh` loop, costing about
+18 minutes of the Security job's 20-minute budget. The step was one slow test
+away from a timeout, not one slow test away from a slow run.
+
+A flat worker pool is unsafe here, and the reason is specific. Two tests write
+into the real tree because the code they exercise hardcodes it: test-gate-paths-exist.sh
+plants fixtures in .ci/scripts, test-gate-anti-vacuity.sh plants one in scripts/.
+About nineteen others recursively enumerate those same directories. A file that
+appears or vanishes mid-enumeration is a hard error under set -euo pipefail, which
+passes on the next serial re-run. That is the flake shape observed locally, and
+lowering the worker count makes it rarer rather than absent.
+
+So the runner schedules three sets instead of pooling flat. W is the two writers,
+run as one serial chain from t=0. T is the 68 temp-isolated tests, filling the
+remaining slots while W runs. S is the 19 real-tree readers, released only once the
+W chain has published its done-marker. Workers never print; each writes a log and
+atomically publishes an exit code, and main prints the blocks in ascending glob
+order, so the transcript is the serial transcript.
+
+Measured on the 20-core dev box over the whole battery: 956s serial versus 304s
+parallel, 3.14x, identical failure sets and identical assertion totals (87 passed,
+955 assertions, both). CI runs 4 workers rather than 8.
+
+test-run-all-parallel.sh pins four properties, each with its own control: the pool
+overlaps (with a jobs=1 run that must be slow, so the stopwatch can fail); jobs=1
+and jobs=4 agree byte for byte; output blocks never interleave under --verbose;
+and the W/S hold-back holds, proven by a sentinel writer plus a scanner that reds
+on contact, with a flat-pool control that must collide. A missing result counts as
+a failure, never a skip, so a scheduling bug shows up as red rather than as a
+shorter green run.
+
+The wave also fixed two strays it walked past: log_info and log_error were called
+by test-shell-counter-increment.sh but never defined anywhere (silent only because
+that file runs without -e; its finding report would have printed "command not
+found" instead of the finding), and the Stop hook's task-queue blindness described
+in the session records rode the same branch.
