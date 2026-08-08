@@ -21,6 +21,13 @@
 # that trains people to ignore this gate. The rule applies ONLY to what `run`
 # actually executes.
 #
+# ACCEPTED LIMITATION (ruled on in the #557 review): the alias unwind is ONE hop.
+# A two-hop chain (`run: npm run A` -> `A: npm run B` -> `B: gates/ script`) would
+# escape resolves_to_gate_script(). No such chain exists, and the design principle
+# here is control-first against shapes that have actually shipped -- if a two-hop
+# alias ever appears, plant it as a second control and widen the unwind THEN,
+# rather than speculatively complicating the resolver now.
+#
 # CONTROL-FIRST: plants the exact 2026-08-08 shape (a gates/ script invoked via an
 # `npm run check:ci-*` alias) and requires detection. If the plant passes, the gate
 # declares ITSELF broken and exits non-zero.
