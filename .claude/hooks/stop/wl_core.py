@@ -577,6 +577,16 @@ _TASKS_DIR_CACHE = {}
 _TASK_CREATED_RE = re.compile(r"Task #(\d+) created successfully: ([^\"\\\n]{10,})")
 
 
+def _taskdir_cache_file(key):
+    # Same /tmp family the hook already uses. Persisting the resolution is what
+    # lets TRANSCRIPT-LESS processes (the --state CLI verb at worklist.py:884,
+    # any other verb) agree with the stop battery: without it, world_sig written
+    # by the CLI and world_sig checked by the hook would hash DIFFERENT task
+    # sets whenever the primary dir is empty, and STATE.md would look eternally
+    # stale. Found by review on #559 (the sweep finding).
+    return os.path.join(tempfile.gettempdir(), "claude-worklist", "taskdir." + key)
+
+
 def _resolve_tasks_dir(session_id, transcript_path=None):
     if not session_id:
         return None
@@ -591,6 +601,19 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     if os.path.isdir(d) and glob.glob(os.path.join(d, "*.json")):
         _TASKS_DIR_CACHE[key] = d
         return d
+    # Durable cache next: a previous process (with a transcript) may have
+    # resolved this already. Validated before trust -- the dir must still exist
+    # and still hold a task; a stale pointer is discarded, never followed.
+    try:
+        cf = _taskdir_cache_file(key)
+        if os.path.isfile(cf):
+            with open(cf, encoding="utf-8") as fh:
+                cached = fh.read().strip()
+            if cached and os.path.isdir(cached) and glob.glob(os.path.join(cached, "*.json")):
+                _TASKS_DIR_CACHE[key] = cached
+                return cached
+    except OSError:
+        pass
     resolved = None
     if transcript_path and os.path.isfile(transcript_path):
         try:
@@ -623,6 +646,17 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
                 resolved = cands.pop()
         except OSError:
             resolved = None
+    if resolved:
+        # Persist for transcript-less processes (tmp+rename; best-effort).
+        try:
+            cf = _taskdir_cache_file(key)
+            os.makedirs(os.path.dirname(cf), exist_ok=True)
+            tmp = cf + ".tmp." + str(os.getpid())
+            with open(tmp, "w", encoding="utf-8") as fh:
+                fh.write(resolved)
+            os.replace(tmp, cf)
+        except OSError:
+            pass
     _TASKS_DIR_CACHE[key] = resolved
     return resolved
 

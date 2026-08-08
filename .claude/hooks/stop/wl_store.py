@@ -1253,7 +1253,7 @@ def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
 # ---- world signature --------------------------------------------------------
 
 
-def world_sig(root, worklist, session_id, fold=None):
+def world_sig(root, worklist, session_id, fold=None, transcript_path=None):
     """THIS SESSION's world: task statuses + HEAD + the structure of the items
     it owns + the requests that involve it. Keyed by the poll fast path (has
     anything moved since the last full stop?) and by the judge verdict cache.
@@ -1283,7 +1283,7 @@ def world_sig(root, worklist, session_id, fold=None):
     An UNOWNED item counts as this session's (C.owned_by_me), matching the
     rule that an untagged item is yours: such an item blocks this session, so
     it must move the signature."""
-    ts = C.task_statuses(session_id)
+    ts = C.task_statuses(session_id, transcript_path)
     try:
         f = fold if fold is not None else load(worklist, sync=False)
         items = "|".join(
@@ -1356,7 +1356,7 @@ def my_requests_sig(worklist, session_id):
     return hashlib.sha1(blob.encode("utf-8", "replace")).hexdigest()[:16]
 
 
-def state_world_sig(root, worklist, session_id, fold=None):
+def state_world_sig(root, worklist, session_id, fold=None, transcript_path=None):
     """The STATE.md staleness key (v14 gap 5): task statuses + HEAD + item
     STRUCTURE (id, state, owner, basetext), deliberately NOT the raw byte
     digests world_sig used to take. Under the byte key every self-inflicted
@@ -1371,7 +1371,7 @@ def state_world_sig(root, worklist, session_id, fold=None):
     session's item landing on the branch is a reason to rewrite the recovery
     document, while world_sig covers only this session's own, because another
     session's bookkeeping is not a reason to pay a full stop battery."""
-    ts = C.task_statuses(session_id)
+    ts = C.task_statuses(session_id, transcript_path)
     try:
         f = fold if fold is not None else load(worklist, sync=False)
         items = "|".join(

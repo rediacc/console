@@ -932,7 +932,12 @@ def poll_fast_path(worklist, session_id, event):
     # signature is now derived from this session's items rather than from the
     # shared files' bytes; passing it here keeps the store parsed once.
     fold = S.load(worklist, sync=False)
-    if S.world_sig(root, worklist, session_id, fold=fold) != base_sig:
+    if (
+        S.world_sig(
+            root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
+        )
+        != base_sig
+    ):
         return False  # tracked work happened since the last full stop
     crons = event.get("session_crons") or []
     if len([c for c in crons if is_poll_cron(c)]) != 1:
@@ -1856,11 +1861,15 @@ def run_stop(event, event_ok, worklist, hook_file):
     # The world signature is computed ONCE, after every shared-state write of
     # this stop (sync, cleanup, escalation), and reused by the STATE.md check,
     # the poll baseline and the judge cache, so all three describe one world.
-    cur_sig = S.world_sig(root, worklist, session_id, fold=fold)
+    cur_sig = S.world_sig(
+        root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
+    )
     # v14 gap 5: STATE.md staleness keys on STRUCTURE, not bytes, so a
     # session's own bookkeeping (lease renewals, update notes) does not stale
     # the document it just refreshed. Polls and the judge keep cur_sig.
-    st_sig = S.state_world_sig(root, worklist, session_id, fold=fold)
+    st_sig = S.state_world_sig(
+        root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
+    )
     agent_branch = C.git_branch(root)
     astate, aage, _atext = S.agent_state_state(
         root, agent_branch, cur_sig=st_sig, saved_sig=state_doc.get("state_sig")
