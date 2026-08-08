@@ -26,6 +26,13 @@ log_fail() {
     exit 1
 }
 log_test() { echo -e "${YELLOW}TEST:${NC} $*"; }
+# info/error were ASSUMED by callers before they existed here:
+# test-shell-counter-increment.sh called both under `set -uo pipefail` (no -e),
+# so every run printed `log_info: command not found` and its finding report
+# would have said the same instead of naming the offending file (found
+# 2026-08-08 by the run-all parallelization agent). Defined once, centrally.
+log_info() { echo -e "${YELLOW}INFO:${NC} $*"; }
+log_error() { echo -e "${RED}ERROR:${NC} $*" >&2; }
 
 # assert_eq <actual> <expected> [<message>]
 assert_eq() {
