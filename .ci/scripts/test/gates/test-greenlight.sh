@@ -51,13 +51,15 @@ process.stdout.write(JSON.stringify({
 # green_candidate <run-id> -- a fixture candidate that satisfies every rule.
 # Cases mutate one field of it, so each assertion isolates one rule.
 green_candidate() {
-    printf '{"runId":%s,"jobs":[{"name":"Tests + Infra / Renet","conclusion":"success"}],"gitlink":"%s","closureHash":"%s"}' \
+    printf '{"runId":%s,"jobs":[{"name":"Tests + Infra / Renet","conclusion":"success"}],"gitlinks":{"private/renet":"%s"},"closureHash":"%s"}' \
         "$1" "$SHA_A" "$HASH_A"
 }
 
 # want <candidates-json> -- the full evaluateGreenlight input for key renet.
+# `wantGitlinks` is a { path -> sha } MAP because a key may pin several
+# submodules (the eight VM/E2E keys pin four) or none at all.
 want() {
-    printf '{"key":"renet","wantSubmoduleSha":"%s","wantClosureHash":"%s","candidates":%s}' \
+    printf '{"key":"renet","wantGitlinks":{"private/renet":"%s"},"wantClosureHash":"%s","candidates":%s}' \
         "$SHA_A" "$HASH_A" "$1"
 }
 
@@ -82,7 +84,7 @@ test_full_match_greenlights_and_names_the_run() {
 
     # CONTROL: greenlit is not the constant answer. The SAME candidate against
     # a different wanted pointer must refuse, or nothing above is proven.
-    v="$(ev "{\"key\":\"renet\",\"wantSubmoduleSha\":\"$SHA_B\",\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 4242)]}")"
+    v="$(ev "{\"key\":\"renet\",\"wantGitlinks\":{\"private/renet\":\"$SHA_B\"},\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 4242)]}")"
     assert_eq "$(jget "$v" greenlit)" "false" "the same candidate against another pointer must NOT greenlight"
     assert_eq "$(jget "$v" reason)" "no-usable-candidate" "and the walk must end with no usable candidate"
     log_pass "a full match greenlights and names its evidence run (case 1)"
@@ -93,7 +95,7 @@ test_full_match_greenlights_and_names_the_run() {
 # ---------------------------------------------------------------------------
 test_failed_job_refuses() {
     local cand v
-    cand="{\"runId\":7,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"failure\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":7,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"failure\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "false" "a failed job must never greenlight"
     assert_contains "$(jget "$v" trail)" "job-failed:failure" "refused as job-failed, carrying the conclusion"
@@ -101,7 +103,7 @@ test_failed_job_refuses() {
     # A cancelled run is the same class and is NOT rare: a live listing of
     # rediacc/console showed 'Tests + Infra / Account E2E' cancelled on the
     # most recent completed run.
-    cand="{\"runId\":8,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"cancelled\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":8,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"cancelled\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_contains "$(jget "$v" trail)" "job-failed:cancelled" "a cancelled job is refused the same way"
     log_pass "a job that ran and did not succeed is refused (case 2)"
@@ -124,21 +126,21 @@ test_failed_job_refuses() {
 # ---------------------------------------------------------------------------
 test_skipped_job_refuses_as_not_run() {
     local cand v
-    cand="{\"runId\":9,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"skipped\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":9,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"skipped\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "false" "a skipped job must never greenlight"
     assert_contains "$(jget "$v" trail)" "job-not-run" "refused as job-not-run, exactly like an absent job"
 
     # A run carrying no such job at all lands on the same reason, because
     # neither can prove the suite executed.
-    cand="{\"runId\":10,\"jobs\":[{\"name\":\"Tests + Infra / Unit\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":10,\"jobs\":[{\"name\":\"Tests + Infra / Unit\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_contains "$(jget "$v" trail)" "job-not-run" "an absent job is refused as job-not-run"
 
     # CONTROL: flipping only the conclusion to success greenlights the very
     # same fixture, so the refusal above is about the conclusion and nothing
     # else in the candidate.
-    cand="{\"runId\":9,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":9,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "true" "the same fixture with conclusion=success DOES greenlight"
     log_pass "a skipped job is refused, so evidence cannot chain across reduced runs (case 3)"
@@ -151,14 +153,14 @@ test_skipped_job_refuses_as_not_run() {
 # ---------------------------------------------------------------------------
 test_differing_closure_refuses() {
     local cand v
-    cand="{\"runId\":11,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_B\"}"
+    cand="{\"runId\":11,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_B\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "false" "a differing console-side closure must refuse"
     assert_contains "$(jget "$v" trail)" "closure-differs" "named as closure-differs"
 
     # CONTROL: flipping only the closure hash back greenlights the same
     # fixture, so the refusal is about the closure and nothing else.
-    cand="{\"runId\":11,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":11,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "true" "the same fixture with the matching closure DOES greenlight"
     log_pass "a changed console-side input refuses as closure-differs (case 4)"
@@ -176,10 +178,10 @@ test_absent_and_throwing_candidates_fail_open() {
     assert_eq "$(jget "$v" greenlit)" "false" "an empty candidate list must not greenlight"
     assert_eq "$(jget "$v" reason)" "no-candidates" "named as no-candidates"
 
-    v="$(ev "{\"key\":\"renet\",\"wantSubmoduleSha\":\"\",\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 1)]}")"
+    v="$(ev "{\"key\":\"renet\",\"wantGitlinks\":{},\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 1)]}")"
     assert_eq "$(jget "$v" reason)" "no-local-gitlink" "an unreadable local gitlink must not greenlight"
 
-    v="$(ev "{\"key\":\"nonsense\",\"wantSubmoduleSha\":\"$SHA_A\",\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 1)]}")"
+    v="$(ev "{\"key\":\"nonsense\",\"wantGitlinks\":{\"private/renet\":\"$SHA_A\"},\"wantClosureHash\":\"$HASH_A\",\"candidates\":[$(green_candidate 1)]}")"
     assert_contains "$(jget "$v" reason)" "unknown-key" "an unknown key must not greenlight"
 
     # A THROWING fetch at each of the three lazy stages. Injected here rather
@@ -190,17 +192,17 @@ test_absent_and_throwing_candidates_fail_open() {
 const g = require(process.argv[1]);
 const boom = () => { throw new Error("api exploded"); };
 const out = [];
-for (const stage of ["jobs", "gitlink", "closureHash"]) {
+for (const stage of ["jobs", "gitlinks", "closureHash"]) {
   const cand = {
     runId: 1,
     jobs: [{ name: "Tests + Infra / Renet", conclusion: "success" }],
-    gitlink: "1111111111111111111111111111111111111111",
+    gitlinks: { "private/renet": "1111111111111111111111111111111111111111" },
     closureHash: "aaaa000000000000000000000000000000000000000000000000000000000000",
   };
   cand[stage] = boom;
   const v = g.evaluateGreenlight({
     key: "renet",
-    wantSubmoduleSha: "1111111111111111111111111111111111111111",
+    wantGitlinks: { "private/renet": "1111111111111111111111111111111111111111" },
     wantClosureHash: "aaaa000000000000000000000000000000000000000000000000000000000000",
     candidates: [cand],
   });
@@ -209,7 +211,7 @@ for (const stage of ["jobs", "gitlink", "closureHash"]) {
 process.stdout.write(out.join(" "));
 ' "$ENGINE")"
     assert_contains "$thrown" "jobs:false:jobs-unreadable:api exploded" "a throwing jobs fetch fails open"
-    assert_contains "$thrown" "gitlink:false:gitlink-unreadable:api exploded" "a throwing gitlink fetch fails open"
+    assert_contains "$thrown" "gitlinks:false:gitlink-unreadable:api exploded" "a throwing gitlink fetch fails open"
     assert_contains "$thrown" "closureHash:false:closure-unreadable:api exploded" "a throwing closure fetch fails open"
     log_pass "absence, bad input and a throwing API all fail open to no greenlight (case 5)"
 }
@@ -349,7 +351,7 @@ test_moved_pointer_refuses() {
 
     # FIRE: everything else is a perfect match. Job green, closure identical,
     # and ONLY the gitlink moved.
-    cand="{\"runId\":31,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_B\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":31,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_B\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "false" "a moved submodule pointer must never greenlight"
     assert_eq "$(jget "$v" runId)" "null" "and must name no evidence run"
@@ -357,20 +359,20 @@ test_moved_pointer_refuses() {
 
     # CONTROL: restore the pointer, change nothing else, and the same fixture
     # greenlights. Without this the refusal above could come from any field.
-    cand="{\"runId\":31,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":31,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "true" "the same fixture with the matching pointer DOES greenlight"
 
     # A one-character difference is a difference. Equality is over the whole
     # hash, not a prefix, so a near-miss cannot be read as a match.
     local near="${SHA_A:0:39}9"
-    cand="{\"runId\":32,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$near\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":32,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$near\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "false" "a pointer differing in one character must refuse"
 
     # An absent gitlink (the candidate commit did not carry that submodule)
     # is a difference too, not a free pass.
-    cand="{\"runId\":33,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlink\":null,\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":33,\"jobs\":[{\"name\":\"Tests + Infra / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_contains "$(jget "$v" trail)" "pointer-differs" "an absent gitlink refuses as pointer-differs"
 
@@ -402,20 +404,20 @@ test_moved_pointer_refuses() {
 test_job_name_leaf_must_match_exactly() {
     local cand v
     for decoy in "Build (Renet) / Renet (cached)" "Build (Docker Fast) / Renet Docker" "Tests + Infra / Renet Extra"; do
-        cand="{\"runId\":21,\"jobs\":[{\"name\":\"$decoy\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+        cand="{\"runId\":21,\"jobs\":[{\"name\":\"$decoy\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
         v="$(ev "$(want "[$cand]")")"
         assert_eq "$(jget "$v" greenlit)" "false" "'$decoy' must not be read as the Renet suite"
     done
 
     # CONTROL: the real name, under a DIFFERENT caller prefix, still matches.
     # Only the leaf is ct-tests.yml's to control, so only the leaf is matched.
-    cand="{\"runId\":22,\"jobs\":[{\"name\":\"Some Other Caller / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":22,\"jobs\":[{\"name\":\"Some Other Caller / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_eq "$(jget "$v" greenlit)" "true" "the leaf name matches regardless of the caller prefix"
 
     # Two jobs answering to one name means the name no longer identifies the
     # suite, so neither reading is evidence.
-    cand="{\"runId\":23,\"jobs\":[{\"name\":\"A / Renet\",\"conclusion\":\"success\"},{\"name\":\"B / Renet\",\"conclusion\":\"success\"}],\"gitlink\":\"$SHA_A\",\"closureHash\":\"$HASH_A\"}"
+    cand="{\"runId\":23,\"jobs\":[{\"name\":\"A / Renet\",\"conclusion\":\"success\"},{\"name\":\"B / Renet\",\"conclusion\":\"success\"}],\"gitlinks\":{\"private/renet\":\"$SHA_A\"},\"closureHash\":\"$HASH_A\"}"
     v="$(ev "$(want "[$cand]")")"
     assert_contains "$(jget "$v" trail)" "job-ambiguous" "two jobs of one name refuse as job-ambiguous"
     log_pass "only an exact job leaf name is evidence, and only when it is unique"
@@ -433,10 +435,10 @@ test_declared_closure_paths_exist() {
 const { CLOSURES } = require(process.argv[1]);
 const lines = [];
 for (const [key, c] of Object.entries(CLOSURES)) {
-  lines.push(`${key}\t${c.submodule}`);
+  for (const p of c.submodules) lines.push(`${key}\t${p}`);
   for (const p of c.paths) lines.push(`${key}\t${p}`);
 }
-process.stdout.write(lines.join("\n"));
+process.stdout.write(`${lines.join("\n")}\n`);
 ' "$ENGINE")"
 
     local count=0
@@ -446,13 +448,274 @@ process.stdout.write(lines.join("\n"));
             "closure path for $key must exist in HEAD: $path"
         count=$((count + 1))
     done <<<"$paths"
-    assert_eq "$((count > 15 ? 1 : 0))" "1" "both keys must declare a non-trivial closure ($count paths seen)"
+    # The floor sits JUST BELOW the real total (408 across 18 keys as of
+    # 2026-08-08), not at some token value: a `> 15` floor survived a table
+    # that had lost every key but one. At 400 a parse break reads as 0 and a
+    # dropped VM/E2E key costs 30 entries, both of which fire this; trimming a
+    # path or two during honest maintenance does not.
+    assert_eq "$((count > 400 ? 1 : 0))" "1" "the table must stay whole ($count entries seen, floor 400)"
 
     # CONTROL: the same assertion applied to a path that does NOT exist must
     # fail, or the loop above proves only that the loop ran.
     assert_eq "$(git -C "$REPO_ROOT" ls-tree HEAD -- .ci/scripts/private/no-such-file.sh | wc -l)" "0" \
         "the existence probe returns 0 lines for a path that is not there"
-    log_pass "every declared closure path exists in HEAD ($count paths)"
+    log_pass "every declared closure path exists in HEAD ($count entries)"
+}
+
+# ---------------------------------------------------------------------------
+# Case 10: MATRIX EVIDENCE. e2e_workers is five API jobs, one per distro. The
+# property is that ALL FIVE must have run green: a candidate carrying four of
+# them, or five with one skipped, proves nothing about the missing leg, and
+# accepting it would let exactly the distro a PR breaks be the one never run.
+#
+# This is rule 1 restated for the matrix case, and it is the reason `jobNames`
+# is a list rather than a name plus a count.
+# ---------------------------------------------------------------------------
+test_matrix_key_needs_every_leg() {
+    local legs v cand
+    legs="$(node -e '
+const { CLOSURES } = require(process.argv[1]);
+process.stdout.write(CLOSURES.e2e_workers.jobNames.join("\n"));
+' "$ENGINE")"
+    assert_eq "$(printf '%s\n' "$legs" | wc -l)" "5" "e2e_workers declares five matrix legs"
+
+    # A helper that builds the candidate from a list of "<leaf>=<conclusion>".
+    local mk
+    # `node -e <code> -- a b` puts a at argv[1], not argv[2]: node consumes the
+    # `--` itself. Slicing from 2 here silently dropped the first leg and read
+    # as a real refusal, which is exactly the shape of bug this file exists to
+    # catch, so the index is stated rather than guessed.
+    mk='
+const jobs = process.argv.slice(1).map((s) => {
+  const i = s.lastIndexOf("=");
+  return { name: `Tests + Infra / ${s.slice(0, i)}`, conclusion: s.slice(i + 1) };
+});
+process.stdout.write(JSON.stringify({
+  runId: 60,
+  jobs,
+  gitlinks: {
+    "private/renet": "1111111111111111111111111111111111111111",
+    "private/account": "1111111111111111111111111111111111111111",
+    "private/elite": "1111111111111111111111111111111111111111",
+    "private/homebrew-tap": "1111111111111111111111111111111111111111",
+  },
+  closureHash: "aaaa000000000000000000000000000000000000000000000000000000000000",
+}));
+'
+    # want_workers <candidate-json> -- the evaluateGreenlight input for the
+    # four-submodule VM/E2E shape.
+    local want_workers
+    want_workers='{"key":"e2e_workers","wantGitlinks":{"private/renet":"'"$SHA_A"'","private/account":"'"$SHA_A"'","private/elite":"'"$SHA_A"'","private/homebrew-tap":"'"$SHA_A"'"},"wantClosureHash":"'"$HASH_A"'","candidates":[CAND]}'
+
+    # FIRE 1: one leg absent from the run entirely.
+    cand="$(node -e "$mk" -- \
+        "E2E Workers (ubuntu-24.04)=success" \
+        "E2E Workers (debian-13)=success" \
+        "E2E Workers (fedora-43)=success" \
+        "E2E Workers (opensuse-16.0)=success")"
+    v="$(ev "${want_workers/CAND/$cand}")"
+    assert_eq "$(jget "$v" greenlit)" "false" "four green legs out of five must NOT greenlight"
+    assert_contains "$(jget "$v" trail)" "job-not-run@E2E Workers (oracle-10)" \
+        "and the trail must name the leg that was missing"
+
+    # FIRE 2: all five present, one of them SKIPPED. This is the shape a
+    # reduced run leaves behind, and it is the one that must never chain.
+    cand="$(node -e "$mk" -- \
+        "E2E Workers (ubuntu-24.04)=success" \
+        "E2E Workers (debian-13)=success" \
+        "E2E Workers (fedora-43)=skipped" \
+        "E2E Workers (opensuse-16.0)=success" \
+        "E2E Workers (oracle-10)=success")"
+    v="$(ev "${want_workers/CAND/$cand}")"
+    assert_eq "$(jget "$v" greenlit)" "false" "one skipped leg out of five must NOT greenlight"
+    assert_contains "$(jget "$v" trail)" "job-not-run@E2E Workers (fedora-43)" \
+        "named as the skipped leg, not as a generic refusal"
+
+    # FIRE 3: one leg red.
+    cand="$(node -e "$mk" -- \
+        "E2E Workers (ubuntu-24.04)=success" \
+        "E2E Workers (debian-13)=failure" \
+        "E2E Workers (fedora-43)=success" \
+        "E2E Workers (opensuse-16.0)=success" \
+        "E2E Workers (oracle-10)=success")"
+    v="$(ev "${want_workers/CAND/$cand}")"
+    assert_eq "$(jget "$v" greenlit)" "false" "one failed leg out of five must NOT greenlight"
+
+    # CONTROL: all five green, nothing else changed, and the same shape DOES
+    # greenlight. Without it every assertion above could be a broken fixture.
+    cand="$(node -e "$mk" -- \
+        "E2E Workers (ubuntu-24.04)=success" \
+        "E2E Workers (debian-13)=success" \
+        "E2E Workers (fedora-43)=success" \
+        "E2E Workers (opensuse-16.0)=success" \
+        "E2E Workers (oracle-10)=success")"
+    v="$(ev "${want_workers/CAND/$cand}")"
+    assert_eq "$(jget "$v" greenlit)" "true" "all five legs green DOES greenlight"
+    assert_eq "$(jget "$v" runId)" "60" "naming the run that proved it"
+
+    # And a moved pointer on ANY ONE of the four pinned submodules withdraws
+    # it, so the multi-submodule rule 2 is not satisfied by the first entry.
+    local one_moved
+    one_moved='{"key":"e2e_workers","wantGitlinks":{"private/renet":"'"$SHA_A"'","private/account":"'"$SHA_A"'","private/elite":"'"$SHA_B"'","private/homebrew-tap":"'"$SHA_A"'"},"wantClosureHash":"'"$HASH_A"'","candidates":[CAND]}'
+    v="$(ev "${one_moved/CAND/$cand}")"
+    assert_eq "$(jget "$v" greenlit)" "false" "one moved pointer of four withdraws the greenlight"
+    assert_contains "$(jget "$v" trail)" "pointer-differs" "refused as pointer-differs"
+    log_pass "a matrix key needs every leg green; four of five is not evidence (case 10)"
+}
+
+# ---------------------------------------------------------------------------
+# Case 11: `submodules: []` is LEGAL and VACUOUS, not a mistake to be rescued.
+# `Unit` and `Linux Packages` check out with no submodules at all (ct-tests.yml
+# :189, ci.yml:709), so there is no pointer to pin and rule 2 has nothing to
+# compare. The hazard being asserted against is the opposite of the usual one:
+# an empty pin list must not be treated as "no local gitlink" and refuse
+# forever, and it must not stop rules 1 and 3 from still deciding.
+# ---------------------------------------------------------------------------
+test_empty_submodule_list_is_vacuous_not_broken() {
+    local decl v cand
+    decl="$(node -e '
+const { CLOSURES } = require(process.argv[1]);
+process.stdout.write(String(CLOSURES.unit.submodules.length));
+' "$ENGINE")"
+    assert_eq "$decl" "0" "the unit key declares no submodules at all"
+
+    cand='{"runId":70,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
+    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    assert_eq "$(jget "$v" greenlit)" "true" "an empty pin list still greenlights on rules 1 and 3"
+    assert_eq "$(jget "$v" runId)" "70" "naming the evidence run"
+
+    # CONTROL 1: rule 3 still decides for a key with no pins, so the pass above
+    # is not "empty submodules disables every rule".
+    cand='{"runId":71,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_B"'"}'
+    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    assert_eq "$(jget "$v" greenlit)" "false" "a differing closure still refuses a pinless key"
+    assert_contains "$(jget "$v" trail)" "closure-differs" "named as closure-differs"
+
+    # CONTROL 2: rule 1 still decides too.
+    cand='{"runId":72,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"skipped"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
+    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    assert_eq "$(jget "$v" greenlit)" "false" "a skipped job still refuses a pinless key"
+
+    # CONTROL 3: the emptiness is a property of THAT key, not of the check. A
+    # key that DOES declare pins and cannot read one of them must still refuse
+    # with no-local-gitlink rather than proceeding on a short map.
+    v="$(ev '{"key":"e2e_workers","wantGitlinks":{"private/renet":"'"$SHA_A"'"},"wantClosureHash":"'"$HASH_A"'","candidates":[]}')"
+    assert_eq "$(jget "$v" reason)" "no-local-gitlink" \
+        "a key with unread pins refuses rather than comparing a short map"
+    log_pass "an empty submodule list is vacuous for that key and only that key (case 11)"
+}
+
+# ---------------------------------------------------------------------------
+# Case 12: KEY ORDER IS COST-DESCENDING. scope-shadow.sh passes the pending
+# keys through in CLOSURES' own order and the walk budget is per invocation, so
+# the tail of this list is what a timeout abandons. Pin both ends: the most
+# expensive key first, the cheapest last. Inserting a new key at the top of the
+# table (the natural place to paste one) would fire this.
+# ---------------------------------------------------------------------------
+test_key_order_is_cost_descending() {
+    local keys first last
+    keys="$(node -e '
+const { CLOSURES } = require(process.argv[1]);
+process.stdout.write(Object.keys(CLOSURES).join(" "));
+' "$ENGINE")"
+    first="${keys%% *}"
+    last="${keys##* }"
+    assert_eq "$first" "e2e_workers" "the first key must be the most expensive one (five 90-minute legs)"
+    assert_eq "$last" "unit" "the last key must be the cheapest one, so a dead budget starves it"
+
+    # CONTROL: the probe reads the real order rather than echoing its argument.
+    assert_not_contains "$first" "unit" "the first key is not the last one"
+
+    # scope-shadow.sh must be the consumer of that order, and must ask for the
+    # raised budget. Asserted against the INVOCATION LINE, not the file: the
+    # first version of this grepped the whole file for '--budget 90', and the
+    # mutation proof caught it passing with the flag deleted from the command,
+    # because the comment ABOVE the command explains the flag and still says
+    # '--budget 90'. A gate satisfied by its own prose cannot fire.
+    local invocation
+    invocation="$(grep -E '^\s*if ! bounded node "\$GREENLIGHT"' \
+        "$REPO_ROOT/.ci/scripts/ci/scope-shadow.sh" || true)"
+    assert_contains "$invocation" '--budget 90' \
+        "the scope-shadow greenlight INVOCATION must raise the walk budget"
+    log_pass "the key order is cost-descending and scope-shadow.sh raises the budget (case 12)"
+}
+
+# ---------------------------------------------------------------------------
+# Case 13: THE TRAIL MUST STAY READABLE. The trail is the only thing that makes
+# a non-greenlight diagnosable, and it is surfaced through a step summary with
+# a byte cap. At two keys the raw dump fitted; at eighteen keys against a
+# 25-candidate list it is ~450 rows and it truncated MID-LINE inside the second
+# key, so sixteen keys' diagnostics were simply absent. scope-shadow.sh's
+# greenlight_digest exists to condense it, and this case is what stops the
+# digest silently dropping keys as the table grows again.
+# ---------------------------------------------------------------------------
+test_the_trail_digest_names_every_key() {
+    local fn="$WORK/digest.sh"
+    sed -n '/^greenlight_digest() {/,/^}$/p' \
+        "$REPO_ROOT/.ci/scripts/ci/scope-shadow.sh" >"$fn"
+    assert_contains "$(cat "$fn")" "awk" "greenlight_digest must be extractable from scope-shadow.sh"
+    # shellcheck source=/dev/null
+    # BLOCKER: the function under test is defined in scope-shadow.sh, which cannot be
+    # sourced whole because sourcing it runs the scope engine.
+    source "$fn"
+
+    # A synthetic trail in the engine's exact debug shape: three keys, each
+    # with a header block and a multi-row candidate table.
+    local raw="$WORK/trail.err"
+    {
+        echo "greenlight: repo=owner/name candidates=3 budget=90s"
+        local k
+        for k in alpha beta gamma; do
+            echo ""
+            echo "greenlight[$k] jobs='Some Job'"
+            echo "greenlight[$k] pins=private/renet=abcdef12"
+            echo "greenlight[$k] closure=${k}0000000000000000000000 (26 paths)"
+            echo "  run id        head      verdict"
+            echo "  900000001     11111111  pointer-differs"
+            echo "  900000002     22222222  closure-differs"
+            echo "  900000003     33333333  job-not-run@E2E Workers (oracle-10)"
+            echo "greenlight[$k] VERDICT: no (no-usable-candidate)"
+            echo "greenlight[$k]: no greenlight (no-usable-candidate)"
+        done
+        echo "greenlight[delta]: local inputs unreadable (boom), nothing is greenlit"
+    } >"$raw"
+
+    local digest
+    digest="$(greenlight_digest "$raw")"
+
+    # Every key survives, with its verdict and the newest candidate's reason.
+    local k
+    for k in alpha beta gamma; do
+        assert_contains "$digest" "$k" "the digest must name key $k"
+    done
+    assert_contains "$digest" "walked=3" "and must say how many candidates were walked"
+    assert_contains "$digest" "newest 900000001 pointer-differs" \
+        "and must carry the NEWEST candidate's reason, which is the one that matters"
+
+    # A reason containing spaces (the matrix form) must survive whole.
+    local wide="$WORK/trail-matrix.err"
+    {
+        echo "greenlight[m] closure=aaaa000000000000 (26 paths)"
+        echo "  run id        head      verdict"
+        echo "  900000009     99999999  job-not-run@E2E Workers (oracle-10)"
+        echo "greenlight[m] VERDICT: no (no-usable-candidate)"
+    } >"$wide"
+    assert_contains "$(greenlight_digest "$wide")" "job-not-run@E2E Workers (oracle-10)" \
+        "a matrix refusal keeps the leg name, spaces and all"
+
+    # An unrecognised line is PASSED THROUGH, never filtered into silence.
+    assert_contains "$digest" "local inputs unreadable (boom)" \
+        "a line the digest does not recognise must survive verbatim"
+
+    # CONTROL: the digest is a real reduction. Against the LIVE-shaped input it
+    # must be far smaller than the raw trail, or it is not solving the problem
+    # it was written for.
+    local rawbytes digestbytes
+    rawbytes="$(wc -c <"$raw")"
+    digestbytes="$(printf '%s' "$digest" | wc -c)"
+    assert_eq "$((digestbytes < rawbytes ? 1 : 0))" "1" \
+        "the digest must be smaller than the raw trail ($digestbytes vs $rawbytes bytes)"
+    log_pass "the trail digest names every key and survives a growing table (case 13)"
 }
 
 log_test "test-greenlight"
@@ -465,6 +728,10 @@ test_cli_emit_is_false_only
 test_moved_pointer_refuses
 test_job_name_leaf_must_match_exactly
 test_declared_closure_paths_exist
+test_matrix_key_needs_every_leg
+test_empty_submodule_list_is_vacuous_not_broken
+test_key_order_is_cost_descending
+test_the_trail_digest_names_every_key
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"
