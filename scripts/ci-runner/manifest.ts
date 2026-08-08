@@ -271,6 +271,9 @@ export const GATES: readonly GateSpec[] = [
   // flattening would recreate #549 fifty-seven times over.
   //
   // ISOLATION IS A HYPOTHESIS, NOT A GIVEN. test-claude-hooks.sh failed once
+// Since 2026-08-08 run-all.sh enforces this in-step: the two writers run as
+// an exclusive serial chain and the real-tree scanners are held until it
+// finishes. See its header.
   // inside the SERIAL battery and could not be reproduced standalone (plan
   // finding F8). Any red that appears only under parallelism gets a named mutex
   // group, never a retry.
@@ -411,6 +414,7 @@ export const GATES: readonly GateSpec[] = [
   { id: 'gate-test:renet-deadcode', run: '.ci/scripts/test/gates/test-renet-deadcode.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-renet-deadcode.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
   { id: 'gate-test:review-labels', run: '.ci/scripts/test/gates/test-review-labels.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-review-labels.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
   { id: 'gate-test:review-status', run: '.ci/scripts/test/gates/test-review-status.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-review-status.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
+  { id: 'gate-test:run-all-parallel', run: '.ci/scripts/test/gates/test-run-all-parallel.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-run-all-parallel.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
   { id: 'gate-test:schema-coverage', run: '.ci/scripts/test/gates/test-schema-coverage.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-schema-coverage.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
   { id: 'gate-test:scope-baseline-attest', run: '.ci/scripts/test/gates/test-scope-baseline-attest.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-scope-baseline-attest.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
   { id: 'gate-test:scope-engine', run: '.ci/scripts/test/gates/test-scope-engine.sh', gate: true, qualityGateTest: true, leaves: ['.ci/scripts/test/gates/test-scope-engine.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Quality-gate unit tests' } },
