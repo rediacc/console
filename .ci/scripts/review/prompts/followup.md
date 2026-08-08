@@ -49,6 +49,13 @@ Process:
    fields path/line/severity/title/body, severity in critical|high|medium|low,
    at most 20) -- but ONLY for genuinely NEW defects in the delta, per rule
    2a. An empty delta review emits an empty array.
+6. Close with the same ```json:pr-labels block the initial review defines
+   (fields bump/kind/why, bump in patch|minor|major, kind 0 to 2 entries from
+   bug|feature|docs|ci) -- but judged over the WHOLE PR, not the delta. Bump
+   intent is a property of the finished pull request, so your verdict
+   SUPERSEDES the previous one rather than adding to it: a PR whose first pass
+   earned "minor" still reads "minor" here unless the delta changed that.
+   `gh pr diff` gives you the whole-PR view for exactly this.
 
 Rules: same as the initial review. Do not push commits, create branches, or
 modify files. Comments only, no approvals. No emojis; never include the text
