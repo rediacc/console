@@ -117,6 +117,30 @@ INT_FIELDS = (
     "mem_ceil_bytes",
 )
 
+# The baseline's on-disk contract. Bump this ONLY together with a migration of
+# the committed file, and expect the gate to refuse every older copy loudly --
+# which is the point. Without a version, a shape change reaches this gate as a
+# KeyError traceback or, worse, as a silent misparse that reports a clean tree.
+BASELINE_FORMAT = 1
+
+# Top-level keys every format-1 baseline must carry. `_comment` and
+# `refreshed_from` are prose and deliberately optional.
+REQUIRED_TOP_KEYS = ("refreshed_at", "jobs")
+
+# `env` is NOT required: it arrived after the first rows were harvested, and
+# classify() already defaults it to the untrusted side. Requiring it would
+# reject a record that is merely older, which is a different thing from wrong.
+REQUIRED_JOB_FIELDS = ("workflow", "runner_label", "tier")
+REQUIRED_JOB_INTS = (
+    "cpu_peak_milli",
+    "mem_peak_bytes",
+    "wall_s",
+    "cpu_ceil_milli",
+    "mem_ceil_bytes",
+    "observed_runs",
+)
+OPTIONAL_JOB_STRINGS = ("env",)
+
 
 BOOTSTRAP_WARNING = (
     "Runner sizing is UNENFORCED on this run. The baseline is PRISTINE (refreshed_at null, "
@@ -126,6 +150,118 @@ BOOTSTRAP_WARNING = (
     "The harvest writes only if it finds at least 5 jobs, so once this file is seeded it is "
     "enforced and this warning cannot come back."
 )
+
+
+class BaselineFormatError(Exception):
+    """The baseline is not a readable format-1 baseline. Always carries a named reason."""
+
+
+def read_baseline_json(path):
+    """Parse the baseline and check its FORMAT only. Never raises a bare traceback.
+
+    Format-only, deliberately, because --refresh calls this: a refresh REPLACES
+    every job record, so refusing it over a malformed record would lock the
+    operator out of the one command that repairs it. A format it cannot read is
+    different in kind -- there is no way to know what the file even means, so
+    nothing may be written into it.
+    """
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise BaselineFormatError("cannot read %s: %s" % (path, exc)) from exc
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise BaselineFormatError(
+            "%s is not valid JSON: %s at line %d column %d. A hand-edit went wrong; "
+            "fix the syntax or restore the file from git." % (path, exc.msg, exc.lineno, exc.colno)
+        ) from exc
+    if not isinstance(data, dict):
+        raise BaselineFormatError(
+            "%s holds a %s at the top level, but a baseline is a JSON object"
+            % (path, type(data).__name__)
+        )
+    if "format" not in data:
+        raise BaselineFormatError(
+            '%s declares no "format". This gate speaks baseline format %d; a file with no '
+            "version cannot be told from one written by a different tool. Add '\"format\": %d' "
+            "if the shape matches, or re-seed with --refresh."
+            % (path, BASELINE_FORMAT, BASELINE_FORMAT)
+        )
+    if data["format"] != BASELINE_FORMAT:
+        raise BaselineFormatError(
+            "%s declares format %r, but this gate speaks format %d. Refusing to read it: an "
+            "incompatible baseline read as if it were compatible is how a checker reports a "
+            "clean tree over numbers it misunderstood. Upgrade the gate, or re-seed the "
+            "baseline with --refresh." % (path, data["format"], BASELINE_FORMAT)
+        )
+    return data
+
+
+def validate_records(data, path):
+    """Every structural complaint about a format-1 baseline's contents.
+
+    Each message names the JOB and the FIELD, because the whole reason this
+    exists is that the alternative was a KeyError traceback pointing at a line
+    of this file rather than at the record that is wrong.
+    """
+    problems = [
+        "%s: missing required top-level key %r" % (path.name, key)
+        for key in REQUIRED_TOP_KEYS
+        if key not in data
+    ]
+    jobs = data.get("jobs")
+    if jobs is not None and not isinstance(jobs, dict):
+        problems.append(
+            '%s: "jobs" is a %s, but it must be an object keyed by '
+            "'<workflow>.yml:<job-id>'" % (path.name, type(jobs).__name__)
+        )
+        return problems
+    for job, rec in sorted((jobs or {}).items()):
+        if not isinstance(rec, dict):
+            problems.append(
+                "%s: record for %r is a %s, but every job record is an object"
+                % (path.name, job, type(rec).__name__)
+            )
+            continue
+        for field in REQUIRED_JOB_FIELDS:
+            if field not in rec:
+                problems.append("%s: job %r is missing required field %r" % (path.name, job, field))
+            elif not isinstance(rec[field], str):
+                problems.append(
+                    "%s: job %r field %r is %r, but it must be a string"
+                    % (path.name, job, field, rec[field])
+                )
+        problems.extend(
+            "%s: job %r field %r is %r, but when present it must be a string"
+            % (path.name, job, field, rec[field])
+            for field in OPTIONAL_JOB_STRINGS
+            if field in rec and not isinstance(rec[field], str)
+        )
+        for field in REQUIRED_JOB_INTS:
+            if field not in rec:
+                problems.append("%s: job %r is missing required field %r" % (path.name, job, field))
+            # bool is a subclass of int, and `true` here would arithmetic as 1
+            # rather than being rejected -- which is exactly the silent misparse
+            # this validator exists to replace.
+            elif not isinstance(rec[field], int) or isinstance(rec[field], bool):
+                problems.append(
+                    "%s: job %r field %r is %r, but it must be a whole number"
+                    % (path.name, job, field, rec[field])
+                )
+    return problems
+
+
+def load_baseline(path):
+    """Parse, version-check and structurally validate. Raises BaselineFormatError, named."""
+    data = read_baseline_json(path)
+    problems = validate_records(data, path)
+    if problems:
+        raise BaselineFormatError(
+            "%s does not match the format-%d contract:\n  - %s"
+            % (path.name, BASELINE_FORMAT, "\n  - ".join(problems))
+        )
+    return data
 
 
 def is_pristine(baseline):
@@ -152,6 +288,13 @@ def is_pristine(baseline):
     below the floor. Together they make "seeded" and "enforced" the same state,
     which is what stops this from being a permanent hole.
     """
+    # The format clause is redundant when this is reached through load_baseline,
+    # which has already refused anything else. It is here so the predicate reads
+    # as the whole definition of "pristine" rather than as two thirds of it, and
+    # the gate test calls this function directly with a format-2 dict so the
+    # clause is pinned by a test rather than only by that reading.
+    if baseline.get("format") != BASELINE_FORMAT:
+        return False
     if "refreshed_at" not in baseline or baseline["refreshed_at"] is not None:
         return False
     return baseline.get("jobs", None) == {}
@@ -650,6 +793,16 @@ def harvest(root, branch, event, limit):
 
 def refresh(root, baseline_path, workflow_dir, branch, event, limit):
     """Rewrite the baseline from harvested annotations. Network lives HERE."""
+    # BEFORE the network, and before anything is written: a file whose format
+    # this gate cannot read is a file it must not merge into either.
+    try:
+        read_baseline_json(baseline_path)
+    except BaselineFormatError as exc:
+        print(
+            "REFUSING TO REFRESH, baseline left untouched:\n  %s" % exc,
+            file=sys.stderr,
+        )
+        return 1
     try:
         pairs = runs_on(workflow_dir)
     except WorkflowUnreadableError as exc:
@@ -698,7 +851,10 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
         )
         return 1
 
-    data = json.loads(baseline_path.read_text(encoding="utf-8"))
+    data = read_baseline_json(baseline_path)
+    # Written explicitly rather than carried over, so a refresh of a file that
+    # somehow lost the key repairs it instead of propagating the gap.
+    data["format"] = BASELINE_FORMAT
     data["jobs"] = dict(sorted(merged.items()))
     data["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
@@ -748,8 +904,12 @@ def main(argv=None):
     if args.refresh:
         return refresh(root, baseline_path, workflow_dir, args.branch, args.event, args.runs)
 
-    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
-    jobs = baseline.get("jobs", {})
+    try:
+        baseline = load_baseline(baseline_path)
+    except BaselineFormatError as exc:
+        print("BASELINE UNREADABLE, so no verdict is possible:\n  %s" % exc, file=sys.stderr)
+        return 1
+    jobs = baseline["jobs"]
 
     if is_pristine(baseline):
         print(

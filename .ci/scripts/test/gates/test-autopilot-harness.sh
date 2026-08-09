@@ -701,31 +701,48 @@ test_push_publishes_the_verdict_on_the_push_path_too() {
 
 # mk_sub_fixture <dir> <branch> - parent with private/renet, plus bare remotes
 # for both. Rebuilt per test so no test inherits another's refs.
+#
+# HERMETIC BY CONSTRUCTION, and it has to be. This sandbox passed on a laptop
+# and died in CI with `fatal: You are on a branch yet to be born` /
+# `unable to checkout submodule 'private/renet'`, because it inherited
+# `init.defaultBranch` from the developer's ~/.gitconfig. Without that setting
+# git's built-in default is `master`, so `git init --bare` left the bare repo's
+# HEAD pointing at refs/heads/master while the seed only ever pushed
+# refs/heads/main. `git submodule add` clones that bare repo, follows its
+# dangling HEAD, and lands on an unborn branch it cannot check out. Every git
+# call below therefore states its own branch and its own identity; nothing here
+# may depend on ambient configuration. Verify with:
+#   HOME=$(mktemp -d) XDG_CONFIG_HOME=$(mktemp -d) GIT_CONFIG_NOSYSTEM=1 \
+#     bash .ci/scripts/test/gates/test-autopilot-harness.sh
+SANDBOX_ID=(-c user.email=fixture@example.invalid -c user.name="Fixture Base")
+
 mk_sub_fixture() {
     local d="$1" branch="$2"
     rm -rf "$d"
     mkdir -p "$d"
-    git init -q --bare "$d/renet.git"
-    git init -q --bare "$d/console.git"
+    # `-b main` on the BARE repo is the fix: it is what the submodule clone
+    # reads as the remote HEAD, so it must name the branch that will actually
+    # exist there.
+    git init -q --bare -b main "$d/renet.git"
+    git init -q --bare -b main "$d/console.git"
     git clone -q "$d/renet.git" "$d/seed" 2>/dev/null
+    # Stated rather than inherited from the clone: an empty-repo clone takes
+    # its unborn HEAD from the remote, and this test should not depend on that
+    # inference holding.
+    git -C "$d/seed" symbolic-ref HEAD refs/heads/main
     mkdir -p "$d/seed/pkg"
     printf 'package x\n' >"$d/seed/pkg/x.go"
-    git -C "$d/seed" config user.email fixture@example.invalid
-    git -C "$d/seed" config user.name "Fixture Base"
     git -C "$d/seed" add -- pkg/x.go
-    git -C "$d/seed" commit -qm seed
-    git -C "$d/seed" branch -M main
+    git -C "$d/seed" "${SANDBOX_ID[@]}" commit -qm seed
     git -C "$d/seed" push -q origin main
     mkdir -p "$d/parent/packages/cli/src"
     printf 'base\n' >"$d/parent/packages/cli/src/x.ts"
     git -C "$d/parent" init -q -b "$branch"
-    git -C "$d/parent" config user.email fixture@example.invalid
-    git -C "$d/parent" config user.name "Fixture Base"
     # protocol.file.allow: git 2.38+ refuses file-transport submodules by
     # default (CVE-2022-39253). The fixture's remotes are local paths.
     git -C "$d/parent" -c protocol.file.allow=always submodule add -q "$d/renet.git" private/renet
     git -C "$d/parent" add -A
-    git -C "$d/parent" commit -qm base
+    git -C "$d/parent" "${SANDBOX_ID[@]}" commit -qm base
     git -C "$d/parent" remote add origin "$d/console.git"
 }
 
