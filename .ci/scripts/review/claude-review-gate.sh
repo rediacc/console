@@ -83,7 +83,7 @@ MANAGED_LABELS=(bug enhancement documentation ci bump-minor bump-none)
 # post-review steps run from a staged copy of .ci alone.
 CREATE_ON_DEMAND_LABELS=(
     "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)"
-    "bump-none|C5DEF5|No user-facing change: merging skips the release entirely (applied by the automated review; a release-worthy commit makes the re-review remove it)"
+    "bump-none|C5DEF5|No user-facing change: merging skips the release (review-applied; removed on release-worthy pushes)"
 )
 
 # Operator directive (2026-07-24): each review pass costs real turns/tokens,
