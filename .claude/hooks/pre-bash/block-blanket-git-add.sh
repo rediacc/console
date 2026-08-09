@@ -48,12 +48,22 @@ SCAN=$(hook_scan_target "$CMD")
 # where the command runs, not what it stages.
 GIT_ADD='(^|[;&|(]|\$\(|`)[[:space:]]*git([[:space:]]+-[A-Za-z-]+([[:space:]]+[^ ;&|]+)?)*[[:space:]]+add[[:space:]]+'
 
-# The three blanket shapes. Each requires the argument to END the command (or be
-# followed by another command), which is what distinguishes `git add -A` from
-# the allowed `git add -A -- <path>`.
-BLANKET_ALL="${GIT_ADD}(-A|--all)[[:space:]]*(\$|[;&|])"
-BLANKET_DOT="${GIT_ADD}\\.[[:space:]]*(\$|[;&|])"
-BLANKET_ROOT="${GIT_ADD}:/[[:space:]]*(\$|[;&|])"
+# What counts as "nothing followed it". End of line, another command, OR a
+# REDIRECTION: `git add -A > /dev/null` and `git add -A 2>&1` stage the entire
+# tree exactly like the bare form, and an earlier version of this guard let both
+# through because `>` was not in the terminator set. Caught in review of PR #566
+# and confirmed by running the guard: all three shapes exited 0.
+END='[[:space:]]*($|[;&|<>]|[0-9]*>)'
+
+# A trailing `--` with NO pathspec after it is also blanket. git treats
+# `git add -A --` as no restriction at all, so the escape this guard advertises
+# (name a pathspec) must actually contain one; an empty pathspec list is the
+# bare form wearing the escape's clothes.
+BARE_DDASH='([[:space:]]+--[[:space:]]*)?'
+
+BLANKET_ALL="${GIT_ADD}(-A|--all)${BARE_DDASH}${END}"
+BLANKET_DOT="${GIT_ADD}\\.${BARE_DDASH}${END}"
+BLANKET_ROOT="${GIT_ADD}:/${BARE_DDASH}${END}"
 
 for pat in "$BLANKET_ALL" "$BLANKET_DOT" "$BLANKET_ROOT"; do
     if printf '%s' "$SCAN" | grep -qE "$pat"; then

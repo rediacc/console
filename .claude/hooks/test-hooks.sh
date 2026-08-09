@@ -154,6 +154,15 @@ check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-gi
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'cd /tmp && git add -A')" "blanket-git-add: after a command separator"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'sh -c "git add -A"')" "blanket-git-add: sh -c wrapper bypass"
+# BYPASSES found by review of PR #566, each confirmed by running the guard before
+# the fix: all three exited 0 while staging the whole tree. Redirection is not a
+# pathspec, and `--` with nothing after it is not a restriction -- git treats an
+# empty pathspec list as no restriction at all, so it is the bare form wearing
+# the escape's clothes.
+check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A > /dev/null')" "blanket-git-add: stdout redirection is not a pathspec"
+check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A 2>&1')" "blanket-git-add: fd redirection is not a pathspec"
+check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A --')" "blanket-git-add: a bare -- with no pathspec is still blanket"
+check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add . > /dev/null')" "blanket-git-add: dot plus redirection"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --title x --body y')" "nondraft-create: console without --draft"
 check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --draft --title x')" "nondraft-create: draft on private submodule"
 check 2 pre-bash/block-admin-merge.sh "$(bash_json 'gh pr merge 531 --squash --admin')" "admin-merge: --admin banned"
@@ -215,6 +224,7 @@ check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json MultiEdit /r/.agent
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- packages/cli/src')" "blanket-git-add: -A WITH a pathspec is the escape, allowed"
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add packages/cli/src/foo.ts')" "blanket-git-add: a named file is allowed"
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git -C private/renet add -A -- pkg/')" "blanket-git-add: -C plus a pathspec is allowed"
+check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- . > /dev/null')" "blanket-git-add CONTROL: a real pathspec WITH redirection is still allowed"
 # CROSS-TALK CONTROL. Two guards match adjacent `git ... add` shapes, and a
 # regex widened by one word would make this one swallow worktree creation --
 # which would then be blocked with the WRONG message and the wrong escape.
