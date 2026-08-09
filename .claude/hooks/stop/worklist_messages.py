@@ -447,6 +447,24 @@ N_CL_FOREIGN = (
     "never blocked on.%s"
 )
 
+# THE OWNER'S ORDER, SAID TO SOMEBODY ELSE, was the bug (found by the automated
+# review on PR #563). Drift used to build ONE body -- V_CL_FLIP, which ends
+# "...in this turn" -- and route it either to a blocking violation or to this
+# advisory, so a session that does not own the handoff read a direct
+# instruction to repair another session's artifacts and header. That is not
+# theoretical: a peer's shared STATE.md was destroyed here by a session obeying
+# an instruction addressed to whoever happened to read it. This constant states
+# the same FACTS and names no action for the reader. V_CL_FLIP keeps its
+# imperative, because on that path the reader IS the owner.
+N_CL_FOREIGN_DRIFT = (
+    "Handoff checklist %s says 'Status: %s' but its artifacts disagree, and it "
+    "is owned by session %s:\n%s\n"
+    "Restoring those artifacts, or writing the honest status, is that session's "
+    "repair to make. Editing another session's checklist header or its files "
+    "from here would overwrite work that is still live. Reported, never blocked "
+    "on."
+)
+
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
     "section. Nothing was written; the previous STATE.md is untouched.\n"

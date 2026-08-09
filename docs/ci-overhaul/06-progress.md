@@ -3298,14 +3298,59 @@ checklist items: once a wave is claimed it rides the worklist store item, whose
 existing ladder and lease machinery already cover it, so nothing new ages
 checklist rows.
 
+Findings are keyed PER CHECKLIST, `<check-class>:<slug>`, built by
+`wl_checklist._ckey`. This is the design rather than a detail because two
+things downstream read the key as an identity and neither degrades gracefully
+when it is shared: the focused block's rotation ties-breaks on
+`order = {v[0]: i for ...}`, a dict comp in which duplicate keys collapse, so
+two violations under one key get identical sort tuples and `min` returns the
+first one on every stop; and `outq_add` finds a non-sticky entry by key alone,
+so a second advisory's body overwrites the first's rather than queueing beside
+it. A shared key therefore starved the second concurrent handoff permanently,
+not for a stop or two, leaving it visible only inside the "N more outstanding"
+count. Scoping costs nothing: the rotation already prunes keys that stop being
+outstanding, so a settled checklist's key leaves `served` on the next stop. The
+prefixes are preserved verbatim (`cl-shape`, `cl-flip`, `cl-producing`,
+`cl-waves`, `cl-foreign`) so a grep on the check class still matches. One key
+stays unscoped, the glob-level fail-closed backstop in `checklist_findings`:
+the glob itself failed, so no slug exists, and that path returns immediately,
+which means at most one such finding can exist per stop. The per-FILE
+fail-closed wrapper beside it is scoped, reading its slug off the path rather
+than out of the parse that just threw.
+
+Drift under a foreign owner gets its OWN message, `N_CL_FOREIGN_DRIFT`, and
+does not reuse `V_CL_FLIP`. Both statuses that can drift (`done` and
+`executing`) used to build one body and route it either to a blocking violation
+or to the `cl-foreign` advisory, which meant a session that does not own the
+handoff was handed the owner's imperative, ending "in this turn". Acting on it
+means editing another session's `Owner:`/`Status:` header or its files; a
+peer's shared `STATE.md` was destroyed here by a session obeying an instruction
+addressed to whoever happened to read it. The advisory now states the same
+facts (checklist, status, owner, the same drift rows), says the repair belongs
+to the owning session, warns that editing it from here would overwrite live
+work, and closes with `Reported, never blocked on.` matching `N_CL_FOREIGN`.
+`V_CL_FLIP` keeps its imperative unchanged, because on that path the reader is
+the owner.
+
+Both were found by the automated review on PR #563, and neither is an accepted
+residual: they are fixed, with the per-slug keying making the "one body per
+slug" claim above true rather than aspirational.
+
 Enforced in `.claude/hooks/stop/wl_checklist.py` (parse, verify, sig, findings)
 wired into `run_stop`, `poll_fast_path`, `bank_pollbase`, `handle_session_start`
-and `handle_post_compact` in `wl_checks.py`, with the eight message constants in
+and `handle_post_compact` in `wl_checks.py`, with the nine message constants in
 `worklist_messages.py` (V_CL_SHAPE, V_CL_UNREADABLE, V_CL_PRODUCING,
-V_CL_PRODUCING_DONE, V_CL_FLIP, V_CL_WAVES, N_CL_FOREIGN, CTX_CHECKLISTS; the
-wave-token format constant is spelled CL_LINK_FMT because ruff S105 fires on
-names containing TOKEN). Suite coverage lands in
+V_CL_PRODUCING_DONE, V_CL_FLIP, V_CL_WAVES, N_CL_FOREIGN, N_CL_FOREIGN_DRIFT,
+CTX_CHECKLISTS; the wave-token format constant is spelled CL_LINK_FMT because
+ruff S105 fires on names containing TOKEN). Suite coverage lands in
 `.claude/hooks/stop/test-worklist-v5.sh` cases 193 onward, house style
 throughout: every blocking case paired with a clean-fixture control, including
 a zero-checklist control that must produce no checklist output at all and a
-stat-only unit call against an unreadable file.
+stat-only unit call against an unreadable file. Cases 204-206 cover the two
+review findings, each verified to FAIL against the unfixed code first: two
+uncovered waves served across two stops, two foreign advisories surviving one
+drain, and the foreign drift wording paired with the same fixture under its
+owner. Case 205 keeps a separate fixture per leg deliberately, because draining
+an advisory latches it in the queue's `shown` ledger and a second checklist
+planted beside an already-shown one is suppressed by the refresh window, which
+looks exactly like the overwrite bug.
