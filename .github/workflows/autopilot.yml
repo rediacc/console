@@ -302,8 +302,12 @@ jobs:
           # filter PER PAGE and concatenates, so a PR past 30 comments wrote
           # two top-level arrays into this file and state-comment.sh select
           # then emitted two verdicts. --slurp wraps the pages first, and
-          # `.[][]` flattens them back into one comment stream.
-          gh api "repos/$REPO/issues/$PR/comments" --paginate --slurp --jq '[.[][] | {id, author: .user.login, body}]' >"$RUNNER_TEMP/fx/comments.json"
+          # `.[][]` flattens them back into one comment stream. The jq step is
+          # a SEPARATE pipe: the runner's gh refuses `--slurp` combined with
+          # `--jq` ("not supported"), which killed the first live dispatch on
+          # 2026-08-09 while the local gh accepted it happily.
+          gh api "repos/$REPO/issues/$PR/comments" --paginate --slurp >"$RUNNER_TEMP/fx/comments.raw.json"
+          jq '[.[][] | {id, author: .user.login, body}]' "$RUNNER_TEMP/fx/comments.raw.json" >"$RUNNER_TEMP/fx/comments.json"
           sel="$(.ci/scripts/autopilot/state-comment.sh select --comments "$RUNNER_TEMP/fx/comments.json" --bot "$BOT")"
           jq -r '.body // ""' <<<"$sel" >"$RUNNER_TEMP/fx/state.txt"
           echo "comment_id=$(jq -r '.id // ""' <<<"$sel")" >>"$GITHUB_OUTPUT"
