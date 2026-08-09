@@ -2541,6 +2541,11 @@ ARITY = {
     "CLI_TRIAGE_SELF": {"id": "i", "me": "m", "why": "", "context": "c",
                         "branch": "b"},
     "TRIAGE_PROMPT": {"finding": "f", "context": "c"},
+    # v20: the /handoff checklist gate (wl_checklist, docs/<slug>/CHECKLIST.md).
+    "V_CL_SHAPE": ("d", "rows"), "V_CL_UNREADABLE": ("e",),
+    "V_CL_PRODUCING": ("s", 0, 1, "rows", "d"), "V_CL_PRODUCING_DONE": ("s", "d"),
+    "V_CL_FLIP": ("d", "executing", "rows", "d"), "V_CL_WAVES": ("s", "d", "rows"),
+    "N_CL_FOREIGN": ("s", "o", ""), "CTX_CHECKLISTS": ("listing",),
     "CTX_PLANS": ("b", "l"), "CTX_PLANS_EXCERPT": ("p", "b"),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
@@ -8179,6 +8184,601 @@ if grep -q "^TIP ''$" <<<"$OUT"; then
     pass "192: the backoff ladder treats an off-minute hourly poll as capped, not unknown"
 else
     fail "192: poll_backoff_tip mis-handled an off-minute hourly poll: $(grep '^TIP' <<<"$OUT")"
+fi
+
+# ---------------------------------------------------------------------------
+# 193-203 v20: the /handoff checklist gate (docs/<slug>/CHECKLIST.md).
+#
+# THE GAP THESE PIN: /handoff wrote a design suite and then TOLD the next
+# session, in prose inside PROMPT.md, to seed the worklist. Prose gates
+# nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped
+# program work silently. CHECKLIST.md is the machine-readable half, and its
+# two halves are enforced by DIFFERENT means: deliverables are FILE-VERIFIED
+# (the tick is bookkeeping, the file is the truth) while waves are
+# tick-on-trust with store linkage through the `cl:<slug>/<wN>` token. Every
+# case below is paired with a clean-fixture control, because a gate nobody has
+# watched stay silent is a gate nobody knows fires for the right reason.
+
+clfile() { # clfile <slug>  -- body on stdin, written to docs/<slug>/CHECKLIST.md
+    mkdir -p "$BASE/proj/docs/$1"
+    cat >"$BASE/proj/docs/$1/CHECKLIST.md"
+}
+
+cldeliver() { # cldeliver <relpath> [content] -- a deliverable file under the repo
+    mkdir -p "$BASE/proj/$(dirname "$1")"
+    printf '%s' "${2-x}" >"$BASE/proj/$1"
+}
+
+echo "== 193. ZERO OVERHEAD: a repo with no checklist never hears the word =="
+# The cost claim in wl_checklist's docstring is that a repo keeping no
+# handoffs pays one glob and says nothing. That is only half a control: a
+# silent gate and a dead gate look identical from here, so the second leg
+# plants one checklist into the SAME fixture and demands the words appear.
+setup
+say "done for now"
+brief_now
+hand_now
+OUT="$(run)"
+if ! grep -qi "handoff" <<<"$OUT" && ! grep -qF "CHECKLIST" <<<"$OUT"; then
+    pass "193: no docs/<slug>/CHECKLIST.md means not one word about handoffs"
+else
+    fail "193: the gate talked about checklists that do not exist: ${OUT:0:300}"
+fi
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: producing
+Owner: deadbeef
+
+## Deliverables
+- [ ] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF "docs/demo/CHECKLIST.md" <<<"$OUT" && grep -qi "handoff" <<<"$OUT"; then
+    pass "193 CONTROL-FOR-THE-CONTROL: one planted checklist and the same fixture speaks"
+else
+    fail "193 CONTROL: the silence above was a DEAD gate, not a cheap one: ${OUT:0:300}"
+fi
+
+echo "== 194. producing + a missing deliverable blocks its OWNER =="
+setup
+say "done for now"
+brief_now
+hand_now
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: producing
+Owner: deadbeef
+
+## Deliverables
+- [ ] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF "DO NOT VERIFY" <<<"$OUT" && grep -qF "d1 docs/demo/README.md -- MISSING" <<<"$OUT"; then
+    pass "194: the producing owner is blocked, and the row names the file and the verdict"
+else
+    fail "194: the producing block did not name the missing deliverable: ${OUT:0:400}"
+fi
+check "194: and the decision is block, not a note on an allowed stop" block "0 of 1 are present"
+
+echo "== 194b. producing + everything verified: ONE step left, and it is the flip =="
+cldeliver docs/demo/README.md "the readme"
+OUT="$(run)"
+if grep -qF "ONE step remains and it is the flip" <<<"$OUT" &&
+    grep -qF "'Status: producing' to 'Status: executing'" <<<"$OUT" &&
+    ! grep -qF "DO NOT VERIFY" <<<"$OUT"; then
+    pass "194b: a verified producing checklist demands the status flip, nothing else"
+else
+    fail "194b: the flip demand is wrong: ${OUT:0:400}"
+fi
+
+echo "== 195. a FOREIGN producing checklist is reported, never blocked on =="
+setup
+say "done for now"
+brief_now
+hand_now
+export WORKLIST_REPORT_PER_STOP=6
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: producing
+Owner: cafe0000
+
+## Deliverables
+- [ ] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF '"decision": "block"' <<<"$OUT" &&
+    grep -qF "that session's to finish" <<<"$OUT"; then
+    pass "195: another session's producing handoff rides the report and blocks nobody"
+else
+    fail "195: a foreign producing checklist was mis-adjudicated: ${OUT:0:400}"
+fi
+if ! grep -qF "adopt it by editing" <<<"$OUT"; then
+    pass "195 CONTROL: a LIVE owner gets no adoption hint (that would be a land grab)"
+else
+    fail "195 CONTROL: the adoption hint fired on a live owner: ${OUT:0:400}"
+fi
+
+echo "== 195b. the same checklist, owner's transcript DEAD: adopt or supersede =="
+# projects_dir is the transcript's own directory (wl_checks.py:1678), so an
+# aged cafe0000*.jsonl beside the fixture transcript is exactly what
+# owner_age_hours reads. Planted rather than mocked, for that reason.
+touch -d '-48 hours' "$BASE/cafe0000-dead.jsonl"
+OUT="$(run)"
+if grep -qF "adopt it by editing the 'Owner:' line" <<<"$OUT" &&
+    grep -qF "docs/demo/CHECKLIST.md" <<<"$OUT" && grep -qF "superseded" <<<"$OUT"; then
+    pass "195b: a dead owner turns the advisory into an adoption offer"
+else
+    fail "195b: no adoption hint for an abandoned handoff: ${OUT:0:500}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 196. TICKED but missing: the file is the truth, the tick is bookkeeping =="
+# The wave is claimed by a peer rather than ticked, so the deliverable check
+# is the ONLY thing that can speak here and the control below is a real allow
+# instead of a different violation wearing the same fixture.
+setup
+say "done for now"
+brief_now
+hand_now
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+as_peer cafe0000 reqcli --add cafe0000 "cl:demo/w1 Wave A: wire the thing" >/dev/null
+OUT="$(run)"
+if grep -qF "reality disagrees" <<<"$OUT" &&
+    grep -qF "d1 docs/demo/README.md -- MISSING" <<<"$OUT"; then
+    pass "196: a ticked box does not save a deliverable that is not on disk"
+else
+    fail "196: the ticked-but-missing deliverable passed: ${OUT:0:400}"
+fi
+
+echo "== 196b. EMPTY is not MISSING, and the row says which =="
+cldeliver docs/demo/README.md ""
+OUT="$(run)"
+if grep -qF "d1 docs/demo/README.md -- EMPTY" <<<"$OUT" &&
+    ! grep -qF -- "-- MISSING" <<<"$OUT"; then
+    pass "196b: a 0-byte deliverable reads as EMPTY, distinctly from MISSING"
+else
+    fail "196b: the truncated deliverable was mis-named: ${OUT:0:400}"
+fi
+cldeliver docs/demo/README.md "the readme"
+check "196b CONTROL: a non-empty file clears the check entirely" allow ""
+
+echo "== 197. an UNCOVERED wave blocks, and carries its own one-command exit =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF "w1 UNCOVERED" <<<"$OUT" && grep -qF "cl:demo/w1" <<<"$OUT" &&
+    grep -qF -- "--add deadbeef 'cl:demo/w1 Wave A: wire the thing'" <<<"$OUT"; then
+    pass "197: the uncovered wave names its token and the exact --add that claims it"
+else
+    fail "197: the uncovered wave has no runnable exit: ${OUT:0:500}"
+fi
+
+echo "== 197b. claiming it with --add moves the work into the ORDINARY open-items check =="
+# DISJOINTNESS, not merely absence: the cl-waves needle must go while the
+# open-item it created appears, because a gate that stopped firing AND took
+# the work with it would look identical from a one-needle assertion.
+reqcli --add deadbeef "cl:demo/w1 Wave A: wire the thing" >/dev/null
+export WORKLIST_FOCUS=off
+OUT="$(run)"
+if ! grep -qF "UNCOVERED" <<<"$OUT" && grep -qF "OPEN worklist item" <<<"$OUT" &&
+    grep -qF "cl:demo/w1" <<<"$OUT"; then
+    pass "197b: a claimed wave stops blocking as a wave and starts blocking as an item"
+else
+    fail "197b: coverage either did not register or swallowed the work: ${OUT:0:500}"
+fi
+unset WORKLIST_FOCUS
+
+echo "== 197c. a PEER's item covers the wave for everybody, which is the point =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+as_peer cafe0000 reqcli --add cafe0000 "cl:demo/w1 Wave A: wire the thing" >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF "UNCOVERED" <<<"$OUT" && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "197c: once ANY session claims the wave, the redundant block on the others lifts"
+else
+    fail "197c: a peer-claimed wave still blocked this session: ${OUT:0:400}"
+fi
+
+echo "== 198. DONE-BUT-UNTICKED: the store settled it, the box did not =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+IID=$(reqcli --add deadbeef "cl:demo/w1 Wave A: wire the thing" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --tick deadbeef "$IID" "wave A landed, suite run green, exit 0" >/dev/null
+OUT="$(run)"
+if grep -qF "w1 DONE-BUT-UNTICKED" <<<"$OUT" && grep -qF "#$IID" <<<"$OUT" &&
+    grep -qF "tick '- [x] w1' in docs/demo/CHECKLIST.md" <<<"$OUT"; then
+    pass "198: a ticked store item with an unticked box is called out with the box to tick"
+else
+    fail "198: the settled wave did not demand its tick: ${OUT:0:500}"
+fi
+
+echo "== 198b. every box ticked under 'executing' means the status is stale =="
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF "everything is settled; set 'Status: done'" <<<"$OUT"; then
+    pass "198b: an all-settled executing checklist is asked for the last edit it needs"
+else
+    fail "198b: a finished program was left at executing forever: ${OUT:0:400}"
+fi
+
+echo "== 199. 'done' is INACTIVE, and is gated on being honestly done =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF "CHECKLIST" <<<"$OUT" && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "199: a genuinely done handoff costs a later session nothing at all"
+else
+    fail "199: a done checklist is still talking: ${OUT:0:400}"
+fi
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF "reality disagrees" <<<"$OUT" &&
+    grep -qF "wave w1 is not ticked, yet the checklist claims done" <<<"$OUT"; then
+    pass "199: 'done' with an unticked wave is a lie the next session would believe"
+else
+    fail "199: a dishonest done header passed: ${OUT:0:400}"
+fi
+
+echo "== 199b. 'superseded' is the terminal escape and adjudicates nothing =="
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: superseded
+
+## Deliverables
+- [ ] d1 file:docs/demo/GONE.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF "CHECKLIST" <<<"$OUT" && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "199b: an abandoned program stops costing anything the moment it says so"
+else
+    fail "199b: superseded still adjudicated: ${OUT:0:400}"
+fi
+
+echo "== 200. the SHAPE gate collects every defect, and scopes itself to the bad file =="
+# One error per stop would cost one turn per typo, so the parser collects them
+# all. The clean checklist alongside is the control: a malformed file must not
+# smear its verdict over its neighbours.
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/good/README.md "the readme"
+clfile good <<'MD'
+# Handoff checklist: good
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/good/README.md
+
+## Waves
+- [x] w1 Wave A: the finished one
+MD
+clfile broken <<'MD'
+# Handoff checklist: broken
+Owner: deadbeef
+
+## Deliverables
+- [ ] d1 nothing verifies this one
+- [ ] d1 file:docs/broken/README.md
+- [ ] w9 a wave id under the deliverables
+
+## Waves
+- [z] w1 a state character that does not exist
+MD
+OUT="$(run)"
+NROWS=0
+for needle in "no 'Status:' line in the first 10 lines" \
+    "does not belong under that section" \
+    "carries no 'file:<path>' token" \
+    "duplicate id 'd1'" \
+    "not a checklist item"; do
+    grep -qF "$needle" <<<"$OUT" && NROWS=$((NROWS + 1))
+done
+if grep -qF "is MALFORMED" <<<"$OUT" && [[ "$NROWS" -ge 3 ]]; then
+    pass "200: the malformed checklist blocks and reports $NROWS defects in one pass"
+else
+    fail "200: shape diagnosis is thin (rows=$NROWS): ${OUT:0:600}"
+fi
+if grep -qF "docs/broken/CHECKLIST.md is MALFORMED" <<<"$OUT" &&
+    ! grep -qF "docs/good/CHECKLIST.md" <<<"$OUT"; then
+    pass "200 CONTROL: the clean checklist beside it is never mentioned"
+else
+    fail "200 CONTROL: the shape verdict smeared onto a healthy file: ${OUT:0:600}"
+fi
+
+echo "== 201. the poll fast path FORFEITS on a live checklist, stat-only =="
+# The banked pollbase carries clsig and cl_live (wl_checks.bank_pollbase).
+# Leg 1 banks a LIVE-but-non-blocking world (wave claimed by a peer), so
+# cl_live=1 with an unchanged signature -- which is the only thing that can
+# make the silent path forfeit here. Legs 2 and 3 are the controls: the same
+# dance with no checklist at all, and with a settled one, must stay silent.
+setup
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+as_peer cafe0000 reqcli --add cafe0000 "cl:demo/w1 Wave A: wire the thing" >/dev/null
+say "answer
+
+## Remaining
+- nothing of mine"
+check "201: the full stop allows and banks the checklist world" allow ""
+BANK="$(cat "${WL%.md}.pollbase-deadbeef")"
+if grep -qF '"cl_live": 1' <<<"$BANK" && grep -qE '"clsig": "[0-9a-f]{16}"' <<<"$BANK"; then
+    pass "201: the pollbase banks the live count beside a stat-only signature"
+else
+    fail "201: the checklist world was not banked: $BANK"
+fi
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if [[ -n "$OUT" ]]; then
+    pass "201: a live checklist forfeits the silent poll even with an unchanged world"
+else
+    fail "201: the poll went silent while a live handoff was outstanding"
+fi
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+- nothing of mine"
+check "201 CONTROL: baseline stop with no checklist at all" allow ""
+if grep -qF '"cl_live": 0' <<<"$(cat "${WL%.md}.pollbase-deadbeef")"; then
+    pass "201 CONTROL: a repo with no handoffs banks cl_live=0, which is what keeps polls free"
+else
+    fail "201 CONTROL: an empty repo banked a live count: $(cat "${WL%.md}.pollbase-deadbeef")"
+fi
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    pass "201 CONTROL: with no checklist the poll stop is still perfectly silent"
+else
+    fail "201 CONTROL: the gate broke the silent path for everyone: rc=$RC '${OUT:0:200}'"
+fi
+setup
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+say "answer
+
+## Remaining
+- nothing of mine"
+check "201 CONTROL: baseline stop with a SETTLED checklist" allow ""
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 && -z "$OUT" ]]; then
+    pass "201 CONTROL: a done program costs polls nothing, exactly as promised"
+else
+    fail "201 CONTROL: a settled checklist still charged the poll: rc=$RC '${OUT:0:200}'"
+fi
+# The banked cl_live is still 0, so the ONLY thing that can forfeit the silent
+# path on the next poll is the moved signature -- and the battery it pays for
+# is what catches the un-tick this edit smuggled in.
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+reqcli --poll deadbeef >/dev/null
+OUT="$(run)"
+if grep -qF "reality disagrees" <<<"$OUT"; then
+    pass "201: a MOVED signature forfeits too, so an edited checklist cannot hide behind a poll"
+else
+    fail "201: an edited checklist slipped past the poll fast path: '${OUT:0:200}'"
+fi
+
+echo "== 202. checklists_sig() is STAT-ONLY, and the unreadable file proves it =="
+# A contract, not an optimisation: the poll path compares this value, and a
+# version that opened files would pay exactly the cost the fast path exists to
+# avoid. A chmod-000 checklist is the instrument -- stat still answers where
+# read cannot, so the signature must come back while the ADJUDICATION (which
+# does read) fails closed into the ALWAYS-tier unreadable violation.
+setup
+mkdir -p "$BASE/proj/docs/locked"
+printf 'Status: executing\n' >"$BASE/proj/docs/locked/CHECKLIST.md"
+chmod 000 "$BASE/proj/docs/locked/CHECKLIST.md"
+OUT=$(
+    cd "$(dirname "$HOOK")" && CLROOT="$BASE/proj" python3 - <<'PYEOF'
+import os
+import sys
+
+sys.path.insert(0, ".")
+import wl_checklist as CL
+
+root = os.environ["CLROOT"]
+path = os.path.join(root, "docs", "locked", "CHECKLIST.md")
+try:
+    open(path).read()
+    print("READABLE yes")
+except OSError:
+    print("READABLE no")
+print("SIG", CL.checklists_sig(root))
+v, a, live = CL.checklist_findings(root, None, "deadbeef-1111", "")
+print("V", v[0][0], v[0][1], live)
+print("TEXT", "THIS IS A HOOK BUG" in v[0][2])
+PYEOF
+)
+chmod 644 "$BASE/proj/docs/locked/CHECKLIST.md"
+if grep -q "^READABLE no$" <<<"$OUT"; then
+    pass "202 CONTROL: the fixture really is unreadable, so the leg below means something"
+else
+    fail "202 CONTROL: chmod 000 did not deny this process (running as root?): ${OUT:0:200}"
+fi
+if grep -qE "^SIG [0-9a-f]{16}$" <<<"$OUT"; then
+    pass "202: checklists_sig returns a signature for a file it may not open"
+else
+    fail "202: the stat-only signature raised or came back malformed: ${OUT:0:300}"
+fi
+if grep -q "^V cl-shape True 1$" <<<"$OUT" && grep -q "^TEXT True$" <<<"$OUT"; then
+    pass "202: and the reading half fails CLOSED, ALWAYS-tier, naming itself a hook bug"
+else
+    fail "202: an unreadable checklist did not fail closed: ${OUT:0:300}"
+fi
+rm -f "$BASE/proj/docs/locked/CHECKLIST.md"
+
+echo "== 203. SessionStart hands a new session the live checklists =="
+setup
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+Owner: cafe0000
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+- [ ] w2 Wave B: land the rest
+MD
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --session-start 2>/dev/null)"
+if grep -qF "LIVE HANDOFF CHECKLISTS" <<<"$out" &&
+    grep -qF "docs/demo/CHECKLIST.md [executing] owner=cafe0000 deliverables 1/1 verified, waves 1/2 settled" <<<"$out"; then
+    pass "203: the listing carries status, owner and both progress fractions"
+else
+    fail "203: SessionStart did not hand back the live checklist: ${out:0:400}"
+fi
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: done
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --session-start 2>/dev/null)"
+if ! grep -qF "LIVE HANDOFF CHECKLISTS" <<<"$out"; then
+    pass "203 CONTROL: a settled checklist is not context anyone needs handed back"
+else
+    fail "203 CONTROL: the listing surfaced a done handoff: ${out:0:400}"
 fi
 
 echo
