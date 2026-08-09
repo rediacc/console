@@ -180,3 +180,19 @@ failing job with a `/runs/` URL, but it is a check-run posted by a separate
 workflow. Read `.output.summary` on the commit's check-runs to see what it
 actually says.
 
+
+## `git diff <branch>` reads as DELETED for a file the worktree never tracked
+
+When a wave builds its branch with PLUMBING (temp `GIT_INDEX_FILE` + `write-tree` +
+`commit-tree` + `update-ref`) so that HEAD can stay put in a checkout shared with
+live peer sessions, the branch new files are UNTRACKED relative to HEAD.
+`git diff --stat <branch> -- <path>` then compares the branch against the INDEX,
+where an untracked file is simply absent, and reports the entire file as deleted.
+Observed 2026-08-09 on branch 0809-2: a healthy 462-line `wl_checklist.py` printed
+`1 file changed, 462 deletions(-)` while sitting intact on disk, and the reflex read
+is that a sub-agent deleted it. Nothing was damaged; the INSTRUMENT was wrong.
+Ask the content, not the index:
+`git show <branch>:<path> | diff - <path>`, or stage into the temp index and use
+`git diff-index --cached --name-status <branch>`. Same class as a failed existence
+check with the wrong path: a query that cannot see the thing it is asking about
+answers confidently and wrongly.
