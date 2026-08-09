@@ -39,6 +39,16 @@ between the two implementations into a visible one. The gate test
 (.ci/scripts/test/gates/test-runner-advice.sh) drives real awk output through
 classify() for three profiles to pin the agreement.
 
+WHICH ROWS ARE BELIEVED. usable() below defers entirely to the row's own
+`verdict=` token: report.awk owns the trust decision, because only it can see
+the container fingerprint and the runner environment. The first real harvest
+(2026-08-09) seeded ZERO jobs for exactly this reason -- every ubuntu-latest row
+came back `tier=PROC_HOST runner_label=unknown verdict=NONE`, since
+setup-workspace does not thread runner-label and the advisor refused to speak.
+The fix was in report.awk (a github-hosted VM with no container fingerprint is
+an exclusive machine, so its /proc numbers are the job's own), not here: this
+file simply stopped being handed NONE for the majority of the fleet.
+
 KNOWN COUPLING. classify() uses the DEFAULT thresholds report.awk assumes
 (840 s declared, 900 s hard cap). panel.sh can forward per-job overrides via
 PROFILER_DECLARED_S / PROFILER_HARD_S, and a job that does so would have its
@@ -154,21 +164,33 @@ def runs_on(workflow_dir):
 def classify(rec):
     """The verdict report.awk's advise() would reach from the same numbers.
 
-    The PROC_HOST-plus-container-fingerprint branch of advise() is deliberately
-    absent: it yields NONE, and --refresh drops NONE rows, so a record carrying
-    that shape never reaches this function.
+    `env` IS LOAD-BEARING HERE, and leaving it out silently undoes the whole
+    hosted-VM arm. Every ubuntu-latest job reports `runner_label=unknown`
+    (setup-workspace does not thread the label), so without consulting env this
+    function would re-derive NONE for precisely the records report.awk just
+    started producing verdicts for: the baseline would seed and the gate would
+    then fire on none of it.
+
+    The PROC_HOST-plus-container-fingerprint branch of advise() is still
+    deliberately absent. It yields NONE, usable() drops NONE rows, so a record
+    carrying that shape never reaches this function -- which is also why
+    trusting env here is not weaker than trusting it there: the fingerprint has
+    already been consulted, upstream, by the only code that can see it.
     """
     tier = rec.get("tier", "")
     label = rec.get("runner_label", "")
+    env = rec.get("env", "unknown")
     cpu_peak = int(rec.get("cpu_peak_milli", 0))
     mem_peak = int(rec.get("mem_peak_bytes", 0))
     wall = int(rec.get("wall_s", 0))
     cpu_ceil = int(rec.get("cpu_ceil_milli", 0))
     mem_ceil = int(rec.get("mem_ceil_bytes", 0))
 
+    hosted_vm = tier == "PROC_HOST" and env == "github-hosted" and "slim" not in label
+
     if tier == "HOST_LEAK":
         return "NONE"
-    if tier == "PROC_HOST" and label in ("", "unknown"):
+    if tier == "PROC_HOST" and label in ("", "unknown") and not hosted_vm:
         return "NONE"
     if tier == "PROC_HOST" and "slim" in label:
         return "NONE"
@@ -352,6 +374,24 @@ def controls(pairs):
             "all) rather than as an advisory"
         )
 
+    # The hosted-VM arm, in both directions. Every ubuntu-latest job reports
+    # runner_label=unknown, so this pair is what stands between the trust arm
+    # working and the gate silently re-muting itself on the majority runner.
+    hosted = {
+        "%s:__control_move__" % workflow: dict(
+            fits_slim, runner_label="unknown", env="github-hosted"
+        )
+    }
+    problems, _ = verdicts(hosted, probe, set())
+    if not problems:
+        return (
+            "planted an unlabelled github-hosted VM that fits slim and the detector stayed silent"
+        )
+    unattributable = {"%s:__control_move__" % workflow: dict(fits_slim, runner_label="unknown")}
+    problems, _ = verdicts(unattributable, probe, set())
+    if problems:
+        return "planted an unlabelled row with no github-hosted evidence and the detector fired on it anyway"
+
     suppressed = verdicts(on_latest, probe, {"%s:__control_move__" % workflow})[0]
     if suppressed:
         return "planted an allowlisted MOVE job and the detector complained anyway"
@@ -403,7 +443,12 @@ def gh_json(args, root):
 
 
 def parse_row(message):
-    """A PROFILER_BASELINE_V1 annotation body -> its key/value dict, or None."""
+    """A PROFILER_BASELINE_V1 annotation body -> its key/value dict, or None.
+
+    `env` is OPTIONAL and defaults to "unknown": rows harvested from runs that
+    predate the RUNNER_ENVIRONMENT field still parse, and they default to the
+    untrusted side rather than being retroactively believed.
+    """
     idx = message.find(ROW_MARKER)
     if idx < 0:
         return None
@@ -414,7 +459,95 @@ def parse_row(message):
             fields[key] = value
     if "job" not in fields or "verdict" not in fields:
         return None
+    fields.setdefault("env", "unknown")
     return fields
+
+
+def usable(fields):
+    """Whether a harvested row may enter the baseline.
+
+    THE VERDICT IS THE TRUST DECISION, so this defers to it rather than
+    re-litigating it. report.awk decides what is measurable from the tier, the
+    label, the container fingerprint and RUNNER_ENVIRONMENT; a github-hosted VM
+    now yields a real verdict, which is the whole point of the hosted-VM arm,
+    and that is how PROC_HOST rows reach the baseline.
+
+    What this deliberately does NOT do is accept verdict=NONE when
+    env=github-hosted. That reads like the same rule and is a fail-open: the
+    remaining ways a github-hosted row lands on NONE are a container
+    fingerprint and a slim label over host-sized limits -- the two shapes where
+    the numbers belong to the machine rather than the job. This function
+    receives strictly LESS evidence than advise() did (the row carries no
+    container hint), so overruling its refusal here would mean deciding from
+    less information that a reading nobody could attribute is attributable.
+    """
+    if fields.get("findings", "0") != "0":
+        return False
+    if fields.get("tier") == "HOST_LEAK":
+        return False
+    return fields["verdict"] != "NONE"
+
+
+def merge_rows(rows, where):
+    """Fold harvested rows into per-job maxima. Pure, so the gate test can drive it.
+
+    Returns (merged, contributing, warnings): the baseline records, the set of
+    run ids that contributed to each, and anything worth printing.
+    """
+    merged = {}
+    contributing = {}
+    warnings = []
+    for run_id, fields in rows:
+        if not usable(fields):
+            continue
+        job = fields["job"]
+        candidates = where.get(job, set())
+        if len(candidates) != 1:
+            warnings.append(
+                "job %r resolves to %d workflow file(s); skipped, because a measurement "
+                "filed under the wrong workflow is worse than a missing one"
+                % (job, len(candidates))
+            )
+            continue
+        workflow = next(iter(candidates))
+        key = "%s:%s" % (workflow, job)
+        rec = merged.setdefault(
+            key,
+            {
+                "workflow": workflow,
+                "runner_label": fields.get("runner_label", "unknown"),
+                "tier": fields.get("tier", "UNKNOWN"),
+                "env": fields.get("env", "unknown"),
+                "cpu_peak_milli": 0,
+                "mem_peak_bytes": 0,
+                "wall_s": 0,
+                "cpu_ceil_milli": 0,
+                "mem_ceil_bytes": 0,
+                "observed_runs": 0,
+            },
+        )
+        for name in INT_FIELDS:
+            try:
+                value = int(fields.get(name, 0))
+            except ValueError:
+                value = 0
+            rec[name] = max(rec[name], value)
+        rec["runner_label"] = fields.get("runner_label", rec["runner_label"])
+        rec["tier"] = fields.get("tier", rec["tier"])
+        rec["env"] = fields.get("env", rec["env"])
+        contributing.setdefault(key, set()).add(run_id)
+        # The row's own token against this file's re-derivation. Disagreement is
+        # the two implementations of advise() having drifted apart, which is
+        # invisible at every other moment.
+        if classify(rec) != fields["verdict"]:
+            warnings.append(
+                "%s reported verdict=%s but classify() re-derives %s from the merged "
+                "maxima; report.awk and check_runner_advice.py may have drifted"
+                % (key, fields["verdict"], classify(rec))
+            )
+    for key, rec in merged.items():
+        rec["observed_runs"] = len(contributing[key])
+    return merged, contributing, warnings
 
 
 def harvest(root, branch, event, limit):
@@ -487,58 +620,9 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
         print("refresh found no runs on branch %r; baseline untouched" % branch, file=sys.stderr)
         return 1
 
-    merged = {}
-    contributing = {}
-    for run_id, fields in rows:
-        if fields["verdict"] == "NONE" or fields.get("tier") == "HOST_LEAK":
-            continue
-        if fields.get("findings", "0") != "0":
-            continue
-        job = fields["job"]
-        candidates = where.get(job, set())
-        if len(candidates) != 1:
-            print(
-                "  WARNING: job %r resolves to %d workflow file(s); skipped, because a "
-                "measurement filed under the wrong workflow is worse than a missing one"
-                % (job, len(candidates)),
-                file=sys.stderr,
-            )
-            continue
-        workflow = next(iter(candidates))
-        key = "%s:%s" % (workflow, job)
-        rec = merged.setdefault(
-            key,
-            {
-                "workflow": workflow,
-                "runner_label": fields.get("runner_label", "unknown"),
-                "tier": fields.get("tier", "UNKNOWN"),
-                "cpu_peak_milli": 0,
-                "mem_peak_bytes": 0,
-                "wall_s": 0,
-                "cpu_ceil_milli": 0,
-                "mem_ceil_bytes": 0,
-                "observed_runs": 0,
-            },
-        )
-        for name in INT_FIELDS:
-            try:
-                value = int(fields.get(name, 0))
-            except ValueError:
-                value = 0
-            rec[name] = max(rec[name], value)
-        rec["runner_label"] = fields.get("runner_label", rec["runner_label"])
-        rec["tier"] = fields.get("tier", rec["tier"])
-        contributing.setdefault(key, set()).add(run_id)
-        # The row's own token against this file's re-derivation. Disagreement is
-        # the two implementations of advise() having drifted apart, which is
-        # invisible at every other moment.
-        if classify(rec) != fields["verdict"]:
-            print(
-                "  WARNING: %s reported verdict=%s but classify() re-derives %s from the "
-                "merged maxima; report.awk and check_runner_advice.py may have drifted"
-                % (key, fields["verdict"], classify(rec)),
-                file=sys.stderr,
-            )
+    merged, _contributing, warnings = merge_rows(rows, where)
+    for warning in warnings:
+        print("  WARNING: %s" % warning, file=sys.stderr)
 
     if not merged:
         print(
@@ -548,9 +632,6 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
             file=sys.stderr,
         )
         return 1
-
-    for key, rec in merged.items():
-        rec["observed_runs"] = len(contributing[key])
 
     data = json.loads(baseline_path.read_text(encoding="utf-8"))
     data["jobs"] = dict(sorted(merged.items()))
