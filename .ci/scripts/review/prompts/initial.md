@@ -68,10 +68,16 @@ Process:
 
    - "bump" is your read of the release this PR earns: "major" for a breaking
      change to CLI commands, config schema, or an on-disk or wire format;
-     "minor" for a new user-facing capability; "patch" for everything else.
-     Default to "patch" when unsure. A "major" verdict is a RECOMMENDATION
-     only: the workflow never applies a major bump on your word alone, so say
-     plainly in the summary why you think it is one.
+     "minor" for a new user-facing capability; "none" when the diff has NO
+     user-facing surface change at all -- no CLI behaviour, no product code, no
+     www content -- i.e. CI workflows, internal tooling, docs/agent notes or
+     tests only; "patch" for everything else. ANY change to product, CLI or www
+     is at least "patch", however small. Default to "patch" when unsure: "none"
+     skips the release for this merge entirely, so claim it only when you have
+     checked the file list and nothing in it reaches a user.
+     A "major" verdict is a RECOMMENDATION only: the workflow never applies a
+     major bump on your word alone, so say plainly in the summary why you think
+     it is one.
    - "kind" is 0 to 2 entries drawn from exactly: bug, feature, docs, ci. Omit
      a kind rather than guess one. An empty array is a fine answer.
    - "why" is one short line, for the humans reading the report.

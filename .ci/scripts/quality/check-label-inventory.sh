@@ -83,6 +83,13 @@ CREATE_ON_DEMAND=(
     # length of one PR and fail direction (b). Create-on-demand dissolves both
     # halves.
     "ci|.ci/scripts/review/claude-review-gate.sh"
+    # BLOCKER: bump-none is in exactly the position `ci` was. The same applier
+    # creates it immediately before its first use, and the same ordering trap
+    # applies in both directions: declaring it here without creating it fails
+    # direction (a) until a human runs `gh label create`, while creating it up
+    # front leaves it live and undeclared for the length of one PR and fails
+    # direction (b), because the applier only reaches main after this file does.
+    "bump-none|.ci/scripts/review/claude-review-gate.sh"
 )
 
 [ -f "$LABELS_FILE" ] || {

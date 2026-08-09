@@ -394,7 +394,7 @@ test_out_of_range_bump_is_rejected() {
     setup "$t"
     execution_file "$t" "$(report_with_verdict '{"bump": "epic", "kind": ["bug"], "why": "x"}')"
     run_apply "$t"
-    assert_eq "$(added "$t")" "" "a bump value outside patch|minor|major invalidates the verdict"
+    assert_eq "$(added "$t")" "" "a bump value outside none|patch|minor|major invalidates the verdict"
     assert_not_contains "$(cat "$t/capture.txt")" "epic" "and the invented value never leaves the script"
     log_pass "PLANTED bump=epic => verdict rejected whole"
 }
@@ -494,20 +494,35 @@ test_create_on_demand_metadata_matches_the_declaration() {
     # staged copy of .ci alone), so the colour and description are duplicated in
     # the script. A duplicate with no gate drifts, and a drifted colour is a
     # label that looks foreign in the UI forever.
-    local script_color script_desc yml_color yml_desc
-    script_color="$(sed -n "s/^CREATE_ON_DEMAND_COLOR='\(.*\)'$/\1/p" "$UNDER_TEST")"
-    script_desc="$(sed -n "s/^CREATE_ON_DEMAND_DESC='\(.*\)'$/\1/p" "$UNDER_TEST")"
-    [[ -n "$script_color" && -n "$script_desc" ]] ||
-        log_fail "CREATE_ON_DEMAND_COLOR/DESC are no longer parseable out of claude-review-gate.sh"
-    yml_color="$(awk '/^- name: ci$/ { found = 1; next }
-                      found && /^- name: / { exit }
-                      found && /^  color: / { gsub(/^  color: "|"$/, ""); print; exit }' "$LABELS_FILE")"
-    yml_desc="$(awk '/^- name: ci$/ { found = 1; next }
-                     found && /^- name: / { exit }
-                     found && /^  description: / { sub(/^  description: "/, ""); sub(/"$/, ""); print; exit }' "$LABELS_FILE")"
-    assert_eq "$script_color" "$yml_color" "the created colour must match .github/labels.yml"
-    assert_eq "$script_desc" "$yml_desc" "the created description must match .github/labels.yml"
-    log_pass "create-on-demand metadata matches the declaration (colour $yml_color)"
+    # EVERY ROW, not just the first. The three scalars became a table when
+    # bump-none arrived needing the same treatment as `ci`, and a check that
+    # only read row one would leave the second row free to drift.
+    local rows row name color desc yml_color yml_desc n=0
+    rows="$(sed -n '/^CREATE_ON_DEMAND_LABELS=(/,/^)$/p' "$UNDER_TEST" |
+        sed -n 's/^ *"\(.*\)"$/\1/p')"
+    [[ -n "$rows" ]] ||
+        log_fail "CREATE_ON_DEMAND_LABELS is no longer parseable out of claude-review-gate.sh"
+    while IFS= read -r row; do
+        [[ -n "$row" ]] || continue
+        name="${row%%|*}"
+        color="${row#*|}"
+        color="${color%%|*}"
+        desc="${row##*|}"
+        yml_color="$(awk -v want="- name: $name" '$0 == want { found = 1; next }
+                          found && /^- name: / { exit }
+                          found && /^  color: / { gsub(/^  color: "|"$/, ""); print; exit }' "$LABELS_FILE")"
+        yml_desc="$(awk -v want="- name: $name" '$0 == want { found = 1; next }
+                         found && /^- name: / { exit }
+                         found && /^  description: / { sub(/^  description: "/, ""); sub(/"$/, ""); print; exit }' "$LABELS_FILE")"
+        [[ -n "$yml_color" ]] ||
+            log_fail "create-on-demand row '$name' names a label .github/labels.yml does not declare"
+        assert_eq "$color" "$yml_color" "$name: the created colour must match .github/labels.yml"
+        assert_eq "$desc" "$yml_desc" "$name: the created description must match .github/labels.yml"
+        n=$((n + 1))
+    done <<<"$rows"
+    [[ "$n" -ge 2 ]] ||
+        log_fail "only $n create-on-demand row(s) checked; ci and bump-none both need one"
+    log_pass "create-on-demand metadata matches the declaration for all $n label(s)"
 }
 
 test_ci_is_on_the_inventory_allowlist() {
@@ -523,6 +538,86 @@ test_ci_is_on_the_inventory_allowlist() {
 # ---------------------------------------------------------------------------
 # Ledger reconciliation -- the property that makes this safe unattended
 # ---------------------------------------------------------------------------
+test_bump_none_verdict_applies_the_label() {
+    # THE FEATURE. "none" means the diff has no user-facing surface, and the
+    # label it applies makes the merge skip the whole release
+    # (.ci/scripts/ci/dispatch-release.sh reads it).
+    local t="$1"
+    setup "$t"
+    execution_file "$t" "$(report_with_verdict '{"bump": "none", "kind": ["ci"], "why": "CI plumbing only"}')"
+    run_apply "$t"
+    assert_exit_code 0 "$LAST_RC" "the arm stays advisory"
+    assert_contains " $(added "$t") " " bump-none " "a none verdict applies bump-none"
+    assert_not_contains " $(added "$t") " " bump-minor " "and nothing else from the bump family"
+    assert_contains "$(ledger "$t")" "bump-none" "the ledger records it, so the next verdict can remove it"
+    log_pass "FIRE: a \"none\" verdict applies bump-none and records it in the ledger"
+}
+
+test_a_release_worthy_verdict_removes_a_stale_bump_none() {
+    # THE OPERATOR'S EXACT CONCERN, and the reason the family needs removal at
+    # all: a PR that was CI-only earns bump-none, then a later commit adds real
+    # product code. The re-review's fresh verdict must win, or a stale
+    # bump-none silently suppresses that PR's release forever.
+    local t="$1"
+    setup "$t"
+    comments_fixture "$t" "$(ledger_comment 900 "$HEAD_SHA" "bump-none,ci")"
+    execution_file "$t" "$(report_with_verdict '{"bump": "patch", "kind": ["feature"], "why": "now touches the CLI"}')"
+    run_apply "$t"
+    assert_contains " $(removed "$t") " " bump-none " "the stale bump-none is REMOVED"
+    assert_contains " $(added "$t") " " enhancement " "and the fresh verdict is applied"
+    assert_not_contains "$(ledger "$t")" "bump-none" "the ledger no longer claims it"
+    log_pass "FIRE: a release-worthy re-review removes a stale bump-none"
+}
+
+test_bump_none_survives_a_re_review_that_still_says_none() {
+    # CONTROL for the case above. Removal must be driven by the NEW verdict, not
+    # by the mere presence of a ledger entry: a second CI-only round must leave
+    # the label in place rather than churning it off and on.
+    local t="$1"
+    setup "$t"
+    comments_fixture "$t" "$(ledger_comment 900 "$HEAD_SHA" "bump-none,ci")"
+    execution_file "$t" "$(report_with_verdict '{"bump": "none", "kind": ["ci"], "why": "still CI only"}')"
+    run_apply "$t"
+    assert_not_contains " $(removed "$t") " " bump-none " "an unchanged verdict must not remove its own label"
+    assert_contains " $(added "$t") " " bump-none " "it is simply re-applied"
+    log_pass "CONTROL: a repeated none verdict leaves bump-none in place"
+}
+
+test_bump_none_is_created_before_first_use() {
+    # Same ordering trap as `ci`: the label is brand new, so the applier creates
+    # it immediately before applying it rather than demanding a human do it.
+    local t="$1"
+    setup "$t"
+    printf '%s\n' bug enhancement documentation bump-minor bump-major full-ci rollback ci \
+        >"$t/fixtures/live-labels.txt"
+    execution_file "$t" "$(report_with_verdict '{"bump": "none", "kind": [], "why": "no user-facing change"}')"
+    run_apply "$t"
+    assert_contains " $(created "$t") " " bump-none " "the missing label is created before use"
+    assert_contains " $(added "$t") " " bump-none " "and then applied"
+    log_pass "bump-none is created on demand, then applied"
+}
+
+test_bump_none_is_on_the_inventory_allowlist() {
+    # Without the entry, bump-none is declared and absent, and
+    # check:ci-label-inventory fails the repo until the first review creates it.
+    grep -qF '"bump-none|.ci/scripts/review/claude-review-gate.sh"' "$INVENTORY_GATE" ||
+        log_fail "check-label-inventory.sh has no CREATE_ON_DEMAND entry for 'bump-none'"
+    grep -qE '^- name: bump-none$' "$LABELS_FILE" ||
+        log_fail ".github/labels.yml does not declare 'bump-none'"
+    log_pass "'bump-none' is declared AND allowlisted as create-on-demand"
+}
+
+test_none_is_in_the_prompt_vocabulary() {
+    # The applier accepts "none"; if the prompt never offers it, the verdict can
+    # never arrive and the whole feature is dead code that still passes its
+    # unit tests.
+    grep -q '"none"' "$INITIAL_PROMPT" ||
+        log_fail "the initial prompt never offers \"none\" as a bump value"
+    grep -q "none|patch|minor|major" "$FOLLOWUP_PROMPT" ||
+        log_fail "the follow-up prompt's bump vocabulary does not include none"
+    log_pass "both prompts offer \"none\", so the verdict the applier accepts can actually be produced"
+}
+
 test_stale_ledger_label_is_removed() {
     local t="$1"
     setup "$t"
@@ -731,6 +826,12 @@ with_temp_dir test_unreadable_file_list_skips_the_mechanical_floor
 
 with_temp_dir test_ci_label_is_created_before_first_use
 
+with_temp_dir test_bump_none_verdict_applies_the_label
+with_temp_dir test_a_release_worthy_verdict_removes_a_stale_bump_none
+with_temp_dir test_bump_none_survives_a_re_review_that_still_says_none
+with_temp_dir test_bump_none_is_created_before_first_use
+test_bump_none_is_on_the_inventory_allowlist
+test_none_is_in_the_prompt_vocabulary
 with_temp_dir test_stale_ledger_label_is_removed
 with_temp_dir test_hand_applied_labels_are_never_removed
 with_temp_dir test_tampered_ledger_cannot_delete_arbitrary_labels
