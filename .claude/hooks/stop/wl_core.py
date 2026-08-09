@@ -321,6 +321,35 @@ def project_root(start):
     return p
 
 
+def projects_dir(root):
+    """Where this repo's session TRANSCRIPTS live, or "" when nothing says.
+
+    ONE definition, for the same reason resolve_session_id is one definition.
+    The Stop hook has always derived this from the event's transcript_path
+    (exact, and it keeps preferring that), but the CLI write path has no event
+    to derive it from and still has to answer "is this section's owner alive?".
+    Two answers to that question is how the drift starts.
+
+    The convention, verified on this machine rather than assumed: the harness
+    writes ~/.claude/projects/<abs-repo-path-with-/-as->/<session-uuid>.jsonl,
+    e.g. /home/muhammed/.claude/projects/-home-muhammed-monorepo-console/.
+
+    Returns "" rather than guessing when the directory is absent: "" means
+    CANNOT SAY, and owner_age_hours already treats that as "unknown owner",
+    which is the conservative direction (unknown never reads as dead by
+    transcript, only by its own section stamp).
+    """
+    env = os.environ.get("WORKLIST_PROJECTS_DIR")
+    if env:
+        return env
+    try:
+        slug = str(pathlib.Path(root).resolve()).replace("/", "-")
+        cand = pathlib.Path.home() / ".claude" / "projects" / slug
+    except (OSError, RuntimeError):
+        return ""
+    return str(cand) if cand.is_dir() else ""
+
+
 # <repo>/.claude/hooks/stop/wl_core.py -> parents[3] is <repo>.
 _HOOK_ROOT_DEPTH = 3
 
