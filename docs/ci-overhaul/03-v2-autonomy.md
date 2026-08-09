@@ -375,6 +375,72 @@ Rollback at any stage: flip the variable (seconds) or revoke the installation (a
 > `ALLOW_PUSH`) and makes the switch-versus-value distinction visible in the name. No
 > variable of either name exists yet, so the rename cost nothing operationally.
 
+### 2026-08-09: S1 to full autonomy in one wave
+
+The staged walk above was written as a ladder to climb one rung at a time. It is not being
+climbed that way. Everything from S2 through S6 lands together, and the reasoning is that the
+rungs were never independent: **S2 is a precondition of S4, not a step before it.** A model
+round that can run while state writes are disarmed pushes a commit, resolves a thread or
+escalates, and then cannot record the round in the ledger, so the next event re-classifies
+from a state comment that never learned the round happened, and the round counter that the
+entire termination proof rests on stops counting. Sitting at S4 with S2 off is not a safer
+intermediate state; it is the one combination with no bound on it at all. The model job's
+`if:` now requires `AUTOPILOT_ALLOW_STATE` alongside `AUTOPILOT_ALLOW_MODEL`, and the
+`model-without-state-guard` invariant pins that structurally rather than trusting the flip
+order.
+
+`AUTOPILOT_ALLOW_SUBMODULES` goes live in this wave too (section 5's push path, landing as
+the second batch of the same change). It stays absent-means-off like every other flag.
+
+**The submodule write path, as built.** The handoff gained an optional `submodules[]`, each
+entry naming one of the four submodule paths (a closed enum), the files to commit inside it,
+and that commit's message. The harness does submodules FIRST and console second, so the
+pointer console publishes always names a commit that is already on its remote. Three details
+are worth recording because they are decisions rather than mechanics:
+
+- **The submodule branch is created at the submodule's CURRENT HEAD, not at `origin/main`.**
+  Section 5's anti-rollback rule is ancestry: only a descendant of the recorded pointer may be
+  committed. Branching at the recorded pointer makes that true by construction, and the
+  harness asserts it with `merge-base --is-ancestor` afterwards anyway. Branching at
+  `origin/main` would silently rebase the round's work onto a different base, which is exactly
+  the stale-checkout case section 5 says must commit nothing.
+- **The gitlink must be declared in the console `files[]`.** A submodule commit is only
+  reachable through the pointer, so a round that pushed the submodule without advancing the
+  pointer would publish a commit nothing references. The validator refuses it, and after
+  staging, the harness re-reads `git ls-files -s` to prove the index holds mode 160000 at
+  exactly the SHA it pushed.
+- **The token scope follows the flag.** With submodules disarmed the post-model token is
+  console-only; arming S6 widens it to all five repos. Section 5 asks for per-ROUND scoping
+  (exactly the repos in that round's handoff), which is not implemented: computing it means
+  parsing the untrusted handoff before the mint, and the flag-shaped approximation keeps the
+  common case narrow without that.
+
+**One gap remains, and it blocks turning the flag on.** The model job checks out the PR head
+with no `submodules:` input, so a live round finds those directories empty and cannot produce
+submodule edits at all. Closing it means giving the pre-model checkout a credential for four
+PRIVATE repositories, which is precisely what section 0 forbids. So the write path is built,
+tested and inert, and the checkout question is a separate decision rather than something to
+be discovered later by flipping the variable. The new `submodule-checkout-pre-model`
+invariant makes the tempting shortcut fail the build instead of shipping.
+
+**No budget flag, deliberately.** Section 9 measured `--max-budget-usd` as a post-hoc stop
+with a 23x overshoot, and a stop that fires mid-round leaves the round's writes half-done
+with no marker, which is the worst shape available. The bounds that actually hold are structural and
+already in place: `--max-turns` (80 for a fix round, 60 for review-response), a 30-minute job
+timeout, the round cap counted from the trusted ledger, and the new stuck-signature refusal.
+Those bound the WORK rather than the spend, which is the right thing to bound when the
+failure mode is thrash rather than cost.
+
+**The escalation latch is now a comment plus a label, never a label alone.** Every way a
+campaign can stop (the model's own `escalate` outcome, a failed round, and the gate's
+terminal no-gos `stuck-signature` and `round-cap`) posts a comment naming the reason before
+applying `autopilot-blocked`. The previous shape latched silently, so the operator's first
+signal that a campaign had ended was noticing that the PR had stopped moving, with the
+model's reason sitting unread in a run log. Relatedly, `escalate` and `no-change` are now
+first-class outcomes of the harness boundary: they exit 0 having staged nothing, instead of
+exiting 1 and painting the round red, which used to fire the generic failure latch and
+discard the escalation's reason on the way past.
+
 ---
 
 ## 9. Cost

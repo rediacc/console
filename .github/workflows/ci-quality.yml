@@ -175,6 +175,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_job_timeout_headroom.py
 
+      # Offline by construction, same split: the committed profiler baseline
+      # against the `runs-on:` in the workflow files. The network lives only in
+      # --refresh, which harvests the profiler's own annotations.
+      - name: Runner sizing advice
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-runner-advice
+
       # Offline by construction: compares the committed record against the
       # secrets each workflow references. The network lives only in --refresh.
       # A hook whose script has been renamed or deleted does not error — it

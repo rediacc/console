@@ -59,6 +59,43 @@
         "maxLength": 400
       }
     },
+    "submodules": {
+      "$comment": "Submodule work for this round, in the order the harness must perform it (03-v2-autonomy.md section 5). Each entry commits and pushes a branch in ONE submodule; the parent's gitlink for that path must ALSO appear in the top-level files[], because the pointer advance is a console change like any other. Gated by AUTOPILOT_ALLOW_SUBMODULES: validate-handoff.cjs rejects this array outright when the flag is off, so the field is inert until the stage is armed. The path enum is closed on purpose -- a submodule the harness does not know is not a path it may write.",
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "files", "message"],
+        "properties": {
+          "path": {
+            "$comment": "Exactly the four submodules of this monorepo, spelled as the parent records them. Held to check-submodule-branches.sh's own hardcoded list.",
+            "enum": [
+              "private/renet",
+              "private/account",
+              "private/elite",
+              "private/homebrew-tap"
+            ]
+          },
+          "files": {
+            "$comment": "Repo-relative to the SUBMODULE, not to console. Same path constraints as the top-level files[]: normalized, no traversal, no absolute paths, and the same denied surfaces.",
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            }
+          },
+          "message": {
+            "$comment": "Commit message for this submodule's commit. Attribution trailers are banned here exactly as they are on the console commit.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        }
+      }
+    },
     "escalation": {
       "type": "object",
       "additionalProperties": false,

@@ -101,6 +101,35 @@ Write exactly one file, `handoff.json`, at the workspace root, schema
   no-change outcome is itself escalated.
 - `commit_message` must carry no attribution trailers.
 
+### Submodules, only when the stage is enabled
+
+`submodules[]` exists in the schema but is refused unless the operator has
+enabled it, and a handoff that declares it while it is off fails the WHOLE
+round. So do not reach for it speculatively: if a red needs a change under
+`private/renet`, `private/account`, `private/elite` or `private/homebrew-tap`
+and the submodule directory is not a real checkout here, that is an
+`escalate`, not a submodule entry.
+
+When it IS available and the submodule is checked out:
+
+```json
+"submodules": [
+  {
+    "path": "private/renet",
+    "files": ["pkg/thing/x.go"],
+    "message": "fix(renet): one-line summary"
+  }
+]
+```
+
+- `files` are relative to the SUBMODULE, and obey the same rules as the
+  top-level `files`: normalized, no traversal, and none of the denied paths.
+- The pointer advance is a console change, so the submodule's path (for
+  example `private/renet`) must ALSO appear in the top-level `files`. A
+  handoff missing that is refused.
+- The harness creates the branch, commits, pushes and opens the submodule PR.
+  You never run git.
+
 ## Economy
 
 You have a bounded turn budget and this PR has a bounded round budget

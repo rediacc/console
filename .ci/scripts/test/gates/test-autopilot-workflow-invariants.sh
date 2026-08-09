@@ -47,7 +47,7 @@ assert_mutated() {
 test_real_workflow_passes() {
     assert_eq "$(run_gate "$REAL")" "0" "the real autopilot.yml satisfies every invariant"
     assert_contains "$(err)" "invariants hold" "and says so (common.sh log_info writes to stderr)"
-    assert_contains "$(err)" "4 jobs scanned" "across all four jobs (gate, model, finish, sweeper)"
+    assert_contains "$(err)" "5 jobs scanned" "across all five jobs (gate, model, finish, escalate, sweeper)"
     log_pass "control: the real workflow passes the gate"
 }
 
@@ -134,6 +134,61 @@ test_cancel_in_progress_armed_fails() {
     log_pass "concurrency can queue rounds but never cancel one mid-push"
 }
 
+test_model_without_state_guard_fails() {
+    # The model job's if: must require AUTOPILOT_ALLOW_STATE. Strip ONLY that
+    # clause: the state-write step further down still mentions the flag, so a
+    # checker that greps the whole file would pass this mutation -- which is
+    # exactly the substitute this invariant must refuse.
+    perl -0pe "s/      vars\.AUTOPILOT_ALLOW_MODEL == 'true' &&\n      vars\.AUTOPILOT_ALLOW_STATE == 'true'\n/      vars.AUTOPILOT_ALLOW_MODEL == 'true'\n/" \
+        "$REAL" >"$WORK/nostate.yml"
+    assert_mutated "$WORK/nostate.yml"
+    grep -q 'AUTOPILOT_ALLOW_STATE' "$WORK/nostate.yml" ||
+        log_fail "the mutation removed every mention of the flag; it must survive elsewhere or this proves nothing"
+    assert_eq "$(run_gate "$WORK/nostate.yml")" "1" "a model job that can run without the state flag must fail"
+    assert_contains "$(err)" "INVARIANT-FAIL: model-without-state-guard" \
+        "as model-without-state-guard (a round that cannot record itself breaks the round counter)"
+    log_pass "the model job is structurally unable to run while state writes are disarmed"
+}
+
+test_unparsed_model_if_fails_closed() {
+    # Anti-vacuity for the invariant above: if the model job's if: cannot be
+    # found at all, the check verified nothing and must say so rather than
+    # pass. Renaming the job is the cheapest way to make it unfindable.
+    perl -pe 's/^  model:$/  modelx:/' "$REAL" >"$WORK/nomodeljob.yml"
+    assert_mutated "$WORK/nomodeljob.yml"
+    assert_eq "$(run_gate "$WORK/nomodeljob.yml")" "1" "an unfindable model if: must fail"
+    assert_contains "$(err)" "an unparsed guard cannot pass" "naming the anti-vacuity reason"
+    log_pass "anti-vacuity: an invariant that cannot locate its subject fails closed"
+}
+
+test_submodule_checkout_before_model_fails() {
+    # S6 makes submodule PUSHES possible after the model exits. The tempting
+    # follow-on is to let the model EDIT submodules by adding submodules: to
+    # its checkout -- but the four submodules are private, so that fetch needs
+    # a credential, and a credential before the model step is the one thing
+    # this design exists to prevent.
+    perl -pe '$_ .= "          submodules: recursive\n" if /^          filter: blob:none$/' \
+        "$REAL" >"$WORK/sub-checkout.yml"
+    assert_mutated "$WORK/sub-checkout.yml"
+    assert_eq "$(run_gate "$WORK/sub-checkout.yml")" "1" "a submodule-fetching checkout before the model must fail"
+    assert_contains "$(err)" "INVARIANT-FAIL: submodule-checkout-pre-model" "as submodule-checkout-pre-model"
+    assert_contains "$(err)" "(model)" "attributed to the model job"
+    # CONTROL 1: an explicit `submodules: false` is the harmless spelling and
+    # must not fire, or the rule would ban writing the safe thing down.
+    perl -pe '$_ .= "          submodules: false\n" if /^          filter: blob:none$/' \
+        "$REAL" >"$WORK/sub-false.yml"
+    assert_mutated "$WORK/sub-false.yml"
+    assert_eq "$(run_gate "$WORK/sub-false.yml")" "0" "an explicit submodules: false is fine"
+    # CONTROL 2: the rule is about POSITION, not about the word. The finish job
+    # runs no model, so a submodule checkout there is not a pre-model
+    # credential and must pass.
+    perl -pe '$_ .= "          submodules: recursive\n" if /^          ref: main$/ && ++$c == 3' \
+        "$REAL" >"$WORK/sub-finish.yml"
+    assert_mutated "$WORK/sub-finish.yml"
+    assert_eq "$(run_gate "$WORK/sub-finish.yml")" "0" "a submodule checkout in a modelless job is not a pre-model credential"
+    log_pass "submodules may be fetched after the model exits, never before it"
+}
+
 log_test "test-autopilot-workflow-invariants"
 test_real_workflow_passes
 test_missing_workflow_fails_closed
@@ -145,6 +200,9 @@ test_persisted_credentials_fail
 test_untrusted_first_checkout_fails
 test_track_progress_armed_fails
 test_cancel_in_progress_armed_fails
+test_model_without_state_guard_fails
+test_unparsed_model_if_fails_closed
+test_submodule_checkout_before_model_fails
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"
 log_pass "all tests passed"

@@ -124,6 +124,7 @@ SCANNER_TESTS=(
     test-suppression-liveness.sh
     test-ci-runner.sh
     test-profiler-coverage.sh
+    test-runner-advice.sh
     test-overrides-reasons.sh
     test-greenlight.sh
     test-knip-blockers.sh
