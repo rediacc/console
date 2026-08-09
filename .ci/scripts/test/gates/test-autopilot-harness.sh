@@ -112,6 +112,23 @@ test_handoff_valid_control() {
     log_pass "control: a valid handoff against a matching dirty tree passes"
 }
 
+test_handoff_in_root_is_not_undeclared_dirty() {
+    # The CI shape every earlier fixture missed: the model writes handoff.json
+    # INTO the workspace root, so git reports it dirty, and it can never be
+    # declared in files[] (declaring it would commit the round's own control
+    # channel). Live regression: canary attempt 6 (run 31327079213) had the
+    # first valid model handoff refused as undeclared-dirty over the handoff
+    # file itself. The contract path must be excluded from the equality check
+    # in BOTH directions.
+    make_dirty
+    mk_handoff "$REPO/handoff.json" '["packages/cli/src/x.ts"]'
+    assert_eq "$(run_validate "$REPO/handoff.json")" "0" \
+        "an in-root handoff must not be refused as undeclared-dirty"
+    rm -f "$REPO/handoff.json"
+    make_clean
+    log_pass "the handoff file is the contract, not an undeclared change"
+}
+
 test_handoff_missing_is_loud() {
     assert_eq "$(run_validate "$WORK/does-not-exist.json")" "1" "a missing handoff must escalate"
     assert_contains "$(err)" "ESCALATE: handoff-missing" "as handoff-missing"
@@ -2267,6 +2284,7 @@ test_prompts_carry_the_required_clauses() {
 
 log_test "test-autopilot-harness"
 test_handoff_valid_control
+test_handoff_in_root_is_not_undeclared_dirty
 test_handoff_missing_is_loud
 test_handoff_oversize
 test_handoff_unparseable
