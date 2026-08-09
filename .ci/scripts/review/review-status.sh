@@ -334,6 +334,16 @@ else
         # author. Pass, loudly.
         warnings+=("**REVIEW CAP REACHED** (${review_count}/${MAX_REVIEWS_PER_PR}) and the marker is stale: ${currency_detail}. The review pipeline will not run again on this PR, so the marker can never reach \`${head_sha}\`. Passing so the PR stays mergeable -- review the delta by hand.")
         log_warn "CURRENCY stale but review cap reached (${review_count}/${MAX_REVIEWS_PER_PR}); passing with a warning"
+    elif review_head_is_exhausted "$(review_attempt_states "$pr" "$ATTEMPT_PREFIX")" "$head_sha"; then
+        # THE SAME DEADLOCK, ONE LEVEL DOWN, and it arrived WITH the free
+        # re-attempts rather than before them. Those attempts are deliberately
+        # not charged, so a head can exhaust its own ceiling while the PR is
+        # still well under its cap -- at which point the gate refuses this head
+        # and the branch above cannot see why. Failing here would reproduce the
+        # #553 outcome exactly: gate refuses, status fails, PR unmergeable
+        # through no fault of its author.
+        warnings+=("**HEAD REVIEW ATTEMPTS EXHAUSTED** for \`${head_sha}\` (${REVIEW_MAX_ATTEMPTS_PER_HEAD} reportless attempts, ${review_count}/${MAX_REVIEWS_PER_PR} of the PR budget spent): ${currency_detail}. The review pipeline will not retry this head, so the marker can never reach it. Passing so the PR stays mergeable -- push a change to earn another pass, or review the delta by hand.")
+        log_warn "CURRENCY stale but head ${head_sha} exhausted its ${REVIEW_MAX_ATTEMPTS_PER_HEAD} attempts; passing with a warning"
     else
         failures+=("Head \`${head_sha}\` has not been reviewed. Last reviewed SHA: \`${last_sha:-<none>}\`. Detail: ${currency_detail}.")
         log_error "CURRENCY failed: $currency_detail"

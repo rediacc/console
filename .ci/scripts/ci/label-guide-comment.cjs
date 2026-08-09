@@ -176,12 +176,19 @@ const renderBody = (labels) => {
     '| --- | --- |',
     ...rows,
     '',
-    '<sub>Generated from <code>.github/labels.yml</code> by <code>.ci/scripts/ci/label-guide-comment.cjs</code>,',
-    'and rewritten in place whenever that file changes. Editing this comment by hand does nothing:',
-    'the next CI run overwrites it. Add or reword a label there instead.',
-    `${labels.length - shown.length} further label(s) exist and are deliberately left off this list`,
-    '(GitHub stock defaults, bot-applied labels, and labels with no consumer in code); they carry',
-    '<code>guide: false</code> in that file.</sub>',
+    // A BLOCKQUOTE, not <sub>. The trailer is the only place that tells a
+    // reader their hand-edits will be overwritten and where to change the
+    // wording instead, so it has to be readable: <sub> renders it as tiny
+    // subscript text, which is where a reader's eye skips. A blockquote reads
+    // as a footer at normal size. Every line carries its own '>' rather than
+    // relying on markdown's lazy continuation, which is easy to break by
+    // editing one line.
+    '> Generated from <code>.github/labels.yml</code> by <code>.ci/scripts/ci/label-guide-comment.cjs</code>,',
+    '> and rewritten in place whenever that file changes. Editing this comment by hand does nothing:',
+    '> the next CI run overwrites it. Add or reword a label there instead.',
+    `> ${labels.length - shown.length} further label(s) exist and are deliberately left off this list`,
+    '> (GitHub stock defaults, bot-applied labels, and labels with no consumer in code); they carry',
+    '> <code>guide: false</code> in that file.',
   ].join('\n');
 };
 

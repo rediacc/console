@@ -251,7 +251,15 @@ test_body_says_it_is_generated() {
     body="$(body_of "$WORK/labels.yml" '[]')"
     assert_contains "$body" ".github/labels.yml" "the body names its source of truth"
     assert_contains "$body" "next CI run overwrites it" "and warns against hand-editing"
-    log_pass "the rendered body tells a human not to hand-edit it"
+    # AND IT MUST BE READABLE. This trailer is the only thing that tells a
+    # reader their edits get overwritten and where to change the wording
+    # instead, so rendering it as <sub> -- tiny subscript text, which is
+    # exactly where an eye skips -- defeats the one job it has. It is a
+    # blockquote now, and this pins that: the assertion above passes just as
+    # happily on unreadable markup.
+    assert_not_contains "$body" "<sub>" "the trailer must not render as tiny subscript text"
+    assert_contains "$body" "> Generated from" "it renders as a normal-size blockquote footer"
+    log_pass "the rendered body tells a human not to hand-edit it, at a size they can read"
 }
 
 test_a_pipe_in_a_description_does_not_break_the_table() {

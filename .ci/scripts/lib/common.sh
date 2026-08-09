@@ -561,9 +561,119 @@ review_report_count() {
 # its author: exactly the outcome that guard exists to prevent.
 #
 # One numerator, one denominator, one file. Both callers use review_spend_total.
-review_spent_attempt_count() {
+# --- Reportless attempts, and why they are not all the same ------------------
+#
+# A reportless attempt used to be terminal for its head: it consumed budget and
+# its marker told the author to "push a change to earn another pass". For a
+# hand-driven PR that is fine. For a fully-green autopilot-driven PR there IS no
+# legitimate change to push, so an `error_max_turns` death stalled the loop
+# behind a human -- observed live on PR #560.
+#
+# An INFRA-CLASS failure is not a verdict on the code. It says the harness ran
+# out of turns or fell over, which the very next dispatch may not do, so the same
+# head gets REVIEW_FREE_REATTEMPTS_PER_HEAD retries before the old rule applies.
+# Anything else keeps the old rule exactly: unknown failures are not assumed
+# retryable, because "we do not know why it died" is the case where retrying
+# forever is most expensive.
+#
+# The bound matters as much as the retry. Three attempts cost three attempts'
+# money, and only one of them is charged -- a deliberate under-charge that keeps
+# the loop moving. What stops that being unbounded is the per-head ceiling: once
+# a head has spent REVIEW_MAX_ATTEMPTS_PER_HEAD, the gate refuses it entirely and
+# only a push (a new head) opens it again.
+# Space-separated, and therefore SINGLE-TOKEN ONLY: the membership test word-
+# splits this string, so a multi-word class added here would silently never
+# match. Every value that reaches it is a result `subtype` from the execution
+# file, which is always one token; the fallback "review step did not succeed"
+# is deliberately multi-word AND deliberately not listed, since an unclassified
+# failure gets no free retries.
+REVIEW_ATTEMPT_INFRA_CLASSES="error_max_turns error_during_execution"
+REVIEW_FREE_REATTEMPTS_PER_HEAD=2
+REVIEW_MAX_ATTEMPTS_PER_HEAD=3
+
+# review_attempt_class_is_infra <class> -> 0 when the class earns free re-attempts.
+review_attempt_class_is_infra() {
+    local want="$1" known
+    for known in $REVIEW_ATTEMPT_INFRA_CLASSES; do
+        [[ "$known" == "$want" ]] && return 0
+    done
+    return 1
+}
+
+# review_attempt_states <pr> <attempt-prefix> -> "<sha>\t<attempts>\t<class>" per marker.
+#
+# ONE marker per head, upserted by claude-review-gate.sh --mark, carrying its own
+# attempt count. Parsed with awk over the raw bodies rather than with a jq regex
+# because a marker body is multi-line and the count and class are lines within
+# it. A LEGACY marker (written before the count existed) has neither line and
+# reads as one attempt of unknown class, which is the old behaviour exactly.
+review_attempt_states() {
     gh api "repos/${GITHUB_REPOSITORY}/issues/${1}/comments" --paginate \
-        --jq ".[] | select(.body | startswith(\"${2}\")) | .id" 2>/dev/null | wc -l || true
+        --jq ".[] | select(.body | startswith(\"${2}\")) | .body, \"---REVIEW-ATTEMPT-EOF---\"" 2>/dev/null |
+        awk '
+            function flush() { if (sha != "") print sha "\t" n "\t" cls; sha = ""; n = 1; cls = "" }
+            BEGIN { sha = ""; n = 1; cls = "" }
+            /^---REVIEW-ATTEMPT-EOF---$/ { flush(); next }
+            /claude-review-attempt:/ && sha == "" {
+                line = $0
+                sub(/.*claude-review-attempt:[[:space:]]*/, "", line)
+                sub(/[[:space:]].*$/, "", line)
+                sha = line
+            }
+            /^attempts:[[:space:]]*[0-9]+/ { line = $0; sub(/^attempts:[[:space:]]*/, "", line); n = line + 0 }
+            /^class:[[:space:]]*/ {
+                line = $0
+                sub(/^class:[[:space:]]*/, "", line)
+                sub(/[[:space:]]*$/, "", line)
+                cls = line
+            }
+            END { flush() }
+        ' || true
+}
+
+# review_chargeable_attempts <states> -> how many of them the CAP counts.
+#
+# Pure, so both callers and the tests can drive it without a network.
+review_chargeable_attempts() {
+    local total=0 sha n cls charge
+    while IFS=$'\t' read -r sha n cls; do
+        [[ -n "$sha" ]] || continue
+        charge="$n"
+        if review_attempt_class_is_infra "$cls"; then
+            charge=$((n - REVIEW_FREE_REATTEMPTS_PER_HEAD))
+            [[ "$charge" -lt 0 ]] && charge=0
+        fi
+        total=$((total + charge))
+    done <<<"${1:-}"
+    echo "$total"
+}
+
+# review_head_attempt_state <states> <sha> -> "<attempts> <class>" for that head.
+review_head_attempt_state() {
+    local want="$2" sha n cls out="0 "
+    while IFS=$'\t' read -r sha n cls; do
+        [[ "$sha" == "$want" ]] && out="$n $cls"
+    done <<<"${1:-}"
+    echo "$out"
+}
+
+# review_head_is_exhausted <states> <sha> -> 0 when this head may not be retried.
+#
+# Only the infra path can exhaust: a non-infra reportless attempt was never
+# per-head blocked, and making it one here would be a NEW restriction wearing
+# the costume of a relaxation.
+review_head_is_exhausted() {
+    local state n cls
+    state="$(review_head_attempt_state "$1" "$2")"
+    n="${state%% *}"
+    cls="${state#* }"
+    review_attempt_class_is_infra "$cls" || return 1
+    [[ "${n:-0}" -ge "$REVIEW_MAX_ATTEMPTS_PER_HEAD" ]]
+}
+
+# review_spent_attempt_count <pr> <attempt-prefix> -> the CHARGEABLE attempt count.
+review_spent_attempt_count() {
+    review_chargeable_attempts "$(review_attempt_states "$1" "$2")"
 }
 
 # review_spend_total <pr> <attempt-prefix> [posted] [spent]

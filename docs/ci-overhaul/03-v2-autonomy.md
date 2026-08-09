@@ -423,6 +423,53 @@ tested and inert, and the checkout question is a separate decision rather than s
 be discovered later by flipping the variable. The new `submodule-checkout-pre-model`
 invariant makes the tempting shortcut fail the build instead of shipping.
 
+### 2026-08-09, later the same day: what the review of #561 changed
+
+Three things the first pass got wrong or left undone, fixed in the same PR rather than filed.
+
+**The push boundary now validates everything before it pushes anything (review observation 1).**
+Submodules used to be pushed inside their own loop, so a console-side refusal arrived after
+renet already had a branch on its remote: a published commit belonging to a console commit
+that was never made, and a submodule PR nobody could land. The boundary now runs in four
+phases. Phase 1 commits each submodule locally. Phase 2 stages and validates console
+(staged-set equality, gitlink mode and SHA, tripwire). Phase 3 is the first remote write of
+the round, submodules in order and then console. Phase 4 re-runs phase 2's validation
+verbatim if an adoption moved a SHA. There is no transaction across four git remotes, but
+there is an order that makes the common failure, a validation refusal, leave zero remote
+writes.
+
+**Orphan adoption.** The same ordering bug, plus any cancelled run, can leave a submodule
+branch pushed while its console half never landed. The next round then branches from the
+recorded pointer and its push is rejected as non-fast-forward by a commit this system wrote,
+which used to strand the campaign on a branch only a human could unpick. On a non-fast-forward
+the harness now inspects the remote tip and adopts it, rebuilding the round's commit on top,
+but only when the tip is provably ours: its committer email is the autopilot identity AND it
+shares its merge-base with `origin/main` with the base this round branched from. The first
+says the autopilot wrote it, the second says it continues this line of work rather than being
+an unrelated branch at the same name. Anything else refuses and names the committer.
+
+**Submodule PR review threads (gap 3).** `check-submodule-branches.sh` reds the console PR
+while a linked submodule PR still carries unresolved threads, and the review machinery only
+ever saw console's own threads, so a round could answer every console finding and stay red on
+a complaint in another repository. The gate now reads the console PR body for linked submodule
+PRs (`linked-sub-prs.sh`, which recognises only the four known submodules, because that output
+decides which repositories get fetched and handed to a model) and fetches their threads too,
+tagged with repo and PR so replies route back. **This is built but largely inert for the same
+structural reason as the submodule checkout:** the gate holds no app token by invariant, and
+`github.token` cannot read a private submodule's PR, so those fetches degrade with a warning
+today. Also fixed while in there: the payload cap now measures UTF-8 **bytes** rather than
+jq's codepoints (review observation 2, which had multi-byte review text measuring about a
+third of its real size), and an escalation's proposed patch is fenced with a backtick run
+longer than any run inside it (observation 3), so a patch touching a markdown file can no
+longer break out of its code block and render as live formatting.
+
+**`AUTOPILOT_EFFORT` (gap 4).** Reasoning effort was a dispatch input only, so every
+autonomous round ran at the model's default and the operator's only lever was to dispatch each
+round by hand. The repo variable is now the standing setting for unattended rounds; the
+dispatch input still wins for the round it is given on, and an unrecognised value in either
+place is ignored with a `::notice` rather than forwarded, since `--effort banana` fails the
+round after paying for the runner.
+
 **No budget flag, deliberately.** Section 9 measured `--max-budget-usd` as a post-hoc stop
 with a 23x overshoot, and a stop that fires mid-round leaves the round's writes half-done
 with no marker, which is the worst shape available. The bounds that actually hold are structural and

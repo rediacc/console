@@ -54,6 +54,9 @@ write_fake_gh() {
 # single-page, so this is faithful). Non-GET calls are captured, never served.
 set -uo pipefail
 method="GET"
+explicit_method=0
+has_field=0
+fields=""
 path=""
 jqexpr=""
 args=("$@")
@@ -66,6 +69,7 @@ while [ "$i" -lt "$n" ]; do
         -X | --method)
             i=$((i + 1))
             method="${args[$i]}"
+            explicit_method=1
             ;;
         --jq)
             i=$((i + 1))
@@ -73,6 +77,9 @@ while [ "$i" -lt "$n" ]; do
             ;;
         --input | -f | -F | --field | --raw-field)
             i=$((i + 1))
+            has_field=1
+            fields="${fields}${args[$i]}
+"
             ;;
         --paginate | --silent) ;;
         -*) ;;
@@ -82,6 +89,14 @@ while [ "$i" -lt "$n" ]; do
     esac
     i=$((i + 1))
 done
+# gh INFERS POST when a field is passed without -X, and so must this fake.
+# Without the inference such a call was classified GET, served a fixture, and
+# never captured -- so a test asserting "the write happened" passed while
+# nothing was written. That is the harness itself failing vacuously, which is
+# the one bug class this whole suite exists to catch.
+if [ "$explicit_method" -eq 0 ] && [ "$has_field" -eq 1 ]; then
+    method="POST"
+fi
 
 if [ "$method" != "GET" ]; then
     {
@@ -89,6 +104,14 @@ if [ "$method" != "GET" ]; then
         cat
         echo
     } >>"$GH_CAPTURE"
+    # `-f key=value` fields go to a SIDECAR file, never into $GH_CAPTURE: the
+    # check-run assertions parse that file as raw JSON with jq, so anything
+    # extra in it would break every existing case. A write whose payload is
+    # fields rather than stdin (the attempt marker) is read from here.
+    {
+        echo "METHOD=$method PATH=$path"
+        printf '%s' "$fields"
+    } >>"${GH_CAPTURE}.fields"
     echo '{"id": 999}'
     exit 0
 fi
@@ -1347,3 +1370,278 @@ with_temp_dir test_report_bot_self_reply_does_not_count
 with_temp_dir test_report_ordinary_chatter_is_ignored
 with_temp_dir test_report_unreadable_comments_fail_closed
 with_temp_dir test_one_reply_clears_both_gates
+
+# ---------------------------------------------------------------------------
+# THE ATTEMPT BUDGET (2026-08-09). A reportless review attempt used to be
+# terminal for its head: it charged a budget unit and its marker said "push a
+# change to earn another pass". On PR #560 that stalled a fully-green,
+# autopilot-driven PR behind a human, because there was no legitimate change to
+# push. An INFRA-CLASS death now gets bounded free re-attempts on the same head.
+#
+# These cases live in this file, rather than beside the --apply-labels tests,
+# because the attempt marker is the SHARED STATE between claude-review-gate.sh
+# and review-status.sh, and this file already owns the budget contract that both
+# of them read. Splitting it would recreate the #553 split-numerator problem in
+# the tests instead of in the code.
+# ---------------------------------------------------------------------------
+
+# attempt_marker <id> <sha> <attempts> <class> -- the NEW marker shape.
+attempt_marker() {
+    jq -nc --argjson id "$1" --arg sha "$2" --arg n "$3" --arg cls "$4" \
+        '{id: $id, user: {login: "github-actions[bot]"},
+          body: ("<!-- claude-review-attempt: " + $sha + " -->\nattempts: " + $n
+                 + "\nclass: " + $cls + "\nA review pass was attempted and produced no report.")}'
+}
+
+test_attempt_accounting_helpers() {
+    # PURE, so both directions are provable without a network. These functions
+    # are the numerator the cap is measured against; the integration cases below
+    # can only show one point of the curve each.
+    # shellcheck source=../../lib/common.sh
+    # BLOCKER: the shared review-budget helpers both review scripts depend on
+    source "$REPO_ROOT/.ci/scripts/lib/common.sh"
+
+    local infra=$'aaa\t1\terror_max_turns'
+    assert_eq "$(review_chargeable_attempts "$infra")" "0" \
+        "the first infra-class attempt on a head is free"
+    infra=$'aaa\t2\terror_max_turns'
+    assert_eq "$(review_chargeable_attempts "$infra")" "0" \
+        "so is the second"
+    infra=$'aaa\t3\terror_max_turns'
+    assert_eq "$(review_chargeable_attempts "$infra")" "1" \
+        "the third is charged"
+    assert_eq "$(review_chargeable_attempts $'aaa\t3\terror_during_execution')" "1" \
+        "error_during_execution is the same class of failure"
+
+    # CONTROL: an unknown failure keeps the old rule exactly. "We do not know why
+    # it died" is the case where retrying forever is most expensive.
+    assert_eq "$(review_chargeable_attempts $'aaa\t1\treview step did not succeed')" "1" \
+        "a non-infra attempt is charged from the first one"
+    assert_eq "$(review_chargeable_attempts $'aaa\t1\t')" "1" \
+        "a LEGACY marker with no class line still charges, exactly as before"
+
+    local mixed=$'aaa\t2\terror_max_turns\nbbb\t1\t\nccc\t3\terror_max_turns'
+    assert_eq "$(review_chargeable_attempts "$mixed")" "2" \
+        "heads are accounted independently (0 + 1 + 1)"
+
+    # The ceiling, both ways.
+    review_head_is_exhausted $'aaa\t3\terror_max_turns' aaa &&
+        log_pass "  a head with 3 infra attempts is exhausted" ||
+        log_fail "a head with 3 infra attempts must be exhausted"
+    if review_head_is_exhausted $'aaa\t2\terror_max_turns' aaa; then
+        log_fail "a head with 2 infra attempts must NOT be exhausted"
+    fi
+    if review_head_is_exhausted $'aaa\t9\t' aaa; then
+        log_fail "a non-infra head must never be per-head blocked; that would be a NEW restriction"
+    fi
+    if review_head_is_exhausted $'aaa\t3\terror_max_turns' bbb; then
+        log_fail "exhaustion must be keyed on the head, not on any head"
+    fi
+    log_pass "attempt accounting: infra gets 2 free re-attempts per head, everything else is unchanged"
+}
+
+# run_mark <TEMP> <subtype-or-empty> -- drive claude-review-gate.sh --mark.
+run_mark() {
+    local t="$1" subtype="${2:-}"
+    if [[ -n "$subtype" ]]; then
+        jq -n --arg s "$subtype" '[{type: "result", subtype: $s, result: ""}]' >"$t/execution.json"
+    else
+        echo '[]' >"$t/execution.json"
+    fi
+    local rc=0
+    LAST_OUT="$(cd "$t" && env \
+        PATH="$t/bin:$PATH" \
+        GH_FIXTURES="$t/fixtures" \
+        GH_CAPTURE="$t/capture.txt" \
+        GH_TOKEN=fake \
+        GITHUB_REPOSITORY=rediacc/console \
+        PR_NUMBER=42 \
+        HEAD_SHA="$NEW_SHA" \
+        EXECUTION_FILE="$t/execution.json" \
+        REVIEW_OUTCOME=failure \
+        NO_COLOR=1 \
+        bash "$REAL_GATE" --mark 2>&1)" || rc=$?
+    LAST_RC="$rc"
+    return 0
+}
+
+# marked_body <TEMP> -- the captured attempt write: its method, path and the
+# `-f body=` payload the gate sent.
+marked_body() {
+    cat "$1/capture.txt.fields" 2>/dev/null || true
+}
+
+test_mark_records_the_first_infra_attempt_as_retryable() {
+    # FIRES: the old code POSTed "Push a change to earn another pass" here, which
+    # is the message that stalled #560.
+    local t="$1"
+    setup "$t"
+    echo '[]' >"$t/fixtures/comments.json"
+    run_mark "$t" error_max_turns
+    assert_eq "$LAST_RC" 0 "--mark must not fail the job (output: $LAST_OUT)"
+    local body
+    body="$(marked_body "$t")"
+    assert_contains "$body" "METHOD=POST" "the first attempt on a head CREATES its marker"
+    assert_contains "$body" "attempts: 1" "the marker carries its own count"
+    assert_contains "$body" "class: error_max_turns" "and the class the count is judged by"
+    assert_contains "$body" "INFRASTRUCTURE-class" "it says why this one is retryable"
+    assert_contains "$body" "gh workflow run claude-review.yml" "and names the existing dispatch that retries it"
+    assert_not_contains "$body" "Push a change to earn another pass" \
+        "an infra failure with re-attempts left must NOT demand a push"
+    log_pass "attempt 1 (infra) records a RETRYABLE marker, no push demanded"
+}
+
+test_mark_upserts_the_second_attempt() {
+    # The marker is upserted, not re-posted: N deaths on one head must be one
+    # comment carrying N, or the count cannot be read back at all.
+    local t="$1"
+    setup "$t"
+    attempt_marker 301 "$NEW_SHA" 1 error_max_turns | jq -s '.' >"$t/fixtures/comments.json"
+    run_mark "$t" error_max_turns
+    local body
+    body="$(marked_body "$t")"
+    assert_contains "$body" "METHOD=PATCH" "a second attempt UPDATES the existing marker"
+    assert_contains "$body" "issues/comments/301" "and patches the one for THIS head"
+    assert_contains "$body" "attempts: 2" "the count advances"
+    assert_not_contains "$body" "Push a change to earn another pass" \
+        "the second infra attempt still has one left"
+    log_pass "attempt 2 (infra) upserts the same marker and stays retryable"
+}
+
+test_mark_closes_the_head_on_the_third_attempt() {
+    # CONTROL for the two above: the bound is real. The third reportless failure
+    # on one head reverts to today's terminal message.
+    local t="$1"
+    setup "$t"
+    attempt_marker 301 "$NEW_SHA" 2 error_max_turns | jq -s '.' >"$t/fixtures/comments.json"
+    run_mark "$t" error_max_turns
+    local body
+    body="$(marked_body "$t")"
+    assert_contains "$body" "attempts: 3" "the count reaches the ceiling"
+    assert_contains "$body" "Push a change to earn another pass" \
+        "the third attempt is terminal, exactly as before"
+    assert_not_contains "$body" "INFRASTRUCTURE-class" "and it no longer offers a re-run"
+    log_pass "attempt 3 (infra) closes the head with today's terminal message"
+}
+
+test_mark_keeps_the_old_rule_for_unknown_failures() {
+    # CONTROL: a failure the pipeline cannot classify gets no free retries at
+    # all. The relaxation is scoped to the classes it was argued for.
+    local t="$1"
+    setup "$t"
+    echo '[]' >"$t/fixtures/comments.json"
+    run_mark "$t" ""
+    local body
+    body="$(marked_body "$t")"
+    assert_contains "$body" "attempts: 1" "still counted"
+    assert_contains "$body" "class: review step did not succeed" "and its class recorded verbatim"
+    assert_contains "$body" "Push a change to earn another pass" \
+        "an unclassified failure is terminal on the first attempt, as before"
+    log_pass "an unclassified reportless failure keeps the old single-shot rule"
+}
+
+# run_gate_decision <TEMP> -- drive the gate's DECISION mode for PR 42 at NEW_SHA.
+run_gate_decision() {
+    local t="$1" rc=0
+    : >"$t/gate-output.txt"
+    LAST_OUT="$(cd "$t" && env \
+        PATH="$t/bin:$PATH" \
+        GH_FIXTURES="$t/fixtures" \
+        GH_CAPTURE="$t/capture.txt" \
+        GH_TOKEN=fake \
+        GITHUB_REPOSITORY=rediacc/console \
+        GITHUB_OUTPUT="$t/gate-output.txt" \
+        EVENT_NAME=workflow_dispatch \
+        PR_NUMBER=42 \
+        PR_HEAD_SHA="$NEW_SHA" \
+        NO_COLOR=1 \
+        bash "$REAL_GATE" 2>&1)" || rc=$?
+    LAST_RC="$rc"
+    return 0
+}
+
+test_gate_refuses_an_exhausted_head() {
+    # THE REFUSAL ITSELF. Free re-attempts have to end somewhere and it cannot be
+    # the per-PR cap, because the free ones are not charged -- without this a head
+    # that dies infra-class would be retried forever at no visible cost.
+    local t="$1"
+    setup "$t"
+    attempt_marker 301 "$NEW_SHA" 3 error_max_turns | jq -s '.' >"$t/fixtures/comments.json"
+    run_gate_decision "$t"
+    assert_eq "$LAST_RC" 0 "the gate exits cleanly when it declines (output: $LAST_OUT)"
+    assert_contains "$(cat "$t/gate-output.txt")" "go=false" "an exhausted head is not reviewed again"
+    assert_contains "$LAST_OUT" "spent all 3 attempts" "and the log says why"
+
+    # CONTROL: one attempt fewer and the same head IS reviewed. This is the whole
+    # point of the change, so it is asserted rather than assumed.
+    setup "$t"
+    attempt_marker 301 "$NEW_SHA" 2 error_max_turns | jq -s '.' >"$t/fixtures/comments.json"
+    run_gate_decision "$t"
+    assert_contains "$(cat "$t/gate-output.txt")" "go=true" \
+        "a head with a re-attempt left must still be reviewable WITHOUT a push"
+    log_pass "the gate refuses an exhausted head and reviews one that still has an attempt left"
+}
+
+test_head_exhaustion_does_not_deadlock_the_pr() {
+    # THE #553 SHAPE, ONE LEVEL DOWN. The free attempts are not charged, so a head
+    # can exhaust its ceiling while the PR sits well under its cap. The gate then
+    # refuses this head; if review-status could not see that, it would post a
+    # required FAILURE and leave a green PR permanently unmergeable.
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" >"$t/m.json"
+    attempt_marker 301 "$NEW_SHA" 3 error_max_turns >"$t/a.json"
+    jq -s '.' "$t/m.json" "$t/a.json" >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" \
+        "ATTEMPT_PREFIX='<!-- claude-review-attempt:'" >"$t/gate-cap3.sh"
+    pr_size "$t" 900 100 # cap 3, and only ONE unit charged -- well under it
+
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap3.sh"
+    assert_eq "$(posted "$t" '.conclusion')" success \
+        "an exhausted head with budget left must stay mergeable"
+    assert_contains "$(posted "$t" '.output.summary')" "HEAD REVIEW ATTEMPTS EXHAUSTED" \
+        "and say so, rather than passing quietly"
+
+    log_pass "an exhausted head passes with a warning instead of deadlocking the PR"
+}
+
+test_retryable_head_with_a_stale_marker_still_fails() {
+    # CONTROL for the case above, in its OWN temp dir because `posted` parses the
+    # single capture file from the first METHOD= line onward -- a second
+    # run_status in the same directory appends a second check-run payload and
+    # makes it unparseable. One run per world, like every other case here.
+    #
+    # One attempt fewer, so the head is still retryable and a stale marker is a
+    # real failure again. Without this the new guard could swallow every stale
+    # head and nothing would notice.
+    local t="$1"
+    setup "$t"
+    marker_comment "$OLD_SHA" >"$t/m.json"
+    attempt_marker 301 "$NEW_SHA" 2 error_max_turns >"$t/a.json"
+    jq -s '.' "$t/m.json" "$t/a.json" >"$t/fixtures/comments.json"
+    echo '{"files": [{"filename": "packages/cli/src/commands/repo.ts"}]}' \
+        >"$t/fixtures/compare.json"
+    printf '%s\n' "MARKER_PREFIX='<!-- claude-reviewed:'" \
+        "ATTEMPT_PREFIX='<!-- claude-review-attempt:'" >"$t/gate-cap3.sh"
+    pr_size "$t" 900 100
+
+    run_status "$t" EVENT_NAME=pull_request_review PR_NUMBER=42 \
+        REVIEW_STATUS_GATE_SCRIPT="$t/gate-cap3.sh"
+    assert_eq "$(posted "$t" '.conclusion')" failure \
+        "a retryable head with a stale marker must still fail"
+    assert_not_contains "$(posted "$t" '.output.summary')" "HEAD REVIEW ATTEMPTS EXHAUSTED" \
+        "no exhaustion warning while an attempt remains"
+    log_pass "a head that still has an attempt left keeps failing on a stale marker"
+}
+
+test_attempt_accounting_helpers
+with_temp_dir test_mark_records_the_first_infra_attempt_as_retryable
+with_temp_dir test_mark_upserts_the_second_attempt
+with_temp_dir test_mark_closes_the_head_on_the_third_attempt
+with_temp_dir test_mark_keeps_the_old_rule_for_unknown_failures
+with_temp_dir test_gate_refuses_an_exhausted_head
+with_temp_dir test_head_exhaustion_does_not_deadlock_the_pr
+with_temp_dir test_retryable_head_with_a_stale_marker_still_fails
