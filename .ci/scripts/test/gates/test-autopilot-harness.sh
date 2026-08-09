@@ -609,6 +609,325 @@ test_push_tripped_tripwire_commits_nothing() {
     log_pass "the tripwire runs on the staged bytes before the commit exists"
 }
 
+# ---------------------------------------------------------------------------
+# The three outcomes. `escalate` and `no-change` are round RESULTS, not
+# failures: the boundary exits 0 having staged nothing, publishes the
+# validated verdict, and leaves the follow-up to the workflow. Before this,
+# every escalating round exited 1, painted the job red, fired the generic
+# failure latch, and lost the model's reason -- the entire payload of an
+# escalation.
+# ---------------------------------------------------------------------------
+
+test_push_escalate_is_a_result_not_a_failure() {
+    local r="$WORK/push-escalate"
+    mk_push_repo "$r" fix-branch
+    # Clean tree: an escalating round changed nothing, and a dirty one would
+    # (correctly) die as undeclared-dirty instead.
+    mk_handoff "$WORK/esc.json" '[]' escalate "$(git -C "$r" rev-parse HEAD)"
+    jq '.escalation = {reason: "the fix needs .github/workflows/ci.yml, which the harness never pushes", patch: "--- a/x\n+++ b/x\n"} | del(.commit_message)' \
+        <"$WORK/esc.json" >"$WORK/esc2.json"
+    assert_eq "$(run_push "$r" "$WORK/esc2.json" fix-branch --dry-run --verdict-out "$WORK/verdict-esc.json")" "0" \
+        "a validated escalate round exits 0"
+    assert_contains "$(err)" "outcome-escalate" "saying which outcome it took"
+    assert_eq "$(git -C "$r" diff --cached --name-only)" "" "with nothing staged"
+    assert_eq "$(git -C "$r" log --oneline | grep -c .)" "1" "and no commit minted"
+    assert_eq "$(jq -r '.outcome' "$WORK/verdict-esc.json")" "escalate" "the verdict file carries the outcome"
+    assert_contains "$(jq -r '.escalation.reason' "$WORK/verdict-esc.json")" "never pushes" \
+        "and the reason, which is the whole payload of an escalation"
+    assert_contains "$(jq -r '.escalation.patch' "$WORK/verdict-esc.json")" "+++ b/x" "and the proposed patch as data"
+    log_pass "escalate: exit 0, nothing staged, and the reason published for the workflow to post"
+}
+
+test_push_escalate_without_a_reason_is_still_rejected() {
+    # THE CONTROL THAT MATTERS: making escalate exit 0 must not make it a way
+    # to end a round quietly. A reasonless escalation is still a rejection.
+    local r="$WORK/push-escalate-bad"
+    mk_push_repo "$r" fix-branch
+    mk_handoff "$WORK/escbad.json" '[]' escalate "$(git -C "$r" rev-parse HEAD)"
+    jq 'del(.commit_message)' <"$WORK/escbad.json" >"$WORK/escbad2.json"
+    assert_eq "$(run_push "$r" "$WORK/escbad2.json" fix-branch --dry-run --verdict-out "$WORK/verdict-bad.json")" "1" \
+        "escalate with no escalation.reason must still be rejected"
+    assert_contains "$(err)" "outcome escalate requires a reason" "with the conditional rule named"
+    assert_eq "$(test -e "$WORK/verdict-bad.json" && echo present || echo absent)" "absent" \
+        "and no verdict is published for a handoff that never validated"
+    log_pass "exit 0 belongs to VALIDATED escalations only"
+}
+
+test_push_no_change_outcome() {
+    local r="$WORK/push-nochange"
+    mk_push_repo "$r" fix-branch
+    mk_handoff "$WORK/nc.json" '[]' no-change "$(git -C "$r" rev-parse HEAD)"
+    jq 'del(.commit_message)' <"$WORK/nc.json" >"$WORK/nc2.json"
+    assert_eq "$(run_push "$r" "$WORK/nc2.json" fix-branch --dry-run --verdict-out "$WORK/verdict-nc.json")" "0" \
+        "a no-change round on a clean tree exits 0"
+    assert_eq "$(git -C "$r" diff --cached --name-only)" "" "with nothing staged"
+    assert_eq "$(jq -r '.outcome' "$WORK/verdict-nc.json")" "no-change" "and the verdict says no-change"
+    # THE OTHER DIRECTION: no-change is a claim about the tree, and a dirty
+    # tree contradicts it. This is the check that keeps 'nothing to do' from
+    # becoming a way to smuggle an undeclared edit past the boundary.
+    printf 'sneaky\n' >>"$r/packages/cli/src/x.ts"
+    assert_eq "$(run_push "$r" "$WORK/nc2.json" fix-branch --dry-run)" "1" \
+        "no-change with a dirty tree must still be rejected"
+    assert_contains "$(err)" "ESCALATE: undeclared-dirty" "as undeclared-dirty"
+    log_pass "no-change exits 0 on a clean tree and dies on a dirty one"
+}
+
+test_push_publishes_the_verdict_on_the_push_path_too() {
+    # CONTROL for the whole outcome branch: the push path is unchanged, and it
+    # publishes the same verdict file, so no caller has to re-parse the
+    # untrusted handoff to learn what the round decided.
+    local r="$WORK/push-verdict"
+    mk_push_repo "$r" fix-branch
+    printf 'fixed\n' >>"$r/packages/cli/src/x.ts"
+    mk_handoff "$WORK/pv.json" '["packages/cli/src/x.ts"]' push "$(git -C "$r" rev-parse HEAD)"
+    jq '.ruled_out = ["widening the timeout (tried r1)"] | .decisions = ["thread T1: fixed in x.ts - guarded nil"]' \
+        <"$WORK/pv.json" >"$WORK/pv2.json"
+    assert_eq "$(run_push "$r" "$WORK/pv2.json" fix-branch --dry-run --verdict-out "$WORK/verdict-push.json")" "0" \
+        "the push path still dry-runs clean"
+    assert_eq "$(jq -r '.outcome' "$WORK/verdict-push.json")" "push" "and publishes outcome push"
+    assert_contains "$(jq -c '.files' "$WORK/verdict-push.json")" "packages/cli/src/x.ts" "with the validated file set"
+    assert_contains "$(jq -c '.ruled_out' "$WORK/verdict-push.json")" "widening the timeout" "the round's ruled-out memory"
+    assert_contains "$(jq -c '.decisions' "$WORK/verdict-push.json")" "thread T1" "and its decisions"
+    assert_eq "$(git -C "$r" log --format=%s -1)" "fix(cli): test fix" "and the commit is still minted"
+    log_pass "control: the push path is unchanged and publishes the same verdict shape"
+}
+
+# ---------------------------------------------------------------------------
+# SUBMODULES (03-v2-autonomy.md section 5). Real fixtures, not mocks: a parent
+# repo with a genuine `git submodule add`, and BARE repositories standing in
+# for the remotes, so "pushed" and "pushed nothing" are both observable as ref
+# state rather than as log text.
+# ---------------------------------------------------------------------------
+
+# mk_sub_fixture <dir> <branch> - parent with private/renet, plus bare remotes
+# for both. Rebuilt per test so no test inherits another's refs.
+mk_sub_fixture() {
+    local d="$1" branch="$2"
+    rm -rf "$d"
+    mkdir -p "$d"
+    git init -q --bare "$d/renet.git"
+    git init -q --bare "$d/console.git"
+    git clone -q "$d/renet.git" "$d/seed" 2>/dev/null
+    mkdir -p "$d/seed/pkg"
+    printf 'package x\n' >"$d/seed/pkg/x.go"
+    git -C "$d/seed" config user.email fixture@example.invalid
+    git -C "$d/seed" config user.name "Fixture Base"
+    git -C "$d/seed" add -- pkg/x.go
+    git -C "$d/seed" commit -qm seed
+    git -C "$d/seed" branch -M main
+    git -C "$d/seed" push -q origin main
+    mkdir -p "$d/parent/packages/cli/src"
+    printf 'base\n' >"$d/parent/packages/cli/src/x.ts"
+    git -C "$d/parent" init -q -b "$branch"
+    git -C "$d/parent" config user.email fixture@example.invalid
+    git -C "$d/parent" config user.name "Fixture Base"
+    # protocol.file.allow: git 2.38+ refuses file-transport submodules by
+    # default (CVE-2022-39253). The fixture's remotes are local paths.
+    git -C "$d/parent" -c protocol.file.allow=always submodule add -q "$d/renet.git" private/renet
+    git -C "$d/parent" add -A
+    git -C "$d/parent" commit -qm base
+    git -C "$d/parent" remote add origin "$d/console.git"
+}
+
+# mk_sub_handoff <file> <parent> <console-files-json> <sub-files-json>
+mk_sub_handoff() {
+    jq -n --arg b "$(git -C "$2" rev-parse HEAD)" \
+        --argjson files "$3" --argjson subfiles "$4" \
+        '{schema: "rediacc-autopilot-handoff/1", base_head: $b, outcome: "push",
+          files: $files, commit_message: "chore(renet): advance the pointer",
+          ledger_line: "r1 | run 30123456789/1 | submodule round",
+          submodules: [{path: "private/renet", files: $subfiles, message: "fix(renet): add F"}]}' >"$1"
+}
+
+# run_sub_push <repo> <handoff> <branch> [args...] - env carries the two stage
+# flags, set by the caller via SUB_FLAG / PUSH_FLAG.
+#
+# `${SUB_FLAG-true}`, NOT `${SUB_FLAG:-true}`: an explicitly EMPTY flag is the
+# absent-means-off case under test, and `:-` would substitute `true` and quietly
+# run the OPPOSITE test. This is the second time that distinction has bitten in
+# this file (see mk_dispatch_event), which is why it is spelled out again here.
+run_sub_push() {
+    local repo="$1" handoff="$2" branch="$3"
+    shift 3
+    local rc=0
+    AUTOPILOT_GIT_NAME="Autopilot Test" AUTOPILOT_GIT_EMAIL="autopilot@example.invalid" \
+        AUTOPILOT_ALLOW_SUBMODULES="${SUB_FLAG-true}" AUTOPILOT_ALLOW_PUSH="${PUSH_FLAG-}" \
+        bash "$PUSH" --root "$repo" --handoff "$handoff" --branch "$branch" "$@" \
+        >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    echo "$rc"
+}
+
+remote_branch_sha() { git -C "$1" rev-parse --verify --quiet "refs/heads/$2" || true; }
+
+test_push_submodule_happy_path() {
+    local d="$WORK/sub-happy"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-ok.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=true
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-ok.json" fix-branch)" "0" "a submodule round pushes clean"
+    # The submodule commit reached its OWN remote, on the console branch name.
+    local sub_sha
+    sub_sha="$(remote_branch_sha "$d/renet.git" fix-branch)"
+    assert_eq "$(test -n "$sub_sha" && echo pushed || echo absent)" "pushed" "the submodule branch exists on its remote"
+    assert_eq "$(git -C "$d/parent/private/renet" rev-parse HEAD)" "$sub_sha" "at exactly the local submodule HEAD"
+    assert_contains "$(git -C "$d/renet.git" show --format=%s -s "$sub_sha")" "fix(renet): add F" \
+        "carrying the declared submodule message, not the console one"
+    assert_contains "$(git -C "$d/renet.git" show "$sub_sha" --name-only --format=)" "pkg/x.go" "and the declared file"
+    # THE POINTER: the parent's committed gitlink names that exact SHA.
+    assert_eq "$(git -C "$d/parent" rev-parse "HEAD:private/renet")" "$sub_sha" \
+        "the console commit's gitlink names the pushed submodule SHA"
+    assert_contains "$(err)" "gitlink verified: private/renet -> $sub_sha" "and the harness said so before committing"
+    # Console itself pushed too, and the ORDER holds: the submodule ref exists
+    # on its remote before console's does, which is what makes the pointer
+    # fetchable by anyone who reads the console commit.
+    assert_eq "$(test -n "$(remote_branch_sha "$d/console.git" fix-branch)" && echo pushed || echo absent)" "pushed" \
+        "and console pushed its pointer bump"
+    log_pass "a submodule round commits, pushes, and lands a verified pointer in console"
+}
+
+test_push_submodule_dry_run_writes_no_remote() {
+    local d="$WORK/sub-dry"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-dry.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-dry.json" fix-branch --dry-run)" "0" "a dry-run submodule round succeeds"
+    # THE WHOLE POINT OF S4: the commits exist locally and NOTHING left the box.
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "" "no submodule branch reached the remote"
+    assert_eq "$(remote_branch_sha "$d/console.git" fix-branch)" "" "and no console branch either"
+    assert_contains "$(err)" "dry-run: would push" "the would-push is reported instead"
+    assert_eq "$(git -C "$d/parent/private/renet" log --format=%s -1)" "fix(renet): add F" "the submodule commit exists locally"
+    assert_eq "$(git -C "$d/parent" rev-parse "HEAD:private/renet")" "$(git -C "$d/parent/private/renet" rev-parse HEAD)" \
+        "and the local pointer already names it"
+    log_pass "dry-run mints both commits and writes neither remote"
+}
+
+test_push_submodule_requires_the_stage_flag() {
+    local d="$WORK/sub-flag"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-flag.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG="" PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-flag.json" fix-branch --dry-run)" "1" \
+        "submodules[] with the flag absent must be refused"
+    assert_contains "$(err)" "ESCALATE: submodules-disabled" "as submodules-disabled"
+    assert_contains "$(err)" "rather than pushing the console half" "naming why the WHOLE round dies, not just its submodule part"
+    assert_eq "$(git -C "$d/parent" log --oneline | grep -c .)" "1" "and no commit was minted anywhere"
+    assert_eq "$(git -C "$d/parent/private/renet" log --oneline | grep -c .)" "1" "including in the submodule"
+    # CONTROL: a non-literal value is still off, like every other stage flag.
+    SUB_FLAG=1
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-flag.json" fix-branch --dry-run)" "1" "only the literal 'true' arms it"
+    assert_contains "$(err)" "submodules-disabled" "still disabled"
+    log_pass "AUTOPILOT_ALLOW_SUBMODULES absent means off, and the whole round fails closed"
+}
+
+test_push_submodule_file_outside_the_submodule() {
+    local d="$WORK/sub-escape"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    SUB_FLAG=true PUSH_FLAG=""
+    # Traversal out of the submodule and back into console.
+    mk_sub_handoff "$WORK/sub-esc.json" "$d/parent" '["private/renet"]' '["../../packages/cli/src/x.ts"]'
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-esc.json" fix-branch --dry-run)" "1" \
+        "a submodule file reaching outside the submodule must be refused"
+    assert_contains "$(err)" "ESCALATE: path-traversal" "as path-traversal"
+    assert_contains "$(err)" "private/renet/../../packages" "with the path reported submodule-qualified"
+    # The denylist applies inside a submodule too: renet has its own workflows.
+    mk_sub_handoff "$WORK/sub-gh.json" "$d/parent" '["private/renet"]' '[".github/workflows/ci.yml"]'
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-gh.json" fix-branch --dry-run)" "1" \
+        "a submodule .github path must be refused"
+    assert_contains "$(err)" "ESCALATE: denylist-github" "as denylist-github"
+    # A path that is simply not there is named rather than dying on a bare
+    # `fatal: pathspec`.
+    mk_sub_handoff "$WORK/sub-gone.json" "$d/parent" '["private/renet"]' '["pkg/nope.go"]'
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-gone.json" fix-branch --dry-run)" "1" \
+        "a submodule path that does not exist must be refused"
+    assert_contains "$(err)" "submodule-path-missing" "as submodule-path-missing"
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "" "and nothing reached the submodule remote in any of these"
+    log_pass "submodule paths obey the same shape and denylist rules as console paths"
+}
+
+test_push_submodule_gitlink_must_be_declared() {
+    local d="$WORK/sub-gitlink"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    # submodules[] present, but files[] does not declare the gitlink: the
+    # submodule commit would be pushed and then referenced by nothing.
+    mk_sub_handoff "$WORK/sub-nolink.json" "$d/parent" '["packages/cli/src/x.ts"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-nolink.json" fix-branch --dry-run)" "1" \
+        "submodule work without the gitlink declared must be refused"
+    assert_contains "$(err)" "ESCALATE: submodule-gitlink-undeclared" "as submodule-gitlink-undeclared"
+    assert_contains "$(err)" "the pointer advance is a console change" "explaining why the gitlink is not optional"
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "" "and nothing was pushed"
+    log_pass "a submodule commit is never published without the pointer that references it"
+}
+
+test_push_submodule_tripwire_fires() {
+    local d="$WORK/sub-trip"
+    mk_sub_fixture "$d" fix-branch
+    node -e 'require("fs").writeFileSync(process.argv[1], "y".repeat(10240))' "$d/parent/private/renet/pkg/blob.txt"
+    mk_sub_handoff "$WORK/sub-trip.json" "$d/parent" '["private/renet"]' '["pkg/blob.txt"]'
+    SUB_FLAG=true PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-trip.json" fix-branch --dry-run)" "1" \
+        "an exfiltration shape inside a submodule must trip"
+    assert_contains "$(err)" "TRIPWIRE: new-file-over-8kb" "as new-file-over-8kb"
+    assert_contains "$(err)" "tripwire tripped in submodule 'private/renet'" "naming which submodule"
+    assert_eq "$(git -C "$d/parent/private/renet" log --oneline | grep -c .)" "1" "no submodule commit was minted"
+    assert_eq "$(git -C "$d/parent" log --oneline | grep -c .)" "1" "and no console commit either"
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "" "and nothing was pushed"
+    # The tripwire sees PARENT-relative paths, which is what lets the scope map
+    # work at all inside a submodule.
+    assert_contains "$(err)" "private/renet/pkg/blob.txt" "with the path reported parent-relative"
+    log_pass "the tripwire runs on the submodule's staged bytes, before its commit exists"
+}
+
+test_push_submodule_branch_forbidden_touches_nothing() {
+    # The submodule branch name IS the console branch name, so `main` is
+    # refused by the parent's own branch check before any submodule is opened.
+    # What this proves is the consequence: a forbidden branch does no submodule
+    # work at all, rather than pushing renet and then discovering console.
+    local d="$WORK/sub-main"
+    mk_sub_fixture "$d" main
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-main.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-main.json" main --dry-run)" "1" "main is refused unconditionally"
+    assert_contains "$(err)" "branch-forbidden" "as branch-forbidden"
+    assert_eq "$(remote_branch_sha "$d/renet.git" main)" "$(git -C "$d/renet.git" rev-parse refs/heads/main)" \
+        "the submodule's main is exactly where it was"
+    assert_eq "$(git -C "$d/parent/private/renet" log --oneline | grep -c .)" "1" "and no submodule commit exists"
+    log_pass "a forbidden branch stops before the first submodule is opened"
+}
+
+test_push_submodule_uninitialized_never_writes_the_parent() {
+    # The live gap this guards: the model job checks out the PR head with NO
+    # `submodules:` input, so a real round finds these directories empty. The
+    # property that must hold whatever the diagnosis is: submodule content is
+    # never committed into console as ordinary files.
+    #
+    # WHAT THIS DOES AND DOES NOT PROVE. It proves the OUTCOME (refused, and
+    # nothing flattened into the parent). It does NOT exercise the
+    # submodule-not-initialized guard in autopilot-push.sh: an uninitialized
+    # submodule makes the parent report nothing dirty at that path, so the
+    # round dies earlier at path-not-dirty. That guard is documented at its own
+    # site as unreachable-today defence in depth, rather than counted here as a
+    # control it is not.
+    local d="$WORK/sub-uninit"
+    mk_sub_fixture "$d" fix-branch
+    rm -rf "$d/parent/private/renet/.git"
+    printf 'package x\nfunc G(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-uninit.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=""
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-uninit.json" fix-branch --dry-run)" "1" \
+        "a round against an uninitialized submodule must be refused"
+    assert_eq "$(git -C "$d/parent" log --oneline | grep -c .)" "1" "no console commit was minted"
+    assert_not_contains "$(git -C "$d/parent" ls-files)" "private/renet/pkg/x.go" \
+        "and submodule content was never staged into the parent as ordinary files"
+    log_pass "an uninitialized submodule refuses instead of flattening into console"
+}
+
 test_push_boundary_never_stages_wholesale() {
     # The ban is structural: no wholesale-staging git invocation may appear
     # in any executable in the autopilot directory.
@@ -675,15 +994,15 @@ mk_dispatch_event() {
         "$file" >"$file.tmp" && mv "$file.tmp" "$file"
 }
 
-# mk_state <file> <campaign> <model> <rounds_max> [rounds-recorded]
+# mk_state <file> <campaign> <model> <rounds_max> [rounds-recorded] [last_sig] [sig_count]
 # A state body in the exact shape state-comment.sh render produces, so the
 # gate is reading the real format rather than a convenient approximation.
 mk_state() {
-    local file="$1" campaign="$2" model="$3" cap="$4" done_rounds="${5:-0}" i
+    local file="$1" campaign="$2" model="$3" cap="$4" done_rounds="${5:-0}" sig="${6:-none}" sig_count="${7:-0}" i
     {
         printf '### Autopilot state (machine-maintained, do not edit)\n'
-        printf 'state: waiting-ci | round: %s/%s | head: abc | last_run: 1/1 handled | campaign: %s | model: %s | rounds_max: %s\n' \
-            "$((done_rounds + 1))" "$cap" "$campaign" "$model" "$cap"
+        printf 'state: waiting-ci | round: %s/%s | head: abc | last_run: 1/1 handled | campaign: %s | model: %s | rounds_max: %s | last_sig: %s | sig_count: %s\n' \
+            "$((done_rounds + 1))" "$cap" "$campaign" "$model" "$cap" "$sig" "$sig_count"
         printf '\n#### Round ledger\n'
         for ((i = 1; i <= done_rounds; i++)); do
             printf 'r%d | run 3999900%04d/1 | red: unit | cause: x | fix: y\n' "$i" "$i"
@@ -1002,9 +1321,9 @@ test_gate_mode_selection_table() {
     assert_contains "$(gate_field "$d" reason)" "cancelled-no-failure" "cancelled clean is a no-go"
     # success branches, in the design's order.
     mk_event "$WORK/ev-s.json" success
-    mk_pr "$WORK/pr-red.json" 'review_gate_red=true'
+    mk_pr "$WORK/pr-red.json" 'review_gate_red=true' 'unresolved_threads=2'
     d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr-red.json")"
-    assert_eq "$(gate_field "$d" mode)" "review-response" "review gate red beats everything else on success"
+    assert_eq "$(gate_field "$d" mode)" "review-response" "review gate red with threads to answer beats everything else on success"
     mk_pr "$WORK/pr-draft.json" 'draft=true'
     d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr-draft.json")"
     assert_eq "$(gate_field "$d" mode)" "ready-flip" "success while draft is a deterministic ready-flip"
@@ -1018,6 +1337,122 @@ test_gate_mode_selection_table() {
     d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-x.json" "$WORK/pr.json")"
     assert_contains "$(gate_field "$d" reason)" "unhandled-conclusion" "anything unrecognised is refused"
     log_pass "mode selection matches the design table branch for branch"
+}
+
+# ---------------------------------------------------------------------------
+# The stuck signature: 03-v2-autonomy.md section 4's flapping bound made
+# mechanical. Three consecutive rounds facing an UNCHANGED failed-job set stop
+# the campaign, because two distinct fixes have already failed to move it.
+# ---------------------------------------------------------------------------
+
+test_gate_stuck_signature_stops_the_thrash() {
+    mk_event "$WORK/ev.json" failure
+    mk_pr "$WORK/pr.json"
+    printf 'Tests + Infra / Unit\nQuality / Lint\n' >"$WORK/sig-jobs.txt"
+    local d sig
+    # Round 1: nothing recorded yet, so the signature is new.
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs.txt")"
+    assert_eq "$(gate_field "$d" decision)" "go" "the first sighting of a failed-job set goes"
+    assert_eq "$(gate_field "$d" sig_count)" "1" "counted as 1"
+    sig="$(gate_field "$d" sig)"
+    assert_eq "$(printf '%s' "$sig" | grep -cE '^[0-9a-f]{8}$')" "1" "and the signature is 8 lowercase hex"
+    # ORDER-INDEPENDENCE: the jobs API is not ordered, so the same set in a
+    # different order must hash the same or the count never accumulates.
+    printf 'Quality / Lint\nTests + Infra / Unit\n' >"$WORK/sig-jobs-rev.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs-rev.txt")"
+    assert_eq "$(gate_field "$d" sig)" "$sig" "the same set in another order hashes the same"
+    # Round 2: the state comment remembers one sighting.
+    mk_state "$WORK/sig-state1.txt" open claude-sonnet-5 25 1 "$sig" 1
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs.txt" --state "$WORK/sig-state1.txt")"
+    assert_eq "$(gate_field "$d" decision)" "go" "the second round still goes: one fix has been tried"
+    assert_eq "$(gate_field "$d" sig_count)" "2" "counted as 2"
+    # Round 3: the same red, twice fixed, still there. Stop.
+    mk_state "$WORK/sig-state2.txt" open claude-sonnet-5 25 2 "$sig" 2
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs.txt" --state "$WORK/sig-state2.txt")"
+    assert_eq "$(gate_field "$d" decision)" "no-go" "the third identical round is refused"
+    assert_contains "$(gate_field "$d" reason)" "stuck-signature" "as stuck-signature"
+    assert_contains "$(gate_field "$d" reason)" "$sig" "naming the signature"
+    # CONTROL 1: a CHANGED failed-job set resets the count and goes. Without
+    # this the rule would be 'three rounds and stop', which is a round cap
+    # wearing a different name.
+    printf 'Tests + Infra / Renet\n' >"$WORK/sig-jobs-other.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs-other.txt" --state "$WORK/sig-state2.txt")"
+    assert_eq "$(gate_field "$d" decision)" "go" "progress on the red resets the count"
+    assert_eq "$(gate_field "$d" sig_count)" "1" "back to 1"
+    # CONTROL 2: an empty failed-job list is 'none' and never matches a
+    # recorded signature, so a green run cannot look like a repeat of the last
+    # red one.
+    : >"$WORK/sig-jobs-empty.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev.json" "$WORK/pr.json" --failed-jobs "$WORK/sig-jobs-empty.txt" --state "$WORK/sig-state2.txt")"
+    assert_eq "$(gate_field "$d" sig)" "none" "no failed jobs means no signature"
+    assert_eq "$(gate_field "$d" decision)" "go" "and no signature can ever be stuck"
+    log_pass "the stuck signature stops a thrash at round 3 and only a genuine thrash"
+}
+
+test_gate_rerun_review_mode() {
+    mk_event "$WORK/ev-s.json" success
+    local d
+    # Red gate, nothing outstanding to answer: the review simply needs to run
+    # again, and that costs zero model tokens.
+    mk_pr "$WORK/pr-red0.json" 'review_gate_red=true' 'unresolved_threads=0'
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr-red0.json")"
+    assert_eq "$(gate_field "$d" decision)" "go" "a red gate with no threads still acts"
+    assert_eq "$(gate_field "$d" mode)" "rerun-review" "deterministically, as rerun-review"
+    assert_contains "$(gate_field "$d" reason)" "no model" "and says so"
+    # CONTROL: with threads outstanding there IS something to answer, so the
+    # round is worth a model. Discriminating by thread count is the whole
+    # point; without this the new mode would swallow every review round.
+    mk_pr "$WORK/pr-red2.json" 'review_gate_red=true' 'unresolved_threads=2'
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr-red2.json")"
+    assert_eq "$(gate_field "$d" mode)" "review-response" "threads outstanding still buy a model round"
+    # A draft PR with a red gate is still rerun-review, not ready-flip: the
+    # existing order puts the review gate first and this must not change it.
+    mk_pr "$WORK/pr-red-draft.json" 'review_gate_red=true' 'unresolved_threads=0' 'draft=true'
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op run_gate "$WORK/ev-s.json" "$WORK/pr-red-draft.json")"
+    assert_eq "$(gate_field "$d" mode)" "rerun-review" "the review gate is still checked before draft"
+    log_pass "a red review gate with nothing to answer reruns the review instead of buying a round"
+}
+
+test_gate_rerun_rounds_count_against_the_cap() {
+    # TERMINATION: a rerun creates a review run, which creates a workflow_run,
+    # which re-enters the gate. That loop terminates only because the rerun
+    # writes a ledger line in the counted shape. Prove the counter sees them.
+    mk_event "$WORK/ev-s.json" success
+    mk_pr "$WORK/pr-red0.json" 'review_gate_red=true' 'unresolved_threads=0'
+    local d i
+    {
+        printf '### Autopilot state (machine-maintained, do not edit)\n'
+        printf 'state: waiting-review | round: 3/3 | head: abc | last_run: 9/1 handled | campaign: open | model: claude-sonnet-5 | rounds_max: 3 | last_sig: none | sig_count: 0\n'
+        printf '\n#### Round ledger\n'
+        for ((i = 1; i <= 3; i++)); do
+            printf 'r%d | run 3070000%04d/1 | rerun-review: re-requested the review gate, no model\n' "$i" "$i"
+        done
+    } >"$WORK/rerun-cap.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev-s.json" "$WORK/pr-red0.json" --state "$WORK/rerun-cap.txt")"
+    assert_eq "$(gate_field "$d" decision)" "no-go" "rerun rounds at the cap stop the loop"
+    assert_contains "$(gate_field "$d" reason)" "round-cap" "as round-cap"
+    assert_contains "$(gate_field "$d" reason)" "3 rounds recorded" "having counted every rerun line"
+    # CONTROL: one round under the cap still goes, so the refusal above is the
+    # cap and not the ledger shape being unreadable.
+    {
+        printf '### Autopilot state (machine-maintained, do not edit)\n'
+        printf 'state: waiting-review | round: 3/3 | head: abc | last_run: 9/1 handled | campaign: open | model: claude-sonnet-5 | rounds_max: 3 | last_sig: none | sig_count: 0\n'
+        printf '\n#### Round ledger\n'
+        printf 'r1 | run 30700000001/1 | rerun-review: re-requested the review gate, no model\n'
+        printf 'r2 | run 30700000002/1 | rerun-review: re-requested the review gate, no model\n'
+    } >"$WORK/rerun-under.txt"
+    d="$(AUTOPILOT_ENABLED=true AUTOPILOT_AUTHOR_ALLOWLIST=op \
+        run_gate "$WORK/ev-s.json" "$WORK/pr-red0.json" --state "$WORK/rerun-under.txt")"
+    assert_eq "$(gate_field "$d" decision)" "go" "two of three rounds spent still goes"
+    assert_eq "$(gate_field "$d" round)" "3" "as round 3"
+    log_pass "rerun rounds are counted rounds, so the review loop terminates"
 }
 
 # ---------------------------------------------------------------------------
@@ -1099,6 +1534,263 @@ test_state_comment_compaction_over_55kb() {
     log_pass "above 55KB the ledger compacts, bounded well under GitHub's 65,536-char limit"
 }
 
+test_state_comment_records_every_entry_not_just_the_first() {
+    # THE ANTI-THRASH MEMORY ONLY WORKS IF IT REMEMBERS. The single --ruled-out
+    # / --decision flags recorded one entry per round, so a round that ruled
+    # out three approaches recorded one and the next round was free to retry
+    # the other two. The *-file variants take the whole array.
+    printf 'widening the e2e timeout (red persisted)\nretrying the flaky leg (same failure)\nbumping the runner size (no change)\n' >"$WORK/ruled.txt"
+    printf 'thread T1: fixed in x.ts - guarded the nil case\nthread T2: declined - the finding assumes a legacy path\n' >"$WORK/dec.txt"
+    local body
+    body="$(bash "$STATE_COMMENT" render --body /dev/null --state waiting-ci --round 1/25 \
+        --head abc1234 --last-run "30123456789/1 handled" \
+        --ledger "r1 | run 30123456789/1 | red: e2e" \
+        --ruled-out-file "$WORK/ruled.txt" --decisions-file "$WORK/dec.txt")"
+    assert_contains "$body" "- widening the e2e timeout" "the first ruled-out entry lands"
+    assert_contains "$body" "- bumping the runner size" "and so does the third"
+    assert_contains "$body" "- thread T2: declined" "every decision lands too"
+    assert_eq "$(grep -c '^- ' <<<"$body")" "5" "five bulleted entries across the two sections"
+    # They must SURVIVE the next render, or the memory lasts exactly one round.
+    printf '%s\n' "$body" >"$WORK/mem1.txt"
+    printf 'a fourth dead end\n' >"$WORK/ruled2.txt"
+    body="$(bash "$STATE_COMMENT" render --body "$WORK/mem1.txt" --state waiting-ci --round 2/25 \
+        --head def5678 --last-run "30123456790/1 handled" \
+        --ledger "r2 | run 30123456790/1 | red: e2e" --ruled-out-file "$WORK/ruled2.txt")"
+    assert_contains "$body" "- widening the e2e timeout" "round 1's ruled-out entries carry forward"
+    assert_contains "$body" "- thread T1: fixed in x.ts" "and round 1's decisions"
+    assert_contains "$body" "- a fourth dead end" "with round 2's appended"
+    # The 400-char cap applies per entry, exactly as it does to a ledger line.
+    node -e 'process.stdout.write("R".repeat(600) + "\n")' >"$WORK/ruled-long.txt"
+    printf '%s\n' "$body" >"$WORK/mem2.txt"
+    body="$(bash "$STATE_COMMENT" render --body "$WORK/mem2.txt" --state waiting-ci --round 3/25 \
+        --head aaa0000 --last-run "30123456791/1 handled" --ruled-out-file "$WORK/ruled-long.txt")"
+    assert_eq "$(awk '/^- R+$/ { print length($0) }' <<<"$body")" "400" "an over-long entry is capped at 400 chars"
+    # CONTROL: an empty file appends nothing, because "ruled nothing out" is
+    # the common case and must not render a stray bullet.
+    : >"$WORK/ruled-empty.txt"
+    local before after
+    before="$(grep -c '^- ' <<<"$body")"
+    printf '%s\n' "$body" >"$WORK/mem3.txt"
+    body="$(bash "$STATE_COMMENT" render --body "$WORK/mem3.txt" --state waiting-ci --round 4/25 \
+        --head bbb0000 --last-run "30123456792/1 handled" --ruled-out-file "$WORK/ruled-empty.txt")"
+    after="$(grep -c '^- ' <<<"$body")"
+    assert_eq "$after" "$before" "an empty entry file appends nothing"
+    log_pass "the ledger memory records every entry, carries them forward, and caps each one"
+}
+
+test_state_comment_signature_fields_round_trip() {
+    # ONE WRITER, ONE READER: the gate reads the signature back through
+    # `fields`, so a rendered body must classify to the values it carried.
+    local body f
+    body="$(bash "$STATE_COMMENT" render --body /dev/null --state waiting-ci --round 2/9 \
+        --head abc1234 --last-run "1/1 handled" --last-sig deadbeef --sig-count 2)"
+    printf '%s\n' "$body" >"$WORK/sigbody.txt"
+    f="$(bash "$STATE_COMMENT" fields --body "$WORK/sigbody.txt")"
+    assert_eq "$(jq -r '.last_sig' <<<"$f")" "deadbeef" "the signature survives the round trip"
+    assert_eq "$(jq -r '.sig_count' <<<"$f")" "2" "and so does its count"
+    # Hostile values collapse to their sentinels: these feed a refusal
+    # decision, so a surprise value must fail toward 'not stuck', never toward
+    # a stuck verdict on a PR that is fine.
+    printf 'state: x | last_sig: ../../etc/passwd | sig_count: 99999999\n' >"$WORK/sighostile.txt"
+    f="$(bash "$STATE_COMMENT" fields --body "$WORK/sighostile.txt")"
+    assert_eq "$(jq -r '.last_sig' <<<"$f")" "none" "a path-shaped signature collapses to none"
+    assert_eq "$(jq -r '.sig_count' <<<"$f")" "0" "and an out-of-range count to 0"
+    printf 'state: x | last_sig: DEADBEEF | sig_count: 2\n' >"$WORK/sigupper.txt"
+    f="$(bash "$STATE_COMMENT" fields --body "$WORK/sigupper.txt")"
+    assert_eq "$(jq -r '.last_sig' <<<"$f")" "none" "uppercase hex is not the shape the gate emits, so it is not a signature"
+    log_pass "the signature fields round-trip and normalize hostile values in both directions"
+}
+
+# ---------------------------------------------------------------------------
+# review-payload.sh: which review text may reach the model. The filter is on
+# the thread's ROOT author, because anyone can reply into a thread on a public
+# repo but only the review pipeline opens one.
+# ---------------------------------------------------------------------------
+
+PAYLOAD="$AUTOPILOT/review-payload.sh"
+REVIEW_REPLY="$AUTOPILOT/review-reply.sh"
+SWEEP="$AUTOPILOT/sweep-campaigns.sh"
+
+# mk_thread <id> <root-author> <resolved> <outdated> [reply-author] [body-filler-bytes]
+mk_thread() {
+    local filler=""
+    [[ -n "${6:-}" ]] && filler="$(node -e 'process.stdout.write("F".repeat(+process.argv[1]))' "$6")"
+    jq -cn --arg id "$1" --arg a "$2" --argjson res "$3" --argjson out "$4" \
+        --arg ra "${5:-}" --arg filler "$filler" '
+        {id: $id, isResolved: $res, isOutdated: $out, path: "packages/cli/src/x.ts", line: 12,
+         comments: {nodes: ([{databaseId: 1, body: ("the finding text " + $filler), author: {login: $a}}]
+                    + (if $ra == "" then [] else [{databaseId: 2, body: "a reply", author: {login: $ra}}] end))}}'
+}
+
+test_review_payload_filters_on_the_root_author() {
+    {
+        printf '['
+        mk_thread "PRT_trusted" "github-actions[bot]" false false "mallory"
+        printf ','
+        mk_thread "PRT_mallory" "mallory" false false
+        printf ','
+        mk_thread "PRT_resolved" "github-actions[bot]" true false
+        printf ','
+        mk_thread "PRT_outdated" "github-actions[bot]" false true
+        printf ']'
+    } >"$WORK/threads.json"
+    local p
+    p="$(bash "$PAYLOAD" --threads "$WORK/threads.json" --author-filter github-actions 2>/dev/null)"
+    # FIRES: an outsider cannot get text in front of the model by opening a
+    # thread of their own.
+    assert_not_contains "$p" "PRT_mallory" "a thread rooted by an outsider is dropped whole"
+    assert_not_contains "$p" "PRT_resolved" "a resolved thread is not outstanding work"
+    assert_not_contains "$p" "PRT_outdated" "nor is an outdated one"
+    assert_eq "$(jq -r '.kept' <<<"$p")" "1" "exactly one thread survives"
+    # CONTROL: a trusted thread is kept WITH its replies. Replies are carried
+    # deliberately, as data -- an unresolved finding often gets its real
+    # detail in a follow-up, and the prompt frames every quoted snippet as
+    # data about the code rather than an instruction.
+    assert_contains "$p" "PRT_trusted" "the trusted thread is kept"
+    assert_eq "$(jq -r '.threads[0].comments | length' <<<"$p")" "2" "including its untrusted reply, as data"
+    assert_eq "$(jq -r '.threads[0].comments[1].author' <<<"$p")" "mallory" "with the replier named so the model can weigh it"
+    # And the filter can be pointed elsewhere, which proves it is a filter
+    # rather than a hardcoded pass.
+    p="$(bash "$PAYLOAD" --threads "$WORK/threads.json" --author-filter mallory 2>/dev/null)"
+    assert_eq "$(jq -r '.threads[0].id' <<<"$p")" "PRT_mallory" "a different filter selects a different root author"
+    log_pass "the review payload is filtered by root author, and replies ride along as data"
+}
+
+test_review_payload_byte_cap() {
+    # Oversize plant: three fat threads against a small cap. Dropping is
+    # REPORTED, because a round that silently saw half the findings would
+    # claim to have addressed every finding.
+    {
+        printf '['
+        mk_thread "PRT_old" "github-actions[bot]" false false "" 4000
+        printf ','
+        mk_thread "PRT_mid" "github-actions[bot]" false false "" 4000
+        printf ','
+        mk_thread "PRT_new" "github-actions[bot]" false false "" 4000
+        printf ']'
+    } >"$WORK/fat-threads.json"
+    local p
+    p="$(bash "$PAYLOAD" --threads "$WORK/fat-threads.json" --max-bytes 9000 2>/dev/null)"
+    assert_eq "$(jq -r '.dropped' <<<"$p")" "1" "the cap sheds one thread"
+    assert_eq "$(jq -r '.kept' <<<"$p")" "2" "keeping the rest"
+    assert_not_contains "$p" "PRT_old" "and it sheds the OLDEST, which the round is least able to act on"
+    assert_contains "$p" "PRT_new" "keeping the newest finding"
+    assert_eq "$(jq -r '.bytes <= 9000' <<<"$p")" "true" "the payload is under the cap"
+    # CONTROL: the same threads under a generous cap keep everything, so the
+    # drop above is the cap firing and not the filter mis-reading them.
+    p="$(bash "$PAYLOAD" --threads "$WORK/fat-threads.json" --max-bytes 100000 2>/dev/null)"
+    assert_eq "$(jq -r '.dropped' <<<"$p")" "0" "a generous cap drops nothing"
+    assert_eq "$(jq -r '.kept' <<<"$p")" "3" "and keeps all three"
+    # An empty filter would match every author, which is the opposite of
+    # filtering; it must be a usage error rather than a silent pass-through.
+    local rc=0
+    bash "$PAYLOAD" --threads "$WORK/threads.json" --author-filter "" >/dev/null 2>&1 || rc=$?
+    assert_eq "$rc" "2" "an empty author filter is refused"
+    log_pass "the payload cap sheds oldest-first, reports what it shed, and refuses a no-op filter"
+}
+
+# ---------------------------------------------------------------------------
+# review-reply.sh: the model records dispositions, the harness replies and
+# resolves. A thread id the round was never shown is not addressable.
+# ---------------------------------------------------------------------------
+
+test_review_reply_plan_requires_a_shown_thread() {
+    {
+        printf '['
+        mk_thread "PRT_shown" "github-actions[bot]" false false
+        printf ']'
+    } >"$WORK/rr-threads.json"
+    bash "$PAYLOAD" --threads "$WORK/rr-threads.json" --out "$WORK/rr-payload.json" 2>/dev/null
+    jq -n '{verdict: "ok", outcome: "push", files: [], commit_message: "m", ledger_line: "r1 | run 1/1 | x",
+            ruled_out: [], escalation: null,
+            decisions: ["thread PRT_shown: fixed in x.ts - guarded the nil case",
+                        "thread PRT_never_shown: declined - out of scope",
+                        "thread ../../etc/passwd: declined - nope",
+                        "chose expect.poll over sleep in test Y"]}' >"$WORK/rr-verdict.json"
+    local plan
+    plan="$(bash "$REVIEW_REPLY" plan --verdict "$WORK/rr-verdict.json" --threads "$WORK/rr-payload.json" 2>"$WORK/err.txt")"
+    # CONTROL: the thread the round was actually shown is planned, with the
+    # disposition text as the reply body.
+    assert_eq "$(jq -r '.replies | length' <<<"$plan")" "1" "exactly one reply is planned"
+    assert_eq "$(jq -r '.replies[0].thread_id' <<<"$plan")" "PRT_shown" "for the thread the round was shown"
+    assert_eq "$(jq -r '.replies[0].body' <<<"$plan")" "fixed in x.ts - guarded the nil case" \
+        "carrying the disposition as the reply body"
+    # FIRES: a well-shaped id the round never saw names a thread on some other
+    # PR. Skipped, and flagged.
+    assert_contains "$(jq -c '.skipped' <<<"$plan")" "PRT_never_shown" "an unshown thread is skipped"
+    assert_contains "$(jq -c '.skipped' <<<"$plan")" "unknown-thread" "with the reason named"
+    assert_contains "$(jq -c '.skipped' <<<"$plan")" "malformed-id" "and a path-shaped id is refused on its shape"
+    assert_eq "$(jq -r '.flagged' <<<"$plan")" "true" "the plan is flagged so the round is not quietly partial"
+    assert_contains "$(err)" "name no thread" "and the skip is loud on stderr"
+    # An ordinary decisions entry is not thread traffic and is not an error.
+    assert_not_contains "$(jq -c '.skipped' <<<"$plan")" "expect.poll" "a non-thread decision is simply not a reply"
+    log_pass "only threads the round was shown are addressable; everything else is skipped and flagged"
+}
+
+test_review_reply_caps_the_body_and_fails_closed_on_write() {
+    {
+        printf '['
+        mk_thread "PRT_shown" "github-actions[bot]" false false
+        printf ']'
+    } >"$WORK/rr-threads.json"
+    bash "$PAYLOAD" --threads "$WORK/rr-threads.json" --out "$WORK/rr-payload.json" 2>/dev/null
+    local long
+    long="$(node -e 'process.stdout.write("B".repeat(5000))')"
+    jq -n --arg l "$long" '{verdict: "ok", outcome: "push", files: [], commit_message: "m",
+            ledger_line: "r1 | run 1/1 | x", decisions: [("thread PRT_shown: " + $l)]}' >"$WORK/rr-long.json"
+    local plan
+    plan="$(bash "$REVIEW_REPLY" plan --verdict "$WORK/rr-long.json" --threads "$WORK/rr-payload.json" --max-body 200 2>/dev/null)"
+    assert_eq "$(jq -r '.replies[0].body | length' <<<"$plan")" "200" "an over-long disposition is capped"
+    # The write half refuses without the stage flag, before any gh call could
+    # happen: replying and resolving are writes like any other.
+    printf '%s\n' "$plan" >"$WORK/rr-plan.json"
+    local rc=0
+    bash "$REVIEW_REPLY" apply --plan "$WORK/rr-plan.json" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "1" "apply without AUTOPILOT_ALLOW_PUSH refuses"
+    assert_contains "$(err)" "stage-flag-disabled" "naming the flag"
+    # CONTROL: an empty plan is a no-op that still refuses without the flag
+    # above, and succeeds trivially with it -- no network needed to prove the
+    # zero-entry path never reaches gh.
+    jq -n '{replies: [], skipped: [], flagged: false}' >"$WORK/rr-empty.json"
+    rc=0
+    AUTOPILOT_ALLOW_PUSH=true bash "$REVIEW_REPLY" apply --plan "$WORK/rr-empty.json" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "0" "an empty plan applies cleanly"
+    assert_contains "$(err)" "no thread touched" "touching nothing"
+    log_pass "reply bodies are capped and the write half fails closed"
+}
+
+# ---------------------------------------------------------------------------
+# sweep-campaigns.sh: the sweeper must reach campaign-armed PRs, which carry
+# no label. Trust still comes from the state comment's AUTHOR.
+# ---------------------------------------------------------------------------
+
+test_sweep_finds_open_campaigns_and_refuses_lookalikes() {
+    local dir="$WORK/sweep/comments"
+    mkdir -p "$dir"
+    local open_body closed_body
+    open_body="$(bash "$STATE_COMMENT" render --body /dev/null --state waiting-ci --round 2/9 \
+        --head abc --last-run "1/1 handled" --campaign open --model claude-opus-5 --rounds-max 9)"
+    closed_body="$(bash "$STATE_COMMENT" render --body /dev/null --state "done" --round 3/9 \
+        --head abc --last-run "1/1 handled" --campaign closed --model claude-opus-5 --rounds-max 9)"
+    jq -n --arg b "$open_body" '[{id: 1, author: "rediacc-autopilot[bot]", body: $b}]' >"$dir/11.json"
+    jq -n --arg b "$closed_body" '[{id: 2, author: "rediacc-autopilot[bot]", body: $b}]' >"$dir/12.json"
+    # THE SPOOF: console is public, so a lookalike comment claiming an open
+    # campaign is the obvious way to make the sweeper dispatch rounds against
+    # a PR nobody armed.
+    jq -n --arg b "$open_body" '[{id: 3, author: "mallory", body: $b}]' >"$dir/13.json"
+    jq -n '[{number: 11}, {number: 12}, {number: 13}, {number: 14}]' >"$WORK/sweep/prs.json"
+    local listed
+    listed="$(bash "$SWEEP" --prs "$WORK/sweep/prs.json" --comments-dir "$dir" --bot 'rediacc-autopilot[bot]' 2>"$WORK/err.txt")"
+    assert_eq "$listed" "11" "only the PR with a trusted open campaign is listed"
+    assert_not_contains "$listed" "12" "a closed campaign is not swept"
+    assert_not_contains "$listed" "13" "and a byte-identical lookalike from another author is not trusted"
+    # A PR with no comment dump is skipped LOUDLY: "could not look" is not
+    # "not armed", and swallowing it would make a fetch failure read as a
+    # closed campaign.
+    assert_contains "$(err)" "no comment dump for PR #14" "an unreadable PR is reported, not assumed closed"
+    log_pass "the sweeper reaches campaign-armed PRs and refuses lookalikes"
+}
+
 # ---------------------------------------------------------------------------
 # finish.sh check-done, both directions.
 # ---------------------------------------------------------------------------
@@ -1122,6 +1814,127 @@ test_finish_check_done() {
     assert_eq "$rc" "1" "ready-flip without AUTOPILOT_ALLOW_PUSH refuses"
     assert_contains "$(err)" "stage-flag-disabled" "naming the flag"
     log_pass "done detection reads in both directions, and finish writes fail closed"
+}
+
+# ---------------------------------------------------------------------------
+# The three scripts the workflow steps call: compose-prompt, update-state and
+# post-escalation. They exist because the repo bans fat inline run: blocks, and
+# that same extraction is what makes them testable at all -- the words an
+# operator reads when a campaign stops are this wave's actual product.
+# ---------------------------------------------------------------------------
+
+COMPOSE="$AUTOPILOT/compose-prompt.sh"
+UPDATE_STATE="$AUTOPILOT/update-state.sh"
+POST_ESC="$AUTOPILOT/post-escalation.sh"
+
+test_compose_prompt_refuses_a_blind_review_round() {
+    local fx="$WORK/compose/fx"
+    mkdir -p "$fx"
+    printf '{"decision":"go","mode":"fix","reason":"ci-failure"}\n' >"$fx/decision.json"
+    printf 'state: waiting-ci | round: 1/25\n' >"$fx/state.txt"
+    printf 'Tests + Infra / Unit\n' >"$fx/failed-jobs.txt"
+    # CONTROL: a fix round needs no payload and composes fine.
+    local rc=0
+    bash "$COMPOSE" --prompts "$AUTOPILOT/prompts" --fx "$fx" --template fix-round.md \
+        --mode fix --out "$WORK/compose/fix.md" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "0" "a fix round composes"
+    assert_contains "$(cat "$WORK/compose/fix.md")" "<failed_jobs>" "carrying the failed-job block"
+    assert_contains "$(cat "$WORK/compose/fix.md")" "Tests + Infra / Unit" "with the actual red job in it"
+    assert_not_contains "$(cat "$WORK/compose/fix.md")" "<review_payload>" "and no review payload it never asked for"
+    # FIRES: a review round with no payload would answer findings it never
+    # read. The gate treats a failed thread fetch as a warning so one GraphQL
+    # hiccup cannot stop fix rounds; the cost of that choice is paid here.
+    rc=0
+    bash "$COMPOSE" --prompts "$AUTOPILOT/prompts" --fx "$fx" --template review-response.md \
+        --mode review-response --out "$WORK/compose/blind.md" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "1" "a review round with no payload refuses"
+    assert_contains "$(err)" "refusing to run a review round blind" "saying why"
+    # CONTROL: with a payload present the same round composes and carries it.
+    printf '{"threads":[{"id":"PRT_x","path":"a.ts","comments":[{"author":"github-actions[bot]","body":"the finding"}]}],"kept":1}\n' >"$fx/review-payload.json"
+    rc=0
+    bash "$COMPOSE" --prompts "$AUTOPILOT/prompts" --fx "$fx" --template review-response.md \
+        --mode review-response --out "$WORK/compose/rev.md" >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "0" "with a payload the review round composes"
+    assert_contains "$(cat "$WORK/compose/rev.md")" "<review_payload>" "carrying the payload block"
+    assert_contains "$(cat "$WORK/compose/rev.md")" "PRT_x" "with the thread id the round must cite in its decisions"
+    log_pass "compose-prompt injects the payload for review rounds and refuses to run one blind"
+}
+
+test_update_state_fails_closed_and_renders_the_round() {
+    local rc=0
+    # Fail closed FIRST: this is a write path, and the flag is the stage gate.
+    bash "$UPDATE_STATE" --pr 1 --repo rediacc/console --body /dev/null --state waiting-ci \
+        --round 1 --rounds-max 25 --head abc --last-run "1/1 handled" --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "1" "a state write without AUTOPILOT_ALLOW_STATE refuses"
+    assert_contains "$(err)" "stage-flag-disabled" "naming the flag"
+    # CONTROL: armed, it renders the round from the VALIDATED verdict.
+    jq -n '{verdict: "ok", outcome: "push", files: ["x.ts"], ledger_line: "r1 | run 30123456789/1 | red: unit",
+            ruled_out: ["widening the timeout", "retrying the flaky leg"],
+            decisions: ["thread T1: fixed in x.ts - guarded nil"]}' >"$WORK/us-verdict.json"
+    rc=0
+    AUTOPILOT_ALLOW_STATE=true bash "$UPDATE_STATE" --pr 1 --repo rediacc/console --body /dev/null \
+        --state waiting-ci --round 4 --rounds-max 25 --head abc1234 --last-run "30123456789/1 handled" \
+        --ledger "r4 | run 30123456789/1 | red: unit" --verdict "$WORK/us-verdict.json" \
+        --campaign open --model claude-opus-5 --last-sig deadbeef --sig-count 2 --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "0" "armed, the render succeeds"
+    assert_contains "$(out)" "campaign: open | model: claude-opus-5" "the metadata line carries the campaign"
+    assert_contains "$(out)" "last_sig: deadbeef | sig_count: 2" "and the stuck signature"
+    assert_contains "$(out)" "r4 | run 30123456789/1" "the ledger line lands"
+    assert_contains "$(out)" "- widening the timeout" "every ruled-out entry lands"
+    assert_contains "$(out)" "- retrying the flaky leg" "not just the first"
+    assert_contains "$(out)" "- thread T1: fixed" "and the decisions"
+    # A multi-line entry collapses to one line, or the carry-over parser would
+    # drop its continuation on the very next round.
+    jq -n '{ruled_out: ["first line\nsecond line"], decisions: []}' >"$WORK/us-multiline.json"
+    AUTOPILOT_ALLOW_STATE=true bash "$UPDATE_STATE" --pr 1 --repo rediacc/console --body /dev/null \
+        --state waiting-ci --round 1 --rounds-max 25 --head abc --last-run "1/1 handled" \
+        --verdict "$WORK/us-multiline.json" --dry-run >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "- first line second line" "a multi-line entry becomes one carried-over bullet"
+    log_pass "update-state fails closed and records the whole round, not its first line"
+}
+
+test_post_escalation_says_what_stopped() {
+    local rc=0
+    bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt" || rc=$?
+    assert_eq "$rc" "1" "an escalation write without AUTOPILOT_ALLOW_STATE refuses"
+    assert_contains "$(err)" "stage-flag-disabled" "naming the flag"
+    # The model's reason and proposed patch are the payload of an escalation;
+    # losing them to a red job and a wordless label was the whole problem.
+    jq -n '{outcome: "escalate", escalation: {reason: "the fix needs .github/workflows/ci.yml",
+            patch: "--- a/ci.yml\n+++ b/ci.yml\n+  timeout-minutes: 20"}}' >"$WORK/pe-verdict.json"
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round escalated" \
+        --round 3 --verdict "$WORK/pe-verdict.json" --run-url "https://example.invalid/run/1" --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "the fix needs .github/workflows/ci.yml" "the model's reason reaches the comment"
+    assert_contains "$(out)" "Proposed patch (data, not applied)" "and the patch rides as data, never applied"
+    assert_contains "$(out)" "+  timeout-minutes: 20" "with the diff itself attached"
+    assert_contains "$(out)" "autopilot-blocked" "the comment says how to unlatch"
+    assert_contains "$(out)" "https://example.invalid/run/1" "and points at the run log"
+    # The failure path NAMES THE STEP CLASS. "Something went wrong" is what
+    # this replaced.
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" \
+        --round 3 --steps "restore=success,model=success,boundary=failure,state=skipped" --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "the handoff validator or the exfiltration tripwire" "the failed step class is named"
+    assert_not_contains "$(out)" "unclassified" "not left unclassified"
+    # CONTROL: the FIRST failing key wins, so a later failure cannot mask an
+    # earlier one.
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" \
+        --steps "restore=failure,model=failure,boundary=failure" --dry-run >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "trusted-config assert (wall 4)" "the earliest failed class is the one reported"
+    # And with no failure anywhere it says so instead of inventing a cause.
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" \
+        --steps "restore=success,model=success" --dry-run >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "unclassified" "no failing step means an honest 'unclassified', not a guess"
+    # The gate's terminal no-gos arrive by --reason instead of a verdict.
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the campaign stopped" \
+        --reason "stuck-signature: failed-job set e1e83547 is unchanged after 2 fix round(s)" --dry-run \
+        >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_contains "$(out)" "stuck-signature: failed-job set e1e83547" "the gate's own reason reaches the operator"
+    log_pass "every way a campaign stops now arrives with words attached"
 }
 
 # ---------------------------------------------------------------------------
@@ -1175,6 +1988,18 @@ test_push_stage_flag_fails_closed
 test_push_branch_checks_are_hardcoded
 test_push_rejected_handoff_commits_nothing
 test_push_tripped_tripwire_commits_nothing
+test_push_escalate_is_a_result_not_a_failure
+test_push_escalate_without_a_reason_is_still_rejected
+test_push_no_change_outcome
+test_push_publishes_the_verdict_on_the_push_path_too
+test_push_submodule_happy_path
+test_push_submodule_dry_run_writes_no_remote
+test_push_submodule_requires_the_stage_flag
+test_push_submodule_file_outside_the_submodule
+test_push_submodule_gitlink_must_be_declared
+test_push_submodule_tripwire_fires
+test_push_submodule_branch_forbidden_touches_nothing
+test_push_submodule_uninitialized_never_writes_the_parent
 test_push_boundary_never_stages_wholesale
 test_gate_stage_flags_fail_closed
 test_gate_fork_guard
@@ -1190,10 +2015,23 @@ test_state_comment_fields_normalize_hostile_values
 test_gate_dedup_and_round_cap
 test_gate_watchdog_deferral
 test_gate_mode_selection_table
+test_gate_stuck_signature_stops_the_thrash
+test_gate_rerun_review_mode
+test_gate_rerun_rounds_count_against_the_cap
 test_state_comment_trusted_selection
 test_state_comment_render_appends_and_caps
+test_state_comment_records_every_entry_not_just_the_first
+test_state_comment_signature_fields_round_trip
 test_state_comment_compaction_over_55kb
+test_review_payload_filters_on_the_root_author
+test_review_payload_byte_cap
+test_review_reply_plan_requires_a_shown_thread
+test_review_reply_caps_the_body_and_fails_closed_on_write
+test_sweep_finds_open_campaigns_and_refuses_lookalikes
 test_finish_check_done
+test_compose_prompt_refuses_a_blind_review_round
+test_update_state_fails_closed_and_renders_the_round
+test_post_escalation_says_what_stopped
 test_prompts_carry_the_required_clauses
 echo ""
 echo "assertion call sites: $(grep -cE '^[[:space:]]*assert_' "${BASH_SOURCE[0]}")"

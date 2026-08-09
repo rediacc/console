@@ -41,6 +41,7 @@ the same way you would verify a gate's finding.**
 | CI parity exemptions (direction-tagged) | `.ci-parity-exempt` | `scripts/check-ci-parity.ts` |
 | `package.json` overrides | `package.json`: `overrides` + `_overridesReasons` | `scripts/check-overrides-reasons.ts` |
 | knip suppressions (`ignore*` arrays) | `knip.jsonc` (inline `// BLOCKER:` comments) | `scripts/check-knip-blockers.ts` |
+| Runner sizing exemptions | `.runner-advice-allowlist` | `.ci/scripts/quality/check_runner_advice.py`. Liveness is enforced **in-gate** rather than by a `check-suppression-liveness.ts` probe, because the oracle (does this entry still suppress a MOVE_TO_SLIM finding?) *is* the comparison the gate already performs; same arrangement as `.profiler-coverage-allowlist` |
 
 ### Format
 

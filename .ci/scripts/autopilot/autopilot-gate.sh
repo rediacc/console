@@ -53,11 +53,20 @@
 #
 # Output: {"decision":"go"|"no-go","mode":...,"reason":...,"round":N,
 #          "push_allowed":bool,"armed_by":...,"model":...,"rounds_max":N,
-#          "campaign":"open"|"closed"|"none","dispatch_trusted":bool}.
+#          "campaign":"open"|"closed"|"none","dispatch_trusted":bool,
+#          "sig":"<hex8>"|"none","sig_count":N}.
 #          Exit 0 for any decision; 2 for
 #          usage errors (a wiring bug must be loud, never read as a quiet
 #          no-go). `model`, `rounds_max` and `campaign` are what the workflow
 #          feeds to claude_args and to the next state-comment write.
+#
+# THE STUCK SIGNATURE, 03-v2-autonomy.md section 4's flapping bound made
+# mechanical: `sig` is the first 8 hex of sha256 over the SORTED failed-job
+# set, and `sig_count` is how many consecutive rounds have now faced that same
+# set (read back from the state comment, written forward by the workflow). At
+# STUCK_LIMIT the fix arm refuses instead of spending another round on a fix
+# that has twice failed to move the red, which is the difference between
+# escalating at round 3 and escalating at the 25-round cap.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -109,6 +118,22 @@ CAMPAIGN_STATE="none"
 ARMED_BY="none"
 DISPATCH_TRUSTED=false
 
+# The third consecutive round facing an unchanged failed-job set is the one
+# that refuses: two distinct fixes have already failed to move it.
+STUCK_LIMIT=3
+SIG="none"
+SIG_COUNT=0
+
+# sha256_hex - read stdin, print the hex digest. coreutils on the runner,
+# shasum on macOS; every .ci script documents itself as locally runnable.
+sha256_hex() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum | cut -d' ' -f1
+    else
+        shasum -a 256 | cut -d' ' -f1
+    fi
+}
+
 # Round number this invocation would become: ledger entries + 1. The ledger
 # in the trusted-author state comment is the ONLY round counter (wall 3: the
 # cap must be enforced by the harness, never by the model).
@@ -152,9 +177,11 @@ emit() { # emit <decision> <mode> <reason>
         --argjson rounds_max "$MAX_ROUNDS" \
         --arg campaign "$campaign_next" \
         --argjson dispatch_trusted "$DISPATCH_TRUSTED" \
+        --arg sig "$SIG" \
+        --argjson sig_count "$SIG_COUNT" \
         '{decision: $decision, mode: $mode, reason: $reason, round: $round, push_allowed: $push_allowed,
           armed_by: $armed_by, model: $model, rounds_max: $rounds_max, campaign: $campaign,
-          dispatch_trusted: $dispatch_trusted}'
+          dispatch_trusted: $dispatch_trusted, sig: $sig, sig_count: $sig_count}'
     exit 0
 }
 no_go() { emit "no-go" "none" "$1"; }
@@ -218,6 +245,20 @@ fi
 CAMPAIGN_STATE="$(jq -r '.campaign' <<<"$campaign_fields")"
 campaign_model="$(jq -r '.model' <<<"$campaign_fields")"
 campaign_rounds="$(jq -r '.rounds_max' <<<"$campaign_fields")"
+campaign_last_sig="$(jq -r '.last_sig' <<<"$campaign_fields")"
+campaign_sig_count="$(jq -r '.sig_count' <<<"$campaign_fields")"
+
+# Failure signature: sorted, so the same set of red jobs hashes the same
+# regardless of the order the jobs API happened to return them in. An empty or
+# absent list is 'none' and never matches a previous signature -- a green run
+# must not look like a repeat of the last red one.
+if [[ -n "$FAILED_JOBS" && -s "$FAILED_JOBS" ]]; then
+    SIG="$(LC_ALL=C sort "$FAILED_JOBS" | sha256_hex | cut -c1-8)"
+fi
+SIG_COUNT=1
+if [[ "$SIG" != "none" && "$SIG" == "$campaign_last_sig" ]]; then
+    SIG_COUNT=$((campaign_sig_count + 1))
+fi
 
 # Model resolution, in the design's order: the dispatch input beats the
 # campaign's recorded model, which beats the default. An unrecognised value at
@@ -328,6 +369,13 @@ fi
 # 9. Mode selection (03-v2-autonomy.md section 2, check 6, in its order).
 case "$conclusion" in
     failure)
+        # Flapping bound before the fix round, not after: by the time the same
+        # failed-job set arrives for the STUCK_LIMIT-th time, two distinct
+        # fixes have already been spent on it and a third is a worse bet than
+        # the operator's attention.
+        if [[ "$SIG" != "none" ]] && ((SIG_COUNT >= STUCK_LIMIT)); then
+            no_go "stuck-signature: failed-job set ${SIG} is unchanged after $((SIG_COUNT - 1)) fix round(s); escalating rather than burning the round cap"
+        fi
         emit "go" "fix" "ci-failure: run ${run_id} concluded failure"
         ;;
     cancelled)
@@ -341,7 +389,16 @@ case "$conclusion" in
         ;;
     success)
         if [[ "$pr_review_red" == "true" ]]; then
-            emit "go" "review-response" "review-gate-red: CI green but the Review Gate is red"
+            # A red Review Gate with NOTHING outstanding to answer is the
+            # review pipeline needing to run again, not the model needing to
+            # think: the deterministic rerun costs zero model tokens
+            # (03-v2-autonomy.md section 9 lists review-gate rerun among the
+            # zero-cost paths). With threads open there IS something to
+            # answer, so that case still buys a round.
+            if ((pr_threads == 0)); then
+                emit "go" "rerun-review" "review-gate-red-no-threads: the Review Gate is red with nothing outstanding to answer; deterministic rerun, no model"
+            fi
+            emit "go" "review-response" "review-gate-red: CI green, the Review Gate is red, and ${pr_threads} thread(s) are outstanding"
         fi
         if [[ "$pr_draft" == "true" ]]; then
             emit "go" "ready-flip" "success-while-draft: deterministic ready-flip, no model"

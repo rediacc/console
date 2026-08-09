@@ -17,17 +17,32 @@
 #   render --body <file> --state <s> --round <r/cap> --head <sha> \
 #          --last-run <id/attempt handled> [--ledger <line>] \
 #          [--ruled-out <line>] [--decision <line>] \
-#          [--campaign open|closed|none] [--model <id>] [--rounds-max <n>]
+#          [--ruled-out-file <file>] [--decisions-file <file>] \
+#          [--campaign open|closed|none] [--model <id>] [--rounds-max <n>] \
+#          [--last-sig <hex8>] [--sig-count <n>]
 #       Rebuilds the full body: header, state line, then the three sections
 #       carried over from --body (absent/empty file = fresh comment) plus the
 #       appended lines. Every appended line is hard-capped at 400 chars.
 #       Above 55 KB, ledger rounds older than the last 8 compact to a
 #       one-line pointer (full detail persists in that round's workflow
 #       logs, reachable by run id).
+#       The --*-file variants append ONE capped line per input line, which is
+#       how a round's whole ruled_out[]/decisions[] arrays reach the comment
+#       without the workflow having to loop (03-v2-autonomy.md section 3: the
+#       ruled-out section is the anti-thrash memory, and a memory that only
+#       ever records its first entry is not one).
 #   fields --body <file>
-#       Prints {"campaign":...,"model":...,"rounds_max":N} read back from the
-#       metadata line. autopilot-gate.sh calls THIS rather than re-parsing the
-#       line itself, so the format has exactly one reader and one writer.
+#       Prints {"campaign":...,"model":...,"rounds_max":N,"last_sig":...,
+#       "sig_count":N} read back from the metadata line. autopilot-gate.sh
+#       calls THIS rather than re-parsing the line itself, so the format has
+#       exactly one reader and one writer.
+#
+# THE STUCK SIGNATURE (last_sig / sig_count) is the flapping bound from
+# 03-v2-autonomy.md section 4: "same job red twice with the same signature
+# after two distinct fixes yields stuck and escalates rather than burning the
+# cap". The signature is computed by the gate over the sorted failed-job set;
+# this comment is where it persists between rounds, so the count survives the
+# workflow_run boundary the same way the ledger does.
 #
 # THE CAMPAIGN FIELDS (campaign / model / rounds_max) are the dispatch-armed
 # loop's memory. A `gh workflow run Autopilot -f pr_number=N` is the arming
@@ -80,6 +95,10 @@ normalize_field() {
         campaign) [[ "$value" == "open" || "$value" == "closed" ]] || value="none" ;;
         model) [[ "$value" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || value="none" ;;
         rounds_max) [[ "$value" =~ ^[0-9]{1,4}$ ]] || value="0" ;;
+        # Exactly the 8 lowercase hex the gate emits; anything else is not a
+        # signature this loop produced, so it must not be able to match one.
+        last_sig) [[ "$value" =~ ^[0-9a-f]{8}$ ]] || value="none" ;;
+        sig_count) [[ "$value" =~ ^[0-9]{1,4}$ ]] || value="0" ;;
         *)
             log_error "normalize_field: unknown field '$name'"
             exit 2
@@ -135,7 +154,7 @@ case "$cmd" in
         HEAD_SHA="${ARG_HEAD:-}"
         LAST_RUN="${ARG_LAST_RUN:-}"
         [[ -n "$STATE" && -n "$ROUND" && -n "$HEAD_SHA" && -n "$LAST_RUN" ]] || {
-            log_error "usage: state-comment.sh render --body <file> --state <s> --round <r/cap> --head <sha> --last-run <id/attempt handled> [--ledger <line>] [--ruled-out <line>] [--decision <line>] [--campaign <c>] [--model <id>] [--rounds-max <n>]"
+            log_error "usage: state-comment.sh render --body <file> --state <s> --round <r/cap> --head <sha> --last-run <id/attempt handled> [--ledger <line>] [--ruled-out <line>] [--decision <line>] [--ruled-out-file <file>] [--decisions-file <file>] [--campaign <c>] [--model <id>] [--rounds-max <n>] [--last-sig <hex8>] [--sig-count <n>]"
             exit 2
         }
 
@@ -146,6 +165,8 @@ case "$cmd" in
         CAMPAIGN="$(normalize_field campaign "${ARG_CAMPAIGN:-$(state_field "$BODY" campaign)}")"
         MODEL="$(normalize_field model "${ARG_MODEL:-$(state_field "$BODY" model)}")"
         ROUNDS_MAX="$(normalize_field rounds_max "${ARG_ROUNDS_MAX:-$(state_field "$BODY" rounds_max)}")"
+        LAST_SIG="$(normalize_field last_sig "${ARG_LAST_SIG:-$(state_field "$BODY" last_sig)}")"
+        SIG_COUNT="$(normalize_field sig_count "${ARG_SIG_COUNT:-$(state_field "$BODY" sig_count)}")"
 
         work="$(mktemp -d)"
         trap 'rm -rf "$work"' EXIT
@@ -169,17 +190,32 @@ case "$cmd" in
             ' "$BODY"
         fi
 
+        # append_entries <src-file> <dest-file> - one capped, bulleted line per
+        # non-blank input line. An absent or empty source appends nothing,
+        # because "this round ruled nothing out" is the common case and must
+        # not render a stray bullet.
+        append_entries() {
+            local src="${1:-}" dest="$2" line
+            [[ -n "$src" && -s "$src" ]] || return 0
+            while IFS= read -r line; do
+                [[ -z "${line//[[:space:]]/}" ]] && continue
+                cap_line "- $line" >>"$dest"
+            done <"$src"
+        }
+
         [[ -n "${ARG_LEDGER:-}" ]] && cap_line "$ARG_LEDGER" >>"$work/ledger"
         [[ -n "${ARG_RULED_OUT:-}" ]] && cap_line "- $ARG_RULED_OUT" >>"$work/ruled"
         [[ -n "${ARG_DECISION:-}" ]] && cap_line "- $ARG_DECISION" >>"$work/decisions"
+        append_entries "${ARG_RULED_OUT_FILE:-}" "$work/ruled"
+        append_entries "${ARG_DECISIONS_FILE:-}" "$work/decisions"
 
         render_body() { # render_body <ledger-file>
             printf '%s\n' "$HEADER"
             # Not cap_line'd, and it does not need to be: every field here is
             # either a workflow-controlled short value or normalized above, so
             # this line cannot grow with the ledger the way an appended line can.
-            printf 'state: %s | round: %s | head: %s | last_run: %s | campaign: %s | model: %s | rounds_max: %s\n' \
-                "$STATE" "$ROUND" "$HEAD_SHA" "$LAST_RUN" "$CAMPAIGN" "$MODEL" "$ROUNDS_MAX"
+            printf 'state: %s | round: %s | head: %s | last_run: %s | campaign: %s | model: %s | rounds_max: %s | last_sig: %s | sig_count: %s\n' \
+                "$STATE" "$ROUND" "$HEAD_SHA" "$LAST_RUN" "$CAMPAIGN" "$MODEL" "$ROUNDS_MAX" "$LAST_SIG" "$SIG_COUNT"
             printf '\n#### Round ledger\n'
             cat "$1"
             printf '\n#### Ruled out\n'
@@ -224,7 +260,10 @@ case "$cmd" in
             --arg campaign "$(state_field "$BODY" campaign)" \
             --arg model "$(state_field "$BODY" model)" \
             --argjson rounds_max "$(state_field "$BODY" rounds_max)" \
-            '{campaign: $campaign, model: $model, rounds_max: $rounds_max}'
+            --arg last_sig "$(state_field "$BODY" last_sig)" \
+            --argjson sig_count "$(state_field "$BODY" sig_count)" \
+            '{campaign: $campaign, model: $model, rounds_max: $rounds_max,
+              last_sig: $last_sig, sig_count: $sig_count}'
         ;;
     *)
         log_error "unknown subcommand '${cmd}' (select|render|fields)"

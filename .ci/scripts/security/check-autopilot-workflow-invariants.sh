@@ -23,6 +23,27 @@
 #                                tag-mode fetch is the credentialed path.
 #   cancel-in-progress-armed     cancel-in-progress must stay false: never
 #                                kill a round mid-push.
+#   model-without-state-guard    the model job's own `if:` must require
+#                                AUTOPILOT_ALLOW_STATE. A round that can run
+#                                but cannot record itself pushes, resolves
+#                                threads or escalates and then leaves no
+#                                ledger line -- so the next event
+#                                re-classifies from a state comment that never
+#                                learned the round happened, and the round
+#                                counter that bounds the entire loop
+#                                (03-v2-autonomy.md section 4's termination
+#                                proof) stops counting. Stage order (S2 before
+#                                S4) is supposed to make the combination
+#                                impossible; this makes it structurally so.
+#   submodule-checkout-pre-model no checkout step in the model job may request
+#                                submodules before the model runs. The four
+#                                submodules are PRIVATE, so fetching them needs
+#                                a credential, and a credential that exists
+#                                before the model step is the one thing this
+#                                whole design is built to prevent. S6 makes
+#                                submodule pushes possible AFTER the model
+#                                exits; it must not become a reason to hand the
+#                                model's checkout a token.
 #
 # Env: WORKFLOW_FILE overrides the target so the gate test can drive every
 # invariant against mutated copies. Exit 0 clean, 1 violation, 2 setup error.
@@ -82,6 +103,16 @@ BEGIN { job = "<top>"; in_jobs = 0; in_run = 0; run_indent = 0 }
     }
     if (!is_comment && line ~ /^[[:space:]]*run:[[:space:]]*[|>]/) { in_run = 1; run_indent = indent }
 
+    # A checkout that asks for submodules needs a credential for four PRIVATE
+    # repos. Anywhere before the model action in the model job, that is a
+    # pre-model credential by another name. `submodules: false` is fine and is
+    # what the negated match allows. This sits BEFORE the pending-checkout
+    # block on purpose: that block `next`s over every line of a with-block, so
+    # a check placed after it never sees the inputs it is meant to police.
+    if (!is_comment && line ~ /^[[:space:]]*submodules:[[:space:]]*/ && line !~ /submodules:[[:space:]]*.?false.?[[:space:]]*$/) {
+        if (!(job in submodule_checkout)) submodule_checkout[job] = NR
+    }
+
     # A pending checkout is judged the moment its STEP ends: any new step
     # marker, or any dedent to at or above the marker indent. Step keys
     # (with:, id:) and with-block contents all sit deeper than the marker.
@@ -131,6 +162,9 @@ END {
         if (j == "gate") printf "token-in-gate\t%d\t%s\n", first_token[j], j
         if ((j in model_line) && first_token[j] < model_line[j]) printf "token-before-model\t%d\t%s\n", first_token[j], j
     }
+    for (j in submodule_checkout) {
+        if ((j in model_line) && submodule_checkout[j] < model_line[j]) printf "submodule-checkout-pre-model\t%d\t%s\n", submodule_checkout[j], j
+    }
     # A model job with NO app-token at all is fine (tokenless job); a gate job
     # is judged above. Emit a marker so the caller can assert coverage.
     printf "scanned-jobs\t0\t%d\n", length(seen_checkout)
@@ -151,6 +185,29 @@ done <<<"$findings"
 # above must stay explained at the point of use, not by folklore.
 if ! grep -q 'WALL 4' "$WORKFLOW_FILE"; then
     fail "wall4-comment-missing: no 'WALL 4' comment explains the trusted checkout ($WORKFLOW_FILE)"
+fi
+
+# The model job's JOB-LEVEL `if:` (not a step's, and not the state-write step's
+# own guard) must name AUTOPILOT_ALLOW_STATE. Extracted as its own pass rather
+# than folded into the walk above because it is a claim about one specific
+# key's contents, and a grep over the whole file would pass on the state-write
+# step that already mentions the flag -- which is precisely the thing this
+# invariant must not accept as a substitute.
+model_if="$(awk '
+    /^  model:[[:space:]]*$/ { inmodel = 1; next }
+    inmodel && /^  [A-Za-z_][A-Za-z0-9_-]*:/ { inmodel = 0 }
+    inmodel && /^    if:/ { inif = 1; print; next }
+    inif {
+        if ($0 ~ /^      /) { print; next }
+        inif = 0
+    }
+' "$WORKFLOW_FILE")"
+if [[ -z "$model_if" ]]; then
+    # Anti-vacuity: an unfindable `if:` means this invariant checked nothing,
+    # which must never read as green.
+    fail "model-without-state-guard: no job-level 'if:' found for the model job in $WORKFLOW_FILE (an unparsed guard cannot pass)"
+elif ! grep -q 'AUTOPILOT_ALLOW_STATE' <<<"$model_if"; then
+    fail "model-without-state-guard: the model job's if: does not require AUTOPILOT_ALLOW_STATE ($WORKFLOW_FILE); a round that cannot record itself breaks the round counter"
 fi
 
 if ((FAILED != 0)); then

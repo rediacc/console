@@ -11,7 +11,7 @@
 //
 // Usage:
 //   validate-handoff.cjs --handoff <file> --root <checkout> \
-//     --base-head <sha> --status <file>
+//     --base-head <sha> --status <file> [--allow-submodules true|false]
 //
 //   --root       the checkout the harness owns; every declared path must
 //                realpath-resolve to inside it.
@@ -20,6 +20,13 @@
 //   --status     capture of `git status --porcelain=v1 -z` taken by the
 //                harness. Passed as a file so this validator is pure and
 //                offline-testable: it runs no git, no network, no shell.
+//   --allow-submodules  the S6 stage flag, as a VALUE rather than an ambient
+//                read: absent falls back to AUTOPILOT_ALLOW_SUBMODULES in the
+//                environment, and anything other than the literal 'true' is
+//                off. A handoff carrying submodules[] while this is off is
+//                REJECTED rather than trimmed, because a round that quietly
+//                dropped its submodule half would push a console pointer bump
+//                with nothing behind it.
 //
 // Exit: 0 valid (normalized verdict JSON on stdout), 1 escalate (reasons on
 // stderr), 2 usage error. There is no exit code meaning "ignore me".
@@ -190,6 +197,25 @@ function validate(raw, opts) {
   if (handoff.outcome === 'escalate' && !(handoff.escalation && handoff.escalation.reason)) {
     fail('schema-violation', 'handoff.escalation.reason: outcome escalate requires a reason');
   }
+  const submodules = Array.isArray(handoff.submodules) ? handoff.submodules : [];
+  if (submodules.length > 0) {
+    // The stage flag, checked before anything about the entries is believed.
+    if (!opts.allowSubmodules) {
+      fail(
+        'submodules-disabled',
+        `handoff.submodules: ${submodules.length} submodule change(s) declared while AUTOPILOT_ALLOW_SUBMODULES is not 'true'; refusing the whole round rather than pushing the console half of it`
+      );
+    }
+    // A submodule push only makes sense on a push round: escalate and
+    // no-change stage nothing, so the submodule commits would be minted and
+    // then stranded with no pointer advance to carry them.
+    if (handoff.outcome !== 'push') {
+      fail(
+        'schema-violation',
+        `handoff.submodules: outcome '${handoff.outcome}' never pushes, so submodule work cannot ride on it`
+      );
+    }
+  }
   // block-commit-meta.sh bans attribution trailers repo-wide; refusing them
   // here keeps the harness from minting a commit its own hooks would reject.
   if (
@@ -212,31 +238,37 @@ function validate(raw, opts) {
   }
 
   const dirty = parseStatusZ(opts.statusBuf);
-  const declared = new Set();
-  for (const entry of files) {
+
+  // The SHAPE rules, shared by console files[] and every submodule's files[].
+  // Extracted rather than copied: a submodule whose paths were policed by a
+  // second, slightly different copy of these rules is a hole that opens the day
+  // one copy is updated and the other is not. Returns the normalized path, or
+  // null when it failed (reasons already recorded).
+  const checkPathShape = (entry, rootDir, label) => {
+    const where = label ? `${label}/${entry}` : entry;
     if (path.posix.isAbsolute(entry) || path.isAbsolute(entry) || /^[A-Za-z]:/.test(entry)) {
-      fail('path-absolute', entry);
-      continue;
+      fail('path-absolute', where);
+      return null;
     }
     if (entry.includes('\\') || entry.includes('\u0000')) {
-      fail('path-traversal', `${entry} (backslash or NUL)`);
-      continue;
+      fail('path-traversal', `${where} (backslash or NUL)`);
+      return null;
     }
     const norm = path.posix.normalize(entry);
     if (norm !== entry || entry.startsWith('./')) {
-      fail('path-not-normalized', `'${entry}' is not in normalized repo-relative form`);
-      continue;
+      fail('path-not-normalized', `'${where}' is not in normalized repo-relative form`);
+      return null;
     }
     if (norm.split('/').includes('..')) {
-      fail('path-traversal', entry);
-      continue;
+      fail('path-traversal', where);
+      return null;
     }
     if (DENY_GITHUB.some((b) => underPrefix(norm, b))) {
       fail(
         'denylist-github',
-        `${norm} - workflow-surface changes are never pushed by the harness; escalating with the proposed patch attached as data (03-v2-autonomy.md wall 2)`
+        `${where} - workflow-surface changes are never pushed by the harness; escalating with the proposed patch attached as data (03-v2-autonomy.md wall 2)`
       );
-      continue;
+      return null;
     }
     if (
       DENY_BLOCKED_PREFIXES.some((b) => underPrefix(norm, b)) ||
@@ -244,14 +276,21 @@ function validate(raw, opts) {
     ) {
       fail(
         'denylist-blocked',
-        `${norm} - agent-config surface; blocked outright, quarantine for inspection as data (wall 4)`
+        `${where} - agent-config surface; blocked outright, quarantine for inspection as data (wall 4)`
       );
-      continue;
+      return null;
     }
-    if (!resolvesInsideRoot(opts.root, norm)) {
-      fail('path-symlink-escape', `${norm} resolves outside the checkout`);
-      continue;
+    if (!resolvesInsideRoot(rootDir, norm)) {
+      fail('path-symlink-escape', `${where} resolves outside ${rootDir}`);
+      return null;
     }
+    return norm;
+  };
+
+  const declared = new Set();
+  for (const entry of files) {
+    const norm = checkPathShape(entry, opts.root, '');
+    if (norm === null) continue;
     if (!dirty.has(norm)) {
       fail('path-not-dirty', `${norm} declared but git status shows no change to it`);
       continue;
@@ -266,6 +305,67 @@ function validate(raw, opts) {
       fail('undeclared-dirty', `${d} changed in the tree but is not declared in files[]`);
   }
 
+  // Submodule entries, once the stage flag has already been checked above.
+  const seenSubmodules = new Set();
+  for (const sm of submodules) {
+    if (!sm || typeof sm !== 'object' || typeof sm.path !== 'string') continue; // schema said so already
+    if (seenSubmodules.has(sm.path)) {
+      fail(
+        'submodule-duplicate',
+        `${sm.path} appears twice; one entry per submodule, in the order the harness must perform them`
+      );
+      continue;
+    }
+    seenSubmodules.add(sm.path);
+
+    const smFiles = Array.isArray(sm.files) ? sm.files : [];
+    if (smFiles.length === 0) {
+      fail('schema-violation', `handoff.submodules[${sm.path}].files: must not be empty`);
+    }
+    if (typeof sm.message !== 'string' || sm.message.trim().length === 0) {
+      fail('schema-violation', `handoff.submodules[${sm.path}].message: required and non-empty`);
+    }
+    if (typeof sm.message === 'string' && /co-authored-by/i.test(sm.message)) {
+      fail(
+        'commit-meta-banned',
+        `handoff.submodules[${sm.path}].message carries an attribution trailer (banned repo-wide by block-commit-meta.sh)`
+      );
+    }
+
+    // THE GITLINK MUST BE DECLARED. A submodule commit is only reachable from
+    // console through the pointer, so a round that pushes the submodule
+    // without advancing the pointer has published a commit nothing references
+    // and left the console PR describing a tree it does not contain.
+    if (!declared.has(sm.path)) {
+      fail(
+        'submodule-gitlink-undeclared',
+        `${sm.path} has submodule changes but the gitlink '${sm.path}' is not in the top-level files[]; the pointer advance is a console change and must be declared like one`
+      );
+    }
+
+    // Paths are relative to the SUBMODULE, so they are resolved against the
+    // submodule's own directory. A file naming its way back out of the
+    // submodule is the interesting attack, and it fails as a symlink escape
+    // or a traversal exactly as it would in console.
+    const smRoot = path.join(opts.root, sm.path);
+    let smRootUsable = true;
+    try {
+      smRootUsable = fs.statSync(smRoot).isDirectory();
+    } catch {
+      smRootUsable = false;
+    }
+    if (!smRootUsable) {
+      fail(
+        'submodule-missing',
+        `${sm.path} is declared but is not a directory in this checkout; the harness cannot write a submodule it does not have`
+      );
+      continue;
+    }
+    for (const entry of smFiles) {
+      checkPathShape(entry, smRoot, sm.path);
+    }
+  }
+
   if (reasons.length > 0) return { ok: false, reasons };
   return {
     ok: true,
@@ -278,6 +378,11 @@ function validate(raw, opts) {
       ruled_out: handoff.ruled_out || [],
       decisions: handoff.decisions || [],
       escalation: handoff.escalation || null,
+      submodules: submodules.map((sm) => ({
+        path: sm.path,
+        files: [...sm.files].sort(),
+        message: sm.message,
+      })),
     },
     reasons: [],
   };
@@ -291,6 +396,7 @@ function main(argv) {
     else if (args[i] === '--root') opts.root = args[++i];
     else if (args[i] === '--base-head') opts.baseHead = args[++i];
     else if (args[i] === '--status') opts.status = args[++i];
+    else if (args[i] === '--allow-submodules') opts.allowSubmodulesArg = args[++i];
     else {
       process.stderr.write(`validate-handoff: unknown argument '${args[i]}'\n`);
       return 2;
@@ -317,11 +423,18 @@ function main(argv) {
     );
     return 1;
   }
+  // Explicit flag beats the ambient environment; both fail closed on anything
+  // that is not the literal 'true'.
+  const allowSubmodules =
+    opts.allowSubmodulesArg !== undefined
+      ? opts.allowSubmodulesArg === 'true'
+      : process.env.AUTOPILOT_ALLOW_SUBMODULES === 'true';
   const result = validate(raw, {
     handoffPath: opts.handoff,
     root: opts.root,
     baseHead: opts.baseHead,
     statusBuf,
+    allowSubmodules,
   });
   if (!result.ok) {
     for (const r of result.reasons) process.stderr.write(`ESCALATE: ${r}\n`);

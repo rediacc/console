@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "Observed peak CPU / RAM / wall clock per CI job, and the input to",
+    "check_runner_advice.py. Refresh with:",
+    "    npm run check:ci-runner-advice -- --refresh --branch main",
+    "which harvests the `PROFILER_BASELINE_V1` rows the runner profiler writes",
+    "as `::notice` annotations (.ci/scripts/ci/profiler/panel.sh). The GATE",
+    "itself never touches the network: it compares these committed numbers",
+    "against the `runs-on:` in the workflow files, so `npm run ci` stays",
+    "offline-safe. This mirrors job-timeout-baseline.json deliberately, down to",
+    "the refresh/verify split and the stale-baseline check.",
+    "",
+    "WHY AN ANNOTATION HARVEST AND NOT A STEP SUMMARY. The profiler's human",
+    "panel is a step summary, and a step summary cannot be read back through",
+    "the API at all -- there is no endpoint for it. Check-run ANNOTATIONS can,",
+    "which is the only reason a machine-readable row exists beside the panel.",
+    "",
+    "WHY THE REFRESH IS MANUAL. A gate that rewrites its own baseline from CI",
+    "is a gate that ratifies whatever CI currently does: a job that crept onto",
+    "a bigger runner would be recorded as correct on the next run. Refreshing",
+    "is a commit somebody makes and a reviewer sees.",
+    "",
+    "DELIBERATELY UNSEEDED AT BIRTH. `jobs` is empty, and the gate treats fewer",
+    "than 5 jobs as VACUOUS INPUT and exits 1. That is not an oversight: an",
+    "empty baseline makes every comparison vacuous while the gate prints a",
+    "clean line, which is the exact failure this repo keeps finding. The floor",
+    "makes it impossible to merge the gate without the harvest that gives it",
+    "something to check."
+  ],
+  "refreshed_at": null,
+  "refreshed_from": "PROFILER_BASELINE_V1 annotations on Console CI runs, check-runs annotations API",
+  "jobs": {}
+}
