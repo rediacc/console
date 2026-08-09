@@ -72,6 +72,7 @@ MODULE MAP:
     wl_reggate    v7/v8 regression-gate machinery
     wl_email      the operator email channel (SES digests of open questions)
     wl_judge      the stop-legitimacy judge and its verdict cache
+    wl_checklist  the /handoff checklist gate over docs/<slug>/CHECKLIST.md
     wl_checks     the static battery and the Stop orchestration (run_stop)
     worklist_messages  every user-facing string (arity-pinned by the suite)
 

@@ -3205,3 +3205,107 @@ label applied mid-PR needs a real push to take effect: `external_quality`
 is computed from the EVENT payload's label snapshot (ci.yml:129) and
 `pull_request` triggers only on [opened, synchronize], so a bare rerun
 re-reads the unlabeled payload.
+
+## Handoff checklist gate: /handoff <-> Stop hook (2026-08-09)
+
+`/handoff` produced prose and nothing else. Its scope waves lived in a README
+paragraph, its deliverables lived in the command's own step list, and the only
+thing that ever asked the consuming session to seed the worklist was an
+instruction sentence inside PROMPT.md. The Stop hook, 13k lines across 13
+modules, had zero grep hits for "handoff": nothing verified that a producing
+session actually wrote every deliverable, and nothing verified that the
+consuming session claimed or finished a single wave. An ignored PROMPT.md, or
+one compacted out of context, silently dropped program work with no red
+anywhere. `docs/<slug>/CHECKLIST.md` is now the artifact both sides are held
+to, and the hook reads it.
+
+The grammar, deliberately small enough to write from memory:
+
+```
+# Handoff checklist: <slug>
+Status: producing            <- first 10 lines; producing|executing|done|superseded
+Owner: 99ccf057              <- 8-char session prefix, required while producing
+
+## Deliverables
+- [ ] d1 file:docs/<slug>/README.md
+- [ ] d2 file:docs/<slug>/PROMPT.md
+- [ ] d3 file:~/.claude/projects/-home-muhammed-monorepo-console/programs/<slug>/MANIFEST.md
+
+## Waves
+- [ ] w1 Wave A: <one-line title>
+```
+
+Ids are section-scoped (`d` under Deliverables, `w` under Waves), only ` ` and
+`x` are legal box states, and every deliverable carries a `file:` token.
+Deliverables are file-verified, period: the path must exist and be non-empty,
+`~` expands, relative paths resolve against the repo root, and the tick is
+bookkeeping while the file is the truth. A ticked-but-missing deliverable is
+called out loudly rather than believed. Waves are tick-on-trust with store
+linkage: a wave is settled by `[x]` or covered by any worklist store item whose
+text contains the literal token `cl:<slug>/<wN>`, seeded with
+`worklist.py --add <me> 'cl:<slug>/<wN> <title>'`. Evidence discipline rides
+the existing `--tick` gate, so no new evidence machinery was invented.
+
+Four check keys. `cl-shape` is ALWAYS-tier when the parser itself crashed (the
+V_CI_UNREADABLE precedent, fail closed rather than unknown-and-pass) and
+rotated for ordinary grammar violations: bad Status, missing Owner while
+producing, malformed item line, duplicate id, deliverable without a `file:`.
+`cl-producing` is rotated and blocks the OWNER only, on unmet deliverables or,
+once they all verify, on the missing flip. `cl-flip` is rotated and fires when
+Status is executing or done but a deliverable file is missing or empty, or done
+carries unticked waves. `cl-waves` is rotated, one body per slug, and blocks
+ANY stopping session on an uncovered `[ ]` wave, on a done-but-unticked box,
+and on an all-settled checklist that has not been set to `Status: done`.
+
+Blocking everyone on `cl-waves` is the deliberate part. An uncovered wave is
+unclaimed work, exactly the semantics an untagged worklist item already has:
+the moment any session adds the `cl:` item the wave has an owner and stops
+blocking everybody else. Worst case is one redundant simultaneous block, and it
+self-resolves on the next stop because every violation has a single-turn solo
+exit (add the item, tick the box, or flip the status). A foreign producing
+checklist never blocks: it emits the advisory `cl-foreign`, change-latched, and
+after the owner's transcript has been idle 24h the advisory gains an adoption
+hint (edit `Owner:`, or supersede the program).
+
+Cost is bounded on both paths. The full Stop battery reads checklists because
+that is the enforcement point: zero checklists costs one glob, live ones get a
+header read, and only producing/executing files are parsed in full (typically
+0-2 small files). The poll fast path stays read-free by contract: `clsig` is a
+sha1 over sorted `(relpath, mtime_ns, size)`, stat-only so a chmod-000
+checklist cannot make it raise, and both `clsig` and `cl_live` are banked in
+the pollbase. A poll forfeits the fast path when the signature moved, when
+banked `cl_live > 0`, or when the keys are absent from an older baseline. In
+plain terms: a live checklist means polls pay the battery, and done or
+superseded checklists cost polls nothing. SessionStart and PostCompact inject a
+LIVE HANDOFF CHECKLISTS listing, one line per live checklist with status,
+owner, and the verified/settled counts.
+
+Lifecycle is `producing` -> `executing` -> `done` or `superseded`. The owner
+cannot stop while producing until every file verifies and the status is
+flipped; `done` is gated on all-verified plus all-ticked, so it cannot be used
+as an escape; `superseded` is the terminal exit for an abandoned program. An
+update-mode `/handoff` re-verifies every `file:`, appends new waves with fresh
+monotonic ids, never renumbers or un-ticks, and flips `done` back to
+`executing` when it adds waves. The hook never writes the checklist, and the md
+file is the single source of truth, with no checklist events in the JSONL store
+to reconcile against.
+
+Two accepted residuals, stated rather than solved. A session that skips writing
+a checklist at all is invisible to the hook; the mitigation is social, making
+the checklist the FIRST file write plus a named line in the command's Report
+and Constraints sections. And the 45/90/120 liveness ladder does not apply to
+checklist items: once a wave is claimed it rides the worklist store item, whose
+existing ladder and lease machinery already cover it, so nothing new ages
+checklist rows.
+
+Enforced in `.claude/hooks/stop/wl_checklist.py` (parse, verify, sig, findings)
+wired into `run_stop`, `poll_fast_path`, `bank_pollbase`, `handle_session_start`
+and `handle_post_compact` in `wl_checks.py`, with the eight message constants in
+`worklist_messages.py` (V_CL_SHAPE, V_CL_UNREADABLE, V_CL_PRODUCING,
+V_CL_PRODUCING_DONE, V_CL_FLIP, V_CL_WAVES, N_CL_FOREIGN, CTX_CHECKLISTS; the
+wave-token format constant is spelled CL_LINK_FMT because ruff S105 fires on
+names containing TOKEN). Suite coverage lands in
+`.claude/hooks/stop/test-worklist-v5.sh` cases 193 onward, house style
+throughout: every blocking case paired with a clean-fixture control, including
+a zero-checklist control that must produce no checklist output at all and a
+stat-only unit call against an unreadable file.

@@ -441,6 +441,12 @@ N_PHANTOM_BLIND = (
     "found six that were the former while looking like the latter."
 )
 
+N_CL_FOREIGN = (
+    "Handoff checklist docs/%s/CHECKLIST.md is 'Status: producing', owned by "
+    "session %s -- its deliverables are that session's to finish. Reported, "
+    "never blocked on.%s"
+)
+
 CLI_STATE_REFUSED = (
     "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
     "section. Nothing was written; the previous STATE.md is untouched.\n"
@@ -506,6 +512,58 @@ V_DOCS_DRIFT = (
     "updated. Those documents are how a new or compacted session understands this "
     "work, so code moving without them deletes the next session's starting "
     "context. Update the ones your changes invalidated, in this turn."
+)
+
+# ---- the /handoff checklist gate (docs/<slug>/CHECKLIST.md, wl_checklist) ---
+
+V_CL_SHAPE = (
+    "handoff checklist %s is MALFORMED, and a checklist the hook cannot parse "
+    "gates nothing at all, so it blocks rather than passing quietly:\n%s\n"
+    "    THE GRAMMAR: a 'Status:' line in the first 10 lines carrying one of "
+    "producing, executing, done, superseded; an 'Owner: <your session prefix>' "
+    "line while it is producing; '- [ ] d1 file:<path>' rows under "
+    "'## Deliverables', each with at least one file: token; '- [ ] w1 <title>' "
+    "rows under '## Waves'; ids unique across the file; only '[ ]' and '[x]', "
+    "because leases and deferrals live in the worklist store, not here."
+)
+
+V_CL_UNREADABLE = (
+    "THIS IS A HOOK BUG: the handoff-checklist check failed (%s), so that check "
+    "is blind. It blocks rather than passing quietly, per no-escape-hatch. Fix "
+    "wl_checklist.py, or repair the checklist file it choked on -- there is "
+    "deliberately no flag that turns this check off."
+)
+
+V_CL_PRODUCING = (
+    "you ran /handoff for '%s' and its deliverables DO NOT VERIFY (%d of %d are "
+    "present and non-empty):\n%s\n"
+    "A tick is bookkeeping; the FILE is the truth, which is why the box being "
+    "checked would not have saved this. Write the missing artifacts now, then "
+    "flip 'Status: producing' to 'Status: executing' in %s. This session owns "
+    "that handoff and cannot stop until both are done."
+)
+
+V_CL_PRODUCING_DONE = (
+    "every deliverable of handoff '%s' verifies, so ONE step remains and it is "
+    "the flip: edit %s and change 'Status: producing' to 'Status: executing'. "
+    "Until then every stop of this session blocks here, because a handoff left "
+    "at producing is a handoff nobody has been handed."
+)
+
+V_CL_FLIP = (
+    "handoff checklist %s says 'Status: %s' but reality disagrees:\n%s\n"
+    "A status ahead of its artifacts is exactly how program work drops "
+    "silently: the next session reads the header, believes it, and never looks. "
+    "Restore the artifact(s), or write the honest status in %s, in this turn."
+)
+
+V_CL_WAVES = (
+    "handoff '%s' (%s) carries program state the worklist DOES NOT COVER:\n%s\n"
+    "An UNCOVERED wave is unclaimed work, so it blocks every stopping session "
+    "until someone claims it -- the same semantics an untagged worklist item "
+    "has today, and it stops blocking the others the moment one session adds "
+    "the item. Each row above carries its own one-command exit; run the one "
+    "that matches what you are actually doing."
 )
 
 V_UNCONFIRMED = (
@@ -1135,6 +1193,18 @@ CTX_PLANS_EXCERPT = (
     "=== %s, its '## Status' section (the progress cursor of work already "
     "under way; treat it as the truth and your own recollection as "
     "unreliable) ===\n%s"
+)
+
+CTX_CHECKLISTS = (
+    "LIVE HANDOFF CHECKLISTS (docs/<slug>/CHECKLIST.md, the machine-readable "
+    "half of a /handoff):\n%s\n\n"
+    "The Stop hook ENFORCES these, so they are not documentation: one at "
+    "'Status: producing' blocks its owner until every 'file:' token exists and "
+    "is non-empty, and one at 'Status: executing' blocks ANY stopping session "
+    "while a wave is neither covered by a worklist item nor ticked. Claim a "
+    "wave before you work it with `.claude/hooks/stop/worklist.py --add "
+    "<your-prefix> 'cl:<slug>/<id> <title>'`, tick its box once the wave is "
+    "done, and set 'Status: done' when every box is ticked."
 )
 
 CTX_POSTCOMPACT_MISSING = (
