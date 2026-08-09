@@ -15,6 +15,7 @@ import pathlib
 import re
 import time
 
+import wl_checklist
 import wl_ci
 import wl_core as C
 import wl_email
@@ -354,7 +355,7 @@ def pollbase_path(worklist, session_id):
     return worklist.with_suffix(".pollbase-%s" % (session_id or "unknown")[:8])
 
 
-def bank_pollbase(worklist, session_id, sig):
+def bank_pollbase(worklist, session_id, sig, clsig="", cl_live=-1):
     """Record the world as the poll fast path's baseline.
 
     OPERATOR DECISION, 2026-07-30, overriding the original v9 rule that only an
@@ -372,10 +373,18 @@ def bank_pollbase(worklist, session_id, sig):
     inbox). What banking buys is only this: a poll that changes nothing can
     recognise that nothing changed. The moment real work lands, the signature
     moves and the battery returns on its own.
+
+    v20 banks the handoff-checklist world beside it: `clsig` is the stat-only
+    signature of every docs/<slug>/CHECKLIST.md and `cl_live` is how many of
+    them could block. The defaults are the FAIL-SAFE values, not neutral ones
+    -- cl_live=-1 reads as "unknown, forfeit the silent path", so a future
+    call site that forgets these arguments (and an old baseline written before
+    the keys existed) costs a full battery rather than buying a silent stop.
     """
     with contextlib.suppress(OSError):
         pollbase_path(worklist, session_id).write_text(
-            json.dumps({"sig": sig, "at": C.stamp_now()}), encoding="utf-8"
+            json.dumps({"sig": sig, "at": C.stamp_now(), "clsig": clsig, "cl_live": cl_live}),
+            encoding="utf-8",
         )
 
 
@@ -736,6 +745,15 @@ def docs_drift(root):
 # Cost: SessionStart and PostCompact only. The Stop battery and the poll fast
 # path never read plan files; the guide's single os.path.exists probe per
 # TRIAGED item is the only plan-related work on the stop path.
+#
+# HANDOFF CHECKLISTS ARE THE EXCEPTION, and deliberately so (v20,
+# wl_checklist). docs/<slug>/CHECKLIST.md IS the enforcement point, so the
+# full Stop battery does read those files -- a gate that refuses to look at
+# its own subject is not a gate. The poll fast path still never opens one:
+# checklists_sig() is stat-only and its result is banked in the pollbase
+# beside the world signature, so a live or changed checklist forfeits the
+# silent path without ever charging a poll for a read. A repo that keeps no
+# handoffs pays one glob and nothing else.
 
 PLAN_STATUS_RE = re.compile(r"^Status:\s*([A-Za-z-]+)\s*$", re.MULTILINE)
 PLAN_HEADER_LINES = 10
@@ -922,12 +940,26 @@ def poll_fast_path(worklist, session_id, event):
         return False
     base_p = pollbase_path(worklist, session_id)
     try:
-        base_sig = json.loads(base_p.read_text(encoding="utf-8"))["sig"]
+        base = json.loads(base_p.read_text(encoding="utf-8"))
+        base_sig = base["sig"]
         if time.time() - base_p.stat().st_mtime > POLL_FULL_MAX_MIN * 60:
             return False  # the horizon: a poll stop now pays the battery
     except (OSError, ValueError, KeyError, TypeError):
         return False
     root = C.project_root(C.project_start(event))
+    # v20: a LIVE or CHANGED handoff checklist forfeits the silent path. The
+    # battery is where checklist obligations are adjudicated, and this is the
+    # stat-only half of that contract: no checklist is opened here, only
+    # stat'd, and an old baseline missing the keys reads as cl_live=-1 and
+    # forfeits. Done and superseded checklists bank cl_live=0, so a settled
+    # program costs polls nothing.
+    try:
+        if int(base.get("cl_live", -1)) != 0:
+            return False
+        if wl_checklist.checklists_sig(root) != base.get("clsig"):
+            return False
+    except Exception:  # noqa: BLE001 -- a broken forfeit costs the battery, never an allow
+        return False
     # The fold is loaded BEFORE the signature check since v17, because the
     # signature is now derived from this session's items rather than from the
     # shared files' bytes; passing it here keeps the store parsed once.
@@ -1407,6 +1439,14 @@ def handle_session_start(event):
     if listing:
         blocks.append(M.CTX_PLANS % (branch, listing))
         summary.append("%d open plan(s) in docs/agent/%s" % (len(live), branch))
+    # A THIRD independent block, for the reason the two above are independent:
+    # a repo with live handoff checklists and no design docs and no plans must
+    # still be told about the checklists, because the Stop hook will block on
+    # them and a session that has never heard of them cannot act.
+    cl_listing, cl_n = wl_checklist.checklists_block(root)
+    if cl_listing:
+        blocks.append(M.CTX_CHECKLISTS % cl_listing)
+        summary.append("%d live handoff checklist(s)" % cl_n)
     if not blocks:
         return
     C.emit(
@@ -1478,6 +1518,12 @@ def handle_post_compact(event):
         rel, body = plan_status_excerpt(root, live)
         if body:
             msg += "\n\n" + M.CTX_PLANS_EXCERPT % (rel, body)
+    # v20: and the handoff checklists, appended on all three branches above
+    # for the same reason. A compacted session that forgets a live checklist
+    # rediscovers it as a block it cannot explain.
+    cl_listing, _cl_n = wl_checklist.checklists_block(root)
+    if cl_listing:
+        msg += "\n\n" + M.CTX_CHECKLISTS % cl_listing
     C.emit(
         {
             "systemMessage": "PostCompact: STATE.md %s (.agent/%s/STATE.md)"
@@ -2672,6 +2718,28 @@ def run_stop(event, event_ok, worklist, hook_file):
     dstate, ddrift, ddir = docs_drift(root)
     if dstate == "drifted":
         vadd("docs-drift", False, M.V_DOCS_DRIFT % (ddrift, " ".join(PROGRAM_SURFACE), ddir))
+    # ---- v20: the /handoff checklist gate (docs/<slug>/CHECKLIST.md) --------
+    # WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the
+    # next session seed the worklist. Prose gates nothing, so a handoff whose
+    # PROMPT.md was ignored or compacted away dropped program work silently
+    # and nobody found out. CHECKLIST.md is the machine-readable half of the
+    # same handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping,
+    # the file is the truth) and waves are store-linked through the
+    # `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather
+    # than promised. The two signature values are computed here because the
+    # pollbase banks them below; see wl_checklist for the adjudication.
+    cl_sig_now, cl_live_now = "", -1
+    try:
+        cl_sig_now = wl_checklist.checklists_sig(root)
+        _cl_v, _cl_a, cl_live_now = wl_checklist.checklist_findings(
+            root, fold, session_id, projects_dir
+        )
+        for _k, _always, _t in _cl_v:
+            vadd(_k, _always, _t)
+        for _k, _t, _p in _cl_a:
+            outq_add(worklist, session_id, state_doc, _k, _t, _p)
+    except Exception as exc:  # noqa: BLE001 -- fail CLOSED: a blind gate must say so
+        vadd("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])
     # v9: the two-cron shape (operator directive). A looped session carries
     # exactly one 5-minute inbox poll beside at most one work loop.
     # v18: a CONFIRMED waiter satisfies this in place of a poll cron. The check
@@ -2970,7 +3038,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # entirely. Its window is deliberately not marked as fired, so the
         # "last delivered" stamp the roster prints stays true and the next
         # genuinely eventful stop still owes it.
-        bank_pollbase(worklist, session_id, cur_sig)
+        bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
         counter.unlink(missing_ok=True)
         S.save_state(worklist, session_id, state_doc)
         C.emit({"systemMessage": quiet_note})
@@ -2985,7 +3053,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         counter.write_text(str(int(counter.read_text()) + 1 if counter.exists() else 1))
         # Bank BEFORE emitting, because emit() exits the process and this is
         # the path a busy session actually takes. See bank_pollbase.
-        bank_pollbase(worklist, session_id, cur_sig)
+        bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
         # The reggate fail-safe promises ONE line, never silence, even on a
         # stop that blocks for other reasons. ci_report and queue_note ride
         # along rather than blocking: a downgraded CI failure or a saturated
@@ -3369,7 +3437,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # not extend its own horizon: that bound is what stops the silent path
     # becoming a way to live on polls alone, and it survives this change
     # because poll_fast_path exits before reaching here.
-    bank_pollbase(worklist, session_id, cur_sig)
+    bank_pollbase(worklist, session_id, cur_sig, clsig=cl_sig_now, cl_live=cl_live_now)
     # The guide LEADS the allow report: it is the thing the session copies
     # into its Remaining section, so it comes before everything else. Absent
     # entirely when it had no rows (v18), which is what lets a clean stop with
