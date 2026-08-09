@@ -49,7 +49,11 @@ name: Autopilot
 # exactly that trap; 03-v2-autonomy.md section 8).
 # Plus configuration variables: AUTOPILOT_AUTHOR_ALLOWLIST (empty allows
 # NOBODY), AUTOPILOT_APPLIER_ALLOWLIST, AUTOPILOT_LABEL, AUTOPILOT_MAX_ROUNDS,
-# AUTOPILOT_BOT_LOGIN, AUTOPILOT_GIT_NAME, AUTOPILOT_GIT_EMAIL.
+# AUTOPILOT_BOT_LOGIN, AUTOPILOT_GIT_NAME, AUTOPILOT_GIT_EMAIL, and
+# AUTOPILOT_EFFORT (low|medium|high|xhigh|max) -- the standing reasoning effort
+# for AUTONOMOUS rounds, which have no dispatcher to ask. The `effort` dispatch
+# input still wins for the round it is given on, and an unrecognised value in
+# either place is ignored with a ::notice rather than forwarded to the CLI.
 #
 # IDENTITY, and the split matters: AUTOPILOT_APP_ID is an org VARIABLE
 # (`vars.AUTOPILOT_APP_ID`, visibility scoped to console), NOT a secret. Setting
@@ -263,7 +267,10 @@ jobs:
       # round consumes rather than a live API the round can widen
       # (03-v2-autonomy.md section 6, residual 1). review-payload.sh keeps
       # only unresolved, non-outdated threads whose ROOT comment author is the
-      # review pipeline.
+      # review pipeline. The console PR BODY rides along so the linked
+      # submodule PRs are fetched too: the Submodule Branches gate reds console
+      # over threads living in another repository, and a round that cannot see
+      # them cannot clear it.
       #
       # A FETCH FAILURE IS NOT A GATE FAILURE, but it is not silence either.
       # Failing the whole gate here would let one GraphQL hiccup stop fix
@@ -276,7 +283,8 @@ jobs:
           PR: ${{ steps.pr.outputs.number }}
         run: |
           rc=0
-          .ci/scripts/autopilot/fetch-review-threads.sh --pr "$PR" --repo "$REPO" --out "$RUNNER_TEMP/fx/review-threads.json" || rc=$?
+          gh pr view "$PR" --repo "$REPO" --json body --jq '.body // ""' >"$RUNNER_TEMP/fx/pr-body.md" || true
+          .ci/scripts/autopilot/fetch-review-threads.sh --pr "$PR" --repo "$REPO" --body "$RUNNER_TEMP/fx/pr-body.md" --out "$RUNNER_TEMP/fx/review-threads.json" || rc=$?
           if [ "$rc" -ne 0 ]; then
             echo "::warning::autopilot gate: review threads could not be fetched; a review-response round will refuse rather than run on a partial payload"
             exit 0
@@ -484,18 +492,22 @@ jobs:
       # agent SDK emits every extraArgs entry to the CLI verbatim as
       # `--<key> <value>`, which is the same path the SDK uses for its own
       # `effort` option. 'default' means: do not pass the flag at all.
+      #
+      # AUTOPILOT_EFFORT is the standing setting for AUTONOMOUS rounds, which
+      # have nobody to ask: before it, every unattended round ran at the
+      # model's own default and the only lever was to dispatch each round by
+      # hand. The dispatch input still wins when present, and an unrecognised
+      # value in either is ignored with a ::notice rather than forwarded, since
+      # `--effort banana` fails the round after paying for the runner.
       - name: Resolve the round's model arguments
         id: margs
         env:
           MODEL: ${{ needs.gate.outputs.model }}
           MODE: ${{ needs.gate.outputs.mode }}
           EFFORT: ${{ inputs.effort }}
+          EFFORT_VAR: ${{ vars.AUTOPILOT_EFFORT }}
         run: |
-          turns=60
-          if [ "$MODE" = "fix" ]; then turns=80; fi
-          args="--model $MODEL"$'\n'"--max-turns $turns"$'\n'"--disallowed-tools Task,Agent"
-          if [ -n "$EFFORT" ] && [ "$EFFORT" != "default" ]; then args="$args"$'\n'"--effort $EFFORT"; fi
-          { echo 'args<<AUTOPILOT_ARGS_EOF'; printf '%s\n' "$args"; echo 'AUTOPILOT_ARGS_EOF'; } >>"$GITHUB_OUTPUT"
+          "$RUNNER_TEMP/harness/.ci/scripts/autopilot/resolve-model-args.sh" --model "$MODEL" --mode "$MODE" --effort "$EFFORT" --effort-var "$EFFORT_VAR"
 
       # NO WRITE TOKEN: github_token carries this job's contents:read grant,
       # comments and pushes are impossible from inside the model, and the app

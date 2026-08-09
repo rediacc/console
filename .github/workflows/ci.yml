@@ -440,6 +440,18 @@ jobs:
         with:
           script: return await require('./.ci/scripts/ci/label-guide-comment.cjs')({github, context, core})
 
+      # A SECOND STEP HERE, not a second job. It needs exactly what this job
+      # already holds -- `pull-requests: write` plus the `.ci/scripts` sparse
+      # checkout -- and the argument in this job's header applies unchanged: a
+      # whole job to buy one more comment is the wrong trade, and a second job
+      # would also need its own entry in `needs` and in assert-ci-complete.sh.
+      # Same idempotence contract: it rewrites in place and writes nothing when
+      # the body is unchanged.
+      - name: Post the autopilot guide
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: return await require('./.ci/scripts/ci/autopilot-guide-comment.cjs')({github, context, core})
+
   # ============================================================================
   # COLUMN 2: QUALITY
   # Jobs: quality (reusable workflow)

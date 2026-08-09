@@ -259,58 +259,169 @@ for ((i = 0; i < sub_count; i++)); do
         exit 1
     fi
 
-    if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "dry-run: would push $sub_sha to $REMOTE refs/heads/$BRANCH in '$sub'"
-    else
-        git -C "$subdir" push "$REMOTE" "$sub_sha:refs/heads/$BRANCH"
-        log_info "pushed $sub_sha to $REMOTE refs/heads/$BRANCH in '$sub'"
-    fi
-    printf '%s %s\n' "$sub" "$sub_sha" >>"$workdir/sub-shas.txt"
+    printf '%s %s %s\n' "$sub" "$sub_sha" "$sub_base" >>"$workdir/sub-shas.txt"
 done
 
-# Stage exactly the validated files, one path at a time.
+# ---------------------------------------------------------------------------
+# PHASE 2: validate the CONSOLE side. Still no remote write anywhere.
+#
+# Packaged as a function because phase 4 re-runs it verbatim after an orphan
+# adoption changes a submodule SHA. Re-running the real check beats reasoning
+# that the change "cannot matter".
+# ---------------------------------------------------------------------------
 jq -r '.files[]' "$workdir/verdict.json" >"$workdir/files.txt"
-while IFS= read -r f; do
-    [[ -z "$f" ]] && continue
-    git add -- "$f"
-done <"$workdir/files.txt"
-
-# Staged-set equality: what git staged must be byte-for-byte the declared
-# list. Any divergence (a pathspec that expanded, an index surprise) aborts.
-git diff --cached --name-only | LC_ALL=C sort >"$workdir/staged.txt"
 LC_ALL=C sort "$workdir/files.txt" >"$workdir/declared.txt"
-if ! diff -u "$workdir/declared.txt" "$workdir/staged.txt" >&2; then
-    log_error "staged-set-mismatch: the staged set does not equal the validated files[]; refusing to commit"
-    exit 1
+
+stage_and_validate_console() {
+    # Stage exactly the validated files, one path at a time.
+    while IFS= read -r f; do
+        [[ -z "$f" ]] && continue
+        git add -- "$f"
+    done <"$workdir/files.txt"
+
+    # Staged-set equality: what git staged must be byte-for-byte the declared
+    # list. Any divergence (a pathspec that expanded, an index surprise) aborts.
+    git diff --cached --name-only | LC_ALL=C sort >"$workdir/staged.txt"
+    if ! diff -u "$workdir/declared.txt" "$workdir/staged.txt" >&2; then
+        log_error "staged-set-mismatch: the staged set does not equal the validated files[]; refusing to commit"
+        exit 1
+    fi
+
+    # The pointer advance, verified in the INDEX rather than trusted. `git add`
+    # on a submodule path stages whatever the submodule's HEAD happens to be,
+    # so this proves the console commit about to be minted names exactly the
+    # SHA this round produced, at mode 160000 (a gitlink, not a directory of
+    # files someone flattened into the parent).
+    while read -r sub sub_sha _; do
+        [[ -z "$sub" ]] && continue
+        entry="$(git ls-files -s -- "$sub")"
+        staged_mode="$(awk '{print $1}' <<<"$entry")"
+        staged_sha="$(awk '{print $2}' <<<"$entry")"
+        if [[ "$staged_mode" != "160000" ]]; then
+            log_error "gitlink-not-staged: '$sub' is staged as mode '${staged_mode:-<absent>}', not a 160000 gitlink; refusing to commit"
+            exit 1
+        fi
+        if [[ "$staged_sha" != "$sub_sha" ]]; then
+            log_error "gitlink-sha-mismatch: '$sub' is staged at $staged_sha but this round produced $sub_sha; refusing to commit a pointer to a different commit"
+            exit 1
+        fi
+        log_info "gitlink verified: $sub -> $sub_sha"
+    done <"$workdir/sub-shas.txt"
+
+    # Tripwire on the exact bytes about to be committed, BEFORE any commit.
+    git diff --cached >"$workdir/staged.diff"
+    if ! node "$SCRIPT_DIR/exfil-tripwire.cjs" --diff "$workdir/staged.diff" \
+        ${FAILED_JOBS:+--failed-jobs "$FAILED_JOBS"}; then
+        log_error "tripwire tripped; escalating (nothing committed, nothing pushed)"
+        exit 1
+    fi
+}
+
+stage_and_validate_console
+log_info "all repos validated; nothing has been pushed yet"
+
+# ---------------------------------------------------------------------------
+# PHASE 3: the pushes. EVERY validation above has already passed, in every
+# repo, which is the whole point of the phase split: a console-side refusal
+# used to arrive AFTER the submodules had already been pushed, leaving branches
+# and PRs on renet/account/elite referring to a console commit that was never
+# made. There is no transaction across four git remotes, but there is an order
+# that makes the common failure -- a validation refusal -- leave zero remote
+# writes, and this is it.
+# ---------------------------------------------------------------------------
+
+# adopt_or_refuse <sub> <subdir> <sha> <base> - handle a non-fast-forward.
+#
+# THE ORPHAN CASE IS OURS TO CLEAN UP. A previous round can leave a submodule
+# branch pushed while its console half never landed (the old ordering did
+# exactly this, and a cancelled run can still do it). The next round then
+# builds on the recorded pointer, and its push is rejected as non-fast-forward
+# by a commit THIS SYSTEM wrote. Refusing there strands the campaign on a
+# branch only a human can unpick, so the harness rebuilds its work on top of
+# the orphan instead -- but only when the orphan is provably ours.
+#
+# "Ours" is two independent facts, both required: the tip's COMMITTER EMAIL is
+# the autopilot identity, and the tip shares its merge-base with origin/main
+# with the base we branched from. The first says the autopilot wrote it; the
+# second says it is a continuation of this line of work rather than an
+# unrelated branch that happens to sit at the same name. A tip failing either
+# is somebody else's work, and the round stops rather than rewriting it.
+adopt_or_refuse() {
+    local sub="$1" subdir="$2" sha="$3" base="$4"
+    log_warn "submodule '$sub': push rejected as non-fast-forward; inspecting the remote tip before deciding"
+    git -C "$subdir" fetch -q "$REMOTE" "$BRANCH"
+    local tip tip_email main_ref base_mb tip_mb
+    tip="$(git -C "$subdir" rev-parse FETCH_HEAD)"
+    tip_email="$(git -C "$subdir" log -1 --format=%ce "$tip")"
+    if [[ "$tip_email" != "$AUTOPILOT_GIT_EMAIL" ]]; then
+        log_error "submodule-foreign-branch: '$sub' branch '$BRANCH' already exists at $tip, committed by '$tip_email' rather than the autopilot identity '$AUTOPILOT_GIT_EMAIL'; refusing to rewrite someone else's branch"
+        exit 1
+    fi
+    main_ref="$REMOTE/main"
+    if git -C "$subdir" rev-parse --verify --quiet "$main_ref" >/dev/null 2>&1; then
+        base_mb="$(git -C "$subdir" merge-base "$base" "$main_ref" 2>/dev/null || true)"
+        tip_mb="$(git -C "$subdir" merge-base "$tip" "$main_ref" 2>/dev/null || true)"
+        if [[ -z "$tip_mb" || "$tip_mb" != "$base_mb" ]]; then
+            log_error "submodule-unrelated-branch: '$sub' remote tip $tip does not share this round's merge-base with $main_ref (tip: ${tip_mb:-<none>}, ours: ${base_mb:-<none>}); refusing to build on an unrelated history"
+            exit 1
+        fi
+    fi
+    log_warn "submodule '$sub': the remote tip $tip is an autopilot orphan; rebuilding this round's commit on top of it"
+    # The message is looked up BY PATH rather than by a positional index two
+    # separate loops would have to keep in agreement.
+    jq -r --arg p "$sub" '.submodules[] | select(.path == $p) | .message' "$workdir/verdict.json" >"$workdir/adopt-msg.txt"
+    git -C "$subdir" checkout -q -B "$BRANCH" "$tip"
+    if ! git -C "$subdir" cherry-pick --no-commit "$sha" >/dev/null 2>&1; then
+        git -C "$subdir" cherry-pick --abort >/dev/null 2>&1 || true
+        log_error "submodule-adopt-conflict: '$sub' this round's commit does not apply cleanly on top of $tip; a human must reconcile the branch"
+        exit 1
+    fi
+    git -C "$subdir" -c "user.name=$AUTOPILOT_GIT_NAME" -c "user.email=$AUTOPILOT_GIT_EMAIL" \
+        commit -F "$workdir/adopt-msg.txt" --quiet
+    ADOPTED_SHA="$(git -C "$subdir" rev-parse HEAD)"
+    git -C "$subdir" push "$REMOTE" "$ADOPTED_SHA:refs/heads/$BRANCH"
+    log_info "adopted the orphan in '$sub': pushed $ADOPTED_SHA to $REMOTE refs/heads/$BRANCH"
+}
+
+ADOPTION_HAPPENED=false
+if [[ "$DRY_RUN" == "true" ]]; then
+    while read -r sub sub_sha _; do
+        [[ -z "$sub" ]] && continue
+        log_info "dry-run: would push $sub_sha to $REMOTE refs/heads/$BRANCH in '$sub'"
+    done <"$workdir/sub-shas.txt"
+else
+    : >"$workdir/sub-shas.pushed"
+    while read -r sub sub_sha sub_base_recorded; do
+        [[ -z "$sub" ]] && continue
+        subdir="$ROOT/$sub"
+        ADOPTED_SHA=""
+        if git -C "$subdir" push "$REMOTE" "$sub_sha:refs/heads/$BRANCH" 2>"$workdir/push-err.txt"; then
+            log_info "pushed $sub_sha to $REMOTE refs/heads/$BRANCH in '$sub'"
+        else
+            cat "$workdir/push-err.txt" >&2
+            if ! grep -qiE 'non-fast-forward|fetch first|\[rejected\]' "$workdir/push-err.txt"; then
+                log_error "submodule-push-failed: '$sub' push failed for a reason that is not a non-fast-forward; refusing to guess"
+                exit 1
+            fi
+            adopt_or_refuse "$sub" "$subdir" "$sub_sha" "$sub_base_recorded"
+            sub_sha="$ADOPTED_SHA"
+            ADOPTION_HAPPENED=true
+        fi
+        printf '%s %s %s\n' "$sub" "$sub_sha" "$sub_base_recorded" >>"$workdir/sub-shas.pushed"
+    done <"$workdir/sub-shas.txt"
+    mv "$workdir/sub-shas.pushed" "$workdir/sub-shas.txt"
 fi
 
-# The pointer advance, verified in the INDEX rather than trusted. `git add` on
-# a submodule path stages whatever the submodule's HEAD happens to be, so this
-# is what proves the console commit about to be minted names exactly the SHA
-# that was pushed a moment ago, at mode 160000 (a gitlink, not a directory of
-# files someone flattened into the parent).
-while read -r sub sub_sha; do
-    [[ -z "$sub" ]] && continue
-    entry="$(git ls-files -s -- "$sub")"
-    staged_mode="$(awk '{print $1}' <<<"$entry")"
-    staged_sha="$(awk '{print $2}' <<<"$entry")"
-    if [[ "$staged_mode" != "160000" ]]; then
-        log_error "gitlink-not-staged: '$sub' is staged as mode '${staged_mode:-<absent>}', not a 160000 gitlink; refusing to commit"
-        exit 1
-    fi
-    if [[ "$staged_sha" != "$sub_sha" ]]; then
-        log_error "gitlink-sha-mismatch: '$sub' is staged at $staged_sha but the harness pushed $sub_sha; refusing to commit a pointer to a different commit"
-        exit 1
-    fi
-    log_info "gitlink verified: $sub -> $sub_sha"
-done <"$workdir/sub-shas.txt"
-
-# Tripwire on the exact bytes about to be committed, BEFORE the commit exists.
-git diff --cached >"$workdir/staged.diff"
-if ! node "$SCRIPT_DIR/exfil-tripwire.cjs" --diff "$workdir/staged.diff" \
-    ${FAILED_JOBS:+--failed-jobs "$FAILED_JOBS"}; then
-    log_error "tripwire tripped; escalating (nothing committed, nothing pushed)"
-    exit 1
+# PHASE 4: an adoption moved a submodule SHA, so the gitlink console staged in
+# phase 2 now names a commit that is no longer the branch tip. Re-stage and
+# re-run the SAME validation rather than patching the index and trusting it.
+if [[ "$ADOPTION_HAPPENED" == "true" ]]; then
+    log_warn "an orphan was adopted; re-staging the pointers and re-running the console validation"
+    while read -r sub _ _; do
+        [[ -z "$sub" ]] && continue
+        git add -- "$sub"
+    done <"$workdir/sub-shas.txt"
+    stage_and_validate_console
 fi
 
 # Commit message via -F from a file: no shell interpolation of model text.

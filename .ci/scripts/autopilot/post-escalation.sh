@@ -117,9 +117,26 @@ trap 'rm -rf "$work"' EXIT
         # ATTACHED AS DATA, never applied. A .github/** fix reaches a human
         # this way precisely because the harness must never push one
         # (03-v2-autonomy.md wall 2).
-        printf '\n<details><summary>Proposed patch (data, not applied)</summary>\n\n```diff\n'
+        #
+        # THE FENCE IS SIZED TO THE CONTENT. A patch that itself contains a
+        # ``` run -- a diff touching a markdown file, which is exactly the
+        # sort of thing a docs round proposes -- would CLOSE a three-backtick
+        # fence early, and the rest of the patch would render as markdown. The
+        # remainder is model-authored text, so what escapes is not merely ugly:
+        # it is untrusted content promoted from a code block into live
+        # formatting. CommonMark closes a fence only on a run at least as long
+        # as the opening one, so opening with one longer than any run inside
+        # the body is the standard escape.
+        # `|| true` on the pipeline, not decoration: a patch with NO backticks
+        # at all is the common case, grep exits 1 on no match, and pipefail
+        # would turn the ordinary case into a failed escalation.
+        longest="$(jq -r '.escalation.patch' "$VERDICT" | { grep -oE '`+' || true; } | awk '{ if (length($0) > m) m = length($0) } END { print m + 0 }')"
+        fence_len=3
+        ((longest >= fence_len)) && fence_len=$((longest + 1))
+        fence="$(printf '%*s' "$fence_len" '' | tr ' ' '`')"
+        printf '\n<details><summary>Proposed patch (data, not applied)</summary>\n\n%sdiff\n' "$fence"
         jq -r '.escalation.patch' "$VERDICT"
-        printf '\n```\n\n</details>\n'
+        printf '\n%s\n\n</details>\n' "$fence"
     fi
     [[ -n "$RUN_URL" ]] && printf '\nRun log: %s\n' "$RUN_URL"
 } >"$work/body.md"
