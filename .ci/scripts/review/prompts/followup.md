@@ -50,7 +50,7 @@ Process:
    at most 20) -- but ONLY for genuinely NEW defects in the delta, per rule
    2a. An empty delta review emits an empty array.
 6. Close with the same ```json:pr-labels block the initial review defines
-   (fields bump/kind/why, bump in patch|minor|major, kind 0 to 2 entries from
+   (fields bump/kind/why, bump in none|patch|minor|major, kind 0 to 2 entries from
    bug|feature|docs|ci) -- but judged over the WHOLE PR, not the delta. Bump
    intent is a property of the finished pull request, so your verdict
    SUPERSEDES the previous one rather than adding to it: a PR whose first pass
