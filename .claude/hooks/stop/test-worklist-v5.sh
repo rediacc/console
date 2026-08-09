@@ -2545,7 +2545,9 @@ ARITY = {
     "V_CL_SHAPE": ("d", "rows"), "V_CL_UNREADABLE": ("e",),
     "V_CL_PRODUCING": ("s", 0, 1, "rows", "d"), "V_CL_PRODUCING_DONE": ("s", "d"),
     "V_CL_FLIP": ("d", "executing", "rows", "d"), "V_CL_WAVES": ("s", "d", "rows"),
-    "N_CL_FOREIGN": ("s", "o", ""), "CTX_CHECKLISTS": ("listing",),
+    "N_CL_FOREIGN": ("s", "o", ""),
+    "N_CL_FOREIGN_DRIFT": ("d", "executing", "o", "rows"),
+    "CTX_CHECKLISTS": ("listing",),
     "CTX_PLANS": ("b", "l"), "CTX_PLANS_EXCERPT": ("p", "b"),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
     "V_MISLABELLED": ("x",), "V_OUT_OF_SYNC": (1, "#1"),
@@ -8694,7 +8696,10 @@ echo "== 202. checklists_sig() is STAT-ONLY, and the unreadable file proves it =
 # version that opened files would pay exactly the cost the fast path exists to
 # avoid. A chmod-000 checklist is the instrument -- stat still answers where
 # read cannot, so the signature must come back while the ADJUDICATION (which
-# does read) fails closed into the ALWAYS-tier unreadable violation.
+# does read) fails closed into the ALWAYS-tier unreadable violation. The key
+# it fails closed UNDER is asserted too, and it is per-slug (`cl-shape:locked`)
+# for the reason case 204 pins: one unreadable checklist must not evict a
+# second one from the rotation.
 setup
 mkdir -p "$BASE/proj/docs/locked"
 printf 'Status: executing\n' >"$BASE/proj/docs/locked/CHECKLIST.md"
@@ -8731,7 +8736,7 @@ if grep -qE "^SIG [0-9a-f]{16}$" <<<"$OUT"; then
 else
     fail "202: the stat-only signature raised or came back malformed: ${OUT:0:300}"
 fi
-if grep -q "^V cl-shape True 1$" <<<"$OUT" && grep -q "^TEXT True$" <<<"$OUT"; then
+if grep -q "^V cl-shape:locked True 1$" <<<"$OUT" && grep -q "^TEXT True$" <<<"$OUT"; then
     pass "202: and the reading half fails CLOSED, ALWAYS-tier, naming itself a hook bug"
 else
     fail "202: an unreadable checklist did not fail closed: ${OUT:0:300}"
@@ -8780,6 +8785,199 @@ if ! grep -qF "LIVE HANDOFF CHECKLISTS" <<<"$out"; then
 else
     fail "203 CONTROL: the listing surfaced a done handoff: ${out:0:400}"
 fi
+
+# ---------------------------------------------------------------------------
+# 204-206 v20b: ONE KEY PER CHECKLIST, and an advisory that gives no orders.
+# Both gaps were found by the automated review on PR #563, and both are about
+# a second concurrent handoff, which this repo ran two of on the day they
+# landed.
+#
+# 204/205 pin the KEY. Every checklist finding used to be pushed under a fixed
+# string -- "cl-waves", "cl-foreign" and friends -- while two things downstream
+# read that string as an IDENTITY. The focused block's rotation builds its tie
+# breaker with `order = {v[0]: i for ...}`, a dict comp in which duplicate keys
+# COLLAPSE, so two violations sharing a key get identical sort tuples and `min`
+# returns the first one forever; and outq_add finds a non-sticky entry by key
+# alone, so the second advisory OVERWRITES the first rather than queueing
+# beside it. The second handoff was therefore starved permanently, not for a
+# stop or two, and only ever showed up inside the "N more outstanding" count.
+#
+# 206 pins the AUDIENCE. The drift text was built once and routed either to a
+# blocking violation (owner) or to the advisory (non-owner), so a session that
+# does not own the handoff was told to restore the artifacts "in this turn".
+# Acting on that means editing another session's header or its files, which is
+# how a peer's shared STATE.md was destroyed here.
+
+echo "== 204. two handoffs, two keys: the rotation serves BOTH, one per stop =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/alpha/README.md "the readme"
+cldeliver docs/beta/README.md "the readme"
+clfile alpha <<'MD'
+# Handoff checklist: alpha
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/alpha/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the alpha thing
+MD
+clfile beta <<'MD'
+# Handoff checklist: beta
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/beta/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the beta thing
+MD
+OUT1="$(run)"
+OUT2="$(run)"
+if grep -qF "handoff 'alpha' (docs/alpha/CHECKLIST.md)" <<<"$OUT1$OUT2" &&
+    grep -qF "handoff 'beta' (docs/beta/CHECKLIST.md)" <<<"$OUT1$OUT2"; then
+    pass "204: two uncovered waves in one check class are both itemized across two stops"
+else
+    fail "204: one handoff starved the other in the rotation: 1=${OUT1:0:300} 2=${OUT2:0:300}"
+fi
+if ! grep -qF "handoff 'beta'" <<<"$OUT1" && ! grep -qF "handoff 'alpha'" <<<"$OUT2"; then
+    pass "204: and it is still ONE per stop, in battery order -- the block did not widen"
+else
+    fail "204: the focused block stopped rotating: 1=${OUT1:0:300} 2=${OUT2:0:300}"
+fi
+as_peer cafe0000 reqcli --add cafe0000 "cl:alpha/w1 Wave A: wire the alpha thing" >/dev/null
+as_peer cafe0000 reqcli --add cafe0000 "cl:beta/w1 Wave A: wire the beta thing" >/dev/null
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && ! grep -qF "UNCOVERED" <<<"$OUT" && ! grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "204 CONTROL: both waves claimed, so neither per-slug key is left outstanding"
+else
+    fail "204 CONTROL: a per-slug key outlived the wave it belonged to: ${OUT:0:400}"
+fi
+
+echo "== 205. two FOREIGN advisories, two keys: the second no longer eats the first =="
+# Leg 1 is the needle's own control: with only alpha planted, beta's needle
+# must be MISSING. Without it, leg 2 could pass on a grep that matches
+# anything, which is the failure mode a two-needle assertion hides best.
+#
+# EACH LEG GETS ITS OWN FIXTURE, and that is not tidiness. Draining an
+# advisory latches it in the queue's `shown` ledger, so planting beta beside an
+# ALREADY-SHOWN alpha suppresses alpha through the refresh window -- correct
+# behaviour that looks exactly like the overwrite bug and would have made this
+# case fire for the wrong reason.
+setup
+say "done for now"
+brief_now
+hand_now
+export WORKLIST_REPORT_PER_STOP=6
+clfile alpha <<'MD'
+# Handoff checklist: alpha
+Status: producing
+Owner: cafe0000
+
+## Deliverables
+- [ ] d1 file:docs/alpha/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the alpha thing
+MD
+OUT="$(run)"
+if grep -qF "docs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
+    ! grep -qF "docs/beta/CHECKLIST.md" <<<"$OUT"; then
+    pass "205 CONTROL: one foreign handoff, one advisory, and beta's needle can be absent"
+else
+    fail "205 CONTROL: the single-checklist baseline is not what it claims: ${OUT:0:400}"
+fi
+setup
+say "done for now"
+brief_now
+hand_now
+export WORKLIST_REPORT_PER_STOP=6
+clfile alpha <<'MD'
+# Handoff checklist: alpha
+Status: producing
+Owner: cafe0000
+
+## Deliverables
+- [ ] d1 file:docs/alpha/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the alpha thing
+MD
+clfile beta <<'MD'
+# Handoff checklist: beta
+Status: producing
+Owner: cafe0000
+
+## Deliverables
+- [ ] d1 file:docs/beta/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the beta thing
+MD
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "docs/alpha/CHECKLIST.md is 'Status: producing'" <<<"$OUT" &&
+    grep -qF "docs/beta/CHECKLIST.md is 'Status: producing'" <<<"$OUT"; then
+    pass "205: both foreign handoffs ride the report; neither advisory overwrites the other"
+else
+    fail "205: one foreign advisory replaced the other in the queue: ${OUT:0:600}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 206. a foreign DRIFT advisory reports it; it does not order the reader around =="
+setup
+say "done for now"
+brief_now
+hand_now
+export WORKLIST_REPORT_PER_STOP=6
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+Owner: cafe0000
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && grep -qF "d1 docs/demo/README.md -- MISSING" <<<"$OUT" &&
+    grep -qF "Reported, never blocked on." <<<"$OUT" &&
+    grep -qF "cafe0000" <<<"$OUT" && ! grep -qF "in this turn" <<<"$OUT"; then
+    pass "206: a non-owner is told about the drift and is handed no instruction to act on"
+else
+    fail "206: the foreign drift advisory still issues the owner's order: rc=$RC ${OUT:0:600}"
+fi
+if grep -qF "another session's" <<<"$OUT"; then
+    pass "206: and it says out loud that repairing it here would overwrite live work"
+else
+    fail "206: nothing warned the reader off editing a peer's checklist: ${OUT:0:600}"
+fi
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+Owner: deadbeef
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: wire the thing
+MD
+OUT="$(run)"
+if grep -qF '"decision": "block"' <<<"$OUT" && grep -qF "reality disagrees" <<<"$OUT" &&
+    grep -qF "in this turn" <<<"$OUT"; then
+    pass "206 CONTROL: the SAME drift under its owner still blocks, imperative intact"
+else
+    fail "206 CONTROL: ownership stopped deciding who is ordered to repair: ${OUT:0:600}"
+fi
+unset WORKLIST_REPORT_PER_STOP
 
 echo
 echo "  passed=$PASS failed=$FAIL"

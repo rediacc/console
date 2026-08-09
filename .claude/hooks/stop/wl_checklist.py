@@ -317,6 +317,29 @@ def _adopt_hint(owner, projects_dir, rel):
     )
 
 
+def _ckey(prefix, slug):
+    """The finding key for ONE checklist: `<check-class>:<slug>`.
+
+    A FIXED key per check class was the bug (automated review, PR #563). Two
+    things downstream read the key as an identity, and both starve the second
+    checklist rather than delaying it:
+
+      * the focused block's rotation (wl_checks.py) ties-breaks on
+        `order = {v[0]: i for ...}`, a dict comp in which duplicate keys
+        COLLAPSE, so two violations sharing a key get identical sort tuples and
+        `min` returns the first one on every stop, forever;
+      * outq_add finds a non-sticky entry by key alone, so the second
+        advisory's text OVERWRITES the first's instead of queueing beside it.
+
+    Two concurrent handoffs is an ordinary state here, so the second one simply
+    vanished into the "N more outstanding" count. Scoping by slug costs
+    nothing: the rotation prunes any key that is no longer outstanding, so a
+    settled checklist's key leaves `served` on the next stop. The PREFIX is
+    preserved verbatim so a grep on the check class still matches.
+    """
+    return "%s:%s" % (prefix, slug)
+
+
 def _adjudicate(root, path, fold, session_id, projects_dir):
     """(violations, advisories, live) for ONE checklist. See checklist_findings."""
     v, a = [], []
@@ -326,7 +349,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
         # A malformed checklist is adjudicated NO FURTHER: every verdict below
         # would be read off a file the parser has already said it misread.
         rows = "\n".join("    " + e for e in parsed["errors"])
-        return [("cl-shape", False, M.V_CL_SHAPE % (rel, rows))], a, 1
+        return [(_ckey("cl-shape", slug), False, M.V_CL_SHAPE % (rel, rows))], a, 1
     if status == "superseded":
         return v, a, 0  # the terminal escape for an abandoned program
     drows, met, total = _deliverable_rows(root, parsed)
@@ -340,11 +363,22 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
         )
         if not rows:
             return v, a, 0
-        text = M.V_CL_FLIP % (rel, "done", "\n".join(rows), rel)
         if C.owned_by_me(owner or None, session_id):
-            v.append(("cl-flip", False, text))
+            v.append(
+                (
+                    _ckey("cl-flip", slug),
+                    False,
+                    M.V_CL_FLIP % (rel, "done", "\n".join(rows), rel),
+                )
+            )
         else:
-            a.append(("cl-foreign", text, 2))
+            a.append(
+                (
+                    _ckey("cl-foreign", slug),
+                    M.N_CL_FOREIGN_DRIFT % (rel, "done", owner, "\n".join(rows)),
+                    2,
+                )
+            )
         return v, a, 1
 
     if status == "producing":
@@ -353,17 +387,17 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
             if drows:
                 v.append(
                     (
-                        "cl-producing",
+                        _ckey("cl-producing", slug),
                         False,
                         M.V_CL_PRODUCING % (slug, met, total, "\n".join(drows), rel),
                     )
                 )
             else:
-                v.append(("cl-producing", False, M.V_CL_PRODUCING_DONE % (slug, rel)))
+                v.append((_ckey("cl-producing", slug), False, M.V_CL_PRODUCING_DONE % (slug, rel)))
         else:
             a.append(
                 (
-                    "cl-foreign",
+                    _ckey("cl-foreign", slug),
                     M.N_CL_FOREIGN % (slug, owner, _adopt_hint(owner, projects_dir, rel)),
                     2,
                 )
@@ -375,11 +409,22 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
     if drows:
         # Deliverables are re-verified regardless of their ticks, which is what
         # catches both a ticked-but-missing artifact and one deleted after the flip.
-        text = M.V_CL_FLIP % (rel, "executing", "\n".join(drows), rel)
         if C.owned_by_me(owner or None, session_id):
-            v.append(("cl-flip", False, text))
+            v.append(
+                (
+                    _ckey("cl-flip", slug),
+                    False,
+                    M.V_CL_FLIP % (rel, "executing", "\n".join(drows), rel),
+                )
+            )
         else:
-            a.append(("cl-foreign", text, 2))
+            a.append(
+                (
+                    _ckey("cl-foreign", slug),
+                    M.N_CL_FOREIGN_DRIFT % (rel, "executing", owner, "\n".join(drows)),
+                    2,
+                )
+            )
     wrows = _wave_rows(fold, parsed, session_id)
     if not wrows and not drows and all(w["ticked"] for w in parsed["waves"]):
         wrows = ["    everything is settled; set 'Status: done' in %s" % rel]
@@ -388,7 +433,7 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
         # work, the same semantics as an untagged worklist item, so it blocks
         # whoever tries to stop. The moment anyone claims it with --add it
         # stops blocking everyone else.
-        v.append(("cl-waves", False, M.V_CL_WAVES % (slug, rel, "\n".join(wrows))))
+        v.append((_ckey("cl-waves", slug), False, M.V_CL_WAVES % (slug, rel, "\n".join(wrows))))
     return v, a, 1
 
 
@@ -408,12 +453,19 @@ def checklist_findings(root, fold, session_id, projects_dir):
     try:
         paths = checklist_paths(root)
     except Exception as exc:  # noqa: BLE001 -- fail CLOSED
+        # UNSCOPED, and deliberately so: the glob itself failed, so there is no
+        # slug to scope by, and this path returns immediately -- at most one
+        # such finding can exist per stop, so it has nothing to collide with.
         return [("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160])], [], 1
     for path in paths:
         try:
             v, a, n = _adjudicate(root, path, fold, session_id, projects_dir)
         except Exception as exc:  # noqa: BLE001 -- fail CLOSED, per file
-            violations.append(("cl-shape", True, M.V_CL_UNREADABLE % str(exc)[:160]))
+            # Per FILE, so scoped like every other per-checklist finding. The
+            # slug is read off the path rather than out of the parse, because
+            # the parse is what just threw.
+            slug = os.path.basename(os.path.dirname(str(path)))
+            violations.append((_ckey("cl-shape", slug), True, M.V_CL_UNREADABLE % str(exc)[:160]))
             live += 1
             continue
         violations.extend(v)
