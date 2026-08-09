@@ -28,9 +28,11 @@
 # untrusted -- to learn what the round decided.
 #
 # SUBMODULES (03-v2-autonomy.md section 5), gated by AUTOPILOT_ALLOW_SUBMODULES.
-# When the verdict carries submodules[], each one is committed and pushed on the
-# CALLER'S BRANCH NAME before console stages anything, and the parent's gitlink
-# is then verified in the index at exactly the SHA that was pushed. The branch
+# When the verdict carries submodules[], each one is COMMITTED on the CALLER'S
+# BRANCH NAME in phase 1; nothing is PUSHED anywhere until every validation
+# (submodule and console alike) has passed in phase 2 -- phase 3 then pushes
+# submodules first, console last, and the parent's gitlink is verified in the
+# index at exactly the SHA that gets pushed. The branch
 # is created at the submodule's CURRENT HEAD, never at origin/main, so the new
 # commit is a descendant of the pointer the parent recorded -- section 5's
 # anti-rollback rule is ancestry, and branching elsewhere would break it
@@ -136,12 +138,14 @@ case "$outcome" in
 esac
 
 # ---------------------------------------------------------------------------
-# SUBMODULES FIRST, then console (03-v2-autonomy.md section 5). The order is
-# the design's: each submodule's branch is committed and pushed before the
-# parent stages its gitlink, so the pointer console publishes always names a
-# commit that already exists on the remote. The reverse order publishes a
-# console commit pointing at a SHA nobody else can fetch, which is the shape
-# that makes a submodule bump unreviewable.
+# SUBMODULES FIRST, then console (03-v2-autonomy.md section 5) -- for COMMITS
+# here in phase 1 and again for PUSHES in phase 3. The parent's gitlink is
+# staged only after the submodule commit exists, and the console push goes out
+# only after the submodule pushes landed, so the pointer console publishes
+# always names a commit that already exists on the remote. The reverse order
+# publishes a console commit pointing at a SHA nobody else can fetch, which is
+# the shape that makes a submodule bump unreviewable. No remote is written in
+# this phase: a validation failure in phase 2 must strand nothing.
 # ---------------------------------------------------------------------------
 : >"$workdir/sub-shas.txt"
 sub_count="$(jq -r '(.submodules // []) | length' "$workdir/verdict.json")"
@@ -358,13 +362,23 @@ adopt_or_refuse() {
         exit 1
     fi
     main_ref="$REMOTE/main"
-    if git -C "$subdir" rev-parse --verify --quiet "$main_ref" >/dev/null 2>&1; then
-        base_mb="$(git -C "$subdir" merge-base "$base" "$main_ref" 2>/dev/null || true)"
-        tip_mb="$(git -C "$subdir" merge-base "$tip" "$main_ref" 2>/dev/null || true)"
-        if [[ -z "$tip_mb" || "$tip_mb" != "$base_mb" ]]; then
-            log_error "submodule-unrelated-branch: '$sub' remote tip $tip does not share this round's merge-base with $main_ref (tip: ${tip_mb:-<none>}, ours: ${base_mb:-<none>}); refusing to build on an unrelated history"
-            exit 1
-        fi
+    # BOTH checks are required, so an unresolvable main is a refusal, not a
+    # skip. The identity check alone is the weaker guard (a committer email is
+    # forgeable by anyone who can push), and the checkout mechanics that leave
+    # main unfetched here are exactly the ones nobody exercises -- failing
+    # closed is the only reading under which the doc's "both required" is true.
+    if ! git -C "$subdir" rev-parse --verify --quiet "$main_ref" >/dev/null 2>&1; then
+        git -C "$subdir" fetch -q "$REMOTE" "main:refs/remotes/$REMOTE/main" 2>/dev/null || true
+    fi
+    if ! git -C "$subdir" rev-parse --verify --quiet "$main_ref" >/dev/null 2>&1; then
+        log_error "submodule-main-unresolvable: '$sub' has no resolvable $main_ref even after a fetch, so the ancestry half of the adoption check cannot run; refusing to adopt on the identity check alone"
+        exit 1
+    fi
+    base_mb="$(git -C "$subdir" merge-base "$base" "$main_ref" 2>/dev/null || true)"
+    tip_mb="$(git -C "$subdir" merge-base "$tip" "$main_ref" 2>/dev/null || true)"
+    if [[ -z "$tip_mb" || "$tip_mb" != "$base_mb" ]]; then
+        log_error "submodule-unrelated-branch: '$sub' remote tip $tip does not share this round's merge-base with $main_ref (tip: ${tip_mb:-<none>}, ours: ${base_mb:-<none>}); refusing to build on an unrelated history"
+        exit 1
     fi
     log_warn "submodule '$sub': the remote tip $tip is an autopilot orphan; rebuilding this round's commit on top of it"
     # The message is looked up BY PATH rather than by a positional index two
