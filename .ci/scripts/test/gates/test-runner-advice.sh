@@ -267,16 +267,126 @@ test_under_observed_move_is_an_advisory() {
 
 test_empty_baseline_refuses() {
     # ANTI-VACUITY. Zero jobs compared exits 0 and reads exactly like coverage.
+    # `refreshed_at` is SET here, so this is not the pristine shape: something
+    # wrote this file and left no jobs behind, which is a defect.
     local d="$1"
     workflow "$d/wf" ubuntu-latest
     printf '{"refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
     : >"$d/allow"
     local rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
-    assert_exit_code 1 "$rc" "an empty baseline must REFUSE, not report clean"
+    assert_exit_code 1 "$rc" "an empty baseline with a refresh stamp must REFUSE, not report clean"
     assert_contains "$LAST_OUT" "VACUOUS INPUT" "names the refusal"
     assert_not_contains "$LAST_OUT" "sit on the runner their own profile justifies" "must not print a success line"
-    log_pass "an empty baseline refuses rather than passing vacuously"
+    # The refusal EXPLAINS the bootstrap exception, so the annotation is what
+    # must be absent, not the word.
+    assert_not_contains "$LAST_OUT" "::warning title=Runner sizing (bootstrap)::" \
+        "a stamped file must not reach the bootstrap exception"
+    log_pass "an empty baseline that has been written to refuses rather than passing vacuously"
+}
+
+test_pristine_baseline_warns_and_passes() {
+    # THE BOOTSTRAP EXCEPTION. Without it the gate is unsatisfiable: it goes red
+    # on an unseeded baseline, the seed can only come from a run whose profiled
+    # jobs finished, and this gate failing ~5 minutes in is what stops them
+    # finishing. Two rounds of that yielded 3 jobs against a floor of 5.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    printf '{"refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
+    : >"$d/allow"
+    local rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 0 "$rc" "the pristine as-committed baseline must pass (output: $LAST_OUT)"
+    # The warning is the FIRE direction for this arm. A pristine run that exits
+    # 0 SILENTLY is the failure this whole gate exists to prevent, so passing
+    # without saying so must fail this test.
+    assert_contains "$LAST_OUT" "::warning title=Runner sizing (bootstrap)::" "emits the annotation, so CI shows it"
+    assert_contains "$LAST_OUT" "UNENFORCED" "says plainly that nothing was checked"
+    assert_contains "$LAST_OUT" "--refresh --branch main" "names the command that fixes it"
+    log_pass "a pristine baseline warns loudly and passes, rather than blocking its own bootstrap"
+}
+
+test_pristine_shape_is_exact() {
+    # Every near-miss must still REFUSE. "Below the floor" and "never seeded"
+    # are different states and only the second one is innocent; forgiving the
+    # first would make truncating this file a way to silence a real finding.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    : >"$d/allow"
+    local rc
+
+    # (1) null stamp, but jobs present and below the floor.
+    printf '{"refreshed_at": null, "jobs": {"fixture.yml:waster": {"workflow": "fixture.yml", "runner_label": "ubuntu-latest", "tier": "PROC_HOST", "cpu_peak_milli": 200, "mem_peak_bytes": 943718400, "wall_s": 120, "cpu_ceil_milli": 4000, "mem_ceil_bytes": 16000000000, "observed_runs": 3}}}\n' >"$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a null stamp with SOME jobs is not pristine"
+    assert_contains "$LAST_OUT" "VACUOUS INPUT" "refuses rather than bootstrapping"
+
+    # (2) stamp set, zero jobs -- already covered above, asserted here as part
+    # of the shape matrix so the two halves of the predicate are both pinned.
+    printf '{"refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a stamped baseline with zero jobs is not pristine"
+
+    # (3) no refreshed_at key at all: a file somebody has edited, not the
+    # committed shape.
+    printf '{"jobs": {}}\n' >"$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a baseline missing refreshed_at entirely is not pristine"
+
+    # (4) no jobs key at all.
+    printf '{"refreshed_at": null}\n' >"$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a baseline missing jobs entirely is not pristine"
+    log_pass "the pristine exception is shape-exact: four near-misses all still refuse"
+}
+
+test_refresh_refuses_a_partial_harvest() {
+    # ALL OR NOTHING. This is what keeps the pristine exception honest: if a
+    # harvest could write 2 jobs, "seeded" would stop meaning "enforceable" and
+    # the gate would refuse every run afterwards with no way back.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    printf '{"refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
+    local before after out rc=0
+    before="$(md5sum <"$d/base.json")"
+    out="$(
+        python3 - "$GATE" "$d/base.json" "$d/wf" 2>&1 <<'PY'
+import importlib.util
+import pathlib
+import sys
+
+spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+NUMS = "runner_label=ubuntu-latest tier=PROC_HOST env=github-hosted cpu_peak_milli=200 mem_peak_bytes=943718400 wall_s=120 cpu_ceil_milli=4000 mem_ceil_bytes=16000000000 samples=12 findings=0 verdict=MOVE_TO_SLIM"
+# Two of the fixture workflow's own jobs, so the workflow index resolves them
+# and the refusal under test is the FLOOR rather than an unresolvable job id.
+rows = [
+    ("1", module.parse_row("PROFILER_BASELINE_V1 job=%s %s" % (job, NUMS)))
+    for job in ("waster", "heavy")
+]
+
+# The network half is stubbed; the REFUSAL under test is everything after it.
+workflow_dir = pathlib.Path(sys.argv[3])
+module.harvest = lambda *a, **k: (["9001"], rows)
+sys.exit(
+    module.refresh(
+        workflow_dir.parent, pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
+    )
+)
+PY
+    )" || rc=$?
+    after="$(md5sum <"$d/base.json")"
+    assert_exit_code 1 "$rc" "a harvest below the floor must refuse (output: $out)"
+    assert_contains "$out" "harvest yielded 2 job(s)" "says exactly what it found"
+    assert_contains "$out" "baseline left untouched" "says what it did about it"
+    assert_eq "$after" "$before" "the baseline must be byte-identical after a refused harvest"
+    log_pass "a partial harvest is refused and leaves the file untouched"
 }
 
 test_stale_baseline_fails() {
@@ -572,17 +682,24 @@ test_real_tree_seam_free() {
     # baseline -- fails this case.
     local rc=0
     LAST_OUT="$(python3 "$GATE" 2>&1)" || rc=$?
-    if [ "$rc" -eq 0 ]; then
-        assert_contains "$LAST_OUT" "sit on the runner their own profile justifies" \
-            "a passing real tree must print the count it compared"
-        log_pass "the real tree passes seam-free with a seeded baseline"
-    else
-        assert_exit_code 1 "$rc" "the only acceptable failure is the vacuity refusal"
-        assert_contains "$LAST_OUT" "VACUOUS INPUT" \
-            "an unseeded baseline must refuse loudly, naming vacuity rather than a sizing verdict"
-        assert_contains "$LAST_OUT" "--refresh" "the refusal must name the command that fixes it"
-        log_pass "the real tree refuses seam-free while its baseline is unseeded (expected until the harvest lands)"
-    fi
+    assert_exit_code 0 "$rc" "the real tree must not fail: it is either pristine or seeded (output: $LAST_OUT)"
+    case "$LAST_OUT" in
+        *"Runner sizing (bootstrap)"*)
+            # PRISTINE. Exit 0 is only acceptable WITH the warning: a silent
+            # pass over an unseeded baseline is the exact shape this gate
+            # exists to prevent, so the annotation is asserted, not tolerated.
+            assert_contains "$LAST_OUT" "::warning title=Runner sizing (bootstrap)::" \
+                "a pristine real tree must annotate, not pass quietly"
+            assert_contains "$LAST_OUT" "UNENFORCED" "and must say the word"
+            log_pass "the real tree is pristine and says so loudly (expected until the harvest lands)"
+            ;;
+        *)
+            assert_contains "$LAST_OUT" "sit on the runner their own profile justifies" \
+                "a seeded real tree must print the count it compared"
+            assert_not_contains "$LAST_OUT" "UNENFORCED" "a seeded baseline must not claim to be unenforced"
+            log_pass "the real tree passes seam-free with a seeded baseline"
+            ;;
+    esac
     case "$LAST_OUT" in
         *fixture.yml*) log_fail "this test's fixture names leaked into the real run: a seam is not isolating" ;;
         *) ;;
@@ -599,6 +716,9 @@ with_temp_dir test_slim_job_at_its_limit_fails
 with_temp_dir test_orphan_baseline_record_fails
 with_temp_dir test_under_observed_move_is_an_advisory
 with_temp_dir test_empty_baseline_refuses
+with_temp_dir test_pristine_baseline_warns_and_passes
+with_temp_dir test_pristine_shape_is_exact
+with_temp_dir test_refresh_refuses_a_partial_harvest
 with_temp_dir test_stale_baseline_fails
 with_temp_dir test_empty_workflow_dir_refuses
 with_temp_dir test_awk_and_python_agree_on_the_verdict
