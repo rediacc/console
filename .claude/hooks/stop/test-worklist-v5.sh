@@ -1719,7 +1719,7 @@ say "answer
 ## Remaining
 | #7 | thing | pending, me |"
 task 7 pending "thing"
-age_state deadbeef -60                                    # stamped an hour AHEAD
+age_state deadbeef -60                                           # stamped an hour AHEAD
 touch -d '40 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md" # the honest age
 check "44c FIRE: a future-stamped section falls back to mtime and goes stale" block "STATE.md is stale"
 # CONTROL 1: a stamp inside the tolerated skew is still TRUSTED, so this is a
