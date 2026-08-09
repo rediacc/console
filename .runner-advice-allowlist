@@ -1,0 +1,30 @@
+# Jobs exempt from the "a job that fits ubuntu-slim runs on ubuntu-slim"
+# invariant enforced by .ci/scripts/quality/check_runner_advice.py.
+#
+# Entry format: <workflow-basename>.yml:<job-id>, one per line, each covered by
+# a "# BLOCKER: <reason>" comment block above it (a blank line resets the
+# tracked BLOCKER, so one reason covers the contiguous group beneath it; plain
+# `#` comment lines do NOT reset it). The gate itself checks only that a reason
+# is PRESENT; its prose is held to the same bar as every other allowlist in the
+# repo by the shared validator in .ci/scripts/lib/blocker-validator.sh, applied
+# to this file by .ci/scripts/test/gates/test-runner-advice.sh. See
+# docs/agent/suppressions.md.
+#
+# ONLY THE COST DIRECTION IS WAIVABLE HERE. An entry suppresses a MOVE_TO_SLIM
+# finding, which costs core-minutes. It does NOT suppress the reliability
+# direction -- a job already on slim that is at its time cap or saturating its
+# 1 core / 5 GB -- because that job is about to start failing as `cancelled`,
+# and a waiver for a thing that is about to break is a waiver for the outage.
+#
+# THIS LIST CAN ONLY SHRINK. The gate re-derives its own oracle every run and
+# rejects an entry the moment it stops suppressing something real: a job that
+# no longer exists, a job with no measurement in the baseline, a job whose
+# profile no longer says MOVE_TO_SLIM, or a job that has already been moved.
+# That is the liveness half of the BLOCKER convention, enforced in the gate
+# itself rather than by an external probe, because the oracle IS the comparison
+# the gate already performs.
+#
+# A good reason names the thing about the job that slim cannot give it and that
+# the profile cannot see: a hard dependency on a nested VM, a tool that needs
+# more than 14 GB of disk, a step that is only fast because of page cache the
+# sampler does not measure. "It has always run there" is not one.

@@ -32,7 +32,21 @@
 #   PROFILER_WALL_S       elapsed seconds measured by the action (authoritative)
 #   PROFILER_TITLE        heading suffix, normally the job name
 #   PROFILER_NOTE         one-line note from the action (e.g. "sampler died")
+#   PROFILER_DECLARED_S   the job's own declared timeout in seconds; forwarded
+#                         to report.awk, which otherwise assumes 840 (14 min)
+#   PROFILER_HARD_S       the platform hard cap in seconds; report.awk assumes
+#                         900 (slim). Both are passed ONLY when non-empty, so an
+#                         unset variable keeps the aggregator's own default
+#                         rather than overwriting it with an empty string.
+#   GITHUB_JOB            the job id the machine row is keyed by (set by GitHub)
 #   GITHUB_STEP_SUMMARY   panel to append to; stdout when unset
+#
+# THE MACHINE ROW. Besides the human panel this emits exactly one `::notice`
+# carrying the advisory text and a single-line, machine-parseable row of the
+# numbers behind it. That annotation is the ONLY durable artifact of a profile:
+# a step summary cannot be read back through the API, while annotations can,
+# which is how .ci/scripts/quality/check_runner_advice.py --refresh harvests a
+# sizing baseline from real runs instead of from hand-entered numbers.
 #
 # Run locally:
 #   PROFILER_SAMPLE_FILE=/tmp/p.tsv .ci/scripts/ci/profiler/panel.sh
@@ -103,11 +117,34 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 PANEL="$WORK/panel.md"
 FINDINGS="$WORK/findings.txt"
+MACHINE="$WORK/machine.txt"
 : >"$FINDINGS"
 
+# A workflow command's message is line-oriented and `%` starts an escape, so
+# both must be encoded or the annotation is silently truncated at the newline.
+escape_workflow_command() {
+    local s="$1"
+    s="${s//%/%25}"
+    s="${s//$'\r'/%0D}"
+    s="${s//$'\n'/%0A}"
+    printf '%s' "$s"
+}
+
+AWK_ARGS=(-v wall_s="$WALL_S" -v findings_file="$FINDINGS" -v title="$TITLE"
+    -v machine_file="$MACHINE" -v job="${GITHUB_JOB:-}")
+# Passing `-v declared_s=` would set it to the empty string, which report.awk
+# reads as "unset" and replaces with its default anyway -- but relying on that
+# would make the defaults live in two places. Pass the flag only when there is
+# a value to pass.
+if [ -n "${PROFILER_DECLARED_S:-}" ]; then
+    AWK_ARGS+=(-v declared_s="$PROFILER_DECLARED_S")
+fi
+if [ -n "${PROFILER_HARD_S:-}" ]; then
+    AWK_ARGS+=(-v hard_s="$PROFILER_HARD_S")
+fi
+
 RC=0
-awk -v wall_s="$WALL_S" -v findings_file="$FINDINGS" -v title="$TITLE" \
-    -f "$REPORT_AWK" "$SAMPLE_FILE" >"$PANEL" || RC=$?
+awk "${AWK_ARGS[@]}" -f "$REPORT_AWK" "$SAMPLE_FILE" >"$PANEL" || RC=$?
 if [ "$RC" -gt 1 ]; then
     echo "panel.sh: aggregator failed with exit $RC" >&2
     exit 2
@@ -129,6 +166,20 @@ if [ -n "$NOTE" ]; then
 fi
 
 cat "$PANEL" >>"$SUMMARY"
+
+# Exactly ONE notice per job. report.awk writes the row only when it produced a
+# verdict, so a run it refused to advise on emits no annotation at all rather
+# than an unusable one -- and the harvester never has to decide whether a row
+# it can see is one it should believe.
+if [ -s "$MACHINE" ]; then
+    ADVISORY="$(sed -n 's/^\*\*Advisory:\*\* //p' "$PANEL" | head -n 1)"
+    # The advisory is read back out of the panel, and the panel can have been
+    # trimmed above. Say so rather than emitting a notice that opens with
+    # nothing; the row after it is the part a machine reads either way.
+    ADVISORY="${ADVISORY:-(advisory text unavailable: the panel was trimmed)}"
+    ROW="$(head -n 1 "$MACHINE")"
+    echo "::notice title=Runner sizing (profiler)::$(escape_workflow_command "$ADVISORY") | $(escape_workflow_command "$ROW")"
+fi
 
 if [ -s "$FINDINGS" ]; then
     emit_finding_annotations "$FINDINGS"

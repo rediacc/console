@@ -31,6 +31,17 @@
 #   title          panel heading suffix, e.g. the job name
 #   declared_s     declared timeout in seconds (default 840 = 14 min)
 #   hard_s         platform hard cap in seconds (default 900 = 15 min, slim)
+#   machine_file   when set, the one-line machine row is written here
+#   job            the job id the row is keyed by (GITHUB_JOB)
+#
+# THE MACHINE ROW. The panel is for a human reading one job; the row is for
+# check_runner_advice.py reading every job at once. It carries the same numbers
+# the advisory was computed from plus the VERDICT TOKEN, so the sizing gate
+# compares a committed baseline against real measurements instead of against
+# prose it would have to parse. It is written only when a verdict exists, which
+# is exactly the set of runs the advisory was willing to speak about: a
+# HOST_LEAK, an unsampled sub-interval run, or a PROC_HOST reading nobody can
+# attribute produces no row at all rather than a row nobody should trust.
 #
 # Exit: 0 clean, 1 one or more findings.
 
@@ -82,6 +93,14 @@ BEGIN {
     FS = "\t"
     if (declared_s == "") declared_s = 840
     if (hard_s == "") hard_s = 900
+    # A job migrating to slim must land at least this far under the hard cap.
+    # Named rather than folded into a literal because the keep-off-slim branch
+    # and check_runner_advice.py's classify() have to agree on it: the two
+    # thresholds used to be the unrelated literals 840 and 780, so raising the
+    # declared timeout moved one and left the other describing a cap that no
+    # longer existed.
+    slack_s = 120
+    advice_verdict = ""
     tier = "UNKNOWN"; cpu_ceil = 0; mem_ceil = 0; interval = 0
     runner = "unknown"; cpu_src = "?"; mem_src = "?"
     n = 0; nfind = 0
@@ -138,8 +157,8 @@ END {
     print ""
     print "**Runner:** " runner " (tier " tier "; cpu via " cpu_src ", memory via " mem_src ")"
     print "**Detected ceilings:** " fmt_cores(cpu_ceil) " cores / " fmt_bytes(mem_ceil)
-    print "**Wall clock:** " hms(wall) " (" pct(wall, declared_s) " of the 14m declared timeout, " \
-          pct(wall, hard_s) " of the 15m slim hard cap)"
+    print "**Wall clock:** " hms(wall) " (" pct(wall, declared_s) " of the " hms(declared_s) " declared timeout, " \
+          pct(wall, hard_s) " of the " hms(hard_s) " slim hard cap)"
 
     if (tier == "HOST_LEAK") {
         finding("HOST_LEAK: the sampler resolved host-sized limits (" fmt_cores(cpu_ceil) \
@@ -280,6 +299,13 @@ END {
 # told to "MOVE TO ubuntu-slim" while already sitting on one. This is the
 # label-free signal, and unlike container fingerprinting it needs no probe data
 # to be trusted, because it is the quota the kernel is enforcing.
+#
+# EVERY RETURN SETS advice_verdict FIRST. The token is what the machine row
+# carries and what check_runner_advice.py's classify() must reproduce, so it is
+# assigned as a plain global immediately before each return rather than built
+# from the prose: mawk has no way to hand back two values, and re-deriving the
+# verdict by matching on the sentence would put a second, silently divergent
+# copy of these thresholds in a regex.
 function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim) {
     # States the ASSUMPTION rather than asserting the fact. The old wording --
     # "valid because 'X' is a full VM" -- was a claim the report has no way to
@@ -287,12 +313,18 @@ function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim) {
     # wrong in the case that matters.
     caveat = (tier == "PROC_HOST") ? " (measured from /proc, on the assumption that '" rn "' is a full VM this job owns; if it ran in a container these are host numbers)" : ""
     unlabelled = (rn == "" || rn == "unknown")
-    if (tier == "PROC_HOST" && unlabelled)
+    if (tier == "PROC_HOST" && unlabelled) {
+        advice_verdict = "NONE"
         return "none. Limits came from /proc (host-wide) and no runner label was passed, so a VM cannot be told from a container and these ceilings may belong to the host. Pass runner-label to the action."
-    if (tier == "PROC_HOST" && rn ~ /slim/)
+    }
+    if (tier == "PROC_HOST" && rn ~ /slim/) {
+        advice_verdict = "NONE"
         return "none. /proc was read from inside slim's container, so these are host numbers. This should have been caught as HOST_LEAK."
-    if (tier == "PROC_HOST" && container_hint == "CONTAINER")
+    }
+    if (tier == "PROC_HOST" && container_hint == "CONTAINER") {
+        advice_verdict = "NONE"
         return "none. The label says '" rn "' but the PID 1 fingerprint says container, so the /proc ceilings are the host's. Fix the label before trusting any sizing from this run."
+    }
     # Keyed on the TIER, not on whether a label happened to be supplied. The
     # first version said `unlabelled &&`, which quietly made the ceiling
     # evidence conditional on nobody having claimed otherwise -- so a job under a
@@ -308,25 +340,53 @@ function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim) {
     # `unlabelled` clause was only ever reachable at a cgroup tier anyway.
     on_slim = (rn ~ /slim/) || (tier != "PROC_HOST" && cpu_ceil > 0 && cpu_ceil <= 1500 && mem_ceil > 0 && mem_ceil <= 6442450944)
     if (on_slim) {
-        if (w >= 840) return "already on slim, but wall clock is at or past the 14m declared timeout - this job is close to the 15m hard cap and should move UP."
-        if (cpk > 1000 || mpk > 4831838208) return "already on slim and saturating it (peak " fmt_cores(cpk) " cores / " fmt_bytes(mpk) "); consider moving UP if the job is slow."
+        if (w >= declared_s) {
+            advice_verdict = "SLIM_OVER_TIME"
+            return "already on slim, but wall clock is at or past the " hms(declared_s) " declared timeout - this job is close to the " hms(hard_s) " hard cap and should move UP."
+        }
+        if (cpk > 1000 || mpk > 4831838208) {
+            advice_verdict = "SLIM_SATURATED"
+            return "already on slim and saturating it (peak " fmt_cores(cpk) " cores / " fmt_bytes(mpk) "); consider moving UP if the job is slow."
+        }
+        advice_verdict = "SLIM_FIT"
         return "slim fits: peak " fmt_cores(cpk) " cores and " fmt_bytes(mpk) " inside a 1 core / 5 GB box, finishing in " hms(w) "."
     }
-    if (w >= 780)
-        return "keep " rn ": " hms(w) " leaves too little margin under slim's 15m hard cap." caveat
-    if (cpk > 1000)
+    # hard_s - slack_s, not a second literal. A job that is ALREADY at or past
+    # the declared timeout on a bigger box has no business being told to move
+    # onto a box whose cap it would hit, and the margin it has to clear is
+    # stated once (BEGIN) rather than restated as a number here.
+    if (w >= hard_s - slack_s) {
+        advice_verdict = "KEEP"
+        return "keep " rn ": " hms(w) " leaves less than " hms(slack_s) " of margin under slim's " hms(hard_s) " hard cap." caveat
+    }
+    if (cpk > 1000) {
+        advice_verdict = "KEEP"
         return "keep " rn ": peak " fmt_cores(cpk) " cores needs more than slim's single vCPU." caveat
-    if (mpk > 4831838208)
+    }
+    if (mpk > 4831838208) {
+        advice_verdict = "KEEP"
         return "keep " rn ": peak " fmt_bytes(mpk) " is too close to slim's 5 GB." caveat
-    return "MOVE TO ubuntu-slim: peak " fmt_cores(cpk) " cores and " fmt_bytes(mpk) " fit a 1 core / 5 GB box, and " hms(w) " fits the 15m cap. On a 4-vCPU VM this job is burning about 4x the core-minutes it needs." caveat
+    }
+    advice_verdict = "MOVE_TO_SLIM"
+    return "MOVE TO ubuntu-slim: peak " fmt_cores(cpk) " cores and " fmt_bytes(mpk) " fit a 1 core / 5 GB box, and " hms(w) " fits the " hms(hard_s) " cap. On a 4-vCPU VM this job is burning about 4x the core-minutes it needs." caveat
 }
 
-function finish() {
+function finish(   row) {
     print ""
     if (nfind > 0) {
         print "**Profile findings:**"
         for (k = 1; k <= nfind; k++) print "- " findings[k]
         print ""
+    }
+    # findings is carried rather than filtered here: a row from a run whose
+    # sampler was starved must be REJECTABLE by the consumer, and dropping it
+    # silently would make "no row" mean two different things.
+    if (machine_file != "" && advice_verdict != "") {
+        row = sprintf("PROFILER_BASELINE_V1 job=%s runner_label=%s tier=%s cpu_peak_milli=%d mem_peak_bytes=%.0f wall_s=%d cpu_ceil_milli=%d mem_ceil_bytes=%.0f samples=%d findings=%d verdict=%s",
+            (job == "" ? "unknown" : job), (runner == "" ? "unknown" : runner), tier,
+            cpu_peak, mem_peak, wall, cpu_ceil, mem_ceil, n, nfind, advice_verdict)
+        print row > machine_file
+        close(machine_file)
     }
     exit exit_code
 }
