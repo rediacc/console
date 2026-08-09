@@ -196,3 +196,22 @@ Ask the content, not the index:
 `git diff-index --cached --name-status <branch>`. Same class as a failed existence
 check with the wrong path: a query that cannot see the thing it is asking about
 answers confidently and wrongly.
+
+## Editing a shell script while a background job is RUNNING it
+
+Bash reads a script LAZILY, by byte offset, not into memory. Rewrite the file
+while a job is executing it and the interpreter resumes at its old offset inside
+the new bytes, so it starts parsing mid-token. The error it prints names a line
+that is innocent, and often no longer exists at that number.
+
+Observed 2026-08-09: `test-hooks.sh` was edited (five cases appended, then
+`shfmt -w`) while a backgrounded umbrella run was still inside it. That run died
+with `line 380: syntax error near unexpected token (` pointing at
+`echo "... $n case(s) passed"`, a line that had been valid for months and now
+sits at 368. `bash -n` on the file was CLEAN throughout, which is the tell: a
+syntax error that the syntax checker cannot reproduce is not in the file, it is
+in the READER. Chasing the named line finds nothing wrong, because nothing is.
+
+So: never edit a script a background job is running. Let it finish, or copy the
+tree and edit the copy. And when a shell syntax error cites a line that looks
+fine, check whether anything rewrote the file mid-run before debugging the line.
