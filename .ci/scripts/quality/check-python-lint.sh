@@ -24,6 +24,15 @@
 #      it. If the control cannot fire, this exits non-zero WITHOUT judging the
 #      real files, because a verdict from an instrument that cannot fail is
 #      worse than no verdict.
+#   3. AN UNTRACKED FILE, silently omitted. Found live 2026-08-09: this gate
+#      reported "27 files, All checks passed!" while wl_checklist.py, the
+#      newest and second-largest module of the Stop-hook program, was untracked
+#      and therefore never in the list. A format violation in it was caught
+#      only by running ruff by hand. The omission is invisible by construction:
+#      a shorter list still passes the floor, so nothing looks wrong. The list
+#      now includes untracked-but-not-ignored Python, and control 3 below
+#      plants an untracked file to prove the enumeration reaches it. Gitignored
+#      files stay excluded, which is what keeps venvs and build output out.
 #
 # The control plants F821 (undefined name) specifically, because that is the
 # rule that caught the real bug. If a future config change disables it, this
@@ -52,10 +61,38 @@ if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 fi
 # A read loop, NOT mapfile: check-commands.sh rejects mapfile as unavailable in
 # the minimal CI shell, and it is right -- the gate failed on exactly that.
+# ONE enumerator, used by the real list AND by control 3 below. It is a function
+# specifically so the control cannot drift from the thing it guards: an earlier
+# draft of control 3 ran its own copy of this query, which meant editing the real
+# enumeration left the control green -- a check that cannot fail, introduced by
+# the very commit that was fixing one.
+enumerate_py() {
+    git ls-files --cached --others --exclude-standard -- '*.py' ':!:private/**'
+}
+
+# ---- CONTROL 3: the ENUMERATION must reach an UNTRACKED file -----------------
+# Runs before the real list is built, because a list that omits files silently
+# is not worth counting. Found live 2026-08-09: `git ls-files` alone reported
+# "27 files, All checks passed!" while wl_checklist.py, the newest and second
+# largest module of the Stop-hook program, was untracked and never in the list.
+# The name is runtime-keyed so a crashed earlier run cannot make this pass by
+# leaving its specimen behind.
+enum_probe="enum_probe_$$_$(date +%s).py"
+cleanup_probe() { rm -f "$REPO_ROOT/$enum_probe"; }
+trap cleanup_probe EXIT
+printf 'x = 1\n' >"$REPO_ROOT/$enum_probe"
+if ! enumerate_py | grep -qx -- "$enum_probe"; then
+    echo "${RED}✗ CONTROL FAILED${NC}: the file enumeration did not return a planted" >&2
+    echo "  UNTRACKED Python file (${enum_probe}), so this gate is blind to exactly" >&2
+    echo "  the case that shipped on 2026-08-09. Refusing to judge the real files." >&2
+    exit 1
+fi
+cleanup_probe
+
 PY_FILES=()
 while IFS= read -r _f; do
     [[ -n "$_f" ]] && PY_FILES+=("$_f")
-done < <(git ls-files -- '*.py' ':!:private/**')
+done < <(enumerate_py)
 count="${#PY_FILES[@]}"
 
 # The floor is a real number, not 1. The interesting failure is a glob that
@@ -109,7 +146,10 @@ fi
 # ancestry, then point --config at it explicitly. That way this also proves the
 # config path the real run uses actually resolves.
 control_dir="$(mktemp -d)"
-trap 'rm -rf "$control_dir"' EXIT
+# Covers the probe too: bash EXIT traps REPLACE rather than stack, so this line
+# silently disarms cleanup_probe above. The probe is already removed by here, but
+# a future reordering would otherwise leak a stray .py into a SHARED worktree.
+trap 'rm -rf "$control_dir"; cleanup_probe' EXIT
 cat >"$control_dir/control.py" <<'PYEOF'
 def planted():
     # F821: `undefined_on_purpose` is never bound anywhere.
