@@ -74,3 +74,5 @@ if [[ "$missing" -ne 0 ]]; then
 fi
 
 log_info ".npmrc is clean and hardened"
+
+  badly_indented_canary_var=1
