@@ -75,12 +75,22 @@ jq -e 'type == "array"' "$THREADS" >/dev/null 2>&1 || {
 # order, so the newest findings are the ones a round can still act on; an
 # older thread that has survived several rounds unaddressed is the better
 # thing to lose, and it is reported as lost rather than dropped in silence.
+# `utf8bytelength`, NOT `length`. jq's `length` on a string counts CODEPOINTS,
+# so a payload of CJK or emoji review text measured roughly a third of the
+# bytes it actually occupies, and the cap that exists to bound what reaches the
+# model could be overshot by 3x on exactly the content least likely to have
+# been budgeted for. The cap is a byte budget, so it is measured in bytes.
+#
+# `repo` and `pr` ride through to the payload: a thread from a submodule PR
+# must be answerable in the repository it lives in.
 payload="$(jq -c --arg af "$AUTHOR_FILTER" --argjson max "$MAX_BYTES" '
     [ .[]
       | select((.isResolved // false) == false and (.isOutdated // false) == false)
       | select((((.comments.nodes // [])[0].author.login) // "") | contains($af))
       | {
           id: .id,
+          repo: (.repo // null),
+          pr: (.pr // null),
           path: (.path // ""),
           line: (.line // null),
           comments: [ (.comments.nodes // [])[]
@@ -91,12 +101,12 @@ payload="$(jq -c --arg af "$AUTHOR_FILTER" --argjson max "$MAX_BYTES" '
     ]
     | . as $kept
     | reduce range(0; ($kept | length)) as $i ({threads: $kept, dropped: 0};
-        if ((.threads | tojson | length) <= $max) then .
+        if ((.threads | tojson | utf8bytelength) <= $max) then .
         else {threads: (.threads[1:]), dropped: (.dropped + 1)} end)
     | {threads: .threads,
        kept: (.threads | length),
        dropped: .dropped,
-       bytes: (.threads | tojson | length)}
+       bytes: (.threads | tojson | utf8bytelength)}
 ' "$THREADS")"
 
 if [[ -n "$OUT" ]]; then

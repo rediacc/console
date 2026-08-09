@@ -900,6 +900,112 @@ test_push_submodule_tripwire_fires() {
     log_pass "the tripwire runs on the submodule's staged bytes, before its commit exists"
 }
 
+test_push_validation_failure_leaves_no_remote_write() {
+    # THE TRANSACTION ORDER. Submodules used to be pushed inside their own
+    # loop, so a CONSOLE-side refusal arrived after renet already had a branch
+    # on its remote: a published commit belonging to a console commit that was
+    # never made, and a submodule PR nobody could land. Every validation in
+    # every repo now runs before the first push anywhere.
+    local d="$WORK/sub-txn"
+    mk_sub_fixture "$d" fix-branch
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    # An untracked DIRECTORY is dirty as `docs/` but stages as its files, so
+    # `git add -- docs/` expands and the staged set stops equalling the
+    # declared one. That is a real pathspec expansion, which is exactly what
+    # the staged-set check exists to catch -- and it fails on the CONSOLE side,
+    # after the submodule has already been committed locally.
+    mkdir -p "$d/parent/docs"
+    printf 'a\n' >"$d/parent/docs/a.txt"
+    printf 'b\n' >"$d/parent/docs/b.txt"
+    jq -n --arg b "$(git -C "$d/parent" rev-parse HEAD)" \
+        '{schema: "rediacc-autopilot-handoff/1", base_head: $b, outcome: "push",
+          files: ["docs/", "private/renet"], commit_message: "chore: mixed round",
+          ledger_line: "r1 | run 30123456789/1 | mixed",
+          submodules: [{path: "private/renet", files: ["pkg/x.go"], message: "fix(renet): add F"}]}' \
+        >"$WORK/sub-txn.json"
+    SUB_FLAG=true PUSH_FLAG=true
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-txn.json" fix-branch)" "1" \
+        "a console-side validation failure must refuse the round"
+    assert_contains "$(err)" "staged-set-mismatch" "as staged-set-mismatch"
+    # THE CLAIM THAT MATTERS: zero remote writes, in EITHER repo.
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "" \
+        "and the submodule remote was never written, even though its commit already existed locally"
+    assert_eq "$(remote_branch_sha "$d/console.git" fix-branch)" "" "nor the console remote"
+    # The local submodule commit DOES exist: the phase split defers the push,
+    # it does not defer the work.
+    assert_eq "$(git -C "$d/parent/private/renet" log --format=%s -1)" "fix(renet): add F" \
+        "the submodule commit was made locally before console was validated"
+    assert_not_contains "$(err)" "all repos validated" "and the harness never reached its own 'validated' checkpoint"
+    log_pass "a validation failure anywhere leaves every remote untouched"
+}
+
+# mk_sub_orphan <dir> <branch> <committer-email> - leave a commit on the
+# submodule's remote branch that the parent's pointer knows nothing about.
+mk_sub_orphan() {
+    local d="$1" branch="$2" email="$3"
+    rm -rf "$d/orphan"
+    git clone -q "$d/renet.git" "$d/orphan"
+    git -C "$d/orphan" checkout -q -B "$branch" origin/main
+    printf 'orphan\n' >"$d/orphan/pkg/orphan.go"
+    git -C "$d/orphan" add -A
+    git -C "$d/orphan" -c user.email="$email" -c user.name="Orphan Round" commit -qm "orphan round"
+    git -C "$d/orphan" push -q origin "$branch"
+    git -C "$d/orphan" rev-parse HEAD
+}
+
+test_push_submodule_adopts_our_own_orphan() {
+    # A previous round pushed the submodule and never landed its console half
+    # (the old ordering did exactly this; a cancelled run still can). This
+    # round branches from the recorded pointer, so its push is rejected as
+    # non-fast-forward BY A COMMIT THIS SYSTEM WROTE. Refusing there strands
+    # the campaign on a branch only a human can unpick.
+    local d="$WORK/sub-orphan"
+    mk_sub_fixture "$d" fix-branch
+    local orphan
+    orphan="$(mk_sub_orphan "$d" fix-branch autopilot@example.invalid)"
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-orphan.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=true
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-orphan.json" fix-branch)" "0" \
+        "a round facing its own orphan converges instead of failing"
+    assert_contains "$(err)" "is an autopilot orphan" "having recognised the tip as its own"
+    local tip
+    tip="$(remote_branch_sha "$d/renet.git" fix-branch)"
+    # The orphan is PRESERVED, not overwritten: the round's work sits on top.
+    assert_eq "$(git -C "$d/renet.git" merge-base --is-ancestor "$orphan" "$tip" && echo yes || echo no)" "yes" \
+        "the orphan commit is still an ancestor of the new tip"
+    assert_contains "$(git -C "$d/renet.git" show "$tip" --name-only --format=)" "pkg/x.go" \
+        "and this round's file rides on top of it"
+    assert_contains "$(git -C "$d/renet.git" show --format=%s -s "$tip")" "fix(renet): add F" \
+        "with this round's message preserved through the rebuild"
+    # And console's pointer names the ADOPTED sha, not the pre-adoption one.
+    assert_eq "$(git -C "$d/parent" rev-parse "HEAD:private/renet")" "$tip" \
+        "console's committed gitlink names the adopted commit"
+    assert_contains "$(err)" "re-running the console validation" \
+        "because the pointer was re-staged and re-validated rather than patched"
+    log_pass "an autopilot orphan is adopted, and console points at the result"
+}
+
+test_push_submodule_refuses_a_foreign_branch() {
+    # The other direction, and the one that matters more: a branch of the same
+    # name written by someone else is not ours to rewrite.
+    local d="$WORK/sub-foreign"
+    mk_sub_fixture "$d" fix-branch
+    local foreign
+    foreign="$(mk_sub_orphan "$d" fix-branch someone-else@example.invalid)"
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-foreign.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=true
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-foreign.json" fix-branch)" "1" \
+        "a foreign tip on the submodule branch must refuse"
+    assert_contains "$(err)" "submodule-foreign-branch" "as submodule-foreign-branch"
+    assert_contains "$(err)" "someone-else@example.invalid" "naming whose commit it declined to rewrite"
+    assert_eq "$(remote_branch_sha "$d/renet.git" fix-branch)" "$foreign" \
+        "and the foreign branch is exactly where it was"
+    assert_eq "$(remote_branch_sha "$d/console.git" fix-branch)" "" "with console never pushed"
+    log_pass "adoption is scoped to commits the autopilot itself wrote"
+}
+
 test_push_submodule_branch_forbidden_touches_nothing() {
     # The submodule branch name IS the console branch name, so `main` is
     # refused by the parent's own branch check before any submodule is opened.
@@ -1711,6 +1817,112 @@ test_review_payload_byte_cap() {
 # resolves. A thread id the round was never shown is not addressable.
 # ---------------------------------------------------------------------------
 
+LINKED="$AUTOPILOT/linked-sub-prs.sh"
+
+test_linked_sub_prs_only_recognises_the_four_submodules() {
+    cat >"$WORK/linked-body.md" <<'BODY'
+Some description a human wrote.
+
+<!-- autopilot-submodule-prs:begin -->
+**Submodule PRs**
+
+- `private/renet` -> https://github.com/rediacc/renet/pull/123
+- `private/account` -> rediacc/account#45
+<!-- autopilot-submodule-prs:end -->
+BODY
+    local got
+    got="$(bash "$LINKED" --body "$WORK/linked-body.md")"
+    assert_contains "$got" "rediacc/renet 123" "the full-URL link form is recognised"
+    assert_contains "$got" "rediacc/account 45" "and the owner/repo#N short form"
+    assert_eq "$(grep -c . <<<"$got")" "2" "and nothing else"
+    # FIRES: this output decides which repositories the gate will fetch review
+    # comments from and hand to a model. A body is operator-authored on an
+    # armed PR, but it is still text; only the four submodules are addressable.
+    cat >"$WORK/linked-hostile.md" <<'BODY'
+- https://github.com/attacker/renet/pull/7
+- rediacc/evil-repo/pull/999
+- https://github.com/rediacc/console/pull/1
+BODY
+    got="$(bash "$LINKED" --body "$WORK/linked-hostile.md")"
+    assert_eq "$got" "" "a foreign owner, an unknown repo and console itself are all ignored"
+    # A body with no links at all is normal and quiet, not an error.
+    printf 'nothing here\n' >"$WORK/linked-empty.md"
+    local rc=0
+    got="$(bash "$LINKED" --body "$WORK/linked-empty.md")" || rc=$?
+    assert_eq "$rc" "0" "a body with no submodule links exits 0"
+    assert_eq "$got" "" "and prints nothing"
+    log_pass "linked submodule PRs are read from the body, and only the four known repos are addressable"
+}
+
+test_review_payload_carries_repo_and_counts_real_bytes() {
+    # A submodule thread must stay answerable in the repository it lives in.
+    {
+        printf '['
+        mk_thread "PRT_console" "github-actions[bot]" false false
+        printf ','
+        jq -cn '{id: "PRT_sub", isResolved: false, isOutdated: false, repo: "rediacc/renet", pr: 123,
+                 path: "pkg/x.go", line: 4,
+                 comments: {nodes: [{databaseId: 9, body: "renet finding", author: {login: "github-actions[bot]"}}]}}'
+        printf ']'
+    } >"$WORK/rp-tagged.json"
+    local p
+    p="$(bash "$PAYLOAD" --threads "$WORK/rp-tagged.json" 2>/dev/null)"
+    assert_eq "$(jq -r '.kept' <<<"$p")" "2" "both threads survive the author filter"
+    assert_eq "$(jq -r '.threads[] | select(.id == "PRT_sub") | .repo' <<<"$p")" "rediacc/renet" \
+        "the submodule thread keeps its repo"
+    assert_eq "$(jq -r '.threads[] | select(.id == "PRT_sub") | .pr' <<<"$p")" "123" "and its PR number"
+    assert_eq "$(jq -r '.threads[] | select(.id == "PRT_console") | .repo' <<<"$p")" "null" \
+        "a console thread carries no repo tag and is treated as console downstream"
+    # THE CAP IS A BYTE BUDGET. jq's `length` on a string counts CODEPOINTS, so
+    # a payload of multi-byte review text measured a fraction of the bytes it
+    # actually occupies and could overshoot the cap several times over.
+    local wide
+    wide="$(node -e 'process.stdout.write("é".repeat(3000))')"
+    jq -cn --arg w "$wide" '[{id: "PRT_wide", isResolved: false, isOutdated: false, path: "a", line: 1,
+        comments: {nodes: [{databaseId: 1, body: $w, author: {login: "github-actions[bot]"}}]}}]' \
+        >"$WORK/rp-wide.json"
+    p="$(bash "$PAYLOAD" --threads "$WORK/rp-wide.json" --max-bytes 4000 2>/dev/null)"
+    assert_eq "$(jq -r '.dropped' <<<"$p")" "1" \
+        "3000 two-byte characters exceed a 4000-BYTE cap and are shed"
+    # CONTROL: the same 3000 characters fit a cap that genuinely is large
+    # enough in bytes, so the drop above is the measurement, not the content.
+    p="$(bash "$PAYLOAD" --threads "$WORK/rp-wide.json" --max-bytes 9000 2>/dev/null)"
+    assert_eq "$(jq -r '.dropped' <<<"$p")" "0" "and fit under a 9000-byte cap"
+    assert_eq "$(jq -r '.bytes > 6000' <<<"$p")" "true" "with the reported size counted in bytes, not codepoints"
+    log_pass "the payload carries repo/pr and measures its cap in UTF-8 bytes"
+}
+
+test_review_reply_routes_to_the_threads_repo() {
+    {
+        printf '['
+        jq -cn '{id: "PRT_sub", isResolved: false, isOutdated: false, repo: "rediacc/renet", pr: 123,
+                 path: "pkg/x.go", line: 4,
+                 comments: {nodes: [{databaseId: 9, body: "renet finding", author: {login: "github-actions[bot]"}}]}}'
+        printf ','
+        mk_thread "PRT_console" "github-actions[bot]" false false
+        printf ']'
+    } >"$WORK/rr-tagged.json"
+    bash "$PAYLOAD" --threads "$WORK/rr-tagged.json" --out "$WORK/rr-tagged-payload.json" 2>/dev/null
+    jq -n '{verdict: "ok", outcome: "push", files: [], ledger_line: "r1 | run 1/1 | x",
+            decisions: ["thread PRT_sub: fixed in pkg/x.go - guarded the nil case",
+                        "thread PRT_console: declined - out of scope"]}' >"$WORK/rr-tagged-verdict.json"
+    local plan
+    plan="$(bash "$REVIEW_REPLY" plan --verdict "$WORK/rr-tagged-verdict.json" --threads "$WORK/rr-tagged-payload.json" 2>/dev/null)"
+    assert_eq "$(jq -r '.replies | length' <<<"$plan")" "2" "both dispositions are planned"
+    assert_eq "$(jq -r '.replies[] | select(.thread_id == "PRT_sub") | .repo' <<<"$plan")" "rediacc/renet" \
+        "the submodule thread's reply is routed to its own repository"
+    assert_eq "$(jq -r '.replies[] | select(.thread_id == "PRT_console") | .repo' <<<"$plan")" "console" \
+        "and an untagged thread stays console"
+    # The membership rule is unchanged by tagging: an id from no payload is
+    # still unaddressable, whatever repo it claims.
+    jq -n '{verdict: "ok", outcome: "push", files: [], ledger_line: "r1 | run 1/1 | x",
+            decisions: ["thread PRT_elsewhere: declined - nope"]}' >"$WORK/rr-elsewhere.json"
+    plan="$(bash "$REVIEW_REPLY" plan --verdict "$WORK/rr-elsewhere.json" --threads "$WORK/rr-tagged-payload.json" 2>/dev/null)"
+    assert_eq "$(jq -r '.replies | length' <<<"$plan")" "0" "an unshown thread is still not addressable"
+    assert_contains "$(jq -c '.skipped' <<<"$plan")" "unknown-thread" "and is still flagged"
+    log_pass "replies are routed to the repository the thread lives in"
+}
+
 test_review_reply_plan_requires_a_shown_thread() {
     {
         printf '['
@@ -1912,6 +2124,43 @@ test_update_state_fails_closed_and_renders_the_round() {
     log_pass "update-state fails closed and records the whole round, not its first line"
 }
 
+MARGS="$AUTOPILOT/resolve-model-args.sh"
+
+test_resolve_model_args_effort_sources() {
+    local a
+    # CONTROL: neither source set, so no --effort flag at all.
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort default --effort-var "" 2>/dev/null)"
+    assert_contains "$a" "--model claude-sonnet-5" "the model rides through"
+    assert_contains "$a" "--max-turns 80" "a fix round gets 80 turns"
+    assert_not_contains "$a" "--effort" "and no effort flag is passed when neither source is set"
+    a="$(bash "$MARGS" --model claude-opus-5 --mode review-response --effort default --effort-var "" 2>/dev/null)"
+    assert_contains "$a" "--max-turns 60" "a review round gets 60"
+    # The repo VARIABLE is what an autonomous round has: no dispatcher to ask.
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort default --effort-var high 2>/dev/null)"
+    assert_contains "$a" "--effort high" "AUTOPILOT_EFFORT arms an autonomous round"
+    # The dispatch input wins: a human aiming at one round knows something the
+    # standing setting does not.
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort max --effort-var low 2>/dev/null)"
+    assert_contains "$a" "--effort max" "the dispatch input beats the variable"
+    assert_not_contains "$a" "--effort low" "and the variable does not also appear"
+    # FIRES: a junk value is ignored LOUDLY. `--effort banana` would fail the
+    # round after paying for the runner, and a silent drop would leave the
+    # operator believing a setting was in force that never was.
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort default --effort-var banana 2>/dev/null)"
+    assert_not_contains "$a" "--effort" "an unrecognised variable never reaches the CLI"
+    assert_contains "$a" "--model claude-sonnet-5" "and the round still runs"
+    # The notice goes to STDOUT, because that is the stream the Actions runner
+    # parses `::` workflow commands from. The workflow step therefore must not
+    # discard stdout, or "ignored loudly" becomes "ignored".
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort default --effort-var banana 2>/dev/null)"
+    assert_contains "$a" "::notice::" "with a notice explaining why it was ignored"
+    assert_contains "$a" "banana" "naming the offending value"
+    # Same treatment for a junk dispatch input, and the variable still applies.
+    a="$(bash "$MARGS" --model claude-sonnet-5 --mode fix --effort banana --effort-var medium 2>/dev/null)"
+    assert_contains "$a" "--effort medium" "a junk dispatch input falls through to the variable"
+    log_pass "effort resolves dispatch > variable > none, and junk is ignored loudly"
+}
+
 test_post_escalation_says_what_stopped() {
     local rc=0
     bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" --dry-run \
@@ -1928,8 +2177,28 @@ test_post_escalation_says_what_stopped() {
     assert_contains "$(out)" "the fix needs .github/workflows/ci.yml" "the model's reason reaches the comment"
     assert_contains "$(out)" "Proposed patch (data, not applied)" "and the patch rides as data, never applied"
     assert_contains "$(out)" "+  timeout-minutes: 20" "with the diff itself attached"
+    assert_eq "$(grep -m1 'diff$' "$WORK/out.txt")" '```diff' "fenced as a diff block"
     assert_contains "$(out)" "autopilot-blocked" "the comment says how to unlatch"
     assert_contains "$(out)" "https://example.invalid/run/1" "and points at the run log"
+    # THE FENCE IS SIZED TO THE CONTENT. A patch touching a markdown file
+    # carries its own ``` run, which would CLOSE a three-backtick fence early
+    # and render the remainder -- model-authored text -- as live formatting
+    # rather than as quoted data.
+    jq -n '{outcome: "escalate", escalation: {reason: "a docs fix",
+            patch: "--- a/README.md\n+++ b/README.md\n+```bash\n+echo hi\n+```\n"}}' >"$WORK/pe-fence.json"
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title t \
+        --verdict "$WORK/pe-fence.json" --dry-run >"$WORK/out.txt" 2>"$WORK/err.txt"
+    # Compared EXACTLY, not by substring: '````diff' contains '```diff', so a
+    # contains-check could never tell the two apart.
+    assert_eq "$(grep -m1 'diff$' "$WORK/out.txt")" '````diff' \
+        'a patch carrying its own three-backtick run opens with a four-backtick fence'
+    # CONTROL: an ordinary patch keeps the ordinary fence, so the widening is
+    # driven by the content rather than applied to everything.
+    jq -n '{outcome: "escalate", escalation: {reason: "r", patch: "--- a/x\n+++ b/x\n+ok\n"}}' >"$WORK/pe-plain.json"
+    AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title t \
+        --verdict "$WORK/pe-plain.json" --dry-run >"$WORK/out.txt" 2>"$WORK/err.txt"
+    assert_eq "$(grep -m1 'diff$' "$WORK/out.txt")" '```diff' \
+        "a patch with no backticks keeps the ordinary three-backtick fence, so the widening is content-driven"
     # The failure path NAMES THE STEP CLASS. "Something went wrong" is what
     # this replaced.
     AUTOPILOT_ALLOW_STATE=true bash "$POST_ESC" --pr 1 --repo rediacc/console --title "the round failed" \
@@ -2015,6 +2284,9 @@ test_push_submodule_requires_the_stage_flag
 test_push_submodule_file_outside_the_submodule
 test_push_submodule_gitlink_must_be_declared
 test_push_submodule_tripwire_fires
+test_push_validation_failure_leaves_no_remote_write
+test_push_submodule_adopts_our_own_orphan
+test_push_submodule_refuses_a_foreign_branch
 test_push_submodule_branch_forbidden_touches_nothing
 test_push_submodule_uninitialized_never_writes_the_parent
 test_push_boundary_never_stages_wholesale
@@ -2042,12 +2314,16 @@ test_state_comment_signature_fields_round_trip
 test_state_comment_compaction_over_55kb
 test_review_payload_filters_on_the_root_author
 test_review_payload_byte_cap
+test_linked_sub_prs_only_recognises_the_four_submodules
+test_review_payload_carries_repo_and_counts_real_bytes
+test_review_reply_routes_to_the_threads_repo
 test_review_reply_plan_requires_a_shown_thread
 test_review_reply_caps_the_body_and_fails_closed_on_write
 test_sweep_finds_open_campaigns_and_refuses_lookalikes
 test_finish_check_done
 test_compose_prompt_refuses_a_blind_review_round
 test_update_state_fails_closed_and_renders_the_round
+test_resolve_model_args_effort_sources
 test_post_escalation_says_what_stopped
 test_prompts_carry_the_required_clauses
 echo ""

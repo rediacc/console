@@ -526,6 +526,15 @@ if [[ "${1:-}" == "--mark" ]]; then
     # code was read -- but `review_spent_attempt_count` does, so it consumes budget.
     # It records WHY, because "we stopped reviewing this PR" is only a
     # defensible message if it says what was spent on.
+    # ONE MARKER PER HEAD, upserted with its own attempt count (2026-08-09).
+    # The marker used to be POSTed fresh on every failure, so N deaths on one
+    # head meant N comments and N charged units. That was right for a verdict
+    # and wrong for an infrastructure death: on PR #560 an `error_max_turns`
+    # told a fully-green, autopilot-driven PR to "push a change to earn another
+    # pass" when there was no legitimate change to push, and the loop stalled
+    # behind a human. An infra-class failure now gets bounded free re-attempts
+    # on the same head; see the block above review_attempt_states() in
+    # ../lib/common.sh for why the bound is as important as the retry.
     if [[ "${REVIEW_OUTCOME:-}" != "success" ]]; then
         why="review step did not succeed"
         if [[ -n "${EXECUTION_FILE:-}" && -f "${EXECUTION_FILE:-}" ]]; then
@@ -535,13 +544,46 @@ if [[ "${1:-}" == "--mark" ]]; then
             ' "$EXECUTION_FILE" 2>/dev/null) || subtype=""
             [[ -n "$subtype" ]] && why="$subtype"
         fi
-        gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-            -f body="${ATTEMPT_PREFIX} ${HEAD_SHA} -->
+
+        attempt_id=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$ATTEMPT_PREFIX\"))
+                      | select(.body | contains(\"$HEAD_SHA\")) | .id" 2>/dev/null </dev/null |
+            tail -n 1) || attempt_id=""
+        prior=$(review_head_attempt_state \
+            "$(review_attempt_states "$PR_NUMBER" "$ATTEMPT_PREFIX")" "$HEAD_SHA")
+        attempts=$((${prior%% *} + 1))
+
+        if review_attempt_class_is_infra "$why" &&
+            [[ "$attempts" -le "$REVIEW_FREE_REATTEMPTS_PER_HEAD" ]]; then
+            verdict_line="That is an INFRASTRUCTURE-class failure, not a verdict on the code, so it does not
+close this head's budget yet: attempt ${attempts} of ${REVIEW_MAX_ATTEMPTS_PER_HEAD}.
+Re-run it on the same head, no push required:
+\`gh workflow run claude-review.yml --ref <this PR's branch> -f pr_number=${PR_NUMBER}\`"
+        else
+            verdict_line="That is attempt ${attempts} of ${REVIEW_MAX_ATTEMPTS_PER_HEAD} on this head, so it counts against this PR's
+review budget because it spent real turns and tokens.
+Push a change to earn another pass."
+        fi
+
+        body="${ATTEMPT_PREFIX} ${HEAD_SHA} -->
+attempts: ${attempts}
+class: ${why}
 A review pass was attempted on \`${HEAD_SHA:0:7}\` and produced no report (\`${why}\`).
-It counts against this PR's review budget because it spent real turns and tokens.
-Push a change to earn another pass." >/dev/null 2>&1 ||
-            log_warn "could not record the spent attempt for ${HEAD_SHA:0:7}"
-        log_info "recorded a SPENT ATTEMPT for ${HEAD_SHA:0:7} (${why}); it consumes budget but does not mark the SHA reviewed"
+${verdict_line}"
+        if [[ -n "$attempt_id" ]]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${attempt_id}" \
+                -f body="$body" >/dev/null 2>&1 </dev/null ||
+                log_warn "could not update the spent attempt for ${HEAD_SHA:0:7}"
+        else
+            # -X POST explicitly. gh infers it from -f, but leaving it implicit
+            # made this write indistinguishable from a read to anything parsing
+            # the argv -- including this pipeline's own test harness, which
+            # served it a fixture instead of capturing it.
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+                -f body="$body" >/dev/null 2>&1 </dev/null ||
+                log_warn "could not record the spent attempt for ${HEAD_SHA:0:7}"
+        fi
+        log_info "recorded SPENT ATTEMPT ${attempts}/${REVIEW_MAX_ATTEMPTS_PER_HEAD} for ${HEAD_SHA:0:7} (${why}); it does not mark the SHA reviewed"
         exit 0
     fi
     # A marker is a CLAIM that a review happened. Step success alone proved
@@ -688,7 +730,21 @@ case "${EVENT_NAME:-}" in
 esac
 
 reports_posted=$(review_report_count "$pr")
-attempts_spent=$(review_spent_attempt_count "$pr" "$ATTEMPT_PREFIX")
+# Fetched ONCE: the cap needs the chargeable total, the per-head ceiling needs
+# this head's own row, and paying for the same paginated listing twice on every
+# invocation is how a cheap guard becomes an expensive one.
+attempt_states=$(review_attempt_states "$pr" "$ATTEMPT_PREFIX")
+attempts_spent=$(review_chargeable_attempts "$attempt_states")
+
+# THE PER-HEAD CEILING. Free re-attempts have to end somewhere, and it cannot be
+# the per-PR cap alone: the free ones are not charged, so without this a head
+# that dies infra-class could be retried forever at no visible cost. Checked
+# BEFORE the cap so the message names the real reason.
+head_state=$(review_head_attempt_state "$attempt_states" "$head_sha")
+if review_head_is_exhausted "$attempt_states" "$head_sha"; then
+    emit false "$pr" "$head_sha" "" \
+        "head ${head_sha:0:7} has spent all ${REVIEW_MAX_ATTEMPTS_PER_HEAD} attempts (${head_state% *} recorded, class ${head_state#* }); push a change to earn another pass"
+fi
 # Budget is what was SPENT, not what was delivered. A pass that burned its turns
 # and posted nothing cost the same as one that posted a full report, and
 # charging only for successes is what let a failing SHA be re-reviewed forever.

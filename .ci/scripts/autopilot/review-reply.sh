@@ -75,10 +75,17 @@ case "$cmd" in
         # --threads accepts review-payload.sh's object or a bare array of
         # threads; both name the same set, and requiring one spelling would
         # break the moment the payload gains a field.
+        # id -> repo, so a planned reply carries the repository its thread
+        # lives in. The GraphQL mutations address a thread by its global node
+        # id and need no repo argument, but the plan is also an audit record
+        # and a log line, and "resolved a thread" is not a useful sentence
+        # without naming where.
         known="$(jq -c '[ ((.threads // .) // [])[] | .id ] | map(select(type == "string"))' "$THREADS")"
+        known_repos="$(jq -c '[ ((.threads // .) // [])[] | select(.id | type == "string") | {key: .id, value: (.repo // "console")} ] | from_entries' "$THREADS")"
 
         plan="$(jq -c \
             --argjson known "$known" \
+            --argjson repos "$known_repos" \
             --arg shape "$ID_SHAPE" \
             --argjson max "$MAX_BODY" '
             ($known | map({(.): true}) | add // {}) as $ids
@@ -94,9 +101,10 @@ case "$cmd" in
                 then {kind: "skipped", entry: .id, reason: "malformed-id"}
                 elif ($ids[.id] | not)
                 then {kind: "skipped", entry: .id, reason: "unknown-thread"}
-                else {kind: "reply", thread_id: .id, body: (.body[0:$max])}
+                else {kind: "reply", thread_id: .id, body: (.body[0:$max]),
+                      repo: ($repos[.id] // "console")}
                 end)
-            | {replies: [ .[] | select(.kind == "reply") | {thread_id, body} ],
+            | {replies: [ .[] | select(.kind == "reply") | {thread_id, body, repo} ],
                skipped: [ .[] | select(.kind == "skipped") | {entry, reason} ]}
             | . + {flagged: ((.skipped | length) > 0)}
         ' "$VERDICT")"
@@ -138,6 +146,7 @@ case "$cmd" in
         for ((i = 0; i < n; i++)); do
             tid="$(jq -r ".replies[$i].thread_id" "$PLAN")"
             body="$(jq -r ".replies[$i].body" "$PLAN")"
+            trepo="$(jq -r ".replies[$i].repo // \"console\"" "$PLAN")"
             # Re-checked at the write, not only at the plan: apply is a
             # separate invocation and its input is a file on disk.
             [[ "$tid" =~ $ID_SHAPE ]] || {
@@ -146,11 +155,11 @@ case "$cmd" in
             }
             # Model text travels as a -f VALUE, never as shell: `-f k=v` puts
             # the bytes in one argv slot with no re-parse.
-            gh_json "review reply for thread $tid" -- api graphql \
+            gh_json "review reply for thread $tid in $trepo" -- api graphql \
                 -f query="$REPLY_MUTATION" -f threadId="$tid" -f body="$body" >/dev/null
             gh_json "resolve thread $tid" -- api graphql \
                 -f query="$RESOLVE_MUTATION" -f threadId="$tid" >/dev/null
-            log_info "replied and resolved thread $tid"
+            log_info "replied and resolved thread $tid in $trepo"
         done
         log_info "review-reply apply: $n thread(s) answered and resolved"
         ;;
