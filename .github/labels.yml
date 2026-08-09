@@ -79,6 +79,14 @@
   color: "FBCA04"
   description: "Triggers a minor version bump (X.Y+1.0) on merge to main"
 
+# The fourth member of the family, and the only one that subtracts: it skips the
+# WHOLE release rather than choosing its size. Created on demand by the applier
+# (see the CREATE_ON_DEMAND allowlist in check-label-inventory.sh) for the same
+# ordering reason `ci` is.
+- name: bump-none
+  color: "C5DEF5"
+  description: "No user-facing change: merging skips the release entirely (applied by the automated review; a release-worthy commit makes the re-review remove it)"
+
 # Kind labels, applied by the automated review (claude-review-gate.sh
 # --apply-labels) from its own verdict plus an all-files path rule. Applying one
 # by hand is fine: the applier reconciles only labels its own ledger comment

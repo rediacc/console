@@ -68,16 +68,23 @@ LEDGER_PREFIX='<!-- claude-labels:'
 # cosmetic, a wrong major is a statement to every consumer of the version
 # stream. The model may RECOMMEND one in its report; applying it stays a human
 # act, and its absence here means no code path in this arm can reach it.
-MANAGED_LABELS=(bug enhancement documentation ci bump-minor)
+MANAGED_LABELS=(bug enhancement documentation ci bump-minor bump-none)
 
 # Created on demand immediately before its first use, the nightly-red pattern
 # (see the CREATE_ON_DEMAND allowlist in ../quality/check-label-inventory.sh).
 # The colour and description are asserted equal to .github/labels.yml by
 # test-review-labels.sh, since this file cannot read labels.yml: the post-review
 # steps run from a staged copy of .ci alone.
-CREATE_ON_DEMAND_LABEL='ci'
-CREATE_ON_DEMAND_COLOR='FEF2C0'
-CREATE_ON_DEMAND_DESC='Build system, CI workflows, or .ci tooling (applied by the automated review)'
+# "<name>|<color>|<description>", one row per label. A TABLE rather than the
+# three scalars this used to be: bump-none arrived needing exactly the same
+# treatment as `ci`, and a second set of scalars would have been the copy that
+# drifts. Each row is asserted equal to .github/labels.yml by
+# test-review-labels.sh, since this file cannot read labels.yml itself: the
+# post-review steps run from a staged copy of .ci alone.
+CREATE_ON_DEMAND_LABELS=(
+    "ci|FEF2C0|Build system, CI workflows, or .ci tooling (applied by the automated review)"
+    "bump-none|C5DEF5|No user-facing change: merging skips the release entirely (applied by the automated review; a release-worthy commit makes the re-review remove it)"
+)
 
 # Operator directive (2026-07-24): each review pass costs real turns/tokens,
 # and a security-critical hook file went through 5 consecutive passes each
@@ -409,7 +416,7 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
         log_info "no json:pr-labels block in the report; mechanical labels only"
     elif ! jq -e '
         type == "object"
-        and ((.bump // "patch") as $b | ["patch", "minor", "major"] | index($b) != null)
+        and ((.bump // "patch") as $b | ["none", "patch", "minor", "major"] | index($b) != null)
         and ((.kind // []) | type == "array")
         and ((.kind // []) | length <= 2)
         and (((.kind // []) - ["bug", "feature", "docs", "ci"]) | length == 0)
@@ -423,6 +430,13 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
         why=$(jq -r '(.why // "") | .[0:200]' <<<"$verdict")
         log_info "review verdict: bump=${bump} kind=$(jq -rc '.kind // []' <<<"$verdict") why=${why:-<none>}"
         case "$bump" in
+            # The ONLY verdict that subtracts a release. Safe to apply on the
+            # model's word alone in a way `major` is not: a wrong `none` costs a
+            # release that the next release-worthy merge picks up anyway (the
+            # commits still ship, they just do not earn their own tag), while a
+            # wrong `major` is a permanent statement to every consumer of the
+            # version stream.
+            none) add_desired bump-none ;;
             minor) add_desired bump-minor ;;
             major)
                 log_warn "the review RECOMMENDS a major bump (${why:-no reason given}). bump-major is never applied automatically; apply it by hand if you agree."
@@ -471,11 +485,16 @@ if [[ "${1:-}" == "--apply-labels" ]]; then
 
     while IFS= read -r label; do
         [[ -n "$label" ]] || continue
-        if [[ "$label" == "$CREATE_ON_DEMAND_LABEL" ]] &&
+        row=""
+        for candidate in "${CREATE_ON_DEMAND_LABELS[@]}"; do
+            [[ "${candidate%%|*}" == "$label" ]] && row="$candidate"
+        done
+        if [[ -n "$row" ]] &&
             ! gh api "repos/${GITHUB_REPOSITORY}/labels/${label}" >/dev/null 2>&1 </dev/null; then
+            rest="${row#*|}"
             gh api -X POST "repos/${GITHUB_REPOSITORY}/labels" \
-                -f name="$label" -f color="$CREATE_ON_DEMAND_COLOR" \
-                -f description="$CREATE_ON_DEMAND_DESC" >/dev/null 2>&1 </dev/null ||
+                -f name="$label" -f color="${rest%%|*}" \
+                -f description="${rest#*|}" >/dev/null 2>&1 </dev/null ||
                 log_warn "could not create the '$label' label"
         fi
         gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels" \
