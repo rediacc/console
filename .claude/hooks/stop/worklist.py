@@ -923,6 +923,14 @@ def main():
                     max(0.0, (time.time() - mine["ts"]) / 60.0)
                 )
                 mine["tail"] = stamp
+                # AFTER `replaced` above, which deliberately reports the age of
+                # the section being replaced. Without this line the kept_rows
+                # confirmation below re-uses the OLD ts and tells the writer its
+                # freshly-written section is minutes old, which is exactly the
+                # kind of thing this whole change exists to stop a session
+                # believing. The on-disk document was always right; only the
+                # confirmation lied. Caught in review of PR #565.
+                mine["ts"] = time.time()
                 mine["body"] = body.strip()
             else:
                 kept.append(
