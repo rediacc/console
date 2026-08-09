@@ -85,7 +85,7 @@
 # ordering reason `ci` is.
 - name: bump-none
   color: "C5DEF5"
-  description: "No user-facing change: merging skips the release entirely (applied by the automated review; a release-worthy commit makes the re-review remove it)"
+  description: "No user-facing change: merging skips the release (review-applied; removed on release-worthy pushes)"
 
 # Kind labels, applied by the automated review (claude-review-gate.sh
 # --apply-labels) from its own verdict plus an all-files path rule. Applying one
