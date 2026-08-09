@@ -1,4 +1,5 @@
 {
+  "format": 1,
   "_comment": [
     "Observed peak CPU / RAM / wall clock per CI job, and the input to",
     "check_runner_advice.py. Refresh with:",
@@ -19,6 +20,17 @@
     "is a gate that ratifies whatever CI currently does: a job that crept onto",
     "a bigger runner would be recorded as correct on the next run. Refreshing",
     "is a commit somebody makes and a reviewer sees.",
+    "",
+    "THE FORMAT FIELD IS THE CONTRACT. \"format\": 1 says which shape this file",
+    "is in, and check_runner_advice.py refuses -- by name, never by traceback --",
+    "any file that declares a version it does not speak, declares none at all,",
+    "is not valid JSON, or carries a record missing a field or holding a",
+    "non-integer where a number belongs. Without it, a hand-edit or a shape",
+    "change arrived at the gate as a KeyError pointing at the gate's own source,",
+    "or worse, as a silent misparse reporting a clean tree over numbers it had",
+    "misunderstood. --refresh writes the version explicitly and refuses to merge",
+    "into a file whose version it cannot read, before it spends an API call.",
+    "Bump the version only together with a migration of this file.",
     "",
     "THE THREE BOOTSTRAP RULES, which are one argument and not three",
     "conveniences:",
@@ -48,7 +60,128 @@
     "only the jobs that finished, which is how the 3-job partial harvests",
     "happened."
   ],
-  "refreshed_at": null,
+  "refreshed_at": "2026-08-09T09:21:23Z",
   "refreshed_from": "PROFILER_BASELINE_V1 annotations on Console CI runs, check-runs annotations API",
-  "jobs": {}
+  "jobs": {
+    "ci-build-cli.yml:build-cli-executables": {
+      "workflow": "ci-build-cli.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 1963,
+      "mem_peak_bytes": 1882722304,
+      "wall_s": 77,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 1
+    },
+    "ci-build-docker.yml:build-cli": {
+      "workflow": "ci-build-docker.yml",
+      "runner_label": "unknown",
+      "tier": "CGROUP_V1",
+      "env": "github-hosted",
+      "cpu_peak_milli": 909,
+      "mem_peak_bytes": 1322598400,
+      "wall_s": 86,
+      "cpu_ceil_milli": 909,
+      "mem_ceil_bytes": 5368709120,
+      "observed_runs": 1
+    },
+    "ci-build-docker.yml:build-www": {
+      "workflow": "ci-build-docker.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 2242,
+      "mem_peak_bytes": 3379699712,
+      "wall_s": 83,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16765378560,
+      "observed_runs": 1
+    },
+    "ci-quality.yml:quality-code": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 2300,
+      "mem_peak_bytes": 7330607104,
+      "wall_s": 326,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 1
+    },
+    "ci-quality.yml:quality-content": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 1919,
+      "mem_peak_bytes": 1858768896,
+      "wall_s": 90,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16770756608,
+      "observed_runs": 2
+    },
+    "ci-quality.yml:quality-go": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 3977,
+      "mem_peak_bytes": 2924396544,
+      "wall_s": 240,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 1
+    },
+    "ci-quality.yml:quality-i18n": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 1876,
+      "mem_peak_bytes": 2085720064,
+      "wall_s": 239,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 1
+    },
+    "ci-quality.yml:quality-packages": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 3566,
+      "mem_peak_bytes": 2117304320,
+      "wall_s": 180,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 2
+    },
+    "ci-quality.yml:quality-security": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 3669,
+      "mem_peak_bytes": 1938997248,
+      "wall_s": 485,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 1
+    },
+    "ci-quality.yml:quality-www-build": {
+      "workflow": "ci-quality.yml",
+      "runner_label": "unknown",
+      "tier": "PROC_HOST",
+      "env": "github-hosted",
+      "cpu_peak_milli": 2484,
+      "mem_peak_bytes": 3522994176,
+      "wall_s": 165,
+      "cpu_ceil_milli": 4000,
+      "mem_ceil_bytes": 16766423040,
+      "observed_runs": 2
+    }
+  }
 }
