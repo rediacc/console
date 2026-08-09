@@ -51,8 +51,11 @@ gh_retry "sweeper label-armed list" -- pr list --repo "$REPO" --label "$LABEL" -
 # separate document. --slurp wraps the pages, `.[][]` flattens them back.
 while IFS= read -r n; do
     [[ -n "$n" ]] || continue
+    # jq as a separate pipe: the runner's gh refuses --slurp with --jq
+    # ("not supported"), proven live on the first canary dispatch 2026-08-09.
     gh_retry "comments for PR #$n" -- api "repos/$REPO/issues/$n/comments" --paginate --slurp \
-        --jq '[.[][] | {id, author: .user.login, body}]' >"$WORK/comments/$n.json"
+        >"$WORK/comments/$n.raw.json"
+    jq '[.[][] | {id, author: .user.login, body}]' "$WORK/comments/$n.raw.json" >"$WORK/comments/$n.json"
 done < <(jq -r '.[].number' "$WORK/prs.json")
 
 "$SCRIPT_DIR/sweep-campaigns.sh" --prs "$WORK/prs.json" --comments-dir "$WORK/comments" --bot "$BOT" \
