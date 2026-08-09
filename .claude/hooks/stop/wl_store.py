@@ -34,8 +34,10 @@ survives. Compact crash = tempfile + os.replace, log intact. Sync crash
 after fold, before append = nothing written, next invocation re-syncs.
 
 The sidecars (.requests, .sessions, .loop, .reggate-*,
-.pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .stuck-*, .croncount-*,
-.blocks, .waiter-*, .state-*) keep their v5-v9 formats and names: their shapes
+.pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*,
+.croncount-*, .blocks, .waiter-*, .waiternudge-*, .state-*, .events.*,
+.lastevent-*, .emails, .emailunconf-*, .failwarned, .reaped-*, .agentstate.*)
+keep their v5-v9 formats and names: their shapes
 are pinned by the suite and by living sessions, and consolidating them buys
 nothing. New v10 state (liveness ladder, task ages, judge cache, autonomy
 windows, STATE.md world-signature) lives in ONE new per-session doc,
@@ -45,8 +47,14 @@ THIS LIST IS LOAD-BEARING, not documentation. .ci/scripts/quality/
 check-tracked-sidecars.sh parses it to decide what git must never track, so a
 sidecar missing from it is a sidecar the gate is blind to. That already
 happened: .waiter-* and .state-* were absent when the gate was written, so a
-planted tracked heartbeat passed cleanly. Add new sidecars HERE when you add
-them, and keep the parenthesised shape the parser depends on.
+planted tracked heartbeat passed cleanly. It happened AGAIN and was found
+while adding .agentstate.*: ELEVEN suffixes this module and its siblings
+actually write (.events.*, .lastevent-*, .emails, .emailunconf-*, .ciqueue-*,
+.waiternudge-*, .failwarned, .reaped-*, .agentstate.*) were absent, so the
+list was checked against the code rather than against memory --
+grepping the hook directory for with_suffix call sites enumerates the truth.
+Add new sidecars HERE when you add them, and keep the parenthesised shape the
+parser depends on (no nested parentheses: the parser stops at the first `)`).
 The compact-recovery document itself lives in the repo at
 .agent/<branch>/STATE.md (gitignored), not in TMPDIR.
 """
@@ -55,6 +63,7 @@ try:
     import fcntl
 except ImportError:  # Windows: no POSIX advisory locking
     fcntl = None
+import calendar
 import glob as _glob
 import hashlib
 import json
@@ -123,36 +132,35 @@ AGENT_STATE_MIN_CHARS = 250
 # state alone; 4000 still refuses a pasted transcript.
 AGENT_STATE_MAX_CHARS = int(os.environ.get("WORKLIST_AGENT_STATE_MAX_CHARS", "4000"))
 
-# ...but the BUDGET IS PER SESSION while the DOCUMENT IS PER BRANCH, and two
-# live sessions routinely share one branch. A flat cap then gives each session
-# `cap minus the other session's block`: measured 2026-08-05 with a 1899-char
-# neighbour, one session had ~1850 usable and was refused ELEVEN times across
-# three refresh cycles (4996/4706/4410/4243/4131/4047/4019), deleting real
-# content each round to fit.
-#
-# The dangerous part is not the friction, it is the INCENTIVE: under a flat
-# cap the cheapest way to satisfy it is to delete the other session's block,
-# which is precisely the loss this document's own header warns about and which
-# had already happened twice. A limit that rewards the failure it guards
-# against is mis-scoped, so the cap SCALES with the number of session blocks
-# present. One block behaves exactly as before.
-AGENT_STATE_SESSION_RE = re.compile(r"^##[ \t]+SESSION\b", re.MULTILINE | re.IGNORECASE)
+# The cap is FLAT again, and that is only sound because the budget and the
+# document now have the same scope. It was briefly scaled by the number of
+# `## SESSION` headings, because the budget was per SESSION while the document
+# was per BRANCH: measured 2026-08-05 with a 1899-char neighbour, one session
+# had ~1850 usable and was refused ELEVEN times across three refresh cycles,
+# deleting real content each round to fit -- and the cheapest way to satisfy a
+# flat cap was to delete the OTHER session's block. Scaling the cap treated the
+# symptom. The real defect was that `--state` rewrote the whole file, so on
+# 2026-08-09 a session obeyed a staleness nag and destroyed a peer's entire
+# document describing a live campaign. Since that fix the document is a set of
+# OWNED SECTIONS merged one at a time (agent_state_parse / _render), the cap
+# applies to ONE section, and no budget pressure can reach a neighbour.
 
-
-def agent_state_blocks(text):
-    """How many `## SESSION ...` blocks a STATE.md body carries (minimum 1).
-
-    Deliberately counts the HEADING rather than parsing owners: the merge
-    convention is a heading per session, and a body with no such heading is
-    the single-session shape this file has always had.
-    """
-    return max(1, len(AGENT_STATE_SESSION_RE.findall(text or "")))
-
-
-def agent_state_max_chars(text):
-    """The effective cap for THIS body: the per-session budget times the
-    number of session blocks in it."""
-    return AGENT_STATE_MAX_CHARS * agent_state_blocks(text)
+# The heading that owns a section. The owner group is deliberately wider than
+# hex so the `legacy` pseudo-owner parses through the same path, and the tail
+# is captured whole so a heading a human annotated survives a round trip.
+AGENT_STATE_HEAD_RE = re.compile(
+    r"^##[ \t]+SESSION[ \t]+([A-Za-z0-9_-]{4,32})\b[ \t]*(.*)$", re.MULTILINE
+)
+# The section's own age lives in its heading, not in a sidecar: a sidecar is
+# invisible to the human reading the file, and the file being readable is what
+# made the 2026-08-09 loss recoverable at all. Seconds optional, because the
+# headings live sessions were already writing by hand carry minute stamps.
+AGENT_STATE_TS_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
+AGENT_STATE_TS_FMTS = ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%MZ")
+# Content that predates the section format, or any text before the first
+# heading, is owned by nobody. It is adopted under this pseudo-owner rather
+# than deleted, and ages out through the ordinary reap path.
+AGENT_STATE_LEGACY_OWNER = "legacy"
 
 
 # A second session arriving on a branch has no recorded signature for a
@@ -260,6 +268,23 @@ def agent_state_backup_path(worklist, branch=""):
         safe = re.sub(r"[^A-Za-z0-9._-]", "_", str(branch))
         return worklist.with_suffix(".agentstate.prev.%s.md" % safe)
     return worklist.with_suffix(".agentstate.prev.md")
+
+
+def agent_state_reaped_path(worklist, branch=""):
+    """APPEND-ONLY archive of sections reaped as dead. Same branch-sanitising
+    rule as the backup slot beside it.
+
+    Separate from `.prev` and strictly stronger, because the hazard is
+    different. `.prev` covers one generation of a document a session CHOSE to
+    replace; reaping deletes a section NOBODY chose to delete, so it appends
+    instead of overwriting. One append per dead session per branch, which is
+    small enough that unbounded growth is the right trade against ever losing
+    the last words of a session that died mid-campaign.
+    """
+    if branch:
+        safe = re.sub(r"[^A-Za-z0-9._-]", "_", str(branch))
+        return worklist.with_suffix(".agentstate.reaped.%s.md" % safe)
+    return worklist.with_suffix(".agentstate.reaped.md")
 
 
 def trap_headings(root):
@@ -1181,27 +1206,160 @@ def agent_state_shape(body):
     forbid headings outright. Presence of a `## Next action` section is a
     strictly better gate: it targets the one question STATE.md exists to
     answer, and padding cannot satisfy it.
+
+    The subject is ONE SECTION, not the whole document, so the cap is flat
+    again (see AGENT_STATE_MAX_CHARS).
     """
     text = (body or "").strip()
     if len(text) < AGENT_STATE_MIN_CHARS:
         return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
-    cap = agent_state_max_chars(text)
-    if len(text) > cap:
-        blocks = agent_state_blocks(text)
-        # Name the arithmetic when the cap is not the bare constant, so a
-        # refusal on a shared document does not read as "you wrote too much".
-        detail = "%d chars, maximum %d" % (len(text), cap)
-        if blocks > 1:
-            detail += " (%d session blocks x %d)" % (blocks, AGENT_STATE_MAX_CHARS)
-        return "bloated", detail
+    if len(text) > AGENT_STATE_MAX_CHARS:
+        return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
     if not AGENT_NEXT_RE.search(text):
         return "aimless", "no '## Next action' section; the next action IS the value"
     return "ok", "%d chars" % len(text)
 
 
-def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
+def agent_state_stamp(epoch):
+    """An ISO8601Z heading stamp for `epoch` seconds. Seconds included: the
+    staleness threshold is 15 MINUTES and a minute-truncated stamp reads up to
+    59 seconds older than the truth, which is exactly the sort of quiet
+    off-by-one that makes a boundary case pass for the wrong reason."""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(epoch))
+
+
+# A stamp this far in the FUTURE is not a stamp, it is a wrong clock. Found on
+# the live .agent/main/STATE.md while driving this code for the first time: a
+# session's hand-written heading read 101 minutes ahead, almost certainly local
+# time written with a Z. Trusting it would make that section PERMANENTLY fresh,
+# which is a strictly worse failure than the unstamped fallback -- the whole
+# point of per-section staleness is that a section cannot dodge its own clock.
+# So a future stamp is treated exactly like an unparseable one: fall back to the
+# file's mtime and record stamped=False, which is the honest answer and which
+# the 24-hour reap path still bounds.
+AGENT_STATE_FUTURE_SKEW_SEC = 300
+
+
+def _agent_state_ts(tail, fallback):
+    """(epoch, stamped) for a heading tail: the first ISO8601Z stamp anywhere
+    in it, else `fallback` with stamped=False. A stamp in the future beyond
+    AGENT_STATE_FUTURE_SKEW_SEC is not trusted (see above)."""
+    m = AGENT_STATE_TS_RE.search(tail or "")
+    if m:
+        for fmt in AGENT_STATE_TS_FMTS:
+            try:
+                ts = calendar.timegm(time.strptime(m.group(0), fmt))
+            except ValueError:
+                continue
+            if ts > time.time() + AGENT_STATE_FUTURE_SKEW_SEC:
+                return fallback, False
+            return ts, True
+    return fallback, False
+
+
+def agent_state_parse(text, mtime):
+    """A STATE.md body -> the ordered list of sections it holds.
+
+    Each section is {"owner", "tail", "ts", "stamped", "body"}: `tail` is the
+    heading text after the owner (kept verbatim so a human's annotation
+    survives a round trip), `ts` is epoch seconds from the stamp in that tail,
+    and `stamped` says whether the stamp was really there.
+
+    NEVER RAISES, and never discards. A document with no headings -- every
+    STATE.md written before 2026-08-09, plus anything a raw `cat >` produced --
+    becomes ONE section owned by the `legacy` pseudo-owner carrying the whole
+    text. Text before the first heading is the same case. Silently dropping
+    either would be the loss this whole redesign exists to prevent, arriving
+    through the parser instead of through the writer.
+    """
+    text = text or ""
+    heads = list(AGENT_STATE_HEAD_RE.finditer(text))
+    sections = []
+    preamble = (text[: heads[0].start()] if heads else text).strip()
+    if preamble:
+        ts, stamped = mtime, False
+        sections.append(
+            {
+                "owner": AGENT_STATE_LEGACY_OWNER,
+                "tail": "%s (adopted from a pre-section document)" % agent_state_stamp(mtime),
+                "ts": ts,
+                "stamped": stamped,
+                "body": preamble,
+            }
+        )
+    for i, m in enumerate(heads):
+        end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
+        tail = m.group(2).strip()
+        ts, stamped = _agent_state_ts(tail, mtime)
+        sections.append(
+            {
+                "owner": m.group(1),
+                "tail": tail,
+                "ts": ts,
+                "stamped": stamped,
+                "body": text[m.end() : end].strip(),
+            }
+        )
+    return sections
+
+
+def agent_state_render(sections):
+    """The inverse of agent_state_parse, and idempotent on anything this
+    program wrote: render(parse(x)) == x for such an x. Order is preserved,
+    because a diff between two writes must show exactly one section changed."""
+    out = []
+    for s in sections:
+        head = "## SESSION %s" % s["owner"]
+        if s.get("tail"):
+            head += " " + s["tail"]
+        out.append(head + "\n\n" + (s["body"] or "").strip() + "\n")
+    return "\n".join(out)
+
+
+def agent_state_mine(sections, session_id):
+    """This caller's own section, or None.
+
+    C.same_session rather than C.owned_by_me: the CLI passes a short prefix and
+    the Stop event carries the full uuid, and either side of this comparison
+    can be either. owned_by_me is one-directional, so a session that once wrote
+    a longer tag than the prefix it later passes would grow a SECOND section
+    for itself -- harmless to peers but a document that nags forever.
+    """
+    for s in sections:
+        if s["owner"] != AGENT_STATE_LEGACY_OWNER and C.same_session(s["owner"], session_id):
+            return s
+    return None
+
+
+def agent_state_dead(sections, session_id, projects_dir, now=None):
+    """(kept, reaped) under the repo's ONE liveness notion.
+
+    A section is dead when its owner is not the caller AND either the owner's
+    newest transcript is at least WORKLIST_DEAD_HOURS old, or the owner has no
+    transcript at all (a `legacy` pseudo-owner, or a session whose transcripts
+    live on another machine) and the section's OWN stamp is that old. Falling
+    back to the section stamp keeps one horizon instead of inventing a second.
+
+    The caller's own section is NEVER reaped, at any age: a session's own stale
+    section is a nag, not garbage.
+    """
+    now = time.time() if now is None else now
+    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    kept, reaped = [], []
+    for s in sections:
+        if C.same_session(s["owner"], session_id):
+            kept.append(s)
+            continue
+        age_h = owner_age_hours(s["owner"], projects_dir)
+        if age_h is None:
+            age_h = (now - s["ts"]) / 3600.0
+        (reaped if age_h >= dead_h else kept).append(s)
+    return kept, reaped
+
+
+def agent_state_state(root, branch, session_id="", cur_sig=None, saved_sig=None):
     """('no-branch'|'no-dir'|'missing'|'thin'|'bloated'|'aimless'|'stale'|'ok',
-    age_min, text).
+    age_min, my_body).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a
     real operator decision that way: the rediacc-autopilot App had already been
@@ -1212,14 +1370,28 @@ def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
     Staleness is WORLD-KEYED, unchanged from v10: age alone never stales the
     document; the world signature must also have moved since it was recorded.
 
-    ADOPT-ON-FIRST-SIGHT is the one semantic change, forced by the document
-    becoming per-BRANCH. `saved_sig is None` used to fall back to pure age and
-    demand a rewrite; with a shared document that would order a second session
-    to rewrite what the first wrote thirty seconds ago, reproducing the exact
-    churn the redesign fixes. An unsigned document young enough
-    (<= AGENT_STATE_ADOPT_MAX_MIN) is "ok" and the CALLER banks the signature;
-    an abandoned one is not adopted. Named residual: a session's first stop on
-    a branch grants at most one stop of grace on a document up to that old.
+    ADOPT-ON-FIRST-SIGHT was forced by the document becoming per-BRANCH.
+    `saved_sig is None` used to fall back to pure age and demand a rewrite;
+    with a shared document that would order a second session to rewrite what
+    the first wrote thirty seconds ago. An unsigned document young enough
+    (<= AGENT_STATE_ADOPT_MAX_MIN) is "ok" and the CALLER banks the signature.
+
+    PER-SESSION since 2026-08-09, and this is the half that matters. The
+    verdict is about the CALLER'S OWN SECTION and nothing else. Age comes from
+    that section's heading stamp, not from the file's mtime, because mtime is
+    per FILE while the obligation is per SESSION: a peer's write used to reset
+    everyone's clock, so B's stale document read "ok" the moment A wrote, and
+    wl_checks then banked A's world signature as B's own. A peer's MALFORMED
+    section never blocks me either -- blocking me on a section I must not edit
+    leaves deletion as the only way to clear the gate, which is precisely the
+    incentive that destroyed a live campaign's document.
+
+    NAMED RESIDUAL, fail-open by at most one peer-write interval: a section
+    whose heading carries no parseable stamp (only reachable by a raw
+    `cat > STATE.md`, since Write and Edit are both denied) falls back to the
+    file's mtime, which is the NEWEST write to the file, so it can read fresher
+    than it is. Treating it as permanently stale would nag forever on a
+    document the tool did not write; the reap path still bounds it at 24 hours.
 
     OSError degrades to "missing", which BLOCKS: a permissions problem on
     .agent/ must not read as a clean bill.
@@ -1233,21 +1405,69 @@ def agent_state_state(root, branch, cur_sig=None, saved_sig=None):
         return "missing", None, ""
     try:
         text = p.read_text(encoding="utf-8", errors="replace")
-        age = (time.time() - p.stat().st_mtime) / 60.0
+        mtime = p.stat().st_mtime
     except OSError:
         return "missing", None, ""
-    verdict, _detail = agent_state_shape(text)
+    sections = agent_state_parse(text, mtime)
+    mine = agent_state_mine(sections, session_id)
+    if mine is None:
+        # No section of my own. An UNOWNED preamble is judged as if it were
+        # mine, which reproduces the single-session behaviour this file had
+        # before sections existed -- including the adopt grace below, and
+        # including the stale verdict once that grace runs out. Peers' sections
+        # are not adoptable: writing my own costs one command and destroys
+        # nothing, so there is no churn to avoid any more.
+        mine = next((s for s in sections if s["owner"] == AGENT_STATE_LEGACY_OWNER), None)
+        if mine is None:
+            return "missing", None, ""
+    body = mine["body"]
+    age = max(0.0, (time.time() - mine["ts"]) / 60.0)
+    verdict, _detail = agent_state_shape(body)
     if verdict != "ok":
-        return verdict, int(age), text
+        return verdict, int(age), body
     if age <= AGENT_STATE_STALE_MIN:
-        return "ok", int(age), text
+        return "ok", int(age), body
     if saved_sig is None:
         if age <= AGENT_STATE_ADOPT_MAX_MIN:
-            return "ok", int(age), text
-        return "stale", int(age), text
+            return "ok", int(age), body
+        return "stale", int(age), body
     if cur_sig is not None and cur_sig != saved_sig:
-        return "stale", int(age), text
-    return "ok", int(age), text
+        return "stale", int(age), body
+    return "ok", int(age), body
+
+
+def agent_state_briefing(root, branch, session_id, projects_dir=""):
+    """(own_body_or_None, peers_rendered, n_live_peers) for PostCompact and for
+    the Stop check's peer note.
+
+    Dead sections are SKIPPED here, never removed: a read-only path that
+    mutates the shared document is the fastest route to the next clobber. Only
+    the write path reaps.
+    """
+    if not branch:
+        return None, "", 0
+    p = agent_state_path(root, branch)
+    try:
+        text = p.read_text(encoding="utf-8", errors="replace")
+        mtime = p.stat().st_mtime
+    except OSError:
+        return None, "", 0
+    sections = agent_state_parse(text, mtime)
+    mine = agent_state_mine(sections, session_id)
+    if mine is None:
+        mine = next((s for s in sections if s["owner"] == AGENT_STATE_LEGACY_OWNER), None)
+    live, _dead = agent_state_dead(sections, session_id, projects_dir)
+    now = time.time()
+    rows = []
+    for s in live:
+        if s is mine:
+            continue
+        rows.append(
+            "--- SESSION %s, written %d minutes ago. NOT YOURS: read it, never "
+            "rewrite or delete it.\n%s"
+            % (s["owner"], int(max(0.0, (now - s["ts"]) / 60.0)), s["body"])
+        )
+    return (mine["body"] if mine else None), "\n\n".join(rows), len(rows)
 
 
 # ---- world signature --------------------------------------------------------

@@ -256,7 +256,8 @@ V_MANY_POLL_CRONS = (
 )
 
 V_AGENT_STATE = (
-    "the compact-recovery document .agent/%s/STATE.md is %s%s. Compaction has "
+    "YOUR SECTION of the compact-recovery document .agent/%s/STATE.md is %s%s. "
+    "Compaction has "
     "already cost this project one operator decision (the autopilot App was "
     "reported blocked AFTER the operator had created it), and the transcript "
     "cannot be the recovery mechanism because the transcript is what gets "
@@ -264,7 +265,10 @@ V_AGENT_STATE = (
     "a session that knows NOTHING: what is true right now and what happens "
     "next. RULES.md and TRAPS.md are not freshness-gated, so do NOT restate "
     "them here; STATE.md carries only what is volatile. Stale means the WORLD "
-    "has moved since it was written; an unchanged world never stales it:\n"
+    "has moved since it was written; an unchanged world never stales it. The "
+    "document holds ONE OWNED SECTION PER SESSION and this verdict is about "
+    "yours alone: send YOUR SECTION'S BODY ONLY, never the whole file, and the "
+    "tool merges it in place while every peer's section stays byte-identical:\n"
     "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n    ...\n    EOF"
 )
 
@@ -275,12 +279,20 @@ V_AGENT_BOOTSTRAP = (
     "you):\n"
     "    mkdir -p .agent/%s\n"
     "    cp .agent/<previous-branch>/RULES.md .agent/%s/RULES.md   # then sharpen\n"
-    "then write a fresh STATE.md via worklist.py --state. See .agent/README.md."
+    "then write a fresh STATE.md via worklist.py --state. (.agent/ is gitignored, so its README may be absent on a fresh clone.)"
 )
 
 V_AGENT_STILL_ABSENT = (
     ".agent/%s/ is still absent; the bootstrap commands were shown on an "
     "earlier stop. Create it, then write STATE.md via worklist.py --state."
+)
+
+N_AGENT_PEERS = (
+    "NOTE: .agent/%s/STATE.md carries other sessions' sections beside yours. "
+    "They are theirs; read them for cross-session context and NEVER rewrite or "
+    "delete one. `--state` merges only your own section, so you cannot lose "
+    "them by accident -- a raw `cat > STATE.md` in Bash still can. A section "
+    "marked reap-eligible is dropped by the next write and archived first:\n%s"
 )
 
 N_AGENT_BLIND = (
@@ -466,8 +478,26 @@ N_CL_FOREIGN_DRIFT = (
 )
 
 CLI_STATE_REFUSED = (
-    "STATE REFUSED (%s: %s). Limits: %d-%d chars and a '## Next action' "
-    "section. Nothing was written; the previous STATE.md is untouched.\n"
+    "STATE REFUSED (%s: %s). Limits for YOUR SECTION: %d-%d chars and a "
+    "'## Next action' section. Nothing was written; the previous STATE.md is "
+    "untouched, including every other session's section.\n"
+)
+
+# The refusal an in-flight session running the pre-section instructions will
+# meet mid-task, so it states the whole contract rather than merely saying no.
+# Piping the whole document in was the old habit, and it is the exact habit
+# that destroyed a peer's live campaign document on 2026-08-09.
+CLI_STATE_WHOLE_DOC = (
+    "STATE REFUSED: the body you piped in carries a '## SESSION' heading, so it "
+    "looks like the WHOLE document rather than your own section.\n"
+    "The contract changed: .agent/<branch>/STATE.md is one OWNED SECTION per "
+    "session, and `--state` merges YOUR body into it under a lock, leaving "
+    "every other section byte-identical. It writes your heading for you.\n"
+    "Send your section's body ALONE -- no '## SESSION' line, no peer's text:\n"
+    "    .claude/hooks/stop/worklist.py --state %s <<'EOF'\n"
+    "    ...what is true right now, and a '## Next action' section...\n"
+    "    EOF\n"
+    "Nothing was written; the previous document is untouched.\n"
 )
 
 # WHY THESE TWO EXIST (cross-session report #7c1c2629, 2026-08-05, reproduced
@@ -1239,6 +1269,19 @@ CTX_POSTCOMPACT_NO_BRANCH = (
     "so the per-branch STATE.md cannot be located. Check out a branch or set "
     "WORKLIST_AGENT_BRANCH, then read .agent/<branch>/STATE.md and RULES.md. "
     "Branch-independent hard-won facts, titles from .agent/TRAPS.md:\n%s"
+)
+
+# Appended as its OWN block rather than widened into CTX_POSTCOMPACT_BRIEFING,
+# for two reasons: it keeps that message's arity frozen, and it has to ride the
+# MISSING branch too. Before sections existed, a compacted session on a branch
+# where only a peer had written got no state content whatsoever, which is a
+# strictly worse briefing than the file in front of it contains.
+CTX_POSTCOMPACT_PEERS = (
+    "=== OTHER SESSIONS' SECTIONS of .agent/<branch>/STATE.md ===\n"
+    "These belong to sessions sharing this checkout. They are context, not your "
+    "work: read them so you do not sweep their uncommitted files or re-decide "
+    "what they decided, and never rewrite or delete one. `--state` merges only "
+    "your own section.\n\n%s"
 )
 
 CTX_POSTCOMPACT_BRIEFING = (

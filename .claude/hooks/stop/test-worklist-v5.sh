@@ -75,6 +75,14 @@ setup() {
     # the AMBIENT case rather than the leak: it is a real knob, so a value in the
     # operator's own shell would silently retune the streak under the suite.
     unset WORKLIST_BG_OUTPUT_DIR WORKLIST_HARNESS_PID WORKLIST_QUIET_WAKES
+    # The STATE.md reap knobs, reset for exactly the reason above. Case 29h
+    # points WORKLIST_PROJECTS_DIR at a fixture transcript dir to make a peer
+    # section reap-eligible; leaked forward, every later case would judge
+    # section liveness against that stale directory. Unset, wl_core.projects_dir
+    # falls back to ~/.claude/projects/<slug>, which does not exist for a
+    # mktemp fixture root, so it answers "" and no section is ever reaped by
+    # transcript age -- which is the hermetic default this suite needs.
+    unset WORKLIST_PROJECTS_DIR WORKLIST_DEAD_HOURS WORKLIST_ARCHIVE_HOURS
     # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite
     # that inherits the ambient value passes locally and silently no-ops in CI,
     # where 30 cases came back with empty output and read as failures.
@@ -129,8 +137,93 @@ task() { # task <id> <status> <subject> [blockedBy-csv]
 # without the CLI: written by an older flow, hand-edited, by a raw Write, or
 # truncated by a full disk. So the shape cases plant the file and the refusal
 # gets its own case.
+#
+# SINCE THE SECTION FORMAT (2026-08-09), a plant with no `## SESSION` heading
+# is specifically a LEGACY document: agent_state_parse turns it into one
+# unowned section, and the read path judges that section as if it were the
+# caller's. That is deliberate and is what keeps every shape case below
+# meaningful without a stamped fixture -- but it also means these cases now
+# exercise the mtime FALLBACK rather than the heading stamp, so any case whose
+# subject is AGE must use age_state on a real stamped section instead.
 plant_state() { # plant_state <body>
     printf '%s' "$1" >"$BASE/proj/.agent/agenttest/STATE.md"
+}
+
+# The same raw plant, named for what the new cases use it for: a whole
+# DOCUMENT (possibly multi-section) placed on disk without going through the
+# merge, which is the only way to fabricate a peer's section for a read case.
+plant_doc() { # plant_doc <text>
+    printf '%s' "$1" >"$BASE/proj/.agent/agenttest/STATE.md"
+}
+
+mk_section() { # mk_section <owner> <minutes-ago> <body> -> one stamped section
+    python3 -c '
+import sys, time
+owner, mins, body = sys.argv[1], float(sys.argv[2]), sys.argv[3]
+stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - mins * 60))
+sys.stdout.write("## SESSION %s %s\n\n%s\n" % (owner, stamp, body.strip()))
+' "$1" "$2" "$3"
+}
+
+section_now() { # section_now <owner> <body> -> one section stamped now
+    mk_section "$1" 0 "$2"
+}
+
+age_state() { # age_state <owner> <minutes-ago> -- backdate that section's stamp
+    # The heading stamp is the age source now, so `touch -d` no longer ages a
+    # section written by --state: it moves the file's mtime, which is only the
+    # FALLBACK for an unstamped section. A case that keeps touching the file
+    # would silently test the fallback instead of the rule, so this helper
+    # EXITS NON-ZERO when the owner's heading is not there rather than aging
+    # nothing and passing quietly.
+    python3 - "$BASE/proj/.agent/agenttest/STATE.md" "$1" "$2" <<'PYEOF'
+import re, sys, time
+path, owner, mins = sys.argv[1], sys.argv[2], float(sys.argv[3])
+stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - mins * 60))
+text = open(path, encoding="utf-8").read()
+new, n = re.subn(
+    r"(?m)^(##[ \t]+SESSION[ \t]+%s\b)[ \t]*.*$" % re.escape(owner),
+    lambda m: m.group(1) + " " + stamp,
+    text,
+)
+if n != 1:
+    sys.exit("age_state: expected ONE '## SESSION %s' heading, found %d" % (owner, n))
+open(path, "w", encoding="utf-8").write(new)
+PYEOF
+}
+
+section_of() { # section_of <owner> -- that section rendered, or nothing
+    python3 - "$(dirname "$HOOK")" "$BASE/proj/.agent/agenttest/STATE.md" "$1" <<'PYEOF'
+import os, sys
+sys.path.insert(0, sys.argv[1])
+import wl_store as S
+try:
+    text = open(sys.argv[2], encoding="utf-8").read()
+    mtime = os.path.getmtime(sys.argv[2])
+except OSError:
+    sys.exit(0)
+for s in S.agent_state_parse(text, mtime):
+    if s["owner"] == sys.argv[3]:
+        sys.stdout.write(S.agent_state_render([s]))
+PYEOF
+}
+
+state_as() { # state_as <prefix> <body> -- merge a section as ANOTHER session
+    # LOUD ON FAILURE, deliberately. The first draft swallowed stderr, and a
+    # peer body two characters under the 250-char floor was silently refused:
+    # three cases then asserted the ABSENCE of a section that had never been
+    # written, and two of them would have passed for the wrong reason. A helper
+    # whose failure is invisible turns every case built on it into a vacuity.
+    local out rc
+    out="$(printf '%s' "$2" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+            WORKLIST_AGENT_BRANCH=agenttest WORKLIST_SESSION_ID="$(peer_id "$1")" \
+            python3 "$HOOK" --state "$1" 2>&1)"
+    rc=$?
+    if [[ "$rc" -ne 0 ]]; then
+        fail "FIXTURE BROKEN: state_as $1 was refused (rc=$rc): ${out:0:200}"
+        return 1
+    fi
 }
 
 # A STATE.md fresh enough and well-shaped enough to satisfy the gate. Keeps the
@@ -309,6 +402,40 @@ pass() {
 fail() {
     echo "  FAIL: $1"
     FAIL=$((FAIL + 1))
+}
+
+run_as() { # run_as <prefix> -- drive a Stop event as ANOTHER live session
+    # The whole point of the per-session STATE.md rule is that two sessions on
+    # one branch get DIFFERENT verdicts, and a suite that can only ever stop as
+    # `deadbeef` cannot observe that. Both the event's session_id and
+    # WORKLIST_SESSION_ID move together, exactly as they do for a real peer.
+    local sid
+    sid="$(peer_id "$1")"
+    printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
+        "$sid" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
+        TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+            WORKLIST_SESSION_ID="$sid" \
+            WORKLIST_AGENT_BRANCH="${WORKLIST_AGENT_BRANCH-agenttest}" \
+            WORKLIST_JUDGE="${JUDGE_MODE:-off}" GITHUB_ACTIONS="${GHA:-}" \
+            python3 "$HOOK" 2>"$BASE/err.txt"
+}
+
+check_as() { # check_as <prefix> <label> <expect-decision> <must-contain>
+    local who="$1" label="$2" want="$3" needle="$4" out
+    out="$(run_as "$who")"
+    local got
+    got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+    if [[ "$got" == "$want" ]] && grep -qF "$needle" <<<"$out"; then
+        echo "  PASS: $label"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $label (want=$want got=$got, needle '$needle' $(grep -qF "$needle" <<<"$out" && echo present || echo MISSING))"
+        echo "        out: ${out:0:220}"
+        [[ -s "$BASE/err.txt" ]] && echo "        err: $(head -c 200 "$BASE/err.txt")"
+        FAIL=$((FAIL + 1))
+    fi
 }
 
 check() { # check <label> <expect-decision> <must-contain>
@@ -550,6 +677,62 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+echo "== 21b. PostCompact puts MY section first and LABELS the peer's =="
+# A compacted session reads top-down, and the block it must act on is its own.
+# The peer's section rides along because this checkout runs several sessions at
+# once and a peer's section is the only place the reader learns which
+# uncommitted files are not theirs to sweep -- but it must be unmistakably
+# marked as not theirs to rewrite, or the briefing itself becomes the next
+# clobber's instruction.
+setup
+hand_now
+PEER_BODY='Session cafe1234 owns packages/cli/src/services/licensing and the two drill scripts under scripts/dev, all of them uncommitted. A git add -A from any other session in this checkout would sweep them into somebody else s commit, which is the cross-session fact that has no home in a per-session file.
+
+## Next action
+Finish the renewal drill and report the soft-claim slot count.'
+state_as cafe1234 "$PEER_BODY"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+OWN_AT="$(python3 -c "import sys; print(sys.stdin.read().find('ci-overhaul session'))" <<<"$out")"
+PEER_AT="$(python3 -c "import sys; print(sys.stdin.read().find('SESSION cafe1234'))" <<<"$out")"
+if [[ "$OWN_AT" -ge 0 && "$PEER_AT" -gt "$OWN_AT" ]] &&
+    grep -qF "NOT YOURS" <<<"$out" && grep -qF "owns packages/cli" <<<"$out"; then
+    pass "21b: own section first, peer's after it and labelled NOT YOURS"
+else
+    fail "21b: ordering/labelling wrong (own@$OWN_AT peer@$PEER_AT): ${out:0:300}"
+fi
+# CONTROL: with no peer section there is no peers block at all, so the label is
+# information about the file rather than boilerplate on every briefing.
+setup
+hand_now
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "ci-overhaul session" <<<"$out" && ! grep -qF "OTHER SESSIONS' SECTIONS" <<<"$out"; then
+    pass "21b CONTROL: a solo document produces no peers block"
+else
+    fail "21b CONTROL: a peers block appeared with no peers: ${out:0:300}"
+fi
+
+echo "== 20b. PostCompact with NO section of MY OWN still hands back the peer's =="
+# Before sections, this path returned NO state content whatsoever: a compacted
+# session on a branch where only a peer had written was told to reconstruct
+# from what survived, while the peer's section sat unread in the file in front
+# of it. The instruction to write one must survive too, or this becomes a way
+# to inherit a peer's document as your own.
+setup
+state_as cafe1234 "$PEER_BODY"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "NO STATE.md" <<<"$out" && grep -qF "owns packages/cli" <<<"$out" &&
+    grep -qF "NOT YOURS" <<<"$out"; then
+    pass "20b: the own-missing instruction AND the peer's body are both returned"
+else
+    fail "20b: the missing branch dropped the peer's section: ${out:0:300}"
+fi
+
 echo "== 22. an UNREADABLE transcript blames the HOOK, not the session =="
 setup
 brief_now
@@ -724,35 +907,13 @@ refuse() { # refuse <label> <body-producing-command...>
     fi
 }
 refuse "an over-long body" python3 -c "print('## Next action: go ' + 'x'*4100)"
-# The cap is PER SESSION but the document is PER BRANCH: with a flat 4000 a
-# second session got `4000 minus the neighbour's block` and was refused eleven
-# times in one session, and its cheapest remedy was DELETING the other block --
-# the very loss this document exists to prevent. So the cap scales with the
-# number of `## SESSION` headings. This body would be refused under a flat cap
-# and must be ACCEPTED now; the control immediately after proves the scaled cap
-# still refuses, so this is not a blanket lift.
-two_session_body() {
-    python3 -c "
-print('## SESSION A')
-print('a'*3000)
-print('## SESSION B')
-print('b'*2500)
-print('## Next action')
-print('carry on')"
-}
-if two_session_body | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
-    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null 2>&1; then
-    pass "a 2-session body over the flat cap is accepted (the cap scales per block)"
-else
-    fail "the scaled cap regressed: a 2-session body under 2x4000 was refused"
-fi
-refuse "a 2-session body over the SCALED cap" python3 -c "
-print('## SESSION A')
-print('a'*4200)
-print('## SESSION B')
-print('b'*4200)
-print('## Next action')
-print('go')"
+# The cap is FLAT again, and 29g below is why that is now safe. It was briefly
+# SCALED by the number of `## SESSION` headings, because the budget was per
+# session while the document was per branch and a flat cap's cheapest remedy
+# was deleting the neighbour's block. Since --state merges one owned section,
+# the budget and the document have the same scope and a multi-section body is
+# not an over-budget document at all -- it is a whole-document paste, which is
+# refused for a different and stronger reason.
 refuse "a stub body" printf 'wip'
 refuse "an aimless body (no Next action section)" python3 -c "print('y'*400)"
 # CONTROL: a well-shaped body must still be written, or the guard is just a
@@ -775,6 +936,214 @@ if cmp -s "$BASE/state.good" "$STATE_FILE"; then
 else
     fail "a refused rewrite MUTATED the previous STATE.md"
 fi
+
+echo "== 29f. TWO sessions share one branch and BOTH sections survive =="
+# THE INCIDENT, 2026-08-09. Three sessions were live in one checkout on main.
+# The staleness gate nagged 99ccf057 about a document 2fd369e0 owned, 99ccf057
+# rewrote it, and a peer's entire state document -- a live canary campaign,
+# attempt 6 in flight, five flag flips, an operator-owned design question --
+# was destroyed. It came back only because the single-slot .prev backup was
+# read before the next write overwrote it.
+#
+# The assertion is a BYTE COMPARISON of A's rendered section across B's write,
+# not an allow: an allow would prove the gate was satisfied, and the thing that
+# failed was never the gate.
+setup
+brief_now
+hand_now # A = deadbeef
+A_BEFORE="$(section_of deadbeef)"
+B_BODY='This is session B, running the licensing drill on a fork of the bench universe, with the mint tool staged and the activation cap already lifted to five. Nothing here overlaps session A, and losing it would cost the drill.
+
+## Next action
+Re-run the license-e2e battery against the fork and read the failure reason verbatim.'
+state_as cafe1234 "$B_BODY"
+A_AFTER="$(section_of deadbeef)"
+if [[ -n "$A_BEFORE" && "$A_BEFORE" == "$A_AFTER" ]]; then
+    pass "29f: a peer's write leaves A's section byte-identical, stamp included"
+else
+    fail "29f: B's write MUTATED A's section: before='${A_BEFORE:0:80}' after='${A_AFTER:0:80}'"
+fi
+if grep -qF "This is session B" "$STATE_FILE" && grep -qF "ci-overhaul session" "$STATE_FILE"; then
+    pass "29f: the merged document carries BOTH sections"
+else
+    fail "29f: a section is missing from the merged document: $(head -c 200 "$STATE_FILE")"
+fi
+# CONTROL: B writing AGAIN replaces only B's section. Without this the case
+# would pass on a tool that merely refused to write anything at all.
+B_ONE="$(section_of cafe1234)"
+sleep 1 # so an advanced stamp is observable at second resolution
+state_as cafe1234 "${B_BODY/session B/session B, round two}"
+if [[ "$(section_of deadbeef)" == "$A_BEFORE" ]] &&
+    [[ "$(section_of cafe1234)" != "$B_ONE" ]] &&
+    grep -qF "round two" "$STATE_FILE"; then
+    pass "29f CONTROL: a second write replaces only its own section, A untouched"
+else
+    fail "29f CONTROL: the second write hit the wrong section"
+fi
+
+echo "== 29g. --state REFUSES a body carrying a '## SESSION' heading =="
+# The old habit is pasting the WHOLE document, and that habit is what destroyed
+# a peer's document. The tool now writes the heading itself, so a body with one
+# in it is a whole-document paste; refusing teaches the contract at zero cost,
+# because the previous document is untouched.
+setup
+brief_now
+hand_now
+cp "$STATE_FILE" "$BASE/state.before29g"
+WHOLE_DOC="$(
+    cat <<EOF
+## SESSION deadbeef 2026-08-09T18:30:00Z
+
+$STATE_BODY
+EOF
+)"
+out="$(printf '%s' "$WHOLE_DOC" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef 2>&1)"
+rc=$?
+if [[ "$rc" -ne 0 ]] && grep -qF "looks like the WHOLE document" <<<"$out"; then
+    pass "29g FIRE: a body with a '## SESSION' heading is refused, naming the contract"
+else
+    fail "29g: a whole-document paste was accepted: rc=$rc '${out:0:200}'"
+fi
+if cmp -s "$BASE/state.before29g" "$STATE_FILE"; then
+    pass "29g: the refusal left the document byte-identical"
+else
+    fail "29g: a REFUSED whole-document write still mutated the document"
+fi
+# CONTROL: the same body WITHOUT the heading is accepted, so the refusal keys
+# on the heading and not on the body being long or familiar.
+if printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null 2>&1; then
+    pass "29g CONTROL: the same body without the heading is accepted"
+else
+    fail "29g CONTROL: the heading check refused a plain section body"
+fi
+
+echo "== 29h. a DEAD peer's section is reaped, and archived BEFORE it is dropped =="
+# Reaping is the one path that deletes content nobody chose to delete, so it is
+# the one path with an append-only archive rather than a single slot. Liveness
+# is the repo's existing notion (owner_age_hours over the transcript dir), with
+# the section's own stamp as the fallback for an owner that has no transcript.
+setup
+brief_now
+hand_now
+mkdir -p "$BASE/projects"
+export WORKLIST_PROJECTS_DIR="$BASE/projects"
+DEAD_BODY='Session ghost1234 was driving the ceph cutover rehearsal and has not been seen since. Its last recorded position is the RBD snapshot step on carrier two, with the node sync verified and the fork not yet taken.
+
+## Next action
+Take the fork once node sync is confirmed on all three carriers.'
+LIVE_BODY='Session live5678 is watching the nightly on main and is very much alive, which is the whole point of this control: an age in the DOCUMENT must not outvote a transcript that is still being written.
+
+## Next action
+Read the nightly job log and diagnose any red.'
+plant_doc "$(section_of deadbeef)
+$(mk_section ghost1234 1800 "$DEAD_BODY")
+$(mk_section live5678 1800 "$LIVE_BODY")"
+: >"$BASE/projects/live5678-1111-2222-3333-444444444444.jsonl" # a fresh transcript
+REAPED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+REAPED="${REAPED%.md}.agentstate.reaped.agenttest.md"
+age_state deadbeef 1800 # the writer's OWN section is 30h old too
+out="$(printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state deadbeef 2>&1)"
+if ! grep -qF "ghost1234" "$STATE_FILE" && grep -qF "Session ghost1234" "$REAPED" 2>/dev/null; then
+    pass "29h FIRE: the dead peer's section is gone from STATE.md and present in the archive"
+else
+    fail "29h: reap/archive wrong (in doc: $(grep -c ghost1234 "$STATE_FILE"), archive: $(head -c 80 "$REAPED" 2>&1))"
+fi
+if grep -qF "Session live5678" "$STATE_FILE"; then
+    pass "29h CONTROL 1: a peer with a fresh transcript is NOT reaped despite a 30h stamp"
+else
+    fail "29h CONTROL 1: a LIVE peer's section was reaped"
+fi
+# CONTROL 2 asserts the ABSENCE of the writer from the archive, not the
+# presence of its section in the document: the write re-adds its own section
+# either way, so a presence check would pass even on a tool that reaped it
+# first and then wrote it back with the old body lost.
+if [[ "$(grep -c '## SESSION deadbeef' "$STATE_FILE")" == "1" ]] &&
+    ! grep -qF "SESSION deadbeef" "$REAPED" 2>/dev/null; then
+    pass "29h CONTROL 2: the writer's own 30h-old section is never reaped"
+else
+    fail "29h CONTROL 2: the writer reaped or duplicated its own section: $(head -c 200 "$STATE_FILE")"
+fi
+if grep -qF "sections REAPED as dead" <<<"$out" && grep -qF "$REAPED" <<<"$out"; then
+    pass "29h: the write names what it reaped and where the archive went"
+else
+    fail "29h: the reap was silent: '${out:0:220}'"
+fi
+unset WORKLIST_PROJECTS_DIR
+
+echo "== 29i. a LEGACY single-section document is ADOPTED, never destroyed =="
+# Three checkouts hold a pre-section STATE.md on disk right now. The first
+# merge on such a branch must keep that text, because it may be an in-flight
+# peer's only record -- which is exactly the loss this whole change is about.
+setup
+brief_now
+LEGACY_BODY='This document predates the section format entirely. It belongs to whichever session wrote it last, it has no heading, and if the first sectioned write deletes it then this change has reproduced the very incident it was built to prevent.
+
+## Next action
+Preserve me verbatim under a legacy heading.'
+plant_doc "$LEGACY_BODY"
+printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+if grep -qF "## SESSION legacy" "$STATE_FILE" && grep -qF "predates the section format" "$STATE_FILE" &&
+    grep -qF "## SESSION deadbeef" "$STATE_FILE"; then
+    pass "29i FIRE: the legacy text survives under a legacy heading beside the new section"
+else
+    fail "29i: the legacy document was lost: $(head -c 250 "$STATE_FILE")"
+fi
+# CONTROL: aged past the dead horizon it is REAPED -- into the archive, never
+# into nothing. Adoption is a grace period, not a permanent squatter.
+mkdir -p "$BASE/projects"
+export WORKLIST_PROJECTS_DIR="$BASE/projects"
+REAPED="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+REAPED="${REAPED%.md}.agentstate.reaped.agenttest.md"
+age_state legacy 1800
+printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+if ! grep -qF "predates the section format" "$STATE_FILE" &&
+    grep -qF "predates the section format" "$REAPED" 2>/dev/null; then
+    pass "29i CONTROL: an aged legacy section is reaped INTO THE ARCHIVE, not into nothing"
+else
+    fail "29i CONTROL: aged legacy handling wrong (doc: $(grep -c predates "$STATE_FILE"), archive: $(grep -c predates "$REAPED" 2>/dev/null))"
+fi
+unset WORKLIST_PROJECTS_DIR
+
+echo "== 29j. a MALFORMED document is never silently replaced =="
+# Fail closed: the parser must degrade rather than discard. A document that
+# yields no usable section is still SOMEBODY'S text, and the write that lands
+# beside it must leave it recoverable from the document itself and from .prev.
+setup
+brief_now
+JUNK='half a sentence with no heading and no next action, well under the floor'
+plant_doc "$JUNK"
+BACKUP="$(TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" python3 "$HOOK" --path)"
+BACKUP="${BACKUP%.md}.agentstate.prev.agenttest.md"
+printf '%s' "$STATE_BODY" | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
+    python3 "$HOOK" --state deadbeef >/dev/null 2>&1
+if grep -qF "$JUNK" "$STATE_FILE"; then
+    pass "29j: an unparseable body is preserved in the document, not discarded"
+else
+    fail "29j: the malformed body vanished: $(head -c 200 "$STATE_FILE")"
+fi
+if [[ "$(cat "$BACKUP" 2>/dev/null)" == "$JUNK" ]]; then
+    pass "29j: and the original bytes are also in the .prev backup"
+else
+    fail "29j: .prev does not hold the original: '$(head -c 80 "$BACKUP" 2>&1)'"
+fi
+# CONTROL: the caller's own verdict is unaffected by the junk beside it. The
+# junk is under the thin floor, and a shape check that judged the whole FILE
+# would call this document thin and block a session whose own section is fine.
+task 7 pending "thing"
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+check "29j CONTROL: a peer's malformed text never blocks my own good section" allow ""
 
 echo "== 29e. a SHORT or body-less --state refuses instead of HANGING =="
 # REGRESSION GATE for the defect session 4c3e095a reported as #7c1c2629 and
@@ -823,12 +1192,19 @@ else
     fail "the absent-stdin branch swallowed the thin diagnosis: '${thin_out:0:200}'"
 fi
 
-echo "== 29c. a clobbered STATE.md is RECOVERABLE from the backup =="
-# Two live sessions share one branch, and --state is last-write-wins by design.
+echo "== 29c. the OUTGOING document is recoverable from the backup =="
+# Two live sessions share one branch, and --state used to be last-write-wins.
 # What was not by design is that the loss was permanent: session 84611aab
 # replaced session b9491d9c's 0-minute-old document twice, and neither body
 # could be recovered -- the event log stores item TEXT, never STATE bodies.
-# The write path now keeps exactly one previous body beside the lock.
+# The write path keeps exactly one previous DOCUMENT beside the lock.
+#
+# Since the merge (2026-08-09) a peer write cannot clobber anything, so this
+# case is no longer about a clobber: 29f owns that property. What is left for
+# the backup to cover is a bug in the MERGE itself, which is why the copy is of
+# the whole outgoing document and why one slot is enough. The assertions moved
+# from `== $VICTIM` to "contains VICTIM", because the outgoing document now
+# holds every section rather than just the one being replaced.
 setup
 brief_now
 hand_now # writes STATE_BODY
@@ -847,24 +1223,24 @@ printf '%s' "$VICTIM" |
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 2>&1)"
-if [[ "$(cat "$BACKUP" 2>/dev/null)" == "$VICTIM" ]]; then
-    pass "the clobbered body is byte-recoverable from the backup"
+if grep -qF "PR #547 merged to main at 01:30Z" "$BACKUP" 2>/dev/null; then
+    pass "the outgoing document is recoverable from the backup"
 else
-    fail "the backup does not hold the clobbered body: '$(head -c 120 "$BACKUP" 2>&1)'"
+    fail "the backup does not hold the outgoing document: '$(head -c 120 "$BACKUP" 2>&1)'"
 fi
 # The backup must be the OUTGOING document, never the incoming one -- a copy
 # taken after os.replace would look like a backup and restore nothing.
-if [[ "$(cat "$BACKUP" 2>/dev/null)" != "$STATE_BODY" ]]; then
-    pass "CONTROL: the backup is the outgoing body, not the one just written"
+if ! grep -qF "Round 23 went red" "$BACKUP" 2>/dev/null; then
+    pass "CONTROL: the backup is the outgoing document, not the one just written"
 else
     fail "the backup captured the INCOMING body; restoring it is a no-op"
 fi
-# The session that destroyed the document has to be TOLD where the copy went,
-# in the same line that tells it something was replaced.
-if grep -qF "previous body saved to" <<<"$out" && grep -qF "$BACKUP" <<<"$out"; then
+# The writing session has to be TOLD where the copy went, in the same line that
+# tells it something was there before.
+if grep -qF "previous document saved to" <<<"$out" && grep -qF "$BACKUP" <<<"$out"; then
     pass "the success line names the backup path"
 else
-    fail "the clobber was silent about recovery: '${out:0:200}'"
+    fail "the write was silent about recovery: '${out:0:200}'"
 fi
 # CONTROL: the FIRST write on a branch replaces nothing, so it must not claim
 # a backup exists -- an unconditional path in that line would send the next
@@ -873,7 +1249,7 @@ rm -f "$STATE_FILE" "$BACKUP"
 out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --state deadbeef 2>&1)"
-if grep -qF "previous body saved to" <<<"$out"; then
+if grep -qF "previous document saved to" <<<"$out"; then
     fail "a first write with nothing to replace still advertised a backup"
 else
     pass "CONTROL: a first write advertises no backup"
@@ -907,8 +1283,9 @@ printf '%s' "$STATE_BODY" |
 printf '%s' "$VICT_A" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=otherbranch \
         WORKLIST_SESSION_ID="$(peer_id cafe1234)" python3 "$HOOK" --state cafe1234 >/dev/null 2>&1
-if [[ "$(cat "$BACKUP_A" 2>/dev/null)" == "$VICT_A" ]] &&
-    [[ "$(cat "$BACKUP_B" 2>/dev/null)" == "$STATE_BODY" ]]; then
+if grep -qF "Recover me from the branch-A backup" "$BACKUP_A" 2>/dev/null &&
+    grep -qF "Round 23 went red" "$BACKUP_B" 2>/dev/null &&
+    ! grep -qF "Recover me from the branch-A backup" "$BACKUP_B" 2>/dev/null; then
     pass "29d: each branch keeps its own backup; a write elsewhere cannot destroy it"
 else
     fail "29d: cross-branch write clobbered the backup (A: $(head -c 40 "$BACKUP_A" 2>&1))"
@@ -920,7 +1297,7 @@ out="$(printf '%s' "$STATE_BODY" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
         python3 "$HOOK" --state deadbeef 2>&1)"
 rmdir "$BACKUP_A" 2>/dev/null
-if grep -qF "backup copy FAILED" <<<"$out" && ! grep -qF "previous body saved to" <<<"$out"; then
+if grep -qF "backup copy FAILED" <<<"$out" && ! grep -qF "previous document saved to" <<<"$out"; then
     pass "29d CONTROL: a failed backup write warns instead of naming a phantom file"
 else
     fail "29d CONTROL: the failed backup was advertised as saved: '${out:0:200}'"
@@ -1225,7 +1602,8 @@ check "no found-not-fixed list, no complaint" allow ""
 
 echo "== 44. a STATE.md just over the limit is STALE (the limit is load-bearing) =="
 # NOTE: 44 and 45 are ONE indivisible fixture; 45 has no setup of its own and
-# reads $HAND set here. Do not reorder or insert a setup between them.
+# re-stamps the section 44 planted. Do not reorder or insert a setup between
+# them.
 setup
 brief_now
 hand_now
@@ -1234,18 +1612,132 @@ say "answer
 ## Remaining
 | #7 | thing | pending, me |"
 task 7 pending "thing"
-# Age it past the default without touching the clock: the check reads mtime.
+# Age it past the default without touching the clock. AGE COMES FROM THE
+# SECTION'S HEADING STAMP since 2026-08-09, not from the file's mtime, so this
+# re-stamps the section rather than touching the file: mtime is per FILE while
+# the obligation is per SESSION, and a peer's write used to reset everyone's
+# clock. `touch -d` here would silently exercise the unstamped fallback instead
+# of the rule under test.
 # The limit is 15 minutes, and the pair BRACKETS it: 16 must block, 14 must
 # not. A single far-past fixture would keep passing if the constant were
 # raised to an hour by accident. The world has moved since hand_now banked the
 # signature (task 7 landed after), so world-keyed staleness is armed.
-HAND="$BASE/proj/.agent/agenttest/STATE.md"
-touch -d '16 minutes ago' "$HAND"
+age_state deadbeef 16
 check "a 16-minute-old STATE.md blocks at the 15-minute limit" block "STATE.md is stale"
 
 echo "== 45. and one just inside it does not =="
-touch -d '14 minutes ago' "$HAND"
+age_state deadbeef 14
 check "a 14-minute-old STATE.md is inside the 15-minute limit" allow ""
+
+echo "== 44b. staleness is PER SESSION: one session's write cannot silence another =="
+# THE OTHER HALF OF THE 2026-08-09 INCIDENT, and the half that made the first
+# half inevitable. Age used to come from the file's MTIME, which is per FILE,
+# while the recorded signature is per SESSION. So a peer's write reset
+# everyone's clock: session B's 30-minute-stale document read "ok" the instant
+# session A wrote, and -- worse than a skipped stop -- wl_checks then banked
+# A's world signature as B's own, so B adopted a document describing A's world
+# as its own recovery artifact. Reproduced against the real function before the
+# fix: ('stale', 30) became ('ok', 0) purely because A wrote.
+#
+# A mutation that reverts the age source to p.stat().st_mtime must turn this
+# case red.
+setup
+brief_now
+brief_other cafe1234
+hand_now # A = deadbeef, stamped now
+B_BODY='Session B is holding the canary campaign: attempt 6 is in flight behind watch id 9be21c, five flags are flipped, and v1.2.24 is released. None of this is session A material and none of it may be silenced by session A writing.
+
+## Next action
+Read attempt 6 to completion and record the flag states before touching anything.'
+state_as cafe1234 "$B_BODY"
+age_state cafe1234 30 # B is stale; A is not. A's write above is the "peer write".
+# B needs work of its OWN outstanding, because the STATE.md violation only
+# fires when something remains for that session: the tasks in the fixture dir
+# are keyed to `deadbeef`, so without this B has an empty plate and the case
+# would pass vacuously by never reaching the check under test.
+as_peer cafe1234 reqcli --add cafe1234 "B's own open item" >/dev/null
+task 7 pending "thing"
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+B_SIG_BEFORE="$(python3 -c "
+import json, pathlib
+p = pathlib.Path('${WL%.md}.state-cafe1234.json')
+print(json.loads(p.read_text()).get('state_sig', '') if p.exists() else '')")"
+# FOCUS=off for B's two stops. B legitimately has TWO violations (its open item
+# and its stale section) and the focus mechanism surfaces one, so a focused run
+# would assert the needle's absence for a reason that has nothing to do with
+# the rule under test -- and the anti-vacuity control below would then pass on
+# a hook that never computed staleness at all.
+export WORKLIST_FOCUS=off
+check_as cafe1234 "44b FIRE: the STALE session B is nagged" block "STATE.md is stale"
+unset WORKLIST_FOCUS
+check "44b: session A, fresh, is NOT nagged by B's staleness" allow ""
+# THE BANKING HALF, which is worse than the skipped stop it hid behind. On a
+# "stale" verdict nothing may be banked, or the next stop would compare against
+# a signature recorded DURING the block and clear itself. Under the mtime bug B
+# got an "ok" verdict off A's write and banked A's world as its own.
+B_SIG_AFTER="$(python3 -c "
+import json, pathlib
+p = pathlib.Path('${WL%.md}.state-cafe1234.json')
+print(json.loads(p.read_text()).get('state_sig', '') if p.exists() else '')")"
+if [[ -n "$B_SIG_BEFORE" && "$B_SIG_BEFORE" == "$B_SIG_AFTER" ]]; then
+    pass "44b: B's banked signature is untouched by its stale block and by A's stop"
+else
+    fail "44b: B's signature moved during the block ('${B_SIG_BEFORE:0:12}' -> '${B_SIG_AFTER:0:12}')"
+fi
+# ANTI-VACUITY. Re-stamp B fresh: the nag must go away. Without this the case
+# would pass on a hook that simply blocks every peer for every reason.
+age_state cafe1234 1
+export WORKLIST_FOCUS=off
+OUT="$(run_as cafe1234)"
+unset WORKLIST_FOCUS
+# The second half of the anti-vacuity: B must still be SPEAKING (it still owns
+# an open item), so the missing needle is the staleness verdict changing rather
+# than the hook having gone quiet.
+if ! grep -qF "STATE.md is stale" <<<"$OUT" && grep -qF "OPEN worklist item" <<<"$OUT"; then
+    pass "44b ANTI-VACUITY: a freshly stamped section B is no longer nagged"
+else
+    fail "44b ANTI-VACUITY: B is nagged even when fresh, or went silent: ${OUT:0:220}"
+fi
+
+echo "== 44c. a FUTURE heading stamp cannot buy permanent freshness =="
+# FOUND ON THE LIVE DOCUMENT, not imagined: driving this code against the real
+# .agent/main/STATE.md for the first time showed a peer's hand-written heading
+# stamped 101 minutes AHEAD -- almost certainly local time written with a Z. A
+# trusted future stamp makes that section permanently fresh, which is worse
+# than the unstamped fallback it would otherwise have taken, because the entire
+# point of per-section staleness is that a section cannot dodge its own clock.
+# A future stamp is therefore treated exactly like an unparseable one.
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+task 7 pending "thing"
+age_state deadbeef -60                                    # stamped an hour AHEAD
+touch -d '40 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md" # the honest age
+check "44c FIRE: a future-stamped section falls back to mtime and goes stale" block "STATE.md is stale"
+# CONTROL 1: a stamp inside the tolerated skew is still TRUSTED, so this is a
+# rule about wrong clocks rather than a blanket distrust of the future.
+age_state deadbeef -2
+check "44c CONTROL: a stamp 2 minutes ahead is inside the skew and stays fresh" allow ""
+# CONTROL 2: and the fallback is really the mtime, not a hardcoded stale. Same
+# future stamp, fresh file: allowed.
+age_state deadbeef -60
+touch -d '1 minute ago' "$BASE/proj/.agent/agenttest/STATE.md"
+task 8 pending "moved"
+newturn
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |
+| #8 | moved | pending, me |"
+check "44c CONTROL: the untrusted stamp falls back to mtime, which here is fresh" allow ""
 
 echo "== 46. CONTROL: an open item still blocks off a runner =="
 setup
@@ -2504,6 +2996,7 @@ ARITY = {
     "V_AGENT_STATE": ("b", "s", "", 250, 4000, "m"),
     "V_AGENT_BOOTSTRAP": ("b", "b", "b"), "V_AGENT_STILL_ABSENT": ("b",),
     "N_AGENT_BLIND": ("r",), "CLI_STATE_REFUSED": ("v", "d", 250, 4000),
+    "N_AGENT_PEERS": ("br", "rows"), "CLI_STATE_WHOLE_DOC": ("m",),
     "N_UNREAD_REPORTS": (2, "b", "rows", "p", "p", "m"),
     "CLI_REAP_USAGE": (), "CLI_REAP_UNKNOWN": ("t", "l"),
     "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
@@ -2581,6 +3074,7 @@ ARITY = {
     "CTX_POSTCOMPACT_MISSING": ("p", "b", "m"),
     "CTX_POSTCOMPACT_NO_BRANCH": ("t",),
     "CTX_POSTCOMPACT_BRIEFING": ("d", "s", "r", "p", "t"),
+    "CTX_POSTCOMPACT_PEERS": ("b",),
     "JUDGE_PROMPT": {"streak": 1, "remaining": "r", "leases": 0, "loop": "l",
                      "citations": "c", "message": "m", "traps": "t"},
     "REGGATE_PROMPT": {"fixset": "f", "keys": "k"},
@@ -3441,8 +3935,7 @@ printf 'You are picking up the ci-overhaul session driving PR #543 to green on b
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
         WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --state deadbeef >/dev/null
 check "fresh STATE.md, settled world: allowed" allow ""
-HAND="$BASE/proj/.agent/agenttest/STATE.md"
-touch -d '25 minutes ago' "$HAND"
+age_state deadbeef 25 # the heading stamp is the age source, not the file mtime
 check "an OLD STATE.md with an UNCHANGED world is NOT stale (the poll trap is dead)" allow ""
 task 8 pending "the new thing"
 newturn
@@ -4219,7 +4712,7 @@ say "answer
 ## Remaining
 - the flag decision, deferred with a default"
 check "T12 baseline stop allows" allow ""
-touch -d '25 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+age_state deadbeef 25
 reqcli --poll deadbeef >/dev/null
 OUT="$(run)"
 RC=$?
@@ -4272,7 +4765,7 @@ else
     fail "154a CONTROL: the stop emitted nothing at all: ${OUT:0:260}"
 fi
 # The FOCUS=off dump-all block carried the section too; it must not any more.
-touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+age_state deadbeef 20
 task 8 pending "moved"
 newturn
 say "answer
@@ -5081,7 +5574,7 @@ say "answer
 ## Remaining
 - #7 thing (pending)"
 run >/dev/null
-touch -d '20 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+age_state deadbeef 20
 reqcli --lease deadbeef "$FID" +90 worker:bw9 "renewing the watch lease" >/dev/null
 newturn
 say "answer
@@ -7446,7 +7939,7 @@ L1_TABLE=(
     "--update|--update @ME@ $I_UPDATE moved-a-bit|updated #"
     "--lease|--lease @ME@ $I_LEASE +30 worker:l1bg|leased #"
     "--list|--list --open @ME@|l1-list-item"
-    "--state|--state @ME@|STATE.md written"
+    "--state|--state @ME@|STATE.md section written"
     "--loop|--loop @ME@ 2099-01-01T00:00:00Z 1 l1-label|loop declared"
     "--brief|--brief @ME@ l1-brief-text|brief recorded"
     "--reap|--reap @ME@ l1task9|reaped 1 task"

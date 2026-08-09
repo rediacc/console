@@ -22,6 +22,25 @@ check() {
     fi
 }
 
+# check_out <expected-exit> <script> <json-stdin> <label> <must-contain>
+# Like check(), plus an assertion on what the guard SAID. Used where the
+# message is the product: the STATE.md guard's whole job since 2026-08-09 is to
+# redirect a session to the one writer that can merge, and an exit code alone
+# cannot tell "blocked, here is the correct command" from "blocked, good luck".
+check_out() {
+    local expected="$1" script="$2" json="$3" label="$4" needle="$5" rc out
+    out="$(echo "$json" | bash "$DIR/$script" 2>&1 >/dev/null)"
+    rc=$?
+    if [[ "$rc" == "$expected" ]] && grep -qF "$needle" <<<"$out"; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s (exit %s)\n' "$expected" "$label" "$rc"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got exit %s, needle %s)\n' "$expected" "$label" "$rc" \
+            "$(grep -qF "$needle" <<<"$out" && echo present || echo MISSING)"
+    fi
+}
+
 bash_json() { printf '{"tool_input":{"command":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 edit_json() { printf '{"tool_input":{"new_string":%s}}' "$(jq -Rn --arg c "$1" '$c')"; }
 multiedit_json() { printf '{"tool_input":{"edits":[{"new_string":%s}]}}' "$(jq -Rn --arg c "$1" '$c')"; }
@@ -168,11 +187,20 @@ check 2 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft 
 check 2 pre-edit/block-suppressions.sh "$(edit_json "a // @ts-""ignore")" "suppressions(new_string)"
 check 2 pre-edit/block-suppressions.sh "$(multiedit_json "b // eslint-""disable")" "suppressions(MultiEdit)"
 check 2 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_FAT")" "inline-workflow-run: 9-line block blocked"
-# STATE.md shape guard: the CLI refusal alone is bypassed by a raw Write (the
+# STATE.md write guard: the CLI refusal alone is bypassed by a raw Write (the
 # document lives at a plain repo path), so the guard is the closing half.
-check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content tiny)" "agent-state: thin Write blocked"
-check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked"
-check 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)"
+#
+# IT DENIES EVERY DIRECT WRITE NOW, shape-valid ones included, and the
+# WELL-SHAPED case below is the one that changed. STATE.md holds one owned
+# section per session and only the CLI can merge; a perfectly shaped whole-file
+# Write deletes every peer's section exactly as thoroughly as a malformed one,
+# so a guard that measured LENGTH was waving through the only defect that
+# matters. Each case asserts the message too, because redirecting to `--state`
+# IS the guard's product.
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content tiny)" "agent-state: thin Write blocked" "worklist.py --state"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_AIMLESS")" "agent-state: aimless Write (no Next action) blocked" "worklist.py --state"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/STATE.md new_string patch)" "agent-state: Edit blocked (rewrite, never append)" "ONE OWNED SECTION PER SESSION"
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json MultiEdit /r/.agent/b/STATE.md new_string patch)" "agent-state: MultiEdit blocked" "worklist.py --state"
 
 # --- should PASS (exit 0) ---
 # NOTE: block-premature-ready.sh and block-admin-merge.sh verify live CI/thread
@@ -230,9 +258,16 @@ check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git worktree remove ../foo'
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'git status')" "worktree-add: unrelated git command ok"
 check 0 pre-bash/block-worktree-add.sh "$(bash_json 'echo "lets talk about git worktree add sometime"')" "worktree-add: quoted prose mention ignored"
 check 0 pre-edit/block-suppressions.sh "$(edit_json 'const x = 1;')" "suppressions: clean"
-check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write passes"
+# INVERTED 2026-08-09: a well-shaped whole-file Write used to PASS here, and
+# that is the hole the incident went through. It is now denied like every other
+# direct write, and it lives up in the deny block above only in spirit -- it is
+# asserted here, beside its controls, so the pair reads as one decision.
+check_out 2 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/b/STATE.md content "$STATE_GOOD")" "agent-state: well-shaped Write is ALSO blocked (shape was never the defect)" "worklist.py --state"
+# The two controls that keep the guard from being a blanket denial: it must not
+# reach RULES.md (sharpened by ordinary edits) or anything outside .agent/.
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Edit /r/.agent/b/RULES.md new_string sharpen)" "agent-state: RULES.md edits untouched"
 check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/packages/cli/src/foo.ts content tiny)" "agent-state: non-agent files untouched"
+check 0 pre-edit/block-agent-state-shape.sh "$(tool_json Write /r/.agent/TRAPS.md content "$STATE_GOOD")" "agent-state: TRAPS.md untouched"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json '.github/workflows/x.yml' "$WF_THIN")" "inline-workflow-run: thin block ok"
 check 0 pre-edit/block-inline-workflow-run.sh "$(wf_edit_json 'packages/cli/src/foo.ts' "$WF_FAT")" "inline-workflow-run: non-workflow file ok"
 

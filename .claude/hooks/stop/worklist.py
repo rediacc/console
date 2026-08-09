@@ -786,14 +786,23 @@ def main():
         sys.stderr.write(M.CLI_STATE_USAGE)
         sys.exit(2)
     if len(sys.argv) > 2 and sys.argv[1] == "--state":
-        # `... --state <prefix>` with the STATE.md body on stdin. The document
-        # is PER BRANCH now, not per session, so the old "no other writer to
-        # race" assumption is dead: two live sessions share one branch today.
-        # flock + tempfile + os.replace makes the write atomic (a reader never
-        # sees half a file); last-write-wins is deliberate, because a document
-        # whose contract is "rewrite every time" has no merge semantics. The
-        # success line names what was replaced, which is the only cheap
-        # defence against session B silently deleting session A's next action.
+        # `... --state <prefix>` with THIS SESSION'S SECTION BODY on stdin.
+        #
+        # It used to be the whole document, and last-write-wins was called
+        # deliberate: "a document whose contract is rewrite-every-time has no
+        # merge semantics". On 2026-08-09 that contract met three live sessions
+        # in one checkout. The staleness gate nagged 99ccf057 about a document
+        # 2fd369e0 owned, 99ccf057 obeyed, and a peer's entire state document
+        # (a live canary campaign, attempt 6 in flight) was destroyed. It came
+        # back only because the single-slot .prev backup was read before the
+        # next write overwrote it.
+        #
+        # So the document has merge semantics now: one OWNED SECTION per
+        # session, replaced or appended in place under the existing flock,
+        # every other section byte-identical afterwards. flock + tempfile +
+        # os.replace still makes the write atomic. The success line names what
+        # was kept and what was reaped, because a session that cannot see the
+        # peers cannot be expected to respect them.
         wl = _local_worklist_path(_local_project_start())
         prefix = sys.argv[2]
         _identity_or_die(prefix, _die2)
@@ -826,7 +835,14 @@ def main():
                 )
             sys.stderr.write(M.CLI_STATE_NO_BODY % (extra, prefix))
             sys.exit(2)
-        # Refuse a document the Stop check would reject, with the SAME rule.
+        # A body carrying a '## SESSION' heading is a session pasting the WHOLE
+        # document, which is the pre-2026-08-09 habit. Refusing it is how the
+        # contract gets taught, and the refusal costs nothing: the previous
+        # document is untouched, so the worst case is one wasted command.
+        if S.AGENT_STATE_HEAD_RE.search(body):
+            sys.stderr.write(M.CLI_STATE_WHOLE_DOC % prefix)
+            sys.exit(2)
+        # Refuse a section the Stop check would reject, with the SAME rule.
         # Accept-then-reject leaves the one artifact designed to survive
         # compaction broken while the session believes it is fine; refusing
         # leaves the previous good document untouched.
@@ -834,7 +850,7 @@ def main():
         if verdict != "ok":
             sys.stderr.write(
                 M.CLI_STATE_REFUSED
-                % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.agent_state_max_chars(body))
+                % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
             sys.exit(2)
         target = S.agent_state_path(root, branch)
@@ -842,41 +858,106 @@ def main():
         # 3688784930/3688787780): a shared slot let a write on ANOTHER branch
         # destroy this branch's only backup.
         backup = S.agent_state_backup_path(wl, branch)
+        reaped_path = S.agent_state_reaped_path(wl, branch)
+        pdir = C.projects_dir(root)
+        backed_up = had_prev = False
         replaced = ""
-        try:
-            prev_age = int((time.time() - target.stat().st_mtime) / 60.0)
-            prev_first = (
-                target.read_text(encoding="utf-8", errors="replace").strip().splitlines()[0][:100]
-            )
-            replaced = ", replacing a %d-minute-old document (first line: %r)" % (
-                prev_age,
-                prev_first,
-            )
-        except (OSError, IndexError):
-            pass
-        backed_up = False
+        kept_rows, reaped_rows = [], []
         lock = S.agent_state_lock_path(wl)
         with open(lock, "w", encoding="utf-8") as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
-            # Keep the outgoing document before overwriting it. Inside the lock
-            # and before os.replace, so the copy is of the body we are actually
-            # about to destroy and not of one a racing writer slipped in.
+            # EVERYTHING between here and os.replace reads and writes under the
+            # lock. The old code read the outgoing document before taking it,
+            # which was harmless when the write was a whole-file replace and is
+            # not harmless now: a merge that parsed a pre-lock snapshot would
+            # drop a section a racing writer added in between.
             try:
-                backup.write_text(target.read_text(encoding="utf-8"), encoding="utf-8")
-                backed_up = True
+                current = target.read_text(encoding="utf-8", errors="replace")
+                mtime = target.stat().st_mtime
             except OSError:
-                pass  # first write on this branch, or an unreadable target
+                current, mtime = "", time.time()
+            had_prev = bool(current.strip())
+            if had_prev:
+                try:
+                    backup.write_text(current, encoding="utf-8")
+                    backed_up = True
+                except OSError:
+                    pass  # unwritable backup slot; confessed in the line below
+            sections = S.agent_state_parse(current, mtime)
+            kept, reaped = S.agent_state_dead(sections, prefix, pdir)
+            if reaped:
+                # ARCHIVE BEFORE DROP, append-only. Reaping is the one path that
+                # deletes content nobody chose to delete, so it is the one path
+                # that gets a guarantee stronger than the single .prev slot. A
+                # failed archive ABORTS the reap: keeping a dead section forever
+                # is a tidiness problem, losing it is the failure this file
+                # exists to prevent.
+                try:
+                    with open(reaped_path, "a", encoding="utf-8") as af:
+                        af.write(
+                            "\n".join(
+                                "# reaped %s by %s from branch %s\n%s\n"
+                                % (
+                                    S.agent_state_stamp(time.time()),
+                                    prefix,
+                                    branch,
+                                    S.agent_state_render([s]),
+                                )
+                                for s in reaped
+                            )
+                        )
+                    reaped_rows = [
+                        "%s (%d min old)" % (s["owner"], int((time.time() - s["ts"]) / 60.0))
+                        for s in reaped
+                    ]
+                except OSError as exc:
+                    sys.stderr.write(
+                        "WARNING: could not archive %d dead section(s) to %s (%s), so they "
+                        "were KEPT rather than dropped.\n" % (len(reaped), reaped_path, exc)
+                    )
+                    kept, reaped = sections, []
+            mine = S.agent_state_mine(kept, prefix)
+            stamp = S.agent_state_stamp(time.time())
+            if mine is not None:
+                replaced = ", replacing your %d-minute-old section" % int(
+                    max(0.0, (time.time() - mine["ts"]) / 60.0)
+                )
+                mine["tail"] = stamp
+                mine["body"] = body.strip()
+            else:
+                kept.append(
+                    {
+                        "owner": prefix,
+                        "tail": stamp,
+                        "ts": time.time(),
+                        "stamped": True,
+                        "body": body.strip(),
+                    }
+                )
+            merged = S.agent_state_render(kept)
+            kept_rows = [
+                "%s%s (%d min old)"
+                % (
+                    s["owner"],
+                    " <- you" if s["owner"] == prefix else "",
+                    int(max(0.0, (time.time() - s["ts"]) / 60.0)),
+                )
+                for s in kept
+            ]
             fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
-                f.write(body)
+                f.write(merged)
             os.replace(tmp, target)
-        if replaced:
-            # Name the backup ONLY when something was replaced AND the copy
-            # actually landed (findings 3688770247/3688779150/3688787850: the
-            # old line advertised a recovery path that a failed write had
-            # never created, which is worse than no promise at all).
+        # Name the backup ONLY when a previous document existed AND the copy
+        # actually landed (findings 3688770247/3688779150/3688787850: the old
+        # line advertised a recovery path that a failed write had never
+        # created, which is worse than no promise at all). The condition is
+        # "there was a document", not "I replaced my own section": since the
+        # merge, a write that only APPENDS a section still rewrites the file,
+        # so the backup is real and worth naming either way.
+        if had_prev:
             if backed_up:
-                replaced += "; previous body saved to %s" % backup
+                replaced += "; previous document saved to %s" % backup
             else:
                 replaced += "; WARNING: the backup copy FAILED, the replaced body is gone"
         try:
@@ -886,7 +967,15 @@ def main():
             S.save_state(wl, prefix, doc)
         except Exception:  # noqa: BLE001 -- the sig is an optimisation, never a gate on writing
             pass
-        print("STATE.md written for branch %s (%d chars)%s" % (branch, len(body), replaced))
+        print(
+            "STATE.md section written for %s on branch %s (%d chars)%s\n"
+            "  sections kept: %s" % (prefix, branch, len(body), replaced, ", ".join(kept_rows))
+        )
+        if reaped_rows:
+            print(
+                "  sections REAPED as dead: %s; archived to %s"
+                % (", ".join(reaped_rows), reaped_path)
+            )
         return
     if sys.argv[1:2] == ["--session-start"]:
         ev, _ok = _read_event()
