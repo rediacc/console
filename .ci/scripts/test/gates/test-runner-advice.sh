@@ -83,6 +83,7 @@ baseline() {
     local file="$1" stamp="$2" observed="${3:-3}"
     cat >"$file" <<JSON
 {
+  "format": 1,
   "refreshed_at": "$stamp",
   "jobs": {
     "fixture.yml:waster": {
@@ -271,7 +272,7 @@ test_empty_baseline_refuses() {
     # wrote this file and left no jobs behind, which is a defect.
     local d="$1"
     workflow "$d/wf" ubuntu-latest
-    printf '{"refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
     : >"$d/allow"
     local rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
@@ -292,7 +293,7 @@ test_pristine_baseline_warns_and_passes() {
     # finishing. Two rounds of that yielded 3 jobs against a floor of 5.
     local d="$1"
     workflow "$d/wf" ubuntu-latest
-    printf '{"refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
     : >"$d/allow"
     local rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
@@ -316,7 +317,7 @@ test_pristine_shape_is_exact() {
     local rc
 
     # (1) null stamp, but jobs present and below the floor.
-    printf '{"refreshed_at": null, "jobs": {"fixture.yml:waster": {"workflow": "fixture.yml", "runner_label": "ubuntu-latest", "tier": "PROC_HOST", "cpu_peak_milli": 200, "mem_peak_bytes": 943718400, "wall_s": 120, "cpu_ceil_milli": 4000, "mem_ceil_bytes": 16000000000, "observed_runs": 3}}}\n' >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": null, "jobs": {"fixture.yml:waster": {"workflow": "fixture.yml", "runner_label": "ubuntu-latest", "tier": "PROC_HOST", "cpu_peak_milli": 200, "mem_peak_bytes": 943718400, "wall_s": 120, "cpu_ceil_milli": 4000, "mem_ceil_bytes": 16000000000, "observed_runs": 3}}}\n' >"$d/base.json"
     rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
     assert_exit_code 1 "$rc" "a null stamp with SOME jobs is not pristine"
@@ -324,24 +325,198 @@ test_pristine_shape_is_exact() {
 
     # (2) stamp set, zero jobs -- already covered above, asserted here as part
     # of the shape matrix so the two halves of the predicate are both pinned.
-    printf '{"refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": "%s", "jobs": {}}\n' "$(fresh_stamp)" >"$d/base.json"
     rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
     assert_exit_code 1 "$rc" "a stamped baseline with zero jobs is not pristine"
 
     # (3) no refreshed_at key at all: a file somebody has edited, not the
-    # committed shape.
-    printf '{"jobs": {}}\n' >"$d/base.json"
+    # committed shape. Caught one layer earlier, by the structural validator,
+    # which is why the message is about the missing key rather than pristineness.
+    printf '{"format": 1, "jobs": {}}\n' >"$d/base.json"
     rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
     assert_exit_code 1 "$rc" "a baseline missing refreshed_at entirely is not pristine"
+    assert_contains "$LAST_OUT" "missing required top-level key 'refreshed_at'" "names the missing key"
 
     # (4) no jobs key at all.
-    printf '{"refreshed_at": null}\n' >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": null}\n' >"$d/base.json"
     rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
     assert_exit_code 1 "$rc" "a baseline missing jobs entirely is not pristine"
+    assert_contains "$LAST_OUT" "missing required top-level key 'jobs'" "names the missing key"
     log_pass "the pristine exception is shape-exact: four near-misses all still refuse"
+}
+
+test_unknown_format_refuses() {
+    # A baseline with no machine-checked version reaches the gate as a KeyError
+    # traceback or, worse, as a silent misparse that reports a clean tree over
+    # numbers it misunderstood. Both are replaced by a NAMED incompatibility.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    : >"$d/allow"
+    local rc
+
+    # (1) a FUTURE format this gate does not speak.
+    baseline "$d/base.json" "$(fresh_stamp)"
+    sed -i 's/"format": 1,/"format": 2,/' "$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a baseline in an unknown format must refuse"
+    assert_contains "$LAST_OUT" "declares format 2" "names what it found"
+    assert_contains "$LAST_OUT" "this gate speaks format 1" "names what it speaks"
+    assert_not_contains "$LAST_OUT" "Traceback" "must be a named failure, never a stack trace"
+    assert_not_contains "$LAST_OUT" "sit on the runner their own profile justifies" "must not report a verdict"
+
+    # (2) no version at all.
+    baseline "$d/base.json" "$(fresh_stamp)"
+    sed -i '/"format": 1,/d' "$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a baseline with no format must refuse"
+    assert_contains "$LAST_OUT" "declares no \"format\"" "names the missing version"
+    assert_not_contains "$LAST_OUT" "Traceback" "must be a named failure, never a stack trace"
+
+    # (3) not JSON at all -- the other way a hand-edit ends in a traceback.
+    printf '{"format": 1, "jobs": {,}\n' >"$d/base.json"
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a corrupt baseline must refuse"
+    assert_contains "$LAST_OUT" "is not valid JSON" "names the syntax problem"
+    assert_not_contains "$LAST_OUT" "Traceback" "must be a named failure, never a stack trace"
+
+    # CONTROL: the same file, untouched, is read fine -- so the three refusals
+    # above are the version check working rather than the fixture being broken.
+    baseline "$d/base.json" "$(fresh_stamp)"
+    workflow "$d/wf" ubuntu-slim
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 0 "$rc" "a valid format-1 baseline must still be read (output: $LAST_OUT)"
+    log_pass "an unknown, missing or corrupt baseline format refuses by NAME, never by traceback"
+}
+
+test_bad_record_names_the_job_and_field() {
+    # The failure this replaces was `KeyError: 'mem_peak_bytes'` pointing at a
+    # line of the gate, which tells the reader nothing about which record is
+    # wrong. Every message names the job and the field.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    : >"$d/allow"
+    local rc
+
+    baseline "$d/base.json" "$(fresh_stamp)"
+    python3 - "$d/base.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+data = json.load(open(p, encoding="utf-8"))
+data["jobs"]["fixture.yml:waster"]["mem_peak_bytes"] = "lots"
+json.dump(data, open(p, "w", encoding="utf-8"))
+PY
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a non-integer numeric must refuse"
+    assert_contains "$LAST_OUT" "fixture.yml:waster" "names the job"
+    assert_contains "$LAST_OUT" "'mem_peak_bytes'" "names the field"
+    assert_contains "$LAST_OUT" "must be a whole number" "says what was expected"
+    assert_not_contains "$LAST_OUT" "Traceback" "must be a named failure, never a stack trace"
+
+    # A missing field is the same class and must read the same way.
+    baseline "$d/base.json" "$(fresh_stamp)"
+    python3 - "$d/base.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+data = json.load(open(p, encoding="utf-8"))
+del data["jobs"]["fixture.yml:heavy"]["tier"]
+json.dump(data, open(p, "w", encoding="utf-8"))
+PY
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a missing record field must refuse"
+    assert_contains "$LAST_OUT" "job 'fixture.yml:heavy' is missing required field 'tier'" "names job and field"
+
+    # `true` is the interesting one: bool is a subclass of int in Python, so a
+    # naive isinstance check would arithmetic it as 1 rather than reject it.
+    baseline "$d/base.json" "$(fresh_stamp)"
+    python3 - "$d/base.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+data = json.load(open(p, encoding="utf-8"))
+data["jobs"]["fixture.yml:waster"]["observed_runs"] = True
+json.dump(data, open(p, "w", encoding="utf-8"))
+PY
+    rc=0
+    run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
+    assert_exit_code 1 "$rc" "a boolean where a count belongs must refuse"
+    assert_contains "$LAST_OUT" "'observed_runs'" "names the field"
+    log_pass "a malformed record is refused by job name and field name, not by traceback"
+}
+
+test_is_pristine_requires_the_format() {
+    # The format clause inside is_pristine is redundant when the predicate is
+    # reached through load_baseline, so no end-to-end fixture can pin it. Driven
+    # directly here instead, rather than left as a claim in a comment.
+    local out
+    out="$(
+        python3 - "$GATE" <<'PY'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+print(module.is_pristine({"format": 1, "refreshed_at": None, "jobs": {}}))
+print(module.is_pristine({"format": 2, "refreshed_at": None, "jobs": {}}))
+print(module.is_pristine({"refreshed_at": None, "jobs": {}}))
+PY
+    )"
+    assert_eq "$(printf '%s\n' "$out" | sed -n 1p)" "True" "the committed shape is pristine"
+    assert_eq "$(printf '%s\n' "$out" | sed -n 2p)" "False" "a format this gate cannot read is never pristine"
+    assert_eq "$(printf '%s\n' "$out" | sed -n 3p)" "False" "an unversioned file is never pristine"
+    log_pass "is_pristine requires the format it can read, not only the shape"
+}
+
+test_refresh_refuses_an_unreadable_format() {
+    # A refresh MERGES into the file it is given. A format it cannot read is a
+    # file whose meaning is unknown, so nothing may be written into it -- and
+    # the check runs before the network, so a refused refresh costs no API call.
+    local d="$1"
+    workflow "$d/wf" ubuntu-latest
+    baseline "$d/base.json" "$(fresh_stamp)"
+    sed -i 's/"format": 1,/"format": 2,/' "$d/base.json"
+    local before after out rc=0
+    before="$(md5sum <"$d/base.json")"
+    out="$(
+        python3 - "$GATE" "$d/base.json" "$d/wf" 2>&1 <<'PY'
+import importlib.util
+import pathlib
+import sys
+
+spec = importlib.util.spec_from_file_location("check_runner_advice", sys.argv[1])
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+
+
+def exploded(*_a, **_k):
+    raise AssertionError("the network was reached despite an unreadable format")
+
+
+module.harvest = exploded
+workflow_dir = pathlib.Path(sys.argv[3])
+sys.exit(
+    module.refresh(
+        workflow_dir.parent, pathlib.Path(sys.argv[2]), workflow_dir, "main", "", 8
+    )
+)
+PY
+    )" || rc=$?
+    after="$(md5sum <"$d/base.json")"
+    assert_exit_code 1 "$rc" "a refresh onto an unreadable format must refuse (output: $out)"
+    assert_contains "$out" "REFUSING TO REFRESH" "says what it declined to do"
+    assert_contains "$out" "declares format 2" "names the format it found"
+    assert_not_contains "$out" "the network was reached" "must refuse BEFORE spending an API call"
+    assert_eq "$after" "$before" "the baseline must be byte-identical after a refused refresh"
+    log_pass "a refresh onto an unreadable format refuses before the network and touches nothing"
 }
 
 test_refresh_refuses_a_partial_harvest() {
@@ -350,7 +525,7 @@ test_refresh_refuses_a_partial_harvest() {
     # the gate would refuse every run afterwards with no way back.
     local d="$1"
     workflow "$d/wf" ubuntu-latest
-    printf '{"refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
+    printf '{"format": 1, "refreshed_at": null, "jobs": {}}\n' >"$d/base.json"
     local before after out rc=0
     before="$(md5sum <"$d/base.json")"
     out="$(
@@ -399,19 +574,22 @@ test_stale_baseline_fails() {
     assert_exit_code 1 "$rc" "a baseline older than the age limit must fail"
     assert_contains "$LAST_OUT" "the baseline itself is stale" "names the staleness"
 
-    # A missing stamp is the same failure, and must not read as "fresh".
+    # A stamp that is PRESENT but not a date must not read as "fresh". This is
+    # the staleness path's own failure; a stamp that is missing entirely is
+    # caught one layer earlier by the structural validator, which is asserted
+    # separately in test_pristine_shape_is_exact.
     python3 - "$d/base.json" <<'PY'
 import json, sys
 p = sys.argv[1]
 data = json.load(open(p, encoding="utf-8"))
-data.pop("refreshed_at")
+data["refreshed_at"] = "some time last week"
 json.dump(data, open(p, "w", encoding="utf-8"))
 PY
     rc=0
     run_gate "$d/base.json" "$d/wf" "$d/allow" || rc=$?
-    assert_exit_code 1 "$rc" "a baseline with no refreshed_at must fail"
+    assert_exit_code 1 "$rc" "a baseline whose refreshed_at is not a date must fail"
     assert_contains "$LAST_OUT" "missing or unparseable" "says the stamp itself is the problem"
-    log_pass "a stale or unstamped baseline fails rather than being trusted"
+    log_pass "a stale or unparseably-stamped baseline fails rather than being trusted"
 }
 
 test_empty_workflow_dir_refuses() {
@@ -718,6 +896,10 @@ with_temp_dir test_under_observed_move_is_an_advisory
 with_temp_dir test_empty_baseline_refuses
 with_temp_dir test_pristine_baseline_warns_and_passes
 with_temp_dir test_pristine_shape_is_exact
+with_temp_dir test_unknown_format_refuses
+with_temp_dir test_bad_record_names_the_job_and_field
+test_is_pristine_requires_the_format
+with_temp_dir test_refresh_refuses_an_unreadable_format
 with_temp_dir test_refresh_refuses_a_partial_harvest
 with_temp_dir test_stale_baseline_fails
 with_temp_dir test_empty_workflow_dir_refuses
