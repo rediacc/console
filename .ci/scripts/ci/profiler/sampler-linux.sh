@@ -41,8 +41,13 @@
 #     --out /tmp/p.tsv --interval 2 &
 #
 # Output format (TSV, one line per record):
-#   #META  tier  cpu_milli  mem_bytes  interval_s  start_ms  runner_label  cpu_src  mem_src  container_hint
+#   #META  tier  cpu_milli  mem_bytes  interval_s  start_ms  runner_label  cpu_src  mem_src  container_hint  runner_env
 #   S      t_ms  cpu_milli  mem_bytes  rx_bytes    tx_bytes  disk_ws_kb    disk_tmp_kb
+#
+# META FIELDS ARE APPEND-ONLY. report.awk reads them positionally and treats a
+# missing trailing field as its default, so a new field goes on the END and an
+# older TSV keeps parsing. Reordering would silently reinterpret every archived
+# capture.
 # cpu_milli on a sample line is USAGE in millicores (1000 = one full core); on
 # the #META line it is the detected CEILING.
 #
@@ -199,6 +204,21 @@ detect_mem_ceiling() {
 # while a false positive is a visible warning rather than a silent wrong answer.
 # That asymmetry is why this is allowed to ship before profiler-probe.yml has
 # confirmed what these files look like inside slim.
+# GitHub sets RUNNER_ENVIRONMENT to `github-hosted` or `self-hosted`. It is the
+# one piece of provenance that distinguishes an EXCLUSIVE VM from a machine this
+# job merely shares, and paired with the container fingerprint it is what lets
+# report.awk trust /proc numbers on ubuntu-latest -- where no runner-label is
+# threaded through setup-workspace and the advisor was therefore silent on the
+# majority of the fleet.
+#
+# Sanitized to [a-z-]+ because it is copied verbatim into a TAB-separated record
+# that awk then splits: a value carrying a tab or a newline would shift every
+# field after it, and this variable is environment-controlled.
+RUNNER_ENV="${RUNNER_ENVIRONMENT:-}"
+case "$RUNNER_ENV" in
+    '' | *[!a-z-]*) RUNNER_ENV="unknown" ;;
+esac
+
 CONTAINER_HINT="UNKNOWN"
 detect_container() {
     local v
@@ -444,7 +464,7 @@ run_probe() {
     # today, which means a caller that forgets to pass it gets no protection.
     # These are the candidates for a label-free "am I in a container" signal;
     # the probe exists to find out which of them is actually true on slim.
-    echo "**RUNNER_ENVIRONMENT:** ${RUNNER_ENVIRONMENT:-(unset)}"
+    echo "**RUNNER_ENVIRONMENT:** ${RUNNER_ENVIRONMENT:-(unset)} (recorded as: ${RUNNER_ENV})"
     echo "**/.dockerenv:** $([ -e /.dockerenv ] && echo present || echo absent)"
     echo "**/proc/1/cgroup:** $(probe_file /proc/1/cgroup)"
     echo "**/proc/1/comm:** $(probe_file /proc/1/comm)"
@@ -504,9 +524,9 @@ fi
 HOST_LEAK_MSG=""
 if ! check_host_leak; then
     : >"$OUT" || true
-    printf '#META\tHOST_LEAK\t%s\t%s\t%s\t0\t%s\t%s\t%s\t%s\n' \
+    printf '#META\tHOST_LEAK\t%s\t%s\t%s\t0\t%s\t%s\t%s\t%s\t%s\n' \
         "$CPU_CEIL_MILLI" "$MEM_CEIL_BYTES" "$INTERVAL" "$RUNNER_LABEL" "$CPU_SRC" "$MEM_SRC" \
-        "$CONTAINER_HINT" >>"$OUT"
+        "$CONTAINER_HINT" "$RUNNER_ENV" >>"$OUT"
     echo "sampler-linux.sh: $HOST_LEAK_MSG" >&2
     exit 3
 fi
@@ -551,9 +571,9 @@ START_US="$NOW_US"
     exit 2
 }
 exec 8>>"$OUT"
-printf '#META\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+printf '#META\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
     "$TIER" "$CPU_CEIL_MILLI" "$MEM_CEIL_BYTES" "$INTERVAL" "$((START_US / 1000))" \
-    "$RUNNER_LABEL" "$CPU_SRC" "$MEM_SRC" "$CONTAINER_HINT" >&8
+    "$RUNNER_LABEL" "$CPU_SRC" "$MEM_SRC" "$CONTAINER_HINT" "$RUNNER_ENV" >&8
 
 # Disk about once a minute, and always on the first tick so the table is never
 # blank for short jobs. `df` is the one fork in the loop, which is why it is

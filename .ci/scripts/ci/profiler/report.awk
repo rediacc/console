@@ -40,8 +40,11 @@
 # compares a committed baseline against real measurements instead of against
 # prose it would have to parse. It is written only when a verdict exists, which
 # is exactly the set of runs the advisory was willing to speak about: a
-# HOST_LEAK, an unsampled sub-interval run, or a PROC_HOST reading nobody can
-# attribute produces no row at all rather than a row nobody should trust.
+# HOST_LEAK or an unsampled sub-interval run produces no row at all rather than
+# a row nobody should trust. A reading nobody can attribute DOES get a row, with
+# verdict=NONE, so the consumer can see that the job was measured and refused
+# rather than never measured -- and it carries env= for the same reason the
+# advisory now consults it.
 #
 # Exit: 0 clean, 1 one or more findings.
 
@@ -103,6 +106,7 @@ BEGIN {
     advice_verdict = ""
     tier = "UNKNOWN"; cpu_ceil = 0; mem_ceil = 0; interval = 0
     runner = "unknown"; cpu_src = "?"; mem_src = "?"
+    container_hint = "UNKNOWN"; runner_env = "unknown"
     n = 0; nfind = 0
     cpu_sum = 0; cpu_peak = 0; cpu_nonzero = 0
     mem_sum = 0; mem_peak = 0; mem_min = -1
@@ -116,6 +120,10 @@ $1 == "#META" {
     # Field 10 is newer than the rest; an older TSV simply leaves it empty, which
     # reads as UNKNOWN and changes nothing.
     container_hint = ($10 == "") ? "UNKNOWN" : $10
+    # Field 11 is newer still. Defaulting it to "unknown" rather than to
+    # "github-hosted" is the safe direction: an archived TSV keeps the old,
+    # SILENT behaviour instead of being retroactively trusted.
+    runner_env = ($11 == "") ? "unknown" : $11
     next
 }
 
@@ -288,8 +296,27 @@ END {
 # The reading is only poisoned when /proc is read from INSIDE a container, which
 # is the slim case, and there the sampler has already refused (a slim label plus
 # host-sized limits is HOST_LEAK). What remains genuinely ambiguous is PROC_HOST
-# with no label at all: a VM and a container are indistinguishable from here, so
-# that one says nothing.
+# with no label at all: a VM and a container are indistinguishable from here --
+# UNLESS the runner itself says which it is.
+#
+# THE HOSTED-VM ARM, and why "says nothing" was too strict. On 2026-08-09 the
+# first real harvest seeded ZERO rows: quality-www-build on ubuntu-latest emitted
+# `runner_label=unknown tier=PROC_HOST verdict=NONE`, because setup-workspace
+# deliberately does not thread runner-label and the unlabelled-PROC_HOST arm
+# below then refused to advise. That is the majority of the fleet, so the
+# advisor was blind exactly where it was needed and the silence looked like
+# health. The missing evidence is not the label at all: RUNNER_ENVIRONMENT
+# = github-hosted plus a container fingerprint that does NOT say container
+# identifies an exclusive VM the job owns outright, and there host-wide and
+# job-wide are the same numbers by construction. That combination is trusted;
+# everything else -- a self-hosted PROC_HOST box that may be shared, a container
+# fingerprint, a slim label with host-sized limits -- still says nothing.
+#
+# The fingerprint is required to be non-CONTAINER rather than exactly HOST
+# because its only UNKNOWN path is an unreadable /proc/1/comm, and the dangerous
+# direction (slim's container read as a host) is already covered twice over: by
+# HOST_LEAK in the sampler and by the slim-label arm below, both of which run
+# before this one can apply.
 #
 # THE LABEL ONLY MATTERS WHEN THE CGROUP READ FAILED. When it succeeded, the
 # detected CEILING is itself the ground truth about the box: a 1-core / 5 GB
@@ -306,14 +333,34 @@ END {
 # from the prose: mawk has no way to hand back two values, and re-deriving the
 # verdict by matching on the sentence would put a second, silently divergent
 # copy of these thresholds in a regex.
-function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim) {
+function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim, hosted_vm, rn_show) {
+    unlabelled = (rn == "" || rn == "unknown")
+    # The trusted arm. Deliberately excludes the two shapes the arms below
+    # refuse, so this is a strict ADDITION: no input that used to produce a
+    # verdict changes its answer, and no input either arm would have refused
+    # becomes trusted here. Both exclusions are REDUNDANT today -- the arms
+    # below refuse those inputs on their own -- and both stay anyway, so that
+    # what this arm trusts is legible from this one expression instead of from
+    # the order of the returns underneath it. Reordering is the accident this
+    # guards against, and it is a fail-open when it happens.
+    hosted_vm = (tier == "PROC_HOST" && runner_env == "github-hosted" &&
+                 container_hint != "CONTAINER" && rn !~ /slim/)
+    # A job with no label on a hosted VM still needs a NAME in the prose, and
+    # "keep unknown:" is not one. Say what is actually known about the box.
+    rn_show = rn
+    if (hosted_vm) rn_show = unlabelled ? "this github-hosted VM (label unknown)" : ("github-hosted " rn)
     # States the ASSUMPTION rather than asserting the fact. The old wording --
     # "valid because 'X' is a full VM" -- was a claim the report has no way to
     # verify: its only evidence is the label, and the label is exactly what is
-    # wrong in the case that matters.
-    caveat = (tier == "PROC_HOST") ? " (measured from /proc, on the assumption that '" rn "' is a full VM this job owns; if it ran in a container these are host numbers)" : ""
-    unlabelled = (rn == "" || rn == "unknown")
-    if (tier == "PROC_HOST" && unlabelled) {
+    # wrong in the case that matters. On the hosted-VM arm it is not an
+    # assumption any more, and the caveat says which evidence carried it.
+    if (hosted_vm)
+        caveat = " (measured from /proc on " rn_show "; RUNNER_ENVIRONMENT reports github-hosted and the PID 1 fingerprint is not a container, so this machine is the job's own and its /proc ceilings are the job's ceilings)"
+    else if (tier == "PROC_HOST")
+        caveat = " (measured from /proc, on the assumption that '" rn "' is a full VM this job owns; if it ran in a container these are host numbers)"
+    else
+        caveat = ""
+    if (tier == "PROC_HOST" && unlabelled && !hosted_vm) {
         advice_verdict = "NONE"
         return "none. Limits came from /proc (host-wide) and no runner label was passed, so a VM cannot be told from a container and these ceilings may belong to the host. Pass runner-label to the action."
     }
@@ -357,15 +404,15 @@ function advise(tier, cpk, mpk, w, rn,   caveat, unlabelled, on_slim) {
     # stated once (BEGIN) rather than restated as a number here.
     if (w >= hard_s - slack_s) {
         advice_verdict = "KEEP"
-        return "keep " rn ": " hms(w) " leaves less than " hms(slack_s) " of margin under slim's " hms(hard_s) " hard cap." caveat
+        return "keep " rn_show ": " hms(w) " leaves less than " hms(slack_s) " of margin under slim's " hms(hard_s) " hard cap." caveat
     }
     if (cpk > 1000) {
         advice_verdict = "KEEP"
-        return "keep " rn ": peak " fmt_cores(cpk) " cores needs more than slim's single vCPU." caveat
+        return "keep " rn_show ": peak " fmt_cores(cpk) " cores needs more than slim's single vCPU." caveat
     }
     if (mpk > 4831838208) {
         advice_verdict = "KEEP"
-        return "keep " rn ": peak " fmt_bytes(mpk) " is too close to slim's 5 GB." caveat
+        return "keep " rn_show ": peak " fmt_bytes(mpk) " is too close to slim's 5 GB." caveat
     }
     advice_verdict = "MOVE_TO_SLIM"
     return "MOVE TO ubuntu-slim: peak " fmt_cores(cpk) " cores and " fmt_bytes(mpk) " fit a 1 core / 5 GB box, and " hms(w) " fits the " hms(hard_s) " cap. On a 4-vCPU VM this job is burning about 4x the core-minutes it needs." caveat
@@ -382,8 +429,8 @@ function finish(   row) {
     # sampler was starved must be REJECTABLE by the consumer, and dropping it
     # silently would make "no row" mean two different things.
     if (machine_file != "" && advice_verdict != "") {
-        row = sprintf("PROFILER_BASELINE_V1 job=%s runner_label=%s tier=%s cpu_peak_milli=%d mem_peak_bytes=%.0f wall_s=%d cpu_ceil_milli=%d mem_ceil_bytes=%.0f samples=%d findings=%d verdict=%s",
-            (job == "" ? "unknown" : job), (runner == "" ? "unknown" : runner), tier,
+        row = sprintf("PROFILER_BASELINE_V1 job=%s runner_label=%s tier=%s env=%s cpu_peak_milli=%d mem_peak_bytes=%.0f wall_s=%d cpu_ceil_milli=%d mem_ceil_bytes=%.0f samples=%d findings=%d verdict=%s",
+            (job == "" ? "unknown" : job), (runner == "" ? "unknown" : runner), tier, runner_env,
             cpu_peak, mem_peak, wall, cpu_ceil, mem_ceil, n, nfind, advice_verdict)
         print row > machine_file
         close(machine_file)
