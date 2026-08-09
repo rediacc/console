@@ -56,6 +56,12 @@ row computed against different numbers than this file re-derives. Nothing
 forwards them today; the --refresh disagreement warning is what would surface
 it on the day something does.
 
+THE BOOTSTRAP, in one line each: a PRISTINE baseline (refreshed_at null, zero
+jobs) warns and passes, because there is provably nothing to check; any other
+below-floor shape is a hard VACUOUS refusal; and --refresh will not write a
+baseline below the floor. See is_pristine() for why those three are one
+argument rather than three conveniences.
+
 WHAT IT DOES NOT DO. It does not predict cost or duration, and it never edits a
 workflow. It asserts one thing: that a measured, repeatedly-observed fit is
 either taken or justified.
@@ -110,6 +116,45 @@ INT_FIELDS = (
     "cpu_ceil_milli",
     "mem_ceil_bytes",
 )
+
+
+BOOTSTRAP_WARNING = (
+    "Runner sizing is UNENFORCED on this run. The baseline is PRISTINE (refreshed_at null, "
+    "zero jobs), which is the as-committed state, so no job has a measurement to check yet "
+    "and there is nothing this gate could be right or wrong about. Seed it from runs that "
+    "COMPLETED, with: npm run check:ci-runner-advice -- --refresh --branch main --runs 20 . "
+    "The harvest writes only if it finds at least 5 jobs, so once this file is seeded it is "
+    "enforced and this warning cannot come back."
+)
+
+
+def is_pristine(baseline):
+    """The exact as-committed shape, and nothing that merely resembles it.
+
+    WHY AN EXCEPTION AT ALL. The bootstrap is otherwise structurally impossible.
+    The gate goes red on an unseeded baseline, and the baseline can only be
+    seeded from a run whose profiled jobs finished -- but the run that would
+    supply them contains this gate, which fails ~5 minutes in and takes the
+    slow lanes down with it. Two rounds of that yielded 3 harvestable jobs
+    against a floor of 5. So the floor made its own precondition unreachable.
+
+    WHY IT IS SHAPE-EXACT. "Below the floor" and "never seeded" are different
+    states and only the second one is innocent. A baseline with 1-4 jobs is
+    evidence that a harvest ran and produced too little, or that somebody
+    deleted rows; a refreshed_at with no jobs is evidence that a write went
+    wrong halfway. Forgiving those would turn the exception into a way to
+    silence a real finding by truncating a file. So this matches the committed
+    shape and only that: the key PRESENT and null, and jobs PRESENT and empty.
+    A missing refreshed_at key is not this shape either -- it is a file
+    somebody has edited.
+
+    The other half of the argument lives in refresh(), which refuses to WRITE
+    below the floor. Together they make "seeded" and "enforced" the same state,
+    which is what stops this from being a permanent hole.
+    """
+    if "refreshed_at" not in baseline or baseline["refreshed_at"] is not None:
+        return False
+    return baseline.get("jobs", None) == {}
 
 
 class WorkflowUnreadableError(Exception):
@@ -626,9 +671,29 @@ def refresh(root, baseline_path, workflow_dir, branch, event, limit):
 
     if not merged:
         print(
-            "refresh matched NONE of the %d run(s) sampled: no usable PROFILER_BASELINE_V1 "
-            "annotation was found. Refusing to stamp refreshed_at on numbers nothing "
-            "verified." % len(run_ids),
+            "refresh matched NONE of the %d run(s) sampled (asked for up to %d): no usable "
+            "PROFILER_BASELINE_V1 annotation was found. Refusing to stamp refreshed_at on "
+            "numbers nothing verified." % (len(run_ids), limit),
+            file=sys.stderr,
+        )
+        return 1
+
+    # ALL OR NOTHING, and this is what makes the pristine exception in main()
+    # honest rather than a hole. The gate lets a PRISTINE baseline through with
+    # a warning because there is provably nothing to check yet; that reasoning
+    # only holds if "seeded" and "at or above the floor" are the same state. A
+    # partial harvest -- which is the normal outcome of a run that went red
+    # before the slow lanes finished -- would otherwise write a 2-job baseline
+    # that is neither pristine nor enforceable, and the gate would then refuse
+    # every run until somebody noticed. Leaving the file untouched keeps it in
+    # a state the gate has a defined answer for.
+    if len(merged) < MIN_BASELINE_JOBS:
+        print(
+            "harvest yielded %d job(s), below the %d-job floor; baseline left untouched.\n"
+            "  A partial seed is worse than none: it is neither the pristine state the gate\n"
+            "  forgives nor a baseline it can enforce. Harvest from runs that COMPLETED --\n"
+            "  a cancelled or early-failing run profiles only the jobs that finished."
+            % (len(merged), MIN_BASELINE_JOBS),
             file=sys.stderr,
         )
         return 1
@@ -685,11 +750,23 @@ def main(argv=None):
 
     baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
     jobs = baseline.get("jobs", {})
+
+    if is_pristine(baseline):
+        print(
+            "::warning title=Runner sizing (bootstrap)::%s" % BOOTSTRAP_WARNING,
+            file=sys.stdout,
+        )
+        print("runner sizing: UNENFORCED, baseline is pristine (see the warning above)")
+        return 0
+
     if len(jobs) < MIN_BASELINE_JOBS:
         print(
             "VACUOUS INPUT: baseline names %d job(s), expected at least %d. A sizing check\n"
             "over an empty baseline exits 0 and reads exactly like full coverage. Seed it:\n"
-            "  npm run check:ci-runner-advice -- --refresh --branch main"
+            "  npm run check:ci-runner-advice -- --refresh --branch main\n"
+            "This is NOT the pristine bootstrap state (refreshed_at null AND zero jobs), so\n"
+            "the bootstrap exception does not apply: something has already written here, and\n"
+            "a half-written baseline is a defect rather than a starting point."
             % (len(jobs), MIN_BASELINE_JOBS),
             file=sys.stderr,
         )
