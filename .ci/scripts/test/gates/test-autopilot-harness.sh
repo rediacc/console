@@ -1006,6 +1006,29 @@ test_push_submodule_refuses_a_foreign_branch() {
     log_pass "adoption is scoped to commits the autopilot itself wrote"
 }
 
+test_push_submodule_adoption_needs_resolvable_main() {
+    # The ancestry half of the adoption check needs $REMOTE/main. When it is
+    # unresolvable even after a fetch, the guard must REFUSE rather than fall
+    # through to the identity check alone -- a committer email is the forgeable
+    # half, and "both required" has to mean both. (Review observation on
+    # a2559c9: the old code swallowed the rev-parse failure and skipped.)
+    local d="$WORK/sub-nomain"
+    mk_sub_fixture "$d" fix-branch
+    mk_sub_orphan "$d" fix-branch autopilot@example.invalid >/dev/null
+    # Make main genuinely unresolvable: gone from the bare origin (so the
+    # rescue fetch finds nothing) and gone from the checkout's tracking refs.
+    git -C "$d/renet.git" symbolic-ref HEAD refs/heads/fix-branch
+    git -C "$d/renet.git" branch -D main -q
+    git -C "$d/parent/private/renet" update-ref -d refs/remotes/origin/main 2>/dev/null || true
+    printf 'package x\nfunc F(){}\n' >"$d/parent/private/renet/pkg/x.go"
+    mk_sub_handoff "$WORK/sub-nomain.json" "$d/parent" '["private/renet"]' '["pkg/x.go"]'
+    SUB_FLAG=true PUSH_FLAG=true
+    assert_eq "$(run_sub_push "$d/parent" "$WORK/sub-nomain.json" fix-branch)" "1" \
+        "adoption without a resolvable main must refuse, not degrade to identity-only"
+    assert_contains "$(err)" "submodule-main-unresolvable" "as submodule-main-unresolvable"
+    log_pass "adoption fails closed when the ancestry check cannot run"
+}
+
 test_push_submodule_branch_forbidden_touches_nothing() {
     # The submodule branch name IS the console branch name, so `main` is
     # refused by the parent's own branch check before any submodule is opened.
@@ -2287,6 +2310,7 @@ test_push_submodule_tripwire_fires
 test_push_validation_failure_leaves_no_remote_write
 test_push_submodule_adopts_our_own_orphan
 test_push_submodule_refuses_a_foreign_branch
+test_push_submodule_adoption_needs_resolvable_main
 test_push_submodule_branch_forbidden_touches_nothing
 test_push_submodule_uninitialized_never_writes_the_parent
 test_push_boundary_never_stages_wholesale
