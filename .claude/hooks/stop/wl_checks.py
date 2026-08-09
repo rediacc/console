@@ -1483,7 +1483,9 @@ def handle_post_compact(event):
         state = "no-branch"
         msg = M.CTX_POSTCOMPACT_NO_BRANCH % traps_block
     else:
-        state, _age, text = S.agent_state_state(root, branch)  # shape + presence only
+        # shape + presence only, but for THIS session's own section.
+        state, _age, text = S.agent_state_state(root, branch, session_id=sid)
+        _, peers, _npeers = S.agent_state_briefing(root, branch, sid, C.projects_dir(root))
         if state in ("missing", "no-dir"):
             msg = M.CTX_POSTCOMPACT_MISSING % (
                 S.agent_state_path(root, branch),
@@ -1506,6 +1508,14 @@ def handle_post_compact(event):
                 S.agent_traps_path(root),
                 traps_block,
             )
+        # AFTER the briefing, on BOTH branches. Own section first is the point:
+        # a compacted session reads top-down, and the block it must act on is
+        # its own. On the missing branch this is the whole state content there
+        # is -- before sections, that branch returned none at all, so a
+        # compacted session on a shared branch was told to reconstruct from
+        # nothing while a peer's section sat in the file unread.
+        if peers:
+            msg += "\n\n" + M.CTX_POSTCOMPACT_PEERS % peers
     # v16: the durable half of the briefing, appended to ALL THREE branches
     # above. STATE.md says what is true right now and can be missing or
     # stale; a plan file says what was DESIGNED and is committed, so it is
@@ -1917,8 +1927,18 @@ def run_stop(event, event_ok, worklist, hook_file):
         root, worklist, session_id, fold=fold, transcript_path=event.get("transcript_path")
     )
     agent_branch = C.git_branch(root)
+    # session_id, not blank: the verdict is about THIS session's own section.
+    # Without it the check judged whichever document happened to be on disk, so
+    # a peer's write reset everyone's clock and -- worse than a skipped stop --
+    # the adopt below banked the PEER'S world signature as this session's own,
+    # making a document describing someone else's world read as this one's
+    # recovery artifact.
     astate, aage, _atext = S.agent_state_state(
-        root, agent_branch, cur_sig=st_sig, saved_sig=state_doc.get("state_sig")
+        root,
+        agent_branch,
+        session_id=session_id,
+        cur_sig=st_sig,
+        saved_sig=state_doc.get("state_sig"),
     )
     if astate == "ok":
         # ADOPT: an "ok" verdict banks the signature so a second session
@@ -2646,6 +2666,43 @@ def run_stop(event, event_ok, worklist, hook_file):
         agent_note = M.N_AGENT_BLIND % root
         # Class 2, volatile: recomputed from the branch state every stop.
         outq_add(worklist, session_id, state_doc, "agent-blind", agent_note, 2)
+    # REPORT-ONLY, and it must stay that way: a session that cannot see its
+    # peers' sections cannot be expected to respect them, but a peer's section
+    # is never this session's obligation. Class 2 volatile, recomputed from the
+    # document every stop, exactly like the blind note above. NEVER reaps here:
+    # a read-only every-turn hook that mutates the shared document is the
+    # fastest route to the next clobber, so it only NAMES what a write would
+    # drop.
+    if agent_branch:
+        try:
+            _p = S.agent_state_path(root, agent_branch)
+            _all = S.agent_state_parse(
+                _p.read_text(encoding="utf-8", errors="replace"), _p.stat().st_mtime
+            )
+            _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
+            _reap_ids = {id(s) for s in _reapable}
+            _now = time.time()
+            _rows = [
+                "    %-14s %4d min old%s"
+                % (
+                    s["owner"],
+                    int(max(0.0, (_now - s["ts"]) / 60.0)),
+                    "   REAP-ELIGIBLE" if id(s) in _reap_ids else "",
+                )
+                for s in _all
+                if not C.same_session(s["owner"], session_id)
+            ]
+            if _rows:
+                outq_add(
+                    worklist,
+                    session_id,
+                    state_doc,
+                    "agent-peers",
+                    M.N_AGENT_PEERS % (agent_branch, "\n".join(_rows)),
+                    2,
+                )
+        except OSError:
+            pass  # no document, or an unreadable one: the astate branches above own that
     # v18: unread sub-agent reports, on ORDINARY stops as well as at the two
     # boundaries wl_report already covers by hook. SessionStart and PostCompact
     # catch a fresh or compacted session; this catches the far commoner case of
