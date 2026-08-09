@@ -239,6 +239,20 @@ function validate(raw, opts) {
 
   const dirty = parseStatusZ(opts.statusBuf);
 
+  // The handoff file is the CONTRACT, not a change: the model writes it into
+  // the workspace root, so git always reports it dirty, and it can never be
+  // declared in files[] (declaring it would commit the round's own control
+  // channel). Excluding exactly the contract path keeps both directions of
+  // the staged-set equality honest. Live proof this was missing: attempt 6
+  // on canary PR #562 (run 31327079213) had the model finally write a valid
+  // handoff and the boundary refused the round as undeclared-dirty over the
+  // handoff file itself.
+  {
+    const path = require('node:path');
+    const rel = path.relative(opts.root, opts.handoffPath).split(path.sep).join('/');
+    dirty.delete(rel);
+  }
+
   // The SHAPE rules, shared by console files[] and every submodule's files[].
   // Extracted rather than copied: a submodule whose paths were policed by a
   // second, slightly different copy of these rules is a hole that opens the day
