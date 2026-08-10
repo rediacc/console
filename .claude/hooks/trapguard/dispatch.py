@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
 """trapguard: the PostToolUse surface for misread-outcome traps.
 
-Today this file carries ONE mode, `--probe-payload`, and it is deliberately the
-only thing here. The plan (docs/agent/main/PLAN-trap-enforcement.md, section 7.1)
-makes the probe a BLOCKING PREREQUISITE for every output-interpretation rule:
+Two modes. `--posttool` is the live one, running the misread-outcome rules below.
+`--probe-payload` is a retired diagnostic, kept because the next rule that wants
+a payload field should re-run it rather than trust this docstring.
 
-    No hook in this repo has ever read `tool_response`. The only evidence it
-    arrives is a docstring (wl_wait.py:139-143) recording a payload someone
-    captured. That is a ruling from an artifact, which is itself a trap in the
-    corpus, so it gets probed before anything depends on it.
+THE PROBE CAME FIRST, AND THAT ORDER WAS THE POINT. No hook in this repo had ever
+read `tool_response`; the only evidence it arrives was a docstring
+(`wl_wait.py:139-143`) recording a payload someone captured. That is a ruling
+from an artifact, which is itself a trap in this corpus, so it was probed before
+anything depended on it (plan section 7.1). Writing the rules first would have
+been building a check on an unverified payload shape, which is how a check that
+cannot fire ships believing it works.
 
-So the rules that read tool_response are NOT written yet. Writing them first and
-probing afterwards would be building a check on an unverified payload shape,
-which is how a check that cannot fire gets shipped believing it works.
+WHAT THE PROBE ANSWERED, on real payloads, 2026-08-09: the field arrives as a
+dict; a planted nonce reached the hook, so it carries actual output rather than
+merely existing; and hooks fire for subagents. It also corrected that docstring
+twice -- `isImage` and `noOutputExpected` were undocumented, and `agent_id` and
+`agent_type` are ABSENT on main-loop calls, appearing only for subagents, so a
+rule keyed on them would have silently never matched in the main loop.
 
-WHAT IT RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans only.
-No tool output is ever written to disk by this probe: a hook that logged tool
-responses would be a durable copy of everything every session reads, including
-whatever a command happened to print. The single exception is a NONCE the
-operator plants deliberately, which is the only string this file ever matches
-against, and it is matched by pattern rather than stored.
+WHAT THE PROBE RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans
+only. No tool output is ever written to disk: a hook that logged tool responses
+would be a durable copy of everything every session reads. The single exception
+is a nonce planted deliberately, matched by pattern rather than stored. It is
+unregistered in settings.json; a diagnostic on every tool call is a standing cost.
 
-NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed,
-so it cannot deny anything, and a probe that broke a session's turn because its
+NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed, so
+nothing here can deny anything, and a hook that broke a session's turn because a
 log directory was read-only would be a self-inflicted outage. Every path exits 0.
 """
 
@@ -31,6 +36,7 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
 
 # The only string this file ever matches. Planted by hand to prove that stdout
@@ -144,9 +150,18 @@ def rule_phantom_deletion_diff(cmd, out, root):
     index git compares against. The reflex read is that a sub-agent deleted it,
     and the near-miss is a destructive repair of a file that was never damaged.
 
-    THE ON-DISK TEST IS THE WHOLE DISCRIMINATOR. A real deletion and this
-    phantom print the same summary; only the filesystem tells them apart, and
-    it costs one stat per named path.
+    TWO TESTS, AND THE FIRST ONE ALONE WAS WRONG. This rule briefly shipped
+    keyed on "the file still exists", which fires on ANY deletions-only change
+    to a tracked file. It false-positived within the hour on
+    `git diff --stat package-lock.json`, a peer's ordinary 27-line removal. A
+    rule that fires on common, correct shapes trains sessions to discount it,
+    which is worse than not having it.
+
+    Existence narrows; TRACKED-NESS decides. The phantom exists because the file
+    is untracked relative to HEAD, so git compares against an index with no
+    entry for it and calls the whole thing removed. A tracked file losing lines
+    is just a diff. Cost is one stat plus one `git ls-files` per named path, and
+    if git cannot answer the rule stays silent rather than guessing.
     """
     if not re.search(r"\bgit\s+(-[A-Za-z-]+\s+\S+\s+)*diff\b", cmd):
         return None
@@ -158,6 +173,35 @@ def rule_phantom_deletion_diff(cmd, out, root):
     alive = [p for p in paths if p not in ("a", "b") and (pathlib.Path(root) / p).exists()]
     if not alive:
         return None
+    # EXISTS-ON-DISK IS NOT ENOUGH, and this rule shipped briefly believing it was.
+    # It fired on `git diff --stat package-lock.json` for a tracked file a peer had
+    # simply removed lines from: deletions, no insertions, file obviously present.
+    # Any deletions-only change to a tracked file looks like that, which is common,
+    # and a rule that fires on ordinary shapes teaches sessions to ignore it -- the
+    # precision decay the plan names as this tier's main risk.
+    #
+    # The real discriminator is TRACKED-NESS. The phantom happens because the file
+    # is untracked relative to HEAD, so git compares against an index that has no
+    # entry and reports the whole file as removed. A tracked file losing lines is
+    # just a diff. `git ls-files --error-unmatch` answers exactly that question.
+    untracked = []
+    for p in alive:
+        try:
+            rc = subprocess.run(
+                ["git", "ls-files", "--error-unmatch", "--", p],
+                cwd=root,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+                check=False,
+            ).returncode
+        except (OSError, subprocess.SubprocessError):
+            return None  # cannot tell: stay silent rather than cry wolf
+        if rc != 0:
+            untracked.append(p)
+    if not untracked:
+        return None
+    alive = untracked
     return (
         "trapguard[phantom-deletion-diff]: this diff reports deletions and no "
         "insertions, but %s still exist(s) on disk. Before concluding anything "
@@ -236,7 +280,7 @@ def main():
     # sub-field would make a negative result ambiguous between "no content" and
     # "content lives somewhere I did not look".
     row = {
-        "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "tool_name": str(event.get("tool_name") or ""),
         "payload_keys": sorted(str(k) for k in event) if isinstance(event, dict) else [],
         "response_type": rtype,
