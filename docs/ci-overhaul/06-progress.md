@@ -3354,3 +3354,86 @@ owner. Case 205 keeps a separate fixture per leg deliberately, because draining
 an advisory latches it in the queue's `shown` ledger and a second checklist
 planted beside an already-shown one is suppressed by the refresh window, which
 looks exactly like the overwrite bug.
+
+## STATE.md session isolation, and traps as instruments (2026-08-09/10)
+
+Two programs, one root cause: this repo runs several sessions in ONE shared
+checkout, and both the compact-recovery document and the trap corpus were built
+as if a branch had one session.
+
+### STATE.md is one owned section per session (PR #565)
+
+`.agent/<branch>/STATE.md` is keyed per BRANCH. The Stop hook told a session the
+document was stale, it obeyed, and it destroyed a peer's entire state section:
+a live canary campaign's notes, recovered only because the single-slot `.prev`
+backup was read before the next write clobbered that too. It was then hand-merged
+three more times in one afternoon, which is the workaround that proved the defect.
+
+The staleness gate DROVE the collision. It nags every session on the branch, on a
+15-minute limit, to rewrite one shared file, so more sessions meant more
+overwrites. The format was already half-present (`AGENT_STATE_SESSION_RE`,
+`agent_state_blocks`) and only scaled a character cap by heading count: headings
+existed, ownership and merge did not, which is exactly why the tooling could not
+see the collision.
+
+Now `--state` takes one session's body and merges it under a lock, leaving every
+other section byte-identical and writing the heading itself. Staleness is judged
+per section, so one session's write cannot silence another's obligation, nor can
+a stale section hide behind a fresh peer. Dead sections are archived before being
+dropped, reusing `owner_age_hours` rather than inventing a second liveness notion.
+A legacy single-section document is adopted; a malformed one is never silently
+replaced.
+
+**The doors are shut mechanically, which is the whole point.** A prose rule
+protects only a session that reads it, so the pre-edit guard DENIES a whole-file
+`Write` to STATE.md and `--state` REFUSES a body carrying a `## SESSION` heading.
+Both messages name the incident and print the correct command.
+
+Two defects only the live document exposed, no fixture would have: a peer heading
+stamped 71 minutes in the FUTURE (local time written with `Z`), which makes a
+section permanently fresh and is strictly worse than no stamp, now clamped to a
+300s skew; and the confirmation line reporting the writer's OWN section's old age
+after a fresh write, because the replace branch never updated `ts`. The document
+was always right and only the tool's report about itself lied.
+
+### Traps become instruments (PRs #566, #567)
+
+Operator ruling: "reading the trap file could be skipped with an agent." A trap in
+markdown protects only a session that reads it, remembers it, and applies it at
+the right second. This repo had already proved that in its own record:
+`REPORT-licensing-bigbang-2026-08-04.md:234` is titled "WHY KNOWING ABOUT IT DOES
+NOT PREVENT IT" and reports eight instances in one night, three by the author who
+had just written the entry. `pr-babysit-0804-1.md:114` adds the design principle:
+"not one was caught by its author re-reading it. Each was caught by a DIFFERENT
+instrument."
+
+Plan at `docs/agent/main/PLAN-trap-enforcement.md`, which absorbs and supersedes
+`PLAN-unify-trap-corpus.md`. Instruments are matched to failure SHAPE, not topic:
+forbidden action and guaranteed-failing action (PreToolUse block), misread outcome
+(PostToolUse injection on `tool_response`), unproven claim (control-first gate).
+Of 23 traps roughly 14 are mechanizable now and about 2.5 are judgment-only, and
+the judgment-only ones sit at the top of the cost curve.
+
+Landed: `block-blanket-git-add.sh`, and `trapguard/dispatch.py` carrying
+`cancelled-run-not-passed` and `phantom-deletion-diff`.
+
+**`tool_response` was probed before anything depended on it**, because the only
+evidence it arrives was a docstring recording a captured payload, which is a
+ruling from an artifact and itself a trap here. The probe recorded key names,
+lengths and booleans only, never values, and corrected that docstring twice:
+`isImage` and `noOutputExpected` are undocumented, and `agent_id`/`agent_type` are
+ABSENT on main-loop calls, appearing only for subagents, so a rule keyed on them
+would have silently never matched. The probe was retired in the same commit that
+shipped the rules.
+
+**Three defects in the new instruments, none found by re-reading them.** Review
+found the guard bypassable by `git add -A > /dev/null`, `2>&1` and a bare `--`,
+since redirection was not a terminator and git treats an empty pathspec list as no
+restriction; a present-but-bypassable guard is worse than none because it
+manufactures confidence. `phantom-deletion-diff` false-positived within the hour on
+an ordinary deletions-only diff of a TRACKED file, so existence narrows and
+tracked-ness decides. And three fixtures in a row tested the author's belief rather
+than the behaviour, each time with the code right and the test wrong.
+
+Both rules have fired in production on real commands, including on the exact
+`git diff` output that misled the session that built them.
