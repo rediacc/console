@@ -3479,3 +3479,57 @@ of the band. The label is `163g` rather than the next letter in sequence because
 `163y` was already carrying two unrelated case groups, so a third would have made
 `grep 163y` return three disjoint blocks. Case labels in this suite are not unique
 and nothing enforces that they are.
+
+### Round 7: the Static red, and two gates that misdirected their reader (PR #567)
+
+**The CI red was a skipped gate, not a hard problem.** shellcheck 0.9 cannot parse a
+trailing explanation on a disable directive, so `# shellcheck disable=SC2086 -- why`
+failed Static and the watchdog cancelled four siblings. The run then reported
+`conclusion=cancelled`, which is the cancelled-siblings-*with*-a-failure shape this same
+PR added a rule for; reading the rollup rather than the job conclusions would have sent
+the session hunting a superseded run. The hook suites and python lint had been run
+locally; shellcheck had not, and it was the one that mattered. The standing lesson is
+that "I ran the gates" means all of shellcheck, shfmt and check-python-lint, since the
+Static job is a conjunction.
+
+**The stop judge can no longer order the operator's three things.** It read a session
+sitting on four green stacked PRs and returned `next_action: "merge PRs 563, 565 and
+566"`. The session declined, which is the right outcome reached by the wrong mechanism:
+it survived on judgement at the moment of reading, and this program exists because
+judgement at the moment of reading is the faculty that fails. `sanitize_next_action`
+(`wl_judge.py`) rewrites the field where the verdict is parsed, so no caller can bypass
+it, and `verdict` and `reason` are deliberately untouched because rewriting them would
+collide with the no-escape-hatch invariant. The deferral's original default was "reject
+and re-ask once"; sanitising was chosen instead, because a re-ask buys a second sample
+from the model that just offended, costs another call, and needs a loop bound, while a
+rewrite is deterministic and cannot loop. Suite case 207: seven rejected shapes, five
+preserved, and verdict integrity as its own assertion. Rejecting "ask the operator
+whether to merge" is deliberate over-inclusion, pinned with its reasoning, because a
+carve-out for the question reopens "ask the operator whether to merge, and if CI is
+green, merge".
+
+**A dead worker gets a remedy that can resolve it.** The 90-minute rung reported a
+worker the OS says is gone and printed `--update`, which resets the liveness clock and
+leaves the false `worker:<id>` standing, so the identical complaint fires on the next
+stop. It cost a full round trip. Gone entries are their own list (`wl_liveness.ladder`
+returns them separately and `continue`s before the age rungs, so an item can never be
+double-counted) with their own message offering only `--lease` and `--tick`. It then
+fired on its author one round after being written, in the same failure he had just
+walked into.
+
+**The mutation caught a defect in the TEST, not the code, and that is the round's real
+result.** Case 208 first asserted only that the block does not print `--update`. A
+mutation suppressing the whole block made that assertion PASS, because with no block
+there is no `--update` and a bare negative is satisfied by the feature not existing. A
+check that passes when the thing it guards is gone is precisely what this suite exists
+to catch, and nothing but running the mutation would have revealed it. Both assertions
+now require the block to be present.
+
+**Three baselines were discarded rather than cited**, which is worth recording because
+each failure mode is reusable. One died on a mid-run byte-offset shift: bash reads a
+script by offset, so editing a suite while a background run executes it corrupts the run
+and the error names a line that is perfectly valid. One was contaminated because every
+suite call spawns a fresh interpreter that imports `wl_liveness` and `wl_checks` at call
+time, so editing those mid-run means early cases exercise old code and later ones new;
+a snapshot of the entry point is not a snapshot of what it imports. And the first case-208
+mutant produced a red that proved nothing, because the case was broken.
