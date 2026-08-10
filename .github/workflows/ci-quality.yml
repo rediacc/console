@@ -160,6 +160,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/shellcheck.sh
 
+      # Self-test for the mutation runner. Cheap on purpose: it drives
+      # mutate-check.sh through all four of its verdicts against a miniature
+      # fixture suite, so it costs seconds rather than the 8-plus minutes two
+      # passes of the real suite would. It does NOT force a mutation per test
+      # case, which is not gateable; it stops the instrument rotting into
+      # something that always says OK.
+      - name: Mutation runner self-test
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check-mutate-check.sh
+
       - name: Shell format
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/security/shfmt.sh
