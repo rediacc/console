@@ -243,6 +243,7 @@ def prove_new_gate(root, scripts, state):
     because a gate can be defined yet never run."""
     stamp = C.stamp_now()
     notes, proven = [], False
+    already_green = []
     for pat in CHECK_SCRIPT_GLOBS:
         for f in sorted(glob.glob(os.path.join(str(root), pat))):
             rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
@@ -251,7 +252,21 @@ def prove_new_gate(root, scripts, state):
                 continue
             prev = state["gate_runs"].get(rel)
             if prev and prev.get("hash") == digest:
-                continue  # neither new nor changed: proves nothing for THIS fix
+                # Neither new nor changed, so it proves nothing for THIS fix and
+                # `proven` stays False. But a gate this marker already RAN GREEN
+                # must still be NAMED, because the alternative message is false.
+                # Measured 2026-08-10: a session wrote check:ci-mutate-check,
+                # the probe ran it and recorded exit 0, and on the very next
+                # finding the probe reported "no new or changed check script
+                # found; a claimed gate must leave one" -- while that gate sat
+                # in this same marker at exit 0 with a matching hash. The
+                # session cannot tell "your gate is missing" from "your gate is
+                # old news", so it either writes a duplicate gate or argues with
+                # a message that is simply wrong. Naming it makes the REBUT exit
+                # usable, which is the exit the judge itself asked for here.
+                if prev.get("exit") == 0:
+                    already_green.append(rel)
+                continue
             # SUITE gates (hook and gate test suites) have no check:* key and
             # take minutes to run, so they are accepted ON CHANGE: they run in
             # CI regardless (Quality/Static executes the hook suite; the gates
@@ -299,7 +314,14 @@ def prove_new_gate(root, scripts, state):
             if code == 0:
                 proven = True
     if not notes:
-        notes.append("no new or changed check script found; a claimed gate must leave one")
+        if already_green:
+            notes.append(
+                "no NEW or CHANGED check script this stop, but this marker already ran "
+                "these green: %s. If one of them covers this finding, REBUT and name it; "
+                "the judge re-reads your message" % ", ".join(sorted(already_green)[:4])
+            )
+        else:
+            notes.append("no new or changed check script found; a claimed gate must leave one")
     return proven, "; ".join(notes)
 
 
