@@ -108,7 +108,7 @@ def _response_text(resp):
     return ""
 
 
-def rule_cancelled_run_not_passed(cmd, out, _root):
+def rule_cancelled_run_not_passed(cmd, out, _root, _resp):
     """A cancelled run is not a passed run (docs/agent/TRAPS.md:147).
 
     Cost when missed: three consecutive CI rounds that measured nothing while
@@ -130,7 +130,13 @@ def rule_cancelled_run_not_passed(cmd, out, _root):
     # inside the change whose whole subject is checks that cannot fire.
     #
     # They are now independent alternatives, which is what they always were.
-    saw_cancelled = bool(re.search(r"cancelled", out))
+    # A COUNT of zero cancelled jobs is the OPPOSITE of this trap: it is a session
+    # performing exactly the check this rule asks for and finding nothing. Observed
+    # live within the hour, warning about output that read `cancelled=0`. Strip the
+    # zero-count shapes before deciding, so the rule stays quiet on the good
+    # behaviour it exists to encourage. A real `"conclusion":"cancelled"` survives.
+    counted_zero = re.sub(r"cancelled\W{0,4}0\b", "", out, flags=re.IGNORECASE)
+    saw_cancelled = bool(re.search(r"cancelled", counted_zero, re.IGNORECASE))
     empty_failure_filter = bool(
         re.search(r'conclusion\s*==\s*["\']?failure', cmd)
         and re.search(r"^\[\s*\]$|^\s*$", out.strip())
@@ -158,7 +164,7 @@ def rule_cancelled_run_not_passed(cmd, out, _root):
     )
 
 
-def rule_phantom_deletion_diff(cmd, out, root):
+def rule_phantom_deletion_diff(cmd, out, root, _resp):
     """An all-deletions diff for a file that is still on disk (TRAPS.md:184).
 
     Observed 2026-08-09: an intact 462-line wl_checklist.py printed
@@ -230,7 +236,73 @@ def rule_phantom_deletion_diff(cmd, out, root):
     )
 
 
-RULES = (rule_cancelled_run_not_passed, rule_phantom_deletion_diff)
+# The tail steps that exist to undo an earlier one. Deliberately a short, named
+# set rather than "anything destructive": the rule must stay quiet on ordinary
+# interrupted commands, and every entry here is a shape whose whole purpose is
+# putting something back.
+RESTORE_TAIL = re.compile(
+    r"\bcp\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
+    r"|\bmv\b[^\n;&|]*\.(?:orig|bak|prev|save)\b"
+    r"|\bgit\s+(?:checkout|restore)\b"
+    r"|\bgit\s+stash\s+pop\b"
+    r"|\bunset\b[^\n;&|]*(?:MUTAT|TRAPGUARD)",
+    re.IGNORECASE,
+)
+
+
+def rule_interrupted_cleanup_skipped(cmd, out, _root, resp):
+    """A killed command did not run its own cleanup (this session, 2026-08-09).
+
+    The output of an interrupted command is a truthful account of a partial run,
+    which is exactly what makes it dangerous: it ends mid-script, having printed
+    a restore step that may never have run.
+
+    Paid for immediately, in the session that wrote the other two rules: a
+    mutation test neutered a guard in the live tree, ran the suite, and restored
+    it on the next line. The suite outlived the 2-minute tool timeout, the whole
+    command took SIGTERM, and the restore never happened. What came back was
+    `mutated: guard neutered` and a truncated log -- output that reads like a
+    completed step, because every line it printed was true. The tree sat with a
+    disabled guard in it.
+
+    Why this is a hook and not a note: the failure is invisible at exactly the
+    moment you are reading output, which is the faculty that already failed. The
+    two conditions are independent alternatives on purpose, since the harness
+    reports a kill through `interrupted` on some paths and through the timeout
+    text on others, and gating either behind the other is how the sibling rule
+    above ended up with a branch that could not fire.
+    """
+    killed = bool(resp.get("interrupted")) if isinstance(resp, dict) else False
+    timed_out = bool(re.search(r"timed out after|Exit code 143|\bSIGTERM\b", out))
+    if not (killed or timed_out):
+        return None
+    # Only worth a word if a LATER step was supposed to undo an earlier one. The
+    # first statement cannot be a tail, so a bare `git restore ...` that was
+    # itself the interrupted command is not this shape.
+    first_sep = re.search(r";|&&|\|\||\n", cmd)
+    if not first_sep:
+        return None
+    tail = cmd[first_sep.end() :]
+    m = RESTORE_TAIL.search(tail)
+    if not m:
+        return None
+    return (
+        "trapguard[interrupted-cleanup-skipped]: this command was KILLED, and a "
+        "later step in it looks like a restore (%r). A kill does not run the rest "
+        "of the script, so whatever an earlier step moved, mutated or disabled is "
+        "very likely still that way -- while the output you just read is a "
+        "truthful, complete-looking account of the part that DID run. Check the "
+        "state the restore was meant to return to before trusting anything here, "
+        "and prefer mutating a sandbox copy over the live tree so a kill can "
+        "strand nothing." % m.group(0).strip()[:60]
+    )
+
+
+RULES = (
+    rule_cancelled_run_not_passed,
+    rule_phantom_deletion_diff,
+    rule_interrupted_cleanup_skipped,
+)
 
 
 def run_posttool():
@@ -247,12 +319,13 @@ def run_posttool():
         cmd = str(ti.get("command") or "")
     if not cmd:
         return 0
-    out = _response_text(event.get("tool_response"))
+    resp = event.get("tool_response")
+    out = _response_text(resp)
     root = event.get("cwd") or os.getcwd()
     notes = []
     for rule in RULES:
         try:
-            note = rule(cmd, out, root)
+            note = rule(cmd, out, root, resp)
         except Exception:  # noqa: BLE001 -- one broken rule must not silence the others
             note = None
         if note:

@@ -305,6 +305,19 @@ check_inject fires "$(inject_json 'gh run view 1 --jq .jobs[]|select(.conclusion
     "trapguard: a failure-filtered query returning EMPTY is warned about" "cancelled-run-not-passed"
 check_inject silent "$(inject_json 'gh run view 1 --json jobs' '[]')" \
     "trapguard CONTROL: an empty result from an UNfiltered query is not that shape"
+# Precision decay, observed LIVE within an hour of the rule shipping: it warned about
+# output reading `cancelled=0`, which is a session performing exactly the check this
+# rule asks for and finding nothing. Counting cancelled jobs must not be punished.
+check_inject silent "$(inject_json 'gh run view 1 --json jobs' 'success=44 skipped=39 cancelled=0 failure=1')" \
+    "trapguard CONTROL: a cancelled COUNT of zero is the good behaviour, not the trap"
+check_inject silent "$(inject_json 'gh run view 1 --json jobs' '{"cancelled": 0, "failure": 1}')" \
+    "trapguard CONTROL: the JSON zero-count shape is silent too"
+check_inject fires "$(inject_json 'gh run view 1 --json jobs' 'success=40 cancelled=3 failure=1')" \
+    "trapguard: a NON-zero cancelled count still fires" "cancelled-run-not-passed"
+# The one that matters: a zero count must not MASK a real cancellation beside it.
+check_inject fires "$(inject_json 'gh run view 1 --json jobs' 'cancelled=0
+{"conclusion":"cancelled","name":"Quality"}')" \
+    "trapguard: a zero count does not mask a real cancelled conclusion" "cancelled-run-not-passed"
 # The on-disk test is the whole discriminator for the next three: identical
 # output, and only the filesystem separates a phantom from a real deletion.
 # The phantom needs a path that is UNTRACKED and present, which is the state a
@@ -331,6 +344,32 @@ check_inject silent "$(inject_json 'git diff --cached somebranch' ' .claude/hook
 check_inject silent "$(inject_json 'git diff --stat package-lock.json' ' package-lock.json | 27 -------
  1 file changed, 27 deletions(-)')" \
     "trapguard CONTROL: a TRACKED file losing lines is an ordinary diff, not a phantom"
+
+# interrupted-cleanup-skipped. Written the same hour it was paid for: a mutation
+# test neutered a guard in the live tree, ran the suite, and restored it on the
+# next line; the suite outlived the 2-minute tool timeout, the command took
+# SIGTERM, and the restore never ran. The output ended on "mutated: guard
+# neutered", which is TRUE and reads like a finished step.
+inject_killed() { # inject_killed <command> <stdout> <interrupted-bool>
+    python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","cwd":sys.argv[1],"tool_input":{"command":sys.argv[2]},"tool_response":{"stdout":sys.argv[3],"stderr":"","interrupted":sys.argv[4]=="true"}}))' "$(cd "$DIR/../.." && pwd)" "$1" "$2" "$3"
+}
+check_inject fires "$(inject_killed 'python3 -c mutate; bash suite.sh; cp /tmp/worklist.py.orig .claude/hooks/stop/worklist.py' 'mutated: guard neutered' true)" \
+    "trapguard: an interrupted command whose tail was a restore is warned about" "interrupted-cleanup-skipped"
+# The two conditions are INDEPENDENT alternatives, not one gated behind the
+# other, which is the exact defect review found in the sibling rule: the harness
+# reports a kill through `interrupted` on some paths and the timeout text on
+# others, so either alone must be enough.
+check_inject fires "$(inject_killed 'mutate.sh; bash suite.sh; git checkout -- src/x.py' 'Command timed out after 2m 0s' false)" \
+    "trapguard: the timeout TEXT alone fires without the interrupted flag" "interrupted-cleanup-skipped"
+check_inject fires "$(inject_killed 'mutate.sh; bash suite.sh; cp x.orig x' '' true)" \
+    "trapguard: the interrupted FLAG alone fires without the timeout text" "interrupted-cleanup-skipped"
+check_inject silent "$(inject_killed 'mutate.sh; bash suite.sh; cp /tmp/x.orig src/x.py' 'all done' false)" \
+    "trapguard CONTROL: the same command completing is not warned about"
+# A restore that IS the command has no earlier step it could have stranded.
+check_inject silent "$(inject_killed 'git restore src/x.py' '' true)" \
+    "trapguard CONTROL: a bare restore with no preceding step stays silent"
+check_inject silent "$(inject_killed 'npm test; echo done' 'Command timed out after 2m 0s' true)" \
+    "trapguard CONTROL: interrupted with nothing to put back stays silent"
 
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"

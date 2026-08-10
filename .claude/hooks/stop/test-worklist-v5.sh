@@ -3001,6 +3001,7 @@ ARITY = {
     "CLI_REAP_USAGE": (), "CLI_REAP_UNKNOWN": ("t", "l"),
     "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
     "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
+    "CLI_BRIEF_LOOKS_LIKE_ID": ("v",),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
@@ -6297,6 +6298,47 @@ if as_peer briefpf1 reqcli --brief briefpf1 some text </dev/null 2>&1 | grep -qF
 else
     fail "163x CONTROL: --brief broke for valid input"
 fi
+# 163g: a LONE ITEM ID is a misread of the verb, not a very short brief. The word
+# reads both ways (publish a brief / brief me on X) and `--brief <me> <text...>`
+# is `--tick <me> <id> <evidence>` minus the evidence, so the id lands where the
+# sentence goes. Paid for live: a session meaning to READ item 65ce7ca3 published
+# it, and the roster then advertised "65ce7ca3" as that session's live activity to
+# every later reader. Both real id widths are covered, since ids are 8 or 12 hex
+# and the code must never assume one width.
+#
+# CAPTURE THEN MATCH, never `refusing-command | grep -q`. This suite runs under
+# `set -uo pipefail` (line 5), so a pipeline carries the FIRST non-zero exit, not
+# grep's. The refusal exits 2 by design, which made the pipeline false while grep
+# was matching perfectly: the first version of these cases failed on a green tree
+# and, worse, also failed under a mutation that disabled the guard, so its red
+# proved nothing. Every other refusal case here captures first for this reason.
+for _wid in 65ce7ca3 a1b2c3d4e5f6; do
+    OUT="$(as_peer briefpf2 reqcli --brief briefpf2 "$_wid" </dev/null 2>&1)"
+    RC=$?
+    if [[ "$RC" == "2" ]] && grep -qF "shape of an item id" <<<"$OUT"; then
+        pass "163g a bare ${#_wid}-char id is refused as a brief"
+    else
+        fail "163g a bare ${#_wid}-char id: rc=$RC out=${OUT:0:90}"
+    fi
+done
+# The controls that keep the refusal from swallowing real briefs: the discriminator
+# is a LONE all-hex token of id width, so anything with a second word, any non-hex
+# character, or a length outside the band must still record.
+while IFS='|' read -r _why _txt; do
+    # shellcheck disable=SC2086 -- deliberately word-split: the point is >1 arg
+    OUT="$(as_peer briefpf3 reqcli --brief briefpf3 $_txt </dev/null 2>&1)"
+    RC=$?
+    if [[ "$RC" == "0" ]] && grep -qF "brief recorded" <<<"$OUT"; then
+        pass "163g CONTROL: $_why still records"
+    else
+        fail "163g CONTROL: $_why was wrongly refused (rc=$RC)"
+    fi
+done <<'BRIEFOK'
+an id followed by real words|65ce7ca3 is what I am reading
+a short non-hex word|triage
+a hex string past the id width|abcdefabcdefabcde
+a hex string under the id width|abcde
+BRIEFOK
 # CONTROL 2, THE LOAD-BEARING ONE: the real Stop hook takes NO arguments, so the
 # leading-dash catch-all must not be able to swallow it. If this regressed, every
 # stop in the repo would exit 2 instead of running any check at all.
