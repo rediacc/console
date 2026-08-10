@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""trapguard: the PostToolUse surface for misread-outcome traps.
+
+Today this file carries ONE mode, `--probe-payload`, and it is deliberately the
+only thing here. The plan (docs/agent/main/PLAN-trap-enforcement.md, section 7.1)
+makes the probe a BLOCKING PREREQUISITE for every output-interpretation rule:
+
+    No hook in this repo has ever read `tool_response`. The only evidence it
+    arrives is a docstring (wl_wait.py:139-143) recording a payload someone
+    captured. That is a ruling from an artifact, which is itself a trap in the
+    corpus, so it gets probed before anything depends on it.
+
+So the rules that read tool_response are NOT written yet. Writing them first and
+probing afterwards would be building a check on an unverified payload shape,
+which is how a check that cannot fire gets shipped believing it works.
+
+WHAT IT RECORDS, AND WHAT IT REFUSES TO. Key names, lengths and booleans only.
+No tool output is ever written to disk by this probe: a hook that logged tool
+responses would be a durable copy of everything every session reads, including
+whatever a command happened to print. The single exception is a NONCE the
+operator plants deliberately, which is the only string this file ever matches
+against, and it is matched by pattern rather than stored.
+
+NEVER FAILS A TOOL CALL. PostToolUse runs after the tool has already executed,
+so it cannot deny anything, and a probe that broke a session's turn because its
+log directory was read-only would be a self-inflicted outage. Every path exits 0.
+"""
+
+import datetime
+import json
+import os
+import pathlib
+import re
+import sys
+
+# The only string this file ever matches. Planted by hand to prove that stdout
+# genuinely reaches the hook (assertion P2), not merely that a key named
+# tool_response exists (assertion P1). The two are different claims and the
+# whole tier depends on the second one.
+NONCE_RE = re.compile(r"trapguard-probe-[0-9a-zA-Z]+")
+
+PROBE_PATH = pathlib.Path(
+    os.environ.get("TRAPGUARD_PROBE_PATH")
+    or (pathlib.Path.home() / ".claude" / "trapguard" / "probe.jsonl")
+)
+
+
+def _response_facts(resp):
+    """(type-name, length, key-names) for whatever tool_response turned out to be.
+
+    Written to survive being wrong about the shape, because being wrong about the
+    shape is precisely what the probe exists to discover. A dict, a string, a
+    list and an absent field each answer differently rather than raising.
+    """
+    if resp is None:
+        return "absent", 0, []
+    if isinstance(resp, dict):
+        try:
+            length = len(json.dumps(resp))
+        except (TypeError, ValueError):
+            length = -1
+        return "dict", length, sorted(str(k) for k in resp)
+    if isinstance(resp, str):
+        return "str", len(resp), []
+    if isinstance(resp, list):
+        return "list", len(resp), []
+    return type(resp).__name__, -1, []
+
+
+# ---- the misread-outcome rules ----------------------------------------------
+#
+# These read `tool_response` and INJECT context; they cannot deny, because the
+# command already ran. That is the correct semantics: in both traps below the
+# command was fine and only the READING of its output was wrong, which is
+# exactly the failure no other surface can catch. A CI gate is far too late and
+# a PreToolUse hook is too early: at request time neither trap is visible.
+#
+# Each rule is (applies, verdict). `applies` narrows on the command so the
+# response is not scanned for every tool call; `verdict` keys on the RESPONSE,
+# never on the command alone, because a command is not wrong here, an inference
+# from its output is.
+
+STAT_DELETIONS = re.compile(r"(\d+) deletions?\(-\)")
+STAT_INSERTIONS = re.compile(r"(\d+) insertions?\(\+\)")
+# ` path/to/file.py | 462 ------` and `--- a/path`, the two shapes git uses.
+STAT_PATH = re.compile(r"^\s*(\S+)\s*\|\s*\d+", re.MULTILINE)
+DIFF_PATH = re.compile(r"^(?:---|\+\+\+) [ab]/(\S+)", re.MULTILINE)
+
+
+def _response_text(resp):
+    """Whatever the tool printed, as one string, without caring about shape.
+
+    The probe established tool_response is a dict of stdout/stderr/interrupted/
+    isImage/noOutputExpected, but this stays shape-tolerant on purpose: the
+    payload gained two keys nobody had documented, so assuming today's exact
+    shape is how a rule silently stops matching after a harness update.
+    """
+    if isinstance(resp, str):
+        return resp
+    if isinstance(resp, dict):
+        return "\n".join(str(resp.get(k) or "") for k in ("stdout", "stderr"))
+    return ""
+
+
+def rule_cancelled_run_not_passed(cmd, out, _root):
+    """A cancelled run is not a passed run (docs/agent/TRAPS.md:147).
+
+    Cost when missed: three consecutive CI rounds that measured nothing while
+    being counted as "did not recur". The watchdog cancels siblings on the first
+    real failure, so a job that never ran looks identical to a job that passed
+    in every run-level summary.
+    """
+    if not re.search(r"gh\s+run\b|actions/runs|actions/jobs", cmd):
+        return None
+    if not out.strip():
+        return None
+    if not re.search(r'"?cancelled"?', out):
+        return None
+    # A run-level cancellation, or a failure-filtered query that came back empty
+    # while something in scope was cancelled. Both are the same misreading.
+    empty_failure_filter = bool(
+        re.search(r'conclusion\s*==\s*"failure"', cmd) and re.search(r"\[\s*\]|^\s*$", out.strip())
+    )
+    if not (re.search(r'"conclusion"\s*:\s*"cancelled"|cancelled', out) or empty_failure_filter):
+        return None
+    return (
+        "trapguard[cancelled-run-not-passed]: this output contains a CANCELLED "
+        "conclusion. A cancelled job did not pass, it did not run, and in a run "
+        "summary the two look identical. Distinguish the two shapes before "
+        "concluding anything: cancelled siblings WITH a failed job means the "
+        "watchdog killed the run for that failure, while cancelled with ZERO "
+        "failures and a newer commit means the run was superseded. Read the "
+        "JOB's own conclusion rather than the run's, and treat a job that was "
+        "cancelled as a gate that did not report."
+    )
+
+
+def rule_phantom_deletion_diff(cmd, out, root):
+    """An all-deletions diff for a file that is still on disk (TRAPS.md:184).
+
+    Observed 2026-08-09: an intact 462-line wl_checklist.py printed
+    `1 file changed, 462 deletions(-)` because the branch was built with git
+    plumbing, so the file was untracked relative to HEAD and absent from the
+    index git compares against. The reflex read is that a sub-agent deleted it,
+    and the near-miss is a destructive repair of a file that was never damaged.
+
+    THE ON-DISK TEST IS THE WHOLE DISCRIMINATOR. A real deletion and this
+    phantom print the same summary; only the filesystem tells them apart, and
+    it costs one stat per named path.
+    """
+    if not re.search(r"\bgit\s+(-[A-Za-z-]+\s+\S+\s+)*diff\b", cmd):
+        return None
+    if re.search(r"--cached|--staged", cmd):
+        return None
+    if not STAT_DELETIONS.search(out) or STAT_INSERTIONS.search(out):
+        return None
+    paths = set(STAT_PATH.findall(out)) | set(DIFF_PATH.findall(out))
+    alive = [p for p in paths if p not in ("a", "b") and (pathlib.Path(root) / p).exists()]
+    if not alive:
+        return None
+    return (
+        "trapguard[phantom-deletion-diff]: this diff reports deletions and no "
+        "insertions, but %s still exist(s) on disk. Before concluding anything "
+        "was deleted: `git diff <commit>` compares against the INDEX, so a file "
+        "that is untracked relative to HEAD reads as fully deleted while sitting "
+        "intact in the worktree. This is the normal state for a branch built "
+        "with git plumbing. Ask the content, not the index: "
+        "`git show <branch>:<path> | diff - <path>`." % ", ".join(sorted(alive)[:3])
+    )
+
+
+RULES = (rule_cancelled_run_not_passed, rule_phantom_deletion_diff)
+
+
+def run_posttool():
+    try:
+        raw = sys.stdin.read()
+        event = json.loads(raw) if raw.strip() else {}
+    except Exception:  # noqa: BLE001 -- a warning layer must never break a turn
+        return 0
+    if not isinstance(event, dict):
+        return 0
+    cmd = ""
+    ti = event.get("tool_input")
+    if isinstance(ti, dict):
+        cmd = str(ti.get("command") or "")
+    if not cmd:
+        return 0
+    out = _response_text(event.get("tool_response"))
+    root = event.get("cwd") or os.getcwd()
+    notes = []
+    for rule in RULES:
+        try:
+            note = rule(cmd, out, root)
+        except Exception:  # noqa: BLE001 -- one broken rule must not silence the others
+            note = None
+        if note:
+            notes.append(note)
+    if not notes:
+        return 0
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PostToolUse",
+                    "additionalContext": "\n\n".join(notes),
+                }
+            }
+        )
+    )
+    return 0
+
+
+def main():
+    if "--posttool" in sys.argv[1:]:
+        return run_posttool()
+    if "--probe-payload" not in sys.argv[1:]:
+        return 0
+    try:
+        raw = sys.stdin.read()
+    except Exception:  # noqa: BLE001 -- a probe must never break a turn
+        return 0
+    try:
+        event = json.loads(raw) if raw.strip() else {}
+    except ValueError:
+        # An unparseable payload is itself a finding, so it is recorded rather
+        # than dropped: "the field never arrived" and "the whole event was
+        # malformed" are different answers to P1.
+        event = {"__unparseable__": True}
+
+    resp = event.get("tool_response")
+    rtype, rlen, rkeys = _response_facts(resp)
+
+    # The nonce is matched against the RAW event text, so it is found wherever
+    # the harness happens to put stdout inside tool_response. Matching a parsed
+    # sub-field would make a negative result ambiguous between "no content" and
+    # "content lives somewhere I did not look".
+    row = {
+        "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "tool_name": str(event.get("tool_name") or ""),
+        "payload_keys": sorted(str(k) for k in event) if isinstance(event, dict) else [],
+        "response_type": rtype,
+        "response_len": rlen,
+        "response_keys": rkeys,
+        "nonce_found": bool(NONCE_RE.search(raw)),
+        "agent_id": "present" if event.get("agent_id") else "absent",
+        "agent_type": str(event.get("agent_type") or ""),
+    }
+    try:
+        PROBE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with PROBE_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row) + "\n")
+    except OSError:
+        pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
