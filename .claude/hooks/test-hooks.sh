@@ -271,6 +271,47 @@ gh_case 0 '[]' 0 'gh pr view 567' "one-pr CONTROL: a non-create gh command is ig
 gh_case 2 'gh: could not connect' 1 'gh pr create --draft -t x -b y' \
     "one-pr: an unreadable PR list blocks rather than assuming none" "cannot verify"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --title x --body y')" "nondraft-create: console with --draft ok"
+
+# --- trapguard PostToolUse rules: they INJECT rather than block, so the product
+# is stdout, not the exit code. A rule that exits 0 silently and a rule that
+# exits 0 having warned are indistinguishable without asserting on the text.
+inject_json() { # inject_json <command> <stdout-of-that-command>
+    python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","cwd":sys.argv[1],"tool_input":{"command":sys.argv[2]},"tool_response":{"stdout":sys.argv[3],"stderr":""}}))' "$(cd "$DIR/../.." && pwd)" "$1" "$2"
+}
+check_inject() { # check_inject <fires|silent> <json> <label> [needle]
+    local want="$1" json="$2" label="$3" needle="${4:-}" out
+    out="$(echo "$json" | python3 "$DIR/trapguard/dispatch.py" --posttool 2>/dev/null)"
+    local got="silent"
+    [[ -n "$out" ]] && got="fires"
+    if [[ "$got" == "$want" ]] && { [[ -z "$needle" ]] || grep -qF "$needle" <<<"$out"; }; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s\n' "$want" "$label"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got %s)\n' "$want" "$label" "$got"
+    fi
+}
+check_inject fires "$(inject_json 'gh run view 1 --json jobs' '{"conclusion":"cancelled","name":"Quality / Static"}')" \
+    "trapguard: a cancelled run gets a warning" "cancelled-run-not-passed"
+check_inject silent "$(inject_json 'gh run view 1 --json jobs' '{"conclusion":"success","name":"Quality / Static"}')" \
+    "trapguard CONTROL: an all-success run is NOT warned about"
+check_inject silent "$(inject_json 'gh run view 1 --json jobs' '')" \
+    "trapguard CONTROL: an empty response does not fire (absence is not a cancellation)"
+# The on-disk test is the whole discriminator for the next three: identical
+# output, and only the filesystem separates a phantom from a real deletion.
+check_inject fires "$(inject_json 'git diff somebranch -- .claude/hooks/test-hooks.sh' ' .claude/hooks/test-hooks.sh | 462 ------
+ 1 file changed, 462 deletions(-)')" \
+    "trapguard: all-deletions diff for a file still on disk is warned about" "phantom-deletion-diff"
+check_inject silent "$(inject_json 'git diff somebranch -- gone/never-existed.sh' ' gone/never-existed.sh | 462 ------
+ 1 file changed, 462 deletions(-)')" \
+    "trapguard CONTROL: the SAME output for an absent path stays silent"
+check_inject silent "$(inject_json 'git diff somebranch' ' .claude/hooks/test-hooks.sh | 20 +++---
+ 1 file changed, 12 insertions(+), 8 deletions(-)')" \
+    "trapguard CONTROL: a normal mixed diff stays silent"
+check_inject silent "$(inject_json 'git diff --cached somebranch' ' .claude/hooks/test-hooks.sh | 462 ------
+ 1 file changed, 462 deletions(-)')" \
+    "trapguard CONTROL: --cached is exempt (the index IS the subject there)"
+
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
 check 0 pre-bash/block-premature-ready.sh "$(bash_json 'gh pr ready 531 --undo')" "premature-ready: --undo always allowed"
