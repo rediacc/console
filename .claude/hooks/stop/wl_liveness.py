@@ -492,7 +492,10 @@ def _age_min(stamp):
 
 
 def ladder(fold, session_id, event, state_doc):
-    """(pings, investigates, resolves, doc_changed).
+    """(pings, investigates, resolves, gones, doc_changed).
+
+    `gones` is kept apart from `investigates` because a verifiably dead worker
+    needs a different remedy than a merely quiet one; see the gone branch.
 
     Subjects: my fresh [>] items (age = minutes since their last store
     event) and my in_progress harness tasks (age = minutes since the status
@@ -554,7 +557,7 @@ def ladder(fold, session_id, event, state_doc):
             )
 
     _ = blocking_rung_due  # the poll fast path's forfeit must agree with fire_once below
-    pings, investigates, resolves = [], [], []
+    pings, investigates, resolves, gones = [], [], [], []
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
@@ -576,8 +579,15 @@ def ladder(fold, session_id, event, state_doc):
             return True
 
         if gone:
+            # SEPARATE from `investigates` on purpose. Both are 90-minute-rung
+            # blocks, but they have DIFFERENT remedies, and merging them meant
+            # the caller printed one footer for both: `--update`, which is the
+            # one command that cannot resolve a dead worker. It refreshes the
+            # text and the liveness clock and leaves the false worker:<id> in
+            # place, so the identical complaint fires on the very next stop.
+            # Measured, not theorised: it cost a session a full round trip.
             if fire_once("gone"):
-                investigates.append(
+                gones.append(
                     "%s   <- its declared worker:%s is NOT in the harness background list any more "
                     "(finished or stopped); read its output, then finish the item, re-delegate with "
                     "a new worker id, or reclassify it" % (label, wid)
@@ -591,4 +601,4 @@ def ladder(fold, session_id, event, state_doc):
                 investigates.append("%s   (no update for %dm)" % (label, age))
         elif age >= LADDER_PING_MIN:
             pings.append("%s   (no update for %dm)" % (label, age))
-    return pings, investigates, resolves, changed
+    return pings, investigates, resolves, gones, changed

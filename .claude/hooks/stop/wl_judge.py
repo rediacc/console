@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import time
@@ -367,4 +368,47 @@ def run_judge(
     out = env_out.get("structured_output")
     if not isinstance(out, dict) or out.get("verdict") not in ("stop", "continue"):
         return None, "judge produced no usable structured_output: %s" % repr(out)[:300]
-    return out, None
+    return sanitize_next_action(out), None
+
+
+# The judge advises; it does not get to order the three things reserved to the
+# operator. On 2026-08-09 it read a session sitting on four green stacked PRs and
+# returned next_action "merge PRs 563, 565 and 566". The session declined, which is
+# the right outcome but the wrong MECHANISM: it survived on the model's judgment at
+# the moment of reading, and the whole point of this program is that judgment at the
+# moment of reading is the faculty that fails. A later session, or a more tired one,
+# reads an authoritative-sounding instruction from its own stop gate and complies.
+#
+# WHY SANITISE RATHER THAN RE-ASK. The deferral's default said reject and re-ask
+# once. Re-asking buys a second sample from the same model that just produced the
+# offending text, at another call's latency and cost, and it needs a loop bound to
+# stay safe. Rewriting the field is deterministic, cannot loop, and is strictly
+# safer than any second sample. The VERDICT is deliberately left untouched: stop or
+# continue is the judge's actual job, the offence is only ever in the instruction,
+# and altering the verdict here would collide with the no-escape-hatch invariant.
+FORBIDDEN_ORDERS = (
+    (re.compile(r"\bmerg(?:e|ing)\b", re.IGNORECASE), "merging"),
+    (re.compile(r"\bpush(?:ing)?\b[^.]{0,40}\bmain\b", re.IGNORECASE), "pushing main"),
+    (re.compile(r"\bmain\b[^.]{0,40}\bpush(?:ing)?\b", re.IGNORECASE), "pushing main"),
+    (re.compile(r"\b(?:cut|publish|ship)\w*\b[^.]{0,30}\brelease\b", re.IGNORECASE), "releasing"),
+    (re.compile(r"\brelease\b[^.]{0,20}\b(?:now|it|the\s+\w+)\b", re.IGNORECASE), "releasing"),
+    (re.compile(r"\bgh\s+pr\s+merge\b", re.IGNORECASE), "merging"),
+)
+
+
+def sanitize_next_action(out):
+    """Strip an operator-only directive from a judge verdict, in place.
+
+    Matches on the ORDER, not on politeness: "merge 563" and "you should probably
+    merge 563" are the same instruction. Deliberately narrow about `release`, since
+    "release notes" and "the release channel" are ordinary nouns a legitimate next
+    action may name, while "cut the release" is an order.
+    """
+    action = out.get("next_action")
+    if not isinstance(action, str) or not action.strip():
+        return out
+    for pattern, label in FORBIDDEN_ORDERS:
+        if pattern.search(action):
+            out["next_action"] = M.V_JUDGE_ORDER_REJECTED % (label, action[:120])
+            return out
+    return out
