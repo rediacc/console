@@ -297,6 +297,14 @@ check_inject silent "$(inject_json 'gh run view 1 --json jobs' '{"conclusion":"s
     "trapguard CONTROL: an all-success run is NOT warned about"
 check_inject silent "$(inject_json 'gh run view 1 --json jobs' '')" \
     "trapguard CONTROL: an empty response does not fire (absence is not a cancellation)"
+# THE SHAPE THAT WAS DEAD CODE until review of PR #567. A failure-filtered query
+# returning [] contains no word "cancelled" by construction, because the filter
+# removed the cancelled job, so gating on that word made this branch unreachable
+# for the only case it existed to catch.
+check_inject fires "$(inject_json 'gh run view 1 --jq .jobs[]|select(.conclusion=="failure")' '[]')" \
+    "trapguard: a failure-filtered query returning EMPTY is warned about" "cancelled-run-not-passed"
+check_inject silent "$(inject_json 'gh run view 1 --json jobs' '[]')" \
+    "trapguard CONTROL: an empty result from an UNfiltered query is not that shape"
 # The on-disk test is the whole discriminator for the next three: identical
 # output, and only the filesystem separates a phantom from a real deletion.
 # The phantom needs a path that is UNTRACKED and present, which is the state a
