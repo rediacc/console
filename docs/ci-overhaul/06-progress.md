@@ -3437,3 +3437,45 @@ than the behaviour, each time with the code right and the test wrong.
 
 Both rules have fired in production on real commands, including on the exact
 `git diff` output that misled the session that built them.
+
+### A fourth defect, and the third rule it produced (PR #567, round 5)
+
+Review found a **check that could not fire, inside the change whose subject is
+checks that cannot fire**. `rule_cancelled_run_not_passed` documented two detection
+shapes and gated both behind the literal word `cancelled` appearing in the output.
+The second shape is a `jq` query filtering on `conclusion == "failure"` that comes
+back empty *because the job was cancelled*, and a cancelled job carries no `failure`
+conclusion, so the filter removes it and the word cannot appear. The branch was
+unreachable for the only case it existed to serve. Confirmed by running the shape
+rather than reading it: silence. They are independent alternatives now, with a
+distinct message for the empty-filter case, because an empty failure list is not the
+same claim as nothing being wrong.
+
+The nit shipped with it was a real cost, not tidiness: the `PostToolUse` entry
+carried no matcher, so it started a Python interpreter on every `Read`, `Edit` and
+`Grep` to immediately return nothing. Scoped to `Bash`.
+
+**`interrupted-cleanup-skipped`, the third rule, was paid for the same hour.** A
+mutation test neutered a guard in the live tree, ran the suite, and restored it on
+the next line. The suite outlived the 2-minute tool timeout, the command took
+SIGTERM, and the restore never ran. What came back was `mutated: guard neutered` and
+a truncated log: output that reads like a completed step because every line it
+printed was true. The working tree sat with a disabled guard in it. The rule fires
+when a killed command's later steps look like a restore, and its two conditions
+(`interrupted`, and the timeout text) are independent alternatives specifically
+because the sibling rule's dead branch came from gating one behind another. Six
+cases pin it, three of them controls; the standing remedy it names is to mutate a
+sandbox copy, never the live tree, so a kill can strand nothing.
+
+**`--brief` gained an id guard for the same class of reason.** The verb name reads
+both ways (publish a brief / brief me on X) and `--brief <me> <text...>` is
+`--tick <me> <id> <evidence>` minus the evidence, so a session meaning to READ item
+`65ce7ca3` published it, and the roster then advertised `65ce7ca3` as that session's
+live activity to every later reader. A lone all-hex token of id width is refused;
+the check is shape-only so the branch stays self-contained, and both real id widths
+are covered because ids are 8 or 12 hex and nothing may assume one width. Suite case
+163g, with four controls for a second word, a non-hex word, and lengths either side
+of the band. The label is `163g` rather than the next letter in sequence because
+`163y` was already carrying two unrelated case groups, so a third would have made
+`grep 163y` return three disjoint blocks. Case labels in this suite are not unique
+and nothing enforces that they are.

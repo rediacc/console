@@ -317,6 +317,17 @@ CLI_BRIEF_USAGE = (
     "--loop above: too few arguments used to reach the Stop battery instead.\n"
 )
 
+CLI_BRIEF_LOOKS_LIKE_ID = (
+    "worklist.py --brief: %r has the shape of an item id, not of a brief.\n"
+    "Nothing was recorded. --brief PUBLISHES a sentence about what you are\n"
+    "changing right now; it does not read an item back. The two readings of the\n"
+    "word collided with the argument shape: --brief <me> <text...> looks exactly\n"
+    "like --tick <me> <id> <evidence> at the call site, so a bare id lands in the\n"
+    "roster as the session's current activity and every later reader believes it.\n"
+    "To READ an item:      worklist.py --list --open <me>\n"
+    "To PUBLISH a brief:   worklist.py --brief <me> <what you are changing>\n"
+)
+
 CLI_UNKNOWN_VERB = (
     "worklist.py: unknown verb %r.\n"
     "REFUSED rather than run as a Stop event. Every unrecognised flag used to\n"
@@ -976,9 +987,22 @@ R_JUDGE_UNAVAILABLE = (
     "This is a BUG in the gate, and blocking is deliberate: a judge that "
     "fails open is an escape hatch. You are the primary session, so fix "
     "it now in %s. Diagnose with:\n"
-    "    STOPHOOK_CHILD= claude -p 'reply OK' --output-format json "
+    "    STOPHOOK_CHILD=1 claude -p 'reply OK' --output-format json "
     "--model %s\n"
-    "If the model is simply unreachable and you have verified that, set "
+    "STOPHOOK_CHILD=1, NOT the bare `STOPHOOK_CHILD=` this line carried until "
+    "2026-08-09: the guard is a truthiness test, so an empty value does not "
+    "suppress the child's Stop hook. Measured both ways that day -- empty gave "
+    "18 turns of the child doing worklist chores, two permission denials and "
+    "is_error, while =1 answered 'OK' in one turn for a cent. The broken form "
+    "makes a HEALTHY model look unreachable, which is the worst possible "
+    "diagnostic for a line whose next sentence offers to disable the gate.\n"
+    "A reachable model can still fail this way: the call is schema-constrained "
+    "and budget-capped, so a large prompt that makes the model wander can "
+    "exhaust the budget and return exit 0 with structured_output null, which "
+    "is what 'no usable structured_output: None' means. Before concluding the "
+    "gate is broken, reproduce the REAL call (--json-schema plus "
+    "--max-budget-usd) rather than 'reply OK', which proves only connectivity.\n"
+    "If the model is genuinely unreachable and you have verified that, set "
     "WORKLIST_JUDGE=off in the hook env and say so out loud in your "
     "summary, so a disabled gate is never silent."
 )

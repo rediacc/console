@@ -1035,6 +1035,19 @@ def main():
         # phantom identity that briefs itself looks exactly like a real session.
         _identity_or_die(prefix, _die2)
         text = " ".join(sys.argv[3:]).replace("\n", " ").strip()[:200]
+        # A lone id is a MISREAD of this verb, not a short brief. The word reads
+        # both ways (publish a brief / brief me on X) and the argument shape is
+        # `--tick <me> <id> <evidence>` minus the evidence, so the id lands where
+        # the sentence goes and the roster then advertises it as live activity.
+        # Shape only, no store read: this branch stays self-contained on purpose
+        # (see above), and a bare hex token is never a real brief either way.
+        if (
+            len(sys.argv) == 4
+            and 6 <= len(text) <= 16
+            and all(ch in "0123456789abcdefABCDEF" for ch in text)
+        ):
+            sys.stderr.write(M.CLI_BRIEF_LOOKS_LIKE_ID % text)
+            sys.exit(2)
         stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(wl.with_suffix(".sessions"), "a", encoding="utf-8") as fh:
             fh.write("%s %s %s\n" % (prefix, stamp, text))
