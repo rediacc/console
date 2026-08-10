@@ -118,17 +118,34 @@ def rule_cancelled_run_not_passed(cmd, out, _root):
     """
     if not re.search(r"gh\s+run\b|actions/runs|actions/jobs", cmd):
         return None
-    if not out.strip():
-        return None
-    if not re.search(r'"?cancelled"?', out):
-        return None
-    # A run-level cancellation, or a failure-filtered query that came back empty
-    # while something in scope was cancelled. Both are the same misreading.
+
+    # TWO SHAPES, and the second one was DEAD CODE until review caught it. The
+    # first version gated everything behind "the word cancelled appears in the
+    # output", then checked the empty-failure-filter case behind that gate. But
+    # a `--jq select(.conclusion=="failure")` query that comes back `[]`
+    # BECAUSE the job was cancelled rather than failed contains no such word by
+    # construction: the filter removed it. So the branch could never be reached
+    # for the case it existed to catch, and once the gate passed it could not
+    # change the verdict either. A documented detection shape that cannot fire,
+    # inside the change whose whole subject is checks that cannot fire.
+    #
+    # They are now independent alternatives, which is what they always were.
+    saw_cancelled = bool(re.search(r"cancelled", out))
     empty_failure_filter = bool(
-        re.search(r'conclusion\s*==\s*"failure"', cmd) and re.search(r"\[\s*\]|^\s*$", out.strip())
+        re.search(r'conclusion\s*==\s*["\']?failure', cmd)
+        and re.search(r"^\[\s*\]$|^\s*$", out.strip())
     )
-    if not (re.search(r'"conclusion"\s*:\s*"cancelled"|cancelled', out) or empty_failure_filter):
+    if not (saw_cancelled or empty_failure_filter):
         return None
+    if empty_failure_filter and not saw_cancelled:
+        return (
+            "trapguard[cancelled-run-not-passed]: this query filtered for "
+            "conclusion==failure and came back EMPTY, which is not the same as "
+            "nothing being wrong. A job the watchdog CANCELLED has no failure "
+            "conclusion, so it is invisible to this filter while still being a "
+            "gate that did not report. Count the cancelled jobs before reading "
+            "an empty failure list as a clean run."
+        )
     return (
         "trapguard[cancelled-run-not-passed]: this output contains a CANCELLED "
         "conclusion. A cancelled job did not pass, it did not run, and in a run "
