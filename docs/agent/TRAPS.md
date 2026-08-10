@@ -215,3 +215,25 @@ in the READER. Chasing the named line finds nothing wrong, because nothing is.
 So: never edit a script a background job is running. Let it finish, or copy the
 tree and edit the copy. And when a shell syntax error cites a line that looks
 fine, check whether anything rewrote the file mid-run before debugging the line.
+
+## Rerunning Smoke Test Preview trades one failure for another
+
+`gh run rerun --failed` is the standing remedy for a live-state gate, but it is
+WRONG for `Smoke Test Preview`, and the two attempts look like contradictory
+evidence unless you read both assertion lists.
+
+Observed 2026-08-10 on PR #567, same commit, two attempts:
+  attempt 1: license checks PASS, install.ps1 + marketing 404
+  attempt 2: install.ps1 + marketing PASS, license checks 403
+             "Token is bound to a different IP address"
+
+Neither attempt is the truth about the commit. The 404s are preview propagation,
+which time fixes. The 403 is a rerun artifact: the E2E token is bound to the IP
+of the runner that minted it, and a rerun lands on a different runner. Each
+attempt passes what the other failed, so a FRESH run (new commit, new token) is
+the remedy, not another rerun.
+
+The trap for the reader is the job-level conclusion. Both attempts report
+`Smoke Test Preview: failure`, so a summary read says "reproduces, therefore
+real, therefore mine". It does not reproduce; it fails differently each time.
+Read WHICH assertions failed before concluding a red is deterministic.
