@@ -18,6 +18,15 @@ branch, push, or open a PR unless the operator asks for it in that task. Approvi
 is not approval to commit. (`main` and releases carry stricter rules; see *Never push to
 `main` or cut a release without explicit user authorization*.)
 
+**And when a PR is asked for: ONE open PR at a time.** New work goes onto the branch of
+the PR that is already open, not into a second one. This is enforced by
+`.claude/hooks/pre-bash/block-second-open-pr.sh` rather than left to memory, because it
+was left to memory once and a single night produced four stacked PRs: each new one was
+individually reasonable, and the pile arrived on the operator, who then had to review and
+merge them in a fixed order. A second PR does not get work finished sooner, it splits one
+decision into several. A genuinely independent second PR is the operator's call; ask, and
+say why the work cannot ride the open one.
+
 This means there is **no safety net**, and the tree usually holds work from other sessions
 and agents:
 

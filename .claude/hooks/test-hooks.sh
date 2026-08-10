@@ -229,6 +229,47 @@ check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A -- . > /dev/n
 # regex widened by one word would make this one swallow worktree creation --
 # which would then be blocked with the WRONG message and the wrong escape.
 check 0 pre-bash/block-blanket-git-add.sh "$(bash_json 'git worktree add /tmp/wt main')" "blanket-git-add CONTROL: worktree add is NOT this guard's business"
+# --- one open PR at a time -------------------------------------------------
+# The guard shells out to `gh pr list`, so these stub it on PATH. Without the
+# stub the cases would depend on whatever PRs happen to be open, which is a
+# fixture that changes under you: green today, red tomorrow, and never for a
+# reason anyone can see.
+stub_gh() { # stub_gh <json-or-empty> <exit>; prints a dir to prepend to PATH
+    local out="$1" rc="$2" d
+    d="$(mktemp -d)"
+    {
+        echo '#!/usr/bin/env bash'
+        printf 'cat <<%s\n%s\n%s\n' "GHEOF" "$out" "GHEOF"
+        echo "exit $rc"
+    } >"$d/gh"
+    chmod +x "$d/gh"
+    printf '%s' "$d"
+}
+gh_case() { # gh_case <expected-rc> <stub-json> <stub-rc> <cmd> <label> [needle]
+    local exp="$1" body="$2" grc="$3" cmd="$4" label="$5" needle="${6:-}" d out rc
+    d="$(stub_gh "$body" "$grc")"
+    out="$(echo "$(bash_json "$cmd")" | PATH="$d:$PATH" bash "$DIR/pre-bash/block-second-open-pr.sh" 2>&1)"
+    rc=$?
+    rm -rf "$d"
+    if [[ "$rc" == "$exp" ]] && { [[ -z "$needle" ]] || grep -qF "$needle" <<<"$out"; }; then
+        PASS=$((PASS + 1))
+        printf 'ok   [%s] %s\n' "$exp" "$label"
+    else
+        FAIL=$((FAIL + 1))
+        printf 'FAIL [%s] %s (got %s) %s\n' "$exp" "$label" "$rc" "${out:0:90}"
+    fi
+}
+gh_case 2 '[{"number":563,"title":"t","headRefName":"b","isDraft":false}]' 0 \
+    'gh pr create --draft -t x -b y' "one-pr: a second create is blocked when one is open" "One at a time"
+gh_case 2 '[{"number":563,"title":"t","headRefName":"b","isDraft":false}]' 0 \
+    "sh -c 'gh pr create --draft -t x -b y'" "one-pr: sh -c wrapping does not bypass it"
+# THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it
+# would block the FIRST PR too and simply stop all work.
+gh_case 0 '[]' 0 'gh pr create --draft -t x -b y' "one-pr CONTROL: the first PR is allowed"
+gh_case 0 '[]' 0 'gh pr view 567' "one-pr CONTROL: a non-create gh command is ignored"
+# FAILS CLOSED: an unreadable list is not evidence that the list is empty.
+gh_case 2 'gh: could not connect' 1 'gh pr create --draft -t x -b y' \
+    "one-pr: an unreadable PR list blocks rather than assuming none" "cannot verify"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr create --draft --title x --body y')" "nondraft-create: console with --draft ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
