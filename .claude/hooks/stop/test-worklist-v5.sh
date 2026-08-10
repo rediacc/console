@@ -3002,6 +3002,8 @@ ARITY = {
     "N_ROSTER_STALE": (20, 1, 19, "p", "m"),
     "CLI_LOOP_USAGE": (), "CLI_BRIEF_USAGE": (), "CLI_UNKNOWN_VERB": ("v",),
     "CLI_BRIEF_LOOKS_LIKE_ID": ("v",),
+    "V_JUDGE_ORDER_REJECTED": ("v", "v"),
+    "V_LADDER_INVESTIGATE_GONE": ("rows", "facts", "m", "m"),
     "CLI_STATE_NO_DIR": ("b", "b", "b"), "CLI_STATE_NO_BRANCH": ("r",),
     "CLI_STATE_USAGE": (), "CLI_STATE_NO_BODY": ("x", "p"),
     "V_DOCS_DRIFT": (3, "s", "d"), "V_UNCONFIRMED": ("#1",),
@@ -6325,7 +6327,9 @@ done
 # is a LONE all-hex token of id width, so anything with a second word, any non-hex
 # character, or a length outside the band must still record.
 while IFS='|' read -r _why _txt; do
-    # shellcheck disable=SC2086 -- deliberately word-split: the point is >1 arg
+    # Deliberately unquoted: word-splitting is the point, since these controls
+    # exist to prove a MULTI-token brief still records.
+    # shellcheck disable=SC2086
     OUT="$(as_peer briefpf3 reqcli --brief briefpf3 $_txt </dev/null 2>&1)"
     RC=$?
     if [[ "$RC" == "0" ]] && grep -qF "brief recorded" <<<"$OUT"; then
@@ -9513,6 +9517,122 @@ else
     fail "206 CONTROL: ownership stopped deciding who is ordered to repair: ${OUT:0:600}"
 fi
 unset WORKLIST_REPORT_PER_STOP
+
+echo "== 207. the judge ADVISES; it does not get to order the operator's three things =="
+# Paid for on 2026-08-09: the stop gate read a session sitting on four green
+# stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session
+# declined, which is the right outcome reached by the WRONG mechanism: it survived
+# on the model's judgement at the moment of reading, and this whole program exists
+# because judgement at the moment of reading is the faculty that fails. The filter
+# is deterministic so a tireder session cannot comply with its own stop gate.
+setup
+JUDGE_FILTER_OUT="$(
+    python3 - "$(dirname "$HOOK")" <<'PYEOF'
+import sys
+sys.path.insert(0, sys.argv[1])
+from wl_judge import sanitize_next_action as s
+BLOCK = [
+    ("a bare merge order", "merge PRs 563, 565 and 566"),
+    ("a polite merge order", "You should probably merge 563 now that it is green."),
+    ("the literal command", "gh pr merge 567 --rebase"),
+    ("push main", "push main with the fix"),
+    ("push main, reversed wording", "get this onto main by pushing"),
+    ("cut a release", "cut the release once CI is green"),
+    # DELIBERATE over-inclusion, pinned so nobody relaxes it into a bypass: asking
+    # about merging is harmless, but a carve-out for the question reopens the door
+    # for "ask the operator whether to merge, and if CI is green, merge".
+    ("even ASKING about merging", "ask the operator whether to merge"),
+]
+KEEP = [
+    ("an ordinary review action", "reply to the review summary on 567 and resolve its threads"),
+    ("release as a NOUN", "update the release notes in docs/ before the next wave"),
+    ("the release CHANNEL", "check the release channel manifest for edge"),
+    ("an ordinary suite action", "run the umbrella suite and tick f1c5d077 with the count"),
+    ("an empty next action", ""),
+]
+for why, text in BLOCK:
+    got = s({"next_action": text})["next_action"]
+    print(("REJECTED " if got.startswith("[rejected") else "LEAKED ") + why)
+for why, text in KEEP:
+    got = s({"next_action": text})["next_action"]
+    print(("KEPT " if got == text else "CLOBBERED ") + why)
+# The VERDICT itself must never be touched: stop-or-continue is the judge's actual
+# job and rewriting it here would collide with the no-escape-hatch invariant.
+v = s({"verdict": "stop", "reason": "clean", "next_action": "merge 563"})
+print("VERDICT-INTACT" if v["verdict"] == "stop" and v["reason"] == "clean" else "VERDICT-MUTATED")
+PYEOF
+)"
+if [[ "$(grep -c '^REJECTED ' <<<"$JUDGE_FILTER_OUT")" == "7" ]] && ! grep -q '^LEAKED ' <<<"$JUDGE_FILTER_OUT"; then
+    pass "207 every operator-only order is rejected (7 shapes, including the polite one)"
+else
+    fail "207 an operator-only order leaked: $(grep '^LEAKED ' <<<"$JUDGE_FILTER_OUT")"
+fi
+if [[ "$(grep -c '^KEPT ' <<<"$JUDGE_FILTER_OUT")" == "5" ]] && ! grep -q '^CLOBBERED ' <<<"$JUDGE_FILTER_OUT"; then
+    pass "207 CONTROL: ordinary next actions survive, including release as a noun"
+else
+    fail "207 CONTROL: a legitimate next action was clobbered: $(grep '^CLOBBERED ' <<<"$JUDGE_FILTER_OUT")"
+fi
+if grep -q '^VERDICT-INTACT' <<<"$JUDGE_FILTER_OUT"; then
+    pass "207 CONTROL: the verdict and reason are left untouched (no escape hatch)"
+else
+    fail "207 CONTROL: the filter mutated the verdict itself"
+fi
+
+echo "== 208. a DEAD worker gets the remedy that can actually resolve it =="
+# Paid for live on 2026-08-10. The 90-minute rung reported "its declared
+# worker:X is NOT in the harness background list any more" and printed
+# `--update <id>` as the command. A session ran exactly that, with real
+# evidence, and the IDENTICAL complaint fired on the next stop: --update
+# refreshes the item's text and its liveness clock and leaves the false
+# worker:X claim standing. The prose offered three remedies and the one
+# printed command was the only one that cannot work. One full round trip lost.
+setup
+brief_now
+hand_now
+CID=$(reqcli --add deadbeef "work handed to a worker that then died" | grep -oE '#[0-9a-f]+' | tr -d '#')
+# Lease it to a worker the harness DOES know, so the lease is accepted...
+printf '{"background_tasks":[{"id":"bw9","type":"shell","status":"running","description":"the watch"}]}\n' \
+    >"${WL%.md}.lastevent-deadbeef.json"
+reqcli --lease deadbeef "$CID" +120 worker:bw9 "watching the run" >/dev/null 2>&1
+# ...then take that worker away, which is exactly what a finished task looks like.
+printf '{"background_tasks":[]}\n' >"${WL%.md}.lastevent-deadbeef.json"
+BG='[]'
+OUT="$(run)"
+if grep -qF "NO LONGER EXISTS" <<<"$OUT" && grep -qF "worklist.py --lease deadbeef" <<<"$OUT" && grep -qF "worklist.py --tick deadbeef" <<<"$OUT"; then
+    pass "208 the dead-worker block offers --lease and --tick"
+else
+    fail "208 dead-worker block missing its remedies: ${OUT:0:400}"
+fi
+# THE ASSERTION THAT WOULD HAVE CAUGHT THE ORIGINAL BUG: the command it prints
+# must not be the one that cannot resolve a dead worker.
+#
+# IT REQUIRES THE BLOCK TO BE PRESENT, and that is not belt-and-braces. The first
+# version asserted only the absence of --update, and a mutation that suppressed
+# the whole dead-worker block made it PASS: with no block there is no --update in
+# the output, so a bare negative is satisfied by the feature not existing. A check
+# that passes when the thing it guards is gone is the exact defect this suite
+# exists to catch, and only running the mutation revealed it.
+if grep -qF "NO LONGER EXISTS" <<<"$OUT" && ! grep -qE "worklist\.py --update deadbeef" <<<"$OUT"; then
+    pass "208 the block is present AND does not print --update, the remedy that leaves worker:X standing"
+else
+    fail "208 block absent, or still printing --update for a dead worker: ${OUT:0:400}"
+fi
+# CONTROL: a worker the harness still lists is merely quiet, not gone, and must
+# NOT be pushed onto the dead-worker path.
+setup
+brief_now
+hand_now
+CID=$(reqcli --add deadbeef "work with a live worker" | grep -oE '#[0-9a-f]+' | tr -d '#')
+printf '{"background_tasks":[{"id":"bw9","type":"shell","status":"running","description":"the watch"}]}\n' \
+    >"${WL%.md}.lastevent-deadbeef.json"
+reqcli --lease deadbeef "$CID" +120 worker:bw9 "watching the run" >/dev/null 2>&1
+BG='[{"id":"bw9","status":"running","description":"the watch"}]'
+OUT="$(run)"
+if ! grep -qF "NO LONGER EXISTS" <<<"$OUT"; then
+    pass "208 CONTROL: a still-listed worker is never called gone"
+else
+    fail "208 CONTROL: a live worker was reported as gone: ${OUT:0:300}"
+fi
 
 echo
 echo "  passed=$PASS failed=$FAIL"
