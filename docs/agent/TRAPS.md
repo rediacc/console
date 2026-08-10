@@ -237,3 +237,72 @@ The trap for the reader is the job-level conclusion. Both attempts report
 `Smoke Test Preview: failure`, so a summary read says "reproduces, therefore
 real, therefore mine". It does not reproduce; it fails differently each time.
 Read WHICH assertions failed before concluding a red is deterministic.
+
+## A killed command did not run its own cleanup
+
+MECHANIZED: `.claude/hooks/trapguard/dispatch.py::rule_interrupted_cleanup_skipped`
+fires on this shape, so you should meet it as an injected warning rather than here.
+The entry stays because the remedy is a habit no hook can install for you.
+
+A mutation test neutered a guard in the live tree, ran the suite, and restored it
+on the next line:
+
+```
+python3 -c 'mutate'; bash test-worklist-v5.sh > mut.log; cp worklist.py.orig worklist.py
+```
+
+The suite outlived the 2-minute tool timeout. The whole command took SIGTERM at
+`Exit code 143`, and the restore never ran. What came back was:
+
+```
+syntax ok
+mutated: guard neutered
+```
+
+Both lines true, and together they read like a step that finished. The working
+tree sat with a disabled guard in it, which is the worst possible state for a
+session whose next act is to trust that guard.
+
+The general shape: **an interrupted command's output is a truthful, complete
+looking account of the part that ran.** Nothing marks where it stopped. Any
+`;`-chained cleanup, restore, `git checkout --`, `rm -rf` of a sandbox, or
+`stash pop` is exactly as skippable as the timeout is long, and the risk rises
+with how slow the middle step is, which is the same thing that makes the timeout
+likely.
+
+The remedy is not "remember to check". It is to **mutate a copy, never the live
+tree**: put the sandbox under the scratchpad, mutate there, and let the kill
+strand nothing that matters. When the live tree genuinely must change, verify the
+restore landed by reading the file back, and never from the command's own output.
+
+## A mutation test needs BOTH directions, or its red proves nothing
+
+The discipline is "plant the defect and watch the check go red". That half is not
+enough, and this session paid for the other half within the hour.
+
+Two new suite cases went red under a mutation that disabled the guard they
+covered. Signature looked perfect. They were also red on the untouched tree, so
+the mutation had demonstrated nothing at all: a case that can never pass goes red
+under every mutation, including one that changes nothing.
+
+The cause was `set -uo pipefail` (`test-worklist-v5.sh:5`) plus an assertion
+written as `refusing-command | grep -q needle`. The refusal exits 2 by design, and
+under `pipefail` a pipeline carries the first non-zero exit rather than grep's, so
+the `if` was false while grep was matching perfectly. **Never read an exit code
+after a pipe.** Capture first, then match, which is what every other refusal case
+in that suite already does:
+
+```bash
+OUT="$(cmd 2>&1)"; RC=$?
+if [[ "$RC" == "2" ]] && grep -qF needle <<<"$OUT"; then
+```
+
+So a mutation run must always be two passes: **red with the defect planted, green
+without it**, and the second pass is the one that catches a broken fixture. Run
+them in one script so skipping the baseline takes deliberate effort.
+
+A smaller instance rode along in the same script. Its summary line was
+`grep '^FAIL' "$log"`, but the suite indents results, so the filter matched nothing
+and printed an empty "failures" section under a run that had failed, next to an
+exit code saying otherwise. A reporting filter that cannot match reads exactly like
+good news.
