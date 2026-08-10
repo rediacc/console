@@ -299,9 +299,15 @@ check_inject silent "$(inject_json 'gh run view 1 --json jobs' '')" \
     "trapguard CONTROL: an empty response does not fire (absence is not a cancellation)"
 # The on-disk test is the whole discriminator for the next three: identical
 # output, and only the filesystem separates a phantom from a real deletion.
-check_inject fires "$(inject_json 'git diff somebranch -- .claude/hooks/test-hooks.sh' ' .claude/hooks/test-hooks.sh | 462 ------
- 1 file changed, 462 deletions(-)')" \
-    "trapguard: all-deletions diff for a file still on disk is warned about" "phantom-deletion-diff"
+# The phantom needs a path that is UNTRACKED and present, which is the state a
+# plumbing-built branch leaves files in. Planted at runtime with a keyed name so
+# the case holds in any checkout and a crashed earlier run cannot satisfy it.
+TG_PHANTOM="tg_phantom_probe_$$_$(date +%s).txt"
+printf 'x\n' >"$(cd "$DIR/../.." && pwd)/$TG_PHANTOM"
+check_inject fires "$(inject_json "git diff somebranch -- $TG_PHANTOM" " $TG_PHANTOM | 462 ------
+ 1 file changed, 462 deletions(-)")" \
+    "trapguard: all-deletions diff for an UNTRACKED file still on disk is warned about" "phantom-deletion-diff"
+rm -f "$(cd "$DIR/../.." && pwd)/$TG_PHANTOM"
 check_inject silent "$(inject_json 'git diff somebranch -- gone/never-existed.sh' ' gone/never-existed.sh | 462 ------
  1 file changed, 462 deletions(-)')" \
     "trapguard CONTROL: the SAME output for an absent path stays silent"
@@ -311,6 +317,12 @@ check_inject silent "$(inject_json 'git diff somebranch' ' .claude/hooks/test-ho
 check_inject silent "$(inject_json 'git diff --cached somebranch' ' .claude/hooks/test-hooks.sh | 462 ------
  1 file changed, 462 deletions(-)')" \
     "trapguard CONTROL: --cached is exempt (the index IS the subject there)"
+# THE FALSE POSITIVE THIS RULE SHIPPED WITH, for one hour. A TRACKED file that
+# simply lost lines is a normal diff, and the first version fired on it because
+# it keyed on "the file exists". Existence narrows; tracked-ness decides.
+check_inject silent "$(inject_json 'git diff --stat package-lock.json' ' package-lock.json | 27 -------
+ 1 file changed, 27 deletions(-)')" \
+    "trapguard CONTROL: a TRACKED file losing lines is an ordinary diff, not a phantom"
 
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'cd private/renet && gh pr create --title x --body y')" "nondraft-create: plain create on private submodule ok"
 check 0 pre-bash/block-nondraft-pr-create.sh "$(bash_json 'gh pr list --repo rediacc/console')" "nondraft-create: non-create command ignored"
