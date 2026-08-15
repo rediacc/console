@@ -235,19 +235,44 @@ function probeAsset(
  */
 function runControls(): string[] {
   const failures: string[] = [];
-  const cases: Array<[string, boolean, string]> = [
-    ['rsync  version 3.5.0  protocol version 32', true, 'plain version in prose'],
-    ['zot v2.1.2', true, 'v-prefixed binary against an unprefixed pin'],
-    ['k3s version v1.36.3+k3s1 (5aed4d7b)', true, 'pin that already carries its v'],
-    ['rsync  version 3.4.4  protocol version 32', false, 'THE REGRESSION: an older binary'],
-    ['', false, 'empty output is never a match'],
+  // The pin lives in the CASE, not in a second array indexed by position. It was
+  // written as two parallel arrays and they drifted immediately: the zot case
+  // was checked against the pin 1.75.0, so the control that proves a v-prefixed
+  // binary matches an unprefixed pin was really asserting that 2.1.2 equals
+  // 1.75.0, and it failed. A control that cannot pass is as useless as one that
+  // cannot fail, and positional pairing is what let a reader see nothing wrong.
+  const cases: Array<{ output: string; pin: string; expected: boolean; label: string }> = [
+    {
+      output: 'rsync  version 3.5.0  protocol version 32',
+      pin: '3.5.0',
+      expected: true,
+      label: 'plain version in prose',
+    },
+    {
+      output: 'zot v2.1.2',
+      pin: '2.1.2',
+      expected: true,
+      label: 'v-prefixed binary against an unprefixed pin',
+    },
+    {
+      output: 'k3s version v1.36.3+k3s1 (5aed4d7b)',
+      pin: 'v1.36.3+k3s1',
+      expected: true,
+      label: 'pin that already carries its v',
+    },
+    {
+      output: 'rsync  version 3.4.4  protocol version 32',
+      pin: '3.5.0',
+      expected: false,
+      label: 'THE REGRESSION: an older binary',
+    },
+    { output: '', pin: '3.5.0', expected: false, label: 'empty output is never a match' },
   ];
-  const pins = ['3.5.0', '1.75.0', 'v1.36.3+k3s1', '3.5.0', '3.5.0'];
-  cases.forEach(([output, expected, label], i) => {
-    if (statesVersion(output, pins[i]) !== expected) {
-      failures.push(`control: ${label} (pin ${pins[i]}) did not behave as ${expected}`);
+  for (const { output, pin, expected, label } of cases) {
+    if (statesVersion(output, pin) !== expected) {
+      failures.push(`control: ${label} (pin ${pin}) did not behave as ${expected}`);
     }
-  });
+  }
 
   // The strict cross-arch form must reject a longer version that merely shares
   // a prefix, or it would certify 3.5.01 as 3.5.0.
