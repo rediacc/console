@@ -187,6 +187,24 @@ jobs:
     timeout-minutes: 14
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # SUBMODULES, because the unit suite reads renet's SOURCE. datastore-prune-parser
+      # asserts that the CLI's prune fixtures cover every kind renet's
+      # DatastorePrunableResources reports, by parsing
+      # private/renet/pkg/prune/datastore.go. It throws rather than skipping when
+      # that file is absent, deliberately: a coverage check that quietly does not
+      # run is the exact failure it exists to prevent. Without the submodule this
+      # job fails on a file it never fetched, which reads as a broken test rather
+      # than a missing checkout.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
       - uses: ./.github/actions/setup-workspace
         with:
           build-packages: 'true'
