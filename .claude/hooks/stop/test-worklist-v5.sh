@@ -604,12 +604,17 @@ else
     FAIL=$((FAIL + 1))
 fi
 
+# GITHUB_ACTIONS is pinned below for a reason specific to THIS case: it asserts
+# EMPTY output, and the hook's CI no-op also produces empty output. Inheriting a
+# true value in Actions would make this pass whether or not the recursion guard
+# exists at all -- the assertion and the leak are indistinguishable. An
+# empty-output test is the one shape where a silent no-op reads as success.
 echo "== 10. recursion guard =="
 setup
 echo '- [ ] (deadbeef) open thing' >>"$WL"
 out="$(printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s"}' "$SID" "$BASE/proj" "$BASE/t.jsonl" |
     TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
-        STOPHOOK_CHILD=1 python3 "$HOOK" 2>&1)"
+        GITHUB_ACTIONS="${GHA:-}" STOPHOOK_CHILD=1 python3 "$HOOK" 2>&1)"
 if [[ -z "$out" ]]; then
     echo "  PASS: STOPHOOK_CHILD=1 exits silently (no recursion)"
     PASS=$((PASS + 1))
@@ -10393,7 +10398,8 @@ printf 'not json at all' >"$BASE/t.jsonl"
 _214c_err="$BASE/214c.stderr"
 OUT="$(printf 'garbage-not-json' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
     WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
-    WORKLIST_JUDGE=off WORKLIST_CADENCE=on python3 "$HOOK" 2>"$_214c_err")"
+    WORKLIST_JUDGE=off WORKLIST_CADENCE=on GITHUB_ACTIONS="${GHA:-}" \
+    python3 "$HOOK" 2>"$_214c_err")"
 _214c_rc=$?
 if grep -qF '"decision": "block"' <<<"$OUT"; then
     pass "214c GUARD A: an always-tier violation blocks even when a pause was owed"
