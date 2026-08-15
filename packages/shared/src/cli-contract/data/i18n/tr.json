@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "{{name}} için anlık görüntü kaydedildi",
   "commands.backup.snapshot.description": "Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra değişen hücreler",
   "commands.backup.snapshot.failed": "{{name}} için anlık görüntü başarısız oldu",
+  "commands.backup.snapshot.optionCold": "Konteynerleri durdurur, dondurur, yeniden başlatır ve ancak ondan sonra yükler. Kısa ama gerçek bir kesinti karşılığında uygulama tutarlı bir anlık görüntü verir; --dry-run ile birlikte kullanılamaz",
   "commands.backup.snapshot.optionDryRun": "Yalnızca planla: yükleme yapılmaz. Nelerin taşınacağını bildirir",
   "commands.backup.snapshot.optionReseed": "Yerel çıpaya güvenme ve tam envanteri yeniden yükle (her şeyi yeniden yükler ve kotayı yeniden düşer)",
   "commands.backup.snapshot.quotaRefused": "{{name}} için anlık görüntü reddedildi: depolama kotası aşıldı. Eski anlık görüntüleri temizleyin veya kotayı artırın",

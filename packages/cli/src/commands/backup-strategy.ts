@@ -1,9 +1,7 @@
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
-import {
-  unschedulableDestinationReason,
-} from '../services/backup/backup-schedule-unit-generator.js';
+import { unschedulableDestinationReason } from '../services/backup/backup-schedule-unit-generator.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   bindBackupStrategy,
