@@ -761,6 +761,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-parity
 
+      # Tutorials are EXECUTABLE documentation: CI runs the sequence against real
+      # VMs and customers follow the same steps by hand. A renamed command or flag
+      # otherwise surfaces 20 minutes into a provisioned job, or in public.
+      - name: Tutorial CLI validity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tutorial_cli_validity.py
+
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-parity
