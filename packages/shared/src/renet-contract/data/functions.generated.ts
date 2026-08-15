@@ -8,7 +8,7 @@
 
 /** Delete one or more backups from storage or machine */
 export interface BackupDeleteParams {
-  /** Target type: machine or storage */
+  /** Target type: machine (SSH); storage is retired */
   sourceType: string;
   /** Target machine or storage name */
   from: string;
@@ -20,7 +20,7 @@ export interface BackupDeleteParams {
 
 /** List available backups on storage or machine */
 export interface BackupListParams {
-  /** Source type: machine or storage */
+  /** Source type: machine (SSH); storage is retired */
   sourceType: string;
   /** Source machine or storage name */
   from: string;
@@ -30,7 +30,7 @@ export interface BackupListParams {
 
 /** Pull repository from remote source (machine or storage) */
 export interface BackupPullParams {
-  /** Source type: machine (SSH) or storage (rclone) */
+  /** Source type: machine (SSH); storage is retired */
   sourceType: string;
   /** Source machine or storage name */
   from: string;
@@ -48,7 +48,7 @@ export interface BackupPullParams {
 
 /** Push repository to remote destination (machine or storage) */
 export interface BackupPushParams {
-  /** Destination type: machine (SSH) or storage (rclone) */
+  /** Destination type: machine (SSH); storage is retired */
   destinationType: string;
   /** Single destination (machine or storage name) */
   to?: string;
@@ -1474,8 +1474,8 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       sourceType: {
         type: 'string',
         required: true,
-        default: 'storage',
-        help: 'Target type: machine or storage',
+        default: 'machine',
+        help: 'Target type: machine (SSH); storage is retired',
         options: ['machine', 'storage'],
         ui: 'dropdown',
         enum: ['machine', 'storage'],
@@ -1505,8 +1505,8 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       sourceType: {
         type: 'string',
         required: true,
-        default: 'storage',
-        help: 'Source type: machine or storage',
+        default: 'machine',
+        help: 'Source type: machine (SSH); storage is retired',
         options: ['machine', 'storage'],
         ui: 'dropdown',
         enum: ['machine', 'storage'],
@@ -1532,8 +1532,8 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       sourceType: {
         type: 'string',
         required: true,
-        default: 'storage',
-        help: 'Source type: machine (SSH) or storage (rclone)',
+        default: 'machine',
+        help: 'Source type: machine (SSH); storage is retired',
         options: ['machine', 'storage'],
         ui: 'dropdown',
         enum: ['machine', 'storage'],
@@ -1584,7 +1584,7 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         required: true,
         default: 'machine',
-        help: 'Destination type: machine (SSH) or storage (rclone)',
+        help: 'Destination type: machine (SSH); storage is retired',
         options: ['machine', 'storage'],
         ui: 'dropdown',
         enum: ['machine', 'storage'],
