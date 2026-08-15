@@ -1,4 +1,24 @@
 #!/bin/bash
+# TUTORIAL_DRAFT: teaches `rdc repo push --to <storage>`, which is retired. The
+# rclone cloud arm was removed, so push, pull and list refuse a storage
+# destination and name the chunk store instead. Until this is re-recorded the
+# sequence runner skips it, because a tutorial that demonstrates a removed
+# command is worse than one that is temporarily absent: it teaches the wrong
+# thing to everybody who follows it.
+#
+# WHY IT IS NOT SIMPLY REWRITTEN HERE. The replacement is `rdc backup snapshot`
+# and `rdc backup restore --at`, which upload through the account server's
+# presigned URLs, and that needs the R2 buckets and BACKUP_S3_* secrets that do
+# not exist yet -- operator work, tracked separately. Rewriting it to
+# machine-to-machine instead would make it green today but change what the
+# tutorial is ABOUT, and its narrated video in 13 languages would then contradict
+# its own text.
+#
+# TO RESTORE IT: delete this marker once the chunk-store path is provisionable,
+# rewrite the steps below against `backup snapshot` / `backup restore --at`, and
+# re-record. The markdown at packages/www/src/content/docs/*/backup-restore.md is
+# already rewritten and does NOT teach the retired commands.
+#
 # Tutorial 11: Backup & Restore
 # The full story: import an S3-compatible storage, push a backup, list it,
 # then prove the restore path — take the repo offline, pull the backup back,

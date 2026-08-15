@@ -549,7 +549,14 @@ def ladder(fold, session_id, event, state_doc):
             continue  # expired leases are open items already
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
-        gone = bool(wid) and wid not in now_bg
+        # GONE means DROPPED, not merely unconfirmable. A worker only counts as
+        # gone if the harness could see it when the lease was taken and cannot
+        # see it now. An Agent leased by NAME never appears in a background-task
+        # list at all, and reporting that as "finished or stopped" sent this
+        # session chasing a worker that was actively writing files. Unverifiable
+        # workers fall through to the age ladder, which catches a real stall
+        # without inventing a death.
+        gone = bool(wid) and wid not in now_bg and bool(rec.get("worker_verified"))
         subjects.append(
             (
                 "item:" + rec["id"],

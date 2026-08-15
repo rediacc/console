@@ -628,8 +628,10 @@ def _item_cli(argv, worklist):
             )
         except (OSError, ValueError):
             _running = None
+        was_verified = False
         if _running is not None:
             if wid in _running:
+                was_verified = True
                 verified = " (worker verified against the harness's running tasks)"
             else:
                 # Name BOTH causes, and annotate the ids. The message used to
@@ -651,7 +653,10 @@ def _item_cli(argv, worklist):
                     "since its output last grew; a stale age means the entry may "
                     "already be dead): %s" % (wid, _annotated_running(_running, me) or "none")
                 )
-        S.lease_item(worklist, me, item_id, until, wid, note)
+        # The verification bit is PERSISTED, not just printed. Liveness needs it
+        # to tell a worker that died from one that was never confirmable, and
+        # until now it was computed here and dropped on the floor.
+        S.lease_item(worklist, me, item_id, until, wid, note, worker_verified=was_verified)
         print("leased #%s until %s on %s%s" % (item_id, until, wm, verified))
         return
     die("unknown item mode %s" % mode)
