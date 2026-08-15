@@ -565,35 +565,42 @@ process.stdout.write(JSON.stringify({
 
 # ---------------------------------------------------------------------------
 # Case 11: `submodules: []` is LEGAL and VACUOUS, not a mistake to be rescued.
-# `Unit` and `Linux Packages` check out with no submodules at all (ct-tests.yml
-# :189, ci.yml:709), so there is no pointer to pin and rule 2 has nothing to
-# compare. The hazard being asserted against is the opposite of the usual one:
-# an empty pin list must not be treated as "no local gitlink" and refuse
-# forever, and it must not stop rules 1 and 3 from still deciding.
+# `Linux Packages` checks out with no submodules at all (ci.yml:709), so there
+# is no pointer to pin and rule 2 has nothing to compare. The hazard being
+# asserted against is the opposite of the usual one: an empty pin list must not
+# be treated as "no local gitlink" and refuse forever, and it must not stop
+# rules 1 and 3 from still deciding.
+#
+# This case used `unit` as its example until Unit grew a submodule checkout --
+# its suite parses private/renet source and was failing on a file it never
+# fetched. The assertion moved to a key that is STILL an example rather than
+# being deleted: what is under test is the empty-list BEHAVIOUR, not which key
+# happens to have one, and dropping the assertion would have left that
+# behaviour unpinned while looking like a tidy-up.
 # ---------------------------------------------------------------------------
 test_empty_submodule_list_is_vacuous_not_broken() {
     local decl v cand
     decl="$(node -e '
 const { CLOSURES } = require(process.argv[1]);
-process.stdout.write(String(CLOSURES.unit.submodules.length));
+process.stdout.write(String(CLOSURES.package_tests.submodules.length));
 ' "$ENGINE")"
-    assert_eq "$decl" "0" "the unit key declares no submodules at all"
+    assert_eq "$decl" "0" "the package_tests key declares no submodules at all"
 
-    cand='{"runId":70,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
-    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    cand='{"runId":70,"jobs":[{"name":"Linux Packages","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
+    v="$(ev '{"key":"package_tests","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
     assert_eq "$(jget "$v" greenlit)" "true" "an empty pin list still greenlights on rules 1 and 3"
     assert_eq "$(jget "$v" runId)" "70" "naming the evidence run"
 
     # CONTROL 1: rule 3 still decides for a key with no pins, so the pass above
     # is not "empty submodules disables every rule".
-    cand='{"runId":71,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_B"'"}'
-    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    cand='{"runId":71,"jobs":[{"name":"Linux Packages","conclusion":"success"}],"gitlinks":{},"closureHash":"'"$HASH_B"'"}'
+    v="$(ev '{"key":"package_tests","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
     assert_eq "$(jget "$v" greenlit)" "false" "a differing closure still refuses a pinless key"
     assert_contains "$(jget "$v" trail)" "closure-differs" "named as closure-differs"
 
     # CONTROL 2: rule 1 still decides too.
-    cand='{"runId":72,"jobs":[{"name":"Tests + Infra / Unit","conclusion":"skipped"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
-    v="$(ev '{"key":"unit","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
+    cand='{"runId":72,"jobs":[{"name":"Linux Packages","conclusion":"skipped"}],"gitlinks":{},"closureHash":"'"$HASH_A"'"}'
+    v="$(ev '{"key":"package_tests","wantGitlinks":{},"wantClosureHash":"'"$HASH_A"'","candidates":['"$cand"']}')"
     assert_eq "$(jget "$v" greenlit)" "false" "a skipped job still refuses a pinless key"
 
     # CONTROL 3: the emptiness is a property of THAT key, not of the check. A
