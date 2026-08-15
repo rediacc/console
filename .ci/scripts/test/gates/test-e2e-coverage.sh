@@ -126,6 +126,33 @@ test_negative_control_live_verbs_pass() {
     rm -rf "$fix"
 }
 
+# A COMMENT IS NOT COVERAGE. This is the one that was live: a storage test
+# asserted a retirement message names its replacement, and the verb literal in
+# that assertion plus the comment explaining it made backup_restore read as
+# exercised. The gate then demanded its allowlist entry be deleted as a debt
+# paid. Stripping comments also exposed machine_uninstall, whose only trace was
+# a header comment listing a whole domain.
+test_comment_mention_is_not_coverage() {
+    local fix
+    fix="$(mktemp -d)"
+    build_fixture "$fix"
+    # dead_verb is genuinely uncovered. Name it in a COMMENT inside the LIVE
+    # suite and nothing else: a gate that reads comments will call it covered.
+    cat >"$fix/e2e/tests/01-live.test.ts" <<'EOF'
+// dead_verb is described here and never called
+/* dead_verb again, in a block comment */
+test('covers live_verb via the method map', async () => {
+  await runner.liveVerb();
+  const shellForm = 'litonly_verb';
+  expect(shellForm).toBeTruthy();
+});
+EOF
+    run_gate "$fix"
+    assert_contains "$GATE_OUT" "dead_verb" "a verb named only in comments must still be reported as uncovered"
+    log_pass "a comment mention does not confer coverage"
+    rm -rf "$fix"
+}
+
 test_allowlist_silences_dead_verb() {
     local fix
     fix="$(mktemp -d)"
@@ -183,6 +210,7 @@ test_registry_workflow_drift_rejected() {
 log_test "test-e2e-coverage"
 test_fires_on_dark_only_verb
 test_negative_control_live_verbs_pass
+test_comment_mention_is_not_coverage
 test_allowlist_silences_dead_verb
 test_missing_blocker_rejected
 test_stale_allowlist_entry_rejected

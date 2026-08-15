@@ -381,6 +381,18 @@ const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
   CLUSTER_LICENSING_SUITE: '1',
 };
 
+/**
+ * Blank out `//` and block comments, preserving line structure.
+ *
+ * Line count is preserved so any position-based reporting stays honest, and
+ * strings are left alone on purpose: see the note at the call site.
+ */
+export function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, lead) => lead + ' '.repeat(m.length - lead.length));
+}
+
 async function main(): Promise<void> {
   // Evaluate every conditional config under the maximal CI selection.
   for (const [k, v] of Object.entries(CI_LEG_ENABLE_FLAGS)) process.env[k] = v;
@@ -409,9 +421,22 @@ async function main(): Promise<void> {
   for (const line of perConfigCounts) console.log(`    ${line}`);
   console.log('');
 
-  // Read live-test contents once.
+  // Read live-test contents once, WITH COMMENTS STRIPPED.
+  //
+  // A comment cannot exercise anything. Counting one as coverage is not a
+  // near-miss, it is the opposite of what this gate is for, and it happened:
+  // a storage test asserted that a RETIREMENT MESSAGE names its replacement,
+  // and the verb literal inside that assertion plus the comment explaining it
+  // made `backup_restore` look exercised. The gate then demanded its allowlist
+  // entry be deleted as a debt paid, which would have recorded coverage that
+  // does not exist in the very file that tracks coverage that does not exist.
+  //
+  // STRING LITERALS ARE DELIBERATELY KEPT. A test that really drives a verb
+  // usually names it in a string -- `exec('rdc backup restore ...')` -- so
+  // excluding strings would blind the gate to genuine coverage. Comments are
+  // the part that can never be evidence.
   const liveTestText = new Map<string, string>();
-  for (const f of liveFiles) liveTestText.set(f, fs.readFileSync(f, 'utf-8'));
+  for (const f of liveFiles) liveTestText.set(f, stripComments(fs.readFileSync(f, 'utf-8')));
   const anyLiveTest = (needle: string): boolean => {
     for (const text of liveTestText.values()) if (text.includes(needle)) return true;
     return false;
@@ -434,7 +459,7 @@ async function main(): Promise<void> {
   // exactly the dead-coverage this gate exists to reject.
   const liveHelperText = new Map<string, string>();
   for (const f of helperFiles) {
-    const text = fs.readFileSync(f, 'utf-8');
+    const text = stripComments(fs.readFileSync(f, 'utf-8'));
     const helperMethods = parseHelperMethodNames(text);
     if (helperMethods.some((name) => anyLiveTest(`.${name}(`))) {
       liveHelperText.set(f, text);

@@ -53,3 +53,18 @@ repository_up_all
 # This entry expires itself: the gate REJECTS an allowlisted name that becomes
 # covered, so the day suite 26 goes live this line fails until it is deleted.
 backup_restore
+
+# BLOCKER: machine_uninstall tears the renet install off a machine, so exercising
+# it means sacrificing the very VM the rest of the suite runs on. No live config
+# provisions a throwaway machine for it, and adding one is fleet work this wave
+# does not carry.
+#
+# It was NEVER covered. It only looked covered because the header comment of
+# 01-system-checks.test.ts lists the whole setup DOMAIN, and check-e2e-coverage
+# counted a verb literal appearing anywhere in a live suite -- comments included.
+# Stripping comments from that scan is what surfaced this, so the entry is a
+# pre-existing debt made visible rather than a new one.
+#
+# This entry expires itself: the gate REJECTS an allowlisted name that becomes
+# covered, so the day a suite really drives it, this line fails until deleted.
+machine_uninstall
