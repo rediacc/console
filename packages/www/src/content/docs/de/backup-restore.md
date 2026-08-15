@@ -194,7 +194,7 @@ Um Backup-Artefakte auf einer Maschine zu sehen:
 rdc backup list -m server-1
 ```
 
-Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante Backups](#geplante-backups) (`hot/` und `cold/`) zusammenführt, sodass Sie jedes Backup in einer einzigen Ansicht sehen:
+Die Ausgabe listet die Snapshots, die der Chunk-Storage für dieses Repository vorhält:
 
 | Spalte | Bedeutung |
 |---|---|
@@ -206,23 +206,15 @@ Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante B
 
 Das Auflisten eines Storage-Backends wurde zusammen mit dem rclone-Zweig eingestellt; der Befehl verweigert die Ausführung und nennt diese beiden Ersatzbefehle.
 
-### Storage layout
+### Was Hot und Cold wirklich bedeuten
 
-Geplante Backups landen in moduspezifischen Unterordnern innerhalb des konfigurierten Ordners des Speichers, sodass derselbe Speicher sowohl den stündlichen als auch den wöchentlichen Stream sauber beherbergt, ohne sie zu vermischen:
+`--mode hot` und `--mode cold` beschreiben, wie das Repository während der Sicherung behandelt wird, nicht wo die Daten landen.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** erstellt einen Snapshot eines laufenden Repositorys. Container bedienen weiter Anfragen, und das Image wird mitten im Schreibvorgang erfasst, sodass das Backup absturzkonsistent ist: genau der Zustand, den Sie hätten, wenn der Maschine in diesem Moment der Strom ausgefallen wäre. Das reicht für alles, was sich aus dem eigenen Journal erholt, also für die meisten Datenbanken.
 
-Ein Repo kann sowohl in `hot/` als auch in `cold/` erscheinen (der stündliche Zeitplan erfasst es; der wöchentliche erfasst es erneut). Die zusammengeführte Auflistung zeigt beide Zeilen, sodass klar ist, welche Streams welche Repos abdecken.
+**Cold** stoppt zuerst die Container, schreibt auf die Platte, prüft, dass sie wirklich gestoppt sind, friert das Image ein und startet die Container erst danach neu. Das kostet einen echten Ausfall, aber dieser Ausfall ist das Einfrieren mit konstanter Dauer statt der Übertragung, und das Ergebnis ist anwendungskonsistent.
+
+Beide schreiben in denselben Chunk-Storage. Zellen werden über ihren Inhalt adressiert, sodass ein Repository, das sowohl von einem stündlichen Hot- als auch von einem wöchentlichen Cold-Zeitplan gesichert wird, die gemeinsamen Blöcke nur einmal statt zweimal speichert, und auch eine Fork-Familie teilt sie sich. Die Nutzung wird mit `rdc backup usage` gegen Ihr Kontingent angerechnet.
 
 ## Ein Repository nach dem anderen synchronisieren
 
@@ -349,7 +341,7 @@ Unterbrechungen sind sicher. Wird der Dienst gestoppt (oder die Maschine neu ges
 
 ### Strategie definieren
 
-Der kanonische Standard ist eine Aufteilung in zwei Strategien: ein schneller stündlicher Hot-Stream, der jedes Repo erfasst, und ein langsamerer wöchentlicher Cold-Stream, der anwendungskonsistente Snapshots erstellt. Die beiden Strategien schreiben in unterschiedliche Speicher-Unterordner (`hot/` und `cold/`), sodass sich Backups nie vermischen.
+Der kanonische Standard ist eine Aufteilung in zwei Strategien: ein schneller stündlicher Hot-Stream, der jedes Repo erfasst, und ein langsamerer wöchentlicher Cold-Stream, der Container für anwendungskonsistente Snapshots ruhig stellt. Beide schreiben in denselben Chunk-Storage, und gemeinsame Blöcke werden nur einmal statt pro Stream gespeichert.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Schließen Sie ein Repository aus dem hochfrequenten Lauf aus, wenn:
 
 > **Wenn die Daten rein regenerierbar sind**, überlegen Sie, ob Sie sie überhaupt sichern müssen. Eine Alternative ist, nur die rohen Quelleingaben (in diesem Beispiel die CSV-Dumps) zu sichern und die abgeleitete Kopie ganz zu überspringen. Ein wöchentliches Cold-Backup der Quelleingaben ist viel kleiner und für eine Wiederherstellung vollständig ausreichend.
 
-Repos, die aus keiner der beiden Strategien ausgeschlossen sind, erscheinen sowohl in den `hot/`- als auch in den `cold/`-Speicher-Unterordnern. Die zusammengeführte Ausgabe von `rdc backup list` zeigt beide Zeilen, sodass Sie überprüfen können, welche Streams welche Repos abdecken.
+Ein Repo, das von keiner der beiden Strategien ausgeschlossen wird, wird von beiden erfasst: Es hat stündliche absturzkonsistente Snapshots und einen wöchentlichen anwendungskonsistenten. `rdc backup snapshot list <repo>` zeigt sie gemeinsam an, und die gemeinsamen Blöcke werden nur einmal gespeichert.
 
 ## Backup-Operationen
 

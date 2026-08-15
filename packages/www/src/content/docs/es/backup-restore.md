@@ -194,7 +194,7 @@ Para ver los artefactos de respaldo que hay en una máquina:
 rdc backup list -m server-1
 ```
 
-La salida es una tabla unificada que combina ambas [carpetas de respaldos programados](#respaldos-programados) (`hot/` y `cold/`) para que veas cada respaldo en una sola vista:
+La salida lista los snapshots que el almacenamiento fragmentado guarda para ese repositorio:
 
 | Columna | Significado |
 |---|---|
@@ -206,23 +206,15 @@ La salida es una tabla unificada que combina ambas [carpetas de respaldos progra
 
 Listar un backend de almacenamiento quedó retirado junto con la rama de rclone; el comando se rechaza y nombra estos dos reemplazos.
 
-### Disposición de almacenamiento
+### Qué significan realmente hot y cold
 
-Los respaldos programados se escriben en subcarpetas por modo dentro de la carpeta configurada del almacenamiento, así el mismo almacenamiento aloja limpiamente tanto el flujo horario como el semanal sin mezclarlos:
+`--mode hot` y `--mode cold` describen cómo se trata el repositorio mientras se toma el respaldo, no dónde termina la data.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** toma un snapshot de un repositorio en ejecución. Los contenedores siguen atendiendo, y la imagen se captura a mitad de escritura, por lo que el respaldo es consistente ante fallos: exactamente lo que obtendrías si a la máquina se le cortara la luz en ese instante. Eso está bien para cualquier cosa que se recupere desde su propio journal, que es la mayoría de las bases de datos.
 
-Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma horario lo captura; el cronograma semanal lo vuelve a capturar). El listado combinado muestra ambas filas para que puedas ver qué flujos cubren qué repositorios.
+**Cold** detiene primero los contenedores, vuelca a disco, verifica que estén parados, congela la imagen y solo entonces los reinicia. Cuesta una inactividad real, pero esa inactividad es la congelación de duración constante y no la transferencia, y el resultado es consistente a nivel de aplicación.
+
+Ambos escriben en el mismo almacenamiento fragmentado. Las celdas se direccionan por contenido, así que un repositorio respaldado tanto por un cronograma hot cada hora como por uno cold cada semana almacena los bloques compartidos una sola vez en lugar de dos, y una familia de forks también los comparte. El uso se mide contra tu cuota con `rdc backup usage`.
 
 ## Sincronizar un Repositorio a la Vez
 
@@ -349,7 +341,7 @@ Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) ha
 
 ### Definir una Estrategia
 
-La configuración predeterminada es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que toma snapshots consistentes a nivel de aplicación. Las dos estrategias escriben en subcarpetas distintas del almacenamiento (`hot/` y `cold/`), así los flujos nunca se mezclan.
+La configuración predeterminada es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que detiene los contenedores para tomar snapshots consistentes a nivel de aplicación. Ambos escriben en el mismo almacenamiento fragmentado, y los bloques compartidos se almacenan una sola vez en lugar de una por flujo.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Excluye un repositorio de la ejecución de alta frecuencia cuando:
 
 > **Si los datos son puramente regenerables**, considera si necesitas respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
 
-Los repositorios que no se excluyen de ninguna estrategia aparecen en las subcarpetas `hot/` y `cold/` del almacenamiento. La salida combinada de `rdc backup list` muestra ambas filas para verificar qué flujos cubren qué repositorios.
+Un repositorio que ninguna de las dos estrategias excluye queda capturado por ambas, así que tiene snapshots horarios consistentes ante fallos y uno semanal consistente a nivel de aplicación. `rdc backup snapshot list <repo>` los muestra juntos, y los bloques que comparten se almacenan una sola vez.
 
 ## Operaciones de Respaldo
 

@@ -194,7 +194,7 @@ Masinal olevate varunduskoopiate nägemiseks:
 rdc backup list -m server-1
 ```
 
-Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](#ajastatud-varundamine) (`hot/` ja `cold/`), et näeksid kõiki varukoopiad ühes vaates:
+Väljund loetleb hetktõmmised, mida tükksalvestus selle repositooriumi jaoks hoiab:
 
 | Veerg | Tähendus |
 |---|---|
@@ -206,23 +206,15 @@ Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](
 
 Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.
 
-### Salvestuse paigutus
+### Mida hot ja cold tegelikult tähendavad
 
-Ajastatud varukopiad maanduvad salvestuse konfigureeritud kausta sees režiimipõhistes alamkaustades, nii et sama salvestus majutab puhtalt nii tunniset kui iganädalast voogu, ilma et need seguneksid:
+`--mode hot` ja `--mode cold` kirjeldavad, kuidas repositooriumi varukoopia võtmise ajal koheldakse, mitte seda, kuhu andmed jõuavad.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** teeb hetktõmmise töötavast repositooriumist. Konteinerid jätkavad teenindamist ja tõmmis jäädvustatakse kesk kirjutamist, seega on varukoopia krahhi-järjepidev: täpselt selline, nagu saaksid siis, kui masinal sel hetkel vool kaoks. See sobib kõigele, mis taastub oma logist, ehk enamikule andmebaasidele.
 
-Repo võib ilmuda nii `hot/` kui ka `cold/` kaustas (tunnine ajakava teeb sellest hetktõmmise; iganädalane ajakava teeb uuesti). Ühendatud loend näitab mõlemat rida, nii et on selge, millised vood milliseid repo-sid katavad.
+**Cold** peatab kõigepealt konteinerid, kirjutab kettale, kontrollib, et need on peatunud, külmutab tõmmise ja alles siis käivitab konteinerid uuesti. See maksab tõelise seisaku, kuid see seisak on konstantse kestusega külmutus, mitte ülekanne, ja tulemus on rakenduse-järjepidev.
+
+Mõlemad kirjutavad samasse tükksalvestusse. Rakud on aadresseeritud sisu järgi, seega repositoorium, mida varundatakse nii tunnise hot- kui ka iganädalase cold-ajakavaga, salvestab jagatud rakud üks kord, mitte kaks, ja ka forkide perekond jagab neid. Kasutust arvestatakse sinu kvoodi vastu käsuga `rdc backup usage`.
 
 ## Sünkroniseeri üks repositoorium korraga
 
@@ -349,7 +341,7 @@ Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb va
 
 ### Strateegia määratlemine
 
-Kanooniline vaikeväärtus on kahe strateegiaga jaotus: kiire tunnine hot-voog, mis hõlmab kõiki repo-sid, ja aeglasem iganädalane cold-voog, mis teeb rakenduse-ühilduvaid hetktõmmiseid. Kaks strateegiat kirjutavad erinevatesse salvestuse alamkaustadesse (`hot/` ja `cold/`), nii et varukopiad ei segune kunagi.
+Kanooniline vaikeväärtus on kahe strateegiaga jaotus: kiire tunnine hot-voog, mis hõlmab kõiki repo-sid, ja aeglasem iganädalane cold-voog, mis peatab konteinerid rakenduse-järjepidevate hetktõmmiste jaoks. Mõlemad kirjutavad samasse tükksalvestusse ja jagatud rakud salvestatakse üks kord, mitte iga voo kohta eraldi.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
 
 > **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
 
-Repositooriumid, mis ei ole kummastki strateegiast välja jäetud, ilmuvad mõlemas salvestuse alamkaustas `hot/` ja `cold/`. `rdc backup list` ühendatud väljund näitab mõlemat rida, nii et saate kontrollida, millised vood milliseid repositooriumeid katavad.
+Repositoorium, mida kumbki strateegia välja ei jäta, saab hõlmatud mõlema poolt, nii et sellel on tunnised krahhi-järjepidevad hetktõmmised ja üks iganädalane rakenduse-järjepidev hetktõmmis. `rdc backup snapshot list <repo>` näitab neid koos, ning nende jagatud rakud salvestatakse üks kord.
 
 ## Varundamistoimingud
 
