@@ -22,9 +22,10 @@
         "executorAmbiguous": "Registreeritud on rohkem kui üks masin; täpsusta salvestuse loetelu lipuga @<machine>, et öelda, milline seda käitab.",
         "listing": "Varukoopiate loetlemine...",
         "optionPath": "Alamkataloog salvestuse juures. Kui jäetakse välja, loetletakse ja ühendatakse hot/ ja cold/.",
-        "optionStorage": "Loetle artefaktid sellel salvestuse lõpp-punktil",
+        "optionStorage": "LÕPETATUD: salvestusteenuse loetelu eemaldati koos rclone'i haruga",
         "placementExclusive": "Anna täpselt üks: --machine või --storage, mitte mõlemad.",
-        "placementRequired": "Määra --machine <m> või --storage <s>, et öelda, kust loetleda."
+        "placementRequired": "Määra --machine <m> või --storage <s>, et öelda, kust loetleda.",
+        "storageRetired": "Salvestusteenuse sisu loetlemine on lõpetatud: rclone'i pilveharu eemaldati. Tükihoidla hetktõmmised loetle käsuga `rdc backup snapshot list`, masinal olevad artefaktid käsuga `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",
@@ -56,6 +57,7 @@
         "restored": "\"{{name}}\" taastatud masinale {{machine}}",
         "restoringSnapshot": "\"{{name}}\" taastamine hetktõmmisest {{snapshot}}...",
         "sourceUnknown": "Hoidlat nimega \"{{name}}\" ei tunta selles konfiguratsioonis, seega selle varukoopia artefakti ei õnnestu leida.",
+        "storageRetired": "Salvestusteenusest taastamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu",
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "Põhihoidla \"{{grand}}\" ülevõtmine forgi \"{{fork}}\" andmetega masinal \"{{machine}}\"..."
       },
       "pull": {
-        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
+        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
         "description": "Tõmba hoidla kaugelt (masin või salvestus). Jäta nimi välja, et tõmmata kõik hoidlad. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
         "descriptionShort": "Tõmba hoidla kaugelt (masin või salvestus)",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionUp": "Pärast tõmbamist haagi külge ja juuruta hoidla sellel masinal",
         "pulling": "Hoidla \"{{repo}}\" varukoopia tõmbamine...",
-        "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)"
+        "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
+        "storageRetired": "Salvestusteenusest tõmbamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --from-machine"
       },
       "push": {
-        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
+        "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
         "description": "Lükka hoidla kaugele (masin või salvestus). Sihtkoha tüüp tuvastatakse automaatselt konfiguratsioonist. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia/migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Lükatud koopia maandub varukoopia ARTEFAKTINA: käivita see sihtmasinal käsuga 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Lükka hoidla kaugele (masin või salvestus)",
         "destRequired": "Määra --to <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
         "examples": {
-          "toMachine": "Saada hoidla teisele masinale.",
-          "toStorage": "Saada hoidla salvestusruumi taustaprogrammi."
+          "toMachine": "Saada hoidla teisele masinale."
         },
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
         "optionCheckpoint": "Loo CRIU kontrollpunkt enne varukoopiat (jäädvustab protsessi mäluseisundi otseülekandeks)",
@@ -1498,7 +1500,8 @@
         "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
         "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
         "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
-        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul"
+        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul",
+        "storageRetired": "Salvestusteenusesse saatmine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke varundus käib nüüd käsuga `rdc backup snapshot` (üleslaadimine) ja `rdc backup restore <repo> --at <snapshot>` (allalaadimine), mõlemad tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --to-machine"
       },
       "refMachineConflict": "Hoidla viide tuletab oma masina ise. Kasuta -m/--machine ainult masinaülese vormi jaoks: repo {{verb}} --all -m <machine>.",
       "replicate": {

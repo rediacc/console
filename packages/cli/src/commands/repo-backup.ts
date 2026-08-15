@@ -158,6 +158,26 @@ async function narrowRemoteToDataPlane(
   return { type: resolved.type, name: resolved.name };
 }
 
+/**
+ * The storage arm is retired, and this refuses it HERE rather than letting the
+ * machine answer.
+ *
+ * renet already refuses a storage destination with errStorageRetired(), so this
+ * is not the only guard. It exists because without it the operator pays an SSH
+ * round trip to be told no, and because the CLI was still ADVERTISING the path
+ * in its own help and examples while the engine refused it. That gap is how the
+ * backup-restore tutorial kept running `rdc repo push my-app --to my-storage`
+ * and failing 14 seconds into a CI job, and how the E2E suite kept asserting
+ * rclone flags that no longer exist.
+ *
+ * The sentence matches renet's, deliberately: an operator who hits this from a
+ * script and from a terminal should not have to work out that they are the same
+ * refusal.
+ */
+function refuseRetiredStorage(kind: 'push' | 'pull'): never {
+  throw new ValidationError(t(`commands.repo.${kind}.storageRetired`));
+}
+
 /** Resolve backup target from CLI options. */
 async function resolvePushTarget(
   options: Record<string, unknown>
@@ -166,7 +186,12 @@ async function resolvePushTarget(
     return { type: 'machine', name: options.toMachine as string };
   }
   if (options.to) {
-    return narrowRemoteToDataPlane(await resolveRemoteName(options.to as string));
+    const resolved = await narrowRemoteToDataPlane(await resolveRemoteName(options.to as string));
+    if (resolved.type === 'storage') {
+      refuseRetiredStorage('push');
+    }
+
+    return resolved;
   }
   throw new ValidationError(t('commands.repo.push.destRequired'));
 }
@@ -333,7 +358,12 @@ async function resolvePullSource(
     return { type: 'machine', name: options.fromMachine as string };
   }
   if (options.from) {
-    return narrowRemoteToDataPlane(await resolveRemoteName(options.from as string));
+    const resolved = await narrowRemoteToDataPlane(await resolveRemoteName(options.from as string));
+    if (resolved.type === 'storage') {
+      refuseRetiredStorage('pull');
+    }
+
+    return resolved;
   }
   throw new ValidationError(t('commands.repo.pull.sourceRequired'));
 }

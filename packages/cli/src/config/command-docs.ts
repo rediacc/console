@@ -103,11 +103,11 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       descriptionKey: 'commands.repo.list.examples.byDatastore',
     },
   ],
+  // The storage examples are gone with the arm they demonstrated. An example is
+  // the most load-bearing documentation there is: the backup-restore tutorial
+  // ran `rdc repo push my-app --to my-storage` straight out of this list and
+  // failed 14 seconds into a CI job.
   'repo push': [
-    {
-      command: 'rdc repo push shop --to backups-s3',
-      descriptionKey: 'commands.repo.push.examples.toStorage',
-    },
     {
       command: 'rdc repo push shop --to-machine server-1',
       descriptionKey: 'commands.repo.push.examples.toMachine',
@@ -115,11 +115,11 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
   ],
   'repo pull': [
     {
-      command: 'rdc repo pull shop --from backups-s3',
+      command: 'rdc repo pull shop --from-machine server-1',
       descriptionKey: 'commands.repo.pull.examples.basic',
     },
     {
-      command: 'rdc repo pull shop --from backups-s3 --up',
+      command: 'rdc repo pull shop --from-machine server-1 --up',
       descriptionKey: 'commands.repo.pull.examples.andStart',
     },
   ],

@@ -22,9 +22,10 @@
         "executorAmbiguous": "Hay más de una máquina registrada; cualifica el listado de almacenamiento con @<machine> para indicar cuál lo ejecuta.",
         "listing": "Listando copias de seguridad...",
         "optionPath": "Subdirectorio dentro de la raíz del almacenamiento. Si se omite, se listan y combinan hot/ y cold/.",
-        "optionStorage": "Listar artefactos en este almacenamiento",
+        "optionStorage": "RETIRADO: el listado de almacenamiento se eliminó junto con el brazo de rclone",
         "placementExclusive": "Pasa exactamente uno de --machine o --storage, no ambos.",
-        "placementRequired": "Especifica --machine <m> o --storage <s> para indicar de dónde listar."
+        "placementRequired": "Especifica --machine <m> o --storage <s> para indicar de dónde listar.",
+        "storageRetired": "Listar un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. Las instantáneas del almacén de bloques se listan con `rdc backup snapshot list`, y los artefactos de una máquina con `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Listar los manifiestos de instantáneas de copia de seguridad registrados en el servidor",
@@ -56,6 +57,7 @@
         "restored": "Se restauró {{name}} en {{machine}}",
         "restoringSnapshot": "Restaurando {{name}} desde la instantánea {{snapshot}}...",
         "sourceUnknown": "No se conoce ningún repositorio llamado \"{{name}}\" en esta configuración, así que no se puede localizar su artefacto de copia de seguridad.",
+        "storageRetired": "Restaurar desde un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La restauración puntual se hace con `rdc backup restore <repo> --at <snapshot>` sobre el almacén de bloques",
         "targetExists": "\"{{name}}\" ya existe. Restaura con otro nombre (--as) o elimina primero el repositorio existente."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "Tomando el control de \"{{grand}}\" con datos de \"{{fork}}\" en \"{{machine}}\"..."
       },
       "pull": {
-        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
         "deployFailed": "Error al desplegar \"{{repo}}\" después de pull",
+        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
         "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Obtener repositorio de un remoto (máquina o almacenamiento). Omitir el nombre para obtener todos los repos. El tipo de origen se detecta automáticamente desde la configuración. Use --up para desplegar después del pull",
         "descriptionShort": "Obtener repositorio de un remoto (máquina o almacenamiento)",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
         "optionUp": "Después de pull, montar y desplegar el repositorio en esta máquina",
         "pulling": "Obteniendo respaldo de \"{{repo}}\"...",
-        "sourceRequired": "Especifique --from <remote> (nombre de máquina o almacenamiento de la configuración)"
+        "sourceRequired": "Especifique --from <remote> (nombre de máquina o almacenamiento de la configuración)",
+        "storageRetired": "Descargar desde un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La restauración puntual se hace con `rdc backup restore <repo> --at <snapshot>` sobre el almacén de bloques. La transferencia entre máquinas no cambia: usa --from-machine"
       },
       "push": {
-        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
         "deployFailed": "Error al desplegar \"{{repo}}\" después del envío",
+        "deployed": "Repositorio \"{{repo}}\" desplegado en {{machine}}",
         "deploying": "Desplegando \"{{repo}}\" en {{machine}}...",
         "description": "Enviar repositorio a un remoto (máquina o almacenamiento). Omitir el nombre para enviar todos los repos. El tipo de destino se detecta automáticamente desde la configuración. Para transferencia entre máquinas, la imagen cifrada del repo se copia con el MISMO GUID — esto es un respaldo/migración, no un fork. Para crear un fork independiente, use 'repo fork' primero, luego push. Use --up para desplegar después del push",
         "descriptionShort": "Enviar repositorio a un remoto (máquina o almacenamiento)",
         "destRequired": "Especifique --to <remote> (nombre de máquina o almacenamiento de la configuración)",
         "examples": {
-          "toMachine": "Envía un repositorio a otra máquina.",
-          "toStorage": "Envía un repositorio a un backend de almacenamiento."
+          "toMachine": "Envía un repositorio a otra máquina."
         },
         "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: \"6M\", \"10M\")",
         "optionCheckpoint": "Crear checkpoint CRIU antes del respaldo (captura el estado de memoria del proceso para migración en vivo)",
@@ -1498,7 +1500,8 @@
         "pushing": "Enviando respaldo de \"{{repo}}\" a {{dest}}...",
         "statsDelta": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
         "statsFull": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (completo)",
-        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}",
+        "storageRetired": "Enviar a un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. La copia puntual se hace con `rdc backup snapshot` (subida) y `rdc backup restore <repo> --at <snapshot>` (descarga), ambas sobre el almacén de bloques. La transferencia entre máquinas no cambia: usa --to-machine"
       },
       "refMachineConflict": "Una referencia de repositorio ya deriva su propia máquina. Usa -m/--machine solo para la forma a nivel de máquina: repo {{verb}} --all -m <machine>.",
       "replicate": {

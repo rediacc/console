@@ -22,9 +22,10 @@
         "executorAmbiguous": "Plusieurs machines sont enregistrées ; précisez le listage du stockage avec @<machine> pour indiquer laquelle l'exécute.",
         "listing": "Listage des sauvegardes...",
         "optionPath": "Sous-répertoire dans la racine du stockage. Si omis, hot/ et cold/ sont listés et fusionnés.",
-        "optionStorage": "Lister les artefacts sur ce point de terminaison de stockage",
+        "optionStorage": "RETIRÉ : le listage du stockage a disparu avec le bras rclone",
         "placementExclusive": "Passez exactement l'un de --machine ou --storage, pas les deux.",
-        "placementRequired": "Spécifiez --machine <m> ou --storage <s> pour indiquer d'où lister."
+        "placementRequired": "Spécifiez --machine <m> ou --storage <s> pour indiquer d'où lister.",
+        "storageRetired": "Lister un backend de stockage est retiré : le bras cloud rclone a été supprimé. Les instantanés du magasin de blocs se listent avec `rdc backup snapshot list`, les artefacts d'une machine avec `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Lister les manifestes d'instantanés de sauvegarde enregistrés sur le serveur",
@@ -56,6 +57,7 @@
         "restored": "{{name}} restauré sur {{machine}}",
         "restoringSnapshot": "Restauration de {{name}} depuis l'instantané {{snapshot}}...",
         "sourceUnknown": "Aucun dépôt nommé \"{{name}}\" n'est connu dans cette configuration, son artefact de sauvegarde est donc introuvable.",
+        "storageRetired": "La restauration depuis un backend de stockage est retirée : le bras cloud rclone a été supprimé. La restauration ponctuelle passe par `rdc backup restore <repo> --at <snapshot>` via le magasin de blocs",
         "targetExists": "\"{{name}}\" existe déjà. Restaurez sous un autre nom (--as) ou supprimez d'abord le dépôt existant."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "Prise de contrôle de \"{{grand}}\" avec les données de \"{{fork}}\" sur \"{{machine}}\"..."
       },
       "pull": {
-        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deployFailed": "Échec du déploiement de \"{{repo}}\" après le pull",
+        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Tirer un dépôt depuis un distant (machine ou stockage). Omettre le nom pour tirer tous les dépôts. Le type de source est détecté automatiquement depuis la configuration. Utilisez --up pour déployer après le pull",
         "descriptionShort": "Tirer un dépôt depuis un distant (machine ou stockage)",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "Stratégie de delta par blocs lors de l'utilisation d'une base de delta : auto, physical ou shared",
         "optionUp": "Après le pull, monter et déployer le dépôt sur cette machine",
         "pulling": "Récupération de la sauvegarde de \"{{repo}}\"...",
-        "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)"
+        "sourceRequired": "Spécifiez --from <remote> (nom de machine ou stockage depuis la configuration)",
+        "storageRetired": "La récupération depuis un backend de stockage est retirée : le bras cloud rclone a été supprimé. La restauration ponctuelle passe par `rdc backup restore <repo> --at <snapshot>` via le magasin de blocs. Le transfert entre machines est inchangé : utilisez --from-machine"
       },
       "push": {
-        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deployFailed": "Échec du déploiement de \"{{repo}}\" après l'envoi",
+        "deployed": "Dépôt \"{{repo}}\" déployé sur {{machine}}",
         "deploying": "Déploiement de \"{{repo}}\" sur {{machine}}...",
         "description": "Pousser un dépôt vers un distant (machine ou stockage). Le type de cible est détecté automatiquement depuis la configuration. Pour un transfert machine-à-machine, l'image chiffrée du dépôt est copiée avec le MÊME GUID — c'est une sauvegarde/migration, pas un fork. Pour créer un fork indépendant, utilisez d'abord 'repo fork', puis push. Une copie poussée atterrit comme un ARTEFACT de sauvegarde : démarrez-le sur la cible avec 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Pousser un dépôt vers un distant (machine ou stockage)",
         "destRequired": "Spécifiez --to <remote> (nom de machine ou stockage depuis la configuration)",
         "examples": {
-          "toMachine": "Pousser un dépôt vers une autre machine.",
-          "toStorage": "Pousser un dépôt vers un backend de stockage."
+          "toMachine": "Pousser un dépôt vers une autre machine."
         },
         "optionBwlimit": "Limite de bande passante pour le transfert rsync (ex : \"6M\", \"10M\")",
         "optionCheckpoint": "Créer un checkpoint CRIU avant la sauvegarde (capture l'état de la mémoire des processus pour la migration à chaud)",
@@ -1498,7 +1500,8 @@
         "pushing": "Envoi de la sauvegarde de \"{{repo}}\" vers {{dest}}...",
         "statsDelta": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (delta par rapport à la base {{base}}, image {{image}})",
         "statsFull": "\"{{repo}}\" envoyé vers {{machine}} — {{transferred}} transférés en {{duration}} (transfert complet)",
-        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} — terminé en {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" envoyé vers {{machine}} — terminé en {{duration}}",
+        "storageRetired": "L'envoi vers un backend de stockage est retiré : le bras cloud rclone a été supprimé. La sauvegarde ponctuelle passe par `rdc backup snapshot` (envoi) et `rdc backup restore <repo> --at <snapshot>` (récupération), toutes deux via le magasin de blocs. Le transfert entre machines est inchangé : utilisez --to-machine"
       },
       "refMachineConflict": "Une réf de dépôt dérive sa propre machine. N'utilisez -m/--machine que pour la forme à l'échelle de la machine : repo {{verb}} --all -m <machine>.",
       "replicate": {

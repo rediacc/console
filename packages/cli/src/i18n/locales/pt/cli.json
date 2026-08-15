@@ -22,9 +22,10 @@
         "executorAmbiguous": "Está registada mais do que uma máquina; qualifique a listagem do armazenamento com @<machine> para indicar qual a executa.",
         "listing": "A listar cópias de segurança...",
         "optionPath": "Subdiretório dentro da raiz do armazenamento. Se omitido, hot/ e cold/ são listados e combinados.",
-        "optionStorage": "Listar artefactos neste armazenamento",
+        "optionStorage": "DESCONTINUADO: a listagem de armazenamento saiu junto com o braço do rclone",
         "placementExclusive": "Passe exatamente um de --machine ou --storage, não ambos.",
-        "placementRequired": "Especifique --machine <m> ou --storage <s> para indicar de onde listar."
+        "placementRequired": "Especifique --machine <m> ou --storage <s> para indicar de onde listar.",
+        "storageRetired": "Listar um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. Os snapshots do chunk store são listados com `rdc backup snapshot list` e os artefatos de uma máquina com `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Listar os manifestos de snapshots de cópia de segurança registados no servidor",
@@ -56,6 +57,7 @@
         "restored": "{{name}} restaurado em {{machine}}",
         "restoringSnapshot": "A restaurar {{name}} a partir do snapshot {{snapshot}}...",
         "sourceUnknown": "Não é conhecido nenhum repositório chamado \"{{name}}\" nesta configuração, pelo que o seu artefacto de cópia de segurança não pode ser localizado.",
+        "storageRetired": "Restaurar de um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. A restauração pontual é feita com `rdc backup restore <repo> --at <snapshot>` sobre o chunk store",
         "targetExists": "\"{{name}}\" já existe. Restaure com outro nome (--as) ou elimine primeiro o repositório existente."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "A fazer takeover de \"{{grand}}\" com os dados de \"{{fork}}\" em \"{{machine}}\"..."
       },
       "pull": {
-        "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deployFailed": "Falha ao implementar \"{{repo}}\" após recepção",
+        "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
         "description": "Receber repositório de um destino remoto (máquina ou armazenamento). Omita o nome para receber todos os repositórios. O tipo de origem é detectado automaticamente a partir da configuração. Use --up para implementar após a recepção.",
         "descriptionShort": "Receber repositório de um destino remoto (máquina ou armazenamento)",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "Estratégia de delta de blocos ao usar uma base de delta: auto, physical ou shared",
         "optionUp": "Após a recepção, montar e implementar o repositório nesta máquina",
         "pulling": "A receber cópia de segurança de \"{{repo}}\"...",
-        "sourceRequired": "Especifique --from <remoto> (máquina ou nome de armazenamento da configuração)"
+        "sourceRequired": "Especifique --from <remoto> (máquina ou nome de armazenamento da configuração)",
+        "storageRetired": "Baixar de um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. A restauração pontual é feita com `rdc backup restore <repo> --at <snapshot>` sobre o chunk store. A transferência entre máquinas continua igual: use --from-machine"
       },
       "push": {
-        "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deployFailed": "Falha ao implementar \"{{repo}}\" após envio",
+        "deployed": "Repositório \"{{repo}}\" implementado em {{machine}}",
         "deploying": "A implementar \"{{repo}}\" em {{machine}}...",
         "description": "Enviar repositório para um destino remoto (máquina ou armazenamento). O tipo de destino é detectado automaticamente a partir da configuração. Para transferência entre máquinas, a imagem encriptada do repositório é copiada com o MESMO GUID -- trata-se de uma cópia de segurança/migração, não de um fork. Para criar um fork independente, use 'repo fork' primeiro e depois envie. Uma cópia enviada fica como um ARTEFACTO de cópia de segurança: arranque-o no destino com 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Enviar repositório para um destino remoto (máquina ou armazenamento)",
         "destRequired": "Especifique --to <remoto> (máquina ou nome de armazenamento da configuração)",
         "examples": {
-          "toMachine": "Envia um repositório para outra máquina.",
-          "toStorage": "Envia um repositório para um backend de armazenamento."
+          "toMachine": "Envia um repositório para outra máquina."
         },
         "optionBwlimit": "Limite de largura de banda para transferência rsync (por ex., \"6M\", \"10M\")",
         "optionCheckpoint": "Criar ponto de verificação CRIU antes da cópia de segurança (captura o estado de memória do processo para migração em directo)",
@@ -1498,7 +1500,8 @@
         "pushing": "A enviar cópia de segurança de \"{{repo}}\" para {{dest}}...",
         "statsDelta": "\"{{repo}}\" enviado para {{machine}} — {{transferred}} transferidos em {{duration}} (delta sobre a base {{base}}, imagem {{image}})",
         "statsFull": "\"{{repo}}\" enviado para {{machine}} — {{transferred}} transferidos em {{duration}} (transferência completa)",
-        "statsNoBytes": "\"{{repo}}\" enviado para {{machine}} — concluído em {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" enviado para {{machine}} — concluído em {{duration}}",
+        "storageRetired": "Enviar para um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. O backup pontual é feito com `rdc backup snapshot` (envio) e `rdc backup restore <repo> --at <snapshot>` (download), ambos sobre o chunk store. A transferência entre máquinas continua igual: use --to-machine"
       },
       "refMachineConflict": "Uma ref de repositório já deriva a sua própria máquina. Use -m/--machine apenas para a forma ao nível da máquina: repo {{verb}} --all -m <machine>.",
       "replicate": {
