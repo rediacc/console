@@ -35,7 +35,7 @@ after fold, before append = nothing written, next invocation re-syncs.
 
 The sidecars (.requests, .sessions, .loop, .reggate-*,
 .pollbase-*, .pollmark-*, .cistate-*, .cimark-*, .ciqueue-*, .stuck-*,
-.croncount-*, .blocks, .waiter-*, .waiternudge-*, .state-*, .events.*,
+.croncount-*, .blocks-*, .waiter-*, .waiternudge-*, .state-*, .events.*,
 .lastevent-*, .emails, .emailunconf-*, .failwarned, .reaped-*, .agentstate.*)
 keep their v5-v9 formats and names: their shapes
 are pinned by the suite and by living sessions, and consolidating them buys
@@ -311,6 +311,76 @@ def trap_headings(root):
 
 def requests_path(worklist):
     return worklist.with_suffix(".requests")
+
+
+def intents_path(worklist):
+    return worklist.with_suffix(".intents")
+
+
+# An intent is a statement of PLAN, never evidence of work. The ceiling exists
+# because an intent that outlives its own horizon while the checks it covered are
+# still outstanding must become a violation rather than a mute button.
+INTENT_MAX_CHARS = 240
+INTENT_DEFAULT_MIN = int(os.environ.get("WORKLIST_INTENT_DEFAULT_MIN", "45"))
+INTENT_MAX_MIN = int(os.environ.get("WORKLIST_INTENT_MAX_MIN", "120"))
+
+
+def record_intent(worklist, me, text, covers, minutes):
+    """Append one intent. A SIDECAR, never the event log.
+
+    The event log is folded by `compact` down to the minimal item-reproducing
+    set, so a novel event kind there would be silently destroyed. `.requests` is
+    the precedent this follows.
+    """
+    _append_lines(
+        intents_path(worklist),
+        str(intents_path(worklist)) + ".lock",
+        [
+            {
+                "at": C.stamp_now(),
+                "by": (me or "")[:8],
+                "text": (text or "")[:INTENT_MAX_CHARS],
+                "covers": sorted({c for c in (covers or []) if c})[:12],
+                "min": max(1, min(int(minutes or INTENT_DEFAULT_MIN), INTENT_MAX_MIN)),
+            }
+        ],
+    )
+
+
+def live_intent(worklist, session_id, now=None):
+    """(intent_or_None, expired_or_None) for THIS session.
+
+    Returns the newest unexpired intent, and separately the newest EXPIRED one
+    whose horizon has passed -- the caller turns that second value into a
+    violation, which is what stops `--intent` becoming a way to go quiet
+    indefinitely.
+    """
+    p = intents_path(worklist)
+    if not p.exists():
+        return None, None
+    now = now or C.utcnow()
+    live, expired = None, None
+    try:
+        rows = p.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None, None
+    for line in rows:
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if not C.same_session(str(rec.get("by") or ""), session_id):
+            continue
+        when = C.parse_stamp(str(rec.get("at") or ""))
+        if when is None:
+            continue
+        age_min = (now - when).total_seconds() / 60.0
+        if age_min <= float(rec.get("min") or INTENT_DEFAULT_MIN):
+            live = rec
+        else:
+            expired = rec
+
+    return live, expired
 
 
 # ---- per-session state doc --------------------------------------------------
@@ -1586,26 +1656,43 @@ def state_world_sig(root, worklist, session_id, fold=None, transcript_path=None)
     a commit, a task flip), which is exactly when the recovery document
     genuinely needs rewriting.
 
-    Still SEPARATE from world_sig after v17 made that one structural too, and
-    the difference is ownership: this key covers EVERY item, because another
-    session's item landing on the branch is a reason to rewrite the recovery
-    document, while world_sig covers only this session's own, because another
-    session's bookkeeping is not a reason to pay a full stop battery."""
+    Still SEPARATE from world_sig after v17 made that one structural too, but
+    NO LONGER by covering every item byte-for-byte. That was the v18 bug: with
+    ~48 addressable agents in one worktree, ANY peer's --add/--tick/--state moved
+    this key, so a check whose contract is "an unchanged world never stales it"
+    degenerated into "fires every 15 minutes" and was indistinguishable from
+    wall-clock at the point of observation. A session measured TEN forced
+    continuations in one night, several of them this check firing while the
+    session was doing exactly what its STATE.md already described.
+
+    The fix is the one v17 already applied to world_sig (see :1519): scope the
+    detail to MY items. A peer's bookkeeping is not a reason to rewrite my
+    recovery document. But a peer starting a genuinely new program still is, so
+    their items survive as a COARSE BUCKET (count//10) rather than as content:
+    ten peer items appearing moves the key, one peer ticking one does not.
+    Deliberately asymmetric, and the asymmetry is the whole point."""
     ts = C.task_statuses(session_id, transcript_path)
     try:
         f = fold if fold is not None else load(worklist, sync=False)
-        items = "|".join(
-            "%s:%s:%s:%s"
-            % (
-                r["id"],
-                r["state"],
-                r.get("owner") or "",
-                hashlib.sha1(
-                    str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
-                ).hexdigest()[:8],
-            )
-            for r in sorted(f.items, key=lambda x: x["id"])
-        )
+        mine, peers = [], 0
+        for r in sorted(f.items, key=lambda x: x["id"]):
+            if C.owned_by_me(r.get("owner"), session_id):
+                mine.append(
+                    "%s:%s:%s:%s"
+                    % (
+                        r["id"],
+                        r["state"],
+                        r.get("owner") or "",
+                        hashlib.sha1(
+                            str(r.get("basetext") or r.get("text") or "").encode("utf-8", "replace")
+                        ).hexdigest()[:8],
+                    )
+                )
+            else:
+                peers += 1
+        # Peers as a bucket, not as content: a new PROGRAM arriving on the branch
+        # still stales the recovery document, a peer's routine tick does not.
+        items = "|".join(mine) + "|peers:%d" % (peers // 10)
     except Exception:  # noqa: BLE001 -- an unreadable store must still yield a stable key
         items = "unreadable"
     blob = "|".join(

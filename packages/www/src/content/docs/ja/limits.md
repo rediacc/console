@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: ja
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # 制限とクォータ
@@ -138,8 +138,8 @@ CRIU によるライブマイグレーションには以下の制約がありま
 |------|-----|
 | リポジトリあたりのバックアップ先 | 無制限 |
 | 同時バックアップジョブ | リポジトリあたり 1（同時にトリガーされた場合、ジョブはキューに入ります） |
-| バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます。`rdc backup strategy set <name> --bwlimit "6M"` でアップロード速度を制限できます（rclone `--bwlimit` 構文: simple `6M`、directional `6M:off`、またはタイムテーブル `08:00,3M;22:00,10M`） |
-| 保持期間 | ストレージプロバイダー（S3、Cloudflare R2 など）によって制御されます。Rediacc は保持ポリシーを強制しません。 |
+| バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます。`rdc backup strategy set <name> --bwlimit "6M"` でアップロード速度を制限できます |
+| 保持期間 | `rdc backup retention set` で宣言し（GFS パラメータ: `--keep-last`、`--keep-hourly`、`--keep-daily`、`--keep-weekly`、`--keep-monthly`、`--keep-yearly`）、サーバー側で強制されます。`rdc backup retention clear` で解除されます。チャンクストレージはプランのクォータに対して、物理的に一意に保存されたバイト数として計測されるため、スナップショット間およびフォークファミリー全体での重複排除は 1 回のみカウントされます: Community 10 GiB、Professional 100 GiB、Business 500 GiB、Enterprise 2 TiB。`rdc backup usage` で確認できます。従来の storage-push 経路には独自の保持機能はなく、ご利用のストレージプロバイダーによって管理されます。 |
 | マシン間バックアップ | サポート対象。デスティネーションマシンに十分なデータストア容量が必要です |
 
 ---

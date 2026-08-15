@@ -4,20 +4,20 @@
  */
 
 // CSV utilities
-export { buildCSVContent, escapeCSVValue } from './csv';
+export { buildCSVContent, escapeCSVValue } from './csv.js';
 // Text formatting
-export { unescapeLogOutput } from './format';
-export type { LogLevel, ParsedLogLine } from './logParser';
+export { unescapeLogOutput } from './format.js';
+export type { LogLevel, ParsedLogLine } from './logParser.js';
 // Log parsing
-export { parseLogLevel, parseLogLine, parseLogOutput } from './logParser';
+export { parseLogLevel, parseLogLine, parseLogOutput } from './logParser.js';
 // Property normalization
-export { normalizeToBoolean, normalizeToNumber, normalizeToString } from './normalize';
+export { normalizeToBoolean, normalizeToNumber, normalizeToString } from './normalize.js';
 // Progress parsing
-export { extractMostRecentProgress, extractProgressMessage } from './progress';
+export { extractMostRecentProgress, extractProgressMessage } from './progress.js';
 // Search utilities
-export { searchInFields } from './search';
+export { searchInFields } from './search.js';
 // Size parsing utilities
-export { calculateResourcePercent, parseMemorySize } from './size';
+export { calculateResourcePercent, parseMemorySize } from './size.js';
 // Sorting utilities
 export {
   compareValues,
@@ -25,9 +25,9 @@ export {
   createCustomSorter,
   createDateSorter,
   createSorter,
-} from './sorting';
-export type { SSHTestResult } from './sshTestResult';
+} from './sorting.js';
+export type { SSHTestResult } from './sshTestResult.js';
 // SSH test parsing
-export { parseSshTestResult } from './sshTestResult';
+export { parseSshTestResult } from './sshTestResult.js';
 // Version comparison
-export { compareVersions, isValidVersion, InvalidVersionError } from './version';
+export { compareVersions, isValidVersion, InvalidVersionError } from './version.js';

@@ -198,6 +198,42 @@ export const StateSchema = z.object({
 
   networkIds: z.object({ next: z.number().int().optional() }).optional(),
   certCache: z.record(z.string(), AcmeCertCacheSchema).optional(),
+
+  /**
+   * Host-local record of the last chunk-store backup activity per repo (keyed by
+   * repo name). Written via `configFileStorage.updateState` so it never bumps the
+   * version counter and is stripped from any push (R2-F2) — a scheduled run has no
+   * CLI present and the server ledger is authoritative for billing; this is only
+   * a local convenience surfaced by `rdc backup` reads. Same host-local doctrine
+   * as `licenseRefresh`/`renetProvision`. All leaves are public runtime
+   * observations, so none is committed.
+   */
+  backupRuns: z
+    .record(
+      z.string(),
+      z.object({
+        /** ISO timestamp of the last recorded run for this repo. */
+        lastRunAt: z.string(),
+        /** What produced this record. */
+        // 'snapshot' is the chunk-store write path. 'backup' is the retired
+        // rclone push, kept accepted so run histories written before the
+        // cutover still parse; nothing emits it. This enum and BackupRunKind
+        // in packages/cli/src/services/backup/backup-runs-state.ts are the
+        // same vocabulary declared twice; they must be changed together.
+        kind: z.enum(['backup', 'snapshot', 'restore', 'verify']),
+        /** Outcome verbatim (e.g. ok, failed, verified, mismatch, no-backup). */
+        status: z.string(),
+        /** Snapshot id involved, when the run addressed one. */
+        snapshotId: z.string().optional(),
+        /** Physical unique stored bytes as of the last read, when known. */
+        storedBytes: z.number().int().optional(),
+        /** Bytes added by the last backup run, when known. */
+        addedBytes: z.number().int().optional(),
+        /** Failure detail, when the run did not succeed. */
+        error: z.string().optional(),
+      })
+    )
+    .optional(),
   /** Managed read-replica sets keyed by set name (spec 05 §1, R2-F17). */
   replicaSets: z.record(z.string(), ReplicaSetSchema).optional(),
   /** Managed canary sets keyed by set name (spec 05 §2, R2-F17). */

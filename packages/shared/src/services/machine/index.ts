@@ -3,4 +3,4 @@
  */
 
 // Parsing services (vault status, repository deployment)
-export * from './parsing';
+export * from './parsing.js';

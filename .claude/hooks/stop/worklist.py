@@ -632,16 +632,78 @@ def _item_cli(argv, worklist):
             if wid in _running:
                 verified = " (worker verified against the harness's running tasks)"
             else:
+                # Name BOTH causes, and annotate the ids. The message used to
+                # offer only "you named an Agent", which sends a caller hunting
+                # for a task id that does not exist when the real cause is the
+                # second one: the sidecar event is a SNAPSHOT, so a task started
+                # moments ago is legitimately absent from it.
+                #
+                # The ids are annotated with their output-file age because the
+                # bare list reads as "these are alive" and it is not: this list
+                # is the harness's last word, and a task whose process has died
+                # stays in it. A caller trusted that literally this session and
+                # nearly pointed a second writer at a dead worker's files.
                 print(
                     "WARNING: worker:%s is not among the harness's running background "
-                    "task ids (%s). If you named an Agent, lease its TASK id instead; "
-                    "the hook verifies against these ids and anything else reads as "
-                    "unverifiable." % (wid, ", ".join(_running[:10]) or "none")
+                    "task ids. Two causes: you leased an Agent's NAME instead of its "
+                    "task id, OR the task started after the last sidecar snapshot, "
+                    "which is expected and harmless. Last known running (age = minutes "
+                    "since its output last grew; a stale age means the entry may "
+                    "already be dead): %s" % (wid, _annotated_running(_running, me) or "none")
                 )
         S.lease_item(worklist, me, item_id, until, wid, note)
         print("leased #%s until %s on %s%s" % (item_id, until, wm, verified))
         return
     die("unknown item mode %s" % mode)
+
+
+def _annotated_running(ids, me):
+    """Render harness-reported running task ids with their output-file age.
+
+    The bare id list reads as a roster of LIVE workers, and it is not: it is
+    the harness's last word, and an entry stays in it after its process dies.
+    A caller in this session read that list literally, concluded a worker was
+    alive, and came within one command of pointing a second writer at the files
+    a dead worker had been given. The age is the cheapest available correction:
+    it comes from the output stream's mtime, which no self-report can fake.
+
+    Silent about what it cannot measure. A task with no output file yet (an
+    agent that reports only at completion) is printed bare rather than accused,
+    for the same reason the ladder reports an unverifiable worker instead of
+    declaring it dead.
+    """
+    facts = {}
+    try:
+        # Resolve the task directory by SESSION PREFIX. The liveness module
+        # derives it from a full session id supplied by the harness event, and
+        # there is no event on this path -- a --lease is a plain CLI call. The
+        # first cut passed an empty id, found no files, and annotated nothing
+        # while still printing a confident list: a check that silently could not
+        # fire, which is worse than no check because the caller reads the bare
+        # ids as verified.
+        munged = re.sub(r"[^A-Za-z0-9]", "-", os.getcwd())
+        root = os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), munged)
+        base = ""
+        with contextlib.suppress(OSError):
+            for d in sorted(os.listdir(root)):
+                if d.startswith(me) and os.path.isdir(os.path.join(root, d, "tasks")):
+                    base = os.path.join(root, d, "tasks")
+                    break
+        if not base:
+            return ", ".join(ids[:10])
+        for i in ids:
+            with contextlib.suppress(OSError):
+                st = os.stat(os.path.join(base, i + ".output"))
+                facts[i] = int((time.time() - st.st_mtime) / 60.0)
+    except Exception:  # noqa: BLE001 -- an annotation must never break the lease
+        facts = {}
+
+    out = []
+    for i in ids[:10]:
+        age = facts.get(i)
+        out.append("%s (%dm)" % (i, age) if age is not None else i)
+
+    return ", ".join(out)
 
 
 def _reassign_cli(argv):
@@ -1019,6 +1081,56 @@ def main():
             )
         print("loop declared for %s, next fire %s" % (sys.argv[2], sys.argv[3]))
         return
+    if sys.argv[1:2] == ["--intent"]:
+        # `worklist.py --intent <me> '<=240 chars>' [--covers <key|#id> ...] [--for <min>]`
+        #
+        # A statement of PLAN. It is NOT evidence of work, and the gating below
+        # is deliberately tiny because of that: it reprioritises the rotation and
+        # answers the two checks whose entire content is a status question. It
+        # can never satisfy tick evidence, and it never touches the integrity,
+        # judge or deferral tiers.
+        argv = sys.argv[2:]
+        me = argv[0] if argv else ""
+        if not C.PREFIX_RE.match(me or ""):
+            sys.stderr.write(M.CLI_INTENT_USAGE)
+            sys.exit(2)
+        _identity_or_die(me, _die2)
+        covers, minutes, words = [], S.INTENT_DEFAULT_MIN, []
+        i = 1
+        while i < len(argv):
+            if argv[i] == "--covers" and i + 1 < len(argv):
+                covers.append(argv[i + 1].lstrip("#"))
+                i += 2
+            elif argv[i] == "--for" and i + 1 < len(argv):
+                try:
+                    minutes = int(argv[i + 1])
+                except ValueError:
+                    sys.stderr.write(M.CLI_INTENT_USAGE)
+                    sys.exit(2)
+                i += 2
+            else:
+                words.append(argv[i])
+                i += 1
+        text = " ".join(words).replace("\n", " ").strip()
+        if not text:
+            sys.stderr.write(M.CLI_INTENT_USAGE)
+            sys.exit(2)
+        wl = C.worklist_for(C.project_start())
+        S.record_intent(wl, me, text, covers, minutes)
+        print(
+            "intent recorded for %s (%d chars, %d min horizon%s).\n"
+            "  It reprioritises the rotation and answers `brief`/`agent-state`. It is NOT "
+            "evidence: ticks still need it, and the integrity, judge and deferral tiers are "
+            "untouched. If it expires while what it covers is still outstanding, that "
+            "becomes its own violation."
+            % (
+                me,
+                len(text),
+                max(1, min(minutes, S.INTENT_MAX_MIN)),
+                ", covering " + ", ".join(covers) if covers else "",
+            )
+        )
+        return
     if sys.argv[1:2] == ["--brief"]:
         # Same class as --loop above, same fix.
         if len(sys.argv) <= 2:
@@ -1051,6 +1163,24 @@ def main():
         stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
         with open(wl.with_suffix(".sessions"), "a", encoding="utf-8") as fh:
             fh.write("%s %s %s\n" % (prefix, stamp, text))
+        # Stamp the WORLD alongside the brief, so the staleness check can ask
+        # whether reality moved rather than only whether the clock did. A brief
+        # describing an unchanged world is still accurate at 91 minutes, and
+        # nagging for a rewrite of an accurate sentence is the pure-wall-clock
+        # failure this closes. The check falls back to wall-clock when the key
+        # is absent, so an older brief -- or one written while wl_store was
+        # broken -- behaves exactly as before.
+        #
+        # Best-effort and last, deliberately: this branch is self-contained so a
+        # broken sibling cannot take the brief channel down, and that guarantee
+        # outranks the optimisation. The brief is already on disk by this point.
+        try:
+            _root = C.project_start()
+            _doc = S.load_state(wl, prefix)
+            _doc["brief_sig"] = S.state_world_sig(_root, wl, prefix)
+            S.save_state(wl, prefix, _doc)
+        except Exception:  # noqa: BLE001 -- never let the sig block the brief
+            pass
         print("brief recorded for %s (%d chars)" % (prefix, len(text)))
         return
     if sys.argv[1:2] and sys.argv[1] in ("--ask", "--answer", "--decline", "--ack", "--requests"):

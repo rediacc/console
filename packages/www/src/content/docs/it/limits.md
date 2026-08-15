@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: it
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Limiti e Quote
@@ -138,8 +138,8 @@ La migrazione live tramite CRIU ha i seguenti vincoli:
 |-------|-------|
 | Destinazioni di backup per repository | Illimitate |
 | Job di backup simultanei | 1 per repository (i job si accodano se attivati contemporaneamente) |
-| Frequenza di backup | Nessun intervallo minimo imposto; limitata dalla larghezza di banda di archiviazione. Usa `rdc backup strategy set <name> --bwlimit "6M"` per limitare la velocità di upload (sintassi rclone `--bwlimit`: semplice `6M`, direzionale `6M:off`, o timetable `08:00,3M;22:00,10M`) |
-| Conservazione | Controllata dal tuo provider di archiviazione (S3, Cloudflare R2, ecc.). Rediacc non applica politiche di conservazione. |
+| Frequenza di backup | Nessun intervallo minimo imposto; limitata dalla larghezza di banda di archiviazione. Usa `rdc backup strategy set <name> --bwlimit "6M"` per limitare la velocità di upload |
+| Conservazione | Dichiarata con `rdc backup retention set` (parametri GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e applicata lato server; `rdc backup retention clear` la rimuove. Lo storage a chunk viene misurato rispetto a una quota del piano come byte fisici unici memorizzati, quindi i dati identici tra snapshot e in un'intera famiglia di fork vengono conteggiati una sola volta: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, verificabile con `rdc backup usage`. Il percorso legacy di push su storage non ha una propria conservazione ed è gestito dal tuo provider. |
 | Backup tra macchine | Supportato; la macchina di destinazione deve avere spazio sufficiente nel datastore |
 
 ---
@@ -157,7 +157,7 @@ La migrazione live tramite CRIU ha i seguenti vincoli:
 
 ## Versioni OS Supportate
 
-Le macchine remote devono eseguire uno dei seguenti sistemi per soddisfare i requisiti di kernel, file system e isolamento di rete di Rediacc. Questo elenco è il set testato in CI (matrice Bridge Workers) e deve rimanere sincronizzato con [Requisiti](/en/docs/requirements):
+Le macchine remote devono eseguire uno dei seguenti sistemi per soddisfare i requisiti di kernel, file system e isolamento di rete di Rediacc. Questo elenco è il set testato in CI (matrice Bridge Workers) e deve rimanere sincronizzato con [Requisiti](/it/docs/requirements):
 
 | OS | Versione Minima | Kernel Predefinito | Note |
 |----|-----------------|----------------|-------|
@@ -171,7 +171,7 @@ Le macchine remote devono eseguire uno dei seguenti sistemi per soddisfare i req
 
 > **Perché il kernel 6.1?** Rediacc usa BTRFS per l'archiviazione cifrata dei repository e il forking copy-on-write. Linux 6.1 ha introdotto miglioramenti critici a BTRFS che riducono significativamente i tempi di mount per datastore di grandi dimensioni, migliorano le prestazioni di eliminazione degli snapshot e correggono problemi di integrità dei dati presenti nei kernel precedenti. Il kernel 6.1 è anche necessario per gli hook di isolamento di rete a livello kernel che applicano l'isolamento tra repository, riscrivendo in modo trasparente le chiamate `bind()` e bloccando le connessioni tra repository.
 
-> **Perché non Rocky Linux 10 / RHEL 10 stock kernel?** Il kernel stock di RHEL 10 non include il modulo `btrfs` (`modprobe btrfs` fallisce con "Module btrfs not found"). Il backend di archiviazione cifrata di Rediacc non può funzionare senza btrfs. **Oracle Linux 10 è l'unico target compatibile con RHEL nell'elenco supportato** perché usa per impostazione predefinita l'Unbreakable Enterprise Kernel (UEK), che mantiene btrfs. Vedi [Requisiti -> Perché UEK?](/en/docs/requirements) per la spiegazione completa.
+> **Perché non Rocky Linux 10 / RHEL 10 stock kernel?** Il kernel stock di RHEL 10 non include il modulo `btrfs` (`modprobe btrfs` fallisce con "Module btrfs not found"). Il backend di archiviazione cifrata di Rediacc non può funzionare senza btrfs. **Oracle Linux 10 è l'unico target compatibile con RHEL nell'elenco supportato** perché usa per impostazione predefinita l'Unbreakable Enterprise Kernel (UEK), che mantiene btrfs. Vedi [Requisiti -> Perché UEK?](/it/docs/requirements) per la spiegazione completa.
 
 ### Matrice delle funzionalità del kernel
 

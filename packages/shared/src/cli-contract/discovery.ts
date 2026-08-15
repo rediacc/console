@@ -17,7 +17,7 @@
  * block.
  */
 
-import type { ResourceKind } from './types';
+import type { ResourceKind } from './types.js';
 
 /** Config families (of `resources`) that back a config-sourced discovery. */
 export type DiscoveryFamily =

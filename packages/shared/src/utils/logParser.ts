@@ -3,7 +3,7 @@
  * Used by StructuredLogView to display logs in a structured table/list format
  */
 
-import { unescapeLogOutput } from './format';
+import { unescapeLogOutput } from './format.js';
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'debug';
 

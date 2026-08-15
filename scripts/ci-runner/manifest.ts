@@ -103,6 +103,14 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-i18n-locale-only', run: 'npm run check:ci-i18n-locale-only', gate: true, leaves: ['scripts/check-locale-only-edits.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n" } },
   { id: 'check:types', run: 'npm run check:types', gate: true, mutex: ['build-artifacts'], heavy: true, leaves: ['tsc'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "TypeScript" } },
   { id: 'check:test-cli', run: 'npm run check:test-cli', gate: true, weight: 2, heavy: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Run CLI unit tests" } },
+  // `Run shared package tests` has run in CI for a long time with NO manifest
+  // entry, so `npm run ci` never ran packages/shared's tests locally: CI caught
+  // them, a pre-push run did not. The parity gate could not see the hole
+  // because R2 only matches `.ci/scripts/**` leaves and a bare vitest is not
+  // one. Both entries below close that, and are `check:test-*` rather than
+  // `check:ci-*` because R1 only demands manifest membership for the latter.
+  { id: 'check:test-shared', run: 'npm run check:test-shared', gate: true, weight: 2, heavy: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Run shared package tests" } },
+  { id: 'check:test-www', run: 'npm run check:test-www', gate: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Run www unit tests" } },
   // A FOURTH www-dist consumer, which the plan's F5 list did not have.
   // workers/www/src/__tests__/redirect-aliases.test.ts:3 statically imports
   // packages/www/dist/route-manifest.json. `astro build` empties dist before
@@ -124,6 +132,13 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-security-audit', run: 'npm run check:ci-security-audit', gate: true, leaves: ['.ci/scripts/security/audit.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: "Audit" } },
   { id: 'check:ci-scope-scripts-reachability', run: 'npm run check:ci-scope-scripts-reachability', gate: true, leaves: ['.ci/scripts/quality/check-scope-scripts-reachability.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-security', step: 'Scope map — reachable scripts/ paths force full CI' } },
   { id: 'check:ci-mutate-check', run: 'npm run check:ci-mutate-check', gate: true, leaves: ['.ci/scripts/quality/check-mutate-check.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Mutation runner self-test" } },
+  // The 675-assertion suite behind the stop hook. check:ci-mutate-check does
+  // NOT cover this: it drives a miniature fixture-suite.sh to prove the
+  // MUTATION RUNNER still reports four verdicts, and never runs the real suite.
+  // So until this entry the hook logic was gated by nothing, and a hand fix to
+  // it could regress silently -- which is exactly how the dead i18n rules
+  // survived. `heavy` because it is minutes, not seconds.
+  { id: 'check:ci-hook-worklist-suite', run: 'npm run check:ci-hook-worklist-suite', gate: true, weight: 2, heavy: true, leaves: ['.claude/hooks/stop/test-worklist-v5.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Stop-hook worklist suite" } },
   { id: 'check:ci-shell-lint', run: 'npm run check:ci-shell-lint', gate: true, leaves: ['.ci/scripts/security/shellcheck.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Shell lint" } },
   { id: 'check:ci-shell-format', run: 'npm run check:ci-shell-format', gate: true, leaves: ['.ci/scripts/security/shfmt.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Shell format" } },
   { id: 'check:ci-python-lint', run: 'npm run check:ci-python-lint', gate: true, leaves: ['.ci/scripts/quality/check-python-lint.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Python lint + format (ruff)" } },
@@ -135,6 +150,7 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-no-inline-python', run: 'npm run check:ci-no-inline-python', gate: true, leaves: ['.ci/scripts/quality/check_inline_python.py'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "No inline Python in JS/TS" } },
   { id: 'check:ci-i18n-value-types', run: 'npm run check:ci-i18n-value-types', gate: true, leaves: ['.ci/scripts/quality/check_i18n_value_types.py'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-content', step: "i18n value types match English" } },
   { id: 'check:ci-lint-rule-liveness', run: 'npm run check:ci-lint-rule-liveness', gate: true, leaves: ['.ci/scripts/quality/check_lint_rule_liveness.py'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-content', step: "Enabled lint rules can actually fire" } },
+  { id: 'check:ci-agent-hint-liveness', run: 'npm run check:ci-agent-hint-liveness', gate: true, leaves: ['.ci/scripts/quality/check_agent_hint_liveness.py'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-content', step: "Agent hints can actually fire" } },
   { id: 'check:ci-lint-scope-coverage', run: 'npm run check:ci-lint-scope-coverage', gate: true, leaves: ['.ci/scripts/quality/check_lint_scope_coverage.py'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Every source file reaches a linter" } },
   { id: 'check:ci-shell-commands', run: 'npm run check:ci-shell-commands', gate: true, leaves: ['.ci/scripts/security/check-commands.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Shell commands exist on the runner image" } },
   { id: 'check:ci-gate-id-convention', run: 'npm run check:ci-gate-id-convention', gate: true, leaves: ['.ci/scripts/quality/check-gate-id-convention.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "Gate registration follows the gates/ convention" } },
@@ -160,6 +176,7 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-i18n-placeholders', run: 'npm run check:ci-i18n-placeholders', gate: true, leaves: ['scripts/check-i18n-placeholders.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n placeholders" } },
   { id: 'check:ci-i18n-untranslated', run: 'npm run check:ci-i18n-untranslated', gate: true, leaves: ['scripts/check-i18n-untranslated.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n untranslated" } },
   { id: 'check:ci-i18n-cross-locale', run: 'npm run check:ci-i18n-cross-locale', gate: true, leaves: ['scripts/check-i18n-cross-locale.ts','scripts/check-locale-de-contamination.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n cross-locale" } },
+  { id: 'check:ci-docs-structure-parity', run: 'npm run check:ci-docs-structure-parity', gate: true, leaves: ['scripts/check-docs-structure-parity.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "Docs structure parity" } },
   // Chained into check:ci-i18n-cross-locale rather than given a workflow step of its
   // own, so it inherits a REAL CI home instead of a 'local-only' BLOCKER. The two are
   // the same defect class read by two instruments: the stopword detector identifies a
@@ -171,6 +188,28 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-i18n-command-parity', run: 'npm run check:ci-i18n-command-parity', gate: true, leaves: ['scripts/check-cli-docs.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-i18n', step: "i18n command parity" } },
   { id: 'check:ci-config-migrations', run: 'npm run check:ci-config-migrations', gate: true, leaves: ['.ci/scripts/quality/check-config-migrations.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Check config-migration runner + fixtures" } },
   { id: 'check:ci-schema-coverage', run: 'npm run check:ci-schema-coverage', gate: true, leaves: ['scripts/check-schema-coverage.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Schema coverage" } },
+  { id: 'check:ci-shared-constant-duplication', run: 'npm run check:ci-shared-constant-duplication', gate: true, leaves: ['scripts/check-shared-constant-duplication.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Shared constant duplication" } },
+  { id: 'check:ci-shared-esm-resolvable', run: 'npm run check:ci-shared-esm-resolvable', gate: true, leaves: ['scripts/check-shared-esm-resolvable.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Shared ESM resolvable" } },
+  { id: 'check:ci-runtime-imports-are-deps', run: 'npm run check:ci-runtime-imports-are-deps', gate: true, leaves: ['scripts/check-runtime-imports-are-deps.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Runtime imports are dependencies" } },
+  { id: 'check:ci-backup-manifest-shape-parity', run: 'npm run check:ci-backup-manifest-shape-parity', gate: true, leaves: ['scripts/check-backup-manifest-shape-parity.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Backup manifest shape parity" } },
+  { id: 'check:ci-backup-protocol-conformance', run: 'npm run check:ci-backup-protocol-conformance', gate: true, leaves: ['scripts/check-backup-protocol-conformance.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Backup protocol conformance" } },
+  // Covers the CLASS the conformance gate above cannot see: that gate pins
+  // the key fields EXIST on both sides of the wire, this one pins that the
+  // client never COMPOSES a key when one is missing. The composing fallback
+  // was introduced twice, and the second time it was duplicated into the
+  // read path, because each path's tests passed in isolation.
+  { id: 'check:ci-no-client-key-composition', run: 'npm run check:ci-no-client-key-composition', gate: true, leaves: ['scripts/check-no-client-key-composition.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "No client-side key composition" } },
+  // The knobs are spelled in FOUR places (shared schema, account DTO, the
+  // sweep that enforces them, the CLI flags). A knob present in three and
+  // absent from the sweep is a rule that silently does nothing, and each
+  // layer's own tests pass because each layer is internally consistent.
+  { id: 'check:ci-retention-knob-parity', run: 'npm run check:ci-retention-knob-parity', gate: true, leaves: ['scripts/check-retention-knob-parity.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Retention knob parity" } },
+  // The CLASS behind four separate findings this program hit: an unrun test
+  // suite reads exactly like a passing one. private/account/web ran 1 of 34
+  // files, packages/www ran none, packages/shared ran in CI but never
+  // locally, and packages/json runs nowhere. This gate makes a suite
+  // impossible to be invisible to BOTH CI and the omissions record.
+  { id: 'check:ci-test-scripts-reachable', run: 'npm run check:ci-test-scripts-reachable', gate: true, leaves: ['scripts/check-test-scripts-reachable.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-code', step: "Test suites are CI-reachable" } },
   { id: 'check:ci-editorconfig', run: 'npm run check:ci-editorconfig', gate: true, leaves: ['.ci/scripts/quality/check-editorconfig.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-static', step: "EditorConfig" } },
   { id: 'check:ci-account-portal', run: 'npm run check:ci-account-portal', gate: true, heavy: true, leaves: ['.ci/scripts/quality/check-account-portal.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Check account portal (typecheck + build)" } },
   { id: 'check:ci-account-server', run: 'npm run check:ci-account-server', gate: true, mutex: ['account-vitest'], weight: 2, heavy: true, leaves: ['.ci/scripts/private/run-account.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Run account integration tests" } },
@@ -179,7 +218,13 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-account-no-node-env-routes', run: 'npm run check:ci-account-no-node-env-routes', gate: true, leaves: ['grep','echo'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Assert no NODE_ENV branching in account routes" } },
   { id: 'check:ci-account-no-admin-role', run: 'npm run check:ci-account-no-admin-role', gate: true, leaves: ['grep','echo'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check no admin user role (must be root)" } },
   { id: 'check:ci-account-scope-audit', run: 'npm run check:ci-account-scope-audit', gate: true, mutex: ['account-vitest'], weight: 2, heavy: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check scope registry audit" } },
-  { id: 'check:ci-console-coverage', run: 'npm run check:ci-console-coverage', gate: true, mutex: ['account-vitest'], weight: 2, heavy: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Console contract coverage" } },
+  // Runs the WHOLE private/account/web tree, not just the contract-coverage
+  // file it used to name. That one file was 1 of 34; the other 33 (config key
+  // slots, the config session provider, useJobStream, executor-session, all of
+  // src/lib) could go red while CI stayed green. Renamed rather than quietly
+  // widened, because the step name is the only thing a reader of a red log
+  // sees and "Console contract coverage" would then be lying about 33 files.
+  { id: 'check:ci-test-account-web', run: 'npm run check:ci-test-account-web', gate: true, mutex: ['account-vitest'], weight: 2, heavy: true, leaves: ['vitest'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-packages', step: "Account portal unit tests" } },
   { id: 'check:ci-renet', run: 'npm run check:ci-renet', gate: true, mutex: ['renet-bin'], leaves: ['.ci/scripts/private/run-renet.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Run renet quality" } },
   { id: 'check:ci-go-deps', run: 'npm run check:ci-go-deps', gate: true, leaves: ['.ci/scripts/quality/check-go-deps.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check Go dependency freshness" } },
   { id: 'check:ci-renet-types', run: 'npm run check:ci-renet-types', gate: true, mutex: ['renet-bin'], leaves: ['.ci/scripts/quality/check-renet-types.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check renet types freshness" } },
@@ -199,6 +244,8 @@ export const GATES: readonly GateSpec[] = [
   { id: 'check:ci-embed-credits', run: 'npm run check:ci-embed-credits', gate: true, leaves: ['scripts/check-embed-credits.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed credits consistency" } },
   { id: 'check:ci-embed-arch-parity', run: 'npm run check:ci-embed-arch-parity', gate: true, leaves: ['scripts/check-embed-arch-parity.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed arch parity" } },
   { id: 'check:ci-embed-asset-freshness', run: 'npm run check:ci-embed-asset-freshness', gate: true, leaves: ['scripts/check-embed-asset-freshness.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embed-asset upstream freshness" } },
+  { id: 'check:ci-embed-asset-versions', run: 'npm run check:ci-embed-asset-versions', gate: true, leaves: ['scripts/check-embed-asset-versions.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check embedded asset versions match their pins" } },
+  { id: 'check:ci-recovery-context', run: 'npm run check:ci-recovery-context', gate: true, leaves: ['scripts/check-recovery-context.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check recovery functions get an uncancellable context" } },
   { id: 'check:ci-no-otlp-creds', run: 'npm run check:ci-no-otlp-creds', gate: true, leaves: ['.ci/scripts/quality/check-no-otlp-creds.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-build-renet.yml', job: 'build-renet', step: "Assert no OTLP credentials baked into the built binaries" } },
   { id: 'check:ci-subscription-schema', run: 'npm run check:ci-subscription-schema', gate: true, leaves: ['.ci/scripts/quality/check-subscription-schema.sh'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-go', step: "Check subscription schema consistency" } },
   { id: 'check:ci-pricing-consistency', run: 'npm run check:ci-pricing-consistency', gate: true, leaves: ['scripts/check-pricing-consistency.ts'], ci: { kind: 'step', workflow: '.github/workflows/ci-quality.yml', job: 'quality-content', step: "Pricing consistency" } },

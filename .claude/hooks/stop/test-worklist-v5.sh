@@ -55,6 +55,7 @@ setup() {
     # Cases that test cron behavior (25, 26, 34, 35, 101+) or I6 pin their own.
     CRONS='[{"id":"w","schedule":"17 * * * *"},{"id":"p","schedule":"*/5 * * * *"}]'
     JUDGE_MODE=off
+    CADENCE=off
     # The v13 F2 email knobs. Reset here for the same reason every other knob
     # is: a stray WORKLIST_EMAIL_TRANSPORT leaking out of one case would make a
     # later case write mail into a stale directory, and a stray WORKLIST_SES_ENV
@@ -100,6 +101,19 @@ setup() {
     # branch is `agenttest` and no real report carries it -- a hermetic suite
     # must not depend on a branch name never colliding.
     export WORKLIST_REPORTS_DIR="$BASE/reports"
+    # PINNED INTO THE FIXTURE, for exactly the reason above. Unset, the
+    # specialist-agent matcher (wl_agents) scores every case in this suite
+    # against the OPERATOR'S REAL .claude/agents, so a case's verdict would
+    # change whenever somebody edited an agent description -- a suite that
+    # fails on someone else's prose edit. Empty by default, which is the
+    # silent corpus every case that is not 209 wants.
+    mkdir -p "$BASE/agents"
+    export WORKLIST_AGENTS_DIR="$BASE/agents"
+    # The hint knobs, reset for the same reason every other knob is: a leaked
+    # WORKLIST_AGENT_HINT=off from case 209I would silently mute the feature
+    # for every case after it, and the absence assertions would still pass.
+    unset WORKLIST_AGENT_HINT WORKLIST_AGENT_HINT_MAX_PER_SESSION
+    unset WORKLIST_AGENT_HINT_MIN_SCORE WORKLIST_AGENT_HINT_MIN_MARGIN
     mkdir -p "$BASE/proj/.agent/agenttest"
     WL="$BASE/tmp/claude-worklist/$(echo "$BASE/proj" | sed 's|[^A-Za-z0-9._-]|_|g' | sed 's/^_//').md"
     : >"$WL"
@@ -119,6 +133,14 @@ import json,sys
 rec={"type":"assistant","message":{"content":[{"type":"text","text":sys.argv[1]}]}}
 open(sys.argv[2],"a").write(json.dumps(rec)+"\n")
 ' "$1" "$BASE/t.jsonl"
+}
+
+mk_agent() { # mk_agent <name> <description> -- one fixture agent in the corpus
+    # INVENTED NOUNS ONLY in the cases below. A fixture that borrows the real
+    # agents' vocabulary would pass or fail depending on prose nobody thinks of
+    # as test data, which is the same coupling WORKLIST_AGENTS_DIR removes.
+    printf -- '---\nname: %s\ndescription: %s\ntools: Bash\nmodel: opus\n---\nbody text\n' \
+        "$1" "$2" >"$BASE/agents/$1.md"
 }
 
 task() { # task <id> <status> <subject> [blockedBy-csv]
@@ -381,11 +403,24 @@ fixcommit() { # fixcommit <file> <subject>
 }
 
 run() { # feed the hook a Stop event and print its raw JSON verdict
+    # CADENCE OFF BY DEFAULT HERE, and this is a deliberate trade worth naming.
+    # The cadence stands the hook down for one turn after it demanded and the
+    # session answered, so ANY case shaped block -> new say -> block sees a pause
+    # instead of the second block. That is most of this suite, and rewriting
+    # hundreds of assertions to alternate would make them harder to read without
+    # making them truer: what they exist to pin is WHAT each check says when it
+    # fires, not the pacing between firings.
+    #
+    # The cost is real and must not be forgotten: with this off, none of the
+    # cases below exercise the cadence, so the guards are only as covered as the
+    # dedicated cases that set CADENCE=on explicitly (214*). If you add a guard,
+    # add a case there -- nothing here will catch it for you.
     printf '{"session_id":"%s","cwd":"%s","transcript_path":"%s","session_crons":%s,"background_tasks":%s}' \
         "$SID" "$BASE/proj" "$BASE/t.jsonl" "${CRONS:-[]}" "${BG:-[]}" |
         TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
             WORKLIST_AGENT_BRANCH="${WORKLIST_AGENT_BRANCH-agenttest}" \
             WORKLIST_JUDGE="${JUDGE_MODE:-off}" GITHUB_ACTIONS="${GHA:-}" \
+            WORKLIST_CADENCE="${CADENCE:-off}" \
             python3 "$HOOK" 2>"$BASE/err.txt"
 }
 
@@ -452,6 +487,23 @@ print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>
         echo "  FAIL: $label (want=$want got=$got, needle '$needle' $(grep -qF "$needle" <<<"$out" && echo present || echo MISSING))"
         echo "        out: ${out:0:220}"
         [[ -s "$BASE/err.txt" ]] && echo "        err: $(head -c 200 "$BASE/err.txt")"
+        FAIL=$((FAIL + 1))
+    fi
+}
+
+check_absent() { # check_absent <label> <expect-decision> <must-NOT-contain>
+    local label="$1" want="$2" needle="$3" out
+    out="$(run)"
+    local got
+    got="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$out" 2>/dev/null)"
+    if [[ "$got" == "$want" ]] && ! grep -qF "$needle" <<<"$out"; then
+        echo "  PASS: $label"
+        PASS=$((PASS + 1))
+    else
+        echo "  FAIL: $label (want=$want got=$got, needle '$needle' $(grep -qF "$needle" <<<"$out" && echo PRESENT || echo absent))"
+        echo "        out: ${out:0:220}"
         FAIL=$((FAIL + 1))
     fi
 }
@@ -645,6 +697,16 @@ brief_now
 task 7 pending "thing"
 plant_state 'wip'
 check "a too-short STATE.md blocks" block "STATE.md is thin"
+# 1.4 CONTROL: a SHAPE verdict must carry no age at all. `thin` is about the
+# body, and printing a staleness limit beside it suggests that waiting or
+# re-stamping would help. Without this control the change above could have
+# simply appended a phrase everywhere and still read as wall-clock.
+OUT="$(run)"
+if ! grep -qE "min old" <<<"$OUT"; then
+    pass "212b CONTROL: a thin STATE.md carries no age, because age is irrelevant to shape"
+else
+    fail "212b CONTROL: a shape verdict printed an age: ${OUT:0:300}"
+fi
 
 echo "== 20. PostCompact hands back STATE.md, RULES.md AND the trap titles =="
 setup
@@ -1776,6 +1838,50 @@ check "3 stops with nothing moved blocks" block "EMPLOY A PLANNING OR INVESTIGAT
 
 echo "== 51. and it RESETS, so stop 4 is quiet again =="
 check "the nag is rate-limited, not every-stop" allow ""
+
+# 51b. THE DEFERRAL BLIND SPOT. The stuck check used to fire on
+# `something_remains`, which counts `[?]` deferrals. A `[?]` is BY CONSTRUCTION
+# the one shape a session cannot advance -- it is parked on the operator's
+# decision or on a capability only they hold -- so "nothing moved" is the
+# CORRECT outcome there, not a stall, and the remedy the check prints (delegate
+# to a Plan/Explore agent) cannot work: the constraint is authority, not
+# knowledge. Measured 2026-08-15, the two survivors were "set four Worker
+# secrets with the operator's Cloudflare session" and "delete the last restore
+# path once a machine has round-tripped a repo". The only way to satisfy the
+# check was to spawn a decorative agent, i.e. to game it.
+#
+# `[>]` deliberately still counts as actionable (case 53 covers it): work on a
+# worker genuinely can stall, and the bg-wait check reports that separately.
+echo "== 51b. CONTROL: with ONLY [?] deferrals left, the stuck check stays quiet =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | blocked on the operator | deferred |"
+echo '- [?] (deadbeef) set the four Worker secrets DEFAULT: hold, it needs the operator session' >>"$WL"
+check "deferral-only stop 1 is quiet" allow ""
+check "deferral-only stop 2 is quiet" allow ""
+# The third identical stop is where case 50 fires. It must NOT here.
+check "deferral-only stop 3 does NOT demand an agent" allow ""
+
+echo "== 51c. and one OPEN item alongside the deferral restores the demand =="
+setup
+brief_now
+hand_now
+say "answer
+
+## Remaining
+| #7 | thing | pending, me |"
+echo '- [?] (deadbeef) a parked question DEFAULT: hold' >>"$WL"
+echo '- [ ] (deadbeef) something I can actually do' >>"$WL"
+# An open item blocks EVERY stop on its own account, so these two assert the
+# OTHER blocker by name -- the point is that the stuck demand is absent until
+# the third stop, and then present.
+check "mixed stop 1 blocks on the open item, not the stuck check" block "OPEN worklist item"
+check "mixed stop 2 blocks on the open item, not the stuck check" block "OPEN worklist item"
+check "an actionable item alongside a deferral still trips it" block "EMPLOY A PLANNING OR INVESTIGATION AGENT"
 
 echo "== 52. a task changing status counts as movement =="
 setup
@@ -3023,6 +3129,7 @@ ARITY = {
     "N_JUDGE_STAMP": ("m", "approved"),
     "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
     "N_OUTQ_MORE": (3,),
+    "N_AGENT_HINT": ("a", "a", "t, t"), "N_AGENT_CORPUS_ERR": ("rows",),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),
@@ -3043,6 +3150,11 @@ ARITY = {
     "V_CL_FLIP": ("d", "executing", "rows", "d"), "V_CL_WAVES": ("s", "d", "rows"),
     "N_CL_FOREIGN": ("s", "o", ""),
     "N_CL_FOREIGN_DRIFT": ("d", "executing", "o", "rows"),
+    "N_CL_DOOR_PARKED": ("d", 1, "rows"),
+    "N_CADENCE_PAUSE": (1, "keys", 1, 3),
+    "V_PLAN_DRIFT": (1, "rows"),
+    "V_INTENT_EXPIRED": ("t", 1, 1, "cov"),
+    "CLI_INTENT_USAGE": None,
     "CTX_CHECKLISTS": ("listing",),
     "CTX_PLANS": ("b", "l"), "CTX_PLANS_EXCERPT": ("p", "b"),
     "V_UNCITED": ("x",), "V_FOUND_NOT_FIXED": None, "V_UNSTATED": ("#1",),
@@ -3948,6 +4060,17 @@ say "answer
 | #7 | thing | pending, me |
 | #8 | the new thing | pending, me |"
 check "the same old STATE.md goes stale the moment the world moves" block "STATE.md is stale"
+# 1.4: the verdict must name the CAUSE. It used to print only "(N min old,
+# limit M)", and a session read that as pure wall-clock and concluded the code
+# disagreed with its own documentation. The age is a symptom; the signature
+# moving is the trigger, and a document a week old whose world never moved is
+# never stale.
+OUT="$(run)"
+if grep -qF "your world signature moved since it was written" <<<"$OUT"; then
+    pass "212: a stale STATE.md names the signature move, not just an age"
+else
+    fail "212: the stale verdict does not say WHY: ${OUT:0:300}"
+fi
 
 echo "== 146. v11: the store-derived GUIDE rides every full stop, bounded =="
 # The operator's ask: "--list should be used always on stop hook to output
@@ -4633,6 +4756,54 @@ say "answer
 - #7 thing (pending)
 - #8 moved (pending)"
 check "T7b CONTROL: a real --state rewrite clears it" allow ""
+
+echo "== 153b2. C12: a PEER's item must not stale MY recovery document =="
+# The v18 bug this pins. state_world_sig hashed EVERY item regardless of owner,
+# so with ~48 agents in one worktree any peer --add/--tick moved my key. A check
+# whose contract is "an unchanged world never stales it" then degenerated into
+# "fires every 15 minutes" -- indistinguishable from wall-clock at the point of
+# observation, which is what made the WRONG fix (raise the limit) look obvious.
+# v17 had already scoped world_sig this way; state_world_sig was left behind.
+setup
+brief_now
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+task 7 pending "thing"
+printf '%s' "$STATE_BODY" >"$BASE/proj/.agent/agenttest/STATE.md"
+touch -d '30 minutes ago' "$BASE/proj/.agent/agenttest/STATE.md"
+check "153b2 SETUP: the document is adopted and its signature banked" allow ""
+# A DIFFERENT session adds its own item. Peer bookkeeping, not my world.
+reqcli --add cafe1234 "peer item nobody else owns" >/dev/null
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+check "153b2: a peer's item does NOT stale my recovery document" allow ""
+
+echo "== 153b3. C12 CONTROL: MY OWN item still stales it =="
+# Without this the narrowing above is indistinguishable from disabling the check.
+#
+# The item is ADDED AND TICKED in one go, deliberately. An item merely added is
+# ALSO an open-items violation, and with only one rotating check surfaced per
+# stop the hook showed that one instead -- my first draft asserted on a message
+# the rotation had chosen not to print. Ticking leaves exactly one rotating
+# violation, so what the stop surfaces is unambiguous.
+IID=$(reqcli --add deadbeef "my own item, which IS a reason to rewrite" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --tick deadbeef "$IID" "landed, suite green, exit 0" >/dev/null
+newturn
+say "answer
+
+## Remaining
+- #7 thing (pending)"
+OUT="$(run)"
+if grep -qF "STATE.md is stale" <<<"$OUT"; then
+    pass "153b3: my own item still stales it -- the ownership scope did not disable the check"
+else
+    fail "153b3: the ownership scope swallowed a REAL staleness: ${OUT:0:400}"
+fi
 
 echo "== 153c. T9: a detached HEAD is REPORT-ONLY, never a block =="
 # Operator decision 2026-07-30, a deliberate departure from the
@@ -7988,6 +8159,7 @@ L1_TABLE=(
     "--state|--state @ME@|STATE.md section written"
     "--loop|--loop @ME@ 2099-01-01T00:00:00Z 1 l1-label|loop declared"
     "--brief|--brief @ME@ l1-brief-text|brief recorded"
+    "--intent|--intent @ME@ l1-intent-text --for 30|intent recorded"
     "--reap|--reap @ME@ l1task9|reaped 1 task"
     "--ask|--ask @ME@ cafe1234 l1-table-ask|request #"
     "--answer|--answer @ME@ $R_ANSWER l1-my-answer|answered #"
@@ -8992,6 +9164,56 @@ else
     fail "198: the settled wave did not demand its tick: ${OUT:0:500}"
 fi
 
+echo "== 198c. a wave closed through a DOOR must NOT be told to tick its box =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: set the production secrets and cut over
+MD
+IID=$(reqcli --add deadbeef "cl:demo/w1 Wave A: set the production secrets and cut over" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --tick deadbeef "$IID" "door:operator-only - needs secrets no session holds; brief at docs/demo/RUNBOOK.md:12" >/dev/null
+OUT="$(run)"
+if ! grep -qF "w1 DONE-BUT-UNTICKED" <<<"$OUT"; then
+    pass "198c: a door-closed wave is covered and correctly unticked, not demanded as done"
+else
+    fail "198c: the gate demanded a FALSE tick for work no session did: ${OUT:0:500}"
+fi
+
+echo "== 198d. control: the same wave WITHOUT a door still demands its tick =="
+setup
+say "done for now"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: set the production secrets and cut over
+MD
+IID=$(reqcli --add deadbeef "cl:demo/w1 Wave A: set the production secrets and cut over" | grep -oE '#[0-9a-f]+' | tr -d '#')
+reqcli --tick deadbeef "$IID" "cut over on host-1, verified, exit 0" >/dev/null
+OUT="$(run)"
+if grep -qF "w1 DONE-BUT-UNTICKED" <<<"$OUT"; then
+    pass "198d: control fires -- 198c passes because of the door, not because the check went silent"
+else
+    fail "198d: the door exemption swallowed a genuinely settled wave: ${OUT:0:500}"
+fi
+
 echo "== 198b. every box ticked under 'executing' means the status is stale =="
 clfile demo <<'MD'
 # Handoff checklist: demo
@@ -9633,6 +9855,872 @@ if ! grep -qF "NO LONGER EXISTS" <<<"$OUT"; then
 else
     fail "208 CONTROL: a live worker was reported as gone: ${OUT:0:300}"
 fi
+
+echo "== 209. the specialist-agent hint (wl_agents) =="
+# WHY THIS EXISTS. On 2026-08-14 the operator had to hint twice BY HAND ("there
+# is bench server deployment", "@.claude/agents/ may help for ops as well")
+# because nothing surfaced the seven specialists that already existed: the word
+# "bench" appeared ZERO times across all seven `description` fields and exactly
+# once in the whole directory, in a BODY. The knowledge existed and the matching
+# surface did not. The hook now says so unprompted.
+#
+# EVERY CASE BELOW USES INVENTED NOUNS against the fixture corpus in
+# $BASE/agents (setup pins WORKLIST_AGENTS_DIR at it). A fixture borrowing the
+# real agents' vocabulary would go red when somebody edits a description, which
+# is prose nobody thinks of as test data.
+#
+# THE HINT IS PRIORITY 3 and OUTQ_PER_STOP is 1, so on any stop carrying another
+# advisory the hint correctly loses the slot. That is the single most important
+# noise control in the design (209K proves it), and it is why every case that
+# wants to SEE a hint widens the drain first.
+HINT_DESC="Zorbium recalibration and the frobnicator index, including sprocket torque."
+HINT_SAY="done for now, next up is the zorbium frobnicator recalibration"
+hint_fixture() { # a clean allow stop whose last message is in the fixture domain
+    say "$HINT_SAY"
+    brief_now
+    hand_now
+}
+hint_n() { # occurrences of the hint header in $1
+    # A COUNT, not a grep: the payload is ONE JSON line, so `grep -c` answers 1
+    # for two hints and the double-fire cases below would pass on a feature
+    # that fired every stop.
+    python3 -c 'import sys; print(sys.stdin.read().count("Specialist agent available"))' <<<"$1"
+}
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+check "209A a matching last message produces the hint on an allow stop" allow \
+    "Specialist agent available: fixtureagent"
+# CONTROL, and it leads with a POSITIVE PRESENCE check rather than the absence
+# alone. This suite documents the trap at case 208: a mutation that suppressed a
+# whole block made an absence-only assertion PASS, because with no feature there
+# is nothing to find. So the stop must be shown to have spoken at all first.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent fixtureagent "$HINT_DESC"
+say "done for now, the meeting notes are filed"
+brief_now
+hand_now
+OUT="$(run)"
+if grep -qF "INBOX HAS BEEN QUIET" <<<"$OUT" && [[ "$(hint_n "$OUT")" -eq 0 ]]; then
+    pass "209A CONTROL: the stop still reports, and neutral text earns no hint"
+else
+    fail "209A CONTROL: neutral text hinted, or the stop said nothing at all: ${OUT:0:400}"
+fi
+
+# B. ADVISORY, NEVER A BLOCK. `vadd` has 46 call sites and every one of them
+# stops the session; blocking a session for not consulting a specialist is the
+# fastest possible way to get this feature switched off.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+OUT="$(run)"
+RC=$?
+if [[ "$RC" -eq 0 ]] && [[ "$(hint_n "$OUT")" -eq 1 ]] &&
+    ! grep -qF '"decision"' <<<"$OUT" && ! grep -qF "Do not stop yet" <<<"$OUT"; then
+    pass "209B the hint rides an allow: no decision field, no block reason, rc=0"
+else
+    fail "209B the hint blocked or failed the stop (rc=$RC): ${OUT:0:400}"
+fi
+
+# C. A TIE IS SILENCE, BY CONSTRUCTION: a tie makes the margin 0, which is below
+# any positive threshold, so there is no tie-break rule to get wrong. Inventing a
+# winner is how a matcher starts lying.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent tiealpha "Zorbium recalibration with the widget gearbox lattice."
+mk_agent tiebeta "Zorbium recalibration with the sprocket flywheel lattice."
+say "done for now, the widget gearbox and the sprocket flywheel both wait on me"
+brief_now
+hand_now
+OUT="$(run)"
+if [[ "$(hint_n "$OUT")" -eq 0 ]] && ! grep -qF "Traceback" "$BASE/err.txt"; then
+    pass "209C two agents matching equally produce no hint and no error"
+else
+    fail "209C a tie was broken, or it crashed: ${OUT:0:300} err: $(head -c 200 "$BASE/err.txt")"
+fi
+# CONTROL: the same two fixtures, a haystack naming only ONE of them. Without
+# this, 209C would pass on a matcher that had simply stopped working.
+newturn
+say "done for now, the widget gearbox waits on me"
+OUT="$(run)"
+if grep -qF "Specialist agent available: tiealpha" <<<"$OUT"; then
+    pass "209C CONTROL: break the tie and the same corpus hints immediately"
+else
+    fail "209C CONTROL: the corpus could not hint at all, so 209C proved nothing: ${OUT:0:400}"
+fi
+
+# D. RATE LIMIT: the same specialist is not suggested twice. A hint that fires
+# on every stop is wallpaper, and wallpaper gets ignored.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+OUT="$(run)"
+newturn
+say "$HINT_SAY"
+OUT2="$(run)"
+if [[ "$(hint_n "$OUT")" -eq 1 ]] && [[ $(($(hint_n "$OUT") + $(hint_n "$OUT2"))) -eq 1 ]]; then
+    pass "209D two identical stops in a row emit the hint exactly once"
+else
+    fail "209D hint counts were $(hint_n "$OUT") then $(hint_n "$OUT2")"
+fi
+
+# E. A DELETED AGENT CANNOT BE RECOMMENDED. The corpus is re-read from disk on
+# every stop for exactly this reason, which is also why there is no cache: a
+# cache is what would let a deleted agent keep being recommended.
+#
+# The second stop matches a DIFFERENT agent on the same text, deliberately. A
+# case that merely re-ran the deleted agent's own haystack would pass on the
+# refresh window alone, proving nothing about the corpus being re-read.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent gonesoon "$HINT_DESC"
+hint_fixture
+OUT="$(run)"
+rm -f "$BASE/agents/gonesoon.md"
+mk_agent stillhere "$HINT_DESC"
+newturn
+say "$HINT_SAY"
+OUT2="$(run)"
+if grep -qF "Specialist agent available: gonesoon" <<<"$OUT" &&
+    grep -qF "Specialist agent available: stillhere" <<<"$OUT2" &&
+    ! grep -qF "gonesoon" <<<"$OUT2" && ! grep -qF "Traceback" "$BASE/err.txt"; then
+    pass "209E a deleted agent stops being recommended, and its sibling still is"
+else
+    fail "209E stale corpus or crash: ${OUT2:0:400} err: $(head -c 200 "$BASE/err.txt")"
+fi
+
+# F. INDEPENDENT OF THE JUDGE. wl_judge spends one haiku call per eventful stop
+# at 4.9-20.0s and has BLOCKED a stop on a timeout; a second model call was
+# refused. This pins that the hint is deterministic and does not ride that call.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+OUT="$(run)" # JUDGE_MODE=off, and $BASE/binonly holds no `claude` at all
+if [[ "$(hint_n "$OUT")" -eq 1 ]] && ! grep -qF "Stop-gate judge" <<<"$OUT"; then
+    pass "209F the hint fires with the judge OFF, so it costs no model call"
+else
+    fail "209F the hint needed the judge: ${OUT:0:400}"
+fi
+
+# G. A MALFORMED CORPUS IS LOUD, AND DEGRADES RATHER THAN DISABLES. A file that
+# cannot be parsed is an agent that has silently stopped being reachable, which
+# is the exact failure this whole feature exists to end -- so it is reported,
+# while every sibling that IS well-formed keeps matching.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent goodagent "$HINT_DESC"
+printf -- '---\nname: brokenagent\ntools: Bash\n---\nbody with no description\n' \
+    >"$BASE/agents/brokenagent.md"
+hint_fixture
+OUT="$(run)"
+if grep -qF "Agent corpus problem" <<<"$OUT" && grep -qF "brokenagent" <<<"$OUT" &&
+    grep -qF "Specialist agent available: goodagent" <<<"$OUT"; then
+    pass "209G a description-less agent is REPORTED and its valid sibling still matches"
+else
+    fail "209G the corpus error was swallowed or it disabled the matcher: ${OUT:0:400}"
+fi
+
+# H. POSTCOMPACT, which is the highest-value delivery in the design: a compacted
+# session is precisely the one that has forgotten a specialist exists, and
+# additionalContext is read rather than skimmed. Once per compaction by
+# construction, so it needs no rate limit.
+setup
+mk_agent fixtureagent "$HINT_DESC"
+STATE_SAVE="$STATE_BODY"
+STATE_BODY='You are picking up the zorbium frobnicator recalibration, which has been running since the sprocket torque numbers came back wrong on the third pass. Nothing is committed yet and the fixture rig is still wired up the way the last session left it.
+
+## Next action
+
+Re-run the frobnicator index build, then compare the recalibration output against the numbers in the notes.'
+hand_now
+STATE_BODY="$STATE_SAVE"
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "picking up an in-progress session" <<<"$out" &&
+    grep -qF "Specialist agent available: fixtureagent" <<<"$out"; then
+    pass "209H PostCompact hands the compacted session its specialist"
+else
+    fail "209H PostCompact carried no hint: ${out:0:400}"
+fi
+# CONTROL: the same corpus, a briefing in no agent's domain. The briefing must
+# still arrive -- absence of the hint alone would also describe a broken
+# PostCompact.
+setup
+mk_agent fixtureagent "$HINT_DESC"
+hand_now
+out="$(printf '{"session_id":"%s","cwd":"%s"}' "$SID" "$BASE/proj" |
+    TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_AGENT_BRANCH=agenttest \
+        python3 "$HOOK" --post-compact 2>/dev/null)"
+if grep -qF "picking up an in-progress session" <<<"$out" && [[ "$(hint_n "$out")" -eq 0 ]]; then
+    pass "209H CONTROL: an off-domain briefing still arrives, without a hint"
+else
+    fail "209H CONTROL: the briefing broke, or hinted off-domain: ${out:0:400}"
+fi
+
+# I. THE KILL SWITCH. Positive presence first, for the 208 reason.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+export WORKLIST_AGENT_HINT=off
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+OUT="$(run)"
+if grep -qF "INBOX HAS BEEN QUIET" <<<"$OUT" && [[ "$(hint_n "$OUT")" -eq 0 ]]; then
+    pass "209I WORKLIST_AGENT_HINT=off silences the hint and nothing else"
+else
+    fail "209I the kill switch did not kill, or it killed the whole report: ${OUT:0:400}"
+fi
+unset WORKLIST_AGENT_HINT
+
+# J. THE PER-SESSION CAP, across DIFFERENT agents (the refresh window in 209D
+# only bounds one agent; without a cap, eight specialists could each get a turn).
+setup
+export WORKLIST_REPORT_PER_STOP=4
+export WORKLIST_AGENT_HINT_MAX_PER_SESSION=1
+mk_agent alphaagent "$HINT_DESC"
+mk_agent betaagent "Quixotic pumpjack telemetry and the marlinspike ledger."
+hint_fixture
+OUT="$(run)"
+newturn
+say "done for now, the quixotic pumpjack telemetry needs a marlinspike ledger entry"
+OUT2="$(run)"
+if grep -qF "Specialist agent available: alphaagent" <<<"$OUT" &&
+    [[ $(($(hint_n "$OUT") + $(hint_n "$OUT2"))) -eq 1 ]]; then
+    pass "209J the per-session cap holds across two different agents"
+else
+    fail "209J cap leaked: $(hint_n "$OUT") then $(hint_n "$OUT2")"
+fi
+# CONTROL: one planted fact differs, the cap. The second agent must then land,
+# or 209J was measuring a matcher that could only ever hit once.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+export WORKLIST_AGENT_HINT_MAX_PER_SESSION=2
+mk_agent alphaagent "$HINT_DESC"
+mk_agent betaagent "Quixotic pumpjack telemetry and the marlinspike ledger."
+hint_fixture
+OUT="$(run)"
+newturn
+say "done for now, the quixotic pumpjack telemetry needs a marlinspike ledger entry"
+OUT2="$(run)"
+if grep -qF "Specialist agent available: alphaagent" <<<"$OUT" &&
+    grep -qF "Specialist agent available: betaagent" <<<"$OUT2"; then
+    pass "209J CONTROL: raise the cap by one and the second specialist lands"
+else
+    fail "209J CONTROL: the second agent never fired, so the cap proved nothing: ${OUT2:0:400}"
+fi
+unset WORKLIST_AGENT_HINT_MAX_PER_SESSION
+unset WORKLIST_REPORT_PER_STOP
+
+# K. PRIORITY 3 NEVER DISPLACES A REAL SECTION, and this is the case to write
+# first: it PROVES the noise control instead of asserting it. Every existing
+# advisory is priority 2 or better and outq_drain releases one section per stop,
+# so a hint reaches the operator only on a stop with nothing more important to
+# say. That property costs nothing to obtain and is the whole reason this
+# feature is not wallpaper.
+setup
+mk_agent fixtureagent "$HINT_DESC"
+hint_fixture
+brief_other cafe1234
+touch -d '-48 hours' "$BASE/cafe1234.jsonl"
+echo '- [ ] (cafe1234) their abandoned item' >>"$WL"
+OUT="$(run)" # WORKLIST_REPORT_PER_STOP unset, so exactly one section is released
+if [[ "$(hint_n "$OUT")" -eq 0 ]] &&
+    grep -qE "INBOX HAS BEEN QUIET|ORPHANED item\(s\)|Other sessions in this worktree" <<<"$OUT" &&
+    grep -qF "more report section(s) queued" <<<"$OUT"; then
+    pass "209K a real advisory takes the slot, the hint waits, and the tail says so"
+else
+    fail "209K the hint displaced a real section, or nothing was queued: ${OUT:0:400}"
+fi
+# CONTROL, and it is what makes 209K a measurement rather than a coincidence:
+# widen the drain on the very next stop and the hint is STILL THERE, so what
+# 209K observed was a queued hint being outranked, not a hint that never fired.
+export WORKLIST_REPORT_PER_STOP=6
+newturn
+say "$HINT_SAY"
+OUT2="$(run)"
+if grep -qF "Specialist agent available: fixtureagent" <<<"$OUT2"; then
+    pass "209K CONTROL: the outranked hint was queued all along and drains next"
+else
+    fail "209K CONTROL: the hint was never queued at all: ${OUT2:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+# L. THE OPERATOR'S OWN SENTENCE, verbatim. REGRESSION 2026-08-15.
+#
+# "there is bench server deployment. Why you don't utilize it?" is the sentence
+# that caused this feature to be built, and when the matcher was first wired up
+# it returned NOTHING for it. The corpus carried `deploy`, `deploying` and
+# `deploys` -- three variants of one verb, hand-enumerated -- and not
+# `deployment`, so the query lost that hit to morphology, landed on `bench`
+# alone at 1.0, and died against MIN_SCORE=2. The feature would have shipped
+# unable to answer the only query we KNOW a real session needed.
+#
+# Pinned in the operator's words rather than a tidied paraphrase, because a
+# paraphrase is written by the same hand that writes the matcher and drifts
+# toward whatever the matcher already does.
+#
+# THE FIXTURE DESCRIPTION MUST NOT CONTAIN "deployment", and the case ASSERTS
+# that rather than trusting it: if some future session "fixes" a red run here by
+# pasting the query's word into the description, the assertion below goes red
+# instead, which is the hand-maintained-variant-list staleness this fold exists
+# to end.
+setup
+export WORKLIST_REPORT_PER_STOP=4
+mk_agent benchops "The bench rig: deploy the account worker to the bench box and reset its store."
+say "there is bench server deployment. Why you don't utilize it?"
+brief_now
+hand_now
+OUT="$(run)"
+if ! grep -qF "deployment" "$BASE/agents/benchops.md" &&
+    grep -qF "Specialist agent available: benchops" <<<"$OUT"; then
+    pass "209L the operator's literal sentence fires, on a description that never says 'deployment'"
+else
+    fail "209L the motivating query still does not fire, or the fixture was tautologised: ${OUT:0:400}"
+fi
+# CONTROL, and it is what makes 209L a measurement of MORPHOLOGY rather than of
+# the word `bench`: `bench` on its own scores 1.0, below MIN_SCORE, and stays
+# silent. So the hit that carried 209L over the floor can only have come from
+# `deployment` folding onto the description's `deploy`.
+newturn
+say "there is a bench in the corridor and nobody has claimed it"
+OUT="$(run)"
+if [[ "$(hint_n "$OUT")" -eq 0 ]]; then
+    pass "209L CONTROL: one discriminative term alone is still under the floor"
+else
+    fail "209L CONTROL: a single term cleared MIN_SCORE, so the floor is not holding: ${OUT:0:400}"
+fi
+unset WORKLIST_REPORT_PER_STOP
+
+echo "== 211. a DOOR-PARKED wave is reported, never blocked on =="
+# _wave_rows deliberately emits nothing for a wave whose covering items were all
+# closed through a door: the work did not happen, no session can make it happen,
+# and demanding a tick would be demanding a lie. That reasoning is right, and it
+# skipped the wave into TOTAL silence -- no violation, and its item is [x] so it
+# has also left --list --open. Nothing surfaced it again, ever.
+#
+# Found 2026-08-15 when the operator asked why the stop hook had never mentioned
+# an unticked w8. The honest answer was that the ONLY thing keeping it visible
+# was a session remembering to write it into a report by hand.
+setup
+say "done for now
+
+## Remaining
+- nothing"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: mint the production secrets
+MD
+IID="$(reqcli --add deadbeef "cl:demo/w1 Wave A: mint the production secrets" | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+reqcli --tick deadbeef "$IID" "door:operator-only -- secrets are write-only, exit 0" >/dev/null
+OUT="$(run)"
+DEC="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)"
+if grep -qF "w1 [door:operator-only]" <<<"$OUT" && [[ "$DEC" != "block" ]]; then
+    pass "211: a door-parked wave is REPORTED and does not block"
+else
+    fail "211: door-parked wave decision=$DEC out: ${OUT:0:400}"
+fi
+
+echo "== 211b. CONTROL: the same wave TICKED says nothing at all =="
+# Without this the advisory could be firing on any unticked wave, or on every
+# checklist regardless of state, and would read as noise within a day.
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [x] w1 Wave A: mint the production secrets
+MD
+OUT="$(run)"
+if ! grep -qF "door:operator-only]" <<<"$OUT"; then
+    pass "211b CONTROL: a ticked wave produces no door advisory"
+else
+    fail "211b CONTROL: the advisory fired on a TICKED wave: ${OUT:0:300}"
+fi
+
+echo "== 211c. CONTROL: closed WITHOUT a door is a different thing entirely =="
+# An item ticked by DOING the work leaves the wave genuinely done-but-unticked,
+# which is a VIOLATION with its own exit, not a door advisory. If this case ever
+# starts printing the advisory, the door detector has stopped reading doors and
+# is matching every closed item.
+setup
+say "done for now
+
+## Remaining
+- nothing"
+brief_now
+hand_now
+cldeliver docs/demo/README.md "the readme"
+clfile demo <<'MD'
+# Handoff checklist: demo
+Status: executing
+
+## Deliverables
+- [x] d1 file:docs/demo/README.md
+
+## Waves
+- [ ] w1 Wave A: wire the thing
+MD
+IID="$(reqcli --add deadbeef "cl:demo/w1 Wave A: wire the thing" | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+reqcli --tick deadbeef "$IID" "wired it, suite green, exit 0" >/dev/null
+OUT="$(run)"
+if grep -qF "DONE-BUT-UNTICKED" <<<"$OUT" && ! grep -qF "door:" <<<"$OUT"; then
+    pass "211c CONTROL: a doorless close is DONE-BUT-UNTICKED, not a door advisory"
+else
+    fail "211c CONTROL: ${OUT:0:400}"
+fi
+
+echo "== 213. the block counter is SESSION-SCOPED =="
+# It was a single shared `.blocks` for the whole worktree. With ~48 addressable
+# sessions here, one peer's clean allow deleted MY judge streak and one peer's
+# block inflated it, so every decision keyed off the streak was reading someone
+# else's work. Fixed before the cadence lands, because the cadence's cap is the
+# next thing to key off block streaks.
+setup
+say "done for now"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+run >/dev/null
+if [[ -f "${WL%.md}.blocks-deadbeef" ]]; then
+    pass "213: the counter is written per-session as .blocks-deadbeef"
+else
+    fail "213: no per-session counter; found: $(ls "${WL%.md}".blocks* 2>&1)"
+fi
+
+echo "== 213b. CONTROL: a PEER's counter is untouched by my stop =="
+# The whole point. Plant a peer's streak, take a stop of my own, and it must
+# survive byte-for-byte -- under the old shared file my stop would have
+# overwritten or deleted it.
+printf '7' >"${WL%.md}.blocks-cafe1234"
+run >/dev/null
+if [[ "$(cat "${WL%.md}.blocks-cafe1234" 2>/dev/null)" == "7" ]]; then
+    pass "213b CONTROL: a peer's block streak survives my stop unchanged"
+else
+    fail "213b CONTROL: peer streak became '$(cat "${WL%.md}.blocks-cafe1234" 2>/dev/null)'"
+fi
+
+echo "== 214. THE CADENCE: the hook stands down for ONE turn after being answered =="
+# Operator's ask: "1 report/update 1 others/order flow". The acceptance test is
+# the plan's own sentence -- the cadence must make it easier to be HEARD, not
+# easier to STOP -- so every guard below exists because the naive version fails
+# it. These are the ONLY cases that exercise the cadence: run() defaults it off.
+setup
+CADENCE=on
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "214: the first stop still DEMANDS" block "OPEN worklist item"
+newturn
+say "I have now answered the demand
+
+## Remaining
+- stuff"
+OUT="$(run)"
+DEC="$(python3 -c 'import json,sys
+raw=sys.stdin.read().strip()
+print(json.loads(raw).get("decision","allow") if raw else "allow")' <<<"$OUT" 2>/dev/null)"
+if [[ "$DEC" != "block" ]] && grep -qF "still outstanding" <<<"$OUT"; then
+    pass "214: the next stop is PAUSED, and still names what is outstanding"
+else
+    fail "214: decision=$DEC out: ${OUT:0:220}"
+fi
+
+echo "== 214b. GUARD B: an unchanged message buys NOTHING =="
+# Without this a session emits an empty turn after every block and gets a free
+# allow every other stop, which is the exact regression the cadence must not be.
+# No `say` between stops here, so the assistant message is byte-identical.
+setup
+CADENCE=on
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "214b: first stop demands" block "OPEN worklist item"
+newturn
+check "214b GUARD B: no new say means no pause, it demands again" block "OPEN worklist item"
+
+echo "== 214c. GUARD A: the ALWAYS tier defeats the pause =="
+# The integrity tier is the reason this machinery exists. A session that just
+# answered still does not get a quiet turn while something urgent is outstanding.
+setup
+CADENCE=on
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "214c: first stop demands" block "OPEN worklist item"
+newturn
+say "answered, and now something urgent is also true
+
+## Remaining
+- stuff"
+# hook-blind is an always-tier violation: an unparseable event.
+printf 'not json at all' >"$BASE/t.jsonl"
+OUT="$(printf 'garbage-not-json' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
+    WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
+    WORKLIST_JUDGE=off WORKLIST_CADENCE=on python3 "$HOOK" 2>/dev/null)"
+if grep -qF '"decision": "block"' <<<"$OUT"; then
+    pass "214c GUARD A: an always-tier violation blocks even when a pause was owed"
+else
+    fail "214c GUARD A: the always tier was paused: ${OUT:0:220}"
+fi
+
+echo "== 214d. a CLEAN stop consumes the debt =="
+# The hook owes a quiet turn to a session it just interrupted, not a voucher
+# redeemable whenever that session next happens to be blocked. Found by case
+# 3619: block, clean allow, new item -- and the new item was silently paused.
+setup
+CADENCE=on
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "214d: first stop demands" block "OPEN worklist item"
+sed -i 's/^- \[ \] (deadbeef) open thing/- [x] (deadbeef) open thing/' "$WL"
+newturn
+say "all done
+
+## Remaining
+- nothing"
+check "214d: the clean stop allows" allow ""
+echo '- [ ] (deadbeef) a brand new thing' >>"$WL"
+newturn
+say "starting the new thing
+
+## Remaining
+- the new thing"
+check "214d: the NEW item demands, the debt was spent on the clean stop" block "OPEN worklist item"
+
+echo "== 214e. WORKLIST_CADENCE=off restores the old behaviour exactly =="
+# The kill switch has to work, or there is no way back if this proves wrong in
+# daily use.
+setup
+CADENCE=off
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "214e: first stop demands" block "OPEN worklist item"
+newturn
+say "answered
+
+## Remaining
+- stuff"
+check "214e: with cadence OFF it demands again immediately" block "OPEN worklist item"
+
+echo "== 215. PLAN DRIFT: the session is bound to its own committed design record =="
+# The gap the operator named: plans were surfaced at SessionStart and PostCompact
+# and NOWHERE else, so a session could work all day while the committed plan
+# describing that work went stale. plan_records() existed; nothing on the stop
+# path called it.
+setup
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+# PLAN: the thing
+Status: executing
+MD
+# Backdate the plan, then move MY work after it. The trigger is the work, never
+# the clock: a plan a week old on a branch where nothing moved is accurate.
+touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+# A TICKED item, deliberately. It stamps `upd` (which is what "my work moved"
+# reads) without leaving anything open, so plan-drift is the ONLY rotating check
+# outstanding. The focused block surfaces exactly one of those, so an open item
+# here would win the rotation and this case would score whichever check happened
+# to be picked -- which is how its first version passed its three controls while
+# the thing they control for never fired at all.
+# FOUR ticked items, not one. The check requires a THRESHOLD of moved work
+# (PLAN_DRIFT_MIN_MOVES) rather than any movement at all, because a single tick
+# is not a plan going stale -- and treating it as one made the check
+# unsatisfiable: update the plan, tick the next item, stale again immediately.
+for n in 1 2 3 4; do
+    PID="$(reqcli --add deadbeef "work $n that outran the plan" | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+    reqcli --tick deadbeef "$PID" "landed, suite green, exit 0" >/dev/null
+done
+check "215: a plan the work has moved past is flagged" block "PLAN-thing.md"
+
+echo "== 215a. CONTROL: ONE tick is not a plan going stale =="
+# The threshold is what makes the exit real. Without this control the check
+# could go back to firing on any movement, which is the unsatisfiable version.
+setup
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+# PLAN: the thing
+Status: executing
+MD
+touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+PID="$(reqcli --add deadbeef 'one small thing' | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+reqcli --tick deadbeef "$PID" "landed, exit 0" >/dev/null
+OUT="$(run)"
+if ! grep -qF "PLAN-thing.md" <<<"$OUT"; then
+    pass "215a CONTROL: a single tick does not stale a plan"
+else
+    fail "215a CONTROL: one tick flagged the plan: ${OUT:0:240}"
+fi
+
+echo "== 215b. CONTROL: the same plan, touched AFTER the work, is silent =="
+# Without this the check could be firing on the mere existence of a plan file,
+# which would make it noise within a day.
+touch "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+newturn
+say "still working
+
+## Remaining
+- stuff"
+OUT="$(run)"
+if ! grep -qF "PLAN-thing.md" <<<"$OUT"; then
+    pass "215b CONTROL: an up-to-date plan is not flagged"
+else
+    fail "215b CONTROL: a fresh plan was still flagged: ${OUT:0:240}"
+fi
+
+echo "== 215c. CONTROL: a DONE plan is history and is never flagged =="
+# Demanding edits to history is how a check earns its way into being ignored.
+cat >"$BASE/proj/docs/agent/agenttest/PLAN-thing.md" <<'MD'
+# PLAN: the thing
+Status: done
+MD
+touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-thing.md"
+newturn
+say "still working
+
+## Remaining
+- stuff"
+OUT="$(run)"
+if ! grep -qF "PLAN-thing.md" <<<"$OUT"; then
+    pass "215c CONTROL: a done plan is never flagged"
+else
+    fail "215c CONTROL: a done plan was flagged: ${OUT:0:240}"
+fi
+
+echo "== 215d. CONTROL: a project with NO plan directory pays nothing and says nothing =="
+setup
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+echo '- [ ] (deadbeef) work with no plan anywhere' >>"$WL"
+OUT="$(run)"
+if ! grep -qF "committed plan file" <<<"$OUT"; then
+    pass "215d CONTROL: no plan directory means no plan-drift complaint"
+else
+    fail "215d CONTROL: complained about plans that do not exist: ${OUT:0:240}"
+fi
+
+echo "== 216. an UNKNOWN plan carries a DESCRIPTION and FILE POINTERS =="
+# An UNKNOWN status told the one reader who has no context precisely nothing:
+# "this plan cannot be parsed", full stop. It now carries the plan's title and
+# the files it keeps referring to, so a new or compacted session knows what to
+# open first.
+setup
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+mkdir -p "$BASE/proj/docs/agent/agenttest"
+cat >"$BASE/proj/docs/agent/agenttest/PLAN-mystery.md" <<'MD'
+# PLAN: the mystery subject
+
+**Status (dated parenthetical): this shape does not parse**
+
+The work lives in pkg/chunkstore/pipeline_linux.go and pkg/chunkstore/pipeline_linux.go
+again, plus cmd/renet/backup_snapshot.go. A passing mention of docs/agent/README.md.
+MD
+touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-mystery.md"
+for n in 1 2 3 4; do
+    PID="$(reqcli --add deadbeef "work $n" | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+    reqcli --tick deadbeef "$PID" "landed, exit 0" >/dev/null
+done
+OUT="$(run)"
+if grep -qF "the mystery subject" <<<"$OUT" && grep -qF "pkg/chunkstore/pipeline_linux.go" <<<"$OUT"; then
+    pass "216: an UNKNOWN plan names its subject and the files to open"
+else
+    fail "216: no orientation on an UNKNOWN plan: ${OUT:0:320}"
+fi
+
+echo "== 216b. CONTROL: the most-mentioned file leads, and the plan itself is never listed =="
+# A plan's own path is not a pointer to anywhere useful, and a file mentioned
+# once is a passing reference rather than the subject.
+if ! grep -qF "PLAN-mystery.md; opens" <<<"$OUT" && ! grep -qF "opens: docs/agent/README.md" <<<"$OUT"; then
+    pass "216b CONTROL: self-reference excluded and ranking puts the subject first"
+else
+    fail "216b CONTROL: bad pointer list: ${OUT:0:320}"
+fi
+
+echo "== 216c. CONTROL: a plan with a READABLE status gets no orientation =="
+# The orientation is for UNKNOWN specifically. If it appeared on every row it
+# would just be noise on plans whose state is already clear.
+cat >"$BASE/proj/docs/agent/agenttest/PLAN-mystery.md" <<'MD'
+# PLAN: the mystery subject
+Status: executing
+
+The work lives in pkg/chunkstore/pipeline_linux.go.
+MD
+touch -d '-2 hours' "$BASE/proj/docs/agent/agenttest/PLAN-mystery.md"
+newturn
+say "still working
+
+## Remaining
+- stuff"
+OUT="$(run)"
+if grep -qF "PLAN-mystery.md" <<<"$OUT" && ! grep -qF "opens:" <<<"$OUT"; then
+    pass "216c CONTROL: a readable status is flagged without orientation noise"
+else
+    fail "216c CONTROL: ${OUT:0:320}"
+fi
+
+echo "== 217. --intent answers the two STATUS-QUESTION checks, and nothing else =="
+# An intent is a statement of PLAN. Its whole legitimate power is answering the
+# checks whose entire content is "what are you doing" -- brief and agent-state --
+# and reordering attention. It is never evidence.
+setup
+say "answer
+
+## Remaining
+- stuff"
+hand_now
+printf '%s %s %s\n' deadbeef "$(date -u -d '-200 minutes' +%Y-%m-%dT%H:%M:%SZ)" "old" >>"${WL%.md}.sessions"
+echo '- [ ] (deadbeef) open thing' >>"$WL"
+check "217: without an intent the stale brief is one of the outstanding checks" block "OPEN worklist item"
+reqcli --intent deadbeef "driving the open thing to green" --covers open-items --for 60 >/dev/null
+OUT="$(run)"
+if ! grep -qF "session brief is stale" <<<"$OUT"; then
+    pass "217: a live intent answers the stale-brief question"
+else
+    fail "217: brief still fired under a live intent: ${OUT:0:260}"
+fi
+
+echo "== 217b. C8: an intent must NOT satisfy the TICK-EVIDENCE gate =="
+# The plan names this as decisive. "I am working on it" is not evidence, and if
+# an intent could close an item the ledger becomes a record of intentions.
+IID="$(reqcli --add deadbeef 'needs real evidence' | grep -o '#[0-9a-f]*' | head -1 | tr -d '#')"
+OUT="$(reqcli --tick deadbeef "$IID" "I have an intent covering this" 2>&1 || true)"
+if grep -qF "REFUSED" <<<"$OUT"; then
+    pass "217b C8: a tick still demands real evidence with an intent live"
+else
+    fail "217b C8: an intent satisfied the evidence gate: ${OUT:0:240}"
+fi
+
+echo "== 217c. an intent NEVER suppresses open-items, only reorders it =="
+# Covered keys sort LAST but stay in `violations`, so the header count stays
+# truthful. An intent reorders attention; it does not make work disappear.
+OUT="$(run)"
+if grep -qE "check\(s\) outstanding" <<<"$OUT"; then
+    pass "217c: covered work is still counted as outstanding, not silently dropped"
+else
+    fail "217c: outstanding count vanished under an intent: ${OUT:0:240}"
+fi
+
+echo "== 217d. an EXPIRED intent becomes its own violation =="
+# This is what stops --intent being a mute button: going quiet has a horizon,
+# and outliving it while the work is still open is itself the finding.
+setup
+say "answer
+
+## Remaining
+- stuff"
+brief_now
+hand_now
+# NO open item on purpose. The focused block surfaces ONE rotating check, so an
+# open item here would win the rotation and this case would score whichever
+# check happened to be picked rather than the expiry -- the same trap that made
+# an earlier fixture pass its controls while the thing they controlled for never
+# fired. An expired intent is a violation in its own right, which is precisely
+# what stops --intent being a mute button.
+python3 - "$WL" <<'PYEOF'
+import json, sys, datetime, pathlib
+p = pathlib.Path(sys.argv[1]).with_suffix(".intents")
+old = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=90)).strftime("%Y-%m-%dT%H:%M:%SZ")
+p.write_text(json.dumps({"at": old, "by": "deadbeef", "text": "said long ago", "covers": ["open-items"], "min": 30}) + "\n")
+PYEOF
+check "217d: an expired intent blocks in its own right" block "stated intent has EXPIRED"
+
+echo "== 210. the brief work-gate: an old brief on an UNCHANGED world =="
+# A brief goes stale when the WORLD moves, not when the clock does. A sentence
+# that still describes what this session is doing is still true at 200 minutes,
+# and nagging for a rewrite of an accurate sentence trains the reader to dismiss
+# the check.
+#
+# Uses the REAL --brief CLI, because only that path stamps the world signature
+# the gate compares. The direct .sessions writes elsewhere in this suite
+# deliberately carry no signature and must keep falling back to wall-clock --
+# case 5 above is that fallback, and it still blocks.
+#
+# hand_now() is required, not decoration: the hook surfaces ONE outstanding
+# check, so without a STATE.md this case would pass or fail on whichever
+# complaint happened to win the rotation rather than on the brief.
+setup
+say "answer
+
+## Remaining
+- nothing open"
+hand_now
+TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" WORKLIST_TASKS_DIR="$BASE/tasks" \
+    WORKLIST_AGENT_BRANCH=agenttest python3 "$HOOK" --brief deadbeef "doing the thing" >/dev/null 2>&1
+# Backdate it. Last line for a prefix wins, so this is an append like any other.
+printf '%s %s %s\n' deadbeef "$(date -u -d '-200 minutes' +%Y-%m-%dT%H:%M:%SZ)" "doing the thing" >>"${WL%.md}.sessions"
+check_absent "an old brief on an unchanged world does NOT nag" allow "session brief is stale"
+
+echo "== 210b. CONTROL: the same old brief once the world MOVES =="
+# Without this the gate above could be a check that can never fire. Same fixture
+# and the same 200-minute-old brief; the only difference is that the world moved,
+# which is exactly when peers can no longer see what this session is doing.
+#
+# A DONE item, deliberately: it moves the item structure the signature covers
+# without leaving anything open, so the brief stays the only thing left to
+# complain about and the rotation cannot surface something else instead.
+echo '- [x] (deadbeef) a finished piece of work' >>"$WL"
+check "an old brief blocks once the world has moved" block "session brief is stale"
 
 echo
 echo "  passed=$PASS failed=$FAIL"

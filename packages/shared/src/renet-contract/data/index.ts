@@ -6,8 +6,8 @@ export {
   type FunctionDefinition,
   type FunctionParameterDefinition,
   type UIType,
-} from './definitions';
-export { FUNCTION_REQUIREMENTS } from './functionRequirements';
+} from './definitions.js';
+export { FUNCTION_REQUIREMENTS } from './functionRequirements.js';
 
 // Type-safe exports from generated file
 // Note: FUNCTION_VISIBILITY and FunctionVisibility removed - visibility validation
@@ -24,7 +24,7 @@ export {
   RENET_FUNCTIONS_VERSION,
   type RenetFunctionName,
   type TypedFunctionPayload,
-} from './functions.generated';
+} from './functions.generated.js';
 
 // Zod validation exports from schema file
 export {
@@ -33,7 +33,7 @@ export {
   isValidParams,
   safeValidateFunctionParams,
   validateFunctionParams,
-} from './functions.schema';
+} from './functions.schema.js';
 // List types - auto-generated from renet/pkg/list/types.go
 // These are the types from 'renet list all --json' for machine status
 export {
@@ -63,7 +63,7 @@ export {
   type ServiceInfo,
   type ServicesResult,
   type SystemInfo,
-} from './list-types.generated';
+} from './list-types.generated.js';
 // Vault types - auto-generated from renet/pkg/functions/vault/
 export {
   assertRenetVault,
@@ -77,7 +77,7 @@ export {
   type TaskSection,
   VAULT_SCHEMA,
   VAULT_VERSION,
-} from './vault.generated';
+} from './vault.generated.js';
 // Vault Zod schemas - auto-generated from renet/pkg/functions/vault/
 export {
   ContextSectionSchema,
@@ -91,4 +91,4 @@ export {
   StorageSectionSchema,
   TaskSectionSchema,
   validateRenetVault,
-} from './vault.schema';
+} from './vault.schema.js';

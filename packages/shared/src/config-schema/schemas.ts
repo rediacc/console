@@ -427,12 +427,74 @@ const ClusterConfigSchema = z.object({
 // Backup strategy
 // =============================================================================
 
-const BackupDestinationSchema = z.object({
+// Fields shared by every destination kind.
+const backupDestinationCommon = {
   name: z.string().min(1, 'Destination name cannot be empty'),
-  storage: z.string().min(1, 'Storage name cannot be empty'),
   enabled: z.boolean().optional(),
   bandwidthLimit: z.string().optional(),
-  folder: z.string().optional(),
+};
+
+/**
+ * A backup destination, discriminated on `kind` (mirrors DatastoreBackendSchema).
+ *
+ * - `storage`: the classic rclone target. Points at a named /resources/storages
+ *   entry by name; that entry's vaultContent holds the credentials. Legacy
+ *   destinations carry no `kind`, so it DEFAULTS to 'storage' — the on-disk shape
+ *   is unchanged and needs no migration.
+ * - `hosted-service`: the content-addressed chunk store. Absent `endpoint` = the
+ *   Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
+ *   config); set `endpoint` for a customer S3 / self-hosted elite plane whose
+ *   credentials ride a container-level `vaultContent` bag.
+ *
+ * NEVER add a `provider` string here: buildRcloneArgs (rclone-args.ts) emits
+ * `:{provider}:` unconditionally, so only the `storage` kind may reach it.
+ */
+export const BackupDestinationSchema = z.union([
+  z.object({
+    kind: z.literal('storage').default('storage'),
+    ...backupDestinationCommon,
+    storage: z.string().min(1, 'Storage name cannot be empty'),
+    folder: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal('hosted-service'),
+    ...backupDestinationCommon,
+    endpoint: z.string().optional(),
+    vaultContent: z.record(z.string(), z.unknown()).optional(),
+  }),
+]);
+
+/**
+ * GFS-style retention policy for a strategy's manifests.
+ *
+ * The CLI DECLARES this; the account server ENFORCES it (retentionPolicySweep
+ * in private/account/src/services/backup-gc.service.ts, per lineage, on the
+ * maintenance cron). Enforcement is server-side because the server holds the
+ * only delete credential, and because the machine most likely to eat quota
+ * forever is the one that died — a policy that only self-manages while a
+ * machine is up is not self-managing.
+ *
+ * The semantics the server implements, stated exactly (the earlier wording
+ * here, "unset = unbounded for that bucket", described no code and read the
+ * opposite way round for a single-knob policy):
+ * - `keepLast` keeps the N most recent snapshots regardless of time bucket.
+ * - Each time knob keeps the most recent snapshot in each of the N most recent
+ *   buckets that HAVE one — `keepDaily: 7` is "the last 7 days with a backup",
+ *   not "the last 7 calendar days".
+ * - Once ANY knob is set, an unset knob contributes nothing (restic/borg).
+ * - A policy with EVERY knob unset declares no bound and keeps everything,
+ *   which is what keeps `retention: {}` distinguishable from omitting
+ *   `retention` entirely (the latter pushes no policy at all).
+ * - The newest snapshot of a lineage is ALWAYS kept, whatever the policy says.
+ *   A retention sweep must never empty a lineage.
+ */
+const RetentionPolicySchema = z.object({
+  keepLast: z.number().int().min(0).optional(),
+  keepHourly: z.number().int().min(0).optional(),
+  keepDaily: z.number().int().min(0).optional(),
+  keepWeekly: z.number().int().min(0).optional(),
+  keepMonthly: z.number().int().min(0).optional(),
+  keepYearly: z.number().int().min(0).optional(),
 });
 
 const BackupStrategyConfigSchema = z.object({
@@ -443,6 +505,7 @@ const BackupStrategyConfigSchema = z.object({
   bandwidthLimit: z.string().optional(),
   include: z.array(z.string()).optional(),
   exclude: z.array(z.string()).optional(),
+  retention: RetentionPolicySchema.optional(),
 });
 
 // =============================================================================

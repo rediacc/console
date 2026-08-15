@@ -1,16 +1,46 @@
 ---
 title: "Backup e Ripristino"
-description: "Esegui il backup dei repository cifrati su qualsiasi storage compatibile con rclone, ripristina su una macchina qualsiasi e automatizza con strategie di backup denominate e timer systemd."
+description: "Esegui il backup dei repository cifrati in due modi: storage a chunk indirizzato per contenuto che carica solo le celle modificate, oppure un push completo su qualsiasi storage compatibile con rclone. Ripristina su una macchina qualsiasi e automatizza con strategie denominate e timer systemd."
 category: "Guides"
 order: 7
 language: it
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Backup e Ripristino
 
 Rediacc esegue il backup dei repository cifrati su storage esterno e li ripristina sulla stessa o su una macchina diversa. I backup sono cifrati; per il ripristino è necessaria la credenziale LUKS del repository.
+
+## Due percorsi di backup
+
+Rediacc offre due percorsi di backup indipendenti, e questa guida li copre entrambi. Usano storage e comandi diversi, quindi un repository sottoposto a backup con l'uno non risulta sottoposto a backup con l'altro.
+
+**Lo storage a chunk** (`rdc backup snapshot`) carica l'immagine del repository in celle di dimensione fissa indirizzate per contenuto. La prima esecuzione carica l'intero inventario non nullo; ogni esecuzione successiva carica solo le celle modificate, determinate dai metadati di allocazione del file system anziché leggendo l'intera immagine. Le celle identiche sono memorizzate una sola volta tra gli snapshot e tra un'intera famiglia di fork, e l'utilizzo viene conteggiato a fronte della tua quota di storage (`rdc backup usage`).
+
+**Il push su storage** (`rdc repo push`) copia un intero file di backup su un provider compatibile con rclone che registri tu stesso. È in fase di disattivazione a favore dello storage a chunk, e le strategie pianificate non lo guidano più. Le sezioni seguenti che lo descrivono funzionano ancora oggi, ma considerale come il percorso legacy.
+
+Il ripristino dallo storage a chunk funziona: `rdc backup restore <repo> --at <snapshot-id>` materializza uno snapshot memorizzato, e `--at` accetta anche un timestamp RFC 3339, che viene risolto rispetto all'inventario degli snapshot. Aggiungi `--as <name>` per ripristinare con un nome diverso e `--up` per riportare il repository su dopo. Lo storage a chunk ti offre anche il caricamento (`rdc backup snapshot`), la verifica (`rdc backup verify`, e `--deep` per ri-hashare ogni cella anziché un campione), l'inventario degli snapshot (`rdc backup manifests`) e la contabilità della quota (`rdc backup usage`).
+
+### Comandi per lo storage a chunk
+
+```bash
+# Carica uno snapshot. La prima esecuzione semina i dati, le successive inviano solo le celle modificate.
+rdc backup snapshot my-app
+
+# Pianifica senza caricare: riporta cosa verrebbe spostato.
+rdc backup snapshot my-app --dry-run
+
+# Non fidarti dell'ancora locale e ricarica l'intero inventario.
+# Questo ricarica tutto e riaddebita la quota; usalo solo quando
+# l'ancora è nota per essere difettosa.
+rdc backup snapshot my-app --reseed
+
+# Controlla l'inventario memorizzato e la tua quota.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Configurare lo Storage
 
@@ -63,7 +93,7 @@ Scarica il backup di un repository dallo storage esterno:
 rdc repo pull my-app --from my-storage
 ```
 
-Il download verifica sempre che il repository di destinazione sia montato prima di scrivere. Se non è montato, l'operazione viene interrotta.
+Il pull rifiuta di sovrascrivere un repository attualmente **montato**. Smontalo prima, esegui il pull e poi riportalo su con `rdc repo up`. I repository basati su directory sono l'eccezione: si sincronizzano sul posto anche mentre sono montati.
 
 | Opzione | Descrizione |
 |--------|-------------|

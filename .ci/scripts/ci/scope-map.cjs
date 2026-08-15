@@ -198,7 +198,7 @@ const RULES = [
   // rest becomes a zero-job module.
   //
   // scripts/drills/*.sh are EXECUTED by the gated Drills job:
-  // ct-tests.yml:1730 -> ./run.sh drill universe|transfer (:1787,:1801)
+  // ct-tests.yml:1730 -> ./run.sh drill universe|transfer|backup
   // -> run.sh:1987,:1991 -> these files. Mapping them to a module would need
   // `drills` in a surface, and that surface (cli, shared, account) would drag
   // the whole VM matrix in anyway; full is both cheaper and honest.
@@ -273,10 +273,12 @@ const JOB_SURFACES = {
   // full CI, so it needs no separate module.
   license_enforcement: ['renet'],
   account_e2e: ['account', 'shared'],
-  // The drills leg runs `./run.sh drill universe` + `drill transfer`: the CLI's
-  // own config resolution (`packages/cli`), the shared package both it and the
-  // account server build against, and a live `./run.sh account dev` gateway
-  // (`private/account`) the assertions log in to.
+  // The drills leg runs `./run.sh drill universe` + `drill transfer` + `drill
+  // backup`: the CLI's own config resolution (`packages/cli`), the shared
+  // package both it and the account server build against, and a live
+  // `./run.sh account dev` gateway (`private/account`) the assertions log in
+  // to. `drill backup` additionally drives the chunk store through that same
+  // gateway, so it needs no module the other two do not already pull in.
   //
   // The drills' OWN source (scripts/drills/*.sh) is not a module: `scripts/`
   // hits the `scripts-harness` rule => full CI, so an edit to a drill always
@@ -290,7 +292,12 @@ const JOB_SURFACES = {
   // i18n PR, which is the single most common change shape in this repo. The
   // accepted cost: a www change that breaks `astro dev` while still building
   // clean would surface as a red drills leg on the NEXT cli/account PR.
-  drills: ['cli', 'shared', 'account'],
+  // `renet` is here because of `drill backup`: the chunk engine, the restore
+  // path and the prune reclaim all live in private/renet, and the drill that
+  // exercises them was NOT triggered by a change to them. A drill that cannot
+  // be reached by an edit to the thing it tests is a gate that only fires by
+  // coincidence.
+  drills: ['cli', 'shared', 'account', 'renet'],
   ops: ['cli', 'shared', 'provisioning', 'json', 'renet', 'account', 'tutorials'],
   elite_run: ['elite', 'renet'],
   update_flow: ['cli', 'shared', 'json', 'renet'],

@@ -49,7 +49,10 @@ const TEST_CONFIG: RdcConfig = {
       c1: { provider: 'kvm', pools: [{ name: 'p', role: 'hyperconverged', count: 1 }] },
     },
     backupStrategies: {
-      nightly: { destinations: [{ name: 'off', storage: 's1' }], schedule: '0 3 * * *' },
+      nightly: {
+        destinations: [{ kind: 'storage', name: 'off', storage: 's1' }],
+        schedule: '0 3 * * *',
+      },
     },
     deletedRepositories: [
       {

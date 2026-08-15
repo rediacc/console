@@ -450,13 +450,28 @@ def output_quiet_min(session_id, task_id):
     return (time.time() - newest) / 60.0
 
 
+ROSTER_MAX = int(os.environ.get("WORKLIST_ROSTER_MAX", "6"))
+
+
 def worker_facts(event, session_id):
     """One human line per RUNNING background task, with everything the OS
     could add. This is the raw material for the ladder messages: facts, not
-    verdicts, in the submodule_pointer_moves handover style."""
+    verdicts, in the submodule_pointer_moves handover style.
+
+    CAPPED since v19, and the cap is ordered by usefulness rather than by
+    arrival. A session running ~48 agents printed ~48 lines into EVERY ladder
+    message and every bg-report, which is a context bill charged on the stop
+    that can least afford it -- and the rows that matter are always the few
+    that are suspect, quiet, or gone, never the forty that are streaming
+    normally. So: actionable rows first and in full, ordinary ones only until
+    the budget runs out, then ONE counted summary line.
+
+    The summary line is not decoration. A silent truncation reads as "that is
+    everything", which is the failure this file's own doctrine names; the
+    count is what keeps a capped list honest."""
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
     verdicts = verify_background(live_bg)
-    rows = []
+    hot, cold = [], []
     for b in live_bg:
         tid = str(b.get("id") or "?")
         v = verdicts.get(tid, "unverifiable")
@@ -470,15 +485,24 @@ def worker_facts(event, session_id):
             osword = "harness lists it as running but NO matching process was found (it may have just finished; check its output)"
         else:
             osword = "no OS-level check possible for this task type"
+        line = "%s (%s) %s; %s%s" % (
+            tid,
+            b.get("type") or "?",
+            (b.get("description") or "")[:60],
+            osword,
+            "" if quiet is None else "; output quiet %dm" % quiet,
+        )
+        # Actionable = the OS is unsure, or the worker has gone quiet. Those are
+        # the rows a reader can act on; the rest are noise at scale.
+        actionable = v == "suspect" or (quiet is not None and quiet >= 15)
+        (hot if actionable else cold).append(line)
+
+    rows = hot + cold[: max(0, ROSTER_MAX - len(hot))]
+    hidden = len(hot) + len(cold) - len(rows)
+    if hidden > 0:
         rows.append(
-            "%s (%s) %s; %s%s"
-            % (
-                tid,
-                b.get("type") or "?",
-                (b.get("description") or "")[:60],
-                osword,
-                "" if quiet is None else "; output quiet %dm" % quiet,
-            )
+            "+ %d other worker(s) not shown, all OS-confirmed or streaming; "
+            "raise WORKLIST_ROSTER_MAX to see them" % hidden
         )
     return rows, verdicts
 

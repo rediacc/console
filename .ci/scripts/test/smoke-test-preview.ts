@@ -334,6 +334,52 @@ async function stepChannelRewrite(): Promise<void> {
   await checkMarketingHtml(expectedChannel);
 }
 
+/**
+ * The backup quota page must actually be IN the deployment.
+ *
+ * `04-testing-and-local-loop.md:96` claimed this smoke already existed. It did
+ * not: this file matched neither "backup" nor "quota", so
+ * `private/account/web/src/pages/BackupStorage.tsx` (routed at
+ * `router.tsx:269`) shipped with no preview coverage at all, and the handoff
+ * checklist ticked a wave on the strength of it.
+ *
+ * Fetching the route and asserting HTTP 200 would prove almost nothing: the
+ * portal is a single-page app, so every path under /account returns the same
+ * shell whether or not the page was built. The check that means something is
+ * that the SERVED BUNDLE still contains the route, because a page dropped from
+ * the build takes its route string with it.
+ */
+async function stepQuotaPageShipped(): Promise<void> {
+  try {
+    const shell = await fetch(`${PREVIEW_URL}/account/backup-storage`);
+    if (!shell.ok) throw new Error(`route returned HTTP ${shell.status}`);
+    const html = await shell.text();
+
+    // Every module the shell pulls in; the route lives in the router chunk.
+    const srcs = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
+    if (srcs.length === 0) throw new Error('the shell referenced no scripts at all');
+
+    let found = false;
+    for (const src of srcs) {
+      const url = src.startsWith('http') ? src : `${PREVIEW_URL}${src}`;
+      const js = await fetch(url);
+      if (!js.ok) continue;
+      if ((await js.text()).includes('backup-storage')) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      throw new Error(
+        'no served bundle mentions the backup-storage route: the quota page is not in this deployment'
+      );
+    }
+    ok('Backup quota page is in the deployed bundle (/account/backup-storage)');
+  } catch (e) {
+    fail('Backup quota page shipped', e);
+  }
+}
+
 async function main(): Promise<void> {
   console.log(`\nLicense Smoke Test: ${PREVIEW_URL}\n`);
 
@@ -350,6 +396,7 @@ async function main(): Promise<void> {
   }
 
   await stepChannelRewrite();
+  await stepQuotaPageShipped();
 
   // Summary
   console.log(`\n${passed} passed, ${failed} failed\n`);

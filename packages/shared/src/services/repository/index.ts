@@ -1,9 +1,9 @@
 // Core repository functions
 
 // Specialized repository services
-export * from './backup-validation';
-export * from './core';
-export * from './fork-operations';
-export * from './grand-deletion';
-export * from './orchestration';
-export * from './promotion';
+export * from './backup-validation.js';
+export * from './core.js';
+export * from './fork-operations.js';
+export * from './grand-deletion.js';
+export * from './orchestration.js';
+export * from './promotion.js';

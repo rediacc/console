@@ -9,11 +9,16 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { CLI_CONTRACT, CLI_CONTRACT_VERSION } from '../data/contract.generated';
-import { RESOURCE_DISCOVERY } from '../discovery';
-import { CONTRACT_LANGUAGES, translate } from '../i18n';
-import { commandsByDomain, commandsForContext, getCommand, proxyCapableCommands } from '../index';
-import { ContractStringsSchema, checkContractInvariants, parseCliContract } from '../validation';
+import { CLI_CONTRACT, CLI_CONTRACT_VERSION } from '../data/contract.generated.js';
+import { RESOURCE_DISCOVERY } from '../discovery.js';
+import { CONTRACT_LANGUAGES, translate } from '../i18n.js';
+import {
+  commandsByDomain,
+  commandsForContext,
+  getCommand,
+  proxyCapableCommands,
+} from '../index.js';
+import { ContractStringsSchema, checkContractInvariants, parseCliContract } from '../validation.js';
 
 /**
  * Read as an asset rather than imported: a static import of a 348KB JSON makes
@@ -143,8 +148,21 @@ describe('CLI contract', () => {
     // was a §4.9 wrong-target bug: a proxied `archive purge` would have permanently
     // deleted the PROXY HOST's archived records. The plane gate checks domains, not
     // leaves, so it could not see this.
+    // 82 -> 83: the chunk-store `backup verify` landed — a machine-plane,
+    // non-interactive verification verb (the backup_verify FunctionDef runs on the
+    // machine that holds the anchor), so it is genuinely proxy-capable like its
+    // `backup list`/`status`/`restore` siblings. The two other new backup reads
+    // (`usage`, `manifests`) are `other`-plane account-tunnel reads, so they are
+    // NOT proxy-capable and do not move this count.
+    // 83 -> 84: the chunk-store `backup snapshot` landed — machine-plane and
+    // non-interactive, and the work genuinely happens on the machine holding
+    // the repo, so it is proxy-capable for the same reason `backup verify` is.
+    // It arrived without moving this pin, which is precisely what the pin is
+    // for; it was caught by wiring `packages/shared`'s tests into the LOCAL
+    // gate set (they ran in CI and nowhere else, so nothing failed until a
+    // push).
     // Update this only when the surface genuinely changes.
-    expect(proxyCapableCommands().length).toBe(82);
+    expect(proxyCapableCommands().length).toBe(84);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {

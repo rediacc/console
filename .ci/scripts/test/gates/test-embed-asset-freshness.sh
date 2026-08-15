@@ -35,7 +35,7 @@ setup_fixtures() {
     cat >"$FIXTURE_DIR/all-current.json" <<'EOF'
 {
   "criu": { "version": "0.0.1" }, "rsync": { "version": "0.0.1" },
-  "rclone": { "version": "0.0.1" }, "zot": { "version": "0.0.1" },
+  "zot": { "version": "0.0.1" },
   "k3s": { "version": "0.0.1" }, "csiprovisioner": { "version": "0.0.1" },
   "csisnapshotter": { "version": "0.0.1" }, "snapshotcontroller": { "version": "0.0.1" }
 }
@@ -45,7 +45,7 @@ EOF
     cat >"$FIXTURE_DIR/stale.json" <<'EOF'
 {
   "criu": { "version": "0.0.1" }, "rsync": { "version": "0.0.1" },
-  "rclone": { "version": "0.0.1" }, "zot": { "version": "0.0.1" },
+  "zot": { "version": "0.0.1" },
   "k3s": { "version": "9999.0.0", "publishedAt": "2020-01-01T00:00:00Z" },
   "csiprovisioner": { "version": "0.0.1" }, "csisnapshotter": { "version": "0.0.1" },
   "snapshotcontroller": { "version": "0.0.1" }
@@ -59,7 +59,7 @@ EOF
     cat >"$FIXTURE_DIR/fresh.json" <<EOF
 {
   "criu": { "version": "0.0.1" }, "rsync": { "version": "0.0.1" },
-  "rclone": { "version": "0.0.1" }, "zot": { "version": "0.0.1" },
+  "zot": { "version": "0.0.1" },
   "k3s": { "version": "9999.0.0", "publishedAt": "$recent" },
   "csiprovisioner": { "version": "0.0.1" }, "csisnapshotter": { "version": "0.0.1" },
   "snapshotcontroller": { "version": "0.0.1" }

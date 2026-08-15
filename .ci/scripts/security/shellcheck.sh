@@ -45,30 +45,32 @@ main() {
 
     shellcheck --version
 
-    # Check all shell scripts in .ci directory
-    log_info "Checking .ci/**/*.sh"
-    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
-    # shellcheck disable=SC2086
-    find .ci -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
+    # EVERY TRACKED .sh FILE, enumerated from git rather than from a list of
+    # roots. It used to be four hardcoded roots (.ci, .claude/hooks, run.sh,
+    # scripts/), and the omission was invisible by construction: a file outside
+    # them produced no error and no mention, just a green tick over an unread
+    # file. Found on 2026-08-15 when a helper added under .claude/lib passed both
+    # shell gates carrying a blatant SC2086. Widening to .claude/** would have
+    # fixed that one file and left 13 others unscanned, among them the PUBLIC
+    # install.sh that users pipe into bash.
+    #
+    # git ls-files is the enumerator because it needs no maintenance: a new
+    # script is covered the moment it is tracked, which is exactly the property
+    # a root list cannot have.
+    log_info "Checking every tracked *.sh file"
+    SH_FILES="$(git ls-files '*.sh')"
 
-    # Claude hooks carry live PR policy (draft enforcement, --admin ban,
-    # merge-time review hygiene) — policy-critical shell gets linted too.
-    log_info "Checking .claude/hooks/**/*.sh"
-    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
-    # shellcheck disable=SC2086
-    find .claude/hooks -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
+    # A gate that lints nothing exits 0 and looks identical to a gate that lints
+    # everything. Refuse the empty list rather than pass it.
+    if [ -z "$SH_FILES" ]; then
+        log_error "no tracked *.sh files found: the enumerator is broken, not the tree clean"
+        exit 1
+    fi
+    log_info "$(printf '%s\n' "$SH_FILES" | wc -l | tr -d ' ') file(s)"
 
-    # Check the main run.sh script
-    log_info "Checking ./run.sh"
-    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
+    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags, and SH_FILES is a newline-separated file list; word-splitting is intentional for both
     # shellcheck disable=SC2086
-    shellcheck $SHELLCHECK_OPTS ./run.sh
-
-    # Check shell scripts under scripts/ (dev helpers, docker helpers, etc.)
-    log_info "Checking scripts/**/*.sh"
-    # BLOCKER: SHELLCHECK_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shellcheck receives each flag as its own argv entry
-    # shellcheck disable=SC2086
-    find scripts -name "*.sh" -type f -exec shellcheck $SHELLCHECK_OPTS {} +
+    shellcheck $SHELLCHECK_OPTS $SH_FILES
 
     # Check for bash 4+ features in build scripts (which run on macOS with bash 3.2)
     # ShellCheck doesn't warn about these since they're valid bash, but macOS

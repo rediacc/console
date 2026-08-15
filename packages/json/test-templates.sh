@@ -4,6 +4,13 @@
 # Tests all Rediaccfile templates by executing up/down lifecycle
 # Monitors health checks and cleans up resources for CI environments
 #
+# NOT RUN BY CI, and that is recorded rather than accidental: see
+# packages/e2e-tests/README.md, "Deliberately not in CI", item 9. Short version:
+# every Rediaccfile calls `renet compose`, which needs a per-repo network id, so
+# this needs a LICENSED rediacc repo on a VM and not merely Docker. On a bare
+# host or a fresh fleet member up() fails instantly with
+# "--network-id is required and must be a valid non-zero value".
+#
 # Usage: ./test-templates.sh [OPTIONS]
 #
 # Options:
@@ -131,12 +138,14 @@ discover_templates() {
 
     # Find all directories with Rediaccfile
     while IFS= read -r -d '' rediaccfile; do
-        local template_dir=$(dirname "$rediaccfile")
+        local template_dir
+        template_dir=$(dirname "$rediaccfile")
         local relative_path=${template_dir#$TEMPLATES_DIR/}
 
         # Apply filters
         if [[ -n "$FILTER_CATEGORY" ]]; then
-            local category=$(echo "$relative_path" | cut -d'/' -f1)
+            local category
+            category=$(echo "$relative_path" | cut -d'/' -f1)
             if [[ "$category" != "$FILTER_CATEGORY" ]]; then
                 continue
             fi
@@ -207,10 +216,14 @@ validate_all_containers() {
     fi
 
     # Get expected number of services from docker-compose.yaml
-    local expected_count=$(docker compose config --services 2>/dev/null | wc -l)
+    # `|| true` keeps the pre-split behaviour: `local x=$(...)` swallowed a docker
+    # failure, and both call sites below already handle the zero/empty result.
+    local expected_count
+    expected_count=$(docker compose config --services 2>/dev/null | wc -l) || true
 
     # Get actual container states
-    local ps_output=$(docker compose ps --format json 2>/dev/null)
+    local ps_output
+    ps_output=$(docker compose ps --format json 2>/dev/null) || true
 
     if [[ -z "$ps_output" ]]; then
         [[ $silent -eq 0 ]] && log_error "No containers found (expected $expected_count)"
@@ -226,11 +239,12 @@ validate_all_containers() {
     while IFS= read -r container_json; do
         ((container_count++)) || true
 
-        local name=$(echo "$container_json" | jq -r '.Name')
-        local status=$(echo "$container_json" | jq -r '.Status')
-        local state=$(echo "$container_json" | jq -r '.State')
-        local health=$(echo "$container_json" | jq -r '.Health // empty')
-        local exit_code=$(echo "$container_json" | jq -r '.ExitCode // 0')
+        local name status state health exit_code
+        name=$(echo "$container_json" | jq -r '.Name')
+        status=$(echo "$container_json" | jq -r '.Status')
+        state=$(echo "$container_json" | jq -r '.State')
+        health=$(echo "$container_json" | jq -r '.Health // empty')
+        exit_code=$(echo "$container_json" | jq -r '.ExitCode // 0')
 
         # Check if container is running
         if [[ "$status" =~ ^Up ]]; then
@@ -496,8 +510,9 @@ test_template() {
     log_info "Testing template: $template_path"
 
     # Initialize result structure
-    local result='{"name":"'"$template_path"'","category":"'"$(dirname "$template_path")"'"'
-    local test_start=$(date +%s)
+    local result test_start
+    result='{"name":"'"$template_path"'","category":"'"$(dirname "$template_path")"'"'
+    test_start=$(date +%s)
     local overall_status="passed"
     local error_msg=""
     local first_failure_stage=""
@@ -543,7 +558,8 @@ test_template() {
     fi
 
     # Test up function
-    local up_start=$(date +%s)
+    local up_start
+    up_start=$(date +%s)
     log_verbose "Running up()"
 
     if [[ $using_auto_network -eq 0 && -z "$original_network_mode" ]]; then
@@ -580,9 +596,20 @@ test_template() {
         collect_template_artifacts "$template_path" "$template_dir" "up"
     fi
 
-    # Check health (only if up passed or CONTINUE_ON_ERROR is set)
-    if [[ "$overall_status" == "passed" ]] || [[ $CONTINUE_ON_ERROR -eq 1 ]]; then
-        local health_start=$(date +%s)
+    # Health-check ONLY when up() passed. There is nothing to be healthy
+    # otherwise: the containers were never started, so the check can only sit
+    # there until HEALTH_CHECK_TIMEOUT (360s by default) and then report a
+    # health failure for a stack that never existed.
+    #
+    # This used to also run when CONTINUE_ON_ERROR was set, which is the
+    # DEFAULT, so every failing template burned six extra minutes and then
+    # blamed the wrong stage. Measured 2026-08-14 on caching/redis: up() failed
+    # in 0s, the run still took 374s, and the reported cause was "Health check
+    # failed". CONTINUE_ON_ERROR is about carrying on to the NEXT template, not
+    # about probing a stack that never came up.
+    if [[ "$overall_status" == "passed" ]]; then
+        local health_start
+        health_start=$(date +%s)
         log_verbose "Checking health"
         if check_health "$template_dir"; then
             local health_duration=$(($(date +%s) - health_start))
@@ -593,7 +620,13 @@ test_template() {
             log_error "Health check failed"
             result+=',"health":{"status":"failed","duration":"'"${health_duration}s"'","error":"Health check timeout or containers not healthy"}'
             overall_status="failed"
-            error_msg="Health check failed"
+            # Guarded, exactly as down() below already guards it: the FIRST
+            # failure is the cause, and a later stage must not overwrite it.
+            # Unguarded, an up() failure was reported to the operator as
+            # "Health check failed", sending them to debug the wrong stage.
+            if [[ -z "$error_msg" ]]; then
+                error_msg="Health check failed"
+            fi
             if [[ -z "$first_failure_stage" ]]; then
                 first_failure_stage="health"
             fi
@@ -602,7 +635,8 @@ test_template() {
     fi
 
     # Always try to run down() for cleanup
-    local down_start=$(date +%s)
+    local down_start
+    down_start=$(date +%s)
     log_verbose "Running down()"
     if timeout "$TEST_TIMEOUT" bash -c 'source ./Rediaccfile && down' >/dev/null 2>&1; then
         local down_duration=$(($(date +%s) - down_start))
@@ -630,7 +664,8 @@ test_template() {
     fi
 
     # Cleanup
-    local cleanup_start=$(date +%s)
+    local cleanup_start
+    cleanup_start=$(date +%s)
     log_verbose "Cleaning up"
     cleanup_images "$template_dir"
     cleanup_directories "$template_dir"
@@ -686,7 +721,8 @@ test_template() {
 #==============================================================================
 
 generate_report() {
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local total_duration=$((end_time - START_TIME))
     local duration_formatted="${total_duration}s"
 
@@ -734,7 +770,8 @@ EOF
 }
 
 print_summary() {
-    local end_time=$(date +%s)
+    local end_time
+    end_time=$(date +%s)
     local total_duration=$((end_time - START_TIME))
     local duration_formatted="${total_duration}s"
 

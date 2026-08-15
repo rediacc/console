@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Limits & Kontingente
@@ -67,7 +67,7 @@ Ports werden erst geöffnet, wenn Sie eine öffentliche IP mit `rdc machine infr
 |------|-----------|-------|
 | 80 | TCP | HTTP: wird von Traefik verarbeitet; gibt 404 für nicht konfigurierte Domains zurück, wird an keinen Dienst weitergeleitet |
 | 443 | TCP | HTTPS: wie oben; Anfragen ohne passende Route werden auf der Proxy-Ebene abgelehnt |
-| 10000–10010 | TCP | Dynamischer Bereich für Rediacc-verwaltete TCP-Weiterleitung |
+| 10000-10010 | TCP | Dynamischer Bereich für Rediacc-verwaltete TCP-Weiterleitung |
 
 HTTP/HTTPS unterscheiden sich von rohen TCP-Ports: Obwohl 80 und 443 geöffnet sind, wird jede Anfrage vom Reverse Proxy gegen eine explizite Routing-Tabelle validiert. Ohne einen konfigurierten Dienst und eine passende Domain wird kein Anwendungscode erreicht und keine Daten werden offengelegt.
 
@@ -127,7 +127,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 - **Kernel-Anforderung**: Linux 6.1+ auf sowohl der Quell- als auch der Zielmaschine.
 - **Netzwerkmodus**: CRIU erfordert den Host-Netzwerkmodus. Container mit benutzerdefinierten Netzwerkkonfigurationen können nicht gesichert werden.
 - **Arbeitsspeicher**: Die Größe der Checkpoint-Daten entspricht dem residenten Speicher des gesicherten Prozesses. Große In-Memory-Datensätze (z. B. eine Node.js-App, die 4 GB Daten zwischenspeichert) erzeugen 4 GB Checkpoint-Dateien.
-- **TCP-Verbindungen**: Anwendungen müssen Verbindungsverluste bei der Wiederherstellung tolerieren. Aktive TCP-Verbindungen bleiben **nicht** erhalten, der wiederhergestellte Prozess sieht Sockets als geschlossen und muss die Verbindung neu aufbauen. Dies gilt sowohl für Wiederherstellungen auf derselben Maschine als auch für maschinenübergreifende Wiederherstellungen.
+- **TCP-Verbindungen**: Anwendungen müssen Verbindungsverluste bei der Wiederherstellung tolerieren. Aktive TCP-Verbindungen bleiben **nicht** erhalten. Der wiederhergestellte Prozess sieht Sockets als geschlossen und muss die Verbindung neu aufbauen. Dies gilt sowohl für Wiederherstellungen auf derselben Maschine als auch für maschinenübergreifende Wiederherstellungen.
 - **Live-Fork auf derselben Maschine leitet Eltern-Adressen um**: `rdc repo fork X --tag Y --checkpoint` gefolgt von `rdc repo up` funktioniert, während das Eltern-Repository weiterläuft. Die wiederhergestellten Prozesse tragen die Loopback-Adressen des Eltern-Repositories vom Zeitpunkt des Checkpoints, daher leitet das System sie transparent auf die eigenen Adressen des Forks um (gleicher Dienst, Fork-Kopie der Daten). Die erste Nutzung einer wiederhergestellten TCP-Verbindung schlägt weiterhin fehl und die App muss sich neu verbinden, siehe den TCP-Punkt oben.
 
 ---
@@ -138,8 +138,8 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 |-------|------|
 | Backup-Ziele pro Repository | Unbegrenzt |
 | Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
-| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc backup strategy set <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit (rclone `--bwlimit` Syntax: einfach `6M`, direktional `6M:off`, oder Zeitplan `08:00,3M;22:00,10M`) |
-| Aufbewahrung | Gesteuert durch Ihren Speicheranbieter (S3, Cloudflare R2, usw.). Rediacc erzwingt keine Aufbewahrungsrichtlinien. |
+| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc backup strategy set <name> --bwlimit "6M"`, um die Upload-Geschwindigkeit zu begrenzen |
+| Aufbewahrung | Wird mit `rdc backup retention set` deklariert (GFS-Parameter: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) und auf der Serverseite erzwungen; `rdc backup retention clear` entfernt es. Chunk-Speicher wird gegen ein Plan-Kontingent als physische eindeutige gespeicherte Bytes gemessen, daher wird die Deduplizierung zwischen Snapshots und über eine Fork-Familie hinweg nur einmal gezählt: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, überprüft mit `rdc backup usage`. Der ältere Storage-Push-Pfad hat keine eigene Aufbewahrung und wird von Ihrem Anbieter gesteuert. |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |
 
 ---

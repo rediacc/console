@@ -79,4 +79,4 @@ export {
   validateNetworkId,
   validateSize,
   validateSSHPrivateKey,
-} from '../renet-contract/utils/validation';
+} from '../renet-contract/utils/validation.js';

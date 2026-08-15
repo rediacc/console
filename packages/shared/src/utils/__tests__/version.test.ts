@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compareVersions, InvalidVersionError, isValidVersion } from '../version';
+import { compareVersions, InvalidVersionError, isValidVersion } from '../version.js';
 
 describe('compareVersions()', () => {
   it('orders numeric versions', () => {

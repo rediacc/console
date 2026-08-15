@@ -16,7 +16,7 @@ function _tunnel() {
       --network host                   \
       --rm                             \
       --volume $FOLDER_HOST_CONFIG:$FOLDER_DOCKER_CONFIG \
-      $CLOUDFLARE_DOCKER_IMAGE tunnel --no-autoupdate $@
+      $CLOUDFLARE_DOCKER_IMAGE tunnel --no-autoupdate "$@"
 }
 
 function _tunnel_detach() {
@@ -26,7 +26,7 @@ function _tunnel_detach() {
       --network host                   \
       --rm                             \
       --volume $FOLDER_HOST_CONFIG:$FOLDER_DOCKER_CONFIG \
-      $CLOUDFLARE_DOCKER_IMAGE tunnel --no-autoupdate $@
+      $CLOUDFLARE_DOCKER_IMAGE tunnel --no-autoupdate "$@"
 }
 
 function setup() {
@@ -36,7 +36,7 @@ function setup() {
     sudo mkdir -p  $FOLDER_HOST_CONFIG && \
     sudo chmod 777 $FOLDER_HOST_CONFIG && \
     _tunnel login                      && \
-    sudo chown --reference=$(find $FOLDER_HOST_CONFIG -type f | head -n 1) $FOLDER_HOST_CONFIG && \
+    sudo chown --reference="$(find $FOLDER_HOST_CONFIG -type f | head -n 1)" $FOLDER_HOST_CONFIG && \
     sudo chmod 700 $FOLDER_HOST_CONFIG
 }
 
@@ -48,7 +48,8 @@ function up() {
     docker stop $CLOUDFLARE_TUNNEL_DOCKER    &> /dev/null
     docker rm   $CLOUDFLARE_TUNNEL_DOCKER -f &> /dev/null
 
-    local tunnel_id=$(get_tunnel_id)
+    local tunnel_id
+    tunnel_id=$(get_tunnel_id)
 
     if [[ -z "$tunnel_id" ]]; then
         _tunnel create $CLOUDFLARE_TUNNEL_NAME || return $?
@@ -62,8 +63,8 @@ ingress:
       service: $CLOUDFLARE_TUNNELED_SERVICE
     - service: http_status:404
 EOF
-        sudo chown --reference=$(sudo find $FOLDER_HOST_CONFIG -type f | head -n 1) $tunnel_config_yaml && \
-        sudo chmod --reference=$(sudo find $FOLDER_HOST_CONFIG -type f | head -n 1) $tunnel_config_yaml
+        sudo chown --reference="$(sudo find $FOLDER_HOST_CONFIG -type f | head -n 1)" $tunnel_config_yaml && \
+        sudo chmod --reference="$(sudo find $FOLDER_HOST_CONFIG -type f | head -n 1)" $tunnel_config_yaml
     fi
 
     _tunnel route dns --overwrite-dns $tunnel_id $CLOUDFLARE_TUNNEL_HOST
@@ -74,8 +75,9 @@ function down() {
     docker stop $CLOUDFLARE_TUNNEL_DOCKER    &> /dev/null
     docker rm   $CLOUDFLARE_TUNNEL_DOCKER -f &> /dev/null
 
-    local tunnel_id=$(get_tunnel_id) && \
-    [[ -z "$tunnel_id" ]]            && return
+    local tunnel_id
+    tunnel_id=$(get_tunnel_id)
+    [[ -z "$tunnel_id" ]] && return
 
     _tunnel delete $tunnel_id                   && \
     sudo rm $FOLDER_HOST_CONFIG/$tunnel_id.yaml && \

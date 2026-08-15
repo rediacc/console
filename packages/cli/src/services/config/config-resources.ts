@@ -42,7 +42,9 @@ import {
 } from './config-cluster-logic.js';
 import { allocateNetworkIdInStore } from './config-network-id.js';
 import {
+  assertNoCredentialCollision,
   assertRestoredForkKeyIsExplicit,
+  buildArchivedRecord,
   buildCredentialsMap,
   buildGuidMap,
   resolveDestructiveTargetFromRepos,
@@ -317,6 +319,7 @@ class ConfigService extends ConfigServiceBase {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const repos = state.getRepositories();
+    assertNoCredentialCollision(repos, repoName, config);
     repos[repoName] = config;
     await state.setRepositories(repos);
   }
@@ -424,29 +427,8 @@ class ConfigService extends ConfigServiceBase {
     const repos = state.getRepositories();
     if (!(repoName in repos)) throw new Error(`Repository "${repoName}" not found`);
 
-    // Scrub `secrets` from the archived entry. Archives exist to preserve
-    // identity (repositoryGuid + LUKS credential for backup decryption);
-    // deploy-time secrets are out of scope and would otherwise survive a
-    // delete-then-restore cycle. ArchivedRepositorySchema.omit({secrets})
-    // mirrors this at the schema layer.
-    // v3 archives are RepoRecord (minus secrets) plus {name, tag, deletedAt}.
-    // Runtime status riding along is harmless (stripped by the archive schema on
-    // reload); `secrets` is scrubbed here so it never survives delete-restore.
-    const rec = repos[repoName];
-    const colon = repoName.indexOf(':');
-    const base = colon === -1 ? repoName : repoName.slice(0, colon);
-    const tag = rec.tag ?? (colon === -1 ? DEFAULTS.REPOSITORY.TAG : repoName.slice(colon + 1));
-    const { secrets: _secrets, ...record } = rec;
-    void _secrets;
-    const archived: ArchivedRepository = {
-      ...record,
-      name: base,
-      tag,
-      deletedAt: new Date().toISOString(),
-    };
-
     const deletedRepos = state.getDeletedRepositories();
-    deletedRepos.push(archived);
+    deletedRepos.push(buildArchivedRecord(repoName, repos[repoName]));
     await state.setDeletedRepositories(deletedRepos);
 
     delete repos[repoName];
@@ -472,6 +454,9 @@ class ConfigService extends ConfigServiceBase {
     const { name: originalName, deletedAt, ...repoConfig } = archived;
     void originalName;
     void deletedAt;
+    // This write bypasses addRepository, but the record it makes LIVE is subject
+    // to the same GUID-keyed credential map.
+    assertNoCredentialCollision(repos, restoredName, repoConfig);
     repos[restoredName] = repoConfig;
     await state.setRepositories(repos);
 

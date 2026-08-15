@@ -1,7 +1,10 @@
 ---
 description: Drive the commit → coordinated PRs (submodule-first) → CI-all-green loop for the current tree. Default — run the loop IN THIS SESSION per .claude/agents/pr-babysitter.md (delegating bulky fix implementation to worker sub-agents). Pass `bg` as the first argument to instead spawn a background pr-babysitter teammate and supervise it. The console PR rides as a draft until green; stops at green + Claude-reviewed + threads-resolved PRs; never merges.
 argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
-disable-model-invocation: true
+# Operator-authorised 2026-08-15: "I authorize you to enable model invocation."
+# Was `true`, which reserved this command for a human typing it. Flipping it back
+# restores that reservation, and it is the one line to change.
+disable-model-invocation: false
 allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*)
 ---
 

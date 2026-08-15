@@ -6,8 +6,8 @@ description: >-
 category: Use Cases
 order: 6
 language: fr
-sourceHash: "51a38f7f8567e63e"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 > **Lorsque les lumières s'éteignent, votre entreprise reste allumée.**
@@ -49,29 +49,25 @@ Un grand groupe bancaire espagnol qui a mis en œuvre la solution de réplicatio
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Miroir de données intercontinentales** 
-* Les bases de données bancaires et les systèmes de transactions ont été **répliqués en permanence** dans des centres de données aux États-Unis. 
-* Toutes les données clients et enregistrements de transactions ont été synchronisés avec **un délai inférieur à 3 secondes**
+* Les bases de données bancaires et les systèmes de transactions seraient **répliqués en permanence** dans des centres de données aux États-Unis 
+* Les données clients et les enregistrements de transactions resteraient synchronisés dans la limite du délai de réplication que permettent votre liaison et votre volume
 
 ### 2. **Transition opérationnelle transparente** 
-* Lorsque les serveurs espagnols ont perdu du courant, le trafic a été **automatiquement redirigé** vers les systèmes basés aux États-Unis. 
-* Les clients n'ont connu qu'une brève interruption de 47 secondes avant la reprise des services
+* Si les serveurs espagnols perdaient du courant, le trafic serait **automatiquement redirigé** vers les systèmes basés aux États-Unis 
+* Les clients ne constateraient qu'une brève interruption le temps que la redirection s'effectue, plutôt qu'une panne aussi longue que celle du réseau électrique
 
 ### 3. **Poursuite du service à distance** 
-* Les centres d'appels des pays non concernés ont accédé aux systèmes répliqués pour maintenir le support client. 
-* Les applications bancaires mobiles sont restées fonctionnelles grâce à la connexion à des centres de données alternatifs
+* Les centres d'appels des pays non concernés pourraient accéder aux systèmes répliqués et continuer à assurer le support client 
+* Les applications bancaires mobiles resteraient fonctionnelles grâce à la connexion à des centres de données alternatifs
 
 ## Résultat potentiel
 
 **Continuité des activités :** 
-* Alors que les concurrents étaient hors ligne pendant plus de 14 heures, la banque a maintenu **98 % de disponibilité du service**
+* Les concurrents sont restés hors ligne plus de 14 heures. Une banque dotée de cette architecture continuerait à fonctionner pendant toute cette période
 
-**Confiance du client :** 
-* La banque était la seule grande institution financière à traiter les transactions pendant la crise 
-* La satisfaction client a augmenté de 27% dans les enquêtes post-crise
+**Continuité du service :** 
+* Elle pourrait continuer à traiter les transactions là où les établissements sans seconde région en seraient incapables
 
 **Protection financière :** 
-* La banque a évité environ 370 millions d'euros de pertes dues à des échecs de transactions 
-* Aucune donnée n'a été perdue ou corrompue, éliminant ainsi les opérations de récupération coûteuses
-
-**Avantage concurrentiel :** 
-* La banque a accueilli 140 000 nouveaux clients le mois suivant auprès de concurrents qui n'avaient pas réussi à maintenir le service.
+* Elle éviterait les pertes liées aux échecs de transactions qui s'accumulent à chaque heure où un système de paiement est hors service 
+* Aucune donnée ne serait perdue ou corrompue, éliminant ainsi le besoin de toute opération de récupération

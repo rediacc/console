@@ -183,11 +183,24 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/bandwidthLimit': { kind: 'public' },
   '/resources/backupStrategies/*/include': { kind: 'public' },
   '/resources/backupStrategies/*/exclude': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/kind': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/storage': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/folder': { kind: 'public' },
+  // hosted-service destination: the endpoint identifies a customer/elite plane
+  // (mirror accountServer/releasesUrl → identifier); vaultContent is the
+  // credential bag, one container-level secret leaf like storages/*/vaultContent.
+  '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
+  '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
+  // GFS retention knobs (counts; enforced server-side). Non-sensitive policy.
+  '/resources/backupStrategies/*/retention/keepLast': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepHourly': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepDaily': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepWeekly': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepMonthly': { kind: 'public' },
+  '/resources/backupStrategies/*/retention/keepYearly': { kind: 'public' },
 
   // ── Storages ─────────────────────────────────────────────────────────────
   '/resources/storages/*/provider': { kind: 'public' },
@@ -288,6 +301,16 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
+  // Host-local last-backup-activity record per repo (state, never pushed). All
+  // leaves are runtime observations keyed by a repo name the config already
+  // lists in the clear — registered public, so nothing here is committed.
+  '/state/backupRuns/*/lastRunAt': { kind: 'public' },
+  '/state/backupRuns/*/kind': { kind: 'public' },
+  '/state/backupRuns/*/status': { kind: 'public' },
+  '/state/backupRuns/*/snapshotId': { kind: 'public' },
+  '/state/backupRuns/*/storedBytes': { kind: 'public' },
+  '/state/backupRuns/*/addedBytes': { kind: 'public' },
+  '/state/backupRuns/*/error': { kind: 'public' },
   // Per-machine epoch-ms of the last opportunistic licence-refresh attempt.
   // Public: a rate-limiting timestamp keyed by a machine name the config
   // already lists in the clear, carrying no credential and no repo identity.

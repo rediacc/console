@@ -10,7 +10,7 @@ export {
   RENET_FUNCTIONS_VERSION,
   type RenetFunctionName,
   type TypedFunctionPayload,
-} from './data/functions.generated';
+} from './data/functions.generated.js';
 // Licensing tiers (generated from renet's tier map, the single source of truth).
 // Consumers must DERIVE the answer from here rather than restating it: the CLI
 // used to keep its own prefix rule and it had already drifted, claiming every
@@ -21,7 +21,7 @@ export {
   type LicenseTier,
   type LicenseTierEntry,
   requiresLicense,
-} from './data/license-tiers.generated';
+} from './data/license-tiers.generated.js';
 // Data
 // Zod validation
 export {

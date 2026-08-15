@@ -10,7 +10,7 @@
  * downloads the other twelve. (This is deliberately unlike @rediacc/shared/i18n,
  * which imports all locales statically for synchronous CLI access.)
  */
-import type { ContractStrings } from './types';
+import type { ContractStrings } from './types.js';
 
 export type ContractLanguage =
   | 'ar'

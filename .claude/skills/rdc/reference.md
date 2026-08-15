@@ -313,14 +313,14 @@ Create or update a backup strategy
 
 **Options:**
 
-- `--destination <name>` — Destination name within the strategy
-- `--storage <name>` — Storage config name (rclone credentials)
+- `--destination <name>` — Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given
+- `--storage <name>` — Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled
 - `--cron <expression>` — Cron schedule (e.g., "0 * * * *" for hourly)
-- `--mode <mode>` — Backup mode: "hot" (zero downtime) or "cold" (stop, snapshot, restart)
+- `--mode <mode>` — Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
 - `--bwlimit <limit>` — Rclone bandwidth limit (e.g., "6M", "10M:off", "08:00,3M;22:00,10M")
 - `--include <repos>` — Only back up these repos (comma-separated names)
 - `--exclude <repos>` — Exclude these repos from backup (comma-separated names)
-- `--folder <path>` — Subfolder under the storage bucket for this destination (e.g. hot, cold)
+- `--folder <path>` — Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage
 - `--enable` — Enable the strategy or destination
 - `--disable` — Disable the strategy or destination
 
@@ -389,7 +389,6 @@ Run a backup now.
 **Options:**
 
 - `-m, --machine <name>` — Machine name
-- `-w, --watch` — Watch for changes
 - `--debug` — Enable debug output
 
 > MCP tool
@@ -416,6 +415,62 @@ Cancel a running backup on a remote machine
 
 > MCP tool
 
+### rdc backup usage
+
+Show backup storage quota, stored bytes, and per-repo usage
+
+> MCP tool
+
+### rdc backup manifests [repo-ref]
+
+List backup snapshot manifests recorded on the server
+
+> MCP tool
+
+### rdc backup verify <repo-ref>
+
+Verify a repository's backup anchor against the chunk store
+
+**Options:**
+
+- `--deep` — Re-hash every recorded cell (full verification) instead of a sampled check
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc backup snapshot <repo-ref>
+
+Upload a chunk-store snapshot: full inventory first, changed cells after
+
+**Options:**
+
+- `--reseed` — Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
+- `--dry-run` — Plan only: no upload. Reports what would move
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc backup retention set <repo-ref>
+
+Declare how many snapshots to keep. Every knob is replaced, not merged.
+
+**Options:**
+
+- `--keep-last <n>` — Keep this many of the most recent snapshots
+- `--keep-hourly <n>` — Keep the newest snapshot from each of this many hours
+- `--keep-daily <n>` — Keep the newest snapshot from each of this many days
+- `--keep-weekly <n>` — Keep the newest snapshot from each of this many weeks
+- `--keep-monthly <n>` — Keep the newest snapshot from each of this many months
+- `--keep-yearly <n>` — Keep the newest snapshot from each of this many years
+
+> MCP excluded: Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.
+
+### rdc backup retention clear <repo-ref>
+
+Remove the policy, so every snapshot of this repository is kept.
+
+> MCP excluded: Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.
+
 ### rdc backup list [artifact-ref]
 
 List backup artifacts on a machine or storage.
@@ -425,7 +480,6 @@ List backup artifacts on a machine or storage.
 - `-m, --machine <name>` — Machine name
 - `--storage <name>` — List artifacts on this storage endpoint
 - `--path <subdir>` — Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.
-- `-w, --watch` — Watch for changes
 - `--debug` — Enable debug output
 
 > MCP tool
@@ -439,6 +493,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `--as <name>` — Name for the restored repository (defaults to the artifact name)
 - `-m, --machine <name>` — Machine name
 - `--datastore <name>` — Restore into this named datastore (its attached machine hosts it)
+- `--at <time>` — Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
 - `--up` — Deploy the restored repository after the transfer
 - `--health-window <seconds>` — Total health-gate window in seconds (default 300)
 - `--health-timeout <seconds>` — Per-attempt health-check timeout in seconds (default 30)
@@ -1232,7 +1287,6 @@ Push repository to a remote (machine or storage). The target type is auto-detect
 - `--provision <provider>` — Auto-provision target machine via cloud provider if it doesn't exist
 - `--checkpoint` — Create CRIU checkpoint before backup (captures process memory state for live migration)
 - `--force` — Force overwrite existing backup
-- `-w, --watch` — Watch for changes
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
 - `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
@@ -1251,7 +1305,6 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 - `--from-machine <machine>` — 
 - `--force` — Force overwrite existing repository
 - `--up` — After pull, mount and deploy repository on this machine
-- `-w, --watch` — Watch for changes
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
 - `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared

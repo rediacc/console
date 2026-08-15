@@ -15,14 +15,14 @@ import {
   type NetworkInterface,
   type ServiceInfo,
   type SystemInfo,
-} from '../../renet-contract/data/list-types.generated';
-import { isValidGuid } from '../../validation';
+} from '../../renet-contract/data/list-types.generated.js';
+import { isValidGuid } from '../../validation/index.js';
 import {
   isEncryptedVaultData,
   type ListResult,
   type MachineWithVaultStatus,
   parseListResult,
-} from './parsing-types';
+} from './parsing-types.js';
 
 // Re-export list types for CLI consumers
 export type {
@@ -345,4 +345,4 @@ export function getMachineNetworkInterfaces(machine: MachineWithVaultStatus): Ne
 }
 
 // Health check utilities are in a separate file to keep this file manageable.
-export { getMachineHealth, type MachineHealthResult } from './parsing-health';
+export { getMachineHealth, type MachineHealthResult } from './parsing-health.js';

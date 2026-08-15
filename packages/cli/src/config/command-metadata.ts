@@ -119,12 +119,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup run': {
-    mcp: {
-      destructive: false,
-      idempotent: false,
-      timeout: 'write',
-      excludeOptions: ['watch', 'debug'],
-    },
+    mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup status': {
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
@@ -133,16 +128,44 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup list': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'read',
-      excludeOptions: ['watch', 'debug'],
-    },
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'backup restore': {
     grandGuard: true,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
+  },
+  'backup usage': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'backup manifests': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'backup retention': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // The two MUTATIONS opt OUT of MCP. A retention policy decides what the
+  // server DELETES, and an agent that narrows one silently discards snapshots
+  // the operator meant to keep; `set` also REPLACES every knob rather than
+  // merging, so a partial call is a data-loss shape. The read above is fine.
+  'backup retention set': {
+    mcpExcludeReason:
+      'Declares what the server deletes, and replaces every knob rather than ' +
+      'merging, so a partial call silently discards retained snapshots.',
+  },
+  'backup retention clear': {
+    mcpExcludeReason:
+      'Removes the policy entirely; the blast radius of getting it wrong is ' +
+      'the operator keeping or losing every snapshot of a repository.',
+  },
+  'backup verify': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
+  },
+  // Opts IN, unlike the strategy mutations: it is a machine-plane, non-interactive
+  // command an agent legitimately runs. NOT idempotent, because each run mints a
+  // new snapshot id and charges quota for whatever it uploads; not destructive,
+  // because it only ever adds objects (machine grants carry no delete).
+  'backup snapshot': {
+    mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup strategy set': {
     mcpExcludeReason: 'Backup policy mutation; use CLI directly.',
@@ -279,7 +302,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       descriptionOverride:
         'Push a repository backup to storage or directly to another machine. WARNING: machine-to-machine push copies with the SAME GUID (backup/migration). To create an independent fork on another machine, use repo_fork first, then push the fork. A pushed copy is a backup artifact: boot it with backup_restore, not with push',
       requiredArgs: ['ref'],
-      excludeOptions: ['watch', 'debug', 'skip-router-restart'],
+      excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
 
@@ -291,7 +314,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['watch', 'debug', 'skip-router-restart'],
+      excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
 

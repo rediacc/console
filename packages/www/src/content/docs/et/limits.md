@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Piirangud ja kvoodid
@@ -138,8 +138,8 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 |-------|-------|
 | Varukoopia sihtkohti hoidla kohta | Piiramatu |
 | Samaaegseid varukoopia töid | 1 hoidla kohta (tööd järjekorda, kui käivitatud samaaegselt) |
-| Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc backup strategy set <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks (rclone `--bwlimit` süntaks: lihtne `6M`, suunaline `6M:off` või ajakava `08:00,3M;22:00,10M`) |
-| Säilitamine | Kontrollib teie salvestusteenuse pakkuja (S3, Cloudflare R2 jne). Rediacc ei jõusta säilitamispoliitikat. |
+| Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc backup strategy set <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks |
+| Säilitamine | Deklareeritakse käsuga `rdc backup retention set` (GFS-parameetrid: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ja jõustatakse serveri poolel; `rdc backup retention clear` eemaldab selle. Tükksalvestust mõõdetakse plaani kvoodi vastu füüsiliste unikaalsete salvestatud baitidena, mistõttu identsed andmed tõmmiste vahel ja kogu forkide perekonna ulatuses loetakse ainult üks kord: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, kontrollitav käsuga `rdc backup usage`. Pärandiks jäänud salvestuse push-tee ei paku iseseisvat säilitamist ja seda juhib teie teenusepakkuja. |
 | Masinate vaheline varukoopia | Toetatud; sihtmasinal peab olema piisavalt andmehoidla ruumi |
 
 ---

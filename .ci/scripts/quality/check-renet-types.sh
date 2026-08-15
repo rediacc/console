@@ -70,5 +70,8 @@ fi
 
 # Check failed
 log_error "Stale types detected: ${STALE[*]}"
-log_error "Run: ./run.sh deploy prep"
+log_error "Regenerate:"
+log_error "  cd private/renet && go build -o bin/renet ./cmd/renet"
+log_error "  private/renet/bin/renet functions generate-types \\"
+log_error "    --output packages/shared/src/renet-contract/data --version dev"
 exit 1

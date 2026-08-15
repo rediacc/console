@@ -84,7 +84,8 @@ read_file_content() {
 # Function to get template metadata from README
 extract_template_metadata() {
     local template_dir="$1"
-    local template_name="$(basename "$template_dir")"
+    local template_name
+    template_name="$(basename "$template_dir")"
     local readme_file="$template_dir/README.md"
 
     # Extract title (first header)
@@ -125,15 +126,17 @@ get_file_type() {
 generate_template_json() {
     local template_dir="$1"
     local output_file="$2"
-    local template_name="$(basename "$template_dir")"
-    local category="$(basename $(dirname "$template_dir"))"
+    local template_name category
+    template_name="$(basename "$template_dir")"
+    category="$(basename "$(dirname "$template_dir")")"
 
     echo "Processing template: $category/$template_name"
 
     # Extract metadata
-    local metadata=$(extract_template_metadata "$template_dir")
-    local title="$(echo "$metadata" | cut -d'|' -f1)"
-    local description="$(echo "$metadata" | cut -d'|' -f2)"
+    local metadata title description
+    metadata=$(extract_template_metadata "$template_dir")
+    title="$(echo "$metadata" | cut -d'|' -f1)"
+    description="$(echo "$metadata" | cut -d'|' -f2)"
 
     # Create template ID from category and name
     local template_id="${category}_${template_name}"
@@ -154,7 +157,8 @@ EOF
     # Process all files in template directory
     while IFS= read -r -d '' file; do
         local relative_path="${file#$template_dir/}"
-        local filename=$(basename "$file")
+        local filename
+        filename=$(basename "$file")
 
         # Skip hidden files and directories, except .env files
         if [[ -d "$file" ]]; then
@@ -204,11 +208,11 @@ generate_catalog_json() {
     # Count valid templates by finding all template directories recursively
     # Include skipped templates in count for full transparency
     local template_count=0
-    for template_dir in $(find "$templates_dir" -mindepth 2 -maxdepth 2 -type d); do
+    while IFS= read -r -d '' template_dir; do
         if [[ -f "$template_dir/README.md" ]] || [[ -f "$template_dir/docker-compose.yaml" ]] || [[ -f "$template_dir/Rediaccfile" ]]; then
             template_count=$((template_count + 1))
         fi
-    done
+    done < <(find "$templates_dir" -mindepth 2 -maxdepth 2 -type d -print0)
 
     # Start catalog structure
     cat > "$output_file" << EOF
@@ -226,9 +230,10 @@ EOF
     # Process each template directory recursively
     while IFS= read -r -d '' template_dir; do
         if [[ -f "$template_dir/README.md" ]] || [[ -f "$template_dir/docker-compose.yaml" ]] || [[ -f "$template_dir/Rediaccfile" ]]; then
-            local template_name="$(basename "$template_dir")"
-            local category_path="$(dirname "$template_dir" | sed 's|.*/templates||' | sed 's|^/||')"
-            local category="$(echo "$category_path" | cut -d'/' -f1)"
+            local template_name category_path category
+            template_name="$(basename "$template_dir")"
+            category_path="$(dirname "$template_dir" | sed 's|.*/templates||' | sed 's|^/||')"
+            category="$(echo "$category_path" | cut -d'/' -f1)"
             local template_path="${category}/${template_name}"
 
             # Check if template is in skip list
@@ -237,20 +242,22 @@ EOF
                 template_status="skipped"
             fi
 
-            local metadata=$(extract_template_metadata "$template_dir")
-            local title="$(echo "$metadata" | cut -d'|' -f1)"
-            local description="$(echo "$metadata" | cut -d'|' -f2)"
+            local metadata title description
+            metadata=$(extract_template_metadata "$template_dir")
+            title="$(echo "$metadata" | cut -d'|' -f1)"
+            description="$(echo "$metadata" | cut -d'|' -f2)"
             local template_id="${category}_${template_name}"
 
             # Track categories
-            if [[ ! " ${categories[@]} " =~ " ${category} " ]]; then
+            if [[ ! " ${categories[*]} " == *" ${category} "* ]]; then
                 categories+=("$category")
             fi
 
             # Count files in template
-            local file_count=$(find "$template_dir" -maxdepth 1 -type f | wc -l)
-            local has_readme=$([ -f "$template_dir/README.md" ] && echo "true" || echo "false")
-            local has_docker=$([ -f "$template_dir/docker-compose.yaml" ] && echo "true" || echo "false")
+            local file_count has_readme has_docker
+            file_count=$(find "$template_dir" -maxdepth 1 -type f | wc -l)
+            has_readme=$([ -f "$template_dir/README.md" ] && echo "true" || echo "false")
+            has_docker=$([ -f "$template_dir/docker-compose.yaml" ] && echo "true" || echo "false")
 
             if [[ "$first" == "true" ]]; then
                 first=false
@@ -308,9 +315,10 @@ copy_template_assets() {
     find "$templates_dir" -name "assets" -type d | while read -r assets_dir; do
         if [[ -d "$assets_dir" ]]; then
             local template_path="${assets_dir%/assets}"
-            local template_name="$(basename "$template_path")"
-            local category_path="$(dirname "$template_path" | sed 's|.*/templates/||')"
-            local category="$(echo "$category_path" | cut -d'/' -f1)"
+            local template_name category_path category
+            template_name="$(basename "$template_path")"
+            category_path="$(dirname "$template_path" | sed 's|.*/templates/||')"
+            category="$(echo "$category_path" | cut -d'/' -f1)"
 
             mkdir -p "$assets_output_dir/$category"
             cp -r "$assets_dir"/* "$assets_output_dir/$category/" 2>/dev/null || true
@@ -359,10 +367,11 @@ process_templates() {
     local processed=0
 
     # Process each template directory recursively (category/template structure)
-    for template_dir in $(find "$templates_dir" -mindepth 2 -maxdepth 2 -type d); do
+    while IFS= read -r -d '' template_dir; do
         if [[ -f "$template_dir/README.md" ]] || [[ -f "$template_dir/docker-compose.yaml" ]] || [[ -f "$template_dir/Rediaccfile" ]]; then
-            local template_name="$(basename "$template_dir")"
-            local category="$(basename $(dirname "$template_dir"))"
+            local template_name category
+            template_name="$(basename "$template_dir")"
+            category="$(basename "$(dirname "$template_dir")")"
             local template_path="${category}/${template_name}"
             local template_id="${category}_${template_name}"
 
@@ -375,7 +384,7 @@ process_templates() {
             generate_template_json "$template_dir" "$output_file"
             processed=$((processed + 1))
         fi
-    done
+    done < <(find "$templates_dir" -mindepth 2 -maxdepth 2 -type d -print0)
 
     log_success "Processed $processed templates"
 
@@ -401,7 +410,8 @@ process_configs() {
     # Copy config files from config directory
     for config_file in "$configs_dir"/*.json; do
         if [[ -f "$config_file" ]]; then
-            local filename="$(basename "$config_file")"
+            local filename
+            filename="$(basename "$config_file")"
             # Only copy config files (endpoints, pricing, services)
             if [[ "$filename" == "endpoints.json" ]] || [[ "$filename" == "pricing.json" ]] || [[ "$filename" == "services.json" ]]; then
                 cp "$config_file" "$output_dir/$filename"
@@ -1622,14 +1632,16 @@ minify_json_files() {
     # Find all JSON files in build directory
     while IFS= read -r -d '' json_file; do
         if [[ -f "$json_file" ]]; then
-            local size_before=$(stat -f%z "$json_file" 2>/dev/null || stat -c%s "$json_file" 2>/dev/null || echo "0")
+            local size_before
+            size_before=$(stat -f%z "$json_file" 2>/dev/null || stat -c%s "$json_file" 2>/dev/null || echo "0")
             total_size_before=$((total_size_before + size_before))
 
             # Create temporary file and minify
             local temp_file="${json_file}.tmp"
             if jq -c . "$json_file" > "$temp_file" 2>/dev/null; then
                 mv "$temp_file" "$json_file"
-                local size_after=$(stat -f%z "$json_file" 2>/dev/null || stat -c%s "$json_file" 2>/dev/null || echo "0")
+                local size_after
+                size_after=$(stat -f%z "$json_file" 2>/dev/null || stat -c%s "$json_file" 2>/dev/null || echo "0")
                 total_size_after=$((total_size_after + size_after))
                 minified=$((minified + 1))
             else
@@ -1666,17 +1678,20 @@ show_summary() {
     echo ""
 
     if [[ -d "$BUILD_DIR/templates" ]]; then
-        local template_count=$(find "$BUILD_DIR/templates" -name "*.json" | wc -l)
+        local template_count
+        template_count=$(find "$BUILD_DIR/templates" -name "*.json" | wc -l)
         echo "  - templates/         ($template_count template JSON files)"
     fi
 
     if [[ -d "$BUILD_DIR/configs" ]]; then
-        local config_count=$(find "$BUILD_DIR/configs" -name "*.json" | wc -l)
+        local config_count
+        config_count=$(find "$BUILD_DIR/configs" -name "*.json" | wc -l)
         echo "  - configs/           ($config_count config JSON files)"
     fi
 
     if [[ -d "$BUILD_DIR/assets" ]]; then
-        local asset_count=$(find "$BUILD_DIR/assets" -type f | wc -l)
+        local asset_count
+        asset_count=$(find "$BUILD_DIR/assets" -type f | wc -l)
         echo "  - assets/            ($asset_count asset files)"
     fi
 

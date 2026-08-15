@@ -4,7 +4,7 @@
  * Functions for validating subscription data structure and status.
  */
 
-import { PLAN_ORDER, SUBSCRIPTION_CONFIG } from './constants';
+import { PLAN_ORDER, SUBSCRIPTION_CONFIG } from './constants.js';
 import type {
   OrganizationSubscription,
   PlanCode,
@@ -12,7 +12,7 @@ import type {
   SubscriptionData,
   SubscriptionStatus,
   SubscriptionValidationResult,
-} from './types';
+} from './types.js';
 
 /**
  * Validate that a subscription data object has all required fields.

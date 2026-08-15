@@ -119,7 +119,8 @@ detect_libc() {
 # Check for required commands
 check_requirements() {
     local missing=""
-    for cmd in curl; do
+    local required_cmds=(curl)
+    for cmd in "${required_cmds[@]}"; do
         if ! command -v "$cmd" &>/dev/null; then
             missing="$missing $cmd"
         fi

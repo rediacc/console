@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    // ESNext, not ES2022: src/index.ts pulls in private/account/src/i18n, whose
+    // JSON imports use import attributes. Under ES2022 every one of those lines
+    // is a TS2823 error, which is how this config sat red and unnoticed.
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
     "types": ["@cloudflare/workers-types"],
@@ -9,5 +12,8 @@
     "noEmit": true,
     "skipLibCheck": true
   },
-  "include": ["src"]
+  // The ambient declarations come along because this project compiles account
+  // sources through the entry import; private/account/tsconfig.json picks them
+  // up via its own include, which does not apply here.
+  "include": ["src", "../../private/account/src/types/*.d.ts"]
 }

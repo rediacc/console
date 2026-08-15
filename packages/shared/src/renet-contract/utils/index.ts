@@ -1,4 +1,4 @@
-export { minifyJSON } from './json';
+export { minifyJSON } from './json.js';
 export {
   mapRcloneToStorageProvider,
   PROVIDER_MAPPING,
@@ -7,7 +7,7 @@ export {
   type RcloneConfig,
   type RcloneConfigFields,
   type RcloneConfigFieldValue,
-} from './rclone';
+} from './rclone.js';
 export {
   formatSizeBytes,
   getParamArray,
@@ -32,4 +32,4 @@ export {
   validateSizeWithMin,
   // SSH key format validation
   validateSSHPrivateKey,
-} from './validation';
+} from './validation.js';

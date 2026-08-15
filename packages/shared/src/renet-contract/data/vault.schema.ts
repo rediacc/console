@@ -3,7 +3,7 @@
 // Source: renet/pkg/functions/vault/
 
 import { z, type ZodSafeParseResult } from 'zod';
-import { VAULT_SCHEMA, VAULT_VERSION } from './vault.generated';
+import { VAULT_SCHEMA, VAULT_VERSION } from './vault.generated.js';
 
 // ============================================
 // Zod schemas for vault validation

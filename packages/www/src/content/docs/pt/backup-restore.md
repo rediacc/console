@@ -1,16 +1,47 @@
 ---
 title: "Backup e Restauro"
-description: "Faça backup de repositórios encriptados para qualquer armazenamento compatível com rclone, restaure em qualquer máquina e automatize com estratégias de backup nomeadas e temporizadores systemd."
+description: "Faça backup de repositórios encriptados de duas formas: armazenamento fragmentado endereçado por conteúdo que envia apenas as células alteradas, ou um push completo para qualquer armazenamento compatível com rclone. Restaure em qualquer máquina e automatize com estratégias nomeadas e temporizadores systemd."
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "e4a4e0de5"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Backup e Restauro
 
 A Rediacc pode fazer backup de repositórios encriptados para fornecedores de armazenamento externo e restaurá-los na mesma máquina ou em máquinas diferentes. Os backups são encriptados; a credencial LUKS do repositório é necessária para restaurar.
+
+## Duas vias de backup
+
+A Rediacc tem duas vias de backup independentes, e este guia cobre ambas. Utilizam
+armazenamento e comandos diferentes, pelo que um repositório com backup feito por uma via não fica com backup feito pela outra.
+
+**Armazenamento fragmentado** (`rdc backup snapshot`) envia a imagem do repositório em células de tamanho fixo endereçadas pelo seu conteúdo. A primeira execução envia todo o inventário não vazio; cada execução seguinte envia apenas as células que mudaram, decidido a partir dos metadados de alocação do sistema de ficheiros em vez de ler a imagem inteira. As células idênticas são armazenadas uma única vez entre snapshots e entre toda uma família de forks, e a utilização é medida face à sua quota de armazenamento (`rdc backup usage`).
+
+**Push de armazenamento** (`rdc repo push`) copia um ficheiro de backup completo para um fornecedor compatível com rclone que regista você mesmo. Está a ser descontinuado em favor do armazenamento fragmentado, e as estratégias agendadas já não o utilizam. As secções abaixo que o descrevem ainda funcionam hoje, mas considere-o como a via legada.
+
+Restaurar a partir do armazenamento fragmentado funciona: `rdc backup restore <repo> --at <snapshot-id>` materializa um snapshot armazenado, e `--at` também aceita um timestamp RFC 3339, que é resolvido contra o inventário de snapshots. Adicione `--as <name>` para restaurar com um nome diferente e `--up` para colocar o repositório em funcionamento depois. O armazenamento fragmentado também oferece envio (`rdc backup snapshot`), verificação (`rdc backup verify`, e `--deep` para re-hashear cada célula em vez de uma amostra), o inventário de snapshots (`rdc backup manifests`) e contabilidade de quotas (`rdc backup usage`).
+
+### Comandos de armazenamento fragmentado
+
+```bash
+# Enviar um snapshot. A primeira execução semeia; as seguintes enviam apenas as células alteradas.
+rdc backup snapshot my-app
+
+# Planear sem enviar: relata o que se moveria.
+rdc backup snapshot my-app --dry-run
+
+# Desconfiar da âncora local e reenviar todo o inventário.
+# Isto reenvia tudo e volta a debitar a quota; use apenas
+# quando a âncora for sabidamente má.
+rdc backup snapshot my-app --reseed
+
+# Verificar o inventário armazenado e a sua quota.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Configurar Armazenamento
 
@@ -63,7 +94,7 @@ Receba um backup de repositório do armazenamento externo:
 rdc repo pull my-app --from my-storage
 ```
 
-A receção verifica sempre que o repositório de destino está montado antes de escrever. Se não estiver montado, a operação é cancelada.
+A receção recusa substituir um repositório que esteja atualmente **montado**. Desmonte-o primeiro, faça a receção e volte a colocá-lo em funcionamento com `rdc repo up`. Os repositórios baseados em diretório são a exceção: sincronizam-se no próprio local mesmo estando montados.
 
 | Opção | Descrição |
 |--------|-------------|
@@ -318,7 +349,7 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
 | **Frequência adequada** | Alta (ex: de hora em hora) | Baixa (ex: diária ou semanal) |
 | **Uso típico** | Rede de segurança de alta frequência | Backup agendado com consistência garantida |
 
-**Hot** é o padrão correto para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é efectuado, por isso a janela de backup não interrompe os utilizadores. O snapshot é crash-consistent: é equivalente ao que se obteria após um encerramento não limpo. Para a maioria das bases de dados modernas e filas de mensagens, isto é aceitável.
+**Hot** é o padrão correto para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é effectuado, por isso a janela de backup não interrompe os utilizadores. O snapshot é crash-consistent: é equivalente ao que se obteria após um encerramento não limpo. Para a maioria das bases de dados modernas e filas de mensagens, isto é aceitável.
 
 **Cold** é apropriado quando precisa de um snapshot application-consistent garantido e pode aceitar um breve reinício por repositório. Os serviços são parados antes do snapshot e reiniciados antes de o carregamento começar, por isso um carregamento lento ou falhado nunca prolonga a janela de downtime. Consulte [Semântica do Backup Cold](#semantica-do-backup-cold) para o modelo de garantia completo.
 

@@ -54,7 +54,7 @@ if ! go test ./pkg/subscription/... -run 'TestGoTypesMatchTypeScriptSchema|TestG
     log_error "This means the subscription types are out of sync between TypeScript and Go."
     log_error "To fix:"
     log_error "  1. Update Go types in private/renet/pkg/subscription/types.go to match TypeScript"
-    log_error "  2. Run: npm run generate:subscription-schema"
+    log_error "  2. Run: npx tsx packages/shared/scripts/generate-subscription-schema.ts"
     log_error "  3. Run: cd private/renet && go test ./pkg/subscription/... -run TestGoTypesMatchTypeScriptSchema -v"
     exit 1
 fi
@@ -65,7 +65,13 @@ log_info "Go types match TypeScript schema"
 cd "$REPO_ROOT"
 if ! git diff --quiet "$SCHEMA_FILE" 2>/dev/null; then
     log_error "Schema file has uncommitted changes"
-    log_error "Run: npm run generate:subscription-schema"
+    log_error ""
+    log_error "This step ALREADY regenerated it for you (phase 1). There is nothing"
+    log_error "left to run: review the diff and commit it."
+    log_error "  git diff $SCHEMA_FILE"
+    log_error ""
+    log_error "This compares against git HEAD, so it stays red in a working tree that"
+    log_error "has legitimately-regenerated output but is not committed yet."
     exit 1
 fi
 

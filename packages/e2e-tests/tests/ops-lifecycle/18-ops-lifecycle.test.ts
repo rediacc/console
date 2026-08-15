@@ -13,9 +13,17 @@ import { InfrastructureManager } from '../../src/utils/infrastructure/Infrastruc
  * coverage, and the zero-skip gate (run-e2e.sh --fail-on-skip) forbids it.
  *
  * The ops lifecycle itself IS exercised in CI by the dedicated OPS Tests job
- * (.github/workflows/ci-ops-test.yml drives `rdc ops up/status/down/reset`
- * on throwaway VMs), so excluding these playwright wrappers loses no CI
- * coverage. They remain runnable locally by pointing Playwright at this file
+ * (.github/workflows/ci-ops-test.yml drives ops setup, check, up --basic,
+ * status, up --skip-orchestration and down on throwaway VMs), so excluding
+ * these playwright wrappers loses no CI coverage of THOSE verbs.
+ *
+ * CORRECTED 2026-08-15: this used to claim CI drives "up/status/down/reset".
+ * There is no `reset` CLI verb at all -- command-tree.json gives ops exactly
+ * up, down, status, ssh, setup and check -- and the string never appears in
+ * that workflow. The reset tests below are still real: they call
+ * OpsManager.resetVMs(), which runs `renet ops up --force --parallel`
+ * (packages/provisioning/src/ops/OpsVMLifecycle.ts:127). What was false was
+ * the claim that CI covers them; no config selects this file, so it does not. They remain runnable locally by pointing Playwright at this file
  * directly (there is no CI guard here anymore — exclusion is by config, not a
  * runtime skip).
  */
