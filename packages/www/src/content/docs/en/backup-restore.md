@@ -4,7 +4,7 @@ description: "Back up encrypted repositories two ways: content-addressed chunk s
 category: "Guides"
 order: 7
 language: en
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "c02ab3e78c40fa92"
 ---
 
 # Backup & Restore
@@ -57,6 +57,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Cold Snapshots (`--cold`)
+
+A cold snapshot stops a repository before it is frozen, so the stored image is application-consistent instead of crash-consistent. It runs on the machine itself:
+
+```bash
+# Every repository on the default datastore.
+sudo renet backup snapshot --cold
+
+# Only the repositories you name. --repo takes a repository GUID and repeats.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` cannot be combined with `--dry-run`. A dry run that stops containers is not dry, and one that does not is not cold, so renet refuses the pair rather than pick a meaning for you.
+
+### What a cold run does
+
+For each selected repository, in this order:
+
+1. Stop its containers.
+2. Flush the repository mount and the datastore to disk.
+3. Confirm the containers really stopped.
+4. Take a copy-on-write reflink of the repository image.
+5. Start the containers again.
+
+Only then does the upload begin, with every repository already back up.
+
+The outage is the freeze, not the transfer. A reflink is metadata only, so it takes the same time whether the repository holds 1 GB or 100 GB. An upload does not work that way: it grows with the bytes that changed, and a first snapshot uploads the whole non-zero inventory. Holding containers down until the upload finished would tie the outage to the size of the data, which on a first seed means hours instead of milliseconds.
+
+Every selected repository is stopped inside one window rather than one at a time. That costs a slightly longer outage per repository, and it buys a single consistency point across the whole set.
+
+A repository with no containers running is already quiet. It is snapshotted with no outage at all, and that is a normal result rather than a failure.
+
+### What the outage costs
+
+Measured on a real machine, the whole outage was **222 ms**:
+
+| Phase | Measured | What happens |
+|-------|----------|--------------|
+| `cold_down` | 64 ms | Containers stop |
+| `cold_sync` | 26 ms | Repository mounts and datastore flushed to disk |
+| `cold_verify` | 31 ms | Containers confirmed stopped |
+| `cold_stage` | 0 ms | Reflink of the repository image |
+| `cold_up` | 99 ms | Containers start again |
+
+Restarting the containers dominates, and staging is effectively free: the reflink does not register at millisecond resolution. Read that zero next to the per-repository records rather than on its own, though. A run that refused every repository also reports `cold_stage=0ms`, and only the records say which of the two you are looking at.
+
+The breakdown is the evidence, not decoration. None of these five phases reads or sends repository data, so none of them grows as the backup grows. The one part that does grow, the upload, runs after the outage has already ended.
+
+renet prints the same figures when the run finishes, so you can measure your own machines instead of trusting ours:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Each repository's JSON record carries the same outage and phases, so a later reader can tell a cold snapshot from a hot one without guessing from timing.
+
+### When to choose cold
+
+Hot is the default and the right choice for most repositories. A hot snapshot is crash-consistent, which is the state a repository would be in after a power cut, and it costs no downtime at all. Most databases and queues recover from that state on their own.
+
+Choose cold for data that cannot be safely captured while it is being written. A database holding its own write-ahead log and in-memory state is the obvious case. You are trading a short, measured outage for a snapshot the application can open without recovering first.
+
+### What a cold run refuses
+
+Refusing is the feature. A backup labeled cold that never quiesced anything is a lie you would only find out about at restore time, so renet never quietly downgrades a cold run to a hot one:
+
+- **Containers that did not stop.** After the stop, renet asks the repository's own Docker socket whether anything is still running. If something is, that repository is refused instead of snapshotted. The check fails closed: if the socket cannot be reached or the container list cannot be read, the quiesce counts as unverified, and unverified is refused.
+- **A license that cannot be read.** Licenses are checked before the outage rather than after it, because a repository whose license cannot be read could never have uploaded anything. Such a repository is skipped without being stopped. If none of the selected repositories has a readable license, the whole run is refused before a single container goes down.
+- **A second cold run on the same datastore.** The lock covers the datastore, and a busy lock is refused outright, having stopped nothing. Two overlapping runs would each stop containers the other believes it owns, and the second would restart repositories the first was still freezing. Skipping the run and waiting for the next one is better than that.
+
+If a run is interrupted while the containers are down, by a `systemctl stop` or a reboot, renet starts them again before it exits. Recovery on the machine is the backstop: it spots a cold backup whose owner is gone and brings those repositories back up.
 
 ## Configure Storage
 

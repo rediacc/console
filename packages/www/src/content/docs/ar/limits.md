@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: ar
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # الحدود والحصص
@@ -138,6 +138,7 @@ rdc machine infra push server-1
 |------|--------|
 | وجهات النسخ الاحتياطي لكل مستودع | غير محدود |
 | مهام النسخ الاحتياطي المتزامنة | 1 لكل مستودع (تصطف المهام في قائمة الانتظار إذا تم تشغيلها بشكل متزامن) |
+| اللقطات الباردة المتزامنة | 1 لكل مخزن بيانات؛ يُرفض أي `renet backup snapshot --cold` ثانٍ فوراً دون أن يوقف شيئاً |
 | تكرار النسخ الاحتياطي | لا يوجد حد أدنى للفاصل الزمني المفروض؛ محدود بعرض نطاق التخزين الخاص بك. استخدم `rdc backup strategy set <name> --bwlimit "6M"` لتحديد سرعة الرفع |
 | الاحتفاظ | يُعرَّف باستخدام `rdc backup retention set` (معاملات GFS: `--keep-last`، `--keep-hourly`، `--keep-daily`، `--keep-weekly`، `--keep-monthly`، `--keep-yearly`) ويُفرض من جانب الخادم؛ يزيله `rdc backup retention clear`. يُقاس التخزين المجزّأ مقابل حصة الخطة كبايتات فعلية فريدة مخزَّنة، لذا لا تُحتسب البيانات المتطابقة بين اللقطات وعبر عائلة التفريعات إلا مرة واحدة: Community 10 GiB، Professional 100 GiB، Business 500 GiB، Enterprise 2 TiB، يُتحقق منها عبر `rdc backup usage`. مسار دفع التخزين القديم ليس له احتفاظ خاص به، ويخضع لمزوّدك. |
 | النسخ الاحتياطي عبر الأجهزة | مدعوم؛ يجب أن يحتوي الجهاز الوجهة على مساحة كافية في مخزن البيانات |

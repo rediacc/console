@@ -4,8 +4,8 @@ description: "Esegui il backup dei repository cifrati in due modi: storage a chu
 category: "Guides"
 order: 7
 language: it
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Backup e Ripristino
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Snapshot a Freddo (`--cold`)
+
+Uno snapshot a freddo ferma un repository prima di congelarlo, così l'immagine memorizzata è application-consistent e non soltanto crash-consistent. Il comando gira sulla macchina stessa:
+
+```bash
+# Ogni repository sul datastore predefinito.
+sudo renet backup snapshot --cold
+
+# Solo i repository indicati. --repo prende un GUID di repository ed è ripetibile.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` non si può combinare con `--dry-run`. Una prova a vuoto che ferma i container non è una prova a vuoto, e una che non li ferma non è a freddo: renet rifiuta la coppia invece di scegliere un significato al posto tuo.
+
+### Cosa fa un'esecuzione a freddo
+
+Per ogni repository selezionato, in quest'ordine:
+
+1. Fermare i suoi container.
+2. Scrivere su disco il mount del repository e il datastore.
+3. Verificare che i container si siano davvero fermati.
+4. Prendere un reflink copy-on-write dell'immagine del repository.
+5. Riavviare i container.
+
+Solo a quel punto parte il caricamento, con tutti i repository già di nuovo attivi.
+
+Il downtime è il congelamento, non il trasferimento. Un reflink tocca solo metadati, quindi impiega lo stesso tempo sia che il repository contenga 1 GB sia che ne contenga 100. Un caricamento no: cresce con i byte cambiati, e il primo snapshot carica l'intero inventario non nullo. Tenere i container fermi fino alla fine del caricamento legherebbe il downtime alla mole dei dati, cioè ore invece di millisecondi alla prima copia.
+
+Tutti i repository selezionati vengono fermati in un'unica finestra, non uno alla volta. Costa un po' più di downtime per repository e in cambio dà un solo punto di consistenza per l'intero insieme.
+
+Un repository senza container in esecuzione è già fermo. Viene catturato senza alcun downtime, ed è un esito normale, non un errore.
+
+### Quanto costa il downtime
+
+Misurato su una macchina reale, il downtime totale è stato di **222 ms**:
+
+| Fase | Misurato | Cosa succede |
+|------|----------|--------------|
+| `cold_down` | 64 ms | I container si fermano |
+| `cold_sync` | 26 ms | Mount del repository e datastore scritti su disco |
+| `cold_verify` | 31 ms | Si conferma che i container sono fermi |
+| `cold_stage` | 0 ms | Reflink dell'immagine del repository |
+| `cold_up` | 99 ms | I container ripartono |
+
+Il riavvio dei container domina, e lo staging è praticamente gratis: il reflink non si vede nemmeno alla risoluzione del millisecondo. Quello zero però va letto accanto ai record dei singoli repository, non da solo. Anche un'esecuzione che ha rifiutato ogni repository riporta `cold_stage=0ms`, e solo i record dicono quale dei due casi hai davanti.
+
+Il dettaglio è la prova, non un ornamento. Nessuna di queste cinque fasi legge o invia dati del repository, quindi nessuna cresce al crescere del backup. La parte che cresce, il caricamento, parte quando il downtime è già finito.
+
+renet stampa gli stessi numeri alla fine di un'esecuzione, così puoi misurare le tue macchine invece di fidarti delle nostre:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Il record JSON di ogni repository porta lo stesso downtime e le stesse fasi, così più avanti si distingue uno snapshot a freddo da uno a caldo senza doverlo dedurre dai tempi.
+
+### Quando scegliere il freddo
+
+Il caldo è il comportamento predefinito ed è la scelta giusta per la maggior parte dei repository. Uno snapshot a caldo è crash-consistent, cioè nello stato in cui un repository si troverebbe dopo un blackout, e non costa alcun downtime. Quasi tutti i database e le code si rimettono in sesto da soli.
+
+Scegli il freddo per dati che non si possono catturare in sicurezza mentre vengono scritti. Un database con il proprio write-ahead log e lo stato in memoria è il caso tipico. Stai scambiando un downtime breve e misurato con uno snapshot che l'applicazione può aprire senza doversi prima riparare.
+
+### Cosa rifiuta un'esecuzione a freddo
+
+Il rifiuto è la funzione. Un backup etichettato a freddo che non ha fermato nulla è una bugia che scopriresti solo al ripristino, perciò renet non declassa mai in silenzio un'esecuzione a freddo a una a caldo:
+
+- **Container che non si sono fermati.** Dopo lo stop, renet chiede al socket Docker del repository se qualcosa è ancora in esecuzione. Se sì, quel repository viene rifiutato invece che catturato. Il controllo decide dalla parte sicura: se il socket è irraggiungibile o l'elenco dei container non è leggibile, la quiescenza vale come non verificata, e non verificata significa rifiutata.
+- **Una licenza che non si riesce a leggere.** Le licenze si controllano prima del downtime, non dopo, perché un repository con licenza illeggibile non avrebbe comunque potuto caricare niente. Un repository così viene saltato senza essere fermato. Se nessuno dei repository selezionati ha una licenza leggibile, l'intera esecuzione viene rifiutata prima che scenda un solo container.
+- **Una seconda esecuzione a freddo sullo stesso datastore.** Il lock copre il datastore, e un lock occupato viene rifiutato subito, senza aver fermato nulla. Due esecuzioni sovrapposte fermerebbero ciascuna container che l'altra crede propri, e la seconda riavvierebbe repository che la prima sta ancora congelando. Saltare l'esecuzione e aspettare la prossima è meglio.
+
+Se un'esecuzione viene interrotta con i container fermi, da un `systemctl stop` o da un riavvio, renet li rimette in moto prima di uscire. Il recupero sulla macchina fa da rete: individua un backup a freddo il cui proprietario è sparito e riporta su quei repository.
 
 ## Configurare lo Storage
 

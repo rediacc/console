@@ -4,8 +4,8 @@ description: "Verschlüsselte Repositories auf zwei Wegen sichern: über inhalts
 category: "Guides"
 order: 7
 language: de
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Backup & Wiederherstellung
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Cold-Snapshots (`--cold`)
+
+Ein Cold-Snapshot stoppt ein Repository, bevor es eingefroren wird. Das gespeicherte Image ist damit anwendungskonsistent statt nur absturzkonsistent. Der Befehl läuft auf der Maschine selbst:
+
+```bash
+# Jedes Repository auf dem Standard-Datastore.
+sudo renet backup snapshot --cold
+
+# Nur die genannten Repositories. --repo nimmt eine Repository-GUID und ist wiederholbar.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` lässt sich nicht mit `--dry-run` kombinieren. Ein Probelauf, der Container stoppt, ist kein Probelauf, und einer, der es nicht tut, ist nicht cold. Deshalb weist renet die Kombination zurück, statt sich selbst für eine Bedeutung zu entscheiden.
+
+### Was bei einem Cold-Lauf passiert
+
+Für jedes ausgewählte Repository, in dieser Reihenfolge:
+
+1. Seine Container stoppen.
+2. Repository-Mount und Datastore auf die Platte schreiben.
+3. Prüfen, dass die Container wirklich gestoppt sind.
+4. Einen Copy-on-Write-Reflink des Repository-Images anlegen.
+5. Die Container wieder starten.
+
+Erst danach beginnt der Upload, und zwar mit längst wieder laufenden Repositories.
+
+Die Ausfallzeit ist das Einfrieren, nicht die Übertragung. Ein Reflink besteht nur aus Metadaten und dauert deshalb gleich lang, ob das Repository 1 GB oder 100 GB hält. Beim Upload ist das anders: er wächst mit den geänderten Bytes, und der erste Snapshot lädt das gesamte nicht-leere Inventar hoch. Container bis zum Ende des Uploads unten zu halten, würde die Ausfallzeit an die Datenmenge koppeln, was bei einer Erstsicherung Stunden statt Millisekunden bedeutet.
+
+Alle ausgewählten Repositories werden in einem gemeinsamen Fenster gestoppt, nicht nacheinander. Das kostet pro Repository etwas mehr Ausfallzeit und bringt dafür einen einzigen Konsistenzpunkt über den ganzen Satz.
+
+Ein Repository ohne laufende Container ist bereits ruhig. Es wird ganz ohne Ausfallzeit gesichert, und das ist ein normales Ergebnis, kein Fehler.
+
+### Was die Ausfallzeit kostet
+
+Auf einer echten Maschine gemessen betrug die gesamte Ausfallzeit **222 ms**:
+
+| Phase | Gemessen | Was passiert |
+|-------|----------|--------------|
+| `cold_down` | 64 ms | Container stoppen |
+| `cold_sync` | 26 ms | Repository-Mounts und Datastore werden auf die Platte geschrieben |
+| `cold_verify` | 31 ms | Container werden als gestoppt bestätigt |
+| `cold_stage` | 0 ms | Reflink des Repository-Images |
+| `cold_up` | 99 ms | Container starten wieder |
+
+Der Neustart der Container dominiert, und das Staging ist praktisch kostenlos: der Reflink taucht in Millisekunden-Auflösung gar nicht erst auf. Lesen Sie diese Null aber neben den Datensätzen der einzelnen Repositories und nicht für sich allein. Ein Lauf, der jedes Repository zurückgewiesen hat, meldet ebenfalls `cold_stage=0ms`, und nur die Datensätze sagen, welcher der beiden Fälle vorliegt.
+
+Die Aufschlüsselung ist der Beleg, keine Dekoration. Keine dieser fünf Phasen liest oder sendet Repository-Daten, also wächst auch keine davon mit dem Backup. Der Teil, der wächst, ist der Upload, und der läuft erst, wenn die Ausfallzeit schon vorbei ist.
+
+renet gibt dieselben Werte am Ende eines Laufs aus, sodass Sie Ihre eigenen Maschinen messen können statt uns zu glauben:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Der JSON-Datensatz jedes Repositorys trägt dieselbe Ausfallzeit und dieselben Phasen, sodass später erkennbar bleibt, ob ein Snapshot cold oder hot entstanden ist, ohne es aus Zeiten zu erraten.
+
+### Wann Sie cold wählen sollten
+
+Hot ist die Voreinstellung und für die meisten Repositories die richtige Wahl. Ein Hot-Snapshot ist absturzkonsistent, also in dem Zustand, in dem ein Repository nach einem Stromausfall wäre, und kostet gar keine Ausfallzeit. Die meisten Datenbanken und Queues kommen damit von allein zurecht.
+
+Cold ist für Daten gedacht, die sich während des Schreibens nicht sicher erfassen lassen. Eine Datenbank mit eigenem Write-Ahead-Log und Zustand im Arbeitsspeicher ist der klassische Fall. Sie tauschen eine kurze, gemessene Ausfallzeit gegen einen Snapshot, den die Anwendung ohne vorherige Reparatur öffnen kann.
+
+### Was ein Cold-Lauf zurückweist
+
+Das Zurückweisen ist das Feature. Ein Backup mit dem Etikett cold, das nie etwas stillgelegt hat, ist eine Lüge, die erst beim Restore auffliegt. Deshalb stuft renet einen Cold-Lauf nie stillschweigend auf hot herunter:
+
+- **Container, die nicht gestoppt sind.** Nach dem Stoppen fragt renet den Docker-Socket des Repositorys, ob dort noch etwas läuft. Wenn ja, wird dieses Repository zurückgewiesen statt gesichert. Die Prüfung entscheidet im Zweifel gegen den Lauf: Ist der Socket nicht erreichbar oder die Containerliste nicht lesbar, gilt die Stilllegung als unbestätigt, und unbestätigt wird zurückgewiesen.
+- **Eine Lizenz, die sich nicht lesen lässt.** Lizenzen werden vor der Ausfallzeit geprüft, nicht danach, denn ein Repository mit unlesbarer Lizenz hätte ohnehin nie etwas hochladen können. Ein solches Repository wird übersprungen, ohne gestoppt zu werden. Hat kein einziges der ausgewählten Repositories eine lesbare Lizenz, wird der ganze Lauf zurückgewiesen, bevor auch nur ein Container heruntergefahren wird.
+- **Ein zweiter Cold-Lauf auf demselben Datastore.** Die Sperre gilt für den ganzen Datastore, und eine belegte Sperre wird sofort zurückgewiesen, ohne irgendetwas gestoppt zu haben. Zwei überlappende Läufe würden jeweils Container stoppen, die der andere für seine hält, und der zweite würde Repositories starten, die der erste noch einfriert. Den Lauf auszulassen und auf den nächsten zu warten, ist besser.
+
+Wird ein Lauf unterbrochen, während die Container unten sind, etwa durch ein `systemctl stop` oder einen Neustart, startet renet sie vor dem Beenden wieder. Die Wiederherstellung auf der Maschine ist der Rückhalt: Sie erkennt ein Cold-Backup, dessen Besitzer verschwunden ist, und fährt diese Repositories wieder hoch.
 
 ## Speicher konfigurieren
 
