@@ -45,6 +45,25 @@ if ! npx tsc --noEmit; then
 fi
 log_info "Backend typecheck passed"
 
+# Phase 3b: TypeScript typecheck (e2e). NOTHING checked this until 2026-08-15,
+# and the cost was a TS2352 sitting on a branch unseen: the backup wave made
+# `kind` part of BackupDestinationSchema while an e2e fixture still built a
+# destination without one. Playwright TRANSPILES without typechecking, so the
+# suite ran green over a type error, and the schema's own `.default('storage')`
+# meant runtime was fine too. Two layers of "works anyway" is exactly how a
+# type error becomes invisible.
+#
+# It lives here rather than in a new gate key because this script is already
+# the place a reader looks for "does the account package typecheck", and a
+# third phase costs nothing next to the two above it.
+log_step "Typechecking account e2e suite..."
+cd "$ACCOUNT_DIR"
+if ! npx tsc --noEmit -p e2e/tsconfig.json; then
+    log_error "e2e typecheck failed!"
+    exit 1
+fi
+log_info "e2e typecheck passed"
+
 # Phase 4: Lint (if biome is available)
 log_step "Linting account portal frontend..."
 cd "$REPO_ROOT"
