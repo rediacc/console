@@ -341,6 +341,32 @@ check_pr_review_comments() {
     echo "$unreplied_count"
 }
 
+# The newest top-level "**Claude finished" report on a PR must have a later
+# comment by a different author. Echoes: "none" (no report exists),
+# "answered", or "unanswered". Returns non-zero when the comments cannot be
+# read (fail closed, same rationale as check_pr_review_comments).
+check_pr_report_answered() {
+    local repo="$1" pr_number="$2"
+    if ! command -v gh &>/dev/null; then
+        echo "none"
+        return 0
+    fi
+    local comments
+    if ! comments=$(gh_json "issue comments for ${repo}#${pr_number}" -- \
+        api "repos/${repo}/issues/${pr_number}/comments" --paginate); then
+        return 1
+    fi
+    # jq does the whole judgement so bash never parses comment bodies: pick
+    # the newest report by created_at, then ask whether ANY comment from a
+    # different login was created after it.
+    echo "$comments" | jq -r '
+        ([.[] | select(.body | startswith("**Claude finished"))] | sort_by(.created_at) | last) as $r
+        | if $r == null then "none"
+          elif ([.[] | select(.created_at > $r.created_at and .user.login != $r.user.login)] | length) > 0
+          then "answered"
+          else "unanswered" end'
+}
+
 # Main validation
 main() {
     local current_branch
@@ -479,6 +505,31 @@ main() {
                             errors=$((errors + 1))
                         else
                             log_info "✓ $sm_path: all review comments addressed"
+                        fi
+
+                        # The REPORT hole, hit live on 2026-08-09 while landing
+                        # console#561: rediacc/account#78's automated review
+                        # posted a top-level REPORT (no inline threads), and
+                        # nothing console-side checked it -- the thread check
+                        # above sees only pulls/comments, and the report landed
+                        # AFTER the last console run, so no per-commit check
+                        # ever re-evaluated. Only the local block-admin-merge
+                        # hook caught it, which a web-UI merge would bypass.
+                        # Rule (same oracle as check-review-report-replies.sh):
+                        # the NEWEST "**Claude finished" report on the sub-PR
+                        # must have a LATER comment by someone other than the
+                        # bot that posted it.
+                        local report_state
+                        if ! report_state="$(check_pr_report_answered "$repo" "$submodule_pr_number")"; then
+                            log_error "✗ $sm_path: could not read issue comments for $submodule_pr_url"
+                            log_error "  This gate cannot certify the report state, so it counts as an error."
+                            errors=$((errors + 1))
+                        elif [[ "$report_state" == "unanswered" ]]; then
+                            log_error "✗ $sm_path: the newest automated review REPORT on $submodule_pr_url has no reply"
+                            log_error "  AI FIX: answer the report substantively (a top-level PR comment posted after it)"
+                            errors=$((errors + 1))
+                        else
+                            log_info "✓ $sm_path: review report answered ($report_state)"
                         fi
                     fi
                 fi

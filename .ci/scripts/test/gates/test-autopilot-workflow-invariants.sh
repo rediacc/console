@@ -150,6 +150,23 @@ test_model_without_state_guard_fails() {
     log_pass "the model job is structurally unable to run while state writes are disarmed"
 }
 
+test_model_round_file_tools_required() {
+    # The model round's permission allowlist must include the file tools:
+    # the handoff contract requires the model to edit files and write
+    # handoff.json, and an allowlist denies everything unlisted. Live proof:
+    # runs 31321211521/31326053280 burned 41 turns with 21 denials on an
+    # allowlist that simply omitted Edit/Write. Strip ONLY "Edit" from the
+    # settings block; every other permission entry survives, so a checker
+    # that merely counts entries or greps the file for the word Edit (it
+    # appears in prose comments) would pass this mutation.
+    sed 's/^                  "Edit",$//' "$REAL" >"$WORK/noedit.yml"
+    assert_mutated "$WORK/noedit.yml"
+    assert_eq "$(run_gate "$WORK/noedit.yml")" "1" "an allowlist without Edit must fail"
+    assert_contains "$(err)" "model-round-file-tools" \
+        "as model-round-file-tools (the omission class every other permission check passes)"
+    log_pass "the model round cannot lose its file tools silently"
+}
+
 test_unparsed_model_if_fails_closed() {
     # Anti-vacuity for the invariant above: if the model job's if: cannot be
     # found at all, the check verified nothing and must say so rather than
@@ -201,6 +218,7 @@ test_untrusted_first_checkout_fails
 test_track_progress_armed_fails
 test_cancel_in_progress_armed_fails
 test_model_without_state_guard_fails
+test_model_round_file_tools_required
 test_unparsed_model_if_fails_closed
 test_submodule_checkout_before_model_fails
 echo ""
