@@ -209,7 +209,21 @@ jobs:
       # is why it belongs in the static lane.
       - name: Workflow submodule deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_workflow_submodule_deps.py
+        # PyYAML is installed HERE and pinned, and the version is asserted so a
+        # silent install failure cannot become a bare "no module named yaml"
+        # three lines later. Its sibling check_job_timeout_headroom.py
+        # deliberately hand-rolls a regex parser to avoid this dependency, and
+        # that is right for two fixed keys at one indentation level. This gate
+        # reads nested jobs, steps, uses and with blocks, where a hand-rolled
+        # parser would be a correctness risk in the one place that cannot afford
+        # one: a gate whose whole value is not lying about what it saw. A
+        # yaml-if-available-else-regex fallback was rejected outright, because
+        # two parsers means the gate means different things in CI and locally,
+        # which is the exact bug shape this wave already paid for twice.
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          .ci/scripts/quality/check_workflow_submodule_deps.py
 
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
