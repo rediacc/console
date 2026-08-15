@@ -6,8 +6,15 @@ import { BridgeTestRunner } from '../src/utils/bridge/BridgeTestRunner';
  *
  * Tests for system check functions in renet functions.
  *
- * All functions are registered in GoExecutor (setup domain):
- * - machine_ping, daemon_nop, machine_version, machine_ssh_test, setup, machine_uninstall
+ * All functions are registered in GoExecutor (setup domain). This list is what
+ * the DOMAIN contains, not a claim about what this file exercises, and the
+ * difference used to matter more than it looks: check-e2e-coverage counted a
+ * verb literal anywhere in a live suite, comments included, so naming
+ * machine_uninstall here made it read as covered when nothing here calls it.
+ * The gate strips comments now; the name is written split below so this line
+ * cannot resurrect the claim.
+ * - machine_ping, daemon_nop, machine_version, machine_ssh_test, setup,
+ *   machine_(uninstall) -- NOT exercised here, see .e2e-coverage-allowlist
  * - machine_check_kernel, machine_check_setup, machine_check_memory
  * - machine_check_sudo, machine_check_tools, machine_check_renet, machine_check_criu
  * - machine_check_btrfs, machine_check_drivers, machine_check_system, machine_check_users
