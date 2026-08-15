@@ -2,7 +2,7 @@
 // Run: npm run generate:cli-contract -w @rediacc/cli
 // Source: the live Commander tree + COMMAND_METADATA + command-registry + i18n
 
-import type { CliContract } from '../types';
+import type { CliContract } from '../types.js';
 
 export const CLI_CONTRACT_VERSION = 'dev';
 
@@ -140,18 +140,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged."
         },
         {
-          "flags": "-w, --watch",
-          "long": "watch",
-          "short": "w",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "common",
-          "descriptionKey": "options.watch",
-          "label": "Watch for changes"
-        },
-        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -223,6 +211,42 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "manifests"
+      ],
+      "pathKey": "backup manifests",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.manifests.description",
+      "label": "List backup snapshot manifests recorded on the server",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "restore"
       ],
       "pathKey": "backup restore",
@@ -271,6 +295,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "common",
           "descriptionKey": "commands.backup.restore.optionDatastore",
           "label": "Restore into this named datastore (its attached machine hosts it)"
+        },
+        {
+          "flags": "--at <time>",
+          "long": "at",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionAt",
+          "label": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
         },
         {
           "flags": "--up",
@@ -385,6 +420,177 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "backup",
+        "retention"
+      ],
+      "pathKey": "backup retention",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.retention.description",
+      "label": "Show the snapshot retention policy the server is enforcing.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": true,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "retention",
+        "clear"
+      ],
+      "pathKey": "backup retention clear",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.retention.clearDescription",
+      "label": "Remove the policy, so every snapshot of this repository is kept.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Removes the policy entirely; the blast radius of getting it wrong is the operator keeping or losing every snapshot of a repository.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
+        "retention",
+        "set"
+      ],
+      "pathKey": "backup retention set",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.retention.setDescription",
+      "label": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
+      "options": [
+        {
+          "flags": "--keep-last <n>",
+          "long": "keep-last",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepLast",
+          "label": "Keep this many of the most recent snapshots"
+        },
+        {
+          "flags": "--keep-hourly <n>",
+          "long": "keep-hourly",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepHourly",
+          "label": "Keep the newest snapshot from each of this many hours"
+        },
+        {
+          "flags": "--keep-daily <n>",
+          "long": "keep-daily",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepDaily",
+          "label": "Keep the newest snapshot from each of this many days"
+        },
+        {
+          "flags": "--keep-weekly <n>",
+          "long": "keep-weekly",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepWeekly",
+          "label": "Keep the newest snapshot from each of this many weeks"
+        },
+        {
+          "flags": "--keep-monthly <n>",
+          "long": "keep-monthly",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepMonthly",
+          "label": "Keep the newest snapshot from each of this many months"
+        },
+        {
+          "flags": "--keep-yearly <n>",
+          "long": "keep-yearly",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.retention.optionKeepYearly",
+          "label": "Keep the newest snapshot from each of this many years"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Declares what the server deletes, and replaces every knob rather than merging, so a partial call silently discards retained snapshots.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
+    },
+    {
+      "path": [
+        "backup",
         "run"
       ],
       "pathKey": "backup run",
@@ -408,18 +614,6 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
-        },
-        {
-          "flags": "-w, --watch",
-          "long": "watch",
-          "short": "w",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.watch",
-          "label": "Watch for changes"
         },
         {
           "flags": "--debug",
@@ -453,16 +647,6 @@ export const CLI_CONTRACT: CliContract = {
           },
           "descriptionKey": "commands.backup.run.examples.basic",
           "label": "Run a backup strategy now."
-        },
-        {
-          "command": "rdc backup run nightly -m prod-1 --watch",
-          "values": {
-            "strategy": "nightly",
-            "machine": "prod-1",
-            "watch": "true"
-          },
-          "descriptionKey": "commands.backup.run.examples.watch",
-          "label": "Run a backup strategy and follow its progress."
         }
       ],
       "keywords": [
@@ -565,6 +749,75 @@ export const CLI_CONTRACT: CliContract = {
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "snapshot"
+      ],
+      "pathKey": "backup snapshot",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.snapshot.description",
+      "label": "Upload a chunk-store snapshot: full inventory first, changed cells after",
+      "options": [
+        {
+          "flags": "--reseed",
+          "long": "reseed",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionReseed",
+          "label": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionDryRun",
+          "label": "Plan only: no upload. Reports what would move"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
     },
     {
       "path": [
@@ -774,7 +1027,7 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionDestination",
-          "label": "Destination name within the strategy"
+          "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given"
         },
         {
           "flags": "--storage <name>",
@@ -788,7 +1041,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.backup.strategy.set.optionStorage",
-          "label": "Storage config name (rclone credentials)"
+          "label": "Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled"
         },
         {
           "flags": "--cron <expression>",
@@ -815,7 +1068,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.backup.strategy.set.optionMode",
-          "label": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)"
+          "label": "Backup mode: \"hot\" snapshots while everything keeps running, \"cold\" stops the containers for the moment the snapshot is taken"
         },
         {
           "flags": "--bwlimit <limit>",
@@ -861,7 +1114,7 @@ export const CLI_CONTRACT: CliContract = {
           "format": "path",
           "tier": "advanced",
           "descriptionKey": "commands.backup.strategy.set.optionFolder",
-          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold)"
+          "label": "Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage"
         },
         {
           "flags": "--enable",
@@ -1020,6 +1273,91 @@ export const CLI_CONTRACT: CliContract = {
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "usage"
+      ],
+      "pathKey": "backup usage",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "other",
+      "descriptionKey": "commands.backup.usage.description",
+      "label": "Show backup storage quota, stored bytes, and per-repo usage",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "backup",
+        "verify"
+      ],
+      "pathKey": "backup verify",
+      "domain": "backup",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.backup.verify.description",
+      "label": "Verify a repository's backup anchor against the chunk store",
+      "options": [
+        {
+          "flags": "--deep",
+          "long": "deep",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.verify.optionDeep",
+          "label": "Re-hash every recorded cell (full verification) instead of a sampled check"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "repo-ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "repo-ref"
     },
     {
       "path": [
@@ -9640,18 +9978,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "After pull, mount and deploy repository on this machine"
         },
         {
-          "flags": "-w, --watch",
-          "long": "watch",
-          "short": "w",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.watch",
-          "label": "Watch for changes"
-        },
-        {
           "flags": "--bwlimit <limit>",
           "long": "bwlimit",
           "valueTaking": true,
@@ -9842,18 +10168,6 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.repo.push.optionForce",
           "label": "Force overwrite existing backup"
-        },
-        {
-          "flags": "-w, --watch",
-          "long": "watch",
-          "short": "w",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.watch",
-          "label": "Watch for changes"
         },
         {
           "flags": "--bwlimit <limit>",

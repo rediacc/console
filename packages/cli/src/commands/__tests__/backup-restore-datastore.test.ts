@@ -22,6 +22,7 @@ vi.mock('../../i18n/index.js', () => ({
 
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockAddRepository = vi.hoisted(() => vi.fn());
+const SOURCE_CREDENTIAL = vi.hoisted(() => 'source-credential-not-random');
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -31,7 +32,11 @@ vi.mock('../../services/config/config-resources.js', () => ({
     allocateNetworkId: vi.fn().mockResolvedValue(4242),
     // The SOURCE exists; the restore TARGET must not (restore refuses to overwrite).
     getRepository: (ref: string) =>
-      Promise.resolve(ref === 'src' ? { repositoryGuid: 'guid-src', tag: 'latest' } : undefined),
+      Promise.resolve(
+        ref === 'src'
+          ? { repositoryGuid: 'guid-src', tag: 'latest', credential: SOURCE_CREDENTIAL }
+          : undefined
+      ),
     listRepositories: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -137,5 +142,34 @@ describe('backup restore honours --datastore (#74)', () => {
     expect(callFor('backup_pull')?.datastore).toBeUndefined();
     const [, config] = mockAddRepository.mock.calls[0];
     expect(config.placement).toEqual({ machine: 'm1' });
+  });
+});
+
+/**
+ * A restored repo REUSES the source's GUID, and the executor's credential map is
+ * keyed by GUID (`buildCredentialsMap`). Minting a fresh `randomBytes(24)`
+ * credential here therefore never gave the restored repo a key of its own: the
+ * two records fought over one map slot, and which credential survived depended
+ * on where the operator's `--as` name sorted. `repo fork` has always inherited
+ * (repo-fork.ts, `credential: parentConfig.credential`); restore now matches.
+ *
+ * The refusal half of this fix (a second live record on one GUID under a
+ * different credential) is pinned at the service layer, where the guard lives:
+ * services/__tests__/config-resources-credential-collision.test.ts.
+ */
+describe('backup restore credential inheritance', () => {
+  it('reuses the source credential instead of minting a fresh one', async () => {
+    await run(['restore', 'store1:src', '--as', 'copy', '--machine', 'm1', '-y']);
+
+    const [, config] = mockAddRepository.mock.calls[0];
+    expect(config.repositoryGuid).toBe('guid-src');
+    expect(config.credential).toBe(SOURCE_CREDENTIAL);
+  });
+
+  it('registers the restored repo under the --as name, not the source name', async () => {
+    await run(['restore', 'store1:src', '--as', 'copy', '--machine', 'm1', '-y']);
+
+    const [key] = mockAddRepository.mock.calls[0];
+    expect(key).toBe('copy:latest');
   });
 });

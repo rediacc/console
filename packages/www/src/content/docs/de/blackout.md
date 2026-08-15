@@ -6,8 +6,8 @@ description: >-
 category: Use Cases
 order: 6
 language: de
-sourceHash: "51a38f7f8567e63e"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 > **Wenn das Licht ausgeht, läuft Ihr Geschäft weiter.**
@@ -49,29 +49,26 @@ Eine große spanische Bankengruppe, die die kontinentalübergreifende Replikatio
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Interkontinentale Datenspiegelung** 
-* Kernbankdatenbanken und Transaktionssysteme wurden **kontinuierlich** in Rechenzentren in den Vereinigten Staaten repliziert 
-* Alle Kundendaten und Transaktionsaufzeichnungen wurden mit **weniger als 3 Sekunden Verzögerung** synchronisiert
+* Kernbankdatenbanken und Transaktionssysteme würden **kontinuierlich** in Rechenzentren in den Vereinigten Staaten repliziert 
+* Kundendaten und Transaktionsdatensätze blieben synchron, innerhalb der Replikationsverzögerung, die Ihre Verbindung und Ihr Datenvolumen zulassen
 
 ### 2. **Nahtloser Betriebsübergang** 
-* Als die spanischen Server ausfielen, wurde der Datenverkehr **automatisch** auf in den USA ansässige Systeme umgeleitet 
-* Kunden erlebten nur eine kurze Unterbrechung von 47 Sekunden, bevor die Dienste wieder aufgenommen wurden
+* Würden die spanischen Server ausfallen, würde der Datenverkehr **automatisch** auf die in den USA ansässigen Systeme umgeleitet 
+* Kunden würden nur eine kurze Unterbrechung bemerken, bis die Umleitung abgeschlossen ist, statt eines Ausfalls in der Dauer des Netzausfalls
 
 ### 3. **Fortsetzung des Remote-Service** 
-* Callcenter in nicht betroffenen Ländern griffen auf die replizierten Systeme zu, um den Kundensupport aufrechtzuerhalten 
-* Mobile-Banking-Apps blieben durch die Anbindung an alternative Rechenzentren funktionsfähig
+* Callcenter in nicht betroffenen Ländern könnten die replizierten Systeme erreichen und den Kundensupport weiter aufrechterhalten 
+* Mobile-Banking-Apps blieben funktionsfähig, indem sie sich mit den alternativen Rechenzentren verbinden
 
 ## Mögliches Ergebnis
 
 **Geschäftskontinuität:** 
-* Während die Konkurrenz mehr als 14 Stunden lang offline war, konnte die Bank **eine Serviceverfügbarkeit von 98 %** aufrechterhalten.
+* Wettbewerber waren über 14 Stunden offline. Eine Bank mit dieser Architektur würde im selben Zeitraum weiter im Dienst bleiben
 
-**Kundenvertrauen:** 
-* Die Bank war das einzige große Finanzinstitut, das während der Krise Transaktionen abwickelte 
-* Die Kundenzufriedenheit stieg in Umfragen nach der Krise um 27 %
+**Kontinuität des Service:** 
+* Sie könnte weiterhin Transaktionen verarbeiten, während Institute ohne zweite Region dazu nicht in der Lage wären
 
 **Finanzielle Absicherung:** 
-* Die Bank konnte etwa 370 Millionen Euro an Verlusten durch Transaktionsfehler vermeiden 
-* Es gingen keine Daten verloren oder wurden beschädigt, wodurch kostspielige Wiederherstellungsvorgänge entfallen
+* Es würden die Verluste durch Transaktionsausfälle vermieden, die für jede Stunde anfallen, in der ein Zahlungssystem ausfällt
+* Es gingen keine Daten verloren oder wurden beschädigt, sodass keine Wiederherstellungsvorgänge nötig wären
 
-**Wettbewerbsvorteil:** 
-* Die Bank gewann im folgenden Monat 140.000 neue Kunden von Wettbewerbern, die ihren Service nicht aufrechterhalten konnten

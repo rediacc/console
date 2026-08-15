@@ -32,6 +32,14 @@ export interface DatastorePrunableResources {
   stale_locks?: string[] | null;
   stale_snapshots?: string[] | null;
   stale_backup_snapshots?: string[] | null;
+  stale_pull_staging?: string[] | null;
+  // Reclaimable staging left by a killed `backup restore`. Same shape and same
+  // reclaim rule as pull staging, and a DISTINCT prefix on purpose so a restore
+  // and a `backup sync pull` cannot collide on one path.
+  stale_restore_staging?: string[] | null;
+  stale_churn_probe_bases?: string[] | null;
+  stale_backup_anchors?: string[] | null;
+  stale_backup_journals?: string[] | null;
   orphan_sandboxes?: string[] | null;
   iptables_chains?: IptablesChain[] | null;
   auth_keys?: AuthKey[] | null;
@@ -83,6 +91,11 @@ export function buildPrunePreviewRows(resources: DatastorePrunableResources): Pr
   };
   add('backup-snapshot', resources.stale_backup_snapshots);
   add('stale-snapshot', resources.stale_snapshots);
+  add('pull-staging', resources.stale_pull_staging);
+  add('restore-staging', resources.stale_restore_staging);
+  add('churn-probe-base', resources.stale_churn_probe_bases);
+  add('backup-anchor', resources.stale_backup_anchors);
+  add('backup-journal', resources.stale_backup_journals);
   add('empty-mount', resources.empty_mounts);
   add('orphan-immovable', resources.orphan_immovables);
   add('orphan-state-mirror', resources.orphan_state_mirrors);

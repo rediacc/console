@@ -103,5 +103,19 @@ export default test.defineConfig({
     ...(process.env.CI && process.env.CLI_SUITE !== '1'
       ? []
       : [{ name: 'test-23', testMatch: '23-*.test.ts' }]),
+    // Chunk-store backup, machine tier (suite 25). Unconditional: it needs
+    // only a worker VM, which every E2E Workers leg has, and it carries the
+    // live coverage of the `backup_verify` verb (check:ci-e2e-coverage counts a
+    // verb dark unless a suite a LIVE config selects exercises it). It never
+    // skips where a worker exists, which is what `--fail-on-skip` requires.
+    { name: 'test-25', testMatch: '25-*.test.ts' },
+    // Suite 26 (control plane + upload engine) needs an account server and a
+    // renet that registers the chunk-store run verb — neither exists on the
+    // E2E Workers legs, and a skip there is a job failure. Gated, so CI
+    // collects nothing rather than skipping. Locally it always runs and fails
+    // closed on its own prerequisites.
+    ...(process.env.CI && process.env.BACKUP_STORAGE_SUITE !== '1'
+      ? []
+      : [{ name: 'test-26', testMatch: '26-*.test.ts' }]),
   ],
 });

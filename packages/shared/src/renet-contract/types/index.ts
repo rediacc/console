@@ -1,4 +1,4 @@
-export type { FunctionRequirements, QueueRequestContext, VaultContent } from './requirements';
+export type { FunctionRequirements, QueueRequestContext, VaultContent } from './requirements.js';
 export {
   assertRenetVault,
   type ContextSection,
@@ -13,4 +13,4 @@ export {
   type TaskSection,
   VAULT_SCHEMA,
   VAULT_VERSION,
-} from './vault';
+} from './vault.js';

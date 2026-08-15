@@ -3,8 +3,8 @@
  * Handles grand/fork detection, affected resources, and repository grouping
  */
 
-import { DEFAULTS } from '../../config';
-import { type MachineWithVaultStatus, parseVaultStatus } from '../machine';
+import { DEFAULTS } from '../../config/index.js';
+import { type MachineWithVaultStatus, parseVaultStatus } from '../machine/index.js';
 
 /**
  * Repository information for relationship analysis

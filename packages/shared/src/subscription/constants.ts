@@ -5,7 +5,7 @@
  * All components (account-server, middleware, renet, CLI) should use these values.
  */
 
-import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types';
+import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types.js';
 
 /**
  * Resource limits by plan.
@@ -21,25 +21,46 @@ export const PLAN_LIMITS: Record<
   {
     maxRepositorySizeGb: number;
     maxRepoLicenseIssuancesPerMonth: number;
+    /**
+     * Default backup-storage quota in PHYSICAL unique stored bytes (what R2
+     * bills; dedup benefit passes to the user). Nullable per-subscription
+     * override + usage-adjustment live on the subscription row; this is only the
+     * plan default. Deliberately NOT edge-doubled (see the account server's
+     * `getLimitsForEnvironment`): stored bytes are a real recurring bill, not a
+     * marketing knob. On-prem transport rides the signed delegation cert.
+     */
+    storageQuotaBytes: number;
   }
 > = {
   COMMUNITY: {
     maxRepositorySizeGb: 10,
     maxRepoLicenseIssuancesPerMonth: 100,
+    storageQuotaBytes: 10 * 1024 ** 3,
   },
   PROFESSIONAL: {
     maxRepositorySizeGb: 100,
     maxRepoLicenseIssuancesPerMonth: 2000,
+    storageQuotaBytes: 100 * 1024 ** 3,
   },
   BUSINESS: {
     maxRepositorySizeGb: 500,
     maxRepoLicenseIssuancesPerMonth: 5000,
+    storageQuotaBytes: 500 * 1024 ** 3,
   },
   ENTERPRISE: {
     maxRepositorySizeGb: 1024,
     maxRepoLicenseIssuancesPerMonth: 15000,
+    storageQuotaBytes: 2048 * 1024 ** 3,
   },
 } as const;
+
+/** Plan-default backup storage quota in bytes (COMMUNITY fallback). */
+export function getStorageQuotaBytesForPlan(planCode: string): number {
+  if (planCode in PLAN_LIMITS) {
+    return PLAN_LIMITS[planCode as PlanCode].storageQuotaBytes;
+  }
+  return PLAN_LIMITS.COMMUNITY.storageQuotaBytes;
+}
 
 /**
  * How long a machine holds its Floating license slot after the last repo
@@ -284,6 +305,7 @@ export function getMaxMachines(planCode: string): number {
 export const PROGRESSIVE_LIMIT_KEYS: readonly (keyof (typeof PLAN_LIMITS)[PlanCode])[] = [
   'maxRepositorySizeGb',
   'maxRepoLicenseIssuancesPerMonth',
+  'storageQuotaBytes',
 ] as const;
 
 /**

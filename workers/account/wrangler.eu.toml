@@ -13,6 +13,13 @@ REGION = "eu"
 WEBAUTHN_RP_ID = "eu.rediacc.com"
 WEBAUTHN_ORIGIN = "https://eu.rediacc.com"
 
+# Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
+# Handled by `scheduled` in src/index.ts, which forwards to the account app in
+# private/account/src/entry/cloudflare.ts. Without this block the handler ships
+# but is never invoked and event_log grows without bound.
+[triggers]
+crons = ["0 3 * * *"]
+
 [observability]
 enabled = true
 
@@ -40,4 +47,11 @@ migrations_dir = "../../private/account/drizzle"
 [[r2_buckets]]
 binding = "CONFIG_BUCKET"
 bucket_name = "rediacc-configs-eu"
+jurisdiction = "eu"
+
+# Backup chunk store (content-addressed backup storage). The bucket is an
+# operator/provision step: create it before deploying with this binding.
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "rediacc-backups-eu"
 jurisdiction = "eu"

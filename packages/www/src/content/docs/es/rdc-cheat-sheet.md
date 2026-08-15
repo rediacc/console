@@ -4,8 +4,8 @@ description: "Referencia rápida de rdc: configuraciones, repositorios, máquina
 category: Guides
 order: 3
 language: es
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Hoja de referencia de RDC CLI
@@ -50,6 +50,11 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 | `rdc repo pull ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al bajar |
 | `rdc repo push ... --checkpoint` | Guardar punto de control de contenedores antes de subir |
 | `rdc backup list --storage <storage>` | Listar las copias de seguridad disponibles en el almacenamiento |
+| `rdc backup snapshot <repo>` | Subir un snapshot al almacenamiento fragmentado: inventario completo primero, celdas cambiadas después |
+| `rdc backup snapshot <repo> --dry-run` | Planificar el snapshot sin subir; informa qué se movería |
+| `rdc backup verify <repo>` | Verificar el ancla de respaldo de un repositorio contra el almacenamiento fragmentado |
+| `rdc backup usage` | Mostrar los bytes almacenados en el almacenamiento fragmentado frente a tu cuota |
+| `rdc backup manifests <repo>` | Listar los manifiestos de snapshot registrados en el servidor |
 | `rdc storage browse <storage>` | Explorar el contenido del almacenamiento |
 
 ## Migración de repositorios

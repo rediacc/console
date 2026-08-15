@@ -1,16 +1,46 @@
 ---
 title: "Backup & Wiederherstellung"
-description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher sichern, auf jeder Maschine wiederherstellen und mit benannten Strategien und systemd-Timern automatisieren."
+description: "Verschlüsselte Repositories auf zwei Wegen sichern: über inhaltsadressierten Chunk-Storage, der nur geänderte Zellen hochlädt, oder per vollständigem Push zu jedem rclone-kompatiblen Speicher. Auf jeder Maschine wiederherstellen und mit benannten Strategien und systemd-Timern automatisieren."
 category: "Guides"
 order: 7
 language: de
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Backup & Wiederherstellung
 
 Rediacc kann verschlüsselte Repositories auf externen Speicheranbietern sichern und sie auf derselben oder einer anderen Maschine wiederherstellen. Backups sind verschlüsselt; das LUKS-Credential des Repositories wird zur Wiederherstellung benötigt.
+
+## Zwei Backup-Wege
+
+Rediacc bietet zwei unabhängige Backup-Wege, und dieser Leitfaden behandelt beide. Sie verwenden unterschiedlichen Speicher und unterschiedliche Befehle, sodass ein Repository, das über den einen Weg gesichert wurde, über den anderen nicht gesichert ist.
+
+**Chunk-Storage** (`rdc backup snapshot`) lädt das Repository-Image in Zellen fester Größe hoch, die über ihren Inhalt adressiert werden. Der erste Lauf lädt das vollständige, nicht-leere Inventar hoch; jeder folgende Lauf lädt nur die geänderten Zellen hoch, ermittelt anhand der Allokationsmetadaten des Dateisystems statt durch Lesen des gesamten Images. Identische Zellen werden über Snapshots und über eine ganze Fork-Familie hinweg nur einmal gespeichert, und die Nutzung wird gegen Ihr Speicherkontingent angerechnet (`rdc backup usage`).
+
+**Storage-Push** (`rdc repo push`) kopiert eine vollständige Backup-Datei zu einem rclone-kompatiblen Anbieter, den Sie selbst registrieren. Dieser Weg wird zugunsten des Chunk-Storage auslaufen gelassen, und geplante Strategien treiben ihn nicht länger voran. Die Abschnitte unten, die ihn beschreiben, funktionieren noch heute, behandeln Sie sie aber als den Legacy-Weg.
+
+Die Wiederherstellung aus dem Chunk-Storage funktioniert: `rdc backup restore <repo> --at <snapshot-id>` materialisiert einen gespeicherten Snapshot, und `--at` akzeptiert auch einen RFC-3339-Zeitstempel, der gegen das Snapshot-Inventar aufgelöst wird. Fügen Sie `--as <name>` hinzu, um unter einem anderen Namen wiederherzustellen, und `--up`, um das Repository anschließend hochzufahren. Chunk-Storage bietet auch Upload (`rdc backup snapshot`), Verifizierung (`rdc backup verify`, mit `--deep` zur erneuten Hashberechnung jeder Zelle statt nur einer Stichprobe), das Snapshot-Inventar (`rdc backup manifests`) und Kontingentabrechnung (`rdc backup usage`).
+
+### Chunk-Storage-Befehle
+
+```bash
+# Snapshot hochladen. Der erste Lauf sät, spätere Läufe senden nur geänderte Zellen.
+rdc backup snapshot my-app
+
+# Planen, ohne hochzuladen: zeigt, was sich bewegen würde.
+rdc backup snapshot my-app --dry-run
+
+# Dem lokalen Anker misstrauen und das vollständige Inventar neu hochladen.
+# Dies lädt alles neu hoch und belastet erneut das Kontingent; nur verwenden,
+# wenn der Anker nachweislich fehlerhaft ist.
+rdc backup snapshot my-app --reseed
+
+# Das gespeicherte Inventar und Ihr Kontingent prüfen.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Speicher konfigurieren
 
@@ -63,7 +93,7 @@ Ein Repository-Backup vom externen Speicher abrufen:
 rdc repo pull my-app --from my-storage
 ```
 
-Pull prüft immer, ob das Ziel-Repository eingehängt ist, bevor geschrieben wird. Ist es nicht eingehängt, wird die Operation abgebrochen.
+Pull verweigert das Überschreiben eines Repositorys, das aktuell **eingehängt** ist. Hängen Sie es zuerst aus, führen Sie den Pull aus, und bringen Sie es anschließend mit `rdc repo up` wieder hoch. Verzeichnisbasierte Repositories sind die Ausnahme: Sie synchronisieren sich im eingehängten Zustand direkt an Ort und Stelle.
 
 | Option | Beschreibung |
 |--------|-------------|
@@ -120,7 +150,7 @@ Ein Repo kann sowohl in `hot/` als auch in `cold/` erscheinen (der stündliche Z
 
 ## Ein Repository nach dem anderen synchronisieren
 
-Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für „alle Repositories auf einmal“: Führen Sie den Befehl einmal pro Repository aus.
+Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für "alle Repositories auf einmal": Führen Sie den Befehl einmal pro Repository aus.
 
 ### In den Speicher übertragen
 
@@ -225,8 +255,8 @@ Konkret: Ein Lauf, der am Montag um 03:00 UTC startet und am Donnerstag Mittag e
 | Tag | 03:00 UTC feuert | Ergebnis |
 |------|-----------------|----------|
 | Montag | Erstes Feuern | Lauf beginnt |
-| Dienstag | Zweites Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
-| Mittwoch | Drittes Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
+| Dienstag | Zweites Feuern | Stil verworfen (vorheriger Lauf ist noch aktiv) |
+| Mittwoch | Drittes Feuern | Stil verworfen (vorheriger Lauf ist noch aktiv) |
 | Donnerstag | Lauf endet mittags | Kein Nachholen; nächster Lauf ist Freitag 03:00 UTC |
 
 Die `Persistent=true`-Direktive des Timers rettet diese Feuer **nicht**. `Persistent=true` wiederholt Feuer, die verpasst wurden, weil der Timer selbst inaktiv war (System aus, Timer deaktiviert). Feuer, die verworfen wurden, weil der Dienst beschäftigt war, sind weg.

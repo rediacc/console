@@ -5,8 +5,8 @@ description: >-
 category: Reference
 order: 99
 language: ko
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # 제한 및 할당량
@@ -137,8 +137,8 @@ CRIU를 통한 라이브 마이그레이션에는 다음과 같은 제약이 있
 |-------|-------|
 | 저장소당 백업 대상 | 무제한 |
 | 동시 백업 작업 | 저장소당 1개(작업이 동시에 트리거되면 대기열에 추가됨) |
-| 백업 빈도 | 최소 간격 강제 없음. 스토리지 대역폭에 의해 제한됩니다. `rdc backup strategy set <name> --bwlimit "6M"`을 사용하여 업로드 속도를 제한하십시오(rclone `--bwlimit` 구문: 단순 `6M`, 방향별 `6M:off`, 또는 시간표 `08:00,3M;22:00,10M`) |
-| 보존 | 스토리지 제공업체(S3, Cloudflare R2 등)에 의해 제어됩니다. Rediacc는 보존 정책을 강제하지 않습니다. |
+| 백업 빈도 | 최소 간격 강제 없음. 스토리지 대역폭에 의해 제한됩니다. `rdc backup strategy set <name> --bwlimit "6M"`을 사용하여 업로드 속도를 제한하십시오 |
+| 보존 | `rdc backup retention set`으로 선언하며(GFS 옵션: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`), 서버 측에서 강제됩니다. `rdc backup retention clear`로 제거할 수 있습니다. 청크 스토리지는 플랜 할당량에 대해 물리적으로 고유하게 저장된 바이트 수로 측정되므로, 스냅샷 간 및 포크 계열 전체에 걸친 중복 제거는 한 번만 집계됩니다: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB이며 `rdc backup usage`로 확인할 수 있습니다. 기존 storage-push 경로는 자체 보존 기능이 없으며 스토리지 제공업체에 의해 관리됩니다. |
 | 교차 머신 백업 | 지원됨. 대상 머신에 충분한 데이터스토어 공간이 있어야 합니다. |
 
 ---

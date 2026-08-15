@@ -224,19 +224,23 @@
     "planResources": {
       "COMMUNITY": {
         "maxRepositorySizeGb": 10,
-        "maxRepoLicenseIssuancesPerMonth": 100
+        "maxRepoLicenseIssuancesPerMonth": 100,
+        "storageQuotaBytes": 10737418240
       },
       "PROFESSIONAL": {
         "maxRepositorySizeGb": 100,
-        "maxRepoLicenseIssuancesPerMonth": 2000
+        "maxRepoLicenseIssuancesPerMonth": 2000,
+        "storageQuotaBytes": 107374182400
       },
       "BUSINESS": {
         "maxRepositorySizeGb": 500,
-        "maxRepoLicenseIssuancesPerMonth": 5000
+        "maxRepoLicenseIssuancesPerMonth": 5000,
+        "storageQuotaBytes": 536870912000
       },
       "ENTERPRISE": {
         "maxRepositorySizeGb": 1024,
-        "maxRepoLicenseIssuancesPerMonth": 15000
+        "maxRepoLicenseIssuancesPerMonth": 15000,
+        "storageQuotaBytes": 2199023255552
       }
     },
     "planFeatures": {

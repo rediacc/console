@@ -49,10 +49,24 @@ main() {
 
     # Claude hooks carry live PR policy (draft enforcement, --admin ban,
     # merge-time review hygiene) — policy-critical shell gets formatted too.
-    log_info "Checking .claude/hooks/**/*.sh"
+    #
+    # Scope is the whole .claude tree, not .claude/hooks, since 2026-08-15: a
+    # helper under .claude/lib passed both shell gates while carrying a blatant
+    # SC2086, because neither gate was looking at it.
+    #
+    # DELIBERATELY NARROWER THAN shellcheck.sh, which now enumerates every
+    # tracked *.sh from git. The asymmetry is intentional and is not an
+    # oversight to be "fixed": shellcheck reports CORRECTNESS defects (SC2155
+    # masking an exit code, SC2068 mangling arguments) and is worth surfacing
+    # everywhere, while shfmt reports FORMATTING. Enumerating everything here
+    # would demand reformatting 11 files nobody is otherwise touching, including
+    # deployed repository templates under packages/json/templates — pure churn
+    # in a shared tree, with no defect found. Widen this only alongside an
+    # intentional decision to reformat those files.
+    log_info "Checking .claude/**/*.sh"
     # BLOCKER: SHFMT_OPTS is a space-separated set of CLI flags; word-splitting is intentional so shfmt receives each flag as its own argv entry
     # shellcheck disable=SC2086
-    find .claude/hooks -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
+    find .claude -name "*.sh" -type f -exec shfmt $SHFMT_OPTS {} +
 
     # Check the main run.sh script
     log_info "Checking ./run.sh"

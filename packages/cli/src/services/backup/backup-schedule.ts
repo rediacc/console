@@ -45,7 +45,6 @@ import {
 } from './backup-schedule-reconcile.js';
 import {
   buildBackupCommands,
-  buildDestinationCommand,
   cronToOnCalendar,
   generateServiceUnit,
   generateTimerUnit,
@@ -202,7 +201,7 @@ export async function pushBackupSchedule(
   const sftp = lease.sftp;
 
   try {
-    const desired = await computeDesiredUnits(strategies, datastore, remoteRenetPath);
+    const desired = computeDesiredUnits(strategies, datastore, remoteRenetPath);
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);
     applyInFlightGate(plan, options.force ?? false);
@@ -233,7 +232,6 @@ export const _testing = {
   generateTimerUnit,
   cronToOnCalendar,
   buildBackupCommands,
-  buildDestinationCommand,
   generateEnvFile,
   envFilePath,
   sha256Hex,

@@ -12,23 +12,23 @@
 
 // Import all translations statically for sync loading
 // These are bundled at build time
-import ar from './locales/ar/common.json';
-import de from './locales/de/common.json';
-import en from './locales/en/common.json';
-import es from './locales/es/common.json';
-import et from './locales/et/common.json';
-import fr from './locales/fr/common.json';
-import it from './locales/it/common.json';
-import ja from './locales/ja/common.json';
-import ko from './locales/ko/common.json';
-import pt from './locales/pt/common.json';
-import ru from './locales/ru/common.json';
-import tr from './locales/tr/common.json';
-import zh from './locales/zh/common.json';
-import type { SharedCommonTranslations, SupportedLanguage } from './types';
+import ar from './locales/ar/common.json' with { type: 'json' };
+import de from './locales/de/common.json' with { type: 'json' };
+import en from './locales/en/common.json' with { type: 'json' };
+import es from './locales/es/common.json' with { type: 'json' };
+import et from './locales/et/common.json' with { type: 'json' };
+import fr from './locales/fr/common.json' with { type: 'json' };
+import it from './locales/it/common.json' with { type: 'json' };
+import ja from './locales/ja/common.json' with { type: 'json' };
+import ko from './locales/ko/common.json' with { type: 'json' };
+import pt from './locales/pt/common.json' with { type: 'json' };
+import ru from './locales/ru/common.json' with { type: 'json' };
+import tr from './locales/tr/common.json' with { type: 'json' };
+import zh from './locales/zh/common.json' with { type: 'json' };
+import type { SharedCommonTranslations, SupportedLanguage } from './types.js';
 
 // Re-export types
-export * from './types';
+export * from './types.js';
 
 /**
  * Static translations map for sync loading (CLI).

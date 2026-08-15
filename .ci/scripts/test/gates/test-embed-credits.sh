@@ -30,14 +30,17 @@ setup_fixtures() {
     # BLOCKER: capture FIXTURE_DIR at trap-set time so EXIT removes this exact path
     trap "rm -rf '$FIXTURE_DIR'" EXIT
 
-    # credits.go fixture with a deliberately wrong rclone version.
+    # credits.go fixture with a deliberately wrong zot version.
+    # (Was rclone until 2026-08-15, when rclone left the embed entirely. The
+    # fixture was rewritten onto a SURVIVING asset rather than deleted: a
+    # control that no longer names a real asset stops proving anything.)
     cat >"$FIXTURE_DIR/bad-credits.go" <<'EOF'
 package embed
 
 var credits = []Credit{
 	{Asset: AssetCRIU, Name: "CRIU", Version: "4.2"},
 	{Asset: AssetRsync, Name: "rsync", Version: "3.4.1"},
-	{Asset: AssetRclone, Name: "rclone", Version: "9.9.9"},
+	{Asset: AssetZot, Name: "zot", Version: "9.9.9"},
 }
 EOF
 
@@ -46,7 +49,7 @@ EOF
 {
   "components": [
     { "asset": "criu", "name": "CRIU", "version": "4.2" },
-    { "asset": "rclone", "name": "rclone", "version": "1.73.0" }
+    { "asset": "zot", "name": "zot", "version": "2.1.2" }
   ]
 }
 EOF

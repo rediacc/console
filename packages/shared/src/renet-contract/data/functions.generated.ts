@@ -80,6 +80,30 @@ export interface BackupPushParams {
   retainBasePrune?: string;
 }
 
+/** Restore a repository image from a chunk-store snapshot */
+export interface BackupRestoreParams {
+  /** Lineage (grand) GUID the snapshot belongs to */
+  lineage: string;
+  /** Snapshot id to restore (a TIME is resolved by the CLI, never here) */
+  at: string;
+  /** Resolve the manifest chain and report what would be fetched; write nothing */
+  dryRun?: boolean;
+}
+
+/** Upload a chunk-store snapshot: full inventory first, changed cells after */
+export interface BackupSnapshotParams {
+  /** Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota) */
+  reseed?: boolean;
+  /** Plan only: no session, no grant, no upload; report what would move */
+  dryRun?: boolean;
+}
+
+/** Verify local chunk-backup state against the recorded snapshot inventory */
+export interface BackupVerifyParams {
+  /** Verification level: spot (sampled cells) or full (re-hash every recorded cell) */
+  level?: string;
+}
+
 /** Mount RBD image on client */
 export interface CephClientMountParams {
   /** Image name (defaults to repository) */
@@ -774,6 +798,9 @@ export const RENET_FUNCTIONS = [
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_restore',
+  'backup_snapshot',
+  'backup_verify',
   'ceph_client_mount',
   'ceph_client_unmount',
   'ceph_clone_delete',
@@ -862,6 +889,9 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'backup_list',
   'backup_pull',
   'backup_push',
+  'backup_restore',
+  'backup_snapshot',
+  'backup_verify',
   'ceph_bootstrap_cluster',
   'ceph_client_config_export',
   'ceph_client_config_install',
@@ -1029,6 +1059,9 @@ export type FunctionParamsMap = {
   backup_list: BackupListParams;
   backup_pull: BackupPullParams;
   backup_push: BackupPushParams;
+  backup_restore: BackupRestoreParams;
+  backup_snapshot: BackupSnapshotParams;
+  backup_verify: BackupVerifyParams;
   ceph_client_mount: CephClientMountParams;
   ceph_client_unmount: CephClientUnmountParams;
   ceph_clone_delete: CephCloneDeleteParams;
@@ -1120,6 +1153,15 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'backup_push': {
     requirements: { machine: true, team: true, repository: true, storage: true },
+  },
+  'backup_restore': {
+    requirements: { machine: true, team: true, repository: true, storage: true },
+  },
+  'backup_snapshot': {
+    requirements: { machine: true, team: true, repository: true, storage: true },
+  },
+  'backup_verify': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'ceph_client_mount': {
     requirements: { machine: true, team: true },
@@ -1621,6 +1663,65 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       retainBasePrune: {
         type: 'string',
         help: 'Delete this prior retained base on both machines after a successful push',
+      },
+    },
+  },
+  'backup_restore': {
+    name: 'backup_restore',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true, storage: true },
+    params: {
+      lineage: {
+        type: 'string',
+        required: true,
+        help: 'Lineage (grand) GUID the snapshot belongs to',
+        placeholder: 'the repo\'s grand GUID',
+      },
+      at: {
+        type: 'string',
+        required: true,
+        help: 'Snapshot id to restore (a TIME is resolved by the CLI, never here)',
+        placeholder: 'e.g., 20260814T120000Z-0011223344556677',
+      },
+      dryRun: {
+        type: 'bool',
+        default: 'false',
+        help: 'Resolve the manifest chain and report what would be fetched; write nothing',
+      },
+    },
+  },
+  'backup_snapshot': {
+    name: 'backup_snapshot',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true, storage: true },
+    params: {
+      reseed: {
+        type: 'bool',
+        default: 'false',
+        help: 'Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)',
+      },
+      dryRun: {
+        type: 'bool',
+        default: 'false',
+        help: 'Plan only: no session, no grant, no upload; report what would move',
+      },
+    },
+  },
+  'backup_verify': {
+    name: 'backup_verify',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      level: {
+        type: 'string',
+        default: 'spot',
+        help: 'Verification level: spot (sampled cells) or full (re-hash every recorded cell)',
+        options: ['spot', 'full'],
+        ui: 'dropdown',
+        enum: ['spot', 'full'],
       },
     },
   },
@@ -3216,6 +3317,9 @@ export const queueFunctions: QueueFunctionsType = {
   backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
   backup_push: (params) => ({ functionName: 'backup_push', params }),
+  backup_restore: (params) => ({ functionName: 'backup_restore', params }),
+  backup_snapshot: (params) => ({ functionName: 'backup_snapshot', params }),
+  backup_verify: (params) => ({ functionName: 'backup_verify', params }),
   ceph_client_mount: (params) => ({ functionName: 'ceph_client_mount', params }),
   ceph_client_unmount: (params) => ({ functionName: 'ceph_client_unmount', params }),
   ceph_clone_delete: (params) => ({ functionName: 'ceph_clone_delete', params }),

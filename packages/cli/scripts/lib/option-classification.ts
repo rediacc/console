@@ -248,7 +248,6 @@ export const TIER_OVERRIDES: Readonly<Record<string, OptionTier>> = {
   'repo sync download --local': 'common',
   'repo logs --lines': 'common',
   'job logs --follow': 'common',
-  'backup list --watch': 'common',
   'repo up --all': 'common',
   'repo down --all': 'common',
 };

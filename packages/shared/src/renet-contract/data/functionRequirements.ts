@@ -3,4 +3,4 @@ export {
   FUNCTION_REQUIREMENTS,
   isRenetFunction,
   type RenetFunctionName,
-} from './functions.generated';
+} from './functions.generated.js';

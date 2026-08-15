@@ -10,7 +10,7 @@ each CI job runs is the single source of truth for "is this suite live":
 
 | Config | CI job | Suites |
 |---|---|---|
-| `playwright.config.ts` (default) | E2E Workers (×5 distros) | 01-07, 10-14, 15-19, 21, 22 |
+| `playwright.config.ts` (default) | E2E Workers (×5 distros) | 01-07, 10-14, 15-19, 21, 22, 25 |
 | `playwright.ceph.config.ts` | E2E Ceph | ceph/08, 09, 12c |
 | `playwright.ceph-workers.config.ts` | E2E Ceph Workers | ceph/13, 14 |
 | `playwright.k8s.config.ts` | E2E K8s | kube/15 |
@@ -65,10 +65,72 @@ requirement). `ct-tests.yml`'s header points here.
    (`src/utils/CliRunner.ts`) as the rdc-driving precedent, and the live-config
    registry the coverage gate uses (add `ci-examples.yml`'s config to it).
 
-7. **Suite 23 (CLI migrate routing) — pending local validation.** Authored and
+7. **Suite 26 (chunk-store backup: control plane, upload engine, restore).**
+   All three of its tiers need something the E2E Workers legs do not have, and
+   that job runs `--fail-on-skip`, so a skip inside it is a job failure rather
+   than a notice. The ACCOUNT tier needs a running account server plus an api
+   token carrying `backup:read`; the ENGINE tier additionally needs a two-worker
+   fleet (the run verb `renet backup snapshot` exists since 2026-08-14 and is
+   probed, not assumed); the RESTORE tier additionally needs a two-worker fleet
+   AND a real bucket. Its download path landed 2026-08-14 (`renet backup
+   restore`, `pkg/chunkstore/download.go` + `restore.go`), so
+   `E2E_CHUNK_RESTORE_VERB` now DEFAULTS to `backup restore` and needs no
+   export — but the tier still probes `renet backup --help` on the DEPLOYED
+   binary, so a fleet whose renet predates the verb skips loudly rather than
+   going green on a variable. The project is therefore gated behind
+   `BACKUP_STORAGE_SUITE=1` and collects nothing in CI. The machine-tier
+   coverage CI DOES run is suite 25, which drives `backup snapshot --dry-run`
+   with no account server at all. Locally:
+
+   ```bash
+   ./run.sh account dev     # note the gateway port it prints
+   BACKUP_STORAGE_SUITE=1 \
+     REDIACC_ACCOUNT_SERVER=http://127.0.0.1:<port> \
+     E2E_ACCOUNT_API_TOKEN=<token with backup:read> \
+     npx playwright test tests/26-backup-storage-cli.test.ts
+   # the ENGINE tier additionally wants VM_WORKERS="11 12";
+   # the RESTORE tier wants the same fleet plus a real bucket. Its verb now
+   # defaults correctly, so E2E_CHUNK_RESTORE_VERB is an override, not a
+   # prerequisite.
+   ```
+
+   All three tiers fail CLOSED: absent prerequisites with no declaration are a
+   RED, not a skip. Declare an intentional omission with
+   `E2E_EXPECT_NO_ACCOUNT_SERVER`, `E2E_EXPECT_NO_CHUNK_ENGINE` or
+   `E2E_EXPECT_NO_CHUNK_RESTORE`.
+
+8. **Suite 23 (CLI migrate routing) — pending local validation.** Authored and
    tsc-green, but the E2E Workers `ubuntu-24.04` leg does NOT set `CLI_SUITE=1` yet.
    Before enabling it, transcribe the exact `repo create`/datastore argv + the
    `beforeAll` machine-registration/SSH wiring from the wave round-log transcript
    and validate on a local two-worker fleet (`VM_WORKERS="11 12"`). To enable:
    add `cli-suite: '1'` to the `ubuntu-24.04` matrix leg in `ct-tests.yml`. Run
    locally with `CLI_SUITE=1` and two workers present.
+
+9. **`packages/json`'s Rediaccfile template suite** (`packages/json/test-templates.sh`,
+   28 templates). Not an e2e suite, listed here because this is the repo's one
+   discoverable index of "runs nowhere in CI, and here is why" — leaving it
+   undocumented is how an unrun suite reads as a passing one.
+
+   It is MACHINE-TIER and cannot run on a bare CI runner. Every Rediaccfile calls
+   `renet compose`, which needs a per-repo network id; on a freshly provisioned
+   fleet member with Docker healthy and `renet` on disk it exits
+   `--network-id is required and must be a valid non-zero value`, because the
+   worker has no `/mnt/rediacc/repositories` at all. Running one template
+   therefore needs a LICENSED rediacc repo on a VM, not merely a VM: the ops
+   nodes are absent from every config, so it also needs machine registration and
+   a repo created through the account server.
+
+   Sizing, measured 2026-08-14 rather than estimated: one LIGHT template
+   (`caching/redis`) took 374s wall, and the script allows `TEST_TIMEOUT=240` per
+   lifecycle function plus `HEALTH_CHECK_TIMEOUT=360`. Twenty-eight templates is
+   hours, so it belongs behind a `run_*` flag in `ct-tests.yml` on a fleet-backed
+   job, never in the quality lane.
+
+   Whether it earns that job is an OPEN OPERATOR DECISION, not an oversight. Until
+   it is taken the suite stays manual and this entry is the record of that.
+   Run it locally with a licensed repo present:
+
+   ```bash
+   cd packages/json && ./test-templates.sh --template caching/redis
+   ```

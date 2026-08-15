@@ -96,6 +96,9 @@ function warnOrphanDestinations(
   warnings: string[]
 ): void {
   for (const dest of strategy.destinations) {
+    // Only `storage`-kind destinations reference a /resources/storages entry;
+    // hosted-service destinations carry their own endpoint/credentials.
+    if (dest.kind !== 'storage') continue;
     if (storageNames.has(dest.storage)) continue;
     warnings.push(
       `resources.backupStrategies.${strategyName}.destinations[name=${dest.name}].storage points at "${dest.storage}" which is not in resources.storages. Fix manually; auto-removing the destination would change the strategy's intent`

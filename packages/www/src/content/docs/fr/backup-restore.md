@@ -1,16 +1,46 @@
 ---
 title: "Sauvegarde et restauration"
-description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage compatible rclone, restaurez-les sur n'importe quelle machine, et automatisez avec des stratégies de sauvegarde nommées et des timers systemd."
-category: Guides
+description: "Sauvegardez des dépôts chiffrés de deux façons : un stockage fragmenté adressé par contenu qui n'envoie que les cellules modifiées, ou un push complet vers n'importe quel stockage compatible rclone. Restaurez sur n'importe quelle machine et automatisez avec des stratégies nommées et des timers systemd."
+category: "Guides"
 order: 7
 language: fr
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Sauvegarde et restauration
 
 Rediacc sauvegarde des dépôts chiffrés vers un stockage externe et les restaure sur la même machine ou sur une machine différente. Les sauvegardes sont chiffrées ; l'identifiant LUKS du dépôt est nécessaire pour la restauration.
+
+## Deux voies de sauvegarde
+
+Rediacc propose deux voies de sauvegarde indépendantes, et ce guide couvre les deux. Elles utilisent un stockage et des commandes différents, si bien qu'un dépôt sauvegardé par l'une n'est pas sauvegardé par l'autre.
+
+**Le stockage fragmenté** (`rdc backup snapshot`) envoie l'image du dépôt sous forme de cellules de taille fixe adressées par leur contenu. La première exécution envoie tout l'inventaire non nul ; chaque exécution suivante n'envoie que les cellules modifiées, déterminées à partir des métadonnées d'allocation du système de fichiers plutôt qu'en relisant l'image entière. Les cellules identiques ne sont stockées qu'une seule fois, entre les instantanés et sur toute une famille de forks, et l'usage est mesuré par rapport à votre quota de stockage (`rdc backup usage`).
+
+**Le push de stockage** (`rdc repo push`) copie un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistrez vous-même. Il est retiré au profit du stockage fragmenté, et les stratégies planifiées ne l'utilisent plus. Les sections ci-dessous qui le décrivent fonctionnent toujours aujourd'hui, mais traitez-les comme la voie héritée.
+
+La restauration depuis le stockage fragmenté fonctionne : `rdc backup restore <repo> --at <snapshot-id>` matérialise un instantané stocké, et `--at` accepte également un horodatage RFC 3339, qui est résolu par rapport à l'inventaire des instantanés. Ajoutez `--as <name>` pour restaurer sous un nom différent et `--up` pour déployer le dépôt par la suite. Le stockage fragmenté vous offre également l'envoi (`rdc backup snapshot`), la vérification (`rdc backup verify`, avec `--deep` pour recalculer le hash de chaque cellule plutôt qu'un échantillon), l'inventaire des instantanés (`rdc backup manifests`) et la comptabilité des quotas (`rdc backup usage`).
+
+### Commandes de stockage fragmenté
+
+```bash
+# Envoyer un instantané. La première exécution amorce, les suivantes n'envoient que les cellules modifiées.
+rdc backup snapshot my-app
+
+# Planifier sans envoyer : indique ce qui serait déplacé.
+rdc backup snapshot my-app --dry-run
+
+# Ne pas faire confiance à l'ancre locale et renvoyer tout l'inventaire.
+# Ceci renvoie tout et recharge le quota ; à n'utiliser que lorsque
+# l'ancre est connue pour être défaillante.
+rdc backup snapshot my-app --reseed
+
+# Vérifier l'inventaire stocké et votre quota.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Configurer le stockage
 
@@ -63,7 +93,7 @@ Récupérez une sauvegarde de dépôt depuis un stockage externe :
 rdc repo pull my-app --from my-storage
 ```
 
-Pull vérifie toujours que le dépôt cible est monté avant d'écrire. S'il ne l'est pas, l'opération est annulée.
+Pull refuse d'écraser un dépôt actuellement **monté**. Démontez-le d'abord, effectuez le pull, puis remontez-le avec `rdc repo up`. Les dépôts basés sur un répertoire font exception : ils se synchronisent sur place même montés.
 
 | Option | Description |
 |--------|-------------|
@@ -116,7 +146,7 @@ Les sauvegardes planifiées atterrissent dans des sous-dossiers par mode à l'in
     └── ...
 ```
 
-Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné fait remonter les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
+Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné affiche les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
 
 ## Synchroniser un dépôt à la fois
 
@@ -163,12 +193,12 @@ Utilisez `hot` pour les services qui tolèrent les snapshots cohérents en cas d
 
 ### Sémantique de la sauvegarde froide
 
-Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, snapshot, démarrage**. Comprendre les limites des garanties aide les opérateurs à détecter les défaillances partielles rapidement.
+Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, snapshot, démarrage**. Comprendre où finissent les garanties permet de détecter rapidement les défaillances partielles.
 
 **Ce que la sauvegarde froide garantit :**
 
 - Avant le snapshot, chaque conteneur en cours d'exécution dans chaque dépôt inclus est arrêté gracieusement via le hook `down()` du Rediaccfile, et le Docker daemon par dépôt est mis en veille. Le snapshot est donc cohérent au niveau applicatif, et pas seulement cohérent en cas de crash.
-- L'ensemble des IDs de conteneur qui étaient en cours d'exécution avant le snapshot est persisté dans un fichier sidecar à `/var/run/rediacc/cold-backup-<guid>.running.json`. C'est la source de vérité pour "ce qui doit être de nouveau actif une fois terminé."
+- L'ensemble des IDs de conteneur qui étaient en cours d'exécution avant le snapshot est persisté dans un fichier sidecar à `/var/run/rediacc/cold-backup-<guid>.running.json`. C'est la source de vérité pour « ce qui doit être de nouveau actif une fois terminé ».
 - Après le snapshot, le hook `up()` du Rediaccfile du dépôt est invoqué pour restaurer le stack compose complet.
 - Un fichier sidecar de statut par exécution à `/var/run/rediacc/cold-backup-<guid>.status.json` enregistre la phase, le résultat et toute erreur de chaque tentative.
 
@@ -231,7 +261,7 @@ Concrètement, une exécution qui démarre le lundi à 03:00 UTC et se termine l
 
 La directive `Persistent=true` du minuteur ne sauve **pas** ces déclenchements. `Persistent=true` rejoue les déclenchements qui ont été manqués parce que le minuteur lui-même était inactif (système éteint, minuteur désactivé). Les déclenchements abandonnés parce que le service était occupé sont perdus.
 
-Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides en parallèle sur le même datastore entrerait en conflit sur le chemin du snapshot BTRFS, le remote rclone et les sidecars par dépôt à `/var/run/rediacc/cold-backup-<guid>.status.json`. La sérialisation derrière une instance de longue durée est le résultat sûr.
+Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides en parallèle sur le même datastore entrerait en conflit sur le chemin du snapshot BTRFS, le remote rclone et les sidecars par dépôt à `/var/run/rediacc/cold-backup-<guid>.status.json`. Attendre derrière une instance en cours d'exécution est plus sûr que de maltraiter les mêmes données de deux directions.
 
 **Implication pour la surveillance.** Une sauvegarde bloquée (par exemple, rclone coincé sur un trou noir réseau) abandonne silencieusement chaque déclenchement de minuteur suivant. Le planificateur n'émet aucune alarme. Surveillez `systemctl show <unit> -p ActiveEnterTimestamp` : si le service est `activating` depuis plus longtemps que votre durée d'exécution attendue (par exemple, plus de 48 h sur un minuteur nocturne), investiguez.
 
@@ -313,12 +343,12 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
 
 | | Hot | Cold |
 |---|-----|------|
-| **Cohérence** | Cohérent en cas de crash (snapshot BTRFS pendant l'exécution) | Cohérent au niveau applicatif (arrêt → snapshot → démarrage) |
+| **Cohérence** | Cohérent en cas de crash (snapshot BTRFS pendant l'exécution) | Cohérent au niveau applicatif (arrêt, snapshot, démarrage) |
 | **Temps d'arrêt** | Aucun | Fenêtre stop+start par dépôt (typiquement 5-120 s) |
 | **Fréquence adaptée** | Élevée (p. ex. horaire) | Faible (p. ex. quotidienne ou hebdomadaire) |
 | **Usage typique** | Filet de sécurité fréquent | Sauvegarde planifiée avec cohérence garantie |
 
-**Hot** est le bon choix par défaut pour les exécutions à haute fréquence. Les services continuent de fonctionner pendant la prise du snapshot, la fenêtre de sauvegarde n'interrompt donc pas les utilisateurs. Le snapshot est cohérent en cas de crash : il équivaut à ce que vous obtiendriez après un arrêt incorrect. Pour la plupart des bases de données modernes et des files de messages, c'est acceptable.
+**Hot** est le bon choix par défaut pour les exécutions à haute fréquence. Les services continuent de fonctionner pendant la prise du snapshot, de sorte qu'il n'y a pas de temps d'arrêt pour vos applications. Le snapshot est cohérent en cas de crash : il équivaut à ce que vous obtiendriez après un arrêt incorrect. Pour la plupart des bases de données modernes et des files de messages, c'est acceptable.
 
 **Cold** est approprié quand vous avez besoin d'un snapshot applicatif garanti et que vous pouvez accepter un bref redémarrage par dépôt. Les services sont arrêtés avant le snapshot et redémarrés avant le début du chargement, de sorte qu'un chargement lent ou échoué ne prolonge jamais la fenêtre de temps d'arrêt. Consultez [Sémantique de la sauvegarde froide](#sémantique-de-la-sauvegarde-froide) pour le modèle de garantie complet.
 

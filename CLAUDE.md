@@ -280,11 +280,11 @@ rdc --config production machine status prod-1  # Use specific config
 
 ```
 packages/cli/src/
-├── commands/           # Command implementations
+├── commands/           # Command implementations (hand-registered Commander subtrees)
 │   ├── machine/        # machine subcommands (query filters, provision.ts = OpenTofu VM provision/destroy)
 │   ├── config.ts        # Config management (replaces context)
 │   ├── term.ts          # SSH terminal
-│   ├── sync.ts          # File sync via rsync
+│   ├── repo-sync.ts     # File sync via rsync (`repo sync`)
 │   ├── vscode.ts        # VS Code Remote SSH
 │   └── repo.ts          # Repository management
 ├── remote/             # SSH, SFTP, rsync, terminal, VS Code server modules (was shared-desktop/)
@@ -303,8 +303,8 @@ packages/cli/src/
 │   ├── tofu/             # OpenTofu cloud-VM provisioning engine
 │   ├── update/           # updater, background-updater, update-state
 │   └── __tests__/        # unit tests (central, mirrors commands/__tests__)
-└── utils/
-    └── commandFactory.ts  # Generic CRUD command builder
+└── utils/             # cross-command helpers: command-policy, agent-guard, config-schema,
+                       # errors, platform, repo-{classify,target,executor}
 ```
 
 ### How the Local Adapter Works

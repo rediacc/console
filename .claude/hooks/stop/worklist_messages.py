@@ -485,6 +485,63 @@ N_CL_FOREIGN = (
 # an instruction addressed to whoever happened to read it. This constant states
 # the same FACTS and names no action for the reader. V_CL_FLIP keeps its
 # imperative, because on that path the reader IS the owner.
+V_PLAN_DRIFT = (
+    "%d committed plan file(s) on this branch describe work you have since "
+    "moved past:\n%s\n"
+    "A plan is the DURABLE design record -- committed, so it outlives this "
+    "session, compaction, and this machine. STATE.md is the volatile cursor; "
+    "the plan is what a stranger reads to understand WHY. You have ticked, "
+    "added or updated your own items since these were last written, which is "
+    "precisely when the record stops describing the work.\n"
+    "Update the plan body where the design actually changed, or set "
+    "'Status: done' / 'Status: superseded' if it is finished or replaced. "
+    "Do NOT simply touch the file: a plan that says the wrong thing with a "
+    "fresh timestamp is worse than one that is visibly behind. Only "
+    "draft/executing plans are checked, and the clock is never the trigger -- "
+    "a plan on a branch where nothing moved is never flagged."
+)
+
+CLI_INTENT_USAGE = (
+    "usage: worklist.py --intent <me> '<=240 chars: what you are doing and the next verb'\n"
+    "                   [--covers <check-key|#item-id> ...] [--for <minutes, default 45, max 120>]\n"
+    "\n"
+    "An intent says what you are DOING. It reprioritises the rotation so what you\n"
+    "have covered sorts last, and it answers `brief` and `agent-state`, whose entire\n"
+    "content is a status question. It is not evidence: it cannot satisfy a tick, and\n"
+    "it never touches the integrity, judge or deferral tiers.\n"
+)
+
+V_INTENT_EXPIRED = (
+    "Your stated intent has EXPIRED and what it covered is still outstanding:\n"
+    '    "%s"\n'
+    "    said %d minute(s) ago with a %d minute horizon; covering: %s\n"
+    "An intent is a statement of plan, not a mute button, so its horizon closing "
+    "while the work is still open is itself the finding. Either say what actually "
+    "happened (a fresh --intent, or --update on the item), or do the thing. The "
+    "checks it was answering resume now."
+)
+
+N_CADENCE_PAUSE = (
+    "Stop hook: %d check(s) still outstanding (%s), but this stop is YOURS -- "
+    "the hook demanded last turn and you answered, so it stands down for one "
+    "turn rather than talking over you. Pause %d of %d before it demands again; "
+    "the integrity, judge and evidence tiers never pause, so anything urgent "
+    "would have blocked regardless. Nothing here is forgotten or excused: the "
+    "same checks are waiting at the next stop."
+)
+
+N_CL_DOOR_PARKED = (
+    "Handoff checklist %s has %d wave(s) that only YOU can finish:\n%s\n"
+    "Not blocked on, and not a defect: each is covered by a store item closed "
+    "through a door, so no session can do it and demanding a tick would be "
+    "demanding a lie. But 'nothing can do it' is not the same as 'nobody needs "
+    "to hear about it'. A door-closed wave leaves the open slice (its item is "
+    "[x]) and emits no violation, so the ONLY thing that kept it in front of the "
+    "operator was a session remembering to write it into a report -- and a "
+    "session that forgets loses it silently, which is exactly what the doors "
+    "exist to prevent. Carry it into your ## Remaining with the door named."
+)
+
 N_CL_FOREIGN_DRIFT = (
     "Handoff checklist %s says 'Status: %s' but its artifacts disagree, and it "
     "is owned by session %s:\n%s\n"
@@ -895,6 +952,26 @@ N_OUTQ_MORE = (
     "priority first, oldest first inside a priority. Raise "
     "WORKLIST_REPORT_PER_STOP to drain faster.)"
 )
+
+# ---- the specialist-agent hint (wl_agents) ----------------------------------
+# NAMING THE MATCHED TERMS is what makes a wrong hint self-refuting: a reader
+# who sees "Matched on: fork, cap" dismisses it in one second instead of
+# opening a 9 KB agent file to find out why it was suggested. It is also what
+# makes the matcher debuggable in the field without a debug flag.
+
+N_AGENT_HINT = (
+    "Specialist agent available: %s (.claude/agents/%s.md).\n"
+    "  Matched on: %s\n"
+    "  It carries knowledge this session would otherwise rediscover. Spawn it "
+    "with the\n"
+    "  Agent tool, or ignore this line if it is not the domain you are in."
+)
+
+# A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a
+# crash and never to a quiet skip: the matcher runs on the path that ends every
+# turn, so an exception here is a session that cannot stop, and a silent skip is
+# an agent that has stopped being reachable while everything still looks fine.
+N_AGENT_CORPUS_ERR = "Agent corpus problem (specialist hints are degraded until fixed):\n%s"
 
 # ---- block-reason wrappers (the `reason` field of an emitted block) ---------
 

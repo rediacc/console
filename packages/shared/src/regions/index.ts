@@ -12,7 +12,7 @@ import type { SignedSubscriptionBlob } from '../subscription/types.js';
 
 // Baked-in fallback regions. This is a copy of the root regions.json
 // kept in sync by the build process. Always available, even offline.
-import regionsData from './data.json';
+import regionsData from './data.json' with { type: 'json' };
 
 export interface RegionInfo {
   id: string;

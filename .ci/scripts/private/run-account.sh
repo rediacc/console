@@ -17,9 +17,18 @@ STAGE="${1:-quality}"
 REPO_ROOT="$(get_repo_root)"
 ACCOUNT_DIR="$REPO_ROOT/private/account"
 
-# Check if account directory is available
+# A missing submodule must not read as "tests passed". `check:ci-account-server`
+# is a gate in ci-quality.yml, and a silent exit 0 there means the account suite
+# never ran while the job reported green.
 if [[ ! -f "$ACCOUNT_DIR/package.json" ]]; then
-    log_warn "Account server not available, skipping"
+    if [[ "${CI:-}" == "true" ]]; then
+        log_error "Account server not available at $ACCOUNT_DIR (submodule not checked out)."
+        log_error "CI=true: failing rather than reporting success for tests that never ran."
+        log_error "Check out the submodule, or drop this gate from the job that needs it."
+        exit 1
+    fi
+    log_warn "Account server not available at $ACCOUNT_DIR, skipping."
+    log_warn "CI is not 'true', so absence is a soft skip here; in CI it is a hard failure."
     exit 0
 fi
 
@@ -36,13 +45,17 @@ case "$STAGE" in
         npm run test
         ;;
     deploy)
-        log_step "Deploying account to Cloudflare..."
-        DEPLOY_ARGS=""
-        if [[ -n "${WORKER_NAME:-}" ]]; then
-            DEPLOY_ARGS="--name $WORKER_NAME"
-            log_info "Using worker name override: $WORKER_NAME"
-        fi
-        npx wrangler deploy $DEPLOY_ARGS
+        # This stage used to run `npx wrangler deploy` from private/account with
+        # no --config, which picks up that directory's root wrangler.toml. That
+        # file is local-dev only: its worker name and D1 id are live nowhere, so
+        # the deploy would have published an orphan worker. Nothing invokes this
+        # stage, so refusing breaks no caller.
+        log_error "This stage cannot deploy the account server."
+        log_error "Production and edge are the seven configs under workers/account/:"
+        log_error "  wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench.toml"
+        log_error "Deploy through the script that resolves them:"
+        log_error "  .ci/scripts/deploy/deploy-account.sh --region <eu|us|asia> [--target edge]"
+        exit 1
         ;;
     *)
         log_error "Unknown stage: $STAGE"

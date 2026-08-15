@@ -274,9 +274,25 @@ function main(): void {
   if (errors.length > 0) {
     console.error('Translation hash check FAILED:\n');
     errors.forEach((e) => console.error(e));
-    console.error('\nTo fix: run `npm run i18n:generate-hashes`, then re-naturalize ONLY the');
-    console.error('changed keys (delta) via private/growth/i18n_pipeline -- not everything.');
-    console.error('`npm run i18n:naturalize-status` shows the stale keys. See docs/i18n/CONVENTIONS.md.');
+    // The ORDER below is the whole point, and the previous version of this text
+    // had it backwards. Generating hashes FIRST stamps the stale translations as
+    // current, which is precisely the drift this gate exists to catch: the
+    // non-English values still say what the old English said, and nothing would
+    // ever report it again. Re-translate, THEN re-hash.
+    console.error('\nTo fix, IN THIS ORDER:');
+    console.error('  1. Re-translate the changed keys in the NON-ENGLISH locales of the surface');
+    console.error('     named above. Values only -- these files are alphabetically sorted and');
+    console.error('     mirror English key-for-key.');
+    console.error('  2. THEN run `npm run i18n:generate-hashes` to re-baseline.');
+    console.error('');
+    console.error('Which tool does step 1 depends on the SURFACE, and they are not the same:');
+    console.error('  - packages/www/src/i18n/translations/  -> private/growth/i18n_pipeline');
+    console.error('    (`./run.sh --lang <lang> --surface <surface>`; `npm run i18n:naturalize-status`');
+    console.error('     lists what is stale). Its config targets that directory and ONLY that one.');
+    console.error('  - packages/cli/src/i18n/locales/       -> that pipeline CANNOT do these.');
+    console.error('    config.py points at packages/www; pointing it here silently does nothing.');
+    console.error('    Translate them directly (a Sonnet sub-agent, per the repo model policy).');
+    console.error('See docs/i18n/CONVENTIONS.md.');
     process.exit(1);
   }
 

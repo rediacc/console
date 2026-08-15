@@ -91,6 +91,9 @@ playwright/venv/
 playwright_venv/
 # Python
 __pycache__/
+# ruff writes this whenever check:ci-python-lint runs (or anyone runs ruff
+# by hand); it is a local cache, never an artifact.
+.ruff_cache/
 *.py[cod]
 *$py.class
 *.pyc

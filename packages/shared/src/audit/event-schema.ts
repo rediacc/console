@@ -73,6 +73,10 @@ const backupEventTypes = [
   'cli.backup.list',
   'cli.backup.pull',
   'cli.backup.push',
+  // `backup_restore` is the chunk-store restore verb. It is deliberately
+  // TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says
+  // nothing about auditability: it mutates a repo, so it records like the rest.
+  'cli.backup.restore',
 ] as const;
 
 // Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes

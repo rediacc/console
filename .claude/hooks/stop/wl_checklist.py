@@ -275,6 +275,19 @@ def _covering_items(fold, token):
     ]
 
 
+# The three doors from CLAUDE.md's findings rule. Closing an item through one
+# means "no session can do this", NOT "this is finished": operator-only powers
+# (secrets, purchases, production deploys), an explicit operator deferral, or a
+# target outside this session's write access.
+_DOOR_RX = re.compile(r"\bdoor:(?:operator-only|operator-deferred|no-write-access)\b")
+
+
+def _closed_through_door(rec):
+    """True when this record was ticked by naming a door rather than by doing it."""
+    blob = "%s %s" % (rec.get("text") or "", rec.get("lastnote") or "")
+    return bool(_DOOR_RX.search(blob))
+
+
 def _wave_rows(fold, parsed, session_id):
     """Problem rows for the unticked waves, each carrying its one-command exit."""
     me8 = (session_id or "unknown")[:8]
@@ -294,12 +307,63 @@ def _wave_rows(fold, parsed, session_id):
                 % (w["id"], token, me8, token, title)
             )
         elif all((r.get("state") or "") == "x" for r in matches):
+            # A wave whose only covering items were closed through a DOOR is
+            # correctly unticked, and demanding its tick would be demanding a
+            # lie. `door:operator-only` means the secrets are unset, the machines
+            # unmigrated and the cutover unrun -- the item left the session, the
+            # WORK did not happen. This checklist's own comment block says an
+            # overstating handoff is worse than an incomplete one, because the
+            # next session reads it as ground truth. So: covered, not done, no
+            # row. Ticking the box is the operator's to do once the door opens.
+            if any(_closed_through_door(r) for r in matches):
+                continue
             ids = ", ".join("#%s" % r.get("id") for r in matches)
             rows.append(
                 "    %s DONE-BUT-UNTICKED: store item %s is done with evidence; "
                 "tick '- [x] %s' in %s" % (w["id"], ids, w["id"], rel)
             )
     return rows
+
+
+def _door_parked_rows(fold, parsed):
+    """Rows for unticked waves whose covering items were ALL closed through a door.
+
+    _wave_rows above skips these on purpose and the reasoning there is right:
+    the work did not happen, no session can make it happen, and demanding a tick
+    would be demanding a lie. But it skipped them into TOTAL silence, and that
+    is a different claim. Such a wave emits no violation, and its covering item
+    is `[x]` so it has also left `--list --open`: nothing in the machinery
+    surfaces it again, ever.
+
+    What kept `cl:backup-storage/w8` (the credentialed cutover legs) visible for
+    a whole day was one session choosing to write it into STATE.md and into
+    every report. That is discipline, not a control, and the doors exist
+    precisely because discipline is what fails across a compaction. So these are
+    reported as an ADVISORY: never blocking, because nothing here can act on
+    them, but never silent either, because the operator can.
+    """
+    slug, rows = parsed["slug"], []
+    for w in parsed["waves"]:
+        if w["ticked"]:
+            continue
+        matches = _covering_items(fold, CL_LINK_FMT % (slug, w["id"]))
+        if not matches or not all((r.get("state") or "") == "x" for r in matches):
+            continue
+        doors = [r for r in matches if _closed_through_door(r)]
+        if not doors:
+            continue
+        why = ", ".join(sorted({_door_name(r) for r in doors}))
+        rows.append("    %s [%s] %s" % (w["id"], why, w["text"][:70].rstrip(" -\u2014")))
+
+    return rows
+
+
+def _door_name(rec):
+    """The door a record names, for the advisory. 'a door' when it cannot be read
+    -- the row is worth printing even when the reason is unparseable."""
+    m = _DOOR_RX.search(" ".join(str(v) for v in rec.values() if isinstance(v, str)))
+
+    return m.group(0) if m else "a door"
 
 
 def _adopt_hint(owner, projects_dir, rel):
@@ -434,6 +498,20 @@ def _adjudicate(root, path, fold, session_id, projects_dir):
         # whoever tries to stop. The moment anyone claims it with --add it
         # stops blocking everyone else.
         v.append((_ckey("cl-waves", slug), False, M.V_CL_WAVES % (slug, rel, "\n".join(wrows))))
+    # Door-parked waves: reported, never blocked on. _wave_rows skips them for
+    # the right reason and into the wrong silence -- see _door_parked_rows.
+    # NOT ownership-gated, for the same reason the wave check is not: whoever is
+    # here is the one who can tell the operator, and the operator is the only
+    # party who can open the door.
+    prows = _door_parked_rows(fold, parsed)
+    if prows:
+        a.append(
+            (
+                _ckey("cl-door", slug),
+                M.N_CL_DOOR_PARKED % (rel, len(prows), "\n".join(prows)),
+                2,
+            )
+        )
     return v, a, 1
 
 

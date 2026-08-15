@@ -124,7 +124,15 @@ function allFamiliesConfig(): RdcConfig {
       ],
       backupStrategies: {
         nightly: {
-          destinations: [{ name: 'offsite', storage: 's1', folder: 'backups/shop', enabled: true }],
+          destinations: [
+            {
+              kind: 'storage',
+              name: 'offsite',
+              storage: 's1',
+              folder: 'backups/shop',
+              enabled: true,
+            },
+          ],
           schedule: '0 3 * * *',
           mode: 'cold',
           enabled: true,

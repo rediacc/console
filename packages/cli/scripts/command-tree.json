@@ -1128,12 +1128,6 @@
               "defaultValue": null
             },
             {
-              "flags": "-w, --watch",
-              "descriptionKey": "options.watch",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1205,6 +1199,167 @@
           "subcommands": []
         },
         {
+          "name": "usage",
+          "descriptionKey": "commands.backup.usage.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "manifests",
+          "descriptionKey": "commands.backup.manifests.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "verify",
+          "descriptionKey": "commands.backup.verify.description",
+          "options": [
+            {
+              "flags": "--deep",
+              "descriptionKey": "commands.backup.verify.optionDeep",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "snapshot",
+          "descriptionKey": "commands.backup.snapshot.description",
+          "options": [
+            {
+              "flags": "--reseed",
+              "descriptionKey": "commands.backup.snapshot.optionReseed",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.backup.snapshot.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "retention",
+          "descriptionKey": "commands.backup.retention.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "repo-ref",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": [
+            {
+              "name": "set",
+              "descriptionKey": "commands.backup.retention.setDescription",
+              "options": [
+                {
+                  "flags": "--keep-last <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepLast",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--keep-hourly <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepHourly",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--keep-daily <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepDaily",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--keep-weekly <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepWeekly",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--keep-monthly <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepMonthly",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--keep-yearly <n>",
+                  "descriptionKey": "commands.backup.retention.optionKeepYearly",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "clear",
+              "descriptionKey": "commands.backup.retention.clearDescription",
+              "options": [],
+              "arguments": [
+                {
+                  "name": "repo-ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
+        },
+        {
           "name": "list",
           "descriptionKey": "commands.backup.list.description",
           "options": [
@@ -1223,12 +1378,6 @@
             {
               "flags": "--path <subdir>",
               "descriptionKey": "commands.backup.list.optionPath",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "-w, --watch",
-              "descriptionKey": "options.watch",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1268,6 +1417,12 @@
             {
               "flags": "--datastore <name>",
               "descriptionKey": "commands.backup.restore.optionDatastore",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--at <time>",
+              "descriptionKey": "commands.backup.restore.optionAt",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2575,12 +2730,6 @@
               "defaultValue": null
             },
             {
-              "flags": "-w, --watch",
-              "descriptionKey": "options.watch",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
               "flags": "--bwlimit <limit>",
               "descriptionKey": "commands.repo.push.optionBwlimit",
               "mandatory": false,
@@ -2646,12 +2795,6 @@
             {
               "flags": "--up",
               "descriptionKey": "commands.repo.pull.optionUp",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
-              "flags": "-w, --watch",
-              "descriptionKey": "options.watch",
               "mandatory": false,
               "defaultValue": null
             },

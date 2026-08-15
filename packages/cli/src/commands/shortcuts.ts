@@ -127,7 +127,6 @@ export function registerShortcuts(program: Command): void {
       },
       [] as string[]
     )
-    .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {

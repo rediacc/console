@@ -1,5 +1,6 @@
 ---
-sourceHash: "51a38f7f8567e63e"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 title: Continuità Bancaria Durante un Blackout
 description: Mantieni le operazioni bancarie durante le interruzioni di corrente con il mirroring intercontinentale dei dati.
 category: Use Cases
@@ -46,29 +47,25 @@ Un importante gruppo bancario spagnolo che aveva implementato la soluzione di re
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Mirroring Intercontinentale dei Dati**
-* I database bancari principali e i sistemi di transazione erano **continuamente replicati** verso data center negli Stati Uniti
-* Tutti i dati dei clienti e i record delle transazioni erano sincronizzati con un **ritardo inferiore a 3 secondi**
+* I database bancari principali e i sistemi di transazione sarebbero **continuamente replicati** verso data center negli Stati Uniti
+* I dati dei clienti e i registri delle transazioni resterebbero sincronizzati entro il ritardo di replica consentito dal tuo collegamento e dal tuo volume di dati
 
 ### 2. **Transizione Operativa Fluida**
-* Quando i server spagnoli hanno perso corrente, il traffico è stato **automaticamente reindirizzato** ai sistemi basati negli USA
-* I clienti hanno sperimentato solo una breve interruzione di 47 secondi prima che i servizi riprendessero
+* Se i server spagnoli perdessero corrente, il traffico verrebbe **automaticamente reindirizzato** ai sistemi basati negli USA
+* I clienti noterebbero solo una breve interruzione durante il completamento del reindirizzamento, invece di un'interruzione lunga quanto il guasto della rete
 
 ### 3. **Continuazione del Servizio da Remoto**
-* I call center in paesi non colpiti hanno avuto accesso ai sistemi replicati per mantenere l'assistenza ai clienti
-* Le app di mobile banking sono rimaste funzionali collegandosi a data center alternativi
+* I call center in paesi non colpiti potrebbero raggiungere i sistemi replicati e continuare ad assistere i clienti
+* Le app di mobile banking resterebbero funzionali collegandosi a data center alternativi
 
 ## Risultato Potenziale
 
 **Continuità Aziendale:**
-* Mentre i concorrenti erano offline per oltre 14 ore, la banca ha mantenuto il **98% di disponibilità del servizio**
+* I concorrenti sono rimasti offline per oltre 14 ore. Una banca dotata di questa architettura continuerebbe a operare per l'intera durata
 
-**Fiducia dei Clienti:**
-* La banca è stata l'unico grande istituto finanziario a processare transazioni durante la crisi
-* La soddisfazione dei clienti è aumentata del 27% nei sondaggi post-crisi
+**Continuità del Servizio:**
+* Potrebbe continuare a elaborare transazioni laddove gli istituti privi di una seconda regione non ne sarebbero in grado
 
 **Protezione Finanziaria:**
-* La banca ha evitato circa 370 milioni di euro in perdite da fallimenti nelle transazioni
-* Nessun dato è andato perso o corrotto, eliminando costose operazioni di recupero
-
-**Vantaggio Competitivo:**
-* La banca ha acquisito 140.000 nuovi clienti nel mese successivo dai concorrenti che non erano riusciti a mantenere il servizio
+* Eviterebbe le perdite dovute a transazioni fallite che si accumulano per ogni ora in cui un sistema di pagamento resta fermo
+* Nessun dato andrebbe perso o corrotto, eliminando così la necessità di qualsiasi operazione di recupero

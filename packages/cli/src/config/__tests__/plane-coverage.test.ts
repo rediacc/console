@@ -146,8 +146,20 @@ describe('command plane coverage', () => {
     // machine-plane default of the `backup` domain would have been a false claim.
     // 166 -> 167, config 53 -> 54: the new `config current` leaf, a read-only
     // config-plane command that reports the resolved server/channel/token state.
-    expect(COMMANDS.length).toBe(167);
-    expect(counts).toEqual({ config: 54, machine: 93, other: 20 });
+    // 167 -> 170, machine 93 -> 94, other 20 -> 22: the chunk-store backup reads.
+    // `backup verify` reaches a machine (backup_verify verb) so it keeps the backup
+    // domain's machine default; `backup usage` and `backup manifests` are
+    // account-tunnel reads (accountServerFetch), so `other` like `subscription`.
+    // 170 -> 171: `backup snapshot`, the chunk-store WRITE verb.
+    // 171 -> 174, other 22 -> 25: `backup retention` and its `set`/`clear`
+    // children — the CLI half of retention enforcement, without which the
+    // policy was enforceable server-side but UNDECLARABLE. They are `other`
+    // for the same reason `usage` and `manifests` are: accountServerFetch
+    // against the control plane, never a machine. Inheriting the backup
+    // domain's machine default would have made them proxyCapable, offering
+    // the command that decides what gets DELETED for remote execution.
+    expect(COMMANDS.length).toBe(174);
+    expect(counts).toEqual({ config: 54, machine: 95, other: 25 });
   });
 
   it('records the interactive commands', () => {
@@ -199,7 +211,11 @@ describe('command plane coverage', () => {
     // relocation out of the `config` noun silently gave them repo's machine default,
     // and this list is exactly the set the proxy will run remotely, which is why an
     // archive verb appearing in it was a wrong-target data-loss bug (§4.9).
-    expect(machineNonInteractive.length).toBe(89);
+    // 89 -> 90: `backup verify` is a machine-plane, non-interactive read (the
+    // backup_verify verb runs on the machine that holds the anchor).
+    // 90 -> 91: `backup snapshot` is machine-plane and non-interactive, so a
+    // remote executor can run it, exactly like its `backup verify` sibling.
+    expect(machineNonInteractive.length).toBe(91);
   });
 
   it('plane and interactive entries all point at real commands', () => {

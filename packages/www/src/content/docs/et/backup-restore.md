@@ -1,16 +1,46 @@
 ---
 title: "Varundamine ja taastamine"
-description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvasse salvestusse, taasta neid mis tahes masinal ja automatiseeri varundamine nimetatud strateegiate ja systemd-taimerite abil."
+description: "Varunda krüpteeritud repositooriumeid kahel viisil: sisupõhiselt aadresseeritud tükksalvestusse, mis laadib üles ainult muutunud rakud, või täieliku push'iga mis tahes rclone-ühilduvasse salvestusse. Taasta mis tahes masinal ja automatiseeri nimetatud strateegiate ning systemd-taimerite abil."
 category: "Guides"
 order: 7
 language: et
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Varundamine ja taastamine
 
 Rediacc saab varundada krüpteeritud repositooriumeid väliste salvestusteenuste pakkujatele ja taastada neid samadel või erinevatel masinatel. Varukopiad on krüpteeritud; repositooriumi LUKS-volitus on taastamiseks vajalik.
+
+## Kaks varundamisviisi
+
+Rediacc'il on kaks sõltumatut varundamisviisi ja see juhend käsitleb mõlemat. Need kasutavad erinevat salvestust ja erinevaid käske, seega üht viisi kasutades varundatud repositoorium ei ole teise viisi kaudu varundatud.
+
+**Tükksalvestus** (`rdc backup snapshot`) laadib repositooriumi tõmmise üles fikseeritud suurusega rakkudena, mis on aadresseeritud oma sisu järgi. Esimene käivitus laadib üles kogu nullist erineva sisu; iga järgnev käivitus laadib üles ainult muutunud rakud, mis otsustatakse failisüsteemi eraldusmetaandmete, mitte kogu tõmmise lugemise põhjal. Identsed rakud salvestatakse üks kord kõigi tõmmiste ja kogu forkide perekonna ulatuses, ning kasutust arvestatakse sinu salvestuskvoodi vastu (`rdc backup usage`).
+
+**Salvestuse push** (`rdc repo push`) kopeerib terve varufaili rclone-ühilduvasse teenusepakkujasse, mille registreerid ise. Seda viisildastatakse tükksalvestuse kasuks ja ajastatud strateegiad seda enam ei käivita. Allpool olevad jaotised, mis seda kirjeldavad, töötavad ikkagi täna, kuid käsitle neid päranditee asemel.
+
+Taastamine tükksalvestusest toimib: `rdc backup restore <repo> --at <snapshot-id>` teostab salvestatud hetktõmmise, ja `--at` aktsepteerib ka RFC 3339 ajatempli, mis lahendatakse hetktõmmise inventuuri vastu. Lisage `--as <name>` taastamiseks erineva nimega ja `--up` repositooriumi pärast juurutamiseks. Tükksalvestus annab ka üleslaadimist (`rdc backup snapshot`), kinnitamist (`rdc backup verify`, ja `--deep` iga raku uuesti räsimiseks, mitte proovi asemel), hetktõmmiste inventuuri (`rdc backup manifests`) ja kvootide arvestust (`rdc backup usage`).
+
+### Tükksalvestuse käsud
+
+```bash
+# Laadi tõmmis üles. Esimene käivitus külvab, hilisemad saadavad ainult muutunud rakud.
+rdc backup snapshot my-app
+
+# Planeeri ilma üles laadimata: näitab, mis liiguks.
+rdc backup snapshot my-app --dry-run
+
+# Ära usalda kohalikku ankrut ja laadi kogu sisu uuesti üles.
+# See laadib kõik uuesti üles ja arvestab kvoodi uuesti; kasuta
+# seda ainult siis, kui ankur on teadaolevalt vigane.
+rdc backup snapshot my-app --reseed
+
+# Kontrolli salvestatud sisu ja oma kvooti.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Salvestuse seadistamine
 
@@ -63,7 +93,7 @@ Tõmba repositooriumi varukoopia välisest salvestusest:
 rdc repo pull my-app --from my-storage
 ```
 
-Pull kontrollib alati enne kirjutamist, kas siht-repositoorium on ühendatud. Kui see pole ühendatud, katkestatakse toiming.
+Pull keeldub üle kirjutamast repositooriumi, mis on hetkel **ühendatud**. Ühenda see kõigepealt lahti, tee pull ja too see siis tagasi käsuga `rdc repo up`. Kaustapõhised repositooriumid on erand: need sünkroonivad end kohapeal ka ühendatuna.
 
 | Valik | Kirjeldus |
 |--------|-------------|
@@ -120,7 +150,7 @@ Repo võib ilmuda nii `hot/` kui ka `cold/` kaustas (tunnine ajakava teeb selles
 
 ## Sünkroniseeri üks repositoorium korraga
 
-Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi „kõik repositooriumid korraga“ ei ole: käivita käsk iga repositooriumi jaoks eraldi.
+Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi "kõik repositooriumid korraga" ei ole: käivita käsk iga repositooriumi jaoks eraldi.
 
 ### Saada salvestusse
 

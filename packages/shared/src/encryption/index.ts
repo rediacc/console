@@ -1,7 +1,7 @@
-import type { ICryptoProvider } from './types';
-import { hasVaultFields, transformVaultFields } from './vaultTransform';
+import type { ICryptoProvider } from './types.js';
+import { hasVaultFields, transformVaultFields } from './vaultTransform.js';
 
-export { ENCRYPTION_CONFIG, PASSWORD_SALT } from './constants';
+export { ENCRYPTION_CONFIG, PASSWORD_SALT } from './constants.js';
 
 const BASE64_REGEX = /^[A-Za-z0-9+/]+=*$/;
 
@@ -38,6 +38,6 @@ export function createVaultEncryptor(provider: ICryptoProvider): VaultEncryptor 
   };
 }
 
-export type { ICryptoProvider } from './types';
-export { analyzeVaultProtocolState, isEncrypted, VaultProtocolState } from './vaultProtocol';
-export { hasVaultFields, isVaultField, transformVaultFields } from './vaultTransform';
+export type { ICryptoProvider } from './types.js';
+export { analyzeVaultProtocolState, isEncrypted, VaultProtocolState } from './vaultProtocol.js';
+export { hasVaultFields, isVaultField, transformVaultFields } from './vaultTransform.js';

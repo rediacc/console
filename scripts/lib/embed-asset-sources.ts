@@ -24,7 +24,6 @@ export interface EmbedAssetSource {
 export const EMBED_ASSET_SOURCES: EmbedAssetSource[] = [
   { base: 'criu', display: 'CRIU', kind: 'github', repo: 'checkpoint-restore/criu' },
   { base: 'rsync', display: 'rsync', kind: 'rsync-index' },
-  { base: 'rclone', display: 'rclone', kind: 'github', repo: 'rclone/rclone' },
   { base: 'zot', display: 'zot', kind: 'github', repo: 'project-zot/zot' },
   { base: 'k3s', display: 'k3s', kind: 'github', repo: 'k3s-io/k3s' },
   {

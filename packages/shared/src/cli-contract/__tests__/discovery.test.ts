@@ -11,9 +11,9 @@ import {
   type DiscoveryFamily,
   RESOURCE_DISCOVERY,
   RESOURCE_KINDS,
-} from '../discovery';
-import { getCommand } from '../index';
-import type { ResourceKind } from '../types';
+} from '../discovery.js';
+import { getCommand } from '../index.js';
+import type { ResourceKind } from '../types.js';
 
 /** The kinds whose values come straight from a config family. */
 const CONFIG_SOURCED = new Set<ResourceKind>(

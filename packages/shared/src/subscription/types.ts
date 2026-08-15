@@ -191,6 +191,14 @@ export interface DelegationCert {
   maxMachines: number;
   maxRepositorySizeGb: number;
   maxRepoLicenseIssuancesPerMonth: number;
+  /**
+   * Backup-storage quota in PHYSICAL unique stored bytes for this subscription.
+   * Rides inside the signed cert (populated from the subscription row, like
+   * maxRepositorySizeGb) because the on-prem admin has no subscription-edit
+   * surface. Optional for backward compatibility — certs issued before storage
+   * backups default to the plan value when read.
+   */
+  storageQuotaBytes?: number;
   /** Upper bound on the chain sequence number */
   maxTotalIssuances: number;
   /** Base64 SPKI Ed25519 public key of the on-premise server */
@@ -227,7 +235,16 @@ export type ApiTokenScope =
   // Config plane: `config:enroll` lets a headless CLI add a password key slot to
   // its own config-store membership (rdc config remote enable --password).
   // Creatable by any member — not privileged.
-  | 'config:enroll';
+  | 'config:enroll'
+  // Backup plane: `backup:read` lets a CLI query the subscription's backup
+  // storage state through the tunnel (usage, manifest index, verify). Read-only,
+  // creatable by any member — not privileged. The MACHINE never holds this: it
+  // commits its own manifests via the license-blob storage session.
+  | 'backup:read'
+  // `backup:manage` declares the server-enforced GFS retention policy, which
+  // SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a
+  // token minted to show a usage bar must not be able to shrink history.
+  | 'backup:manage';
 
 /**
  * API token for machine authentication.

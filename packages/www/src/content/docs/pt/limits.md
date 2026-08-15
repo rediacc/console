@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: pt
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Limites e Quotas
@@ -138,8 +138,8 @@ A migração ao vivo via CRIU tem as seguintes restrições:
 |-------|-------|
 | Destinos de cópia de segurança por repositório | Ilimitado |
 | Tarefas de cópia de segurança simultâneas | 1 por repositório (as tarefas ficam em fila se acionadas em simultâneo) |
-| Frequência de cópia de segurança | Sem intervalo mínimo imposto; limitado pela largura de banda do seu armazenamento. Use `rdc backup strategy set <name> --bwlimit "6M"` para limitar a velocidade de envio (sintaxe `--bwlimit` do rclone: simples `6M`, direcional `6M:off`, ou tabela de horários `08:00,3M;22:00,10M`) |
-| Retenção | Controlada pelo seu fornecedor de armazenamento (S3, Cloudflare R2, etc.). O Rediacc não impõe políticas de retenção. |
+| Frequência de cópia de segurança | Sem intervalo mínimo imposto; limitado pela largura de banda do seu armazenamento. Use `rdc backup strategy set <name> --bwlimit "6M"` para limitar a velocidade de envio |
+| Retenção | Declarada com `rdc backup retention set` (parâmetros GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e imposta no servidor; `rdc backup retention clear` remove-a. O armazenamento em chunks é medido contra uma quota do plano como bytes físicos únicos armazenados, pelo que a deduplicação entre snapshots e em toda uma família de forks é contada apenas uma vez: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, consultável com `rdc backup usage`. O caminho legado de storage-push não tem retenção própria e é regido pelo seu fornecedor de armazenamento. |
 | Cópia de segurança entre máquinas | Suportado; a máquina de destino deve ter espaço suficiente no datastore |
 
 ---

@@ -3,7 +3,7 @@
 // Source: renet/pkg/functions/commands/
 
 import { z, type ZodSafeParseResult } from 'zod';
-import type { RenetFunctionName, FunctionParamsMap } from './functions.generated';
+import type { RenetFunctionName, FunctionParamsMap } from './functions.generated.js';
 
 // ============================================
 // Zod schemas for runtime validation
@@ -72,6 +72,28 @@ export const BackupPushParamsSchema = z.object({
     .describe('Delta strategy: auto|physical|shared'),
   retainBase: z.string().optional().describe('Retain the pushed image as an immutable delta base under this GUID on both machines'),
   retainBasePrune: z.string().optional().describe('Delete this prior retained base on both machines after a successful push'),
+});
+
+/** Restore a repository image from a chunk-store snapshot */
+export const BackupRestoreParamsSchema = z.object({
+  lineage: z.string().min(1).describe('Lineage (grand) GUID the snapshot belongs to'),
+  at: z.string().min(1).describe('Snapshot id to restore (a TIME is resolved by the CLI, never here)'),
+  dryRun: z.boolean().default(false).optional().describe('Resolve the manifest chain and report what would be fetched; write nothing'),
+});
+
+/** Upload a chunk-store snapshot: full inventory first, changed cells after */
+export const BackupSnapshotParamsSchema = z.object({
+  reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
+  dryRun: z.boolean().default(false).optional().describe('Plan only: no session, no grant, no upload; report what would move'),
+});
+
+/** Verify local chunk-backup state against the recorded snapshot inventory */
+export const BackupVerifyParamsSchema = z.object({
+  level: z
+    .enum(['spot', 'full'])
+    .default('spot')
+    .optional()
+    .describe('Verification level: spot (sampled cells) or full (re-hash every recorded cell)'),
 });
 
 /** Mount RBD image on client */
@@ -596,6 +618,9 @@ export const FUNCTION_SCHEMAS = {
   backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,
   backup_push: BackupPushParamsSchema,
+  backup_restore: BackupRestoreParamsSchema,
+  backup_snapshot: BackupSnapshotParamsSchema,
+  backup_verify: BackupVerifyParamsSchema,
   ceph_client_mount: CephClientMountParamsSchema,
   ceph_client_unmount: CephClientUnmountParamsSchema,
   ceph_clone_delete: CephCloneDeleteParamsSchema,

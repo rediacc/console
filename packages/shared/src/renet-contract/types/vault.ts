@@ -21,4 +21,4 @@ export {
   type TaskSection,
   VAULT_SCHEMA,
   VAULT_VERSION,
-} from '../data/vault.generated';
+} from '../data/vault.generated.js';

@@ -6,8 +6,8 @@ description: >-
 category: Use Cases
 order: 6
 language: tr
-sourceHash: "51a38f7f8567e63e"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 > **Işıklar Söndüğünde İşletmeniz Açık Kalır.**
@@ -49,29 +49,25 @@ Rediacc'ın kıtalar arası kopyalama çözümünü uygulayan büyük bir İspan
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Kıtalararası Veri Yansıtma** 
-* Temel bankacılık veritabanları ve işlem sistemleri Amerika Birleşik Devletleri'ndeki veri merkezlerine **sürekli olarak kopyalandı** 
-* Tüm müşteri verileri ve işlem kayıtları **3 saniyeden az gecikmeyle** senkronize edildi
+* Temel bankacılık veritabanları ve işlem sistemleri Amerika Birleşik Devletleri'ndeki veri merkezlerine **sürekli olarak kopyalanıyor olurdu** 
+* Müşteri verileri ve işlem kayıtları, bağlantınızın ve veri hacminizin izin verdiği çoğaltma gecikmesi içinde senkronize kalırdı
 
 ### 2. **Sorunsuz Operasyonel Geçiş** 
-* İspanyol sunucuları güç kaybettiğinde trafik **otomatik olarak ABD merkezli sistemlere yönlendirildi** 
-* Müşteriler, hizmetler yeniden başlatılmadan önce yalnızca 47 saniyelik kısa bir kesinti yaşadı
+* İspanyol sunucular güç kaybettiğinde trafik **otomatik olarak ABD merkezli sistemlere yönlendirilirdi** 
+* Müşteriler, şebeke arızası kadar uzun süren bir kesinti yerine, yönlendirme tamamlanana kadar yalnızca kısa bir kesinti fark ederdi
 
 ### 3. **Uzaktan Hizmete Devam Etme** 
-* Etkilenmeyen ülkelerdeki çağrı merkezleri, müşteri desteğini sürdürmek için kopyalanan sistemlere erişti 
-* Mobil bankacılık uygulamaları alternatif veri merkezlerine bağlanarak işlevselliğini korudu
+* Etkilenmeyen ülkelerdeki çağrı merkezleri, kopyalanan sistemlere erişip müşteri desteğini sürdürebilirdi 
+* Mobil bankacılık uygulamaları alternatif veri merkezlerine bağlanarak işlevselliğini korurdu
 
 ## Potansiyel Sonuç
 
 **İş Sürekliliği:** 
-* Rakipler 14 saatten fazla çevrimdışıyken banka **%98 hizmet kullanılabilirliğini** korudu
+* Rakipler 14 saatten fazla çevrimdışı kaldı. Bu mimariyi kullanan bir banka ise aynı süre boyunca hizmet vermeye devam ederdi
 
-**Müşteri Güveni:** 
-* Banka, kriz sırasında işlem gerçekleştiren tek büyük finans kuruluşuydu 
-* Kriz sonrası anketlerde müşteri memnuniyeti %27 arttı
+**Hizmet Sürekliliği:** 
+* İkinci bir bölgesi olmayan kurumlar bunu yapamazken, o işlemleri işlemeye devam edebilirdi
 
 **Finansal Koruma:** 
-* Banka, işlem başarısızlıklarından kaynaklanan yaklaşık 370 milyon Euro'luk zarardan kaçındı 
-* Hiçbir veri kaybolmadı veya bozulmadı, bu da maliyetli kurtarma işlemlerini ortadan kaldırdı
-
-**Rekabet Avantajı:** 
-* Banka, ertesi ay hizmetini sürdüremeyen rakiplerinden 140.000 yeni müşteri kazandı
+* Bir ödeme sisteminin devre dışı kaldığı her saat için biriken işlem başarısızlığı kayıplarından kaçınılırdı 
+* Hiçbir veri kaybolmaz veya bozulmazdı, dolayısıyla herhangi bir kurtarma işlemine gerek kalmazdı

@@ -4,8 +4,8 @@ description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기�
 category: Guides
 order: 3
 language: ko
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de5"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # RDC CLI 치트 시트
@@ -49,7 +49,12 @@ sourceCommit: "e4a4e0de5"
 | `rdc repo push ... --bwlimit <limit>` | 푸시 중 rsync 대역폭 제한 (예: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | 풀 중 rsync 대역폭 제한 |
 | `rdc repo push ... --checkpoint` | 푸시 전 컨테이너 체크포인트 생성 |
-| `rdc backup list --storage <storage> | 스토리지의 사용 가능한 백업 나열 |
+| `rdc backup list --storage <storage>` | 스토리지의 사용 가능한 백업 나열 |
+| `rdc backup snapshot <repo>` | 청크 스토리지 스냅샷 업로드: 처음에는 전체 인벤토리, 이후에는 변경된 셀만 |
+| `rdc backup snapshot <repo> --dry-run` | 업로드 없이 스냅샷 계획; 무엇이 이동할지 보고 |
+| `rdc backup verify <repo>` | 레포지토리의 백업 앵커를 청크 스토리지와 대조하여 검증 |
+| `rdc backup usage` | 청크 스토리지에 저장된 바이트를 쿼터와 비교하여 표시 |
+| `rdc backup manifests <repo>` | 서버에 기록된 스냅샷 매니페스트 나열 |
 | `rdc storage browse <storage>` | 스토리지 내용 탐색 |
 
 ## 리포지터리 마이그레이션

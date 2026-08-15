@@ -1,5 +1,5 @@
-import { UPDATE_STATE_DEFAULTS } from './constants';
-import type { UpdateStateBase } from './types';
+import { UPDATE_STATE_DEFAULTS } from './constants.js';
+import type { UpdateStateBase } from './types.js';
 
 /**
  * Check if cooldown has expired. Base cooldown is 1 hour, with exponential

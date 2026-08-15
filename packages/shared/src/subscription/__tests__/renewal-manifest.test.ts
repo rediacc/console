@@ -7,7 +7,7 @@ import {
   type RenewalRequestManifest,
   type SignedRenewalRequestManifest,
   verifyManifestSignature,
-} from '../index';
+} from '../index.js';
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = '';

@@ -10,10 +10,10 @@ import {
   isRenetFunction,
   RENET_FUNCTIONS_VERSION,
   type RenetFunctionName,
-} from '../data/functions.generated';
+} from '../data/functions.generated.js';
 
 // Re-export type guards from generated types
-export { assertRenetVault, isRenetVault } from '../data/vault.generated';
+export { assertRenetVault, isRenetVault } from '../data/vault.generated.js';
 // Re-export vault validation from generated schemas
 export {
   ContextSectionSchema,
@@ -26,10 +26,10 @@ export {
   StorageSectionSchema,
   TaskSectionSchema,
   validateRenetVault,
-} from '../data/vault.schema';
+} from '../data/vault.schema.js';
 
 // Re-export vault types for convenience
-export type { MachineSection, RenetVault, RepositoryInfo, StorageSection } from '../types';
+export type { MachineSection, RenetVault, RepositoryInfo, StorageSection } from '../types/index.js';
 
 // =============================================================================
 // Bridge Function Validation

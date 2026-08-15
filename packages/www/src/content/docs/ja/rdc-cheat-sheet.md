@@ -4,8 +4,8 @@ description: "rdc コマンドのクイックリファレンス：設定、リ�
 category: Guides
 order: 3
 language: ja
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de5"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # RDC CLI チートシート
@@ -49,7 +49,12 @@ sourceCommit: "e4a4e0de5"
 | `rdc repo push ... --bwlimit <limit>` | プッシュ時の rsync 帯域幅を制限する (例: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | プル時の rsync 帯域幅を制限する |
 | `rdc repo push ... --checkpoint` | プッシュ前にコンテナのチェックポイントを作成する |
-| `rdc backup list --storage <storage> | ストレージ内の利用可能なバックアップを一覧表示する |
+| `rdc backup list --storage <storage>` | ストレージ内の利用可能なバックアップを一覧表示する |
+| `rdc backup snapshot <repo>` | チャンクストレージスナップショットをアップロードする: 最初は全インベントリ、以降は変更されたセルのみ |
+| `rdc backup snapshot <repo> --dry-run` | アップロードせずにスナップショットを計画する; 何が移動するかを報告する |
+| `rdc backup verify <repo>` | リポジトリのバックアップアンカーをチャンクストレージと照合して検証する |
+| `rdc backup usage` | チャンクストレージに保存されたバイト数をクォータと比較して表示する |
+| `rdc backup manifests <repo>` | サーバーに記録されたスナップショットマニフェストを一覧表示する |
 | `rdc storage browse <storage>` | ストレージの内容を参照する |
 
 ## リポジトリの移行
