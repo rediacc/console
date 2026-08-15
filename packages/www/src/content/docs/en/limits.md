@@ -136,6 +136,7 @@ Live migration via CRIU has the following constraints:
 |-------|-------|
 | Backup destinations per repository | Unlimited |
 | Simultaneous backup jobs | 1 per repository (jobs queue if triggered concurrently) |
+| Simultaneous cold snapshots | 1 per datastore; a second `renet backup snapshot --cold` is refused straight away and stops nothing |
 | Backup frequency | No minimum interval enforced; limited by your storage bandwidth. Use `rdc backup strategy set <name> --bwlimit "6M"` to cap upload speed |
 | Retention | Declared with `rdc backup retention set` (GFS knobs: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) and enforced server-side; `rdc backup retention clear` removes it. Chunk storage is metered against a plan quota as physical unique stored bytes, so deduplication between snapshots and across a fork family counts once: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, checked with `rdc backup usage`. The legacy storage-push path has no retention of its own and is governed by your provider. |
 | Cross-machine backup | Supported; destination machine must have sufficient datastore space |

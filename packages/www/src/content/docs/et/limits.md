@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Piirangud ja kvoodid
@@ -138,6 +138,7 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 |-------|-------|
 | Varukoopia sihtkohti hoidla kohta | Piiramatu |
 | Samaaegseid varukoopia töid | 1 hoidla kohta (tööd järjekorda, kui käivitatud samaaegselt) |
+| Samaaegseid külmi hetktõmmiseid | 1 andmehoidla kohta; teine `renet backup snapshot --cold` lükatakse kohe tagasi ega peata midagi |
 | Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc backup strategy set <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks |
 | Säilitamine | Deklareeritakse käsuga `rdc backup retention set` (GFS-parameetrid: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ja jõustatakse serveri poolel; `rdc backup retention clear` eemaldab selle. Tükksalvestust mõõdetakse plaani kvoodi vastu füüsiliste unikaalsete salvestatud baitidena, mistõttu identsed andmed tõmmiste vahel ja kogu forkide perekonna ulatuses loetakse ainult üks kord: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, kontrollitav käsuga `rdc backup usage`. Pärandiks jäänud salvestuse push-tee ei paku iseseisvat säilitamist ja seda juhib teie teenusepakkuja. |
 | Masinate vaheline varukoopia | Toetatud; sihtmasinal peab olema piisavalt andmehoidla ruumi |

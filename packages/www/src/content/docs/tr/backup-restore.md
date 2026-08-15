@@ -4,8 +4,8 @@ description: "Şifrelenmiş depoları iki şekilde yedekleyin: yalnızca değiş
 category: "Guides"
 order: 7
 language: tr
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Soğuk Anlık Görüntüler (`--cold`)
+
+Soğuk anlık görüntü, depoyu dondurmadan önce durdurur; böylece saklanan imaj yalnızca kilitlenme tutarlı değil, uygulama tutarlı olur. Komut makinenin kendisinde çalışır:
+
+```bash
+# Varsayılan datastore üzerindeki her depo.
+sudo renet backup snapshot --cold
+
+# Yalnızca adını verdiğiniz depolar. --repo bir depo GUID'i alır ve tekrarlanabilir.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` ile `--dry-run` birlikte kullanılamaz. Konteynerleri durduran bir prova çalıştırması prova sayılmaz, durdurmayan bir çalıştırma da soğuk sayılmaz; bu yüzden renet sizin yerinize bir anlam seçmek yerine ikiliyi reddeder.
+
+### Soğuk çalıştırma ne yapar
+
+Seçilen her depo için, şu sırayla:
+
+1. Deponun konteynerlerini durdurur.
+2. Depo bağlama noktasını ve datastore'u diske yazar.
+3. Konteynerlerin gerçekten durduğunu doğrular.
+4. Depo imajının yaz-kopyala (reflink) kopyasını alır.
+5. Konteynerleri yeniden başlatır.
+
+Yükleme ancak bundan sonra başlar; o sırada bütün depolar çoktan ayaktadır.
+
+Kesinti dondurma süresidir, aktarım süresi değil. Reflink yalnızca meta veridir; depo 1 GB da tutsa 100 GB da tutsa aynı sürer. Yükleme öyle değildir: değişen bayt sayısıyla birlikte büyür ve ilk anlık görüntü sıfır olmayan envanterin tamamını yükler. Konteynerleri yükleme bitene kadar kapalı tutmak kesintiyi veri boyutuna bağlardı; ilk yedeklemede bu, milisaniyeler yerine saatler demektir.
+
+Seçilen depoların hepsi tek tek değil, tek bir pencerede durdurulur. Bu, depo başına biraz daha uzun kesinti demektir ve karşılığında tüm depo grubu için tek bir tutarlılık noktası verir.
+
+Çalışan konteyneri olmayan bir depo zaten sessizdir. Hiç kesinti olmadan yedeklenir; bu bir hata değil, olağan bir sonuçtur.
+
+### Kesintinin maliyeti
+
+Gerçek bir makinede ölçüldüğünde toplam kesinti **222 ms** oldu:
+
+| Aşama | Ölçülen | Ne olur |
+|-------|---------|---------|
+| `cold_down` | 64 ms | Konteynerler durur |
+| `cold_sync` | 26 ms | Depo bağlama noktaları ve datastore diske yazılır |
+| `cold_verify` | 31 ms | Konteynerlerin durduğu doğrulanır |
+| `cold_stage` | 0 ms | Depo imajının reflink kopyası |
+| `cold_up` | 99 ms | Konteynerler yeniden başlar |
+
+Baskın olan, konteynerlerin yeniden başlaması; hazırlama aşaması ise neredeyse bedava: reflink milisaniye çözünürlüğünde görünmüyor bile. Yine de bu sıfırı tek başına değil, depo başına kayıtlarla birlikte okuyun. Her depoyu reddeden bir çalıştırma da `cold_stage=0ms` bildirir; hangisiyle karşı karşıya olduğunuzu yalnızca kayıtlar söyler.
+
+Bu döküm süs değil, kanıttır. Bu beş aşamanın hiçbiri depo verisi okumaz ya da göndermez; dolayısıyla yedek büyüdükçe hiçbiri büyümez. Büyüyen tek kısım olan yükleme ise kesinti bittikten sonra çalışır.
+
+renet, çalıştırma bitince aynı sayıları yazdırır; böylece bizim ölçümümüze güvenmek yerine kendi makinelerinizi ölçebilirsiniz:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Her deponun JSON kaydı da aynı kesintiyi ve aynı aşamaları taşır; böylece bir anlık görüntünün soğuk mu sıcak mı olduğu sürelerden tahmin edilmeden anlaşılır.
+
+### Soğuğu ne zaman seçmeli
+
+Varsayılan sıcaktır ve depoların çoğu için doğru seçim de odur. Sıcak anlık görüntü kilitlenme tutarlıdır; yani deponun elektrik kesintisinden sonraki hâline denktir ve hiç kesinti maliyeti yoktur. Veritabanlarının ve kuyrukların çoğu bu durumdan kendi kendine toparlanır.
+
+Soğuğu, yazılırken güvenle yakalanamayacak veriler için seçin. Kendi write-ahead log'unu ve bellekteki durumunu tutan bir veritabanı en tipik örnektir. Kısa ve ölçülmüş bir kesintiyi, uygulamanın önce kendini onarmadan açabileceği bir anlık görüntüyle takas etmiş olursunuz.
+
+### Soğuk çalıştırmanın reddettikleri
+
+Reddetmek burada bir özelliktir. Hiçbir şeyi durdurmamış ama soğuk etiketi taşıyan bir yedek, ancak geri yükleme sırasında fark edeceğiniz bir yalandır; bu yüzden renet soğuk bir çalıştırmayı sessizce sıcağa düşürmez:
+
+- **Durmayan konteynerler.** Durdurmanın ardından renet, deponun kendi Docker soketine hâlâ çalışan bir şey olup olmadığını sorar. Varsa o depo yedeklenmez, reddedilir. Denetim güvenli tarafta kalır: sokete ulaşılamıyorsa ya da konteyner listesi okunamıyorsa durdurma doğrulanmamış sayılır ve doğrulanmamış olan reddedilir.
+- **Okunamayan lisans.** Lisanslar kesintiden sonra değil, önce denetlenir; çünkü lisansı okunamayan bir depo zaten hiçbir şey yükleyemezdi. Böyle bir depo durdurulmadan atlanır. Seçilen depoların hiçbirinin okunabilir lisansı yoksa, tek bir konteyner bile inmeden çalıştırmanın tamamı reddedilir.
+- **Aynı datastore üzerinde ikinci bir soğuk çalıştırma.** Kilit datastore'un tamamını kapsar ve dolu bir kilit, hiçbir şeyi durdurmamış olarak anında reddedilir. Üst üste binen iki çalıştırmadan her biri, diğerinin kendisine ait saydığı konteynerleri durdururdu; ikincisi de birincisinin hâlâ dondurmakta olduğu depoları başlatırdı. Çalıştırmayı atlayıp bir sonrakini beklemek bundan iyidir.
+
+Konteynerler kapalıyken bir çalıştırma `systemctl stop` ya da yeniden başlatma yüzünden kesilirse, renet çıkmadan önce onları yeniden başlatır. Makinedeki kurtarma da ağ görevi görür: sahibi ortadan kaybolmuş bir soğuk yedeği fark eder ve o depoları yeniden ayağa kaldırır.
 
 ## Depolamayı Yapılandırma
 

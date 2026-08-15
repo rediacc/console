@@ -4,8 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid kahel viisil: sisupõhiselt
 category: "Guides"
 order: 7
 language: et
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Varundamine ja taastamine
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Külmad hetktõmmised (`--cold`)
+
+Külm hetktõmmis peatab repositooriumi enne külmutamist, nii et salvestatud tõmmis on rakenduse-järjepidev, mitte ainult krahhi-järjepidev. Käsk töötab masinas endas:
+
+```bash
+# Iga repositoorium vaikimisi andmesalves.
+sudo renet backup snapshot --cold
+
+# Ainult nimetatud repositooriumid. --repo võtab repositooriumi GUID-i ja on korratav.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` ja `--dry-run` kokku ei käi. Proovikäivitus, mis konteinereid peatab, ei ole proovikäivitus, ja see, mis neid ei peata, ei ole külm; seepärast keeldub renet paarist, selle asemel et sinu eest tähendus valida.
+
+### Mida külm käivitus teeb
+
+Iga valitud repositooriumi puhul, selles järjekorras:
+
+1. Peatab selle konteinerid.
+2. Kirjutab repositooriumi haakepunkti ja andmesalve kettale.
+3. Kontrollib, et konteinerid tõesti peatusid.
+4. Teeb repositooriumi tõmmisest kirjutamisel-kopeeriva reflingi.
+5. Käivitab konteinerid uuesti.
+
+Alles siis algab üleslaadimine, ja kõik repositooriumid on selleks ajaks juba töös.
+
+Seisak on külmutamine, mitte ülekanne. Reflink koosneb ainult metaandmetest, seega võtab see sama palju aega, hoiab repositoorium siis 1 GB või 100 GB. Üleslaadimine nii ei tööta: see kasvab koos muutunud baitidega ja esimene hetktõmmis laadib üles kogu nullist erineva sisu. Konteinerite allhoidmine kuni üleslaadimise lõpuni seoks seisaku andmemahuga, mis esimesel korral tähendab tunde, mitte millisekundeid.
+
+Kõik valitud repositooriumid peatatakse ühes aknas, mitte ükshaaval. See maksab repositooriumi kohta veidi rohkem seisakut ja annab vastu ühe järjepidevuspunkti kogu komplekti kohta.
+
+Repositoorium, milles ühtegi konteinerit ei tööta, on juba vaikne. Selle hetktõmmis tehakse ilma igasuguse seisakuta, ja see on tavapärane tulemus, mitte tõrge.
+
+### Mida seisak maksab
+
+Päris masinas mõõdetuna oli kogu seisak **222 ms**:
+
+| Etapp | Mõõdetud | Mis toimub |
+|-------|----------|------------|
+| `cold_down` | 64 ms | Konteinerid peatuvad |
+| `cold_sync` | 26 ms | Repositooriumi haakepunktid ja andmesalv kirjutatakse kettale |
+| `cold_verify` | 31 ms | Kinnitatakse, et konteinerid on peatunud |
+| `cold_stage` | 0 ms | Repositooriumi tõmmise reflink |
+| `cold_up` | 99 ms | Konteinerid käivituvad uuesti |
+
+Kõige rohkem kulub konteinerite taaskäivitamisele ja ettevalmistus on praktiliselt tasuta: reflink ei paista millisekundilise täpsuse juures üldse välja. Loe seda nulli siiski koos iga repositooriumi kirjetega, mitte omaette. Ka käivitus, mis keeldus igast repositooriumist, teatab `cold_stage=0ms`, ja ainult kirjed ütlevad, kumma juhtumiga on tegu.
+
+Jaotus on tõend, mitte kaunistus. Ükski neist viiest etapist ei loe ega saada repositooriumi andmeid, seega ei kasva ükski neist koos varukoopiaga. Ainus osa, mis kasvab, on üleslaadimine, ja see käib siis, kui seisak on juba läbi.
+
+renet trükib käivituse lõpus samad numbrid, nii et sa saad mõõta oma masinaid, mitte uskuda meie omi:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Iga repositooriumi JSON-kirje kannab sama seisakut ja samu etappe, nii et hiljem on külm hetktõmmis kuumast eristatav ilma aegadest oletamata.
+
+### Millal valida külm
+
+Kuum on vaikevalik ja enamiku repositooriumide puhul õige valik. Kuum hetktõmmis on krahhi-järjepidev, ehk sellises seisus, nagu repositoorium oleks pärast voolukatkestust, ja see ei maksa mingit seisakut. Enamik andmebaase ja järjekordi taastub sellest ise.
+
+Vali külm nende andmete jaoks, mida ei saa kirjutamise ajal ohutult jäädvustada. Tüüpiline juhtum on andmebaas, millel on oma ettekirjutuslogi ja mälus hoitav olek. Sa vahetad lühikese mõõdetud seisaku hetktõmmise vastu, mille rakendus saab avada ilma end enne parandamata.
+
+### Millest külm käivitus keeldub
+
+Keeldumine ongi siin see väärtus. Külmaks nimetatud varukoopia, mis ei peatanud midagi, on vale, mille avastad alles taastamisel; seepärast ei alanda renet külma käivitust vaikselt kuumaks:
+
+- **Konteinerid, mis ei peatunud.** Pärast peatamist küsib renet repositooriumi enda Dockeri soklilt, kas midagi veel töötab. Kui töötab, siis sellest repositooriumist keeldutakse, selle asemel et hetktõmmis teha. Kontroll otsustab turvalise poole kasuks: kui soklini ei saa või konteinerite loendit ei õnnestu lugeda, loetakse peatamine kinnitamata jäänuks, ja kinnitamata tähendab keeldumist.
+- **Litsents, mida ei saa lugeda.** Litsentse kontrollitakse enne seisakut, mitte pärast, sest repositoorium, mille litsentsi ei saa lugeda, poleks niikuinii midagi üles laadida saanud. Selline repositoorium jäetakse vahele ilma seda peatamata. Kui ühelgi valitud repositooriumil ei ole loetavat litsentsi, keeldutakse kogu käivitusest enne, kui üksainuski konteiner alla läheb.
+- **Teine külm käivitus samas andmesalves.** Lukk katab kogu andmesalve ja hõivatud lukust keeldutakse kohe, ilma et midagi oleks peatatud. Kaks kattuvat käivitust peataksid kumbki konteinereid, mida teine peab enda omaks, ja teine käivitaks uuesti repositooriume, mida esimene alles külmutab. Käivitus vahele jätta ja järgmist oodata on sellest parem.
+
+Kui käivitus katkeb ajal, mil konteinerid on all, näiteks `systemctl stop` või taaskäivituse tõttu, käivitab renet need enne väljumist uuesti. Masina taastus on varuvõrk: see märkab külma varukoopiat, mille omanik on kadunud, ja toob need repositooriumid tagasi üles.
 
 ## Salvestuse seadistamine
 

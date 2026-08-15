@@ -4,8 +4,8 @@ description: "Sauvegardez des dépôts chiffrés de deux façons : un stockage f
 category: "Guides"
 order: 7
 language: fr
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Sauvegarde et restauration
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Instantanés à froid (`--cold`)
+
+Un instantané à froid arrête un dépôt avant de le figer : l'image stockée est donc cohérente au niveau applicatif plutôt que cohérente en cas de crash. La commande s'exécute sur la machine elle-même :
+
+```bash
+# Tous les dépôts du datastore par défaut.
+sudo renet backup snapshot --cold
+
+# Uniquement les dépôts nommés. --repo prend un GUID de dépôt et se répète.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` ne se combine pas avec `--dry-run`. Une exécution à blanc qui arrête des conteneurs n'est pas à blanc, et une qui ne les arrête pas n'est pas à froid : renet refuse donc la combinaison au lieu de choisir un sens à votre place.
+
+### Ce que fait une exécution à froid
+
+Pour chaque dépôt sélectionné, dans cet ordre :
+
+1. Arrêter ses conteneurs.
+2. Écrire sur disque le montage du dépôt et le datastore.
+3. Vérifier que les conteneurs se sont réellement arrêtés.
+4. Prendre un reflink copie-sur-écriture de l'image du dépôt.
+5. Redémarrer les conteneurs.
+
+L'envoi ne commence qu'ensuite, alors que tous les dépôts sont déjà repartis.
+
+Le temps d'arrêt, c'est le gel, pas le transfert. Un reflink ne touche que des métadonnées : il prend le même temps que le dépôt pèse 1 GB ou 100 GB. Un envoi, lui, grandit avec les octets modifiés, et un premier instantané envoie tout l'inventaire non nul. Garder les conteneurs arrêtés jusqu'à la fin de l'envoi lierait le temps d'arrêt au volume des données, soit des heures au lieu de quelques millisecondes lors du premier envoi.
+
+Tous les dépôts sélectionnés sont arrêtés dans une seule fenêtre plutôt qu'un par un. Cela coûte un peu plus de temps d'arrêt par dépôt, et cela offre un point de cohérence unique sur l'ensemble.
+
+Un dépôt sans conteneur en cours d'exécution est déjà au repos. Il est capturé sans le moindre temps d'arrêt, et c'est un résultat normal, pas un échec.
+
+### Ce que coûte le temps d'arrêt
+
+Mesuré sur une machine réelle, le temps d'arrêt total a été de **222 ms** :
+
+| Phase | Mesuré | Ce qui se passe |
+|-------|--------|-----------------|
+| `cold_down` | 64 ms | Les conteneurs s'arrêtent |
+| `cold_sync` | 26 ms | Montages du dépôt et datastore écrits sur disque |
+| `cold_verify` | 31 ms | Arrêt des conteneurs confirmé |
+| `cold_stage` | 0 ms | Reflink de l'image du dépôt |
+| `cold_up` | 99 ms | Les conteneurs redémarrent |
+
+Le redémarrage des conteneurs domine, et la préparation ne coûte pratiquement rien : le reflink n'apparaît même pas à la milliseconde près. Lisez tout de même ce zéro à côté des enregistrements de chaque dépôt, et non isolément. Une exécution qui a refusé tous les dépôts affiche elle aussi `cold_stage=0ms`, et seuls les enregistrements disent lequel des deux cas vous avez sous les yeux.
+
+Ce détail est la preuve, pas de la décoration. Aucune de ces cinq phases ne lit ni n'envoie de données du dépôt, donc aucune ne grandit quand la sauvegarde grandit. La partie qui grandit, l'envoi, se déroule une fois le temps d'arrêt terminé.
+
+renet affiche les mêmes chiffres à la fin d'une exécution, pour que vous mesuriez vos propres machines au lieu de nous croire sur parole :
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+Chaque enregistrement JSON de dépôt porte le même temps d'arrêt et les mêmes phases, si bien qu'on distingue plus tard un instantané à froid d'un instantané à chaud sans le deviner d'après les durées.
+
+### Quand choisir le froid
+
+Le mode à chaud est celui par défaut, et c'est le bon choix pour la plupart des dépôts. Un instantané à chaud est cohérent en cas de crash, c'est-à-dire dans l'état où serait un dépôt après une coupure de courant, et il ne coûte aucun temps d'arrêt. La plupart des bases de données et des files d'attente s'en remettent toutes seules.
+
+Choisissez le froid pour des données qu'on ne peut pas capturer sans risque pendant leur écriture. Une base de données avec son propre journal d'écriture anticipée et son état en mémoire est le cas typique. Vous échangez un court temps d'arrêt mesuré contre un instantané que l'application peut ouvrir sans devoir se réparer d'abord.
+
+### Ce qu'une exécution à froid refuse
+
+Le refus est la fonctionnalité. Une sauvegarde étiquetée à froid qui n'a rien mis au repos est un mensonge que vous ne découvririez qu'à la restauration : renet ne rétrograde donc jamais une exécution à froid en exécution à chaud.
+
+- **Des conteneurs qui ne se sont pas arrêtés.** Après l'arrêt, renet demande au socket Docker du dépôt si quelque chose tourne encore. Si oui, ce dépôt est refusé au lieu d'être capturé. Le contrôle tranche du côté sûr : si le socket est injoignable ou la liste des conteneurs illisible, la mise au repos est considérée comme non vérifiée, et non vérifiée signifie refusée.
+- **Une licence illisible.** Les licences sont vérifiées avant le temps d'arrêt et non après, car un dépôt dont la licence est illisible n'aurait de toute façon rien pu envoyer. Un tel dépôt est ignoré sans être arrêté. Si aucun des dépôts sélectionnés n'a de licence lisible, toute l'exécution est refusée avant qu'un seul conteneur ne s'arrête.
+- **Une deuxième exécution à froid sur le même datastore.** Le verrou couvre le datastore entier, et un verrou déjà pris est refusé immédiatement, sans avoir rien arrêté. Deux exécutions qui se chevauchent arrêteraient chacune des conteneurs que l'autre croit lui appartenir, et la seconde redémarrerait des dépôts que la première est encore en train de figer. Sauter l'exécution et attendre la suivante vaut mieux que cela.
+
+Si une exécution est interrompue alors que les conteneurs sont arrêtés, par un `systemctl stop` ou un redémarrage, renet les relance avant de quitter. La reprise sur la machine sert de filet : elle repère une sauvegarde à froid dont le propriétaire a disparu et remet ces dépôts en marche.
 
 ## Configurer le stockage
 

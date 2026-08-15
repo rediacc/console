@@ -4,8 +4,8 @@ description: "Respalda repositorios cifrados de dos formas: almacenamiento fragm
 category: "Guides"
 order: 7
 language: es
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Respaldo y Restauración
@@ -41,6 +41,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Snapshots en Frío (`--cold`)
+
+Un snapshot en frío detiene un repositorio antes de congelarlo, de modo que la imagen almacenada es consistente a nivel de aplicación en lugar de consistente ante fallos. El comando se ejecuta en la propia máquina:
+
+```bash
+# Todos los repositorios del datastore por defecto.
+sudo renet backup snapshot --cold
+
+# Solo los repositorios que indiques. --repo toma un GUID de repositorio y se puede repetir.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` no se puede combinar con `--dry-run`. Una ejecución en seco que detiene contenedores no es en seco, y una que no los detiene no es en frío, así que renet rechaza la pareja en lugar de elegir un significado por ti.
+
+### Qué hace una ejecución en frío
+
+Para cada repositorio seleccionado, en este orden:
+
+1. Detener sus contenedores.
+2. Volcar a disco el montaje del repositorio y el datastore.
+3. Comprobar que los contenedores se detuvieron de verdad.
+4. Tomar un reflink copy-on-write de la imagen del repositorio.
+5. Volver a arrancar los contenedores.
+
+Solo entonces empieza la subida, con todos los repositorios ya en marcha.
+
+El tiempo de inactividad es la congelación, no la transferencia. Un reflink es solo metadatos, así que tarda lo mismo tanto si el repositorio guarda 1 GB como 100 GB. Una subida no funciona así: crece con los bytes que cambiaron, y el primer snapshot sube el inventario no vacío entero. Mantener los contenedores parados hasta terminar la subida ataría la inactividad al tamaño de los datos, lo que en la primera copia significa horas en vez de milisegundos.
+
+Todos los repositorios seleccionados se detienen dentro de una sola ventana, no de uno en uno. Eso cuesta algo más de inactividad por repositorio y, a cambio, da un único punto de consistencia para todo el conjunto.
+
+Un repositorio sin contenedores en ejecución ya está en reposo. Se captura sin ninguna inactividad, y eso es un resultado normal, no un fallo.
+
+### Cuánto cuesta la inactividad
+
+Medido en una máquina real, la inactividad total fue de **222 ms**:
+
+| Fase | Medido | Qué ocurre |
+|------|--------|------------|
+| `cold_down` | 64 ms | Los contenedores se detienen |
+| `cold_sync` | 26 ms | Montajes del repositorio y datastore volcados a disco |
+| `cold_verify` | 31 ms | Se confirma que los contenedores están parados |
+| `cold_stage` | 0 ms | Reflink de la imagen del repositorio |
+| `cold_up` | 99 ms | Los contenedores vuelven a arrancar |
+
+Reiniciar los contenedores domina, y la preparación sale prácticamente gratis: el reflink ni siquiera se registra con resolución de milisegundos. Aun así, lee ese cero junto a los registros de cada repositorio y no por separado. Una ejecución que rechazó todos los repositorios también informa `cold_stage=0ms`, y solo los registros dicen cuál de los dos casos estás viendo.
+
+El desglose es la prueba, no un adorno. Ninguna de estas cinco fases lee ni envía datos del repositorio, así que ninguna crece cuando crece la copia. La parte que sí crece, la subida, ocurre cuando la inactividad ya terminó.
+
+renet imprime las mismas cifras al terminar una ejecución, para que midas tus propias máquinas en vez de fiarte de las nuestras:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+El registro JSON de cada repositorio lleva la misma inactividad y las mismas fases, así que más adelante se distingue un snapshot en frío de uno en caliente sin adivinarlo por los tiempos.
+
+### Cuándo elegir el frío
+
+El modo en caliente es el predeterminado y la opción correcta para la mayoría de los repositorios. Un snapshot en caliente es consistente ante fallos, que es el estado en el que quedaría un repositorio tras un corte de luz, y no cuesta nada de inactividad. La mayoría de las bases de datos y las colas se recuperan solas desde ahí.
+
+Elige el frío para datos que no se pueden capturar con seguridad mientras se escriben. Una base de datos con su propio registro de escritura anticipada y su estado en memoria es el caso claro. Cambias una inactividad corta y medida por un snapshot que la aplicación puede abrir sin recuperarse antes.
+
+### Qué rechaza una ejecución en frío
+
+Rechazar es la función. Una copia etiquetada como en frío que nunca detuvo nada es una mentira que solo descubrirías al restaurar, así que renet nunca degrada en silencio una ejecución en frío a una en caliente:
+
+- **Contenedores que no se detuvieron.** Tras la parada, renet pregunta al socket Docker del propio repositorio si sigue corriendo algo. Si es así, ese repositorio se rechaza en lugar de capturarse. La comprobación falla del lado seguro: si no se puede alcanzar el socket o leer la lista de contenedores, la parada cuenta como no verificada, y lo no verificado se rechaza.
+- **Una licencia que no se puede leer.** Las licencias se comprueban antes de la inactividad, no después, porque un repositorio cuya licencia no se puede leer nunca habría podido subir nada. Ese repositorio se omite sin detenerlo. Si ninguno de los repositorios seleccionados tiene una licencia legible, la ejecución entera se rechaza antes de que caiga un solo contenedor.
+- **Una segunda ejecución en frío sobre el mismo datastore.** El bloqueo cubre el datastore, y un bloqueo ocupado se rechaza de inmediato, sin haber detenido nada. Dos ejecuciones solapadas pararían cada una contenedores que la otra cree suyos, y la segunda arrancaría repositorios que la primera todavía está congelando. Saltarse la ejecución y esperar a la siguiente es mejor que eso.
+
+Si una ejecución se interrumpe con los contenedores parados, por un `systemctl stop` o un reinicio, renet los vuelve a arrancar antes de salir. La recuperación en la máquina es la red de seguridad: detecta una copia en frío cuyo dueño ha desaparecido y devuelve esos repositorios a su sitio.
 
 ## Configurar Almacenamiento
 

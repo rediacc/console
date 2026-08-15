@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: ja
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # 制限とクォータ
@@ -138,6 +138,7 @@ CRIU によるライブマイグレーションには以下の制約がありま
 |------|-----|
 | リポジトリあたりのバックアップ先 | 無制限 |
 | 同時バックアップジョブ | リポジトリあたり 1（同時にトリガーされた場合、ジョブはキューに入ります） |
+| 同時コールドスナップショット | データストアあたり 1（2つ目の `renet backup snapshot --cold` は即座に拒否され、何も停止しません） |
 | バックアップ頻度 | 最小間隔の強制なし。ストレージ帯域幅によって制限されます。`rdc backup strategy set <name> --bwlimit "6M"` でアップロード速度を制限できます |
 | 保持期間 | `rdc backup retention set` で宣言し（GFS パラメータ: `--keep-last`、`--keep-hourly`、`--keep-daily`、`--keep-weekly`、`--keep-monthly`、`--keep-yearly`）、サーバー側で強制されます。`rdc backup retention clear` で解除されます。チャンクストレージはプランのクォータに対して、物理的に一意に保存されたバイト数として計測されるため、スナップショット間およびフォークファミリー全体での重複排除は 1 回のみカウントされます: Community 10 GiB、Professional 100 GiB、Business 500 GiB、Enterprise 2 TiB。`rdc backup usage` で確認できます。従来の storage-push 経路には独自の保持機能はなく、ご利用のストレージプロバイダーによって管理されます。 |
 | マシン間バックアップ | サポート対象。デスティネーションマシンに十分なデータストア容量が必要です |
