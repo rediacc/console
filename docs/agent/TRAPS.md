@@ -579,3 +579,31 @@ widened past `.claude`, because enumerating everything would demand reformatting
 eleven untouched files including deployed repository templates: churn, with no
 defect found. That asymmetry is documented in `shfmt.sh` so a later reader does
 not "fix" it.
+
+## A Python gate that runs green on your machine and dies on the runner
+
+`check_workflow_submodule_deps.py` imported PyYAML, passed every local run, and
+died on the runner with `ModuleNotFoundError: No module named 'yaml'`. The
+module was in the author's environment and not on a clean Ubuntu runner, and
+nothing compared what a script imports against what its job installs.
+
+The tell is that **it never failed anywhere the author could see it**, which is
+the same shape as two other traps this repo has paid for: a suite case that
+silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest
+against a workflow step that did not exist. All three passed where they were run
+and meant nothing where they mattered.
+
+**This one is now a gate rather than a paragraph**: `check:ci-python-gate-deps`
+reads the imports of every `.py` a workflow step runs, drops stdlib and
+first-party modules, and requires a `pip install` in the same job to name what
+is left. Verified by replaying the real defect, which it reports as
+`check_workflow_submodule_deps.py imports 'yaml' and no pip install in this job
+names it`.
+
+The reason it is a gate and not this paragraph: the stop-hook suite's own
+`setup()` carried a comment recording that 30 cases were once lost to an
+inherited `GITHUB_ACTIONS`, and a new call site was still added without the pin.
+A document an agent can skip is not a control.
+
+**It does not follow imports transitively.** A gate that grows a helper module
+with its own third-party import is one hop outside what this sees.
