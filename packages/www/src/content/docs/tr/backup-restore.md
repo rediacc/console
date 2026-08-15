@@ -18,7 +18,7 @@ Rediacc'ın iki bağımsız yedekleme yolu vardır ve bu kılavuz ikisini de ele
 
 **Parça depolama** (`rdc backup snapshot`) depo imajını içeriğe göre adreslenen sabit boyutlu hücreler halinde yükler. İlk çalıştırma sıfır olmayan tüm envanteri yükler; sonraki her çalıştırma, imajın tamamını okumak yerine dosya sistemi ayırma meta verilerinden belirlenen yalnızca değişen hücreleri yükler. Aynı hücreler, anlık görüntüler arasında ve bir fork ailesinin tamamında yalnızca bir kez saklanır; kullanım da depolama kotanıza (`rdc backup usage`) göre ölçülür.
 
-**Depolama gönderimi** (`rdc repo push`), kendinizin kaydettiği rclone uyumlu bir sağlayıcıya tam bir yedek dosyası kopyalar. Parça depolamaya karşı kullanımdan kaldırılmakta ve zamanlanmış stratejiler artık onu yönlendirilmemektedir. Aşağıdaki bölümler hâlâ bugün çalışır, ancak bunları eski yol olarak görün.
+**Depolama gönderimi kullanımdan kaldırıldı.** `rdc repo push --to <storage>`, kendinizin kaydettiği rclone uyumlu bir sağlayıcıya tam bir yedek dosyası kopyalıyordu. rclone tarafı tamamen kaldırıldı; push, pull, list ve restore artık bir depolama hedefini reddedip sizi buraya yönlendiriyor. Makineden makineye aktarım etkilenmedi: zaten hiç rclone üzerinden geçmiyordu.
 
 Parça depolamadan geri yükleme çalışır: `rdc backup restore <repo> --at <snapshot-id>` saklanan bir anlık görüntüyü somutlaştırır ve `--at` RFC 3339 zaman damgasını da kabul eder; bu, anlık görüntü envanterine göre çözümlenir. Farklı bir ad altında geri yüklemek için `--as <name>` ekleyin ve sonra depoyu ayağa kaldırmak için `--up` ekleyin. Parça depolama ayrıca yükleme (`rdc backup snapshot`), doğrulama (`rdc backup verify` ve `--deep` kullanarak her hücreyi örnekle değil yeniden karma), anlık görüntü envanteri (`rdc backup manifests`) ve kota muhasebesi (`rdc backup usage`) sağlar.
 
@@ -134,19 +134,20 @@ Bu, bir rclone yapılandırma dosyasındaki depolama yapılandırmalarını mevc
 rdc storage list
 ```
 
-## Yedek Gönderme
+## Yedeği Başka Bir Makineye Gönderme
 
-Bir depo yedeğini harici depolamaya gönderin:
+Bir depoyu SSH üzerinden ikinci bir makineye kopyalayın:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değilse `cold/` klasörüne yerleşir. Bu, zamanlanmış yedeklemelerin kullandığı düzenle aynıdır; dolayısıyla `rdc backup list` her yedeği tek bir tabloda gösterir.
+Şifreli imaj AYNI GUID ile kopyalanır; dolayısıyla bu bir fork değil, bir yedekleme veya taşımadır. Bağımsız bir kopya elde etmek için önce `rdc repo fork` çalıştırıp forku gönderin.
+
+Belirli bir ana ait yedek için bunun yerine parça depolamayı kullanın: `rdc backup snapshot my-app` yalnızca değişen hücreleri yükler, `rdc backup restore my-app --at <snapshot>` ise bunlardan herhangi birini geri getirir.
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--to <storage>` | Hedef depolama konumu |
 | `--to-machine <machine>` | Makineden makineye yedekleme için hedef makine |
 | `--dest <filename>` | Özel hedef dosya adı |
 | `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (`rediacc.checkpoint=true` etiketli konteynerler için). Hedef `repo up` ile otomatik geri yüklenir |
@@ -157,19 +158,21 @@ Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değils
 | `--debug` | Ayrıntılı çıktıyı etkinleştir |
 | `--skip-router-restart` | İşlem sonrası yönlendirici sunucusunun yeniden başlatılmasını atla |
 
-## Yedek Çekme / Geri Yükleme
+## Yedeği Başka Bir Makineden Çekme
 
-Harici depolamadan bir depo yedeğini çekin:
+Depoyu, üzerinde bulunduğu makineden geri getirin:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+Bunun yerine parça depolamadan geri yüklemek için
+`rdc backup restore my-app --at <snapshot-id>` kullanın.
 
 Pull, o an **bağlı** olan bir deponun üzerine yazmayı reddeder. Önce bağlantısını keyin, pull işlemini yapın, ardından `rdc repo up` ile tekrar ayağa kaldırın. Dizin tabanlı depolar istisnadır: bağlıyken bile yerinde senkronize olurlar.
 
 | Seçenek | Açıklama |
 |---------|----------|
-| `--from <storage>` | Kaynak depolama konumu |
 | `--from-machine <machine>` | Makineden makineye geri yükleme için kaynak makine |
 | `--force` | Mevcut yerel yedeği geçersiz kıl |
 | `--bwlimit <limit>` | rsync transferi için bant genişliği sınırı (örn. `10M`, `500K`) |
@@ -179,10 +182,16 @@ Pull, o an **bağlı** olan bir deponun üzerine yazmayı reddeder. Önce bağla
 
 ## Yedekleri Listeleme
 
-Bir depolama konumundaki mevcut yedekleri görüntüleyin:
+Parça depolamadaki anlık görüntüleri listeleyin:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+Bir makinede duran yedek dosyalarını görmek için:
+
+```bash
+rdc backup list -m server-1
 ```
 
 Çıktı, hem [zamanlanmış yedekleme klasörlerini](#zamanlanmis-yedeklemeler) (`hot/` ve `cold/`) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz:
@@ -195,12 +204,7 @@ rdc backup list --storage my-storage
 | `Size` | Yedekleme dosyasının okunabilir boyutu |
 | `Modified` | Depolama arka ucundan UTC zaman damgası |
 
-Tek bir moda inmek için `--path` geçirin:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Bir depolama arka ucunu listelemek, rclone tarafıyla birlikte kullanımdan kaldırıldı; komut reddedilir ve şu iki yerine geçen komutu belirtir.
 
 ### Depolama düzeni
 
@@ -224,23 +228,21 @@ Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anl
 
 Push ve pull tek bir depo üzerinde çalışır; depo ref ile adreslenir (`name`, `name:tag` veya `name@machine`). "Tüm depolar aynı anda" biçimi yoktur: komutu her depo için bir kez çalıştırın.
 
-### Depolamaya Gönder
+### Başka Bir Makineye Gönder
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Depolamadan Çek
+### Başka Bir Makineden Çek
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Seçenek | Açıklama |
 |--------|----------|
-| `--to <remote>` | Hedef depolama veya makine (gönderme) |
 | `--to-machine <machine>` | Makineden makineye gönderme için hedef makine |
-| `--from <remote>` | Kaynak depolama veya makine (çekme) |
 | `--from-machine <machine>` | Makineden makineye çekme için kaynak makine |
 | `--force` | Mevcut bir yedeği veya depoyu geçersiz kıl |
 | `--checkpoint` | Göndermeden önce CRIU checkpoint oluştur (yalnızca gönderme) |
@@ -351,7 +353,7 @@ Standart varsayılan, iki stratejili bir bölüştürmedir: her depoyu yakalayan
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ Her strateji `--include` ve `--exclude` filtreleri taşıyabilir. Bir `--exclude
 ```bash
 # Sıcak strateji: her şeyi saatlik olarak yedekle
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # Soğuk strateji: büyük türetilmiş veri kümesi hariç her şeyi haftalık yedekle
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ Migrasyon, şifrelenmiş depo verilerini rsync aracılığıyla aktarır. Kaynak
 
 ## Depolamayı Tarama
 
-Bir depolama konumunun içeriğini tarayın:
+`rdc storage browse` ve `rdc storage import`, bu kullanımdan kaldırmanın istisnasıdır: gömülü bir kopya yerine PATH'teki kendi rclone'unuzu başlatırlar ve değişiklikten önce yazılmış bir arşivi okumanın yolu olarak kalırlar.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Tarama yalnızca okunabilir. Bir depolama arka ucuna gönderme, ondan çekme ve onu listeleme kullanımdan kaldırıldı; her biri reddedilir ve yerine geçen parça depolama komutunu belirtir.
 
 ## En İyi Uygulamalar
 

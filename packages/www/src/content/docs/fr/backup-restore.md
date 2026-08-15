@@ -18,7 +18,7 @@ Rediacc propose deux voies de sauvegarde indépendantes, et ce guide couvre les 
 
 **Le stockage fragmenté** (`rdc backup snapshot`) envoie l'image du dépôt sous forme de cellules de taille fixe adressées par leur contenu. La première exécution envoie tout l'inventaire non nul ; chaque exécution suivante n'envoie que les cellules modifiées, déterminées à partir des métadonnées d'allocation du système de fichiers plutôt qu'en relisant l'image entière. Les cellules identiques ne sont stockées qu'une seule fois, entre les instantanés et sur toute une famille de forks, et l'usage est mesuré par rapport à votre quota de stockage (`rdc backup usage`).
 
-**Le push de stockage** (`rdc repo push`) copie un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistrez vous-même. Il est retiré au profit du stockage fragmenté, et les stratégies planifiées ne l'utilisent plus. Les sections ci-dessous qui le décrivent fonctionnent toujours aujourd'hui, mais traitez-les comme la voie héritée.
+**Le push de stockage est retiré.** `rdc repo push --to <storage>` copiait auparavant un fichier de sauvegarde complet vers un fournisseur compatible rclone que vous enregistriez vous-même. La branche rclone a été entièrement supprimée, et push, pull, list et restore refusent désormais une destination de stockage et vous renvoient ici. Le transfert de machine à machine n'est pas concerné : il n'est jamais passé par rclone.
 
 La restauration depuis le stockage fragmenté fonctionne : `rdc backup restore <repo> --at <snapshot-id>` matérialise un instantané stocké, et `--at` accepte également un horodatage RFC 3339, qui est résolu par rapport à l'inventaire des instantanés. Ajoutez `--as <name>` pour restaurer sous un nom différent et `--up` pour déployer le dépôt par la suite. Le stockage fragmenté vous offre également l'envoi (`rdc backup snapshot`), la vérification (`rdc backup verify`, avec `--deep` pour recalculer le hash de chaque cellule plutôt qu'un échantillon), l'inventaire des instantanés (`rdc backup manifests`) et la comptabilité des quotas (`rdc backup usage`).
 
@@ -134,19 +134,20 @@ Ceci importe des configurations de stockage depuis un fichier de configuration r
 rdc storage list
 ```
 
-## Envoyer une sauvegarde
+## Envoyer une sauvegarde vers une autre machine
 
-Envoyez une sauvegarde de dépôt vers un stockage externe :
+Copiez un dépôt vers une seconde machine par SSH :
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est monté au moment du push, et dans `cold/` quand il est démonté. C'est la même disposition qu'utilisent les sauvegardes planifiées, de sorte que `rdc backup list` affiche toutes les sauvegardes dans un seul tableau.
+L'image chiffrée est copiée avec le MÊME GUID : il s'agit donc d'une sauvegarde ou d'une migration, pas d'un fork. Pour obtenir une copie indépendante, exécutez d'abord `rdc repo fork` puis envoyez le fork.
+
+Pour une sauvegarde à un instant donné, utilisez plutôt le stockage fragmenté : `rdc backup snapshot my-app` n'envoie que les cellules modifiées, et `rdc backup restore my-app --at <snapshot>` en récupère n'importe laquelle.
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Emplacement de stockage cible |
 | `--to-machine <machine>` | Machine cible pour la sauvegarde de machine à machine |
 | `--dest <filename>` | Nom de fichier de destination personnalisé |
 | `--checkpoint` | Créer un checkpoint CRIU avant l'envoi (pour les conteneurs avec le label `rediacc.checkpoint=true`). La cible se restaure automatiquement lors du `repo up` |
@@ -157,19 +158,21 @@ La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est m
 | `--debug` | Activer la sortie détaillée |
 | `--skip-router-restart` | Ignorer le redémarrage du serveur de routes après l'opération |
 
-## Récupérer / Restaurer une sauvegarde
+## Récupérer une sauvegarde depuis une autre machine
 
-Récupérez une sauvegarde de dépôt depuis un stockage externe :
+Ramenez un dépôt depuis la machine qui le détient :
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+Pour restaurer depuis le stockage fragmenté à la place, utilisez
+`rdc backup restore my-app --at <snapshot-id>`.
 
 Pull refuse d'écraser un dépôt actuellement **monté**. Démontez-le d'abord, effectuez le pull, puis remontez-le avec `rdc repo up`. Les dépôts basés sur un répertoire font exception : ils se synchronisent sur place même montés.
 
 | Option | Description |
 |--------|-------------|
-| `--from <storage>` | Emplacement de stockage source |
 | `--from-machine <machine>` | Machine source pour la restauration de machine à machine |
 | `--force` | Écraser la sauvegarde locale existante |
 | `--bwlimit <limit>` | Limite de bande passante pour le transfert rsync (p. ex. `10M`, `500K`) |
@@ -179,10 +182,16 @@ Pull refuse d'écraser un dépôt actuellement **monté**. Démontez-le d'abord,
 
 ## Lister les sauvegardes
 
-Affichez les sauvegardes disponibles dans un emplacement de stockage :
+Listez les instantanés dans le stockage fragmenté :
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+Pour voir les sauvegardes présentes sur une machine :
+
+```bash
+rdc backup list -m server-1
 ```
 
 La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes planifiées](#sauvegardes-planifiées) (`hot/` et `cold/`) afin que vous voyiez toutes les sauvegardes en une seule vue :
@@ -195,12 +204,7 @@ La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes 
 | `Size` | Taille lisible de la sauvegarde |
 | `Modified` | Horodatage UTC du backend de stockage |
 
-Pour zoomer sur un seul mode, passez `--path` :
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Lister un backend de stockage est retiré avec la branche rclone ; la commande refuse et nomme ces deux remplacements.
 
 ### Disposition du stockage
 
@@ -224,23 +228,21 @@ Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horair
 
 Push et pull agissent sur un seul dépôt, identifié par sa réf (`name`, `name:tag` ou `name@machine`). Il n'existe pas de forme « tous les dépôts en une fois » : exécutez la commande une fois par dépôt.
 
-### Envoyer vers le stockage
+### Envoyer vers une autre machine
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Récupérer depuis le stockage
+### Récupérer depuis une autre machine
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <remote>` | Stockage ou machine de destination (envoi) |
 | `--to-machine <machine>` | Machine de destination pour l'envoi de machine à machine |
-| `--from <remote>` | Stockage ou machine source (récupération) |
 | `--from-machine <machine>` | Machine source pour la récupération de machine à machine |
 | `--force` | Écraser une sauvegarde ou un dépôt existant |
 | `--checkpoint` | Créer un checkpoint CRIU avant l'envoi (envoi uniquement) |
@@ -351,7 +353,7 @@ Le défaut canonique est un partage en deux stratégies : un flux hot horaire ra
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ Chaque stratégie peut porter des filtres `--include` et `--exclude`. Les noms d
 ```bash
 # Stratégie hot : sauvegarder tout toutes les heures
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # Stratégie cold : sauvegarder tout chaque semaine, sauf le grand jeu de données dérivé
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ La migration transfère les données du dépôt chiffré via rsync. Le dépôt s
 
 ## Parcourir le stockage
 
-Parcourez le contenu d'un emplacement de stockage :
+`rdc storage browse` et `rdc storage import` font exception à ce retrait : ils lancent votre propre rclone depuis le PATH plutôt qu'une copie embarquée, et restent le moyen de lire une archive écrite avant ce changement.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Le parcours est en lecture seule. Envoyer vers, récupérer depuis et lister un backend de stockage sont retirés ; chacun refuse et nomme la commande de stockage fragmenté qui le remplace.
 
 ## Bonnes pratiques
 

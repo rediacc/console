@@ -18,7 +18,7 @@ Rediacc bietet zwei unabhängige Backup-Wege, und dieser Leitfaden behandelt bei
 
 **Chunk-Storage** (`rdc backup snapshot`) lädt das Repository-Image in Zellen fester Größe hoch, die über ihren Inhalt adressiert werden. Der erste Lauf lädt das vollständige, nicht-leere Inventar hoch; jeder folgende Lauf lädt nur die geänderten Zellen hoch, ermittelt anhand der Allokationsmetadaten des Dateisystems statt durch Lesen des gesamten Images. Identische Zellen werden über Snapshots und über eine ganze Fork-Familie hinweg nur einmal gespeichert, und die Nutzung wird gegen Ihr Speicherkontingent angerechnet (`rdc backup usage`).
 
-**Storage-Push** (`rdc repo push`) kopiert eine vollständige Backup-Datei zu einem rclone-kompatiblen Anbieter, den Sie selbst registrieren. Dieser Weg wird zugunsten des Chunk-Storage auslaufen gelassen, und geplante Strategien treiben ihn nicht länger voran. Die Abschnitte unten, die ihn beschreiben, funktionieren noch heute, behandeln Sie sie aber als den Legacy-Weg.
+**Storage-Push wurde eingestellt.** `rdc repo push --to <storage>` kopierte früher eine vollständige Backup-Datei zu einem rclone-kompatiblen Anbieter, den Sie selbst registrierten. Der rclone-Zweig wurde vollständig entfernt, und Push, Pull, List und Restore verweigern jetzt ein Speicherziel und verweisen hierher. Die Maschine-zu-Maschine-Übertragung bleibt unangetastet: Sie lief nie über rclone.
 
 Die Wiederherstellung aus dem Chunk-Storage funktioniert: `rdc backup restore <repo> --at <snapshot-id>` materialisiert einen gespeicherten Snapshot, und `--at` akzeptiert auch einen RFC-3339-Zeitstempel, der gegen das Snapshot-Inventar aufgelöst wird. Fügen Sie `--as <name>` hinzu, um unter einem anderen Namen wiederherzustellen, und `--up`, um das Repository anschließend hochzufahren. Chunk-Storage bietet auch Upload (`rdc backup snapshot`), Verifizierung (`rdc backup verify`, mit `--deep` zur erneuten Hashberechnung jeder Zelle statt nur einer Stichprobe), das Snapshot-Inventar (`rdc backup manifests`) und Kontingentabrechnung (`rdc backup usage`).
 
@@ -134,19 +134,20 @@ Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in 
 rdc storage list
 ```
 
-## Ein Backup erstellen
+## Ein Backup auf eine andere Maschine übertragen
 
-Ein Repository-Backup auf externen Speicher übertragen:
+Ein Repository per SSH auf eine zweite Maschine kopieren:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-Das Backup landet im Ordner `hot/` des Speichers, wenn das Repository beim Push eingehängt ist, und in `cold/`, wenn es nicht eingehängt ist. Dieses Layout verwenden auch die geplanten Backups, sodass `rdc backup list` alle Backups in einer einzigen Tabelle anzeigt.
+Das verschlüsselte Image wird mit der GLEICHEN GUID kopiert, es handelt sich also um ein Backup oder eine Migration, nicht um einen Fork. Für eine unabhängige Kopie zuerst `rdc repo fork` ausführen und dann den Fork pushen.
+
+Für ein Backup zu einem bestimmten Zeitpunkt stattdessen Chunk-Storage verwenden: `rdc backup snapshot my-app` lädt nur die geänderten Zellen hoch, und `rdc backup restore my-app --at <snapshot>` holt jede davon zurück.
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to <storage>` | Ziel-Speicherort |
 | `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Backup |
 | `--dest <filename>` | Benutzerdefinierter Zieldateiname |
 | `--checkpoint` | CRIU-Checkpoint vor dem Pushen erstellen (für Container mit Label `rediacc.checkpoint=true`). Ziel stellt automatisch bei `repo up` wieder her |
@@ -157,19 +158,21 @@ Das Backup landet im Ordner `hot/` des Speichers, wenn das Repository beim Push 
 | `--debug` | Ausführliche Ausgabe aktivieren |
 | `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
 
-## Backup abrufen / wiederherstellen
+## Ein Backup von einer anderen Maschine abrufen
 
-Ein Repository-Backup vom externen Speicher abrufen:
+Ein Repository von der Maschine zurückholen, auf der es liegt:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+Um stattdessen aus dem Chunk-Storage wiederherzustellen, verwenden Sie
+`rdc backup restore my-app --at <snapshot-id>`.
 
 Pull verweigert das Überschreiben eines Repositorys, das aktuell **eingehängt** ist. Hängen Sie es zuerst aus, führen Sie den Pull aus, und bringen Sie es anschließend mit `rdc repo up` wieder hoch. Verzeichnisbasierte Repositories sind die Ausnahme: Sie synchronisieren sich im eingehängten Zustand direkt an Ort und Stelle.
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--from <storage>` | Quell-Speicherort |
 | `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Wiederherstellung |
 | `--force` | Vorhandenes lokales Backup überschreiben |
 | `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`, `500K`) |
@@ -179,10 +182,16 @@ Pull verweigert das Überschreiben eines Repositorys, das aktuell **eingehängt*
 
 ## Backups auflisten
 
-Verfügbare Backups an einem Speicherort anzeigen:
+Die Snapshots im Chunk-Storage auflisten:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+Um Backup-Artefakte auf einer Maschine zu sehen:
+
+```bash
+rdc backup list -m server-1
 ```
 
 Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante Backups](#geplante-backups) (`hot/` und `cold/`) zusammenführt, sodass Sie jedes Backup in einer einzigen Ansicht sehen:
@@ -195,12 +204,7 @@ Die Ausgabe ist eine vereinheitlichte Tabelle, die beide [Ordner für geplante B
 | `Size` | Menschenlesbare Größe der Backup-Datei |
 | `Modified` | UTC-Zeitstempel vom Storage-Backend |
 
-Um in einen einzelnen Modus hineinzuzoomen, übergeben Sie `--path`:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Das Auflisten eines Storage-Backends wurde zusammen mit dem rclone-Zweig eingestellt; der Befehl verweigert die Ausführung und nennt diese beiden Ersatzbefehle.
 
 ### Storage layout
 
@@ -224,23 +228,21 @@ Ein Repo kann sowohl in `hot/` als auch in `cold/` erscheinen (der stündliche Z
 
 Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für "alle Repositories auf einmal": Führen Sie den Befehl einmal pro Repository aus.
 
-### In den Speicher übertragen
+### Auf eine andere Maschine übertragen
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Aus dem Speicher abrufen
+### Von einer anderen Maschine abrufen
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to <remote>` | Ziel-Speicher oder -Maschine (Push) |
 | `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Push |
-| `--from <remote>` | Quell-Speicher oder -Maschine (Pull) |
 | `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Pull |
 | `--force` | Ein vorhandenes Backup oder Repository überschreiben |
 | `--checkpoint` | Vor dem Pushen einen CRIU-Checkpoint erstellen (nur Push) |
@@ -351,7 +353,7 @@ Der kanonische Standard ist eine Aufteilung in zwei Strategien: ein schneller st
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ Jede Strategie kann `--include`- und `--exclude`-Filter tragen. Repository-Namen
 ```bash
 # Hot-Strategie: alles stündlich sichern
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # Cold-Strategie: alles wöchentlich sichern, außer dem großen abgeleiteten Datensatz
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ Die Migration überträgt die verschlüsselten Repository-Daten via rsync. Das Q
 
 ## Speicher durchsuchen
 
-Den Inhalt eines Speicherorts durchsuchen:
+`rdc storage browse` und `rdc storage import` sind die Ausnahme von dieser Einstellung: Sie starten Ihr eigenes rclone aus PATH statt einer eingebetteten Kopie und bleiben der Weg, um ein vor der Umstellung geschriebenes Archiv zu lesen.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Das Durchsuchen ist nur lesend. Push zu, Pull von und Auflisten eines Storage-Backends sind eingestellt; jeder Befehl verweigert die Ausführung und nennt den Chunk-Storage-Befehl, der ihn ersetzt.
 
 ## Bewährte Methoden
 

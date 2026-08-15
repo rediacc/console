@@ -18,7 +18,7 @@ Rediacc에는 두 개의 독립된 백업 경로가 있으며, 이 가이드는 
 
 **청크 스토리지**(`rdc backup snapshot`)는 레포지토리 이미지를 콘텐츠로 주소 지정된 고정 크기 셀 단위로 업로드합니다. 첫 실행에서는 0이 아닌 전체 인벤토리를 업로드하고, 이후 실행부터는 이미지 전체를 읽는 대신 파일시스템 할당 메타데이터로 판단해 변경된 셀만 업로드합니다. 동일한 셀은 스냅샷 간에도, 포크 계열 전체에서도 한 번만 저장되며, 사용량은 스토리지 쿼터(`rdc backup usage`)에 반영되어 계량됩니다.
 
-**스토리지 푸시**(`rdc repo push`)는 직접 등록한 rclone 호환 제공자로 백업 파일 전체를 복사합니다. 이는 청크 스토리지를 위해 폐지 중이며, 예약된 전략이 더 이상 이를 구동하지 않습니다. 아래의 섹션에서 설명하는 것들은 현재 여전히 작동하지만, 레거시 경로로 취급하세요.
+**스토리지 푸시는 폐지되었습니다.** `rdc repo push --to <storage>`는 직접 등록한 rclone 호환 제공자로 백업 파일 전체를 복사하던 명령이었습니다. rclone 쪽 구현은 완전히 제거되었으며, push, pull, list, restore는 이제 스토리지 대상을 거부하고 이 문서로 안내합니다. 머신 간 전송은 영향을 받지 않습니다. 애초에 rclone을 거친 적이 없기 때문입니다.
 
 청크 스토리지에서 복원이 작동합니다. `rdc backup restore <repo> --at <snapshot-id>`는 저장된 스냅샷을 구체화하며, `--at`은 또한 RFC 3339 타임스탬프를 허용하여 스냅샷 인벤토리에 대해 해석됩니다. `--as <name>`을 추가하여 다른 이름으로 복원하고 `--up`을 사용하여 이후 레포지토리를 다시 올릴 수 있습니다. 청크 스토리지는 또한 업로드(`rdc backup snapshot`), 검증(`rdc backup verify`, 그리고 샘플 대신 모든 셀을 다시 해시하는 `--deep`), 스냅샷 인벤토리(`rdc backup manifests`), 그리고 쿼터 회계(`rdc backup usage`)를 제공합니다.
 
@@ -134,19 +134,20 @@ rdc storage import rclone.conf
 rdc storage list
 ```
 
-## 백업 푸시
+## 다른 머신으로 백업 푸시
 
-레포지토리 백업을 외부 스토리지에 푸시합니다.
+SSH를 통해 레포지토리를 두 번째 머신으로 복사합니다.
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-백업은 푸시 시점에 레포지토리가 마운트되어 있으면 스토리지의 `hot/` 폴더에, 마운트 해제 상태이면 `cold/` 폴더에 저장됩니다. 이는 예약 백업이 사용하는 것과 동일한 레이아웃이므로, `rdc backup list`에서 모든 백업을 한 테이블에 확인할 수 있습니다.
+암호화된 이미지는 동일한 GUID로 복사되므로, 이는 포크가 아니라 백업이나 마이그레이션입니다. 독립된 사본이 필요하면 먼저 `rdc repo fork`를 실행한 뒤 포크를 푸시하세요.
+
+특정 시점 백업이 필요하면 대신 청크 스토리지를 사용하세요. `rdc backup snapshot my-app`은 변경된 셀만 업로드하고, `rdc backup restore my-app --at <snapshot>`은 그중 어느 것이든 되돌립니다.
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--to <storage>` | 대상 스토리지 위치 |
 | `--to-machine <machine>` | 머신 간 백업을 위한 대상 머신 |
 | `--dest <filename>` | 사용자 지정 대상 파일 이름 |
 | `--checkpoint` | 푸시 전 CRIU 체크포인트 생성 (`rediacc.checkpoint=true` 레이블이 있는 컨테이너용). `repo up` 시 대상이 자동 복원 |
@@ -157,19 +158,21 @@ rdc repo push my-app --to my-storage
 | `--debug` | 상세 출력 활성화 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
-## 백업 풀 / 복원
+## 다른 머신에서 백업 풀
 
-외부 스토리지에서 레포지토리 백업을 풀합니다.
+레포지토리가 있는 머신에서 다시 가져옵니다.
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+대신 청크 스토리지에서 복원하려면
+`rdc backup restore my-app --at <snapshot-id>`를 사용하세요.
 
 풀은 현재 **마운트된** 레포지토리를 덮어쓰지 않고 거부합니다. 먼저 마운트를 해제한 후 풀을 실행하고, 이후 `rdc repo up`으로 다시 올리세요. 디렉터리 기반 레포지토리는 예외로, 마운트된 상태에서도 제자리에서 동기화됩니다.
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--from <storage>` | 소스 스토리지 위치 |
 | `--from-machine <machine>` | 머신 간 복원을 위한 소스 머신 |
 | `--force` | 기존 로컬 백업 덮어쓰기 |
 | `--bwlimit <limit>` | rsync 전송 대역폭 제한 (예: `10M`, `500K`) |
@@ -179,10 +182,16 @@ rdc repo pull my-app --from my-storage
 
 ## 백업 목록 보기
 
-스토리지 위치에서 사용 가능한 백업을 확인합니다.
+청크 스토리지의 스냅샷을 나열합니다.
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+머신에 있는 백업 산출물을 확인하려면:
+
+```bash
+rdc backup list -m server-1
 ```
 
 출력은 [예약 백업 폴더](#예약-백업)(`hot/`과 `cold/`) 모두를 병합한 통합 테이블로, 모든 백업을 한 번에 볼 수 있습니다.
@@ -195,12 +204,7 @@ rdc backup list --storage my-storage
 | `Size` | 백업 파일의 사람이 읽을 수 있는 크기 |
 | `Modified` | 스토리지 백엔드의 UTC 타임스탬프 |
 
-단일 모드를 조회하려면 `--path`를 전달하세요.
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+스토리지 백엔드 목록 보기는 rclone 쪽 구현과 함께 폐지되었습니다. 명령은 거부되며 다음 두 가지 대체 방법을 알려줍니다.
 
 ### 스토리지 레이아웃
 
@@ -224,23 +228,21 @@ rdc backup list --storage my-storage --path cold
 
 푸시와 풀은 ref(`name`, `name:tag` 또는 `name@machine`)로 지정한 단일 레포지토리에 대해 작동합니다. "모든 레포지토리를 한 번에" 형식은 없습니다. 레포지토리마다 명령을 한 번씩 실행하세요.
 
-### 스토리지에 푸시
+### 다른 머신으로 푸시
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### 스토리지에서 풀
+### 다른 머신에서 풀
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | 옵션 | 설명 |
 |--------|-------------|
-| `--to <remote>` | 대상 스토리지 또는 머신 (푸시) |
 | `--to-machine <machine>` | 머신 간 푸시를 위한 대상 머신 |
-| `--from <remote>` | 소스 스토리지 또는 머신 (풀) |
 | `--from-machine <machine>` | 머신 간 풀을 위한 소스 머신 |
 | `--force` | 기존 백업 또는 레포지토리 덮어쓰기 |
 | `--checkpoint` | 푸시 전 CRIU 체크포인트 생성 (푸시 전용) |
@@ -351,7 +353,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ rdc backup strategy remove weekly-cold
 ```bash
 # 핫 전략: 매시간 모든 것 백업
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # 콜드 전략: 매주 모든 것 백업, 큰 파생 데이터셋 제외
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ rdc repo migrate my-app@server-1 --to server-2
 
 ## 스토리지 탐색
 
-스토리지 위치의 내용을 탐색합니다.
+`rdc storage browse`와 `rdc storage import`는 이번 폐지의 예외입니다. 내장 사본이 아니라 PATH의 자체 rclone을 실행하며, 변경 이전에 작성된 아카이브를 읽는 방법으로 남아 있습니다.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+탐색은 읽기 전용입니다. 스토리지 백엔드로의 푸시, 그로부터의 풀, 그리고 목록 보기는 모두 폐지되었으며, 각각 거부되면서 이를 대체하는 청크 스토리지 명령을 알려줍니다.
 
 ## 모범 사례
 
