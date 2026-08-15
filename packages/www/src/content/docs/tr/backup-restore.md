@@ -194,7 +194,7 @@ Bir makinede duran yedek dosyalarını görmek için:
 rdc backup list -m server-1
 ```
 
-Çıktı, hem [zamanlanmış yedekleme klasörlerini](#zamanlanmis-yedeklemeler) (`hot/` ve `cold/`) birleştiren birleşik bir tablodur; böylece her yedeği tek bir görünümde görebilirsiniz:
+Çıktı, parça depolamanın bu depo için sakladığı anlık görüntüleri listeler:
 
 | Sütun | Anlamı |
 |---|---|
@@ -206,23 +206,15 @@ rdc backup list -m server-1
 
 Bir depolama arka ucunu listelemek, rclone tarafıyla birlikte kullanımdan kaldırıldı; komut reddedilir ve şu iki yerine geçen komutu belirtir.
 
-### Depolama düzeni
+### Sıcak ve soğuk gerçekte ne anlama gelir
 
-Zamanlanmış yedeklemeler, depolamanın yapılandırılmış klasörünün içinde mod başına alt klasörlere iner; böylece aynı depolama hem saatlik hem de haftalık akışları karıştırmadan temiz biçimde barındırır:
+`--mode hot` ve `--mode cold`, verinin nereye yazıldığını değil, yedek alınırken deponun nasıl ele alındığını tanımlar.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Sıcak**, çalışan bir deponun anlık görüntüsünü alır. Konteynerler hizmet vermeye devam eder ve imaj yazma işleminin ortasında yakalanır; bu yüzden yedek kilitlenme tutarlıdır: makinenin tam o anda elektriğinin kesilmesiyle elde edeceğiniz durumun aynısı. Bu, kendi jurnalinden kurtarabilen her şey için, yani çoğu veritabanı için sorun teşkil etmez.
 
-Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anlık görüntüsünü alır; haftalık zamanlama tekrar alır). Birleşik liste her iki satırı da gösterir, böylece hangi akışların hangi depoları kapsadığı net olur.
+**Soğuk**, önce konteynerleri durdurur, diske yazar, gerçekten durduklarını doğrular, imajı dondurur ve ancak ondan sonra yeniden başlatır. Gerçek bir kesinti maliyeti vardır, ama bu kesinti aktarım değil, sabit süreli dondurma işlemidir ve sonuç uygulama tutarlıdır.
+
+Her ikisi de aynı parça depolamaya yazar. Hücreler içeriğe göre adreslenir; bu yüzden hem saatlik sıcak hem de haftalık soğuk zamanlamayla yedeklenen bir depo, paylaşılan blokları iki kez değil bir kez saklar, ve bir fork ailesi de bunları paylaşır. Kullanım, `rdc backup usage` ile kotanıza göre ölçülür.
 
 ## Repoları Teker Teker Senkronize Etme
 
@@ -349,7 +341,7 @@ Kesintiler güvenlidir. Servisi durdurmak (veya makineyi yeniden başlatmak) yed
 
 ### Strateji Tanımlama
 
-Standart varsayılan, iki stratejili bir bölüştürmedir: her depoyu yakalayan hızlı bir saatlik sıcak akış ve uygulama tutarlı anlık görüntüler alan daha yavaş bir haftalık soğuk akış. İki strateji farklı depolama alt klasörlerine (`hot/` ve `cold/`) yazar, böylece yedeklemeler asla karışmaz.
+Standart varsayılan, iki stratejili bir bölüştürmedir: her depoyu yakalayan hızlı bir saatlik sıcak akış ve uygulama tutarlı anlık görüntüler için konteynerleri durduran daha yavaş bir haftalık soğuk akış. İkisi de aynı parça depolamaya yazar; paylaşılan bloklar akış başına değil, bir kez saklanır.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Yüksek frekanslı çalıştırmadan bir depoyu hariç tutun:
 
 > **Veriler tamamen yeniden üretilebiliyorsa**, hiç yedeklemeniz gerekip gerekmediğini düşünün. Bir alternatif, yalnızca ham kaynak girdileri (bu örnekte CSV dökümleri) yedeklemek ve türetilmiş kopyayı tamamen atlamaktır. Kaynak girdilerin haftalık soğuk yedeklemesi çok daha küçük ve kurtarma için tamamen yeterlidir.
 
-Her iki stratejiden de hariç tutulmayan depolar hem `hot/` hem de `cold/` depolama alt klasörlerinde görünür. Birleşik `rdc backup list` çıktısı her iki satırı da gösterir; böylece hangi akışların hangi depoları kapsadığını doğrulayabilirsiniz.
+İki stratejiden hiçbirinin dışlamadığı bir depo her ikisi tarafından da yakalanır; böylece hem saatlik kilitlenme tutarlı anlık görüntülere hem de haftalık uygulama tutarlı bir anlık görüntüye sahip olur. `rdc backup snapshot list <repo>` bunları birlikte gösterir ve paylaştıkları bloklar bir kez saklanır.
 
 ## Yedekleme İşlemleri
 

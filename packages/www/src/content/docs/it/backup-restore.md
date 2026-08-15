@@ -194,7 +194,7 @@ Per vedere i backup presenti su una macchina:
 rdc backup list -m server-1
 ```
 
-L'output è una tabella unificata che unisce entrambe le [cartelle dei backup pianificati](#backup-pianificati) (`hot/` e `cold/`) in modo da vedere ogni backup in un'unica vista:
+L'output elenca gli snapshot che lo storage a chunk conserva per quel repository:
 
 | Colonna | Significato |
 |---|---|
@@ -206,23 +206,15 @@ L'output è una tabella unificata che unisce entrambe le [cartelle dei backup pi
 
 Elencare un backend di storage è stato dismesso insieme al ramo rclone; il comando rifiuta l'esecuzione e indica questi due sostituti.
 
-### Layout dello storage
+### Cosa significano davvero hot e cold
 
-I backup pianificati finiscono in sottocartelle per modalità all'interno della cartella configurata dello storage, in modo che lo stesso storage ospiti in modo ordinato sia lo stream orario che quello settimanale senza mescolarli:
+`--mode hot` e `--mode cold` descrivono come viene trattato il repository mentre si esegue il backup, non dove finiscono i dati.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** cattura uno snapshot di un repository in esecuzione. I container continuano a servire richieste e l'immagine viene catturata a metà scrittura, quindi il backup è crash-consistent: esattamente ciò che otterreste se la macchina perdesse alimentazione in quell'istante. Va bene per tutto ciò che si riprende dal proprio journal, ovvero la maggior parte dei database.
 
-Un repository può apparire sia in `hot/` che in `cold/` (lo schedule orario ne crea uno snapshot; lo schedule settimanale ne crea un altro). L'elenco unificato mostra entrambe le righe in modo che sia chiaro quali stream coprono quali repository.
+**Cold** ferma prima i container, scrive su disco, verifica che siano fermi, congela l'immagine e solo dopo li riavvia. Costa un downtime reale, ma quel downtime è il congelamento a durata costante e non il trasferimento, e il risultato è application-consistent.
+
+Entrambi scrivono nello stesso storage a chunk. Le celle sono indirizzate per contenuto, quindi un repository sottoposto a backup sia con uno schedule hot orario sia con uno cold settimanale memorizza i blocchi condivisi una sola volta anziché due, e anche una famiglia di fork li condivide. L'utilizzo viene conteggiato a fronte della vostra quota con `rdc backup usage`.
 
 ## Sincronizzare un repository alla volta
 
@@ -349,7 +341,7 @@ Le interruzioni sono sicure. Fermare il servizio (o riavviare la macchina) fa s�
 
 ### Definire una Strategia
 
-Il default canonico è una divisione in due strategie: uno stream hot orario veloce che cattura ogni repository e uno stream cold settimanale più lento che crea snapshot app-consistent. Le due strategie scrivono in sottocartelle di storage diverse (`hot/` e `cold/`) in modo che i backup non si mescolino mai.
+Il default canonico è una divisione in due strategie: uno stream hot orario veloce che cattura ogni repository e uno stream cold settimanale più lento che mette in pausa i container per snapshot app-consistent. Entrambi scrivono nello stesso storage a chunk, e i blocchi condivisi vengono memorizzati una sola volta anziché per ogni stream.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Escludi un repository dall'esecuzione ad alta frequenza quando:
 
 > **Se i dati sono puramente rigenerabili**, considera se è necessario eseguirne il backup. Un'alternativa è eseguire il backup solo degli input sorgente grezzi (i dump CSV, in questo esempio) e saltare la copia derivata del tutto. Un backup cold settimanale degli input sorgente è molto più piccolo e completamente sufficiente per il recupero.
 
-I repository non esclusi da nessuna delle due strategie appaiono in entrambe le sottocartelle di storage `hot/` e `cold/`. L'output unificato di `rdc backup list` mostra entrambe le righe in modo da poter verificare quali stream coprono quali repository.
+Un repository che nessuna delle due strategie esclude viene catturato da entrambe, quindi ha snapshot orari crash-consistent e uno settimanale application-consistent. `rdc backup snapshot list <repo>` li mostra insieme, e i blocchi che condividono vengono memorizzati una sola volta.
 
 ## Operazioni di Backup
 

@@ -195,7 +195,7 @@ Para ver os artefactos de backup presentes numa máquina:
 rdc backup list -m server-1
 ```
 
-A saída é uma tabela unificada que combina ambas as [pastas de backups agendados](#backups-agendados) (`hot/` e `cold/`) para que veja todos os backups numa só vista:
+A saída lista os snapshots que o armazenamento fragmentado guarda para esse repositório:
 
 | Coluna | Significado |
 |---|---|
@@ -207,23 +207,15 @@ A saída é uma tabela unificada que combina ambas as [pastas de backups agendad
 
 Listar um backend de armazenamento foi descontinuado juntamente com o ramo rclone; o comando recusa e indica estas duas alternativas.
 
-### Layout de armazenamento
+### O que hot e cold realmente significam
 
-Os backups agendados ficam em subpastas por modo dentro da pasta configurada do armazenamento, para que o mesmo armazenamento aloje de forma organizada tanto o fluxo horário como o semanal sem os misturar:
+`--mode hot` e `--mode cold` descrevem como o repositório é tratado enquanto o backup é feito, não onde os dados ficam.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** tira um snapshot de um repositório em execução. Os contentores continuam a servir pedidos, e a imagem é capturada a meio de uma escrita, pelo que o backup é consistente por falha: exatamente o que obteria se a máquina perdesse energia nesse instante. Isso é suficiente para tudo o que recupera a partir do seu próprio journal, ou seja, a maioria das bases de dados.
 
-Um repositório pode aparecer em `hot/` e em `cold/` (o agendamento horário tira snapshot; o agendamento semanal tira outro). A listagem combinada mostra ambas as linhas para que fique claro quais os fluxos que cobrem quais repositórios.
+**Cold** para primeiro os contentores, escreve em disco, confirma que estão parados, congela a imagem e só depois os reinicia. Custa um downtime real, mas esse downtime é o congelamento de duração constante e não a transferência, e o resultado é consistente ao nível da aplicação.
+
+Ambos escrevem no mesmo armazenamento fragmentado. As células são endereçadas por conteúdo, pelo que um repositório com backup feito tanto por um agendamento hot horário como por um cold semanal armazena os blocos partilhados uma única vez em vez de duas, e uma família de forks também os partilha. A utilização é medida face à sua quota com `rdc backup usage`.
 
 ## Sincronizar um repositório de cada vez
 
@@ -350,7 +342,7 @@ As interrupções são seguras. Parar o serviço (ou reiniciar a máquina) faz c
 
 ### Definir uma Estratégia
 
-A predefinição canónica é uma divisão em duas estratégias: um fluxo hot horário rápido que captura todos os repositórios, e um fluxo cold semanal mais lento que tira snapshots consistentes para a aplicação. As duas estratégias escrevem em subpastas de armazenamento diferentes (`hot/` e `cold/`) para que os backups nunca se misturem.
+A predefinição canónica é uma divisão em duas estratégias: um fluxo hot horário rápido que captura todos os repositórios, e um fluxo cold semanal mais lento que pausa os contentores para snapshots consistentes para a aplicação. Ambos escrevem no mesmo armazenamento fragmentado, e os blocos partilhados são armazenados uma única vez em vez de um por fluxo.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -460,7 +452,7 @@ Exclua um repositório da execução de alta frequência quando:
 
 > **Se os dados são puramente regeneráveis**, considere se precisa de os fazer backup. Uma alternativa é fazer backup apenas das entradas de origem brutas (os dumps CSV, neste exemplo) e ignorar completamente a cópia derivada. Um backup cold semanal das entradas de origem é muito mais pequeno e completamente suficiente para a recuperação.
 
-Os repositórios não excluídos de nenhuma das estratégias aparecem em ambas as subpastas de armazenamento `hot/` e `cold/`. O resultado unificado de `rdc backup list` mostra ambas as linhas para que possa verificar quais os fluxos que cobrem quais repositórios.
+Um repositório que nenhuma das estratégias exclui é capturado por ambas, pelo que tem snapshots horários consistentes por falha e um semanal consistente ao nível da aplicação. `rdc backup snapshot list <repo>` mostra-os em conjunto, e os blocos que partilham são armazenados uma única vez.
 
 ## Operações de Backup
 

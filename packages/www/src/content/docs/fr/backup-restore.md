@@ -194,7 +194,7 @@ Pour voir les sauvegardes présentes sur une machine :
 rdc backup list -m server-1
 ```
 
-La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes planifiées](#sauvegardes-planifiées) (`hot/` et `cold/`) afin que vous voyiez toutes les sauvegardes en une seule vue :
+La sortie liste les instantanés que le stockage fragmenté conserve pour ce dépôt :
 
 | Colonne | Signification |
 |---|---|
@@ -206,23 +206,15 @@ La sortie est un tableau unifié qui fusionne les deux [dossiers de sauvegardes 
 
 Lister un backend de stockage est retiré avec la branche rclone ; la commande refuse et nomme ces deux remplacements.
 
-### Disposition du stockage
+### Ce que hot et cold signifient vraiment
 
-Les sauvegardes planifiées atterrissent dans des sous-dossiers par mode à l'intérieur du dossier configuré du stockage, de sorte que le même stockage héberge proprement les flux horaires et hebdomadaires sans les mélanger :
+`--mode hot` et `--mode cold` décrivent la façon dont le dépôt est traité pendant la prise de la sauvegarde, pas l'endroit où atterrissent les données.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** prend un instantané d'un dépôt en cours d'exécution. Les conteneurs continuent de servir, et l'image est capturée en pleine écriture, si bien que la sauvegarde est cohérente en cas de crash : exactement ce que vous obtiendriez si la machine perdait l'alimentation à cet instant. Cela convient à tout ce qui se rétablit à partir de son propre journal, c'est-à-dire la plupart des bases de données.
 
-Un dépôt peut apparaître dans `hot/` et dans `cold/` (la planification horaire le capture ; la planification hebdomadaire le capture également). Le listing fusionné affiche les deux lignes pour qu'il soit clair quels flux couvrent quels dépôts.
+**Cold** arrête d'abord les conteneurs, écrit sur le disque, vérifie qu'ils sont bien arrêtés, fige l'image, puis seulement ensuite les redémarre. Cela coûte une véritable interruption, mais cette interruption correspond au gel à durée constante et non au transfert, et le résultat est cohérent au niveau applicatif.
+
+Les deux écrivent dans le même stockage fragmenté. Les cellules sont adressées par leur contenu, si bien qu'un dépôt sauvegardé à la fois par une planification hot horaire et une planification cold hebdomadaire stocke les blocs partagés une seule fois plutôt que deux, et une famille de forks les partage également. L'usage est mesuré par rapport à votre quota avec `rdc backup usage`.
 
 ## Synchroniser un dépôt à la fois
 
@@ -349,7 +341,7 @@ Les interruptions sont sans danger. Arrêter le service (ou redémarrer la machi
 
 ### Définir une stratégie
 
-Le défaut canonique est un partage en deux stratégies : un flux hot horaire rapide qui capture chaque dépôt, et un flux cold hebdomadaire plus lent qui prend des snapshots cohérents au niveau applicatif. Les deux stratégies écrivent dans des sous-dossiers de stockage différents (`hot/` et `cold/`) afin que les sauvegardes ne se mélangent jamais.
+Le défaut canonique est un partage en deux stratégies : un flux hot horaire rapide qui capture chaque dépôt, et un flux cold hebdomadaire plus lent qui met les conteneurs au repos pour des snapshots cohérents au niveau applicatif. Les deux écrivent dans le même stockage fragmenté, et les blocs partagés sont stockés une seule fois plutôt que par flux.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -459,7 +451,7 @@ Excluez un dépôt de l'exécution haute fréquence quand :
 
 > **Si les données sont purement régénérables**, envisagez si vous avez vraiment besoin de les sauvegarder. Une alternative est de ne sauvegarder que les entrées sources brutes (les dumps CSV dans cet exemple) et d'ignorer entièrement la copie dérivée. Une sauvegarde froide hebdomadaire des entrées sources est bien plus petite et entièrement suffisante pour la récupération.
 
-Les dépôts non exclus d'aucune des deux stratégies apparaissent dans les sous-dossiers `hot/` et `cold/` du stockage. La sortie fusionnée de `rdc backup list` affiche les deux lignes pour vérifier quels flux couvrent quels dépôts.
+Un dépôt qu'aucune des deux stratégies n'exclut est capturé par les deux : il dispose donc d'instantanés horaires cohérents en cas de crash et d'un instantané hebdomadaire cohérent au niveau applicatif. `rdc backup snapshot list <repo>` les affiche ensemble, et les blocs qu'ils partagent ne sont stockés qu'une seule fois.
 
 ## Opérations de sauvegarde
 
