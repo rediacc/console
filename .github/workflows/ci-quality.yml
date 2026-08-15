@@ -201,6 +201,16 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_hooks_resolvable.py
 
+      # A job that READS submodule source must CHECK IT OUT. Tests + Infra /
+      # Unit parsed private/renet/pkg/prune/datastore.go with a bare checkout,
+      # failed on a file it never fetched, and cancelled 26 siblings; the ENOENT
+      # named a test file, so the evidence pointed at the wrong thing entirely.
+      # Reads workflow YAML only, so it needs no token and no submodule, which
+      # is why it belongs in the static lane.
+      - name: Workflow submodule deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_workflow_submodule_deps.py
+
       - name: No inline Python in JS/TS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_inline_python.py
