@@ -131,8 +131,18 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
     expect(output).toContain('storage is retired');
     // The sentence must carry the operator somewhere, or a refusal is just a
     // dead end with better grammar.
-    expect(output).toContain('backup snapshot');
-    expect(output).toContain('backup restore');
+    //
+    // ASSERTED BY THE DISTINCTIVE FRAGMENTS, not the bare verb names, and this
+    // comment avoids spelling them for the same reason. check-e2e-coverage
+    // counts a verb literal appearing ANYWHERE in a live suite -- assertions and
+    // comments alike -- as that verb being exercised. Naming the restore verb
+    // here made it look covered by a suite that only ever reads it inside an
+    // error string, and the gate then demanded its allowlist entry be deleted
+    // as a debt paid. That would have recorded coverage which does not exist.
+    // `--at <snapshot>` and `chunk store` pin the same guidance without
+    // pretending anything ran.
+    expect(output).toContain('chunk store');
+    expect(output).toContain('--at <snapshot>');
     // And the retired flags must not reappear in the emitted command.
     expect(output).not.toContain('--rclone-backend');
     expect(output).not.toContain('--rclone-bucket');
@@ -153,7 +163,7 @@ test.describe('Storage arm is RETIRED @bridge @storage', () => {
     const output = result.stdout + result.stderr;
 
     expect(output).toContain('storage is retired');
-    expect(output).toContain('backup snapshot');
+    expect(output).toContain('chunk store');
     expect(output).not.toContain('--rclone-backend');
   });
 

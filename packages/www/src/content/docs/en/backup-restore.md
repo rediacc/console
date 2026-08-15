@@ -215,7 +215,7 @@ To see backup artifacts sitting on a machine:
 rdc backup list -m server-1
 ```
 
-The output is a unified table that merges both [scheduled-backup folders](#scheduled-backups) (`hot/` and `cold/`) so you see every backup in one view:
+The output lists the snapshots the chunk store holds for that repository:
 
 | Column | Meaning |
 |---|---|
@@ -228,23 +228,25 @@ The output is a unified table that merges both [scheduled-backup folders](#sched
 Listing a storage backend is retired along with the rclone arm; the command
 refuses and names these two replacements.
 
-### Storage layout
+### What hot and cold actually mean
 
-Scheduled backups land under per-mode subfolders inside the storage's configured folder, so the same storage cleanly hosts both the hourly and the weekly streams without mixing them:
+`--mode hot` and `--mode cold` describe how the repository is treated while the
+backup is taken, not where the data lands.
 
-```text
-<bucket>/<folder>/
-├── hot/
-│   ├── <guid-1>
-│   ├── <guid-2>
-│   └── ...
-└── cold/
-    ├── <guid-1>
-    ├── <guid-3>
-    └── ...
-```
+**Hot** snapshots a running repository. Containers keep serving, and the image is
+captured mid-write, so the backup is crash-consistent: exactly what you would get
+if the machine lost power at that instant. That is fine for anything that
+recovers from its own journal, which is most databases.
 
-A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing shows both rows so you can see which streams cover which repos.
+**Cold** stops the containers first, flushes, verifies they are down, freezes the
+image and only then restarts them. It costs a real outage, but the outage is the
+constant-time freeze rather than the transfer, and the result is
+application-consistent.
+
+Both write into the same chunk store. Cells are addressed by content, so a repo
+backed up by both an hourly hot schedule and a weekly cold one stores the shared
+blocks once rather than twice, and a fork family shares them too. Usage is
+metered against your quota with `rdc backup usage`.
 
 ## Sync One Repository at a Time
 
@@ -371,7 +373,7 @@ Interruptions are safe. Stopping the service (or rebooting the machine) makes th
 
 ### Define a Strategy
 
-The default setup is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream for app-consistent snapshots. Both strategies write to separate storage subfolders (`hot/` and `cold/`), so the streams never mix.
+The default setup is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream that quiesces containers for app-consistent snapshots. Both write into the same chunk store, and shared blocks are stored once rather than per stream.
 
 ```bash
 rdc backup strategy set hourly-hot \
@@ -481,7 +483,7 @@ Exclude a repository from the high-frequency run when:
 
 > **If the data is purely regenerable**, consider whether you need to back it up at all. An alternative is to back up only the raw source inputs (the CSV dumps, in this example) and skip the derived copy entirely. A weekly cold backup of the source inputs is much smaller and fully sufficient for recovery.
 
-Repos that are not excluded from either strategy appear in both the `hot/` and `cold/` storage subfolders. The merged `rdc backup list` output shows both rows so you can verify which streams cover which repos.
+A repo that neither strategy excludes is captured by both, so it has hourly crash-consistent snapshots and a weekly application-consistent one. `rdc backup snapshot list <repo>` shows them together, and the blocks they share are stored once.
 
 ## Backup Operations
 
