@@ -55,8 +55,6 @@ export const FORK_NETWORK_ID_B = TEST_ENV.network.forkB;
 // eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
 export const TEST_REPOSITORY_NAME = TEST_ENV.testRepositoryName;
 // eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
-export const TEST_CONTAINER_PREFIX = TEST_ENV.testContainerPrefix;
-// eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
 export const TEST_PASSWORD = TEST_ENV.testPassword;
 // eslint-disable-next-line no-restricted-syntax -- Re-exporting TEST_ENV properties as named constants for clarity
 export const TEST_USER = TEST_ENV.testUser;

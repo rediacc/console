@@ -9935,7 +9935,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.pull.description",
-      "label": "Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
+      "label": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
       "options": [
         {
           "flags": "--from <remote>",
@@ -9950,7 +9950,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.pull.optionFrom",
-          "label": "Source machine or storage name (auto-detected from config)"
+          "label": "Source machine name (auto-detected from config)"
         },
         {
           "flags": "--from-machine <machine>",
@@ -10064,19 +10064,19 @@ export const CLI_CONTRACT: CliContract = {
       "hasSubcommands": false,
       "examples": [
         {
-          "command": "rdc repo pull shop --from backups-s3",
+          "command": "rdc repo pull shop --from-machine server-1",
           "values": {
             "ref": "shop",
-            "from": "backups-s3"
+            "from-machine": "server-1"
           },
           "descriptionKey": "commands.repo.pull.examples.basic",
-          "label": "Pull a repository from a storage backend."
+          "label": "Pull a repository from another machine."
         },
         {
-          "command": "rdc repo pull shop --from backups-s3 --up",
+          "command": "rdc repo pull shop --from-machine server-1 --up",
           "values": {
             "ref": "shop",
-            "from": "backups-s3",
+            "from-machine": "server-1",
             "up": "true"
           },
           "descriptionKey": "commands.repo.pull.examples.andStart",
@@ -10113,7 +10113,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "REPOSITORIES",
       "plane": "machine",
       "descriptionKey": "commands.repo.push.description",
-      "label": "Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
+      "label": "Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
       "options": [
         {
           "flags": "--to <remote>",
@@ -10128,7 +10128,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.repo.push.optionTo",
-          "label": "Destination machine or storage name (auto-detected from config)"
+          "label": "Destination machine name (auto-detected from config)"
         },
         {
           "flags": "--to-machine <machine>",
@@ -10255,15 +10255,6 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "hasSubcommands": false,
       "examples": [
-        {
-          "command": "rdc repo push shop --to backups-s3",
-          "values": {
-            "ref": "shop",
-            "to": "backups-s3"
-          },
-          "descriptionKey": "commands.repo.push.examples.toStorage",
-          "label": "Push a repository to a storage backend."
-        },
         {
           "command": "rdc repo push shop --to-machine server-1",
           "values": {
