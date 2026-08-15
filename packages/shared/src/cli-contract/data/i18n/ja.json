@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "{{name}} のスナップショットを保存しました",
   "commands.backup.snapshot.description": "チャンクストアへスナップショットをアップロードする: 初回は全インベントリ、以降は変更セルのみ",
   "commands.backup.snapshot.failed": "{{name}} のスナップショットに失敗しました",
+  "commands.backup.snapshot.optionCold": "コンテナを停止して凍結し、再起動してからアップロードします。短い実停止と引き換えに、アプリケーション整合性のあるスナップショットが得られます。--dry-run とは併用できません",
   "commands.backup.snapshot.optionDryRun": "計画のみ実行: アップロードは行わない。移動対象を報告する",
   "commands.backup.snapshot.optionReseed": "ローカルアンカーを信用せず、全インベントリを再アップロードする（すべて再アップロードし、クォータも再課金される）",
   "commands.backup.snapshot.quotaRefused": "{{name}} のスナップショットが拒否されました: ストレージクォータを超過しています。古いスナップショットを削除するか、クォータを引き上げてください",

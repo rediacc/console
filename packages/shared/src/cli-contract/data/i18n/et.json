@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "Hetktõmmis salvestatud hoidlale {{name}}",
   "commands.backup.snapshot.description": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
   "commands.backup.snapshot.failed": "Hetktõmmis ebaõnnestus hoidlale {{name}}",
+  "commands.backup.snapshot.optionCold": "Peatab konteinerid, külmutab, käivitab uuesti ja alles siis laadib üles. Maksab lühikese päris katkestuse, aga annab rakendusega kooskõlas oleva hetktõmmise; koos võtmega --dry-run ei tööta",
   "commands.backup.snapshot.optionDryRun": "Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks",
   "commands.backup.snapshot.optionReseed": "Ära usalda kohalikku ankrut ja lae üles täielik inventuur (laeb kõik uuesti üles ja arvestab kvoodi uuesti)",
   "commands.backup.snapshot.quotaRefused": "Hetktõmmis lükati tagasi hoidlale {{name}}: salvestuskvoot ületatud. Kärbi vanu hetktõmmiseid või tõsta kvooti",

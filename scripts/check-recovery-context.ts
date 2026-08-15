@@ -288,7 +288,7 @@ function main(): void {
     console.error('  On SIGTERM the work context is dead, every call inside fails instantly, and the');
     console.error('  repositories stay STOPPED. Route the call through a wrapper that builds its own');
     console.error('  context from context.Background() with its own timeout, as restartColdRepos does');
-    console.error('  in private/renet/cmd/renet/backup_sync.go.');
+    console.error('  in private/renet/cmd/renet/backup_cold_restart.go.');
     process.exit(1);
   }
 

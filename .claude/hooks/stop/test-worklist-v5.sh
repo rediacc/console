@@ -10385,13 +10385,20 @@ say "answered, and now something urgent is also true
 - stuff"
 # hook-blind is an always-tier violation: an unparseable event.
 printf 'not json at all' >"$BASE/t.jsonl"
+# stderr is CAPTURED, not discarded. This case failed once in CI with an EMPTY
+# OUT and passed locally at 735/0, and a discarded stderr is precisely why that
+# was undiagnosable: an empty stdout looks identical whether the hook decided to
+# allow or died before deciding. A test that cannot say WHICH of those happened
+# sends its reader guessing at a difference the machine already knew.
+_214c_err="$BASE/214c.stderr"
 OUT="$(printf 'garbage-not-json' | TMPDIR="$BASE/tmp" CLAUDE_PROJECT_DIR="$BASE/proj" \
     WORKLIST_TASKS_DIR="$BASE/tasks" WORKLIST_AGENT_BRANCH=agenttest \
-    WORKLIST_JUDGE=off WORKLIST_CADENCE=on python3 "$HOOK" 2>/dev/null)"
+    WORKLIST_JUDGE=off WORKLIST_CADENCE=on python3 "$HOOK" 2>"$_214c_err")"
+_214c_rc=$?
 if grep -qF '"decision": "block"' <<<"$OUT"; then
     pass "214c GUARD A: an always-tier violation blocks even when a pause was owed"
 else
-    fail "214c GUARD A: the always tier was paused: ${OUT:0:220}"
+    fail "214c GUARD A: the always tier was paused: rc=${_214c_rc} stdout=[${OUT:0:220}] stderr=[$(tr '\n' ' ' <"$_214c_err" 2>/dev/null | tail -c 400)]"
 fi
 
 echo "== 214d. a CLEAN stop consumes the debt =="
