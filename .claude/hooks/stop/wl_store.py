@@ -643,6 +643,12 @@ def _fold_events(events):
                 rec["state"] = ">"
                 rec["until"] = str(ev.get("until", ""))
                 rec["worker"] = str(ev.get("worker", ""))
+                # Absent on events written before this field existed, which
+                # reads as False: an old lease is treated as unverifiable rather
+                # than as dead. That is the safe direction -- the age ladder
+                # still catches a genuine stall, whereas a false "gone" sends a
+                # session hunting a worker that never existed.
+                rec["worker_verified"] = bool(ev.get("worker_verified"))
                 note = str(ev.get("note", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -847,7 +853,17 @@ def triage_item(worklist, by, item_id, verdict, reason, plan=""):
     append_events(worklist, [ev])
 
 
-def lease_item(worklist, by, item_id, until, worker, note=""):
+def lease_item(worklist, by, item_id, until, worker, note="", worker_verified=False):
+    """Record a lease, INCLUDING whether the worker was verifiable when taken.
+
+    That bit is the difference between "this worker died" and "this worker was
+    never something the OS could confirm". The liveness ladder used to conflate
+    them: any id absent from the harness snapshot was reported as gone, so an
+    Agent leased by NAME -- which can never appear in a background-task list --
+    was accused of being dead while it was demonstrably writing files. The caller
+    already computes this at lease time to print its warning; it simply threw the
+    answer away.
+    """
     append_events(
         worklist,
         [
@@ -859,6 +875,7 @@ def lease_item(worklist, by, item_id, until, worker, note=""):
                 "until": until,
                 "worker": worker,
                 "note": note,
+                "worker_verified": bool(worker_verified),
             }
         ],
     )
