@@ -342,6 +342,58 @@ check_env_shell_vars() {
 
 check_env_shell_vars
 
+# -----------------------------------------------------------------------------
+# The RUNNER's gh refuses `--slurp` combined with `--jq` ("the --slurp option
+# is not supported with --jq or --template") while local gh versions accept it,
+# so the incompatibility is invisible to every local run and to shell linting
+# (the bash is valid; the tool rejects the flags at runtime). It killed the
+# first live autopilot dispatch on 2026-08-09 (run 31321043543). Pipe the
+# --slurp output through jq as a separate process instead.
+# Control-first: the scanner must prove it can fire before its silence means
+# anything.
+# -----------------------------------------------------------------------------
+check_gh_slurp_jq() {
+    local scan_files=("${GITHUB_YAMLS[@]}")
+    while IFS= read -r f; do scan_files+=("$f"); done \
+        < <(find .ci/scripts -name '*.sh' -type f 2>/dev/null)
+
+    slurp_jq_offenders() {
+        # stdin: file content. Prints line numbers where one gh invocation
+        # (including line continuations, which is how the real regression was
+        # written) carries both flags. Comments do not count.
+        awk '
+            /^[[:space:]]*#/ { joined = ""; next }
+            { line = $0; n[++c] = NR
+              if (joined != "") { joined = joined " " line } else { joined = line; start = NR }
+              if (line ~ /\\[[:space:]]*$/) next
+              if (joined ~ /--slurp/ && joined ~ /--jq/) print start
+              joined = "" }'
+    }
+    local control
+    control="$(printf 'gh api repos/x/issues --paginate --slurp \\\n    --jq ".[]"\n' | slurp_jq_offenders)"
+    if [[ -z "$control" ]]; then
+        log_error "gh --slurp/--jq control did not fire on a planted two-line offender; the scanner is broken, refusing to certify anything"
+        ERRORS=$((ERRORS + 1))
+        return
+    fi
+    local f hits
+    for f in "${scan_files[@]}"; do
+        # The scanner's own awk program and control string carry both flags;
+        # scanning this file would be a permanent self-match, not a finding.
+        [[ "$f" == *"/check-workflows.sh" ]] && continue
+        hits="$(slurp_jq_offenders <"$f" || true)"
+        [[ -n "$hits" ]] || continue
+        while IFS= read -r ln; do
+            [[ -n "$ln" ]] || continue
+            log_error "$f:$ln: gh invocation combines --slurp with --jq; the RUNNER's gh rejects this at runtime (proven live, run 31321043543)"
+            echo "  Fix:  drop --jq from the gh call and pipe the --slurp output through jq separately"
+            echo ""
+            ERRORS=$((ERRORS + 1))
+        done <<<"$hits"
+    done
+}
+check_gh_slurp_jq
+
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     log_error "Found $ERRORS problem(s) in workflows"
