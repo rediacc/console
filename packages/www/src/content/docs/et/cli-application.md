@@ -6,7 +6,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "4ee8ba9a9d7a9aca"
+sourceHash: "5b9b07c52875fd1e"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2254,6 +2254,7 @@ rdc backup snapshot <repo-ref> [options]
 |------|-------------|----------|---------|
 | `--reseed` | {{t:cli.commands.backup.snapshot.optionReseed}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.commands.backup.snapshot.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cold` | {{t:cli.commands.backup.snapshot.optionCold}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 

@@ -4341,7 +4341,7 @@
   {
     "id": "search-14658",
     "content": "8.8 snapshot",
-    "body": "{{t:cli.commands.backup.snapshot.description}} rdc backup snapshot <repo-ref> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | --reseed | {{t:cli.commands.backup.snapshot.optionReseed}} | {{t:cli.docs.optionLabels.no}} | - | | --dry-run | {{t:cli.commands.backup.snapshot.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-status\"></a>",
+    "body": "{{t:cli.commands.backup.snapshot.description}} rdc backup snapshot <repo-ref> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | --reseed | {{t:cli.commands.backup.snapshot.optionReseed}} | {{t:cli.docs.optionLabels.no}} | - | | --dry-run | {{t:cli.commands.backup.snapshot.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - | | --cold | {{t:cli.commands.backup.snapshot.optionCold}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-status\"></a>",
     "excerpt": "{{t:cli.commands.backup.snapshot.description}} rdc backup snapshot <repo-ref> [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders...",
     "category": "Documentation",
     "page": "/ru/docs/cli-application",
