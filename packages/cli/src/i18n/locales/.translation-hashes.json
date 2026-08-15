@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1755,
-    "sourceCommit": "e2e34857ddce986e332bc3d0b8366ebcaac4ae91"
+    "keyCount": 1757,
+    "sourceCommit": "ed40593132a3223ffed76456d8b7f64a4c790f4a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -20,9 +20,10 @@
     "commands.backup.list.executorAmbiguous": "d5f95c9e",
     "commands.backup.list.listing": "d210e32c",
     "commands.backup.list.optionPath": "ce218b32",
-    "commands.backup.list.optionStorage": "47fbd69d",
+    "commands.backup.list.optionStorage": "e872d2f8",
     "commands.backup.list.placementExclusive": "a335482d",
     "commands.backup.list.placementRequired": "5972aaed",
+    "commands.backup.list.storageRetired": "be1c399e",
     "commands.backup.manifests.description": "14c9566d",
     "commands.backup.manifests.empty": "b5b0c78e",
     "commands.backup.manifests.fetching": "f1015dd7",
@@ -48,6 +49,7 @@
     "commands.backup.restore.restored": "8ed4ad00",
     "commands.backup.restore.restoringSnapshot": "510f88ee",
     "commands.backup.restore.sourceUnknown": "5be0a248",
+    "commands.backup.restore.storageRetired": "4d76f81c",
     "commands.backup.restore.targetExists": "658b0b83",
     "commands.backup.retention.clearDescription": "5523f854",
     "commands.backup.retention.cleared": "d9ab604b",

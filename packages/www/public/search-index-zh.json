@@ -2772,8 +2772,8 @@
   {
     "id": "search-17117",
     "content": "列出备份",
-    "body": "列出分块存储中的快照： rdc backup snapshot list my-app 要查看某台机器上的备份产物： rdc backup list -m server-1 输出是一个统一的表格，合并了两个定时备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |---|---| | Mode | hot 或 cold。此条目所属的定时备份文件夹 | | Name | 从本地配置解析的仓库名称（对于不在配置中的仓库回退到 GUID） | | GUID | 磁盘上的仓库 GUID | | Size | 备份文件的可读大小 | | Modified | 来自存储后端的 UTC 时间戳 | 列出存储后端的功能已随 rclone 分支一并停用；该命令会被拒绝，并指出以下两个替代方式。",
-    "excerpt": "列出分块存储中的快照： rdc backup snapshot list my-app 要查看某台机器上的备份产物： rdc backup list -m server-1 输出是一个统一的表格，合并了两个定时备份文件夹（hot/ 和 cold/），让您一次看到所有备份： | 列 | 含义 | |-...",
+    "body": "列出分块存储中的快照： rdc backup snapshot list my-app 要查看某台机器上的备份产物： rdc backup list -m server-1 输出列出该仓库在分块存储中保存的所有快照： | 列 | 含义 | |---|---| | Mode | hot 或 cold。此条目所属的定时备份文件夹 | | Name | 从本地配置解析的仓库名称（对于不在配置中的仓库回退到 GUID） | | GUID | 磁盘上的仓库 GUID | | Size | 备份文件的可读大小 | | Modified | 来自存储后端的 UTC 时间戳 | 列出存储后端的功能已随 rclone 分支一并停用；该命令会被拒绝，并指出以下两个替代方式。",
+    "excerpt": "列出分块存储中的快照： rdc backup snapshot list my-app 要查看某台机器上的备份产物： rdc backup list -m server-1 输出列出该仓库在分块存储中保存的所有快照： | 列 | 含义 | |---|---| | Mode | hot 或 cold。...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -2782,9 +2782,9 @@
   },
   {
     "id": "search-17118",
-    "content": "存储布局",
-    "body": "定时备份落在存储所配置文件夹内的按模式划分的子文件夹中，因此同一存储可以干净地同时承载每小时和每周流，互不混合： <bucket>/<folder>/ ├── hot/ │ ├── <guid-1> │ ├── <guid-2> │ └── ... └── cold/ ├── <guid-1> ├── <guid-3> └── ... 一个仓库可以同时出现在 hot/ 和 cold/ 中（每小时定时器对其快照；每周定时器再次快照）。合并后的列表会将这两行同时显示出来，便于看清哪些流覆盖了哪些仓库。",
-    "excerpt": "定时备份落在存储所配置文件夹内的按模式划分的子文件夹中，因此同一存储可以干净地同时承载每小时和每周流，互不混合： <bucket>/<folder>/ ├── hot/ │ ├── <guid-1> │ ├── <guid-2> │ └── ... └── cold/ ├── <guid-1> ├─...",
+    "content": "hot 和 cold 到底意味着什么",
+    "body": "--mode hot 和 --mode cold 描述的是备份过程中如何对待仓库，而不是数据最终落在哪里。 hot 会对正在运行的仓库做快照。容器持续对外服务，镜像是在写入过程中被捕获的，因此备份是崩溃一致的：相当于机器在那一瞬间断电时的状态。这对任何能从自身日志恢复的东西都没问题，而大多数数据库正是如此。 cold 会先停止容器、刷写到磁盘、确认容器确已停止，冻结镜像后才重新启动容器。这会带来真实的停机，但这段停机是耗时恒定的冻结过程，而不是传输过程，其结果是应用一致的。 两者都写入同一个分块存储。单元按内容寻址，因此一个仓库如果同时被每小时的 hot 计划和每周的 cold 计划备份，共享的块只会存储一次而不是两次，派生家族之间也同样共享。使用量会通过 rdc backup usage 计入您的配额。",
+    "excerpt": "--mode hot 和 --mode cold 描述的是备份过程中如何对待仓库，而不是数据最终落在哪里。 hot 会对正在运行的仓库做快照。容器持续对外服务，镜像是在写入过程中被捕获的，因此备份是崩溃一致的：相当于机器在那一瞬间断电时的状态。这对任何能从自身日志恢复的东西都没问题，而大多数数据库正...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -2893,8 +2893,8 @@
   {
     "id": "search-17128",
     "content": "定义策略",
-    "body": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（hot/ 和 cold/），以保证备份永不混合。 rdc backup strategy set hourly-hot \\ --destination rediacc \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination rediacc \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 策略上的 --exclude 过滤器是针对体积过大、无法纳入每周维护窗口的仓库的推荐逃生口。每小时 hot 策略仍然覆盖它们；cold 只是跳过。--exclude 中的仓库名称匹配本地配置的仓库名称（不带 :tag）。 | 选项 | 描述 | |------|------| | <strategy>（位置参数） | 策略名称（用于机器绑定） | | --destination <storage> | 上传目标存储提供商 | | --cron <expression> | cron 表达式（例如 \"0 2 *\" 表示每天凌晨 2 点） | | --mode <hot\\|cold> | 备份模式 | | --bwlimit <limit> | 上传带宽限制（例如 10M） | | --include <pattern> | 包含过滤器（可重复使用） | | --exclude <pattern> | 排除过滤器（可重复使用） | | --enable / --disable | 启用或禁用策略 |",
-    "excerpt": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，进行应用一致性快照。两个策略写入不同的存储子文件夹（hot/ 和 cold/），以保证备份永不混合。 rdc backup strategy set hourly-hot \\ --destinati...",
+    "body": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，为了应用一致性快照而暂停容器。两者写入同一个分块存储，共享的块只存储一次，而不是按流各存一份。 rdc backup strategy set hourly-hot \\ --destination rediacc \\ --cron \"0 \" \\ --mode hot \\ --bwlimit 20M \\ --enable rdc backup strategy set weekly-cold \\ --destination rediacc \\ --cron \"15 3 0\" \\ --mode cold \\ --exclude very-large-repo \\ --enable cold 策略上的 --exclude 过滤器是针对体积过大、无法纳入每周维护窗口的仓库的推荐逃生口。每小时 hot 策略仍然覆盖它们；cold 只是跳过。--exclude 中的仓库名称匹配本地配置的仓库名称（不带 :tag）。 | 选项 | 描述 | |------|------| | <strategy>（位置参数） | 策略名称（用于机器绑定） | | --destination <storage> | 上传目标存储提供商 | | --cron <expression> | cron 表达式（例如 \"0 2 *\" 表示每天凌晨 2 点） | | --mode <hot\\|cold> | 备份模式 | | --bwlimit <limit> | 上传带宽限制（例如 10M） | | --include <pattern> | 包含过滤器（可重复使用） | | --exclude <pattern> | 排除过滤器（可重复使用） | | --enable / --disable | 启用或禁用策略 |",
+    "excerpt": "规范的默认设置是双策略组合：一个快速的每小时 hot 流，覆盖每个仓库；一个较慢的每周 cold 流，为了应用一致性快照而暂停容器。两者写入同一个分块存储，共享的块只存储一次，而不是按流各存一份。 rdc backup strategy set hourly-hot \\ --destination...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",
@@ -2970,7 +2970,7 @@
   {
     "id": "search-17135",
     "content": "何时从高频热备份策略中排除仓库",
-    "body": "在以下情况下将仓库从高频运行中排除： 仓库较大且完全可以从卷上已有的源数据重新生成，因此每次每小时备份都会浪费大量带宽而不增加实质的恢复价值。 按您的可用上传速度，备份运行会超过其自身的计划间隔。 示例。 analytics-demo 仓库包含大约 114 GB 的派生 Postgres 表，这些表可以从同一个卷中已存储的原始 CSV 转储文件完全重建。在 6 MB/s 上传限制下，该仓库的单次热备份需要超过 5 小时。每小时运行意味着每次运行在下一次触发时仍在进行，导致所有后续运行被静默丢弃（参见长时间运行的备份和重叠的计划）。从 hourly-hot 中排除并保留在 weekly-cold 中意味着每周备份一次，而不是永远不备份。 如果数据是纯粹可再生的，请考虑是否需要备份它。另一种方法是只备份原始源输入（在本例中是 CSV 转储），完全跳过派生副本。源输入的每周冷备份要小得多，完全足以用于恢复。 未从任何策略中排除的仓库会出现在 hot/ 和 cold/ 存储子文件夹中。合并后的 rdc backup list 输出会显示两行，以便您验证哪些流覆盖了哪些仓库。",
+    "body": "在以下情况下将仓库从高频运行中排除： 仓库较大且完全可以从卷上已有的源数据重新生成，因此每次每小时备份都会浪费大量带宽而不增加实质的恢复价值。 按您的可用上传速度，备份运行会超过其自身的计划间隔。 示例。 analytics-demo 仓库包含大约 114 GB 的派生 Postgres 表，这些表可以从同一个卷中已存储的原始 CSV 转储文件完全重建。在 6 MB/s 上传限制下，该仓库的单次热备份需要超过 5 小时。每小时运行意味着每次运行在下一次触发时仍在进行，导致所有后续运行被静默丢弃（参见长时间运行的备份和重叠的计划）。从 hourly-hot 中排除并保留在 weekly-cold 中意味着每周备份一次，而不是永远不备份。 如果数据是纯粹可再生的，请考虑是否需要备份它。另一种方法是只备份原始源输入（在本例中是 CSV 转储），完全跳过派生副本。源输入的每周冷备份要小得多，完全足以用于恢复。 不被任一策略排除的仓库会被两者同时捕获，因此它既有每小时的崩溃一致性快照，也有每周的应用一致性快照。rdc backup snapshot list <repo> 会把它们一起显示出来，两者共享的块只存储一次。",
     "excerpt": "在以下情况下将仓库从高频运行中排除： 仓库较大且完全可以从卷上已有的源数据重新生成，因此每次每小时备份都会浪费大量带宽而不增加实质的恢复价值。 按您的可用上传速度，备份运行会超过其自身的计划间隔。 示例。 analytics-demo 仓库包含大约 114 GB 的派生 Postgres 表，这些表...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
