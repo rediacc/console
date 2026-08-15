@@ -3818,7 +3818,13 @@ brief_now
 hand_now
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
-printf '{"ev":"add","id":"aaaa3331","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated build"}\n{"ev":"lease","id":"aaaa3331","at":"%s","by":"deadbeef","until":"%s","worker":"bogusw1"}\n' \
+# worker_verified:true is the load-bearing half of this fixture. GONE means
+# DROPPED: the harness could see the worker when the lease was taken and cannot
+# see it now. Without that bit the case was really asserting "any id the harness
+# does not list is dead", which is a different and wrong rule -- it accused an
+# Agent leased by NAME, which can never appear in a background-task list, while
+# that agent was actively writing files.
+printf '{"ev":"add","id":"aaaa3331","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated build"}\n{"ev":"lease","id":"aaaa3331","at":"%s","by":"deadbeef","until":"%s","worker":"bogusw1","worker_verified":true}\n' \
     "$NOW" "$NOW" "$UNTIL" >>"${WL%.md}.events.jsonl"
 BG='[]'
 say "answer
@@ -3826,6 +3832,29 @@ say "answer
 ## Remaining
 - the delegated build (ongoing on its worker)"
 check "a lease whose worker the harness no longer lists blocks with the facts" block "NOT in the harness background list"
+
+# THE OTHER HALF: a worker that was NEVER confirmable must not be called dead.
+# This is the case that cost this session several round trips -- an Agent leased
+# by name, absent from the background list by construction, reported as
+# "finished or stopped" while its files were appearing on disk.
+setup
+brief_now
+hand_now
+NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+UNTIL=$(date -u -d '+30 minutes' +%Y-%m-%dT%H:%MZ)
+printf '{"ev":"add","id":"aaaa3333","at":"%s","by":"deadbeef","s":" ","o":"deadbeef","t":"delegated docs"}\n{"ev":"lease","id":"aaaa3333","at":"%s","by":"deadbeef","until":"%s","worker":"docdelta","worker_verified":false}\n' \
+    "$NOW" "$NOW" "$UNTIL" >>"${WL%.md}.events.jsonl"
+BG='[]'
+say "answer
+
+## Remaining
+- the delegated docs (ongoing on its agent)"
+out="$(run)"
+if grep -qF "NOT in the harness background list" <<<"$out"; then
+    fail "a never-verified worker was accused of being dead: ${out:0:220}"
+else
+    pass "a worker that was never confirmable is not reported as dead"
+fi
 # THE FALSE-ACCUSATION CONTROL (the one failure mode worse than no check):
 # an UNVERIFIABLE worker (teammate: no OS process exists by design) must not
 # read as gone. Same fixture shape, worker present in the event.

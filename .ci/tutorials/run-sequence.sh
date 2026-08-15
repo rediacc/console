@@ -70,6 +70,22 @@ for script in "$SCRIPT_DIR"/tutorial-*.sh; do
 done
 [[ $drift -ne 0 ]] && exit 2
 
+# ── Drafts: a script may declare itself not-yet-runnable ────────────────────
+# A tutorial whose feature was removed cannot be run and must not be silently
+# deleted either: the docs<->scripts 1:1 drift check above exists precisely to
+# stop a tutorial from vanishing unnoticed. A TUTORIAL_DRAFT marker in the
+# script is the honest middle: the file stays, the reason stays with it, and
+# the sequence skips it LOUDLY rather than reporting a pass it did not earn.
+declare -a runnable=()
+for slug in "${sequence[@]}"; do
+    if grep -q '^# TUTORIAL_DRAFT:' "$SCRIPT_DIR/tutorial-$slug.sh"; then
+        echo "SKIP (draft): $slug -- $(grep -m1 '^# TUTORIAL_DRAFT:' "$SCRIPT_DIR/tutorial-$slug.sh" | cut -c19-)" >&2
+        continue
+    fi
+    runnable+=("$slug")
+done
+sequence=("${runnable[@]}")
+
 # ── Optional subset (sequence order preserved) ──────────────────────────────
 if [[ -n "${TUTORIAL_ONLY:-}" ]]; then
     declare -a subset=()
