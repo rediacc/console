@@ -1,5 +1,6 @@
 ---
-sourceHash: "51a38f7f8567e63e"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 title: Panganduse järjepidevus elektrikatkestuse ajal
 description: Hoia pangandusoperatsioone käigus elektrikatkestuste ajal mandritevaheline andmete peegeldamisega.
 category: Use Cases
@@ -46,29 +47,25 @@ Suurem Hispaania pangakontsern, kes rakendas Rediacc mandritevahelist replikatsi
 ![Panganduse järjepidevus elektrikatkestuse ajal](/img/blackout-continuity.svg)
 
 ### 1. **Mandritevaheline andmete peegeldamine**
-* Põhilised pangaandmebaasid ja tehingusüsteemid **replikeeriti pidevalt** andmekeskustesse Ameerika Ühendriikides
-* Kõik kliendiandmed ja tehingukirjed sünkroniseeriti **alla 3-sekundilise viivitusega**
+* Põhilised pangaandmebaasid ja tehingusüsteemid **replikeeritaks pidevalt** andmekeskustesse Ameerika Ühendriikides
+* Kliendiandmed ja tehingukirjed püsiksid sünkroonis replikatsiooniviivituse piires, mille sinu ühendus ja andmemaht võimaldavad
 
 ### 2. **Sujuv operatiivne üleminek**
-* Kui Hispaania serverid kaotasid toite, **suunati liiklus automaatselt ümber** USA-põhistele süsteemidele
-* Kliendid kogesid ainult lühikest 47-sekundilist katkestust enne teenuste taastumist
+* Kui Hispaania serverid kaotaksid toite, **suunataks liiklus automaatselt ümber** USA-põhistele süsteemidele
+* Kliendid märkaksid vaid lühikest katkestust ümbersuunamise lõpuleviimise ajal, mitte katkestust, mis kestaks sama kaua kui elektrivõrgu rike ise
 
 ### 3. **Kaugteenuste jätkamine**
-* Kõnekeskused mõjutamata riikides pääsesid replitseeritud süsteemidele, et säilitada klienditugi
-* Mobiilipanganduse rakendused jäid toimivaks, ühendudes alternatiivsete andmekeskustega
+* Kõnekeskused mõjutamata riikides pääseksid replitseeritud süsteemidele ja jätkaksid klienditoe pakkumist
+* Mobiilipanganduse rakendused püsiksid toimivana, ühendudes alternatiivsete andmekeskustega
 
 ## Potentsiaalne tulemus
 
 **Ärijätkuvus:**
-* Samal ajal kui konkurendid olid 14+ tundi võrguühenduseta, hoidis pank **98% teenuste saadavust**
+* Konkurendid olid võrguühenduseta üle 14 tunni. Seda arhitektuuri kasutav pank jätkaks teenindamist kogu selle aja jooksul
 
-**Klientide usaldus:**
-* Pank oli ainus suur finantsasutus, kes töötas tehinguid kriisi ajal
-* Klientide rahulolu kasvas 27% kriisijärgsetes uuringutes
+**Teenuse järjepidevus:**
+* Pank saaks jätkata tehingute töötlemist ajal, mil teise regioonita asutused seda ei suudaks
 
 **Finantskaitse:**
-* Pank hoidis ära ligikaudu 370 miljoni euro suurused kahjud tehingutõrgetest
-* Andmeid ei kaotatud ega rikutud, kõrvaldades kulukad taastamistoimingud
-
-**Konkurentsieelis:**
-* Pank registreeris järgneva kuu jooksul 140 000 uut klienti konkurentidelt, kes ei suutnud teenust säilitada
+* Väldiks kahjusid, mis kogunevad iga tunniga, mil maksesüsteem on maas
+* Andmeid ei kaotataks ega rikutaks, mistõttu poleks taastamistoimingut vaja

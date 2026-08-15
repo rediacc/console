@@ -3,14 +3,14 @@
  * Provides types and utilities for consistent telemetry across web and CLI.
  */
 
-export { TELEMETRY_ATTRIBUTES, TELEMETRY_SUBSCRIPTION_SOURCES } from './attributes';
+export { TELEMETRY_ATTRIBUTES, TELEMETRY_SUBSCRIPTION_SOURCES } from './attributes.js';
 // Types
 export type {
   TelemetryConfig,
   TelemetryContext,
   TelemetryMetric,
   UserContext,
-} from './types';
+} from './types.js';
 
 // Utilities
 export {
@@ -23,4 +23,4 @@ export {
   extractApiEndpoint,
   generateSessionId,
   isSensitiveKey,
-} from './utils';
+} from './utils.js';

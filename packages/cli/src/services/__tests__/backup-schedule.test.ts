@@ -12,7 +12,12 @@ beforeAll(async () => {
 const mockExecStreaming = vi.fn();
 const mockConnect = vi.fn().mockResolvedValue(undefined);
 const mockClose = vi.fn();
-const mockBuildRcloneArgs = vi.fn();
+// A tripwire, not a stub. The rclone/OneDrive emission was removed on
+// 2026-08-15, so any call to buildRcloneArgs from the scheduling path means
+// dead credential plumbing came back to life.
+const mockBuildRcloneArgs = vi.fn(() => {
+  throw new Error('buildRcloneArgs must not be reachable from the backup scheduling path');
+});
 
 const mockProvisionRenetToRemote = vi
   .fn()
@@ -146,7 +151,6 @@ async function desiredContentFor(
   strategyName: string,
   strategy: import('../../types/index.js').BackupStrategyConfig,
   destinations: import('../../types/index.js').BackupStrategyDestination[],
-  rcloneArgsByDest: Map<string, { remote: string; params: string[] }>,
   datastore = '/mnt/rediacc',
   remoteRenetPath = '/usr/bin/renet'
 ) {
@@ -155,7 +159,6 @@ async function desiredContentFor(
     strategyName,
     strategy,
     destinations,
-    rcloneArgsByDest,
     datastore,
     remoteRenetPath
   );
@@ -189,17 +192,30 @@ const DEFAULT_LOCAL_CONFIG = {
   },
 };
 
+/**
+ * The only destination kind a unit can be generated for since the rclone/
+ * OneDrive path was removed on 2026-08-15.
+ */
+const HOSTED_DEST: import('../../types/index.js').BackupStrategyDestination = {
+  kind: 'hosted-service',
+  name: 'chunks-hourly',
+  enabled: true,
+};
+
+/**
+ * A destination as the operator's real config holds it: no `kind` field at all.
+ * The schema defaults it to `storage` on parse; the generator must refuse it
+ * either way rather than emitting a unit with no ExecStart.
+ */
+const KINDLESS_DEST = {
+  name: 'onedrive-hourly',
+  storage: 'microsoft',
+} as unknown as import('../../types/index.js').BackupStrategyDestination;
+
 const DEFAULT_STRATEGY = {
   schedule: '0 * * * *',
   mode: 'hot',
-  destinations: [{ name: 'onedrive-hourly', storage: 'microsoft', enabled: true }],
-};
-
-const DEFAULT_RCLONE_ARGS = {
-  remote: ':s3:rediacc/hostinger',
-  // Empty params so the default strategy has no env file — integration
-  // tests can focus on unit reconciliation without also mocking env hashes.
-  params: [] as string[],
+  destinations: [HOSTED_DEST],
 };
 
 // ---------------------------------------------------------------------------
@@ -207,62 +223,138 @@ const DEFAULT_RCLONE_ARGS = {
 // ---------------------------------------------------------------------------
 
 describe('generateServiceUnit', () => {
-  it('keeps bwlimit on argv (per-destination) and emits EnvironmentFile=', async () => {
+  it('keeps bwlimit on argv and needs no EnvironmentFile= at all', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent, envVars } = _testing.generateServiceUnit(
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', bandwidthLimit: '6M', destinations: [] },
-      [{ name: 'onedrive', storage: 'microsoft' }],
-      new Map([['onedrive', { remote: ':onedrive:hostinger', params: [] }]]),
+      [HOSTED_DEST],
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(serviceContent).toContain('--mode hot');
-    expect(serviceContent).toContain('--rclone-param bwlimit=6M');
+    expect(serviceContent).toContain('ExecStart=/usr/bin/renet backup snapshot');
+    // Converted to bytes/second: `backup snapshot --bwlimit` is an Int64, and
+    // the rclone-style '6M' the schema declares would die at cobra's flag parse
+    // inside the timer, at run time, on a machine nobody is watching.
+    expect(serviceContent).toContain('--bwlimit 6291456');
+    expect(serviceContent).not.toContain('--bwlimit 6M');
+    // The chunk store carries no credentials by construction, so the
+    // EnvironmentFile= sidecar has nothing to hold any more.
     expect(serviceContent).not.toContain('EnvironmentFile=');
-    expect(envVars.RCLONE_BWLIMIT).toBeUndefined();
+    expect(envVars).toEqual({});
   });
 
-  it('moves rclone credential params to envVars as RCLONE_<KEY> and keeps them out of ExecStart', async () => {
+  it('never writes credentials into the unit or a sidecar for a chunk-store destination', async () => {
+    // Successor to the rclone test that pinned credentials OUT of ExecStart and
+    // INTO a 0600 EnvironmentFile=. There is no credential to place any more:
+    // the machine authenticates with its signed licence blob, so the correct
+    // assertion is that nothing credential-shaped appears anywhere.
     const { _testing } = await import('../backup/backup-schedule.js');
-    const tokenJson = '{"access_token":"abc","refresh_token":"xyz"}';
     const { serviceContent, envVars } = _testing.generateServiceUnit(
-      'nightly-cold',
-      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([
-        [
-          'dest',
-          {
-            remote: ':onedrive:hostinger',
-            params: [
-              `--onedrive-token=${tokenJson}`,
-              '--onedrive-drive-id=4D895B49A06E9E5C',
-              '--onedrive-drive-type=personal',
-            ],
-          },
-        ],
-      ]),
+      'nightly-snapshot',
+      { schedule: '0 3 * * *', destinations: [] },
+      [HOSTED_DEST],
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
-    expect(envVars).toEqual({
-      RCLONE_ONEDRIVE_TOKEN: tokenJson,
-      RCLONE_ONEDRIVE_DRIVE_ID: '4D895B49A06E9E5C',
-      RCLONE_ONEDRIVE_DRIVE_TYPE: 'personal',
-    });
-    expect(serviceContent).not.toContain('onedrive-token');
-    expect(serviceContent).not.toContain('access_token');
-    expect(serviceContent).toContain('EnvironmentFile=/etc/rediacc/backup-nightly-cold.env');
+    expect(envVars).toEqual({});
+    expect(serviceContent).not.toMatch(/RCLONE_|--rclone-param|--setenv|token/i);
+    expect(serviceContent).not.toContain('EnvironmentFile=');
+  });
+
+  it('emits no --mode flag, which `backup snapshot` does not have', async () => {
+    // private/renet/cmd/renet/backup_snapshot.go declares no --mode. Pinned so
+    // nothing starts emitting one that cobra would reject at flag-parse time,
+    // inside the timer, on a machine nobody is watching.
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'hourly-hot',
+      { schedule: '0 * * * *', mode: 'hot', destinations: [] },
+      [HOSTED_DEST],
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(serviceContent).not.toContain('--mode');
+  });
+
+  it('emits --cold for a cold strategy, and nothing for a hot one', async () => {
+    // This assertion used to say the opposite: cold was REFUSED, because the
+    // scheduled verb could only take a hot snapshot and deploying one would
+    // have handed back unquiesced snapshots of a database the operator asked to
+    // be stopped first. `backup snapshot --cold` closed that gap, so the flag
+    // is emitted rather than the strategy rejected.
+    //
+    // Both directions are asserted deliberately. Checking only the cold case
+    // would pass just as happily against a generator that appended --cold to
+    // EVERY unit, which would impose a nightly outage on every hot strategy on
+    // the machine — the mirror image of the bug this replaced.
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const gen = (mode: 'hot' | 'cold') =>
+      _testing.generateServiceUnit(
+        `nightly-${mode}`,
+        { schedule: '0 3 * * *', mode, destinations: [] },
+        [HOSTED_DEST],
+        '/mnt/rediacc',
+        '/usr/bin/renet'
+      ).serviceContent;
+
+    expect(gen('cold')).toContain('--cold');
+    expect(gen('hot')).not.toContain('--cold');
+    // The retired spelling must not come back: renet takes --cold, not --mode.
+    // `--mode cold` parses as an unknown flag and the unit dies inside a timer
+    // at 03:00, where nobody is watching.
+    expect(gen('cold')).not.toContain('--mode');
+  });
+
+  it('gives a cold unit a stop window longer than renet needs to restart', async () => {
+    // A SIGTERM inside the cold window leaves containers STOPPED, and renet's
+    // handler has to bring them all back before it exits — bounded at 15 min
+    // renet-side. The hot budget of 90s would SIGKILL mid-restart and leave the
+    // repositories down, turning a clean `systemctl stop` into the outage cold
+    // mode exists to keep brief.
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const stopSec = (mode: 'hot' | 'cold') => {
+      const { serviceContent } = _testing.generateServiceUnit(
+        `nightly-${mode}`,
+        { schedule: '0 3 * * *', mode, destinations: [] },
+        [HOSTED_DEST],
+        '/mnt/rediacc',
+        '/usr/bin/renet'
+      );
+      const m = /TimeoutStopSec=(\d+)/.exec(serviceContent);
+      if (!m) throw new Error(`no TimeoutStopSec in the ${mode} unit`);
+      return Number(m[1]);
+    };
+
+    // 15 min is renet's coldRestartTimeout; anything at or under it can SIGKILL
+    // a restart that is still working.
+    expect(stopSec('cold')).toBeGreaterThan(15 * 60);
+    // And the hot unit must NOT inherit it: a 16-minute shutdown wait on every
+    // reboot, for a path whose cleanup is bounded at 60s, is its own defect.
+    expect(stopSec('hot')).toBe(90);
+  });
+
+  it('defaults an unset mode to hot rather than to an outage', async () => {
+    // A strategy with no `mode` is the common case. Reading undefined as cold
+    // would stop every container on the machine nightly, so the default is
+    // pinned here rather than left to whichever branch happens to run.
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const { serviceContent } = _testing.generateServiceUnit(
+      'nightly',
+      { schedule: '0 3 * * *', destinations: [] },
+      [HOSTED_DEST],
+      '/mnt/rediacc',
+      '/usr/bin/renet'
+    );
+    expect(serviceContent).not.toContain('--cold');
   });
 
   it('emits TimeoutStartSec=infinity so long uploads are never killed by systemd', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent } = _testing.generateServiceUnit(
-      'nightly-cold',
-      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      'nightly-snapshot',
+      { schedule: '0 3 * * *', destinations: [] },
+      [HOSTED_DEST],
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
@@ -280,8 +372,7 @@ describe('generateServiceUnit', () => {
     const { serviceContent } = _testing.generateServiceUnit(
       'hourly-hot',
       { schedule: '0 * * * *', mode: 'hot', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      [HOSTED_DEST],
       '/mnt/rediacc',
       '/usr/bin/renet'
     );
@@ -298,10 +389,9 @@ describe('generateServiceUnit', () => {
   it('uses the same renet path for the renewal as for the backup itself', async () => {
     const { _testing } = await import('../backup/backup-schedule.js');
     const { serviceContent } = _testing.generateServiceUnit(
-      'nightly-cold',
-      { schedule: '0 3 * * *', mode: 'cold', destinations: [] },
-      [{ name: 'dest', storage: 'microsoft' }],
-      new Map([['dest', { remote: ':onedrive:hostinger', params: [] }]]),
+      'nightly-snapshot',
+      { schedule: '0 3 * * *', destinations: [] },
+      [HOSTED_DEST],
       '/mnt/rediacc',
       '/opt/rediacc/bin/renet'
     );
@@ -311,24 +401,56 @@ describe('generateServiceUnit', () => {
     expect(serviceContent).not.toContain('ExecStartPre=-/usr/bin/renet');
   });
 
-  it('throws on conflicting env vars across destinations', async () => {
+  it('validates every destination, not just the first, before emitting a unit', async () => {
+    // Successor to the conflicting-env-var test: destinations no longer
+    // contribute env vars that could collide, but the multi-destination
+    // validation it protected still matters — a strategy must be rejected
+    // whole rather than half-rendered.
     const { _testing } = await import('../backup/backup-schedule.js');
     const call = () =>
       _testing.generateServiceUnit(
         'mixed',
         { schedule: '0 * * * *', destinations: [] },
-        [
-          { name: 'dest1', storage: 'm1' },
-          { name: 'dest2', storage: 'm2' },
-        ],
-        new Map([
-          ['dest1', { remote: ':onedrive:a', params: ['--onedrive-token=aaa'] }],
-          ['dest2', { remote: ':onedrive:b', params: ['--onedrive-token=bbb'] }],
-        ]),
+        [HOSTED_DEST, { kind: 'storage' as const, name: 'dest2', storage: 'm2' }],
         '/mnt/rediacc',
         '/usr/bin/renet'
       );
-    expect(call).toThrow(/Conflicting env var "RCLONE_ONEDRIVE_TOKEN"/);
+    expect(call).toThrow(/Backup destination "dest2"/);
+    expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
+  });
+
+  it('REFUSES an rclone `storage` destination instead of emitting a unit with no ExecStart', async () => {
+    // The exact defect the hosted-service branch was added to fix, reachable
+    // again from the other side now that rclone is gone: a config still naming
+    // a storage destination must not deploy a timer that backs up nothing.
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const call = () =>
+      _testing.generateServiceUnit(
+        'hourly-hot',
+        { schedule: '0 * * * *', mode: 'hot', destinations: [] },
+        [{ kind: 'storage' as const, name: 'onedrive-hourly', storage: 'microsoft' }],
+        '/mnt/rediacc',
+        '/usr/bin/renet'
+      );
+    expect(call).toThrow(/Backup destination "onedrive-hourly"/);
+    expect(call).toThrow(/kind "storage"/);
+    expect(call).toThrow(/rclone\/OneDrive path was removed on 2026-08-15/);
+    expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
+  });
+
+  it('REFUSES a destination with no `kind`, which is how the real config reads', async () => {
+    const { _testing } = await import('../backup/backup-schedule.js');
+    const call = () =>
+      _testing.generateServiceUnit(
+        'hourly-hot',
+        { schedule: '0 * * * *', mode: 'hot', destinations: [] },
+        [KINDLESS_DEST],
+        '/mnt/rediacc',
+        '/usr/bin/renet'
+      );
+    expect(call).toThrow(/Backup destination "onedrive-hourly"/);
+    expect(call).toThrow(/kind "storage"/);
+    expect(call).toThrow(/Refusing to generate a unit that would back up nothing\./);
   });
 });
 
@@ -638,7 +760,6 @@ describe('pushBackupSchedule (reconcile)', () => {
     mockGetLocalConfig.mockResolvedValue(DEFAULT_LOCAL_CONFIG);
     mockGetBackupStrategy.mockResolvedValue(DEFAULT_STRATEGY);
     mockGetStorage.mockResolvedValue({ vaultContent: { any: 'value' } });
-    mockBuildRcloneArgs.mockReturnValue(DEFAULT_RCLONE_ARGS);
     mockRefreshRepoLicensesBatch.mockResolvedValue({
       scanned: 2,
       issued: 1,
@@ -747,12 +868,10 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 2: all hashes match → unchanged, no writes, no daemon-reload', async () => {
-    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
     const desired = await desiredContentFor(
       'hourly-hot',
       DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations,
-      rcloneArgsByDest
+      DEFAULT_STRATEGY.destinations
     );
 
     scriptedExec([
@@ -789,12 +908,10 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 3: schedule changed → only timer staged, service untouched', async () => {
-    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
     const desired = await desiredContentFor(
       'hourly-hot',
       DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations,
-      rcloneArgsByDest
+      DEFAULT_STRATEGY.destinations
     );
 
     scriptedExec([
@@ -839,12 +956,10 @@ describe('pushBackupSchedule (reconcile)', () => {
   });
 
   it('test 4: removed strategy → disable --now, then rm on exact paths (no glob)', async () => {
-    const rcloneArgsByDest = new Map([['onedrive-hourly', DEFAULT_RCLONE_ARGS]]);
     const desired = await desiredContentFor(
       'hourly-hot',
       DEFAULT_STRATEGY as import('../../types/index.js').BackupStrategyConfig,
-      DEFAULT_STRATEGY.destinations,
-      rcloneArgsByDest
+      DEFAULT_STRATEGY.destinations
     );
 
     scriptedExec([

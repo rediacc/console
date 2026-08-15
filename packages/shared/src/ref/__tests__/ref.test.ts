@@ -15,7 +15,7 @@ import {
   splitRef,
   validateLabel,
   validateTag,
-} from '../index';
+} from '../index.js';
 
 /** Assert `fn` throws a RefGrammarError whose message includes `needle`. */
 function expectGrammarError(fn: () => unknown, needle?: string): void {

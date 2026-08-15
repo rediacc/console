@@ -1,6 +1,6 @@
 ---
 title: "Backup & Restore"
-description: "Back up encrypted repositories to any rclone-compatible storage, restore on any machine, and automate with named backup strategies and systemd timers."
+description: "Back up encrypted repositories two ways: content-addressed chunk storage that uploads only changed cells, or a full push to any rclone-compatible storage. Restore on any machine and automate with named strategies and systemd timers."
 category: "Guides"
 order: 7
 language: en
@@ -10,6 +10,53 @@ sourceHash: "f5222efa9505ab5e"
 # Backup & Restore
 
 Rediacc backs up encrypted repositories to external storage and restores them on the same or a different machine. Backups are encrypted; your repository's LUKS credential is required to restore.
+
+## Two backup paths
+
+Rediacc has two independent backup paths, and this guide covers both. They use
+different storage and different commands, so a repository backed up on one is not
+backed up on the other.
+
+**Chunk storage** (`rdc backup snapshot`) uploads the repository image in
+fixed-size cells addressed by content. The first run uploads the full non-zero
+inventory; every run after it uploads only the cells that changed, decided from
+filesystem allocation metadata rather than by reading the whole image. Identical
+cells are stored once across snapshots and across a fork family, and usage is
+metered against your storage quota (`rdc backup usage`).
+
+**Storage push** (`rdc repo push`) copies a whole backup file to an
+rclone-compatible provider you register yourself. It is being retired in favour
+of chunk storage, and scheduled strategies no longer drive it. The sections below
+that describe it still work today, but treat them as the legacy path.
+
+Restoring from chunk storage works: `rdc backup restore <repo> --at <snapshot-id>`
+materializes a stored snapshot, and `--at` also accepts an RFC 3339 timestamp,
+which is resolved against the snapshot inventory. Add `--as <name>` to restore
+under a different name and `--up` to bring the repository up afterwards. Chunk
+storage also gives you upload (`rdc backup snapshot`), verification
+(`rdc backup verify`, and `--deep` to re-hash every cell rather than a sample),
+the snapshot inventory (`rdc backup manifests`), and quota accounting
+(`rdc backup usage`).
+
+### Chunk-storage commands
+
+```bash
+# Upload a snapshot. First run seeds, later runs send only changed cells.
+rdc backup snapshot my-app
+
+# Plan without uploading: reports what would move.
+rdc backup snapshot my-app --dry-run
+
+# Distrust the local anchor and re-upload the full inventory.
+# This re-uploads everything and re-charges quota; use it only when the
+# anchor is known bad.
+rdc backup snapshot my-app --reseed
+
+# Check the stored inventory and your quota.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Configure Storage
 
@@ -62,7 +109,7 @@ Pull a repository backup from external storage:
 rdc repo pull my-app --from my-storage
 ```
 
-Pull always checks that the target repository is mounted before writing. If it is not mounted, the operation is aborted.
+Pull refuses to overwrite a repository that is currently **mounted**. Unmount it first, pull, then bring it back up with `rdc repo up`. Directory-based repositories are the exception: they sync in place while mounted.
 
 | Option | Description |
 |--------|-------------|

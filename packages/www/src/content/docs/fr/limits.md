@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Limites et quotas
@@ -138,8 +138,8 @@ La migration à chaud via CRIU a les contraintes suivantes :
 |--------|--------|
 | Destinations de backup par repository | Illimitées |
 | Jobs de backup simultanés | 1 par repository (les jobs sont mis en file d'attente s'ils sont déclenchés simultanément) |
-| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc backup strategy set <name> --bwlimit "6M"` pour limiter la vitesse d'envoi (syntaxe rclone `--bwlimit` : simple `6M`, directionnelle `6M:off`, ou tableau horaire `08:00,3M;22:00,10M`) |
-| Rétention | Contrôlée par votre fournisseur de stockage (S3, Cloudflare R2, etc.). Rediacc n'impose pas de politiques de rétention. |
+| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc backup strategy set <name> --bwlimit "6M"` pour limiter la vitesse d'envoi |
+| Rétention | Déclarée avec `rdc backup retention set` (paramètres GFS : `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) et appliquée côté serveur ; `rdc backup retention clear` la supprime. Le stockage fragmenté est mesuré par rapport à un quota de plan en octets physiques uniques stockés, si bien que les données identiques entre les instantanés et sur toute une famille de forks ne sont comptées qu'une seule fois : Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, vérifiable avec `rdc backup usage`. La voie héritée de push de stockage n'a pas de rétention propre et dépend de votre fournisseur. |
 | Backup inter-machines | Pris en charge ; la machine de destination doit disposer d'un espace datastore suffisant |
 
 ---

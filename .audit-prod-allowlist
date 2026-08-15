@@ -31,16 +31,32 @@
 # BLOCKER: neither advisory is reachable in our build — the high one is the esbuild Deno module (lib/deno/mod.ts), which we never import (Node-only toolchain), and the low one is the esbuild dev server's Windows path traversal; the dev server is never shipped to prod and CI/prod builds do not run on Windows. Drop once astro/vite widen the esbuild range to admit 0.28.1.
 1120680
 
-# astro 5.18.1 reflected-XSS / unescaped-attribute / host-header SSRF advisories
-# (1120912, 1120917; sibling 1120914 no longer fires and was pruned). The patched
-# versions are astro 7.0.2+, a major upgrade that removes legacy content collections
-# and requires migrating src/content/config.ts to src/content.config.ts with
-# collection loaders — a breaking change across the docs site, tracked separately.
-# BLOCKER: @rediacc/www builds with astro output: 'static'; the slot-name XSS,
-# spread-attribute XSS, and prerendered error-page SSRF paths are all SSR/host-header
-# paths that do not exist in a static export. Drop once the site migrates to astro v7.
-1120912
-1120917
+# astro 5.18.1 reflected-XSS / unescaped-attribute / host-header SSRF advisories.
+# UPSTREAM RENUMBERED THIS FAMILY on 2026-08-15: 1120912 and 1120917 stopped firing
+# and 1123700 / 1139373 / 1139375 / 1139376 / 1139377 / 1139378 took their place,
+# several of them explicitly "incomplete fix for CVE-2026-54298" re-issues of the
+# same defects. The dead pair was deleted (the liveness half of the convention) and
+# the live ids added; the reasoning below is unchanged because the vulnerabilities
+# are. The patched versions are astro 7.0.2+, a major upgrade that removes legacy
+# content collections and requires migrating src/content/config.ts to
+# src/content.config.ts with collection loaders — tracked separately.
+# BLOCKER: @rediacc/www builds with astro output: 'static' (astro.config.mjs:144).
+# Two distinct arguments, and they are not the same one twice: the host-header SSRF
+# in the prerendered error-page fetch (1139377) needs a SERVER to receive a Host
+# header, and a static export has none. The XSS advisories (1123700, 1139373,
+# 1139375, 1139376, 1139378 — spread attribute names, transition:* directive values,
+# View Transition animation properties, slot names) are render-time escaping bugs,
+# and in a static export rendering happens at BUILD time over our own committed
+# content, so there is no request-time attacker-controlled value to inject. Note
+# 1139375 names hydrated islands, which a static build does ship — it is covered by
+# the second argument, not the first, because the directive values still come from
+# our source. Drop the whole group once the site migrates to astro v7.
+1123700
+1139373
+1139375
+1139376
+1139377
+1139378
 
 # js-yaml 3.x quadratic CPU in !!omap resolution (GHSA-5p4m-2wfm-xmqj,
 # CVE-2026-59870). The 4.x half of this advisory was FIXED, not allowlisted:
@@ -57,3 +73,14 @@
 # output: 'static' (astro.config.mjs:144) so no server evaluates YAML at
 # request time. Re-check when gray-matter ships a js-yaml 4 engine.
 1138114
+
+# sharp inherits four libvips CVEs (2026-33327, 2026-33328, 2026-35590, 2026-35591).
+# npm reports fixAvailable as astro@7.2.2 — sharp reaches us only through astro's
+# image optimization, so the fix is gated behind the SAME major migration as the
+# astro group above, not behind anything sharp ships.
+# BLOCKER: reaching libvips requires DECODING AN ATTACKER-SUPPLIED IMAGE. sharp runs
+# only at build time inside @rediacc/www's static export, over images committed to
+# this repo; no runtime path accepts an uploaded or remote image (www is
+# output: 'static', astro.config.mjs:144, so no server decodes anything at request
+# time). Drop together with the astro group when the site migrates to astro v7.
+1124066

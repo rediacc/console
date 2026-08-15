@@ -27,9 +27,11 @@ import { formatDuration } from '../../utils/format.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../../utils/timeline.js';
+import { accountServerFetch } from '../account/account-client.js';
 import {
   isDatastoreScopedId,
   issueRepoLicense,
+  readRuntimeRepoLicenseStatuses,
   type RepoBatchRecoveryFailureMode,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
@@ -55,6 +57,7 @@ import {
 } from '../renet/renet-execution.js';
 import {
   isRepoProvisioningFunction,
+  isRestoreLicenseFunction,
   parseRenetLicenseFailure,
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
@@ -105,6 +108,10 @@ import {
 } from './job-client.js';
 import { followJobLogs, readJobStatus, renderJobEvent } from './job-remote.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
+// Type-only, so nothing from the command layer is pulled in at runtime. The
+// declaration is imported rather than restated because it is a WIRE shape: a
+// hand-written twin here is how the two sides drift apart while both stay green.
+import type { BackupManifestsResponse } from '../../commands/backup-storage.js';
 
 // ExecuteResult only. The other seam types are consumed from executor-factory,
 // which is the entry point to this layer; re-exporting them here as well just
@@ -372,6 +379,160 @@ async function resolveRepoLicenseContext(
   const ctx: RepoLicenseContext = { ...built, datastoreMount };
   const datastoreId = await resolveProvisioningDatastoreId(repo, sftp, scope);
   return datastoreId === undefined ? ctx : { ...ctx, datastoreId };
+}
+
+/**
+ * The licence context for `backup_restore`, resolved from the RESTORE's own
+ * inputs rather than from a repo that exists on the machine.
+ *
+ * A deliberate copy of `resolveRepoLicenseContext` rather than a shared helper,
+ * and the copy is the design (see `ensureRepoLicenseForRestore`). Every one of
+ * its four inputs comes from somewhere else here:
+ *
+ * - The repo record is the one `backup restore` wrote BEFORE invoking the
+ *   executor, carrying the SOURCE's guid (backup.ts's `addRepository` sets
+ *   `repositoryGuid: source.repositoryGuid`). That is deliberate on both sides:
+ *   the licence minted here is the one `repository_up` will look for after the
+ *   restore, so `--up` works and nothing is orphaned.
+ * - The lineage comes from `params.lineage`, NOT from the record. The restored
+ *   record carries no `grandGuid` at all — `addRepository` is called with five
+ *   fields and that is not one of them, and `grandGuid` is stored, never
+ *   derived (resource-state.ts). `params.lineage` is the same value the command
+ *   computed (`source.grandGuid ?? source.repositoryGuid`) and hands to the
+ *   chunk store, so reading it keeps one number in play instead of two.
+ * - The size comes from the MANIFEST, because the machine cannot answer: the
+ *   image being licensed does not exist there yet by construction, so the
+ *   `stat` probe would report the 1 GB floor and cap a restored 500 GB repo.
+ * - The datastore identity reuses `resolveProvisioningDatastoreId` unchanged.
+ *   `backup restore` records `placement` for both the `--datastore` and the
+ *   `--machine` case, and this is the piece that decides whether the blob lands
+ *   where `datastore.IdentityAt` will look for it. Getting it wrong is a
+ *   licence installed somewhere nothing reads.
+ */
+async function resolveRestoreLicenseContext(
+  machineName: string,
+  params: Record<string, unknown>,
+  sftp: SFTPClient,
+  scope: DatastoreScopeOptions
+): Promise<Omit<RepoLicenseContext, 'requestedSizeGb'> | null> {
+  const repoName = typeof params.repository === 'string' ? params.repository : '';
+  if (!repoName) return null;
+  let repo = await configService.getRepository(repoName);
+  if (!repo && !repoName.includes(':')) {
+    repo = await configService.getRepository(`${repoName}:latest`);
+  }
+  if (!repo?.repositoryGuid) return null;
+  const machine = await configService.getLocalMachine(machineName);
+
+  const repositoryGuid = repo.repositoryGuid;
+  const lineage = typeof params.lineage === 'string' && params.lineage ? params.lineage : undefined;
+  const grandGuid = lineage ?? repo.grandGuid ?? repositoryGuid;
+
+  // Size is deliberately NOT resolved here. It costs a round trip to the
+  // account server, and the caller's skip probe may decide no licence needs
+  // issuing at all — in which case that round trip buys nothing.
+  const ctx: Omit<RepoLicenseContext, 'requestedSizeGb'> = {
+    repositoryGuid,
+    grandGuid,
+    // Same rule buildRepoLicenseContext applies: a lineage that is the repo's
+    // own guid is a grand, anything else is a fork of one.
+    kind: grandGuid === repositoryGuid ? 'grand' : 'fork',
+    datastoreMount: repoImageDatastoreMount(repo, machine),
+  };
+  const datastoreId = await resolveProvisioningDatastoreId(repo, sftp, scope);
+  return datastoreId === undefined ? ctx : { ...ctx, datastoreId };
+}
+
+/**
+ * Whether the target already holds a usable licence for the repo about to be
+ * restored — in which case issuance is skipped entirely.
+ *
+ * This is a cost control, and it is part of the fix rather than a refinement.
+ * `claimRepoLicenseIssuanceSlot` is unconditional on the single-issue path and
+ * dedupes by NOTHING: not by repo, not by machine. Without this probe a DR
+ * session that fails three times on an unrelated error would spend four monthly
+ * issuances, which is exactly the shape of surprise a disaster is the worst
+ * moment to receive.
+ *
+ * Scoped to the SOURCE GUID IN THE TARGET DATASTORE, never "any licence on the
+ * machine". Probing for "any" would reproduce the carrier-repo bug from the
+ * other direction: it would skip issuance on a machine holding some unrelated
+ * blob, the restore would then succeed through renet's any-repo fallback, and
+ * the `--up` that follows would fail for want of a licence for THIS guid.
+ *
+ * Best-effort: a scan that cannot answer means "issue", never "refuse". The
+ * cost of a redundant issuance is one slot; the cost of a refused pre-flight is
+ * a failed disaster recovery.
+ */
+async function restoreLicenseAlreadyInstalled(
+  ctx: Omit<RepoLicenseContext, 'requestedSizeGb'>,
+  machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+  sshPrivateKey: string,
+  remoteRenetPath: string,
+  sftp: SFTPClient
+): Promise<boolean> {
+  // `--all-datastores`, so a licence in a NAMED datastore is visible here; the
+  // scope comparison below is what keeps that breadth from being permissive.
+  const statuses = await readRuntimeRepoLicenseStatuses(
+    machine,
+    sshPrivateKey,
+    remoteRenetPath,
+    sftp
+  ).catch(() => []);
+  // Both sides normalised through the same predicate the licence WRITER uses,
+  // so an empty string, a missing field and a malformed id all collapse to the
+  // unscoped population — which is the population they would actually be
+  // written to.
+  const wanted = isDatastoreScopedId(ctx.datastoreId) ? ctx.datastoreId : undefined;
+  return statuses.some(
+    (entry) =>
+      entry.repositoryGuid === ctx.repositoryGuid &&
+      entry.runtimeValid &&
+      (isDatastoreScopedId(entry.datastoreId) ? entry.datastoreId : undefined) === wanted
+  );
+}
+
+/**
+ * The size to request for a restore's licence, read from the SNAPSHOT the
+ * restore is about to materialise.
+ *
+ * `resolveRequestedSizeGb` cannot answer this one: it `stat`s the repo image,
+ * and on a restore that image does not exist yet — on a DR machine nothing
+ * does. It would fall back to the 1 GB floor and cap the restored repo at 1 GB
+ * for the rest of its life, because `MaxRepositorySizeGb` is signed into the
+ * payload and read back by renet's `repository_limits`.
+ *
+ * The manifest index is the authority instead: its `totalBytes` is written from
+ * the snapshot's `ImageBytes`, i.e. the full LOGICAL image size, which is the
+ * size the restored repo will present. `params.at` is already a snapshot id by
+ * the time the executor sees it (the command resolves a time to an id before
+ * dispatching), so this is an exact lookup rather than a search.
+ *
+ * Best-effort, and the floor is the fallback: this runs inside a pre-flight for
+ * disaster recovery, and refusing the restore because a size lookup failed
+ * would be a worse outcome than an under-sized licence the operator can
+ * re-issue. It warns rather than throws, for the same reason
+ * `warnUnmeasuredRepoSize` does.
+ */
+async function resolveRestoreSizeGb(lineage: string, at: unknown): Promise<number> {
+  const snapshotId = typeof at === 'string' ? at : '';
+  try {
+    const index = await accountServerFetch<BackupManifestsResponse>(
+      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}`
+    );
+    const manifest = index.manifests.find((m) => m.snapshotId === snapshotId);
+    if (!manifest) throw new Error(`no manifest for snapshot ${snapshotId || '(unset)'}`);
+    return Math.max(MIN_REQUESTED_SIZE_GB, Math.ceil(manifest.totalBytes / (1024 * 1024 * 1024)));
+  } catch (error) {
+    outputService.warn(
+      `Could not read the size of snapshot ${snapshotId || '(unset)'} from the manifest index ` +
+        `(${error instanceof Error ? error.message : String(error)}), so the restored ` +
+        `repository's license is being requested at the ${MIN_REQUESTED_SIZE_GB} GB minimum. ` +
+        `If the restored repository is larger than that, re-issue its license afterwards ` +
+        `("rdc subscription refresh").`
+    );
+    return MIN_REQUESTED_SIZE_GB;
+  }
 }
 
 async function resolveRepoLicenseInputs(
@@ -1346,6 +1507,89 @@ class LocalExecutorService {
   }
 
   /**
+   * Pre-flight for `backup_restore` (isRestoreLicenseFunction): install the
+   * repo licence the restore needs as its chunk-store credential, on a machine
+   * that may hold none at all.
+   *
+   * This is the disaster-recovery case, and it is the whole point: the target
+   * of a real restore is a fresh replacement box. renet's `resolveRestoreLicense`
+   * accepts ANY installed blob on the machine, so the pre-existing remedy was
+   * to create a throwaway carrier repo first — which no operator in a DR
+   * situation would know, and which is precisely what this removes. The licence
+   * is issued silently, as one timed step, exactly as provisioning renders one.
+   *
+   * Two things it must NOT do, both load-bearing:
+   *
+   * - It must not route through the repo-provisioning path. `backup_restore` is
+   *   TierNone in renet's map on purpose, so an expired licence can never lock a
+   *   customer out of their own backed-up data. See `isRestoreLicenseFunction`.
+   * - It must not issue for an arbitrary guid. The licence is minted for the
+   *   SOURCE repo's guid, which the restored record already carries, so the
+   *   very next `--up` (operate-tier, resolved guid-specifically with no
+   *   any-repo fallback) finds it. A carrier licence would satisfy the restore
+   *   and then fail the deploy: "restored, and the repo will not start".
+   *
+   * Structurally parallel to `ensureRepoLicenseForProvisioning`, and a COPY of
+   * its shared parts rather than a shared helper. That is deliberate: the
+   * provisioning version runs CONCURRENTLY with machine verification and any
+   * factored-out helper would have to stay correct for both callers, which is a
+   * standing tax for two short bodies that are free to diverge.
+   */
+  private async ensureRepoLicenseForRestore(
+    options: ExecuteOptions,
+    machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
+    sshPrivateKey: string,
+    remoteRenetPath: string,
+    sftp: SFTPClient
+  ): Promise<void> {
+    // Allow bypassing activation for nolicense/CI builds where no subscription server exists
+    if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') {
+      return;
+    }
+
+    const tokenState = getSubscriptionTokenState();
+    if (tokenState.kind !== 'ready') {
+      if (isAgentEnvironment()) {
+        throw new ValidationError(t('errors.subscription.tokenRequired'));
+      }
+      await authorizeSubscriptionViaDeviceCode(undefined, {
+        interactive: process.stdin.isTTY && process.stdout.isTTY,
+        announceIntro: true,
+      });
+    }
+
+    const params = options.params ?? {};
+    const base = await resolveRestoreLicenseContext(options.machineName, params, sftp, {
+      remoteRenetPath,
+      required: true,
+    });
+    if (!base) {
+      throw new Error(t('errors.subscription.activationFailed'));
+    }
+
+    if (await restoreLicenseAlreadyInstalled(base, machine, sshPrivateKey, remoteRenetPath, sftp)) {
+      return;
+    }
+
+    const issued = await this.issueOrExplainSlotLimit(
+      machine,
+      sshPrivateKey,
+      {
+        ...base,
+        requestedSizeGb: await resolveRestoreSizeGb(
+          base.grandGuid ?? base.repositoryGuid,
+          params.at
+        ),
+      },
+      remoteRenetPath,
+      sftp
+    );
+    if (!issued) {
+      throw new Error(t('errors.subscription.activationFailed'));
+    }
+  }
+
+  /**
    * Issue, and answer the server's machine-slot refusal in the same words the
    * pre-flight uses.
    *
@@ -1915,6 +2159,20 @@ class LocalExecutorService {
         });
       };
       await Promise.all([runVerify(), runLicense()]);
+    } else if (isRestoreLicenseFunction(options.functionName)) {
+      // Sequential, unlike the provisioning arm above, and the difference is
+      // not stylistic. That arm's concurrency is safe because its pre-flight
+      // only needs the renet binary; this one runs a licence SCAN on the target
+      // (the skip probe) over the same shared SFTP session `verifyMachineSetup`
+      // is using, and a restore target is by construction a machine nobody has
+      // verified yet. Verify first, then license: a DR restore is not a path
+      // where a second of wall clock is worth an interleaving hazard.
+      await runVerify();
+      const licStart = Date.now();
+      await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
+        this.ensureRepoLicenseForRestore(options, machine, sshPrivateKey, remoteRenetPath, sftp)
+      );
+      cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart, startedAtMs: licStart });
     } else {
       await runVerify();
     }

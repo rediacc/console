@@ -3,7 +3,7 @@
  * Handles validation for repository backup operations
  */
 
-import { isFork, type RepositoryWithRelations } from './core';
+import { isFork, type RepositoryWithRelations } from './core.js';
 
 /**
  * Result of backup validation

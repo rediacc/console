@@ -4,8 +4,8 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 order: 3
 language: de
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # RDC CLI Cheat Sheet
@@ -50,6 +50,11 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc repo pull ... --bwlimit <limit>` | rsync-Bandbreite beim Herunterladen begrenzen |
 | `rdc repo push ... --checkpoint` | Container vor dem Hochladen sichern |
 | `rdc backup list --storage <storage>` | Verfügbare Sicherungen im Speicher auflisten |
+| `rdc backup snapshot <repo>` | Chunk-Store-Snapshot hochladen: zuerst das vollständige Inventar, danach nur geänderte Zellen |
+| `rdc backup snapshot <repo> --dry-run` | Snapshot planen, ohne hochzuladen; zeigt, was sich bewegen würde |
+| `rdc backup verify <repo>` | Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren |
+| `rdc backup usage` | Im Chunk-Store gespeicherte Bytes gegenüber dem Kontingent anzeigen |
+| `rdc backup manifests <repo>` | Auf dem Server erfasste Snapshot-Manifeste auflisten |
 | `rdc storage browse <storage>` | Speicherinhalte durchsuchen |
 
 ## Repository-Migration

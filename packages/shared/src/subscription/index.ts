@@ -20,6 +20,7 @@ export {
   getPlanLimits,
   getPlanMetadata,
   getPlanPricing,
+  getStorageQuotaBytesForPlan,
   getStripeLookupKey,
   hasFeature,
   isCommunityUsable,
@@ -42,7 +43,7 @@ export {
   RENEWAL_MANIFEST_MAX_AGE_MS,
   SUBSCRIPTION_CONFIG,
   TRIAL_PERIOD_DAYS,
-} from './constants';
+} from './constants.js';
 // Crypto (Ed25519 signature verification)
 export {
   clearPublicKeys,
@@ -56,38 +57,38 @@ export {
   signSubscriptionPayload,
   verifyAndDecodeSubscription,
   verifySignature,
-} from './crypto';
+} from './crypto.js';
 export type {
   ComputedValidity,
   ComputeValidityInput,
   ValidityClampReason,
-} from './delegation-cert-policy';
+} from './delegation-cert-policy.js';
 // Delegation cert validity policy
 export {
   computeDelegationCertValidity,
   computeRenewalThresholdDays,
   SubscriptionExpiredForDelegationError,
-} from './delegation-cert-policy';
+} from './delegation-cert-policy.js';
 // Public-key fingerprint (shared with Go renet)
 export {
   computePublicKeyId,
   isValidPublicKeyId,
   PUBLIC_KEY_ID_PATTERN,
-} from './fingerprint';
+} from './fingerprint.js';
 export type {
   RenewalRequestManifest,
   SignedRenewalRequestManifest,
-} from './renewal-manifest';
+} from './renewal-manifest.js';
 // Air-gapped renewal manifest
 export {
   canonicalManifestBytes,
   isManifestExpired,
   RENEWAL_MANIFEST_SCHEMA_VERSION,
   verifyManifestSignature,
-} from './renewal-manifest';
-export type { SigningKey } from './signing-keys';
+} from './renewal-manifest.js';
+export type { SigningKey } from './signing-keys.js';
 // Signing keys (Ed25519 public keys for signature verification)
-export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys';
+export { CURRENT_SIGNING_KEY, SIGNING_KEYS } from './signing-keys.js';
 // Types
 export type {
   ApiToken,
@@ -107,7 +108,7 @@ export type {
   SubscriptionData,
   SubscriptionStatus,
   SubscriptionValidationResult,
-} from './types';
+} from './types.js';
 // Validation
 export {
   calculateGracePeriodEnd,
@@ -122,4 +123,4 @@ export {
   validateSignedBlob,
   validateSubscription,
   validateSubscriptionData,
-} from './validation';
+} from './validation.js';

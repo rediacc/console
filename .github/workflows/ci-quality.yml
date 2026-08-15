@@ -533,6 +533,34 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-schema-coverage
 
+      - name: Shared constant duplication
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shared-constant-duplication
+
+      - name: Runtime imports are dependencies
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-runtime-imports-are-deps
+
+      - name: Backup manifest shape parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-backup-manifest-shape-parity
+
+      - name: Backup protocol conformance
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-backup-protocol-conformance
+
+      - name: No client-side key composition
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-no-client-key-composition
+
+      - name: Retention knob parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-retention-knob-parity
+
+      - name: Test suites are CI-reachable
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-test-scripts-reachable
+
       - name: Every source file reaches a linter
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_lint_scope_coverage.py
@@ -720,6 +748,10 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_lint_rule_liveness.py
 
+      - name: Agent hints can actually fire
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_agent_hint_liveness.py
+
       # Static half of the zero-skip contract: every topology subdir of tests/
       # must be excluded by the base playwright.config.ts, so the E2E Workers
       # job never collects-then-skips a foreign-topology suite. The runtime half
@@ -761,7 +793,11 @@ jobs:
   quality-packages:
     name: Packages
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 15 -> 20 for the Stop-hook worklist suite added below (MEASURED 4m6s,
+    # 693 assertions, 2026-08-15). ubuntu-latest has no hard cap, unlike the
+    # slim lanes, so raising it here is meaningful rather than cosmetic; the
+    # neighbouring www-build and security lanes already sit at 20.
+    timeout-minutes: 20
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -791,21 +827,43 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-account-portal.sh
 
-      - name: Console contract coverage
+      - name: Account portal unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-console-coverage
+        run: npm run check:ci-test-account-web
 
       - name: Check config-migration runner + fixtures
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check-config-migrations.sh
 
+      - name: Shared ESM resolvable
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-shared-esm-resolvable
+
       - name: Run shared package tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test --workspace=@rediacc/shared
 
+      - name: Run www unit tests
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run test:unit --workspace=@rediacc/www
+
       - name: Run CLI unit tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run test:unit --workspace=@rediacc/cli
+
+      # The stop hook's own suite (693 assertions). It lives in this lane, not
+      # in Static, for two reasons: it IS a test suite like its neighbours, and
+      # Static runs on ubuntu-slim whose HARD 15-minute cap kills the job as
+      # "cancelled" with no failed step. Raising a slim timeout past 14 is
+      # therefore meaningless and is refused by check-workflow-gates.sh CHECK 3.
+      # Measured 4m6s locally on 2026-08-15.
+      #
+      # check:ci-mutate-check does NOT cover this: it drives a miniature
+      # fixture-suite to prove the mutation RUNNER still reports four verdicts,
+      # and never runs the real suite.
+      - name: Stop-hook worklist suite
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .claude/hooks/stop/test-worklist-v5.sh
 
       # The generated CLI contract drives the web console, `rdc --proxy` and
       # the executor. It was RED at HEAD when first run here: a stale value
@@ -906,6 +964,10 @@ jobs:
       - name: i18n cross-locale
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-i18n-cross-locale
+
+      - name: Docs structure parity
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-docs-structure-parity
 
       - name: Locale sources
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
@@ -1183,6 +1245,29 @@ jobs:
       - name: Check embed arch parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-embed-arch-parity
+
+      # Recovery functions must not receive a context the work path can cancel.
+      # A cold backup that stops containers and restarts them passed the WORK
+      # context into the restart; SIGTERM (how systemd stops a unit) cancelled it,
+      # every call inside failed instantly, and the repositories stayed STOPPED.
+      # The unit test covers that one call site; this covers the CLASS. Offline,
+      # static, and it skips loudly when the renet submodule is absent.
+      - name: Check recovery functions get an uncancellable context
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-recovery-context
+
+      # The ONLY embed gate that opens the artifact. Every other one compares a
+      # declaration to a declaration (pin vs upstream, ARG vs lockfile, credits
+      # vs lockfile), so a rebuild that silently failed to update the binary
+      # passed all of them -- which is exactly what happened to the rsync
+      # 3.4.4 -> 3.5.0 bump on 2026-08-15. This decompresses each staged asset
+      # and asks the binary its own version. It is offline and needs no token.
+      # It SKIPS loudly (never silently) when no asset is staged, which is the
+      # normal case for a job that has not run `./build.sh embed_assets`; its
+      # comparison controls still run on every invocation.
+      - name: Check embedded asset versions match their pins
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-embed-asset-versions
 
       # Freshness of the embedded-binary version pins vs upstream. GITHUB_TOKEN
       # raises the API rate limit; the gate fails SOFT on any network/rate-limit

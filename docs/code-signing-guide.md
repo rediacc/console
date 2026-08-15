@@ -607,4 +607,4 @@ Note: SSL.com with eSigner would be ~$1,249+/yr for Windows alone — not recomm
 | Debian Package Signing | https://www.debian.org/doc/manuals/securing-debian-manual/deb-pack-sign.en.html |
 | AppImage Signing | https://docs.appimage.org/packaging-guide/optional/signatures.html |
 | Cloudflare R2 as Repo | https://blog.cloudflare.com/using-cloudflare-r2-as-an-apt-yum-repository/ |
-| GnuPG Key Management | https://www.gnupg.org/gph/en/manual/c235.html |
+| GnuPG Key Management | https://www.gnupg.org/gph/en/manual.html#MANAGEMENT |

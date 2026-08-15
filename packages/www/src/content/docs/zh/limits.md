@@ -5,8 +5,8 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # 限制与配额
@@ -137,8 +137,8 @@ rdc machine infra push server-1
 |------|-----|
 | 每个仓库的备份目标 | 无限制 |
 | 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） |
-| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc backup strategy set <name> --bwlimit "6M"` 限制上传速度（rclone `--bwlimit` 语法：简单格式 `6M`、方向性 `6M:off`，或时间表 `08:00,3M;22:00,10M`） |
-| 保留策略 | 由您的存储提供商（S3、Cloudflare R2 等）控制。Rediacc 不强制执行保留策略。 |
+| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc backup strategy set <name> --bwlimit "6M"` 限制上传速度 |
+| 保留策略 | 通过 `rdc backup retention set` 声明（GFS 参数：`--keep-last`、`--keep-hourly`、`--keep-daily`、`--keep-weekly`、`--keep-monthly`、`--keep-yearly`），并在服务器端强制执行；`rdc backup retention clear` 可移除该设置。分块存储按计划配额计量，以物理唯一存储字节数计算，因此快照之间以及整个分支家族内的去重只计算一次：Community 10 GiB、Professional 100 GiB、Business 500 GiB、Enterprise 2 TiB，可用 `rdc backup usage` 查看。旧版 storage-push 路径没有自身的保留机制，由您的存储提供商管理。 |
 | 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 |
 
 ---

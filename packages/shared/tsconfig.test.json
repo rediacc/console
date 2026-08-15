@@ -1,0 +1,15 @@
+{
+  // Typechecks what tsconfig.json excludes from the build. The build drops
+  // src/**/__tests__/** so dist holds only importable modules; without this
+  // sibling project those tests would stop being typechecked at all, which
+  // would trade one silent failure for another.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
+  "exclude": ["node_modules", "dist"]
+}

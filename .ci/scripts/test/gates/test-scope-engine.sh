@@ -591,7 +591,7 @@ test_representative_deltas_classify_to_pinned_verdicts() {
     # sets are the measured truth as of 2026-08-05, taken from the real
     # --classify path rather than read off JOB_SURFACES by hand.
     local cli_keys="drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers fork_isolation install_methods ops package_tests unit update_flow"
-    local renet_keys="e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet update_flow"
+    local renet_keys="drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers elite_run fork_isolation install_methods license_enforcement ops package_tests renet update_flow"
     local account_keys="account_e2e drills e2e_ceph e2e_ceph_workers e2e_k8s e2e_k8s_ceph e2e_k8s_multinode e2e_migrate e2e_workers fork_isolation ops"
 
     # -- the rows that must skip the heavy matrix entirely -------------------

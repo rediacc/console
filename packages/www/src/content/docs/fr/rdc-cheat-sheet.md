@@ -4,8 +4,8 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 order: 3
 language: fr
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Aide-mémoire RDC CLI
@@ -50,6 +50,11 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc repo pull ... --bwlimit <limit>` | Limiter la bande passante rsync lors de la réception |
 | `rdc repo push ... --checkpoint` | Créer un point de contrôle des conteneurs avant l'envoi |
 | `rdc backup list --storage <storage>` | Lister les sauvegardes disponibles dans le stockage |
+| `rdc backup snapshot <repo>` | Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite |
+| `rdc backup snapshot <repo> --dry-run` | Planifier l'instantané sans l'envoyer ; indique ce qui serait déplacé |
+| `rdc backup verify <repo>` | Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté |
+| `rdc backup usage` | Afficher les octets stockés dans le stockage fragmenté par rapport à votre quota |
+| `rdc backup manifests <repo>` | Lister les manifestes d'instantanés enregistrés sur le serveur |
 | `rdc storage browse <storage>` | Parcourir le contenu du stockage |
 
 ## Migration de dépôt

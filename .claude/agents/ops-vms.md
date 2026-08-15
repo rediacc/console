@@ -1,6 +1,6 @@
 ---
 name: ops-vms
-description: Provisioning and operating the local KVM VM cluster with ./rdc.sh ops (up, up --basic, down, status) plus working on those VMs over SSH. Knows the 6-VM topology and its RAM/disk cost, the incremental provisioning behavior, the build-first trap that fails ops before any VM work, the OS image matrix, SSH access rules, the autostart/reconcile recovery layers, and which operations are agent-blocked by ancestry-verified env overrides. Use when a task needs live machines: bridge tests, licensing drills, cluster/ceph work, or diagnosing why ops up failed.
+description: Provisioning and operating the local KVM VM cluster with ./rdc.sh ops (up, up --basic, down, status) plus working on those VMs over SSH. Knows the 6-VM topology and its RAM/disk cost, the incremental provisioning behavior, the build-first trap that fails ops before any VM work, the OS image matrix, SSH access rules, the autostart/reconcile recovery layers, and which operations are agent-blocked by ancestry-verified env overrides. Use when a task needs live machines or a fleet of them: bridge tests, licensing drills, cluster/ceph work, hypervisor or libvirt trouble, or diagnosing why ops up failed.
 tools: Bash, Read, Edit, Write, Grep, Glob
 model: opus
 ---

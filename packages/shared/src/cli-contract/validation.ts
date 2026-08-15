@@ -6,7 +6,7 @@
  * generator's output) can prove the shape before relying on it.
  */
 import { z } from 'zod';
-import type { CliContract, ContractCommand } from './types';
+import type { CliContract, ContractCommand } from './types.js';
 
 export const CommandPlaneSchema = z.enum(['config', 'machine', 'other']);
 

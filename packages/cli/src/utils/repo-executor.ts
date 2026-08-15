@@ -55,7 +55,20 @@ export async function executeRepoFunction(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
-  options: { debug?: boolean; skipRouterRestart?: boolean; kubeCluster?: string },
+  options: {
+    debug?: boolean;
+    skipRouterRestart?: boolean;
+    kubeCluster?: string;
+    /**
+     * Capture the verb's stdout into `result.stdout` instead of letting the
+     * step detector drop it. Needed by verbs whose OUTPUT IS THE ANSWER: the
+     * default handler keeps step events and discards every other line, which
+     * is right for `repo up`/`fork`/`push` and wrong for `backup verify`,
+     * whose verdict vanished entirely (exit 0, empty stdout, in both text and
+     * json modes) while renet was reporting {"status":"verified",...}.
+     */
+    captureOutput?: boolean;
+  },
   messages: RepoFunctionMessages
 ): Promise<ExecuteResult> {
   // Validate repository exists in context
@@ -82,6 +95,7 @@ export async function executeRepoFunction(
     params: { repository: repoName, ...params },
     debug: options.debug,
     skipRouterRestart: options.skipRouterRestart,
+    captureOutput: options.captureOutput,
   });
 
   if (result.success) {

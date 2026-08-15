@@ -1,19 +1,46 @@
 ---
-title: Yedekleme ve Geri Yükleme
-description: >-
-  Şifrelenmiş depoları herhangi bir rclone uyumlu depolama hizmetine yedekleyin,
-  herhangi bir makinede geri yükleyin ve adlandırılmış yedekleme stratejileri ile
-  systemd zamanlayıcıları aracılığıyla otomatikleştirin.
-category: Guides
+title: "Yedekleme ve Geri Yükleme"
+description: "Şifrelenmiş depoları iki şekilde yedekleyin: yalnızca değişen hücreleri yükleyen içerik adresli parça depolama veya herhangi bir rclone uyumlu depolamaya tam gönderim. Herhangi bir makinede geri yükleyin ve adlandırılmış stratejiler ile systemd zamanlayıcıları aracılığıyla otomatikleştirin."
+category: "Guides"
 order: 7
 language: tr
-sourceHash: "7cc6e8e80bab7952"
-sourceCommit: "e4a4e0de5"
+sourceHash: "89fb87b424d15a7d"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Yedekleme ve Geri Yükleme
 
 Rediacc, şifrelenmiş depoları harici depolama sağlayıcılarına yedekleyebilir ve aynı veya farklı makinelerde geri yükleyebilir. Yedekler şifrelenmiştir; geri yükleme için deponun LUKS kimlik bilgisi gereklidir.
+
+## İki yedekleme yolu
+
+Rediacc'ın iki bağımsız yedekleme yolu vardır ve bu kılavuz ikisini de ele alır. Farklı depolama ve farklı komutlar kullanırlar; bu yüzden biriyle yedeklenen bir depo, diğeriyle yedeklenmiş sayılmaz.
+
+**Parça depolama** (`rdc backup snapshot`) depo imajını içeriğe göre adreslenen sabit boyutlu hücreler halinde yükler. İlk çalıştırma sıfır olmayan tüm envanteri yükler; sonraki her çalıştırma, imajın tamamını okumak yerine dosya sistemi ayırma meta verilerinden belirlenen yalnızca değişen hücreleri yükler. Aynı hücreler, anlık görüntüler arasında ve bir fork ailesinin tamamında yalnızca bir kez saklanır; kullanım da depolama kotanıza (`rdc backup usage`) göre ölçülür.
+
+**Depolama gönderimi** (`rdc repo push`), kendinizin kaydettiği rclone uyumlu bir sağlayıcıya tam bir yedek dosyası kopyalar. Parça depolamaya karşı kullanımdan kaldırılmakta ve zamanlanmış stratejiler artık onu yönlendirilmemektedir. Aşağıdaki bölümler hâlâ bugün çalışır, ancak bunları eski yol olarak görün.
+
+Parça depolamadan geri yükleme çalışır: `rdc backup restore <repo> --at <snapshot-id>` saklanan bir anlık görüntüyü somutlaştırır ve `--at` RFC 3339 zaman damgasını da kabul eder; bu, anlık görüntü envanterine göre çözümlenir. Farklı bir ad altında geri yüklemek için `--as <name>` ekleyin ve sonra depoyu ayağa kaldırmak için `--up` ekleyin. Parça depolama ayrıca yükleme (`rdc backup snapshot`), doğrulama (`rdc backup verify` ve `--deep` kullanarak her hücreyi örnekle değil yeniden karma), anlık görüntü envanteri (`rdc backup manifests`) ve kota muhasebesi (`rdc backup usage`) sağlar.
+
+### Parça depolama komutları
+
+```bash
+# Bir anlık görüntü yükle. İlk çalıştırma tohumlar, sonrakiler yalnızca değişen hücreleri gönderir.
+rdc backup snapshot my-app
+
+# Yüklemeden planla: nelerin taşınacağını bildirir.
+rdc backup snapshot my-app --dry-run
+
+# Yerel çıpaya güvenme ve tüm envanteri yeniden yükle.
+# Bu her şeyi yeniden yükler ve kotayı yeniden düşer; yalnızca çıpanın
+# bozuk olduğu bilindiğinde kullanın.
+rdc backup snapshot my-app --reseed
+
+# Saklanan envanteri ve kotanızı kontrol edin.
+rdc backup verify my-app
+rdc backup manifests my-app
+rdc backup usage
+```
 
 ## Depolamayı Yapılandırma
 
@@ -66,7 +93,7 @@ Harici depolamadan bir depo yedeğini çekin:
 rdc repo pull my-app --from my-storage
 ```
 
-Pull, yazmadan önce her zaman hedef deponun bağlı olup olmadığını kontrol eder. Bağlı değilse işlem iptal edilir.
+Pull, o an **bağlı** olan bir deponun üzerine yazmayı reddeder. Önce bağlantısını keyin, pull işlemini yapın, ardından `rdc repo up` ile tekrar ayağa kaldırın. Dizin tabanlı depolar istisnadır: bağlıyken bile yerinde senkronize olurlar.
 
 | Seçenek | Açıklama |
 |---------|----------|
@@ -121,9 +148,9 @@ Zamanlanmış yedeklemeler, depolamanın yapılandırılmış klasörünün içi
 
 Bir depo hem `hot/` hem de `cold/` altında görünebilir (saatlik zamanlama anlık görüntüsünü alır; haftalık zamanlama tekrar alır). Birleşik liste her iki satırı da gösterir, böylece hangi akışların hangi depoları kapsadığı net olur.
 
-## Repoları teker teker senkronize etme
+## Repoları Teker Teker Senkronize Etme
 
-Push ve pull tek bir depo üzerinde çalışır; depo ref ile adreslenir (`name`, `name:tag` veya `name@machine`). «Tüm depolar aynı anda» biçimi yoktur: komutu her depo için bir kez çalıştırın.
+Push ve pull tek bir depo üzerinde çalışır; depo ref ile adreslenir (`name`, `name:tag` veya `name@machine`). "Tüm depolar aynı anda" biçimi yoktur: komutu her depo için bir kez çalıştırın.
 
 ### Depolamaya Gönder
 
@@ -138,7 +165,7 @@ rdc repo pull shop@server-1 --from my-storage
 ```
 
 | Seçenek | Açıklama |
-|--------|-------------|
+|--------|----------|
 | `--to <remote>` | Hedef depolama veya makine (gönderme) |
 | `--to-machine <machine>` | Makineden makineye gönderme için hedef makine |
 | `--from <remote>` | Kaynak depolama veya makine (çekme) |
@@ -153,7 +180,7 @@ rdc repo pull shop@server-1 --from my-storage
 
 ## Zamanlanmış Yedeklemeler
 
-Rediacc, adlandırılmış yedekleme stratejileri kullanır. Her strateji bir zamanlama, yedekleme modu, isteğe bağlı bant genişliği sınırı ve dosya filtreleri tanımlar. Makineler, hangi yedeklemelerin çalıştırılacağını belirlemek için stratejileri adlarıyla referans alır.
+Rediacc, adlandırılmış yedekleme stratejileri kullanır. Her strateji bir zamanlama, yedekleme modu, isteğe bağlı bant genişliği sınırı ve dosya filtreleri tanımlar. Stratejiler, hangi yedeklemelerin çalıştırılacağını belirlemek için makinelere adıyla bağlanır.
 
 ### Yedekleme Modları
 
@@ -166,7 +193,7 @@ Kilitlenme tutarlı anlık görüntülere izin veren servisler için `hot` kulla
 
 ### Soğuk Yedekleme Semantiği
 
-Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdur -- anlık görüntü -- başlat**. Garantilerin sınırlarını anlamak, operatörlerin kısmi arızaları erken tespit etmesine yardımcı olur.
+Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdur – anlık görüntü – başlat**. Garantilerin sınırlarını anlamak, operatörlerin kısmi arızaları erken tespit etmesine yardımcı olur.
 
 **Soğuk yedeklemenin garantiledikleri:**
 
@@ -177,7 +204,7 @@ Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdu
 
 **Soğuk yedeklemenin garanti ETMEDİKLERİ:**
 
-- `up()` en iyi efors ile calısır. Soğuk yedeklemenin kontrolü dışındaki nedenlerle başarısız olabilir (`depends_on: service_healthy` koşulunun hala beklenmesi, compose dosyası sözdizimi hatası, görüntü çekerken geçici bir ağ arızası). Başarısız olduğunda, soğuk yedekleme hatayı hata seviyesinde günlüğe kaydeder, durum sidecar'ını yazar ve bir sonraki depoya geçer.
+- `up()` en iyi efors ile çalışır. Soğuk yedeklemenin kontrolü dışındaki nedenlerle başarısız olabilir (`depends_on: service_healthy` koşulunun hala beklenmesi, compose dosyası sözdizimi hatası, görüntü çekerken geçici bir ağ arızası). Başarısız olduğunda, soğuk yedekleme hatayı hata seviyesinde günlüğe kaydeder, durum sidecar'ını yazar ve bir sonraki depoya geçer.
 - `up()` başarısız olduğunda, **doğrudan yedek yeniden başlatma** devreye girer: çalışma sidecar'ı okunur ve kaydedilen her konteyner ID'si doğrudan Docker API aracılığıyla yeniden başlatılır (compose olmadan). Bu, Rediaccfile kancalarını yeniden çalıştırmadan compose akışında bir sorun olsa bile servisleri geri getirir.
 - Bazı konteyner ID'leri için yedek de başarısız olursa (örneğin, Docker daemon'un kendisi çalışmıyorsa), sidecar **yerinde bırakılır**, böylece yönlendirici watchdog her tıkta yeniden denemeye devam edebilir.
 
@@ -238,7 +265,7 @@ Bu varsayılan davranış kasıtlıdır. Aynı datastore'a karşı iki soğuk ye
 
 **İzleme sonucu.** Takılı bir yedekleme (örneğin, bir ağ kara deliğine takılan rclone) sonraki her zamanlayıcı tetiklemesini sessizce bırakır. Zamanlayıcı hiçbir alarm vermez. `systemctl show <unit> -p ActiveEnterTimestamp` izleyin: servis beklenen çalışma süresinden daha uzun süre `activating` durumundaysa (örneğin, gecelik zamanlayıcıda 48 saatten fazla), araştırın.
 
-**Her zamanlanmış tetiklemenin çalışmasını istiyorsanız**, zamanlayıcıyı `OnCalendar=<cron>` yerine `OnUnitInactiveSec=<aralık>` olarak değiştirin. Bu, sabit bir duvar saati zamanlaması yerine önceki çalıştırmanın tamamlanmasından N saat sonra tetiklenir, böylece uzun süren çalıştırmalar düşüşlere neden olmaz. Yalnızca bir sonraki çalıştırmayı ileriye iter. Takas zamanlama sapmasıdır: 03:00 gecelik «sonuncusunun bittiği saatten 24 saat sonra» olur.
+**Her zamanlanmış tetiklemenin çalışmasını istiyorsanız**, zamanlayıcıyı `OnCalendar=<cron>` yerine `OnUnitInactiveSec=<aralık>` olarak değiştirin. Bu, sabit bir duvar saati zamanlaması yerine önceki çalıştırmanın tamamlanmasından N saat sonra tetiklenir, böylece uzun süren çalıştırmalar düşüşlere neden olmaz. Yalnızca bir sonraki çalıştırmayı ileriye iter. Takas zamanlama sapmasıdır: 03:00 gecelik "sonuncusunun bittiği saatten 24 saat sonra" olur.
 
 ### Anlık Görüntüler, Kesintiler ve Havuz Alanı
 

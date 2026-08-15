@@ -87,7 +87,10 @@ if [[ "$RC" -ne 0 ]]; then
     log_error "Renet tier-map tests failed."
     log_error "  A registered function with no tier entry means renet cannot decide whether"
     log_error "  it needs a licence, and the CLI's generated contract inherits that gap."
-    log_error "  Fix private/renet/pkg/license/tiermap.go, then: ./run.sh deploy prep"
+    log_error "  Fix private/renet/pkg/license/tiermap.go, then regenerate:"
+    log_error "    cd private/renet && go build -o bin/renet ./cmd/renet"
+    log_error "    private/renet/bin/renet functions generate-types \\"
+    log_error "      --output packages/shared/src/renet-contract/data --version dev"
     exit 1
 fi
 

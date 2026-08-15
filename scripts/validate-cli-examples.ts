@@ -128,7 +128,24 @@ const COMMAND_PATH_IGNORE = /(?:__tests__|\.test\.ts$|\.spec\.ts$)/;
  * verdict, and rewriting it to satisfy a validator would destroy the only thing it is for.
  * Any FIX it prompted lands as a later commit, never as an edit to the report.
  */
-const EXCLUDED_FILES = new Set<string>(['docs/design/spec/11-p4-gate-review.md']);
+/**
+ * BLOCKER: these three carry KNOWN-BAD CLI syntax as their payload, not as advice.
+ * `PLAN-lint-rule-matrix-probe.md` tabulates the fixture that each lint rule must
+ * report on — `rdc repo list <name>` and `rdc config current <name>` are there
+ * precisely BECAUSE they are positional violations, and the table is what proves
+ * those two rules can fire. The two agent-hint plans hold the matcher's sample
+ * corpus, where an entry is a verbatim operator sentence ("rdc config remote
+ * enable fails with Decryption failed...") that happens to open with a command
+ * name. Editing any of them to satisfy this validator would change the fixture or
+ * the corpus, i.e. destroy the evidence, exactly as the P4 gate-review entry above
+ * describes. Drop an entry if its document stops carrying bad syntax on purpose.
+ */
+const EXCLUDED_FILES = new Set<string>([
+  'docs/design/spec/11-p4-gate-review.md',
+  'docs/agent/backup-storage/PLAN-lint-rule-matrix-probe.md',
+  'docs/agent/backup-storage/PLAN-agent-hints-implementation.md',
+  'docs/agent/backup-storage/PLAN-agent-hints-in-stop-hook.md',
+]);
 
 /**
  * Files that legitimately contain AGENTS.md-style copy-paste templates

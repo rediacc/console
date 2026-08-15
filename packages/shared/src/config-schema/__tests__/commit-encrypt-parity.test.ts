@@ -75,7 +75,7 @@ function fullyPopulated(): RdcConfig {
       ],
       backupStrategies: {
         nightly: {
-          destinations: [{ name: 'off', storage: 's1' }],
+          destinations: [{ kind: 'storage', name: 'off', storage: 's1' }],
           schedule: '0 3 * * *',
         },
       },

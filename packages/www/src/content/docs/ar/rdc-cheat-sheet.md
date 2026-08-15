@@ -4,8 +4,8 @@ description: "مرجع سريع لـ rdc: الإعدادات والمستودع�
 category: Guides
 order: 3
 language: ar
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -50,6 +50,11 @@ sourceCommit: "e4a4e0de590cf69aa4f3a1760376a0b7e3d7bf70"
 | `rdc repo pull ... --bwlimit <limit>` | تحديد عرض نطاق rsync أثناء السحب |
 | `rdc repo push ... --checkpoint` | عمل نقطة تحقق للحاويات قبل الرفع |
 | `rdc backup list --storage <storage>` | عرض النسخ الاحتياطية المتاحة في التخزين |
+| `rdc backup snapshot <repo>` | رفع لقطة تخزين مجزّأ: المخزون الكامل أولاً، ثم الخلايا المتغيّرة لاحقاً |
+| `rdc backup snapshot <repo> --dry-run` | تخطيط اللقطة دون رفع؛ يُظهر ما كان سيتحرك |
+| `rdc backup verify <repo>` | التحقق من مرساة النسخ الاحتياطي لمستودع مقابل التخزين المجزّأ |
+| `rdc backup usage` | عرض البايتات المخزَّنة في التخزين المجزّأ مقابل حصتك |
+| `rdc backup manifests <repo>` | عرض بيانات اللقطات المسجّلة على الخادم |
 | `rdc storage browse <storage>` | تصفح محتويات التخزين |
 
 ## نقل المستودعات

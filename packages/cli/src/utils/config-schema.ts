@@ -59,9 +59,16 @@ export const MachineConfigSchema = z.object({
 // config-schema/schemas.ts in packages/shared (spec 04 §5.1: the caps must live in one place). Imported
 // and re-exported here so the flat `RepositoryConfigSchema` below (used by
 // `config repository add` validation) and existing importers keep working.
-import { SecretEntrySchema, SecretKeySchema } from '@rediacc/shared/config-schema';
+import {
+  BackupDestinationSchema,
+  SecretEntrySchema,
+  SecretKeySchema,
+} from '@rediacc/shared/config-schema';
 
-export { SecretEntrySchema, SecretKeySchema };
+// BackupDestinationSchema is re-exported, never redefined. A hand-maintained copy
+// lived here and drifted: it validated `config repository`/strategy input, so any
+// field the shared schema gained was stripped before it reached the config.
+export { BackupDestinationSchema, SecretEntrySchema, SecretKeySchema };
 
 export const RepositoryConfigSchema = z.object({
   repositoryGuid: z.uuid('Must be a valid UUID'),
@@ -128,14 +135,6 @@ export const InfraConfigSchema = z.object({
   baseDomain: domain.optional(),
   tcpPorts: z.array(port).optional(),
   udpPorts: z.array(port).optional(),
-});
-
-export const BackupDestinationSchema = z.object({
-  name: z.string().min(1, 'Destination name cannot be empty'),
-  storage: z.string().min(1, 'Storage name cannot be empty'),
-  enabled: z.boolean().optional(),
-  bandwidthLimit: z.string().optional(),
-  folder: z.string().optional(),
 });
 
 export const CertEmailSchema = z.email('Must be a valid email address');
@@ -214,55 +213,36 @@ export function normalizePath(value: string): string {
 /**
  * Canonical key order for RdcConfig JSON serialization.
  * Keys not listed here are appended alphabetically after the ordered keys.
+ *
+ * Every entry must be a real top-level key of `RdcConfigSchema`, and every
+ * top-level key must appear here; both directions are pinned by the tests in
+ * `__tests__/config-schema.test.ts`. Neither held before: this was still the v2
+ * key list, so 25 of its 28 entries matched nothing while ten real v3 sections
+ * fell through to alphabetical ordering without a word.
  */
-const CONFIG_KEY_ORDER = [
-  // Metadata
+export const CONFIG_KEY_ORDER = [
+  // Identity
+  'schemaVersion',
   'id',
   'version',
 
-  // Cloud
-  'apiUrl',
-  'token',
-  'userEmail',
-  'team',
-  'region',
+  // Which universe this config is
+  'account',
+  'defaults',
+  'credentials',
 
-  // Defaults
-  'machine',
-  'language',
-  'universalUser',
-  'nextNetworkId',
+  // What it holds
+  'resources',
+  'state',
 
-  // SSH
-  'ssh',
-  'sshContent',
+  // Infrastructure and authorization
+  'infra',
+  'policy',
   'renetPath',
 
-  // Resources
-  'machines',
-  'storages',
-  'repositories',
-  'deletedRepositories',
-
-  // Infrastructure
-  'certEmail',
-  'cfDnsApiToken',
-  'cfDnsZoneId',
-  'acmeCertCache',
-
-  // Backup
-  'backupStrategy',
-
-  // Cloud providers
-  'cloudProviders',
-
-  // Encryption
-  'encrypted',
-  'encryptedResources',
-  'masterPassword',
-
-  // S3
-  's3',
+  // At-rest encryption and the remote-store pointer
+  'encryption',
+  'remote',
 ] as const;
 
 /**

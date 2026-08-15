@@ -4,8 +4,8 @@ description: "Краткая справка по rdc: конфиги, репоз
 category: Guides
 order: 3
 language: ru
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de5"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Шпаргалка по CLI RDC
@@ -49,7 +49,12 @@ sourceCommit: "e4a4e0de5"
 | `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Ограничить пропускную способность rsync при получении |
 | `rdc repo push ... --checkpoint` | Создать контрольную точку контейнеров перед отправкой |
-| `rdc backup list --storage <storage> | Список доступных резервных копий в хранилище |
+| `rdc backup list --storage <storage>` | Список доступных резервных копий в хранилище |
+| `rdc backup snapshot <repo>` | Загрузить снимок в чанковое хранилище: сначала полный инвентарь, затем только измененные ячейки |
+| `rdc backup snapshot <repo> --dry-run` | Спланировать снимок без загрузки; сообщает, что переместилось бы |
+| `rdc backup verify <repo>` | Проверить якорь резервной копии репозитория по чанковому хранилищу |
+| `rdc backup usage` | Показать байты, хранящиеся в чанковом хранилище, относительно вашей квоты |
+| `rdc backup manifests <repo>` | Список манифестов снимков, зарегистрированных на сервере |
 | `rdc storage browse <storage>` | Просмотреть содержимое хранилища |
 
 ## Миграция репозитория

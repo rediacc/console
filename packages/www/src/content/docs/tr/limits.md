@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "5b839348d23c213f"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "d817b5e895ddaf03"
+sourceCommit: "3c9c1a6ea"
 ---
 
 # Limitler ve Kotalar
@@ -138,8 +138,8 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 |-------|-------|
 | Depo başına yedekleme hedefleri | Sınırsız |
 | Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
-| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc backup strategy set <name> --bwlimit "6M"` kullanın (rclone `--bwlimit` sözdizimi: basit `6M`, yönlü `6M:off` veya zaman çizelgesi `08:00,3M;22:00,10M`) |
-| Saklama | Depolama sağlayıcınız (S3, Cloudflare R2 vb.) tarafından kontrol edilir. Rediacc saklama politikaları uygulamaz. |
+| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc backup strategy set <name> --bwlimit "6M"` kullanın |
+| Saklama | `rdc backup retention set` ile bildirilir (GFS parametreleri: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ve sunucu tarafında uygulanır; `rdc backup retention clear` bunu kaldırır. Chunk depolama, plan kotasına karşı fiziksel olarak benzersiz depolanan bayt sayısı olarak ölçülür, bu nedenle anlık görüntüler arasındaki ve bir çatal ailesinin tamamındaki tekilleştirme yalnızca bir kez sayılır: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, `rdc backup usage` ile kontrol edilir. Eski storage-push yolunun kendine ait bir saklaması yoktur ve depolama sağlayıcınız tarafından yönetilir. |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
 
 ---

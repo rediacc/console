@@ -240,10 +240,6 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
       command: 'rdc backup run nightly -m prod-1',
       descriptionKey: 'commands.backup.run.examples.basic',
     },
-    {
-      command: 'rdc backup run nightly -m prod-1 --watch',
-      descriptionKey: 'commands.backup.run.examples.watch',
-    },
   ],
   'backup list': [
     { command: 'rdc backup list -m prod-1', descriptionKey: 'commands.backup.list.examples.basic' },

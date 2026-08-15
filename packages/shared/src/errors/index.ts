@@ -4,4 +4,4 @@
  */
 
 // Export validation error
-export { ValidationError } from './ValidationError';
+export { ValidationError } from './ValidationError.js';

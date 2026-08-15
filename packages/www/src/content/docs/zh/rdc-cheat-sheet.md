@@ -4,8 +4,8 @@ description: "rdc 快速参考：配置、仓库、机器、文件同步和容�
 category: Guides
 order: 3
 language: zh
-sourceHash: "baeb612f4804f526"
-sourceCommit: "e4a4e0de5"
+sourceHash: "ee96cb869dcc2639"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # RDC CLI 快速参考
@@ -49,7 +49,12 @@ sourceCommit: "e4a4e0de5"
 | `rdc repo push ... --bwlimit <limit>` | 推送时限制 rsync 带宽（如 `10M`） |
 | `rdc repo pull ... --bwlimit <limit>` | 拉取时限制 rsync 带宽 |
 | `rdc repo push ... --checkpoint` | 推送前对容器创建检查点 |
-| `rdc backup list --storage <storage> | 列出存储中的可用备份 |
+| `rdc backup list --storage <storage>` | 列出存储中的可用备份 |
+| `rdc backup snapshot <repo>` | 上传分块存储快照：首次为完整清单，之后仅为变更单元 |
+| `rdc backup snapshot <repo> --dry-run` | 规划快照而不上传；报告将会移动哪些内容 |
+| `rdc backup verify <repo>` | 对照分块存储验证仓库的备份锚点 |
+| `rdc backup usage` | 显示分块存储中已存储的字节数与配额的对比 |
+| `rdc backup manifests <repo>` | 列出服务器上记录的快照清单 |
 | `rdc storage browse <storage>` | 浏览存储内容 |
 
 ## 仓库迁移

@@ -2,6 +2,7 @@ import accountApp from '../../../private/account/src/entry/cloudflare.js';
 
 interface Env {
   ASSETS: Fetcher;
+  DB: D1Database;
   [key: string]: unknown;
 }
 
@@ -96,5 +97,16 @@ export default {
     }
 
     return withSecurityHeaders(new Response('Not Found', { status: 404 }));
+  },
+
+  // Cron entrypoint. Every deployed region reaches the account app's scheduled
+  // work through here, so forgetting this re-export silently disables it: the
+  // nightly event_log retention sweep never ran in any region until this line
+  // existed, because this module used to export `fetch` alone while the handler
+  // sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
+  // block in every wrangler.*.toml is the other half; both are gated by
+  // private/account/tests/integration/cron-wiring.test.ts.
+  scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
+    accountApp.scheduled(controller, env as never, ctx);
   },
 };

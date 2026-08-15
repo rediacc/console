@@ -6,7 +6,7 @@
  * as "allowed" in the console must be the rule the executor enforces.
  */
 
-import { DEFAULTS } from '../config';
+import { DEFAULTS } from '../config/index.js';
 import type { MutationScope, PolicyDocument, PolicyOrgRole, PolicyRule } from './schema.js';
 
 /**

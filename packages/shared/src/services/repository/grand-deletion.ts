@@ -3,7 +3,7 @@
  * Handles validation for deleting grand (credential) repositories
  */
 
-import { isCredential, isFork, type RepositoryWithRelations } from './core';
+import { isCredential, isFork, type RepositoryWithRelations } from './core.js';
 
 /**
  * Child clone information

@@ -1,5 +1,6 @@
 ---
-sourceHash: "51a38f7f8567e63e"
+sourceHash: "63861113cf5e7809"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 title: Continuidade Bancária Durante Apagão
 description: Manter as operações bancárias durante cortes de energia com espelhamento de dados intercontinental.
 category: Use Cases
@@ -46,29 +47,25 @@ Um grande grupo bancário espanhol que implementou a solução de replicação t
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Espelhamento de Dados Intercontinental**
-* As bases de dados bancárias centrais e os sistemas de transações foram **continuamente replicados** para centros de dados nos Estados Unidos
-* Todos os dados de clientes e registos de transações foram sincronizados com **menos de 3 segundos de atraso**
+* As bases de dados bancárias centrais e os sistemas de transações seriam **continuamente replicados** para centros de dados nos Estados Unidos
+* Os dados dos clientes e os registos de transações manter-se-iam sincronizados dentro do atraso de replicação que a sua ligação e o seu volume permitissem
 
 ### 2. **Transição Operacional Contínua**
-* Quando os servidores espanhóis perderam energia, o tráfego foi **automaticamente redirecionado** para sistemas baseados nos EUA
-* Os clientes experienciaram apenas uma breve interrupção de 47 segundos antes de os serviços serem retomados
+* Se os servidores espanhóis perdessem energia, o tráfego seria **automaticamente redirecionado** para sistemas baseados nos EUA
+* Os clientes notariam apenas uma breve interrupção até o redirecionamento se concluir, em vez de uma falha tão longa quanto a da rede elétrica
 
 ### 3. **Continuação Remota do Serviço**
-* Centros de atendimento em países não afetados acederam aos sistemas replicados para manter o apoio ao cliente
-* As aplicações de banca móvel mantiveram-se funcionais ao ligar-se a centros de dados alternativos
+* Centros de atendimento em países não afetados poderiam aceder aos sistemas replicados e continuar a apoiar os clientes
+* As aplicações de banca móvel manter-se-iam funcionais ao ligar-se a centros de dados alternativos
 
 ## Resultado Potencial
 
 **Continuidade do Negócio:**
-* Enquanto os concorrentes estavam offline por mais de 14 horas, o banco manteve **98% de disponibilidade de serviço**
+* Os concorrentes estiveram offline mais de 14 horas. Um banco com esta arquitetura continuaria a operar durante toda essa janela
 
-**Confiança dos Clientes:**
-* O banco foi a única grande instituição financeira a processar transações durante a crise
-* A satisfação dos clientes aumentou 27% em inquéritos pós-crise
+**Continuidade do Serviço:**
+* Poderia continuar a processar transações enquanto instituições sem uma segunda região não conseguiriam
 
 **Proteção Financeira:**
-* O banco evitou aproximadamente €370 milhões em perdas por falhas de transações
-* Nenhum dado foi perdido ou corrompido, eliminando operações de recuperação dispendiosas
-
-**Vantagem Competitiva:**
-* O banco conquistou 140.000 novos clientes no mês seguinte, provenientes de concorrentes que falharam em manter o serviço
+* Evitaria as perdas por falhas de transações que se acumulam a cada hora em que um sistema de pagamentos está indisponível
+* Nenhum dado seria perdido ou corrompido, pelo que nenhuma operação de recuperação seria necessária

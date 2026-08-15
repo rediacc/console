@@ -3,7 +3,16 @@ set -e
 
 # Load environment variables from .env file
 if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+    read -r -a ENV_ASSIGNMENTS <<< "$(grep -v '^#' .env | xargs)"
+    # The emptiness guard is not defensive padding. With an empty or
+    # comment-only .env the array is empty, and `export "${ARR[@]}"` degrades to
+    # a bare `export`, which PRINTS THE ENTIRE ENVIRONMENT to stdout -- every
+    # secret this container was started with, into whatever collects that log.
+    # The original `export $(cat .env | ...)` had the identical behaviour, so
+    # this is a pre-existing disclosure, not a regression from the quoting fix.
+    if [ ${#ENV_ASSIGNMENTS[@]} -gt 0 ]; then
+        export "${ENV_ASSIGNMENTS[@]}"
+    fi
 fi
 
 # Set THREADS to CPU core count but cap at 8
@@ -12,7 +21,7 @@ if [ -z "$THREADS" ]; then
 fi
 
 # Detect container name from docker compose
-CONTAINER_NAME=$(docker inspect $(docker compose ps -q db) --format '{{.Name}}' 2>/dev/null | sed 's/^\/*//')
+CONTAINER_NAME=$(docker inspect "$(docker compose ps -q db)" --format '{{.Name}}' 2>/dev/null | sed 's/^\/*//')
 
 # Extract the Docker-assigned port
 PGPORT=$(docker port "$CONTAINER_NAME" 5432 2>/dev/null | cut -d: -f2)
@@ -41,7 +50,7 @@ host_setup() {
     sysbench --version
 
     echo "Host setup completed successfully!"
-    return $?
+    return 0
 }
 
 # Function to execute PostgreSQL commands using psql

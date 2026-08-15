@@ -183,29 +183,107 @@ function loadBlocklist(): Map<string, BlocklistEntry> {
 /**
  * Get outdated packages using npm outdated
  */
-function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
+class DepsProbeError extends Error {}
+
+/**
+ * Run `npm outdated --json` and return its parsed report, or THROW.
+ *
+ * This function exists because every path that used to `return {}` here was a
+ * FAIL-OPEN, and it was not theoretical. Proven 2026-08-15 by pointing the gate
+ * at a dead registry:
+ *
+ *   npm_config_registry=http://127.0.0.1:9/ npx tsx scripts/check-deps.ts
+ *   -> "All dependencies are up-to-date", exit 0
+ *
+ * An empty report and an unreachable registry are indistinguishable to the
+ * caller, so the gate asserted the STRONGEST possible claim ("everything is
+ * current") precisely when it had learned nothing. In CI, one registry blip or
+ * rate-limit turned the dependency-freshness gate into a no-op. It was caught
+ * only because the gate answered exit 0 and exit 1 two minutes apart with no
+ * intervening change.
+ *
+ * The contract now: a parsed JSON object is the ONLY success. `npm outdated`
+ * exits 0 with an empty report when nothing is outdated and 1 with a populated
+ * one when something is, so the exit code alone never decides anything here.
+ * Anything else -- no stdout, unparseable stdout, a non-object -- throws.
+ */
+function runNpmOutdated(cwd: string, extraArgs = ''): Record<string, OutdatedPackageInfo> {
+  const command = `npm outdated --json${extraArgs ? ` ${extraArgs}` : ''}`;
+  let stdout = '';
+  let stderr = '';
+
+  // Control seam: forces a failure branch with no network and no waiting, so
+  // --selftest can prove this gate is still able to fail. '1' reproduces a probe
+  // that produced nothing; 'error-json' reproduces the REAL shape npm emits when
+  // it cannot reach the registry (see the error-key check below), which is the
+  // one that actually shipped as a fail-open.
+  const forceMode = process.env.CHECK_DEPS_FORCE_PROBE_FAILURE ?? '';
+  const forced = forceMode === '1';
+  const forcedErrorJson = forceMode === 'error-json';
+
   try {
-    // npm outdated returns exit code 1 if there are outdated packages
-    execSync('npm outdated --json', {
-      cwd: CONSOLE_ROOT,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    // If we get here, no outdated packages
-    return {};
-  } catch (error) {
-    // npm outdated returns exit code 1 when packages are outdated
-    const execError = error as { stdout?: string };
-    if (execError.stdout) {
-      try {
-        return JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
-      } catch {
-        console.error('Failed to parse npm outdated output');
-        return {};
-      }
+    if (forcedErrorJson) {
+      stdout = JSON.stringify({
+        error: { code: 'ECONNREFUSED', summary: 'simulated unreachable registry', detail: '' },
+      });
+      throw new Error('simulated npm failure');
     }
-    return {};
+    stdout = forced
+      ? execSync('sh -c \'echo "simulated probe failure" >&2; exit 1\'', {
+          cwd,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        })
+      : execSync(command, { cwd, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+  } catch (error) {
+    const execError = error as { stdout?: string; stderr?: string };
+    if (!forcedErrorJson) {
+      stdout = execError.stdout ?? '';
+    }
+    stderr = execError.stderr ?? '';
   }
+
+  const trimmed = stdout.trim();
+  if (trimmed === '') {
+    throw new DepsProbeError(
+      `\`${command}\` produced no output in ${path.relative(CONSOLE_ROOT, cwd) || '.'}. ` +
+        'That is a probe that did not run, not a clean result. ' +
+        `stderr: ${stderr.trim() || '(empty)'}`,
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    throw new DepsProbeError(
+      `\`${command}\` returned unparseable output in ${path.relative(CONSOLE_ROOT, cwd) || '.'}. ` +
+        `stderr: ${stderr.trim() || '(empty)'}`,
+    );
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new DepsProbeError(`\`${command}\` returned ${typeof parsed}, expected a JSON object.`);
+  }
+
+  // The one that actually bit us. `npm outdated --json` does NOT fail loudly when
+  // it cannot reach the registry: it prints a well-formed object whose only key
+  // is `error`, e.g.
+  //   {"error":{"code":"ECONNREFUSED","summary":"request to .../typescript failed",...}}
+  // That parses fine, contains no outdated packages, and therefore reads as
+  // "everything is current" -- the strongest possible claim, made from zero
+  // information. Verified against npm 10 with a dead registry, 2026-08-15.
+  const errorPayload = (parsed as { error?: { code?: string; summary?: string } }).error;
+  if (errorPayload) {
+    throw new DepsProbeError(
+      `\`${command}\` could not reach the registry from ${path.relative(CONSOLE_ROOT, cwd) || '.'}: ` +
+        `${errorPayload.code ?? 'unknown'} ${errorPayload.summary ?? ''}`.trim(),
+    );
+  }
+  return parsed as Record<string, OutdatedPackageInfo>;
+}
+
+function getOutdatedPackages(): Record<string, OutdatedPackageInfo> {
+  return runNpmOutdated(CONSOLE_ROOT);
 }
 
 /**
@@ -238,30 +316,13 @@ function getPrivateOutdatedPackages(): PrivateOutdatedResult[] {
   const results: PrivateOutdatedResult[] = [];
 
   for (const dir of getPrivatePackageDirs()) {
-    try {
-      // Use --package-lock-only so the check works in CI where node_modules
-      // is not installed for private submodule packages. npm reads installed
-      // versions from package-lock.json and queries the registry for latest.
-      execSync('npm outdated --json --package-lock-only', {
-        cwd: dir,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-    } catch (error) {
-      const execError = error as { stdout?: string; stderr?: string };
-      if (execError.stdout) {
-        try {
-          const packages = JSON.parse(execError.stdout) as Record<string, OutdatedPackageInfo>;
-          if (Object.keys(packages).length > 0) {
-            const dirName = path.relative(CONSOLE_ROOT, dir);
-            results.push({ dir, name: dirName, packages });
-          }
-        } catch (jsonError) {
-          console.error(`Failed to parse 'npm outdated' output for ${dir}:`, jsonError);
-        }
-      } else {
-        console.error(`'npm outdated' failed in ${dir}:`, execError.stderr || error);
-      }
+    // --package-lock-only so the check works in CI where node_modules is not
+    // installed for private submodule packages. A failure here THROWS rather
+    // than logging and continuing: this loop used to treat an unreachable
+    // registry in one directory as "that directory has nothing outdated".
+    const packages = runNpmOutdated(dir, '--package-lock-only');
+    if (Object.keys(packages).length > 0) {
+      results.push({ dir, name: path.relative(CONSOLE_ROOT, dir), packages });
     }
   }
 
@@ -762,5 +823,82 @@ async function checkDependencies(): Promise<void> {
   process.exit(0);
 }
 
+/**
+ * Control: prove this gate can still FAIL.
+ *
+ * A dependency-freshness gate that silently passes when it cannot reach the
+ * registry is worse than no gate, because it answers "everything is current".
+ * This re-runs the real script with the probe forced to fail and asserts a
+ * non-zero exit, offline and in milliseconds. Run by `--selftest`.
+ */
+function selftest(): void {
+  // Two shapes, because they failed open for two different reasons and only the
+  // second one ever shipped. Each must make the gate exit non-zero WITH its own
+  // message, so a gate that merely dies for an unrelated reason cannot pass here.
+  //
+  // process.execArgv carries tsx's own loader flags (--require preflight.cjs,
+  // --import loader.mjs). Without them the child is a bare node that cannot
+  // resolve this file's .js-suffixed TS imports, and the control would "fire"
+  // on a module-resolution error instead of on the thing it is testing.
+  const cases = [
+    { mode: '1', expect: 'did not run', label: 'a probe that produced no output' },
+    {
+      mode: 'error-json',
+      expect: 'could not reach the registry',
+      label: "npm's error-shaped report",
+    },
+  ];
+
+  for (const { mode, expect, label } of cases) {
+    const child = spawnSync(process.execPath, [...process.execArgv, process.argv[1]], {
+      cwd: CONSOLE_ROOT,
+      encoding: 'utf-8',
+      env: { ...process.env, CHECK_DEPS_FORCE_PROBE_FAILURE: mode },
+    });
+    const output = `${child.stdout ?? ''}${child.stderr ?? ''}`;
+
+    if (child.status === 0) {
+      console.error(
+        `${RED}\u2717${NC} CONTROL DID NOT FIRE for ${label}: the gate still exited 0.\n` +
+          '  That is the exact fail-open this control exists to prevent (see runNpmOutdated).',
+      );
+      process.exit(1);
+    }
+    if (!output.includes(expect)) {
+      console.error(
+        `${RED}\u2717${NC} the gate failed for ${label}, but without the expected message\n` +
+          `  (${expect}), so the failure may be incidental. Output was:\n${output}`,
+      );
+      process.exit(1);
+    }
+    if (output.includes('All dependencies are up-to-date')) {
+      console.error(
+        `${RED}\u2717${NC} the gate printed the up-to-date claim while failing on ${label}.`,
+      );
+      process.exit(1);
+    }
+  }
+
+  console.log(
+    `${GREEN}\u2713${NC} control fired on both shapes: an unrunnable probe and an unreachable ` +
+      'registry each fail the gate instead of passing it',
+  );
+  process.exit(0);
+}
+
 // Run the check
-checkDependencies();
+if (process.argv.includes('--selftest')) {
+  selftest();
+} else {
+  checkDependencies().catch((error: unknown) => {
+    if (error instanceof DepsProbeError) {
+      console.error(`${RED}✗${NC} dependency probe failed: ${error.message}`);
+      console.error(
+        `${RED}✗${NC} Refusing to report "up-to-date" from a check that did not run.\n` +
+          '  If the registry is unreachable, fix that and re-run; do not treat this as a pass.',
+      );
+      process.exit(1);
+    }
+    throw error;
+  });
+}

@@ -2,6 +2,12 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "composite": true,
+    // NodeNext makes the invariant PERMANENT rather than a one-time cleanup:
+    // TypeScript now REQUIRES the extension on every relative specifier, so a
+    // future extensionless import fails the typecheck instead of silently
+    // shipping a dist that Node cannot load.
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,
@@ -10,5 +16,9 @@
     "lib": ["ESNext", "DOM"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"],
-  "exclude": ["node_modules", "dist"]
+  // Tests are excluded from the BUILD so dist contains only importable modules.
+  // That is what lets the resolvability gate assert imported === total with no
+  // carve-out; a gate with an exclusion list has a place for the next
+  // regression to live. Test typechecking is restored by tsconfig.test.json.
+  "exclude": ["node_modules", "dist", "src/**/__tests__/**"]
 }

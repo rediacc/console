@@ -51,20 +51,26 @@ async function triggerAdhocBackup(
   debug?: boolean
 ): Promise<void> {
   outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-  const { buildRcloneArgs } = await import('@rediacc/shared/storage-browser');
   const { _testing } = await import('../services/backup/backup-schedule.js');
 
   const enabledDests = config.destinations.filter((d) => d.enabled !== false);
-  const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
+  // INVERTED 2026-08-15. This used to require the rclone `storage` kind and
+  // refuse hosted-service; the rclone path has been removed, so the chunk store
+  // is the only destination an ad-hoc run can drive. Left as-is, this function
+  // would now refuse every destination there is.
   for (const dest of enabledDests) {
-    const storageCfg = await configService.getStorage(dest.storage);
-    rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent, dest.folder));
+    if (dest.kind !== 'hosted-service') {
+      throw new Error(
+        `Backup destination "${dest.name}" has kind "${(dest as { kind?: string }).kind ?? BACKUP_DEFAULTS.DESTINATION_KIND}". The ` +
+          'rclone/OneDrive path was removed on 2026-08-15; change it to a ' +
+          '`hosted-service` destination to run it.'
+      );
+    }
   }
 
   const { commands, envVars } = _testing.buildBackupCommands(
     config,
     enabledDests,
-    rcloneArgsByDest,
     datastore,
     remoteRenetPath
   );
@@ -369,6 +375,10 @@ export function registerBackupOpsCommands(backup: Command): void {
         });
         if (!options.dryRun) {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
+          // DR nudge: enabling backups without config-storage enrollment leaves
+          // the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
+          const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
+          await warnIfConfigStorageUnenrolled();
         }
       } catch (error) {
         handleError(error);
@@ -380,7 +390,6 @@ export function registerBackupOpsCommands(backup: Command): void {
     .argument('[strategy]', t('options.strategyName'))
     .description(t('commands.backup.run.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
-    .option('-w, --watch', t('options.watch'))
     .option('--debug', t('options.debug'))
     .action(async (strategy: string | undefined, options) => {
       try {

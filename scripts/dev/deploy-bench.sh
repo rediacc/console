@@ -180,6 +180,10 @@ jq -n \
     --arg ses_from "${AWS_SES_FROM:-noreply@notify.rediacc.com}" \
     --arg ses_cs "${AWS_SES_CONFIGURATION_SET:-}" \
     --arg turnstile "${TURNSTILE_SECRET_KEY:-}" \
+    --arg backup_ep "${BACKUP_S3_ENDPOINT:-${R2_ENDPOINT:-}}" \
+    --arg backup_bucket "${BACKUP_S3_BUCKET:-rediacc-backups-bench}" \
+    --arg backup_key "${BACKUP_S3_ACCESS_KEY_ID:-${R2_ACCESS_KEY_ID:-}}" \
+    --arg backup_secret "${BACKUP_S3_SECRET_ACCESS_KEY:-${R2_SECRET_ACCESS_KEY:-}}" \
     --arg otlp_creds "${OTLP_CLIENT_CREDENTIALS:-}" \
     --arg seller_name "${SELLER_NAME:-}" \
     --arg seller_vat "${SELLER_VAT_NUMBER:-}" \
@@ -206,6 +210,10 @@ jq -n \
         AWS_SES_FROM: $ses_from,
         AWS_SES_CONFIGURATION_SET: $ses_cs,
         TURNSTILE_SECRET_KEY: $turnstile,
+        BACKUP_S3_ENDPOINT: $backup_ep,
+        BACKUP_S3_BUCKET: $backup_bucket,
+        BACKUP_S3_ACCESS_KEY_ID: $backup_key,
+        BACKUP_S3_SECRET_ACCESS_KEY: $backup_secret,
         OTLP_CLIENT_CREDENTIALS: $otlp_creds,
         SELLER_NAME: $seller_name,
         SELLER_VAT_NUMBER: $seller_vat,

@@ -138,7 +138,7 @@ rdc backup schedule -m <machine>
 
 ### Run, watch, and restore
 ```bash
-rdc backup run daily -m <machine> -w      # run a strategy now and watch it
+rdc backup run daily -m <machine>         # run a strategy now
 rdc backup status daily -m <machine>
 rdc backup list <artifact-ref> -m <machine>
 rdc backup restore <artifact-ref> --as <new-name> -m <machine> --up

@@ -119,6 +119,14 @@ REGISTRY=(
     # be resolved at all and the gate would otherwise report that zero enabled
     # rules are healthy -- which is what a healthy repo looks like too.
     ".ci/scripts/quality/check_lint_rule_liveness.py|VACUOUS INPUT"
+    # Against an empty tree there is no .claude/agents at all, so every
+    # reachability assertion is over an empty corpus and the gate would exit 0
+    # reporting that every agent is reachable -- which is what a healthy corpus
+    # looks like too. The missing-directory path and the MIN_AGENTS floor both
+    # say VACUOUS INPUT, and both are answered BEFORE wl_agents is imported: the
+    # fixture has no .claude/hooks either, so an unguarded import would exit
+    # non-zero for an environment reason wearing a vacuity failure's exit code.
+    ".ci/scripts/quality/check_agent_hint_liveness.py|VACUOUS INPUT"
     # An empty tree tracks no js/ts at all, so "every file reaches a linter" is
     # trivially true over zero files -- indistinguishable from full coverage.
     ".ci/scripts/quality/check_lint_scope_coverage.py|VACUOUS INPUT"

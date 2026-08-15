@@ -1465,21 +1465,15 @@
       }
     },
     "backup": {
-      "description": "Manage backup strategies, their scheduled runs, and the artifacts they produce: declare a strategy for a repository, run or restore it on demand, and inspect the archives it wrote to a storage endpoint.",
-      "schedule": {
-        "description": "Deploy backup schedule to a remote machine (systemd timers)",
-        "optionDryRun": "Preview generated units without deploying",
-        "optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
-        "optionResetFailed": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)",
-        "success": "Backup schedule deployed to {{machine}}"
-      },
       "cancel": {
         "cancelled": "Cancelled {{name}}",
         "cancelling": "Stopping {{name}}...",
         "description": "Cancel a running backup on a remote machine",
         "notRunning": "No backup running for strategy \"{{name}}\""
       },
+      "description": "Manage backup strategies, their scheduled runs, and the artifacts they produce: declare a strategy for a repository, run or restore it on demand, and inspect the archives it wrote to a storage endpoint.",
       "descriptionShort": "Manage backups",
+      "drNudge": "Config storage is not enrolled: your repo credentials (LUKS passphrases) live only on this host, so a bare-metal restore cannot recover them. Enroll with \"rdc config remote enable\" to sync them inside the encrypted config blob.",
       "list": {
         "description": "List backup artifacts on a machine or storage.",
         "executorAmbiguous": "More than one machine is registered; qualify the storage listing with @<machine> to say which one runs it.",
@@ -1493,34 +1487,75 @@
           "byStorage": "List the backups in a specific storage backend."
         }
       },
+      "manifests": {
+        "description": "List backup snapshot manifests recorded on the server",
+        "fetching": "Fetching backup manifests...",
+        "empty": "No backup manifests found."
+      },
       "restore": {
+        "atNoSnapshot": "No snapshot was taken at or before {{at}}, so there is no point in time to restore.",
+        "atResolved": "Resolved {{at}} to snapshot {{snapshot}} (taken {{created}}).",
+        "atUnparsable": "--at \"{{at}}\" is neither a snapshot id nor a time. Pass a snapshot id from `rdc backup manifests`, or an RFC3339 time such as 2026-08-14T12:00:00Z.",
         "datastoreUnattached": "Datastore \"{{datastore}}\" is not attached to any machine. Attach it first: rdc datastore attach {{datastore}} --to <machine>.",
-        "deployed": "Deployed {{name}} on {{machine}}",
         "deployFailed": "Deploy of restored {{name}} failed",
+        "deployed": "Deployed {{name}} on {{machine}}",
         "deploying": "Deploying {{name}} on {{machine}}...",
         "description": "Turn a backup artifact into a live repository. Placement is stated here.",
-        "failed": "Restore of {{name}} failed",
-        "optionAs": "Name for the restored repository (defaults to the artifact name)",
-        "optionDatastore": "Restore into this named datastore (its attached machine hosts it)",
-        "optionUp": "Deploy the restored repository after the transfer",
-        "placementExclusive": "Pass exactly one placement flag: --machine or --datastore.",
-        "placementRequired": "Say where to restore: --machine <m> (docker) or --datastore <d> (named datastore).",
-        "placeRequired": "A restore artifact must name where it lives: use repo@place (for example shop:nightly@backup-1).",
-        "pulling": "Pulling {{name}} from {{place}}...",
-        "restored": "Restored {{name}} onto {{machine}}",
-        "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
-        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
         "examples": {
           "basic": "Restore a backup onto a machine.",
           "asNewRepo": "Restore a backup as a new repository and start it."
-        }
+        },
+        "failed": "Restore of {{name}} failed",
+        "optionAs": "Name for the restored repository (defaults to the artifact name)",
+        "optionAt": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)",
+        "optionDatastore": "Restore into this named datastore (its attached machine hosts it)",
+        "optionUp": "Deploy the restored repository after the transfer",
+        "placeRequired": "A restore artifact must name where it lives: use repo@place (for example shop:nightly@backup-1).",
+        "placementExclusive": "Pass exactly one placement flag: --machine or --datastore.",
+        "placementRequired": "Say where to restore: --machine <m> (docker) or --datastore <d> (named datastore).",
+        "pulling": "Pulling {{name}} from {{place}}...",
+        "restored": "Restored {{name}} onto {{machine}}",
+        "restoringSnapshot": "Restoring {{name}} from snapshot {{snapshot}}...",
+        "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
+        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first."
+      },
+      "retention": {
+        "clearDescription": "Remove the policy, so every snapshot of this repository is kept.",
+        "cleared": "Retention policy removed for {{name}}. Every snapshot is kept from now on.",
+        "description": "Show the snapshot retention policy the server is enforcing.",
+        "empty": "No retention policy is declared, so every snapshot is kept.",
+        "knobNotAnInteger": "{{flag}} needs a whole number of snapshots to keep, not \"{{value}}\".",
+        "noKnobs": "Give at least one rule, for example --keep-last 7. Setting none would clear the policy, which \"clear\" does explicitly.",
+        "optionKeepDaily": "Keep the newest snapshot from each of this many days",
+        "optionKeepHourly": "Keep the newest snapshot from each of this many hours",
+        "optionKeepLast": "Keep this many of the most recent snapshots",
+        "optionKeepMonthly": "Keep the newest snapshot from each of this many months",
+        "optionKeepWeekly": "Keep the newest snapshot from each of this many weeks",
+        "optionKeepYearly": "Keep the newest snapshot from each of this many years",
+        "set": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep.",
+        "setDescription": "Declare how many snapshots to keep. Every knob is replaced, not merged."
       },
       "run": {
         "description": "Run a backup now.",
         "examples": {
-          "basic": "Run a backup strategy now.",
-          "watch": "Run a backup strategy and follow its progress."
+          "basic": "Run a backup strategy now."
         }
+      },
+      "schedule": {
+        "description": "Deploy backup schedule to a remote machine (systemd timers)",
+        "optionDryRun": "Preview generated units without deploying",
+        "optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
+        "optionResetFailed": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)",
+        "success": "Backup schedule deployed to {{machine}}"
+      },
+      "snapshot": {
+        "description": "Upload a chunk-store snapshot: full inventory first, changed cells after",
+        "optionReseed": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)",
+        "optionDryRun": "Plan only: no upload. Reports what would move",
+        "starting": "Snapshotting {{name}} to chunk storage...",
+        "completed": "Snapshot stored for {{name}}",
+        "failed": "Snapshot failed for {{name}}",
+        "quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota"
       },
       "status": {
         "description": "Show backup status and timer state on a remote machine"
@@ -1531,16 +1566,16 @@
           "description": "Create or update a backup strategy",
           "optionBwlimit": "Rclone bandwidth limit (e.g., \"6M\", \"10M:off\", \"08:00,3M;22:00,10M\")",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
-          "optionDestination": "Destination name within the strategy",
+          "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination unless --storage is given",
           "optionDisable": "Disable the strategy or destination",
           "optionEnable": "Enable the strategy or destination",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
-          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold)",
+          "optionFolder": "Subfolder under the storage bucket for this destination (e.g. hot, cold). Needs --storage",
           "optionInclude": "Only back up these repos (comma-separated names)",
-          "optionMode": "Backup mode: \"hot\" (zero downtime) or \"cold\" (stop, snapshot, restart)",
-          "optionStorage": "Storage config name (rclone credentials)",
+          "optionMode": "Backup mode: \"hot\" snapshots while everything keeps running, \"cold\" stops the containers for the moment the snapshot is taken",
+          "optionStorage": "Use this rclone storage config instead of the chunk store. Legacy: such a destination cannot be scheduled",
           "saved": "Backup strategy configuration saved",
-          "storageRequired": "--storage is required when creating a new destination. Use: --storage <storage-name>",
+          "storageRequired": "--storage <storage-name> is required for this destination. Without it you get a Rediacc chunk-store destination, which has no storage bucket and therefore no --folder",
           "examples": {
             "configure": "Configure a backup strategy's storage and mode.",
             "disable": "Turn a backup strategy off."
@@ -1571,6 +1606,18 @@
           "notConfigured": "No backup strategies configured",
           "notFound": "Backup strategy \"{{name}}\" not found"
         }
+      },
+      "usage": {
+        "description": "Show backup storage quota, stored bytes, and per-repo usage",
+        "fetching": "Fetching backup storage usage...",
+        "empty": "No per-repo backup storage usage recorded yet."
+      },
+      "verify": {
+        "description": "Verify a repository's backup anchor against the chunk store",
+        "optionDeep": "Re-hash every recorded cell (full verification) instead of a sampled check",
+        "starting": "Verifying backup for {{name}} ({{level}})...",
+        "completed": "Backup verified for {{name}}",
+        "failed": "Backup verification failed for {{name}}"
       }
     },
     "storage": {
@@ -2261,7 +2308,6 @@
     "vscodeNoOpen": "Print the URL without launching the local browser",
     "vscodeServerArchive": "Pre-staged server tarball path on the machine (airgapped installs)",
     "vscodeServerProvider": "Browser VS Code server implementation (openvscode, code-server)",
-    "watch": "Watch for changes",
     "yes": "Skip confirmation prompt"
   },
   "prompts": {

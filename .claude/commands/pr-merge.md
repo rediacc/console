@@ -15,7 +15,7 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 ## Task: land the stacked PRs for branch `$ARGUMENTS`
 
-Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`). Only run when the user has asked to land the PRs.**
+Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`) UNLESS the PR carries the `bump-none` label, in which case the merge is deliberately release-free and steps 5 and 6 shrink to almost nothing. Only run when the user has asked to land the PRs.**
 
 Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `private/account` → `rediacc/account`, `private/elite` → `rediacc/elite`, `private/homebrew-tap` → `rediacc/homebrew-tap`.
 
@@ -159,7 +159,42 @@ The pointer bump changed only submodule SHAs (trees verified identical in step 2
 - `git submodule update --init --recursive` — **all** submodules, not just the merged ones. The old form named only the merged pointers, which left `private/homebrew-tap` and `private/elite` sitting at whatever commit the previous branch had them at while `main`'s record moved on.
 - Verify: local `main` == `origin/main`, working tree clean (only `settings.local.json` may differ), `git submodule status` shows no `+`/`-`.
 
-### 5. Watch the release land (the merge to main IS the edge release)
+### 5. Watch the release land (the merge to main IS the edge release, unless bump-none)
+
+**FIRST, CHECK FOR `bump-none`. A release-free merge is a normal outcome, not a missing step.**
+
+```bash
+gh pr view <console-pr> --repo rediacc/console --json labels -q '[.labels[].name] | join(", ")'
+```
+
+If the label set contains `bump-none`, the automated review has declared this merge earns no
+release: no git tag, no GitHub Release, no R2 upload, **no edge deploy**. Its commits ship with
+the next release-worthy merge. Console CI still runs on `main` and still does the real Docker
+build and push, so it must still go green, but `dispatch-release.sh` will deliberately skip and
+**no Release run will ever appear**. Confirm the decision from the run rather than inferring it
+from an absence:
+
+```bash
+gh run view <main-ci-run> --repo rediacc/console --json jobs \
+  -q '.jobs[] | select(.name=="Finalize Release Sentinel") | .databaseId'
+# then read that job's log; it prints the verdict verbatim, e.g.
+#   release SKIPPED: #567 carries 'bump-none'
+```
+
+**Why this is called out.** Observed live on 2026-08-10: a session merged a `bump-none` PR,
+watched Console CI on `main` go green, then went looking for the Release run and found only
+runs from the previous day. Nothing was wrong. But "the release run is missing" and "the
+release was correctly skipped" look identical from a run list, and the first reading invites
+re-dispatching a release nobody wanted, which ships artifacts. Read the label first, then the
+sentinel job's own words.
+
+When `bump-none` applies, the rest of step 5 does not: there is no Release run to watch, no
+tag to report, and nothing deployed to edge. **Step 6 also shrinks** -- CD pushes its two
+`[skip ci]` commits back to `main` only when a release actually happens, so a `bump-none` merge
+leaves the local checkout exactly one fast-forward behind and no submodule pointer moves.
+
+For a release-worthy merge, everything below applies as written.
+
 The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the **real** Docker build+push, not the PR dry-run). When Console CI goes green, its finalize step **dispatches the Release workflow** (`cd-v2.yml`): git tag → GitHub Release → R2 upload → **deploy edge**. Both do main-only work that PR CI only dry-ran, so they can fail where every PR check was green. The land is not done until this is green.
 - Find the **Console CI** run for the merged commit: `gh run list --repo rediacc/console --branch main --workflow "Console CI" --limit 3` (event `push`, matching the merged SHA), then arm a terminal-state watch (run_in_background: true; the process exit notifies on completion — do NOT use `gh run watch`, it has dropped silently on terminal runs): `R=<run-id>; until [ "$(gh run view $R --repo rediacc/console --json status --jq .status)" = "completed" ]; do sleep 20; done; gh run view $R --repo rediacc/console --json conclusion,jobs`.
 - Console CI on `main` is green **before** the Release run exists. Once it is, find the **Release** run (`gh run list --repo rediacc/console --workflow "Release" --limit 3`, event `workflow_dispatch`, matching the merged SHA) and background-watch it the same way. That is the run that actually tags and deploys edge.
@@ -185,7 +220,7 @@ The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the 
 
 ### 6. Re-sync main AFTER the release run — CD pushes to main during step 5
 
-**This step is not optional and step 4 does not cover it.** The release run does not only tag and deploy; it pushes **two commits back to `main`** after your merge, every single time:
+**This step is not optional for a release-worthy merge, and step 4 does not cover it.** (For a `bump-none` merge there is no release run, so none of the two commits below are written and the checkout is at most one fast-forward behind. Re-sync anyway, it is cheap, but do not go hunting for a homebrew-tap pointer move that never happened.) The release run does not only tag and deploy; it pushes **two commits back to `main`** after your merge, every single time:
 
 ```
 chore(release): update homebrew-tap submodule pointer [skip ci]

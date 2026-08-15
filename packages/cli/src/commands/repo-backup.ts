@@ -29,7 +29,6 @@ interface BackupRunOptions {
   cluster?: string;
   kubeCluster?: string;
   debug?: boolean;
-  watch?: boolean;
   skipRouterRestart?: boolean;
 }
 
@@ -430,7 +429,6 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--provision <provider>', t('commands.repo.push.optionProvision'))
     .option('--checkpoint', t('commands.repo.push.optionCheckpoint'))
     .option('--force', t('commands.repo.push.optionForce'))
-    .option('-w, --watch', t('options.watch'))
     .option('--bwlimit <limit>', t('commands.repo.push.optionBwlimit'))
     .option('--delta-base <guid>', t('commands.repo.push.optionDeltaBase'))
     .addOption(
@@ -460,7 +458,6 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .addOption(new Option('--from-machine <machine>').hideHelp())
     .option('--force', t('commands.repo.pull.optionForce'))
     .option('--up', t('commands.repo.pull.optionUp'))
-    .option('-w, --watch', t('options.watch'))
     .option('--bwlimit <limit>', t('commands.repo.pull.optionBwlimit'))
     .option('--delta-base <guid>', t('commands.repo.pull.optionDeltaBase'))
     .addOption(

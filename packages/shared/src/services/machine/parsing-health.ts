@@ -15,8 +15,8 @@ import {
   type ListResult,
   type ServiceInfo,
   type SystemInfo,
-} from '../../renet-contract/data/list-types.generated';
-import { type MachineWithVaultStatus, parseListResult } from './parsing-types';
+} from '../../renet-contract/data/list-types.generated.js';
+import { type MachineWithVaultStatus, parseListResult } from './parsing-types.js';
 
 /**
  * Health check result for CI/CD pipelines.

@@ -45,29 +45,26 @@ A major Spanish banking group that implemented Rediacc's cross-continental repli
 ![Banking Continuity During Blackout](/img/blackout-continuity.svg)
 
 ### 1. **Intercontinental Data Mirroring**
-* Core banking databases and transaction systems were **continuously replicated** to data centers in the United States
-* All customer data and transaction records were synchronized with **less than 3-second delay**
+* Core banking databases and transaction systems would be **continuously replicated** to data centers in the United States
+* Customer data and transaction records would stay synchronized within the replication lag your link and volume allow
 
 ### 2. **Seamless Operational Transition**
-* When Spanish servers lost power, traffic was **automatically redirected** to U.S.-based systems
-* Customers experienced only a brief 47-second interruption before services resumed
+* When the Spanish servers lost power, traffic would be **automatically redirected** to the U.S.-based systems
+* Customers would see a brief interruption while the redirect completes, rather than an outage lasting as long as the grid failure
 
 ### 3. **Remote Service Continuation**
-* Call centers in unaffected countries accessed the replicated systems to maintain customer support
-* Mobile banking apps remained functional by connecting to alternative data centers
+* Call centers in unaffected countries could reach the replicated systems and keep supporting customers
+* Mobile banking apps would stay functional by connecting to the alternative data centers
 
 ## Potential Outcome
 
 **Business Continuity:**
-* While competitors were offline for 14+ hours, the bank maintained **98% service availability**
+* Competitors were offline for 14+ hours. A bank running this architecture would stay serving through the same window
 
-**Customer Trust:**
-* The bank was the only major financial institution processing transactions during the crisis
-* Customer satisfaction increased by 27% in post-crisis surveys
+**Continuity of Service:**
+* It could keep processing transactions while institutions without a second region could not
 
 **Financial Protection:**
-* The bank avoided approximately €370 million in losses from transaction failures
-* No data was lost or corrupted, eliminating costly recovery operations
+* It would avoid the transaction-failure losses that accrue for every hour a payment system is down
+* No data would be lost or corrupted, so no recovery operation would be needed
 
-**Competitive Advantage:**
-* The bank onboarded 140,000 new customers in the following month from competitors who failed to maintain service

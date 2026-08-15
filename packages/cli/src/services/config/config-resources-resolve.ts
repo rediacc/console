@@ -8,7 +8,7 @@
  * and `config-resources.ts` stays under its max-lines budget.
  */
 
-import type { RepositoryConfig } from '../../types/index.js';
+import type { ArchivedRepository, RepositoryConfig } from '../../types/index.js';
 import { parseRepoRef, RESERVED_GRAND_TAG } from '../../utils/config-schema.js';
 
 /** A repository whose base name matches an operator's `--name` query. */
@@ -98,6 +98,57 @@ export function buildCredentialsMap(
     if (repoConfig.credential) map[repoConfig.repositoryGuid] = repoConfig.credential;
   }
   return map;
+}
+
+/**
+ * Build the archive record for a repository being deleted.
+ *
+ * Archives exist to preserve identity (`repositoryGuid` plus the LUKS
+ * credential), so a backup taken before the delete stays decryptable. Deploy-time
+ * `secrets` are out of scope and are scrubbed here so they cannot survive a
+ * delete-then-restore cycle; `ArchivedRepositorySchema.omit({secrets})` mirrors
+ * that at the schema layer. Runtime status riding along is harmless: the archive
+ * schema strips it on reload.
+ */
+export function buildArchivedRecord(repoKey: string, rec: RepositoryConfig): ArchivedRepository {
+  const colon = repoKey.indexOf(':');
+  const base = colon === -1 ? repoKey : repoKey.slice(0, colon);
+  const tag = rec.tag ?? (colon === -1 ? RESERVED_GRAND_TAG : repoKey.slice(colon + 1));
+  const { secrets: _secrets, ...record } = rec;
+  void _secrets;
+  return { ...record, name: base, tag, deletedAt: new Date().toISOString() };
+}
+
+/**
+ * Refuse a second LIVE record that reuses another record's `repositoryGuid`
+ * under a DIFFERENT credential.
+ *
+ * {@link buildCredentialsMap} is keyed by GUID, so such a pair does not fail
+ * loudly: one credential silently wins the single map slot for both records and
+ * the loser's LUKS image stops unlocking. Which one wins depends on iteration
+ * order over the config keys, so the same config is mountable or not depending
+ * on the alphabetical position of a name the operator chose.
+ *
+ * Archived records live in `resources.deletedRepositories`, never in the
+ * repositories dict this scans, so they are exempt by construction.
+ */
+export function assertNoCredentialCollision(
+  repos: Record<string, RepositoryConfig>,
+  key: string,
+  config: RepositoryConfig
+): void {
+  if (!config.credential) return;
+  for (const [otherKey, other] of Object.entries(repos)) {
+    if (otherKey === key) continue;
+    if (other.repositoryGuid !== config.repositoryGuid) continue;
+    if (!other.credential || other.credential === config.credential) continue;
+    throw new Error(
+      `Cannot register "${key}": it reuses the repositoryGuid of "${otherKey}" ` +
+        `(${config.repositoryGuid}) under a different credential. Credentials are ` +
+        `keyed by GUID, so one of the two repositories would become unmountable. ` +
+        `Give "${key}" the same credential as "${otherKey}", or a GUID of its own.`
+    );
+  }
 }
 
 /**

@@ -152,6 +152,30 @@ check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add -A')" "blanket-g
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add --all')" "blanket-git-add: --all with no pathspec"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add .')" "blanket-git-add: a lone dot"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'git add :/')" "blanket-git-add: the repo-root magic pathspec"
+
+# block-destructive-git-restore.sh -- the four commands that DISCARD uncommitted
+# work. Added 2026-08-14 after `git checkout -- <one file>`, run to tidy up a
+# stray edit, destroyed another live session's uncommitted value in that file.
+# The rule had existed in CLAUDE.md for months; a rule protects only the session
+# that recalls it at the one second it matters.
+H=pre-bash/block-destructive-git-restore.sh
+check 2 "$H" "$(bash_json 'git checkout -- packages/www/src/i18n/translations/.translation-hashes.json')" "destructive-git: the exact 2026-08-14 command"
+check 2 "$H" "$(bash_json 'git checkout .')" "destructive-git: checkout a lone dot"
+check 2 "$H" "$(bash_json 'git restore src/file.ts')" "destructive-git: restore"
+check 2 "$H" "$(bash_json 'git -C private/renet restore pkg/chunkstore/session.go')" "destructive-git: restore in a submodule via -C"
+check 2 "$H" "$(bash_json 'git stash')" "destructive-git: bare stash"
+check 2 "$H" "$(bash_json 'git stash pop')" "destructive-git: stash pop"
+check 2 "$H" "$(bash_json 'git clean -fd')" "destructive-git: clean"
+check 2 "$H" "$(bash_json 'echo hi; git restore src/')" "destructive-git: after a command separator"
+# THE NEGATIVE HALF, which matters more than usual: this guard sits on `git
+# checkout`, which sessions use to switch branches all day. A guard that blocks
+# that is one sessions demand be removed, leaving no guard at all.
+check 0 "$H" "$(bash_json 'git checkout main')" "destructive-git: branch switch is NOT blocked"
+check 0 "$H" "$(bash_json 'git checkout -b feature/x')" "destructive-git: branch create is NOT blocked"
+check 0 "$H" "$(bash_json 'git stash list')" "destructive-git: stash list is read-only"
+check 0 "$H" "$(bash_json 'git stash show -p')" "destructive-git: stash show is read-only"
+check 0 "$H" "$(bash_json 'git clean -n')" "destructive-git: clean --dry-run is read-only"
+check 0 "$H" "$(bash_json 'git status')" "destructive-git: unrelated git command"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'cd /tmp && git add -A')" "blanket-git-add: after a command separator"
 check 2 pre-bash/block-blanket-git-add.sh "$(bash_json 'sh -c "git add -A"')" "blanket-git-add: sh -c wrapper bypass"
 # BYPASSES found by review of PR #566, each confirmed by running the guard before

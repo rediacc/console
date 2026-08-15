@@ -9,8 +9,8 @@ import type {
   SignedSubscriptionBlob,
   SubscriptionData,
   SubscriptionValidationResult,
-} from './types';
-import { decodeSubscriptionPayload, validateSubscription } from './validation';
+} from './types.js';
+import { decodeSubscriptionPayload, validateSubscription } from './validation.js';
 
 /**
  * Known public keys for signature verification.

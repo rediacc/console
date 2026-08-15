@@ -5,21 +5,21 @@
  * `npm run generate:cli-contract -w @rediacc/cli`. The check:ci-cli-contract
  * gate fails when the checked-in data drifts from the CLI.
  */
-export { CLI_CONTRACT, CLI_CONTRACT_VERSION } from './data/contract.generated';
+export { CLI_CONTRACT, CLI_CONTRACT_VERSION } from './data/contract.generated.js';
 export {
   DISCOVERY_FAMILIES,
   type DiscoveryFamily,
   type DiscoverySource,
   RESOURCE_DISCOVERY,
   RESOURCE_KINDS,
-} from './discovery';
+} from './discovery.js';
 export {
   CONTRACT_LANGUAGES,
   type ContractLanguage,
   isContractLanguage,
   loadContractStrings,
   translate,
-} from './i18n';
+} from './i18n.js';
 export type {
   CliContract,
   CommandExample,
@@ -35,7 +35,7 @@ export type {
   PositionalKind,
   ResourceKind,
   TimeoutClass,
-} from './types';
+} from './types.js';
 export {
   CliContractSchema,
   CommandExampleSchema,
@@ -54,10 +54,10 @@ export {
   ResourceKindSchema,
   safeParseCliContract,
   TimeoutClassSchema,
-} from './validation';
+} from './validation.js';
 
-import { CLI_CONTRACT } from './data/contract.generated';
-import type { ContractCommand } from './types';
+import { CLI_CONTRACT } from './data/contract.generated.js';
+import type { ContractCommand } from './types.js';
 
 const BY_PATH_KEY: ReadonlyMap<string, ContractCommand> = new Map(
   CLI_CONTRACT.commands.map((c) => [c.pathKey, c])

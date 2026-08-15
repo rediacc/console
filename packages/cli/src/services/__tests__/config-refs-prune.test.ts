@@ -63,8 +63,8 @@ describe('pruneDanglingRefs', () => {
   it('warns on storage destinations whose target is missing', () => {
     const cfg = baseConfig();
     cfg.resources!.backupStrategies!.daily.destinations = [
-      { name: 'd1', storage: 's1' },
-      { name: 'd2', storage: 'GHOST-STORAGE' },
+      { kind: 'storage', name: 'd1', storage: 's1' },
+      { kind: 'storage', name: 'd2', storage: 'GHOST-STORAGE' },
     ];
     const r = pruneDanglingRefs(cfg);
     // Destinations are NOT auto-removed (could change strategy semantics).

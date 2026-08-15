@@ -89,6 +89,20 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // `backup strategy set/remove/list/show` edit strategy records in the config
   // (backup-strategy.ts imports no executor or SSH).
   'backup strategy': { plane: 'config' },
+  // `backup usage`/`backup manifests` are account-tunnel READS (accountServerFetch),
+  // not machine executor commands — control-plane, so `other` (like `subscription`).
+  // `backup verify` DOES reach a machine (backup_verify verb), so it keeps the
+  // backup-domain machine default.
+  'backup usage': { plane: 'other' },
+  'backup manifests': { plane: 'other' },
+  // `backup retention` (and its set/clear children) is the same shape: it reads
+  // and writes the policy through accountServerFetch and never touches a
+  // machine. Without these entries it inherits the backup-domain MACHINE
+  // default and becomes proxyCapable, which would offer a policy that decides
+  // what gets DELETED for execution against the wrong target.
+  'backup retention': { plane: 'other' },
+  'backup retention set': { plane: 'other' },
+  'backup retention clear': { plane: 'other' },
 
   // ── repo: config-side ref and secret ops, and the local template catalog ─
   // The one git-like ref op that never leaves the config: it rewrites the

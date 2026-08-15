@@ -147,6 +147,39 @@ export function isRepoProvisioningFunction(functionName: string): boolean {
 }
 
 /**
+ * The disaster-recovery verb that needs a repo licence installed on the target
+ * machine BEFORE it runs, without being a repo-provisioning verb.
+ *
+ * `renet backup restore` opens a chunk-store session, and the licence blob is
+ * what it exchanges for one (cmd/renet/backup_restore.go's
+ * `resolveRestoreLicense`): it is the bearer credential AND the address book,
+ * since the session URL is derived from the blob's `RenewalURL`. On a fresh DR
+ * machine there is no blob at all, so the restore refuses — which is exactly
+ * the case the verb exists for.
+ *
+ * This is a SEPARATE classification from `isRepoProvisioningFunction`, and the
+ * separation is deliberate rather than incidental:
+ *
+ * - It is not a repository_* verb, so it fails that predicate's prefix gate and
+ *   `resolveRepoLicenseContext`'s (local-executor.ts, `if
+ *   (!functionName.startsWith('repository_')) return null;`).
+ * - It is TierNone in renet's map, and that is a load-bearing decision, not an
+ *   oversight (pkg/license/tiermap.go: "a tier gate on the DISASTER RECOVERY
+ *   verb would mean an expired licence can lock a customer out of their own
+ *   backed-up data"). Promoting it to create-tier so it fell out of the tier
+ *   map naturally would reintroduce the very lockout the pre-flight is here to
+ *   remove.
+ *
+ * So the name is written out rather than derived. The requirement it encodes is
+ * an IMPLEMENTATION one (a session needs a bearer blob), not a TIER one, and
+ * the two must not be conflated — which is why this cannot be, and must not
+ * become, a tier lookup.
+ */
+export function isRestoreLicenseFunction(functionName: string): boolean {
+  return functionName === 'backup_restore';
+}
+
+/**
  * True when a provisioning verb's new repo is named by `params.tag`. Callers
  * resolving the issuance target must read `tag` for these and `repository` for
  * the rest.

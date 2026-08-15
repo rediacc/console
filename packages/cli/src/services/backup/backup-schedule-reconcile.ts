@@ -6,10 +6,8 @@
  * that the executor module consumes.
  */
 
-import { buildRcloneArgs } from '@rediacc/shared/storage-browser';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
-import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { generateEnvFile } from './backup-env-file.js';
 import {
@@ -244,11 +242,15 @@ export async function readRemoteState(
 // Phase B — Compute desired units
 // ---------------------------------------------------------------------------
 
-export async function computeDesiredUnits(
+// SYNCHRONOUS since 2026-08-15. Its only await was configService.getStorage,
+// which existed to build rclone args; with the rclone path removed there is
+// nothing async left. The single caller (backup-schedule.ts:204) still awaits
+// it, which is harmless, so the signature change needs no caller edit.
+export function computeDesiredUnits(
   strategies: { name: string; config: BackupStrategyConfig }[],
   datastore: string,
   remoteRenetPath: string
-): Promise<Map<string, DesiredUnit>> {
+): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
   for (const { name, config } of strategies) {
     const enabledDests = config.destinations.filter((d) => d.enabled !== false);
@@ -257,17 +259,17 @@ export async function computeDesiredUnits(
       continue;
     }
 
-    const rcloneArgsByDest = new Map<string, { remote: string; params: string[] }>();
-    for (const dest of enabledDests) {
-      const storageCfg = await configService.getStorage(dest.storage);
-      rcloneArgsByDest.set(dest.name, buildRcloneArgs(storageCfg.vaultContent, dest.folder));
-    }
+    // NOTE 2026-08-15: this used to build an rclone args Map here and REFUSE any
+    // hosted-service destination as "not available in this build yet". Both are
+    // gone. Keeping the refusal after the rclone emission was deleted made
+    // `backup schedule push` impossible for EVERY config: hosted-service threw
+    // here, and storage threw in the unit generator. The generator is now the
+    // single place that validates destination kind.
 
     const { serviceContent, envVars } = generateServiceUnit(
       name,
       config,
       enabledDests,
-      rcloneArgsByDest,
       datastore,
       remoteRenetPath
     );

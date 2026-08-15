@@ -1802,6 +1802,21 @@ jobs:
           set -o pipefail
           ./run.sh drill transfer --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-transfer.log"
 
+      # The chunk-store backup drill: session mint from a licence blob, the
+      # quota boundary, lease accounting, idempotent commit, the delete-free
+      # grant, a point-in-time restore read THROUGH A READ GRANT, and the
+      # 60-day retain-on-cancel promise. 86 assertions, 19s locally.
+      #
+      # Added after the drill was run green end to end locally, never before:
+      # a drill nobody has seen pass is indistinguishable from a broken one.
+      # Running it is also what found the defect it now guards — a
+      # backup-intent session could mint a READ grant, which handed an uploader
+      # back the read authority the write/read action split had just removed.
+      - name: drill backup
+        run: |
+          set -o pipefail
+          ./run.sh drill backup --keep-work 2>&1 | tee "$RUNNER_TEMP/drill-backup.log"
+
       - name: collect drill diagnostics
         if: failure()
         run: .ci/scripts/test/collect-drill-diagnostics.sh
@@ -1813,6 +1828,7 @@ jobs:
           path: |
             ${{ runner.temp }}/drill-universe.log
             ${{ runner.temp }}/drill-transfer.log
+            ${{ runner.temp }}/drill-backup.log
             ${{ runner.temp }}/drill-diagnostics
           retention-days: 3
           if-no-files-found: ignore

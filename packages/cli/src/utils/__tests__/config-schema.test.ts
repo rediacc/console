@@ -14,6 +14,7 @@ vi.mock('../../i18n/index.js', () => ({
   },
 }));
 
+import { RdcConfigSchema } from '@rediacc/shared/config-schema';
 import { configService } from '../../services/config/config-resources.js';
 import type { RdcConfig } from '../../types/index.js';
 import {
@@ -22,6 +23,7 @@ import {
   assertStorageExists,
   BackupDestinationSchema,
   CertEmailSchema,
+  CONFIG_KEY_ORDER,
   InfraConfigSchema,
   MachineConfigSchema,
   normalizeDomain,
@@ -337,6 +339,35 @@ describe('config-schema', () => {
     it('rejects missing name', () => {
       expect(BackupDestinationSchema.safeParse({ storage: 'microsoft' }).success).toBe(false);
     });
+
+    it('defaults a kind-less destination to the storage kind', () => {
+      const parsed = BackupDestinationSchema.safeParse({ name: 'legacy', storage: 'microsoft' });
+      expect(parsed.success).toBe(true);
+      expect(parsed.success && parsed.data.kind).toBe('storage');
+    });
+
+    it('accepts a hosted-service destination with a credential bag', () => {
+      const parsed = BackupDestinationSchema.safeParse({
+        kind: 'hosted-service',
+        name: 'rediacc-backups',
+        endpoint: 'https://s3.example.com',
+        vaultContent: { accessKeyId: 'AK', secretAccessKey: 'SK' },
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.success && parsed.data.kind).toBe('hosted-service');
+    });
+
+    it('accepts a hosted-service destination with no endpoint (Rediacc-hosted)', () => {
+      expect(
+        BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: 'hosted' }).success
+      ).toBe(true);
+    });
+
+    it('does not let a hosted-service destination match the storage variant', () => {
+      // No `storage`, kind explicit → must NOT satisfy the storage variant.
+      const parsed = BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: 'h' });
+      expect(parsed.success && parsed.data.kind).toBe('hosted-service');
+    });
   });
 
   describe('CertEmailSchema', () => {
@@ -457,31 +488,53 @@ describe('config-schema', () => {
     });
   });
 
+  /**
+   * The ordering list only affects keys it actually NAMES; everything else is
+   * alphabetized without a word. That is what let it rot invisibly: it stayed
+   * the v2 top-level key list long after the v3 shape landed, so entries like
+   * 'backupStrategy' (singular, and nested under `resources` even by its correct
+   * plural name) sat there matching nothing while the file still looked curated.
+   */
+  describe('CONFIG_KEY_ORDER', () => {
+    it('names only real RdcConfig top-level keys', () => {
+      const real = Object.keys(RdcConfigSchema.shape);
+      expect(CONFIG_KEY_ORDER.filter((k) => !real.includes(k))).toEqual([]);
+    });
+
+    it('names every top-level key, so none falls through to alphabetical', () => {
+      const ordered = new Set<string>(CONFIG_KEY_ORDER);
+      expect(Object.keys(RdcConfigSchema.shape).filter((k) => !ordered.has(k))).toEqual([]);
+    });
+  });
+
   describe('orderedReplacer / stringifyConfig', () => {
     it('puts metadata keys first in root config', () => {
       const config: RdcConfig = {
-        machines: { test: { ip: '1.2.3.4', user: 'root' } },
+        resources: { machines: { test: { ip: '1.2.3.4', user: 'root' } } },
         version: 1,
         id: 'test-id',
-        ssh: { privateKeyPath: '/test' },
+        schemaVersion: 3,
       };
       const json = stringifyConfig(config);
       const keys = Object.keys(JSON.parse(json));
-      expect(keys[0]).toBe('id');
-      expect(keys[1]).toBe('version');
+      expect(keys[0]).toBe('schemaVersion');
+      expect(keys[1]).toBe('id');
+      expect(keys[2]).toBe('version');
     });
 
     it('sorts nested object keys alphabetically', () => {
       const config: RdcConfig = {
         id: 'test',
         version: 1,
-        machines: {
-          server: { user: 'root', ip: '1.2.3.4', port: 22 },
+        resources: {
+          machines: {
+            server: { user: 'root', ip: '1.2.3.4', port: 22 },
+          },
         },
       };
       const json = stringifyConfig(config);
       const parsed = JSON.parse(json);
-      const machineKeys = Object.keys(parsed.machines.server);
+      const machineKeys = Object.keys(parsed.resources.machines.server);
       expect(machineKeys).toEqual(['ip', 'port', 'user']);
     });
 
@@ -489,36 +542,36 @@ describe('config-schema', () => {
       const config: RdcConfig = {
         id: 'test',
         version: 1,
-        machines: {
-          srv: { ip: '1.2.3.4', user: 'root', infra: { tcpPorts: [443, 80, 25] } },
+        resources: {
+          machines: {
+            srv: { ip: '1.2.3.4', user: 'root', infra: { tcpPorts: [443, 80, 25] } },
+          },
         },
       };
       const json = stringifyConfig(config);
       const parsed = JSON.parse(json);
-      expect(parsed.machines.srv.infra.tcpPorts).toEqual([443, 80, 25]);
+      expect(parsed.resources.machines.srv.infra.tcpPorts).toEqual([443, 80, 25]);
     });
 
     it('strips undefined values', () => {
-      const config: RdcConfig = { id: 'test', version: 1, team: undefined };
+      const config: RdcConfig = { id: 'test', version: 1, renetPath: undefined };
       const json = stringifyConfig(config);
-      expect(json).not.toContain('team');
+      expect(json).not.toContain('renetPath');
     });
 
-    it('places ssh before machines before storages', () => {
+    it('orders declared sections by CONFIG_KEY_ORDER, not alphabetically', () => {
+      // Alphabetically this would be account, encryption, resources; the list
+      // says account, resources, encryption, and the list must win.
       const config: RdcConfig = {
         id: 'test',
         version: 1,
-        storages: {},
-        machines: {},
-        ssh: { privateKeyPath: '/test' },
+        encryption: { mode: 'plaintext' },
+        resources: {},
+        account: { userEmail: 'ops@example.com' },
       };
-      const json = stringifyConfig(config);
-      const keys = Object.keys(JSON.parse(json));
-      const sshIdx = keys.indexOf('ssh');
-      const machinesIdx = keys.indexOf('machines');
-      const storagesIdx = keys.indexOf('storages');
-      expect(sshIdx).toBeLessThan(machinesIdx);
-      expect(machinesIdx).toBeLessThan(storagesIdx);
+      const keys = Object.keys(JSON.parse(stringifyConfig(config)));
+      expect(keys.indexOf('account')).toBeLessThan(keys.indexOf('resources'));
+      expect(keys.indexOf('resources')).toBeLessThan(keys.indexOf('encryption'));
     });
   });
 });

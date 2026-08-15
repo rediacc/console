@@ -1745,6 +1745,8 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill universe      Config isolation, source labels, per-config tokens (headless)
   drill transfer      Config-storage battery vs ./run.sh account dev (headless)
   drill license       Live licensing battery on the ops VMs (declares its VM cost)
+  drill backup        Live chunk-store battery: session mint, seed and incremental
+                      upload, byte-identical restore, quota refusal (no VMs needed)
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
 
@@ -1994,10 +1996,14 @@ main() {
                     shift
                     "$ROOT_DIR/scripts/drills/license.sh" "$@"
                     ;;
+                backup)
+                    shift
+                    "$ROOT_DIR/scripts/drills/backup.sh" "$@"
+                    ;;
                 *)
                     log_error "Unknown drill: ${1:-}"
                     echo ""
-                    echo "Usage: ./run.sh drill [universe|transfer|license] [--selftest]"
+                    echo "Usage: ./run.sh drill [universe|transfer|license|backup] [--selftest]"
                     exit 1
                     ;;
             esac

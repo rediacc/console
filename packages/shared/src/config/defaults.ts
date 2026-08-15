@@ -454,6 +454,30 @@ export const SORT_DEFAULTS = {
 export const BACKUP_DEFAULTS = {
   /** Default backup mode (hot = zero-downtime snapshot while running) */
   MODE: 'hot' as const,
+  /**
+   * Default destination kind. The schema declares
+   * `kind: z.literal('storage').default('storage')`, so a PARSED destination
+   * always has one and TypeScript believes it is never undefined — but a raw
+   * config object has no `kind` field at all (the operator's live config reads
+   * exactly that way), so code reading it defensively needs a named default
+   * rather than a literal, which custom/no-hardcoded-nullish-defaults requires.
+   */
+  DESTINATION_KIND: 'storage' as const,
+  /**
+   * Kind for a destination the CLI is CREATING, which is deliberately NOT
+   * `DESTINATION_KIND` above. The two answer different questions and drifted
+   * apart on 2026-08-15 when the rclone path was deleted:
+   *
+   * - `DESTINATION_KIND` is what a destination on disk with no `kind` field
+   *   MEANS. That is a fact about old data and can never change: those entries
+   *   are rclone destinations, and reading them as anything else would mislabel
+   *   the operator's live config.
+   * - `NEW_DESTINATION_KIND` is what `rdc backup strategy set --destination`
+   *   makes when the operator does not say. It is `hosted-service` because the
+   *   chunk store is the only kind `rdc backup schedule` can deploy, so any
+   *   other default hands back a destination that cannot be scheduled.
+   */
+  NEW_DESTINATION_KIND: 'hosted-service' as const,
 } as const;
 
 /**

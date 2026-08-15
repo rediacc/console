@@ -46,23 +46,13 @@
     },
     {
       "kind": "embedded-binary",
-      "asset": "rclone",
-      "name": "rclone",
-      "version": "1.75.0",
-      "spdx": "MIT",
-      "license": "MIT License (Copyright (C) 2012 by Nick Craig-Wood); conveyed as a binary.",
-      "upstreamSourceUrl": "https://github.com/rclone/rclone/archive/v1.75.0/rclone-1.75.0.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rclone-1.75.0.tar.gz"
-    },
-    {
-      "kind": "embedded-binary",
       "asset": "rsync",
       "name": "rsync",
-      "version": "3.4.4",
+      "version": "3.5.0",
       "spdx": "GPL-3.0-or-later",
       "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
-      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.4.4.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.4.4.tar.gz",
+      "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.0.tar.gz",
+      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.0.tar.gz",
       "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
     },
     {

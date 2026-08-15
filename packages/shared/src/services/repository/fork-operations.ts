@@ -3,7 +3,7 @@
  * Handles validation for fork-specific operations like deletion
  */
 
-import { isFork, type RepositoryWithRelations } from './core';
+import { isFork, type RepositoryWithRelations } from './core.js';
 
 /**
  * Result of fork deletion validation
