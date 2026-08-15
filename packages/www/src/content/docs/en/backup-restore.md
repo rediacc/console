@@ -24,10 +24,11 @@ filesystem allocation metadata rather than by reading the whole image. Identical
 cells are stored once across snapshots and across a fork family, and usage is
 metered against your storage quota (`rdc backup usage`).
 
-**Storage push** (`rdc repo push`) copies a whole backup file to an
-rclone-compatible provider you register yourself. It is being retired in favour
-of chunk storage, and scheduled strategies no longer drive it. The sections below
-that describe it still work today, but treat them as the legacy path.
+**Storage push is retired.** `rdc repo push --to <storage>` used to copy a whole
+backup file to an rclone-compatible provider you registered yourself. The rclone
+arm has been removed, and push, pull, list and restore now refuse a storage
+destination and point you here. Machine-to-machine transfer is untouched: it
+never went through rclone.
 
 Restoring from chunk storage works: `rdc backup restore <repo> --at <snapshot-id>`
 materializes a stored snapshot, and `--at` also accepts an RFC 3339 timestamp,
@@ -150,19 +151,24 @@ This imports storage configurations from an rclone config file into the current 
 rdc storage list
 ```
 
-## Push a Backup
+## Push a Backup to Another Machine
 
-Push a repository backup to external storage:
+Copy a repository to a second machine over SSH:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-The backup lands in the storage's `hot/` folder when the repository is mounted at push time, and in `cold/` when it is unmounted. This is the same layout the scheduled backups use, so `rdc backup list` shows every backup in one table.
+The encrypted image is copied with the SAME GUID, so this is a backup or a
+migration rather than a fork. To get an independent copy, `rdc repo fork` first
+and push the fork.
+
+For point-in-time backup, use chunk storage instead: `rdc backup snapshot my-app`
+uploads only the cells that changed, and `rdc backup restore my-app --at <snapshot>`
+brings any of them back.
 
 | Option | Description |
 |--------|-------------|
-| `--to <storage>` | Target storage location |
 | `--to-machine <machine>` | Target machine for machine-to-machine backup |
 | `--dest <filename>` | Custom destination filename |
 | `--checkpoint` | Create a CRIU checkpoint before pushing (for containers with `rediacc.checkpoint=true` label). Target auto-restores on `repo up` |
@@ -173,19 +179,21 @@ The backup lands in the storage's `hot/` folder when the repository is mounted a
 | `--debug` | Enable verbose output |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
-## Pull / Restore a Backup
+## Pull a Backup from Another Machine
 
-Pull a repository backup from external storage:
+Bring a repository back from the machine that holds it:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+To restore from chunk storage instead, use
+`rdc backup restore my-app --at <snapshot-id>`.
 
 Pull refuses to overwrite a repository that is currently **mounted**. Unmount it first, pull, then bring it back up with `rdc repo up`. Directory-based repositories are the exception: they sync in place while mounted.
 
 | Option | Description |
 |--------|-------------|
-| `--from <storage>` | Source storage location |
 | `--from-machine <machine>` | Source machine for machine-to-machine restore |
 | `--force` | Override existing local backup |
 | `--bwlimit <limit>` | Bandwidth limit for rsync transfer (e.g. `10M`, `500K`) |
@@ -195,10 +203,16 @@ Pull refuses to overwrite a repository that is currently **mounted**. Unmount it
 
 ## List Backups
 
-View available backups in a storage location:
+List the snapshots in chunk storage:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+To see backup artifacts sitting on a machine:
+
+```bash
+rdc backup list -m server-1
 ```
 
 The output is a unified table that merges both [scheduled-backup folders](#scheduled-backups) (`hot/` and `cold/`) so you see every backup in one view:
@@ -211,12 +225,8 @@ The output is a unified table that merges both [scheduled-backup folders](#sched
 | `Size` | Human-readable size of the backup file |
 | `Modified` | UTC timestamp from the storage backend |
 
-To drill into a single mode, pass `--path`:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Listing a storage backend is retired along with the rclone arm; the command
+refuses and names these two replacements.
 
 ### Storage layout
 
@@ -240,23 +250,21 @@ A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; 
 
 Push and pull act on a single repository, addressed by ref (`name`, `name:tag`, or `name@machine`). There is no "all repositories at once" form: run the command once per repository.
 
-### Push to Storage
+### Push to Another Machine
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Pull from Storage
+### Pull from Another Machine
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Option | Description |
 |--------|-------------|
-| `--to <remote>` | Destination storage or machine (push) |
 | `--to-machine <machine>` | Destination machine for machine-to-machine push |
-| `--from <remote>` | Source storage or machine (pull) |
 | `--from-machine <machine>` | Source machine for machine-to-machine pull |
 | `--force` | Overwrite an existing backup or repository |
 | `--checkpoint` | Create a CRIU checkpoint before pushing (push only) |
@@ -367,7 +375,7 @@ The default setup is a two-strategy split: a fast hourly hot stream that capture
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -376,7 +384,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -447,7 +455,7 @@ Each strategy can carry `--include` and `--exclude` filters. Repository names th
 ```bash
 # Hot strategy: back up everything hourly
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -455,7 +463,7 @@ rdc backup strategy set hourly-hot \
 
 # Cold strategy: back up everything weekly, excluding the large derived dataset
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -540,11 +548,16 @@ Migration transfers the encrypted repository data via rsync. The source reposito
 
 ## Browse Storage
 
-Browse the contents of a storage location:
+`rdc storage browse` and `rdc storage import` are the exception to the retirement:
+they spawn your own rclone from PATH rather than an embedded copy, and they remain
+the way to read an archive written before the change.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Browsing is read-only. Pushing to, pulling from and listing a storage backend are
+retired; each refuses and names the chunk-store command that replaces it.
 
 ## Best Practices
 

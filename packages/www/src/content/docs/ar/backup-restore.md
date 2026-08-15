@@ -21,7 +21,7 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 **التخزين المجزّأ** (`rdc backup snapshot`) يرفع صورة المستودع في خلايا ثابتة الحجم مُعنوَنة بمحتواها. يرفع التشغيل الأول كامل المخزون غير الفارغ؛ وكل تشغيل لاحق يرفع فقط الخلايا التي تغيّرت، وهو ما يُحدَّد من بيانات تخصيص نظام الملفات وليس بقراءة الصورة كاملة. تُخزَّن الخلايا المتطابقة مرة واحدة فقط عبر اللقطات وعبر عائلة التفريعات، وتُحتسب النسخة المستخدمة مقابل حصة التخزين لديك (`rdc backup usage`).
 
-**دفع التخزين** (`rdc repo push`) ينسخ ملف نسخة احتياطية كاملاً إلى مزود متوافق مع rclone تُسجّله بنفسك. يجري إيقاف هذا المسار لصالح التخزين المجزّأ، والاستراتيجيات المجدولة لم تعد تستدعيه. الأقسام أدناه التي تصفه لا تزال تعمل اليوم، لكن اعتبره المسار القديم.
+**دفع التخزين أُوقف نهائياً.** كان `rdc repo push --to <storage>` يُستخدم لنسخ ملف نسخة احتياطية كاملاً إلى مزود متوافق مع rclone تُسجّله بنفسك. أُزيل مسار rclone بالكامل، وأصبحت أوامر الدفع والسحب والعرض والاستعادة ترفض الآن أي وجهة تخزين وتوجّهك إلى هذا القسم. النقل من جهاز إلى جهاز لم يتأثر: فهو لم يمرّ عبر rclone أصلاً.
 
 الاستعادة من التخزين المجزّأ تعمل: `rdc backup restore <repo> --at <snapshot-id>` تجسّد لقطة محفوظة، و `--at` يقبل أيضاً طابع زمني RFC 3339، والذي يُحلّ مقابل مخزون اللقطات. أضف `--as <name>` للاستعادة تحت اسم مختلف و `--up` لإحضار المستودع بعدها. يوفر التخزين المجزّأ أيضاً الرفع (`rdc backup snapshot`)، التحقق (`rdc backup verify`، و `--deep` لإعادة حساب كل خلية بدلاً من عينة)، مخزون اللقطات (`rdc backup manifests`)، وحسابات الحصة (`rdc backup usage`).
 
@@ -137,19 +137,20 @@ rdc storage import rclone.conf
 rdc storage list
 ```
 
-## إرسال نسخة احتياطية
+## إرسال نسخة احتياطية إلى جهاز آخر
 
-إرسال نسخة احتياطية من مستودع إلى تخزين خارجي:
+نسخ مستودع إلى جهاز ثانٍ عبر SSH:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-تُحفظ النسخة الاحتياطية في مجلد `hot/` داخل التخزين إذا كان المستودع مُحمَّلًا وقت الإرسال، وفي `cold/` إذا كان غير مُحمَّل. هذا التخطيط نفسه تستخدمه النسخ الاحتياطية المجدولة، لذا يعرض `rdc backup list` كل نسخة في جدول واحد.
+تُنسخ الصورة المشفرة بنفس الـ GUID، لذا هذه نسخة احتياطية أو ترحيل وليست تفريعاً. للحصول على نسخة مستقلة، شغّل `rdc repo fork` أولاً ثم أرسل التفريع.
+
+للنسخ الاحتياطي عند نقطة زمنية محددة، استخدم التخزين المجزّأ بدلاً من ذلك: `rdc backup snapshot my-app` يرفع فقط الخلايا التي تغيّرت، و `rdc backup restore my-app --at <snapshot>` يعيد أياً منها.
 
 | الخيار | الوصف |
 |--------|-------|
-| `--to <storage>` | موقع التخزين الهدف |
 | `--to-machine <machine>` | الجهاز الهدف للنسخ الاحتياطي من جهاز إلى جهاز |
 | `--dest <filename>` | اسم ملف الوجهة المخصص |
 | `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الإرسال (للحاويات التي تحمل تسمية `rediacc.checkpoint=true`). الهدف يستعيد تلقائياً عند `repo up` |
@@ -160,19 +161,21 @@ rdc repo push my-app --to my-storage
 | `--debug` | تفعيل الإخراج التفصيلي |
 | `--skip-router-restart` | تخطي إعادة تشغيل خادم المسار بعد العملية |
 
-## سحب / استعادة نسخة احتياطية
+## سحب نسخة احتياطية من جهاز آخر
 
-سحب نسخة احتياطية لمستودع من تخزين خارجي:
+إعادة مستودع من الجهاز الذي يحمله:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+للاستعادة من التخزين المجزّأ بدلاً من ذلك، استخدم
+`rdc backup restore my-app --at <snapshot-id>`.
 
 يرفض السحب استبدال مستودع **مُحمَّل** حالياً. أزل تحميله أولاً، ثم نفّذ السحب، ثم أعده للعمل عبر `rdc repo up`. المستودعات القائمة على مجلد استثناء: فهي تُزامَن في مكانها أثناء كونها محمّلة.
 
 | الخيار | الوصف |
 |--------|-------|
-| `--from <storage>` | موقع التخزين المصدر |
 | `--from-machine <machine>` | الجهاز المصدر للاستعادة من جهاز إلى جهاز |
 | `--force` | استبدال النسخة الاحتياطية المحلية الموجودة |
 | `--bwlimit <limit>` | حد عرض النطاق الترددي لنقل rsync (مثال: `10M`، `500K`) |
@@ -182,10 +185,16 @@ rdc repo pull my-app --from my-storage
 
 ## عرض النسخ الاحتياطية
 
-عرض النسخ الاحتياطية المتاحة في موقع تخزين:
+عرض اللقطات في التخزين المجزّأ:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+لرؤية النسخ الاحتياطية الموجودة على جهاز:
+
+```bash
+rdc backup list -m server-1
 ```
 
 الإخراج عبارة عن جدول موحَّد يدمج كلا مجلدَي [النسخ الاحتياطية المجدولة](#scheduled-backups) (`hot/` و `cold/`) لرؤية كل نسخة احتياطية في عرض واحد:
@@ -198,12 +207,7 @@ rdc backup list --storage my-storage
 | `Size` | حجم ملف النسخة الاحتياطية بصيغة قابلة للقراءة |
 | `Modified` | الطابع الزمني UTC من وحدة التخزين الخلفية |
 
-للتنقيب في وضع واحد، مرّر `--path`:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+عرض التخزين أُوقف مع مسار rclone؛ الأمر يرفض ويذكر هذين البديلين.
 
 ### تخطيط التخزين
 
@@ -227,23 +231,21 @@ rdc backup list --storage my-storage --path cold
 
 يعمل الدفع والسحب على مستودع واحد فقط، يُحدَّد عبر مرجع (`name` أو `name:tag` أو `name@machine`). لا توجد صيغة «جميع المستودعات دفعة واحدة»: شغّل الأمر مرة واحدة لكل مستودع.
 
-### الإرسال إلى التخزين
+### الإرسال إلى جهاز آخر
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### السحب من التخزين
+### السحب من جهاز آخر
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | الخيار | الوصف |
 |--------|-------------|
-| `--to <remote>` | التخزين أو الجهاز الهدف (الإرسال) |
 | `--to-machine <machine>` | الجهاز الهدف للإرسال من جهاز إلى جهاز |
-| `--from <remote>` | التخزين أو الجهاز المصدر (السحب) |
 | `--from-machine <machine>` | الجهاز المصدر للسحب من جهاز إلى جهاز |
 | `--force` | استبدال نسخة احتياطية أو مستودع موجود |
 | `--checkpoint` | إنشاء نقطة تحقق CRIU قبل الإرسال (الإرسال فقط) |
@@ -354,7 +356,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -363,7 +365,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -434,7 +436,7 @@ rdc backup strategy remove weekly-cold
 ```bash
 # الاستراتيجية الساخنة: نسخ احتياطي لكل شيء كل ساعة
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -442,7 +444,7 @@ rdc backup strategy set hourly-hot \
 
 # الاستراتيجية الباردة: نسخ احتياطي لكل شيء أسبوعياً، باستثناء مجموعة البيانات المشتقة الكبيرة
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -527,11 +529,13 @@ rdc repo migrate my-app@server-1 --to server-2
 
 ## تصفح التخزين
 
-تصفح محتويات موقع تخزين:
+`rdc storage browse` و `rdc storage import` هما الاستثناء من هذا الإيقاف: فهما يشغّلان نسخة rclone الخاصة بك من PATH بدلاً من نسخة مضمّنة، ويبقيان الطريقة لقراءة أرشيف مكتوب قبل هذا التغيير.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+التصفح للقراءة فقط. إرسال النسخ الاحتياطية إلى تخزين والسحب منه وعرضه أُوقفت جميعها؛ كل أمر منها يرفض ويذكر أمر التخزين المجزّأ الذي يحل محله.
 
 ## أفضل الممارسات
 

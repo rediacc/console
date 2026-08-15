@@ -18,7 +18,7 @@ Rediacc'il on kaks sõltumatut varundamisviisi ja see juhend käsitleb mõlemat.
 
 **Tükksalvestus** (`rdc backup snapshot`) laadib repositooriumi tõmmise üles fikseeritud suurusega rakkudena, mis on aadresseeritud oma sisu järgi. Esimene käivitus laadib üles kogu nullist erineva sisu; iga järgnev käivitus laadib üles ainult muutunud rakud, mis otsustatakse failisüsteemi eraldusmetaandmete, mitte kogu tõmmise lugemise põhjal. Identsed rakud salvestatakse üks kord kõigi tõmmiste ja kogu forkide perekonna ulatuses, ning kasutust arvestatakse sinu salvestuskvoodi vastu (`rdc backup usage`).
 
-**Salvestuse push** (`rdc repo push`) kopeerib terve varufaili rclone-ühilduvasse teenusepakkujasse, mille registreerid ise. Seda viisildastatakse tükksalvestuse kasuks ja ajastatud strateegiad seda enam ei käivita. Allpool olevad jaotised, mis seda kirjeldavad, töötavad ikkagi täna, kuid käsitle neid päranditee asemel.
+**Salvestuse push on kaotatud.** `rdc repo push --to <storage>` kopeeris varem terve varufaili rclone-ühilduvasse teenusepakkujasse, mille registreerisid ise. rclone-haru on täielikult eemaldatud ning push, pull, list ja restore keelduvad nüüd salvestussihtmärgist ja suunavad sind siia. Masinalt masinale ülekanne jääb puutumata: see ei käinud kunagi rclone kaudu.
 
 Taastamine tükksalvestusest toimib: `rdc backup restore <repo> --at <snapshot-id>` teostab salvestatud hetktõmmise, ja `--at` aktsepteerib ka RFC 3339 ajatempli, mis lahendatakse hetktõmmise inventuuri vastu. Lisage `--as <name>` taastamiseks erineva nimega ja `--up` repositooriumi pärast juurutamiseks. Tükksalvestus annab ka üleslaadimist (`rdc backup snapshot`), kinnitamist (`rdc backup verify`, ja `--deep` iga raku uuesti räsimiseks, mitte proovi asemel), hetktõmmiste inventuuri (`rdc backup manifests`) ja kvootide arvestust (`rdc backup usage`).
 
@@ -134,19 +134,20 @@ See impordib salvestuskonfiguratsioone rclone-konfiguratsioonifailist praegusess
 rdc storage list
 ```
 
-## Varukoopia saatmine
+## Varukoopia saatmine teise masinasse
 
-Saada repositooriumi varukoopia välisesse salvestusse:
+Kopeeri repositoorium SSH kaudu teise masinasse:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal ühendatud, ja `cold/` kausta, kui see on lahti ühendatud. See on sama paigutus, mida ajastatud varundamine kasutab, seega `rdc backup list` näitab kõiki varukoopiad ühes tabelis.
+Krüpteeritud tõmmis kopeeritakse SAMA GUID-iga, seega on tegu varukoopia või migratsiooniga, mitte fork'iga. Sõltumatu koopia saamiseks käivita kõigepealt `rdc repo fork` ja saada fork.
+
+Kindla ajahetke varundamiseks kasuta selle asemel tükksalvestust: `rdc backup snapshot my-app` laadib üles ainult muutunud rakud ning `rdc backup restore my-app --at <snapshot>` toob need tagasi.
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--to <storage>` | Sihtmärk salvestuskoht |
 | `--to-machine <machine>` | Sihtmasin masina-masina varundamiseks |
 | `--dest <filename>` | Kohandatud sihtfaili nimi |
 | `--checkpoint` | Loob CRIU kontrollpunkti enne saatmist (konteineritele, millel on silt `rediacc.checkpoint=true`). Sihtmärk taastab automaatselt käsuga `repo up` |
@@ -157,19 +158,21 @@ Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal �
 | `--debug` | Luba detailne väljund |
 | `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
 
-## Varukoopia tõmbamine / taastamine
+## Varukoopia tõmbamine teisest masinast
 
-Tõmba repositooriumi varukoopia välisest salvestusest:
+Too repositoorium tagasi masinast, kus see asub:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+Tükksalvestusest taastamiseks kasuta selle asemel käsku
+`rdc backup restore my-app --at <snapshot-id>`.
 
 Pull keeldub üle kirjutamast repositooriumi, mis on hetkel **ühendatud**. Ühenda see kõigepealt lahti, tee pull ja too see siis tagasi käsuga `rdc repo up`. Kaustapõhised repositooriumid on erand: need sünkroonivad end kohapeal ka ühendatuna.
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--from <storage>` | Lähtesalvestuskoht |
 | `--from-machine <machine>` | Lähtemašin masina-masina taastamiseks |
 | `--force` | Kirjuta olemasolev kohalik varukoopia üle |
 | `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`, `500K`) |
@@ -179,10 +182,16 @@ Pull keeldub üle kirjutamast repositooriumi, mis on hetkel **ühendatud**. Ühe
 
 ## Varukoopiote loetlemine
 
-Vaata salvestuskohas saadaolevaid varukoopiad:
+Loetle tükksalvestuses olevad hetktõmmised:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+Masinal olevate varunduskoopiate nägemiseks:
+
+```bash
+rdc backup list -m server-1
 ```
 
 Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](#ajastatud-varundamine) (`hot/` ja `cold/`), et näeksid kõiki varukoopiad ühes vaates:
@@ -195,12 +204,7 @@ Väljund on ühtne tabel, mis ühendab mõlemad [ajastatud varundamise kaustad](
 | `Size` | Inimloetav varukoopifaili suurus |
 | `Modified` | UTC ajatempel salvestusteenuse pakkujalt |
 
-Ühe režiimis süvitsi minekuks kasuta `--path`:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.
 
 ### Salvestuse paigutus
 
@@ -224,23 +228,21 @@ Repo võib ilmuda nii `hot/` kui ka `cold/` kaustas (tunnine ajakava teeb selles
 
 Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi "kõik repositooriumid korraga" ei ole: käivita käsk iga repositooriumi jaoks eraldi.
 
-### Saada salvestusse
+### Saada teise masinasse
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Tõmba salvestusest
+### Tõmba teisest masinast
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--to <remote>` | Sihtsalvestus või -masin (saatmine) |
 | `--to-machine <machine>` | Sihtmasin masina-masina saatmiseks |
-| `--from <remote>` | Lähtesalvestus või -masin (tõmbamine) |
 | `--from-machine <machine>` | Lähtemašin masina-masina tõmbamiseks |
 | `--force` | Kirjuta olemasolev varukoopia või repositoorium üle |
 | `--checkpoint` | Loo enne saatmist CRIU kontrollpunkt (ainult saatmine) |
@@ -351,7 +353,7 @@ Kanooniline vaikeväärtus on kahe strateegiaga jaotus: kiire tunnine hot-voog, 
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ Igal strateegial võivad olla `--include` ja `--exclude` filtrid. Repositooriumi
 ```bash
 # Kuum strateegia: varundage kõik tunnis
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # Külm strateegia: varundage kõik nädalas, välja arvatud suur tuletatud andmestik
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu. Lähte
 
 ## Salvestuse sirvimine
 
-Sirvi salvestuskoha sisu:
+`rdc storage browse` ja `rdc storage import` on erand sellest kaotamisest: need käivitavad sinu enda rclone'i PATH-ist, mitte sisseehitatud koopiat, ja jäävad viisiks lugeda arhiivi, mis on kirjutatud enne muudatust.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Sirvimine on ainult lugemiseks. Salvestusliidesesse saatmine, sealt tõmbamine ja selle loetlemine on kaotatud; iga käsk keeldub ja nimetab tükksalvestuse käsu, mis selle asendab.
 
 ## Parimad praktikad
 

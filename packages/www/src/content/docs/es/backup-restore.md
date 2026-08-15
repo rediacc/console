@@ -18,7 +18,7 @@ Rediacc tiene dos vías de respaldo independientes, y esta guía cubre ambas. Us
 
 **Almacenamiento fragmentado** (`rdc backup snapshot`) sube la imagen del repositorio en celdas de tamaño fijo direccionadas por su contenido. La primera ejecución sube todo el inventario no vacío; cada ejecución posterior sube solo las celdas que cambiaron, decidido a partir de los metadatos de asignación del sistema de archivos en lugar de leer la imagen completa. Las celdas idénticas se almacenan una sola vez entre snapshots y entre toda una familia de forks, y el uso se mide contra tu cuota de almacenamiento (`rdc backup usage`).
 
-**Envío a almacenamiento** (`rdc repo push`) copia un archivo de respaldo completo a un proveedor compatible con rclone que registras tú mismo. Se está retirando a favor del almacenamiento fragmentado, y las estrategias programadas ya no lo impulsan. Las secciones siguientes que lo describen siguen funcionando hoy, pero trátelas como la vía heredada.
+**El envío a almacenamiento quedó retirado.** `rdc repo push --to <storage>` copiaba antes un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. La rama de rclone se eliminó por completo, y push, pull, list y restore ahora rechazan un destino de almacenamiento y te remiten aquí. La transferencia de máquina a máquina no se ve afectada: nunca pasó por rclone.
 
 Restaurar desde el almacenamiento fragmentado funciona: `rdc backup restore <repo> --at <snapshot-id>` materializa un snapshot almacenado, y `--at` también acepta una marca de tiempo RFC 3339, que se resuelve contra el inventario de snapshots. Añade `--as <name>` para restaurar bajo un nombre diferente y `--up` para poner en marcha el repositorio después. El almacenamiento fragmentado también te proporciona carga (`rdc backup snapshot`), verificación (`rdc backup verify`, y `--deep` para volver a hacer hash de cada celda en lugar de una muestra), el inventario de snapshots (`rdc backup manifests`) y contabilidad de cuota (`rdc backup usage`).
 
@@ -134,19 +134,20 @@ Esto importa configuraciones de almacenamiento desde un archivo de configuració
 rdc storage list
 ```
 
-## Enviar un Respaldo
+## Enviar un Respaldo a Otra Máquina
 
-Envía un respaldo del repositorio al almacenamiento externo:
+Copia un repositorio a una segunda máquina por SSH:
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio está montado al momento del envío, y en `cold/` cuando está desmontado. Es el mismo esquema que usan los respaldos programados, por lo que `rdc backup list` muestra todos los respaldos en una sola tabla.
+La imagen cifrada se copia con el MISMO GUID, así que esto es un respaldo o una migración, no un fork. Para obtener una copia independiente, ejecuta primero `rdc repo fork` y envía el fork.
+
+Para un respaldo puntual, usa almacenamiento fragmentado en su lugar: `rdc backup snapshot my-app` sube solo las celdas que cambiaron, y `rdc backup restore my-app --at <snapshot>` recupera cualquiera de ellas.
 
 | Opción | Descripción |
 |--------|-------------|
-| `--to <storage>` | Ubicación de almacenamiento destino |
 | `--to-machine <machine>` | Máquina destino para respaldo de máquina a máquina |
 | `--dest <filename>` | Nombre de archivo de destino personalizado |
 | `--checkpoint` | Crear un checkpoint CRIU antes de enviar (para contenedores con etiqueta `rediacc.checkpoint=true`). El destino se restaura automáticamente con `repo up` |
@@ -157,19 +158,21 @@ El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio 
 | `--debug` | Habilitar salida detallada |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
-## Descargar / Restaurar un Respaldo
+## Descargar un Respaldo desde Otra Máquina
 
-Descarga un respaldo del repositorio desde almacenamiento externo:
+Recupera un repositorio desde la máquina que lo aloja:
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+Para restaurar desde almacenamiento fragmentado en su lugar, usa
+`rdc backup restore my-app --at <snapshot-id>`.
 
 Pull se niega a sobrescribir un repositorio que esté **montado** en ese momento. Desmóntalo primero, ejecuta el pull y luego vuelve a levantarlo con `rdc repo up`. Los repositorios basados en directorio son la excepción: se sincronizan en el sitio mientras están montados.
 
 | Opción | Descripción |
 |--------|-------------|
-| `--from <storage>` | Ubicación de almacenamiento de origen |
 | `--from-machine <machine>` | Máquina de origen para restauración de máquina a máquina |
 | `--force` | Sobreescribir respaldo local existente |
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`, `500K`) |
@@ -179,10 +182,16 @@ Pull se niega a sobrescribir un repositorio que esté **montado** en ese momento
 
 ## Listar Respaldos
 
-Ve los respaldos disponibles en una ubicación de almacenamiento:
+Lista los snapshots en almacenamiento fragmentado:
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+Para ver los artefactos de respaldo que hay en una máquina:
+
+```bash
+rdc backup list -m server-1
 ```
 
 La salida es una tabla unificada que combina ambas [carpetas de respaldos programados](#respaldos-programados) (`hot/` y `cold/`) para que veas cada respaldo en una sola vista:
@@ -195,12 +204,7 @@ La salida es una tabla unificada que combina ambas [carpetas de respaldos progra
 | `Size` | Tamaño legible del archivo de respaldo |
 | `Modified` | Marca de tiempo UTC del backend de almacenamiento |
 
-Para profundizar en un solo modo, pasa `--path`:
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+Listar un backend de almacenamiento quedó retirado junto con la rama de rclone; el comando se rechaza y nombra estos dos reemplazos.
 
 ### Disposición de almacenamiento
 
@@ -224,23 +228,21 @@ Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma hor
 
 Push y pull actúan sobre un único repositorio, identificado por su ref (`name`, `name:tag` o `name@machine`). No existe una forma para «todos los repositorios a la vez»: ejecuta el comando una vez por repositorio.
 
-### Enviar al Almacenamiento
+### Enviar a Otra Máquina
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### Descargar desde el Almacenamiento
+### Descargar desde Otra Máquina
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | Opción | Descripción |
 |--------|-------------|
-| `--to <remote>` | Almacenamiento o máquina de destino (envío) |
 | `--to-machine <machine>` | Máquina de destino para envío de máquina a máquina |
-| `--from <remote>` | Almacenamiento o máquina de origen (descarga) |
 | `--from-machine <machine>` | Máquina de origen para descarga de máquina a máquina |
 | `--force` | Sobreescribir un respaldo o repositorio existente |
 | `--checkpoint` | Crear un checkpoint CRIU antes de enviar (solo envío) |
@@ -351,7 +353,7 @@ La configuración predeterminada es una división en dos estrategias: un flujo h
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ Cada estrategia puede llevar filtros `--include` y `--exclude`. Los nombres de r
 ```bash
 # Estrategia hot: respaldar todo cada hora
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # Estrategia cold: respaldar todo semanalmente, excluyendo el gran conjunto de datos derivado
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ La migración transfiere los datos del repositorio cifrado vía rsync. El reposi
 
 ## Explorar Almacenamiento
 
-Explora el contenido de una ubicación de almacenamiento:
+`rdc storage browse` y `rdc storage import` son la excepción a esta retirada: lanzan tu propio rclone desde PATH en lugar de una copia integrada, y siguen siendo la forma de leer un archivo escrito antes del cambio.
 
 ```bash
 rdc storage browse my-storage
 ```
+
+Explorar es de solo lectura. Enviar a, descargar desde y listar un backend de almacenamiento están retirados; cada uno se rechaza y nombra el comando de almacenamiento fragmentado que lo reemplaza.
 
 ## Mejores Prácticas
 
