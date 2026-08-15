@@ -18,7 +18,7 @@ Rediacc 提供两种独立的备份方式，本指南将同时介绍。它们使
 
 **分块存储**（`rdc backup snapshot`）以按内容寻址的固定大小单元上传仓库镜像。首次运行会上传全部非零清单；此后每次运行只会上传发生变化的单元，其判断依据是文件系统的分配元数据，而不是读取整个镜像。相同的单元在各个快照之间以及整个派生家族中只存储一次，使用量会计入您的存储配额（`rdc backup usage`）。
 
-**存储推送**（`rdc repo push`）会将整个备份文件复制到您自行注册的兼容 rclone 的提供商。本功能正逐步被分块存储取代，定时策略已不再驱动它。下面介绍的这些部分目前仍然有效，但应将其视为传统方式。
+**存储推送已停用。** `rdc repo push --to <storage>` 曾用于将整个备份文件复制到您自行注册的兼容 rclone 的提供商。rclone 这条分支已被彻底移除，push、pull、list 和 restore 现在都会拒绝存储目标并将您指向本页。机器到机器传输不受影响：它本来就不经过 rclone。
 
 从分块存储恢复已支持：`rdc backup restore <repo> --at <snapshot-id>` 可以物化一个已存储的快照，`--at` 也接受 RFC 3339 时间戳，将根据快照清单进行解析。添加 `--as <name>` 可以用不同的名称进行恢复，添加 `--up` 可在恢复后启动仓库。分块存储还提供上传（`rdc backup snapshot`）、验证（`rdc backup verify`，使用 `--deep` 可重新哈希每个单元而不仅仅是样本）、快照清单（`rdc backup manifests`）和配额会计（`rdc backup usage`）。
 
@@ -134,19 +134,20 @@ rdc storage import rclone.conf
 rdc storage list
 ```
 
-## 推送备份
+## 将备份推送到另一台机器
 
-将仓库备份推送到外部存储：
+通过 SSH 将仓库复制到第二台机器：
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-备份在仓库推送时已挂载时落入存储的 `hot/` 文件夹，未挂载时落入 `cold/` 文件夹。这与定时备份使用的布局相同，因此 `rdc backup list` 会在一张表中显示所有备份。
+加密镜像会以相同的 GUID 被复制，因此这是一次备份或迁移，而不是派生。要获得独立副本，请先运行 `rdc repo fork`，再推送该派生。
+
+如需某个时间点的备份，请改用分块存储：`rdc backup snapshot my-app` 只上传发生变化的单元，`rdc backup restore my-app --at <snapshot>` 可以取回其中任意一个。
 
 | 选项 | 描述 |
 |------|------|
-| `--to <storage>` | 目标存储位置 |
 | `--to-machine <machine>` | 用于机器到机器备份的目标机器 |
 | `--dest <filename>` | 自定义目标文件名 |
 | `--checkpoint` | 推送前创建 CRIU 检查点（用于带有 `rediacc.checkpoint=true` 标签的容器）。目标在 `repo up` 时自动恢复 |
@@ -157,19 +158,21 @@ rdc repo push my-app --to my-storage
 | `--debug` | 启用详细输出 |
 | `--skip-router-restart` | 操作后跳过路由服务器重启 |
 
-## 拉取/恢复备份
+## 从另一台机器拉取备份
 
-从外部存储拉取仓库备份：
+从存放仓库的机器上将其取回：
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+若要改从分块存储恢复，请使用
+`rdc backup restore my-app --at <snapshot-id>`。
 
 拉取操作会拒绝覆盖当前**已挂载**的仓库。请先卸载仓库，执行拉取，然后使用 `rdc repo up` 重新启动。基于目录的仓库是例外：即使处于挂载状态，它们也会原地同步。
 
 | 选项 | 描述 |
 |------|------|
-| `--from <storage>` | 源存储位置 |
 | `--from-machine <machine>` | 用于机器到机器恢复的源机器 |
 | `--force` | 覆盖已有本地备份 |
 | `--bwlimit <limit>` | rsync 传输的带宽限制（例如 `10M`、`500K`） |
@@ -179,10 +182,16 @@ rdc repo pull my-app --from my-storage
 
 ## 列出备份
 
-查看存储位置中的可用备份：
+列出分块存储中的快照：
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+要查看某台机器上的备份产物：
+
+```bash
+rdc backup list -m server-1
 ```
 
 输出是一个统一的表格，合并了两个[定时备份文件夹](#定时备份)（`hot/` 和 `cold/`），让您一次看到所有备份：
@@ -195,12 +204,7 @@ rdc backup list --storage my-storage
 | `Size` | 备份文件的可读大小 |
 | `Modified` | 来自存储后端的 UTC 时间戳 |
 
-要深入查看单一模式，传入 `--path`：
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+列出存储后端的功能已随 rclone 分支一并停用；该命令会被拒绝，并指出以下两个替代方式。
 
 ### 存储布局
 
@@ -224,23 +228,21 @@ rdc backup list --storage my-storage --path cold
 
 推送和拉取一次只作用于一个仓库，通过 ref（`name`、`name:tag` 或 `name@machine`）指定。没有"一次处理所有仓库"的形式：请为每个仓库各运行一次命令。
 
-### 推送到存储
+### 推送到另一台机器
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### 从存储拉取
+### 从另一台机器拉取
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | 选项 | 描述 |
 |--------|-------------|
-| `--to <remote>` | 目标存储或机器（推送） |
 | `--to-machine <machine>` | 用于机器到机器推送的目标机器 |
-| `--from <remote>` | 源存储或机器（拉取） |
 | `--from-machine <machine>` | 用于机器到机器拉取的源机器 |
 | `--force` | 覆盖已有的备份或仓库 |
 | `--checkpoint` | 推送前创建 CRIU 检查点（仅推送） |
@@ -351,7 +353,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ rdc backup strategy remove weekly-cold
 ```bash
 # 热备份策略：每小时备份所有内容
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # 冷备份策略：每周备份所有内容，排除大型派生数据集
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ rdc repo migrate my-app@server-1 --to server-2
 
 ## 浏览存储
 
-浏览存储位置的内容：
+`rdc storage browse` 和 `rdc storage import` 是这次停用的例外：它们会从 PATH 启动您自己的 rclone，而不是内置副本，并且仍然是读取变更之前所写归档的方式。
 
 ```bash
 rdc storage browse my-storage
 ```
+
+浏览是只读的。推送到、从中拉取以及列出存储后端均已停用；每个命令都会被拒绝，并指出取代它的分块存储命令。
 
 ## 最佳实践
 

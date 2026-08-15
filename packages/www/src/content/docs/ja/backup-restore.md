@@ -18,7 +18,7 @@ Rediaccには2つの独立したバックアップ経路があり、このガイ
 
 **チャンクストレージ**（`rdc backup snapshot`）は、リポジトリイメージをコンテンツでアドレス指定された固定サイズのセルにアップロードします。初回実行では非ゼロの全インベントリをアップロードし、それ以降の実行では、イメージ全体を読み取るのではなくファイルシステムの割り当てメタデータから判断して、変更されたセルのみをアップロードします。同一のセルはスナップショット間およびフォークファミリー全体で1回だけ保存され、使用量はストレージクォータ（`rdc backup usage`）に対して計測されます。
 
-**ストレージプッシュ**（`rdc repo push`）は、自分で登録したrclone互換プロバイダにバックアップファイル全体をコピーします。チャンクストレージに有利になるよう段階的に廃止されており、スケジュールされた戦略はもはやこれを駆動していません。以下のセクションでこれについて説明していますが、レガシーパスとして扱ってください。
+**ストレージプッシュは廃止されました。** `rdc repo push --to <storage>`は、自分で登録したrclone互換プロバイダにバックアップファイル全体をコピーしていましたが、rclone側の仕組みは完全に取り除かれ、push、pull、list、restoreはストレージ宛先を今後拒否し、このページへ誘導するようになりました。マシン間転送は影響を受けません。もともとrcloneを経由していなかったためです。
 
 チャンクストレージからの復元は機能します：`rdc backup restore <repo> --at <snapshot-id>`は保存されたスナップショットを実体化し、`--at`はRFC 3339タイムスタンプも受け入れます。これはスナップショットインベントリに対して解決されます。`--as <name>`を追加して別の名前で復元し、`--up`を使用して復元後にリポジトリを立ち上げます。チャンクストレージはアップロード（`rdc backup snapshot`）、検証（`rdc backup verify`、`--deep`を使用してサンプリングの代わりに各セルを再ハッシュ化）、スナップショットインベントリ（`rdc backup manifests`）、クォータ会計（`rdc backup usage`）も提供します。
 
@@ -134,19 +134,20 @@ rdc storage import rclone.conf
 rdc storage list
 ```
 
-## バックアップの送信
+## 別のマシンへのバックアップ送信
 
-リポジトリのバックアップを外部ストレージに送信します：
+SSH経由でリポジトリを2台目のマシンにコピーします：
 
 ```bash
-rdc repo push my-app --to my-storage
+rdc repo push my-app --to-machine server-1
 ```
 
-バックアップはリポジトリがマウントされた状態でプッシュすると `hot/` フォルダに保存され、アンマウント状態でプッシュすると `cold/` フォルダに保存されます。このレイアウトはスケジュールバックアップと同じ構造なので、`rdc backup list` で一覧表示すると両方が1つのテーブルにまとめて表示されます。
+暗号化イメージは同じGUIDのままコピーされるため、これはフォークではなくバックアップまたは移行にあたります。独立したコピーが必要な場合は、先に`rdc repo fork`を実行してからフォークをプッシュしてください。
+
+特定時点のバックアップを取りたい場合は、代わりにチャンクストレージを使用します。`rdc backup snapshot my-app`は変更されたセルのみをアップロードし、`rdc backup restore my-app --at <snapshot>`でそのいずれでも復元できます。
 
 | オプション | 説明 |
 |-----------|------|
-| `--to <storage>` | ターゲットストレージの場所 |
 | `--to-machine <machine>` | マシン間バックアップのターゲットマシン |
 | `--dest <filename>` | カスタム宛先ファイル名 |
 | `--checkpoint` | プッシュ前にCRIUチェックポイントを作成（`rediacc.checkpoint=true`ラベル付きコンテナ用）。ターゲットは`repo up`時に自動復元 |
@@ -157,19 +158,21 @@ rdc repo push my-app --to my-storage
 | `--debug` | 詳細出力を有効化 |
 | `--skip-router-restart` | 操作後のルートサーバー再起動をスキップ |
 
-## バックアップの取得 / 復元
+## 別のマシンからのバックアップ取得
 
-外部ストレージからリポジトリのバックアップを取得します：
+リポジトリを保持しているマシンから取り戻します：
 
 ```bash
-rdc repo pull my-app --from my-storage
+rdc repo pull my-app --from-machine server-1
 ```
+
+代わりにチャンクストレージから復元するには、
+`rdc backup restore my-app --at <snapshot-id>`を使用します。
 
 プルは現在**マウントされている**リポジトリの上書きを拒否します。先にアンマウントしてからプルを実行し、その後 `rdc repo up` で再度起動してください。ディレクトリベースのリポジトリは例外で、マウントされたままその場で同期されます。
 
 | オプション | 説明 |
 |-----------|------|
-| `--from <storage>` | ソースストレージの場所 |
 | `--from-machine <machine>` | マシン間復元のソースマシン |
 | `--force` | 既存のローカルバックアップを上書き |
 | `--bwlimit <limit>` | rsync転送の帯域幅制限（例：`10M`、`500K`） |
@@ -179,10 +182,16 @@ rdc repo pull my-app --from my-storage
 
 ## バックアップの一覧表示
 
-ストレージの場所にある利用可能なバックアップを表示します：
+チャンクストレージ内のスナップショットを一覧表示します：
 
 ```bash
-rdc backup list --storage my-storage
+rdc backup snapshot list my-app
+```
+
+マシン上にあるバックアップ成果物を確認するには：
+
+```bash
+rdc backup list -m server-1
 ```
 
 出力は[スケジュールバックアップ](#スケジュールバックアップ)のフォルダ（`hot/` と `cold/`）の両方をマージした統一テーブルで、すべてのバックアップを1つのビューで確認できます：
@@ -195,12 +204,7 @@ rdc backup list --storage my-storage
 | `Size` | バックアップファイルの人間可読のサイズ |
 | `Modified` | ストレージバックエンドからのUTCタイムスタンプ |
 
-特定のモードに絞り込むには `--path` を渡します：
-
-```bash
-rdc backup list --storage my-storage --path hot
-rdc backup list --storage my-storage --path cold
-```
+ストレージバックエンドの一覧表示はrclone側の仕組みとともに廃止されました。コマンドは拒否され、代わりとなる次の2つが示されます。
 
 ### ストレージレイアウト
 
@@ -224,23 +228,21 @@ rdc backup list --storage my-storage --path cold
 
 プッシュとプルは、ref（`name`、`name:tag`、または `name@machine`）で指定した単一のリポジトリに対して動作します。「すべてのリポジトリを一度に」という形式はありません。リポジトリごとにコマンドを1回ずつ実行してください。
 
-### ストレージに送信
+### 別のマシンへ送信
 
 ```bash
-rdc repo push shop@server-1 --to my-storage
+rdc repo push shop@server-1 --to-machine server-2
 ```
 
-### ストレージから取得
+### 別のマシンから取得
 
 ```bash
-rdc repo pull shop@server-1 --from my-storage
+rdc repo pull shop@server-1 --from-machine server-2
 ```
 
 | オプション | 説明 |
 |-----------|------|
-| `--to <remote>` | 宛先のストレージまたはマシン（送信） |
 | `--to-machine <machine>` | マシン間送信の宛先マシン |
-| `--from <remote>` | ソースのストレージまたはマシン（取得） |
 | `--from-machine <machine>` | マシン間取得のソースマシン |
 | `--force` | 既存のバックアップまたはリポジトリを上書き |
 | `--checkpoint` | 送信前にCRIUチェックポイントを作成（送信のみ） |
@@ -351,7 +353,7 @@ concurrency = min(repoCount, max(2, NumCPU/2), 8)
 
 ```bash
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 20M \
@@ -360,7 +362,7 @@ rdc backup strategy set hourly-hot \
 
 ```bash
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude very-large-repo \
@@ -431,7 +433,7 @@ rdc backup strategy remove weekly-cold
 ```bash
 # ホット戦略：すべてを毎時バックアップ
 rdc backup strategy set hourly-hot \
-  --destination my-storage \
+  --destination rediacc \
   --cron "0 * * * *" \
   --mode hot \
   --bwlimit 6M \
@@ -439,7 +441,7 @@ rdc backup strategy set hourly-hot \
 
 # コールド戦略：毎週すべてをバックアップ、大きな派生データセットを除外
 rdc backup strategy set weekly-cold \
-  --destination my-storage \
+  --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
   --exclude analytics-demo \
@@ -524,11 +526,13 @@ rdc repo migrate my-app@server-1 --to server-2
 
 ## ストレージの参照
 
-ストレージの場所の内容を参照します：
+`rdc storage browse`と`rdc storage import`はこの廃止の例外で、埋め込みコピーではなくPATH上の自前のrcloneを起動し、変更前に書かれたアーカイブを読む手段として残ります。
 
 ```bash
 rdc storage browse my-storage
 ```
+
+参照は読み取り専用です。ストレージバックエンドへの送信、取得、一覧表示はいずれも廃止されており、それぞれ拒否された上で代わりとなるチャンクストレージのコマンドが示されます。
 
 ## ベストプラクティス
 
