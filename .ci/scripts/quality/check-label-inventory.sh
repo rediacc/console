@@ -106,6 +106,41 @@ if [ "$DECLARED_COUNT" -lt "$MIN_DECLARED" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# GitHub caps label descriptions at 100 characters, and rejects longer ones at
+# CREATE time only -- a declaration here can sit over the cap indefinitely and
+# then fail whatever finally tries to create/sync it (bump-none did exactly
+# this on 2026-08-09: the applier's create call failed live, mid-merge-flow).
+# Validate proactively, control-first: a checker that cannot fire is not a
+# checker, so prove it fires on a planted 101-char description before reading
+# the real file.
+# ---------------------------------------------------------------------------
+DESC_CAP=100
+desc_over_cap() {
+    # stdin: the labels-yml text. Prints "name<TAB>length" per offender.
+    awk -v cap="$DESC_CAP" '
+        /^- name:/ { name = $0; sub(/^- name:[[:space:]]*/, "", name);
+                     gsub(/^"|"$/, "", name) }
+        /^[[:space:]]+description:/ {
+            d = $0; sub(/^[[:space:]]+description:[[:space:]]*/, "", d);
+            gsub(/^"|"$/, "", d);
+            if (length(d) > cap) printf "%s\t%d\n", name, length(d)
+        }'
+}
+CONTROL=$(printf -- '- name: control-label\n  description: "%s"\n' \
+    "$(printf 'x%.0s' $(seq 1 101))" | desc_over_cap)
+if [ -z "$CONTROL" ]; then
+    log_error "description-cap control did not fire on a planted 101-char description; the checker is broken, refusing to certify anything"
+    exit 1
+fi
+OVER=$(desc_over_cap <"$LABELS_FILE")
+if [ -n "$OVER" ]; then
+    while IFS=$'\t' read -r lbl len; do
+        log_error "label '$lbl' declares a $len-char description; GitHub rejects anything over $DESC_CAP at create time, so this fails exactly when something finally tries to create or sync it. Shorten it in $LABELS_FILE."
+    done <<<"$OVER"
+    exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # The live list
 # ---------------------------------------------------------------------------
 if [ -n "${LABEL_INVENTORY_LIVE_FILE:-}" ]; then

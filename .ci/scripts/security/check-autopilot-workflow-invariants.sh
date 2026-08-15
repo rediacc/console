@@ -210,6 +210,34 @@ elif ! grep -q 'AUTOPILOT_ALLOW_STATE' <<<"$model_if"; then
     fail "model-without-state-guard: the model job's if: does not require AUTOPILOT_ALLOW_STATE ($WORKFLOW_FILE); a round that cannot record itself breaks the round counter"
 fi
 
+# ---------------------------------------------------------------------------
+# model-round-file-tools: the model round's permission allowlist must allow the
+# file tools. The handoff CONTRACT requires the model to edit files and write
+# handoff.json, and with a permissions allowlist present everything unlisted is
+# DENIED -- the first two live rounds (2026-08-09) burned 41 turns with 21
+# permission denials because Edit/Write were simply absent, an OMISSION every
+# other permission check passes by construction. Scoped to the settings block
+# of the model step, not a whole-file grep: a mention elsewhere must not
+# satisfy the requirement.
+# ---------------------------------------------------------------------------
+model_settings="$(awk '
+    /name: Model round/ { instep = 1 }
+    instep && /settings: \|/ { insettings = 1; next }
+    insettings {
+        if ($0 !~ /^          /) { insettings = 0; instep = 0; next }
+        print
+    }
+' "$WORKFLOW_FILE")"
+if [[ -z "$model_settings" ]]; then
+    fail "model-round-file-tools: could not locate the Model round settings block in $WORKFLOW_FILE (an unparsed allowlist cannot pass)"
+else
+    for tool in '"Edit"' '"Write"' '"Read"'; do
+        if ! grep -qF "$tool" <<<"$model_settings"; then
+            fail "model-round-file-tools: the model round's permission allowlist omits $tool; the handoff contract requires the model to edit files and write handoff.json, and an allowlist denies everything unlisted (live proof: 21 denials across runs 31321211521/31326053280)"
+        fi
+    done
+fi
+
 if ((FAILED != 0)); then
     log_error "autopilot workflow invariants FAILED (docs/ci-overhaul/03-v2-autonomy.md is the design source)"
     exit 1
