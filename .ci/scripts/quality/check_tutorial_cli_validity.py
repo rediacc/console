@@ -19,6 +19,14 @@ So this is not the gate for that defect. It is a cheaper gate for a neighbouring
 class that nothing covered either, and pretending otherwise would make it the
 kind of reassuring-but-blind check this repo keeps having to unlearn.
 
+RELATIONSHIP TO check:ci-tutorial-commands, which already existed and which I
+should have found before writing this. That gate validates the tutorial
+STORYBOARDS (card.commandFull and teardownCommand) against the same tree; this
+one validates the tutorial SHELL SCRIPTS, which it does not read. Different
+surfaces, same idea, and neither can see a runtime refusal: that gate was green
+through the entire defect described above, because the failing line is
+structurally valid.
+
 THE ORACLE is packages/cli/scripts/command-tree.json, the exported Commander
 tree, not `rdc --help`. It needs no build, and check:ci-command-tree already
 proves it matches the shipped CLI, so a stale tree is somebody else's red rather
