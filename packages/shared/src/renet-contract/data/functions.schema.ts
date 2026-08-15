@@ -85,6 +85,7 @@ export const BackupRestoreParamsSchema = z.object({
 export const BackupSnapshotParamsSchema = z.object({
   reseed: z.boolean().default(false).optional().describe('Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)'),
   dryRun: z.boolean().default(false).optional().describe('Plan only: no session, no grant, no upload; report what would move'),
+  cold: z.boolean().default(false).optional().describe('Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run'),
 });
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */

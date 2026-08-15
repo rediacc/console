@@ -96,6 +96,8 @@ export interface BackupSnapshotParams {
   reseed?: boolean;
   /** Plan only: no session, no grant, no upload; report what would move */
   dryRun?: boolean;
+  /** Quiesce first: stop each repository's containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run */
+  cold?: boolean;
 }
 
 /** Verify local chunk-backup state against the recorded snapshot inventory */
@@ -1706,6 +1708,11 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'bool',
         default: 'false',
         help: 'Plan only: no session, no grant, no upload; report what would move',
+      },
+      cold: {
+        type: 'bool',
+        default: 'false',
+        help: 'Quiesce first: stop each repository\'s containers, freeze, restart, THEN upload. Costs a real outage, so ask for it only where crash-consistency is not enough. Cannot be combined with dry_run',
       },
     },
   },
