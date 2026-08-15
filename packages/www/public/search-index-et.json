@@ -2772,7 +2772,7 @@
   {
     "id": "search-6701",
     "content": "Varukoopiote loetlemine",
-    "body": "Loetle tükksalvestuses olevad hetktõmmised: rdc backup snapshot list my-app Masinal olevate varunduskoopiate nägemiseks: rdc backup list -m server-1 Väljund on ühtne tabel, mis ühendab mõlemad ajastatud varundamise kaustad (hot/ ja cold/), et näeksid kõiki varukoopiad ühes vaates: | Veerg | Tähendus | |---|---| | Mode | hot või cold. Milline ajastatud varundamise kaust see kirje asub | | Name | Repositooriumi nimi, mis on lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) | | GUID | Kettal olev repositooriumi GUID | | Size | Inimloetav varukoopifaili suurus | | Modified | UTC ajatempel salvestusteenuse pakkujalt | Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.",
+    "body": "Loetle tükksalvestuses olevad hetktõmmised: rdc backup snapshot list my-app Masinal olevate varunduskoopiate nägemiseks: rdc backup list -m server-1 Väljund loetleb hetktõmmised, mida tükksalvestus selle repositooriumi jaoks hoiab: | Veerg | Tähendus | |---|---| | Mode | hot või cold. Milline ajastatud varundamise kaust see kirje asub | | Name | Repositooriumi nimi, mis on lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) | | GUID | Kettal olev repositooriumi GUID | | Size | Inimloetav varukoopifaili suurus | | Modified | UTC ajatempel salvestusteenuse pakkujalt | Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.",
     "excerpt": "Loetle tükksalvestuses olevad hetktõmmised: rdc backup snapshot list my-app Masinal olevate varunduskoopiate nägemiseks: rdc backup list -m server-1 V...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
@@ -2782,9 +2782,9 @@
   },
   {
     "id": "search-6702",
-    "content": "Salvestuse paigutus",
-    "body": "Ajastatud varukopiad maanduvad salvestuse konfigureeritud kausta sees režiimipõhistes alamkaustades, nii et sama salvestus majutab puhtalt nii tunniset kui iganädalast voogu, ilma et need seguneksid: <bucket>/<folder>/ ├── hot/ │ ├── <guid-1> │ ├── <guid-2> │ └── ... └── cold/ ├── <guid-1> ├── <guid-3> └── ... Repo võib ilmuda nii hot/ kui ka cold/ kaustas (tunnine ajakava teeb sellest hetktõmmise; iganädalane ajakava teeb uuesti). Ühendatud loend näitab mõlemat rida, nii et on selge, millised vood milliseid repo-sid katavad.",
-    "excerpt": "Ajastatud varukopiad maanduvad salvestuse konfigureeritud kausta sees režiimipõhistes alamkaustades, nii et sama salvestus majutab puhtalt nii tunnise...",
+    "content": "Mida hot ja cold tegelikult tähendavad",
+    "body": "--mode hot ja --mode cold kirjeldavad, kuidas repositooriumi varukoopia võtmise ajal koheldakse, mitte seda, kuhu andmed jõuavad. Hot teeb hetktõmmise töötavast repositooriumist. Konteinerid jätkavad teenindamist ja tõmmis jäädvustatakse kesk kirjutamist, seega on varukoopia krahhi-järjepidev: täpselt selline, nagu saaksid siis, kui masinal sel hetkel vool kaoks. See sobib kõigele, mis taastub oma logist, ehk enamikule andmebaasidele. Cold peatab kõigepealt konteinerid, kirjutab kettale, kontrollib, et need on peatunud, külmutab tõmmise ja alles siis käivitab konteinerid uuesti. See maksab tõelise seisaku, kuid see seisak on konstantse kestusega külmutus, mitte ülekanne, ja tulemus on rakenduse-järjepidev. Mõlemad kirjutavad samasse tükksalvestusse. Rakud on aadresseeritud sisu järgi, seega repositoorium, mida varundatakse nii tunnise hot- kui ka iganädalase cold-ajakavaga, salvestab jagatud rakud üks kord, mitte kaks, ja ka forkide perekond jagab neid. Kasutust arvestatakse sinu kvoodi vastu käsuga rdc backup usage.",
+    "excerpt": "--mode hot ja --mode cold kirjeldavad, kuidas repositooriumi varukoopia võtmise ajal koheldakse, mitte seda, kuhu andmed jõuavad. Hot teeb hetktõmmise...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
     "path": "docs.backup-restore.content",
