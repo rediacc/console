@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Límites y cuotas
@@ -138,6 +138,7 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 |--------|-------|
 | Destinos de backup por repositorio | Ilimitados |
 | Trabajos de backup simultáneos | 1 por repositorio (los trabajos se ponen en cola si se activan simultáneamente) |
+| Snapshots en frío simultáneos | 1 por datastore; un segundo `renet backup snapshot --cold` se rechaza de inmediato y no detiene nada |
 | Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento. Use `rdc backup strategy set <name> --bwlimit "6M"` para limitar la velocidad de subida |
 | Retención | Se declara con `rdc backup retention set` (controles GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) y se aplica del lado del servidor; `rdc backup retention clear` la elimina. El almacenamiento de chunks se mide contra una cuota del plan en bytes únicos físicos almacenados, por lo que la deduplicación entre snapshots y en una familia de forks se cuenta una sola vez: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, verificado con `rdc backup usage`. La ruta legacy de storage-push no tiene su propia retención y es controlada por su proveedor. |
 | Backup entre máquinas | Soportado; la máquina de destino debe tener suficiente espacio en el datastore |

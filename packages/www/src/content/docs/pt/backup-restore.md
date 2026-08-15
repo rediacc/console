@@ -4,8 +4,8 @@ description: "Faça backup de repositórios encriptados de duas formas: armazena
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "89fb87b424d15a7d"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "c02ab3e78c40fa92"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Backup e Restauro
@@ -42,6 +42,78 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+## Snapshots a Frio (`--cold`)
+
+Um snapshot a frio para um repositório antes de o congelar, pelo que a imagem armazenada fica consistente ao nível da aplicação em vez de consistente por falha. O comando corre na própria máquina:
+
+```bash
+# Todos os repositórios do datastore predefinido.
+sudo renet backup snapshot --cold
+
+# Apenas os repositórios indicados. --repo recebe um GUID de repositório e repete-se.
+sudo renet backup snapshot --cold --repo <guid> --repo <guid>
+```
+
+`--cold` não se combina com `--dry-run`. Uma execução em seco que para contentores não é em seco, e uma que não os para não é a frio, por isso o renet recusa o par em vez de escolher um significado por si.
+
+### O que faz uma execução a frio
+
+Para cada repositório selecionado, por esta ordem:
+
+1. Parar os seus contentores.
+2. Escrever em disco a montagem do repositório e o datastore.
+3. Confirmar que os contentores pararam mesmo.
+4. Criar um reflink copy-on-write da imagem do repositório.
+5. Voltar a arrancar os contentores.
+
+Só depois começa o envio, já com todos os repositórios de volta.
+
+O downtime é o congelamento, não a transferência. Um reflink é só metadados, por isso demora o mesmo quer o repositório guarde 1 GB quer guarde 100 GB. Um envio não funciona assim: cresce com os bytes alterados, e o primeiro snapshot envia todo o inventário não vazio. Manter os contentores em baixo até o envio acabar prenderia o downtime ao tamanho dos dados, o que na primeira cópia significa horas em vez de milissegundos.
+
+Todos os repositórios selecionados são parados dentro de uma só janela, e não um de cada vez. Isso custa um pouco mais de downtime por repositório e dá em troca um único ponto de consistência para todo o conjunto.
+
+Um repositório sem contentores em execução já está parado. É capturado sem downtime nenhum, e isso é um resultado normal, não uma falha.
+
+### Quanto custa o downtime
+
+Medido numa máquina real, o downtime total foi de **222 ms**:
+
+| Fase | Medido | O que acontece |
+|------|--------|----------------|
+| `cold_down` | 64 ms | Os contentores param |
+| `cold_sync` | 26 ms | Montagens do repositório e datastore escritos em disco |
+| `cold_verify` | 31 ms | Confirma-se que os contentores estão parados |
+| `cold_stage` | 0 ms | Reflink da imagem do repositório |
+| `cold_up` | 99 ms | Os contentores voltam a arrancar |
+
+O reinício dos contentores domina, e a preparação sai praticamente de graça: o reflink nem sequer aparece com resolução de milissegundos. Ainda assim, leia esse zero ao lado dos registos de cada repositório e não isoladamente. Uma execução que recusou todos os repositórios também indica `cold_stage=0ms`, e só os registos dizem qual dos dois casos está a ver.
+
+O detalhe é a prova, não enfeite. Nenhuma destas cinco fases lê ou envia dados do repositório, por isso nenhuma cresce quando a cópia cresce. A parte que cresce, o envio, corre quando o downtime já terminou.
+
+O renet imprime os mesmos números no fim de uma execução, para que meça as suas próprias máquinas em vez de acreditar nas nossas:
+
+```text
+Cold backup: <n> repositories quiesced, outage 222ms (cold_down=64ms cold_sync=26ms cold_verify=31ms cold_stage=0ms cold_up=99ms)
+```
+
+O registo JSON de cada repositório leva o mesmo downtime e as mesmas fases, pelo que mais tarde se distingue um snapshot a frio de um a quente sem o adivinhar pelos tempos.
+
+### Quando escolher o frio
+
+O modo a quente é a predefinição e a escolha certa para a maioria dos repositórios. Um snapshot a quente é consistente por falha, ou seja, fica no estado em que um repositório ficaria depois de uma quebra de energia, e não custa downtime nenhum. A maioria das bases de dados e das filas recupera sozinha a partir daí.
+
+Escolha o frio para dados que não podem ser capturados em segurança enquanto estão a ser escritos. Uma base de dados com o seu próprio write-ahead log e estado em memória é o caso óbvio. Está a trocar um downtime curto e medido por um snapshot que a aplicação consegue abrir sem se reparar primeiro.
+
+### O que uma execução a frio recusa
+
+Recusar é a funcionalidade. Uma cópia rotulada como a frio que nunca parou nada é uma mentira que só descobriria no restauro, por isso o renet nunca despromove em silêncio uma execução a frio para uma a quente:
+
+- **Contentores que não pararam.** Depois da paragem, o renet pergunta ao socket Docker do próprio repositório se ainda corre alguma coisa. Se sim, esse repositório é recusado em vez de capturado. A verificação decide pelo lado seguro: se o socket estiver inacessível ou a lista de contentores ilegível, a paragem conta como não verificada, e não verificada é recusada.
+- **Uma licença que não se consegue ler.** As licenças são verificadas antes do downtime e não depois, porque um repositório com licença ilegível nunca teria conseguido enviar nada. Esse repositório é saltado sem ser parado. Se nenhum dos repositórios selecionados tiver licença legível, a execução inteira é recusada antes de cair um único contentor.
+- **Uma segunda execução a frio no mesmo datastore.** O bloqueio cobre o datastore, e um bloqueio ocupado é recusado logo, sem ter parado nada. Duas execuções sobrepostas parariam cada uma contentores que a outra julga seus, e a segunda arrancaria repositórios que a primeira ainda está a congelar. Saltar a execução e esperar pela seguinte é melhor do que isso.
+
+Se uma execução for interrompida com os contentores em baixo, por um `systemctl stop` ou um reinício, o renet volta a arrancá-los antes de sair. A recuperação na máquina serve de rede: deteta uma cópia a frio cujo dono desapareceu e repõe esses repositórios.
 
 ## Configurar Armazenamento
 

@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Limits & Kontingente
@@ -138,6 +138,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 |-------|------|
 | Backup-Ziele pro Repository | Unbegrenzt |
 | Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
+| Gleichzeitige Cold-Snapshots | 1 pro Datastore; ein zweiter `renet backup snapshot --cold` wird sofort zurückgewiesen und stoppt nichts |
 | Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc backup strategy set <name> --bwlimit "6M"`, um die Upload-Geschwindigkeit zu begrenzen |
 | Aufbewahrung | Wird mit `rdc backup retention set` deklariert (GFS-Parameter: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) und auf der Serverseite erzwungen; `rdc backup retention clear` entfernt es. Chunk-Speicher wird gegen ein Plan-Kontingent als physische eindeutige gespeicherte Bytes gemessen, daher wird die Deduplizierung zwischen Snapshots und über eine Fork-Familie hinweg nur einmal gezählt: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, überprüft mit `rdc backup usage`. Der ältere Storage-Push-Pfad hat keine eigene Aufbewahrung und wird von Ihrem Anbieter gesteuert. |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |

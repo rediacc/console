@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: it
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Limiti e Quote
@@ -138,6 +138,7 @@ La migrazione live tramite CRIU ha i seguenti vincoli:
 |-------|-------|
 | Destinazioni di backup per repository | Illimitate |
 | Job di backup simultanei | 1 per repository (i job si accodano se attivati contemporaneamente) |
+| Snapshot a freddo simultanei | 1 per datastore; un secondo `renet backup snapshot --cold` viene rifiutato subito e non ferma nulla |
 | Frequenza di backup | Nessun intervallo minimo imposto; limitata dalla larghezza di banda di archiviazione. Usa `rdc backup strategy set <name> --bwlimit "6M"` per limitare la velocità di upload |
 | Conservazione | Dichiarata con `rdc backup retention set` (parametri GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e applicata lato server; `rdc backup retention clear` la rimuove. Lo storage a chunk viene misurato rispetto a una quota del piano come byte fisici unici memorizzati, quindi i dati identici tra snapshot e in un'intera famiglia di fork vengono conteggiati una sola volta: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, verificabile con `rdc backup usage`. Il percorso legacy di push su storage non ha una propria conservazione ed è gestito dal tuo provider. |
 | Backup tra macchine | Supportato; la macchina di destinazione deve avere spazio sufficiente nel datastore |

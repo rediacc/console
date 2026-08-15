@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "d817b5e895ddaf03"
-sourceCommit: "3c9c1a6ea"
+sourceHash: "b61fbaae7728c76b"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Limitler ve Kotalar
@@ -138,6 +138,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 |-------|-------|
 | Depo başına yedekleme hedefleri | Sınırsız |
 | Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
+| Eş zamanlı soğuk anlık görüntüler | Veri deposu başına 1; ikinci bir `renet backup snapshot --cold` anında reddedilir ve hiçbir şeyi durdurmaz |
 | Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc backup strategy set <name> --bwlimit "6M"` kullanın |
 | Saklama | `rdc backup retention set` ile bildirilir (GFS parametreleri: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ve sunucu tarafında uygulanır; `rdc backup retention clear` bunu kaldırır. Chunk depolama, plan kotasına karşı fiziksel olarak benzersiz depolanan bayt sayısı olarak ölçülür, bu nedenle anlık görüntüler arasındaki ve bir çatal ailesinin tamamındaki tekilleştirme yalnızca bir kez sayılır: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, `rdc backup usage` ile kontrol edilir. Eski storage-push yolunun kendine ait bir saklaması yoktur ve depolama sağlayıcınız tarafından yönetilir. |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
