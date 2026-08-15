@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "تم حفظ اللقطة لـ \"{{name}}\"",
   "commands.backup.snapshot.description": "رفع لقطة إلى التخزين المجزّأ: المخزون الكامل أولاً، ثم الخلايا المتغيّرة",
   "commands.backup.snapshot.failed": "فشلت اللقطة لـ \"{{name}}\"",
+  "commands.backup.snapshot.optionCold": "أوقِف الحاويات ثم جمِّد ثم أعِد التشغيل ثم ارفع. يكلّف انقطاعًا قصيرًا فعليًا لكنه يعطي لقطة متسقة على مستوى التطبيق، ولا يمكن استخدامه مع ‎--dry-run",
   "commands.backup.snapshot.optionDryRun": "التخطيط فقط: بلا رفع. يُظهر ما كان سيتحرك",
   "commands.backup.snapshot.optionReseed": "عدم الوثوق بالمرساة المحلية وإعادة رفع المخزون كاملاً (يعيد رفع كل شيء ويُعيد احتساب الحصة)",
   "commands.backup.snapshot.quotaRefused": "رُفضت اللقطة لـ \"{{name}}\": تم تجاوز حصة التخزين. احذف لقطات قديمة أو ارفع الحصة",

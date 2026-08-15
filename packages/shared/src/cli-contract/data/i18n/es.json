@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "Instantánea guardada para {{name}}",
   "commands.backup.snapshot.description": "Subir una instantánea al almacenamiento fragmentado: primero el inventario completo, después las celdas modificadas",
   "commands.backup.snapshot.failed": "Falló la instantánea de {{name}}",
+  "commands.backup.snapshot.optionCold": "Detiene los contenedores, congela, reinicia y solo entonces sube. Cuesta un corte real breve a cambio de una instantánea coherente con la aplicación; no se puede combinar con --dry-run",
   "commands.backup.snapshot.optionDryRun": "Solo planificar: sin subida. Informa qué se movería",
   "commands.backup.snapshot.optionReseed": "Desconfiar del ancla local y subir un inventario completo (vuelve a subir todo y recarga la cuota)",
   "commands.backup.snapshot.quotaRefused": "Instantánea rechazada para {{name}}: cuota de almacenamiento superada. Elimina instantáneas antiguas o aumenta la cuota",

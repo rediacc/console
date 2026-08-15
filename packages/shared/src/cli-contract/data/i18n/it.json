@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "Snapshot salvato per {{name}}",
   "commands.backup.snapshot.description": "Carica uno snapshot su storage a chunk: prima l'inventario completo, poi le celle modificate",
   "commands.backup.snapshot.failed": "Snapshot non riuscito per {{name}}",
+  "commands.backup.snapshot.optionCold": "Ferma i container, congela, riavvia e solo allora carica. Costa un breve fermo reale ma restituisce uno snapshot coerente a livello applicativo; non si può combinare con --dry-run",
   "commands.backup.snapshot.optionDryRun": "Pianifica soltanto: nessun caricamento. Riporta cosa verrebbe spostato",
   "commands.backup.snapshot.optionReseed": "Non fidarti dell'ancora locale e ricarica un inventario completo (ricarica tutto e riaddebita la quota)",
   "commands.backup.snapshot.quotaRefused": "Snapshot rifiutato per {{name}}: quota di storage superata. Elimina vecchi snapshot o aumenta la quota",

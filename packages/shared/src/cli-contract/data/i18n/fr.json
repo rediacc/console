@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "Instantané enregistré pour {{name}}",
   "commands.backup.snapshot.description": "Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite",
   "commands.backup.snapshot.failed": "Échec de l'instantané pour {{name}}",
+  "commands.backup.snapshot.optionCold": "Arrête les conteneurs, fige, redémarre, puis téléverse. Coûte une brève coupure réelle en échange d'un instantané cohérent au niveau applicatif ; incompatible avec --dry-run",
   "commands.backup.snapshot.optionDryRun": "Planifier seulement : aucun envoi. Indique ce qui serait déplacé",
   "commands.backup.snapshot.optionReseed": "Ne pas faire confiance à l'ancre locale et renvoyer un inventaire complet (renvoie tout et recharge le quota)",
   "commands.backup.snapshot.quotaRefused": "Instantané refusé pour {{name}} : quota de stockage dépassé. Purgez d'anciens instantanés ou augmentez le quota",
