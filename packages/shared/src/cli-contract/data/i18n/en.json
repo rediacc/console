@@ -65,6 +65,7 @@
   "commands.backup.snapshot.completed": "Snapshot stored for {{name}}",
   "commands.backup.snapshot.description": "Upload a chunk-store snapshot: full inventory first, changed cells after",
   "commands.backup.snapshot.failed": "Snapshot failed for {{name}}",
+  "commands.backup.snapshot.optionCold": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run",
   "commands.backup.snapshot.optionDryRun": "Plan only: no upload. Reports what would move",
   "commands.backup.snapshot.optionReseed": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)",
   "commands.backup.snapshot.quotaRefused": "Snapshot refused for {{name}}: storage quota exceeded. Prune old snapshots or raise the quota",

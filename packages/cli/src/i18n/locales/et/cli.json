@@ -91,6 +91,7 @@
         "completed": "Hetktõmmis salvestatud hoidlale {{name}}",
         "description": "Lae hetktõmmis chunk-hoidlasse: esmalt täielik inventuur, seejärel muutunud rakud",
         "failed": "Hetktõmmis ebaõnnestus hoidlale {{name}}",
+        "optionCold": "Peatab konteinerid, külmutab, käivitab uuesti ja alles siis laadib üles. Maksab lühikese päris katkestuse, aga annab rakendusega kooskõlas oleva hetktõmmise; koos võtmega --dry-run ei tööta",
         "optionDryRun": "Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks",
         "optionReseed": "Ära usalda kohalikku ankrut ja lae üles täielik inventuur (laeb kõik uuesti üles ja arvestab kvoodi uuesti)",
         "quotaRefused": "Hetktõmmis lükati tagasi hoidlale {{name}}: salvestuskvoot ületatud. Kärbi vanu hetktõmmiseid või tõsta kvooti",

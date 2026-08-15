@@ -299,16 +299,28 @@ function registerBackupSnapshot(backup: Command): void {
     .description(t('commands.backup.snapshot.description'))
     .option('--reseed', t('commands.backup.snapshot.optionReseed'))
     .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))
+    .option('--cold', t('commands.backup.snapshot.optionCold'))
     .option('--debug', t('options.debug'))
     .action(
-      async (repoRef: string, options: { reseed?: boolean; dryRun?: boolean; debug?: boolean }) => {
+      async (
+        repoRef: string,
+        options: { reseed?: boolean; dryRun?: boolean; cold?: boolean; debug?: boolean }
+      ) => {
         try {
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           const result = await executeRepoFunction(
             'backup_snapshot',
             repoKey,
             machineName,
-            { reseed: options.reseed ?? false, dry_run: options.dryRun ?? false },
+            {
+              reseed: options.reseed ?? false,
+              dry_run: options.dryRun ?? false,
+              // Without this the cold path was reachable only from a scheduled
+              // unit or by SSH-ing to the machine: the generator emits --cold,
+              // but an operator wanting one application-consistent snapshot
+              // before a risky change had no supported route to it.
+              cold: options.cold ?? false,
+            },
             { debug: options.debug },
             {
               starting: t('commands.backup.snapshot.starting', { name: repoKey }),
