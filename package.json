@@ -92,6 +92,7 @@
     "check:ci-secret-reachability": ".ci/scripts/quality/check_secret_reachability.py",
     "check:ci-scope-completeness": ".ci/scripts/quality/check_scope_completeness.py",
     "check:ci-hooks-resolvable": ".ci/scripts/quality/check_hooks_resolvable.py",
+    "check:ci-workflow-submodule-deps": ".ci/scripts/quality/check_workflow_submodule_deps.py",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
     "check:ci-timeout-headroom": ".ci/scripts/quality/check_job_timeout_headroom.py",
     "check:ci-runner-advice": ".ci/scripts/quality/check_runner_advice.py",
