@@ -13,8 +13,8 @@ import type { RenetFunctionName, FunctionParamsMap } from './functions.generated
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
     .enum(['machine', 'storage'])
-    .default('storage')
-    .describe('Target type: machine or storage'),
+    .default('machine')
+    .describe('Target type: machine (SSH); storage is retired'),
   from: z.string().min(1).describe('Target machine or storage name'),
   path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
   repositories: z.array(z.string()).optional().describe('Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.'),
@@ -24,8 +24,8 @@ export const BackupDeleteParamsSchema = z.object({
 export const BackupListParamsSchema = z.object({
   sourceType: z
     .enum(['machine', 'storage'])
-    .default('storage')
-    .describe('Source type: machine or storage'),
+    .default('machine')
+    .describe('Source type: machine (SSH); storage is retired'),
   from: z.string().min(1).describe('Source machine or storage name'),
   path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
 });
@@ -34,8 +34,8 @@ export const BackupListParamsSchema = z.object({
 export const BackupPullParamsSchema = z.object({
   sourceType: z
     .enum(['machine', 'storage'])
-    .default('storage')
-    .describe('Source type: machine (SSH) or storage (rclone)'),
+    .default('machine')
+    .describe('Source type: machine (SSH); storage is retired'),
   from: z.string().min(1).describe('Source machine or storage name'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
@@ -53,7 +53,7 @@ export const BackupPushParamsSchema = z.object({
   destinationType: z
     .enum(['machine', 'storage'])
     .default('machine')
-    .describe('Destination type: machine (SSH) or storage (rclone)'),
+    .describe('Destination type: machine (SSH); storage is retired'),
   to: z.string().optional().describe('Single destination (machine or storage name)'),
   machines: z.array(z.string()).optional().describe('Target machines for parallel deployment'),
   storages: z.array(z.string()).optional().describe('Target storage systems for parallel backup'),
