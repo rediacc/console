@@ -551,9 +551,22 @@ const CLOSURES = {
   // cheapest key in the table, so it is the one to starve if the budget dies.
   unit: {
     jobNames: ['Unit'],
-    // EMPTY: ct-tests.yml:189 is a bare checkout, no submodules.
-    submodules: [],
+    // NO LONGER EMPTY. The job took a bare checkout until the suite failed with
+    // ENOENT on private/renet/pkg/prune/datastore.go: datastore-prune-parser
+    // asserts the CLI's prune fixtures cover every kind renet reports, by
+    // parsing that Go source, and throws rather than skipping when it is absent.
+    // renet is therefore a HARD dependency of this key -- a change to
+    // DatastorePrunableResources must re-run these tests, or the fixtures drift
+    // and nothing says so.
+    //
+    // account is listed for the softer reason: crypto.test.ts verifies
+    // cross-language fixtures from private/account and degrades with
+    // describe.skipIf(!existsSync(...)), so a fixture change there silently
+    // changes what this key proves rather than failing it.
+    submodules: ['private/renet', 'private/account'],
     paths: [
+      // The app-token step the submodule checkout needs to authenticate.
+      '.github/actions/app-token',
       // run-unit.sh:29,35,41,47 runs the four workspace suites, :55 the
       // coverage roll-up. scope-map.cjs:266 additionally names www and
       // workers, both of which the coverage config reaches.
