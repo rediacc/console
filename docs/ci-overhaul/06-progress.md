@@ -3533,3 +3533,101 @@ suite call spawns a fresh interpreter that imports `wl_liveness` and `wl_checks`
 time, so editing those mid-run means early cases exercise old code and later ones new;
 a snapshot of the entry point is not a snapshot of what it imports. And the first case-208
 mutant produced a red that proved nothing, because the case was broken.
+
+## The 0815-1 wave: twelve rounds, and four of the last five reds were the babysitter's own (2026-08-15)
+
+The backup-storage PR wave. What belongs in this document is not the product work but
+what the CI machinery did and failed to do, because a compacted session reading this
+next needs the machinery's shape, not the chunk store's.
+
+**Every red was a real defect. None was a flake, and none was pre-existing.** That is
+worth stating because "environmental" is the cheapest wrong answer available at 3am, and
+across twelve rounds it was never once the right one.
+
+**A run reported `cancelled` three times while jobs had simply never run.** The watchdog
+kills siblings when one job fails, so `Renet (Full)`, `Packages` and `Security` each went
+three consecutive rounds without producing a verdict, and the run summary renders that
+identically to green. Read job conclusions, never the run's. The trapguard hook now says
+this on every `gh run` output that contains a cancellation, which is why it was caught
+each time rather than once.
+
+**Generated artifacts fail in chains, and fixing one stales the next.** Adding one CLI
+flag invalidated, in order: the command tree, the CLI contract, the contract's twelve
+non-English locale files, `cli-application.md` in thirteen locales, and the www search
+index that reads those pages. Each was a separate red because each was discovered only
+after the previous one was fixed. Regenerating the docs without the index would have
+turned one gate failure into two consecutive ones.
+
+### The four failures the babysitter caused, all in gate machinery
+
+Recorded together because they share one shape: *the check passed where I ran it and
+meant nothing where it mattered.*
+
+- **A test that stopped testing under `GITHUB_ACTIONS`.** The stop-hook suite ran 735/0
+  locally and 734/1 in CI. The hook no-ops when `GITHUB_ACTIONS=true`, by design, so an
+  unattended model in Actions cannot burn its turn budget against a gate no human will
+  answer. Cases going through `run()` pin `GITHUB_ACTIONS="${GHA:-}"`; case 214c built
+  its own invocation and did not, so in Actions it asked a no-op whether it blocks.
+  `setup()` already pinned `GHA=''` with a comment recording that **30 cases once came
+  back empty in CI for this exact reason** -- the lesson was learned, then a new ad-hoc
+  call site was added without it. The sweep found a worse sibling: case 10, the recursion
+  guard, asserts output is EMPTY, which the CI no-op also produces, so in Actions it
+  passed whether or not `STOPHOOK_CHILD` was honoured at all. **An empty-output assertion
+  is the one shape where a silent no-op reads as success.**
+- **The diagnostics were the fix.** The failing case discarded stderr, so an allow and a
+  crash looked identical. Capturing rc, stdout and stderr answered it in a single run:
+  `rc=0 stdout=[] stderr=[]`, a deliberate silent allow rather than a crash. That change
+  repaired nothing and shortened the investigation from guesswork to one round.
+- **A gate registered but not running.** `check:ci-workflow-submodule-deps` was wired in
+  `package.json` and `scripts/ci-runner/manifest.ts` with a CI step name that did not
+  exist in the workflow. It was reachable from `npm run ci` and did not run in CI at all
+  -- in the very commit adding a gate against checks that silently do not run.
+  `check:ci-parity` caught it. **"Reachable from `npm run ci`" and "runs in CI" are
+  different claims.**
+- **A dependency that existed only on the author's machine.** That same gate then crashed
+  on the runner with `ModuleNotFoundError: No module named 'yaml'`. A
+  yaml-if-available-else-regex fallback was rejected rather than tried: two parsers means
+  the gate means different things in CI and locally, which is the same bug as the two
+  above.
+
+### check:ci-workflow-submodule-deps, and why it took four tries to work
+
+`Tests + Infra / Unit` parsed `private/renet/pkg/prune/datastore.go` with a bare
+checkout. It failed with ENOENT on a file it never fetched and cancelled 26 siblings, and
+because the error names a TEST file, the evidence pointed at the wrong thing entirely
+while five sibling jobs in the same workflow had the checkout.
+
+The gate walks what each job can execute -- `run:` lines, the repo scripts they name, npm
+keys through package.json, and the test files a runner sweeps -- and fails when something
+reachable READS a submodule path without a checkout. The test-runner hop is why it is not
+a grep: the defect was three call levels from the step.
+
+**It passed a replay of its own defect four times before it worked**, and every fault was
+in the instrument:
+
+- `lstrip("./")` strips a character SET, so `.ci/scripts/x.sh` became `ci/scripts/x.sh`,
+  resolved to nothing, and the walk stopped at the step text
+- a lookbehind excluding a leading slash blinded it to every RELATIVE reference
+- the access window was one line, and the path literal sits alone on its line with
+  `path.resolve()` above it
+- the workspace picker iterated a SET, so it nondeterministically swept `@rediacc/shared`
+  instead of `@rediacc/cli`
+
+None was visible from a green run. **Replaying the real defect is the only thing that
+found them, and it is now the minimum bar for a new gate here.**
+
+It is also narrowed by four false positives it produced on the live tree, each kept as a
+comment at the rule: a built bundle inlines paths it never opens; a shell library NAMES
+paths as constants and is sourced everywhere; a comment CITES a file; and a read guarded
+by `existsSync`/`skipIf` is optional, not broken.
+
+### Two other instruments that could not fail
+
+- **`check-embed-asset-versions.ts` kept its test outputs and pins in two positional
+  arrays**, misaligned since the file was written, so the control proving a v-prefixed
+  binary matches an unprefixed pin was asserting that 2.1.2 equals 1.75.0. **A control
+  that cannot pass is as useless as one that cannot fail.** The pin now lives inside its
+  case.
+- **A weak mutation is indistinguishable from a vacuous test.** Checking whether the cold
+  barrier's refusal test was sound, the first mutation stopped a `nil` repo list, which
+  logs nothing, so it passed. The test was fine; the instrument was not.
