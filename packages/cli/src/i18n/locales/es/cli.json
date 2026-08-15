@@ -91,6 +91,7 @@
         "completed": "Instantánea guardada para {{name}}",
         "description": "Subir una instantánea al almacenamiento fragmentado: primero el inventario completo, después las celdas modificadas",
         "failed": "Falló la instantánea de {{name}}",
+        "optionCold": "Detiene los contenedores, congela, reinicia y solo entonces sube. Cuesta un corte real breve a cambio de una instantánea coherente con la aplicación; no se puede combinar con --dry-run",
         "optionDryRun": "Solo planificar: sin subida. Informa qué se movería",
         "optionReseed": "Desconfiar del ancla local y subir un inventario completo (vuelve a subir todo y recarga la cuota)",
         "quotaRefused": "Instantánea rechazada para {{name}}: cuota de almacenamiento superada. Elimina instantáneas antiguas o aumenta la cuota",

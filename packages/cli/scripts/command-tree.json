@@ -1263,6 +1263,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--cold",
+              "descriptionKey": "commands.backup.snapshot.optionCold",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,

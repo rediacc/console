@@ -785,6 +785,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Plan only: no upload. Reports what would move"
         },
         {
+          "flags": "--cold",
+          "long": "cold",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.snapshot.optionCold",
+          "label": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
