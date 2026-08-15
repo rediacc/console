@@ -22,9 +22,10 @@
         "executorAmbiguous": "Mehr als eine Maschine ist registriert; qualifizieren Sie die Speicher-Auflistung mit @<machine>, um festzulegen, welche sie ausführt.",
         "listing": "Backups werden aufgelistet...",
         "optionPath": "Unterverzeichnis innerhalb des Speicher-Stammverzeichnisses. Wenn weggelassen, werden hot/ und cold/ aufgelistet und zusammengeführt.",
-        "optionStorage": "Artefakte auf diesem Speicher-Endpunkt auflisten",
+        "optionStorage": "EINGESTELLT: das Storage-Listing wurde mit dem rclone-Arm entfernt",
         "placementExclusive": "Geben Sie genau eines von --machine oder --storage an, nicht beides.",
-        "placementRequired": "Geben Sie --machine <m> oder --storage <s> an, um festzulegen, woher aufgelistet werden soll."
+        "placementRequired": "Geben Sie --machine <m> oder --storage <s> an, um festzulegen, woher aufgelistet werden soll.",
+        "storageRetired": "Das Auflisten eines Storage-Backends ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Chunk-Store-Snapshots listest du mit `rdc backup snapshot list`, Artefakte auf einer Maschine mit `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Auf dem Server erfasste Backup-Snapshot-Manifeste auflisten",
@@ -56,6 +57,7 @@
         "restored": "{{name}} auf {{machine}} wiederhergestellt",
         "restoringSnapshot": "{{name}} wird aus Snapshot {{snapshot}} wiederhergestellt...",
         "sourceUnknown": "Kein Repository mit dem Namen \"{{name}}\" ist in dieser Konfiguration bekannt, daher kann sein Backup-Artefakt nicht gefunden werden.",
+        "storageRetired": "Die Wiederherstellung aus einem Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Point-in-Time-Wiederherstellung läuft über `rdc backup restore <repo> --at <snapshot>` im Chunk-Store",
         "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "\"{{grand}}\" wird mit Daten aus \"{{fork}}\" auf \"{{machine}}\" übernommen..."
       },
       "pull": {
-        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
         "deployFailed": "Bereitstellung von \"{{repo}}\" nach Pull fehlgeschlagen",
+        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
         "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository von einem Remote (Rechner oder Speicher) pullen. Namen weglassen, um alle Repos zu pullen. Der Quelltyp wird automatisch aus der Konfiguration erkannt. Verwenden Sie --up zum Bereitstellen nach dem Pull",
         "descriptionShort": "Repository von einem Remote (Rechner oder Speicher) pullen",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
         "optionUp": "Nach dem Pull das Repository auf diesem Rechner mounten und bereitstellen",
         "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
-        "sourceRequired": "Geben Sie --from <remote> an (Rechner- oder Speichername aus der Konfiguration)"
+        "sourceRequired": "Geben Sie --from <remote> an (Rechner- oder Speichername aus der Konfiguration)",
+        "storageRetired": "Das Pullen von einem Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Die Point-in-Time-Wiederherstellung läuft über `rdc backup restore <repo> --at <snapshot>` im Chunk-Store. Der Transfer zwischen Maschinen bleibt unberührt: nutze --from-machine"
       },
       "push": {
-        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
         "deployFailed": "Bereitstellung von \"{{repo}}\" nach Push fehlgeschlagen",
+        "deployed": "Repository \"{{repo}}\" auf {{machine}} bereitgestellt",
         "deploying": "\"{{repo}}\" wird auf {{machine}} bereitgestellt...",
         "description": "Repository an ein Remote (Rechner oder Speicher) pushen. Der Zieltyp wird automatisch aus der Konfiguration erkannt. Bei Rechner-zu-Rechner-Transfer wird das verschlüsselte Repo-Image mit derselben GUID kopiert — dies ist ein Backup/Migration, kein Fork. Für einen unabhängigen Fork verwenden Sie zuerst 'repo fork', dann push. Eine gepushte Kopie landet als Backup-ARTEFAKT: starten Sie es auf dem Ziel mit 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "Repository an ein Remote (Rechner oder Speicher) pushen",
         "destRequired": "Geben Sie --to <remote> an (Rechner- oder Speichername aus der Konfiguration)",
         "examples": {
-          "toMachine": "Ein Repository zu einer anderen Maschine pushen.",
-          "toStorage": "Ein Repository zu einem Speicher-Backend pushen."
+          "toMachine": "Ein Repository zu einer anderen Maschine pushen."
         },
         "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
         "optionCheckpoint": "CRIU-Checkpoint vor Backup erstellen (erfasst Prozessspeicherstatus für Live-Migration)",
@@ -1498,7 +1500,8 @@
         "pushing": "Backup von \"{{repo}}\" wird nach {{dest}} übertragen...",
         "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
         "statsFull": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (vollständig)",
-        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}",
+        "storageRetired": "Das Pushen auf ein Storage-Backend ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Point-in-Time-Sicherung läuft über `rdc backup snapshot` (Upload) und `rdc backup restore <repo> --at <snapshot>` (Download), beides über den Chunk-Store. Der Transfer zwischen Maschinen bleibt unberührt: nutze --to-machine"
       },
       "refMachineConflict": "Eine Repository-Referenz leitet ihre eigene Maschine ab. Verwenden Sie -m/--machine nur für die maschinenweite Form: repo {{verb}} --all -m <machine>.",
       "replicate": {

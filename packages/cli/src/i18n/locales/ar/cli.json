@@ -22,9 +22,10 @@
         "executorAmbiguous": "هناك أكثر من جهاز مسجَّل؛ حدِّد جهاز التنفيذ لعرض قائمة التخزين بإضافة @<machine>.",
         "listing": "جارٍ عرض النسخ الاحتياطية...",
         "optionPath": "دليل فرعي ضمن جذر التخزين. عند حذفه، تُعرض hot/ وcold/ وتُدمَجان.",
-        "optionStorage": "عرض العناصر على نقطة التخزين هذه",
+        "optionStorage": "مُلغى: أُزيل سرد التخزين مع ذراع rclone",
         "placementExclusive": "مرّر واحدًا فقط من --machine أو --storage، وليس كليهما.",
-        "placementRequired": "حدِّد --machine <m> أو --storage <s> لتحديد مصدر العرض."
+        "placementRequired": "حدِّد --machine <m> أو --storage <s> لتحديد مصدر العرض.",
+        "storageRetired": "سرد محتوى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. لقطات مخزن القطع تُسرد بـ `rdc backup snapshot list`، والنسخ الموجودة على جهاز بـ `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "عرض بيانات لقطات النسخ الاحتياطي المسجَّلة على الخادم",
@@ -56,6 +57,7 @@
         "restored": "تمت استعادة \"{{name}}\" على {{machine}}",
         "restoringSnapshot": "جارٍ استعادة \"{{name}}\" من اللقطة {{snapshot}}...",
         "sourceUnknown": "لا يوجد مستودع باسم \"{{name}}\" معروف في هذا التكوين، لذا يتعذر تحديد موقع عنصر النسخة الاحتياطية الخاص به.",
+        "storageRetired": "الاستعادة من واجهة تخزين خلفية لم تعد مدعومة: أُزيل ذراع rclone السحابي. الاستعادة بنقطة زمنية تتم عبر `rdc backup restore <repo> --at <snapshot>` فوق مخزن القطع",
         "targetExists": "\"{{name}}\" موجود بالفعل. استعده باسم آخر (--as) أو احذف المستودع الحالي أولاً."
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "جارٍ الاستحواذ على \"{{grand}}\" بالبيانات من \"{{fork}}\" على \"{{machine}}\"..."
       },
       "pull": {
-        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deployFailed": "فشل نشر \"{{repo}}\" بعد السحب",
+        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
         "description": "سحب مستودع من جهاز بعيد (جهاز أو تخزين). احذف الاسم لسحب جميع المستودعات. يتم الكشف عن نوع المصدر تلقائياً من الإعدادات. استخدم --up للنشر بعد السحب",
         "descriptionShort": "سحب مستودع من جهاز بعيد (جهاز أو تخزين)",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "استراتيجية دلتا الكتل عند استخدام أساس دلتا: auto أو physical أو shared",
         "optionUp": "بعد السحب، قم بتركيب ونشر المستودع على هذا الجهاز",
         "pulling": "جارٍ سحب نسخة احتياطية لـ \"{{repo}}\"...",
-        "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)"
+        "sourceRequired": "حدد --from <remote> (اسم جهاز أو تخزين من الإعدادات)",
+        "storageRetired": "السحب من واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. الاستعادة بنقطة زمنية تتم عبر `rdc backup restore <repo> --at <snapshot>` فوق مخزن القطع. النقل بين الأجهزة لم يتغير: استخدم ‎--from-machine"
       },
       "push": {
-        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deployFailed": "فشل نشر \"{{repo}}\" بعد الدفع",
+        "deployed": "تم نشر المستودع \"{{repo}}\" على {{machine}}",
         "deploying": "جارٍ نشر \"{{repo}}\" على {{machine}}...",
         "description": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين). يتم الكشف عن نوع الهدف تلقائياً من الإعدادات. للنقل بين الأجهزة، يتم نسخ صورة المستودع المشفرة بنفس GUID — هذا نسخ احتياطي/ترحيل، وليس fork. لإنشاء fork مستقل، استخدم 'repo fork' أولاً، ثم ادفع. تصل النسخة المدفوعة كعنصر نسخة احتياطية (ARTIFACT): شغّلها على الجهاز الهدف بـ 'backup restore <ref> --as <name> -m <target> --up'",
         "descriptionShort": "دفع مستودع إلى جهاز بعيد (جهاز أو تخزين)",
         "destRequired": "حدد --to <remote> (اسم جهاز أو تخزين من الإعدادات)",
         "examples": {
-          "toMachine": "دفع مستودع إلى جهاز آخر.",
-          "toStorage": "دفع مستودع إلى خلفية تخزين."
+          "toMachine": "دفع مستودع إلى جهاز آخر."
         },
         "optionBwlimit": "حد عرض النطاق لنقل rsync (مثال: \"6M\"، \"10M\")",
         "optionCheckpoint": "إنشاء نقطة فحص CRIU قبل النسخ الاحتياطي (التقاط حالة ذاكرة العمليات للترحيل المباشر)",
@@ -1498,7 +1500,8 @@
         "pushing": "جارٍ دفع نسخة احتياطية لـ \"{{repo}}\" إلى {{dest}}...",
         "statsDelta": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (دلتا مقابل الأساس {{base}}، الصورة {{image}})",
         "statsFull": "تم دفع \"{{repo}}\" إلى {{machine}} — نُقل {{transferred}} خلال {{duration}} (نقل كامل)",
-        "statsNoBytes": "تم دفع \"{{repo}}\" إلى {{machine}} — اكتمل خلال {{duration}}"
+        "statsNoBytes": "تم دفع \"{{repo}}\" إلى {{machine}} — اكتمل خلال {{duration}}",
+        "storageRetired": "الدفع إلى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. النسخ الاحتياطي بنقطة زمنية صار عبر `rdc backup snapshot` للرفع و`rdc backup restore <repo> --at <snapshot>` للتنزيل، وكلاهما فوق مخزن القطع. النقل بين الأجهزة لم يتغير: استخدم ‎--to-machine"
       },
       "refMachineConflict": "مرجع المستودع يشتق جهازه الخاص. استخدم -m/--machine فقط للصيغة على مستوى الجهاز: repo {{verb}} --all -m <machine>.",
       "replicate": {

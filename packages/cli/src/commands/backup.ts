@@ -31,19 +31,15 @@ async function resolveListExecutor(opts: {
     return { machine: opts.machine, sourceType: 'machine', from: opts.machine };
   }
   if (opts.storage) {
-    // A storage listing still runs rclone on a machine. The artifact ref's
-    // @place names it; otherwise the sole registered machine is used, else the
-    // caller must qualify with @place.
-    const machine = opts.place ?? (await soleMachineOrThrow());
-    return { machine, sourceType: 'storage', from: opts.storage };
+    // RETIRED. The comment this replaces said "a storage listing still runs
+    // rclone on a machine", which stopped being true when the rclone arm was
+    // removed: renet answers a storage source with errStorageRetired("list").
+    // Refusing here rather than on the machine saves an SSH round trip and,
+    // more importantly, stops the CLI from advertising a path its engine
+    // rejects -- the gap that had the backup-restore tutorial failing in CI.
+    throw new ValidationError(t('commands.backup.list.storageRetired'));
   }
   throw new ValidationError(t('commands.backup.list.placementRequired'));
-}
-
-async function soleMachineOrThrow(): Promise<string> {
-  const machines = await configService.listMachines();
-  if (machines.length === 1) return machines[0].name;
-  throw new ValidationError(t('commands.backup.list.executorAmbiguous'));
 }
 
 /** `backup list [artifact-ref]` — list backup artifacts on a machine or storage. */
@@ -171,7 +167,10 @@ function registerBackupRestore(backup: Command): void {
         const targetMachine = await resolveRestoreMachine(options);
         const resolved = await resolveRemoteName(ref.place);
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
-        const sourceType = resolved.type === 'storage' ? 'storage' : 'machine';
+        if (resolved.type === 'storage') {
+          throw new ValidationError(t('commands.backup.restore.storageRetired'));
+        }
+        const sourceType = 'machine';
 
         // #74: `--datastore` was accepted, used to LOOK UP the holder machine, and
         // then dropped — the pull ran against the machine's default, so a restore

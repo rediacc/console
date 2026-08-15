@@ -22,9 +22,10 @@
         "executorAmbiguous": "已注册多台机器；请使用 @<machine> 限定存储列表，指明由哪台机器执行。",
         "listing": "正在列出备份...",
         "optionPath": "存储根目录下的子目录。省略时会列出并合并 hot/ 和 cold/。",
-        "optionStorage": "列出此存储端点上的产物",
+        "optionStorage": "已停用：存储列表随 rclone 分支一并移除",
         "placementExclusive": "只能传入 --machine 或 --storage 之一，不能同时传入两者。",
-        "placementRequired": "请指定 --machine <m> 或 --storage <s>，说明从何处列出。"
+        "placementRequired": "请指定 --machine <m> 或 --storage <s>，说明从何处列出。",
+        "storageRetired": "列出存储后端的内容已停用：rclone 云分支已移除。块存储快照用 `rdc backup snapshot list` 查看，机器上的备份用 `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "列出服务器上记录的备份快照清单",
@@ -56,6 +57,7 @@
         "restored": "已将 {{name}} 恢复到 {{machine}}",
         "restoringSnapshot": "正在从快照 {{snapshot}} 恢复 {{name}}...",
         "sourceUnknown": "此配置中没有名为 \"{{name}}\" 的仓库，因此无法定位其备份产物。",
+        "storageRetired": "从存储后端恢复已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储",
         "targetExists": "\"{{name}}\" 已存在。请使用其他名称恢复（--as），或先删除现有仓库。"
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "正在用 \"{{fork}}\" 的数据接管 \"{{machine}}\" 上的 \"{{grand}}\"..."
       },
       "pull": {
-        "deployed": "仓库\"{{repo}}\"已部署到{{machine}}",
         "deployFailed": "pull后部署\"{{repo}}\"失败",
+        "deployed": "仓库\"{{repo}}\"已部署到{{machine}}",
         "deploying": "正在将\"{{repo}}\"部署到{{machine}}...",
         "description": "从远程（机器或存储）拉取仓库。省略名称以拉取所有仓库。源类型从配置中自动检测。使用--up在pull后部署",
         "descriptionShort": "从远程（机器或存储）拉取仓库",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
         "optionUp": "pull后，在此机器上挂载并部署仓库",
         "pulling": "正在拉取 \"{{repo}}\" 的备份...",
-        "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
+        "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）",
+        "storageRetired": "从存储后端拉取已停用：rclone 云分支已移除。时间点恢复改用 `rdc backup restore <repo> --at <snapshot>`，走块存储。机器之间的传输不受影响：请使用 --from-machine"
       },
       "push": {
-        "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
         "deployFailed": "推送后部署 \"{{repo}}\" 失败",
+        "deployed": "仓库 \"{{repo}}\" 已部署到 {{machine}}",
         "deploying": "正在 {{machine}} 上部署 \"{{repo}}\"...",
         "description": "将仓库推送到远程（机器或存储）。目标类型从配置中自动检测。机器间传输时，加密的仓库镜像会以相同的 GUID 复制 — 这是备份/迁移，而非 fork。要创建独立的 fork，请先使用 'repo fork'，再执行 push。推送后的副本会作为备份产物存在：请在目标机器上使用 'backup restore <ref> --as <name> -m <target> --up' 启动它",
         "descriptionShort": "将仓库推送到远程（机器或存储）",
         "destRequired": "请指定 --to <remote>（配置中的机器或存储名称）",
         "examples": {
-          "toMachine": "将仓库推送到另一台机器。",
-          "toStorage": "将仓库推送到存储后端。"
+          "toMachine": "将仓库推送到另一台机器。"
         },
         "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
@@ -1498,7 +1500,8 @@
         "pushing": "正在将 \"{{repo}}\" 的备份推送到 {{dest}}...",
         "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
         "statsFull": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（完整传输）",
-        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成"
+        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成",
+        "storageRetired": "向存储后端推送已停用：rclone 云分支已移除。时间点备份改用 `rdc backup snapshot`（上传）和 `rdc backup restore <repo> --at <snapshot>`（下载），二者都走块存储。机器之间的传输不受影响：请使用 --to-machine"
       },
       "refMachineConflict": "仓库引用会自行推导出所在机器。-m/--machine 仅用于面向整机的形式：repo {{verb}} --all -m <machine>。",
       "replicate": {

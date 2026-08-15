@@ -1164,13 +1164,13 @@
         }
       },
       "push": {
-        "description": "Push repository to a remote (machine or storage). The target type is auto-detected from config. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
-        "descriptionShort": "Push repository to a remote (machine or storage)",
-        "optionTo": "Destination machine or storage name (auto-detected from config)",
+        "description": "Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID — this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
+        "descriptionShort": "Push repository to another machine",
+        "optionTo": "Destination machine name (auto-detected from config)",
         "optionProvision": "Auto-provision target machine via cloud provider if it doesn't exist",
         "optionCheckpoint": "Create CRIU checkpoint before backup (captures process memory state for live migration)",
         "optionForce": "Force overwrite existing backup",
-        "destRequired": "Specify --to <remote> (machine or storage name from config)",
+        "destRequired": "Specify --to <machine> (a machine name from config)",
         "pushing": "Pushing backup of \"{{repo}}\" to {{dest}}...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
@@ -1182,14 +1182,14 @@
         "statsNoBytes": "Pushed \"{{repo}}\" to {{machine}} — completed in {{duration}}",
         "deployFailed": "Failed to deploy \"{{repo}}\" after push",
         "examples": {
-          "toStorage": "Push a repository to a storage backend.",
           "toMachine": "Push a repository to another machine."
-        }
+        },
+        "storageRetired": "Pushing to a storage backend is retired: the rclone cloud arm has been removed. Point-in-time backup is `rdc backup snapshot` (upload) and `rdc backup restore <repo> --at <snapshot>` (download), both over the chunk store. Machine-to-machine transfer is unaffected: use --to-machine"
       },
       "pull": {
-        "description": "Pull repository from a remote (machine or storage). Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
+        "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull",
         "descriptionShort": "Pull repository from a remote (machine or storage)",
-        "optionFrom": "Source machine or storage name (auto-detected from config)",
+        "optionFrom": "Source machine name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionUp": "After pull, mount and deploy repository on this machine",
@@ -1201,9 +1201,10 @@
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
         "deployFailed": "Failed to deploy \"{{repo}}\" after pull",
         "examples": {
-          "basic": "Pull a repository from a storage backend.",
+          "basic": "Pull a repository from another machine.",
           "andStart": "Pull a repository and start it right away."
-        }
+        },
+        "storageRetired": "Pulling from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store. Machine-to-machine transfer is unaffected: use --from-machine"
       },
       "migrate": {
         "description": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
@@ -1479,13 +1480,14 @@
         "executorAmbiguous": "More than one machine is registered; qualify the storage listing with @<machine> to say which one runs it.",
         "listing": "Listing backups...",
         "optionPath": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.",
-        "optionStorage": "List artifacts on this storage endpoint",
+        "optionStorage": "RETIRED: storage listing was removed with the rclone arm",
         "placementExclusive": "Pass exactly one of --machine or --storage, not both.",
         "placementRequired": "Specify --machine <m> or --storage <s> to say where to list from.",
         "examples": {
           "basic": "List the backups stored for a machine.",
           "byStorage": "List the backups in a specific storage backend."
-        }
+        },
+        "storageRetired": "Listing a storage backend is retired: the rclone cloud arm has been removed. Chunk-store snapshots are listed with `rdc backup snapshot list`; artifacts on a machine with `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "List backup snapshot manifests recorded on the server",
@@ -1517,7 +1519,8 @@
         "restored": "Restored {{name}} onto {{machine}}",
         "restoringSnapshot": "Restoring {{name}} from snapshot {{snapshot}}...",
         "sourceUnknown": "No repository named \"{{name}}\" is known in this config, so its backup artifact cannot be located.",
-        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first."
+        "targetExists": "\"{{name}}\" already exists. Restore under another name (--as) or delete the existing repository first.",
+        "storageRetired": "Restoring from a storage backend is retired: the rclone cloud arm has been removed. Point-in-time restore is `rdc backup restore <repo> --at <snapshot>` over the chunk store"
       },
       "retention": {
         "clearDescription": "Remove the policy, so every snapshot of this repository is kept.",

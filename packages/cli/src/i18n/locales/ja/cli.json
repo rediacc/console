@@ -22,9 +22,10 @@
         "executorAmbiguous": "複数のマシンが登録されています。どのマシンで実行するかを指定するには、ストレージ一覧に @<machine> を付けてください",
         "listing": "バックアップを一覧表示中...",
         "optionPath": "ストレージルート内のサブディレクトリ。省略時は hot/ と cold/ の両方を一覧表示してマージする",
-        "optionStorage": "このストレージエンドポイント上のアーティファクトを一覧表示する",
+        "optionStorage": "廃止: ストレージ一覧は rclone 系統とともに削除されました",
         "placementExclusive": "--machine か --storage のどちらか一方のみを指定してください（両方は不可）",
-        "placementRequired": "どこから一覧表示するか、--machine <m> または --storage <s> で指定してください"
+        "placementRequired": "どこから一覧表示するか、--machine <m> または --storage <s> で指定してください",
+        "storageRetired": "ストレージバックエンドの一覧表示は廃止されました。rclone のクラウド系統が削除されたためです。チャンクストアのスナップショットは `rdc backup snapshot list`、マシン上の成果物は `rdc backup list -m <machine>` で一覧します"
       },
       "manifests": {
         "description": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",
@@ -56,6 +57,7 @@
         "restored": "{{machine}} に {{name}} を復元しました",
         "restoringSnapshot": "スナップショット {{snapshot}} から {{name}} を復元中...",
         "sourceUnknown": "この設定に \"{{name}}\" という名前のリポジトリが存在しないため、バックアップアーティファクトを特定できません",
+        "storageRetired": "ストレージバックエンドからのリストアは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います",
         "targetExists": "\"{{name}}\" は既に存在します。別名で復元する（--as）か、先に既存のリポジトリを削除してください"
       },
       "retention": {
@@ -1459,8 +1461,8 @@
         "starting": "\"{{machine}}\" 上で \"{{fork}}\" のデータを使って \"{{grand}}\" を引き継いでいます..."
       },
       "pull": {
-        "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
         "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
+        "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
         "deploying": "\"{{repo}}\"を{{machine}}にデプロイ中...",
         "description": "リモート（マシンまたはストレージ）からリポジトリをプル。名前を省略するとすべてのリポジトリをプル。ソースタイプは設定から自動検出。pull後にデプロイするには--upを使用",
         "descriptionShort": "リモート（マシンまたはストレージ）からリポジトリをプル",
@@ -1475,18 +1477,18 @@
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
+        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "storageRetired": "ストレージバックエンドからのプルは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います。マシン間の転送はこれまでどおりで、--from-machine を指定してください"
       },
       "push": {
-        "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
+        "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
         "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
         "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
         "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
         "examples": {
-          "toMachine": "リポジトリを別のマシンにプッシュする",
-          "toStorage": "リポジトリをストレージバックエンドにプッシュする"
+          "toMachine": "リポジトリを別のマシンにプッシュする"
         },
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
@@ -1498,7 +1500,8 @@
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
         "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
-        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}"
+        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}",
+        "storageRetired": "ストレージバックエンドへのプッシュは廃止されました。rclone のクラウド系統が削除されたためです。時点バックアップはチャンクストア経由の `rdc backup snapshot`（アップロード）と `rdc backup restore <repo> --at <snapshot>`（ダウンロード）を使います。マシン間の転送はこれまでどおりで、--to-machine を指定してください"
       },
       "refMachineConflict": "リポジトリ ref はそれ自体でマシンを決定します。-m/--machine はマシン全体形式でのみ使用してください: repo {{verb}} --all -m <machine>",
       "replicate": {
