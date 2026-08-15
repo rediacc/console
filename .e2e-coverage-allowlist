@@ -35,3 +35,21 @@ repository_ownership
 repository_prune
 repository_template_apply
 repository_up_all
+
+# BLOCKER: `backup restore` IS tested end to end, but not by a suite CI runs, and
+# this gate's question is membership in the LIVE set rather than "is it tested".
+# The proof is `programs/backup-storage/local-roundtrip.sh` (9 checks, exit 0):
+# it snapshots a real repository to a real S3 endpoint, restores it AS A
+# DIFFERENT REPO, and byte-compares source against restored -- the instrument
+# proved twice over, once by diffing against an older restore (`differ: byte
+# 16778241`) and once by planting a byte and requiring `cmp` to notice.
+#
+# It cannot confer coverage because `packages/e2e-tests/playwright.backup-storage.config.ts`
+# is run by NO workflow (verified: zero matches for `backup-storage.config` across
+# .github/workflows and .ci), so suite 26 is not in LIVE_CONFIG_REGISTRY. Wiring
+# it in needs a live account server plus a real machine in CI, which is the
+# cutover work this wave deliberately does not carry.
+#
+# This entry expires itself: the gate REJECTS an allowlisted name that becomes
+# covered, so the day suite 26 goes live this line fails until it is deleted.
+backup_restore
