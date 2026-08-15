@@ -207,6 +207,15 @@ jobs:
       # named a test file, so the evidence pointed at the wrong thing entirely.
       # Reads workflow YAML only, so it needs no token and no submodule, which
       # is why it belongs in the static lane.
+      # Both of these read workflow YAML and need PyYAML, so one install serves
+      # both and the assert stays with it.
+      - name: Python gate deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          .ci/scripts/quality/check_python_gate_deps.py
+
       - name: Workflow submodule deps
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         # PyYAML is installed HERE and pinned, and the version is asserted so a
