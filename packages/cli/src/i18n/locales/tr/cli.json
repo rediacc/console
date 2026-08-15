@@ -91,6 +91,7 @@
         "completed": "{{name}} için anlık görüntü kaydedildi",
         "description": "Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra değişen hücreler",
         "failed": "{{name}} için anlık görüntü başarısız oldu",
+        "optionCold": "Konteynerleri durdurur, dondurur, yeniden başlatır ve ancak ondan sonra yükler. Kısa ama gerçek bir kesinti karşılığında uygulama tutarlı bir anlık görüntü verir; --dry-run ile birlikte kullanılamaz",
         "optionDryRun": "Yalnızca planla: yükleme yapılmaz. Nelerin taşınacağını bildirir",
         "optionReseed": "Yerel çıpaya güvenme ve tam envanteri yeniden yükle (her şeyi yeniden yükler ve kotayı yeniden düşer)",
         "quotaRefused": "{{name}} için anlık görüntü reddedildi: depolama kotası aşıldı. Eski anlık görüntüleri temizleyin veya kotayı artırın",

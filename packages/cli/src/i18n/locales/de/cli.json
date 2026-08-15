@@ -91,6 +91,7 @@
         "completed": "Snapshot für {{name}} gespeichert",
         "description": "Einen Chunk-Store-Snapshot hochladen: zuerst das vollständige Inventar, danach geänderte Zellen",
         "failed": "Snapshot für {{name}} fehlgeschlagen",
+        "optionCold": "Container stoppen, einfrieren, neu starten, dann hochladen. Kostet eine kurze echte Ausfallzeit, liefert dafür einen anwendungskonsistenten Snapshot; nicht zusammen mit --dry-run verwendbar",
         "optionDryRun": "Nur planen: kein Upload. Zeigt, was sich bewegen würde",
         "optionReseed": "Dem lokalen Anker misstrauen und ein vollständiges Inventar hochladen (lädt alles neu hoch und belastet erneut das Kontingent)",
         "quotaRefused": "Snapshot für {{name}} verweigert: Speicherkontingent überschritten. Alte Snapshots bereinigen oder Kontingent erhöhen",

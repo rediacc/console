@@ -446,6 +446,7 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 
 - `--reseed` — Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)
 - `--dry-run` — Plan only: no upload. Reports what would move
+- `--cold` — Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run
 - `--debug` — Enable debug output
 
 > MCP tool

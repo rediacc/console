@@ -91,6 +91,7 @@
         "completed": "Snapshot guardado para {{name}}",
         "description": "Enviar um snapshot para o armazenamento fragmentado: primeiro o inventário completo, depois as células alteradas",
         "failed": "Falha no snapshot de {{name}}",
+        "optionCold": "Para os contêineres, congela, reinicia e só então envia. Custa uma parada real curta em troca de um snapshot consistente com a aplicação; não pode ser combinado com --dry-run",
         "optionDryRun": "Apenas planear: sem envio. Reporta o que se moveria",
         "optionReseed": "Desconfiar da âncora local e reenviar um inventário completo (reenvia tudo e volta a debitar a quota)",
         "quotaRefused": "Snapshot recusado para {{name}}: quota de armazenamento excedida. Elimine snapshots antigos ou aumente a quota",

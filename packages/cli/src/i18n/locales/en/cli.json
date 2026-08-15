@@ -1551,6 +1551,7 @@
       "snapshot": {
         "description": "Upload a chunk-store snapshot: full inventory first, changed cells after",
         "optionReseed": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)",
+        "optionCold": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run",
         "optionDryRun": "Plan only: no upload. Reports what would move",
         "starting": "Snapshotting {{name}} to chunk storage...",
         "completed": "Snapshot stored for {{name}}",
