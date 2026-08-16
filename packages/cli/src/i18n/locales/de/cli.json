@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Listet die Dateien auf, die ein Repository enthält. Ein lokaler, schreibgeschützter Durchlauf des Repository-Images: kein Server, keine Zugangsdaten, ein laufendes Repository wird nie gestört. Kann keine Snapshots auflisten, die nur im Chunk-Store existieren; zuerst wiederherstellen, dann das Ergebnis durchsuchen.",
+        "optionPath": "Auflistung auf diesen Teilbaum beschränken",
+        "optionDepth": "Abstiegstiefe auf N Ebenen begrenzen (0 für unbegrenzt)",
+        "optionLimit": "Maximale Anzahl zurückgegebener Einträge (0 für unbegrenzt)",
+        "starting": "{{name}} wird aufgelistet...",
+        "completed": "{{name}} aufgelistet",
+        "failed": "{{name}} konnte nicht aufgelistet werden",
+        "truncated": "Auflistung bei {{limit}} Einträgen abgeschnitten. Grenzen Sie mit --path ein, oder erhöhen Sie --limit.",
+        "empty": "{{name}} enthält keine Dateien."
+      },
       "cancel": {
         "cancelled": "{{name}} abgebrochen",
         "cancelling": "{{name}} wird gestoppt...",

@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} aufgelistet",
+  "commands.backup.browse.description": "Listet die Dateien auf, die ein Repository enthält. Ein lokaler, schreibgeschützter Durchlauf des Repository-Images: kein Server, keine Zugangsdaten, ein laufendes Repository wird nie gestört. Kann keine Snapshots auflisten, die nur im Chunk-Store existieren; zuerst wiederherstellen, dann das Ergebnis durchsuchen.",
+  "commands.backup.browse.empty": "{{name}} enthält keine Dateien.",
+  "commands.backup.browse.failed": "{{name}} konnte nicht aufgelistet werden",
+  "commands.backup.browse.optionDepth": "Abstiegstiefe auf N Ebenen begrenzen (0 für unbegrenzt)",
+  "commands.backup.browse.optionLimit": "Maximale Anzahl zurückgegebener Einträge (0 für unbegrenzt)",
+  "commands.backup.browse.optionPath": "Auflistung auf diesen Teilbaum beschränken",
+  "commands.backup.browse.starting": "{{name}} wird aufgelistet...",
+  "commands.backup.browse.truncated": "Auflistung bei {{limit}} Einträgen abgeschnitten. Grenzen Sie mit --path ein, oder erhöhen Sie --limit.",
   "commands.backup.cancel.cancelled": "{{name}} abgebrochen",
   "commands.backup.cancel.cancelling": "{{name}} wird gestoppt...",
   "commands.backup.cancel.description": "Laufendes Backup auf einem Remote-Rechner abbrechen",

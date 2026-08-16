@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta serverit ega mandaate ning töötavat hoidlat see kunagi ei häiri. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust.",
+        "optionPath": "Piira loetelu selle alampuuga",
+        "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
+        "optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",
+        "starting": "{{name}} loetlemine...",
+        "completed": "{{name}} loetletud",
+        "failed": "{{name}} loetlemine ebaõnnestus",
+        "truncated": "Loetelu katkestati {{limit}} kirje juures. Kitsenda seda --path abil või tõsta --limit väärtust.",
+        "empty": "{{name}} ei sisalda faile."
+      },
       "cancel": {
         "cancelled": "{{name}} katkestatud",
         "cancelling": "{{name}} peatamine...",
