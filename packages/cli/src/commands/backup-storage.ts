@@ -444,7 +444,7 @@ function registerBackupRetention(backup: Command): void {
   retention
     .command('set')
     .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.setDescription'))
+    .description(t('commands.backup.retention.set.description'))
     .option('--keep-last <n>', t('commands.backup.retention.optionKeepLast'))
     .option('--keep-hourly <n>', t('commands.backup.retention.optionKeepHourly'))
     .option('--keep-daily <n>', t('commands.backup.retention.optionKeepDaily'))
@@ -479,7 +479,7 @@ function registerBackupRetention(backup: Command): void {
           { method: 'PUT', body: JSON.stringify(body) }
         );
         outputService.success(
-          t('commands.backup.retention.set', { name: repoRef, count: String(declared) })
+          t('commands.backup.retention.set.success', { name: repoRef, count: String(declared) })
         );
         const format = getOutputFormat();
         if (format !== 'table') outputService.print(result, format);
@@ -491,7 +491,7 @@ function registerBackupRetention(backup: Command): void {
   retention
     .command('clear')
     .argument('<repo-ref>', t('options.repoRef'))
-    .description(t('commands.backup.retention.clearDescription'))
+    .description(t('commands.backup.retention.clear.description'))
     .action(async (repoRef: string) => {
       try {
         const lineage = await resolveLineage(repoRef);

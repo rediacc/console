@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1756,
-    "sourceCommit": "5919efb9879052e12a82fbd21291802b6bafd6ef"
+    "sourceCommit": "3e7f41758d788874600cbca32f013154c0d813bc"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -50,7 +50,7 @@
     "commands.backup.restore.sourceUnknown": "5be0a248",
     "commands.backup.restore.storageRetired": "4d76f81c",
     "commands.backup.restore.targetExists": "658b0b83",
-    "commands.backup.retention.clearDescription": "5523f854",
+    "commands.backup.retention.clear.description": "5523f854",
     "commands.backup.retention.cleared": "d9ab604b",
     "commands.backup.retention.description": "b2b6c0cd",
     "commands.backup.retention.empty": "5e3c540b",
@@ -62,8 +62,8 @@
     "commands.backup.retention.optionKeepMonthly": "1c41f88e",
     "commands.backup.retention.optionKeepWeekly": "2c74dbd0",
     "commands.backup.retention.optionKeepYearly": "0f4d6475",
-    "commands.backup.retention.set": "5879e49b",
-    "commands.backup.retention.setDescription": "df882947",
+    "commands.backup.retention.set.description": "df882947",
+    "commands.backup.retention.set.success": "5879e49b",
     "commands.backup.run.description": "d51d7c30",
     "commands.backup.run.examples.basic": "55198cbb",
     "commands.backup.schedule.description": "03a33c04",

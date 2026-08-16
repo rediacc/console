@@ -60,7 +60,9 @@
         "targetExists": "\"{{name}}\" existiert bereits. Stellen Sie unter einem anderen Namen wieder her (--as) oder löschen Sie zuerst das vorhandene Repository."
       },
       "retention": {
-        "clearDescription": "Die Richtlinie entfernen, sodass jeder Snapshot dieses Repositorys erhalten bleibt.",
+        "clear": {
+          "description": "Die Richtlinie entfernen, sodass jeder Snapshot dieses Repositorys erhalten bleibt."
+        },
         "cleared": "Aufbewahrungsrichtlinie für {{name}} entfernt. Ab jetzt wird jeder Snapshot aufbewahrt.",
         "description": "Die vom Server durchgesetzte Snapshot-Aufbewahrungsrichtlinie anzeigen.",
         "empty": "Es ist keine Aufbewahrungsrichtlinie festgelegt, daher wird jeder Snapshot aufbewahrt.",
@@ -72,8 +74,10 @@
         "optionKeepMonthly": "Den neuesten Snapshot aus jedem dieser Monate behalten",
         "optionKeepWeekly": "Den neuesten Snapshot aus jeder dieser Wochen behalten",
         "optionKeepYearly": "Den neuesten Snapshot aus jedem dieser Jahre behalten",
-        "set": "Aufbewahrungsrichtlinie für {{name}} gesetzt ({{count}} Regel(n)). Snapshots außerhalb davon werden beim nächsten Aufräumlauf gelöscht.",
-        "setDescription": "Legen Sie fest, wie viele Snapshots aufbewahrt werden sollen. Jede Einstellung wird ersetzt, nicht zusammengeführt."
+        "set": {
+          "description": "Legen Sie fest, wie viele Snapshots aufbewahrt werden sollen. Jede Einstellung wird ersetzt, nicht zusammengeführt.",
+          "success": "Aufbewahrungsrichtlinie für {{name}} gesetzt ({{count}} Regel(n)). Snapshots außerhalb davon werden beim nächsten Aufräumlauf gelöscht."
+        }
       },
       "run": {
         "description": "Backup sofort auf einem Remote-Rechner auslösen",

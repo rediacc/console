@@ -60,7 +60,9 @@
         "targetExists": "\"{{name}}\" on juba olemas. Taasta teise nime all (--as) või kustuta esmalt olemasolev hoidla."
       },
       "retention": {
-        "clearDescription": "Eemalda poliitika, nii et selle hoidla kõik hetktõmmised säilivad.",
+        "clear": {
+          "description": "Eemalda poliitika, nii et selle hoidla kõik hetktõmmised säilivad."
+        },
         "cleared": "{{name}} säilitamispoliitika eemaldati. Nüüdsest säilivad kõik hetktõmmised.",
         "description": "Näita serveri jõustatavat hetktõmmiste säilitamispoliitikat.",
         "empty": "Säilitamispoliitikat ei ole määratud, seega säilivad kõik hetktõmmised.",
@@ -72,8 +74,10 @@
         "optionKeepMonthly": "Säilita iga selle arvu kuu kohta uusim hetktõmmis",
         "optionKeepWeekly": "Säilita iga selle arvu nädala kohta uusim hetktõmmis",
         "optionKeepYearly": "Säilita iga selle arvu aasta kohta uusim hetktõmmis",
-        "set": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus.",
-        "setDescription": "Määra, mitu hetktõmmist säilitada. Iga säte asendatakse tervikuna, mitte ei liideta."
+        "set": {
+          "description": "Määra, mitu hetktõmmist säilitada. Iga säte asendatakse tervikuna, mitte ei liideta.",
+          "success": "{{name}} säilitamispoliitika määrati ({{count}} reeglit). Sellest välja jäävad hetktõmmised kustutatakse järgmise koristuse käigus."
+        }
       },
       "run": {
         "description": "Käivitab varukoopia kohe kaugmasinal",
