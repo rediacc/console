@@ -19,7 +19,6 @@
           "basic": "Die für eine Maschine gespeicherten Backups auflisten.",
           "byStorage": "Die Backups in einem bestimmten Speicher-Backend auflisten."
         },
-        "executorAmbiguous": "Mehr als eine Maschine ist registriert; qualifizieren Sie die Speicher-Auflistung mit @<machine>, um festzulegen, welche sie ausführt.",
         "listing": "Backups werden aufgelistet...",
         "optionPath": "Unterverzeichnis innerhalb des Speicher-Stammverzeichnisses. Wenn weggelassen, werden hot/ und cold/ aufgelistet und zusammengeführt.",
         "optionStorage": "EINGESTELLT: das Storage-Listing wurde mit dem rclone-Arm entfernt",

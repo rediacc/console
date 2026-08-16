@@ -19,7 +19,6 @@
           "basic": "Lista las copias de seguridad guardadas de una máquina.",
           "byStorage": "Lista las copias de seguridad de un backend de almacenamiento específico."
         },
-        "executorAmbiguous": "Hay más de una máquina registrada; cualifica el listado de almacenamiento con @<machine> para indicar cuál lo ejecuta.",
         "listing": "Listando copias de seguridad...",
         "optionPath": "Subdirectorio dentro de la raíz del almacenamiento. Si se omite, se listan y combinan hot/ y cold/.",
         "optionStorage": "RETIRADO: el listado de almacenamiento se eliminó junto con el brazo de rclone",

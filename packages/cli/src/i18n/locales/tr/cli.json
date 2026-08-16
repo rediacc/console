@@ -19,7 +19,6 @@
           "basic": "Bir makine için saklanan yedekleri listele.",
           "byStorage": "Belirli bir depolama arka ucundaki yedekleri listele."
         },
-        "executorAmbiguous": "Birden fazla makine kayıtlı; hangisinin çalıştıracağını belirtmek için depolama listesini @<makine> ile niteleyin.",
         "listing": "Yedekler listeleniyor...",
         "optionPath": "Depolama kökü içindeki alt dizin. Belirtilmezse hot/ ve cold/ listelenip birleştirilir.",
         "optionStorage": "KALDIRILDI: depolama listeleme, rclone koluyla birlikte çıkarıldı",

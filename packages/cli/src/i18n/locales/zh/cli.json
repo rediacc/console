@@ -19,7 +19,6 @@
           "basic": "列出某台机器已保存的备份。",
           "byStorage": "列出特定存储后端中的备份。"
         },
-        "executorAmbiguous": "已注册多台机器；请使用 @<machine> 限定存储列表，指明由哪台机器执行。",
         "listing": "正在列出备份...",
         "optionPath": "存储根目录下的子目录。省略时会列出并合并 hot/ 和 cold/。",
         "optionStorage": "已停用：存储列表随 rclone 分支一并移除",
