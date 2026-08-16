@@ -307,6 +307,49 @@ export class OpsManager {
    * Throws an error if any VM is not reachable or SSH is not available.
    * STRICT: No graceful fallback, tests cannot proceed if VMs are not ready.
    */
+  /**
+   * Refuse to start Ceph tests against a fleet whose workers are not clients.
+   *
+   * WHY THIS EXISTS, and it is one incident rather than a precaution. On
+   * 2026-08-16 `ceph-common` was SIGKILLed mid-install on one of two workers.
+   * `ops up` reported "Cluster started successfully" -- correctly, since the
+   * failure is non-fatal by design and was recorded -- and the recorded failure
+   * was then ERASED by the health probe, because the cluster genuinely was
+   * HEALTH_OK. Six minutes later a test died with "can't open ceph.conf", an
+   * error that reads as a broken test rather than a half-provisioned fleet.
+   *
+   * The cluster-level health check cannot close that gap: HEALTH_OK is silent
+   * about client distribution by construction. This asks the workers directly.
+   *
+   * Same shape as verifyAllVMsReady deliberately: collect EVERY bad worker and
+   * throw once, so one run tells you about both rather than one per attempt.
+   */
+  async verifyCephClientsReady(): Promise<void> {
+    const workers = this.getWorkerVMIps();
+    const notReady: string[] = [];
+
+    console.warn('[OpsManager] Verifying workers are configured as Ceph clients...');
+
+    for (const ip of workers) {
+      const blocker = await this.vmExecutor.cephClientBlocker(ip);
+      if (blocker) {
+        notReady.push(`${ip} (${blocker})`);
+        continue;
+      }
+      console.warn(`  ✓ ${ip}: ceph client configured`);
+    }
+
+    if (notReady.length > 0) {
+      throw new Error(
+        `Workers are not Ceph clients: ${notReady.join(', ')}. ` +
+          'The cluster may be HEALTH_OK and still leave a worker unconfigured, so this is ' +
+          'checked on the workers rather than inferred from cluster health. Re-run Ceph ' +
+          'provisioning (PROVISION_CEPH_CLUSTER=1 ... renet ops ceph provision) and check ' +
+          'its ceph-common install step for a kill.'
+      );
+    }
+  }
+
   async verifyAllVMsReady(): Promise<void> {
     const allIPs = this.getAllVMIps();
     const notReady: string[] = [];
