@@ -4,8 +4,8 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Kiirjuhend
@@ -227,11 +227,11 @@ Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja l�
 # Tõmba hoidla pilvemassinalt oma kohalikku serverisse
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Tõmba pilvemälust
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Tõmba ja käivita kohe
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Selle asemel taasta kindel ajahetk tükksalvestusest
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Miks tõmmata?** Sinu kohalik masin on NAT taga. Pilv ei saa sulle lükata. Aga sina saad pilve jõuda. Tõmbamine toob hoidla koju.

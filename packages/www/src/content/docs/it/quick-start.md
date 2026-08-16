@@ -4,8 +4,8 @@ description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
 order: -1
 language: it
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Quick Start
@@ -227,11 +227,11 @@ Il push di un repository su storage cloud con `--to <storage>` è dismesso e ora
 # Scarica la repository da una macchina cloud al tuo server locale
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Scarica dall'archiviazione cloud
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Scarica e avvia immediatamente
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Ripristina invece un momento puntuale dallo storage a chunk
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Perché scaricare?** La tua macchina locale è dietro NAT. Il cloud non può caricare da te. Ma tu puoi raggiungere il cloud. Il pull porta la repository a casa.

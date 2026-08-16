@@ -4,8 +4,8 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Início Rápido
@@ -227,11 +227,11 @@ Enviar um repositório para armazenamento na nuvem com `--to <storage>` está re
 # Receber repositório de uma máquina na nuvem para o seu servidor local
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Receber do armazenamento na nuvem
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Receber e iniciar imediatamente
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Em vez disso, restaurar um momento pontual a partir do armazenamento fragmentado
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Porquê receber?** A sua máquina local está atrás de NAT. A nuvem não consegue enviar para si. Mas pode alcançar a nuvem. Receber traz o repositório para casa.

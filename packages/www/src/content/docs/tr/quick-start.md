@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Hızlı Başlangıç
@@ -227,11 +227,11 @@ Anlık görüntüler parça depolamaya yüklenir; bunun için bir hesap sunucusu
 # Bir bulut makinesinden yerel sunucunuza repo çekin
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Bulut depolamadan çekin
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Çek ve hemen başlat
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Bunun yerine parça depolamadan belirli bir zaman noktasını geri yükle
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Neden pull?** Yerel makineniz NAT arkasındadır. Bulut size push yapamaz. Ama siz buluta ulaşabilirsiniz. Pull, repoyu eve getirir.
