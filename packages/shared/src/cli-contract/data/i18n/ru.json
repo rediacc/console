@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "Список {{name}} получен",
+  "commands.backup.browse.description": "Список файлов, содержащихся в репозитории. Локальный обход образа репозитория только для чтения: без сервера, без учётных данных, работающий репозиторий никогда не затрагивается. Невозможно просмотреть снимок, существующий только в хранилище блоков; сначала восстановите его, затем просмотрите результат.",
+  "commands.backup.browse.empty": "{{name}} не содержит файлов.",
+  "commands.backup.browse.failed": "Не удалось получить список {{name}}",
+  "commands.backup.browse.optionDepth": "Ограничить глубину до N уровней (0 - без ограничений)",
+  "commands.backup.browse.optionLimit": "Максимальное число возвращаемых записей (0 - без ограничений)",
+  "commands.backup.browse.optionPath": "Ограничить список этим поддеревом",
+  "commands.backup.browse.starting": "Получение списка {{name}}...",
+  "commands.backup.browse.truncated": "Список обрезан на {{limit}} записях. Сузьте его с помощью --path или увеличьте --limit.",
   "commands.backup.cancel.cancelled": "{{name}} отменено",
   "commands.backup.cancel.cancelling": "Остановка {{name}}...",
   "commands.backup.cancel.description": "Отменить выполняемое резервное копирование на удалённой машине",

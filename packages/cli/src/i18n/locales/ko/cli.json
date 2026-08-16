@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "저장소에 포함된 파일을 나열합니다. 저장소 이미지에 대한 로컬 읽기 전용 순회로, 서버도 자격 증명도 사용하지 않으며 실행 중인 저장소를 방해하지 않습니다. 청크 저장소에만 존재하는 스냅샷은 나열할 수 없습니다. 먼저 복원한 다음 결과를 살펴보세요.",
+        "optionPath": "나열 범위를 이 하위 트리로 제한합니다",
+        "optionDepth": "하위 탐색을 N단계로 제한합니다 (0은 무제한)",
+        "optionLimit": "반환할 최대 항목 수 (0은 무제한)",
+        "starting": "{{name}}을(를) 나열하는 중...",
+        "completed": "{{name}} 나열 완료",
+        "failed": "{{name}}을(를) 나열하지 못했습니다",
+        "truncated": "나열이 {{limit}}개 항목에서 잘렸습니다. --path로 범위를 좁히거나 --limit을 늘리세요.",
+        "empty": "{{name}}에 파일이 없습니다."
+      },
       "cancel": {
         "cancelled": "{{name}}이 취소되었습니다",
         "cancelling": "{{name}} 중지 중...",

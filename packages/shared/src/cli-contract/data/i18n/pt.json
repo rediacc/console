@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} listado",
+  "commands.backup.browse.description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor, sem credenciais, e um repositório em execução nunca é perturbado. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
+  "commands.backup.browse.empty": "{{name}} não contém ficheiros.",
+  "commands.backup.browse.failed": "Não foi possível listar {{name}}",
+  "commands.backup.browse.optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
+  "commands.backup.browse.optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",
+  "commands.backup.browse.optionPath": "Limitar a listagem a esta subárvore",
+  "commands.backup.browse.starting": "A listar {{name}}...",
+  "commands.backup.browse.truncated": "Listagem truncada em {{limit}} entradas. Restrinja com --path, ou aumente --limit.",
   "commands.backup.cancel.cancelled": "{{name}} cancelado",
   "commands.backup.cancel.cancelling": "A parar {{name}}...",
   "commands.backup.cancel.description": "Cancelar uma cópia de segurança em curso numa máquina remota",

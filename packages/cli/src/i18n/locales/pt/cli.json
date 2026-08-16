@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Lista os ficheiros que um repositório contém. Uma leitura local só de leitura da imagem do repositório: sem servidor, sem credenciais, e um repositório em execução nunca é perturbado. Não consegue listar um snapshot que existe apenas no chunk store; restaure-o primeiro e depois explore o resultado.",
+        "optionPath": "Limitar a listagem a esta subárvore",
+        "optionDepth": "Limitar a descida a N níveis (0 para ilimitado)",
+        "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",
+        "starting": "A listar {{name}}...",
+        "completed": "{{name}} listado",
+        "failed": "Não foi possível listar {{name}}",
+        "truncated": "Listagem truncada em {{limit}} entradas. Restrinja com --path, ou aumente --limit.",
+        "empty": "{{name}} não contém ficheiros."
+      },
       "cancel": {
         "cancelled": "{{name}} cancelado",
         "cancelling": "A parar {{name}}...",

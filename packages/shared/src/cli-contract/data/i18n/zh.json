@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "已列出 {{name}}",
+  "commands.backup.browse.description": "列出仓库包含的文件。这是对仓库镜像的本地只读遍历：不联系服务器、不需要凭据，也绝不会打扰正在运行的仓库。它无法列出仅存在于块存储中的快照；请先恢复该快照，再浏览结果。",
+  "commands.backup.browse.empty": "{{name}} 不包含任何文件。",
+  "commands.backup.browse.failed": "无法列出 {{name}}",
+  "commands.backup.browse.optionDepth": "将遍历深度限制为 N 层（0 表示不限）",
+  "commands.backup.browse.optionLimit": "返回的最大条目数（0 表示不限）",
+  "commands.backup.browse.optionPath": "将列表限制在此子目录内",
+  "commands.backup.browse.starting": "正在列出 {{name}}...",
+  "commands.backup.browse.truncated": "列表已在 {{limit}} 条处截断。请使用 --path 缩小范围，或提高 --limit。",
   "commands.backup.cancel.cancelled": "已取消 {{name}}",
   "commands.backup.cancel.cancelling": "正在停止 {{name}}...",
   "commands.backup.cancel.description": "取消远程机器上正在运行的备份",

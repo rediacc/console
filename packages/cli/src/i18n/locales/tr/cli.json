@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Bir deponun içerdiği dosyaları listeler. Depo imajının yerel, salt okunur bir taraması: sunucu yok, kimlik bilgisi yok, çalışan bir depo asla etkilenmez. Yalnızca parça deposunda bulunan bir anlık görüntüyü listeleyemez; önce onu geri yükleyin, ardından sonucu inceleyin.",
+        "optionPath": "Listelemeyi bu alt ağaçla sınırla",
+        "optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",
+        "optionLimit": "Döndürülecek maksimum girdi sayısı (sınırsız için 0)",
+        "starting": "{{name}} listeleniyor...",
+        "completed": "{{name}} listelendi",
+        "failed": "{{name}} listelenemedi",
+        "truncated": "Listeleme {{limit}} girdide kesildi. --path ile daraltın veya --limit değerini artırın.",
+        "empty": "{{name}} hiç dosya içermiyor."
+      },
       "cancel": {
         "cancelled": "{{name}} iptal edildi",
         "cancelling": "{{name}} durduruluyor...",
