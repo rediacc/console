@@ -24,7 +24,7 @@
         "optionStorage": "ПРЕКРАЩЕНО: просмотр хранилища удалён вместе с ветвью rclone",
         "placementExclusive": "Передайте ровно один из параметров: --machine или --storage, но не оба сразу.",
         "placementRequired": "Укажите --machine <m> или --storage <s>, чтобы задать источник списка.",
-        "storageRetired": "Просмотр содержимого хранилища прекращён: облачная ветвь rclone удалена. Снимки хранилища блоков смотрите через `rdc backup snapshot list`, артефакты на машине - через `rdc backup list -m <machine>`"
+        "storageRetired": "Просмотр содержимого хранилища прекращён: облачная ветвь rclone удалена. Снимки хранилища блоков смотрите через `rdc backup manifests`, артефакты на машине - через `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Список манифестов снимков резервных копий, записанных на сервере",

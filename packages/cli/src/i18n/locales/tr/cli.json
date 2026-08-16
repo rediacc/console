@@ -24,7 +24,7 @@
         "optionStorage": "KALDIRILDI: depolama listeleme, rclone koluyla birlikte çıkarıldı",
         "placementExclusive": "--machine veya --storage seçeneklerinden yalnızca birini geçirin, ikisini birden değil.",
         "placementRequired": "Nereden listeleneceğini belirtmek için --machine <m> veya --storage <s> kullanın.",
-        "storageRetired": "Depolama arka ucunu listeleme kaldırıldı: rclone bulut kolu artık yok. Parça deposundaki anlık görüntüler `rdc backup snapshot list`, bir makinedeki yedekler `rdc backup list -m <machine>` ile listelenir"
+        "storageRetired": "Depolama arka ucunu listeleme kaldırıldı: rclone bulut kolu artık yok. Parça deposundaki anlık görüntüler `rdc backup manifests`, bir makinedeki yedekler `rdc backup list -m <machine>` ile listelenir"
       },
       "manifests": {
         "description": "Sunucuya kaydedilen yedek anlık görüntü manifestlerini listele",

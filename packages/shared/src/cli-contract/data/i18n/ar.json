@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "مُلغى: أُزيل سرد التخزين مع ذراع rclone",
   "commands.backup.list.placementExclusive": "مرّر واحدًا فقط من --machine أو --storage، وليس كليهما.",
   "commands.backup.list.placementRequired": "حدِّد --machine <m> أو --storage <s> لتحديد مصدر العرض.",
-  "commands.backup.list.storageRetired": "سرد محتوى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. لقطات مخزن القطع تُسرد بـ `rdc backup snapshot list`، والنسخ الموجودة على جهاز بـ `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "سرد محتوى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. لقطات مخزن القطع تُسرد بـ `rdc backup manifests`، والنسخ الموجودة على جهاز بـ `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "عرض بيانات لقطات النسخ الاحتياطي المسجَّلة على الخادم",
   "commands.backup.manifests.empty": "لم يتم العثور على بيانات نسخ احتياطي.",
   "commands.backup.manifests.fetching": "جارٍ جلب بيانات النسخ الاحتياطي...",

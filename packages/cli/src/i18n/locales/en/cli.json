@@ -1486,7 +1486,7 @@
           "basic": "List the backups stored for a machine.",
           "byStorage": "List the backups in a specific storage backend."
         },
-        "storageRetired": "Listing a storage backend is retired: the rclone cloud arm has been removed. Chunk-store snapshots are listed with `rdc backup snapshot list`; artifacts on a machine with `rdc backup list -m <machine>`"
+        "storageRetired": "Listing a storage backend is retired: the rclone cloud arm has been removed. Chunk-store snapshots are listed with `rdc backup manifests`; artifacts on a machine with `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "List backup snapshot manifests recorded on the server",

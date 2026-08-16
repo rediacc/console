@@ -24,7 +24,7 @@
         "optionStorage": "مُلغى: أُزيل سرد التخزين مع ذراع rclone",
         "placementExclusive": "مرّر واحدًا فقط من --machine أو --storage، وليس كليهما.",
         "placementRequired": "حدِّد --machine <m> أو --storage <s> لتحديد مصدر العرض.",
-        "storageRetired": "سرد محتوى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. لقطات مخزن القطع تُسرد بـ `rdc backup snapshot list`، والنسخ الموجودة على جهاز بـ `rdc backup list -m <machine>`"
+        "storageRetired": "سرد محتوى واجهة تخزين خلفية لم يعد مدعومًا: أُزيل ذراع rclone السحابي. لقطات مخزن القطع تُسرد بـ `rdc backup manifests`، والنسخ الموجودة على جهاز بـ `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "عرض بيانات لقطات النسخ الاحتياطي المسجَّلة على الخادم",

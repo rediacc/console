@@ -185,7 +185,7 @@ Pull se niega a sobrescribir un repositorio que esté **montado** en ese momento
 Lista los snapshots en almacenamiento fragmentado:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Para ver los artefactos de respaldo que hay en una máquina:
@@ -451,7 +451,7 @@ Excluye un repositorio de la ejecución de alta frecuencia cuando:
 
 > **Si los datos son puramente regenerables**, considera si necesitas respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
 
-Un repositorio que ninguna de las dos estrategias excluye queda capturado por ambas, así que tiene snapshots horarios consistentes ante fallos y uno semanal consistente a nivel de aplicación. `rdc backup snapshot list <repo>` los muestra juntos, y los bloques que comparten se almacenan una sola vez.
+Un repositorio que ninguna de las dos estrategias excluye queda capturado por ambas, así que tiene snapshots horarios consistentes ante fallos y uno semanal consistente a nivel de aplicación. `rdc backup manifests <repo>` los muestra juntos, y los bloques que comparten se almacenan una sola vez.
 
 ## Operaciones de Respaldo
 

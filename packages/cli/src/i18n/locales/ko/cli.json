@@ -24,7 +24,7 @@
         "optionStorage": "종료됨: 스토리지 목록 조회는 rclone 계열과 함께 제거되었습니다",
         "placementExclusive": "--machine 또는 --storage 중 하나만 지정하세요 (둘 다는 불가)",
         "placementRequired": "어디서 나열할지 --machine <m> 또는 --storage <s>로 지정하세요",
-        "storageRetired": "스토리지 백엔드 목록 조회는 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 청크 저장소 스냅숏은 `rdc backup snapshot list`로, 머신의 아티팩트는 `rdc backup list -m <machine>`으로 봅니다"
+        "storageRetired": "스토리지 백엔드 목록 조회는 종료되었습니다. rclone 클라우드 계열이 제거되었기 때문입니다. 청크 저장소 스냅숏은 `rdc backup manifests`로, 머신의 아티팩트는 `rdc backup list -m <machine>`으로 봅니다"
       },
       "manifests": {
         "description": "서버에 기록된 백업 스냅샷 매니페스트를 나열합니다",

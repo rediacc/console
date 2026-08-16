@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "DISMESSO: l'elenco dello storage è stato rimosso con il braccio rclone",
   "commands.backup.list.placementExclusive": "Passa esattamente uno tra --machine e --storage, non entrambi.",
   "commands.backup.list.placementRequired": "Specifica --machine <m> oppure --storage <s> per indicare da dove elencare.",
-  "commands.backup.list.storageRetired": "Elencare un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Gli snapshot del chunk store si elencano con `rdc backup snapshot list`, gli artefatti su una macchina con `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "Elencare un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Gli snapshot del chunk store si elencano con `rdc backup manifests`, gli artefatti su una macchina con `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "Elenca i manifest degli snapshot di backup registrati sul server",
   "commands.backup.manifests.empty": "Nessun manifest di backup trovato.",
   "commands.backup.manifests.fetching": "Recupero dei manifest di backup...",
