@@ -6,75 +6,84 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz.",
-      "afterText": "Depolama içe aktarıldı. CLI artık buraya yedek gönderebilir.",
-      "cardLabel": "Depolama İçe Aktar",
-      "prose": "Mevcut bir rclone yapılandırmasını içe aktarın. rclone; S3, Backblaze, Google Drive, Dropbox ve daha fazlasını destekler. rclone kullanıyorsanız aynı yapılandırma doğrudan içe aktarılır."
+      "at": 2.799671,
+      "text": "Hayatta kalması gereken şeyle başlayalım. Çalışan repository'nin içinde tek bir sipariş satırını tutan bir dosya var. Gözünüzü üzerinden ayırmayın, çünkü birazdan bu makineyi çevrimdışına alacak ve bu satırı başka bir yerden geri getireceğiz.",
+      "afterText": "İşte bu satır. Bundan sonrası, onu geri getirmekle ilgili.",
+      "cardLabel": "Veri",
+      "prose": "Önce çalışan repository'den veriyi okuyun. Bir dosyada tek bir satır, böylece sondaki kanıt körü körüne güvenmeniz gereken bir şey değil, kendi gözünüzle görebileceğiniz bir şey olur."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef.",
-      "afterText": "İşte burada. Yedek almaya hazır.",
-      "cardLabel": "Depolamaları Listele",
-      "prose": "CLI'nin artık tanıdığı depolamaları listeleyin. Her biri yedeklemeler için bir hedeftir."
+      "at": 9.00514,
+      "text": "Repository'nin tamamını ikinci bir makineye kopyalayın. İlk kopyalama, şifrelenmiş imajın tamamını SSH üzerinden taşır; burada yaklaşık iki gigabayt yarım dakikada tamamlanır. Karşı tarafa ulaşan şey bir yedekleme artefaktıdır, ikinci bir çalışan uygulama değil.",
+      "afterText": "Kopya artık yedek makinede.",
+      "cardLabel": "Yedek Makineye Gönder",
+      "prose": "Repository'yi ikinci bir makineye kopyalayın. İlk gönderim, şifrelenmiş imajın tamamını taşır; bu filoda yaklaşık iki gigabayt otuz ile kırk saniye arasında tamamlanır. Sonraki her gönderim yalnızca değişen parçaları gönderir. Hedefe ulaşan şey bir yedekleme artefaktıdır, ikinci bir çalışan repository değil."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez.",
-      "afterText": "Yedek yüklendi. Bu depodaki her şey artık uzak depolamada, şifreli olarak duruyor.",
-      "cardLabel": "Yedek Gönder",
-      "prose": "Tam yedek gönderin. Uygulama, veritabanı, dosyalar ve yapılandırma dahil tüm repository yüklenir. Repository bekleme sırasında şifrelendiğinden yedekleme de şifrelenir, ekstra anahtar yönetimine gerek yoktur."
+      "at": 17.993741,
+      "text": "Yedek makineye ne tuttuğunu sorun. Repository orada, kendi adı altında duruyor. İkinci satır, yani ham bir tanımlayıcı gösteren satır, sonraki gönderimin yalnızca değişeni göndermesini sağlayan saklanan taban.",
+      "afterText": "İki satır da beklenen: kopya ve sonraki gönderimleri küçük tutan taban.",
+      "cardLabel": "Kopyayı Doğrula",
+      "prose": "Yedek makineye ne tuttuğunu sorun. Kopya, config'inizden çözümlenen kendi adıyla görünür. Ham bir tanımlayıcı taşıyan ikinci satır, saklanan delta tabanıdır ve bu makineye yapılacak sonraki gönderimi artımlı hale getiren şey de budur."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine.",
-      "afterText": "Tüm anlık görüntüleriniz tek bir yerde. Tek bir komutla herhangi birini geri çekebilirsiniz.",
-      "cardLabel": "Yedekleri Listele",
-      "prose": "Bu depolamada mevcut yedekleri listeleyin. Yeni bir sunucuda geri yükleme tek bir komutla yapılır: repo pull komutu."
+      "at": 23.318642,
+      "text": "Şimdi felaket anı. Birincil makineyi durdurun ve şifreli birimini unmount edin. Bu makine açısından uygulama artık yok.",
+      "afterText": "Durduruldu ve unmount edildi. Bundan sonraki her şey kopya üzerinden yürür.",
+      "cardLabel": "Felaket",
+      "prose": "Birincil makineyi çevrimdışına alın: servislerini durdurun ve şifreli birimini unmount edin. Bundan sonrası, diğer makinedeki kopya üzerinden yürür."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Şimdi geri yükleme kanıtı. Önce repository'yi çevrimdışı alın: servisleri durdurun ve şifreli birimi unmount edin. Uygulama bu makineden gitti.",
-      "afterText": "Çevrimdışı ve unmount edildi, tam olarak yeni bir sunucunun durumu.",
-      "cardLabel": "Çevrimdışı Al",
-      "prose": "Önce repository'yi çevrimdışına alın: repo down komutuyla servisleri durdurun ve şifreli birimi çıkarın."
+      "at": 28.951964,
+      "text": "Artefaktı çalışan bir repository'ye dönüştürün. Bunu yapan komut restore. Bir bayrak yeni repository'ye ad verir, bir bayrak onu yedek makineye yerleştirir, bir bayrak da onayı atlar.",
+      "afterText": "Kopya artık kendi adına sahip bir repository.",
+      "cardLabel": "Artefaktı Geri Yükle",
+      "prose": "Restore, gönderilmiş bir kopyayı repository'ye dönüştüren komuttur. Adı --as ile verilir, yeri --machine ile belirlenir, onayı --yes ile geçilir. Yeni bir adla geri yüklemek hiçbir şeyin üzerine yazmaz, bu yüzden canlı bir makinede güvenle denenebilir."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "Ve yedeği doğrudan depolamadan geri çekin. Repo pull komutu imajı getirir, bütünlüğünü kontrol eder ve tam olarak olduğu yere koyar.",
-      "afterText": "Transfer tamamlandı, bütünlük doğrulandı. Repository geri döndü.",
-      "cardLabel": "Yedeği Çek",
-      "prose": "repo pull komutuyla yedeği depolamadan geri çekin. Image indirilir ve bütünlük kontrolü yapılır."
+      "at": 39.005334,
+      "text": "Geri yüklenen repository'yi mount edin. Container'larını bilerek başlatmıyoruz, çünkü aradığımız kanıt uygulama değil, veri.",
+      "afterText": "Mount edildi, okumaya hazır.",
+      "cardLabel": "Mount Edin",
+      "prose": "Geri yüklenen repository'yi mount edin. Container'lar bilerek kapalı kalır: burada kanıtlanan şey veridir, uygulama değil."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Tekrar mount edin ve repository geri yüklendi. Push, list, pull, yedeklemenin tüm hikayesi bu.",
-      "afterText": "Geri yüklendi. Aynı akış yepyeni bir makinede de çalışır.",
-      "cardLabel": "Geri Yüklenmiş Bağla",
-      "prose": "Repository'yi tekrar bağlayın, tamamen geri yüklenmiştir. Aynı pull işlemi yepyeni bir makinede de çalışır."
+      "at": 46.52408,
+      "text": "Başta çalıştırdığımız aynı komut, bu kez iki komut öncesinde henüz var olmayan bir repository'ye karşı. Aynı dosya, aynı satır, aynı sipariş.",
+      "afterText": "Bütün mesele bu. Veri geri geldi.",
+      "cardLabel": "Veri Hayatta Kaldı",
+      "prose": "Birinci adımdaki aynı komut, iki komut öncesinde var olmayan bir repository'ye karşı çalıştırılıyor. Satır bayt bayt geri geliyor, hem de hiçbir zaman orijinal olmamış bir makineden."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "Bir şey daha, zaman içinde geri dönebileceğiniz yedekler için. Anlık görüntüler parça depolamaya gider; ilk çalıştırma her şeyi yükler, sonraki her çalıştırma yalnızca değişen parçaları yükler. Herhangi bir anlık görüntü tek başına geri yüklenir. Bunun için bir hesap ve lisanslı bir repository gerekir, bu yüzden burada komut yalnızca yazılır, çalıştırılmaz.",
+      "afterText": "Bir hesabınız olduğunda kendi kurulumunuzda yazın, çalışacaktır.",
+      "cardLabel": "Belirli Zamana Ait Yedekler",
+      "prose": "Bir makineye kopyalamak size repository'yi şu anki haliyle verir. Geriye dönebileceğiniz bir geçmiş için anlık görüntüler parça depolamaya gider: ilk çalıştırma yazılan parçaları yükler, sonraki her çalıştırma yalnızca değişeni yükler ve herhangi bir anlık görüntü tek başına geri yüklenebilir. Bu komut burada yalnızca yazılır, çalıştırılmaz; çünkü yükleme bir hesap sunucusu ve lisanslı bir repository gerektirir, kayıtta ise ikisi de yoktur. Kendi kurulumunuzda, bir hesapla, bu komut çalışır."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "Uygulamanız yayında; şimdi onu asla kaybetmediğinizden emin olalım! Bu eğitimde tüm depoyu harici depolamaya gönderiyor ve gerektiğinde geri çekiyoruz."
+      "text": "Uygulamanız yayında; şimdi onu asla kaybetmediğinizden emin olalım! Bu eğitimde repository'nin tamamını ikinci bir makineye kopyalıyor, birinciyi çevrimdışına alıyor ve verileri geri getiriyoruz."
     },
     {
       "id": "three-steps",
-      "text": "Yedekleme ve geri yükleme üç adıma iner. Bir depolama sağlayıcısını yapılandırın, yedek gönderin ve ihtiyaç olduğunda geri yükleyin."
+      "text": "Her şey üç adıma iniyor. Repository'yi kontrolünüzdeki bir makineye kopyalayın, o kopyayı kendi başına bir repository olarak geri yükleyin, ardından verilerinizi tekrar okuyarak bunu kanıtlayın."
     },
     {
       "id": "next-tutorial",
@@ -84,14 +93,15 @@
   "title": "Yedekleme ve Geri Yükleme",
   "chapters": {
     "intro": "Yedekleme ve Geri Yükleme",
-    "three-steps": "Üç adım: yapılandır, gönder, geri yükle",
-    "cast-step-0": "Adım 1: rclone yapılandırmasını içe aktar",
-    "cast-step-1": "Adım 2: Yapılandırılmış depolamaları listele",
-    "cast-step-2": "Adım 3: Tam yedek gönder",
-    "cast-step-3": "Adım 4: Depolamadaki yedekleri listele",
-    "outro": "Sıradaki: İzleme",
-    "cast-step-4": "Adım 5: Repo'yu çevrimdışına al",
-    "cast-step-5": "Adım 6: Yedeği geri çek",
-    "cast-step-6": "Adım 7: Bağla, geri yüklendi"
+    "three-steps": "Üç adım: kopyala, geri yükle, kanıtla",
+    "cast-step-0": "Adım 1: Hayatta kalması gereken veri",
+    "cast-step-1": "Adım 2: İkinci bir makineye kopyala",
+    "cast-step-2": "Adım 3: Yedek makinede artık var",
+    "cast-step-3": "Adım 4: Birincil makine çevrimdışı olur",
+    "cast-step-4": "Adım 5: Kopyayı geri yükle",
+    "cast-step-5": "Adım 6: Geri yüklenen repository'yi mount et",
+    "cast-step-6": "Adım 7: Veri hayatta kaldı",
+    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "outro": "Sıradaki: Ağ ve Alan Adları"
   }
 }

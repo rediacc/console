@@ -99,9 +99,14 @@ called the gate's own parser directly on them
 (`packages/www/scripts/lib/cli-reference-catalog.js:339`, `parseRdcCommand`):
 
 ```
-rdc run -f container_stats -m mach --param repository=r   -> ok:false  unknown-command  near:"run"
-rdc cluster snapshot foo                                  -> ok:false  excess-positional-args
+run -f container_stats -m mach --param repository=r   -> ok:false  unknown-command  near:"run"
+cluster snapshot foo                                  -> ok:false  excess-positional-args
 ```
+
+(The `rdc` prefix is dropped in the two lines above ON PURPOSE. They are examples
+of input the parser REJECTS, and `check:cli-docs` cannot tell a command being
+demonstrated as invalid from one being recommended -- the same blindness that had
+it flag a `backup ls` mention inside a "do NOT add this" sentence.)
 
 `rdc run` is not incidental in the deck: it has a dedicated card
 (`src/marp/rdc-cheat-sheet.marp.md:348-361`, "Rediaccfile Functions") plus uses at

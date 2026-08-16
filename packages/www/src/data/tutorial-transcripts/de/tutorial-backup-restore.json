@@ -6,75 +6,84 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Schritt eins. Wir importieren eine bestehende rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele mehr. Wenn Sie es bereits verwenden, können Sie dieselbe Konfiguration direkt importieren.",
-      "afterText": "Storage importiert. Deine CLI kann jetzt Backups dorthin schicken.",
-      "cardLabel": "Speicher importieren",
-      "prose": "Importieren Sie eine vorhandene rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele weitere Dienste. Wenn Sie rclone bereits verwenden, lässt sich die vorhandene Konfiguration direkt importieren."
+      "at": 2.799671,
+      "text": "Fangen wir mit dem an, was überleben muss. Im laufenden Repository liegt eine Datei mit genau einer Bestellzeile. Behalten Sie sie im Auge, denn gleich nehmen wir diese Maschine offline und holen diese Zeile von woanders zurück.",
+      "afterText": "Das ist die Zeile. Ab jetzt dreht sich alles darum, sie zurückzuholen.",
+      "cardLabel": "Die Daten",
+      "prose": "Lesen Sie zuerst die Nutzdaten aus dem laufenden Repository aus. Eine Zeile in einer Datei, damit der Beweis am Ende etwas ist, das Sie sehen können, statt etwas, das Sie glauben müssen."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Wir listen die Speicher auf, die die CLI jetzt kennt. Jeder Speicher ist ein Ziel, auf das wir Backups übertragen können.",
-      "afterText": "Da ist er. Bereit, Backups entgegenzunehmen.",
-      "cardLabel": "Speicher auflisten",
-      "prose": "Listet die Speicher auf, die der CLI jetzt bekannt sind. Jeder davon ist ein Ziel für Backups."
+      "at": 9.00514,
+      "text": "Kopieren Sie das gesamte Repository auf eine zweite Maschine. Die erste Kopie überträgt das komplette verschlüsselte Image per SSH, hier etwa zwei Gigabyte in einer halben Minute. Auf der anderen Seite landet ein Backup-Artefakt, keine zweite laufende App.",
+      "afterText": "Die Kopie liegt jetzt auf der Backup-Maschine.",
+      "cardLabel": "Auf die Backup-Maschine pushen",
+      "prose": "Kopieren Sie das Repository auf eine zweite Maschine. Der erste Push überträgt das komplette verschlüsselte Image, auf dieser Flotte etwa zwei Gigabyte in dreißig bis vierzig Sekunden, und jeder folgende Push sendet nur noch die geänderten Blöcke. Auf dem Ziel landet ein Backup-Artefakt, kein zweites laufendes Repository."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "Schritt zwei. Wir übertragen ein vollständiges Backup. Das gesamte Repository, App, Datenbank, Dateien, Konfiguration, wird hochgeladen. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt. Kein zusätzliches Schlüsselmanagement.",
-      "afterText": "Backup hochgeladen. Alles in diesem Repo liegt jetzt verschlüsselt im Remote-Storage.",
-      "cardLabel": "Backup pushen",
-      "prose": "Pusht ein vollständiges Backup. Das gesamte Repository wird hochgeladen, einschließlich App, Datenbank, Dateien und Konfiguration. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt, ohne zusätzliches Schlüsselmanagement."
+      "at": 17.993741,
+      "text": "Fragen Sie die Backup-Maschine, was sie hat. Das Repository ist dort, unter seinem eigenen Namen. Die zweite Zeile, die mit der rohen Kennung, ist die aufbewahrte Basis, die den nächsten Push wieder nur die Änderungen senden lässt.",
+      "afterText": "Beide Zeilen sind normal: die Kopie und die Basis, die spätere Pushes klein hält.",
+      "cardLabel": "Die Kopie bestätigen",
+      "prose": "Fragen Sie die Backup-Maschine, was sie hält. Die Kopie erscheint unter ihrem eigenen Namen, aufgelöst aus Ihrer Config. Die zweite Zeile mit der rohen Kennung ist die aufbewahrte Delta-Basis, die den nächsten Push auf diese Maschine inkrementell macht."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine.",
-      "afterText": "Alle deine Snapshots an einem Ort. Jeden davon holst du mit einem einzigen Befehl zurück.",
-      "cardLabel": "Backups auflisten",
-      "prose": "Listet die auf diesem Speicher verfügbaren Backups auf. Die Wiederherstellung auf einem brandneuen Server erfordert nur einen einzigen Befehl: den Repo-Pull-Befehl."
+      "at": 23.318642,
+      "text": "Jetzt die Katastrophe. Die primäre Maschine wird gestoppt und ihr verschlüsseltes Volume ausgehängt. Für diese Maschine ist die Anwendung verschwunden.",
+      "afterText": "Gestoppt und ausgehängt. Alles danach läuft gegen die Kopie.",
+      "cardLabel": "Die Katastrophe",
+      "prose": "Nehmen Sie die primäre Maschine offline: Stoppen Sie ihre Dienste und hängen Sie das verschlüsselte Volume aus. Ab jetzt läuft alles gegen die Kopie auf der anderen Maschine."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Jetzt der Wiederherstellungsbeweis. Erst das repository offline nehmen: die Dienste stoppen und das verschlüsselte Volume aushängen. Die App ist von dieser Maschine verschwunden.",
-      "afterText": "Offline und ausgehängt, genau der Zustand eines frischen Servers.",
-      "cardLabel": "Offline nehmen",
-      "prose": "Nehmen Sie das repository zuerst offline: Stoppen Sie die Services und hängen Sie das verschlüsselte Volume mit dem Befehl repo down aus."
+      "at": 28.951964,
+      "text": "Verwandeln Sie das Artefakt in ein laufendes Repository. Restore ist der Befehl dafür. Ein Flag benennt das neue Repository, eines platziert es auf der Backup-Maschine, und eines überspringt die Bestätigung.",
+      "afterText": "Die Kopie ist jetzt ein Repository, mit einem eigenen Namen.",
+      "cardLabel": "Das Artefakt wiederherstellen",
+      "prose": "Restore ist der Befehl, der aus einer gepushten Kopie ein Repository macht. Benannt wird sie mit --as, platziert mit --machine und bestätigt mit --yes. Die Wiederherstellung unter einem neuen Namen überschreibt nichts, deshalb lässt sich das gefahrlos auf einer laufenden Maschine üben."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "Und das Backup direkt vom Speicher zurückziehen. Der repo pull-Befehl holt das Image, prüft seine Integrität und legt es genau dort ab, wo es war.",
-      "afterText": "Übertragung abgeschlossen, Integrität geprüft. Das repository ist wieder da.",
-      "cardLabel": "Backup laden",
-      "prose": "Laden Sie das Backup mit dem Befehl repo pull vom Speicher zurück. Das Image wird abgerufen und auf Integrität geprüft."
+      "at": 39.005334,
+      "text": "Binden Sie das wiederhergestellte Repository ein. Wir starten die Container bewusst nicht, denn der Beweis, den wir wollen, sind die Daten, nicht die Anwendung.",
+      "afterText": "Eingebunden und bereit zum Lesen.",
+      "cardLabel": "Einbinden",
+      "prose": "Binden Sie das wiederhergestellte Repository ein. Die Container bleiben absichtlich gestoppt: Was hier bewiesen wird, sind die Daten, nicht die Anwendung."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Noch einmal mounten, und das repository ist wiederhergestellt. Push, list, pull, das ist die ganze Backup-Geschichte.",
-      "afterText": "Wiederhergestellt. Derselbe Ablauf funktioniert auch auf einer brandneuen Maschine.",
-      "cardLabel": "Wiederhergestellt einbinden",
-      "prose": "Hängen Sie das repository erneut ein, es ist vollständig wiederhergestellt. Derselbe Pull funktioniert auf einem brandneuen Rechner."
+      "at": 46.52408,
+      "text": "Derselbe Befehl, den wir am Anfang ausgeführt haben, diesmal gegen ein Repository, das vor zwei Befehlen noch gar nicht existierte. Gleiche Datei, gleiche Zeile, gleiche Bestellung.",
+      "afterText": "Genau darum geht es. Die Daten sind zurück.",
+      "cardLabel": "Die Daten haben überlebt",
+      "prose": "Derselbe Befehl wie in Schritt eins, ausgeführt gegen ein Repository, das vor zwei Befehlen noch nicht existierte. Die Zeile kommt Byte für Byte zurück, von einer Maschine, die nie das Original war."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "Noch eins, für Backups, durch die du zurückspulen kannst. Snapshots gehen in den Chunk-Store: Der erste Lauf lädt alles hoch, jeder Lauf danach nur die geänderten Blöcke. Jeder Snapshot lässt sich einzeln wiederherstellen. Dafür braucht es einen Account und ein lizenziertes repository, deshalb wird der Befehl hier nur getippt, nicht ausgeführt.",
+      "afterText": "Tippe ihn auf deiner eigenen Installation, sobald du einen Account hast, und er läuft.",
+      "cardLabel": "Zeitpunkt-Backups",
+      "prose": "Das Kopieren auf eine Maschine gibt dir das repository, so wie es jetzt ist. Für eine Historie, durch die du zurückspulen kannst, gehen Snapshots in den Chunk-Store: Der erste Lauf lädt die geschriebenen Blöcke hoch, jeder Lauf danach nur das, was sich geändert hat, und jeder Snapshot lässt sich einzeln wiederherstellen. Dieser Befehl wird nur getippt und nicht ausgeführt, weil das Hochladen einen Account-Server und ein lizenziertes repository braucht, keines von beidem hat eine Aufnahme. Auf deiner eigenen Installation, mit einem Account, ist das der Befehl."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "Deine App ist live, also sorgen wir dafür, dass du sie nie verlierst! In diesem Tutorial schicken wir das gesamte Repository in einen externen Storage und holen es bei Bedarf wieder zurück."
+      "text": "Deine App ist live, also sorgen wir dafür, dass du sie nie verlierst! In diesem Tutorial kopieren wir ein ganzes Repository auf eine zweite Maschine, nehmen die erste offline und holen die Daten zurück."
     },
     {
       "id": "three-steps",
-      "text": "Backup und Restore läuft in drei Schritten. Konfiguriere einen Storage-Anbieter, schick ein Backup hoch und stelle es wieder her, wenn du es brauchst."
+      "text": "Es läuft auf drei Schritte hinaus. Kopiere das Repository auf eine Maschine, die du kontrollierst, stelle diese Kopie als eigenständiges Repository wieder her, und beweise es anschließend, indem du deine Daten wieder ausliest."
     },
     {
       "id": "next-tutorial",
@@ -84,14 +93,15 @@
   "title": "Backup & Wiederherstellung",
   "chapters": {
     "intro": "Backup & Wiederherstellung",
-    "three-steps": "Drei Schritte: Konfigurieren, Pushen, Wiederherstellen",
-    "cast-step-0": "Schritt 1: rclone-Konfiguration importieren",
-    "cast-step-1": "Schritt 2: Konfigurierte Speicher auflisten",
-    "cast-step-2": "Schritt 3: Vollständiges Backup pushen",
-    "cast-step-3": "Schritt 4: Backups auf dem Speicher auflisten",
-    "outro": "Weiter: Monitoring",
-    "cast-step-4": "Schritt 5: repo offline nehmen",
-    "cast-step-5": "Schritt 6: Backup zurückladen",
-    "cast-step-6": "Schritt 7: Einbinden, wiederhergestellt"
+    "three-steps": "Drei Schritte: Kopieren, Wiederherstellen, Beweisen",
+    "cast-step-0": "Schritt 1: Die Daten, die überleben müssen",
+    "cast-step-1": "Schritt 2: Auf eine zweite Maschine kopieren",
+    "cast-step-2": "Schritt 3: Die Backup-Maschine hat sie",
+    "cast-step-3": "Schritt 4: Die primäre Maschine geht offline",
+    "cast-step-4": "Schritt 5: Die Kopie wiederherstellen",
+    "cast-step-5": "Schritt 6: Das wiederhergestellte Repository einbinden",
+    "cast-step-6": "Schritt 7: Die Daten haben überlebt",
+    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "outro": "Weiter: Netzwerk & Domains"
   }
 }

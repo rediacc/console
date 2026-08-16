@@ -359,7 +359,6 @@ class CliTelemetryService {
     }
   }
 
-
   trackError(error: unknown, context?: Record<string, unknown>): void {
     if (!this.isEnabled || !this.tracer) {
       return;
@@ -398,7 +397,6 @@ class CliTelemetryService {
       // Fail silently
     }
   }
-
 
   private emitLog(
     severity: SeverityNumber,

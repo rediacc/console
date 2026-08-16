@@ -244,7 +244,6 @@ class ConfigService extends ConfigServiceBase {
     }));
   }
 
-
   async updateConfigFields(updates: {
     cfDnsApiToken?: string;
     cfDnsZoneId?: string;
@@ -344,7 +343,6 @@ class ConfigService extends ConfigServiceBase {
     return buildGuidMap(state.getRepositories());
   }
 
-
   /**
    * Resolve a repository reference to its config.
    * Supports: direct key match, legacy names, and bare names (defaults to :latest).
@@ -391,7 +389,6 @@ class ConfigService extends ConfigServiceBase {
       repoRef
     );
   }
-
 
   // ============================================================================
   // Repository Archive (credential preservation on delete)
