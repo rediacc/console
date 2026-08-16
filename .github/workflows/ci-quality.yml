@@ -768,6 +768,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_tutorial_cli_validity.py
 
+      # getCombinedOutput() lowercases, so an assertion expecting a capital can
+      # NEVER match and reports the product broken while it is behaving. Four of
+      # these shipped in one wave, each costing a five-distro CI round.
+      - name: E2E case-blind assertions
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_e2e_case_blind_assertions.py
+
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-parity
