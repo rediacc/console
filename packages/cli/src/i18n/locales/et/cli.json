@@ -14,7 +14,7 @@
       "descriptionShort": "Halda varukoopiaid",
       "drNudge": "Config-hoidla ei ole seadistatud: sinu hoidla mandaadid (LUKS-paroolifraasid) asuvad ainult siin masinas, seega bare-metal taastamine ei suuda neid taastada. Seadista see käsuga \"rdc config remote enable\", et sünkroonida need krüpteeritud config-blobi sisse.",
       "list": {
-        "description": "Loetle varukoopia artefaktid masinal või salvestuses.",
+        "description": "Loetle varukoopia artefaktid masinal.",
         "examples": {
           "basic": "Loetle masina jaoks salvestatud varukoopiad.",
           "byStorage": "Loetle konkreetse salvestusruumi varukoopiad."
@@ -1467,29 +1467,29 @@
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast tõmbamist ebaõnnestus",
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
-        "description": "Tõmba hoidla kaugelt (masin või salvestus). Jäta nimi välja, et tõmmata kõik hoidlad. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
-        "descriptionShort": "Tõmba hoidla kaugelt (masin või salvestus)",
+        "description": "Tõmba hoidla teisest masinast. Salvestusallikad on kasutuselt kõrvaldatud; kasuta ajahetke taasteks käsku `rdc backup restore`. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
+        "descriptionShort": "Tõmba hoidla teisest masinast",
         "examples": {
           "andStart": "Too hoidla ja käivita see kohe.",
-          "basic": "Too hoidla salvestusruumi taustaprogrammist."
+          "basic": "Too hoidla teisest masinast."
         },
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
         "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; võta vastu ainult muutunud plokid (masinaallikas)",
         "optionForce": "Sundi olemasoleva hoidla ülekirjutamine",
-        "optionFrom": "Allika masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+        "optionFrom": "Allikamasina nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionUp": "Pärast tõmbamist haagi külge ja juuruta hoidla sellel masinal",
         "pulling": "Hoidla \"{{repo}}\" varukoopia tõmbamine...",
-        "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
+        "sourceRequired": "Määra --from <machine> (masina nimi konfiguratsioonist)",
         "storageRetired": "Salvestusteenusest tõmbamine on lõpetatud: rclone'i pilveharu eemaldati. Ajahetke taaste käib käsuga `rdc backup restore <repo> --at <snapshot>` tükihoidla kaudu. Masinatevaheline ülekanne ei muutunud: kasuta --from-machine"
       },
       "push": {
         "deployFailed": "Hoidla \"{{repo}}\" juurutamine pärast pushumist ebaõnnestus",
         "deployed": "Hoidla \"{{repo}}\" juurutatud masinal {{machine}}",
         "deploying": "Hoidla \"{{repo}}\" juurutamine masinal {{machine}}...",
-        "description": "Lükka hoidla kaugele (masin või salvestus). Sihtkoha tüüp tuvastatakse automaatselt konfiguratsioonist. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia/migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Lükatud koopia maandub varukoopia ARTEFAKTINA: käivita see sihtmasinal käsuga 'backup restore <ref> --as <name> -m <target> --up'",
-        "descriptionShort": "Lükka hoidla kaugele (masin või salvestus)",
-        "destRequired": "Määra --to <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
+        "description": "Lükka hoidla teise masinasse. Salvestussihtkohad on kasutuselt kõrvaldatud; kasuta ajahetke varunduseks käsku `rdc backup snapshot`. Masinate vahelisel ülekandel kopeeritakse krüpteeritud hoidlakujutis SAMA GUID-iga -- see on varukoopia või migratsioon, mitte fork. Iseseisva forgi loomiseks kasuta kõigepealt 'repo fork' ja seejärel push. Lükatud koopia maandub varukoopia ARTEFAKTINA: käivita see sihtmasinal käsuga 'backup restore <ref> --as <name> -m <target> --up'",
+        "descriptionShort": "Lükka hoidla teise masinasse",
+        "destRequired": "Määra --to <machine> (masina nimi konfiguratsioonist)",
         "examples": {
           "toMachine": "Saada hoidla teisele masinale."
         },
@@ -1499,7 +1499,7 @@
         "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",
         "optionProvision": "Provisioni sihtmasina automaatselt pilveteenusepakkuja kaudu, kui seda ei eksisteeri",
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
-        "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+        "optionTo": "Sihtmasina nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "pushing": "Hoidla \"{{repo}}\" varukoopia lükkamine kohta {{dest}}...",
         "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
         "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
