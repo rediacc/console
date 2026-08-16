@@ -86,28 +86,57 @@ function authored(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
 }
 
+/**
+ * Prose for one step in one language. REFUSES rather than falling back.
+ *
+ * WHY THERE IS NO ENGLISH FALLBACK ANY MORE. This function used to try the
+ * locale's prose, then ENGLISH prose, then the locale's text, then ENGLISH
+ * text. Combined with `authored()` returning false for a `TODO:` value, that
+ * meant an untranslated string was RECOGNISED and then silently replaced with
+ * English. Nothing failed, nothing warned, and the page shipped.
+ *
+ * It is not hypothetical: `chapters.cast-step-7` sat as a literal
+ * `TODO: translate chapter (...)` in all twelve locales of
+ * tutorial-backup-restore, and was found by a human reading the file rather
+ * than by any gate. The fallback did not cause that gap, it CONCEALED it.
+ *
+ * The media pipeline now covers all thirteen languages, so a missing
+ * translation is a defect rather than a condition to survive. Refusing turns a
+ * silent English substitution into a build failure that names the language and
+ * the exact file to fix.
+ */
 function resolveProse(
   step: ManifestStep,
   event: TranscriptEvent | undefined,
   enEvent: TranscriptEvent,
-  isEnglish: boolean
+  isEnglish: boolean,
+  lang: string,
+  tutorial: string
 ): string {
-  if (isEnglish && authored(step.shortProse)) {
-    return step.shortProse;
+  if (isEnglish) {
+    // English is the source. `step.shortProse` is an authored override; the
+    // transcript is the fallback WITHIN English, which is not a cross-language
+    // substitution and is therefore still legitimate.
+    if (authored(step.shortProse)) return step.shortProse;
+    if (authored(enEvent.prose)) return enEvent.prose;
+    if (authored(enEvent.text)) return enEvent.text;
+    throw new Error(
+      `English prose missing for "${tutorial}" markerIndex ${step.markerIndex} (step "${step.id}")`
+    );
   }
-  if (event && authored(event.prose)) {
-    return event.prose;
-  }
-  if (authored(enEvent.prose)) {
-    return enEvent.prose;
-  }
-  if (event && authored(event.text)) {
-    return event.text;
-  }
-  if (authored(enEvent.text)) {
-    return enEvent.text;
-  }
-  return '';
+
+  if (event && authored(event.prose)) return event.prose;
+  if (event && authored(event.text)) return event.text;
+
+  const why = event ? 'is empty or still a TODO placeholder' : 'has no event at that markerIndex';
+  throw new Error(
+    `Untranslated: ${lang} prose for "${tutorial}" markerIndex ${step.markerIndex} ` +
+      `(step "${step.id}") ${why}.\n` +
+      `  Fix: packages/www/src/data/tutorial-transcripts/${lang}/${tutorial}.json\n` +
+      `  This used to fall back to English silently. It no longer does: the media ` +
+      `pipeline covers all ${SUPPORTED_LANGUAGES.length} languages, so a missing ` +
+      `translation is a defect, not a condition to survive.`
+  );
 }
 
 function buildStoryboardStep(step: ManifestStep) {
@@ -157,7 +186,7 @@ function buildStoryboardStep(step: ManifestStep) {
     const isEnglish = lang === 'en';
     const transcript = isEnglish ? enTranscript : readTranscript(step.tutorial, lang);
     const event = transcript?.events?.find((e) => e.markerIndex === step.markerIndex);
-    prose[lang] = resolveProse(step, event, enEvent, isEnglish);
+    prose[lang] = resolveProse(step, event, enEvent, isEnglish, lang, step.tutorial);
   }
 
   return {

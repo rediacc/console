@@ -741,11 +741,13 @@ def docs_drift(root):
     return ("drifted" if drift > DOCS_DRIFT_MAX else "ok"), drift, str(docs)
 
 
-# ---- v16: the plan-file convention (docs/agent/<branch>/PLAN-<slug>.md) -----
+# ---- v16: the plan-file convention (agent/<branch>/PLAN-<slug>.md) ---------
 #
 # A plan is the DURABLE design record: committed with its branch, so it
 # survives compaction and a lost machine. That is what distinguishes it from
-# the gitignored .agent/<branch>/ tree, whose STATE.md is the volatile cursor.
+# the per-session agent/<branch>/<me>/ directories beside it, whose STATE.md is
+# the volatile cursor. A plan sits one level UP, at branch level, because it
+# belongs to the branch's work rather than to whoever happened to write it.
 # Plans are historical once executed, so only draft/executing/UNKNOWN ones are
 # surfaced; done and superseded appear as a count. An unparseable Status line
 # reads as UNKNOWN and is shown LOUDLY, per the V_PR_UNREADABLE convention
@@ -780,11 +782,11 @@ PLAN_DRIFT_MIN_MOVES = int(os.environ.get("WORKLIST_PLAN_DRIFT_MIN", "4"))
 
 
 def plan_dir(root, branch):
-    return pathlib.Path(root) / "docs" / "agent" / (branch or "")
+    return S.agent_plan_dir(root, branch or "")
 
 
 def plan_records(root, branch):
-    """[(relpath, status, lines)] for docs/agent/<branch>/PLAN-*.md.
+    """[(relpath, status, lines)] for agent/<branch>/PLAN-*.md.
 
     status is the parsed value lowercased, or 'UNKNOWN' when no Status line
     sits in the first PLAN_HEADER_LINES lines. Newest mtime first. Empty list
@@ -1652,7 +1654,7 @@ def handle_session_start(event):
     listing, live = plans_block(root, branch)
     if listing:
         blocks.append(M.CTX_PLANS % (branch, listing))
-        summary.append("%d open plan(s) in docs/agent/%s" % (len(live), branch))
+        summary.append("%d open plan(s) in agent/%s" % (len(live), branch))
     # A THIRD independent block, for the reason the two above are independent:
     # a repo with live handoff checklists and no design docs and no plans must
     # still be told about the checklists, because the Stop hook will block on
@@ -1682,7 +1684,7 @@ def handle_post_compact(event):
     mark_context_fresh(event, "post-compact")
     # PostCompact hook: the model has just lost its context. Hand the
     # documents straight back as additionalContext so continuity does not
-    # depend on it remembering to go looking. Since the .agent/ split this
+    # depend on it remembering to go looking. Since the agent-notes split this
     # returns MORE than the old handover ever could: STATE.md in full,
     # RULES.md in full, and the TRAPS.md titles -- the first time a compacted
     # session gets the standing rules at all, delivered exactly once per
@@ -1705,14 +1707,15 @@ def handle_post_compact(event):
         _, peers, _npeers = S.agent_state_briefing(root, branch, sid, C.projects_dir(root))
         if state in ("missing", "no-dir"):
             msg = M.CTX_POSTCOMPACT_MISSING % (
-                S.agent_state_path(root, branch),
+                S.agent_state_path(root, branch, sid),
                 branch,
+                S.agent_session_slug(sid),
                 (sid or "unknown")[:8],
             )
         else:
             try:
                 rules = (
-                    S.agent_rules_path(root, branch)
+                    S.agent_rules_path(root, branch, sid)
                     .read_text(encoding="utf-8", errors="replace")
                     .strip()
                 )
@@ -1769,8 +1772,8 @@ def handle_post_compact(event):
                 msg += "\n\n" + M.N_AGENT_HINT % (hit[0], hit[0], ", ".join(hit[2][:6]))
     C.emit(
         {
-            "systemMessage": "PostCompact: STATE.md %s (.agent/%s/STATE.md)"
-            % (state, branch or "<no-branch>"),
+            "systemMessage": "PostCompact: STATE.md %s (agent/%s/%s/STATE.md)"
+            % (state, branch or "<no-branch>", S.agent_session_slug(sid)),
             "hookSpecificOutput": {
                 "hookEventName": "PostCompact",
                 "additionalContext": msg,
@@ -2068,8 +2071,25 @@ def run_stop(event, event_ok, worklist, hook_file):
     open_items, others, deferred_recs, in_flight_recs = S.classify_items(
         fold, session_id, live_worker_ids=_live_worker_ids
     )
-    deferred = [r["line"] for r in deferred_recs]
-    in_flight = [r["line"] for r in in_flight_recs]
+    # brief_line, NOT r["line"] -- and this was a live regression worth naming.
+    #
+    # v14 introduced brief_text precisely because rec["text"] accumulates every
+    # update forever and "every block that mentioned it printed them all"
+    # (wl_store.brief_text docstring). classify_items duly renders OPEN items
+    # through brief_line... and then hands deferred and in-flight back as raw
+    # records, so these two call sites reached past the fix to the full text.
+    #
+    # [?] and [>] are exactly the states a long-running item lives in, so the
+    # two states that accumulate the most history were the two still printing
+    # all of it. Measured on this session: one [>] item carried 75,672 chars
+    # (~19k tokens) and was replayed on EVERY block, which made the stop hook
+    # the single largest consumer of the context it was trying to protect.
+    #
+    # Nothing is discarded: the full text stays in the append-only store and in
+    # `--list`; only the human-facing render is brief, which is the rule the
+    # rest of this module already follows.
+    deferred = [S.brief_line(r) for r in deferred_recs]
+    in_flight = [S.brief_line(r) for r in in_flight_recs]
 
     def other_sessions_note():
         if not others:
@@ -3051,10 +3071,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.V_AGENT_STATE
             % (
                 agent_branch,
+                S.agent_session_slug(session_id),
                 astate,
                 _agent_state_because(astate, aage),
                 S.AGENT_STATE_MIN_CHARS,
                 S.AGENT_STATE_MAX_CHARS,
+                agent_branch,
                 me8,
             ),
         )
@@ -3063,29 +3085,40 @@ def run_stop(event, event_ok, worklist, hook_file):
             vadd(
                 "agent-bootstrap",
                 True,
-                M.V_AGENT_BOOTSTRAP % (agent_branch, agent_branch, agent_branch),
+                M.V_AGENT_BOOTSTRAP
+                % (
+                    (agent_branch, S.agent_session_slug(session_id)) * 3
+                ),
             )
             state_doc["agent_boot_told"] = agent_branch
             S.save_state(worklist, session_id, state_doc)
         elif something_remains:
-            vadd("agent-absent", False, M.V_AGENT_STILL_ABSENT % agent_branch)
+            vadd(
+                "agent-absent",
+                False,
+                M.V_AGENT_STILL_ABSENT % (agent_branch, S.agent_session_slug(session_id)),
+            )
     elif astate == "no-branch":
         agent_note = M.N_AGENT_BLIND % root
         # Class 2, volatile: recomputed from the branch state every stop.
         outq_add(worklist, session_id, state_doc, "agent-blind", agent_note, 2)
     # REPORT-ONLY, and it must stay that way: a session that cannot see its
-    # peers' sections cannot be expected to respect them, but a peer's section
-    # is never this session's obligation. Class 2 volatile, recomputed from the
-    # document every stop, exactly like the blind note above. NEVER reaps here:
-    # a read-only every-turn hook that mutates the shared document is the
-    # fastest route to the next clobber, so it only NAMES what a write would
-    # drop.
+    # peers cannot be expected to respect them, but a peer's document is never
+    # this session's obligation. Class 2 volatile, recomputed every stop,
+    # exactly like the blind note above.
+    #
+    # PEERS ARE SIBLING DIRECTORIES NOW (2026-08-14), not sections of one
+    # shared file. The split is precisely what stops a peer's write destroying
+    # this session's document -- but the visibility it replaced must survive
+    # it, or the migration trades one silent failure (a clobber) for another (a
+    # session that no longer knows anyone else is here). So this reads every
+    # sibling agent/<branch>/<peer>/STATE.md instead of one file, and keeps the
+    # row shape byte-identical. It still touches NOTHING: an every-turn hook
+    # that writes inside a peer's directory is the fastest route back to the
+    # clobber this layout exists to prevent, so it only NAMES what it sees.
     if agent_branch:
         try:
-            _p = S.agent_state_path(root, agent_branch)
-            _all = S.agent_state_parse(
-                _p.read_text(encoding="utf-8", errors="replace"), _p.stat().st_mtime
-            )
+            _all = S.agent_peer_sections(root, agent_branch, session_id)
             _, _reapable = S.agent_state_dead(_all, session_id, projects_dir)
             _reap_ids = {id(s) for s in _reapable}
             _now = time.time()
@@ -3094,10 +3127,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 % (
                     s["owner"],
                     int(max(0.0, (_now - s["ts"]) / 60.0)),
-                    "   REAP-ELIGIBLE" if id(s) in _reap_ids else "",
+                    # NOT "reap-eligible" any more: nothing prunes another
+                    # session's directory, so a label promising that would be a
+                    # check that cannot fire. What the horizon still tells the
+                    # reader honestly is that this peer looks gone.
+                    "   ABANDONED" if id(s) in _reap_ids else "",
                 )
                 for s in _all
-                if not C.same_session(s["owner"], session_id)
             ]
             if _rows:
                 outq_add(

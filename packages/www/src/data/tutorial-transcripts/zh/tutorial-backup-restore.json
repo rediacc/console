@@ -101,7 +101,7 @@
     "cast-step-4": "第 5 步：恢复副本",
     "cast-step-5": "第 6 步：挂载已恢复的 repository",
     "cast-step-6": "第 7 步：数据活了下来",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "第 8 步：时间点备份",
     "outro": "下一步：网络与域名"
   }
 }

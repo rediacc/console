@@ -72,6 +72,42 @@ function validateSchema(transcript, file, errors) {
     pushError(errors, file, 'version must be exactly 1.', 'Set "version": 1');
   }
 
+  // CHAPTERS, and this block exists because its absence shipped.
+  //
+  // This validator was already TODO-aware for events[].text, events[].afterText
+  // and narration.text -- but chapters were never inspected at all. So
+  // `chapters.cast-step-7` sat as a literal "TODO: translate chapter (...)" in
+  // ALL TWELVE non-English locales of tutorial-backup-restore and this file
+  // reported "All tutorial transcript files are valid" every single run.
+  //
+  // It was found by a human reading the JSON, not by any gate. A validator that
+  // checks three string fields for placeholders and silently ignores a fourth
+  // is worse than one that checks none: it produces a green line that reads as
+  // "the placeholders are gone".
+  if (transcript.chapters !== undefined) {
+    if (typeof transcript.chapters !== 'object' || Array.isArray(transcript.chapters)) {
+      pushError(errors, file, 'chapters must be an object.', 'Use { "<id>": "<title>" }');
+    } else {
+      for (const [key, title] of Object.entries(transcript.chapters)) {
+        if (typeof title !== 'string' || title.trim() === '') {
+          pushError(
+            errors,
+            file,
+            `chapters.${key} must be a non-empty string.`,
+            'Write the chapter title, then translate it for every locale file'
+          );
+        } else if (/^TODO:/i.test(title.trim())) {
+          pushError(
+            errors,
+            file,
+            `chapters.${key} is a TODO placeholder.`,
+            'Translate the chapter title. It will NOT fall back to English any more'
+          );
+        }
+      }
+    }
+  }
+
   if (!Array.isArray(transcript.events)) {
     pushError(
       errors,
