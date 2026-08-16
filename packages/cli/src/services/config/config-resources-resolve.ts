@@ -89,17 +89,6 @@ export function buildGuidMap(repos: Record<string, RepositoryConfig>): Record<st
   return map;
 }
 
-/** Build the GUID → credential map for repos that have a credential set. */
-export function buildCredentialsMap(
-  repos: Record<string, RepositoryConfig>
-): Record<string, string> {
-  const map: Record<string, string> = {};
-  for (const repoConfig of Object.values(repos)) {
-    if (repoConfig.credential) map[repoConfig.repositoryGuid] = repoConfig.credential;
-  }
-  return map;
-}
-
 /**
  * Build the archive record for a repository being deleted.
  *

@@ -11,7 +11,7 @@ import type { RenetFunctionName } from '@rediacc/shared/renet-contract/data/func
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/functions.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
-import { extractRenetToLocal, isSEA } from '../core/embedded-assets.js';
+import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { renetProvisioner } from './renet-provisioner.js';
@@ -69,16 +69,6 @@ function resolveRenetPath(configuredPath: string): string {
         'Run ./rdc.sh to ensure renet is built, or update config with: rdc config init --renet-path <path>'
     );
   }
-}
-
-/**
- * Get the local path to the renet binary for spawning.
- * In dev mode, uses the configured renetPath. In SEA mode, extracts the
- * embedded binary to a local temp file.
- */
-export async function getLocalRenetPath(config: { renetPath: string }): Promise<string> {
-  if (!isSEA()) return resolveRenetPath(config.renetPath);
-  return extractRenetToLocal();
 }
 
 export interface RenetProvisionResult {
