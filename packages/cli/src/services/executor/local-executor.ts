@@ -11,7 +11,6 @@
  * Delegates to shared utilities in renet-execution.ts.
  */
 
-import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -49,7 +48,6 @@ import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import {
   buildLocalVault,
-  getLocalRenetPath,
   provisionRenetToRemote,
   readOptionalSSHKey,
   readSSHKey,

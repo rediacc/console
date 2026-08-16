@@ -45,7 +45,6 @@ import {
   assertNoCredentialCollision,
   assertRestoredForkKeyIsExplicit,
   buildArchivedRecord,
-  buildCredentialsMap,
   buildGuidMap,
   resolveDestructiveTargetFromRepos,
   resolveExactOrLatest,

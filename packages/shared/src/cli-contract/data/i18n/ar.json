@@ -1,6 +1,7 @@
 {
   "commands.backup.browse.completed": "تم عرض {{name}}",
   "commands.backup.browse.description": "عرض الملفات التي يحتويها المستودع. قراءة محلية للقراءة فقط عبر صورة المستودع: بلا خادم حساب وبلا شبكة. يجب أن يكون المستودع المشفّر مركَّبًا، أو أن يكون ملف مفتاحه قد نُشر، قبل أن يمكن فتحه؛ ويُبلغ browse بذلك بدلاً من عرض قائمة فارغة. لا يمكنها عرض لقطة موجودة فقط في مخزن القطع؛ استعدها أولاً ثم تصفح النتيجة.",
+  "commands.backup.browse.descriptionShort": "عرض ملفات المستودع (محلي، للقراءة فقط)",
   "commands.backup.browse.empty": "{{name}} لا يحتوي على ملفات.",
   "commands.backup.browse.failed": "تعذّر عرض {{name}}",
   "commands.backup.browse.optionDepth": "قصر عمق النزول على N مستوى (0 لعدم التحديد)",

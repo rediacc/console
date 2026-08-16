@@ -1,6 +1,7 @@
 {
   "commands.backup.browse.completed": "Listed {{name}}",
   "commands.backup.browse.description": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
+  "commands.backup.browse.descriptionShort": "List the files a repository contains (local, read-only)",
   "commands.backup.browse.empty": "{{name}} contains no files.",
   "commands.backup.browse.failed": "Could not list {{name}}",
   "commands.backup.browse.optionDepth": "Limit descent to N levels (0 for unlimited)",

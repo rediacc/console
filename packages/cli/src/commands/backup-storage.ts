@@ -8,6 +8,7 @@
  * server, owns the anchor and the cell data.
  */
 
+import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
@@ -256,28 +257,50 @@ export interface BrowseListing {
  * Returns undefined rather than throwing, so an unparseable buffer surfaces as
  * a named error instead of a stack trace.
  */
+/**
+ * Candidate JSON payloads on one line of captured output.
+ *
+ * TWO shapes, and the second is the one that cost this wave a CI round: a
+ * verb's stdout can arrive WRAPPED inside a log line as
+ * `msg="[backup_browse] {...}"` with the quotes escaped, in which case scanning
+ * for a bare `{` finds the brace but JSON.parse chokes on the escapes.
+ */
+function browseJsonCandidates(line: string): string[] {
+  const out: string[] = [];
+  const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(line);
+  if (wrapped) out.push(wrapped[1].replaceAll('\\"', '"'));
+  const start = line.indexOf('{');
+  if (start !== -1) out.push(line.slice(start));
+
+  return out;
+}
+
+/** True when a parsed value is shaped like a browse listing and not another verb's record. */
+function isBrowseListing(parsed: unknown): parsed is BrowseListing {
+  return (
+    parsed !== null &&
+    typeof parsed === 'object' &&
+    'entries' in parsed &&
+    'source' in parsed &&
+    Array.isArray((parsed as BrowseListing).entries)
+  );
+}
+
 export function parseBrowseResult(stdout: string | undefined): BrowseListing | undefined {
   if (!stdout) return undefined;
   let found: BrowseListing | undefined;
   for (const raw of stdout.split('\n')) {
-    const line = raw.trim();
-    const candidates: string[] = [];
-    const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(line);
-    if (wrapped) candidates.push(wrapped[1].replaceAll('\\"', '"'));
-    const start = line.indexOf('{');
-    if (start !== -1) candidates.push(line.slice(start));
-    for (const candidate of candidates) {
+    for (const candidate of browseJsonCandidates(raw.trim())) {
       try {
         const parsed: unknown = JSON.parse(candidate);
-        if (parsed && typeof parsed === 'object' && 'entries' in parsed && 'source' in parsed) {
-          found = parsed as BrowseListing;
-        }
+        if (isBrowseListing(parsed)) found = parsed;
       } catch {
         // Not JSON, or a partial line. Keep scanning: a stray log line must not
         // hide a listing that appears later in the buffer.
       }
     }
   }
+
   return found;
 }
 
@@ -297,6 +320,10 @@ function registerBackupBrowse(backup: Command): void {
   backup
     .command('browse')
     .argument('<repo-ref>', t('options.repoRef'))
+    // .summary is the one-liner `--help` lists; .description is the long form a
+    // reader sees on the command's own page. The long one carries the keyfile
+    // precondition and the chunk-store limit, which is too much for a list.
+    .summary(t('commands.backup.browse.descriptionShort'))
     .description(t('commands.backup.browse.description'))
     .option('--path <subdir>', t('commands.backup.browse.optionPath'))
     .option('--depth <n>', t('commands.backup.browse.optionDepth'))
@@ -315,8 +342,8 @@ function registerBackupBrowse(backup: Command): void {
             machineName,
             {
               path: options.path ?? '',
-              depth: options.depth ?? '0',
-              limit: options.limit ?? '10000',
+              depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
+              limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
             },
             // captureOutput for the same reason as backup verify: the listing
             // IS the answer, and without it the step detector drops the verb's
@@ -360,7 +387,9 @@ function registerBackupBrowse(backup: Command): void {
           // a file is absent from a backup when it is present.
           if (listing.truncated) {
             outputService.warn(
-              t('commands.backup.browse.truncated', { limit: options.limit ?? '10000' })
+              t('commands.backup.browse.truncated', {
+                limit: options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT,
+              })
             );
           }
         } catch (error) {
