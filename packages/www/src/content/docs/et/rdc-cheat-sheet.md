@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: et
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI petuleht
@@ -24,6 +24,8 @@ Siia pole loetletud kõiki `rdc` käske, vaid ainult need, mis igal juurutamisel
 | `rdc repo fork <repo>@<machine> --tag <tag>` | Tee hoidlast fork (peaaegu kohene, BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | Tõsta valideeritud fork emahoidla nime all tootmisse |
 | `rdc repo list` | Loenda kõik hoidlad nime ja GUID-iga |
+| `rdc repo resize <repo> --size <size>` | Muuda peatatud hoidla köite suurust |
+| `rdc repo expand <repo> --size <size>` | Kasvata töötava hoidla köidet kohapeal |
 
 ## Hoidlapõhised saladused
 
@@ -103,6 +105,8 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc machine status <machine> --block-devices` | Ainult plokiseadmete teave |
 | `rdc machine list` | Loenda kõik masinad konfiguratsioonis |
 | `rdc machine setup <machine>` | Käivita masina algne provisioneerimine |
+| `rdc machine health <machine>` | Kontrolli masina seisukorda |
+| `rdc machine scan-keys <machine>` | Värskenda SSH hosti võtmeid pärast taasehitust |
 | `rdc machine prune <machine>` | Eemalda kasutamata ressursid masinalt |
 | `rdc machine deprovision <machine>` | Tühjenda masin täielikult |
 
@@ -118,12 +122,17 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc repo sync download <repo>@<machine> --local <dir>` | Laadi hoidla kataloog kohalikult alla |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | Laadi üks kaugfail kohalikku kataloogi |
 | `rdc vscode connect <repo>@<machine>` | Ava VS Code kaugühenduse SSH seanss |
+| `rdc vscode list` | Loenda `vscode connect` loodud SSH konfiguratsioonid |
+| `rdc vscode cleanup --all` | Eemalda kõik `vscode connect` kirjutatud SSH konfiguratsioonid |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | Suuna konteineri port SSH kaudu edasi |
 
 ## Konfigureerimine
 
 | Käsk | Kirjeldus |
 |---------|-------------|
 | `rdc config init <name>` | Loo nimega konfiguratsioonifail |
+| `rdc config list` | Loenda kõik selle masina konfiguratsioonid |
+| `rdc config set machine <alias>` | Suuna alias teisele masinale |
 | `rdc machine add <machine> --ip <host> --user <user>` | Lisa masin konfiguratsiooni |
 | `rdc storage import rclone.conf` | Impordi mälupakkujad rclone'i konfiguratsioonist |
 | `rdc storage list` | Loenda konfigureeritud mälupakkujad |
@@ -134,6 +143,9 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 
 | Käsk | Kirjeldus |
 |---------|-------------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | Voogesita konteineri logisid (eelistatud) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | Käivita käsk konteineris (eelistatud) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | Ava interaktiivne konteineri shell |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | Loenda konteinerid hoidlas |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | Hangi konteineri logid |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | Käivita käsk konteineris |

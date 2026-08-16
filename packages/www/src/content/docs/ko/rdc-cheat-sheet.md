@@ -5,8 +5,8 @@ category: Guides
 order: 3
 cardGrid: true
 language: ko
-sourceHash: "ae49dd7fbc179d35"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "26e60c6b486eadd0"
+sourceCommit: "45cd71f8a80949d4cd621f233377c48715bbf531"
 ---
 
 # RDC CLI 치트 시트
@@ -24,6 +24,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo fork <repo>@<machine> --tag <tag>` | 리포지터리 포크 (거의 즉각적, BTRFS reflink) |
 | `rdc repo promote <repo>:<tag>` | 검증된 포크를 상위 리포지터리 이름으로 프로덕션에 승격 |
 | `rdc repo list` | 이름 및 GUID와 함께 모든 리포지터리 나열 |
+| `rdc repo resize <repo> --size <size>` | 중지된 리포지터리의 볼륨 크기 조정 |
+| `rdc repo expand <repo> --size <size>` | 실행 중인 리포지터리의 볼륨을 그 자리에서 확장 |
 
 ## 리포지터리별 시크릿
 
@@ -103,6 +105,8 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc machine status <machine> --block-devices` | 블록 디바이스 정보만 |
 | `rdc machine list` | config의 모든 머신 나열 |
 | `rdc machine setup <machine>` | 초기 머신 프로비저닝 실행 |
+| `rdc machine health <machine>` | 머신 상태 확인 |
+| `rdc machine scan-keys <machine>` | 재구축 후 SSH 호스트 키 새로 고침 |
 | `rdc machine prune <machine>` | 머신에서 사용하지 않는 리소스 제거 |
 | `rdc machine deprovision <machine>` | 머신 완전히 디프로비저닝 |
 
@@ -118,12 +122,17 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 | `rdc repo sync download <repo>@<machine> --local <dir>` | 리포지터리 디렉터리를 로컬에 다운로드 |
 | `rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir>` | 단일 원격 파일을 로컬 디렉터리로 다운로드 |
 | `rdc vscode connect <repo>@<machine>` | VS Code Remote SSH 세션 열기 |
+| `rdc vscode list` | `vscode connect`가 생성한 SSH 설정 나열 |
+| `rdc vscode cleanup --all` | `vscode connect`가 작성한 모든 SSH 설정 제거 |
+| `rdc repo tunnel <repo> -c <container> --port <port>` | SSH를 통해 컨테이너 포트 전달 |
 
 ## 구성
 
 | 명령 | 설명 |
 |---------|-------------|
 | `rdc config init <name>` | 명명된 config 파일 생성 |
+| `rdc config list` | 이 머신의 모든 config 나열 |
+| `rdc config set machine <alias>` | 별칭이 다른 머신을 가리키도록 설정 |
 | `rdc machine add <machine> --ip <host> --user <user>` | config에 머신 추가 |
 | `rdc storage import rclone.conf` | rclone config에서 스토리지 공급자 가져오기 |
 | `rdc storage list` | 구성된 스토리지 공급자 나열 |
@@ -134,6 +143,9 @@ sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 
 | 명령 | 설명 |
 |---------|-------------|
+| `rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow` | 컨테이너 로그 스트리밍 (권장) |
+| `rdc repo exec <repo>@<machine> -c <container> -- <command>` | 컨테이너에서 명령 실행 (권장) |
+| `rdc repo exec <repo>@<machine> -c <container> -i -- bash` | 대화형 컨테이너 셸 연결 |
 | `rdc term connect <repo>@<machine> -c "docker ps"` | 리포지터리의 컨테이너 나열 |
 | `rdc term connect <repo>@<machine> -c "docker logs <name>"` | 컨테이너 로그 가져오기 |
 | `rdc term connect <repo>@<machine> -c "docker exec <name> <cmd>"` | 컨테이너에서 명령 실행 |
