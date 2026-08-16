@@ -21,12 +21,18 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
 import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
 
-/** Resolve the executor machine for `backup list`. */
-async function resolveListExecutor(opts: {
-  machine?: string;
-  storage?: string;
-  place?: string;
-}): Promise<{ machine: string; sourceType: 'machine' | 'storage'; from: string }> {
+/**
+ * Resolve the executor machine for `backup list`.
+ *
+ * SYNCHRONOUS since the storage arm was retired: the only await here was the
+ * sole-machine lookup that branch needed, and with the branch gone the async
+ * was a leftover promising work it no longer does.
+ */
+function resolveListExecutor(opts: { machine?: string; storage?: string }): {
+  machine: string;
+  sourceType: 'machine' | 'storage';
+  from: string;
+} {
   if (opts.machine) {
     return { machine: opts.machine, sourceType: 'machine', from: opts.machine };
   }
@@ -67,10 +73,14 @@ function registerBackupList(backup: Command): void {
             throw new ValidationError(t('commands.backup.list.placementExclusive'));
           }
           const ref = artifactRef ? parseRef(artifactRef) : undefined;
-          const { machine, sourceType, from } = await resolveListExecutor({
+          // `place` is no longer passed: the ref's @place was only ever read by
+          // the storage branch, to pick which machine ran rclone. The machine
+          // path has always required --machine, so dropping it changes nothing
+          // that still exists -- and an argument a function accepts but never
+          // reads is how a guard survives the feature it guarded.
+          const { machine, sourceType, from } = resolveListExecutor({
             machine: options.machine,
             storage: options.storage,
-            place: ref?.place,
           });
 
           const baseParams: Record<string, unknown> = { sourceType, from };
