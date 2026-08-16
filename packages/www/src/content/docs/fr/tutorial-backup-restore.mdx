@@ -1,19 +1,21 @@
 ---
 title: "Sauvegarde et restauration"
-description: "Poussez votre dépôt vers un stockage externe et restaurez-le sur un nouveau serveur quand vous en avez besoin."
+description: "Copiez un dépôt en direct vers une seconde machine, mettez la première hors ligne, puis récupérez les données."
 category: "Tutorials"
 subcategory: advanced
 order: 11
 language: fr
-sourceHash: "c5c847e04186c9b1"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "bacd754fbeb6fb99"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Sauvegarde et restauration
 
-Votre application est en production. Assurez-vous de la sauvegarder. `rdc` peut pousser votre dépôt entier (application, base de données, fichiers, configurations) vers un stockage externe et le récupérer à tout moment. Résistez aux ransomwares, aux pannes matérielles, à tout.
+Votre application est en production, en direct. Sauvegardez-la. `rdc` copie un dépôt entier, l'application, sa base de données, ses fichiers et sa configuration, vers une seconde machine, et le ramène quand la première a disparu.
+
+Ce tutoriel ne se contente pas de le décrire. Il le fait, sur deux machines réelles, et relit les données à la fin.
 
 ## Regarder le tutoriel
 
@@ -21,70 +23,75 @@ Votre application est en production. Assurez-vous de la sauvegarder. `rdc` peut 
 
 ## Trois étapes
 
-![Configurer, pousser, restaurer](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+![Copier, restaurer, prouver](/img/tutorials/tutorial-backup-restore/slide-1.svg)
 
-1. **Configurer** un fournisseur de stockage.
-2. **Pousser** une sauvegarde.
-3. **Restaurer** quand vous en avez besoin.
+1. **Copiez** le dépôt vers une machine que vous contrôlez.
+2. **Restaurez** cette copie dans un dépôt qui lui est propre.
+3. **Prouvez**-le en relisant vos données.
 
-## Étape 1 : Configurer le stockage
-
-Vous avez besoin d'un fichier de configuration `rclone`. Si vous utilisez déjà rclone, importez-le directement :
+## Étape 1 : Les données qui doivent survivre
 
 <TutorialStep number={1} />
 
-Cela prend en charge S3, B2, Google Drive, Dropbox et bien d'autres. Vérifiez ce qui est configuré :
+Tout ce qui suit est jugé au regard de cette seule ligne. Repérez-la à nouveau à l'étape 7.
+
+## Étape 2 : Copier le dépôt vers une seconde machine
 
 <TutorialStep number={2} />
 
-## Étape 2 : Pousser une sauvegarde
+Le [tutoriel Transfert delta](/fr/docs/tutorial-delta-transfer) montre en direct la moitié incrémentale de cette opération.
+
+Un artefact n'est pas un dépôt en cours d'exécution, ce qui est la raison d'être de l'étape 5.
+
+## Étape 3 : La machine de sauvegarde l'a
 
 <TutorialStep number={3} />
 
-Votre dépôt entier (application, base de données, fichiers, tout) est maintenant sauvegardé. Comme le dépôt lui-même est chiffré, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire.
-
-Listez vos sauvegardes à tout moment :
+## Étape 4 : Sinistre
 
 <TutorialStep number={4} />
 
-## Pourquoi aucun temps d'arrêt ?
-
-L'application continue de tourner pendant que la sauvegarde se téléverse. Comment est-ce cohérent ?
-
-Même logique qu'un [fork](/fr/docs/tutorial-forking). `rdc` forke d'abord, puis téléverse le fork. Le fork capture l'instant ; votre application en direct continue. Aucun temps d'arrêt, aucune incohérence.
-
-## Étape 3 : Restaurer, pour de vrai
-
-Une sauvegarde qu'on ne restaure jamais, c'est un espoir, pas une sauvegarde. Mettez d'abord le dépôt hors ligne :
+## Étape 5 : Transformer l'artefact en dépôt
 
 <TutorialStep number={5} />
 
-Récupérez directement la sauvegarde depuis le stockage :
+Faites-le une fois par machine avant d'en avoir besoin. Une machine qui n'a jamais bouclé le cycle complet n'est pas sauvegardée, aussi sains que paraissent ses envois, et restaurer sous un nouveau nom est sans risque sur une machine qui sert du trafic réel.
+
+## Étape 6 : Le monter
 
 <TutorialStep number={6} />
 
-Et remontez-le, entièrement restauré :
+## Étape 7 : Les données ont survécu
 
 <TutorialStep number={7} />
 
-Le même pull fonctionne sur un tout nouveau serveur : configurez-le, ajoutez-le à `rdc`, et lancez le pull depuis là.
+Mettez les deux côte à côte. Étape 1, tirée du dépôt d'origine sur la machine principale :
 
-```bash
-rdc repo pull my-app@new-server --from my-storage
-rdc repo up my-app@new-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-Mêmes données, mêmes conteneurs, machine différente.
+Étape 7, tirée d'un dépôt qui n'existait pas deux commandes plus tôt, sur un autre matériel :
 
-## Sauvegardes plus rapides : de machine à machine
-
-Vous pouvez également pousser directement entre machines, sans stockage cloud intermédiaire :
-
-```bash
-rdc repo push my-app --to backup-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-> **Conseil pro.** Les pushs de machine à machine n'envoient que les blocs modifiés après le premier. Le [tutoriel Transfert delta](/fr/docs/tutorial-delta-transfer) le montre en direct.
+Voilà le tutoriel. Pas un rapport disant qu'une sauvegarde a réussi, mais la ligne elle-même, relue depuis une autre machine.
+
+## Étape 8 : Des sauvegardes que vous pouvez rembobiner
+
+<TutorialStep number={8} />
+
+Sur votre propre installation, avec un compte, la séquence complète est :
+
+```bash
+rdc backup snapshot my-app
+rdc backup manifests my-app
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+```
+
+Le [guide Sauvegarde et restauration](/fr/docs/backup-restore) couvre les instantanés, la rétention et la vérification en détail.
 
 ---
 

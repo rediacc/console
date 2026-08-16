@@ -4,8 +4,8 @@ description: "rdc コマンドのクイックリファレンス：設定、リ�
 category: Guides
 order: 3
 language: ja
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI チートシート
@@ -44,12 +44,11 @@ sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 
 | コマンド | 説明 |
 |---------|------|
-| `rdc repo push <repo>@<machine> --to <storage>` | リポジトリのバックアップをストレージにプッシュする |
-| `rdc repo pull <repo>@<machine> --from <storage>` | ストレージからリポジトリを復元する |
 | `rdc repo push ... --bwlimit <limit>` | プッシュ時の rsync 帯域幅を制限する (例: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | プル時の rsync 帯域幅を制限する |
 | `rdc repo push ... --checkpoint` | プッシュ前にコンテナのチェックポイントを作成する |
-| `rdc backup list --storage <storage>` | ストレージ内の利用可能なバックアップを一覧表示する |
+| `rdc backup manifests <repo-ref>` | チャンクストレージが保持するスナップショットを一覧表示する |
+| `rdc backup browse <repo-ref>` | リポジトリが含むファイルを一覧表示する (ローカル、読み取り専用) |
 | `rdc backup snapshot <repo>` | チャンクストレージスナップショットをアップロードする: 最初は全インベントリ、以降は変更されたセルのみ |
 | `rdc backup snapshot <repo> --dry-run` | アップロードせずにスナップショットを計画する; 何が移動するかを報告する |
 | `rdc backup verify <repo>` | リポジトリのバックアップアンカーをチャンクストレージと照合して検証する |

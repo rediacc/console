@@ -4,8 +4,8 @@ description: "Referência rápida para rdc: configs, repositórios, máquinas, s
 category: Guides
 order: 3
 language: pt
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Folha de Consulta do CLI RDC
@@ -44,12 +44,11 @@ Credenciais de implantação apenas de escrita. `get` devolve apenas o digest. O
 
 | Comando | Descrição |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Enviar um backup de repositório para o armazenamento |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Restaurar um repositório do armazenamento |
 | `rdc repo push ... --bwlimit <limit>` | Limitar a largura de banda rsync durante o envio (p. ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar a largura de banda rsync durante a receção |
 | `rdc repo push ... --checkpoint` | Criar checkpoint dos contentores antes de enviar |
-| `rdc backup list --storage <storage>` | Listar backups disponíveis no armazenamento |
+| `rdc backup manifests <repo-ref>` | Listar os snapshots guardados no armazenamento fragmentado |
+| `rdc backup browse <repo-ref>` | Listar os ficheiros contidos num repositório (local, só leitura) |
 | `rdc backup snapshot <repo>` | Enviar um snapshot para armazenamento fragmentado: inventário completo primeiro, células alteradas depois |
 | `rdc backup snapshot <repo> --dry-run` | Planear o snapshot sem enviar; relata o que se moveria |
 | `rdc backup verify <repo>` | Verificar a âncora de backup de um repositório face ao armazenamento fragmentado |

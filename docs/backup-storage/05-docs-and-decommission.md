@@ -94,9 +94,11 @@ retired (`rdc storage import`, `repo push --to <storage>`, `backup list
 --storage`, `repo pull --from <storage>`), the cast was fully re-recorded, and
 it now carries EIGHT markers. This line is the one that would have let the
 tutorial ship teaching commands that refuse: it told a reader the expensive
-re-record could be skipped. The slide SVG was worse than stale - it taught
-`rdc config storage import`, which has never existed in the command tree under
-any spelling.
+re-record could be skipped. The slide SVG was worse than stale: it taught a
+`config storage import` verb that has never existed in the command tree under
+any spelling (written without the `rdc` prefix here on purpose, because
+check:cli-docs cannot tell a command being CITED as nonexistent from one being
+recommended).
 
 ## Decommission (wave 5, after parallel-run verification)
 

@@ -4,8 +4,8 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Kiirjuhend
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Lükka pilvemällu (OneDrive, Google Drive, S3)
+### 3. Varunda tükksalvestusse
 
 ```bash
-# Impordi oma rclone konfiguratsioon mäluhoidla tagaplaanina
-rdc storage import ~/rclone.conf
+# Tee kindla ajahetke tõmmis
+rdc backup snapshot my-app
 
-# Loenda saadaolevad mäluhoidlad
-rdc storage list
+# Vaata, millised tõmmised on olemas
+rdc backup manifests my-app
 
-# Lükka hoidla pilvemällu
-rdc repo push my-app --to my-s3-backup
-
-# Loenda varukoopiad mäluhoidlas
-rdc backup list --storage my-s3-backup
+# Kontrolli salvestatud baite sinu kvoodi suhtes
+rdc backup usage
 ```
 
-`--to` tuvastab automaatselt, kas sihtkoht on masin või mäluhoidla tagaplaan. Töötab mis tahes rclone'i toetatud pakkujaga: S3, R2, B2, OneDrive, Google Drive, SFTP jne.
+Tõmmised laaditakse üles tükksalvestusse, mis vajab konto-serverit ja litsentseeritud repositooriumi. Salvestatakse ainult muutunud andmed, seega maksab sama repositooriumi teine tõmmis ainult erinevuse, mitte kogu tõmmise hinda.
+
+Repositooriumi lükkamine pilvemällu käsuga `--to <storage>` on kaotatud ja lükatakse nüüd tagasi. Enne seda muudatust kirjutatud arhiivi lugemiseks toimib `rdc storage browse` endiselt ja vajab `rclone`-i sinu PATH-is.
 
 ### 4. Tõmba kaugelt
 

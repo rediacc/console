@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Limites et quotas
@@ -136,12 +136,33 @@ La migration à chaud via CRIU a les contraintes suivantes :
 
 | Limite | Valeur |
 |--------|--------|
-| Destinations de backup par repository | Illimitées |
-| Jobs de backup simultanés | 1 par repository (les jobs sont mis en file d'attente s'ils sont déclenchés simultanément) |
+| Instantanés par dépôt | Aucune limite au-delà de votre quota de stockage. Chaque instantané est restaurable indépendamment, donc en conserver davantage ne coûte que du stockage et rien d'autre |
+| Instantanés simultanés d'un même dépôt | 1. Une deuxième exécution trouve le verrou de staging du dépôt déjà pris et est **ignorée**, pas mise en file d'attente : elle signale qu'une autre exécution le détient et se termine. Relancez-la ensuite |
 | Instantanés à froid simultanés | 1 par datastore ; un second `renet backup snapshot --cold` est refusé immédiatement et n'arrête rien |
 | Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc backup strategy set <name> --bwlimit "6M"` pour limiter la vitesse d'envoi |
-| Rétention | Déclarée avec `rdc backup retention set` (paramètres GFS : `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) et appliquée côté serveur ; `rdc backup retention clear` la supprime. Le stockage fragmenté est mesuré par rapport à un quota de plan en octets physiques uniques stockés, si bien que les données identiques entre les instantanés et sur toute une famille de forks ne sont comptées qu'une seule fois : Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, vérifiable avec `rdc backup usage`. La voie héritée de push de stockage n'a pas de rétention propre et dépend de votre fournisseur. |
+| Rétention | Déclarée avec `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) et appliquée côté serveur ; `rdc backup retention clear` la supprime, après quoi chaque instantané est conservé |
 | Backup inter-machines | Pris en charge ; la machine de destination doit disposer d'un espace datastore suffisant |
+
+### Quota de stockage de sauvegarde
+
+Les instantanés vont vers le stockage fragmenté, mesuré par abonnement en **octets physiques uniques stockés** : ce qui est réellement conservé après déduplication, pas la somme de ce que vos instantanés représentent logiquement. Les instantanés qui partagent des données, et les dépôts d'une même famille de forks, comptent ces données une seule fois.
+
+| Offre | Quota | Affiché par `rdc backup usage` comme |
+|-------|-------|-----------------------------------------|
+| Community | 10 Go | `10G` |
+| Professional | 100 Go | `100G` |
+| Business | 500 Go | `500G` |
+| Enterprise | 2 To | `2T` |
+
+Ce sont les valeurs par défaut de l'offre. Un abonnement peut porter sa propre dérogation, vérifiez donc `rdc backup usage` plutôt que de vous fier à la ligne ci-dessus.
+
+Le quota est appliqué avant qu'aucune donnée ne bouge : un instantané qui le dépasserait est refusé au moment où la machine demande l'autorisation d'envoyer, et non en cours de transfert. Atterrir exactement sur le quota est autorisé ; un octet de plus est refusé. Ce qui compte comme utilisé inclut les envois encore en cours, si bien que deux exécutions simultanées ne peuvent pas toutes deux se glisser sous le plafond.
+
+Dépasser le quota ne supprime jamais rien. Cela arrête simplement les nouveaux envois, et les instantanés que vous avez déjà restent où ils sont.
+
+Si un abonnement expire, le stockage de sauvegarde devient en lecture seule : les instantanés existants restent lisibles et aucun nouveau ne peut être envoyé. Ces données sont conservées **60 jours** après l'expiration, après quoi un seul passage les supprime. Un remboursement ouvert sur l'organisation gèle ce passage au lieu de l'exécuter.
+
+Les copies de machine à machine effectuées avec `rdc repo push` ne touchent pas ce quota. Elles atterrissent dans le datastore de la machine de destination et sont limitées par son espace libre.
 
 ---
 

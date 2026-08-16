@@ -4,8 +4,8 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Schnellstart
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. In Cloud-Speicher pushen (OneDrive, Google Drive, S3)
+### 3. Im Chunk-Store sichern
 
 ```bash
-# Ihre rclone-Konfiguration als Speicher-Backend importieren
-rdc storage import ~/rclone.conf
+# Einen Snapshot zu einem bestimmten Zeitpunkt erstellen
+rdc backup snapshot my-app
 
-# Verfügbare Speicher auflisten
-rdc storage list
+# Vorhandene Snapshots anzeigen
+rdc backup manifests my-app
 
-# Repo in Cloud-Speicher pushen
-rdc repo push my-app --to my-s3-backup
-
-# Backups im Speicher auflisten
-rdc backup list --storage my-s3-backup
+# Gespeicherte Bytes gegen Ihr Kontingent prüfen
+rdc backup usage
 ```
 
-`--to` erkennt automatisch, ob das Ziel eine Maschine oder ein Speicher-Backend ist. Funktioniert mit jedem von rclone unterstützten Anbieter: S3, R2, B2, OneDrive, Google Drive, SFTP usw.
+Snapshots werden in den Chunk-Store hochgeladen, wofür ein Account-Server und ein lizenziertes Repository nötig sind. Es werden nur geänderte Daten gespeichert, sodass ein zweiter Snapshot desselben Repositorys nur die Differenz statt des gesamten Images kostet.
+
+Das Pushen eines Repositorys in Cloud-Speicher mit `--to <storage>` ist eingestellt und wird jetzt zurückgewiesen. Um ein vor dieser Änderung geschriebenes Archiv zu lesen, funktioniert `rdc storage browse` weiterhin und benötigt `rclone` in Ihrem PATH.
 
 ### 4. Von Remote abrufen
 

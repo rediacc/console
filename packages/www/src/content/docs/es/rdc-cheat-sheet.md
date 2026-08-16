@@ -4,8 +4,8 @@ description: "Referencia rápida de rdc: configuraciones, repositorios, máquina
 category: Guides
 order: 3
 language: es
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Hoja de referencia de RDC CLI
@@ -44,12 +44,11 @@ Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el r
 
 | Comando | Descripción |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Subir una copia de seguridad del repositorio al almacenamiento |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Restaurar un repositorio desde el almacenamiento |
 | `rdc repo push ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al subir (p. ej. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limitar el ancho de banda de rsync al bajar |
 | `rdc repo push ... --checkpoint` | Guardar punto de control de contenedores antes de subir |
-| `rdc backup list --storage <storage>` | Listar las copias de seguridad disponibles en el almacenamiento |
+| `rdc backup manifests <repo-ref>` | Listar los snapshots que contiene el almacenamiento fragmentado |
+| `rdc backup browse <repo-ref>` | Listar los archivos que contiene un repositorio (local, solo lectura) |
 | `rdc backup snapshot <repo>` | Subir un snapshot al almacenamiento fragmentado: inventario completo primero, celdas cambiadas después |
 | `rdc backup snapshot <repo> --dry-run` | Planificar el snapshot sin subir; informa qué se movería |
 | `rdc backup verify <repo>` | Verificar el ancla de respaldo de un repositorio contra el almacenamiento fragmentado |

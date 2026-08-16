@@ -4,8 +4,8 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "e4a4e0de5"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Início Rápido
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Enviar para Armazenamento na Nuvem (OneDrive, Google Drive, S3)
+### 3. Fazer Backup no Armazenamento Fragmentado
 
 ```bash
-# Importar a sua config rclone como backend de armazenamento
-rdc storage import ~/rclone.conf
+# Tirar um snapshot pontual
+rdc backup snapshot my-app
 
-# Listar armazenamentos disponíveis
-rdc storage list
+# Ver que snapshots existem
+rdc backup manifests my-app
 
-# Enviar repositório para armazenamento na nuvem
-rdc repo push my-app --to my-s3-backup
-
-# Listar backups no armazenamento
-rdc backup list --storage my-s3-backup
+# Verificar os bytes armazenados face à sua quota
+rdc backup usage
 ```
 
-`--to` deteta automaticamente se o destino é uma máquina ou um backend de armazenamento. Funciona com qualquer fornecedor suportado pelo rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
+Os snapshots são enviados para o armazenamento fragmentado, que precisa de um servidor de conta e de um repositório licenciado. Só são armazenados os dados alterados, pelo que um segundo snapshot do mesmo repositório custa apenas a diferença, não a imagem inteira.
+
+Enviar um repositório para armazenamento na nuvem com `--to <storage>` está retirado e agora é recusado. Para ler um arquivo escrito antes dessa alteração, o `rdc storage browse` continua a funcionar e precisa do `rclone` no seu PATH.
 
 ### 4. Receber de Remoto
 

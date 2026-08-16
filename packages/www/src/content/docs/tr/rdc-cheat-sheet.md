@@ -4,8 +4,8 @@ description: "rdc komutları için hızlı referans: yapılandırmalar, depolar,
 category: Guides
 order: 3
 language: tr
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI Hızlı Referans
@@ -44,12 +44,11 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 
 | Komut | Açıklama |
 |-------|----------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Depo yedeklemesini depolamaya gönder |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Depoyu depolamadan geri yükle |
 | `rdc repo push ... --bwlimit <limit>` | Gönderme sırasında rsync bant genişliğini sınırla (örn. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Alma sırasında rsync bant genişliğini sınırla |
 | `rdc repo push ... --checkpoint` | Göndermeden önce konteynerlerde kontrol noktası oluştur |
-| `rdc backup list --storage <storage>` | Depolamadaki mevcut yedeklemeleri listele |
+| `rdc backup manifests <repo-ref>` | Parça depolamanın tuttuğu anlık görüntüleri listele |
+| `rdc backup browse <repo-ref>` | Bir deponun içerdiği dosyaları listele (yerel, salt okunur) |
 | `rdc backup snapshot <repo>` | Parça depolamaya bir anlık görüntü yükle: önce tam envanter, sonra yalnızca değişen hücreler |
 | `rdc backup snapshot <repo> --dry-run` | Anlık görüntüyü yüklemeden planla; nelerin taşınacağını bildir |
 | `rdc backup verify <repo>` | Bir deponun yedek çıpasını parça depolamaya karşı doğrula |

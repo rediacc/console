@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Limits & Kontingente
@@ -136,12 +136,33 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 
 | Limit | Wert |
 |-------|------|
-| Backup-Ziele pro Repository | Unbegrenzt |
-| Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
+| Snapshots pro Repository | Keine Begrenzung über Ihr Speicherkontingent hinaus. Jeder Snapshot ist unabhängig wiederherstellbar, daher kostet das Aufbewahren weiterer Snapshots nur Speicherplatz und sonst nichts |
+| Gleichzeitige Snapshots eines Repositorys | 1. Ein zweiter Lauf findet die Staging-Sperre des Repositorys belegt vor und wird **übersprungen**, nicht in die Warteschlange gestellt: Er meldet, dass ein anderer Lauf sie hält, und beendet sich. Führen Sie ihn danach erneut aus |
 | Gleichzeitige Cold-Snapshots | 1 pro Datastore; ein zweiter `renet backup snapshot --cold` wird sofort zurückgewiesen und stoppt nichts |
 | Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc backup strategy set <name> --bwlimit "6M"`, um die Upload-Geschwindigkeit zu begrenzen |
-| Aufbewahrung | Wird mit `rdc backup retention set` deklariert (GFS-Parameter: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) und auf der Serverseite erzwungen; `rdc backup retention clear` entfernt es. Chunk-Speicher wird gegen ein Plan-Kontingent als physische eindeutige gespeicherte Bytes gemessen, daher wird die Deduplizierung zwischen Snapshots und über eine Fork-Familie hinweg nur einmal gezählt: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, überprüft mit `rdc backup usage`. Der ältere Storage-Push-Pfad hat keine eigene Aufbewahrung und wird von Ihrem Anbieter gesteuert. |
+| Aufbewahrung | Wird mit `rdc backup retention set` deklariert (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) und auf der Serverseite erzwungen; `rdc backup retention clear` entfernt sie, danach wird jeder Snapshot behalten |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |
+
+### Backup-Speicherkontingent
+
+Snapshots gehen an den Chunk-Storage, der pro Abonnement in **physischen eindeutig gespeicherten Bytes** gemessen wird: was nach Deduplizierung tatsächlich gehalten wird, nicht die Summe dessen, was Ihre Snapshots logisch darstellen. Snapshots, die Daten teilen, und Repositories derselben Fork-Familie zählen diese Daten nur einmal.
+
+| Plan | Kontingent | Angezeigt von `rdc backup usage` als |
+|------|-----------|--------------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Dies sind die Standardwerte des Plans. Ein Abonnement kann eine eigene Überschreibung tragen, prüfen Sie daher `rdc backup usage`, statt die obige Zeile anzunehmen.
+
+Das Kontingent wird durchgesetzt, bevor sich Daten bewegen: Ein Snapshot, der es überschreiten würde, wird zurückgewiesen, wenn die Maschine um die Erlaubnis zum Hochladen bittet, nicht mitten in der Übertragung. Genau auf dem Kontingent zu landen ist erlaubt; ein Byte darüber wird zurückgewiesen. Was als genutzt zählt, umfasst noch laufende Uploads, sodass sich zwei gleichzeitige Läufe nicht beide unter die Grenze quetschen können.
+
+Eine Kontingentüberschreitung löscht niemals etwas. Sie stoppt nur neue Uploads, und die bereits vorhandenen Snapshots bleiben, wo sie sind.
+
+Läuft ein Abonnement aus, wird der Backup-Speicher schreibgeschützt: Vorhandene Snapshots bleiben lesbar, und es können keine neuen hochgeladen werden. Diese Daten werden **60 Tage** nach dem Ablauf aufbewahrt, danach entfernt sie ein einziger Durchlauf. Eine offene Rückerstattung für die Organisation friert diesen Durchlauf ein, statt ihn auszuführen.
+
+Maschine-zu-Maschine-Kopien mit `rdc repo push` berühren dieses Kontingent nicht. Sie landen im Datastore der Zielmaschine und sind durch dessen freien Speicherplatz begrenzt.
 
 ---
 

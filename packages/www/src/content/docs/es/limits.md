@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Límites y cuotas
@@ -136,12 +136,33 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 
 | Límite | Valor |
 |--------|-------|
-| Destinos de backup por repositorio | Ilimitados |
-| Trabajos de backup simultáneos | 1 por repositorio (los trabajos se ponen en cola si se activan simultáneamente) |
+| Snapshots por repositorio | Sin límite más allá de tu cuota de almacenamiento. Cada snapshot es restaurable de forma independiente, así que conservar más de ellos solo cuesta almacenamiento y nada más |
+| Snapshots simultáneos de un mismo repositorio | 1. Una segunda ejecución encuentra el bloqueo de staging del repositorio ocupado y se **omite**, no se pone en cola: informa que otra ejecución lo tiene y termina. Vuelve a ejecutarla después |
 | Snapshots en frío simultáneos | 1 por datastore; un segundo `renet backup snapshot --cold` se rechaza de inmediato y no detiene nada |
 | Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento. Use `rdc backup strategy set <name> --bwlimit "6M"` para limitar la velocidad de subida |
-| Retención | Se declara con `rdc backup retention set` (controles GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) y se aplica del lado del servidor; `rdc backup retention clear` la elimina. El almacenamiento de chunks se mide contra una cuota del plan en bytes únicos físicos almacenados, por lo que la deduplicación entre snapshots y en una familia de forks se cuenta una sola vez: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, verificado con `rdc backup usage`. La ruta legacy de storage-push no tiene su propia retención y es controlada por su proveedor. |
+| Retención | Se declara con `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) y se aplica del lado del servidor; `rdc backup retention clear` la elimina, tras lo cual se conserva cada snapshot |
 | Backup entre máquinas | Soportado; la máquina de destino debe tener suficiente espacio en el datastore |
+
+### Cuota de almacenamiento de backup
+
+Los snapshots van al almacenamiento fragmentado, que se mide por suscripción en **bytes físicos únicos almacenados**: lo que realmente se conserva tras la deduplicación, no la suma de lo que tus snapshots representan lógicamente. Los snapshots que comparten datos, y los repositorios de la misma familia de forks, cuentan esos datos una sola vez.
+
+| Plan | Cuota | Mostrado por `rdc backup usage` como |
+|------|-------|----------------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Estos son los valores predeterminados del plan. Una suscripción puede llevar su propia anulación, así que consulta `rdc backup usage` en lugar de asumir la fila anterior.
+
+La cuota se aplica antes de que se mueva cualquier dato: un snapshot que la excedería se rechaza cuando la máquina solicita permiso para subir, no a mitad de la transferencia. Llegar exactamente a la cuota está permitido; un byte de más se rechaza. Lo que cuenta como usado incluye las subidas todavía en curso, así que dos ejecuciones concurrentes no pueden ambas colarse por debajo del límite.
+
+Superar la cuota nunca elimina nada. Detiene las subidas nuevas, y los snapshots que ya tienes se quedan donde están.
+
+Si una suscripción vence, el almacenamiento de backup pasa a ser de solo lectura: los snapshots existentes siguen siendo legibles y no se puede subir ninguno nuevo. Esos datos se conservan durante **60 días** tras el vencimiento, después de los cuales una sola limpieza los elimina. Un reembolso abierto en la organización congela esa limpieza en lugar de ejecutarla.
+
+Las copias de máquina a máquina hechas con `rdc repo push` no tocan esta cuota. Aterrizan en el datastore de la máquina de destino y están limitadas por su espacio libre.
 
 ---
 

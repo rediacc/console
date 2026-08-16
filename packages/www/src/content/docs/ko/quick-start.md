@@ -4,8 +4,8 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "e4a4e0de5"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # 빠른 시작
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. 클라우드 스토리지로 푸시 (OneDrive, Google Drive, S3)
+### 3. 청크 스토리지에 백업
 
 ```bash
-# rclone config를 스토리지 백엔드로 가져오기
-rdc storage import ~/rclone.conf
+# 특정 시점 스냅샷 생성
+rdc backup snapshot my-app
 
-# 사용 가능한 스토리지 목록
-rdc storage list
+# 존재하는 스냅샷 확인
+rdc backup manifests my-app
 
-# 리포지터리를 클라우드 스토리지로 푸시
-rdc repo push my-app --to my-s3-backup
-
-# 스토리지의 백업 목록
-rdc backup list --storage my-s3-backup
+# 저장된 바이트를 쿼터와 비교 확인
+rdc backup usage
 ```
 
-`--to`는 대상이 머신인지 스토리지 백엔드인지 자동으로 감지합니다. 모든 rclone 지원 공급자와 작동합니다: S3, R2, B2, OneDrive, Google Drive, SFTP 등.
+스냅샷은 청크 스토리지로 업로드되며, 이를 위해서는 계정 서버와 라이선스가 있는 저장소가 필요합니다. 변경된 데이터만 저장되므로 동일한 저장소의 두 번째 스냅샷은 전체 이미지가 아니라 차이만큼의 비용이 듭니다.
+
+`--to <storage>`로 저장소를 클라우드 스토리지에 푸시하는 기능은 폐지되어 이제 거부됩니다. 그 변경 이전에 작성된 아카이브를 읽으려면 `rdc storage browse`가 계속 작동하며, PATH에 `rclone`이 있어야 합니다.
 
 ### 4. 원격에서 풀
 
