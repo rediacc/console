@@ -73,12 +73,13 @@ function readerFacingSources(): string[] {
       '--',
       'packages/www/src/content/docs/*',
       'packages/www/src/marp/*',
+      'packages/www/src/i18n/translations/*',
       '.ci/tutorials/*',
     ],
     { cwd: REPO, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 }
   )
     .split('\n')
-    .filter((f) => /\.(md|mdx|sh)$/.test(f));
+    .filter((f) => /\.(md|mdx|sh|json)$/.test(f));
 }
 
 export interface Finding {
@@ -96,6 +97,16 @@ export interface Finding {
  */
 export function scanSource(file: string, body: string): Finding[] {
   const isScript = file.endsWith('.sh');
+  // A translation JSON has no fences and no comments. Every string in it is
+  // rendered to a reader, so any retired invocation there is being TAUGHT --
+  // there is no "explaining the retirement" register to protect.
+  //
+  // This file type was added after the gate went green over docs while
+  // `pages.solutionPages.backupVerification.bottomCta.command` shipped
+  // `rdc backup list --storage backup-vault` in ALL 13 languages: a
+  // customer-facing call to action, on the page about backup VERIFICATION,
+  // naming a command that refuses. The gate was looking at the wrong files.
+  const isTranslation = file.endsWith('.json');
   const findings: Finding[] = [];
   let fenced = false;
 
@@ -106,7 +117,7 @@ export function scanSource(file: string, body: string): Finding[] {
       return;
     }
     // A shell comment explaining the retirement is prose, not teaching.
-    const teaching = isScript ? !line.startsWith('#') : fenced;
+    const teaching = isTranslation ? true : isScript ? !line.startsWith('#') : fenced;
     if (!teaching) return;
 
     for (const entry of RETIRED) {
@@ -164,6 +175,18 @@ function runControls(): string[] {
   const scriptReal = ['#!/bin/bash', 'rdc repo push my-app --to my-storage'].join('\n');
   if (scanSource('t.sh', scriptReal).length === 0) {
     failures.push('a retired command in a runnable script line was not caught');
+  }
+
+  // The REAL string that shipped to 13 languages, verbatim. A translation JSON
+  // has no fence to sit inside, so the fence rule alone would have missed it.
+  const cta = '  "command": "rdc backup list --storage backup-vault",';
+  if (scanSource('translations/en.json', cta).length === 0) {
+    failures.push('a retired command in a translation VALUE was not caught');
+  }
+  // And the same string in a .md WITHOUT a fence must still be treated as prose,
+  // so widening to JSON did not accidentally make every mention a finding.
+  if (scanSource('doc.md', cta).length > 0) {
+    failures.push('the JSON rule leaked into markdown: an unfenced mention was flagged');
   }
 
   return failures;
