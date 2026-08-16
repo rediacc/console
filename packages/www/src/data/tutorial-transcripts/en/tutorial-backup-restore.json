@@ -5,89 +5,99 @@
   "title": "Backup & Restore",
   "chapters": {
     "intro": "Backup & Restore",
-    "three-steps": "Three steps: configure, push, restore",
-    "cast-step-0": "Step 1: Import the rclone config",
-    "cast-step-1": "Step 2: List configured storages",
-    "cast-step-2": "Step 3: Push a full backup",
-    "cast-step-3": "Step 4: List backups on the storage",
-    "outro": "Next: Networking & Domains",
-    "cast-step-4": "Step 5: Take the repo offline",
-    "cast-step-5": "Step 6: Pull the backup back",
-    "cast-step-6": "Step 7: Mount — restored"
+    "three-steps": "Three steps: copy, restore, prove",
+    "cast-step-0": "Step 1: The data that has to survive",
+    "cast-step-1": "Step 2: Copy it to a second machine",
+    "cast-step-2": "Step 3: The backup machine has it",
+    "cast-step-3": "Step 4: The primary goes offline",
+    "cast-step-4": "Step 5: Restore the copy",
+    "cast-step-5": "Step 6: Mount the restored repository",
+    "cast-step-6": "Step 7: The data survived",
+    "cast-step-7": "Step 8: Point-in-time backups",
+    "outro": "Next: Networking & Domains"
   },
   "events": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly.",
-      "afterText": "Storage imported. Your CLI can now push backups to it.",
-      "cardLabel": "Import Storage",
-      "prose": "Import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use rclone, the same config imports directly."
+      "at": 2.799671,
+      "text": "Start with the thing that has to survive. Inside the live repository there is a file holding a single order line. Keep an eye on it, because we are about to take this machine offline and get that line back from somewhere else.",
+      "afterText": "That is the line. Everything from here is about getting it back.",
+      "cardLabel": "The Data",
+      "prose": "Read the payload out of the live repository first. One line in one file, so the proof at the end is something you can see rather than something you have to take on trust."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to.",
-      "afterText": "There it is. Ready to receive backups.",
-      "cardLabel": "List Storages",
-      "prose": "List the storages the CLI now knows about. Each one is a destination for backups."
+      "at": 9.00514,
+      "text": "Copy the whole repository to a second machine. The first copy carries the entire encrypted image over SSH, about two gigabytes in half a minute here. What lands on the other side is a backup artifact, not a second running app.",
+      "afterText": "The copy is on the backup machine now.",
+      "cardLabel": "Push To Backup Machine",
+      "prose": "Copy the repository to a second machine. The first push carries the whole encrypted image, roughly two gigabytes in thirty to forty seconds on this fleet, and every push after it sends only the blocks that changed. What lands on the target is a backup artifact rather than a second live repository."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management.",
-      "afterText": "Backup uploaded. Everything in this repo is now on the remote storage, encrypted.",
-      "cardLabel": "Push Backup",
-      "prose": "Push a full backup. The entire repository is uploaded, including the app, database, files, and configuration. Because the repository is encrypted at rest, the backup is encrypted too, with no extra key management."
+      "at": 17.993741,
+      "text": "Ask the backup machine what it is holding. The repository is there under its own name. The second row, the one showing a raw identifier, is the retained base that lets the next push send only what changed.",
+      "afterText": "Both rows are expected: the copy, and the base that keeps later pushes small.",
+      "cardLabel": "Confirm The Copy",
+      "prose": "Ask the backup machine what it is holding. The copy appears under its own name, resolved from your config. The second row carrying a raw identifier is the retained delta base, which is what makes the next push to this machine incremental."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command.",
-      "afterText": "All your snapshots in one place. Pull any of them back with a single command.",
-      "cardLabel": "List Backups",
-      "prose": "List the backups available on this storage. Restoring on a brand new server is one command: the repo pull command."
+      "at": 23.318642,
+      "text": "Now the disaster. Stop the primary and unmount its encrypted volume. As far as this machine is concerned, the application is gone.",
+      "afterText": "Down and unmounted. Everything after this runs against the copy.",
+      "cardLabel": "Disaster",
+      "prose": "Take the primary offline: stop its services and unmount the encrypted volume. Everything from here runs against the copy on the other machine."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Now the restore proof. First take the repository offline: stop the services and unmount the encrypted volume. The app is gone from this machine.",
-      "afterText": "Offline and unmounted — exactly the state of a fresh server.",
-      "cardLabel": "Take Offline",
-      "prose": "Take the repository offline first: stop the services and unmount the encrypted volume with the repo down command."
+      "at": 28.951964,
+      "text": "Turn the artifact into a running repository. Restore is the verb that does it. One flag names the new repository, one places it on the backup machine, and one skips the confirmation.",
+      "afterText": "The copy is a repository now, under a name of its own.",
+      "cardLabel": "Restore The Artifact",
+      "prose": "Restore is the verb that turns a pushed copy into a repository. It is named with --as, placed with --machine, and confirmed with --yes. Restoring under a new name overwrites nothing, which is what makes this safe to practise on a live machine."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "And pull the backup straight back from the storage. The repo pull command fetches the image, checks its integrity, and puts it exactly where it was.",
-      "afterText": "Transfer complete, integrity verified. The repository is back.",
-      "cardLabel": "Pull Backup",
-      "prose": "Pull the backup back from the storage with the repo pull command. The image is fetched and integrity-checked."
+      "at": 39.005334,
+      "text": "Mount the restored repository. We are deliberately not starting its containers, because the proof we want is the data, not the application.",
+      "afterText": "Mounted, and ready to read.",
+      "cardLabel": "Mount It",
+      "prose": "Mount the restored repository. The containers stay down on purpose: the thing being proved here is the data, not the application."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Mount it again, and the repository is restored. Push, list, pull — that is the whole backup story.",
-      "afterText": "Restored. The same flow works on a brand new machine too.",
-      "cardLabel": "Mount Restored",
-      "prose": "Mount the repository again — it is fully restored. The same pull works on a brand new machine."
+      "at": 46.52408,
+      "text": "The same command we ran at the start, against a repository that did not exist two commands ago. Same file, same line, same order.",
+      "afterText": "That is the whole point. The data came back.",
+      "cardLabel": "The Data Survived",
+      "prose": "The same command as step one, run against a repository that did not exist two commands ago. The line comes back byte for byte, out of a machine that was never the original."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "One more, for backups you can roll back through. Snapshots go to the chunk store, where the first run uploads everything and every run after it uploads only the blocks that changed. Any snapshot restores on its own. It needs an account and a licensed repository, so here it is typed rather than run.",
+      "afterText": "Type it on your own installation once you have an account, and it will run.",
+      "cardLabel": "Point In Time Backups",
+      "prose": "Copying to a machine gives you the repository as it is now. For a history you can roll back through, snapshots go to the chunk store: the first run uploads the written blocks, every run after it uploads only what changed, and any snapshot can be restored on its own. This one is typed and not run, because uploading needs an account server and a licensed repository, neither of which a recording has. On your own installation, with an account, this is the command."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "Your app is live, so let's make sure you never lose it! In this tutorial, we push the whole repository to external storage and pull it back on demand."
+      "text": "Your app is live, so let's make sure you never lose it! In this tutorial we copy a whole repository to a second machine, take the first one offline, and bring the data back."
     },
     {
       "id": "three-steps",
-      "text": "Backup and restore comes down to three steps. Configure a storage provider, push a backup, and restore it when you need to."
+      "text": "It comes down to three steps. Copy the repository to a machine you control, restore that copy into a repository of its own, and then prove it by reading your data back out."
     },
     {
       "id": "next-tutorial",

@@ -281,7 +281,6 @@ export function parseBrowseResult(stdout: string | undefined): BrowseListing | u
   return found;
 }
 
-
 /**
  * `backup browse <repo-ref> [--path]` -- list what a repository contains.
  *

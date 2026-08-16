@@ -23,8 +23,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc storage import rclone.conf",
-        "commandFull": "rdc storage import rclone.conf"
+        "command": "cat orders.txt",
+        "commandFull": "rdc term connect my-app --command 'cat orders.txt'"
       }
     },
     {
@@ -34,8 +34,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc storage list",
-        "commandFull": "rdc storage list"
+        "command": "rdc repo push",
+        "commandFull": "rdc repo push my-app --to machine-12"
       }
     },
     {
@@ -43,10 +43,10 @@
       "type": "cast-narrated",
       "markerIndex": 2,
       "holdSec": 0.8,
-      "narrationRole": "transition",
+      "narrationRole": "step",
       "card": {
-        "command": "rdc repo push my-app --to my-storage",
-        "commandFull": "rdc repo push my-app --to my-storage"
+        "command": "rdc repo list",
+        "commandFull": "rdc repo list --machine machine-12"
       }
     },
     {
@@ -56,8 +56,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "command": "rdc backup list --storage my-storage",
-        "commandFull": "rdc backup list --storage my-storage"
+        "command": "rdc repo down",
+        "commandFull": "rdc repo down my-app --unmount"
       }
     },
     {
@@ -67,7 +67,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo down my-app --unmount"
+        "command": "rdc backup restore",
+        "commandFull": "rdc backup restore my-app@machine-12 --as my-app-restored --machine machine-12 --yes"
       }
     },
     {
@@ -77,7 +78,8 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo pull my-app --from my-storage --force --yes"
+        "command": "rdc repo up",
+        "commandFull": "rdc repo up my-app-restored --no-start"
       }
     },
     {
@@ -87,7 +89,19 @@
       "holdSec": 0.8,
       "narrationRole": "step",
       "card": {
-        "commandFull": "rdc repo up my-app --no-start"
+        "command": "cat orders.txt",
+        "commandFull": "rdc term connect my-app-restored --command 'cat orders.txt'"
+      }
+    },
+    {
+      "id": "cast-step-7",
+      "type": "cast-narrated",
+      "markerIndex": 7,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc backup snapshot",
+        "commandFull": "rdc backup snapshot my-app"
       }
     },
     {
