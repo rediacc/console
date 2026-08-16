@@ -1,25 +1,13 @@
-/* @theme rediacc-cheatsheet */
 /* ============================================================================
-   Rediacc CLI Cheat Sheet — Custom Marp Theme
-   All selectors are prefixed with .marp-output so they scope correctly when
-   the generated CSS is injected into the docs page.
+   Rediacc CLI Cheat Sheet card-grid presentation
+   All selectors are prefixed with .cs-cards so they scope to the cheat-sheet
+   article body only.  Rendered by src/components/CheatSheetGrid.astro.
    ============================================================================ */
-
-/* --------------------------------------------------------------------------
-   Override Marp's base slide dimensions (set by marpit core CSS)
-   -------------------------------------------------------------------------- */
-.marp-output div.marpit > section {
-  width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-  position: static !important;
-}
 
 /* --------------------------------------------------------------------------
    CSS Variables
    -------------------------------------------------------------------------- */
-.marp-output {
+.cs-cards {
   --cs-font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --cs-font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   --cs-font-size: 11px;
@@ -52,7 +40,7 @@
 /* --------------------------------------------------------------------------
    Section — base card style
    -------------------------------------------------------------------------- */
-.marp-output section {
+.cs-cards section {
   box-sizing: border-box;
   padding: var(--cs-section-padding);
   background: var(--cs-color-bg);
@@ -67,39 +55,14 @@
 }
 
 /* First section: full-width branding header */
-.marp-output section:first-child {
+.cs-cards section:first-child {
   background: linear-gradient(135deg, var(--cs-color-brand-dark) 0%, #164e63 100%);
   border-color: var(--cs-color-brand-dark);
   color: #ffffff;
   padding: 14px 16px;
 }
 
-/* --------------------------------------------------------------------------
-   Branding header — first section
-   Shows icon + "rediacc" wordmark like the nav bar.
-   -------------------------------------------------------------------------- */
-.marp-output section:first-child .brand-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.marp-output section:first-child .brand-header img {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-}
-
-.marp-output section:first-child .brand-wordmark {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  font-family: var(--cs-font);
-}
-
-.marp-output section:first-child h1 {
+.cs-cards section:first-child h1 {
   font-size: 15px;
   font-weight: 700;
   color: #e0f2fe;
@@ -107,7 +70,7 @@
   border: none;
 }
 
-.marp-output section:first-child p {
+.cs-cards section:first-child p {
   font-size: 11px;
   color: #bae6fd;
   margin: 0;
@@ -116,41 +79,41 @@
 
 /* --------------------------------------------------------------------------
    Category sections — subtle background tints
-   Applied via Marp class directives: <!-- _class: cat-blue -->
+   Applied by CheatSheetGrid.astro, cycling by card index.
    -------------------------------------------------------------------------- */
-.marp-output section.cat-blue {
+.cs-cards section.cat-blue {
   background: var(--cs-color-cat-blue);
 }
-.marp-output section.cat-green {
+.cs-cards section.cat-green {
   background: var(--cs-color-cat-green);
 }
-.marp-output section.cat-amber {
+.cs-cards section.cat-amber {
   background: var(--cs-color-cat-amber);
 }
-.marp-output section.cat-purple {
+.cs-cards section.cat-purple {
   background: var(--cs-color-cat-purple);
 }
-.marp-output section.cat-rose {
+.cs-cards section.cat-rose {
   background: var(--cs-color-cat-rose);
 }
-.marp-output section.cat-teal {
+.cs-cards section.cat-teal {
   background: var(--cs-color-cat-teal);
 }
 
 /* --------------------------------------------------------------------------
    Headings
    -------------------------------------------------------------------------- */
-.marp-output h1,
-.marp-output h2,
-.marp-output h3,
-.marp-output h4 {
+.cs-cards h1,
+.cs-cards h2,
+.cs-cards h3,
+.cs-cards h4 {
   font-family: var(--cs-font);
   line-height: 1.2;
   margin: 0 0 6px 0;
   color: var(--cs-color-text);
 }
 
-.marp-output h2 {
+.cs-cards h2 {
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -161,17 +124,17 @@
   margin-bottom: 8px;
 }
 
-.marp-output h2 a {
+.cs-cards h2 a {
   color: inherit;
   text-decoration: none;
 }
 
-.marp-output h2 a:hover {
+.cs-cards h2 a:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.marp-output h3 {
+.cs-cards h3 {
   font-size: 11px;
   font-weight: 600;
   color: var(--cs-color-text);
@@ -179,7 +142,7 @@
   margin-bottom: 4px;
 }
 
-.marp-output h4 {
+.cs-cards h4 {
   font-size: 11px;
   font-weight: 600;
   color: var(--cs-color-text-muted);
@@ -190,18 +153,18 @@
 /* --------------------------------------------------------------------------
    Paragraphs & text
    -------------------------------------------------------------------------- */
-.marp-output p {
+.cs-cards p {
   margin: 0 0 5px 0;
   font-size: var(--cs-font-size);
   color: var(--cs-color-text);
 }
 
-.marp-output strong {
+.cs-cards strong {
   font-weight: 600;
   color: var(--cs-color-text);
 }
 
-.marp-output em {
+.cs-cards em {
   font-style: italic;
   color: var(--cs-color-text-muted);
 }
@@ -209,32 +172,32 @@
 /* --------------------------------------------------------------------------
    Lists — dense, tight
    -------------------------------------------------------------------------- */
-.marp-output ul,
-.marp-output ol {
+.cs-cards ul,
+.cs-cards ol {
   margin: 0 0 5px 0;
   padding-left: 14px;
 }
 
-.marp-output li {
+.cs-cards li {
   margin-bottom: 2px;
   font-size: var(--cs-font-size);
   line-height: var(--cs-line-height);
 }
 
-.marp-output li p {
+.cs-cards li p {
   margin: 0;
 }
 
 /* Nested lists */
-.marp-output li ul,
-.marp-output li ol {
+.cs-cards li ul,
+.cs-cards li ol {
   margin: 2px 0 2px 0;
 }
 
 /* --------------------------------------------------------------------------
    Inline code
    -------------------------------------------------------------------------- */
-.marp-output code {
+.cs-cards code {
   font-family: var(--cs-font-mono);
   font-size: 11px;
   background: rgba(6, 182, 212, 0.1);
@@ -248,7 +211,7 @@
 /* --------------------------------------------------------------------------
    Code blocks — dark background, syntax-friendly
    -------------------------------------------------------------------------- */
-.marp-output pre {
+.cs-cards pre {
   background: var(--cs-color-bg-code);
   border-radius: var(--cs-radius);
   padding: 5px 8px;
@@ -257,7 +220,7 @@
   border: 1px solid #1e293b;
 }
 
-.marp-output pre code {
+.cs-cards pre code {
   font-family: var(--cs-font-mono);
   font-size: 10px;
   line-height: 1.4;
@@ -272,14 +235,14 @@
 /* --------------------------------------------------------------------------
    Tables — compact
    -------------------------------------------------------------------------- */
-.marp-output table {
+.cs-cards table {
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
   margin: 5px 0;
 }
 
-.marp-output th {
+.cs-cards th {
   background: var(--cs-color-bg-alt);
   font-weight: 600;
   text-align: left;
@@ -289,21 +252,21 @@
   color: var(--cs-color-text);
 }
 
-.marp-output td {
+.cs-cards td {
   padding: 3px 6px;
   border: 1px solid var(--cs-color-border);
   vertical-align: top;
   font-size: 11px;
 }
 
-.marp-output tr:nth-child(even) td {
+.cs-cards tr:nth-child(even) td {
   background: var(--cs-color-bg-alt);
 }
 
 /* --------------------------------------------------------------------------
    Blockquote / tip callout
    -------------------------------------------------------------------------- */
-.marp-output blockquote {
+.cs-cards blockquote {
   border-left: 3px solid var(--cs-color-brand);
   margin: 5px 0;
   padding: 4px 8px;
@@ -311,7 +274,7 @@
   border-radius: 0 var(--cs-radius) var(--cs-radius) 0;
 }
 
-.marp-output blockquote p {
+.cs-cards blockquote p {
   margin: 0;
   color: var(--cs-color-text-muted);
   font-size: 11px;
@@ -320,7 +283,7 @@
 /* --------------------------------------------------------------------------
    Horizontal rule — section divider within a card
    -------------------------------------------------------------------------- */
-.marp-output hr {
+.cs-cards hr {
   border: none;
   border-top: 1px solid var(--cs-color-border);
   margin: 6px 0;
@@ -333,114 +296,99 @@
    Print styles — ink-friendly: white backgrounds, dark text only
    -------------------------------------------------------------------------- */
 @media print {
-  .marp-output {
+  .cs-cards {
     --cs-font-size: 6.5px;
     --cs-line-height: 1.15;
     --cs-section-padding: 2px 4px;
   }
 
   /* All sections: white background, thin border */
-  .marp-output section {
+  .cs-cards section {
     background: #ffffff !important;
     border: 1px solid #999;
     color: #111;
   }
 
   /* Header: white bg with teal text instead of teal bg with white text */
-  .marp-output section:first-child {
+  .cs-cards section:first-child {
     background: #ffffff !important;
     border-bottom: 2px solid #0e7490;
   }
 
-  .marp-output section:first-child h1 {
+  .cs-cards section:first-child h1 {
     font-size: 10px;
     margin: 1px 0;
     color: #0e7490;
   }
 
-  .marp-output section:first-child .brand-header {
-    margin-bottom: 2px;
-    gap: 6px;
-  }
-
-  .marp-output section:first-child .brand-header img {
-    width: 20px;
-    height: 20px;
-  }
-
-  .marp-output section:first-child .brand-wordmark {
-    font-size: 13px;
-    color: #0e7490;
-  }
-
-  .marp-output section:first-child p {
+  .cs-cards section:first-child p {
     font-size: 7.5px;
     color: #444;
   }
 
   /* Code blocks: light gray bg instead of dark — saves ink */
-  .marp-output pre {
+  .cs-cards pre {
     background: #f5f5f5 !important;
     border: 1px solid #ccc !important;
   }
 
-  .marp-output pre code {
+  .cs-cards pre code {
     color: #1a1a1a !important;
   }
 
   /* Inline code: no background tint, just border */
-  .marp-output code {
+  .cs-cards code {
     background: transparent !important;
     border-color: #999 !important;
     color: #1a1a1a !important;
   }
 
   /* Category tints: remove colored backgrounds, use left border accent */
-  .marp-output section.cat-blue,
-  .marp-output section.cat-green,
-  .marp-output section.cat-amber,
-  .marp-output section.cat-purple,
-  .marp-output section.cat-rose,
-  .marp-output section.cat-teal {
+  .cs-cards section.cat-blue,
+  .cs-cards section.cat-green,
+  .cs-cards section.cat-amber,
+  .cs-cards section.cat-purple,
+  .cs-cards section.cat-rose,
+  .cs-cards section.cat-teal {
     background: #ffffff !important;
   }
 
-  .marp-output section.cat-blue {
+  .cs-cards section.cat-blue {
     border-left: 3px solid #3b82f6;
   }
-  .marp-output section.cat-green {
+  .cs-cards section.cat-green {
     border-left: 3px solid #22c55e;
   }
-  .marp-output section.cat-amber {
+  .cs-cards section.cat-amber {
     border-left: 3px solid #f59e0b;
   }
-  .marp-output section.cat-purple {
+  .cs-cards section.cat-purple {
     border-left: 3px solid #a855f7;
   }
-  .marp-output section.cat-rose {
+  .cs-cards section.cat-rose {
     border-left: 3px solid #f43f5e;
   }
-  .marp-output section.cat-teal {
+  .cs-cards section.cat-teal {
     border-left: 3px solid #06b6d4;
   }
 
   /* Headings: dark text */
-  .marp-output h2 {
+  .cs-cards h2 {
     color: #111 !important;
     border-bottom-color: #ccc !important;
   }
 
   /* Tables: no alternating row backgrounds */
-  .marp-output tr:nth-child(even) td {
+  .cs-cards tr:nth-child(even) td {
     background: transparent !important;
   }
 
-  .marp-output th {
+  .cs-cards th {
     background: #f5f5f5 !important;
   }
 
   /* Blockquotes: minimal */
-  .marp-output blockquote {
+  .cs-cards blockquote {
     background: transparent !important;
     border-left-color: #999 !important;
   }
