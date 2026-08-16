@@ -72,6 +72,17 @@ const ALLOWLISTED_DOMAINS = new Set([
   // answer this runner. Recheck by removing this line -- if the host starts
   // answering CI again the gate will pass without it.
   'www.debian.org',
+  // Sectigo code-signing product page - returns HTTP 500 to GitHub-hosted
+  // runners (run 31916185063, Quality/Content), which is a server error rather
+  // than a 403, so it reads as "the page is broken" instead of "you are a bot".
+  // Measured rather than assumed: the same URL answers 200 six times out of six
+  // from a non-datacenter IP -- three HEAD in ~1.8s, three GET in ~0.2s -- with
+  // this file's own browser User-Agent. The link is correct and the page is
+  // live. It predates this wave (b8e332b73, on main); nothing here changed it.
+  // Recheck by removing this line: the liveness audit below already warns when
+  // an allowlisted domain starts answering CI again, so the exemption cannot
+  // outlive its reason quietly.
+  'www.sectigo.com',
   'www.dataprotection.ie', // Ireland DPC - whole domain unreachable from CI/datacenter IPs (connection fails at site root, not just deep links); the Meta-fine press release resolves from browsers
   // Brazil Planalto (LGPD, Lei 13.709/2018 full text) - ECONNRESET to
   // GitHub-hosted runners, reported by this checker as `fetch failed`.
