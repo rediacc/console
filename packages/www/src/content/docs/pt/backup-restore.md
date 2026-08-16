@@ -186,7 +186,7 @@ A receção recusa substituir um repositório que esteja atualmente **montado**.
 Liste os snapshots no armazenamento fragmentado:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Para ver os artefactos de backup presentes numa máquina:
@@ -452,7 +452,7 @@ Exclua um repositório da execução de alta frequência quando:
 
 > **Se os dados são puramente regeneráveis**, considere se precisa de os fazer backup. Uma alternativa é fazer backup apenas das entradas de origem brutas (os dumps CSV, neste exemplo) e ignorar completamente a cópia derivada. Um backup cold semanal das entradas de origem é muito mais pequeno e completamente suficiente para a recuperação.
 
-Um repositório que nenhuma das estratégias exclui é capturado por ambas, pelo que tem snapshots horários consistentes por falha e um semanal consistente ao nível da aplicação. `rdc backup snapshot list <repo>` mostra-os em conjunto, e os blocos que partilham são armazenados uma única vez.
+Um repositório que nenhuma das estratégias exclui é capturado por ambas, pelo que tem snapshots horários consistentes por falha e um semanal consistente ao nível da aplicação. `rdc backup manifests <repo>` mostra-os em conjunto, e os blocos que partilham são armazenados uma única vez.
 
 ## Operações de Backup
 

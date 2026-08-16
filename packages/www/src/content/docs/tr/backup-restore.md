@@ -185,7 +185,7 @@ Pull, o an **bağlı** olan bir deponun üzerine yazmayı reddeder. Önce bağla
 Parça depolamadaki anlık görüntüleri listeleyin:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Bir makinede duran yedek dosyalarını görmek için:
@@ -451,7 +451,7 @@ Yüksek frekanslı çalıştırmadan bir depoyu hariç tutun:
 
 > **Veriler tamamen yeniden üretilebiliyorsa**, hiç yedeklemeniz gerekip gerekmediğini düşünün. Bir alternatif, yalnızca ham kaynak girdileri (bu örnekte CSV dökümleri) yedeklemek ve türetilmiş kopyayı tamamen atlamaktır. Kaynak girdilerin haftalık soğuk yedeklemesi çok daha küçük ve kurtarma için tamamen yeterlidir.
 
-İki stratejiden hiçbirinin dışlamadığı bir depo her ikisi tarafından da yakalanır; böylece hem saatlik kilitlenme tutarlı anlık görüntülere hem de haftalık uygulama tutarlı bir anlık görüntüye sahip olur. `rdc backup snapshot list <repo>` bunları birlikte gösterir ve paylaştıkları bloklar bir kez saklanır.
+İki stratejiden hiçbirinin dışlamadığı bir depo her ikisi tarafından da yakalanır; böylece hem saatlik kilitlenme tutarlı anlık görüntülere hem de haftalık uygulama tutarlı bir anlık görüntüye sahip olur. `rdc backup manifests <repo>` bunları birlikte gösterir ve paylaştıkları bloklar bir kez saklanır.
 
 ## Yedekleme İşlemleri
 

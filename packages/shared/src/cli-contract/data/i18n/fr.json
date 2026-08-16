@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "RETIRÉ : le listage du stockage a disparu avec le bras rclone",
   "commands.backup.list.placementExclusive": "Passez exactement l'un de --machine ou --storage, pas les deux.",
   "commands.backup.list.placementRequired": "Spécifiez --machine <m> ou --storage <s> pour indiquer d'où lister.",
-  "commands.backup.list.storageRetired": "Lister un backend de stockage est retiré : le bras cloud rclone a été supprimé. Les instantanés du magasin de blocs se listent avec `rdc backup snapshot list`, les artefacts d'une machine avec `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "Lister un backend de stockage est retiré : le bras cloud rclone a été supprimé. Les instantanés du magasin de blocs se listent avec `rdc backup manifests`, les artefacts d'une machine avec `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "Lister les manifestes d'instantanés de sauvegarde enregistrés sur le serveur",
   "commands.backup.manifests.empty": "Aucun manifeste de sauvegarde trouvé.",
   "commands.backup.manifests.fetching": "Récupération des manifestes de sauvegarde...",

@@ -24,7 +24,7 @@
         "optionStorage": "廃止: ストレージ一覧は rclone 系統とともに削除されました",
         "placementExclusive": "--machine か --storage のどちらか一方のみを指定してください（両方は不可）",
         "placementRequired": "どこから一覧表示するか、--machine <m> または --storage <s> で指定してください",
-        "storageRetired": "ストレージバックエンドの一覧表示は廃止されました。rclone のクラウド系統が削除されたためです。チャンクストアのスナップショットは `rdc backup snapshot list`、マシン上の成果物は `rdc backup list -m <machine>` で一覧します"
+        "storageRetired": "ストレージバックエンドの一覧表示は廃止されました。rclone のクラウド系統が削除されたためです。チャンクストアのスナップショットは `rdc backup manifests`、マシン上の成果物は `rdc backup list -m <machine>` で一覧します"
       },
       "manifests": {
         "description": "サーバーに記録されたバックアップスナップショットのマニフェストを一覧表示する",

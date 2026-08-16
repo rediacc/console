@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "LÕPETATUD: salvestusteenuse loetelu eemaldati koos rclone'i haruga",
   "commands.backup.list.placementExclusive": "Anna täpselt üks: --machine või --storage, mitte mõlemad.",
   "commands.backup.list.placementRequired": "Määra --machine <m> või --storage <s>, et öelda, kust loetleda.",
-  "commands.backup.list.storageRetired": "Salvestusteenuse sisu loetlemine on lõpetatud: rclone'i pilveharu eemaldati. Tükihoidla hetktõmmised loetle käsuga `rdc backup snapshot list`, masinal olevad artefaktid käsuga `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "Salvestusteenuse sisu loetlemine on lõpetatud: rclone'i pilveharu eemaldati. Tükihoidla hetktõmmised loetle käsuga `rdc backup manifests`, masinal olevad artefaktid käsuga `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "Serverisse salvestatud varukoopia hetktõmmiste manifestide loendamine",
   "commands.backup.manifests.empty": "Varukoopia manifeste ei leitud.",
   "commands.backup.manifests.fetching": "Varukoopia manifestide toomine...",

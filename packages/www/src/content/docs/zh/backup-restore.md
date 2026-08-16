@@ -185,7 +185,7 @@ rdc repo pull my-app --from-machine server-1
 列出分块存储中的快照：
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 要查看某台机器上的备份产物：
@@ -451,7 +451,7 @@ rdc backup strategy set weekly-cold \
 
 > **如果数据是纯粹可再生的**，请考虑是否需要备份它。另一种方法是只备份原始源输入（在本例中是 CSV 转储），完全跳过派生副本。源输入的每周冷备份要小得多，完全足以用于恢复。
 
-不被任一策略排除的仓库会被两者同时捕获，因此它既有每小时的崩溃一致性快照，也有每周的应用一致性快照。`rdc backup snapshot list <repo>` 会把它们一起显示出来，两者共享的块只存储一次。
+不被任一策略排除的仓库会被两者同时捕获，因此它既有每小时的崩溃一致性快照，也有每周的应用一致性快照。`rdc backup manifests <repo>` 会把它们一起显示出来，两者共享的块只存储一次。
 
 ## 备份操作
 

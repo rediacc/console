@@ -185,7 +185,7 @@ Il pull rifiuta di sovrascrivere un repository attualmente **montato**. Smontalo
 Elenca gli snapshot nello storage a chunk:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Per vedere i backup presenti su una macchina:
@@ -451,7 +451,7 @@ Escludi un repository dall'esecuzione ad alta frequenza quando:
 
 > **Se i dati sono puramente rigenerabili**, considera se è necessario eseguirne il backup. Un'alternativa è eseguire il backup solo degli input sorgente grezzi (i dump CSV, in questo esempio) e saltare la copia derivata del tutto. Un backup cold settimanale degli input sorgente è molto più piccolo e completamente sufficiente per il recupero.
 
-Un repository che nessuna delle due strategie esclude viene catturato da entrambe, quindi ha snapshot orari crash-consistent e uno settimanale application-consistent. `rdc backup snapshot list <repo>` li mostra insieme, e i blocchi che condividono vengono memorizzati una sola volta.
+Un repository che nessuna delle due strategie esclude viene catturato da entrambe, quindi ha snapshot orari crash-consistent e uno settimanale application-consistent. `rdc backup manifests <repo>` li mostra insieme, e i blocchi che condividono vengono memorizzati una sola volta.
 
 ## Operazioni di Backup
 

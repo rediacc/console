@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1756,
-    "sourceCommit": "ed40593132a3223ffed76456d8b7f64a4c790f4a"
+    "sourceCommit": "5919efb9879052e12a82fbd21291802b6bafd6ef"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -22,7 +22,7 @@
     "commands.backup.list.optionStorage": "e872d2f8",
     "commands.backup.list.placementExclusive": "a335482d",
     "commands.backup.list.placementRequired": "5972aaed",
-    "commands.backup.list.storageRetired": "be1c399e",
+    "commands.backup.list.storageRetired": "20e8bed4",
     "commands.backup.manifests.description": "14c9566d",
     "commands.backup.manifests.empty": "b5b0c78e",
     "commands.backup.manifests.fetching": "f1015dd7",

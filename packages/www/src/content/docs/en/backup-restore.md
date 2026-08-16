@@ -206,7 +206,7 @@ Pull refuses to overwrite a repository that is currently **mounted**. Unmount it
 List the snapshots in chunk storage:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 To see backup artifacts sitting on a machine:
@@ -483,7 +483,7 @@ Exclude a repository from the high-frequency run when:
 
 > **If the data is purely regenerable**, consider whether you need to back it up at all. An alternative is to back up only the raw source inputs (the CSV dumps, in this example) and skip the derived copy entirely. A weekly cold backup of the source inputs is much smaller and fully sufficient for recovery.
 
-A repo that neither strategy excludes is captured by both, so it has hourly crash-consistent snapshots and a weekly application-consistent one. `rdc backup snapshot list <repo>` shows them together, and the blocks they share are stored once.
+A repo that neither strategy excludes is captured by both, so it has hourly crash-consistent snapshots and a weekly application-consistent one. `rdc backup manifests <repo>` shows them together, and the blocks they share are stored once.
 
 ## Backup Operations
 

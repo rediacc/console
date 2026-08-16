@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "KALDIRILDI: depolama listeleme, rclone koluyla birlikte çıkarıldı",
   "commands.backup.list.placementExclusive": "--machine veya --storage seçeneklerinden yalnızca birini geçirin, ikisini birden değil.",
   "commands.backup.list.placementRequired": "Nereden listeleneceğini belirtmek için --machine <m> veya --storage <s> kullanın.",
-  "commands.backup.list.storageRetired": "Depolama arka ucunu listeleme kaldırıldı: rclone bulut kolu artık yok. Parça deposundaki anlık görüntüler `rdc backup snapshot list`, bir makinedeki yedekler `rdc backup list -m <machine>` ile listelenir",
+  "commands.backup.list.storageRetired": "Depolama arka ucunu listeleme kaldırıldı: rclone bulut kolu artık yok. Parça deposundaki anlık görüntüler `rdc backup manifests`, bir makinedeki yedekler `rdc backup list -m <machine>` ile listelenir",
   "commands.backup.manifests.description": "Sunucuya kaydedilen yedek anlık görüntü manifestlerini listele",
   "commands.backup.manifests.empty": "Yedek manifesti bulunamadı.",
   "commands.backup.manifests.fetching": "Yedek manifestleri alınıyor...",

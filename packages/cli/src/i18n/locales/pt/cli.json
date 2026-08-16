@@ -24,7 +24,7 @@
         "optionStorage": "DESCONTINUADO: a listagem de armazenamento saiu junto com o braço do rclone",
         "placementExclusive": "Passe exatamente um de --machine ou --storage, não ambos.",
         "placementRequired": "Especifique --machine <m> ou --storage <s> para indicar de onde listar.",
-        "storageRetired": "Listar um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. Os snapshots do chunk store são listados com `rdc backup snapshot list` e os artefatos de uma máquina com `rdc backup list -m <machine>`"
+        "storageRetired": "Listar um backend de armazenamento foi descontinuado: o braço de nuvem do rclone foi removido. Os snapshots do chunk store são listados com `rdc backup manifests` e os artefatos de uma máquina com `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Listar os manifestos de snapshots de cópia de segurança registados no servidor",
