@@ -967,6 +967,29 @@ N_AGENT_HINT = (
     "  Agent tool, or ignore this line if it is not the domain you are in."
 )
 
+# ---- the push-back (wl_agents.pushback_for) ---------------------------------
+# NOT an accusation and deliberately not phrased as one: concluding that
+# something is impossible is often CORRECT, and CLAUDE.md rule 3 forbids only
+# concluding it WITHOUT PROBING. So this quotes the claim back, names the file
+# that may already answer it, and asks for one command. A session that has
+# already probed clears it in a sentence.
+#
+# It names the matched terms for the same reason the hint does: a wrong
+# push-back must be refutable in one second, not by opening a 9 KB file.
+
+V_AGENT_PUSHBACK = (
+    "You just claimed %s, in a domain .claude/agents/%s.md already covers.\n"
+    "  Matched on: %s\n"
+    "  That file exists because a previous session paid for this knowledge. It very\n"
+    "  likely names the exact command that would test the claim -- READ IT before\n"
+    "  the claim stands. This fired live on \"it doesn't reproduce: neither local\n"
+    '  worker has /etc/ceph", where ops-vms.md said three lines further down that a\n'
+    "  default `ops up` leaves the Ceph trio unprovisioned and names the fix.\n"
+    "  Clear it either way: run the probe and report what it said, or state in one\n"
+    '  line why that specialist does not apply. "Cannot be done here" is a claim,\n'
+    "  and this is the check that asks you to prove it. Fires ONCE per specialist."
+)
+
 # A corpus that cannot be read degrades to SILENCE PLUS THIS NOTE, never to a
 # crash and never to a quiet skip: the matcher runs on the path that ends every
 # turn, so an exception here is a session that cannot stop, and a silent skip is
