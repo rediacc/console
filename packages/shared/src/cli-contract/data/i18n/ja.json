@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} を一覧表示しました",
+  "commands.backup.browse.description": "リポジトリに含まれるファイルを一覧表示する。リポジトリイメージへのローカルな読み取り専用アクセスであり、サーバーも認証情報も使用せず、稼働中のリポジトリを妨げることは一切ない。チャンクストアにのみ存在するスナップショットは一覧表示できない。先にリストアしてから、その結果を参照すること。",
+  "commands.backup.browse.empty": "{{name}} にはファイルがありません。",
+  "commands.backup.browse.failed": "{{name}} を一覧表示できませんでした",
+  "commands.backup.browse.optionDepth": "階層の深さをNレベルに制限する（0で無制限）",
+  "commands.backup.browse.optionLimit": "返すエントリの最大数（0で無制限）",
+  "commands.backup.browse.optionPath": "一覧表示をこのサブツリーに限定する",
+  "commands.backup.browse.starting": "{{name}} を一覧表示中...",
+  "commands.backup.browse.truncated": "一覧は {{limit}} 件で打ち切られました。--path で絞り込むか、--limit を増やしてください。",
   "commands.backup.cancel.cancelled": "{{name}} をキャンセルしました",
   "commands.backup.cancel.cancelling": "{{name}} を停止中...",
   "commands.backup.cancel.description": "リモートマシン上の実行中バックアップをキャンセル",

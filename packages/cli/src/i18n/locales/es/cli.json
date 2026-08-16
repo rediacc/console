@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Lista los archivos que contiene un repositorio. Un recorrido local de solo lectura de la imagen del repositorio: sin servidor, sin credenciales, y un repositorio en ejecución nunca se ve afectado. No puede listar una instantánea que solo existe en el almacén de bloques; restáurela primero y luego explore el resultado.",
+        "optionPath": "Limitar el listado a este subárbol",
+        "optionDepth": "Limitar el descenso a N niveles (0 para ilimitado)",
+        "optionLimit": "Número máximo de entradas a devolver (0 para ilimitado)",
+        "starting": "Listando {{name}}...",
+        "completed": "{{name}} listado",
+        "failed": "No se pudo listar {{name}}",
+        "truncated": "Listado truncado a {{limit}} entradas. Acótelo con --path, o aumente --limit.",
+        "empty": "{{name}} no contiene archivos."
+      },
       "cancel": {
         "cancelled": "{{name}} cancelado",
         "cancelling": "Deteniendo {{name}}...",

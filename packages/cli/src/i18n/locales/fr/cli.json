@@ -4,6 +4,17 @@
   },
   "commands": {
     "backup": {
+      "browse": {
+        "description": "Liste les fichiers que contient un dépôt. Un parcours local en lecture seule de l'image du dépôt : aucun serveur, aucun identifiant, et un dépôt en cours d'exécution n'est jamais perturbé. Ne peut pas lister un instantané qui n'existe que dans le magasin de blocs ; restaurez-le d'abord, puis parcourez le résultat.",
+        "optionPath": "Limiter le listage à ce sous-arbre",
+        "optionDepth": "Limiter la descente à N niveaux (0 pour illimité)",
+        "optionLimit": "Nombre maximal d'entrées à renvoyer (0 pour illimité)",
+        "starting": "Listage de {{name}}...",
+        "completed": "{{name}} listé",
+        "failed": "Impossible de lister {{name}}",
+        "truncated": "Listage tronqué à {{limit}} entrées. Restreignez avec --path, ou augmentez --limit.",
+        "empty": "{{name}} ne contient aucun fichier."
+      },
       "cancel": {
         "cancelled": "{{name}} annulé",
         "cancelling": "Arrêt de {{name}}...",

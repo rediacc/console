@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} listelendi",
+  "commands.backup.browse.description": "Bir deponun içerdiği dosyaları listeler. Depo imajının yerel, salt okunur bir taraması: sunucu yok, kimlik bilgisi yok, çalışan bir depo asla etkilenmez. Yalnızca parça deposunda bulunan bir anlık görüntüyü listeleyemez; önce onu geri yükleyin, ardından sonucu inceleyin.",
+  "commands.backup.browse.empty": "{{name}} hiç dosya içermiyor.",
+  "commands.backup.browse.failed": "{{name}} listelenemedi",
+  "commands.backup.browse.optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",
+  "commands.backup.browse.optionLimit": "Döndürülecek maksimum girdi sayısı (sınırsız için 0)",
+  "commands.backup.browse.optionPath": "Listelemeyi bu alt ağaçla sınırla",
+  "commands.backup.browse.starting": "{{name}} listeleniyor...",
+  "commands.backup.browse.truncated": "Listeleme {{limit}} girdide kesildi. --path ile daraltın veya --limit değerini artırın.",
   "commands.backup.cancel.cancelled": "{{name}} iptal edildi",
   "commands.backup.cancel.cancelling": "{{name}} durduruluyor...",
   "commands.backup.cancel.description": "Uzak makinede çalışan bir yedeklemeyi iptal et",

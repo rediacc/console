@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} elencato",
+  "commands.backup.browse.description": "Elenca i file contenuti in un repository. Una scansione locale in sola lettura dell'immagine del repository: nessun server, nessuna credenziale, e un repository in esecuzione non viene mai disturbato. Non può elencare uno snapshot che esiste solo nel chunk store; ripristinalo prima, poi esplora il risultato.",
+  "commands.backup.browse.empty": "{{name}} non contiene file.",
+  "commands.backup.browse.failed": "Impossibile elencare {{name}}",
+  "commands.backup.browse.optionDepth": "Limita la discesa a N livelli (0 per illimitato)",
+  "commands.backup.browse.optionLimit": "Numero massimo di voci da restituire (0 per illimitato)",
+  "commands.backup.browse.optionPath": "Limita l'elenco a questo sottoalbero",
+  "commands.backup.browse.starting": "Elenco di {{name}} in corso...",
+  "commands.backup.browse.truncated": "Elenco troncato a {{limit}} voci. Restringilo con --path, oppure aumenta --limit.",
   "commands.backup.cancel.cancelled": "{{name}} annullato",
   "commands.backup.cancel.cancelling": "Arresto di {{name}} in corso...",
   "commands.backup.cancel.description": "Annulla un backup in esecuzione su una macchina remota",

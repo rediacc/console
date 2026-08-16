@@ -1,4 +1,13 @@
 {
+  "commands.backup.browse.completed": "{{name}} loetletud",
+  "commands.backup.browse.description": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta serverit ega mandaate ning töötavat hoidlat see kunagi ei häiri. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust.",
+  "commands.backup.browse.empty": "{{name}} ei sisalda faile.",
+  "commands.backup.browse.failed": "{{name}} loetlemine ebaõnnestus",
+  "commands.backup.browse.optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
+  "commands.backup.browse.optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",
+  "commands.backup.browse.optionPath": "Piira loetelu selle alampuuga",
+  "commands.backup.browse.starting": "{{name}} loetlemine...",
+  "commands.backup.browse.truncated": "Loetelu katkestati {{limit}} kirje juures. Kitsenda seda --path abil või tõsta --limit väärtust.",
   "commands.backup.cancel.cancelled": "{{name}} katkestatud",
   "commands.backup.cancel.cancelling": "{{name}} peatamine...",
   "commands.backup.cancel.description": "Katkestab käimasoleva varukoopia kaugmasinal",
