@@ -4,8 +4,8 @@ description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기�
 category: Guides
 order: 3
 language: ko
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI 치트 시트
@@ -44,12 +44,11 @@ sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 
 | 명령 | 설명 |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | 리포지터리 백업을 스토리지로 푸시 |
-| `rdc repo pull <repo>@<machine> --from <storage>` | 스토리지에서 리포지터리 복원 |
 | `rdc repo push ... --bwlimit <limit>` | 푸시 중 rsync 대역폭 제한 (예: `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | 풀 중 rsync 대역폭 제한 |
 | `rdc repo push ... --checkpoint` | 푸시 전 컨테이너 체크포인트 생성 |
-| `rdc backup list --storage <storage>` | 스토리지의 사용 가능한 백업 나열 |
+| `rdc backup manifests <repo-ref>` | 청크 스토리지가 보관하는 스냅샷 나열 |
+| `rdc backup browse <repo-ref>` | 리포지터리에 포함된 파일 나열 (로컬, 읽기 전용) |
 | `rdc backup snapshot <repo>` | 청크 스토리지 스냅샷 업로드: 처음에는 전체 인벤토리, 이후에는 변경된 셀만 |
 | `rdc backup snapshot <repo> --dry-run` | 업로드 없이 스냅샷 계획; 무엇이 이동할지 보고 |
 | `rdc backup verify <repo>` | 레포지토리의 백업 앵커를 청크 스토리지와 대조하여 검증 |

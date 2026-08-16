@@ -47,7 +47,8 @@ rdc config set team <name>
 # Create a named config (no cloud API)
 rdc config init <name> --ssh-key ~/.ssh/id_ed25519
 
-# Import object storage config from rclone.conf
+# Read a pre-retirement archive (needs rclone on PATH;
+# storage is no longer a backup destination)
 rdc storage import rclone.conf --name <name>
 
 # Add a machine to the active config
@@ -268,33 +269,39 @@ rdc vscode cleanup --all
 <h2><a href="backup-restore">Backup & Restore</a></h2>
 
 ```bash
-# Push repo backup to S3/R2 storage
-rdc repo push <repo> --to <storage>
+# Take a point-in-time snapshot into the chunk store
+rdc backup snapshot <repo>
 
-# Hot backup with container checkpoint (no downtime)
-rdc repo push <repo> \
-  --to <storage> --checkpoint
+# Quiesce containers first (app-consistent)
+rdc backup snapshot <repo> --cold
+
+# List the snapshots the chunk store holds
+rdc backup manifests <repo-ref>
+
+# List the files a repository contains (local read)
+rdc backup browse <repo-ref>
+
+# Restore a point in time
+rdc backup restore <repo> --at <snapshot> \
+  --as <name> --up
+
+# Copy a repository to another machine
+rdc repo push <repo> --to <machine>
 
 # Fork with live state (CRIU checkpoint + CoW clone)
 rdc repo fork <parent> --tag <tag> --checkpoint
 
-# Pull backup from storage to a machine
-rdc repo pull <repo> --from <storage>
-
-# List available backups on storage
-rdc backup list <repo> --storage <storage>
-
 # Configure backup schedule
 rdc backup strategy set primary \
   --cron "0 2 * * *" \
-  --destination <storage> \
+  --destination <destination> \
   --enable
 
 # Push schedule to machine as a systemd timer
 rdc backup schedule -m <machine>
 
-# Push all repos to storage (omit --name to push all)
-rdc repo push <repo> --to <storage>
+# Stored bytes against your quota
+rdc backup usage
 ```
 
 ---

@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "e4a4e0de5"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # 快速开始
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. 推送到云存储（OneDrive、Google Drive、S3）
+### 3. 备份到分块存储
 
 ```bash
-# 导入您的 rclone 配置作为存储后端
-rdc storage import ~/rclone.conf
+# 创建一个特定时间点的快照
+rdc backup snapshot my-app
 
-# 列出可用的存储
-rdc storage list
+# 查看已有哪些快照
+rdc backup manifests my-app
 
-# 将仓库推送到云存储
-rdc repo push my-app --to my-s3-backup
-
-# 列出存储上的备份
-rdc backup list --storage my-s3-backup
+# 核对已存储字节数与您的配额
+rdc backup usage
 ```
 
-`--to` 自动检测目标是机器还是存储后端。支持所有 rclone 支持的提供商：S3、R2、B2、OneDrive、Google Drive、SFTP 等。
+快照会上传到分块存储，这需要账户服务器和已获许可的仓库。只存储发生变化的数据，因此对同一仓库做第二次快照只需支付差异部分的成本，而不是整份镜像的成本。
+
+使用 `--to <storage>` 将仓库推送到云存储的功能已废止，现在会被拒绝。要读取该变更之前写入的存档，`rdc storage browse` 仍可使用，并且需要在您的 PATH 中安装 `rclone`。
 
 ### 4. 从远程拉取
 

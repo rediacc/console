@@ -202,23 +202,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Push to Cloud Storage (OneDrive, Google Drive, S3)
+### 3. Back Up to the Chunk Store
 
 ```bash
-# Import your rclone config as a storage backend
-rdc storage import ~/rclone.conf
+# Take a point-in-time snapshot
+rdc backup snapshot my-app
 
-# List available storages
-rdc storage list
+# See what snapshots exist
+rdc backup manifests my-app
 
-# Push repo to cloud storage
-rdc repo push my-app --to my-s3-backup
-
-# List backups on storage
-rdc backup list --storage my-s3-backup
+# Check the stored bytes against your quota
+rdc backup usage
 ```
 
-`--to` auto-detects whether the target is a machine or a storage backend. Works with any rclone-supported provider: S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
+Snapshots upload to the chunk store, which needs an account server and a licensed repository. Only changed data is stored, so a second snapshot of the same repository costs the difference rather than the whole image.
+
+Pushing a repository to cloud storage with `--to <storage>` is retired and now refuses. To read an archive written before that change, `rdc storage browse` still works and needs `rclone` on your PATH.
 
 ### 4. Pull from Remote
 

@@ -1,19 +1,21 @@
 ---
 title: "备份与恢复"
-description: "将仓库推送到外部存储，在需要时于新服务器上恢复。"
+description: "将正在运行的仓库复制到第二台机器，让第一台下线，然后把数据取回来。"
 category: "Tutorials"
 subcategory: advanced
 order: 11
 language: zh
-sourceHash: "c5c847e04186c9b1"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "bacd754fbeb6fb99"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 备份与恢复
 
-你的应用已在生产环境运行。立即备份。`rdc` 可以将整个仓库（应用、数据库、文件、配置）推送到外部存储，随时拉取回来。应对勒索软件、硬件故障，万无一失。
+你的应用已在生产环境运行。立即备份。`rdc` 会把整个仓库、应用本身、它的数据库、文件和配置，一并复制到第二台机器上；第一台机器消失后，再从那里把它取回来。
+
+本教程不只是讲讲而已，而是在两台真实机器上实际操作一遍,最后把数据读出来确认。
 
 ## 观看教程
 
@@ -21,70 +23,75 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 ## 三个步骤
 
-![配置、推送、恢复](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+![复制、恢复、验证](/img/tutorials/tutorial-backup-restore/slide-1.svg)
 
-1. **配置**存储提供商。
-2. **推送**备份。
-3. 需要时**恢复**。
+1. 将仓库**复制**到你自己掌控的机器上。
+2. 把这份副本**恢复**成一个独立的仓库。
+3. 通过读回数据来**验证**结果。
 
-## 第一步：配置存储
-
-你需要一个 `rclone` 配置文件。如果你已在使用 rclone，可以直接导入：
+## 第一步：必须留存下来的数据
 
 <TutorialStep number={1} />
 
-支持 S3、B2、Google Drive、Dropbox 等众多存储服务。验证已配置的内容：
+下面的每一步都要用这一行数据来检验。第 7 步再来核对一次。
+
+## 第二步：把仓库复制到第二台机器
 
 <TutorialStep number={2} />
 
-## 第二步：推送备份
+[增量传输教程](/zh/docs/tutorial-delta-transfer)现场演示了这个过程中增量传输的那一半。
+
+一个产物（artifact）还不是正在运行的仓库,这正是第 5 步存在的意义。
+
+## 第三步：备份机器已经拿到数据
 
 <TutorialStep number={3} />
 
-整个仓库（应用、数据库、文件，一切）都已备份。由于仓库本身是加密的，备份也是加密的。无需额外的密钥管理。
-
-随时列出备份：
+## 第四步：灾难发生
 
 <TutorialStep number={4} />
 
-## 为什么没有停机时间？
-
-备份上传时应用保持运行。这是如何保证一致性的？
-
-原理与 [fork](/zh/docs/tutorial-forking) 相同。`rdc` 先 fork，然后上传 fork。fork 捕获了那一刻的状态，你的线上应用继续运行。无停机，无不一致。
-
-## 第三步：恢复（真正的演练）
-
-从未实际恢复过的备份只是一种期望，不算真正的备份。先将仓库下线：
+## 第五步：把产物变回一个仓库
 
 <TutorialStep number={5} />
 
-直接从存储拉取备份：
+在真正需要之前,请对每台机器都先做一次这个演练。一台从未完整走过这个来回流程的机器,无论它的推送看起来多顺利,都不能算是有备份;而用新名字恢复,即使在正在承载流量的机器上也是安全的。
+
+## 第六步：挂载它
 
 <TutorialStep number={6} />
 
-然后重新挂载，完全恢复：
+## 第七步：数据留存了下来
 
 <TutorialStep number={7} />
 
-同样的 pull 命令在全新服务器上同样有效：设置好服务器，将其添加到 `rdc`，然后在那台机器上执行 pull：
+把两者放在一起对比。第 1 步,取自主机器上的原始仓库:
 
-```bash
-rdc repo pull my-app@new-server --from my-storage
-rdc repo up my-app@new-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-相同的数据，相同的容器，不同的机器。
+第 7 步,取自两条命令之前根本还不存在的仓库,而且是在不同的硬件上:
 
-## 更快的备份：机器到机器
-
-你也可以直接在机器之间推送，无需经过云存储：
-
-```bash
-rdc repo push my-app --to backup-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-> **进阶提示。** 机器到机器推送在首次之后只发送变更的数据块。[增量传输教程](/zh/docs/tutorial-delta-transfer)有现场演示。
+这就是本教程的核心:不是一份"备份成功"的报告,而是那一行数据本身,从另一台机器上被原样读了回来。
+
+## 第八步：可以随时回溯的备份
+
+<TutorialStep number={8} />
+
+在你自己的安装环境中,配合账户使用时,完整流程是:
+
+```bash
+rdc backup snapshot my-app
+rdc backup manifests my-app
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+```
+
+[备份与恢复指南](/zh/docs/backup-restore)完整介绍了快照、保留策略和校验。
 
 ---
 

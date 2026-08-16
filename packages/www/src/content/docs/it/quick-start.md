@@ -4,8 +4,8 @@ description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
 order: -1
 language: it
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Quick Start
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Carica su Archiviazione Cloud (OneDrive, Google Drive, S3)
+### 3. Backup su Storage a Chunk
 
 ```bash
-# Importa il tuo config rclone come backend di archiviazione
-rdc storage import ~/rclone.conf
+# Crea uno snapshot puntuale
+rdc backup snapshot my-app
 
-# Elenca le archiviazioni disponibili
-rdc storage list
+# Vedi quali snapshot esistono
+rdc backup manifests my-app
 
-# Carica la repository sull'archiviazione cloud
-rdc repo push my-app --to my-s3-backup
-
-# Elenca i backup sull'archiviazione
-rdc backup list --storage my-s3-backup
+# Controlla i byte memorizzati rispetto alla tua quota
+rdc backup usage
 ```
 
-`--to` rileva automaticamente se la destinazione è una macchina o un backend di archiviazione. Funziona con qualsiasi provider supportato da rclone: S3, R2, B2, OneDrive, Google Drive, SFTP, ecc.
+Gli snapshot vengono caricati sullo storage a chunk, che richiede un server dell'account e un repository con licenza. Vengono memorizzati solo i dati modificati, quindi un secondo snapshot dello stesso repository costa solo la differenza invece dell'intera immagine.
+
+Il push di un repository su storage cloud con `--to <storage>` è dismesso e ora viene rifiutato. Per leggere un archivio scritto prima di quella modifica, `rdc storage browse` funziona ancora e richiede `rclone` nel tuo PATH.
 
 ### 4. Scarica da Remoto
 

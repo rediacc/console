@@ -4,8 +4,8 @@ description: "Référence rapide des commandes rdc : configurations, dépôts, m
 category: Guides
 order: 3
 language: fr
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Aide-mémoire RDC CLI
@@ -44,12 +44,11 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 
 | Commande | Description |
 |----------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Pousser une sauvegarde du dépôt vers le stockage |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Restaurer un dépôt depuis le stockage |
 | `rdc repo push ... --bwlimit <limit>` | Limiter la bande passante rsync lors de l'envoi (ex. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limiter la bande passante rsync lors de la réception |
 | `rdc repo push ... --checkpoint` | Créer un point de contrôle des conteneurs avant l'envoi |
-| `rdc backup list --storage <storage>` | Lister les sauvegardes disponibles dans le stockage |
+| `rdc backup manifests <repo-ref>` | Lister les instantanés que le stockage fragmenté contient |
+| `rdc backup browse <repo-ref>` | Lister les fichiers contenus dans un dépôt (local, lecture seule) |
 | `rdc backup snapshot <repo>` | Envoyer un instantané vers le stockage fragmenté : inventaire complet d'abord, cellules modifiées ensuite |
 | `rdc backup snapshot <repo> --dry-run` | Planifier l'instantané sans l'envoyer ; indique ce qui serait déplacé |
 | `rdc backup verify <repo>` | Vérifier l'ancre de sauvegarde d'un dépôt par rapport au stockage fragmenté |

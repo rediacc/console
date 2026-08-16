@@ -1,26 +1,63 @@
 ---
 title: "Backup & Wiederherstellung"
-description: "Verschlüsselte Repositories auf zwei Wegen sichern: über inhaltsadressierten Chunk-Storage, der nur geänderte Zellen hochlädt, oder per vollständigem Push zu jedem rclone-kompatiblen Speicher. Auf jeder Maschine wiederherstellen und mit benannten Strategien und systemd-Timern automatisieren."
+description: "Sichern Sie verschlüsselte Repositories per Snapshot in inhaltsadressiertem Chunk-Storage, wo nur geänderte Zellen hochgeladen werden und sich jeder Snapshot direkt wiederherstellen lässt. Oder bewahren Sie eine Kopie auf einer anderen Maschine auf. Stellen Sie überall wieder her und automatisieren Sie es mit benannten Strategien und systemd-Timern."
 category: "Guides"
 order: 7
 language: de
-sourceHash: "df8a9d53f6991817"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "91f6072e230b059c"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Backup & Wiederherstellung
 
-Rediacc kann verschlüsselte Repositories auf externen Speicheranbietern sichern und sie auf derselben oder einer anderen Maschine wiederherstellen. Backups sind verschlüsselt; das LUKS-Credential des Repositories wird zur Wiederherstellung benötigt.
+Rediacc sichert verschlüsselte Repositories und stellt sie auf derselben oder einer anderen Maschine wieder her. Backups sind verschlüsselt, weil das Repository es ist: Was die Maschine verlässt, ist der Chiffretext, und das LUKS-Credential Ihres Repositories wird zur Wiederherstellung benötigt.
 
-## Zwei Backup-Wege
+Es gibt zwei Wege zu sichern, und sie beantworten unterschiedliche Fragen.
 
-Rediacc bietet zwei unabhängige Backup-Wege, und dieser Leitfaden behandelt beide. Sie verwenden unterschiedlichen Speicher und unterschiedliche Befehle, sodass ein Repository, das über den einen Weg gesichert wurde, über den anderen nicht gesichert ist.
+- **Snapshots in den Chunk-Storage** (`rdc backup snapshot`) bewahren eine Historie, durch die Sie zurückgehen können. Das ist der Hauptweg.
+- **Eine Kopie auf einer anderen Maschine** (`rdc repo push`, `rdc repo pull`) bewahrt das Repository so, wie es jetzt ist, auf Hardware, die Sie kontrollieren. Kein Cloud-Konto ist beteiligt.
 
-**Chunk-Storage** (`rdc backup snapshot`) lädt das Repository-Image in Zellen fester Größe hoch, die über ihren Inhalt adressiert werden. Der erste Lauf lädt das vollständige, nicht-leere Inventar hoch; jeder folgende Lauf lädt nur die geänderten Zellen hoch, ermittelt anhand der Allokationsmetadaten des Dateisystems statt durch Lesen des gesamten Images. Identische Zellen werden über Snapshots und über eine ganze Fork-Familie hinweg nur einmal gespeichert, und die Nutzung wird gegen Ihr Speicherkontingent angerechnet (`rdc backup usage`).
+Sie sind unabhängig voneinander. Ein Repository, das auf die eine Weise gesichert wurde, ist nicht auf die andere Weise gesichert.
 
-**Storage-Push wurde eingestellt.** `rdc repo push --to <storage>` kopierte früher eine vollständige Backup-Datei zu einem rclone-kompatiblen Anbieter, den Sie selbst registrierten. Der rclone-Zweig wurde vollständig entfernt, und Push, Pull, List und Restore verweigern jetzt ein Speicherziel und verweisen hierher. Die Maschine-zu-Maschine-Übertragung bleibt unangetastet: Sie lief nie über rclone.
+## Wie Snapshots funktionieren
 
-Die Wiederherstellung aus dem Chunk-Storage funktioniert: `rdc backup restore <repo> --at <snapshot-id>` materialisiert einen gespeicherten Snapshot, und `--at` akzeptiert auch einen RFC-3339-Zeitstempel, der gegen das Snapshot-Inventar aufgelöst wird. Fügen Sie `--as <name>` hinzu, um unter einem anderen Namen wiederherzustellen, und `--up`, um das Repository anschließend hochzufahren. Chunk-Storage bietet auch Upload (`rdc backup snapshot`), Verifizierung (`rdc backup verify`, mit `--deep` zur erneuten Hashberechnung jeder Zelle statt nur einer Stichprobe), das Snapshot-Inventar (`rdc backup manifests`) und Kontingentabrechnung (`rdc backup usage`).
+Das Repository-Image wird auf einem festen Raster in Zellen fester Größe geschnitten. Jede Zelle ist entweder ein Loch, das heißt, dort wurde nie etwas geschrieben, oder sie wird unter einem Schlüssel gespeichert, der **der** SHA-256-Wert des Chiffretexts dieser Zelle ist.
+
+Aus dieser einen Entscheidung ergeben sich die Eigenschaften.
+
+**Nur echte Änderungen kosten etwas.** Der erste Snapshot lädt jede beschriebene Zelle hoch. Jeder Lauf danach fragt das Dateisystem, welche Extents berührt wurden, liest und hasht nur diese und lädt nur die Zellen hoch, die der Store noch nicht hat. Ein Repository, dessen Daten sich kaum bewegt haben, lädt fast nichts hoch, und der Lauf dauert Minuten statt so lange, wie das Image groß ist.
+
+**Identische Daten werden einmal gespeichert.** Da der Schlüssel der Inhalts-Hash ist, teilen sich zwei Snapshots, die eine Zelle gemeinsam haben, dasselbe Objekt, und das gilt auch für ein Repository und seine [Forks](/de/docs/tutorial-forking): Eine Fork-Familie sichert gegen eine einzige Abstammungslinie, statt ihren Parent zu duplizieren.
+
+**Einen alten Snapshot wiederherzustellen ist nicht langsamer als einen aktuellen.** Es gibt keine Kette von Inkrementen, die durchgespielt werden muss. Die Wiederherstellung löst den Snapshot in eine vollständige Liste von Zellen auf und ruft diese Zellen direkt ab, sodass die Wiederherstellungszeit von der Größe des Images und Ihrer Bandbreite abhängt, nicht davon, wie lange Sie schon Backups machen. Löcher bleiben Löcher, sodass ein sparse Image sparse wiederhergestellt wird, und eine Zelle, die mehrfach im Image vorkommt, wird nur einmal heruntergeladen.
+
+**Jeder Snapshot steht für sich.** Es gibt kein "Vollbackup", das Sie nicht verlieren dürfen, und kein Fenster, in dem ein defektes Inkrement die folgenden ungültig macht. Jeder Snapshot in der Liste ist direkt wiederherstellbar.
+
+**Verifizierung heißt erneut hashen, nicht vertrauen.** Da der Schlüssel der Hash des Inhalts ist, bedeutet die Prüfung eines Backups, Zellen abzurufen und zu hashen. `rdc backup verify` prüft stichprobenartig; `rdc backup verify --deep` hasht jede erfasste Zelle erneut.
+
+**Ein unterbrochener Lauf ist nicht verloren.** Der Upload setzt fort, ohne bereits angekommene Zellen erneut zu senden, und ein Neustart einer unterbrochenen Wiederherstellung hasht erneut, was bereits auf der Platte liegt, und nutzt es wieder, statt es erneut herunterzuladen.
+
+### Was es Sie kostet
+
+Das Kontingent wird in **physisch eindeutig gespeicherten Bytes** gezählt: was nach Deduplizierung tatsächlich gehalten wird, nicht die Summe dessen, was Ihre Snapshots logisch darstellen. Dreißig Snapshots eines Repositorys, das sich nur langsam ändert, kosten fast wie einer. `rdc backup usage` zeigt gespeicherte Bytes gegen Ihr Kontingent, eine Zahl pro Abonnement, die bei 10 GB im Community-Plan beginnt.
+
+### Was Snapshots brauchen
+
+Der Snapshot-Upload läuft über den Account-Server, der jeden Lauf gegen die installierte Lizenz des Repositorys autorisiert und der Maschine eine kurzlebige Berechtigung zum Schreiben aushändigt. Dieser Weg braucht also einen Account-Server, den die Maschine erreichen kann, und ein lizenziertes Repository. Ohne diese wird der Snapshot zurückgewiesen statt still übersprungen, und `rdc backup manifests`, `rdc backup usage` und `rdc backup retention` haben nichts zu lesen.
+
+Das gilt auch für `--dry-run`. Die Lizenz wird gelesen, bevor der Lauf entscheidet, ob er plant oder hochlädt, sodass ein Probelauf eine Vorschau der Arbeit ist, kein Weg, den Befehl ohne Credentials auszuprobieren.
+
+Maschine-zu-Maschine-Push und -Pull brauchen keins von beidem. Sie sind eine direkte Übertragung zwischen zwei Maschinen, die bereits in Ihrer Konfiguration stehen.
+
+### Was ein Snapshot nicht verspricht
+
+- **Ein Snapshot deckt ein Repository ab, nicht Ihre ganze Maschine auf einmal.** Jedes Repository wird zu seinem eigenen Zeitpunkt erfasst. Wenn zwei Repositories voneinander abhängen, sind ihre Snapshots kein koordiniertes Paar.
+- **Es ist keine kontinuierliche Replikation.** Ein Snapshot ist ein Zeitpunkt, den Sie erfasst haben, und Sie können alles verlieren, was seit dem letzten geschrieben wurde. Wie viel das ist, hängt davon ab, wie oft Sie laufen lassen.
+- **Gespeicherte Objekte sind write-once, nicht zertifiziertes WORM.** Zellen werden mit einer Nur-Erstellen-Bedingung geschrieben, die Berechtigung, die eine Maschine erhält, kann nichts löschen, und Löschungen geschehen serverseitig nach Aufbewahrungsrichtlinie. Das ist eine echte Barriere dagegen, dass eine kompromittierte Maschine ihre eigenen Backups zerstört. Es ist keine Compliance-Zertifizierung, und es wird nicht als eine geprüft.
+
+### Der rclone-Speicherpfad ist verschwunden
+
+`rdc repo push --to <storage>` und Verwandte kopierten früher eine ganze Backup-Datei zu einem Cloud-Anbieter, den Sie selbst registrierten. Diese verweigern jetzt ein Speicherziel und nennen ihren Ersatz. Die Maschine-zu-Maschine-Übertragung lief nie über rclone und ist unbetroffen. Wenn Sie noch ein auf diese Weise geschriebenes Archiv lesen müssen, siehe [Ein vor der Umstellung geschriebenes Archiv lesen](#ein-vor-der-umstellung-geschriebenes-archiv-lesen).
 
 ### Chunk-Storage-Befehle
 
@@ -30,6 +67,9 @@ rdc backup snapshot my-app
 
 # Planen, ohne hochzuladen: zeigt, was sich bewegen würde.
 rdc backup snapshot my-app --dry-run
+
+# Container stoppen, einfrieren, neu starten, dann hochladen.
+rdc backup snapshot my-app --cold
 
 # Dem lokalen Anker misstrauen und das vollständige Inventar neu hochladen.
 # Dies lädt alles neu hoch und belastet erneut das Kontingent; nur verwenden,
@@ -41,6 +81,14 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `<repo-ref>` (positional) | Zu sicherndes Repository |
+| `--dry-run` | Nur planen: kein Upload. Zeigt, was sich bewegen würde |
+| `--cold` | Container stoppen, einfrieren, neu starten, dann hochladen. Nicht mit `--dry-run` kombinierbar |
+| `--reseed` | Dem lokalen Anker misstrauen und ein vollständiges Inventar hochladen. Lädt alles neu hoch und belastet das Kontingent erneut |
+| `--debug` | Ausführliche Ausgabe aktivieren |
 
 ## Cold-Snapshots (`--cold`)
 
@@ -114,71 +162,66 @@ Das Zurückweisen ist das Feature. Ein Backup mit dem Etikett cold, das nie etwa
 
 Wird ein Lauf unterbrochen, während die Container unten sind, etwa durch ein `systemctl stop` oder einen Neustart, startet renet sie vor dem Beenden wieder. Die Wiederherstellung auf der Maschine ist der Rückhalt: Sie erkennt ein Cold-Backup, dessen Besitzer verschwunden ist, und fährt diese Repositories wieder hoch.
 
-## Speicher konfigurieren
-
-Bevor Sie Backups übertragen, registrieren Sie einen Speicheranbieter. Rediacc unterstützt jeden rclone-kompatiblen Speicher: S3, B2, Google Drive und viele mehr.
-
-### Aus rclone importieren
-
-Wenn Sie bereits ein rclone-Remote konfiguriert haben:
-
-```bash
-rdc storage import rclone.conf
-```
-
-Dies importiert Speicherkonfigurationen aus einer rclone-Konfigurationsdatei in die aktuelle Konfiguration. Unterstützte Typen: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
-
-### Speicher anzeigen
-
-```bash
-rdc storage list
-```
-
 ## Ein Backup auf eine andere Maschine übertragen
 
 Ein Repository per SSH auf eine zweite Maschine kopieren:
 
 ```bash
-rdc repo push my-app --to-machine server-1
+rdc repo push my-app --to server-1
 ```
 
-Das verschlüsselte Image wird mit der GLEICHEN GUID kopiert, es handelt sich also um ein Backup oder eine Migration, nicht um einen Fork. Für eine unabhängige Kopie zuerst `rdc repo fork` ausführen und dann den Fork pushen.
+`--to <machine>` löst das Ziel aus Ihrer Konfiguration auf, und `--to-machine <machine>` sagt dasselbe explizit. Ein Speichername wird zurückgewiesen: Dieser Pfad ist eingestellt.
+
+Das verschlüsselte Image wird mit der GLEICHEN GUID kopiert, es handelt sich also um ein Backup oder eine Migration, nicht um einen Fork. Für eine unabhängige Kopie zuerst `rdc repo fork` ausführen und dann den Fork übertragen.
+
+Die erste Übertragung trägt das gesamte Image. Jede folgende Übertragung sendet nur die geänderten Blöcke gegen ein unveränderliches Basis-Image, das auf beiden Maschinen gehalten wird, ohne dass Sie Flags setzen müssen. `--delta-base <guid>` benennt diese Basis selbst, falls nötig.
+
+Die übertragene Kopie landet auf dem Ziel als Backup-Artefakt statt als laufendes Repository. Machen Sie mit `rdc backup restore` ein laufendes daraus:
+
+```bash
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
 
 Für ein Backup zu einem bestimmten Zeitpunkt stattdessen Chunk-Storage verwenden: `rdc backup snapshot my-app` lädt nur die geänderten Zellen hoch, und `rdc backup restore my-app --at <snapshot>` holt jede davon zurück.
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Backup |
-| `--dest <filename>` | Benutzerdefinierter Zieldateiname |
-| `--checkpoint` | CRIU-Checkpoint vor dem Pushen erstellen (für Container mit Label `rediacc.checkpoint=true`). Ziel stellt automatisch bei `repo up` wieder her |
+| `<ref>` (positional) | Zu übertragender Repository-Ref |
+| `--to <remote>` | Zielmaschine oder -cluster |
+| `--to-machine <machine>` | Zielmaschine, explizit angegeben |
+| `--provision <provider>` | Zielmaschine über diesen Cloud-Anbieter bereitstellen, falls sie nicht existiert |
+| `--checkpoint` | CRIU-Checkpoint vor dem Übertragen erstellen (für Container mit Label `rediacc.checkpoint=true`). Ziel stellt automatisch bei `repo up` wieder her |
 | `--force` | Ein vorhandenes Backup überschreiben |
 | `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`, `500K`) |
-| `--tag <tag>` | Das Backup markieren |
-| `-w, --watch` | Den Fortschritt der Operation beobachten |
+| `--delta-base <guid>` | Nur geänderte Blöcke gegenüber dieser unveränderlichen Basis-GUID übertragen. Weglassen für automatische Basis |
+| `--strategy <strategy>` | Block-Delta-Strategie bei Verwendung einer Delta-Basis: `auto`, `physical` oder `shared` |
 | `--debug` | Ausführliche Ausgabe aktivieren |
-| `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
+| `--skip-router-restart` | Neustart des Route-Servers nach der Operation überspringen |
 
 ## Ein Backup von einer anderen Maschine abrufen
 
 Ein Repository von der Maschine zurückholen, auf der es liegt:
 
 ```bash
-rdc repo pull my-app --from-machine server-1
+rdc repo pull my-app --from server-1
 ```
 
-Um stattdessen aus dem Chunk-Storage wiederherzustellen, verwenden Sie
-`rdc backup restore my-app --at <snapshot-id>`.
+`--up` hinzufügen, um es im selben Befehl einzuhängen und bereitzustellen. Um stattdessen aus dem Chunk-Storage wiederherzustellen, `rdc backup restore my-app --at <snapshot-id>` verwenden.
 
 Pull verweigert das Überschreiben eines Repositorys, das aktuell **eingehängt** ist. Hängen Sie es zuerst aus, führen Sie den Pull aus, und bringen Sie es anschließend mit `rdc repo up` wieder hoch. Verzeichnisbasierte Repositories sind die Ausnahme: Sie synchronisieren sich im eingehängten Zustand direkt an Ort und Stelle.
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Wiederherstellung |
+| `<ref>` (positional) | Abzurufender Repository-Ref |
+| `--from <remote>` | Quellmaschine oder -cluster |
+| `--from-machine <machine>` | Quellmaschine, explizit angegeben |
 | `--force` | Vorhandenes lokales Backup überschreiben |
+| `--up` | Repository nach dem Abrufen einhängen und bereitstellen |
 | `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`, `500K`) |
-| `-w, --watch` | Den Fortschritt der Operation beobachten |
+| `--delta-base <guid>` | Nur geänderte Blöcke gegenüber dieser unveränderlichen Basis-GUID empfangen |
+| `--strategy <strategy>` | Block-Delta-Strategie bei Verwendung einer Delta-Basis: `auto`, `physical` oder `shared` |
 | `--debug` | Ausführliche Ausgabe aktivieren |
-| `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
+| `--skip-router-restart` | Neustart des Route-Servers nach der Operation überspringen |
 
 ## Backups auflisten
 
@@ -188,61 +231,119 @@ Die Snapshots im Chunk-Storage auflisten:
 rdc backup manifests my-app
 ```
 
-Um Backup-Artefakte auf einer Maschine zu sehen:
+Jede Zeile ist ein gespeicherter Zeitpunkt:
+
+| Spalte | Bedeutung |
+|---|---|
+| `Repo` | Repository-Name, aufgelöst aus Ihrer lokalen Konfiguration (Fallback auf GUID für Repos, die nicht in der Konfiguration sind) |
+| `Snapshot` | Die Snapshot-ID. Das nimmt `rdc backup restore --at` entgegen |
+| `Created` | UTC-Zeit, zu der der Snapshot erstellt wurde |
+| `Total` | Größe des Repository-Images, das dieser Snapshot repräsentiert |
+| `Added` | Bytes, die dieser Snapshot tatsächlich zusätzlich zu den vorherigen hochgeladen hat |
+| `Chunks` | Wie viele Zellen er hinzugefügt hat |
+
+Um zu sehen, was ein `rdc repo push --to <machine>` auf dem Ziel hinterlassen hat, fragen Sie diese Maschine, was sie vorhält:
 
 ```bash
-rdc backup list -m server-1
+rdc repo list --machine server-1
 ```
 
-Die Ausgabe listet die Snapshots, die der Chunk-Storage für dieses Repository vorhält:
+Die übertragene Kopie erscheint unter ihrem eigenen Namen. Eine zweite Zeile mit einer rohen GUID daneben ist die aufbewahrte Delta-Basis, die den nächsten Push zu dieser Maschine inkrementell statt vollständig macht.
+
+`rdc backup list --machine <machine>` liest die Ordner `hot/` und `cold/`, in die geplante Läufe schreiben. Es ist also das falsche Werkzeug für eine Kopie, die ein Push dort abgelegt hat, und zeigt Ihnen nichts.
 
 | Spalte | Bedeutung |
 |---|---|
 | `Mode` | `hot` oder `cold`. In welchem Ordner für geplante Backups dieser Eintrag liegt |
-| `Name` | Aus Ihrer lokalen Konfiguration aufgelöster Repository-Name (Fallback auf GUID für Repos, die nicht in der Konfiguration sind) |
+| `Name` | Repository-Name, aufgelöst aus Ihrer lokalen Konfiguration (Fallback auf GUID für Repos, die nicht in der Konfiguration sind) |
 | `GUID` | Die Repository-GUID auf der Festplatte |
 | `Size` | Menschenlesbare Größe der Backup-Datei |
-| `Modified` | UTC-Zeitstempel vom Storage-Backend |
+| `Modified` | UTC-Zeitstempel der Datei auf der Maschine |
 
-Das Auflisten eines Storage-Backends wurde zusammen mit dem rclone-Zweig eingestellt; der Befehl verweigert die Ausführung und nennt diese beiden Ersatzbefehle.
+Das Auflisten eines Storage-Backends wurde eingestellt, zusammen mit dem rclone-Zweig; der Befehl verweigert die Ausführung und nennt diese beiden Ersatzbefehle.
 
-### Was Hot und Cold wirklich bedeuten
+## Aufbewahrung
 
-`--mode hot` und `--mode cold` beschreiben, wie das Repository während der Sicherung behandelt wird, nicht wo die Daten landen.
-
-**Hot** erstellt einen Snapshot eines laufenden Repositorys. Container bedienen weiter Anfragen, und das Image wird mitten im Schreibvorgang erfasst, sodass das Backup absturzkonsistent ist: genau der Zustand, den Sie hätten, wenn der Maschine in diesem Moment der Strom ausgefallen wäre. Das reicht für alles, was sich aus dem eigenen Journal erholt, also für die meisten Datenbanken.
-
-**Cold** stoppt zuerst die Container, schreibt auf die Platte, prüft, dass sie wirklich gestoppt sind, friert das Image ein und startet die Container erst danach neu. Das kostet einen echten Ausfall, aber dieser Ausfall ist das Einfrieren mit konstanter Dauer statt der Übertragung, und das Ergebnis ist anwendungskonsistent.
-
-Beide schreiben in denselben Chunk-Storage. Zellen werden über ihren Inhalt adressiert, sodass ein Repository, das sowohl von einem stündlichen Hot- als auch von einem wöchentlichen Cold-Zeitplan gesichert wird, die gemeinsamen Blöcke nur einmal statt zweimal speichert, und auch eine Fork-Familie teilt sie sich. Die Nutzung wird mit `rdc backup usage` gegen Ihr Kontingent angerechnet.
-
-## Ein Repository nach dem anderen synchronisieren
-
-Push und Pull wirken jeweils auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für "alle Repositories auf einmal": Führen Sie den Befehl einmal pro Repository aus.
-
-### Auf eine andere Maschine übertragen
+Der Server erzwingt eine Aufbewahrungsrichtlinie pro Repository über den Chunk-Store, sodass alte Snapshots bereinigt werden, ohne dass Sie von Hand etwas löschen. Ohne deklarierte Richtlinie wird jeder Snapshot behalten.
 
 ```bash
-rdc repo push shop@server-1 --to-machine server-2
-```
+# Was gerade durchgesetzt wird.
+rdc backup retention my-app
 
-### Von einer anderen Maschine abrufen
+# Ein rollierendes Fenster behalten: 7 täglich, 4 wöchentlich, 6 monatlich.
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-```bash
-rdc repo pull shop@server-1 --from-machine server-2
+# Zurück dazu, alles zu behalten.
+rdc backup retention clear my-app
 ```
 
 | Option | Beschreibung |
 |--------|-------------|
-| `--to-machine <machine>` | Zielmaschine für Maschine-zu-Maschine-Push |
-| `--from-machine <machine>` | Quellmaschine für Maschine-zu-Maschine-Pull |
-| `--force` | Ein vorhandenes Backup oder Repository überschreiben |
-| `--checkpoint` | Vor dem Pushen einen CRIU-Checkpoint erstellen (nur Push) |
-| `--up` | Das Repository nach dem Pull einhängen und bereitstellen (nur Pull) |
-| `--bwlimit <limit>` | Bandbreitenlimit für den rsync-Transfer (z. B. `10M`) |
-| `--delta-base <guid>` | Nur geänderte Blöcke gegenüber einer unveränderlichen Basis-GUID übertragen |
+| `--keep-last <n>` | Diese Anzahl der neuesten Snapshots behalten |
+| `--keep-hourly <n>` | Den neuesten Snapshot aus jeder dieser Stunden behalten |
+| `--keep-daily <n>` | Den neuesten Snapshot aus jedem dieser Tage behalten |
+| `--keep-weekly <n>` | Den neuesten Snapshot aus jeder dieser Wochen behalten |
+| `--keep-monthly <n>` | Den neuesten Snapshot aus jedem dieser Monate behalten |
+| `--keep-yearly <n>` | Den neuesten Snapshot aus jedem dieser Jahre behalten |
+
+Geben Sie mindestens eine Regel an. `set` ohne Regeln wird zurückgewiesen statt als "nichts behalten" behandelt zu werden, denn eine Richtlinie zu löschen ist es, wofür `clear` da ist.
+
+## Wiederherstellung
+
+`rdc backup restore` verwandelt ein Backup in ein laufendes Repository, und es ist derselbe Befehl für beide Wege. Was sich unterscheidet, ist, worauf Sie ihn richten.
+
+```bash
+# Ein Zeitpunkt aus dem Chunk-Storage.
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+
+# Ein Artefakt, das ein Push auf einer Maschine hinterlassen hat.
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
+
+`--at` nimmt eine Snapshot-ID von `rdc backup manifests`, oder eine RFC-3339-Zeit wie `2026-08-14T12:00:00Z`, die zum neuesten Snapshot aufgelöst wird, der zu diesem Zeitpunkt oder davor genommen wurde. Eine Zeit ohne Snapshot zu diesem Zeitpunkt oder davor wird zurückgewiesen statt aufgerundet.
+
+Die Wiederherstellung unter einem neuen Namen mit `--as` überschreibt nichts, sodass eine Wiederherstellungsübung gefahrlos gegen eine Live-Maschine läuft. Die Wiederherstellung auf einen bereits vorhandenen Namen wird zurückgewiesen.
+
+| Option | Beschreibung |
+|--------|-------------|
+| `<artifact-ref>` (positional) | Was wiederhergestellt werden soll. `repo` für einen Chunk-Store-Snapshot, `repo@place` für ein Artefakt auf einer Maschine |
+| `--as <name>` | Name für das wiederhergestellte Repository (Standard: Name des Artefakts) |
+| `-m, --machine <machine>` | Maschine, auf die wiederhergestellt wird |
+| `--datastore <name>` | In diesen benannten Datastore wiederherstellen, dessen angeschlossene Maschine ihn hostet |
+| `--at <time>` | Einen Zeitpunkt wiederherstellen: eine Snapshot-ID oder eine RFC-3339-Zeit |
+| `--up` | Wiederhergestelltes Repository nach der Übertragung bereitstellen |
+| `--health-window <seconds>` | Wie lange das bereitgestellte Repository auf Gesundheit beobachtet wird |
+| `--health-timeout <seconds>` | Wie lange gewartet wird, bis es gesund wird |
+| `-y, --yes` | Bestätigung überspringen |
 | `--debug` | Ausführliche Ausgabe aktivieren |
-| `--skip-router-restart` | Den Neustart des Route-Servers nach der Operation überspringen |
+
+Die Wiederherstellung eines Repositorys benötigt dessen LUKS-Credential, das in Ihrer Konfiguration liegt. Wenn Sie Config-Storage aktiviert haben, kommt dieses Credential mit Ihrer Konfiguration auf einer neuen Maschine zurück. Falls nicht, bewahren Sie eine Kopie der Konfiguration irgendwo auf, das die ausfallende Maschine nicht mit sich reißt.
+
+### Die Wiederherstellung auf jeder Maschine beweisen
+
+Eine Maschine, die nie einen vollständigen Kreislauf durchlaufen hat, ist nicht gesichert, wie grün ihre Uploads auch aussehen. Uploads und Wiederherstellungen scheitern aus unterschiedlichen Gründen, und die zweite Art zeigt sich erst, wenn Sie es versuchen.
+
+Tun Sie dies einmal pro Maschine, bevor Sie sich auf die Backups verlassen:
+
+1. Einen Snapshot erstellen: `rdc backup snapshot my-app`.
+2. Bestätigen, dass er erfasst wurde: `rdc backup manifests my-app`.
+3. Ihn unter einem Wegwerf-Namen wiederherstellen: `rdc backup restore my-app --as my-app-drill --at <snapshot-id>`.
+4. Das wiederhergestellte Repository mit der Quelle vergleichen, dann die Übungskopie mit `rdc repo delete my-app-drill --yes` löschen.
+
+Nichts in dieser Abfolge berührt das Live-Repository, sie ist also auf einer Maschine sicher, die Traffic bedient. Wenn Sie von einer älteren Backup-Anordnung wegziehen, lassen Sie diese laufen, bis dies auf dieser Maschine mindestens einmal bestanden hat. Zwei Backup-Wege kosten Speicherplatz; ein unbewiesener Weg kostet die Daten.
+
+## Ein Repository nach dem anderen synchronisieren
+
+Push und Pull wirken auf ein einzelnes Repository, adressiert über einen Ref (`name`, `name:tag` oder `name@machine`). Es gibt keine Form für "alle Repositories auf einmal": Führen Sie den Befehl einmal pro Repository aus.
+
+Ein Ref, der einen Fork und eine Maschine benennt, funktioniert genauso wie ein einfacher Name:
+
+```bash
+rdc repo push shop:nightly@server-1 --to server-2
+rdc repo pull shop:nightly@server-1 --from server-2
+```
+
+Die vollständigen Optionslisten finden Sie unter [Ein Backup auf eine andere Maschine übertragen](#ein-backup-auf-eine-andere-maschine-übertragen) und [Ein Backup von einer anderen Maschine abrufen](#ein-backup-von-einer-anderen-maschine-abrufen).
 
 ## Geplante Backups
 
@@ -252,7 +353,7 @@ Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zei
 
 | Modus | Verhalten | Ausfallzeit |
 |-------|-----------|-------------|
-| `hot` | BTRFS-Snapshot wird bei laufenden Diensten erstellt (absturzkonsistent) | Keine |
+| `hot` | Repository-Image wird eingefroren, während Dienste weiterlaufen (absturzkonsistent) | Keine |
 | `cold` | Dienste gestoppt, Snapshot erstellt, Dienste neu gestartet, Snapshot hochgeladen (anwendungskonsistent) | Stop+Start-Fenster pro Repo, parallel über alle Repos. Siehe "Abschätzung der Cold-Backup-Ausfallzeit" unten. |
 
 Verwenden Sie `hot` für Dienste, die absturzkonsistente Snapshots tolerieren. Verwenden Sie `cold`, wenn Sie garantierte Konsistenz benötigen und einen kurzen Neustart akzeptieren können.
@@ -292,7 +393,7 @@ Jedes Repository ist nur während seines eigenen `down()` + `up()`-Fensters ausg
 | Mittel (Webanwendung + Cache) | 20-45 s |
 | Schwer (DB + Queues + Mail) | 60-120 s |
 
-Der Snapshot-Schritt (`btrfs subvolume snapshot -r`) ist O(1), unabhängig von der Repository-Größe: 0,1-1 s. Ein Repository wird nicht für die Snapshots anderer Repositories heruntergefahren gehalten. Der Uploader läuft dann gegen einen schreibgeschützten Snapshot, während alle Repositories bereits wieder oben sind.
+Der Freeze-Schritt ist ein Copy-on-Write-Reflink des Repository-Images. Er besteht nur aus Metadaten und dauert deshalb gleich lang, ob das Repository 1 GB oder 100 GB hält, und bei einem gemessenen Lauf registrierte er sich nicht einmal in Millisekunden-Auflösung. Ein Repository wird nicht für die Freezes anderer Repositories heruntergefahren gehalten. Der Upload läuft dann gegen die eingefrorene Kopie, während jedes Repository bereits wieder oben ist.
 
 **Die Gesamt-Wall-Clock für den gesamten Lauf** wird davon bestimmt, wie viele Repositories gleichzeitig neu starten. Renet leitet diesen Wert vom Host ab:
 
@@ -310,7 +411,7 @@ Beispiele:
 
 **Override per Umgebungsvariable:** Setzen Sie `REDIACC_COLD_BACKUP_CONCURRENCY=N` in der Umgebung des Backup-Dienstes (meist über ein systemd-Drop-in), um einen bestimmten Wert festzulegen. `=1` erzwingt streng serielle Neustarts, nützlich beim Debuggen eines Crashloops im `up()`-Hook eines Repositories.
 
-Wenn Sie ein latenzempfindliches Repository betreiben (öffentliche Webanwendung, Mail), ist dessen Ausfallzeit durch sein eigenes Stop+Start begrenzt (typischerweise 30-90 s), nicht durch die Gesamtlaufzeit. Repositories werden in der Reihenfolge ihrer Erkennung in Parallelitäts-Slots eingeplant; es gibt keine Prioritätswarteschlange. Teilen Sie schwere Repositories in eigene, mit `--exclude` begrenzte Strategien auf, wenn Sie eine feinere Zeitplanung benötigen.
+Wenn Sie ein latenzempfindliches Repository betreiben (öffentliche Webanwendung, Mail), ist dessen Ausfallzeit durch sein eigenes Stop+Start begrenzt (typischerweise 30-90 s), nicht durch die Gesamtlaufzeit. Repositories werden in der Reihenfolge ihrer Erkennung in Parallelitäts-Slots eingeplant; es gibt keine Prioritätswarteschlange. Geben Sie schweren Repositories ihre eigene, mit `--include` begrenzte Strategie, wenn Sie eine feinere Zeitplanung benötigen.
 
 ### Lange Läufe und überlappende Zeitpläne
 
@@ -321,15 +422,15 @@ Konkret: Ein Lauf, der am Montag um 03:00 UTC startet und am Donnerstag Mittag e
 | Tag | 03:00 UTC feuert | Ergebnis |
 |------|-----------------|----------|
 | Montag | Erstes Feuern | Lauf beginnt |
-| Dienstag | Zweites Feuern | Stil verworfen (vorheriger Lauf ist noch aktiv) |
-| Mittwoch | Drittes Feuern | Stil verworfen (vorheriger Lauf ist noch aktiv) |
+| Dienstag | Zweites Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
+| Mittwoch | Drittes Feuern | Still verworfen (vorheriger Lauf ist noch aktiv) |
 | Donnerstag | Lauf endet mittags | Kein Nachholen; nächster Lauf ist Freitag 03:00 UTC |
 
 Die `Persistent=true`-Direktive des Timers rettet diese Feuer **nicht**. `Persistent=true` wiederholt Feuer, die verpasst wurden, weil der Timer selbst inaktiv war (System aus, Timer deaktiviert). Feuer, die verworfen wurden, weil der Dienst beschäftigt war, sind weg.
 
-Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselben Datastore würden um den BTRFS-Snapshot-Pfad, das rclone-Remote und die Per-Repo-Sidecars unter `/var/run/rediacc/cold-backup-<guid>.status.json` konkurrieren. Die Serialisierung hinter einem langen Lauf ist das sichere Ergebnis.
+Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselben Datastore würden um den Freeze-Pfad, den Upload und die Per-Repo-Sidecars unter `/var/run/rediacc/cold-backup-<guid>.status.json` konkurrieren. Hinter einer laufenden Instanz zu warten schlägt es, dieselben Daten aus zwei Richtungen zu strapazieren. Die Datastore-Sperre erzwingt das: Ein zweiter Cold-Lauf findet die Sperre besetzt vor und wird rundweg zurückgewiesen, ohne etwas gestoppt zu haben.
 
-**Monitoring-Konsequenz.** Ein hängendes Backup (zum Beispiel rclone, das an einem Netzwerk-Blackhole hängenbleibt) verwirft still jedes nachfolgende Timer-Feuern. Der Scheduler gibt keinen Alarm aus. Beobachten Sie `systemctl show <unit> -p ActiveEnterTimestamp`: Wenn der Dienst länger als erwartet `activating` ist (zum Beispiel mehr als 48 h bei einem nächtlichen Timer), untersuchen Sie dies.
+**Monitoring-Konsequenz.** Ein hängendes Backup (zum Beispiel ein Upload, der an einem Netzwerk-Blackhole hängenbleibt) verwirft still jedes nachfolgende Timer-Feuern. Der Scheduler gibt keinen Alarm aus. Beobachten Sie `systemctl show <unit> -p ActiveEnterTimestamp`: Wenn der Dienst länger als erwartet `activating` ist (zum Beispiel mehr als 48 h bei einem nächtlichen Timer), untersuchen Sie dies.
 
 **Wenn Sie möchten, dass jedes geplante Feuern läuft**, wechseln Sie den Timer von `OnCalendar=<cron>` zu `OnUnitInactiveSec=<Intervall>`. Das feuert N Stunden nach Abschluss des vorherigen Laufs statt nach einem festen Wall-Clock-Zeitplan, sodass lange Läufe keine Verluste verursachen. Sie schieben nur den nächsten Lauf nach hinten. Der Kompromiss ist Zeitplan-Drift: Ihr nächtliches 03:00 wird zu "24 h nach Abschluss des letzten Laufs."
 
@@ -337,7 +438,7 @@ Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselb
 
 Jeder Push arbeitet von einem kurzlebigen Datastore-Snapshot, sodass die hochgeladenen Daten konsistent sind, auch während Repositories weiter schreiben. Während das Backup läuft, referenziert dieser Snapshot weiterhin jeden Block, den er mit aktiven Repositories teilt: Löschungen und [Trims](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) geben bis zum Abschluss des Zyklus und zum Löschen des Snapshots weniger Pool-Speicher frei. Der [Speichergesundheitsbericht](/de/docs/monitoring#speichergesundheit) zeigt, wie viel Speicher Backup-Snapshots aktuell belegen.
 
-Unterbrechungen sind sicher. Wird der Dienst gestoppt (oder die Maschine neu gestartet), bricht das Backup seine Übertragung ab und löscht seinen Snapshot vor dem Beenden; der nächste geplante Lauf setzt dort fort, wo er aufgehört hat, da unveränderte Dateien per Prüfsumme übersprungen werden. Wird der Prozess zu hart beendet, um aufzuräumen (Stromausfall), wird der verwaiste Snapshot vom Storage-Maintainer innerhalb von Minuten automatisch erkannt und entfernt.
+Unterbrechungen sind sicher. Wird der Dienst gestoppt (oder die Maschine neu gestartet), bricht das Backup seine Übertragung ab und löscht seinen Snapshot vor dem Beenden; der nächste geplante Lauf setzt dort fort, wo er aufgehört hat, da bereits gespeicherte Zellen nicht erneut hochgeladen werden. Wird der Prozess zu hart beendet, um aufzuräumen (Stromausfall), wird der verwaiste Snapshot vom Storage-Maintainer innerhalb von Minuten automatisch erkannt und entfernt.
 
 ### Strategie definieren
 
@@ -357,21 +458,25 @@ rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude very-large-repo \
+  --include shop --include mail \
   --enable
 ```
 
-Der `--exclude`-Filter der Cold-Strategie ist der empfohlene Notausgang für sehr große Repos, die nicht in Ihr wöchentliches Wartungsfenster passen. Die stündliche Hot-Strategie deckt sie weiterhin ab; Cold überspringt sie einfach. Repository-Namen in `--exclude` werden gegen den lokalen Konfigurationsnamen des Repos abgeglichen (ohne `:tag`).
+`--destination <name>` benennt das Ziel innerhalb der Strategie; es ist ein von Ihnen gewähltes Label und beschreibt den Chunk-Store. `--include` listet die zu sichernden Repositories auf, und wiederholtes Angeben fügt weitere hinzu. Weglassen deckt mit der Strategie jedes Repository auf dem Datastore ab. Namen entsprechen dem lokalen Konfigurationsnamen des Repositorys (ohne `:tag`).
+
+`--exclude` wird bei einem Chunk-Store-Ziel zurückgewiesen statt still verworfen, weil das zugrundeliegende `backup snapshot` Repositories auswählt, indem es sie benennt, und selbst kein Exclude hat. Es zu respektieren würde bedeuten, Repositories zu sichern, die Sie ausschließen wollten. Grenzen Sie eine Strategie stattdessen mit `--include` ein, damit schriftlich festgehalten statt erschlossen wird, was ein geplanter Lauf abdeckt.
 
 | Option | Beschreibung |
 |--------|-------------|
-| `<strategy>` (positional) | Name der Strategie (wird zur Maschinenbindung verwendet) |
-| `--destination <storage>` | Speicheranbieter zum Hochladen |
+| `<strategy>` (positional) | Strategie-Name (wird zur Maschinenbindung verwendet) |
+| `--destination <name>` | Ziel-Name innerhalb der Strategie. Standard ist der Chunk-Store |
+| `--storage <name>` | Sich für die eingestellte rclone-Zielart entscheiden. Ein Zeitplan, der es nutzt, kann nicht deployt werden |
 | `--cron <expression>` | Cron-Ausdruck (z. B. `"0 2 * * *"` für täglich um 2 Uhr) |
 | `--mode <hot\|cold>` | Backup-Modus |
 | `--bwlimit <limit>` | Bandbreitenlimit für Uploads (z. B. `10M`) |
-| `--include <pattern>` | Einschlussfilter (wiederholbar) |
-| `--exclude <pattern>` | Ausschlussfilter (wiederholbar) |
+| `--include <repos>` | Von dieser Strategie abgedeckte Repositories (wiederholbar) |
+| `--exclude <repos>` | Zu überspringende Repositories (wiederholbar). Bei einem Chunk-Store-Ziel zurückgewiesen |
+| `--folder <path>` | Unterordner innerhalb eines rclone-Buckets. Bei einem Chunk-Store-Ziel zurückgewiesen |
 | `--enable` / `--disable` | Strategie aktivieren oder deaktivieren |
 
 ### Strategien anzeigen
@@ -389,7 +494,15 @@ rdc backup strategy remove weekly-cold
 
 ### Strategien an eine Maschine binden
 
-Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Maschine:
+Eine Strategie, die an keine Maschine gebunden ist, wird nie deployt. Binden Sie eine oder mehrere an eine Maschine:
+
+```bash
+rdc backup strategy bind hourly-hot --machine hostinger
+rdc backup strategy bind weekly-cold --machine hostinger
+rdc backup strategy unbind weekly-cold --machine hostinger
+```
+
+Die Bindung wird in Ihrer Konfiguration als Liste auf der Maschine festgehalten, die `rdc backup schedule` liest, um zu entscheiden, welche Units deployt werden:
 
 ```json
 {
@@ -409,7 +522,7 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
 
 | | Hot | Cold |
 |---|-----|------|
-| **Konsistenz** | Absturzkonsistent (BTRFS-Snapshot bei laufenden Diensten) | Anwendungskonsistent (Stopp - Snapshot - Start) |
+| **Konsistenz** | Absturzkonsistent (Image eingefroren während des Betriebs) | Anwendungskonsistent (Stopp - Snapshot - Start) |
 | **Ausfallzeit** | Keine | Stop+Start-Fenster pro Repo (typischerweise 5-120 s) |
 | **Geeignete Häufigkeit** | Hoch (z. B. stündlich) | Niedrig (z. B. täglich oder wöchentlich) |
 | **Typischer Einsatz** | Häufiges Sicherheitsnetz | Geplantes Backup mit garantierter Konsistenz |
@@ -418,9 +531,11 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
 
 **Cold** ist geeignet, wenn Sie einen garantiert anwendungskonsistenten Snapshot benötigen und einen kurzen Neustart pro Repo akzeptieren können. Dienste werden vor dem Snapshot gestoppt und vor Beginn des Uploads neu gestartet, sodass ein langsamer oder fehlgeschlagener Upload das Ausfallzeitfenster nie verlängert. Das vollständige Garantiemodell finden Sie unter [Cold-Backup-Semantik](#cold-backup-semantik).
 
-### Repos pro Strategie filtern
+Beide Modi schreiben in denselben Chunk-Store, und der Modus betrifft, wie das Repository behandelt wird, während das Image eingefroren wird, nicht, wo die Daten landen. Ein Repository, das sowohl von einem stündlichen Hot- als auch einem wöchentlichen Cold-Zeitplan abgedeckt wird, speichert die gemeinsamen Zellen einmal statt zweimal.
 
-Jede Strategie kann `--include`- und `--exclude`-Filter tragen. Repository-Namen, die einem `--exclude`-Muster entsprechen, werden für diese Strategie übersprungen; `--include` beschränkt den Lauf auf genau diese Namen. Filter passen auf den lokalen Konfigurationsnamen des Repositories (ohne `:tag`).
+### Repos pro Strategie eingrenzen
+
+Eine Strategie ohne `--include` deckt jedes Repository auf dem Datastore ab. Wiederholtes `--include` grenzt sie auf die von Ihnen genannten Repositories ein, abgeglichen gegen den lokalen Konfigurationsnamen des Repositorys (ohne `:tag`).
 
 ```bash
 # Hot-Strategie: alles stündlich sichern
@@ -431,27 +546,27 @@ rdc backup strategy set hourly-hot \
   --bwlimit 6M \
   --enable
 
-# Cold-Strategie: alles wöchentlich sichern, außer dem großen abgeleiteten Datensatz
+# Cold-Strategie: wöchentlich, und nur die Repositories, die stillgelegt werden müssen
 rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude analytics-demo \
+  --include shop --include mail \
   --enable
 ```
 
-### Wann ein Repo aus der hochfrequenten Hot-Strategie ausschließen
+### Wann ein Repo aus der häufigen Hot-Strategie heraushalten
 
-Schließen Sie ein Repository aus dem hochfrequenten Lauf aus, wenn:
+Benennen Sie die Repositories, die Sie im hochfrequenten Lauf haben wollen, statt ihn alles erfassen zu lassen, wenn:
 
-- Das Repo groß ist und **vollständig aus Quelldaten regeneriert werden kann**, die bereits auf dem Volume liegen, sodass jedes stündliche Backup erhebliche Bandbreite verschwendet, ohne echten Wiederherstellungswert zu bieten.
+- Ein Repo groß und **vollständig aus Quelldaten regenerierbar** ist, die bereits auf dem Volume liegen, sodass jedes stündliche Backup Bandbreite verbraucht, ohne Wiederherstellungswert hinzuzufügen.
 - Der Backup-Lauf bei Ihrer verfügbaren Upload-Geschwindigkeit sein eigenes Zeitplan-Intervall überschreiten würde.
 
-**Beispiel.** Ein `analytics-demo`-Repository enthält ungefähr 114 GB abgeleitete Postgres-Tabellen, die vollständig aus rohen CSV-Dump-Dateien, die bereits im selben Volume gespeichert sind, neu aufgebaut werden können. Bei einem Upload-Limit von 6 MB/s dauert ein einzelnes Hot-Backup dieses Repos über 5 Stunden. Wenn dies stündlich läuft, ist jeder Lauf noch aktiv, wenn der nächste feuert, was dazu führt, dass jeder nachfolgende Lauf still verworfen wird (siehe [Lange Läufe und überlappende Zeitpläne](#lange-läufe-und-überlappende-zeitpläne)). Es aus `hourly-hot` auszuschließen und in `weekly-cold` zu belassen bedeutet, dass es einmal pro Woche gesichert wird statt gar nicht.
+**Beispiel.** Ein `analytics-demo`-Repository hält ungefähr 114 GB abgeleitete Postgres-Tabellen, die aus rohen CSV-Dumps, die im selben Volume gespeichert sind, neu aufgebaut werden können. Bei einem Upload-Limit von 6 MB/s dauert ein erster Snapshot dieses Repos über 5 Stunden. Ihn stündlich laufen zu lassen bedeutet, dass jeder Lauf noch läuft, wenn der nächste feuert, sodass jedes nachfolgende Feuern still verworfen wird (siehe [Lange Läufe und überlappende Zeitpläne](#lange-läufe-und-überlappende-zeitpläne)). Die anderen Repositories in `hourly-hot` aufzulisten und `analytics-demo` bei `weekly-cold` zu belassen bedeutet, dass es einmal pro Woche gesichert wird statt nie.
 
 > **Wenn die Daten rein regenerierbar sind**, überlegen Sie, ob Sie sie überhaupt sichern müssen. Eine Alternative ist, nur die rohen Quelleingaben (in diesem Beispiel die CSV-Dumps) zu sichern und die abgeleitete Kopie ganz zu überspringen. Ein wöchentliches Cold-Backup der Quelleingaben ist viel kleiner und für eine Wiederherstellung vollständig ausreichend.
 
-Ein Repo, das von keiner der beiden Strategien ausgeschlossen wird, wird von beiden erfasst: Es hat stündliche absturzkonsistente Snapshots und einen wöchentlichen anwendungskonsistenten. `rdc backup manifests <repo>` zeigt sie gemeinsam an, und die gemeinsamen Blöcke werden nur einmal gespeichert.
+Ein Repo, das von beiden Strategien abgedeckt wird, erhält stündliche absturzkonsistente Snapshots und einen wöchentlichen anwendungskonsistenten. `rdc backup manifests <repo>` zeigt sie gemeinsam an, und die gemeinsamen Zellen werden einmal gespeichert.
 
 ## Backup-Operationen
 
@@ -466,7 +581,7 @@ rdc backup schedule -m server-1 --dry-run
 
 Das Deploy ist ein State-Reconciler. Er liest die aktuellen Unit-Dateien und den systemd-Zustand auf der Maschine, vergleicht sie mit dem, was die Konfiguration erzeugen würde (SHA-256 pro Datei), und berührt nur Units, deren Inhalt sich tatsächlich geändert hat. Ein erneuter Aufruf ohne Konfigurationsänderungen ist ein No-op: keine Writes, kein `daemon-reload`, kein Timer-Churn.
 
-`--dry-run` gibt den Plan pro Strategie aus (`created`, `updated (service, timer, env)`, `unchanged`, `removed`), ohne die Maschine anzufassen. In Kombination mit `--debug` werden auch die generierten Unit-Inhalte ausgegeben; rclone-Tokens werden redigiert.
+`--dry-run` gibt den Plan pro Strategie aus (`created`, `updated (service, timer, env)`, `unchanged`, `removed`), ohne die Maschine anzufassen. Kombinieren Sie es mit `--debug`, um auch die generierten Unit-Inhalte auszugeben, wobei Credentials geschwärzt werden. Eine Chunk-Store-Unit trägt von vornherein keine: Die Maschine authentifiziert sich mit ihrer eigenen signierten Repository-Lizenz, und der Server händigt eine kurzlebige Berechtigung aus, sodass nichts Sensibles in die Unit-Datei geschrieben wird.
 
 Wenn gerade ein Backup für eine Strategie läuft, die aktualisiert oder entfernt werden soll, bricht das Deploy sofort ab und weist darauf hin, das Backup abzubrechen oder `--force` zu übergeben. Mit `--force` behält der laufende Vorgang seine In-Memory-Unit, und die neue Konfiguration greift beim nächsten Timer-Tick, sodass das laufende Backup niemals beendet wird.
 
@@ -507,29 +622,42 @@ rdc repo migrate my-app@server-1 --to server-2
 
 | Option | Beschreibung |
 |--------|-------------|
-| `<ref>` (positional) | Repository-Ref, das migriert werden soll; das `@machine` darin benennt die Quelle |
-| `--to <place>` | Zielmaschine oder Cluster |
-| `--provision` | Repository auf der Zielmaschine provisionieren, bevor übertragen wird |
-| `--checkpoint` | CRIU-Checkpoint vor der Migration erstellen |
-| `--skip-dns` | DNS-Aktualisierung nach der Migration überspringen |
+| `<ref>` (positional) | Zu migrierender Repository-Ref; dessen `@machine` benennt die Quelle |
+| `--to <place>` | Zielmaschine oder -cluster |
+| `--provision <provider>` | Zielmaschine automatisch über diesen Cloud-Anbieter bereitstellen (z. B. `hetzner`, `linode`) |
+| `--checkpoint` | CRIU-Checkpoint vor der Migration erstellen, sodass auch der Prozessspeicher mitzieht |
+| `--delta-base <guid>` | Unveränderliche Basis-GUID für das Cutover-Delta. Standardmäßig die Basis der ersten Phase |
+| `--strategy <strategy>` | Block-Delta-Strategie für das Cutover: `auto`, `physical` oder `shared` |
+| `--skip-dns` | Aktualisierung der DNS-Einträge nach der Migration überspringen |
+| `--keep-source` | Die Quell-Images nach einem erfolgreichen Umzug behalten |
 | `--bwlimit <limit>` | Bandbreitenlimit für die Übertragung (z. B. `50M`) |
 
-Die Migration überträgt die verschlüsselten Repository-Daten via rsync. Das Quell-Repository bleibt intakt, bis Sie es explizit entfernen.
+Die Migration überträgt die verschlüsselten Repository-Daten in zwei Phasen per rsync: eine Massenübertragung, während das Repository weiterläuft, dann ein kurzer Stopp für das Delta. Die Migration **verschiebt** das Repository, sodass die Quell-Images gelöscht werden, sobald der Umzug gelingt. Übergeben Sie `--keep-source`, um sie zu behalten. Das ist der Unterschied zwischen `repo migrate` und `repo push`: Push lässt die Quelle laufend und unangetastet.
 
-## Speicher durchsuchen
+## Ein vor der Umstellung geschriebenes Archiv lesen
 
-`rdc storage browse` und `rdc storage import` sind die Ausnahme von dieser Einstellung: Sie starten Ihr eigenes rclone aus PATH statt einer eingebetteten Kopie und bleiben der Weg, um ein vor der Umstellung geschriebenes Archiv zu lesen.
+`rdc storage` ist das, was vom rclone-Zweig übrig ist, und es ist schreibgeschützt. Es kann kein Backup-Ziel mehr sein, kommt aber weiterhin an ein Archiv heran, das auf diesem Weg geschrieben wurde.
 
 ```bash
+# Ein Remote registrieren, das Sie bereits für rclone konfiguriert haben.
+rdc storage import rclone.conf
+rdc storage list
+
+# Ansehen, was darin liegt. Dies führt das rclone auf Ihrem PATH aus.
 rdc storage browse my-storage
 ```
 
-Das Durchsuchen ist nur lesend. Push zu, Pull von und Auflisten eines Storage-Backends sind eingestellt; jeder Befehl verweigert die Ausführung und nennt den Chunk-Storage-Befehl, der ihn ersetzt.
+`import` liest eine rclone-Konfigurationsdatei und erfasst die Remotes in Ihrer Konfiguration; unterstützte Typen sind S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob und Swift.
+
+**`browse` benötigt `rclone` auf Ihrem PATH.** Es führt das rclone aus, das auf der Maschine installiert ist, an der Sie gerade tippen; eine gebündelte Kopie gibt es nicht mehr. Ohne eine sagt es Ihnen das und tut sonst nichts.
+
+Das Übertragen zu, Abrufen von, Auflisten und Wiederherstellen eines Storage-Backends sind eingestellt; jeder verweigert die Ausführung und nennt den Befehl, der ihn ersetzt.
 
 ## Bewährte Methoden
 
-- Tägliche Cold-Backups für anwendungskonsistente Snapshots kritischer Daten einplanen
-- Hot-Backups für hochfrequente Snapshots verwenden, bei denen keinerlei Ausfallzeit akzeptabel ist
-- Wiederherstellungen regelmäßig testen, um die Backup-Integrität zu überprüfen
-- Mehrere Speicheranbieter für kritische Daten verwenden (z. B. S3 + B2)
-- Zugangsdaten sicher aufbewahren; Backups sind verschlüsselt, aber das LUKS-Credential wird zur Wiederherstellung benötigt
+- Planen Sie tägliche Cold-Snapshots für anwendungskonsistente Kopien kritischer Daten
+- Verwenden Sie Hot-Snapshots für hochfrequente Läufe, bei denen keinerlei Ausfallzeit toleriert wird
+- Testen Sie Wiederherstellungen regelmäßig. `rdc backup restore --as <new-name>` überschreibt nichts, sodass eine Übung auf einer Live-Maschine gefahrlos ist
+- Legen Sie eine Aufbewahrungsrichtlinie fest, statt von Hand zu bereinigen, damit das gehaltene Fenster schriftlich festgehalten ist
+- Bewahren Sie neben Snapshots auch eine Maschine-zu-Maschine-Kopie auf, wenn Sie eine Kopie auf Hardware wollen, die Sie kontrollieren
+- Bewahren Sie Credentials sicher auf; Backups sind verschlüsselt, aber das LUKS-Credential wird zur Wiederherstellung benötigt

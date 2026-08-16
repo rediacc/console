@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "e4a4e0de5"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Hızlı Başlangıç
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Bulut Depolamaya Gönderme (OneDrive, Google Drive, S3)
+### 3. Parça Depolamaya Yedekleme
 
 ```bash
-# rclone yapılandırmanızı depolama arka ucu olarak içe aktarın
-rdc storage import ~/rclone.conf
+# Belirli bir zaman noktasında anlık görüntü al
+rdc backup snapshot my-app
 
-# Kullanılabilir depolamaları listeleyin
-rdc storage list
+# Hangi anlık görüntülerin var olduğunu gör
+rdc backup manifests my-app
 
-# Repoyu bulut depolamaya gönderin
-rdc repo push my-app --to my-s3-backup
-
-# Depolamadaki yedekleri listeleyin
-rdc backup list --storage my-s3-backup
+# Saklanan baytları kotanıza göre kontrol et
+rdc backup usage
 ```
 
-`--to` hedefin bir makine mi yoksa depolama arka ucu mu olduğunu otomatik algılar. rclone destekli tüm sağlayıcılarla çalışır: S3, R2, B2, OneDrive, Google Drive, SFTP, vb.
+Anlık görüntüler parça depolamaya yüklenir; bunun için bir hesap sunucusu ve lisanslı bir depo gerekir. Yalnızca değişen veriler saklanır, bu yüzden aynı deponun ikinci anlık görüntüsü tüm imaj yerine yalnızca farkı maliyet olarak taşır.
+
+`--to <storage>` ile bir depoyu bulut depolamaya gönderme kaldırılmıştır ve artık reddedilir. Bu değişiklikten önce yazılmış bir arşivi okumak için `rdc storage browse` hâlâ çalışır ve PATH'inizde `rclone` gerektirir.
 
 ### 4. Uzaktan Çekme
 

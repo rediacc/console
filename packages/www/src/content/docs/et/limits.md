@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Piirangud ja kvoodid
@@ -136,12 +136,33 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 
 | Piirang | Väärtus |
 |-------|-------|
-| Varukoopia sihtkohti hoidla kohta | Piiramatu |
-| Samaaegseid varukoopia töid | 1 hoidla kohta (tööd järjekorda, kui käivitatud samaaegselt) |
+| Hetktõmmiseid hoidla kohta | Piirang puudub, välja arvatud teie salvestuskvoot. Iga hetktõmmis on sõltumatult taastatav, seega maksab rohkemate hoidmine ainult salvestusruumi ja mitte midagi muud |
+| Samaaegseid hetktõmmiseid ühe hoidla kohta | 1. Teine käivitus leiab hoidla staging-luku hõivatuna ja **jäetakse vahele**, mitte ei panda järjekorda: see teatab, et teine käivitus hoiab seda, ja väljub. Käivita see hiljem uuesti |
 | Samaaegseid külmi hetktõmmiseid | 1 andmehoidla kohta; teine `renet backup snapshot --cold` lükatakse kohe tagasi ega peata midagi |
 | Varukoopia sagedus | Minimaalset intervalli ei jõustata; piiratud teie salvestuse ribalaiusega. Kasutage `rdc backup strategy set <name> --bwlimit "6M"` üleslaadimiskiiruse piiramiseks |
-| Säilitamine | Deklareeritakse käsuga `rdc backup retention set` (GFS-parameetrid: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ja jõustatakse serveri poolel; `rdc backup retention clear` eemaldab selle. Tükksalvestust mõõdetakse plaani kvoodi vastu füüsiliste unikaalsete salvestatud baitidena, mistõttu identsed andmed tõmmiste vahel ja kogu forkide perekonna ulatuses loetakse ainult üks kord: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, kontrollitav käsuga `rdc backup usage`. Pärandiks jäänud salvestuse push-tee ei paku iseseisvat säilitamist ja seda juhib teie teenusepakkuja. |
+| Säilitamine | Deklareeritakse käsuga `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ja jõustatakse serveri poolel; `rdc backup retention clear` eemaldab selle, misjärel hoitakse alles iga hetktõmmis |
 | Masinate vaheline varukoopia | Toetatud; sihtmasinal peab olema piisavalt andmehoidla ruumi |
+
+### Varunduse salvestuskvoot
+
+Hetktõmmised lähevad tükksalvestusse, mida mõõdetakse tellimuse kohta **füüsiliste unikaalsete salvestatud baitidena**: see, mida pärast dedupleerimist tegelikult hoitakse, mitte teie hetktõmmiste loogiline kogusumma. Hetktõmmised, mis jagavad andmeid, ja sama forkide perekonna repositooriumid loevad neid andmeid ainult üks kord.
+
+| Plaan | Kvoot | `rdc backup usage` näitab seda kui |
+|-------|-------|-------------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Need on plaani vaikeväärtused. Tellimusel võib olla oma ülekirjutus, seega kontrolli `rdc backup usage`, selle asemel et eeldada ülaltoodud rida.
+
+Kvoot jõustatakse enne andmete liikumist: hetktõmmis, mis selle ületaks, lükatakse tagasi siis, kui masin küsib üleslaadimisluba, mitte ülekande keskel. Täpselt kvoodini jõudmine on lubatud; üks bait üle on tagasilükatud. Kasutatuks loetakse ka pooleliolevad üleslaadimised, seega ei saa kaks samaaegset käivitust mõlemad piiri alla mahtuda.
+
+Kvoodi ületamine ei kustuta kunagi midagi. See peatab ainult uued üleslaadimised, ja juba olemasolevad hetktõmmised jäävad sinna, kus need on.
+
+Kui tellimus aegub, muutub varukoopia salvestus kirjutuskaitstuks: olemasolevad hetktõmmised jäävad loetavaks ja uusi ei saa üles laadida. Neid andmeid hoitakse **60 päeva** pärast aegumist, misjärel üks puhastuskäik need eemaldab. Organisatsiooni avatud tagasimakse külmutab selle puhastuskäigu, selle asemel et seda käivitada.
+
+Käsuga `rdc repo push` tehtud masinatevahelised koopiad ei puuduta seda kvooti. Need jõuavad sihtmasina andmehoidlasse ja on piiratud selle vaba ruumiga.
 
 ---
 

@@ -1,19 +1,21 @@
 ---
 title: "Backup y restauración"
-description: "Envía tu repositorio a almacenamiento externo y restáuralo en un nuevo servidor cuando lo necesites."
+description: "Copia un repositorio en vivo a una segunda máquina, desconecta la primera y recupera los datos."
 category: "Tutorials"
 subcategory: advanced
 order: 11
 language: es
-sourceHash: "c5c847e04186c9b1"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "bacd754fbeb6fb99"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Backup y restauración
 
-Tu app está en producción en vivo. Haz una copia de seguridad. `rdc` envía tu repositorio completo (app, base de datos, archivos, configuraciones) a almacenamiento externo y lo recupera en cualquier momento. Ransomware, fallos de hardware, cualquier cosa.
+Tu app está en producción y en vivo. Haz una copia de seguridad. `rdc` copia un repositorio completo, la app, su base de datos, sus archivos y su configuración, a una segunda máquina, y lo trae de vuelta cuando la primera desaparece.
+
+Este tutorial no se limita a describirlo. Lo hace, en dos máquinas reales, y lee los datos de vuelta al final.
 
 ## Ver el tutorial
 
@@ -21,70 +23,75 @@ Tu app está en producción en vivo. Haz una copia de seguridad. `rdc` envía tu
 
 ## Tres pasos
 
-![Configurar, enviar, restaurar](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+![Copiar, restaurar, comprobar](/img/tutorials/tutorial-backup-restore/slide-1.svg)
 
-1. **Configurar** un proveedor de almacenamiento.
-2. **Enviar** un backup.
-3. **Restaurar** cuando lo necesites.
+1. **Copia** el repositorio a una máquina que controlas.
+2. **Restaura** esa copia en un repositorio propio.
+3. **Comprueba** leyendo tus datos de vuelta.
 
-## Paso 1: Configurar el almacenamiento
-
-Necesitas un archivo de configuración de `rclone`. Si ya usas rclone, impórtalo directamente:
+## Paso 1: Los datos que tienen que sobrevivir
 
 <TutorialStep number={1} />
 
-Esto soporta S3, B2, Google Drive, Dropbox y muchos más. Verifica qué está configurado:
+Todo lo que sigue se juzga contra esta única línea. Vuelve a fijarte en ella en el paso 7.
+
+## Paso 2: Copiar el repositorio a una segunda máquina
 
 <TutorialStep number={2} />
 
-## Paso 2: Enviar un backup
+El [tutorial de Transferencia delta](/es/docs/tutorial-delta-transfer) muestra en directo la mitad incremental de esto.
+
+Un artefacto no es un repositorio en ejecución, que es la razón de ser del paso 5.
+
+## Paso 3: La máquina de backup ya lo tiene
 
 <TutorialStep number={3} />
 
-Tu repositorio completo (app, base de datos, archivos, todo) está respaldado ahora. Como el repositorio en sí está cifrado, el backup también está cifrado. Sin gestión de claves adicional.
-
-Lista tus backups en cualquier momento:
+## Paso 4: Desastre
 
 <TutorialStep number={4} />
 
-## ¿Por qué no hay tiempo de inactividad?
-
-La app sigue ejecutándose mientras se sube el backup. ¿Cómo es eso consistente?
-
-La misma lógica que un [fork](/es/docs/tutorial-forking). `rdc` primero hace un fork y luego sube el fork. El fork captura el momento; tu app en vivo sigue funcionando. Sin tiempo de inactividad, sin inconsistencias.
-
-## Paso 3: Restaurar, de verdad
-
-Un backup que nunca restauras es una esperanza, no un backup. Primero detén el repositorio:
+## Paso 5: Convertir el artefacto en un repositorio
 
 <TutorialStep number={5} />
 
-Descarga el backup directamente desde el almacenamiento:
+Haz esto una vez por máquina antes de necesitarlo. Una máquina que nunca ha completado el ciclo completo no está respaldada, por muy bien que se vean sus envíos, y restaurar bajo un nombre nuevo es seguro en una máquina que está sirviendo tráfico real.
+
+## Paso 6: Móntalo
 
 <TutorialStep number={6} />
 
-Y móntalo de nuevo, ya restaurado por completo:
+## Paso 7: Los datos sobrevivieron
 
 <TutorialStep number={7} />
 
-El mismo pull funciona en un servidor nuevo: configúralo, agrégalo a `rdc` y ejecuta el pull ahí:
+Pon los dos uno junto al otro. Paso 1, desde el repositorio original en la máquina principal:
 
-```bash
-rdc repo pull my-app@new-server --from my-storage
-rdc repo up my-app@new-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-Mismos datos, los mismos contenedores, una máquina diferente.
+Paso 7, desde un repositorio que no existía hace dos comandos, en hardware distinto:
 
-## Backups más rápidos: de máquina a máquina
-
-También puedes enviar directamente entre máquinas, sin almacenamiento en la nube de por medio:
-
-```bash
-rdc repo push my-app --to backup-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-> **Consejo profesional.** Los envíos de máquina a máquina solo transfieren los bloques que cambiaron después del primero. El [tutorial de Transferencia delta](/es/docs/tutorial-delta-transfer) lo muestra en directo.
+Ese es el tutorial. No un informe que dice que un backup tuvo éxito, sino la línea misma, leída de vuelta desde otra máquina.
+
+## Paso 8: Backups por los que puedes retroceder
+
+<TutorialStep number={8} />
+
+En tu propia instalación, con una cuenta, la secuencia completa es:
+
+```bash
+rdc backup snapshot my-app
+rdc backup manifests my-app
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+```
+
+La [guía de Respaldo y Restauración](/es/docs/backup-restore) cubre snapshots, retención y verificación en su totalidad.
 
 ---
 

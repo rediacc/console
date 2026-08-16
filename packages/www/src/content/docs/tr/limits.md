@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Limitler ve Kotalar
@@ -136,15 +136,35 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 
 | Limit | Değer |
 |-------|-------|
-| Depo başına yedekleme hedefleri | Sınırsız |
-| Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
+| Depo başına anlık görüntü (snapshot) sayısı | Depolama kotanız dışında bir sınır yok. Her anlık görüntü kendi başına geri yüklenebilir, bu yüzden daha fazlasını saklamanın tek maliyeti depolama alanıdır |
+| Bir deponun eş zamanlı anlık görüntüleri | 1. İkinci bir çalıştırma, deponun hazırlama kilidinin tutulduğunu görürse kuyruğa girmez, **atlanır**: başka bir çalıştırmanın kilidi tuttuğunu bildirip sonlanır. Daha sonra yeniden çalıştırın |
 | Eş zamanlı soğuk anlık görüntüler | Veri deposu başına 1; ikinci bir `renet backup snapshot --cold` anında reddedilir ve hiçbir şeyi durdurmaz |
 | Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc backup strategy set <name> --bwlimit "6M"` kullanın |
-| Saklama | `rdc backup retention set` ile bildirilir (GFS parametreleri: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ve sunucu tarafında uygulanır; `rdc backup retention clear` bunu kaldırır. Chunk depolama, plan kotasına karşı fiziksel olarak benzersiz depolanan bayt sayısı olarak ölçülür, bu nedenle anlık görüntüler arasındaki ve bir çatal ailesinin tamamındaki tekilleştirme yalnızca bir kez sayılır: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, `rdc backup usage` ile kontrol edilir. Eski storage-push yolunun kendine ait bir saklaması yoktur ve depolama sağlayıcınız tarafından yönetilir. |
+| Saklama | `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) ile bildirilir ve sunucu tarafında uygulanır; `rdc backup retention clear` bunu kaldırır, bundan sonra tüm anlık görüntüler saklanır |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
 
----
+### Yedekleme depolama kotası
 
+Anlık görüntüler chunk depolamaya gider; bu, abonelik başına **fiziksel olarak benzersiz depolanan bayt sayısı** cinsinden ölçülür: mükerrer verilerin ayıklanmasından sonra gerçekte tutulan miktardır, anlık görüntülerin mantıksal olarak temsil ettiği toplam değil. Veri paylaşan anlık görüntüler ve aynı çatal (fork) ailesindeki depolar, bu veriyi yalnızca bir kez sayar.
+
+| Plan | Kota | `rdc backup usage` çıktısındaki gösterimi |
+|------|-------|-------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Bunlar plan varsayılanlarıdır. Bir abonelik kendi özel geçersiz kılma değerini taşıyabilir, bu yüzden yukarıdaki satırı varsaymak yerine `rdc backup usage` komutunu kontrol edin.
+
+Kota, herhangi bir veri taşınmadan önce uygulanır: kotayı aşacak bir anlık görüntü, aktarımın ortasında değil, makine yükleme izni istediği anda reddedilir. Kotaya tam olarak ulaşmaya izin verilir; bir bayt fazlası reddedilir. Kullanılan miktara hâlâ devam eden yüklemeler de dahildir, bu yüzden iki eş zamanlı çalıştırma aynı anda limitin altına sığamaz.
+
+Kotayı aşmak hiçbir şeyi silmez. Yalnızca yeni yüklemeleri durdurur; zaten sahip olduğunuz anlık görüntüler oldukları yerde kalır.
+
+Bir abonelik sona ererse, yedekleme depolaması salt okunur hale gelir: mevcut anlık görüntüler okunabilir kalır ve yenileri yüklenemez. Bu veriler, sona ermeden sonra **60 gün** boyunca saklanır, ardından tek bir temizlik işlemiyle kaldırılır. Kuruluşta bekleyen bir iade varsa bu temizlik çalıştırılmaz, dondurulur.
+
+`rdc repo push` ile yapılan makineler arası kopyalar bu kotaya dokunmaz. Hedef makinenin veri deposuna yerleşir ve onun boş alanıyla sınırlanır.
+
+---
 ## CLI ve API
 
 | Limit | Değer |

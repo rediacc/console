@@ -4,8 +4,8 @@ description: "Riferimento rapido per rdc: configurazioni, repository, macchine, 
 category: Guides
 order: 3
 language: it
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Guida rapida alla CLI RDC
@@ -44,12 +44,11 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 
 | Comando | Descrizione |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Invia il backup di un repository sullo storage |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Ripristina un repository dallo storage |
 | `rdc repo push ... --bwlimit <limit>` | Limita la banda rsync durante il push (es. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limita la banda rsync durante il pull |
 | `rdc repo push ... --checkpoint` | Esegui il checkpoint dei container prima del push |
-| `rdc backup list --storage <storage>` | Elenca i backup disponibili nello storage |
+| `rdc backup manifests <repo-ref>` | Elenca gli snapshot contenuti nello storage a chunk |
+| `rdc backup browse <repo-ref>` | Elenca i file contenuti in un repository (locale, sola lettura) |
 | `rdc backup snapshot <repo>` | Carica uno snapshot su storage a chunk: prima l'inventario completo, poi solo le celle modificate |
 | `rdc backup snapshot <repo> --dry-run` | Pianifica lo snapshot senza caricare; riporta cosa verrebbe spostato |
 | `rdc backup verify <repo>` | Verifica l'ancora di backup di un repository rispetto allo storage a chunk |
