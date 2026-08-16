@@ -3,6 +3,7 @@ title: RDC CLI Cheat Sheet
 description: "Quick reference for rdc: configs, repos, machines, file sync, and containers. Full option set: add --help to any command."
 category: Guides
 order: 3
+cardGrid: true
 language: en
 ---
 

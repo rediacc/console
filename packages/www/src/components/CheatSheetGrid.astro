@@ -34,7 +34,19 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
   </div>
 </div>
 
-<style>
+<!--
+  is:inline is load-bearing, do NOT turn this into a scoped <style>.
+
+  These rules deliberately reach OUTSIDE the component (the DocsLayout chrome,
+  `html`/`body`, and a selector-less `@page`), so Astro cannot scope them.  A
+  processed <style> is bundled into the stylesheet shared by every page built
+  from [slug].astro -- 1015 docs pages -- which would hand all of them
+  `@page { size: A4 landscape }` and an unscoped
+  `.docs-article { max-width: none !important }`.  Measured, not theorised:
+  that is what the first build of this component produced.  Inline keeps the
+  rules in the 13 cheat-sheet pages that render it.
+-->
+<style is:inline>
   /* ------------------------------------------------------------------ */
   /* Print-only page header — repeats on every printed page              */
   /* ------------------------------------------------------------------ */
@@ -50,11 +62,11 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
     .docs-article has max-width: var(--container-md) which clips the 3-col
     grid.  Override it and the article-content wrapper to use full width.
   */
-  :global(.docs-article) {
+  .docs-article {
     max-width: none !important;
   }
 
-  :global(.article-content) .cs-cards {
+  .article-content .cs-cards {
     max-width: none;
     width: 100%;
   }
@@ -70,7 +82,7 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
   }
 
   /* First section: branding header — full-bleed, docked left to right */
-  .cs-grid :global(section:first-child) {
+  .cs-grid section:first-child {
     border-radius: 0;
     margin-left: -0.5rem;
     margin-right: -0.5rem;
@@ -80,7 +92,7 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
   }
 
   /* Keep cards in normal flow at their natural height. */
-  .cs-grid :global(section) {
+  .cs-grid section {
     width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
@@ -90,22 +102,22 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
     box-sizing: border-box;
   }
 
-  .cs-grid :global(section > *) {
+  .cs-grid section > * {
     position: static !important;
   }
 
   /* Prevent long code lines from overflowing card boundaries */
-  .cs-grid :global(pre) {
+  .cs-grid pre {
     overflow: hidden !important;
   }
 
-  .cs-grid :global(pre code) {
+  .cs-grid pre code {
     white-space: pre-wrap !important;
     word-break: break-all !important;
   }
 
   /* Scroll margin for TOC anchor links */
-  .cs-grid :global(section h2) {
+  .cs-grid section h2 {
     scroll-margin-top: calc(var(--nav-height, 60px) + 1rem);
   }
 
@@ -140,7 +152,7 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
     }
 
     /* Strip ALL layout chrome — full page for content */
-    :global(html, body) {
+    html, body {
       margin: 0 !important;
       padding: 0 !important;
       font-size: 6.5px !important;
@@ -148,47 +160,47 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
       overflow: visible !important;
     }
 
-    :global(.site-footer, .footer, [class*="footer"]) {
+    .site-footer, .footer, [class*="footer"] {
       display: none !important;
       height: 0 !important;
     }
 
-    :global(header, nav, aside, footer,
-            .docs-shell-top, .docs-header-row,
-            .article-header, .fallback-notice,
-            .sidebar-base, .toc-sidebar) {
+    header, nav, aside, footer,
+    .docs-shell-top, .docs-header-row,
+    .article-header, .fallback-notice,
+    .sidebar-base, .toc-sidebar {
       display: none !important;
     }
 
-    :global(.docs-shell) {
+    .docs-shell {
       max-width: none !important;
       padding: 0 !important;
       margin: 0 !important;
     }
 
-    :global(.docs-layout) {
+    .docs-layout {
       display: block !important;
     }
 
-    :global(.docs-article) {
+    .docs-article {
       max-width: none !important;
       margin: 0 !important;
       padding: 0 !important;
     }
 
-    :global(.docs-content) {
+    .docs-content {
       padding: 0 !important;
       margin: 0 !important;
     }
 
-    :global(.article-content) {
+    .article-content {
       max-width: none !important;
       width: 100% !important;
       padding: 0 !important;
       margin: 0 !important;
     }
 
-    :global(.article-content) .cs-cards {
+    .article-content .cs-cards {
       margin: 0;
       padding-top: 12px;
     }
@@ -202,7 +214,7 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
     }
 
     /* Header spans full width above columns */
-    .cs-grid :global(section:first-child) {
+    .cs-grid section:first-child {
       column-span: all;
       border-radius: 0;
       margin: 0 0 2px 0;
@@ -210,7 +222,7 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
       width: 100%;
     }
 
-    .cs-grid :global(section) {
+    .cs-grid section {
       display: inline-block;
       width: 100%;
       padding: 2px 4px !important;
@@ -219,68 +231,70 @@ const cards = splitIntoCards(await Astro.slots.render('default'));
       page-break-inside: avoid;
     }
 
-    .cs-grid :global(section:last-child) {
+    .cs-grid section:last-child {
       margin-bottom: 0;
     }
 
     /* Compact all typography for print */
-    .cs-grid :global(h2) {
+    .cs-grid h2 {
       font-size: 7px !important;
       margin-bottom: 1px !important;
       padding-bottom: 1px !important;
     }
 
-    .cs-grid :global(h3) {
+    .cs-grid h3 {
       font-size: 6.5px !important;
       margin-top: 1px !important;
       margin-bottom: 1px !important;
     }
 
-    .cs-grid :global(p) {
+    .cs-grid p {
       margin-bottom: 1px !important;
       font-size: 6.5px !important;
     }
 
-    .cs-grid :global(ul, ol) {
+    .cs-grid ul,
+    .cs-grid ol {
       margin: 0 0 1px 0 !important;
       padding-left: 7px !important;
     }
 
-    .cs-grid :global(li) {
+    .cs-grid li {
       margin-bottom: 0 !important;
       font-size: 6.5px !important;
     }
 
-    .cs-grid :global(pre) {
+    .cs-grid pre {
       padding: 1px 3px !important;
       margin: 1px 0 !important;
     }
 
-    .cs-grid :global(pre code) {
+    .cs-grid pre code {
       font-size: 6px !important;
       line-height: 1.15 !important;
     }
 
-    .cs-grid :global(code) {
+    .cs-grid code {
       font-size: 6px !important;
       padding: 0 1px !important;
     }
 
-    .cs-grid :global(table) {
+    .cs-grid table {
       font-size: 6px !important;
     }
 
-    .cs-grid :global(th, td) {
+    .cs-grid th,
+    .cs-grid td {
       padding: 1px 2px !important;
       font-size: 6px !important;
     }
 
-    .cs-grid :global(blockquote) {
+    .cs-grid blockquote {
       margin: 1px 0 !important;
       padding: 1px 3px !important;
     }
 
-    .cs-grid :global(blockquote p) {
+    .cs-grid blockquote p {
       font-size: 6px !important;
     }
   }

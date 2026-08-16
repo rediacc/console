@@ -1040,6 +1040,15 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-locale-sources
 
+      # Source-level complement to Docs render parity in quality-www-build: a page or
+      # layout under packages/www/src that imports a markdown file via `?raw`, or names
+      # src/content/docs/en/ by path, is serving one language to thirteen routes by
+      # construction. No build, so it belongs in this lane rather than behind an astro
+      # build. `?raw` on a stylesheet stays legal -- a stylesheet has no language.
+      - name: Page locale imports
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-page-locale-imports
+
   # ============================================================================
   # L8 BUILT-WWW GATES -- alone. One astro build is the expensive input.
   #
@@ -1107,6 +1116,16 @@ jobs:
       - name: SEO
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-seo
+
+      # The only gate that reads what a READER is served. Every other i18n gate roots
+      # at src/content/docs, so all of them stayed green for months while thirteen
+      # locale routes rendered one English document. It compares each locale source's
+      # `## ` headings against the .article-content body of its built page -- scoped to
+      # that container deliberately, because the German TOC in dist carries the ENGLISH
+      # heading text and would satisfy a whole-page assertion by accident.
+      - name: Docs render parity
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-docs-render-parity
 
       # Scans the BUILT HTML for duplicate CTA anchors, so it needs dist too --
       # its source-literal grep only mentions src/i18n/translations/en.json,

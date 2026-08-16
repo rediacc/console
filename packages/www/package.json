@@ -39,7 +39,6 @@
     "@astrojs/react": "^5.0.2",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
-    "@marp-team/marp-core": "^4.4.0",
     "@marsidev/react-turnstile": "^1.6.0",
     "@rediacc/shared": "*",
     "@types/mdast": "^4.0.4",

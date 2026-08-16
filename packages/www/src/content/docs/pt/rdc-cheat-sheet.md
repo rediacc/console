@@ -3,6 +3,7 @@ title: Folha de Consulta do CLI RDC
 description: "Referência rápida para rdc: configs, repositórios, máquinas, sincronização e contentores. Conjunto completo de opções: adicione --help a qualquer comando."
 category: Guides
 order: 3
+cardGrid: true
 language: pt
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"

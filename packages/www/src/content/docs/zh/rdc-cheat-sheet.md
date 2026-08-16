@@ -3,6 +3,7 @@ title: RDC CLI 快速参考
 description: "rdc 快速参考：配置、仓库、机器、文件同步和容器。完整选项集：在任意命令后添加 --help。"
 category: Guides
 order: 3
+cardGrid: true
 language: zh
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
