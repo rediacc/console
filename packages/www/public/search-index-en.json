@@ -9942,7 +9942,7 @@
   {
     "id": "search-4742",
     "content": "Repository Lifecycle",
-    "body": "| Command | Description | |---------|-------------| | rdc repo create <repo> -m <machine> | Create a new repository on a machine | | rdc repo up <repo>@<machine> | Deploy or update a repository | | rdc repo down <repo>@<machine> | Stop a repository | | rdc repo delete <repo>@<machine> | Delete a repository | | rdc repo fork <repo>@<machine> --tag <tag> | Fork a repository (near-instant, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Promote a validated fork to production under its parent's name | | rdc repo list | List all repositories with name and GUID |",
+    "body": "| Command | Description | |---------|-------------| | rdc repo create <repo> -m <machine> | Create a new repository on a machine | | rdc repo up <repo>@<machine> | Deploy or update a repository | | rdc repo down <repo>@<machine> | Stop a repository | | rdc repo delete <repo>@<machine> | Delete a repository | | rdc repo fork <repo>@<machine> --tag <tag> | Fork a repository (near-instant, BTRFS reflink) | | rdc repo promote <repo>:<tag> | Promote a validated fork to production under its parent's name | | rdc repo list | List all repositories with name and GUID | | rdc repo resize <repo> --size <size> | Resize a stopped repository's volume | | rdc repo expand <repo> --size <size> | Grow a running repository's volume in place |",
     "excerpt": "| Command | Description | |---------|-------------| | rdc repo create <repo> -m <machine> | Create a new repository on a machine | | rdc repo up <repo...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",
@@ -10008,7 +10008,7 @@
   {
     "id": "search-4748",
     "content": "Machine Management",
-    "body": "| Command | Description | |---------|-------------| | rdc machine status <machine> | Full machine status (system, containers, services, repos, network) | | rdc machine status <machine> --system | System info only | | rdc machine status <machine> --containers | Container list only | | rdc machine status <machine> --repositories | Repository list only | | rdc machine status <machine> --services | Service list only | | rdc machine status <machine> --network | Network info only | | rdc machine status <machine> --block-devices | Block device info only | | rdc machine list | List all machines in config | | rdc machine setup <machine> | Run initial machine provisioning | | rdc machine prune <machine> | Remove unused resources from machine | | rdc machine deprovision <machine> | Fully deprovision a machine |",
+    "body": "| Command | Description | |---------|-------------| | rdc machine status <machine> | Full machine status (system, containers, services, repos, network) | | rdc machine status <machine> --system | System info only | | rdc machine status <machine> --containers | Container list only | | rdc machine status <machine> --repositories | Repository list only | | rdc machine status <machine> --services | Service list only | | rdc machine status <machine> --network | Network info only | | rdc machine status <machine> --block-devices | Block device info only | | rdc machine list | List all machines in config | | rdc machine setup <machine> | Run initial machine provisioning | | rdc machine health <machine> | Health check a machine | | rdc machine scan-keys <machine> | Refresh SSH host keys after a rebuild | | rdc machine prune <machine> | Remove unused resources from machine | | rdc machine deprovision <machine> | Fully deprovision a machine |",
     "excerpt": "| Command | Description | |---------|-------------| | rdc machine status <machine> | Full machine status (system, containers, services, repos, network...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",
@@ -10019,7 +10019,7 @@
   {
     "id": "search-4749",
     "content": "Terminal and Sync",
-    "body": "| Command | Description | |---------|-------------| | rdc term connect <machine> | Open SSH terminal to machine | | rdc term connect <repo>@<machine> | Open SSH terminal to repository (sets DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | Run a command on machine | | rdc repo sync upload <repo>@<machine> --local <paths...> | Upload one or more local files/dirs to repository | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Upload a single local file to an explicit remote path | | rdc repo sync download <repo>@<machine> --local <dir> | Download repository directory locally | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Download a single remote file into a local dir | | rdc vscode connect <repo>@<machine> | Open VS Code Remote SSH session |",
+    "body": "| Command | Description | |---------|-------------| | rdc term connect <machine> | Open SSH terminal to machine | | rdc term connect <repo>@<machine> | Open SSH terminal to repository (sets DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | Run a command on machine | | rdc repo sync upload <repo>@<machine> --local <paths...> | Upload one or more local files/dirs to repository | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | Upload a single local file to an explicit remote path | | rdc repo sync download <repo>@<machine> --local <dir> | Download repository directory locally | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | Download a single remote file into a local dir | | rdc vscode connect <repo>@<machine> | Open VS Code Remote SSH session | | rdc vscode list | List SSH configs created by vscode connect | | rdc vscode cleanup --all | Remove every SSH config vscode connect wrote | | rdc repo tunnel <repo> -c <container> --port <port> | Forward a container port over SSH |",
     "excerpt": "| Command | Description | |---------|-------------| | rdc term connect <machine> | Open SSH terminal to machine | | rdc term connect <repo>@<machine>...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",
@@ -10030,8 +10030,8 @@
   {
     "id": "search-4750",
     "content": "Configuration",
-    "body": "| Command | Description | |---------|-------------| | rdc config init <name> | Create a named config file | | rdc machine add <machine> --ip <host> --user <user> | Add a machine to config | | rdc storage import rclone.conf | Import storage providers from rclone config | | rdc storage list | List configured storage providers | | rdc backup strategy set ... | Define a named backup strategy | | rdc --config <name> <command> | Use a named config file |",
-    "excerpt": "| Command | Description | |---------|-------------| | rdc config init <name> | Create a named config file | | rdc machine add <machine> --ip <host> --...",
+    "body": "| Command | Description | |---------|-------------| | rdc config init <name> | Create a named config file | | rdc config list | List every config on this machine | | rdc config set machine <alias> | Point an alias at a different machine | | rdc machine add <machine> --ip <host> --user <user> | Add a machine to config | | rdc storage import rclone.conf | Import storage providers from rclone config | | rdc storage list | List configured storage providers | | rdc backup strategy set ... | Define a named backup strategy | | rdc --config <name> <command> | Use a named config file |",
+    "excerpt": "| Command | Description | |---------|-------------| | rdc config init <name> | Create a named config file | | rdc config list | List every config on t...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -10041,8 +10041,8 @@
   {
     "id": "search-4751",
     "content": "Debug and Escape Hatch",
-    "body": "| Command | Description | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | List containers in a repository | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Fetch container logs | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Execute command in container | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Restart a container |",
-    "excerpt": "| Command | Description | |---------|-------------| | rdc term connect <repo>@<machine> -c \"docker ps\" | List containers in a repository | | rdc term...",
+    "body": "| Command | Description | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Stream container logs (preferred) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | Run a command in a container (preferred) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | Attach an interactive container shell | | rdc term connect <repo>@<machine> -c \"docker ps\" | List containers in a repository | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | Fetch container logs | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | Execute command in container | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | Restart a container |",
+    "excerpt": "| Command | Description | |---------|-------------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | Stream container logs (pref...",
     "category": "Documentation",
     "page": "/en/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",

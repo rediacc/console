@@ -9772,7 +9772,7 @@
   {
     "id": "search-11292",
     "content": "リポジトリのライフサイクル",
-    "body": "| コマンド | 説明 | |---------|------| | rdc repo create <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up <repo>@<machine> | リポジトリをデプロイまたは更新する | | rdc repo down <repo>@<machine> | リポジトリを停止する | | rdc repo delete <repo>@<machine> | リポジトリを削除する | | rdc repo fork <repo>@<machine> --tag <tag> | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) | | rdc repo promote <repo>:<tag> | 検証済みのフォークを親リポジトリの名前で本番環境に昇格する | | rdc repo list | 名前と GUID を含む全リポジトリを一覧表示する |",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo create <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up <repo>@<machine> | リポジトリをデプロイまたは更新する | | rdc repo down <repo>@<machine> | リポジトリを停止する | | rdc repo delete <repo>@<machine> | リポジトリを削除する | | rdc repo fork <repo>@<machine> --tag <tag> | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) | | rdc repo promote <repo>:<tag> | 検証済みのフォークを親リポジトリの名前で本番環境に昇格する | | rdc repo list | 名前と GUID を含む全リポジトリを一覧表示する | | rdc repo resize <repo> --size <size> | 停止中のリポジトリのボリュームサイズを変更する | | rdc repo expand <repo> --size <size> | 稼働中のリポジトリのボリュームをその場で拡張する |",
     "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo create <repo> -m <machine> | マシン上に新しいリポジトリを作成する | | rdc repo up <repo>@<machine> | リポジトリをデプロイまたは更新する | | r...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
@@ -9838,7 +9838,7 @@
   {
     "id": "search-11298",
     "content": "マシン管理",
-    "body": "| コマンド | 説明 | |---------|------| | rdc machine status <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine status <machine> --system | システム情報のみ | | rdc machine status <machine> --containers | コンテナ一覧のみ | | rdc machine status <machine> --repositories | リポジトリ一覧のみ | | rdc machine status <machine> --services | サービス一覧のみ | | rdc machine status <machine> --network | ネットワーク情報のみ | | rdc machine status <machine> --block-devices | ブロックデバイス情報のみ | | rdc machine list | 設定内の全マシンを一覧表示する | | rdc machine setup <machine> | マシンの初期プロビジョニングを実行する | | rdc machine prune <machine> | マシンから未使用リソースを削除する | | rdc machine deprovision <machine> | マシンを完全にデプロビジョニングする |",
+    "body": "| コマンド | 説明 | |---------|------| | rdc machine status <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine status <machine> --system | システム情報のみ | | rdc machine status <machine> --containers | コンテナ一覧のみ | | rdc machine status <machine> --repositories | リポジトリ一覧のみ | | rdc machine status <machine> --services | サービス一覧のみ | | rdc machine status <machine> --network | ネットワーク情報のみ | | rdc machine status <machine> --block-devices | ブロックデバイス情報のみ | | rdc machine list | 設定内の全マシンを一覧表示する | | rdc machine setup <machine> | マシンの初期プロビジョニングを実行する | | rdc machine health <machine> | マシンのヘルスチェックを実行する | | rdc machine scan-keys <machine> | 再構築後に SSH ホストキーを更新する | | rdc machine prune <machine> | マシンから未使用リソースを削除する | | rdc machine deprovision <machine> | マシンを完全にデプロビジョニングする |",
     "excerpt": "| コマンド | 説明 | |---------|------| | rdc machine status <machine> | マシンの完全なステータス (システム、コンテナ、サービス、リポジトリ、ネットワーク) | | rdc machine status <machine> --system...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
@@ -9849,7 +9849,7 @@
   {
     "id": "search-11299",
     "content": "ターミナルと同期",
-    "body": "| コマンド | 説明 | |---------|------| | rdc term connect <machine> | マシンへの SSH ターミナルを開く | | rdc term connect <repo>@<machine> | リポジトリへの SSH ターミナルを開く (DOCKER_HOST を設定) | | rdc term connect <machine> -c \"<command>\" | マシン上でコマンドを実行する | | rdc repo sync upload <repo>@<machine> --local <paths...> | 1 つ以上のローカルファイル/ディレクトリをリポジトリにアップロードする | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 単一のローカルファイルを明示的なリモートパスにアップロードする | | rdc repo sync download <repo>@<machine> --local <dir> | リポジトリディレクトリをローカルにダウンロードする | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 単一のリモートファイルをローカルディレクトリにダウンロードする | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH セッションを開く |",
+    "body": "| コマンド | 説明 | |---------|------| | rdc term connect <machine> | マシンへの SSH ターミナルを開く | | rdc term connect <repo>@<machine> | リポジトリへの SSH ターミナルを開く (DOCKER_HOST を設定) | | rdc term connect <machine> -c \"<command>\" | マシン上でコマンドを実行する | | rdc repo sync upload <repo>@<machine> --local <paths...> | 1 つ以上のローカルファイル/ディレクトリをリポジトリにアップロードする | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | 単一のローカルファイルを明示的なリモートパスにアップロードする | | rdc repo sync download <repo>@<machine> --local <dir> | リポジトリディレクトリをローカルにダウンロードする | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | 単一のリモートファイルをローカルディレクトリにダウンロードする | | rdc vscode connect <repo>@<machine> | VS Code Remote SSH セッションを開く | | rdc vscode list | vscode connect が作成した SSH 設定を一覧表示する | | rdc vscode cleanup --all | vscode connect が書き込んだ SSH 設定をすべて削除する | | rdc repo tunnel <repo> -c <container> --port <port> | コンテナのポートを SSH 経由で転送する |",
     "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect <machine> | マシンへの SSH ターミナルを開く | | rdc term connect <repo>@<machine> | リポジトリへの SSH ターミナルを開く (DOCKE...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
@@ -9860,8 +9860,8 @@
   {
     "id": "search-11300",
     "content": "設定",
-    "body": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc machine add <machine> --ip <host> --user <user> | 設定にマシンを追加する | | rdc storage import rclone.conf | rclone 設定からストレージプロバイダをインポートする | | rdc storage list | 設定済みストレージプロバイダを一覧表示する | | rdc backup strategy set ... | 名前付きバックアップ戦略を定義する | | rdc --config <name> <command> | 名前付き設定ファイルを使用する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc machine add <machine> --ip <host> --user <user> | 設定にマシンを追加する | |...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc config list | このマシン上のすべての設定を一覧表示する | | rdc config set machine <alias> | エイリアスを別のマシンに向ける | | rdc machine add <machine> --ip <host> --user <user> | 設定にマシンを追加する | | rdc storage import rclone.conf | rclone 設定からストレージプロバイダをインポートする | | rdc storage list | 設定済みストレージプロバイダを一覧表示する | | rdc backup strategy set ... | 名前付きバックアップ戦略を定義する | | rdc --config <name> <command> | 名前付き設定ファイルを使用する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc config init <name> | 名前付き設定ファイルを作成する | | rdc config list | このマシン上のすべての設定を一覧表示する | | rdc config set machine <ali...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9871,8 +9871,8 @@
   {
     "id": "search-11301",
     "content": "デバッグと直接アクセス",
-    "body": "| コマンド | 説明 | |---------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | コンテナのログを取得する | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | コンテナ内でコマンドを実行する | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | コンテナを再起動する |",
-    "excerpt": "| コマンド | 説明 | |---------|------| | rdc term connect <repo>@<machine> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect <repo>@<machine> -c \"doc...",
+    "body": "| コマンド | 説明 | |---------|------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | コンテナのログをストリーミングする (推奨) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | コンテナ内でコマンドを実行する (推奨) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | インタラクティブなコンテナシェルに接続する | | rdc term connect <repo>@<machine> -c \"docker ps\" | リポジトリ内のコンテナを一覧表示する | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | コンテナのログを取得する | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | コンテナ内でコマンドを実行する | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | コンテナを再起動する |",
+    "excerpt": "| コマンド | 説明 | |---------|------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | コンテナのログをストリーミングする (推奨) | | rdc repo exec <repo...",
     "category": "Documentation",
     "page": "/ja/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",

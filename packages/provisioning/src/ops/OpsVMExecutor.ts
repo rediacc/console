@@ -108,7 +108,8 @@ export class OpsVMExecutor {
     if (conf.code !== 0) return 'no /etc/ceph/ceph.conf';
 
     const rbd = await this.executeOnVM(ip, 'command -v rbd');
-    if (rbd.code !== 0 || rbd.stdout.trim().length === 0) return 'no rbd binary (ceph-common not installed)';
+    if (rbd.code !== 0 || rbd.stdout.trim().length === 0)
+      return 'no rbd binary (ceph-common not installed)';
 
     return null;
   }
