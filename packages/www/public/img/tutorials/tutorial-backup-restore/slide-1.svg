@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
-  <title id="title">Three steps to back up and restore: configure storage, push the backup, restore when needed</title>
+  <title id="title">Three steps to back up and restore: copy the repository to another machine, restore the copy there, prove the data survived</title>
   <style>
     .bg { fill: #f7f7f6; }
     .num { fill: #556b2f; }
@@ -13,17 +13,17 @@
   <line class="connector" x1="200" y1="270" x2="760" y2="270"/>
 
   <g transform="translate(160 270)"><circle class="num" r="46"/><text class="num-text">1</text></g>
-  <text class="label" x="160" y="370">Configure</text>
-  <text class="desc" x="160" y="394">a storage provider</text>
-  <text class="sub" x="160" y="422">rdc config storage import</text>
+  <text class="label" x="160" y="370">Copy</text>
+  <text class="desc" x="160" y="394">to a machine you control</text>
+  <text class="sub" x="160" y="422">rdc repo push</text>
 
   <g transform="translate(480 270)"><circle class="num" r="46"/><text class="num-text">2</text></g>
-  <text class="label" x="480" y="370">Push</text>
-  <text class="desc" x="480" y="394">a full backup</text>
-  <text class="sub" x="480" y="422">rdc repo push</text>
+  <text class="label" x="480" y="370">Restore</text>
+  <text class="desc" x="480" y="394">the copy becomes a repository</text>
+  <text class="sub" x="480" y="422">rdc backup restore</text>
 
   <g transform="translate(800 270)"><circle class="num" r="46"/><text class="num-text">3</text></g>
-  <text class="label" x="800" y="370">Restore</text>
-  <text class="desc" x="800" y="394">on any new machine</text>
-  <text class="sub" x="800" y="422">rdc repo pull</text>
+  <text class="label" x="800" y="370">Prove</text>
+  <text class="desc" x="800" y="394">read the data back</text>
+  <text class="sub" x="800" y="422">rdc term connect</text>
 </svg>

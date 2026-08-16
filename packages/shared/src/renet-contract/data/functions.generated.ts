@@ -28,13 +28,13 @@ export interface BackupDeleteParams {
   repositories?: string[];
 }
 
-/** List available backups on storage or machine */
+/** List backup artifacts in a machine's own datastore */
 export interface BackupListParams {
-  /** Source type: machine (SSH); storage is retired */
+  /** Source type: local (this machine's datastore) or machine (SSH); storage is retired */
   sourceType: string;
-  /** Source machine or storage name */
+  /** The machine whose datastore is listed; for sourceType=machine, the remote source */
   from: string;
-  /** Subdirectory within the storage root (e.g., 'hot' or 'cold') */
+  /** Limit the listing to one subdirectory; omit to enumerate the whole datastore */
   path?: string;
 }
 
@@ -1545,21 +1545,21 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       sourceType: {
         type: 'string',
         required: true,
-        default: 'machine',
-        help: 'Source type: machine (SSH); storage is retired',
-        options: ['machine', 'storage'],
+        default: 'local',
+        help: 'Source type: local (this machine\'s datastore) or machine (SSH); storage is retired',
+        options: ['local', 'machine', 'storage'],
         ui: 'dropdown',
-        enum: ['machine', 'storage'],
+        enum: ['local', 'machine', 'storage'],
       },
       from: {
         type: 'string',
         required: true,
-        help: 'Source machine or storage name',
+        help: 'The machine whose datastore is listed; for sourceType=machine, the remote source',
         minLength: 1,
       },
       path: {
         type: 'string',
-        help: 'Subdirectory within the storage root (e.g., \'hot\' or \'cold\')',
+        help: 'Limit the listing to one subdirectory; omit to enumerate the whole datastore',
       },
     },
   },
