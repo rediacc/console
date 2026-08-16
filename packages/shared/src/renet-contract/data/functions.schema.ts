@@ -27,14 +27,14 @@ export const BackupDeleteParamsSchema = z.object({
   repositories: z.array(z.string()).optional().describe('Optional list of repository GUIDs to delete in a single call. When set, supersedes the single `repository` requirement.'),
 });
 
-/** List available backups on storage or machine */
+/** List backup artifacts in a machine's own datastore */
 export const BackupListParamsSchema = z.object({
   sourceType: z
-    .enum(['machine', 'storage'])
-    .default('machine')
-    .describe('Source type: machine (SSH); storage is retired'),
-  from: z.string().min(1).describe('Source machine or storage name'),
-  path: z.string().optional().describe('Subdirectory within the storage root (e.g., \'hot\' or \'cold\')'),
+    .enum(['local', 'machine', 'storage'])
+    .default('local')
+    .describe('Source type: local (this machine\'s datastore) or machine (SSH); storage is retired'),
+  from: z.string().min(1).describe('The machine whose datastore is listed; for sourceType=machine, the remote source'),
+  path: z.string().optional().describe('Limit the listing to one subdirectory; omit to enumerate the whole datastore'),
 });
 
 /** Pull repository from remote source (machine or storage) */
