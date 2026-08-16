@@ -1188,14 +1188,14 @@
       },
       "pull": {
         "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull",
-        "descriptionShort": "Pull repository from a remote (machine or storage)",
+        "descriptionShort": "Pull repository from another machine",
         "optionFrom": "Source machine name (auto-detected from config)",
         "optionForce": "Force overwrite existing repository",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionUp": "After pull, mount and deploy repository on this machine",
         "optionDeltaBase": "Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)",
         "optionStrategy": "Block-delta strategy when using a delta base: auto, physical, or shared",
-        "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
+        "sourceRequired": "Specify --from <machine> (a machine name from config)",
         "pulling": "Pulling backup of \"{{repo}}\"...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
@@ -1466,6 +1466,17 @@
       }
     },
     "backup": {
+      "browse": {
+        "description": "List the files a repository contains. A local read-only walk of the repository image: no server, no credentials, and a running repository is never disturbed. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
+        "optionPath": "Limit the listing to this subtree",
+        "optionDepth": "Limit descent to N levels (0 for unlimited)",
+        "optionLimit": "Maximum entries to return (0 for unlimited)",
+        "starting": "Listing {{name}}...",
+        "completed": "Listed {{name}}",
+        "failed": "Could not list {{name}}",
+        "truncated": "Listing truncated at {{limit}} entries. Narrow it with --path, or raise --limit.",
+        "empty": "{{name}} contains no files."
+      },
       "cancel": {
         "cancelled": "Cancelled {{name}}",
         "cancelling": "Stopping {{name}}...",
@@ -1476,7 +1487,7 @@
       "descriptionShort": "Manage backups",
       "drNudge": "Config storage is not enrolled: your repo credentials (LUKS passphrases) live only on this host, so a bare-metal restore cannot recover them. Enroll with \"rdc config remote enable\" to sync them inside the encrypted config blob.",
       "list": {
-        "description": "List backup artifacts on a machine or storage.",
+        "description": "List backup artifacts on a machine.",
         "listing": "Listing backups...",
         "optionPath": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.",
         "optionStorage": "RETIRED: storage listing was removed with the rclone arm",

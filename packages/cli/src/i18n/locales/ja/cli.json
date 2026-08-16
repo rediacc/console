@@ -14,7 +14,7 @@
       "descriptionShort": "バックアップを管理する",
       "drNudge": "Config-Storageが未設定です: リポジトリの認証情報（LUKSパスフレーズ）はこのホストにのみ存在するため、ベアメタル復元では復元できません。\"rdc config remote enable\" で設定し、暗号化されたconfig blob内に同期してください。",
       "list": {
-        "description": "マシンまたはストレージ上のバックアップアーティファクトを一覧表示する",
+        "description": "マシン上のバックアップアーティファクトを一覧表示する",
         "examples": {
           "basic": "マシンに保存されたバックアップを一覧表示する",
           "byStorage": "特定のストレージバックエンド内のバックアップを一覧表示する"
@@ -1467,29 +1467,29 @@
         "deployFailed": "pull後の\"{{repo}}\"のデプロイに失敗しました",
         "deployed": "リポジトリ\"{{repo}}\"が{{machine}}にデプロイされました",
         "deploying": "\"{{repo}}\"を{{machine}}にデプロイ中...",
-        "description": "リモート（マシンまたはストレージ）からリポジトリをプル。名前を省略するとすべてのリポジトリをプル。ソースタイプは設定から自動検出。pull後にデプロイするには--upを使用",
-        "descriptionShort": "リモート（マシンまたはストレージ）からリポジトリをプル",
+        "description": "別のマシンからリポジトリをプル。ストレージソースは廃止されました。時点リストアには `rdc backup restore` を使用してください。ソースタイプは設定から自動検出されます。pull後にデプロイするには --up を使用",
+        "descriptionShort": "別のマシンからリポジトリをプル",
         "examples": {
           "andStart": "リポジトリをプルしてすぐに起動する",
-          "basic": "リポジトリをストレージバックエンドからプルする"
+          "basic": "別のマシンからリポジトリをプルする"
         },
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionDeltaBase": "両マシンにバイト単位で同一に存在するイミュータブルなベースGUID。変更されたブロックのみを受信（マシンソース）",
         "optionForce": "既存のリポジトリを強制的に上書きする",
-        "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
+        "optionFrom": "ソースマシン名（設定から自動検出）",
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
-        "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "sourceRequired": "--from <machine> を指定してください（設定からのマシン名）",
         "storageRetired": "ストレージバックエンドからのプルは廃止されました。rclone のクラウド系統が削除されたためです。時点リストアはチャンクストア経由の `rdc backup restore <repo> --at <snapshot>` を使います。マシン間の転送はこれまでどおりで、--from-machine を指定してください"
       },
       "push": {
         "deployFailed": "プッシュ後の \"{{repo}}\" のデプロイに失敗しました",
         "deployed": "リポジトリ \"{{repo}}\" が {{machine}} にデプロイされました",
         "deploying": "{{machine}} に \"{{repo}}\" をデプロイ中...",
-        "description": "リポジトリをリモート（マシンまたはストレージ）にプッシュ。ターゲットタイプは設定から自動検出。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます — これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
-        "descriptionShort": "リポジトリをリモート（マシンまたはストレージ）にプッシュ",
-        "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
+        "description": "リポジトリを別のマシンにプッシュ。ストレージ宛先は廃止されました。時点バックアップには `rdc backup snapshot` を使用してください。マシン間転送では、暗号化されたリポジトリイメージが同じGUIDでコピーされます。これはバックアップ/移行であり、forkではありません。独立したforkを作成するには、まず'repo fork'を使用してからpush。プッシュされたコピーはバックアップアーティファクトとして配置されます: 'backup restore <ref> --as <name> -m <target> --up' でターゲット上に起動してください",
+        "descriptionShort": "リポジトリを別のマシンにプッシュ",
+        "destRequired": "--to <machine> を指定してください（設定からのマシン名）",
         "examples": {
           "toMachine": "リポジトリを別のマシンにプッシュする"
         },
@@ -1499,7 +1499,7 @@
         "optionForce": "既存のバックアップを強制的に上書きする",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
-        "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
+        "optionTo": "宛先マシン名（設定から自動検出）",
         "pushing": "\"{{repo}}\" のバックアップを {{dest}} にプッシュ中...",
         "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
         "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",

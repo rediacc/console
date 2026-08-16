@@ -91,8 +91,8 @@ rdc backup browse <repo-ref> [--at <snapshot>] [--path <subdir>] [--depth <n>]
   `check:ci-command-planes` Rule 3.
 - **Do not** extend `rdc storage browse` - that is a live rclone-remote browser
   and stays. One noun, one storage system.
-- **Do not** add `rdc backup ls`; the repo already refused to grow a second verb
-  for a route rather than a concept.
+- **Do not** add a second `backup` listing verb (an `ls` beside `browse`); the
+  repo already refused to grow one verb per route rather than per concept.
 
 Every result, table and JSON, must state its source and that source's timestamp.
 A listing that does not say what it is a listing OF is how someone restores the

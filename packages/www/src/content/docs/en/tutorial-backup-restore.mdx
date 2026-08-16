@@ -1,6 +1,6 @@
 ---
 title: "Backup & Restore"
-description: "Push your repository to external storage and restore it on a new server when you need it."
+description: "Copy a live repository to a second machine, take the first one offline, and bring the data back."
 category: "Tutorials"
 subcategory: advanced
 order: 11
@@ -11,7 +11,9 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Backup & Restore
 
-Your app is live in production. Back it up. `rdc` pushes your entire repository (app, database, files, configs) to external storage and pulls it back any time. Ransomware, hardware failure, anything.
+Your app is live in production. Back it up. `rdc` copies an entire repository, the app, its database, its files and its configuration, to a second machine, and brings it back when the first one is gone.
+
+This tutorial does not describe that. It does it, on two real machines, and reads the data back out at the end.
 
 ## Watch the tutorial
 
@@ -19,70 +21,75 @@ Your app is live in production. Back it up. `rdc` pushes your entire repository 
 
 ## Three steps
 
-![Configure, push, restore](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+![Copy, restore, prove](/img/tutorials/tutorial-backup-restore/slide-1.svg)
 
-1. **Configure** a storage provider.
-2. **Push** a backup.
-3. **Restore** when you need it.
+1. **Copy** the repository to a machine you control.
+2. **Restore** that copy into a repository of its own.
+3. **Prove** it by reading your data back out.
 
-## Step 1: Configure storage
-
-You need an `rclone` config file. If you already use rclone, import it directly:
+## Step 1: The data that has to survive
 
 <TutorialStep number={1} />
 
-This supports S3, B2, Google Drive, Dropbox, and many more. Verify what's wired up:
+Everything below is judged against this one line. Watch for it again at step 7.
+
+## Step 2: Copy the repository to a second machine
 
 <TutorialStep number={2} />
 
-## Step 2: Push a backup
+The [Delta Transfer tutorial](/en/docs/tutorial-delta-transfer) shows the incremental half of this live.
+
+An artifact is not a running repository, which is the whole reason step 5 exists.
+
+## Step 3: The backup machine has it
 
 <TutorialStep number={3} />
 
-Your entire repository (app, database, files, everything) is now backed up. Because the repository itself is encrypted, the backup is encrypted too. No extra key management.
-
-List your backups any time:
+## Step 4: Disaster
 
 <TutorialStep number={4} />
 
-## Why no downtime?
-
-The app keeps running while the backup uploads. How is that consistent?
-
-Same logic as a [fork](/en/docs/tutorial-forking). `rdc` forks first, then uploads the fork. The fork captures the moment; your live app keeps going. No downtime, no inconsistency.
-
-## Step 3: Restore, for real
-
-Backups you never restore are hopes, not backups. Take the repository offline first:
+## Step 5: Turn the artifact into a repository
 
 <TutorialStep number={5} />
 
-Pull the backup straight back from the storage:
+Do this once per machine before you need it. A machine that has never round-tripped is not backed up, however healthy its pushes look, and restoring under a new name is safe on a machine that is serving traffic.
+
+## Step 6: Mount it
 
 <TutorialStep number={6} />
 
-And mount it again, fully restored:
+## Step 7: The data survived
 
 <TutorialStep number={7} />
 
-The same pull works on a brand new server: set it up, add it to `rdc`, and run the pull there instead.
+Put the two side by side. Step 1, out of the original repository on the primary machine:
 
-```bash
-rdc repo pull my-app@new-server --from my-storage
-rdc repo up my-app@new-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-Same data, same containers, different machine.
+Step 7, out of a repository that did not exist two commands ago, on different hardware:
 
-## Faster backups: machine to machine
-
-You can also push directly between machines, no cloud storage in between:
-
-```bash
-rdc repo push my-app --to backup-server
+```text
+order-1042 paid 2026-08-16
 ```
 
-> **Pro tip.** Machine-to-machine pushes send only the changed blocks after the first one. The [Delta Transfer tutorial](/en/docs/tutorial-delta-transfer) shows it live.
+That is the tutorial. Not a report that a backup succeeded, but the line itself, read back off another machine.
+
+## Step 8: Backups you can roll back through
+
+<TutorialStep number={8} />
+
+On your own installation, with an account, the full sequence is:
+
+```bash
+rdc backup snapshot my-app
+rdc backup manifests my-app
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+```
+
+The [Backup & Restore guide](/en/docs/backup-restore) covers snapshots, retention and verification in full.
 
 ---
 

@@ -377,9 +377,10 @@ Reasoning against the repo's conventions:
   be the privacy regression in disguise.
 - **Do NOT extend `rdc storage browse`.** That verb is a live rclone-remote
   browser and is explicitly retained (§1.4). One noun, one storage system.
-- **Do NOT add `rdc backup ls`.** The repo already rejected growing a second
-  verb for a route rather than a concept; see the comment at `backup.ts:216-220`
-  refusing to grow `rdc backup restore-snapshot` beside `restore --at`.
+- **Do NOT add a second `backup` listing verb** (an `ls` beside `browse`). The
+  repo already rejected growing one verb per route rather than per concept; see
+  the comment at `backup.ts:216-220` refusing a separate restore-snapshot verb
+  beside `restore --at`.
 
 Resolution helper: use **`resolveRepoRefLocal`**, the config-only resolver that
 `backup manifests` uses (`backup-storage.ts:129`), never `resolveRepoRef`
