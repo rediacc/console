@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import DocsLayout from '../../../layouts/DocsLayout.astro';
+import CheatSheetGrid from '../../../components/CheatSheetGrid.astro';
 import { DEFAULT_LANGUAGE } from '../../../i18n/language-utils';
 import type { Language } from '../../../i18n/types';
 import { getBaseSlug } from '../../../utils/slug';
@@ -42,6 +43,9 @@ const baseSlug = getBaseSlug(doc.slug);
 
 // Check if this is a fallback (English content shown for Spanish request)
 const isFallback = Astro.params.lang !== currentLang;
+
+// Cheat-sheet style docs render as a printable card grid instead of an article.
+const useCardGrid = doc.data.cardGrid === true;
 ---
 
 <DocsLayout
@@ -50,6 +54,13 @@ const isFallback = Astro.params.lang !== currentLang;
   currentLang={Astro.params.lang as Language}
   availableLanguages={translations}
   showFallbackNotice={isFallback}
+  tocTrackingSelector={useCardGrid ? '.cs-cards section h2' : undefined}
 >
-  <Content />
+  {useCardGrid ? (
+    <CheatSheetGrid title={doc.data.title}>
+      <Content />
+    </CheatSheetGrid>
+  ) : (
+    <Content />
+  )}
 </DocsLayout>

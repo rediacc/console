@@ -3,6 +3,7 @@ title: RDC CLI チートシート
 description: "rdc コマンドのクイックリファレンス：設定、リポジトリ、マシン、同期、コンテナ。全オプション一覧は任意のコマンドに --help を付けて確認できます。"
 category: Guides
 order: 3
+cardGrid: true
 language: ja
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"

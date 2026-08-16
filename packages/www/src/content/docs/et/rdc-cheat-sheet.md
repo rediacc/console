@@ -3,6 +3,7 @@ title: RDC CLI petuleht
 description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sünkroonimine ja konteinerid. Täielik valikute kogum: lisa --help käskule."
 category: Guides
 order: 3
+cardGrid: true
 language: et
 sourceHash: "ae49dd7fbc179d35"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
