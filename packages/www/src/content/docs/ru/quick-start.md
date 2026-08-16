@@ -4,8 +4,8 @@ description: Запустите контейнерный сервис на ва�
 category: Guides
 order: -1
 language: ru
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Быстрый старт
@@ -227,11 +227,11 @@ rdc backup usage
 # Получить репозиторий с облачной машины на локальный сервер
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Получить из облачного хранилища
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Получить и сразу запустить
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Восстановить определённый момент времени из чанкового хранилища вместо этого
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Зачем pull?** Ваша локальная машина за NAT. Облако не может отправить данные вам. Но вы можете обратиться к облаку. Pull доставляет репозиторий домой.

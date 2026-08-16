@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Démarrage rapide
@@ -227,11 +227,11 @@ Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et r
 # Récupérer le repo depuis une machine cloud vers votre serveur local
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Récupérer depuis un stockage cloud
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Récupérer et démarrer immédiatement
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Restaurer un instant donné depuis le stockage fragmenté à la place
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Pourquoi récupérer ?** Votre machine locale est derrière un NAT. Le cloud ne peut pas pousser vers vous. Mais vous pouvez atteindre le cloud. Pull ramène le repo chez vous.

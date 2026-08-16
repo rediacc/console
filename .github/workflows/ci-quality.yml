@@ -788,6 +788,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-dead-service-methods
 
+      # A gate can be green over files the RENDERER ignores: 12 locales of the
+      # cheat sheet were corrected while the page served hardcoded English
+      # teaching retired commands. This checks what a reader is taught.
+      - name: Retired commands in docs
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-retired-commands
+
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-parity
