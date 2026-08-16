@@ -385,3 +385,243 @@ def hint_for(haystack, agents_dir_path=None):
     if not corpus:
         return None, errors
     return best_hint(haystack, discriminative(corpus)), errors
+
+
+# =============================================================================
+# THE PUSH-BACK: a session giving up on a domain a specialist already covers.
+# =============================================================================
+#
+# WHY THIS EXISTS, and it is one specific failure rather than a theory.
+# On 2026-08-16 a session wrote, about a red Ceph E2E job:
+#
+#     "It doesn't reproduce: neither local worker has /etc/ceph or rbd."
+#
+# and moved on. The answer was in the file it had just been reading.
+# `ops-vms.md` says `VM_CEPH_NODES` is load-bearing, that a default `ops up`
+# leaves the Ceph trio as bare OS images, and that bare VMs are NOT healed
+# incrementally -- three lines below the passage the session quoted. An empty
+# /etc/ceph was not evidence that local testing is impossible; it was the
+# documented SYMPTOM of Ceph never having been provisioned, with the remedy
+# printed underneath. The operator had to push back by hand, and was right.
+#
+# The existing hint (agent_hint_queue) could not have caught this: it is
+# advisory, priority 3, allow-path only, and it fires on TOPIC alone. This
+# session had already been shown the file. What it needed was not discovery,
+# it was a challenge at the moment of abandonment.
+#
+# WHY THE CONJUNCTION IS THE WHOLE DESIGN. Firing on give-up language alone
+# would be unbearable: "cannot", "not reproducible" and "pre-existing" are
+# ordinary, frequently CORRECT things to write, and CLAUDE.md rule 3 does not
+# forbid concluding impossibility -- it forbids concluding it WITHOUT PROBING.
+# Firing on topic alone is the existing hint, which is already throttled to
+# near-silence for good reason. Only the pair is worth interrupting for: a
+# claim of impossibility about a domain where a written specialist names the
+# exact command that would test the claim.
+#
+# GENERAL OVER THE DIRECTORY, never a hand-maintained list of domains. The
+# corpus is the same one load_corpus() reads from disk on every call, so an
+# agent added next month is covered the day its file lands, and a deleted one
+# stops being cited immediately. That is the same reason wl_agents refuses to
+# cache: a hand-kept table is exactly what goes stale without anyone noticing.
+#
+# WHAT IT DOES NOT DO. It does not judge whether the give-up was CORRECT --
+# it cannot, and pretending otherwise would make it an oracle instead of a
+# prompt. It asks for the probe. A session that has already run the probe
+# answers in one line and moves on; that is the intended cost.
+
+# Give-up markers, as whole-phrase regexes over the session's own last message.
+# Grouped by the CLAIM each one makes, because the reply differs: an
+# impossibility claim wants a probe, a dismissal claim wants ownership proof.
+#
+# Deliberately NOT included: "flaky", "timeout", "rate limit", "quota". Those
+# name an observed condition rather than a decision to stop, and every one of
+# them was a TRUE statement somewhere in the session that motivated this file.
+_RX_IMPOSSIBLE = (
+    r"\b(?:can(?:'|no|)?t\s+be\s+(?:done|tested|run|reproduced|verified|checked)"
+    r"|not\s+possible|impossible\s+to|no\s+way\s+to)\b"
+)
+_RX_NO_REPRO = (
+    r"\b(?:does(?:\s+not|n'?t)\s+reproduce"
+    r"|can(?:'|no|)?t\s+reproduce"
+    r"|not\s+reproducible"
+    r"|(?:only|just)\s+(?:reproducible\s+)?in\s+CI"
+    r"|CI[- ]only)\b"
+)
+_RX_NO_LOCAL = (
+    r"\b(?:not\s+available\s+locally|no\s+local\s+(?:way|path|equivalent)"
+    r"|cannot\s+(?:be\s+)?tested?\s+locally"
+    r"|(?:would\s+)?requires?\s+infrastructure)\b"
+)
+_RX_DISMISSED = (
+    r"\b(?:pre-?existing|environmental|not\s+(?:my|mine|this\s+wave'?s)"
+    r"|out\s+of\s+scope\s+(?:here|for\s+this))\b"
+)
+
+# label -> regex. The label is PRINTED back at the session, so it must read as
+# the thing being claimed rather than as a rule name.
+_GIVEUP_PATTERNS = (
+    ("impossible", _RX_IMPOSSIBLE),
+    ("does-not-reproduce", _RX_NO_REPRO),
+    ("no-local-path", _RX_NO_LOCAL),
+    ("dismissed", _RX_DISMISSED),
+)
+_GIVEUP_RES = tuple((label, re.compile(rx, re.IGNORECASE)) for label, rx in _GIVEUP_PATTERNS)
+
+# The push-back is a ONE-SHOT PER AGENT PER SESSION. Not a nag: the operator's
+# own intervention was a single sentence, and a check that fires every stop
+# until satisfied would be answered by writing around its regex rather than by
+# running the probe. One challenge, then it is the session's call and the
+# record shows what it chose.
+PUSHBACK_ENABLED = os.environ.get("WORKLIST_AGENT_PUSHBACK", "on").strip().lower() not in (
+    "off",
+    "0",
+    "false",
+    "no",
+)
+# Lower than the hint's floor ON PURPOSE. The hint competes with every other
+# advisory for one slot and must be near-certain to be worth a line; this one
+# only ever speaks when the session has ALSO just claimed something is
+# impossible, and that conjunction carries most of the precision. Requiring the
+# hint's full confidence on top would silence it in exactly the case that
+# motivated it -- "neither local worker has /etc/ceph" is a thin haystack.
+PUSHBACK_MIN_SCORE = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_SCORE", "1"))
+PUSHBACK_MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_PUSHBACK_MIN_MARGIN", "0.5"))
+
+
+# A MENTION IS NOT A CLAIM, and this is a live regression rather than a
+# precaution: the first message written after this check shipped was a summary
+# OF THE CHECK, quoting its own trigger phrases -- `"cannot"`, `"not
+# reproducible"`, and the ops-vms sentence verbatim -- and the check duly
+# accused its author of giving up on pr-babysitter. A session that writes ABOUT
+# surrender is not surrendering, exactly as a doc that explains a retired
+# command is not teaching it.
+#
+# Same shape and same remedy as `loop_finished_declared` (wl_checks.py:667),
+# which strips quoted and backticked spans before reading a declaration. Fenced
+# blocks go too: quoting a transcript must never be readable as speech.
+# NEWLINES ALLOWED INSIDE A QUOTE, bounded rather than greedy: the message that
+# exposed this wrapped its quotations across lines, so a `[^"\n]*` rule saw no
+# quotation at all and the fix silently did nothing. The 400-char bound is what
+# keeps an UNBALANCED quote from blanking the rest of the document.
+#
+# NO SINGLE-QUOTE RULE, deliberately. An apostrophe is not a quote mark, and
+# "doesn't ... don't" would pair across a real claim and blank it -- turning a
+# false positive into a false negative, which is strictly worse: this check is
+# only worth having if it still fires on the sentence that motivated it.
+_QUOTED_RE = re.compile(
+    r"```.*?```|`[^`]*`|\"[^\"]{0,400}\"|\u201c[^\u201d]{0,400}\u201d",
+    re.DOTALL,
+)
+
+
+def unquoted(text):
+    """`text` with every quoted, backticked and fenced span blanked out.
+
+    Blanked to a SPACE rather than removed, so two words either side of a quote
+    cannot fuse into a third that matches something neither of them did.
+    """
+    return _QUOTED_RE.sub(" ", text or "")
+
+
+# `.!?` only. A COLON IS NOT A BOUNDARY HERE and that is a live regression:
+# "It doesn't reproduce: neither local worker has /etc/ceph" splits at the
+# colon into a claim with no subject, and the check went silent on the exact
+# sentence it was built from. A colon introduces the EVIDENCE for a claim,
+# which is the half that names the domain.
+_SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+
+
+def _claim_sentences(text):
+    """Every sentence carrying a give-up claim, already unquoted by the caller.
+
+    Split on newlines too, not just terminators: the give-up line in a bulleted
+    status list frequently has no full stop at all, and treating the whole list
+    as one sentence would re-admit every unrelated bullet as evidence.
+    """
+    return [
+        sent
+        for sent in _SENT_SPLIT_RE.split(text or "")
+        if any(rx.search(sent) for _label, rx in _GIVEUP_RES)
+    ]
+
+
+def giveup_claims(text):
+    """Labels of every give-up claim in `text`, in the order they are defined.
+
+    Returns [] for the overwhelmingly common case, so the caller can bail
+    before touching the corpus at all. Deduplicated: three phrasings of the
+    same surrender are one claim, and printing all three would read as three
+    separate accusations.
+    """
+    if not text:
+        return []
+    # BOTH this and pushback_for's own unquote() are load-bearing, and the
+    # redundancy is deliberate rather than an oversight. Mutation-tested: with
+    # either one removed the rule still holds and the gate stays green; only
+    # removing BOTH lets a quoted mention be read as a claim, at which point
+    # the gate goes red naming the sentence. Do not "simplify" one away on the
+    # grounds that the tests still pass -- that is exactly what they would do.
+    text = unquoted(text)
+    found = []
+    for label, rx in _GIVEUP_RES:
+        if rx.search(text) and label not in found:
+            found.append(label)
+    return found
+
+
+def pushback_for(haystack, agents_dir_path=None):
+    """((agent, hits, claims) or None, [error]) -- the conjunction, one call.
+
+    ORDER MATTERS FOR COST, not just for reading: the give-up scan is a handful
+    of regexes over one message and answers "no" on nearly every stop, so it
+    runs BEFORE the corpus is loaded. On a normal stop this function does not
+    touch the disk.
+    """
+    if not PUSHBACK_ENABLED:
+        return None, []
+    claims = giveup_claims(haystack)
+    if not claims:
+        return None, []
+    corpus, errors = load_corpus(agents_dir() if agents_dir_path is None else agents_dir_path)
+    if not corpus:
+        return None, errors
+    # SCORE THE SENTENCE THAT MAKES THE CLAIM, NOT THE WHOLE MESSAGE.
+    #
+    # MEASURED, and it overturned the threshold I first reached for. Scoring the
+    # whole message gave a GENERIC report ("It doesn't reproduce and this is
+    # pre-existing. Remaining: the wave, console review, commit and check.")
+    # a score of 5.0 against pr-babysitter, while the real ceph sentence scored
+    # 4.0 against ops-vms. The false positive outranked the true one, so no
+    # threshold could separate them -- raising the floor silences the case this
+    # check exists for and leaves the noise. That is why there is no
+    # push-back-specific stopword list here either: `check`, `commit`, `console`
+    # and `review` are legitimately discriminative for pr-babysitter, and
+    # banning them would break the agent they legitimately name.
+    #
+    # A claim is ABOUT something, and that something is in the sentence with it.
+    # Restricting the haystack to the claim's own sentences encodes exactly that
+    # and needs no list to maintain.
+    claim_text = " ".join(_claim_sentences(unquoted(haystack)))
+    if not claim_text.strip():
+        return None, errors
+    # SCORE THE SUBJECT, NOT THE SURRENDER. The give-up phrases are cut out of
+    # the haystack before the topic match, and this is a defect the gate's own
+    # negative control caught rather than a precaution: `cannot` is a
+    # discriminative term in at least one agent description, so
+    # "This cannot be done without a token" matched e2e-local ON THE WORD
+    # `cannot` alone. That would have made every honest impossibility claim an
+    # accusation, pointed at a random specialist -- the precise failure this
+    # check exists to avoid, shipped inside the check itself.
+    subject = claim_text
+    for _label, _rx in _GIVEUP_RES:
+        subject = _rx.sub(" ", subject)
+    hit = best_hint(
+        subject,
+        discriminative(corpus),
+        min_score=PUSHBACK_MIN_SCORE,
+        min_margin=PUSHBACK_MIN_MARGIN,
+    )
+    if not hit:
+        return None, errors
+    name, _score, hits = hit
+    return (name, hits, claims), errors

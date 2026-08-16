@@ -3004,6 +3004,34 @@ def run_stop(event, event_ok, worklist, hook_file):
     )
     if loop_died:
         vadd("loop-died", False, M.V_LOOP_DIED % had_crons)
+    # THE PUSH-BACK: the session just declared something impossible in a domain
+    # a written specialist covers. `always=True` because this is a latched
+    # one-shot whose producer marks state at COMPUTE time -- rotating the text
+    # away would spend the latch on a line nobody ever saw, which is the exact
+    # bug the `always` tier exists to prevent.
+    #
+    # It is a BLOCK rather than an advisory, and that is the operator's own
+    # standard applied to their own request: "a document an agent can skip is
+    # not a control". The advisory tier already carries the topic hint, and the
+    # session this was built for had ALREADY been shown that file. One
+    # unskippable challenge per specialist is the smallest thing that could
+    # have changed the outcome.
+    with contextlib.suppress(Exception):  # never wedge a stop on a prompt
+        _pb, _pb_errs = A.pushback_for((last_msg or "") + "\n" + "\n".join(remaining_lines))
+        if _pb:
+            _pb_name, _pb_hits, _pb_claims = _pb
+            _pb_seen = state_doc.get("agent_pushbacks")
+            if not isinstance(_pb_seen, dict):
+                _pb_seen = {}
+                state_doc["agent_pushbacks"] = _pb_seen
+            if _pb_name not in _pb_seen:
+                vadd(
+                    "agent-pushback:%s" % _pb_name,
+                    True,
+                    M.V_AGENT_PUSHBACK % (", ".join(_pb_claims), _pb_name, ", ".join(_pb_hits[:6])),
+                )
+                _pb_seen[_pb_name] = C.stamp_now()
+                S.save_state(worklist, session_id, state_doc)
     # Explicit state mapping, NOT `!= "ok"`: a detached HEAD ("no-branch")
     # must be report-only (operator decision 2026-07-30, a deliberate
     # departure from the V_PR_UNREADABLE blocks-when-blind precedent, because
