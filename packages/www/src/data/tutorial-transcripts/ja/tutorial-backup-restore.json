@@ -101,7 +101,7 @@
     "cast-step-4": "ステップ5: コピーを復元する",
     "cast-step-5": "ステップ6: 復元した repository をマウントする",
     "cast-step-6": "ステップ7: データは生き残った",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "ステップ8: 特定時点へのバックアップ",
     "outro": "次へ: ネットワークとドメイン"
   }
 }

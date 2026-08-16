@@ -101,7 +101,7 @@
     "cast-step-4": "الخطوة 5: استعادة النسخة",
     "cast-step-5": "الخطوة 6: تركيب الـ repository المستعاد",
     "cast-step-6": "الخطوة 7: البيانات نجت",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "الخطوة 8: النسخ الاحتياطي في نقطة زمنية محددة",
     "outro": "التالي: الشبكات والنطاقات"
   }
 }

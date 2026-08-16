@@ -101,7 +101,7 @@
     "cast-step-4": "Paso 5: Restaura la copia",
     "cast-step-5": "Paso 6: Monta el repositorio restaurado",
     "cast-step-6": "Paso 7: Los datos sobrevivieron",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "Paso 8: Copias de seguridad de un punto en el tiempo",
     "outro": "Siguiente: Redes y Dominios"
   }
 }

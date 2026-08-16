@@ -32,6 +32,30 @@ describe('parseBrowseResult', () => {
     expect(got?.entries.map((e) => e.path)).toEqual(['/app', '/readme.txt']);
   });
 
+  // THE REVIEW'S NIT, kept as a test rather than a comment. The wrapped form was
+  // unescaped with replaceAll('\\"', '"'), which handled escaped QUOTES and
+  // nothing else -- so a filename containing a newline or a backslash, both
+  // legal on Linux, decoded into invalid JSON. It failed safe, but "safe" there
+  // meant refusing a repository that was perfectly fine, and an operator could
+  // not tell that from a real fault.
+  it('decodes a wrapped payload whose filenames contain backslashes and newlines', () => {
+    const awkward = {
+      source: 'repository demo',
+      entries: [
+        { path: '/weird\\name', type: 'file', size: 1, modTime: '2026-08-16T06:36:28Z' },
+        { path: '/two\nlines.txt', type: 'file', size: 2, modTime: '2026-08-16T06:36:28Z' },
+      ],
+      truncated: false,
+      totalSize: 3,
+    };
+    const wrapped = `time="..." level=info msg="[backup_browse] ${JSON.stringify(
+      JSON.stringify(awkward)
+    ).slice(1, -1)}"`;
+    const got = parseBrowseResult(wrapped);
+    expect(got, 'a legal filename made the listing undecodable').toBeDefined();
+    expect(got?.entries.map((e) => e.path)).toEqual(['/weird\\name', '/two\nlines.txt']);
+  });
+
   it('finds the listing among surrounding log noise', () => {
     const noisy = [
       'time="..." level=info msg="Starting..."',

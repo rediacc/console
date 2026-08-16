@@ -101,7 +101,7 @@
     "cast-step-4": "Adım 5: Kopyayı geri yükle",
     "cast-step-5": "Adım 6: Geri yüklenen repository'yi mount et",
     "cast-step-6": "Adım 7: Veri hayatta kaldı",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "Adım 8: Belirli bir ana dönebilen yedekler",
     "outro": "Sıradaki: Ağ ve Alan Adları"
   }
 }
