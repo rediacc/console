@@ -1467,7 +1467,7 @@
     },
     "backup": {
       "browse": {
-        "description": "List the files a repository contains. A local read-only walk of the repository image: no server, no credentials, and a running repository is never disturbed. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
+        "description": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
         "optionPath": "Limit the listing to this subtree",
         "optionDepth": "Limit descent to N levels (0 for unlimited)",
         "optionLimit": "Maximum entries to return (0 for unlimited)",

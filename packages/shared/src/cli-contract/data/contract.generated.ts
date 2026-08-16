@@ -34,7 +34,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "INFRASTRUCTURE",
       "plane": "machine",
       "descriptionKey": "commands.backup.browse.description",
-      "label": "List the files a repository contains. A local read-only walk of the repository image: no server, no credentials, and a running repository is never disturbed. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
+      "label": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
       "options": [
         {
           "flags": "--path <subdir>",
