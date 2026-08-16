@@ -77,6 +77,7 @@ SPECIMENS = {
     "media-pipeline": "regenerate the tutorial narration, the captions drift by two seconds",
     "pr-babysitter": "push the branch and watch CI until every job is green, flip the PR ready",
     "config-universe": "rdc config remote enable fails with Decryption failed after the passkey unlock",
+    "e2e-local": "an e2e test is failing, run the bridge suite locally against the VM fleet instead of pushing to CI",
 }
 
 # Neutral haystacks. Every one of them is ordinary work that no specialist owns.
