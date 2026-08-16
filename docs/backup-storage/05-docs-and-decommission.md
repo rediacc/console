@@ -87,9 +87,16 @@ subscription-licensing (backup-renewal framing dies), `.claude/skills/rdc/*`
 (reference.md is generated, regenerate); CLAUDE.md backup sections. (The "stale commandFactory line" this list used to
 name does NOT EXIST: verified 2026-08-14, `commandFactory` appears in no doc,
 no skill file and no source file. Sixth stale disposition in this document.) All x13 via the doc-translation pipeline; the naturalization
-gates fire serially inside `check:i18n`. Tutorial cast: the seven recorded commands
-all survive decommission, so re-record ONLY if wave 2 changes their argv (that
-decision gates the expensive 13-locale re-narration chain).
+gates fire serially inside `check:i18n`. Tutorial cast: **WRONG, corrected 2026-08-16.**
+This said the seven recorded commands all survive decommission and that a
+re-record was needed only if wave 2 changed their argv. FOUR of the seven were
+retired (`rdc storage import`, `repo push --to <storage>`, `backup list
+--storage`, `repo pull --from <storage>`), the cast was fully re-recorded, and
+it now carries EIGHT markers. This line is the one that would have let the
+tutorial ship teaching commands that refuse: it told a reader the expensive
+re-record could be skipped. The slide SVG was worse than stale - it taught
+`rdc config storage import`, which has never existed in the command tree under
+any spelling.
 
 ## Decommission (wave 5, after parallel-run verification)
 
