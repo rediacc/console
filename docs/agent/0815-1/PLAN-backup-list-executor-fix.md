@@ -1,5 +1,5 @@
 # PLAN: backup list reads the machine it runs on, locally
-Status: executing
+Status: step 0 done, steps 1-7 scheduled post-push
 Owner: 97604f47
 Updated: 2026-08-16 (Step 0 landed; 1-7 sequenced after the wave push)
 
@@ -519,3 +519,16 @@ now emits directory-shaped GUID entries, and the CLI-side filter still has to
 stop discarding them in Step 4. Fixing only the engine would leave a kube repo
 listed by renet and dropped by the renderer, which looks identical to the
 original bug from the operator's seat.
+
+### Why this says "scheduled" rather than "executing"
+
+Nothing is in progress on this plan right now, and saying "executing" implied
+otherwise. Step 0 shipped; steps 1 to 7 are deliberately parked behind the
+0815-1 push because they add NEW CLI i18n keys and that push has been gated on
+i18n. Landing new keys mid-block would create another locale delta and extend
+the block rather than clear it.
+
+The parking is a sequencing decision with a named trigger, not an open end: the
+trigger is the push landing. If a future reader finds this plan still at this
+status well after 0815-1 merged, that is a real stall and the honest reading is
+that it was dropped, not scheduled.
