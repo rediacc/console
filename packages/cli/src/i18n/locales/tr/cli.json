@@ -5,7 +5,7 @@
   "commands": {
     "backup": {
       "browse": {
-        "description": "Bir deponun içerdiği dosyaları listeler. Depo imajının yerel, salt okunur bir taraması: sunucu yok, kimlik bilgisi yok, çalışan bir depo asla etkilenmez. Yalnızca parça deposunda bulunan bir anlık görüntüyü listeleyemez; önce onu geri yükleyin, ardından sonucu inceleyin.",
+        "description": "Bir deponun içerdiği dosyaları listeler. Depo imajının yerel, salt okunur bir taraması: hesap sunucusu yok, ağ bağlantısı yok. Şifreli bir depo, açılabilmesi için bağlı olmalı veya anahtar dosyası dağıtılmış olmalıdır; browse boş bir liste göstermek yerine bunu bildirir. Yalnızca parça deposunda bulunan bir anlık görüntüyü listeleyemez; önce onu geri yükleyin, ardından sonucu inceleyin.",
         "optionPath": "Listelemeyi bu alt ağaçla sınırla",
         "optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",
         "optionLimit": "Döndürülecek maksimum girdi sayısı (sınırsız için 0)",
