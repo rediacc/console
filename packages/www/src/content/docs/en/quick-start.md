@@ -225,11 +225,11 @@ Pushing a repository to cloud storage with `--to <storage>` is retired and now r
 # Pull repo from a cloud machine to your local server
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Pull from cloud storage
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Pull and start immediately
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Restore a point in time from the chunk store instead
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Why pull?** Your local machine is behind NAT. The cloud can't push to you. But you can reach the cloud. Pull brings the repo home.

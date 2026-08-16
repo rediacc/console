@@ -4,8 +4,8 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # Schnellstart
@@ -227,11 +227,11 @@ Das Pushen eines Repositorys in Cloud-Speicher mit `--to <storage>` ist eingeste
 # Repo von einer Cloud-Maschine auf Ihren lokalen Server abrufen
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# Von Cloud-Speicher abrufen
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # Abrufen und sofort starten
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# Stattdessen einen bestimmten Zeitpunkt aus dem Chunk-Store wiederherstellen
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **Warum Pull?** Ihre lokale Maschine ist hinter NAT. Die Cloud kann nicht zu Ihnen pushen. Aber Sie können die Cloud erreichen. Pull bringt das Repo nach Hause.

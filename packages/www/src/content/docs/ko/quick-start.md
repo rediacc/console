@@ -4,8 +4,8 @@ description: 몇 분 안에 서버에서 컨테이너화된 서비스를 실행�
 category: Guides
 order: -1
 language: ko
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # 빠른 시작
@@ -227,11 +227,11 @@ rdc backup usage
 # 클라우드 머신에서 로컬 서버로 리포지터리 풀
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# 클라우드 스토리지에서 풀
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # 풀하고 즉시 시작
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# 대신 청크 스토리지에서 특정 시점을 복원
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **왜 풀인가요?** 로컬 머신이 NAT 뒤에 있습니다. 클라우드가 푸시할 수 없습니다. 하지만 클라우드에는 접근할 수 있습니다. 풀은 리포지터리를 집으로 가져옵니다.

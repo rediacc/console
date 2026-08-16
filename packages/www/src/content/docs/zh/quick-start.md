@@ -4,8 +4,8 @@ description: 几分钟内在您的服务器上运行容器化服务。
 category: Guides
 order: -1
 language: zh
-sourceHash: "0388ac2568d00afb"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "b2745d4f0d99d7a4"
+sourceCommit: "a56b03aa5da8df74255a6bc9bc9463665c3499b6"
 ---
 
 # 快速开始
@@ -227,11 +227,11 @@ rdc backup usage
 # 从云机器拉取仓库到本地服务器
 rdc repo pull my-app@my-local-server --from cloud-server
 
-# 从云存储拉取
-rdc repo pull my-app@my-local-server --from my-s3-backup
-
 # 拉取并立即启动
-rdc repo pull my-app@my-local-server --from my-s3-backup --up
+rdc repo pull my-app@my-local-server --from cloud-server --up
+
+# 改为从分块存储恢复某个时间点
+rdc backup restore my-app --at <snapshot> --as my-app --up
 ```
 
 **为什么要拉取？** 您的本地机器在 NAT 之后。云端无法推送到您这里。但您可以访问云端。拉取将仓库带回本地。
