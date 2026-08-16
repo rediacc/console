@@ -1,7 +1,7 @@
-import { createCipheriv, createDecipheriv, createHash, pbkdf2, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, pbkdf2, randomBytes } from 'node:crypto';
 import { promisify } from 'node:util';
 import type { ICryptoProvider } from '@rediacc/shared/encryption';
-import { ENCRYPTION_CONFIG, PASSWORD_SALT } from '@rediacc/shared/encryption';
+import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
 
 const pbkdf2Async = promisify(pbkdf2);
 
@@ -74,13 +74,7 @@ class NodeCryptoProvider implements ICryptoProvider {
     );
   }
 
-  generateHash(data: string): Promise<string> {
-    // Password hashing with salt - must match desktop CLI (api_client.py)
-    const salted = data + PASSWORD_SALT;
-    const hash = createHash(ENCRYPTION_CONFIG.HASH);
-    hash.update(salted);
-    return Promise.resolve(`0x${hash.digest('hex')}`);
-  }
+
 }
 
 export const nodeCryptoProvider = new NodeCryptoProvider();

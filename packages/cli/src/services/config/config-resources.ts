@@ -244,11 +244,6 @@ class ConfigService extends ConfigServiceBase {
     }));
   }
 
-  async setRenetPath(renetPath: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    await this.requireSelfHosted(name);
-    await configFileStorage.update(name, (cfg) => ({ ...cfg, renetPath }));
-  }
 
   async updateConfigFields(updates: {
     cfDnsApiToken?: string;
@@ -349,12 +344,6 @@ class ConfigService extends ConfigServiceBase {
     return buildGuidMap(state.getRepositories());
   }
 
-  async getRepositoryCredentials(): Promise<Record<string, string>> {
-    const config = await this.getCurrent();
-    if (!config) return {};
-    const state = await this.getResourceState();
-    return buildCredentialsMap(state.getRepositories());
-  }
 
   /**
    * Resolve a repository reference to its config.
@@ -403,19 +392,6 @@ class ConfigService extends ConfigServiceBase {
     );
   }
 
-  /**
-   * List all tags for a given base repository name.
-   */
-  async listRepositoriesByName(
-    baseName: string
-  ): Promise<{ key: string; tag: string; config: RepositoryConfig }[]> {
-    const { parseRepoRef } = await import('../../utils/config-schema.js');
-    const repos = await this.listRepositories();
-    return repos.flatMap((r) => {
-      const ref = parseRepoRef(r.name);
-      return ref.name === baseName ? [{ key: r.name, tag: ref.tag, config: r.config }] : [];
-    });
-  }
 
   // ============================================================================
   // Repository Archive (credential preservation on delete)

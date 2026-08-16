@@ -2389,24 +2389,7 @@ class LocalExecutorService {
     return isDevBuild() ? 'development' : DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
 
-  /**
-   * Check if renet binary is available.
-   */
-  async checkRenetAvailable(): Promise<boolean> {
-    try {
-      const config = await configService.getLocalConfig();
-      const renetPath = await getLocalRenetPath(config);
-      return new Promise((resolve) => {
-        const child = spawn(renetPath, ['version'], {
-          stdio: ['ignore', 'pipe', 'pipe'],
-        });
-        child.on('close', (code) => resolve(code === 0));
-        child.on('error', () => resolve(false));
-      });
-    } catch {
-      return false;
-    }
-  }
+
 }
 
 export const localExecutorService = new LocalExecutorService();

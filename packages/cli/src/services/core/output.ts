@@ -102,18 +102,12 @@ class OutputService {
     this.state.operationDurationMs = ms;
   }
 
-  getOperationDurationMs(): number | null {
-    return this.state.operationDurationMs;
-  }
 
   /** Mark that a timeline was rendered — suppresses the postAction "Completed" line */
   setTimelineRendered(): void {
     this.state.timelineRendered = true;
   }
 
-  isTimelineRendered(): boolean {
-    return this.state.timelineRendered;
-  }
 
   private applyFieldFilter<T extends Record<string, unknown>>(data: T | T[]): T | T[] {
     const fields = this.state.fields;
