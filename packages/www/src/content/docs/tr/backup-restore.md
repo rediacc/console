@@ -4,7 +4,7 @@ description: "Şifrelenmiş depoları iki şekilde yedekleyin: yalnızca değiş
 category: "Guides"
 order: 7
 language: tr
-sourceHash: "c02ab3e78c40fa92"
+sourceHash: "df8a9d53f6991817"
 sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
