@@ -629,3 +629,210 @@ when it has not.
 **What to do instead: grep the BUILT HTML for a phrase you just wrote.** If it is
 missing, build again. This is the same rule as everywhere else in this file --
 check the artifact, not the report of the artifact -- and it costs one grep.
+
+<!-- MERGED 2026-08-16 from the gitignored .agent/TRAPS.md, which the stop hook
+     read while THIS file reached nobody programmatically. The two corpora had
+     drifted ~90% apart: 18 headings there, 22 here, 3 shared. Everything below
+     this line came from that file and would have been lost when it went away. -->
+
+## The review tooling comes from `main`, the workflow comes from the PR
+
+A workflow step may only call `claude-review-gate.sh` arms that **already exist
+on main**. `claude-review-reusable.yml` checks the review scripts out with
+`ref: main, path: .review-scripts`, deliberately, so PR-authored review scripts
+can never execute. The workflow file itself comes from the PR.
+
+Cost: run `30552035566`. A step called a `--record-invocation` arm added on the
+branch; `git show origin/main:...claude-review-gate.sh | grep -c record-invocation`
+returns 0, so the step failed instantly and took the review job red.
+
+Corollary: a new script arm is unusable until merged. Inline it in the workflow
+(under `check-workflows.sh`'s 8-logic-line cap) or wait for the merge.
+
+## `.ci/breakpoint/` is VENDORED into other repos
+
+`check-breakpoint-drift.sh` fails on ANY local edit, correctly, and there is no
+exemption list. Do not edit it to change CI behaviour.
+
+Cost: one round. Editing `test-breakpoint-lifecycle.sh` failed the gate with
+`25 files verified, 0 accepted divergences`.
+
+Instead: tune from the CALL SITE. `start-tunnel.sh:44` reads
+`CONNECT_TIMEOUT="${ARG_CONNECT_TIMEOUT:-90}"` from the environment, so setting
+`ARG_CONNECT_TIMEOUT` in `ci.yml` costs zero drift. Measured: env set resolves
+180, unset resolves 90.
+
+## GitHub matrix fail-fast beats the `no-cancel-failure` label
+
+The label cannot reach it. Matrix fail-fast cancels every sibling before the
+watchdog is ever consulted, so on a branch being driven to green each round
+surfaces one failure instead of the whole surface.
+
+`ci-build-docker.yml` and `ci-build-renet.yml` set `fail-fast: false`;
+`ci-build-cli.yml` and `ci-ops-test.yml` did not until 2026-07-30.
+
+Related limit on the same label: it cannot make a DOWNSTREAM job run.
+`validate-install`, `validate-promote`, `deploy-preview` and
+`smoke-test-preview` all hang off `stage-artifacts.result == 'success'`, so a red
+build still leaves that whole half `skipped`. The label buys enumeration of the
+PARALLEL surface, not the SERIAL one.
+
+## A step with no status function is skipped when an earlier step fails
+
+Implicit `success()`. This is how a review that burned its full turn budget
+recorded nothing: the marker step was skipped, the cap counts posted reports, so
+a spent pass counted as zero and the same SHA would be re-reviewed at full price
+forever.
+
+Cost: run `30552035566`, `"subtype": "error_max_turns"`, zero bot comments on the
+PR, no marker. Predicted in advance by the S-2 spike for a budget halt; it
+arrived via `max_turns` instead.
+
+Rule of thumb: if a step is an ACCOUNTING RECORD, it needs `always()`. If it
+POSTS something the model produced, leave it on implicit `success()` -- with no
+output there is nothing to post and it only adds a way to fail the job.
+
+## A cache key must cover every input BAKED INTO the artifact
+
+`generate-tag.sh`'s closure hashes git OIDs at HEAD, documented as being "immune
+to the in-job version bump that dirties package.json". That immunity is right for
+a dirty working file and exactly wrong for the released version: a git TAG is not
+a path, so no `CLOSURE_PATHS` entry could ever cover it, and the key went
+insensitive to the one input the image is stamped with.
+
+Cost: two full rounds. Runs `30534726467` and `30542942037`,
+`Version mismatch: expected '1.2.13', got '1.2.12'`, deterministic and
+self-perpetuating because cutting a tag does not move the closure.
+
+## `git branch --merged` always lies here
+
+All five repos are rebase-merge only, so a merged branch shares no commit with
+`main`. The ancestry test called all 75 console local branches unsafe to delete
+when 59 had merged PRs. Ask the PR, never ancestry.
+
+## A gate can pass on the exact body it was written to reject
+
+`wait-for-preview-worker.sh` waited for a "usable body" and its own comment said
+a 200 carrying no keys must fail. The guard was `grep -q '"keys"'`, but
+`app.ts:154-173` declares `const keys = []` and always returns
+`c.json({ e2e: { keys } })`, so `"keys"` is present even when empty.
+
+Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field
+that only exists inside a populated entry (`publicKeySpki`), not for the
+container.
+
+## Read stdout and stderr SEPARATELY, and never `2>/dev/null`
+
+Cost: at least three rounds this program. `gh run view --log-failed` is
+run-scoped even with `--job` and says so on stderr; a plan writer wrapped in
+`2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and
+`grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation
+probe look inconclusive.
+
+Use `gh api repos/OWNER/REPO/actions/jobs/<id>/logs` for a single job's log.
+
+## A helper defined below its first use is a SILENT no-op
+
+`pass`/`fail` sat at line 2462 of `test-worklist-v5.sh` while cases above called
+them. The suite reported `253 passed, 0 failed` while three assertions emitted
+`pass: command not found` to stderr and counted nothing.
+
+Only visible because stderr was read separately. Define helpers at the top.
+
+## A watch verdict is not evidence
+
+Terminal-state watches have understated failures (reporting one failed job when
+the API showed the run cancelled with more), and `gh run watch` has dropped
+silently on terminal runs 4 times out of 4. Always re-read the Jobs API before
+acting on a verdict, and never treat a still-growing run as final -- one went
+42 -> 48 jobs while being read.
+
+## A background agent goes idle WITHOUT sending its report
+
+Observed three times in one session: `skipplan`, `greenblock`, `stopplan`. Each
+finished real work and then emitted only an `idle_notification`. The findings sat
+unread in the agent's own transcript, in one case for hours, while this session
+reported the work as still in flight.
+
+The report is NOT delivered automatically. You must ask for it with
+`SendMessage` to the agent by name, and the ask should enumerate exactly what you
+want, because a re-asked agent will otherwise summarise rather than send the
+artifact.
+
+Cost of not noticing: `skipplan`'s completed work was committed and pushed by a
+sweep before its report arrived, so it was verified against its gates rather than
+against its reasoning, which is the wrong order.
+
+Corollary: never write "agent is still running" in a status table on the strength
+of no message arriving. Check, or say you have not checked.
+
+## A blanket `git add -A` sweep imports other sessions' half-landed work
+
+The standing rule to commit and push everything every round is what keeps a
+shared tree clean, but it also picks up WIP that was never meant to be committed,
+and that WIP can red your branch.
+
+Measured 2026-07-30: sweep `cefa43ca7` picked up another session's
+`check-solution-video-engine.ts` mid-campaign. It is wired into `npm run ci`, is
+absent from `origin/main`, and failed `273 of 273` on every run of branch 0730-2
+(run 30554973713, job 90913300683). Its owner's answer when asked: drop it, it
+was never meant to be committed yet, and `273/273 unknown` is CORRECT output
+because no manifest entry carries the field until the publish writes it.
+
+So: when a sweep-imported file reds the branch, ASK THE OWNER via
+`worklist.py --ask` before touching it. Do not weaken another session's gate to
+get your own branch green, and do not assume a red gate is a broken gate. Removing
+it needs EVERY site at once (script, `package.json` ci chain, workflow step) or it
+stays red.
+
+## A failed existence check with the WRONG PATH proves nothing
+
+`git show origin/main:<path>` exiting nonzero means "not at THAT path", not
+"not on main". Cost: `18-dual-group-migrate.test.ts` was reported absent from
+main and "arrived via a blanket sweep, unattributed" for hours, by two
+independent checks (an audit agent and this session), both probing
+`tests/18-dual-group-migrate.test.ts` when the file lives at
+`tests/migrate/18-dual-group-migrate.test.ts` and landed in merged PR #520.
+
+Verify existence with the path from `find`/`git ls-files`, never a remembered
+one. And when a zero-skip gate fires, read the line ABOVE the skip first: a
+serial suite skips the rest after a failure, so the skip is usually the
+symptom and the failure one line up is the story (run 30554973713: test 4
+"migrate cutover" failed, test 5 skipped as fallout).
+
+## Harness task output streams live under <tmp>/claude-<uid>/, not <tmp>/
+
+Any hook code deriving a background task's output path must include the
+claude-<uid> segment: the real layout is
+<tmp>/claude-<uid>/<munged-cwd>/<session-id>/tasks/<task-id>.output, where
+munged-cwd is the cwd with every non-alphanumeric character replaced by '-'.
+A derivation that starts at bare gettempdir() resolves to a path that never
+exists, and the failure is SILENT (stat fails, the worker reads as "no
+output stream yet"). Found on the v15 check-in's first live firing; the
+end-to-end regression case is 163e in test-worklist-v5.sh, which drives the
+real derivation against a fixture TMPDIR with no env override.
+
+## A Python step's imports must be stdlib or installed IN THAT JOB
+
+A gate imported PyYAML, passed every local run, and died on the runner with
+`ModuleNotFoundError: No module named 'yaml'`. The module was in the author's
+environment; a clean Ubuntu runner has no PyYAML.
+
+The tell is that it **never failed anywhere the author could see it**. That is
+the same shape as two other traps paid for the same night: a suite case that
+silently no-opped under `GITHUB_ACTIONS`, and a gate registered in the manifest
+against a workflow step that did not exist. All three passed where they were run
+and meant nothing where they mattered. "Reachable from `npm run ci`" and "runs
+in CI" are different claims and neither implies the other.
+
+Install pinned, in the job, and assert the version on the next line so a failed
+install surfaces as itself rather than as an import error further down:
+
+    python3 -m pip install --user --disable-pip-version-check "PyYAML==6.0.2"
+    python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+
+This is now enforced by `check:ci-python-gate-deps`, which reads the imports of
+every `.py` a workflow step runs and requires a `pip install` in the same job to
+name what is not stdlib or first-party. It covers itself. It does NOT follow
+imports transitively, so a gate that grows a helper with its own third-party
+import is one hop outside what it sees.

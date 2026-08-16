@@ -101,7 +101,7 @@
     "cast-step-4": "5단계: 복사본 복원하기",
     "cast-step-5": "6단계: 복원된 repository 마운트하기",
     "cast-step-6": "7단계: 데이터가 살아남았다",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "8단계: 특정 시점 백업",
     "outro": "다음: 네트워킹 및 도메인"
   }
 }

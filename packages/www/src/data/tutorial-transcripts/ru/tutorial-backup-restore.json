@@ -101,7 +101,7 @@
     "cast-step-4": "Шаг 5: Восстановить копию",
     "cast-step-5": "Шаг 6: Смонтировать восстановленный repository",
     "cast-step-6": "Шаг 7: Данные выжили",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "Шаг 8: Резервные копии на нужный момент времени",
     "outro": "Далее: Сеть и Домены"
   }
 }

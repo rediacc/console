@@ -101,7 +101,7 @@
     "cast-step-4": "5. samm: taasta koopia",
     "cast-step-5": "6. samm: ühenda taastatud repository",
     "cast-step-6": "7. samm: andmed jäid alles",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "8. samm: kindla ajahetke varukoopiad",
     "outro": "Järgmine: Võrgud ja domeenid"
   }
 }

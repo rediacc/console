@@ -101,7 +101,7 @@
     "cast-step-4": "Étape 5 : Restaurer la copie",
     "cast-step-5": "Étape 6 : Monter le repository restauré",
     "cast-step-6": "Étape 7 : Les données ont survécu",
-    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "cast-step-7": "Étape 8 : Sauvegardes à un instant T",
     "outro": "Suivant : Réseau et domaines"
   }
 }

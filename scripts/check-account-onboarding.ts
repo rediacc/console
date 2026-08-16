@@ -7,7 +7,8 @@
  *   - account-onboarding.json is well-formed
  *   - every referenced tutorial has a storyboard and English transcript
  *   - every referenced markerIndex exists in the storyboard's cast-narrated scenes
- *   - the referenced English transcript event has authored prose/text (not TODO)
+ *   - the referenced transcript event has authored prose/text (not TODO) in EVERY
+ *     locale, not just English -- an untranslated value used to become English silently
  *   - referenced tutorials are not drafts
  *   - the generated onboarding-content.json is up to date (freshness gate)
  */
@@ -15,6 +16,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { SITE_LOCALES } from '@rediacc/locales';
 
 import { parseRdcCommand } from '../packages/www/scripts/lib/cli-reference-catalog.js';
 
@@ -227,6 +230,48 @@ function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
       step: step.id,
       message: `English prose/text is missing or TODO for "${step.tutorial}" markerIndex ${step.markerIndex}`,
     });
+  }
+
+  // EVERY LANGUAGE, not just English. The check above is older and was the only
+  // one, which is exactly how `chapters.cast-step-7` sat as a literal
+  // `TODO: translate chapter (...)` in all twelve non-English locales of
+  // tutorial-backup-restore without a single gate objecting: English was
+  // authored, so English was all anyone looked at, and the builder's
+  // English-fallback quietly filled the rest.
+  //
+  // The fallback is now gone (build-account-onboarding.ts::resolveProse
+  // REFUSES), so this loop and that refusal say the same thing. Both are worth
+  // having: the builder fails at generation time, this fails in the gate lane
+  // with every offending language listed at once instead of one per run.
+  //
+  // SITE_LOCALES rather than a list written here, deliberately: a hand-rolled
+  // locale set is what produced a 379-key blind spot in this repo before.
+  for (const lang of SITE_LOCALES) {
+    if (lang === 'en') continue;
+    const localised = readTranscript(step.tutorial, lang);
+    if (!localised || !Array.isArray(localised.events)) {
+      issues.push({
+        step: step.id,
+        message: `${lang} transcript missing for "${step.tutorial}"`,
+      });
+      continue;
+    }
+    const localisedEvent = localised.events.find((e) => e.markerIndex === step.markerIndex);
+    if (!localisedEvent) {
+      issues.push({
+        step: step.id,
+        message: `${lang} transcript event missing for "${step.tutorial}" markerIndex ${step.markerIndex}`,
+      });
+      continue;
+    }
+    if (!authored(localisedEvent.prose) && !authored(localisedEvent.text)) {
+      issues.push({
+        step: step.id,
+        message:
+          `${lang} prose/text is missing or TODO for "${step.tutorial}" markerIndex ` +
+          `${step.markerIndex} -- it would once have silently become English`,
+      });
+    }
   }
 }
 
