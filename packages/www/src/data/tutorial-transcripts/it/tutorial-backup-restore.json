@@ -6,75 +6,84 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Passo uno. Importiamo una configurazione rclone esistente. rclone supporta S3, Backblaze, Google Drive, Dropbox e molti altri -- se lo usi gia', puoi importare la stessa configurazione direttamente.",
-      "afterText": "Storage importato. La CLI puo' ora inviarci i backup.",
-      "cardLabel": "Importa Storage",
-      "prose": "Importa una configurazione rclone esistente. rclone supporta S3, Backblaze, Google Drive, Dropbox e molti altri. Se usi già rclone, la stessa configurazione viene importata direttamente."
+      "at": 2.799671,
+      "text": "Iniziamo da ciò che deve sopravvivere. Dentro il repository attivo c'è un file che contiene una singola riga d'ordine. Tienila d'occhio, perché stiamo per portare questa macchina offline e recuperare quella riga da un altro posto.",
+      "afterText": "Ecco la riga. Da qui in poi si tratta solo di recuperarla.",
+      "cardLabel": "I Dati",
+      "prose": "Leggi prima il payload dal repository attivo. Una riga in un file, così la prova finale è qualcosa che puoi vedere, non qualcosa che devi dare per scontato."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage è una destinazione verso cui possiamo inviare i backup.",
-      "afterText": "Eccolo. Pronto a ricevere backup.",
-      "cardLabel": "Elenca Storage",
-      "prose": "Elenca gli storage che la CLI ora conosce. Ognuno è una destinazione per i backup."
+      "at": 9.00514,
+      "text": "Copia l'intero repository su una seconda macchina. La prima copia trasferisce l'intera immagine cifrata via SSH, qui circa due gigabyte in mezzo minuto. Quello che arriva dall'altra parte è un artefatto di backup, non una seconda app in esecuzione.",
+      "afterText": "La copia è ora sulla macchina di backup.",
+      "cardLabel": "Invia Alla Macchina Di Backup",
+      "prose": "Copia il repository su una seconda macchina. Il primo invio trasferisce l'intera immagine cifrata, circa due gigabyte in trenta o quaranta secondi su questa flotta, e ogni invio successivo manda solo i blocchi modificati. Quello che arriva sulla destinazione è un artefatto di backup, non un secondo repository attivo."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository è cifrato a riposo, anche il backup è cifrato. Nessuna gestione aggiuntiva delle chiavi.",
-      "afterText": "Backup caricato. Tutto cio' che c'e' in questo repo si trova ora sullo storage remoto, cifrato.",
-      "cardLabel": "Invia Backup",
-      "prose": "Invia un backup completo. L'intero repository viene caricato, inclusi l'app, il database, i file e la configurazione. Poiché il repository è crittografato a riposo, anche il backup è crittografato, senza alcuna gestione aggiuntiva delle chiavi."
+      "at": 17.993741,
+      "text": "Chiedi alla macchina di backup cosa contiene. Il repository è lì, con il proprio nome. La seconda riga, quella con un identificatore grezzo, è la base conservata che permette al prossimo invio di mandare solo ciò che è cambiato.",
+      "afterText": "Entrambe le righe sono previste: la copia, e la base che mantiene leggeri gli invii successivi.",
+      "cardLabel": "Conferma La Copia",
+      "prose": "Chiedi alla macchina di backup cosa contiene. La copia appare con il proprio nome, risolto dalla tua config. La seconda riga, con un identificatore grezzo, è la base delta conservata, ciò che rende incrementale il prossimo invio a questa macchina."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- il comando pull del repository. Stessi dati, stessi container, macchina diversa.",
-      "afterText": "Tutti i tuoi snapshot in un unico posto. Recuperane uno qualsiasi con un singolo comando.",
-      "cardLabel": "Elenca Backup",
-      "prose": "Elenca i backup disponibili su questo storage. Il ripristino su un server completamente nuovo avviene con un solo comando: il comando repo pull."
+      "at": 23.318642,
+      "text": "Ora il disastro. Ferma la macchina primaria e smonta il suo volume cifrato. Per questa macchina, l'applicazione è sparita.",
+      "afterText": "Fermata e smontata. Tutto ciò che segue funziona sulla copia.",
+      "cardLabel": "Il Disastro",
+      "prose": "Porta la macchina primaria offline: ferma i suoi servizi e smonta il volume cifrato. Da qui in poi tutto funziona sulla copia nell'altra macchina."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Ora la prova del ripristino. Prima si porta il repository offline: si fermano i servizi e si smonta il volume cifrato. L'app è sparita da questa macchina.",
-      "afterText": "Offline e smontato, esattamente come un server appena installato.",
-      "cardLabel": "Porta Offline",
-      "prose": "Per prima cosa porta il repository offline: ferma i servizi e smonta il volume cifrato con il comando repo down."
+      "at": 28.951964,
+      "text": "Trasforma l'artefatto in un repository attivo. Restore è il comando che lo fa. Un flag nomina il nuovo repository, uno lo posiziona sulla macchina di backup, e uno salta la conferma.",
+      "afterText": "La copia è ora un repository, con un nome tutto suo.",
+      "cardLabel": "Ripristina L'Artefatto",
+      "prose": "Restore è il comando che trasforma una copia inviata in un repository. Si nomina con --as, si posiziona con --machine e si conferma con --yes. Ripristinare con un nuovo nome non sovrascrive nulla, ed è questo che rende sicuro farlo su una macchina in produzione."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "E si riporta il backup direttamente dallo storage. Il comando repo pull recupera l'immagine, ne verifica l'integrità e la rimette esattamente dove si trovava.",
-      "afterText": "Trasferimento completato, integrità verificata. Il repository è tornato.",
-      "cardLabel": "Recupera Backup",
-      "prose": "Recupera il backup dallo storage con il comando repo pull. L'immagine viene scaricata e ne viene verificata l'integrità."
+      "at": 39.005334,
+      "text": "Monta il repository ripristinato. Deliberatamente non avviamo i suoi container, perché la prova che vogliamo sono i dati, non l'applicazione.",
+      "afterText": "Montato, e pronto per la lettura.",
+      "cardLabel": "Montalo",
+      "prose": "Monta il repository ripristinato. I container restano fermi apposta: ciò che si dimostra qui sono i dati, non l'applicazione."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Si rimonta, e il repository è ripristinato. Push, list, pull: questa è tutta la storia del backup.",
-      "afterText": "Ripristinato. Lo stesso flusso funziona anche su una macchina nuova di zecca.",
-      "cardLabel": "Monta Ripristinato",
-      "prose": "Monta di nuovo il repository, ora completamente ripristinato. Lo stesso pull funziona anche su una macchina nuova di zecca."
+      "at": 46.52408,
+      "text": "Lo stesso comando eseguito all'inizio, questa volta contro un repository che due comandi fa non esisteva ancora. Stesso file, stessa riga, stesso ordine.",
+      "afterText": "Questo è il punto. I dati sono tornati.",
+      "cardLabel": "I Dati Sono Sopravvissuti",
+      "prose": "Lo stesso comando del passaggio uno, eseguito contro un repository che due comandi fa non esisteva. La riga torna byte per byte, da una macchina che non è mai stata l'originale."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "Un'ultima cosa, per i backup attraverso cui puoi tornare indietro nel tempo. Gli snapshot vanno nel chunk store, dove la prima esecuzione carica tutto e ogni esecuzione successiva carica solo i blocchi modificati. Qualsiasi snapshot si ripristina da solo. Serve un account e un repository con licenza, quindi qui il comando è solo scritto, non eseguito.",
+      "afterText": "Digitalo sulla tua installazione una volta che hai un account, e funzionerà.",
+      "cardLabel": "Backup a Punto nel Tempo",
+      "prose": "Copiare su una macchina ti dà il repository così com'è ora. Per una cronologia attraverso cui tornare indietro, gli snapshot vanno nel chunk store: la prima esecuzione carica i blocchi scritti, ogni esecuzione successiva carica solo ciò che è cambiato, e qualsiasi snapshot può essere ripristinato da solo. Questo comando è scritto e non eseguito, perché il caricamento richiede un server account e un repository con licenza, nessuno dei quali è disponibile in una registrazione. Sulla tua installazione, con un account, questo è il comando."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "La tua app è attiva, quindi assicuriamoci di non perderla mai! In questo tutorial inviamo l'intero repository a uno storage esterno e lo recuperiamo a richiesta."
+      "text": "La tua app è attiva, quindi assicuriamoci di non perderla mai! In questo tutorial copiamo un intero repository su una seconda macchina, portiamo la prima offline e recuperiamo i dati."
     },
     {
       "id": "three-steps",
-      "text": "Il backup e il ripristino si riducono a tre passaggi. Configura un provider di storage, esegui un backup e ripristinalo quando serve."
+      "text": "Si riduce a tre passaggi. Copia il repository su una macchina che controlli, ripristina quella copia in un repository a sé stante, e poi dimostralo rileggendo i tuoi dati."
     },
     {
       "id": "next-tutorial",
@@ -84,14 +93,15 @@
   "title": "Backup e Ripristino",
   "chapters": {
     "intro": "Backup e Ripristino",
-    "three-steps": "Tre passaggi: configura, invia, ripristina",
-    "cast-step-0": "Passaggio 1: importa la configurazione rclone",
-    "cast-step-1": "Passaggio 2: elenca gli storage configurati",
-    "cast-step-2": "Passaggio 3: invia un backup completo",
-    "cast-step-3": "Passaggio 4: elenca i backup sullo storage",
-    "outro": "Avanti: Monitoraggio",
-    "cast-step-4": "Passo 5: Porta il repo offline",
-    "cast-step-5": "Passo 6: Recupera il backup",
-    "cast-step-6": "Passo 7: Monta, ripristinato"
+    "three-steps": "Tre passaggi: copia, ripristina, dimostra",
+    "cast-step-0": "Passaggio 1: I dati che devono sopravvivere",
+    "cast-step-1": "Passaggio 2: Copiarli su una seconda macchina",
+    "cast-step-2": "Passaggio 3: La macchina di backup li ha",
+    "cast-step-3": "Passaggio 4: La macchina primaria va offline",
+    "cast-step-4": "Passaggio 5: Ripristinare la copia",
+    "cast-step-5": "Passaggio 6: Montare il repository ripristinato",
+    "cast-step-6": "Passaggio 7: I dati sono sopravvissuti",
+    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "outro": "Avanti: Rete e Domini"
   }
 }

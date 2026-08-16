@@ -1298,7 +1298,7 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 
 ### rdc repo pull <ref>
 
-Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. Omit name to pull all repos. The source type is auto-detected from config. Use --up to deploy after pull
+Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull
 
 **Options:**
 

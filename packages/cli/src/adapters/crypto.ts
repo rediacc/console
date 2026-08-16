@@ -73,8 +73,6 @@ class NodeCryptoProvider implements ICryptoProvider {
       ENCRYPTION_CONFIG.HASH
     );
   }
-
-
 }
 
 export const nodeCryptoProvider = new NodeCryptoProvider();

@@ -6,75 +6,84 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Première étape. Nous allons importer une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox et bien d'autres. Si vous l'utilisez déjà, vous pouvez importer la même configuration directement.",
-      "afterText": "Stockage importé. Votre CLI peut maintenant y pousser des sauvegardes.",
-      "cardLabel": "Importer le Stockage",
-      "prose": "Importez une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox, et bien d'autres. Si vous utilisez déjà rclone, la même configuration s'importe directement."
+      "at": 2.799671,
+      "text": "Commençons par ce qui doit survivre. Dans le repository actif se trouve un fichier contenant l'enregistrement d'une commande. Gardez-le à l'œil, car nous allons mettre cette machine hors ligne et récupérer cet enregistrement depuis ailleurs.",
+      "afterText": "Voilà cet enregistrement. À partir d'ici, tout consiste à le récupérer.",
+      "cardLabel": "Les Données",
+      "prose": "Lisez d'abord les données du repository actif. Une seule ligne dans un seul fichier, pour que la preuve finale soit quelque chose que vous puissiez voir, plutôt que quelque chose à croire sur parole."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
-      "afterText": "Le voilà. Prêt à recevoir des sauvegardes.",
-      "cardLabel": "Lister les Stockages",
-      "prose": "Listez les stockages que le CLI connaît désormais. Chacun est une destination pour les sauvegardes."
+      "at": 9.00514,
+      "text": "Copiez le repository entier vers une deuxième machine. La première copie transporte l'image chiffrée complète via SSH, environ deux gigaoctets en une demi-minute ici. Ce qui arrive de l'autre côté est un artefact de sauvegarde, pas une deuxième application en cours d'exécution.",
+      "afterText": "La copie est maintenant sur la machine de sauvegarde.",
+      "cardLabel": "Pousser Vers La Machine De Sauvegarde",
+      "prose": "Copiez le repository vers une deuxième machine. Le premier push transporte l'image chiffrée entière, environ deux gigaoctets en trente à quarante secondes sur cette flotte, et chaque push suivant n'envoie que les blocs modifiés. Ce qui arrive sur la cible est un artefact de sauvegarde plutôt qu'un deuxième repository actif."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "Deuxième étape. Nous poussons une sauvegarde complète. Le dépôt entier, application, base de données, fichiers, configuration, est téléversé. Comme le dépôt est chiffré au repos, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire.",
-      "afterText": "Sauvegarde téléversée. Tout ce qui se trouve dans ce repo est désormais sur le stockage distant, chiffré.",
-      "cardLabel": "Envoyer la Sauvegarde",
-      "prose": "Envoyez une sauvegarde complète. L'intégralité du repository est téléversée, incluant l'application, la base de données, les fichiers et la configuration. Comme le repository est chiffré au repos, la sauvegarde est également chiffrée, sans gestion de clés supplémentaire."
+      "at": 17.993741,
+      "text": "Demandez à la machine de sauvegarde ce qu'elle contient. Le repository est là, sous son propre nom. La deuxième ligne, celle qui affiche un identifiant brut, est la base conservée qui permet au prochain push de n'envoyer que ce qui a changé.",
+      "afterText": "Les deux lignes sont normales : la copie, et la base qui garde les prochains push légers.",
+      "cardLabel": "Confirmer La Copie",
+      "prose": "Demandez à la machine de sauvegarde ce qu'elle contient. La copie apparaît sous son propre nom, résolu depuis votre config. La deuxième ligne, portant un identifiant brut, est la base delta conservée, ce qui rend incrémental le prochain push vers cette machine."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente.",
-      "afterText": "Tous vos instantanés au même endroit. Restaurez n'importe lequel d'une seule commande.",
-      "cardLabel": "Lister les Sauvegardes",
-      "prose": "Listez les sauvegardes disponibles sur ce stockage. La restauration sur un tout nouveau serveur se fait en une seule commande : la commande repo pull."
+      "at": 23.318642,
+      "text": "Voici maintenant le désastre. Arrêtez la machine principale et démontez son volume chiffré. Pour cette machine, l'application a disparu.",
+      "afterText": "Arrêtée et démontée. Tout ce qui suit fonctionne sur la copie.",
+      "cardLabel": "Le Désastre",
+      "prose": "Mettez la machine principale hors ligne : arrêtez ses services et démontez le volume chiffré. À partir d'ici, tout fonctionne sur la copie de l'autre machine."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Passons maintenant à la preuve de restauration. D'abord, mettez le repository hors ligne : arrêtez les services et démontez le volume chiffré. L'application a disparu de cette machine.",
-      "afterText": "Hors ligne et démonté, exactement l'état d'un serveur vierge.",
-      "cardLabel": "Mettre Hors Ligne",
-      "prose": "Mettez d'abord le repository hors ligne : arrêtez les services et démontez le volume chiffré avec la commande repo down."
+      "at": 28.951964,
+      "text": "Transformez l'artefact en repository actif. Restore est la commande qui fait cela. Un flag nomme le nouveau repository, un autre le place sur la machine de sauvegarde, et un dernier saute la confirmation.",
+      "afterText": "La copie est maintenant un repository, avec son propre nom.",
+      "cardLabel": "Restaurer L'Artefact",
+      "prose": "Restore est la commande qui transforme une copie poussée en repository. Elle se nomme avec --as, se place avec --machine, et se confirme avec --yes. Restaurer sous un nouveau nom n'écrase rien, ce qui rend l'exercice sûr sur une machine en production."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "Et reprenez la sauvegarde directement depuis le stockage. La commande repo pull récupère l'image, vérifie son intégrité et la replace exactement là où elle se trouvait.",
-      "afterText": "Transfert terminé, intégrité vérifiée. Le repository est de retour.",
-      "cardLabel": "Récupérer Sauvegarde",
-      "prose": "Récupérez la sauvegarde depuis le stockage avec la commande repo pull. L'image est récupérée et son intégrité est vérifiée."
+      "at": 39.005334,
+      "text": "Montez le repository restauré. Nous ne démarrons volontairement pas ses conteneurs, car la preuve recherchée, ce sont les données, pas l'application.",
+      "afterText": "Monté, et prêt à être lu.",
+      "cardLabel": "Le Monter",
+      "prose": "Montez le repository restauré. Les conteneurs restent arrêtés volontairement : ce qui est prouvé ici, ce sont les données, pas l'application."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Montez-le à nouveau, et le repository est restauré. Push, list, pull, c'est toute l'histoire de la sauvegarde.",
-      "afterText": "Restauré. Ce même flux fonctionne aussi sur une toute nouvelle machine.",
-      "cardLabel": "Monter Restauré",
-      "prose": "Montez à nouveau le repository, il est entièrement restauré. La même opération pull fonctionne sur une toute nouvelle machine."
+      "at": 46.52408,
+      "text": "La même commande que celle du début, exécutée cette fois contre un repository qui n'existait pas deux commandes plus tôt. Même fichier, même ligne, même enregistrement.",
+      "afterText": "C'est bien tout l'enjeu. Les données sont revenues.",
+      "cardLabel": "Les Données Ont Survécu",
+      "prose": "La même commande qu'à l'étape un, exécutée contre un repository qui n'existait pas deux commandes plus tôt. La ligne revient octet par octet, depuis une machine qui n'a jamais été l'originale."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "Encore une chose, pour des sauvegardes à travers lesquelles vous pouvez revenir en arrière. Les instantanés partent vers le stockage fragmenté : le premier envoi téléverse tout, et chaque envoi suivant ne téléverse que les blocs modifiés. N'importe quel instantané se restaure seul. Cela nécessite un compte et un repository sous licence, donc ici la commande est seulement tapée, pas exécutée.",
+      "afterText": "Tapez-la sur votre propre installation une fois que vous avez un compte, et elle s'exécutera.",
+      "cardLabel": "Sauvegardes à un Instant Donné",
+      "prose": "Copier vers une machine vous donne le repository tel qu'il est maintenant. Pour un historique à travers lequel revenir en arrière, les instantanés partent vers le stockage fragmenté : le premier envoi téléverse les blocs écrits, chaque envoi suivant ne téléverse que ce qui a changé, et n'importe quel instantané peut être restauré seul. Cette commande est ici tapée et non exécutée, car l'envoi nécessite un serveur de compte et un repository sous licence, dont un enregistrement ne dispose d'aucun. Sur votre propre installation, avec un compte, voici la commande."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "Votre application est en ligne, alors assurons-nous que vous ne la perdiez jamais ! Dans ce tutoriel, nous poussons le dépôt entier vers un stockage externe et le récupérons à la demande."
+      "text": "Votre application est en ligne, alors assurons-nous que vous ne la perdiez jamais ! Dans ce tutoriel, nous copions un repository entier vers une deuxième machine, mettons le premier hors ligne, puis récupérons les données."
     },
     {
       "id": "three-steps",
-      "text": "La sauvegarde et la restauration se résument à trois étapes. Configurer un fournisseur de stockage, pousser une sauvegarde, et la restaurer quand vous en avez besoin."
+      "text": "Cela se résume à trois étapes. Copiez le repository vers une machine que vous contrôlez, restaurez cette copie en un repository à part entière, puis prouvez-le en relisant vos données."
     },
     {
       "id": "next-tutorial",
@@ -84,14 +93,15 @@
   "title": "Sauvegarde et Restauration",
   "chapters": {
     "intro": "Sauvegarde et Restauration",
-    "three-steps": "Trois étapes : configurer, envoyer, restaurer",
-    "cast-step-0": "Étape 1 : Importer la configuration rclone",
-    "cast-step-1": "Étape 2 : Lister les stockages configurés",
-    "cast-step-2": "Étape 3 : Envoyer une sauvegarde complète",
-    "cast-step-3": "Étape 4 : Lister les sauvegardes sur le stockage",
-    "outro": "Suivant : Monitoring",
-    "cast-step-4": "Étape 5 : Mettre le repo hors ligne",
-    "cast-step-5": "Étape 6 : Récupérer la sauvegarde",
-    "cast-step-6": "Étape 7 : Monter, restauré"
+    "three-steps": "Trois étapes : copier, restaurer, prouver",
+    "cast-step-0": "Étape 1 : Les données qui doivent survivre",
+    "cast-step-1": "Étape 2 : Les copier sur une deuxième machine",
+    "cast-step-2": "Étape 3 : La machine de sauvegarde les a",
+    "cast-step-3": "Étape 4 : La machine principale passe hors ligne",
+    "cast-step-4": "Étape 5 : Restaurer la copie",
+    "cast-step-5": "Étape 6 : Monter le repository restauré",
+    "cast-step-6": "Étape 7 : Les données ont survécu",
+    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "outro": "Suivant : Réseau et domaines"
   }
 }

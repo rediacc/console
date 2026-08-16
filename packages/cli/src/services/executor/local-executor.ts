@@ -2388,8 +2388,6 @@ class LocalExecutorService {
     }
     return isDevBuild() ? 'development' : DEFAULTS.TELEMETRY.ENVIRONMENT;
   }
-
-
 }
 
 export const localExecutorService = new LocalExecutorService();

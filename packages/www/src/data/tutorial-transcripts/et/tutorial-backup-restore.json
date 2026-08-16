@@ -6,75 +6,84 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.40238,
-      "text": "Esimene samm. Impordime olemasoleva rclone konfiguratsiooni. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi -- kui kasutad seda juba, saad sama konfiguratsiooni otse importida.",
-      "afterText": "Salvestus on imporditud. CLI saab nüüd sinna varukoopiaid tõugata.",
-      "cardLabel": "Impordi Salvestusruum",
-      "prose": "Impordi olemasolev rclone konfiguratsioon. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi teenuseid. Kui kasutad juba rclone, imporditakse sama konfiguratsioon otse."
+      "at": 2.799671,
+      "text": "Alustame sellest, mis peab üle elama. Töötavas repository's on fail, milles on üks ainus tellimuse rida. Jälgi seda, sest kohe võtame selle masina võrguühenduseta ja toome selle rea kuskilt mujalt tagasi.",
+      "afterText": "See ongi see rida. Edaspidi käib kõik selle tagasitoomisest.",
+      "cardLabel": "Andmed",
+      "prose": "Loe kõigepealt andmed välja töötavast repository'st. Üks rida ühes failis, et lõpptõestus oleks midagi, mida saad ise näha, mitte midagi, mida pead uskuma."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 5.948859,
-      "text": "Loetleme salvestused, millest CLI nüüd teab. Iga salvestus on sihtkoht, kuhu saame varukoopiad tõugata.",
-      "afterText": "Seal see on. Valmis varukoopiaid vastu võtma.",
-      "cardLabel": "Kuva Salvestusruumid",
-      "prose": "Kuva salvestusruumid, mida CLI nüüd tunneb. Iga salvestusruum on varukoopiate sihtkoht."
+      "at": 9.00514,
+      "text": "Kopeeri terve repository teise masinasse. Esimene koopia kannab üle kogu krüpteeritud image'i SSH kaudu, siin umbes kaks gigabaiti poole minutiga. Teisele poole jõuab varukoopia artefakt, mitte teine töötav rakendus.",
+      "afterText": "Koopia on nüüd varundusmasinas.",
+      "cardLabel": "Tõuka Varundusmasinasse",
+      "prose": "Kopeeri repository teise masinasse. Esimene tõuge kannab üle kogu krüpteeritud image'i, sellel serverifarmil umbes kaks gigabaiti kolmekümne kuni neljakümne sekundiga, ja iga järgnev tõuge saadab ainult muutunud plokid. Sihtmasinasse jõuab varukoopia artefakt, mitte teine töötav repository."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 9.401196,
-      "text": "Teine samm. Tõukame täieliku varukoopia. Terve repositoorium -- rakendus, andmebaas, failid, konfiguratsioon -- laaditakse üles. Kuna repositoorium on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud. Lisavõtme haldamine pole vajalik.",
-      "afterText": "Varukoopia üles laaditud. Kõik selle repo sisu on nüüd kaugsalvestusel, krüpteeritud.",
-      "cardLabel": "Lae Varukoopia",
-      "prose": "Laadi täielik varukoopia. Kogu repository laaditakse üles, sealhulgas rakendus, andmebaas, failid ja konfiguratsioon. Kuna repository on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud, ilma täiendava võtmehalduseta."
+      "at": 17.993741,
+      "text": "Küsi varundusmasinalt, mida ta hoiab. Repository on seal, oma nime all. Teine rida, mis näitab toorest identifikaatorit, on säilitatud baas, mis lubab järgmisel tõukel saata ainult muutunu.",
+      "afterText": "Mõlemad read on oodatud: koopia ja baas, mis hoiab hilisemad tõuked väikesena.",
+      "cardLabel": "Kinnita Koopia",
+      "prose": "Küsi varundusmasinalt, mida ta hoiab. Koopia ilmub oma nime all, mis on lahendatud sinu config'ist. Teine rida, mis kannab toorest identifikaatorit, on säilitatud delta-baas, mis teebki järgmise tõuke sellesse masinasse astmeliseks."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 15.183859,
-      "text": "Loetleme sellel salvestusel saadaolevad varukoopiad. Edaspidi on taastamine uuel serveril üks käsk -- CLI repo pull. Samad andmed, samad konteinerid, erinev masin.",
-      "afterText": "Kõik tõmmised ühes kohas. Tõmba ükskõik milline neist ühe käsuga tagasi.",
-      "cardLabel": "Kuva Varukoopiad",
-      "prose": "Kuva sellel salvestusruumil saadaolevad varukoopiad. Taastamine täiesti uuele serverile on üks käsk: repo pull käsk."
+      "at": 23.318642,
+      "text": "Nüüd katastroof. Peata peamasin ja ühenda selle krüpteeritud köide lahti. Selle masina jaoks on rakendus kadunud.",
+      "afterText": "Peatatud ja lahti ühendatud. Kõik edasine töötab koopia peal.",
+      "cardLabel": "Katastroof",
+      "prose": "Võta peamasin võrguühenduseta: peata selle teenused ja ühenda krüpteeritud köide lahti. Edaspidi töötab kõik teises masinas oleva koopia peal."
     },
     {
       "id": "tutorial-backup-restore-05",
       "markerIndex": 4,
-      "at": 20.72372,
-      "text": "Nüüd taastamise tõestus. Võta kõigepealt repository võrguühenduseta: peata teenused ja ühenda krüptitud maht lahti. Rakendus on sellelt masinalt kadunud.",
-      "afterText": "Võrguühenduseta ja lahti ühendatud, täpselt nagu värske server.",
-      "cardLabel": "Võta Ühenduseta",
-      "prose": "Võta repository esmalt võrguühenduseta: peata teenused ja ühenda krüpteeritud köide lahti käsuga repo down."
+      "at": 28.951964,
+      "text": "Muuda artefakt töötavaks repository'ks. Restore on käsk, mis seda teeb. Üks lipp nimetab uue repository, teine paigutab selle varundusmasinasse ja kolmas jätab kinnituse vahele.",
+      "afterText": "Koopia on nüüd repository, omal nimel.",
+      "cardLabel": "Taasta Artefakt",
+      "prose": "Restore on käsk, mis muudab tõugatud koopia repository'ks. Seda nimetatakse lipuga --as, paigutatakse lipuga --machine ja kinnitatakse lipuga --yes. Taastamine uue nime all ei kirjuta midagi üle, mistõttu on seda turvaline harjutada töötaval masinal."
     },
     {
       "id": "tutorial-backup-restore-06",
       "markerIndex": 5,
-      "at": 26.052361,
-      "text": "Ja tõmba varukoopia otse salvestusruumist tagasi. Repo pull käsk tõmbab image'i, kontrollib selle terviklikkust ja paigutab selle täpselt sinna, kus see oli.",
-      "afterText": "Ülekanne lõpetatud, terviklikkus kinnitatud. Repository on tagasi.",
-      "cardLabel": "Tõmba Varukoopia",
-      "prose": "Tõmba varukoopia salvestusest tagasi käsuga repo pull. Pilt laaditakse alla ja kontrollitakse terviklust."
+      "at": 39.005334,
+      "text": "Ühenda taastatud repository. Me ei käivita teadlikult selle konteinereid, sest tõestus, mida soovime, on andmed, mitte rakendus.",
+      "afterText": "Ühendatud ja valmis lugemiseks.",
+      "cardLabel": "Ühenda See",
+      "prose": "Ühenda taastatud repository. Konteinerid jäävad meelega seisma: siin tõestatakse andmeid, mitte rakendust."
     },
     {
       "id": "tutorial-backup-restore-07",
       "markerIndex": 6,
-      "at": 32.749903,
-      "text": "Ühenda see uuesti ja repository on taastatud. Push, list, pull, see on kogu varukoopia lugu.",
-      "afterText": "Taastatud. Sama protsess toimib ka täiesti uuel masinal.",
-      "cardLabel": "Ühenda Taastatud",
-      "prose": "Ühenda repository uuesti, see on täielikult taastatud. Sama pull toimib ka täiesti uuel masinal."
+      "at": 46.52408,
+      "text": "Sama käsk, mille käivitasime alguses, seekord repository vastu, mida kaks käsku tagasi veel ei eksisteerinud. Sama fail, sama rida, sama tellimus.",
+      "afterText": "Selles seisnebki asja mõte. Andmed tulid tagasi.",
+      "cardLabel": "Andmed Jäid Alles",
+      "prose": "Sama käsk mis esimeses sammus, käivitatud repository vastu, mida kaks käsku tagasi ei olnud olemas. Rida tuleb tagasi baidi täpsusega, masinast, mis polnud kunagi originaal."
+    },
+    {
+      "id": "tutorial-backup-restore-08",
+      "markerIndex": 7,
+      "at": 52.091103,
+      "text": "Veel üks, varukoopiate jaoks, mille kaudu saad ajas tagasi kerida. Hetktõmmised lähevad chunk-hoidlasse, kus esimene käivitus laadib üles kõik ja iga järgnev käivitus laadib üles ainult muutunud plokid. Iga hetktõmmis taastub iseseisvalt. Selleks on vaja kontot ja litsentseeritud repository't, seega on see siin ainult kirjutatud, mitte käivitatud.",
+      "afterText": "Kirjuta see oma installatsioonis, kui sul on konto, ja see töötab.",
+      "cardLabel": "Ajahetke Varukoopiad",
+      "prose": "Masinasse kopeerimine annab sulle repository sellisena, nagu see praegu on. Ajaloo jaoks, mille kaudu saad tagasi kerida, lähevad hetktõmmised chunk-hoidlasse: esimene käivitus laadib üles kirjutatud plokid, iga järgnev käivitus ainult selle, mis muutus, ja iga hetktõmmist saab taastada iseseisvalt. See käsk on siin ainult kirjutatud, mitte käivitatud, sest üleslaadimiseks on vaja kontoserverit ja litsentseeritud repository't, kummalgi pole salvestusel olemas. Sinu enda installatsioonis, kontoga, on see õige käsk."
     }
   ],
   "narrations": [
     {
       "id": "intro",
-      "text": "Sinu rakendus on töös, nii et veendume, et sa seda kunagi ei kaota! Selles õpetuses tõukame terve repositooriumi välisesse salvestusse ja tõmbame selle nõudmisel tagasi."
+      "text": "Sinu rakendus on töös, nii et veendume, et sa seda kunagi ei kaota! Selles õpetuses kopeerime terve repository teise masinasse, viime esimese võrguühenduseta ja toome andmed tagasi."
     },
     {
       "id": "three-steps",
-      "text": "Varundamine ja taastamine taandub kolmele sammule. Seadista salvestuse pakkuja, tõuka varukoopia ja taasta see, kui vaja."
+      "text": "Kõik taandub kolmele sammule. Kopeeri repository masinasse, mida sa kontrollid, taasta see koopia omaette repository'ks ja tõesta seda, lugedes oma andmed tagasi välja."
     },
     {
       "id": "next-tutorial",
@@ -84,14 +93,15 @@
   "title": "Varukoopia ja Taastamine",
   "chapters": {
     "intro": "Varukoopia ja Taastamine",
-    "three-steps": "Kolm sammu: seadista, laadi, taasta",
-    "cast-step-0": "1. samm: impordi rclone konfiguratsioon",
-    "cast-step-1": "2. samm: kuva seadistatud salvestusruumid",
-    "cast-step-2": "3. samm: laadi täielik varukoopia",
-    "cast-step-3": "4. samm: kuva varukoopiad salvestusruumil",
-    "outro": "Järgmine: Monitooring",
-    "cast-step-4": "5. samm: Võta repo ühenduseta",
-    "cast-step-5": "6. samm: Tõmba varukoopia tagasi",
-    "cast-step-6": "7. samm: Ühenda, taastatud"
+    "three-steps": "Kolm sammu: kopeeri, taasta, tõesta",
+    "cast-step-0": "1. samm: andmed, mis peavad üle elama",
+    "cast-step-1": "2. samm: kopeeri teise masinasse",
+    "cast-step-2": "3. samm: varundusmasinal on need olemas",
+    "cast-step-3": "4. samm: peamasin läheb võrguühenduseta",
+    "cast-step-4": "5. samm: taasta koopia",
+    "cast-step-5": "6. samm: ühenda taastatud repository",
+    "cast-step-6": "7. samm: andmed jäid alles",
+    "cast-step-7": "TODO: translate chapter (en: Step 8: Point-in-time backups)",
+    "outro": "Järgmine: Võrgud ja domeenid"
   }
 }
