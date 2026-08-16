@@ -39,9 +39,16 @@ Why this dissolves the classic problems:
 - Restore: no chain replay ever. Any snapshot = fetch manifest, parallel-GET its
   cells, write at offsets into a sparse file. RTO is bandwidth-bound and constant in
   history depth. Re-baselining and image compaction are non-problems.
-- Point-in-time with only the live repo on disk: restore is a DIFF against local
-  state. The journal caches the anchor's cell hashes; only cells differing from the
-  target manifest are downloaded (churn-sized, not image-sized). Materialize as a
+- Point-in-time with only the live repo on disk. **NOT AS SHIPPED, corrected
+  2026-08-16.** This described restore as a DIFF against local state downloading
+  only cells that differ from the target manifest, "churn-sized, not
+  image-sized". `assembleImage` (`pkg/chunkstore/restore.go:30`) fetches every
+  non-ZERO cell the materialized manifest names, so a restore IS image-sized.
+  What shipped is narrower and still worth having: an interrupted restore adopts
+  its staging file, re-hashes each non-ZERO cell against the manifest and reuses
+  what matches (`ChunksReused`, `restore.go:292`), discarding the file if the
+  holes are no longer holes; and a hash appearing at several offsets is fetched
+  once. Customer copy must NOT promise churn-sized restore. Materialize as a
   reflink fork (repo checkout semantics), promote to swap in place. Fresh-machine DR
   is the only full download. The same "which hashes exist" logic serves seed,
   incremental push, resume, point-in-time fork, and bare-metal DR.

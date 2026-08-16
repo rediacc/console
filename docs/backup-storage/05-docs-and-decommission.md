@@ -16,6 +16,16 @@ The marketing surface already sells THIS system, not the shipped one. Dispositio
 
 BECOMES TRUE (write with measured numbers from the battery, never invented ones):
 
+**SUPERSEDED 2026-08-16: the hold below is LIFTED. It was correct when written
+and is not correct now.** `pkg/chunkstore/download.go:87` exports `Restore`,
+`restore.go` assembles a manifest into a sparse image, renet carries a `restore`
+verb (`cmd/renet/backup_restore.go:79`), and `backup_pull.go:51` no longer
+refuses blindly but POINTS AT `renet backup restore --at <snapshot>`.
+`09-local-roundtrip-proof.md` then proves a byte-identical round trip. The
+point-in-time tier copy may be written, against measured numbers as ever. The
+original hold is kept below rather than deleted, because a reader who finds this
+file from an older link needs to see what changed and why.
+
 **BLOCKED, verified 2026-08-14: point-in-time restore is NOT one of them yet.**
 `cmd/renet/backup_pull.go:195-196` still refuses `--at` outright, and
 `pkg/chunkstore` exports no fetch-to-disk function, so snapshot-addressed
