@@ -107,9 +107,25 @@ interface VerifyRecord {
  * its diagnostics to stderr, and a parser fed the combined stream would accept
  * a run whose records never appeared at all.
  */
+/**
+ * Verify records, from EITHER shape the harness can deliver them in.
+ *
+ * A bare JSON line is the shape when the verb's stdout reaches the caller
+ * untouched. Through `renet functions once` it does not: the executor swallows
+ * the verb's stdout and re-emits it inside its own log line as
+ * `msg="[backup_verify] {\"guid\":...}"`, on STDERR, with the quotes escaped.
+ * This parser used to accept only the first shape, so a record that was
+ * produced correctly and printed plainly read as "no verify record" -- the test
+ * was looking at the wrong stream for output that was never missing.
+ */
 function parseVerifyRecords(stdout: string): VerifyRecord[] {
   const records: VerifyRecord[] = [];
-  for (const line of stdout.split('\n')) {
+  for (const rawLine of stdout.split('\n')) {
+    let line = rawLine;
+    const wrapped = /msg="\[[a-z_]+\] (\{.*?\})"\s*$/.exec(rawLine.trim());
+    if (wrapped) {
+      line = wrapped[1].replaceAll('\\"', '"');
+    }
     const trimmed = line.trim();
     if (!trimmed.startsWith('{') || !trimmed.includes('"status"')) continue;
     try {
@@ -200,7 +216,7 @@ test.describe
           `backup_verify exited ${result.code}:\n${result.stderr.slice(-800)}`
         ).toBe(0);
 
-        const records = parseVerifyRecords(result.stdout);
+        const records = parseVerifyRecords(result.stdout + result.stderr);
         const mine = records.filter((r) => r.guid === REPO_GUID);
         expect(
           mine.length,
@@ -220,7 +236,9 @@ test.describe
       test('2. the level parameter reaches the verb (level=full is carried through)', async () => {
         const result = await verifyViaFunction(REPO_GUID, 'full');
         expect(result.code, `backup_verify --level full: ${result.stderr.slice(-600)}`).toBe(0);
-        const mine = parseVerifyRecords(result.stdout).filter((r) => r.guid === REPO_GUID);
+        const mine = parseVerifyRecords(result.stdout + result.stderr).filter(
+          (r) => r.guid === REPO_GUID
+        );
         expect(mine.length).toBe(1);
         // The record echoes the level it ran at; `full` here proves the vault
         // param survived FunctionDef -> `--level` -> the record.
@@ -236,9 +254,10 @@ test.describe
         const text = runner.getCombinedOutput(result);
         expect(text).toContain('invalid verify level');
         expect(text, 'the refusal must name the valid levels').toContain('spot, full');
-        expect(parseVerifyRecords(result.stdout), 'a refused run still emitted records').toEqual(
-          []
-        );
+        expect(
+          parseVerifyRecords(result.stdout + result.stderr),
+          'a refused run still emitted records'
+        ).toEqual([]);
       });
 
       test('4. an unfiltered verify enumerates the datastore, and says so when it cannot', async () => {
