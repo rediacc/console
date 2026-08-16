@@ -775,6 +775,19 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_e2e_case_blind_assertions.py
 
+      # A tutorial is executable documentation, so a skipped one is a
+      # customer-facing page nothing verifies. Skipping is denied outright:
+      # fix the tutorial rather than excusing it from the run.
+      - name: Tutorials cannot skip themselves
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_tutorial_no_skips.py
+
+      # knip has no class-member issue type, so an unused method on an exported
+      # singleton service is invisible to it. Nine of them had accumulated.
+      - name: Dead service methods
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-dead-service-methods
+
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-parity

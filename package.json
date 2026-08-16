@@ -96,6 +96,8 @@
     "check:ci-python-gate-deps": ".ci/scripts/quality/check_python_gate_deps.py",
     "check:ci-tutorial-cli-validity": ".ci/scripts/quality/check_tutorial_cli_validity.py",
     "check:ci-e2e-case-blind": ".ci/scripts/quality/check_e2e_case_blind_assertions.py",
+    "check:ci-tutorial-no-skips": ".ci/scripts/quality/check_tutorial_no_skips.py",
+    "check:ci-dead-service-methods": "tsx scripts/check-dead-service-methods.ts",
     "check:ci-no-inline-python": ".ci/scripts/quality/check_inline_python.py",
     "check:ci-timeout-headroom": ".ci/scripts/quality/check_job_timeout_headroom.py",
     "check:ci-runner-advice": ".ci/scripts/quality/check_runner_advice.py",
