@@ -3135,6 +3135,8 @@ ARITY = {
     "N_JUDGE_STAMP_FULL": ("m", "approved", "why"),
     "N_OUTQ_MORE": (3,),
     "N_AGENT_HINT": ("a", "a", "t, t"), "N_AGENT_CORPUS_ERR": ("rows",),
+    # (claims, agent, matched terms) -- the give-up push-back.
+    "V_AGENT_PUSHBACK": ("does-not-reproduce", "ops-vms", "ceph, ops, vms"),
     "N_POLL_BACKOFF": (25, 5, "*/5 * * * *", "*/10 * * * *", 10),
     "N_POLL_BACKOFF_RESET": ("*/10 * * * *", "*/5 * * * *"),
     "N_QUIET_WAKE": (3, 5, "*/5 * * * *", "*/10 * * * *", 10),

@@ -389,10 +389,113 @@ def main() -> int:
         )
         return 1
 
+    # --- the PUSH-BACK, over the same specimen table -------------------------
+    # Reusing the specimens is the point, not a shortcut: it makes push-back
+    # coverage automatic for every agent that exists now and every agent added
+    # later, with no second table to keep in sync. A new agent that earns a
+    # specimen earns its push-back the same day.
+    #
+    # Asserted in BOTH directions in one pass, because either half alone is
+    # worthless. A rule that fires on everything and a rule that fires on
+    # nothing both pass a one-sided test.
+    pb_findings = []
+    for name in sorted(names):
+        specimen = SPECIMENS.get(name)
+        if not specimen:
+            continue  # the equality assertion above already failed for this
+        # POSITIVE: the same sentence a session would type, prefixed with the
+        # surrender that motivated this feature.
+        # ONE SENTENCE, joined by a colon. Two sentences would put the claim
+        # and its subject in different haystacks, which the checker rejects on
+        # purpose -- and a gate that asserted the two-sentence shape would be
+        # demanding the very false positive this feature was fixed to stop
+        # making. The colon form is what the live sentence actually looked like.
+        giving_up = f"It doesn't reproduce: {specimen}"
+        hit, errs = matcher.pushback_for(giving_up, AGENTS_DIR)
+        if errs:
+            pb_findings.append(f"{name}: corpus errors during push-back: {errs}")
+        elif not hit:
+            pb_findings.append(
+                f"{name}: a give-up claim in its own domain did NOT push back "
+                f'(specimen: "{specimen[:60]}...")'
+            )
+        elif hit[0] != name:
+            pb_findings.append(f"{name}: push-back named {hit[0]} instead")
+        # NEGATIVE: the identical sentence WITHOUT a give-up claim must stay
+        # silent. This is the half that keeps the push-back from degrading into
+        # a second, louder copy of the topic hint.
+        quiet, _ = matcher.pushback_for(specimen, AGENTS_DIR)
+        if quiet:
+            pb_findings.append(
+                f"{name}: pushed back on a specimen carrying NO give-up claim "
+                f"({quiet[2]}), so it fires on topic alone"
+            )
+    # NEGATIVE: give-up language with no specialist domain must stay silent too.
+    # The last two are LIVE REGRESSIONS, both from the first hour this check
+    # existed, and both were false positives it produced about ITSELF:
+    #   - a message that quotes the trigger phrases while explaining them
+    #     (a mention is not a claim), and
+    #   - a give-up sentence whose domain words sit in a LATER sentence, which
+    #     scored 5.0 against pr-babysitter while the true ceph case scored 4.0
+    #     -- proof that no threshold separates them and that the claim's own
+    #     sentence is the only honest haystack.
+    for neutral in (
+        "This cannot be done without a token, so it is pre-existing and not mine.",
+        "It doesn't reproduce and there is no local way to check the changelog wording.",
+        (
+            'Firing on "cannot" alone would be unbearable. This fired live on "it '
+            "doesn't reproduce: neither local worker has /etc/ceph\". Remaining: the "
+            "wave, console review."
+        ),
+        (
+            "It doesn't reproduce and this is pre-existing. Remaining: the wave, "
+            "console review, commit and check."
+        ),
+    ):
+        stray, _ = matcher.pushback_for(neutral, AGENTS_DIR)
+        if stray:
+            pb_findings.append(
+                f'"{neutral[:44]}..." pushed back to {stray[0]} on {stray[1]}, '
+                "so give-up language alone is enough to fire it"
+            )
+    # POSITIVE REGRESSION: the sentence the operator pushed back on by hand. It
+    # is pinned verbatim because two separate bugs silenced it during
+    # development -- splitting on its colon, and stripping its apostrophe as a
+    # quote -- and both looked like a healthy quiet check from the outside.
+    _motivating = (
+        "It doesn't reproduce: neither local worker has /etc/ceph or rbd. "
+        "ops up fleet, ceph never provisioned."
+    )
+    _mhit, _ = matcher.pushback_for(_motivating, AGENTS_DIR)
+    if not _mhit or _mhit[0] != "ops-vms":
+        pb_findings.append(
+            "the motivating sentence no longer pushes back to ops-vms (got %r). "
+            "This check exists for that sentence; if it is silent the check is dead." % (_mhit,)
+        )
+
+    if pb_findings:
+        print(
+            f"{RED}✗{NC} the give-up push-back is broken (wl_agents.pushback_for):",
+            file=sys.stderr,
+        )
+        for finding in pb_findings:
+            print(f"  {finding}", file=sys.stderr)
+        print(
+            "\n  It must fire on (give-up claim AND specialist domain) and on nothing else.\n"
+            "  Firing on topic alone duplicates the advisory hint; firing on give-up alone\n"
+            "  makes every honest 'cannot' an accusation.",
+            file=sys.stderr,
+        )
+        return 1
+
     print(f"{GREEN}✓{NC} all {len(names)} agents are reachable by the hint matcher")
     print(
         f"  every specimen wins its own agent at MIN_SCORE={min_score:g} MIN_MARGIN={min_margin:g}, "
         f"and all {len(CONTROLS)} neutral controls stayed silent"
+    )
+    print(
+        f"  push-back fires for all {len(SPECIMENS)} agents on a give-up claim, and stays "
+        "silent on the same specimen without one"
     )
     print("  4 planted defects were caught first, so this green means the check can fail")
     return 0
