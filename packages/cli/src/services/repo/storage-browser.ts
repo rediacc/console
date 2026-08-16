@@ -43,18 +43,6 @@ class StorageBrowserService {
     return parser.parse(result.stdout);
   }
 
-  /**
-   * Check if rclone binary is available in PATH.
-   */
-  async isAvailable(): Promise<boolean> {
-    try {
-      const result = await this.spawnRclone(['version'], 5_000);
-      return result.exitCode === 0;
-    } catch {
-      return false;
-    }
-  }
-
   private spawnRclone(args: string[], timeout = RCLONE_TIMEOUT_MS): Promise<SpawnResult> {
     return new Promise((resolve, reject) => {
       const child = spawn('rclone', args, {
