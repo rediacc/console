@@ -229,7 +229,7 @@ export function parseVerifyVerdict(stdout: string | undefined): VerifyVerdict | 
 }
 
 /** One filesystem object as `renet backup browse` reports it. */
-export interface BrowseEntry {
+interface BrowseEntry {
   path: string;
   type: string;
   size: number;
