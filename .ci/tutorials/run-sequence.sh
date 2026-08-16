@@ -19,7 +19,6 @@
 #   TUTORIAL_RDC_CMD      rdc invocation (never the bare string "rdc")
 #   TUTORIAL_MACHINE_IP/_USER/_NAME, TUTORIAL_SSH_KEY
 #   TUTORIAL_BACKUP_HOST/_USER        second worker (ssh-keys, delta, migration)
-#   TUTORIAL_S3_ENDPOINT/_ACCESS_KEY/_SECRET_KEY/_BUCKET   backup-restore
 #   TUTORIAL_LOG_DIR      per-tutorial logs (default: mktemp -d)
 #   TUTORIAL_ONLY         space-separated slugs: run just these, sequence order
 #
@@ -69,22 +68,6 @@ for script in "$SCRIPT_DIR"/tutorial-*.sh; do
     fi
 done
 [[ $drift -ne 0 ]] && exit 2
-
-# ── Drafts: a script may declare itself not-yet-runnable ────────────────────
-# A tutorial whose feature was removed cannot be run and must not be silently
-# deleted either: the docs<->scripts 1:1 drift check above exists precisely to
-# stop a tutorial from vanishing unnoticed. A TUTORIAL_DRAFT marker in the
-# script is the honest middle: the file stays, the reason stays with it, and
-# the sequence skips it LOUDLY rather than reporting a pass it did not earn.
-declare -a runnable=()
-for slug in "${sequence[@]}"; do
-    if grep -q '^# TUTORIAL_DRAFT:' "$SCRIPT_DIR/tutorial-$slug.sh"; then
-        echo "SKIP (draft): $slug -- $(grep -m1 '^# TUTORIAL_DRAFT:' "$SCRIPT_DIR/tutorial-$slug.sh" | cut -c19-)" >&2
-        continue
-    fi
-    runnable+=("$slug")
-done
-sequence=("${runnable[@]}")
 
 # ── Optional subset (sequence order preserved) ──────────────────────────────
 if [[ -n "${TUTORIAL_ONLY:-}" ]]; then

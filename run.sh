@@ -475,13 +475,6 @@ www_tutorials_record() {
     log_step "Provisioning VMs for tutorial recording..."
     provision_start
 
-    # The backup-restore tutorial pushes to an S3-compatible storage. RustFS
-    # runs on the bridge VM (renet-managed container); bucket name must match
-    # the rclone config the tutorial script writes.
-    log_step "Starting RustFS S3 storage on the bridge..."
-    "$ROOT_DIR/private/renet/bin/renet" ops rustfs start
-    "$ROOT_DIR/private/renet/bin/renet" ops rustfs create-bucket rediacc-test || true
-
     # Recording runs INSIDE the bridge VM so the local host's ~/.config/rediacc is
     # never touched and the cast captures a pristine machine. Bootstrap the bridge
     # with node + asciinema + the dev rdc SEA + the tutorial scripts.
