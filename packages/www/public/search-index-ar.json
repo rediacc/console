@@ -9772,7 +9772,7 @@
   {
     "id": "search-2126",
     "content": "دورة حياة المستودع",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc repo create <repo> -m <machine> | إنشاء مستودع جديد على جهاز | | rdc repo up <repo>@<machine> | نشر مستودع أو تحديثه | | rdc repo down <repo>@<machine> | إيقاف مستودع | | rdc repo delete <repo>@<machine> | حذف مستودع | | rdc repo fork <repo>@<machine> --tag <tag> | تفريع مستودع (شبه فوري، باستخدام BTRFS reflink) | | rdc repo promote <repo>:<tag> | ترقية فرع تم التحقق منه إلى مستودع الإنتاج باسم المستودع الأصل | | rdc repo list | عرض جميع المستودعات باسمها ومعرف GUID |",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc repo create <repo> -m <machine> | إنشاء مستودع جديد على جهاز | | rdc repo up <repo>@<machine> | نشر مستودع أو تحديثه | | rdc repo down <repo>@<machine> | إيقاف مستودع | | rdc repo delete <repo>@<machine> | حذف مستودع | | rdc repo fork <repo>@<machine> --tag <tag> | تفريع مستودع (شبه فوري، باستخدام BTRFS reflink) | | rdc repo promote <repo>:<tag> | ترقية فرع تم التحقق منه إلى مستودع الإنتاج باسم المستودع الأصل | | rdc repo list | عرض جميع المستودعات باسمها ومعرف GUID | | rdc repo resize <repo> --size <size> | تغيير حجم وحدة تخزين مستودع متوقف | | rdc repo expand <repo> --size <size> | توسيع وحدة تخزين مستودع قيد التشغيل أثناء العمل |",
     "excerpt": "| الأمر | الوصف | |-------|-------| | rdc repo create <repo> -m <machine> | إنشاء مستودع جديد على جهاز | | rdc repo up <repo>@<machine> | نشر مستودع أ...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",
@@ -9838,7 +9838,7 @@
   {
     "id": "search-2132",
     "content": "إدارة الأجهزة",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc machine status <machine> | الحالة الكاملة للجهاز (النظام، الحاويات، الخدمات، المستودعات، الشبكة) | | rdc machine status <machine> --system | معلومات النظام فقط | | rdc machine status <machine> --containers | قائمة الحاويات فقط | | rdc machine status <machine> --repositories | قائمة المستودعات فقط | | rdc machine status <machine> --services | قائمة الخدمات فقط | | rdc machine status <machine> --network | معلومات الشبكة فقط | | rdc machine status <machine> --block-devices | معلومات أجهزة التخزين فقط | | rdc machine list | عرض جميع الأجهزة في الإعدادات | | rdc machine setup <machine> | تشغيل التجهيز الأولي للجهاز | | rdc machine prune <machine> | إزالة الموارد غير المستخدمة من الجهاز | | rdc machine deprovision <machine> | إلغاء تجهيز الجهاز بالكامل |",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc machine status <machine> | الحالة الكاملة للجهاز (النظام، الحاويات، الخدمات، المستودعات، الشبكة) | | rdc machine status <machine> --system | معلومات النظام فقط | | rdc machine status <machine> --containers | قائمة الحاويات فقط | | rdc machine status <machine> --repositories | قائمة المستودعات فقط | | rdc machine status <machine> --services | قائمة الخدمات فقط | | rdc machine status <machine> --network | معلومات الشبكة فقط | | rdc machine status <machine> --block-devices | معلومات أجهزة التخزين فقط | | rdc machine list | عرض جميع الأجهزة في الإعدادات | | rdc machine setup <machine> | تشغيل التجهيز الأولي للجهاز | | rdc machine health <machine> | فحص صحة جهاز | | rdc machine scan-keys <machine> | تحديث مفاتيح مضيف SSH بعد إعادة البناء | | rdc machine prune <machine> | إزالة الموارد غير المستخدمة من الجهاز | | rdc machine deprovision <machine> | إلغاء تجهيز الجهاز بالكامل |",
     "excerpt": "| الأمر | الوصف | |-------|-------| | rdc machine status <machine> | الحالة الكاملة للجهاز (النظام، الحاويات، الخدمات، المستودعات، الشبكة) | | rdc mac...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",
@@ -9849,7 +9849,7 @@
   {
     "id": "search-2133",
     "content": "الطرفية والمزامنة",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc term connect <machine> | فتح طرفية SSH للجهاز | | rdc term connect <repo>@<machine> | فتح طرفية SSH للمستودع (تعيين DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | تشغيل أمر على الجهاز | | rdc repo sync upload <repo>@<machine> --local <paths...> | رفع ملف أو مجلد أو عدة مصادر إلى المستودع | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | رفع ملف محلي واحد إلى مسار بعيد محدد | | rdc repo sync download <repo>@<machine> --local <dir> | تنزيل مجلد المستودع محلياً | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | تنزيل ملف واحد من المستودع إلى مجلد محلي | | rdc vscode connect <repo>@<machine> | فتح جلسة VS Code Remote SSH |",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc term connect <machine> | فتح طرفية SSH للجهاز | | rdc term connect <repo>@<machine> | فتح طرفية SSH للمستودع (تعيين DOCKER_HOST) | | rdc term connect <machine> -c \"<command>\" | تشغيل أمر على الجهاز | | rdc repo sync upload <repo>@<machine> --local <paths...> | رفع ملف أو مجلد أو عدة مصادر إلى المستودع | | rdc repo sync upload <repo>@<machine> --local <file> --remote-file <path> | رفع ملف محلي واحد إلى مسار بعيد محدد | | rdc repo sync download <repo>@<machine> --local <dir> | تنزيل مجلد المستودع محلياً | | rdc repo sync download <repo>@<machine> --remote-file <path> --local <dir> | تنزيل ملف واحد من المستودع إلى مجلد محلي | | rdc vscode connect <repo>@<machine> | فتح جلسة VS Code Remote SSH | | rdc vscode list | عرض إعدادات SSH التي أنشأها vscode connect | | rdc vscode cleanup --all | إزالة كل إعدادات SSH التي كتبها vscode connect | | rdc repo tunnel <repo> -c <container> --port <port> | توجيه منفذ حاوية عبر SSH |",
     "excerpt": "| الأمر | الوصف | |-------|-------| | rdc term connect <machine> | فتح طرفية SSH للجهاز | | rdc term connect <repo>@<machine> | فتح طرفية SSH للمستودع...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",
@@ -9860,8 +9860,8 @@
   {
     "id": "search-2134",
     "content": "الإعدادات",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc config init <name> | إنشاء ملف إعدادات مسمى | | rdc machine add <machine> --ip <host> --user <user> | إضافة جهاز إلى الإعدادات | | rdc storage import rclone.conf | استيراد مزودي التخزين من إعدادات rclone | | rdc storage list | عرض مزودي التخزين المهيأين | | rdc backup strategy set ... | تحديد استراتيجية نسخ احتياطي مسماة | | rdc --config <name> <command> | استخدام ملف إعدادات مسمى |",
-    "excerpt": "| الأمر | الوصف | |-------|-------| | rdc config init <name> | إنشاء ملف إعدادات مسمى | | rdc machine add <machine> --ip <host> --user <user> | إضافة...",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc config init <name> | إنشاء ملف إعدادات مسمى | | rdc config list | عرض جميع الإعدادات على هذا الجهاز | | rdc config set machine <alias> | توجيه اسم مستعار إلى جهاز مختلف | | rdc machine add <machine> --ip <host> --user <user> | إضافة جهاز إلى الإعدادات | | rdc storage import rclone.conf | استيراد مزودي التخزين من إعدادات rclone | | rdc storage list | عرض مزودي التخزين المهيأين | | rdc backup strategy set ... | تحديد استراتيجية نسخ احتياطي مسماة | | rdc --config <name> <command> | استخدام ملف إعدادات مسمى |",
+    "excerpt": "| الأمر | الوصف | |-------|-------| | rdc config init <name> | إنشاء ملف إعدادات مسمى | | rdc config list | عرض جميع الإعدادات على هذا الجهاز | | rdc...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
@@ -9871,8 +9871,8 @@
   {
     "id": "search-2135",
     "content": "التشخيص والوصول المباشر",
-    "body": "| الأمر | الوصف | |-------|-------| | rdc term connect <repo>@<machine> -c \"docker ps\" | عرض الحاويات في مستودع | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | جلب سجلات الحاوية | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | تنفيذ أمر داخل حاوية | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | إعادة تشغيل حاوية |",
-    "excerpt": "| الأمر | الوصف | |-------|-------| | rdc term connect <repo>@<machine> -c \"docker ps\" | عرض الحاويات في مستودع | | rdc term connect <repo>@<machine>...",
+    "body": "| الأمر | الوصف | |-------|-------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | بث سجلات الحاوية (مفضّل) | | rdc repo exec <repo>@<machine> -c <container> -- <command> | تشغيل أمر داخل حاوية (مفضّل) | | rdc repo exec <repo>@<machine> -c <container> -i -- bash | فتح واجهة تفاعلية داخل الحاوية | | rdc term connect <repo>@<machine> -c \"docker ps\" | عرض الحاويات في مستودع | | rdc term connect <repo>@<machine> -c \"docker logs <name>\" | جلب سجلات الحاوية | | rdc term connect <repo>@<machine> -c \"docker exec <name> <cmd>\" | تنفيذ أمر داخل حاوية | | rdc term connect <repo>@<machine> -c \"docker restart <name>\" | إعادة تشغيل حاوية |",
+    "excerpt": "| الأمر | الوصف | |-------|-------| | rdc repo logs <repo>@<machine> -c <container> --lines 200 --follow | بث سجلات الحاوية (مفضّل) | | rdc repo exec...",
     "category": "Documentation",
     "page": "/ar/docs/rdc-cheat-sheet",
     "path": "docs.rdc-cheat-sheet.content",
