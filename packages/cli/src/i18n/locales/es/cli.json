@@ -24,7 +24,7 @@
         "optionStorage": "RETIRADO: el listado de almacenamiento se eliminó junto con el brazo de rclone",
         "placementExclusive": "Pasa exactamente uno de --machine o --storage, no ambos.",
         "placementRequired": "Especifica --machine <m> o --storage <s> para indicar de dónde listar.",
-        "storageRetired": "Listar un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. Las instantáneas del almacén de bloques se listan con `rdc backup snapshot list`, y los artefactos de una máquina con `rdc backup list -m <machine>`"
+        "storageRetired": "Listar un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. Las instantáneas del almacén de bloques se listan con `rdc backup manifests`, y los artefactos de una máquina con `rdc backup list -m <machine>`"
       },
       "manifests": {
         "description": "Listar los manifiestos de instantáneas de copia de seguridad registrados en el servidor",

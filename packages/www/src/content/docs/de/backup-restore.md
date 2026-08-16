@@ -185,7 +185,7 @@ Pull verweigert das Überschreiben eines Repositorys, das aktuell **eingehängt*
 Die Snapshots im Chunk-Storage auflisten:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Um Backup-Artefakte auf einer Maschine zu sehen:
@@ -451,7 +451,7 @@ Schließen Sie ein Repository aus dem hochfrequenten Lauf aus, wenn:
 
 > **Wenn die Daten rein regenerierbar sind**, überlegen Sie, ob Sie sie überhaupt sichern müssen. Eine Alternative ist, nur die rohen Quelleingaben (in diesem Beispiel die CSV-Dumps) zu sichern und die abgeleitete Kopie ganz zu überspringen. Ein wöchentliches Cold-Backup der Quelleingaben ist viel kleiner und für eine Wiederherstellung vollständig ausreichend.
 
-Ein Repo, das von keiner der beiden Strategien ausgeschlossen wird, wird von beiden erfasst: Es hat stündliche absturzkonsistente Snapshots und einen wöchentlichen anwendungskonsistenten. `rdc backup snapshot list <repo>` zeigt sie gemeinsam an, und die gemeinsamen Blöcke werden nur einmal gespeichert.
+Ein Repo, das von keiner der beiden Strategien ausgeschlossen wird, wird von beiden erfasst: Es hat stündliche absturzkonsistente Snapshots und einen wöchentlichen anwendungskonsistenten. `rdc backup manifests <repo>` zeigt sie gemeinsam an, und die gemeinsamen Blöcke werden nur einmal gespeichert.
 
 ## Backup-Operationen
 

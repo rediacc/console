@@ -185,7 +185,7 @@ Pull keeldub üle kirjutamast repositooriumi, mis on hetkel **ühendatud**. Ühe
 Loetle tükksalvestuses olevad hetktõmmised:
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Masinal olevate varunduskoopiate nägemiseks:
@@ -451,7 +451,7 @@ Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
 
 > **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
 
-Repositoorium, mida kumbki strateegia välja ei jäta, saab hõlmatud mõlema poolt, nii et sellel on tunnised krahhi-järjepidevad hetktõmmised ja üks iganädalane rakenduse-järjepidev hetktõmmis. `rdc backup snapshot list <repo>` näitab neid koos, ning nende jagatud rakud salvestatakse üks kord.
+Repositoorium, mida kumbki strateegia välja ei jäta, saab hõlmatud mõlema poolt, nii et sellel on tunnised krahhi-järjepidevad hetktõmmised ja üks iganädalane rakenduse-järjepidev hetktõmmis. `rdc backup manifests <repo>` näitab neid koos, ning nende jagatud rakud salvestatakse üks kord.
 
 ## Varundamistoimingud
 

@@ -185,7 +185,7 @@ Pull refuse d'écraser un dépôt actuellement **monté**. Démontez-le d'abord,
 Listez les instantanés dans le stockage fragmenté :
 
 ```bash
-rdc backup snapshot list my-app
+rdc backup manifests my-app
 ```
 
 Pour voir les sauvegardes présentes sur une machine :
@@ -451,7 +451,7 @@ Excluez un dépôt de l'exécution haute fréquence quand :
 
 > **Si les données sont purement régénérables**, envisagez si vous avez vraiment besoin de les sauvegarder. Une alternative est de ne sauvegarder que les entrées sources brutes (les dumps CSV dans cet exemple) et d'ignorer entièrement la copie dérivée. Une sauvegarde froide hebdomadaire des entrées sources est bien plus petite et entièrement suffisante pour la récupération.
 
-Un dépôt qu'aucune des deux stratégies n'exclut est capturé par les deux : il dispose donc d'instantanés horaires cohérents en cas de crash et d'un instantané hebdomadaire cohérent au niveau applicatif. `rdc backup snapshot list <repo>` les affiche ensemble, et les blocs qu'ils partagent ne sont stockés qu'une seule fois.
+Un dépôt qu'aucune des deux stratégies n'exclut est capturé par les deux : il dispose donc d'instantanés horaires cohérents en cas de crash et d'un instantané hebdomadaire cohérent au niveau applicatif. `rdc backup manifests <repo>` les affiche ensemble, et les blocs qu'ils partagent ne sont stockés qu'une seule fois.
 
 ## Opérations de sauvegarde
 

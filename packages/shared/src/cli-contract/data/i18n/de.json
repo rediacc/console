@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "EINGESTELLT: das Storage-Listing wurde mit dem rclone-Arm entfernt",
   "commands.backup.list.placementExclusive": "Geben Sie genau eines von --machine oder --storage an, nicht beides.",
   "commands.backup.list.placementRequired": "Geben Sie --machine <m> oder --storage <s> an, um festzulegen, woher aufgelistet werden soll.",
-  "commands.backup.list.storageRetired": "Das Auflisten eines Storage-Backends ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Chunk-Store-Snapshots listest du mit `rdc backup snapshot list`, Artefakte auf einer Maschine mit `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "Das Auflisten eines Storage-Backends ist eingestellt: der rclone-Cloud-Arm wurde entfernt. Chunk-Store-Snapshots listest du mit `rdc backup manifests`, Artefakte auf einer Maschine mit `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "Auf dem Server erfasste Backup-Snapshot-Manifeste auflisten",
   "commands.backup.manifests.empty": "Keine Backup-Manifeste gefunden.",
   "commands.backup.manifests.fetching": "Backup-Manifeste werden abgerufen...",

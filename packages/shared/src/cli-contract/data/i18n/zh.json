@@ -14,7 +14,7 @@
   "commands.backup.list.optionStorage": "已停用：存储列表随 rclone 分支一并移除",
   "commands.backup.list.placementExclusive": "只能传入 --machine 或 --storage 之一，不能同时传入两者。",
   "commands.backup.list.placementRequired": "请指定 --machine <m> 或 --storage <s>，说明从何处列出。",
-  "commands.backup.list.storageRetired": "列出存储后端的内容已停用：rclone 云分支已移除。块存储快照用 `rdc backup snapshot list` 查看，机器上的备份用 `rdc backup list -m <machine>`",
+  "commands.backup.list.storageRetired": "列出存储后端的内容已停用：rclone 云分支已移除。块存储快照用 `rdc backup manifests` 查看，机器上的备份用 `rdc backup list -m <machine>`",
   "commands.backup.manifests.description": "列出服务器上记录的备份快照清单",
   "commands.backup.manifests.empty": "未找到备份清单。",
   "commands.backup.manifests.fetching": "正在获取备份清单...",
