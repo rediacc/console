@@ -42,12 +42,11 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 
 | Command | Description |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Push a repository backup to storage |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Restore a repository from storage |
 | `rdc repo push ... --bwlimit <limit>` | Limit rsync bandwidth during push (e.g. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Limit rsync bandwidth during pull |
 | `rdc repo push ... --checkpoint` | Checkpoint containers before pushing |
-| `rdc backup list --storage <storage>` | List available backups in storage |
+| `rdc backup manifests <repo-ref>` | List the snapshots the chunk store holds |
+| `rdc backup browse <repo-ref>` | List the files a repository contains (local, read-only) |
 | `rdc backup snapshot <repo>` | Upload a chunk-store snapshot: full inventory first, changed cells after |
 | `rdc backup snapshot <repo> --dry-run` | Plan the snapshot without uploading; reports what would move |
 | `rdc backup verify <repo>` | Verify a repository's backup anchor against the chunk store |

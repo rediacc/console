@@ -4,8 +4,8 @@ description: 数分でサーバー上にコンテナ化されたサービスを�
 category: Guides
 order: -1
 language: ja
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "e4a4e0de5"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # クイックスタート
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. クラウドストレージへのプッシュ（OneDrive、Google Drive、S3）
+### 3. チャンクストレージへのバックアップ
 
 ```bash
-# rclone 設定をストレージバックエンドとしてインポート
-rdc storage import ~/rclone.conf
+# 特定時点のスナップショットを取得
+rdc backup snapshot my-app
 
-# 利用可能なストレージを一覧表示
-rdc storage list
+# 存在するスナップショットを確認
+rdc backup manifests my-app
 
-# リポジトリをクラウドストレージにプッシュ
-rdc repo push my-app --to my-s3-backup
-
-# ストレージ上のバックアップを一覧表示
-rdc backup list --storage my-s3-backup
+# 保存済みバイト数をクォータと照合
+rdc backup usage
 ```
 
-`--to` はターゲットがマシンかストレージバックエンドかを自動検出します。rclone がサポートするすべてのプロバイダーで動作します: S3、R2、B2、OneDrive、Google Drive、SFTP など。
+スナップショットはチャンクストレージにアップロードされます。これにはアカウントサーバーとライセンス済みのリポジトリが必要です。変更されたデータのみが保存されるため、同じリポジトリの2回目のスナップショットはイメージ全体ではなく差分のコストで済みます。
+
+`--to <storage>` を使ったリポジトリのクラウドストレージへのプッシュは廃止され、現在は拒否されます。その変更より前に書かれたアーカイブを読むには、`rdc storage browse` が引き続き使用でき、PATH 上に `rclone` が必要です。
 
 ### 4. リモートからのプル
 

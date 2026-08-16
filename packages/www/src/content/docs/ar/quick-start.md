@@ -4,8 +4,8 @@ description: تشغيل خدمة حاويات على خادمك في دقائق.
 category: Guides
 order: -1
 language: ar
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # البدء السريع
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. الدفع إلى التخزين السحابي (OneDrive، Google Drive، S3)
+### 3. النسخ الاحتياطي إلى التخزين المجزّأ
 
 ```bash
-# استيراد إعدادات rclone كخلفية تخزين
-rdc storage import ~/rclone.conf
+# أخذ لقطة عند نقطة زمنية محددة
+rdc backup snapshot my-app
 
-# عرض وحدات التخزين المتاحة
-rdc storage list
+# معرفة اللقطات الموجودة
+rdc backup manifests my-app
 
-# دفع المستودع إلى التخزين السحابي
-rdc repo push my-app --to my-s3-backup
-
-# عرض النسخ الاحتياطية على التخزين
-rdc backup list --storage my-s3-backup
+# التحقق من البايتات المخزَّنة مقابل حصتك
+rdc backup usage
 ```
 
-يكشف `--to` تلقائيًا ما إذا كان الهدف جهازًا أو خلفية تخزين. يعمل مع أي مزود يدعمه rclone: S3، R2، B2، OneDrive، Google Drive، SFTP، وغيرها.
+ترفع اللقطات إلى التخزين المجزّأ، الذي يحتاج إلى خادم حساب ومستودع مرخَّص. تُخزَّن البيانات المتغيّرة فقط، لذا تكلّف اللقطة الثانية لنفس المستودع الفرق فقط بدلاً من الصورة كاملة.
+
+دفع مستودع إلى التخزين السحابي باستخدام `--to <storage>` متقاعد الآن ويُرفض. لقراءة أرشيف كُتب قبل ذلك التغيير، لا يزال `rdc storage browse` يعمل، ويحتاج `rclone` في PATH الخاص بك.
 
 ### 4. السحب من مصدر بعيد
 

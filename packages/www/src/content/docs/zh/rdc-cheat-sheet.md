@@ -4,8 +4,8 @@ description: "rdc 快速参考：配置、仓库、机器、文件同步和容�
 category: Guides
 order: 3
 language: zh
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI 快速参考
@@ -44,12 +44,11 @@ sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 
 | 命令 | 说明 |
 |------|------|
-| `rdc repo push <repo>@<machine> --to <storage>` | 将仓库备份推送到存储 |
-| `rdc repo pull <repo>@<machine> --from <storage>` | 从存储恢复仓库 |
 | `rdc repo push ... --bwlimit <limit>` | 推送时限制 rsync 带宽（如 `10M`） |
 | `rdc repo pull ... --bwlimit <limit>` | 拉取时限制 rsync 带宽 |
 | `rdc repo push ... --checkpoint` | 推送前对容器创建检查点 |
-| `rdc backup list --storage <storage>` | 列出存储中的可用备份 |
+| `rdc backup manifests <repo-ref>` | 列出分块存储保存的快照 |
+| `rdc backup browse <repo-ref>` | 列出仓库包含的文件（本地，只读） |
 | `rdc backup snapshot <repo>` | 上传分块存储快照：首次为完整清单，之后仅为变更单元 |
 | `rdc backup snapshot <repo> --dry-run` | 规划快照而不上传；报告将会移动哪些内容 |
 | `rdc backup verify <repo>` | 对照分块存储验证仓库的备份锚点 |

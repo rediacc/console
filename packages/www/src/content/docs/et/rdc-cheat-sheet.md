@@ -4,8 +4,8 @@ description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sü
 category: Guides
 order: 3
 language: et
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI petuleht
@@ -44,12 +44,11 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 
 | Käsk | Kirjeldus |
 |---------|-------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Lükka hoidla varukoopia mäluhoidlasse |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Taasta hoidla mäluhoidlast |
 | `rdc repo push ... --bwlimit <limit>` | Piira rsync-i ribalaiust lükkamise ajal (nt `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Piira rsync-i ribalaiust tõmbamise ajal |
 | `rdc repo push ... --checkpoint` | Tee konteinerite kontrollpunkt enne lükkamist |
-| `rdc backup list --storage <storage>` | Loenda mäluhoidlas saadaolevad varukoopiad |
+| `rdc backup manifests <repo-ref>` | Loenda tükksalvestuses olevad tõmmised |
+| `rdc backup browse <repo-ref>` | Loenda repositooriumi sisu failid (lokaalne, kirjutuskaitstud) |
 | `rdc backup snapshot <repo>` | Laadi üles tükksalvestuse tõmmis: kõigepealt kogu sisu, siis ainult muutunud rakud |
 | `rdc backup snapshot <repo> --dry-run` | Planeeri tõmmis ilma üles laadimata; näitab, mis liiguks |
 | `rdc backup verify <repo>` | Kinnita hoidla varunduse ankur tükksalvestuse vastu |

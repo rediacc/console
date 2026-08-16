@@ -4,8 +4,8 @@ description: "Краткая справка по rdc: конфиги, репоз
 category: Guides
 order: 3
 language: ru
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # Шпаргалка по CLI RDC
@@ -44,12 +44,11 @@ sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 
 | Команда | Описание |
 |---------|----------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Отправить резервную копию репозитория в хранилище |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Восстановить репозиторий из хранилища |
 | `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Ограничить пропускную способность rsync при получении |
 | `rdc repo push ... --checkpoint` | Создать контрольную точку контейнеров перед отправкой |
-| `rdc backup list --storage <storage>` | Список доступных резервных копий в хранилище |
+| `rdc backup manifests <repo-ref>` | Список снимков, хранящихся в чанковом хранилище |
+| `rdc backup browse <repo-ref>` | Список файлов, содержащихся в репозитории (локально, только для чтения) |
 | `rdc backup snapshot <repo>` | Загрузить снимок в чанковое хранилище: сначала полный инвентарь, затем только измененные ячейки |
 | `rdc backup snapshot <repo> --dry-run` | Спланировать снимок без загрузки; сообщает, что переместилось бы |
 | `rdc backup verify <repo>` | Проверить якорь резервной копии репозитория по чанковому хранилищу |

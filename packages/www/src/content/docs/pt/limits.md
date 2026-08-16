@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: pt
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Limites e Quotas
@@ -136,15 +136,35 @@ A migração ao vivo via CRIU tem as seguintes restrições:
 
 | Limite | Valor |
 |-------|-------|
-| Destinos de cópia de segurança por repositório | Ilimitado |
-| Tarefas de cópia de segurança simultâneas | 1 por repositório (as tarefas ficam em fila se acionadas em simultâneo) |
+| Snapshots por repositório | Sem limite além da sua quota de armazenamento. Cada snapshot é restaurável de forma independente, pelo que manter mais deles custa apenas espaço de armazenamento, e mais nada |
+| Snapshots simultâneos de um repositório | 1. Uma segunda execução encontra o bloqueio de preparação do repositório já detido e é **ignorada**, não colocada em fila: reporta que outra execução o detém e termina. Volte a executá-la depois |
 | Snapshots a frio simultâneos | 1 por datastore; um segundo `renet backup snapshot --cold` é recusado de imediato e não para nada |
 | Frequência de cópia de segurança | Sem intervalo mínimo imposto; limitado pela largura de banda do seu armazenamento. Use `rdc backup strategy set <name> --bwlimit "6M"` para limitar a velocidade de envio |
-| Retenção | Declarada com `rdc backup retention set` (parâmetros GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e imposta no servidor; `rdc backup retention clear` remove-a. O armazenamento em chunks é medido contra uma quota do plano como bytes físicos únicos armazenados, pelo que a deduplicação entre snapshots e em toda uma família de forks é contada apenas uma vez: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, consultável com `rdc backup usage`. O caminho legado de storage-push não tem retenção própria e é regido pelo seu fornecedor de armazenamento. |
+| Retenção | Declarada com `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e imposta no servidor; `rdc backup retention clear` remove-a, e a partir daí todos os snapshots são mantidos |
 | Cópia de segurança entre máquinas | Suportado; a máquina de destino deve ter espaço suficiente no datastore |
 
----
+### Quota de armazenamento de backup
 
+Os snapshots vão para o armazenamento em chunks, medido por subscrição em **bytes físicos únicos armazenados**: o que está efetivamente retido após a deduplicação, não a soma do que os seus snapshots representam logicamente. Snapshots que partilham dados, e repositórios da mesma família de forks, contam esses dados uma única vez.
+
+| Plano | Quota | Mostrado por `rdc backup usage` como |
+|------|-------|-------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Estes são os valores predefinidos do plano. Uma subscrição pode ter a sua própria substituição, por isso verifique `rdc backup usage` em vez de presumir a linha acima.
+
+A quota é imposta antes de qualquer dado se mover: um snapshot que a excederia é recusado quando a máquina pede permissão para enviar, e não a meio da transferência. Ficar exatamente na quota é permitido; um byte a mais é recusado. O que conta como usado inclui envios ainda em curso, pelo que duas execuções simultâneas não conseguem, ambas, encaixar-se por baixo do limite.
+
+Exceder a quota nunca apaga nada. Interrompe novos envios, e os snapshots que já tem permanecem onde estão.
+
+Se uma subscrição caducar, o armazenamento de backup fica só de leitura: os snapshots existentes continuam legíveis e não é possível enviar novos. Esses dados são mantidos durante **60 dias** após a caducidade, após os quais uma única limpeza os remove. Um reembolso em aberto na organização congela essa limpeza em vez de a executar.
+
+As cópias máquina a máquina feitas com `rdc repo push` não afetam esta quota. Ficam alojadas no datastore da máquina de destino, limitadas pelo seu espaço livre.
+
+---
 ## CLI e API
 
 | Limite | Valor |

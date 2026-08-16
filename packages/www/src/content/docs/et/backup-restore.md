@@ -1,26 +1,63 @@
 ---
 title: "Varundamine ja taastamine"
-description: "Varunda krüpteeritud repositooriumeid kahel viisil: sisupõhiselt aadresseeritud tükksalvestusse, mis laadib üles ainult muutunud rakud, või täieliku push'iga mis tahes rclone-ühilduvasse salvestusse. Taasta mis tahes masinal ja automatiseeri nimetatud strateegiate ning systemd-taimerite abil."
+description: "Tee krüpteeritud repositooriumidest hetktõmmiseid sisupõhiselt aadresseeritud tükksalvestusse, kus laaditakse üles ainult muutunud rakud ja iga hetktõmmis taastub otse. Või hoia koopiat teisel masinal. Taasta kus tahes ja automatiseeri nimetatud strateegiate ning systemd-taimerite abil."
 category: "Guides"
 order: 7
 language: et
-sourceHash: "df8a9d53f6991817"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "91f6072e230b059c"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Varundamine ja taastamine
 
-Rediacc saab varundada krüpteeritud repositooriumeid väliste salvestusteenuste pakkujatele ja taastada neid samadel või erinevatel masinatel. Varukopiad on krüpteeritud; repositooriumi LUKS-volitus on taastamiseks vajalik.
+Rediacc varundab krüpteeritud repositooriumeid ja taastab neid samal või erineval masinal. Varukopiad on krüpteeritud, sest repositoorium ise on seda: masinast lahkub šifreeritud tekst, ning taastamiseks on vajalik repositooriumi LUKS-volitus.
 
-## Kaks varundamisviisi
+Varundamiseks on kaks viisi, ja need vastavad eri küsimustele.
 
-Rediacc'il on kaks sõltumatut varundamisviisi ja see juhend käsitleb mõlemat. Need kasutavad erinevat salvestust ja erinevaid käske, seega üht viisi kasutades varundatud repositoorium ei ole teise viisi kaudu varundatud.
+- **Hetktõmmised tükksalvestusse** (`rdc backup snapshot`) hoiavad ajalugu, mille kaudu saad tagasi minna. See on peamine tee.
+- **Koopia teisel masinal** (`rdc repo push`, `rdc repo pull`) hoiab repositooriumi sellisena, nagu see praegu on, riistvaral, mida sina kontrollid. Pilvekontot ei kaasata.
 
-**Tükksalvestus** (`rdc backup snapshot`) laadib repositooriumi tõmmise üles fikseeritud suurusega rakkudena, mis on aadresseeritud oma sisu järgi. Esimene käivitus laadib üles kogu nullist erineva sisu; iga järgnev käivitus laadib üles ainult muutunud rakud, mis otsustatakse failisüsteemi eraldusmetaandmete, mitte kogu tõmmise lugemise põhjal. Identsed rakud salvestatakse üks kord kõigi tõmmiste ja kogu forkide perekonna ulatuses, ning kasutust arvestatakse sinu salvestuskvoodi vastu (`rdc backup usage`).
+Need on sõltumatud. Ühel viisil varundatud repositoorium ei ole teisel viisil varundatud.
 
-**Salvestuse push on kaotatud.** `rdc repo push --to <storage>` kopeeris varem terve varufaili rclone-ühilduvasse teenusepakkujasse, mille registreerisid ise. rclone-haru on täielikult eemaldatud ning push, pull, list ja restore keelduvad nüüd salvestussihtmärgist ja suunavad sind siia. Masinalt masinale ülekanne jääb puutumata: see ei käinud kunagi rclone kaudu.
+## Kuidas hetktõmmised töötavad
 
-Taastamine tükksalvestusest toimib: `rdc backup restore <repo> --at <snapshot-id>` teostab salvestatud hetktõmmise, ja `--at` aktsepteerib ka RFC 3339 ajatempli, mis lahendatakse hetktõmmise inventuuri vastu. Lisage `--as <name>` taastamiseks erineva nimega ja `--up` repositooriumi pärast juurutamiseks. Tükksalvestus annab ka üleslaadimist (`rdc backup snapshot`), kinnitamist (`rdc backup verify`, ja `--deep` iga raku uuesti räsimiseks, mitte proovi asemel), hetktõmmiste inventuuri (`rdc backup manifests`) ja kvootide arvestust (`rdc backup usage`).
+Repositooriumi tõmmis lõigatakse fikseeritud võrgustikul fikseeritud suurusega rakkudeks. Iga rakk on kas auk, mis tähendab, et sinna pole kunagi midagi kirjutatud, või salvestatakse see võtme all, mis **on** selle raku šifreeritud teksti SHA-256.
+
+Sellest ühest otsusest tulenevad kõik omadused.
+
+**Ainult tegelikud muudatused maksavad midagi.** Esimene hetktõmmis laadib üles iga kirjutatud raku. Iga järgnev käivitus küsib failisüsteemilt, millised extendid puudutati, loeb ja räsib ainult neid ning laadib üles ainult need rakud, mida hoidla veel ei oma. Repositoorium, mille andmed vaevu liikusid, laadib üles peaaegu mitte midagi, ja käivitus võtab minuteid, mitte nii kaua kui tõmmis on suur.
+
+**Identsed andmed salvestatakse üks kord.** Kuna võti on sisu räsi, jagavad kaks hetktõmmist, mis jagavad üht rakku, sama objekti, ja sama kehtib repositooriumi ja tema [forkide](/et/docs/tutorial-forking) kohta: forkide perekond varundab ühe päritolu vastu, selle asemel et oma vanemat dubleerida.
+
+**Vana hetktõmmise taastamine ei ole aeglasem kui hiljutise taastamine.** Ahelat inkrementidest, mida läbi mängida, ei ole. Taastamine lahendab hetktõmmise täielikuks rakkude nimekirjaks ja toob need rakud otse, seega järgib taastamisaeg tõmmise suurust ja sinu ribalaiust, mitte seda, kui kaua oled varukopiaid teinud. Augud jäävad aukudeks, seega hõre tõmmis taastub hõredana, ja rakk, mis esineb tõmmises mitmes kohas, laaditakse alla üks kord.
+
+**Iga hetktõmmis seisab omal jalal.** Ei ole "täisvarukoopiat", mida sa ei tohi kaotada, ega akent, kus katkine inkrement muudab hilisemad kehtetuks. Iga hetktõmmis nimekirjas on otse taastatav.
+
+**Kinnitamine tähendab uuesti räsimist, mitte usaldamist.** Kuna võti on sisu räsi, tähendab varukoopia kontrollimine rakkude toomist ja räsimist. `rdc backup verify` võtab proove; `rdc backup verify --deep` räsib uuesti iga salvestatud raku.
+
+**Katkenud käivitus ei ole raisatud.** Üleslaadimine jätkub ilma juba kohale jõudnud rakke uuesti saatmata, ja osalise taastamise taaskäivitamine räsib uuesti selle, mis on juba kettal, ja kasutab seda uuesti, selle asemel et see uuesti alla laadida.
+
+### Mis see sulle maksma läheb
+
+Kvooti loetakse **füüsiliste unikaalsete salvestatud baitidena**: see, mida pärast dedupleerimist tegelikult hoitakse, mitte teie hetktõmmiste loogiline kogusumma. Kolmkümmend hetktõmmist repositooriumist, mis muutub aeglaselt, maksavad peaaegu sama palju kui üks. `rdc backup usage` näitab salvestatud baite sinu kvoodi vastu, mis on tellimusepõhine number, mis algab 10 GB-st Community plaanil.
+
+### Mida hetktõmmised vajavad
+
+Hetktõmmise üleslaadimine käib läbi konto-serveri, mis autoriseerib iga käivituse repositooriumi paigaldatud litsentsi vastu ja annab masinale lühiajalise kirjutusõiguse. Seega vajab see tee konto-serverit, mille masin saab kätte, ja litsentseeritud repositooriumi. Ilma nendeta lükatakse hetktõmmis tagasi, selle asemel et vaikselt vahele jätta, ja `rdc backup manifests`, `rdc backup usage` ning `rdc backup retention` ei leia midagi lugeda.
+
+See kehtib ka `--dry-run` kohta. Litsentsi loetakse enne, kui käivitus otsustab, kas ta planeerib või laadib üles, seega on proovikäivitus töö eelvaade, mitte viis proovida käsku ilma volitusteta.
+
+Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina vahel, mis on juba sinu konfiguratsioonis.
+
+### Mida hetktõmmis ei luba
+
+- **Hetktõmmis katab ühe repositooriumi, mitte kogu sinu masinat korraga.** Iga repositoorium jäädvustatakse omal hetkel. Kui kaks repositooriumi sõltuvad teineteisest, ei ole nende hetktõmmised koordineeritud paar.
+- **See ei ole pidev replikatsioon.** Hetktõmmis on hetk, mille sa jäädvustasid, ja sa võid kaotada kõik, mis on kirjutatud alates viimasest. Kui palju see on, sõltub sellest, kui sageli sa käivitad.
+- **Salvestatud objektid on üks kord kirjutatavad, mitte sertifitseeritud WORM.** Rakud kirjutatakse ainult-loomise tingimusega, masina saadav õigus ei saa midagi kustutada, ja kustutamised toimuvad serveripoolselt säilituspoliitika alusel. See on tõeline tõke kompromiteeritud masinale, mis hävitab oma varukopiad. See ei ole vastavussertifikaat ja seda ei auditeerita sellisena.
+
+### rclone salvestustee on kadunud
+
+`rdc repo push --to <storage>` ja tema sugulased kopeerisid varem terve varufaili pilveteenuse pakkujasse, mille sa ise registreerisid. Need keelduvad nüüd salvestussihtmärgist ja nimetavad selle asendaja. Masina-masina ülekanne ei käinud kunagi rclone kaudu ega ole mõjutatud. Kui pead endiselt lugema sel viisil kirjutatud arhiivi, vaata [Enne kaotamist kirjutatud arhiivi lugemine](#enne-kaotamist-kirjutatud-arhiivi-lugemine).
 
 ### Tükksalvestuse käsud
 
@@ -30,6 +67,9 @@ rdc backup snapshot my-app
 
 # Planeeri ilma üles laadimata: näitab, mis liiguks.
 rdc backup snapshot my-app --dry-run
+
+# Peata konteinerid, külmuta, käivita uuesti, seejärel laadi üles.
+rdc backup snapshot my-app --cold
 
 # Ära usalda kohalikku ankrut ja laadi kogu sisu uuesti üles.
 # See laadib kõik uuesti üles ja arvestab kvoodi uuesti; kasuta
@@ -41,6 +81,14 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+| Valik | Kirjeldus |
+|--------|-------------|
+| `<repo-ref>` (positsiooniline) | Hetktõmmise repositoorium |
+| `--dry-run` | Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks |
+| `--cold` | Peata konteinerid, külmuta, käivita uuesti, seejärel laadi üles. Ei saa kombineerida `--dry-run`-iga |
+| `--reseed` | Ära usalda kohalikku ankrut ja laadi üles täielik sisu. Laadib kõik uuesti üles ja arvestab kvoodi uuesti |
+| `--debug` | Luba detailne väljund |
 
 ## Külmad hetktõmmised (`--cold`)
 
@@ -114,47 +162,39 @@ Keeldumine ongi siin see väärtus. Külmaks nimetatud varukoopia, mis ei peatan
 
 Kui käivitus katkeb ajal, mil konteinerid on all, näiteks `systemctl stop` või taaskäivituse tõttu, käivitab renet need enne väljumist uuesti. Masina taastus on varuvõrk: see märkab külma varukoopiat, mille omanik on kadunud, ja toob need repositooriumid tagasi üles.
 
-## Salvestuse seadistamine
-
-Enne varukoopiaid, registreeri salvestusteenuse pakkuja. Rediacc toetab mis tahes rclone-ühilduvat salvestust: S3, B2, Google Drive ja palju muud.
-
-### Importimine rclone'ist
-
-Kui sul on juba rclone-kaughoidla konfigureeritud:
-
-```bash
-rdc storage import rclone.conf
-```
-
-See impordib salvestuskonfiguratsioone rclone-konfiguratsioonifailist praegusesse konfiguratsiooni. Toetatud tüübid: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ja Swift.
-
-### Salvestuste vaatamine
-
-```bash
-rdc storage list
-```
-
 ## Varukoopia saatmine teise masinasse
 
 Kopeeri repositoorium SSH kaudu teise masinasse:
 
 ```bash
-rdc repo push my-app --to-machine server-1
+rdc repo push my-app --to server-1
 ```
 
+`--to <machine>` lahendab sihtkoha sinu konfiguratsioonist ja `--to-machine <machine>` ütleb sama asja selgesõnaliselt. Salvestuse nimi lükatakse tagasi: see tee on kaotatud.
+
 Krüpteeritud tõmmis kopeeritakse SAMA GUID-iga, seega on tegu varukoopia või migratsiooniga, mitte fork'iga. Sõltumatu koopia saamiseks käivita kõigepealt `rdc repo fork` ja saada fork.
+
+Esimene saatmine kannab kogu tõmmise. Iga järgnev saatmine saadab ainult muutunud plokid muutumatu baastõmmise vastu, mida hoitakse mõlemal masinal, ilma et peaksid ühtegi lippu seadma. `--delta-base <guid>` nimetab selle baasi ise, kui vaja.
+
+Saadetud koopia jõuab sihtkohta varukoopia artefaktina, mitte töötava repositooriumina. Muuda see üheks käsuga `rdc backup restore`:
+
+```bash
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
 
 Kindla ajahetke varundamiseks kasuta selle asemel tükksalvestust: `rdc backup snapshot my-app` laadib üles ainult muutunud rakud ning `rdc backup restore my-app --at <snapshot>` toob need tagasi.
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--to-machine <machine>` | Sihtmasin masina-masina varundamiseks |
-| `--dest <filename>` | Kohandatud sihtfaili nimi |
+| `<ref>` (positsiooniline) | Saadetava repositooriumi viide |
+| `--to <remote>` | Sihtmasin või -klaster |
+| `--to-machine <machine>` | Sihtmasin, selgesõnaliselt märgitud |
+| `--provision <provider>` | Sihtmasina provisioneerimine selle pilveteenuse pakkuja kaudu, kui see ei eksisteeri |
 | `--checkpoint` | Loob CRIU kontrollpunkti enne saatmist (konteineritele, millel on silt `rediacc.checkpoint=true`). Sihtmärk taastab automaatselt käsuga `repo up` |
 | `--force` | Kirjuta olemasolev varukoopia üle |
 | `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`, `500K`) |
-| `--tag <tag>` | Märgista varukoopia |
-| `-w, --watch` | Jälgi toimingu edenemist |
+| `--delta-base <guid>` | Kanna üle ainult muutunud plokid võrreldes selle muutumatu baas-GUID-iga. Jäta ära automaatse baasi jaoks |
+| `--strategy <strategy>` | Plokk-delta strateegia delta-baasi kasutamisel: `auto`, `physical` või `shared` |
 | `--debug` | Luba detailne väljund |
 | `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
 
@@ -163,20 +203,23 @@ Kindla ajahetke varundamiseks kasuta selle asemel tükksalvestust: `rdc backup s
 Too repositoorium tagasi masinast, kus see asub:
 
 ```bash
-rdc repo pull my-app --from-machine server-1
+rdc repo pull my-app --from server-1
 ```
 
-Tükksalvestusest taastamiseks kasuta selle asemel käsku
-`rdc backup restore my-app --at <snapshot-id>`.
+Lisa `--up`, et see samas käsus ühendada ja juurutada. Tükksalvestusest taastamiseks kasuta selle asemel käsku `rdc backup restore my-app --at <snapshot-id>`.
 
 Pull keeldub üle kirjutamast repositooriumi, mis on hetkel **ühendatud**. Ühenda see kõigepealt lahti, tee pull ja too see siis tagasi käsuga `rdc repo up`. Kaustapõhised repositooriumid on erand: need sünkroonivad end kohapeal ka ühendatuna.
 
 | Valik | Kirjeldus |
 |--------|-------------|
-| `--from-machine <machine>` | Lähtemašin masina-masina taastamiseks |
+| `<ref>` (positsiooniline) | Tõmmatava repositooriumi viide |
+| `--from <remote>` | Lähtemasin või -klaster |
+| `--from-machine <machine>` | Lähtemasin, selgesõnaliselt märgitud |
 | `--force` | Kirjuta olemasolev kohalik varukoopia üle |
+| `--up` | Ühenda ja juuruta repositoorium pärast tõmbamist |
 | `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`, `500K`) |
-| `-w, --watch` | Jälgi toimingu edenemist |
+| `--delta-base <guid>` | Võta vastu ainult muutunud plokid võrreldes selle muutumatu baas-GUID-iga |
+| `--strategy <strategy>` | Plokk-delta strateegia delta-baasi kasutamisel: `auto`, `physical` või `shared` |
 | `--debug` | Luba detailne väljund |
 | `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
 
@@ -188,61 +231,119 @@ Loetle tükksalvestuses olevad hetktõmmised:
 rdc backup manifests my-app
 ```
 
-Masinal olevate varunduskoopiate nägemiseks:
+Iga rida on üks salvestatud ajahetk:
+
+| Veerg | Tähendus |
+|---|---|
+| `Repo` | Repositooriumi nimi, lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) |
+| `Snapshot` | Hetktõmmise id. Seda võtab `rdc backup restore --at` |
+| `Created` | UTC-aeg, millal hetktõmmis tehti |
+| `Total` | Repositooriumi tõmmise suurus, mida see hetktõmmis esindab |
+| `Added` | Baidid, mille see hetktõmmis tegelikult üles laadis lisaks eelnevatele |
+| `Chunks` | Mitu rakku see lisas |
+
+Et näha, mida `rdc repo push --to <machine>` sihtkohta jättis, küsi sellelt masinalt, mida ta hoiab:
 
 ```bash
-rdc backup list -m server-1
+rdc repo list --machine server-1
 ```
 
-Väljund loetleb hetktõmmised, mida tükksalvestus selle repositooriumi jaoks hoiab:
+Saadetud koopia ilmub oma nime all. Teine rida, mis kannab kõrval toorest GUID-i, on säilitatud delta-baas, mis teeb järgmise saatmise sellele masinale inkrementaalseks, mitte täielikuks ülekandeks.
+
+`rdc backup list --machine <machine>` loeb `hot/` ja `cold/` kaustu, kuhu ajastatud käivitused kirjutavad, seega on see vale tööriist koopia jaoks, mille saatmine sinna jättis, ega näita sulle midagi.
 
 | Veerg | Tähendus |
 |---|---|
 | `Mode` | `hot` või `cold`. Milline ajastatud varundamise kaust see kirje asub |
-| `Name` | Repositooriumi nimi, mis on lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) |
+| `Name` | Repositooriumi nimi, lahendatud sinu kohalikust konfiguratsioonist (langeb tagasi GUID-ile repo-de puhul, mida konfiguratsioonis pole) |
 | `GUID` | Kettal olev repositooriumi GUID |
 | `Size` | Inimloetav varukoopifaili suurus |
-| `Modified` | UTC ajatempel salvestusteenuse pakkujalt |
+| `Modified` | UTC ajatempel failist masinal |
 
 Salvestusliidese loetlemine on kaotatud koos rclone-haruga; käsk keeldub ja nimetab need kaks asendust.
 
-### Mida hot ja cold tegelikult tähendavad
+## Säilitamine
 
-`--mode hot` ja `--mode cold` kirjeldavad, kuidas repositooriumi varukoopia võtmise ajal koheldakse, mitte seda, kuhu andmed jõuavad.
+Server jõustab andmehoidla kohta repositooriumipõhist säilituspoliitikat tükksalvestuse üle, nii et vanad hetktõmmised kärbitakse ilma, et sa peaksid midagi käsitsi kustutama. Deklareerimata poliitika korral säilitatakse iga hetktõmmis.
 
-**Hot** teeb hetktõmmise töötavast repositooriumist. Konteinerid jätkavad teenindamist ja tõmmis jäädvustatakse kesk kirjutamist, seega on varukoopia krahhi-järjepidev: täpselt selline, nagu saaksid siis, kui masinal sel hetkel vool kaoks. See sobib kõigele, mis taastub oma logist, ehk enamikule andmebaasidele.
+```bash
+# Mida praegu jõustatakse.
+rdc backup retention my-app
 
-**Cold** peatab kõigepealt konteinerid, kirjutab kettale, kontrollib, et need on peatunud, külmutab tõmmise ja alles siis käivitab konteinerid uuesti. See maksab tõelise seisaku, kuid see seisak on konstantse kestusega külmutus, mitte ülekanne, ja tulemus on rakenduse-järjepidev.
+# Hoia rulluvat akent: 7 päevast, 4 nädalast, 6 kuist.
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-Mõlemad kirjutavad samasse tükksalvestusse. Rakud on aadresseeritud sisu järgi, seega repositoorium, mida varundatakse nii tunnise hot- kui ka iganädalase cold-ajakavaga, salvestab jagatud rakud üks kord, mitte kaks, ja ka forkide perekond jagab neid. Kasutust arvestatakse sinu kvoodi vastu käsuga `rdc backup usage`.
+# Mine tagasi kõige säilitamise juurde.
+rdc backup retention clear my-app
+```
+
+| Valik | Kirjeldus |
+|--------|-------------|
+| `--keep-last <n>` | Säilita see arv kõige uuemaid hetktõmmiseid |
+| `--keep-hourly <n>` | Säilita kõige uuem hetktõmmis igast neist tundidest |
+| `--keep-daily <n>` | Säilita kõige uuem hetktõmmis igast neist päevadest |
+| `--keep-weekly <n>` | Säilita kõige uuem hetktõmmis igast neist nädalatest |
+| `--keep-monthly <n>` | Säilita kõige uuem hetktõmmis igast neist kuudest |
+| `--keep-yearly <n>` | Säilita kõige uuem hetktõmmis igast neist aastatest |
+
+Anna vähemalt üks reegel. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`.
+
+## Taastamine
+
+`rdc backup restore` muudab varukoopia toimivaks repositooriumiks, ja see on sama käsk mõlema tee jaoks. Erinevus on selles, millele sa selle suunad.
+
+```bash
+# Ajahetk tükksalvestusest.
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+
+# Artefakt, mille saatmine masinale jättis.
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
+
+`--at` võtab hetktõmmise id käsust `rdc backup manifests` või RFC 3339 aja, näiteks `2026-08-14T12:00:00Z`, mis lahendatakse kõige uuemaks hetktõmmiseks, mis on tehtud sellel hetkel või varem. Aeg, millele ei eelne hetktõmmist, lükatakse tagasi, selle asemel et see edasi ümardada.
+
+Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastamise harjutus ohutu käivitada elava masina vastu. Taastamine juba olemasoleva nime alla lükatakse tagasi.
+
+| Valik | Kirjeldus |
+|--------|-------------|
+| `<artifact-ref>` (positsiooniline) | Mida taastada. `repo` tükksalvestuse hetktõmmise jaoks, `repo@place` masinal oleva artefakti jaoks |
+| `--as <name>` | Taastatud repositooriumi nimi (vaikimisi artefakti nimi) |
+| `-m, --machine <machine>` | Masin, kuhu taastada |
+| `--datastore <name>` | Taasta sellesse nimetatud andmehoidlasse, mille ühendatud masin seda majutab |
+| `--at <time>` | Taasta ajahetk: hetktõmmise id või RFC 3339 aeg |
+| `--up` | Juuruta taastatud repositoorium pärast ülekannet |
+| `--health-window <seconds>` | Kui kaua jälgida juurutatud repositooriumi tervist |
+| `--health-timeout <seconds>` | Kui kaua oodata, kuni see saab terveks |
+| `-y, --yes` | Jäta kinnitus vahele |
+| `--debug` | Luba detailne väljund |
+
+Repositooriumi taastamine vajab selle LUKS-volitust, mis elab sinu konfiguratsioonis. Kui sul on konfiguratsiooni salvestus lubatud, tuleb see volitus tagasi koos sinu konfiguratsiooniga uuel masinal. Kui mitte, hoia konfiguratsiooni koopiat kuskil, kuhu ebaõnnestuv masin seda endaga kaasa ei võta.
+
+### Taastamise tõestamine igal masinal
+
+Masin, mis pole kunagi täisringi läbinud, ei ole varundatud, ükskõik kui roheliseks tema üleslaadimised tunduvad. Üleslaadimised ja taastamised ebaõnnestuvad erinevatel põhjustel, ja teist tüüpi näed ainult siis, kui proovid.
+
+Tee seda üks kord masina kohta, enne kui varukoopiatele lootma jääd:
+
+1. Tee hetktõmmis: `rdc backup snapshot my-app`.
+2. Kinnita, et see on salvestatud: `rdc backup manifests my-app`.
+3. Taasta see äravisatava nime alla: `rdc backup restore my-app --as my-app-drill --at <snapshot-id>`.
+4. Võrdle taastatud repositooriumi algallikaga, siis kustuta harjutuskoopia käsuga `rdc repo delete my-app-drill --yes`.
+
+Miski selles jadas ei puuduta elavat repositooriumi, seega on see ohutu masinal, mis teenindab liiklust. Kui liigud üle vanemalt varundusskeemilt, hoia seda töös, kuni see on sellel masinal vähemalt korra läbinud. Kaks varundusteed maksavad salvestusruumi; üks tõestamata tee maksab andmed.
 
 ## Sünkroniseeri üks repositoorium korraga
 
 Push ja pull toimivad korraga ühe repositooriumi peal, mis on adresseeritud viitega (`name`, `name:tag` või `name@machine`). Vormi "kõik repositooriumid korraga" ei ole: käivita käsk iga repositooriumi jaoks eraldi.
 
-### Saada teise masinasse
+Viide, mis nimetab forki ja masinat, toimib samamoodi nagu tavaline nimi:
 
 ```bash
-rdc repo push shop@server-1 --to-machine server-2
+rdc repo push shop:nightly@server-1 --to server-2
+rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-### Tõmba teisest masinast
-
-```bash
-rdc repo pull shop@server-1 --from-machine server-2
-```
-
-| Valik | Kirjeldus |
-|--------|-------------|
-| `--to-machine <machine>` | Sihtmasin masina-masina saatmiseks |
-| `--from-machine <machine>` | Lähtemašin masina-masina tõmbamiseks |
-| `--force` | Kirjuta olemasolev varukoopia või repositoorium üle |
-| `--checkpoint` | Loo enne saatmist CRIU kontrollpunkt (ainult saatmine) |
-| `--up` | Ühenda ja juuruta repositoorium pärast tõmbamist (ainult tõmbamine) |
-| `--bwlimit <limit>` | Ribalaiuse piirang rsync-ülekandele (nt `10M`) |
-| `--delta-base <guid>` | Kanna üle ainult muutunud plokid võrreldes muutumatu baas-GUID-iga |
-| `--debug` | Luba detailne väljund |
-| `--skip-router-restart` | Jäta marsruudiserverit pärast toimingut taaskäivitamata |
+Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#varukoopia-saatmine-teise-masinasse) ja [Varukoopia tõmbamine teisest masinast](#varukoopia-tõmbamine-teisest-masinast) all.
 
 ## Ajastatud varundamine
 
@@ -252,7 +353,7 @@ Rediacc kasutab nimetatud varundamisstrateegiaid. Iga strateegia määratleb aja
 
 | Režiim | Käitumine | Seisakuaeg |
 |------|----------|----------|
-| `hot` | BTRFS-hetktõmmis võetakse teenuste töötamise ajal (krahhi-ühilduvalt) | Puudub |
+| `hot` | Repositooriumi tõmmis külmutatakse, samal ajal kui teenused jätkavad tööd (krahhi-ühilduvalt) | Puudub |
 | `cold` | Teenused peatatakse, hetktõmmis võetakse, teenused taaskäivitatakse, hetktõmmis laaditakse üles (rakenduse-ühilduvalt) | Repo-kohane peatus+käivitus aken, paralleelselt repo-dega. Vaata "Külma varundamise seisakuaja hindamine" allpool. |
 
 Kasuta `hot` teenuste puhul, mis taluvad krahhi-ühilduvaid hetktõmmiseid. Kasuta `cold`, kui vajad garanteeritud järjepidevust ja saad lühikest taaskäivitust taluda.
@@ -280,7 +381,7 @@ Külm varundamine käib kolmes faasis kaasatud repo kohta: **peatus → hetktõm
 
 - `rdc machine status <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
-- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
+- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittetühi `failed_repos` on grep-sihtmärk.
 
 ### Külma varundamise seisakuaja hindamine
 
@@ -292,7 +393,7 @@ Iga repo on maas ainult oma `down()` + `up()` akna jooksul. Soojal hostil on nee
 | Keskmine (veebirakendus + vahemälu) | 20-45 s |
 | Raske (DB + järjekorrad + meil) | 60-120 s |
 
-Hetktõmmise samm (`btrfs subvolume snapshot -r`) on O(1) olenemata repo suurusest: 0,1-1 s. Repo ei ole maas teiste repo-de hetktõmmiste tõttu. Laadija käivitatakse siis kirjutuskaitstud hetktõmmise vastu, samal ajal kui kõik repo-d on juba jälle üleval.
+Külmutamise samm on repositooriumi tõmmise kirjutamisel-kopeeriv reflink. See koosneb ainult metaandmetest, seega võtab sama palju aega, hoiab repositoorium siis 1 GB või 100 GB, ning mõõdetud käivitusel ei paistnud see millisekundilise täpsuse juures üldse välja. Repo ei ole maas teiste repo-de külmutamise ajal. Üleslaadija käivitatakse siis külmutatud koopia vastu, samal ajal kui iga repo on juba jälle üleval.
 
 **Kogu käivituse kogu seinakell** sõltub sellest, mitu repo-d taaskäivituvad samaaegselt. Renet tuletab selle hostist:
 
@@ -310,7 +411,7 @@ Näited:
 
 **Ülekate keskkonna kaudu:** sea `REDIACC_COLD_BACKUP_CONCURRENCY=N` varundamisteenuse keskkonnas (tavaliselt systemd drop-in kaudu), et kinnitada konkreetne väärtus. `=1` sunnib rangelt jadaviisilisi taaskäivitusi, mis on kasulik ühe repo `up()` konksus crashloop'i silumisel.
 
-Kui käitad latentsuse suhtes tundlikku repo-t (avalik veebirakendus, meil), on selle seisakuaeg piiratud oma peatus+käivitus ajaga (tavaliselt 30-90 s), mitte kogu käivituse pikkusega. Repo-d ajastatatakse samaaegsuse slottidesse avastamise järjekorras; prioriteedijonot pole. Jaga rasked repo-d oma `--exclude`-ulatusega strateegiatesse, kui vajad täpsemat ajastamist.
+Kui käitad latentsuse suhtes tundlikku repo-t (avalik veebirakendus, meil), on selle seisakuaeg piiratud oma peatus+käivitus ajaga (tavaliselt 30-90 s), mitte kogu käivituse pikkusega. Repo-d ajastatakse samaaegsuse pesadesse avastamise järjekorras; prioriteedijonot pole. Anna raskete repo-de jaoks oma `--include`-ulatusega strateegia, kui vajad täpsemat ajastamist.
 
 ### Pikalt kestvad varukopiad ja kattuvad ajakavad
 
@@ -323,13 +424,13 @@ Konkreetselt näide, kus käivitus algab esmaspäeval kell 03:00 UTC ja lõpeb n
 | Esmaspäev | Esimene käivitus | Käivitus algab |
 | Teisipäev | Teine käivitus | Langetatakse vaikselt (eelmine käivitus on veel aktiivne) |
 | Kolmapäev | Kolmas käivitus | Langetatakse vaikselt (eelmine käivitus on veel aktiivne) |
-| Neljapäev | Käivitus lõpeb lõunal | Järelehoiavat käivitust pole; järgmine käivitus on reede kell 03:00 UTC |
+| Neljapäev | Käivitus lõpeb lõunal | Järelejõudmist pole; järgmine käivitus on reede kell 03:00 UTC |
 
 Taimeri `Persistent=true` direktiiv **ei** päästa neid käivitusi. `Persistent=true` kordab käivitusi, mis jäid vahele, kuna taimer ise oli mitteaktiivne (süsteem väljas, taimer keelatud). Käivitused, mis langetati, kuna teenus oli hõivatud, on kadunud.
 
-See vaikeväärtus on tahtlik. Kahe külma varukoopia paralleelne käivitamine sama andmesalve vastu konkureeriks BTRFS-hetktõmmise teel, rclone-kaughoidlal ja repo-kohastele kõrvalfailidel asukohas `/var/run/rediacc/cold-backup-<guid>.status.json`. Pikalt kestava eksemplari taga serialiseerimine on turvaline tulemus.
+See vaikeväärtus on tahtlik. Kahe külma varukoopia paralleelne käivitamine sama andmesalve vastu konkureeriks külmutamisteel, üleslaadimisel ja repo-kohastel kõrvalfailidel asukohas `/var/run/rediacc/cold-backup-<guid>.status.json`. Töötava eksemplari taga ootamine on parem kui samu andmeid kahest suunast koormata. Andmesalve lukk jõustab seda: teine külm käivitus leiab luku hõivatuna ja lükatakse otsemaid tagasi, ilma et miski peatataks.
 
-**Jälgimise tähendus.** Hangiv varukoopia (näiteks rclone, mis on kinni jäänud võrguaugu tõttu) langetab vaikselt kõik järgnevad taimeri käivitused. Ajastaja ei anna häiret. Jälgi `systemctl show <unit> -p ActiveEnterTimestamp`: kui teenus on olnud `activating` kauem kui oodatud käivituse pikkus (näiteks üle 48 h öösel taimeri puhul), uuri.
+**Jälgimise tähendus.** Hangiv varukoopia (näiteks üleslaadimine, mis on kinni jäänud võrguaugu tõttu) langetab vaikselt kõik järgnevad taimeri käivitused. Ajastaja ei anna häiret. Jälgi `systemctl show <unit> -p ActiveEnterTimestamp`: kui teenus on olnud `activating` kauem kui oodatud käivituse pikkus (näiteks üle 48 h öösel taimeri puhul), uuri.
 
 **Kui vajad iga ajastatud käivitust**, vaheta taimer `OnCalendar=<cron>` asemel `OnUnitInactiveSec=<interval>` peale. See käivitub N tundi pärast eelmise käivituse lõppu, mitte fikseeritud seinakella ajakava alusel, nii et pikad käivitused ei põhjusta langusi. Need lükkavad lihtsalt järgmist käivitust edasi. Kompromiss on ajakava drift: sinu 03:00 öine muutub "24 h pärast eelmise lõppu".
 
@@ -337,7 +438,7 @@ See vaikeväärtus on tahtlik. Kahe külma varukoopia paralleelne käivitamine s
 
 Iga push töötab ajutise andmehoidla hetktõmmise põhjal, nii et üleslaaditud andmed on järjepidevad isegi siis, kui repositooriumid jätkavad kirjutamist. Varundamise ajal hoiab see hetktõmmis kõiki plokke, mida ta jagab elavate repositooriumidega: kustutamised ja [trimmimised](/et/docs/repositories#ruumi-tagasinõudmine-trim) vabastavad vähem basseiniruumi kuni tsükkel lõpeb ja hetktõmmis kustutatakse. [Salvestuse tervise raport](/et/docs/monitoring#salvestuse-tervis) näitab, kui palju ruumi varukoopia hetktõmmised parajasti kinni hoiavad.
 
-Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb varundamise oma ülekande katkestama ja hetktõmmise enne väljumist kustutama; järgmine ajastatud käivitus jätkab sealt, kus see pooleli jäi, kuna muutmata failid jäetakse kontrollsumma alusel vahele. Kui protsess tapetakse liiga kõvasti puhastamiseks (toitekatkestus), tuvastatakse ja eemaldatakse orvuks jäänud hetktõmmis automaatselt salvestuse hooldaja poolt minutite jooksul.
+Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb varundamise oma ülekande katkestama ja hetktõmmise enne väljumist kustutama; järgmine ajastatud käivitus jätkab sealt, kus see pooleli jäi, kuna juba salvestatud rakke ei laadita uuesti üles. Kui protsess tapetakse liiga kõvasti puhastamiseks (toitekatkestus), tuvastatakse ja eemaldatakse orvuks jäänud hetktõmmis automaatselt salvestuse hooldaja poolt minutite jooksul.
 
 ### Strateegia määratlemine
 
@@ -357,21 +458,25 @@ rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude very-large-repo \
+  --include shop --include mail \
   --enable
 ```
 
-`--exclude` filter külma strateegia puhul on soovitatav pääsetee väga suurte repo-de jaoks, mis ei mahu sinu iganädalasesse hooldusaknasse. Tunnine hot-strateegia katab neid ikka; cold lihtsalt jätab vahele. Repo-nimed `--exclude` valikutes vastavad kohaliku konfiguratsiooni repo-nimele (ilma `:tag`-ita).
+`--destination <name>` nimetab sihtkoha strateegia sees; see on sinu valitud silt ja kirjeldab tükksalvestust. `--include` loetleb varundatavad repositooriumid ja selle kordamine lisab veel. Ära anna see ja strateegia katab iga repositooriumi andmesalves. Nimed vastavad kohaliku konfiguratsiooni repositooriumi nimele (ilma `:tag`-ita).
+
+`--exclude` lükatakse tükksalvestuse sihtkoha puhul tagasi, selle asemel et vaikselt maha visata, sest aluseks olev `backup snapshot` valib repositooriume neid nimetades ega oma iseenda välistust. Selle austamine tähendaks nende repositooriumide varundamist, mille sa palusid välja jätta. Piiritle strateegia selle asemel `--include`-ga, nii et see, mida ajastatud käivitus katab, on kirja pandud, mitte tuletatud.
 
 | Valik | Kirjeldus |
 |--------|-------------|
 | `<strategy>` (positsiooniline) | Strateegia nimi (kasutatakse masinaga sidumiseks) |
-| `--destination <storage>` | Salvestusteenuse pakkuja üleslaadimiseks |
+| `--destination <name>` | Sihtkoha nimi strateegia sees. Vaikimisi tükksalvestus |
+| `--storage <name>` | Vali kaotatud rclone-sihtkoha liik. Seda kasutavat ajakava ei saa juurutada |
 | `--cron <expression>` | Cron-avaldis (nt `"0 2 * * *"` päevaks kell 2) |
 | `--mode <hot\|cold>` | Varundamisrežiim |
 | `--bwlimit <limit>` | Ribalaiuse piirang üleslaadimiseks (nt `10M`) |
-| `--include <pattern>` | Kaasamisfilter (korratav) |
-| `--exclude <pattern>` | Välistusfilter (korratav) |
+| `--include <repos>` | Selle strateegia kaetud repositooriumid (korratav) |
+| `--exclude <repos>` | Vahelejäetavad repositooriumid (korratav). Tükksalvestuse sihtkoha puhul tagasi lükatud |
+| `--folder <path>` | Alamkaust rclone-i bucketi sees. Tükksalvestuse sihtkoha puhul tagasi lükatud |
 | `--enable` / `--disable` | Luba või keela strateegia |
 
 ### Strateegiate vaatamine
@@ -389,7 +494,15 @@ rdc backup strategy remove weekly-cold
 
 ### Strateegiate sidumine masinaga
 
-Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
+Strateegia, mis pole seotud ühegi masinaga, ei juuruta kunagi. Seo üks või mitu masinaga:
+
+```bash
+rdc backup strategy bind hourly-hot --machine hostinger
+rdc backup strategy bind weekly-cold --machine hostinger
+rdc backup strategy unbind weekly-cold --machine hostinger
+```
+
+Sidumine salvestatakse sinu konfiguratsioonis nimekirjana masinal, mida `rdc backup schedule` loeb, et otsustada, milliseid üksuseid juurutada:
 
 ```json
 {
@@ -409,7 +522,7 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
 
 | | Kuum | Külm |
 |---|------|------|
-| **Järjepidevus** | Krahhi-järjepidev (BTRFS-i hetktõmmis käitamise ajal) | Rakenduse-järjepidev (stop → hetktõmmis → start) |
+| **Järjepidevus** | Krahhi-järjepidev (tõmmis külmutatud töötamise ajal) | Rakenduse-järjepidev (stop → hetktõmmis → start) |
 | **Seisak** | Puudub | Repositooriumi kohane stop+start aken (tavaliselt 5-120 s) |
 | **Sobiv sagedus** | Kõrge (nt tunnis) | Madal (nt iga päev või kord nädalas) |
 | **Tüüpiline kasutus** | Sagedane turvavõrk | Ajastatud garanteeritud järjepidevusega varukoopia |
@@ -418,12 +531,14 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
 
 **Külm** on asjakohane, kui vajate garanteeritud rakenduse-järjepidevat hetktõmmist ja saate lubada lühikest repositooriumi kohast taaskäivitust. Teenused peatatakse enne hetktõmmist ja taaskäivitatakse enne üleslaadimise algust, nii et aeglane või ebaõnnestunud üleslaadimine ei pikenda seisakuaknit kunagi. Täieliku garantiimudeli jaoks vaadake [Külma varundamise semantika](#kulma-varundamise-semantika).
 
-### Repositooriumide filtreerimine strateegia järgi
+Mõlemad režiimid kirjutavad samasse tükksalvestusse, ja režiim käib selle kohta, kuidas repositooriumi koheldakse, kui tõmmis on külmutatud, mitte selle kohta, kuhu andmed jõuavad. Repositoorium, mida katavad nii tunnine kuum kui iganädalane külm ajakava, salvestab jagatud rakud üks kord, mitte kaks korda.
 
-Igal strateegial võivad olla `--include` ja `--exclude` filtrid. Repositooriumide nimed, mis vastavad `--exclude` mustrile, jäetakse selle strateegia puhul vahele; `--include` piirab käivitamist ainult nende nimedega. Filtrid vastavad kohaliku konfiguratsiooni repositooriuminimele (ilma `:tag`-ita).
+### Repositooriumide piiritlemine strateegia järgi
+
+Strateegia ilma `--include`-ta katab iga repositooriumi andmesalves. `--include` kordamine kitsendab seda repositooriumidele, mida sa nimetad, vastavuses kohaliku konfiguratsiooni repositooriuminimega (ilma `:tag`-ita).
 
 ```bash
-# Kuum strateegia: varundage kõik tunnis
+# Kuum strateegia: varunda kõik tunnis
 rdc backup strategy set hourly-hot \
   --destination rediacc \
   --cron "0 * * * *" \
@@ -431,27 +546,27 @@ rdc backup strategy set hourly-hot \
   --bwlimit 6M \
   --enable
 
-# Külm strateegia: varundage kõik nädalas, välja arvatud suur tuletatud andmestik
+# Külm strateegia: nädalas, ja ainult repositooriumid, mida on vaja rahustada
 rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude analytics-demo \
+  --include shop --include mail \
   --enable
 ```
 
-### Millal jätta repositoorium kõrgsagedusliku kuuma strateegia vahele
+### Millal jätta repositoorium sagedasest kuumast strateegiast välja
 
-Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
+Nimeta repositooriumid, mida soovid kõrgsageduslikus käivituses, selle asemel et lasta sel kõike võtta, kui:
 
-- Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia raiskab märkimisväärset ribalaiust ilma sisukaid taasteandmeid lisamata.
-- Varundamise käivitamine ületaks oma ajakavaintervallit teie saadaoleval üleslaadimiskiirusel.
+- Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia kulutab ribalaiust ilma taasteväärtust lisamata.
+- Varundamise käivitamine ületaks oma ajakavaintervalli teie saadaoleval üleslaadimiskiirusel.
 
-**Näide.** Repositoorium `analytics-demo` sisaldab ligikaudu 114 GB tuletatud Postgres-tabeleid, mida saab täielikult taastada samas köites juba salvestatud toorest CSV-dumpi failidest. 6 MB/s üleslaadimispiiriga võtab selle repositooriumi üks kuum varukoopia üle 5 tunni. Selle tunnine käivitamine tähendab, et iga käivitamine on veel pooleli, kui järgmine käivitub, mis põhjustab iga järgneva käivitamise vaikse mahajätmise (vaadake [Pikalt kestvad varukopiad ja kattuvad ajakavad](#pikalt-kestvad-varukopiad-ja-kattuvad-ajakavad)). Selle jätmine `hourly-hot`-ist välja ja hoidmine `weekly-cold`-is tähendab, et see varundatakse kord nädalas mitte kunagi asemel.
+**Näide.** Repositoorium `analytics-demo` sisaldab ligikaudu 114 GB tuletatud Postgres-tabeleid, mida saab taastada samas köites juba salvestatud toorest CSV-dumpi failidest. 6 MB/s üleslaadimispiiriga võtab selle repositooriumi esimene hetktõmmis üle 5 tunni. Selle tunnine käivitamine tähendab, et iga käivitamine on veel pooleli, kui järgmine käivitub, mis põhjustab iga järgneva käivituse vaikse mahajätmise (vaadake [Pikalt kestvad varukopiad ja kattuvad ajakavad](#pikalt-kestvad-varukopiad-ja-kattuvad-ajakavad)). Teiste repositooriumide loetlemine `hourly-hot`-is ja `analytics-demo` jätmine `weekly-cold`-i jaoks tähendab, et see varundatakse kord nädalas mitte kunagi asemel.
 
 > **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
 
-Repositoorium, mida kumbki strateegia välja ei jäta, saab hõlmatud mõlema poolt, nii et sellel on tunnised krahhi-järjepidevad hetktõmmised ja üks iganädalane rakenduse-järjepidev hetktõmmis. `rdc backup manifests <repo>` näitab neid koos, ning nende jagatud rakud salvestatakse üks kord.
+Repositoorium, mida katavad mõlemad strateegiad, saab tunnised krahhi-järjepidevad hetktõmmised ja ühe iganädalase rakenduse-järjepideva. `rdc backup manifests <repo>` näitab neid koos, ning nende jagatud rakud salvestatakse üks kord.
 
 ## Varundamistoimingud
 
@@ -466,9 +581,9 @@ rdc backup schedule -m server-1 --dry-run
 
 Juurutamine on oleku sobitaja. See loeb masinalt praegused üksuse failid ja systemd oleku, võrdleb konfiguratsioonist tuleneva vastu (SHA-256 faili kohta) ja puudutab ainult üksusi, mille sisu tegelikult muutus. Uuesti käivitamine ilma konfiguratsioonimuutusteta on no-op: pole kirjutusi, pole `daemon-reload`-i, pole taimeri müra.
 
-`--dry-run` prindib plaani iga strateegia kohta (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) ilma masinat puudutamata. Kombineeri `--debug`-iga, et printida ka genereeritud üksuse keha; rclone-tokenid on redakteeritud.
+`--dry-run` prindib plaani iga strateegia kohta (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) ilma masinat puudutamata. Kombineeri `--debug`-iga, et printida ka genereeritud üksuse keha, kusjuures volitused on kustutatud. Tükksalvestuse üksus ei kanna neid algusest peale: masin autentib end oma allkirjastatud repositooriumi litsentsiga ja server annab tagasi lühiajalise õiguse, nii et midagi tundlikku ei kirjutata üksuse faili.
 
-Kui strateegia, mida kavatsed uuendada või eemaldada, puhul on käimas varukoopia, ebaõnnestub juurutamine vihjega seda tühistada või `--force` kasutada. `--force`-ga hoiab käimasolev kutse oma mälu-üksust ja uus konfiguratsioon rakendub järgmisel taimeri taktil, nii et käimasolevat varundamist ei tappa.
+Kui strateegia, mida kavatsed uuendada või eemaldada, puhul on käimas varukoopia, ebaõnnestub juurutamine vihjega seda tühistada või `--force` kasutada. `--force`-ga hoiab käimasolev kutse oma mälu-üksust ja uus konfiguratsioon rakendub järgmisel taimeri taktil, nii et käimasolevat varundamist ei tapeta.
 
 `--reset-failed` on valikuline. Kui see on antud, puhastab see systemd ebaõnnestunud oleku puudutatud teenustel pärast edukat juurutamist. Vaikimisi välja, et eelnevad tõrke-signaalid jäävad hoiatusele nähtavaks.
 
@@ -509,27 +624,40 @@ rdc repo migrate my-app@server-1 --to server-2
 |--------|-------------|
 | `<ref>` (positsiooniline) | Teisaldatava hoidla viide; selle `@machine` osa määrab lähte |
 | `--to <place>` | Sihtmasin või klaster |
-| `--provision` | Provisiona repositoorium sihtmasinat enne ülekandmist |
-| `--checkpoint` | Loo CRIU kontrollpunkt enne migreerimist |
+| `--provision <provider>` | Sihtmasina automaatne provisioneerimine selle pilveteenuse pakkuja kaudu (nt `hetzner`, `linode`) |
+| `--checkpoint` | Loo CRIU kontrollpunkt enne migreerimist, nii et ka protsessi mälu liigub kaasa |
+| `--delta-base <guid>` | Muutumatu baas-GUID ülemineku delta jaoks. Vaikimisi esimese faasi baas |
+| `--strategy <strategy>` | Plokk-delta strateegia ülemineku jaoks: `auto`, `physical` või `shared` |
 | `--skip-dns` | Jäta DNS-kirjete uuendamine pärast migreerimist vahele |
+| `--keep-source` | Säilita lähtetõmmised pärast edukat kolimist |
 | `--bwlimit <limit>` | Ribalaiuse piirang ülekandele (nt `50M`) |
 
-Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu. Lähte-repositoorium jääb puutumatuks kuni selle eksplitsiitse eemaldamiseni.
+Migreerimine kannab krüpteeritud repositooriumi andmed üle rsync kaudu kahes faasis: massülekanne, samal ajal kui repositoorium jätkab tööd, seejärel lühike peatus delta jaoks. Migreerimine **liigutab** repositooriumi, seega kustutatakse lähtetõmmised pärast kolimise õnnestumist. Anna `--keep-source`, et need säilitada. See on erinevus `repo migrate` ja `repo push` vahel: push jätab lähte töötama ja puutumatuks.
 
-## Salvestuse sirvimine
+## Enne kaotamist kirjutatud arhiivi lugemine
 
-`rdc storage browse` ja `rdc storage import` on erand sellest kaotamisest: need käivitavad sinu enda rclone'i PATH-ist, mitte sisseehitatud koopiat, ja jäävad viisiks lugeda arhiivi, mis on kirjutatud enne muudatust.
+`rdc storage` on see, mis jäi rclone-harust järele, ja see on kirjutuskaitstud. See ei saa enam olla varunduse sihtkoht, kuid pääseb endiselt ligi arhiivile, mis kirjutati sinna.
 
 ```bash
+# Registreeri remote, mille oled juba rclone jaoks konfigureerinud.
+rdc storage import rclone.conf
+rdc storage list
+
+# Vaata, mis seal on. See käivitab sinu PATH-il oleva rclone'i.
 rdc storage browse my-storage
 ```
 
-Sirvimine on ainult lugemiseks. Salvestusliidesesse saatmine, sealt tõmbamine ja selle loetlemine on kaotatud; iga käsk keeldub ja nimetab tükksalvestuse käsu, mis selle asendab.
+`import` loeb rclone-konfiguratsioonifaili ja salvestab remote'id sinu konfiguratsiooni; toetatud tüübid on S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob ja Swift.
+
+**`browse` vajab `rclone`-i sinu PATH-il.** See käivitab rclone'i, mis on paigaldatud masinasse, kus sa tipid; sisseehitatud koopiat enam ei ole. Ilma selleta ütleb see seda ega tee muud.
+
+Salvestusliidesesse saatmine, sealt tõmbamine, selle loetlemine ja sellest taastamine on kaotatud; iga käsk keeldub ja nimetab tükksalvestuse käsu, mis selle asendab.
 
 ## Parimad praktikad
 
-- Ajasta päevased külmad varukopiad kriitiliste andmete rakenduse-ühilduvate hetktõmmiste jaoks
-- Kasuta kuumi varukoopiad sagedaste hetktõmmiste jaoks, kus nullseisakuaeg on nõutav
-- Testi taastamist perioodiliselt varukoopia terviklikkuse kontrollimiseks
-- Kasuta kriitiliste andmete jaoks mitut salvestusteenuse pakkujat (nt S3 + B2)
+- Ajasta päevased külmad varukopiad kriitiliste andmete rakenduse-ühilduvate koopiate jaoks
+- Kasuta kuumi hetktõmmiseid kõrgsageduslike käivituste jaoks, kus nullseisakuaeg on nõutav
+- Testi taastamist perioodiliselt. `rdc backup restore --as <new-name>` ei kirjuta midagi üle, seega on harjutus elaval masinal ohutu
+- Sea säilituspoliitika käsitsi kärpimise asemel, nii et hoitav aken on kirja pandud
+- Hoia hetktõmmiste kõrval ka masina-masina koopiat, kui soovid koopiat riistvaral, mida sa kontrollid
 - Hoia volitused turvaliselt; varukopiad on krüpteeritud, kuid LUKS-volitus on taastamiseks vajalik

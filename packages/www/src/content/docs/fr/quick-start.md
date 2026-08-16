@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "6e81b15303ed64f9"
-sourceCommit: "ab31ee30c372b9e9cb6178a63646bf1b2d096816"
+sourceHash: "0388ac2568d00afb"
+sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
 ---
 
 # Démarrage rapide
@@ -204,23 +204,22 @@ rdc repo push my-app --to new-server --checkpoint
 rdc repo push my-app --to new-server --provision linode
 ```
 
-### 3. Pousser vers un stockage cloud (OneDrive, Google Drive, S3)
+### 3. Sauvegarder vers le stockage fragmenté
 
 ```bash
-# Importer votre configuration rclone comme backend de stockage
-rdc storage import ~/rclone.conf
+# Prendre un instantané à un instant donné
+rdc backup snapshot my-app
 
-# Lister les stockages disponibles
-rdc storage list
+# Voir les instantanés existants
+rdc backup manifests my-app
 
-# Pousser le repo vers un stockage cloud
-rdc repo push my-app --to my-s3-backup
-
-# Lister les sauvegardes sur le stockage
-rdc backup list --storage my-s3-backup
+# Vérifier les octets stockés par rapport à votre quota
+rdc backup usage
 ```
 
-`--to` détecte automatiquement si la cible est une machine ou un backend de stockage. Fonctionne avec tout fournisseur supporté par rclone : S3, R2, B2, OneDrive, Google Drive, SFTP, etc.
+Les instantanés sont envoyés vers le stockage fragmenté, qui nécessite un serveur de compte et un dépôt sous licence. Seules les données modifiées sont stockées, donc un second instantané du même dépôt ne coûte que la différence plutôt que l'image entière.
+
+Pousser un dépôt vers un stockage cloud avec `--to <storage>` est retiré et refuse désormais. Pour lire une archive écrite avant ce changement, `rdc storage browse` fonctionne toujours et nécessite `rclone` dans votre PATH.
 
 ### 4. Récupérer depuis un emplacement distant
 

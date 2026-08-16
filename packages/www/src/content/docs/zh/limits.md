@@ -5,8 +5,8 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # 限制与配额
@@ -135,15 +135,35 @@ rdc machine infra push server-1
 
 | 限制 | 值 |
 |------|-----|
-| 每个仓库的备份目标 | 无限制 |
-| 同时备份任务 | 每个仓库 1 个（同时触发时任务排队） |
-| 同时冷快照 | 每个数据存储 1 个（第二个 `renet backup snapshot --cold` 会被立即拒绝，并且什么都不会停止） |
-| 备份频率 | 无强制最小间隔；受限于您的存储带宽。使用 `rdc backup strategy set <name> --bwlimit "6M"` 限制上传速度 |
-| 保留策略 | 通过 `rdc backup retention set` 声明（GFS 参数：`--keep-last`、`--keep-hourly`、`--keep-daily`、`--keep-weekly`、`--keep-monthly`、`--keep-yearly`），并在服务器端强制执行；`rdc backup retention clear` 可移除该设置。分块存储按计划配额计量，以物理唯一存储字节数计算，因此快照之间以及整个分支家族内的去重只计算一次：Community 10 GiB、Professional 100 GiB、Business 500 GiB、Enterprise 2 TiB，可用 `rdc backup usage` 查看。旧版 storage-push 路径没有自身的保留机制，由您的存储提供商管理。 |
-| 跨机器备份 | 支持；目标机器必须有足够的数据存储空间 |
+| 每个仓库的快照数量 | 只受存储配额限制,没有其他上限。每个快照都可独立恢复,因此保留更多快照只会占用存储空间,不会带来其他成本 |
+| 单个仓库的并发快照 | 1个。第二次运行发现仓库的暂存锁已被占用时,不会排队,而是**被跳过**:报告锁被另一次运行持有后退出。请稍后再次运行 |
+| 并发冷快照 | 每个数据存储 1 个(第二个 `renet backup snapshot --cold` 会被立即拒绝,并且不会停止任何东西) |
+| 备份频率 | 无强制最小间隔;受限于您的存储带宽。使用 `rdc backup strategy set <name> --bwlimit "6M"` 限制上传速度 |
+| 保留策略 | 通过 `rdc backup retention set`(`--keep-last`、`--keep-hourly`、`--keep-daily`、`--keep-weekly`、`--keep-monthly`、`--keep-yearly`)声明,并在服务器端强制执行;`rdc backup retention clear` 可移除该策略,之后将保留所有快照 |
+| 跨机器备份 | 支持;目标机器必须有足够的数据存储空间 |
+
+### 备份存储配额
+
+快照会发送到分块存储,按订阅以**物理唯一存储字节数**计量:即去重后实际占用的数据量,而不是快照在逻辑上代表的总量。共享数据的快照之间,以及同一分支家族内的仓库之间,这部分数据只计算一次。
+
+| 套餐 | 配额 | `rdc backup usage` 中显示为 |
+|------|-------|-------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+以上是各套餐的默认值。订阅可以有自己的覆盖设置,所以请以 `rdc backup usage` 的实际结果为准,而不要直接套用上表。
+
+配额在数据传输之前就会被强制执行:会超出配额的快照,会在机器请求上传许可的那一刻被拒绝,而不是在传输过程中途才被拒绝。刚好达到配额上限是允许的,超出一个字节就会被拒绝。已用量的统计也包括正在进行中的上传,因此两个并发的运行不可能同时挤进配额上限之下。
+
+超出配额不会删除任何数据,只会停止新的上传,已有的快照会原样保留。
+
+如果订阅过期,备份存储会变为只读:已有的快照仍可读取,但无法上传新的快照。这些数据会在过期后保留 **60 天**,之后由一次清理统一移除。如果组织存在尚未处理的退款,该清理会被冻结,不会执行。
+
+通过 `rdc repo push` 完成的机器间复制不会占用该配额,而是落在目标机器的数据存储中,受其可用空间限制。
 
 ---
-
 ## CLI 和 API
 
 | 限制 | 值 |

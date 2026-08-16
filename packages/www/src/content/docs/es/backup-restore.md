@@ -1,26 +1,63 @@
 ---
 title: "Respaldo y Restauración"
-description: "Respalda repositorios cifrados de dos formas: almacenamiento fragmentado direccionado por contenido que solo sube las celdas cambiadas, o un envío completo a cualquier almacenamiento compatible con rclone. Restaura en cualquier máquina y automatiza con estrategias nombradas y temporizadores systemd."
+description: "Toma snapshots de repositorios cifrados hacia almacenamiento fragmentado direccionado por contenido, donde solo se suben las celdas cambiadas y cada snapshot se restaura directamente. O conserva una copia en otra máquina. Restaura en cualquier lugar, y automatízalo con estrategias nombradas y temporizadores systemd."
 category: "Guides"
 order: 7
 language: es
-sourceHash: "df8a9d53f6991817"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "91f6072e230b059c"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Respaldo y Restauración
 
-Rediacc respalda repositorios cifrados en almacenamiento externo y los restaura en la misma máquina o en máquinas diferentes. Los respaldos están cifrados; se requiere la credencial LUKS del repositorio para restaurar.
+Rediacc respalda repositorios cifrados y los restaura en la misma máquina o en una diferente. Los respaldos están cifrados porque el repositorio lo está: lo que sale de la máquina es el texto cifrado, y se requiere la credencial LUKS de tu repositorio para restaurar.
 
-## Dos vías de respaldo
+Hay dos formas de respaldar, y responden preguntas distintas.
 
-Rediacc tiene dos vías de respaldo independientes, y esta guía cubre ambas. Usan almacenamiento y comandos distintos, así que un repositorio respaldado por una vía no queda respaldado por la otra.
+- **Snapshots al almacenamiento fragmentado** (`rdc backup snapshot`) mantienen un historial por el que puedes retroceder. Esta es la vía principal.
+- **Una copia en otra máquina** (`rdc repo push`, `rdc repo pull`) mantiene el repositorio tal como está ahora, en hardware que tú controlas. No interviene ninguna cuenta en la nube.
 
-**Almacenamiento fragmentado** (`rdc backup snapshot`) sube la imagen del repositorio en celdas de tamaño fijo direccionadas por su contenido. La primera ejecución sube todo el inventario no vacío; cada ejecución posterior sube solo las celdas que cambiaron, decidido a partir de los metadatos de asignación del sistema de archivos en lugar de leer la imagen completa. Las celdas idénticas se almacenan una sola vez entre snapshots y entre toda una familia de forks, y el uso se mide contra tu cuota de almacenamiento (`rdc backup usage`).
+Son independientes. Un repositorio respaldado de una forma no queda respaldado de la otra.
 
-**El envío a almacenamiento quedó retirado.** `rdc repo push --to <storage>` copiaba antes un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. La rama de rclone se eliminó por completo, y push, pull, list y restore ahora rechazan un destino de almacenamiento y te remiten aquí. La transferencia de máquina a máquina no se ve afectada: nunca pasó por rclone.
+## Cómo funcionan los snapshots
 
-Restaurar desde el almacenamiento fragmentado funciona: `rdc backup restore <repo> --at <snapshot-id>` materializa un snapshot almacenado, y `--at` también acepta una marca de tiempo RFC 3339, que se resuelve contra el inventario de snapshots. Añade `--as <name>` para restaurar bajo un nombre diferente y `--up` para poner en marcha el repositorio después. El almacenamiento fragmentado también te proporciona carga (`rdc backup snapshot`), verificación (`rdc backup verify`, y `--deep` para volver a hacer hash de cada celda en lugar de una muestra), el inventario de snapshots (`rdc backup manifests`) y contabilidad de cuota (`rdc backup usage`).
+La imagen del repositorio se corta en celdas de tamaño fijo sobre una cuadrícula fija. Cada celda es un agujero, es decir, nunca se escribió nada ahí, o se almacena bajo una clave que **es** el SHA-256 del texto cifrado de esa celda.
+
+De esa única decisión salen las propiedades.
+
+**Solo los cambios reales cuestan algo.** El primer snapshot sube cada celda escrita. Cada ejecución posterior pregunta al sistema de archivos qué extents se tocaron, lee y hashea solo esas, y sube solo las celdas que el almacén aún no tiene. Un repositorio cuyos datos apenas se movieron sube casi nada, y la ejecución tarda minutos en lugar de lo que tarde según el tamaño de la imagen.
+
+**Los datos idénticos se almacenan una sola vez.** Como la clave es el hash del contenido, dos snapshots que comparten una celda comparten el objeto, y lo mismo pasa entre un repositorio y sus [forks](/es/docs/tutorial-forking): una familia de forks respalda contra un único linaje en lugar de duplicar a su padre.
+
+**Restaurar un snapshot antiguo no es más lento que restaurar uno reciente.** No hay cadena de incrementos que reproducir. Restaurar resuelve el snapshot en una lista completa de celdas y las obtiene directamente, así que el tiempo de restauración depende del tamaño de la imagen y de tu ancho de banda, no de cuánto tiempo llevas haciendo backups. Los agujeros siguen siendo agujeros, así que una imagen sparse se restaura sparse, y una celda que aparece en varios lugares de la imagen se descarga una sola vez.
+
+**Cada snapshot se sostiene por sí solo.** No hay un "backup completo" que no debas perder ni una ventana donde un incremento roto invalide los siguientes. Cualquier snapshot de la lista es directamente restaurable.
+
+**Verificar es volver a hashear, no confiar.** Como la clave es el hash del contenido, comprobar un backup significa obtener celdas y hashearlas. `rdc backup verify` toma muestras; `rdc backup verify --deep` vuelve a hashear cada celda registrada.
+
+**Una ejecución interrumpida no se pierde.** La subida se reanuda sin reenviar celdas que ya llegaron, y reiniciar una restauración parcial vuelve a hashear lo que ya está en disco y lo reutiliza en lugar de volver a descargarlo.
+
+### Qué te cuesta
+
+La cuota se cuenta en **bytes físicos únicos almacenados**: lo que realmente se conserva tras la deduplicación, no la suma de lo que tus snapshots representan lógicamente. Treinta snapshots de un repositorio que cambia lentamente cuestan casi como uno. `rdc backup usage` muestra los bytes almacenados frente a tu cuota, un número por suscripción que empieza en 10 GB en el plan Community.
+
+### Qué necesitan los snapshots
+
+La subida de un snapshot pasa por el servidor de cuenta, que autoriza cada ejecución contra la licencia instalada del repositorio y le entrega a la máquina un permiso de escritura de corta duración. Así que esta vía necesita un servidor de cuenta que la máquina pueda alcanzar y un repositorio con licencia. Sin ellos, el snapshot se rechaza en lugar de omitirse en silencio, y `rdc backup manifests`, `rdc backup usage` y `rdc backup retention` no tienen nada que leer.
+
+Eso incluye `--dry-run`. La licencia se lee antes de que la ejecución decida si va a planificar o a subir, así que un dry run es una vista previa del trabajo, no una forma de probar el comando sin credenciales.
+
+El push y el pull de máquina a máquina no necesitan ninguna de las dos cosas. Son una transferencia directa entre dos máquinas que ya están en tu configuración.
+
+### Lo que un snapshot no promete
+
+- **Un snapshot cubre un repositorio, no toda tu máquina de una vez.** Cada repositorio se captura en su propio instante. Si dos repositorios dependen entre sí, sus snapshots no forman un par coordinado.
+- **No es replicación continua.** Un snapshot es un punto que tomaste, y puedes perder todo lo escrito desde el último. Cuánto sea eso depende de con qué frecuencia lo ejecutes.
+- **Los objetos almacenados son de escritura única, no WORM certificado.** Las celdas se escriben con una condición de solo creación, el permiso que obtiene una máquina no puede borrar nada, y las eliminaciones ocurren en el servidor según la política de retención. Eso es una barrera real contra una máquina comprometida que destruye sus propios respaldos. No es una certificación de cumplimiento, y no se audita como tal.
+
+### La vía de almacenamiento con rclone desapareció
+
+`rdc repo push --to <storage>` y sus variantes solían copiar un archivo de respaldo completo a un proveedor compatible con rclone que registrabas tú mismo. Ahora rechazan un destino de almacenamiento y nombran su reemplazo. La transferencia de máquina a máquina nunca pasó por rclone y no se ve afectada. Si aún necesitas leer un archivo escrito de esa forma, consulta [Leer un archivo escrito antes de la retirada](#leer-un-archivo-escrito-antes-de-la-retirada).
 
 ### Comandos de almacenamiento fragmentado
 
@@ -30,6 +67,9 @@ rdc backup snapshot my-app
 
 # Planificar sin subir: informa qué se movería.
 rdc backup snapshot my-app --dry-run
+
+# Detener los contenedores, congelar, reiniciar, y luego subir.
+rdc backup snapshot my-app --cold
 
 # Desconfiar del ancla local y volver a subir todo el inventario.
 # Esto vuelve a subir todo y recarga la cuota; úsalo solo cuando
@@ -41,6 +81,14 @@ rdc backup verify my-app
 rdc backup manifests my-app
 rdc backup usage
 ```
+
+| Opción | Descripción |
+|--------|-------------|
+| `<repo-ref>` (posicional) | Repositorio a respaldar con snapshot |
+| `--dry-run` | Solo planificar: sin subida. Informa qué se movería |
+| `--cold` | Detener los contenedores, congelar, reiniciar, y luego subir. No se puede combinar con `--dry-run` |
+| `--reseed` | Desconfiar del ancla local y subir un inventario completo. Vuelve a subir todo y recarga la cuota |
+| `--debug` | Habilitar salida detallada |
 
 ## Snapshots en Frío (`--cold`)
 
@@ -114,47 +162,39 @@ Rechazar es la función. Una copia etiquetada como en frío que nunca detuvo nad
 
 Si una ejecución se interrumpe con los contenedores parados, por un `systemctl stop` o un reinicio, renet los vuelve a arrancar antes de salir. La recuperación en la máquina es la red de seguridad: detecta una copia en frío cuyo dueño ha desaparecido y devuelve esos repositorios a su sitio.
 
-## Configurar Almacenamiento
-
-Antes de enviar respaldos, registra un proveedor de almacenamiento. Rediacc admite cualquier almacenamiento compatible con rclone: S3, B2, Google Drive y muchos más.
-
-### Importar desde rclone
-
-Si ya tienes un remote de rclone configurado:
-
-```bash
-rdc storage import rclone.conf
-```
-
-Esto importa configuraciones de almacenamiento desde un archivo de configuración rclone a la configuración actual. Tipos compatibles: S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
-
-### Ver Almacenamientos
-
-```bash
-rdc storage list
-```
-
 ## Enviar un Respaldo a Otra Máquina
 
 Copia un repositorio a una segunda máquina por SSH:
 
 ```bash
-rdc repo push my-app --to-machine server-1
+rdc repo push my-app --to server-1
 ```
 
+`--to <machine>` resuelve el destino desde tu configuración, y `--to-machine <machine>` dice lo mismo explícitamente. Un nombre de almacenamiento se rechaza: esa vía está retirada.
+
 La imagen cifrada se copia con el MISMO GUID, así que esto es un respaldo o una migración, no un fork. Para obtener una copia independiente, ejecuta primero `rdc repo fork` y envía el fork.
+
+El primer envío lleva la imagen completa. Cada envío posterior manda solo los bloques cambiados frente a una imagen base inmutable que se conserva en ambas máquinas, sin flags que ajustar. `--delta-base <guid>` nombra esa base tú mismo si lo necesitas.
+
+La copia enviada aterriza en el destino como un artefacto de respaldo, no como un repositorio en ejecución. Conviértela en uno con `rdc backup restore`:
+
+```bash
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
 
 Para un respaldo puntual, usa almacenamiento fragmentado en su lugar: `rdc backup snapshot my-app` sube solo las celdas que cambiaron, y `rdc backup restore my-app --at <snapshot>` recupera cualquiera de ellas.
 
 | Opción | Descripción |
 |--------|-------------|
-| `--to-machine <machine>` | Máquina destino para respaldo de máquina a máquina |
-| `--dest <filename>` | Nombre de archivo de destino personalizado |
+| `<ref>` (posicional) | Ref del repositorio a enviar |
+| `--to <remote>` | Máquina o clúster de destino |
+| `--to-machine <machine>` | Máquina de destino, indicada explícitamente |
+| `--provision <provider>` | Aprovisionar la máquina destino mediante este proveedor de nube si no existe |
 | `--checkpoint` | Crear un checkpoint CRIU antes de enviar (para contenedores con etiqueta `rediacc.checkpoint=true`). El destino se restaura automáticamente con `repo up` |
 | `--force` | Sobreescribir un respaldo existente |
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`, `500K`) |
-| `--tag <tag>` | Etiquetar el respaldo |
-| `-w, --watch` | Observar el progreso de la operación |
+| `--delta-base <guid>` | Transferir solo los bloques modificados respecto a esta GUID base inmutable. Omitir para una base automática |
+| `--strategy <strategy>` | Estrategia de delta de bloques al usar una base delta: `auto`, `physical` o `shared` |
 | `--debug` | Habilitar salida detallada |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
@@ -163,20 +203,23 @@ Para un respaldo puntual, usa almacenamiento fragmentado en su lugar: `rdc backu
 Recupera un repositorio desde la máquina que lo aloja:
 
 ```bash
-rdc repo pull my-app --from-machine server-1
+rdc repo pull my-app --from server-1
 ```
 
-Para restaurar desde almacenamiento fragmentado en su lugar, usa
-`rdc backup restore my-app --at <snapshot-id>`.
+Añade `--up` para montarlo y desplegarlo en el mismo comando. Para restaurar desde almacenamiento fragmentado en su lugar, usa `rdc backup restore my-app --at <snapshot-id>`.
 
 Pull se niega a sobrescribir un repositorio que esté **montado** en ese momento. Desmóntalo primero, ejecuta el pull y luego vuelve a levantarlo con `rdc repo up`. Los repositorios basados en directorio son la excepción: se sincronizan en el sitio mientras están montados.
 
 | Opción | Descripción |
 |--------|-------------|
-| `--from-machine <machine>` | Máquina de origen para restauración de máquina a máquina |
+| `<ref>` (posicional) | Ref del repositorio a descargar |
+| `--from <remote>` | Máquina o clúster de origen |
+| `--from-machine <machine>` | Máquina de origen, indicada explícitamente |
 | `--force` | Sobreescribir respaldo local existente |
+| `--up` | Montar y desplegar el repositorio tras la descarga |
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`, `500K`) |
-| `-w, --watch` | Observar el progreso de la operación |
+| `--delta-base <guid>` | Recibir solo los bloques modificados respecto a esta GUID base inmutable |
+| `--strategy <strategy>` | Estrategia de delta de bloques al usar una base delta: `auto`, `physical` o `shared` |
 | `--debug` | Habilitar salida detallada |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
@@ -188,13 +231,26 @@ Lista los snapshots en almacenamiento fragmentado:
 rdc backup manifests my-app
 ```
 
-Para ver los artefactos de respaldo que hay en una máquina:
+Cada fila es un punto en el tiempo almacenado:
+
+| Columna | Significado |
+|---|---|
+| `Repo` | Nombre del repositorio resuelto desde tu configuración local (recurre al GUID para repositorios no presentes en la configuración) |
+| `Snapshot` | El id del snapshot. Esto es lo que toma `rdc backup restore --at` |
+| `Created` | Hora UTC en que se tomó el snapshot |
+| `Total` | Tamaño de la imagen del repositorio que representa este snapshot |
+| `Added` | Bytes que este snapshot realmente subió por encima de los anteriores |
+| `Chunks` | Cuántas celdas añadió |
+
+Para ver qué dejó un `rdc repo push --to <machine>` en el destino, pregúntale a esa máquina qué tiene:
 
 ```bash
-rdc backup list -m server-1
+rdc repo list --machine server-1
 ```
 
-La salida lista los snapshots que el almacenamiento fragmentado guarda para ese repositorio:
+La copia enviada aparece bajo su propio nombre. Una segunda fila con un GUID en bruto al lado es la base delta retenida, que es lo que hace incremental en lugar de completo el siguiente envío a esa máquina.
+
+`rdc backup list --machine <machine>` lee las carpetas `hot/` y `cold/` en las que escriben las ejecuciones programadas, así que es la herramienta equivocada para una copia que dejó ahí un envío, y no te mostrará nada.
 
 | Columna | Significado |
 |---|---|
@@ -202,47 +258,92 @@ La salida lista los snapshots que el almacenamiento fragmentado guarda para ese 
 | `Name` | Nombre del repositorio resuelto desde tu configuración local (recurre al GUID para repositorios no presentes en la configuración) |
 | `GUID` | El GUID del repositorio en disco |
 | `Size` | Tamaño legible del archivo de respaldo |
-| `Modified` | Marca de tiempo UTC del backend de almacenamiento |
+| `Modified` | Marca de tiempo UTC del archivo en la máquina |
 
 Listar un backend de almacenamiento quedó retirado junto con la rama de rclone; el comando se rechaza y nombra estos dos reemplazos.
 
-### Qué significan realmente hot y cold
+## Retención
 
-`--mode hot` y `--mode cold` describen cómo se trata el repositorio mientras se toma el respaldo, no dónde termina la data.
+El servidor aplica una política de retención por repositorio sobre el almacenamiento fragmentado, así que los snapshots antiguos se podan sin que borres nada a mano. Sin política declarada, se conserva cada snapshot.
 
-**Hot** toma un snapshot de un repositorio en ejecución. Los contenedores siguen atendiendo, y la imagen se captura a mitad de escritura, por lo que el respaldo es consistente ante fallos: exactamente lo que obtendrías si a la máquina se le cortara la luz en ese instante. Eso está bien para cualquier cosa que se recupere desde su propio journal, que es la mayoría de las bases de datos.
+```bash
+# Qué se está aplicando ahora mismo.
+rdc backup retention my-app
 
-**Cold** detiene primero los contenedores, vuelca a disco, verifica que estén parados, congela la imagen y solo entonces los reinicia. Cuesta una inactividad real, pero esa inactividad es la congelación de duración constante y no la transferencia, y el resultado es consistente a nivel de aplicación.
+# Mantener una ventana rotativa: 7 diarios, 4 semanales, 6 mensuales.
+rdc backup retention set my-app --keep-daily 7 --keep-weekly 4 --keep-monthly 6
 
-Ambos escriben en el mismo almacenamiento fragmentado. Las celdas se direccionan por contenido, así que un repositorio respaldado tanto por un cronograma hot cada hora como por uno cold cada semana almacena los bloques compartidos una sola vez en lugar de dos, y una familia de forks también los comparte. El uso se mide contra tu cuota con `rdc backup usage`.
+# Volver a conservar todo.
+rdc backup retention clear my-app
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--keep-last <n>` | Conservar esta cantidad de los snapshots más recientes |
+| `--keep-hourly <n>` | Conservar el snapshot más nuevo de cada una de estas horas |
+| `--keep-daily <n>` | Conservar el snapshot más nuevo de cada uno de estos días |
+| `--keep-weekly <n>` | Conservar el snapshot más nuevo de cada una de estas semanas |
+| `--keep-monthly <n>` | Conservar el snapshot más nuevo de cada uno de estos meses |
+| `--keep-yearly <n>` | Conservar el snapshot más nuevo de cada uno de estos años |
+
+Da al menos una regla. `set` sin reglas se rechaza en lugar de tratarse como "no conservar nada", porque para eso está `clear`.
+
+## Restaurar
+
+`rdc backup restore` convierte un respaldo en un repositorio en vivo, y es el mismo comando para ambas vías. Lo que cambia es a qué lo apuntas.
+
+```bash
+# Un punto en el tiempo desde almacenamiento fragmentado.
+rdc backup restore my-app --as my-app-yesterday --at <snapshot-id> --up
+
+# Un artefacto que dejó un envío en una máquina.
+rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
+```
+
+`--at` toma un id de snapshot de `rdc backup manifests`, o una hora RFC 3339 como `2026-08-14T12:00:00Z`, que se resuelve al snapshot más reciente tomado en ese momento o antes. Una hora sin snapshot en ese momento o antes se rechaza en lugar de redondearse hacia adelante.
+
+Restaurar bajo un nombre nuevo con `--as` no sobrescribe nada, así que un simulacro de restauración es seguro de ejecutar contra una máquina en vivo. Restaurar sobre un nombre que ya existe se rechaza.
+
+| Opción | Descripción |
+|--------|-------------|
+| `<artifact-ref>` (posicional) | Qué restaurar. `repo` para un snapshot de almacenamiento fragmentado, `repo@place` para un artefacto en una máquina |
+| `--as <name>` | Nombre para el repositorio restaurado (por defecto, el nombre del artefacto) |
+| `-m, --machine <machine>` | Máquina en la que restaurar |
+| `--datastore <name>` | Restaurar en este datastore nombrado, cuya máquina asociada lo aloja |
+| `--at <time>` | Restaurar un punto en el tiempo: un id de snapshot o una hora RFC 3339 |
+| `--up` | Desplegar el repositorio restaurado después de la transferencia |
+| `--health-window <seconds>` | Cuánto tiempo observar la salud del repositorio desplegado |
+| `--health-timeout <seconds>` | Cuánto tiempo esperar hasta que esté saludable |
+| `-y, --yes` | Omitir la confirmación |
+| `--debug` | Habilitar salida detallada |
+
+Restaurar un repositorio necesita su credencial LUKS, que vive en tu configuración. Si tienes el almacenamiento de configuración activado, esa credencial vuelve con tu configuración en una máquina nueva. Si no, conserva una copia de la configuración en algún lugar que la máquina que falla no se lleve consigo.
+
+### Prueba la restauración en cada máquina
+
+Una máquina que nunca ha completado el ciclo completo no está respaldada, por muy verdes que se vean sus subidas. Las subidas y las restauraciones fallan por razones distintas, y el segundo tipo solo se manifiesta cuando lo intentas.
+
+Hazlo una vez por máquina, antes de confiar en los respaldos:
+
+1. Toma un snapshot: `rdc backup snapshot my-app`.
+2. Confirma que quedó registrado: `rdc backup manifests my-app`.
+3. Restáuralo con un nombre desechable: `rdc backup restore my-app --as my-app-drill --at <snapshot-id>`.
+4. Compara el repositorio restaurado contra la fuente, luego borra la copia de prueba con `rdc repo delete my-app-drill --yes`.
+
+Nada en esa secuencia toca el repositorio en vivo, así que es seguro en una máquina que está sirviendo tráfico. Si estás abandonando un esquema de respaldo más antiguo, mantenlo funcionando hasta que esto haya pasado en esa máquina al menos una vez. Dos vías de respaldo cuestan almacenamiento; una vía no probada cuesta los datos.
 
 ## Sincronizar un Repositorio a la Vez
 
 Push y pull actúan sobre un único repositorio, identificado por su ref (`name`, `name:tag` o `name@machine`). No existe una forma para «todos los repositorios a la vez»: ejecuta el comando una vez por repositorio.
 
-### Enviar a Otra Máquina
+Un ref que nombra un fork y una máquina funciona igual que un nombre simple:
 
 ```bash
-rdc repo push shop@server-1 --to-machine server-2
+rdc repo push shop:nightly@server-1 --to server-2
+rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
-### Descargar desde Otra Máquina
-
-```bash
-rdc repo pull shop@server-1 --from-machine server-2
-```
-
-| Opción | Descripción |
-|--------|-------------|
-| `--to-machine <machine>` | Máquina de destino para envío de máquina a máquina |
-| `--from-machine <machine>` | Máquina de origen para descarga de máquina a máquina |
-| `--force` | Sobreescribir un respaldo o repositorio existente |
-| `--checkpoint` | Crear un checkpoint CRIU antes de enviar (solo envío) |
-| `--up` | Montar y desplegar el repositorio tras la descarga (solo descarga) |
-| `--bwlimit <limit>` | Límite de ancho de banda para la transferencia rsync (p. ej. `10M`) |
-| `--delta-base <guid>` | Transferir solo los bloques modificados respecto a una GUID base inmutable |
-| `--debug` | Habilitar salida detallada |
-| `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
+Las listas completas de opciones están en [Enviar un Respaldo a Otra Máquina](#enviar-un-respaldo-a-otra-máquina) y [Descargar un Respaldo desde Otra Máquina](#descargar-un-respaldo-desde-otra-máquina).
 
 ## Respaldos Programados
 
@@ -252,7 +353,7 @@ Rediacc utiliza estrategias de respaldo nombradas. Cada estrategia define un cro
 
 | Modo | Comportamiento | Tiempo de inactividad |
 |------|---------------|----------------------|
-| `hot` | Snapshot de BTRFS tomado mientras los servicios están en ejecución (consistente ante fallos) | Ninguno |
+| `hot` | Imagen del repositorio congelada mientras los servicios siguen en ejecución (consistente ante fallos) | Ninguno |
 | `cold` | Servicios detenidos, snapshot tomado, servicios reiniciados, snapshot cargado (consistente a nivel de aplicación) | Ventana de stop+start por repositorio, paralelizada entre repositorios. Véase "Estimación del tiempo de inactividad del respaldo en frío" abajo. |
 
 Usa `hot` para servicios que toleran snapshots consistentes ante fallos. Usa `cold` cuando necesites consistencia garantizada y puedas aceptar un breve reinicio.
@@ -292,7 +393,7 @@ Cada repositorio solo está inactivo durante su propia ventana `down()` + `up()`
 | Mediano (aplicación web + caché) | 20-45 s |
 | Pesado (DB + colas + correo) | 60-120 s |
 
-El paso de snapshot (`btrfs subvolume snapshot -r`) es O(1) independientemente del tamaño del repositorio: 0,1-1 s. Un repositorio no se mantiene detenido mientras se toman snapshots de otros repositorios. El cargador luego se ejecuta contra un snapshot de solo lectura mientras todos los repositorios ya están de vuelta.
+El paso de congelación es un reflink copy-on-write de la imagen del repositorio. Es solo metadatos, así que tarda lo mismo tanto si el repositorio guarda 1 GB como 100 GB, y en una ejecución medida ni siquiera se registró con resolución de milisegundos. Un repositorio no se mantiene detenido mientras se congelan otros repositorios. La subida luego se ejecuta contra la copia congelada mientras todos los repositorios ya están de vuelta.
 
 **El tiempo total de reloj para toda la ejecución** está gobernado por cuántos repositorios reinician simultáneamente. Renet deriva este valor del host:
 
@@ -310,11 +411,11 @@ Ejemplos:
 
 **Anulación vía variable de entorno:** establece `REDIACC_COLD_BACKUP_CONCURRENCY=N` en el entorno del servicio de respaldo (normalmente mediante un drop-in de systemd) para fijar un valor específico. `=1` fuerza reinicios estrictamente seriales, útil al depurar un bucle de fallos en el hook `up()` de algún repositorio.
 
-Si ejecutas un repositorio sensible a la latencia (aplicación web pública, correo), su tiempo de inactividad está limitado por su propio stop+start (típicamente 30-90 s), no por la duración total de la ejecución. Los repositorios se programan en slots de concurrencia en el orden en que fueron descubiertos; no hay cola de prioridad. Divide los repositorios pesados en sus propias estrategias con `--exclude` si necesitas una planificación más fina.
+Si ejecutas un repositorio sensible a la latencia (aplicación web pública, correo), su tiempo de inactividad está limitado por su propio stop+start (típicamente 30-90 s), no por la duración total de la ejecución. Los repositorios se programan en slots de concurrencia en el orden en que fueron descubiertos; no hay cola de prioridad. Dale a los repositorios pesados su propia estrategia acotada con `--include` si necesitas una planificación más fina.
 
 ### Respaldos de Larga Duración y Cronogramas Superpuestos
 
-Un respaldo en frío que dura más que su propio intervalo de cronograma (por ejemplo, una primera siembra de un repositorio de 500 GB sobre un enlace modesto puede necesitar legítimamente más de 24 h, durante las cuales el temporizador nocturno dispara de nuevo) no encola ni lanza una segunda ejecución. La unidad systemd `Type=oneshot` es una sola instancia: cuando el temporizador dispara y el servicio ya está `activating`, systemd fusiona el inicio en el trabajo existente. No se lanza ningún proceso nuevo, no se encola ninguna ejecución para más tarde.
+Un respaldo en frío que dura más que su propio intervalo de cronograma (por ejemplo, una primera siembra de un repositorio de 500 GB sobre un enlace modesto puede legítimamente necesitar más de 24 h, durante las cuales el temporizador nocturno dispara de nuevo) no encola ni lanza una segunda ejecución. La unidad systemd `Type=oneshot` es una sola instancia: cuando el temporizador dispara y el servicio ya está `activating`, systemd fusiona el inicio en el trabajo existente. No se lanza ningún proceso nuevo, no se encola ninguna ejecución para más tarde.
 
 Concretamente, una ejecución que comienza el lunes a las 03:00 UTC y termina el jueves al mediodía:
 
@@ -327,9 +428,9 @@ Concretamente, una ejecución que comienza el lunes a las 03:00 UTC y termina el
 
 La directiva `Persistent=true` del temporizador **no** rescata estos disparos. `Persistent=true` repite disparos que se perdieron porque el temporizador mismo estaba inactivo (sistema apagado, temporizador deshabilitado). Los disparos descartados porque el servicio estaba ocupado se pierden.
 
-Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frío en paralelo contra el mismo datastore contendería por la ruta del snapshot BTRFS, el remote de rclone y los sidecars por repositorio en `/var/run/rediacc/cold-backup-<guid>.status.json`. Esperar detrás de una instancia en ejecución es la opción segura.
+Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frío en paralelo contra el mismo datastore contendería por la ruta de congelación, la subida, y los sidecars por repositorio en `/var/run/rediacc/cold-backup-<guid>.status.json`. Esperar detrás de una instancia en ejecución es mejor que castigar los mismos datos desde dos direcciones. El bloqueo del datastore lo impone: una segunda ejecución en frío encuentra el bloqueo ocupado y se rechaza rotundamente, sin haber detenido nada.
 
-**Implicación de monitoreo.** Un respaldo colgado (por ejemplo, rclone atascado en un agujero negro de red) descarta silenciosamente cada disparo posterior del temporizador. El planificador no emite alarma. Observa `systemctl show <unit> -p ActiveEnterTimestamp`: si el servicio ha estado `activating` por más tiempo del esperado (por ejemplo, más de 48 h en un temporizador nocturno), investiga.
+**Implicación de monitoreo.** Un respaldo colgado (por ejemplo, una subida atascada en un agujero negro de red) descarta silenciosamente cada disparo posterior del temporizador. El planificador no emite alarma. Observa `systemctl show <unit> -p ActiveEnterTimestamp`: si el servicio ha estado `activating` por más tiempo del esperado (por ejemplo, más de 48 h en un temporizador nocturno), investiga.
 
 **Si necesitas que cada disparo programado se ejecute**, cambia el temporizador de `OnCalendar=<cron>` a `OnUnitInactiveSec=<intervalo>`. Eso dispara N horas después de la finalización de la ejecución previa en lugar de en un cronograma de reloj de pared fijo, así las ejecuciones largas no causan descartes. Solo empujan la siguiente ejecución más tarde. La contrapartida es la deriva del cronograma: tu nocturno de 03:00 se convierte en "24 h después de que la última terminó."
 
@@ -337,7 +438,7 @@ Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frí
 
 Cada envío trabaja a partir de un snapshot momentáneo del datastore, por lo que los datos cargados son consistentes incluso mientras los repositorios siguen escribiendo. Mientras el respaldo se ejecuta, ese snapshot sigue referenciando todos los bloques que comparte con los repositorios activos: las eliminaciones y los [trims](/es/docs/repositories#recuperar-espacio-trim) liberan menos espacio en el pool hasta que el ciclo termina y el snapshot se elimina. El [informe de salud del almacenamiento](/es/docs/monitoring#salud-del-almacenamiento) muestra cuánto espacio están anclando actualmente los snapshots de respaldo.
 
-Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) hace que el respaldo cancele su transferencia y elimine su snapshot antes de salir; la siguiente ejecución programada continúa donde se quedó, ya que los archivos sin cambios se omiten por checksum. Si el proceso se termina de forma tan abrupta que no puede limpiar (corte de energía), el snapshot huérfano es detectado y eliminado automáticamente por el mantenedor de almacenamiento en pocos minutos.
+Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) hace que el respaldo cancele su transferencia y elimine su snapshot antes de salir; la siguiente ejecución programada continúa donde se quedó, porque las celdas ya almacenadas no se vuelven a subir. Si el proceso se termina de forma tan abrupta que no puede limpiar (corte de energía), el snapshot huérfano es detectado y eliminado automáticamente por el mantenedor de almacenamiento en pocos minutos.
 
 ### Definir una Estrategia
 
@@ -357,21 +458,25 @@ rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude very-large-repo \
+  --include shop --include mail \
   --enable
 ```
 
-El filtro `--exclude` en la estrategia cold es la vía de escape recomendada para repositorios muy grandes que no caben en tu ventana de mantenimiento semanal. La estrategia hot horaria los sigue cubriendo; cold simplemente los omite. Los nombres de repositorio en `--exclude` coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
+`--destination <name>` nombra el destino dentro de la estrategia; es una etiqueta que tú eliges, y describe el almacenamiento fragmentado. `--include` lista los repositorios a respaldar, y repetirlo añade más. Omítelo y la estrategia cubre todos los repositorios del datastore. Los nombres coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
+
+`--exclude` se rechaza para un destino de almacenamiento fragmentado en lugar de descartarse en silencio, porque el `backup snapshot` subyacente selecciona repositorios nombrándolos y no tiene exclusión propia. Respetarlo significaría respaldar repositorios que pediste dejar fuera. Delimita una estrategia con `--include` en su lugar, para que lo que cubre una ejecución programada quede escrito en lugar de inferido.
 
 | Opción | Descripción |
 |--------|-------------|
 | `<strategy>` (posicional) | Nombre de la estrategia (usado para la vinculación a la máquina) |
-| `--destination <storage>` | Proveedor de almacenamiento al que cargar |
+| `--destination <name>` | Nombre del destino dentro de la estrategia. Por defecto, el almacenamiento fragmentado |
+| `--storage <name>` | Optar por el tipo de destino rclone retirado. Un cronograma que lo use no se puede desplegar |
 | `--cron <expression>` | Expresión cron (p. ej. `"0 2 * * *"` para diario a las 2 AM) |
 | `--mode <hot\|cold>` | Modo de respaldo |
 | `--bwlimit <limit>` | Límite de ancho de banda para cargas (p. ej. `10M`) |
-| `--include <pattern>` | Filtro de inclusión (repetible) |
-| `--exclude <pattern>` | Filtro de exclusión (repetible) |
+| `--include <repos>` | Repositorios que cubre esta estrategia (repetible) |
+| `--exclude <repos>` | Repositorios a omitir (repetible). Se rechaza en un destino de almacenamiento fragmentado |
+| `--folder <path>` | Subcarpeta dentro de un bucket rclone. Se rechaza en un destino de almacenamiento fragmentado |
 | `--enable` / `--disable` | Habilitar o deshabilitar la estrategia |
 
 ### Ver Estrategias
@@ -389,7 +494,15 @@ rdc backup strategy remove weekly-cold
 
 ### Vincular Estrategias a una Máquina
 
-En tu configuración, vincula uno o más nombres de estrategia a una máquina:
+Una estrategia no vinculada a ninguna máquina nunca se despliega. Vincula una o más a una máquina:
+
+```bash
+rdc backup strategy bind hourly-hot --machine hostinger
+rdc backup strategy bind weekly-cold --machine hostinger
+rdc backup strategy unbind weekly-cold --machine hostinger
+```
+
+La vinculación se registra en tu configuración como una lista en la máquina, que es lo que lee `rdc backup schedule` para decidir qué unidades desplegar:
 
 ```json
 {
@@ -409,7 +522,7 @@ En tu configuración, vincula uno o más nombres de estrategia a una máquina:
 
 | | Hot | Cold |
 |---|-----|------|
-| **Consistencia** | Consistente ante fallos (snapshot BTRFS mientras los servicios están en ejecución) | Consistente a nivel de aplicación (detener - snapshot - iniciar) |
+| **Consistencia** | Consistente ante fallos (imagen congelada mientras se ejecuta) | Consistente a nivel de aplicación (detener - snapshot - iniciar) |
 | **Tiempo de inactividad** | Ninguno | Ventana stop+start por repositorio (típicamente 5-120 s) |
 | **Frecuencia adecuada** | Alta (p. ej. horaria) | Baja (p. ej. diaria o semanal) |
 | **Uso típico** | Red de seguridad frecuente | Respaldo programado con consistencia garantizada |
@@ -418,9 +531,11 @@ En tu configuración, vincula uno o más nombres de estrategia a una máquina:
 
 **Cold** es apropiado cuando necesitas un snapshot consistente a nivel de aplicación garantizado y puedes aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, así una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulta [Semántica del Respaldo en Frío](#semántica-del-respaldo-en-frío) para el modelo de garantía completo.
 
-### Filtrar repositorios por estrategia
+Ambos modos escriben en el mismo almacenamiento fragmentado, y el modo trata de cómo se maneja el repositorio mientras la imagen está congelada, no de dónde termina la data. Un repositorio cubierto tanto por un cronograma hot cada hora como por uno cold cada semana almacena las celdas que comparten una sola vez en lugar de dos.
 
-Cada estrategia puede llevar filtros `--include` y `--exclude`. Los nombres de repositorios que coincidan con un patrón `--exclude` se omiten para esa estrategia; `--include` restringe la ejecución solo a esos nombres. Los filtros coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
+### Delimitar repositorios por estrategia
+
+Una estrategia sin `--include` cubre todos los repositorios del datastore. Repetir `--include` la reduce a los repositorios que nombras, comparados con el nombre de repositorio de la configuración local (sin `:tag`).
 
 ```bash
 # Estrategia hot: respaldar todo cada hora
@@ -431,27 +546,27 @@ rdc backup strategy set hourly-hot \
   --bwlimit 6M \
   --enable
 
-# Estrategia cold: respaldar todo semanalmente, excluyendo el gran conjunto de datos derivado
+# Estrategia cold: semanal, y solo los repositorios que necesitan reposo
 rdc backup strategy set weekly-cold \
   --destination rediacc \
   --cron "15 3 * * 0" \
   --mode cold \
-  --exclude analytics-demo \
+  --include shop --include mail \
   --enable
 ```
 
-### Cuándo excluir un repositorio de la estrategia hot de alta frecuencia
+### Cuándo mantener un repositorio fuera de la estrategia hot frecuente
 
-Excluye un repositorio de la ejecución de alta frecuencia cuando:
+Nombra los repositorios que quieres en la ejecución de alta frecuencia, en lugar de dejar que lo tome todo, cuando:
 
-- El repositorio es grande y **totalmente regenerable** a partir de los datos de origen ya almacenados en el volumen, así cada respaldo horario desperdicia ancho de banda significativo sin añadir valor de recuperación real.
+- Un repositorio es grande y **totalmente regenerable** a partir de los datos de origen ya almacenados en el volumen, así cada respaldo horario gasta ancho de banda sin añadir valor de recuperación.
 - La ejecución del respaldo superaría su propio intervalo de cronograma a tu velocidad de carga disponible.
 
-**Ejemplo.** Un repositorio `analytics-demo` contiene aproximadamente 114 GB de tablas Postgres derivadas que pueden reconstruirse completamente a partir de archivos CSV brutos ya almacenados dentro del mismo volumen. Con un límite de carga de 6 MB/s, un solo respaldo hot de ese repositorio tarda más de 5 horas. Ejecutarlo cada hora significa que cada ejecución sigue en curso cuando se activa la siguiente, lo que provoca que cada ejecución posterior se descarte silenciosamente (consulta [Respaldos de Larga Duración y Cronogramas Superpuestos](#respaldos-de-larga-duración-y-cronogramas-superpuestos)). Excluirlo de `hourly-hot` y mantenerlo en `weekly-cold` significa que se respalda una vez por semana en lugar de nunca.
+**Ejemplo.** Un repositorio `analytics-demo` contiene aproximadamente 114 GB de tablas Postgres derivadas que pueden reconstruirse a partir de dumps CSV en bruto almacenados dentro del mismo volumen. Con un límite de carga de 6 MB/s, un primer snapshot de ese repositorio tarda más de 5 horas. Ejecutarlo cada hora significa que cada ejecución sigue en curso cuando se activa la siguiente, así que cada disparo posterior se descarta silenciosamente (consulta [Respaldos de Larga Duración y Cronogramas Superpuestos](#respaldos-de-larga-duración-y-cronogramas-superpuestos)). Listar los demás repositorios en `hourly-hot` y dejar `analytics-demo` para `weekly-cold` significa que se respalda una vez por semana en lugar de nunca.
 
 > **Si los datos son puramente regenerables**, considera si necesitas respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
 
-Un repositorio que ninguna de las dos estrategias excluye queda capturado por ambas, así que tiene snapshots horarios consistentes ante fallos y uno semanal consistente a nivel de aplicación. `rdc backup manifests <repo>` los muestra juntos, y los bloques que comparten se almacenan una sola vez.
+Un repositorio que ambas estrategias cubren obtiene snapshots horarios consistentes ante fallos y uno semanal consistente a nivel de aplicación. `rdc backup manifests <repo>` los muestra juntos, y las celdas que comparten se almacenan una sola vez.
 
 ## Operaciones de Respaldo
 
@@ -466,7 +581,7 @@ rdc backup schedule -m server-1 --dry-run
 
 El despliegue es un reconciliador de estado. Lee los archivos de unidad actuales y el estado de systemd en la máquina, los compara con lo que produciría la configuración (SHA-256 por archivo) y solo toca las unidades cuyo contenido realmente cambió. Volver a ejecutarlo sin cambios de configuración es un no-op: sin escrituras, sin `daemon-reload`, sin rotación de temporizadores.
 
-`--dry-run` imprime el plan para cada estrategia (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) sin tocar la máquina. Combínalo con `--debug` para imprimir también los cuerpos de las unidades generadas; los tokens de rclone se redactan.
+`--dry-run` imprime el plan para cada estrategia (`created`, `updated (service, timer, env)`, `unchanged`, `removed`) sin tocar la máquina. Combínalo con `--debug` para imprimir también los cuerpos de las unidades generadas, con las credenciales redactadas. Una unidad de almacenamiento fragmentado no lleva ninguna de entrada: la máquina se autentica con su propia licencia de repositorio firmada, y el servidor devuelve un permiso de corta duración, así que no se escribe nada sensible en el archivo de unidad.
 
 Si actualmente se está ejecutando una copia de seguridad para una estrategia que estás a punto de actualizar o eliminar, el despliegue falla rápido con una sugerencia de cancelarla o pasar `--force`. Con `--force`, la invocación en ejecución conserva su unidad en memoria y la nueva configuración se aplica en el próximo tick del temporizador, así la copia de seguridad en ejecución nunca se termina.
 
@@ -509,27 +624,40 @@ rdc repo migrate my-app@server-1 --to server-2
 |--------|-------------|
 | `<ref>` (posicional) | Ref del repositorio a migrar; su `@machine` indica el origen |
 | `--to <place>` | Máquina o clúster de destino |
-| `--provision` | Provisionar el repositorio en el destino antes de transferir |
-| `--checkpoint` | Crear un checkpoint CRIU antes de migrar |
+| `--provision <provider>` | Aprovisionar automáticamente la máquina destino mediante este proveedor de nube (p. ej. `hetzner`, `linode`) |
+| `--checkpoint` | Crear un checkpoint CRIU antes de migrar, para que la memoria del proceso también se mueva |
+| `--delta-base <guid>` | GUID base inmutable para el delta del cutover. Por defecto, la base de la primera fase |
+| `--strategy <strategy>` | Estrategia de delta de bloques para el cutover: `auto`, `physical` o `shared` |
 | `--skip-dns` | Omitir la actualización de registros DNS después de la migración |
+| `--keep-source` | Conservar las imágenes de origen tras un movimiento exitoso |
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia (p. ej. `50M`) |
 
-La migración transfiere los datos del repositorio cifrado vía rsync. El repositorio de origen permanece intacto hasta que lo elimines explícitamente.
+La migración transfiere los datos del repositorio cifrado vía rsync en dos fases: una transferencia masiva mientras el repositorio sigue en ejecución, y luego una breve parada para el delta. La migración **mueve** el repositorio, así que las imágenes de origen se eliminan una vez que el movimiento tiene éxito. Pasa `--keep-source` para conservarlas. Esta es la diferencia entre `repo migrate` y `repo push`: push deja la fuente en ejecución e intacta.
 
-## Explorar Almacenamiento
+## Leer un Archivo Escrito Antes de la Retirada
 
-`rdc storage browse` y `rdc storage import` son la excepción a esta retirada: lanzan tu propio rclone desde PATH en lugar de una copia integrada, y siguen siendo la forma de leer un archivo escrito antes del cambio.
+`rdc storage` es lo que queda de la rama de rclone, y es de solo lectura. Ya no puede ser un destino de respaldo, pero todavía puede acceder a un archivo que se escribió en uno.
 
 ```bash
+# Registra un remote que ya tienes configurado para rclone.
+rdc storage import rclone.conf
+rdc storage list
+
+# Mira qué hay en él. Esto ejecuta el rclone de tu PATH.
 rdc storage browse my-storage
 ```
 
-Explorar es de solo lectura. Enviar a, descargar desde y listar un backend de almacenamiento están retirados; cada uno se rechaza y nombra el comando de almacenamiento fragmentado que lo reemplaza.
+`import` lee un archivo de configuración rclone y registra los remotes en tu configuración; los tipos compatibles son S3, B2, Google Drive, OneDrive, Mega, Dropbox, Box, Azure Blob y Swift.
+
+**`browse` requiere `rclone` en tu PATH.** Ejecuta el rclone instalado en la máquina donde estás escribiendo; ya no hay una copia integrada. Sin uno, te lo dice y no hace nada más.
+
+Enviar a, descargar desde, listar y restaurar un backend de almacenamiento están retirados; cada uno se rechaza y nombra el comando que lo reemplaza.
 
 ## Mejores Prácticas
 
-- Programa respaldos fríos diarios para snapshots consistentes a nivel de aplicación de datos críticos
-- Usa respaldos calientes para snapshots de alta frecuencia donde se requiere disponibilidad total
-- Prueba las restauraciones periódicamente para verificar la integridad de los respaldos
-- Usa múltiples proveedores de almacenamiento para datos críticos (p. ej. S3 + B2)
+- Programa snapshots fríos diarios para copias consistentes a nivel de aplicación de datos críticos
+- Usa snapshots calientes para ejecuciones de alta frecuencia donde se requiere disponibilidad total
+- Prueba las restauraciones periódicamente. `rdc backup restore --as <new-name>` no sobrescribe nada, así que un simulacro es seguro en una máquina en vivo
+- Establece una política de retención en lugar de podar a mano, para que la ventana que conservas quede escrita
+- Mantén una copia de máquina a máquina además de los snapshots si quieres una copia en hardware que controlas
 - Mantén las credenciales seguras; los respaldos están cifrados pero se requiere la credencial LUKS para restaurar

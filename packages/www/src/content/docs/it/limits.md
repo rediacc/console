@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: it
-sourceHash: "b61fbaae7728c76b"
-sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
+sourceHash: "58ee35faeda9b8df"
+sourceCommit: "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
 ---
 
 # Limiti e Quote
@@ -136,12 +136,33 @@ La migrazione live tramite CRIU ha i seguenti vincoli:
 
 | Limite | Valore |
 |-------|-------|
-| Destinazioni di backup per repository | Illimitate |
-| Job di backup simultanei | 1 per repository (i job si accodano se attivati contemporaneamente) |
+| Snapshot per repository | Nessun limite oltre alla tua quota di storage. Ogni snapshot è ripristinabile in modo indipendente, quindi conservarne di più costa solo storage e nient'altro |
+| Snapshot simultanei di un singolo repository | 1. Una seconda esecuzione trova il lock di staging del repository già occupato e viene **saltata**, non messa in coda: segnala che un'altra esecuzione lo detiene ed esce. Rilanciala in seguito |
 | Snapshot a freddo simultanei | 1 per datastore; un secondo `renet backup snapshot --cold` viene rifiutato subito e non ferma nulla |
 | Frequenza di backup | Nessun intervallo minimo imposto; limitata dalla larghezza di banda di archiviazione. Usa `rdc backup strategy set <name> --bwlimit "6M"` per limitare la velocità di upload |
-| Conservazione | Dichiarata con `rdc backup retention set` (parametri GFS: `--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e applicata lato server; `rdc backup retention clear` la rimuove. Lo storage a chunk viene misurato rispetto a una quota del piano come byte fisici unici memorizzati, quindi i dati identici tra snapshot e in un'intera famiglia di fork vengono conteggiati una sola volta: Community 10 GiB, Professional 100 GiB, Business 500 GiB, Enterprise 2 TiB, verificabile con `rdc backup usage`. Il percorso legacy di push su storage non ha una propria conservazione ed è gestito dal tuo provider. |
+| Conservazione | Dichiarata con `rdc backup retention set` (`--keep-last`, `--keep-hourly`, `--keep-daily`, `--keep-weekly`, `--keep-monthly`, `--keep-yearly`) e applicata lato server; `rdc backup retention clear` la rimuove, dopodiché ogni snapshot viene conservato |
 | Backup tra macchine | Supportato; la macchina di destinazione deve avere spazio sufficiente nel datastore |
+
+### Quota di storage per il backup
+
+Gli snapshot vanno nello storage a chunk, misurato per abbonamento in **byte fisici unici memorizzati**: ciò che è effettivamente trattenuto dopo la deduplicazione, non la somma di ciò che i tuoi snapshot rappresentano logicamente. Gli snapshot che condividono dati, e i repository della stessa famiglia di fork, contano quei dati una sola volta.
+
+| Piano | Quota | Mostrata da `rdc backup usage` come |
+|-------|-------|----------------------------------------|
+| Community | 10 GB | `10G` |
+| Professional | 100 GB | `100G` |
+| Business | 500 GB | `500G` |
+| Enterprise | 2 TB | `2T` |
+
+Questi sono i valori predefiniti del piano. Un abbonamento può avere una propria personalizzazione, quindi controlla `rdc backup usage` invece di assumere la riga sopra.
+
+La quota viene applicata prima che qualsiasi dato si muova: uno snapshot che la supererebbe viene rifiutato quando la macchina chiede il permesso di caricare, non a metà del trasferimento. Atterrare esattamente sulla quota è consentito; un byte in più viene rifiutato. Ciò che conta come utilizzato include i caricamenti ancora in corso, quindi due esecuzioni concorrenti non possono entrambe infilarsi sotto il limite.
+
+Superare la quota non elimina mai nulla. Blocca solo i nuovi caricamenti, e gli snapshot che hai già restano dove sono.
+
+Se un abbonamento scade, lo storage di backup diventa di sola lettura: gli snapshot esistenti restano leggibili e non se ne possono caricare di nuovi. Questi dati vengono conservati per **60 giorni** dopo la scadenza, dopodiché una singola pulizia li rimuove. Un rimborso aperto sull'organizzazione congela quella pulizia invece di eseguirla.
+
+Le copie da macchina a macchina effettuate con `rdc repo push` non toccano questa quota. Atterrano nel datastore della macchina di destinazione e sono limitate dal suo spazio libero.
 
 ---
 

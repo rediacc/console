@@ -4,8 +4,8 @@ description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisyn
 category: Guides
 order: 3
 language: de
-sourceHash: "ee96cb869dcc2639"
-sourceCommit: "b8e332b73573133a282b5c508bc049af1fbeb581"
+sourceHash: "ae49dd7fbc179d35"
+sourceCommit: "522dceadb04b6a3e7f4ea60ac1e47308f6a1a600"
 ---
 
 # RDC CLI Cheat Sheet
@@ -44,12 +44,11 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 
 | Befehl | Beschreibung |
 |--------|--------------|
-| `rdc repo push <repo>@<machine> --to <storage>` | Repository-Sicherung in Speicher hochladen |
-| `rdc repo pull <repo>@<machine> --from <storage>` | Repository aus Speicher wiederherstellen |
 | `rdc repo push ... --bwlimit <limit>` | rsync-Bandbreite beim Hochladen begrenzen (z. B. `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | rsync-Bandbreite beim Herunterladen begrenzen |
 | `rdc repo push ... --checkpoint` | Container vor dem Hochladen sichern |
-| `rdc backup list --storage <storage>` | Verfügbare Sicherungen im Speicher auflisten |
+| `rdc backup manifests <repo-ref>` | Im Chunk-Store gespeicherte Snapshots auflisten |
+| `rdc backup browse <repo-ref>` | Dateien eines Repositorys auflisten (lokal, nur lesend) |
 | `rdc backup snapshot <repo>` | Chunk-Store-Snapshot hochladen: zuerst das vollständige Inventar, danach nur geänderte Zellen |
 | `rdc backup snapshot <repo> --dry-run` | Snapshot planen, ohne hochzuladen; zeigt, was sich bewegen würde |
 | `rdc backup verify <repo>` | Backup-Anker eines Repositorys gegen den Chunk-Store verifizieren |
