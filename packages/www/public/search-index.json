@@ -4445,7 +4445,7 @@
   {
     "id": "search-4237",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
@@ -9856,8 +9856,8 @@
   {
     "id": "search-4734",
     "content": "4. Pull from Remote",
-    "body": "# Pull repo from a cloud machine to your local server rdc repo pull my-app@my-local-server --from cloud-server # Pull from cloud storage rdc repo pull my-app@my-local-server --from my-s3-backup # Pull and start immediately rdc repo pull my-app@my-local-server --from my-s3-backup --up Why pull? Your local machine is behind NAT. The cloud can't push to you. But you can reach the cloud. Pull brings the repo home. Full cycle: Create on dev → push to cloud → pull on production → --up. One repo, any machine, any cloud. Scheduling, automated backups, restore: Backup & Restore. ---",
-    "excerpt": "# Pull repo from a cloud machine to your local server rdc repo pull my-app@my-local-server --from cloud-server # Pull from cloud storage rdc repo pull...",
+    "body": "# Pull repo from a cloud machine to your local server rdc repo pull my-app@my-local-server --from cloud-server # Pull and start immediately rdc repo pull my-app@my-local-server --from cloud-server --up # Restore a point in time from the chunk store instead rdc backup restore my-app --at <snapshot> --as my-app --up Why pull? Your local machine is behind NAT. The cloud can't push to you. But you can reach the cloud. Pull brings the repo home. Full cycle: Create on dev → push to cloud → pull on production → --up. One repo, any machine, any cloud. Scheduling, automated backups, restore: Backup & Restore. ---",
+    "excerpt": "# Pull repo from a cloud machine to your local server rdc repo pull my-app@my-local-server --from cloud-server # Pull and start immediately rdc repo p...",
     "category": "Documentation",
     "page": "/en/docs/quick-start",
     "path": "docs.quick-start.content",

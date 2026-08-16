@@ -28,14 +28,11 @@
         "description": "Bir makine üzerindeki yedek artefaktlarını listele.",
         "examples": {
           "basic": "Bir makine için saklanan yedekleri listele.",
-          "byStorage": "Belirli bir depolama arka ucundaki yedekleri listele."
+          "byPath": "Veri deposunun yalnızca tek bir alt dizinini listele"
         },
         "listing": "Yedekler listeleniyor...",
-        "optionPath": "Depolama kökü içindeki alt dizin. Belirtilmezse hot/ ve cold/ listelenip birleştirilir.",
-        "optionStorage": "KALDIRILDI: depolama listeleme, rclone koluyla birlikte çıkarıldı",
-        "placementExclusive": "--machine veya --storage seçeneklerinden yalnızca birini geçirin, ikisini birden değil.",
-        "placementRequired": "Nereden listeleneceğini belirtmek için --machine <m> veya --storage <s> kullanın.",
-        "storageRetired": "Depolama arka ucunu listeleme kaldırıldı: rclone bulut kolu artık yok. Parça deposundaki anlık görüntüler `rdc backup manifests`, bir makinedeki yedekler `rdc backup list -m <machine>` ile listelenir"
+        "optionPath": "Listelemeyi tek bir alt dizinle sınırla; tüm veri deposunu listelemek için belirtme",
+        "placementRequired": "Yedekleri listelenecek makineyi belirtmek için -m <machine> kullanın."
       },
       "manifests": {
         "description": "Sunucuya kaydedilen yedek anlık görüntü manifestlerini listele",

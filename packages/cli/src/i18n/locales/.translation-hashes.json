@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1765,
-    "sourceCommit": "79c84ad044d5730b6d0a20aaf7b21f21914b6bda"
+    "keyCount": 1762,
+    "sourceCommit": "d00c35b09fadfbf1a9bb8ff0541308d614f13a0a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -25,13 +25,10 @@
     "commands.backup.drNudge": "ad4fb8c1",
     "commands.backup.list.description": "abd1b789",
     "commands.backup.list.examples.basic": "420adc94",
-    "commands.backup.list.examples.byStorage": "7cb1faa8",
+    "commands.backup.list.examples.byPath": "3cc070f9",
     "commands.backup.list.listing": "d210e32c",
-    "commands.backup.list.optionPath": "ce218b32",
-    "commands.backup.list.optionStorage": "e872d2f8",
-    "commands.backup.list.placementExclusive": "a335482d",
-    "commands.backup.list.placementRequired": "5972aaed",
-    "commands.backup.list.storageRetired": "20e8bed4",
+    "commands.backup.list.optionPath": "53d894b2",
+    "commands.backup.list.placementRequired": "2ead5183",
     "commands.backup.manifests.description": "14c9566d",
     "commands.backup.manifests.empty": "b5b0c78e",
     "commands.backup.manifests.fetching": "f1015dd7",

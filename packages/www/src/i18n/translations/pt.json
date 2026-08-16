@@ -4813,7 +4813,7 @@
           "title": "O que obtém"
         },
         "bottomCta": {
-          "command": "rdc backup list --storage backup-vault",
+          "command": "rdc backup verify my-app",
           "description": "Comece com a edição Community gratuita. Verifique o seu primeiro backup em menos de um minuto.",
           "primaryCta": "Começar Gratuitamente com Community",
           "tierBadge": "Sem cartão de crédito necessário",

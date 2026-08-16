@@ -4297,7 +4297,7 @@
   {
     "id": "search-13405",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
@@ -9708,8 +9708,8 @@
   {
     "id": "search-13902",
     "content": "4. Receber de Remoto",
-    "body": "# Receber repositório de uma máquina na nuvem para o seu servidor local rdc repo pull my-app@my-local-server --from cloud-server # Receber do armazenamento na nuvem rdc repo pull my-app@my-local-server --from my-s3-backup # Receber e iniciar imediatamente rdc repo pull my-app@my-local-server --from my-s3-backup --up Porquê receber? A sua máquina local está atrás de NAT. A nuvem não consegue enviar para si. Mas pode alcançar a nuvem. Receber traz o repositório para casa. Ciclo completo: Criar em dev → enviar para a nuvem → receber em produção → --up. Um repositório, qualquer máquina, qualquer nuvem. Agendamento, backups automáticos, restauro: Backup e Restauro. ---",
-    "excerpt": "# Receber repositório de uma máquina na nuvem para o seu servidor local rdc repo pull my-app@my-local-server --from cloud-server # Receber do armazena...",
+    "body": "# Receber repositório de uma máquina na nuvem para o seu servidor local rdc repo pull my-app@my-local-server --from cloud-server # Receber e iniciar imediatamente rdc repo pull my-app@my-local-server --from cloud-server --up # Em vez disso, restaurar um momento pontual a partir do armazenamento fragmentado rdc backup restore my-app --at <snapshot> --as my-app --up Porquê receber? A sua máquina local está atrás de NAT. A nuvem não consegue enviar para si. Mas pode alcançar a nuvem. Receber traz o repositório para casa. Ciclo completo: Criar em dev → enviar para a nuvem → receber em produção → --up. Um repositório, qualquer máquina, qualquer nuvem. Agendamento, backups automáticos, restauro: Backup e Restauro. ---",
+    "excerpt": "# Receber repositório de uma máquina na nuvem para o seu servidor local rdc repo pull my-app@my-local-server --from cloud-server # Receber e iniciar i...",
     "category": "Documentation",
     "page": "/pt/docs/quick-start",
     "path": "docs.quick-start.content",

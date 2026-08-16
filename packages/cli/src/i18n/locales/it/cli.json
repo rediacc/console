@@ -28,14 +28,11 @@
         "description": "Elenca gli artefatti di backup su una macchina.",
         "examples": {
           "basic": "Elenca i backup salvati per una macchina.",
-          "byStorage": "Elenca i backup in un backend di storage specifico."
+          "byPath": "Elenca solo una sottodirectory del datastore"
         },
         "listing": "Elenco dei backup in corso...",
-        "optionPath": "Sottodirectory all'interno della radice dello storage. Se omessa, hot/ e cold/ vengono elencate e unite.",
-        "optionStorage": "DISMESSO: l'elenco dello storage è stato rimosso con il braccio rclone",
-        "placementExclusive": "Passa esattamente uno tra --machine e --storage, non entrambi.",
-        "placementRequired": "Specifica --machine <m> oppure --storage <s> per indicare da dove elencare.",
-        "storageRetired": "Elencare un backend di storage è dismesso: il braccio cloud rclone è stato rimosso. Gli snapshot del chunk store si elencano con `rdc backup manifests`, gli artefatti su una macchina con `rdc backup list -m <machine>`"
+        "optionPath": "Limita l'elenco a una sottodirectory; ometti per elencare l'intero datastore",
+        "placementRequired": "Specifica -m <machine> per indicare la macchina di cui vuoi elencare i backup."
       },
       "manifests": {
         "description": "Elenca i manifest degli snapshot di backup registrati sul server",

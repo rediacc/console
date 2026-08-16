@@ -28,14 +28,11 @@
         "description": "Listar artefactos de copia de seguridad en una máquina.",
         "examples": {
           "basic": "Lista las copias de seguridad guardadas de una máquina.",
-          "byStorage": "Lista las copias de seguridad de un backend de almacenamiento específico."
+          "byPath": "Lista solo un subdirectorio del almacén de datos"
         },
         "listing": "Listando copias de seguridad...",
-        "optionPath": "Subdirectorio dentro de la raíz del almacenamiento. Si se omite, se listan y combinan hot/ y cold/.",
-        "optionStorage": "RETIRADO: el listado de almacenamiento se eliminó junto con el brazo de rclone",
-        "placementExclusive": "Pasa exactamente uno de --machine o --storage, no ambos.",
-        "placementRequired": "Especifica --machine <m> o --storage <s> para indicar de dónde listar.",
-        "storageRetired": "Listar un backend de almacenamiento está retirado: se eliminó el brazo de nube de rclone. Las instantáneas del almacén de bloques se listan con `rdc backup manifests`, y los artefactos de una máquina con `rdc backup list -m <machine>`"
+        "optionPath": "Limita el listado a un subdirectorio; omite esta opción para listar todo el almacén de datos",
+        "placementRequired": "Especifica -m <machine> para indicar la máquina cuyas copias de seguridad quieres listar."
       },
       "manifests": {
         "description": "Listar los manifiestos de instantáneas de copia de seguridad registrados en el servidor",

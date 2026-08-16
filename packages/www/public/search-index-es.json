@@ -4297,7 +4297,7 @@
   {
     "id": "search-5557",
     "content": "8.3 list",
-    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --storage <name> | {{t:cli.commands.backup.list.optionStorage}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
+    "body": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} | |------|-------------|----------|---------| | -m, --machine <name> | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - | | --path <subdir> | {{t:cli.commands.backup.list.optionPath}} | {{t:cli.docs.optionLabels.no}} | - | | --debug | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - | <a id=\"cli-local-backup-manifests\"></a>",
     "excerpt": "{{t:cli.commands.backup.list.description}} rdc backup list [artifact-ref] [options] | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.des...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
@@ -9686,8 +9686,8 @@
   {
     "id": "search-6052",
     "content": "4. Pull desde remoto",
-    "body": "# Traer repo desde una máquina en la nube a su servidor local rdc repo pull my-app@my-local-server --from cloud-server # Traer desde almacenamiento en la nube rdc repo pull my-app@my-local-server --from my-s3-backup # Traer e iniciar inmediatamente rdc repo pull my-app@my-local-server --from my-s3-backup --up ¿Por qué pull? Su máquina local está detrás de NAT. La nube no puede enviar hacia usted. Pero usted puede alcanzar la nube. Pull trae el repo a casa. Ciclo completo: Crear en dev → push a la nube → pull en producción → --up. Un repo, cualquier máquina, cualquier nube. Programación, copias de seguridad automáticas, restauración: Copia de seguridad y restauración. ---",
-    "excerpt": "# Traer repo desde una máquina en la nube a su servidor local rdc repo pull my-app@my-local-server --from cloud-server # Traer desde almacenamiento en...",
+    "body": "# Traer repo desde una máquina en la nube a su servidor local rdc repo pull my-app@my-local-server --from cloud-server # Traer e iniciar inmediatamente rdc repo pull my-app@my-local-server --from cloud-server --up # Restaurar un momento puntual desde el almacenamiento fragmentado en su lugar rdc backup restore my-app --at <snapshot> --as my-app --up ¿Por qué pull? Su máquina local está detrás de NAT. La nube no puede enviar hacia usted. Pero usted puede alcanzar la nube. Pull trae el repo a casa. Ciclo completo: Crear en dev → push a la nube → pull en producción → --up. Un repo, cualquier máquina, cualquier nube. Programación, copias de seguridad automáticas, restauración: Copia de seguridad y restauración. ---",
+    "excerpt": "# Traer repo desde una máquina en la nube a su servidor local rdc repo pull my-app@my-local-server --from cloud-server # Traer e iniciar inmediatament...",
     "category": "Documentation",
     "page": "/es/docs/quick-start",
     "path": "docs.quick-start.content",
