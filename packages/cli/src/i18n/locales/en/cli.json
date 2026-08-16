@@ -1477,7 +1477,6 @@
       "drNudge": "Config storage is not enrolled: your repo credentials (LUKS passphrases) live only on this host, so a bare-metal restore cannot recover them. Enroll with \"rdc config remote enable\" to sync them inside the encrypted config blob.",
       "list": {
         "description": "List backup artifacts on a machine or storage.",
-        "executorAmbiguous": "More than one machine is registered; qualify the storage listing with @<machine> to say which one runs it.",
         "listing": "Listing backups...",
         "optionPath": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.",
         "optionStorage": "RETIRED: storage listing was removed with the rclone arm",

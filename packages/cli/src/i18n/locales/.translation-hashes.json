@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1757,
+    "keyCount": 1756,
     "sourceCommit": "ed40593132a3223ffed76456d8b7f64a4c790f4a"
   },
   "hashes": {
@@ -17,7 +17,6 @@
     "commands.backup.list.description": "ef1c5175",
     "commands.backup.list.examples.basic": "420adc94",
     "commands.backup.list.examples.byStorage": "7cb1faa8",
-    "commands.backup.list.executorAmbiguous": "d5f95c9e",
     "commands.backup.list.listing": "d210e32c",
     "commands.backup.list.optionPath": "ce218b32",
     "commands.backup.list.optionStorage": "e872d2f8",

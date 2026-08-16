@@ -174,8 +174,18 @@ async function narrowRemoteToDataPlane(
  * script and from a terminal should not have to work out that they are the same
  * refusal.
  */
+// STATIC KEYS, not `t(`commands.repo.${kind}.storageRetired`)`. The template
+// literal read fine and defeated check:ci-i18n-cli-key-usage, which finds a key
+// by searching for its literal in the source: both keys were reported as
+// orphans in en/cli.json while being very much in use. The allowlist exists for
+// keys that are GENUINELY dynamic; these two are not, and suppressing a gate to
+// keep a nicety is how the gate stops meaning anything.
 function refuseRetiredStorage(kind: 'push' | 'pull'): never {
-  throw new ValidationError(t(`commands.repo.${kind}.storageRetired`));
+  throw new ValidationError(
+    kind === 'push'
+      ? t('commands.repo.push.storageRetired')
+      : t('commands.repo.pull.storageRetired')
+  );
 }
 
 /** Resolve backup target from CLI options. */
