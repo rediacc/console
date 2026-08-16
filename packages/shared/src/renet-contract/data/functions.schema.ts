@@ -9,6 +9,13 @@ import type { RenetFunctionName, FunctionParamsMap } from './functions.generated
 // Zod schemas for runtime validation
 // ============================================
 
+/** List the files a repository contains (local, read-only) */
+export const BackupBrowseParamsSchema = z.object({
+  path: z.string().optional().describe('Limit the listing to this subtree'),
+  depth: z.string().default('0').optional().describe('Limit descent to N levels (0 = unlimited)'),
+  limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
+});
+
 /** Delete one or more backups from storage or machine */
 export const BackupDeleteParamsSchema = z.object({
   sourceType: z
@@ -615,6 +622,7 @@ export const SetupParamsSchema = z.object({
 });
 
 export const FUNCTION_SCHEMAS = {
+  backup_browse: BackupBrowseParamsSchema,
   backup_delete: BackupDeleteParamsSchema,
   backup_list: BackupListParamsSchema,
   backup_pull: BackupPullParamsSchema,

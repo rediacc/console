@@ -6,6 +6,16 @@
 // Type-safe parameter interfaces
 // ============================================
 
+/** List the files a repository contains (local, read-only) */
+export interface BackupBrowseParams {
+  /** Limit the listing to this subtree */
+  path?: string;
+  /** Limit descent to N levels (0 = unlimited) */
+  depth?: string;
+  /** Maximum entries to return (0 = unlimited) */
+  limit?: string;
+}
+
 /** Delete one or more backups from storage or machine */
 export interface BackupDeleteParams {
   /** Target type: machine (SSH); storage is retired */
@@ -796,6 +806,7 @@ export interface SetupParams {
 }
 
 export const RENET_FUNCTIONS = [
+  'backup_browse',
   'backup_delete',
   'backup_list',
   'backup_pull',
@@ -882,11 +893,12 @@ export const RENET_FUNCTIONS = [
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'dev';
+export const RENET_FUNCTIONS_VERSION = 'v1.2.25';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
 export const RENET_BRIDGE_FUNCTIONS = [
+  'backup_browse',
   'backup_delete',
   'backup_list',
   'backup_pull',
@@ -1057,6 +1069,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
 export type RenetBridgeFunctionName = (typeof RENET_BRIDGE_FUNCTIONS)[number];
 
 export type FunctionParamsMap = {
+  backup_browse: BackupBrowseParams;
   backup_delete: BackupDeleteParams;
   backup_list: BackupListParams;
   backup_pull: BackupPullParams;
@@ -1144,6 +1157,9 @@ export type FunctionParamsMap = {
 };
 
 export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Partial<Record<'machine' | 'team' | 'repository' | 'storage' | 'organization' | 'network_id', boolean>> }> = {
+  'backup_browse': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'backup_delete': {
     requirements: { machine: true, team: true, repository: true, storage: true },
   },
@@ -1467,6 +1483,28 @@ export interface FunctionDefinition {
 // ============================================
 
 export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition> = {
+  'backup_browse': {
+    name: 'backup_browse',
+    category: 'backup',
+    showInMenu: true,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      path: {
+        type: 'string',
+        help: 'Limit the listing to this subtree',
+      },
+      depth: {
+        type: 'string',
+        default: '0',
+        help: 'Limit descent to N levels (0 = unlimited)',
+      },
+      limit: {
+        type: 'string',
+        default: '10000',
+        help: 'Maximum entries to return (0 = unlimited)',
+      },
+    },
+  },
   'backup_delete': {
     name: 'backup_delete',
     category: 'backup',
@@ -3320,6 +3358,7 @@ export type QueueFunctionsType = {
 };
 
 export const queueFunctions: QueueFunctionsType = {
+  backup_browse: (params) => ({ functionName: 'backup_browse', params }),
   backup_delete: (params) => ({ functionName: 'backup_delete', params }),
   backup_list: (params) => ({ functionName: 'backup_list', params }),
   backup_pull: (params) => ({ functionName: 'backup_pull', params }),
