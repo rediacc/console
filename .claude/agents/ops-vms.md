@@ -15,7 +15,9 @@ to misunderstand; every note below was verified live.
 on one machine.
 
 `./rdc.sh ops up` (full): adds VM 12 (worker, .12) and the Ceph trio 21/22/23
-(.21-.23). About 24 GB RAM and ~190 GB disk total. Required for: migration between
+(.21-.23). Measured: 1024 + 5x4096 = **21504 MB** RAM at defaults, and disk is
+SPARSE -- ~8.9 GB actual across the six system images plus three 32 GB sparse
+`cephosd` images, not ~190 GB allocated. Required for: migration between
 workers (needs .12), datastore forks and anything RBD (a datastore-level fork is
 RBD-only; local-backend forks are refused outright), cluster/kube legs.
 
@@ -75,22 +77,95 @@ bundle, and renet, then syncs the renet binary to targets. Consequences:
   the Ceph VMs as bare OS images: no ceph/rbd binaries anywhere, and
   `datastore create --backend rbd` dies with `rbd: command not found` (paid for
   live, 2026-08-04).
-- Ceph VMs that already exist as bare images are NOT healed by an incremental
-  `ops up` with the env set (zero ceph activity, exit 0): re-provision with
-  `VM_BRIDGE='1' VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up
-  --force --parallel` (the bridge harness's own soft-reset pattern; recreates the
-  trio with 32GB OSD disks).
-- The bootstrap itself is `PROVISION_CEPH_CLUSTER=1 VM_BRIDGE='1' VM_WORKERS='11 12'
-  VM_CEPH_NODES='21 22 23' renet ops ceph provision` (the explicit enable flag is
-  REQUIRED for the standalone command; without it the command logs "Ceph cluster
-  provisioning is disabled" and exits 0, a silent no-op). The provisioner creates
-  pool `rediacc_rbd_pool`, not `rbd`: pass `--pool rediacc_rbd_pool` to
-  `datastore create --backend rbd`. (Bootstrap = cephadm
-  bootstrap + orch host adds, several minutes, background it). `ops ceph health`
-  only CHECKS: against never-provisioned nodes it polls toward a 600s timeout
-  (the fail-fast state file exists only after a FAILED provisioning, not an
-  absent one). Prove Ceph exists with health AFTER provision, never with VM
-  liveness.
+- **`--force` is NOT required, and the old claim here was wrong about the
+  mechanism.** This file used to say bare Ceph VMs "are NOT healed by an
+  incremental `ops up`" and prescribed `--force --parallel` to recreate the trio.
+  The observation was real; the cause was not. `ops_up.go:184-190` runs
+  `orchestrateCluster` on every `ops up`, and the Ceph block at `:415-418`
+  depends only on `ProvisionCeph` + `VMCephNodes` -- there is no
+  "VMs already exist, skip Ceph" path in the code. What actually happens is that
+  `ProvisionCeph` arrives FALSE: `opsconfig.Load` probes `cwd/../.env`
+  (`config.go:172`), the CLI spawns renet with no cwd so it inherits the console
+  root, and `/home/muhammed/monorepo/.env` carries `PROVISION_CEPH_CLUSTER=false`,
+  which `config.go:541` gives precedence over the `VM_CEPH_NODES` inference.
+  So: **always set `PROVISION_CEPH_CLUSTER=1` explicitly** -- a real env var
+  outranks that stray parent `.env` -- and do not recreate the VMs. The existing
+  trio already carries its `cephosd` disk (attached at create time,
+  `ops_up.go:294-296`), so `--force` costs ~20 minutes and buys nothing.
+- The standalone bootstrap is `PROVISION_CEPH_CLUSTER=1 VM_BRIDGE='1'
+  VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./bin/renet ops ceph provision`,
+  run from `private/renet` (from the console root the parent `.env` above is on
+  the probe path). It works against ALREADY-RUNNING bare VMs: `provision()`
+  (`provisioner.go:78-168`) is pure SSH and creates no VMs. **It is DESTRUCTIVE
+  and re-runnable, not idempotent** -- `Bootstrap` opens with `CleanupState`
+  (`provisioner.go:413`), wiping any existing cluster and rebuilding. ~21 minutes;
+  background it. The provisioner creates pool `rediacc_rbd_pool`, not `rbd`: pass
+  `--pool rediacc_rbd_pool` to `datastore create --backend rbd`.
+- `ops ceph health` only CHECKS: against never-provisioned nodes it polls toward a
+  600s timeout (the fail-fast state file exists only after a FAILED provisioning,
+  not an absent one). **And health is the WRONG oracle for whether Ceph is
+  usable.** HEALTH_OK is silent about client distribution: a cluster with healthy
+  mons and every OSD up reports it whether or not a worker ever received
+  `/etc/ceph`. Prove Ceph on the WORKERS -- `/etc/ceph/ceph.conf` plus an `rbd`
+  binary on each -- never with cluster health and never with VM liveness:
+
+  ```bash
+  for ip in 192.168.111.11 192.168.111.12; do
+    ssh -i ~/.renet/staging/.ssh/id_rsa ubuntu@$ip 'ls /etc/ceph; command -v rbd'
+  done
+  ```
+
+  This is not hypothetical. On 2026-08-16 `ceph-common` was SIGKILLed mid-install
+  on worker 12 (worker 11 survived the same command at 106s), the failure was
+  recorded correctly, and `checkProvisionRecord` then DELETED the record because
+  the cluster was HEALTH_OK. The E2E suite ran against a half-configured fleet and
+  died six minutes later with "can't open ceph.conf". Both halves are now fixed
+  (the record survives a client-side failure; the harness asks the workers), but
+  the lesson stands: ask the machine that must do the work.
+
+## Ceph on the local fleet
+
+Nothing here is operator-gated: `REDIACC_ALLOW_CLUSTER_OPS` gates the `rdc cluster` /
+`rdc datastore` CLI verbs (`command-policy.ts:197,217`), and the ceph-workers suites
+never touch `rdc` -- they drive `renet` on the VMs over SSH through `BridgeTestRunner`.
+`renet ops ceph provision` has no policy layer at all. An agent can run every step.
+
+Two ways in, and they cost very differently:
+
+- **Cluster only** (~21 min): the standalone `ops ceph provision` above. Right when the
+  VMs are up and you just need Ceph.
+- **Whole suite** (~37 min): the harness provisions Ceph itself --
+  `bridge-global-setup` -> `resetVMs()` -> `renet ops up --force --parallel`, whose
+  Ceph block fires on `ProvisionCeph` + `VMCephNodes`.
+
+```bash
+.ci/scripts/env/create-e2e-env.sh \
+  --renet-path "$PWD/private/renet/bin/renet" --output packages/e2e-tests/.env \
+  --vm-workers "11 12" --vm-ceph-nodes "21 22 23" \
+  --vm-ram-worker 2560 --vm-ram-ceph 2560 --ceph-osd-memory-target 1717986918
+printf 'RENET_DATA_DIR=%s/.renet\n' "$HOME" >> packages/e2e-tests/.env
+.ci/scripts/test/run-e2e.sh --workers 1 --config playwright.ceph-workers.config.ts --fail-on-skip
+```
+
+The `RENET_DATA_DIR` line is the local-only delta: the generated `.env` sets `CI=true`,
+which sends renet to `/tmp/renet` where the VMs' authorized key does not live.
+
+Three traps worth the ink:
+
+- **Topology comes ONLY from `--vm-workers` / `--vm-ceph-nodes`**
+  (`create-e2e-env.sh:66-72`). An env prefix of `VM_CEPH_NODES=...` is INERT here and
+  merely appears to work when it matches the defaults. (`VM_RAM_*` and `VM_IMAGE` do
+  fall back to env; topology does not.)
+- **`--vm-ram-worker` / `--vm-ram-ceph` are mandatory for this topology.**
+  `assert_ram_budget` caps at a hardcoded 14848 MB and the default 6-VM fleet computes
+  to 21504 MB, so it exits 1 before writing anything. No env override for the ceiling.
+- **`KEEP_CLUSTER=1` / `BRIDGE_TEST_SKIP_RESET=1` skip `resetVMs`, and therefore skip
+  Ceph provisioning too.** Fine for iterating once the cluster exists; never on a first
+  run.
+
+Budget note: the suites themselves take ~61 seconds. Everything else is bootstrap, and
+CI's `resetVMs` cap is 1800s against a measured 1800.2s -- a marginally slower run gets
+SIGTERM'd mid-Ceph and reports `code: -1`. That is a latent flake, not a mystery.
 
 ## Agent-mode guardrails (ancestry-verified, non-negotiable)
 

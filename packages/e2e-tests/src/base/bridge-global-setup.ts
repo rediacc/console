@@ -330,6 +330,13 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     const cephNodes = opsManager.getCephVMIps();
     if (cephNodes.length > 0) {
       await waitForCephHealth(opsManager);
+      // Cluster health is NOT the whole precondition. HEALTH_OK is silent about
+      // whether the workers were configured as clients, and on 2026-08-16 a
+      // SIGKILLed ceph-common install left worker 12 without /etc/ceph while the
+      // cluster reported HEALTH_OK and the recorded failure was erased. The
+      // suite ran anyway and failed 6 minutes later with "can't open ceph.conf".
+      // Asking the workers directly turns that into a named failure here.
+      await opsManager.verifyCephClientsReady();
     }
 
     // Step 2: Build renet and deploy to all VMs

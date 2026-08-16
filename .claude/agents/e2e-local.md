@@ -25,10 +25,16 @@ they are usually already running.
 
 ```bash
 # 1. env file describing the fleet (regenerate whenever the fleet changes)
-VM_BRIDGE='1' VM_WORKERS='11 12' VM_CEPH_NODES='' \
-  .ci/scripts/env/create-e2e-env.sh \
-    --renet-path "$PWD/private/renet/bin/renet" \
-    --output packages/e2e-tests/.env
+#
+# TOPOLOGY COMES FROM THE FLAGS, NOT THE ENVIRONMENT. This block used to carry a
+# `VM_BRIDGE=... VM_WORKERS=... VM_CEPH_NODES=...` prefix, which is INERT:
+# create-e2e-env.sh:66-72 reads topology only from --vm-workers/--vm-ceph-nodes.
+# It appeared to work because the values happened to match the defaults. (VM_RAM_*
+# and VM_IMAGE DO fall back to env; topology does not.)
+.ci/scripts/env/create-e2e-env.sh \
+  --renet-path "$PWD/private/renet/bin/renet" \
+  --output packages/e2e-tests/.env \
+  --vm-workers "11 12"
 
 # 2. run everything, or one suite
 .ci/scripts/test/run-e2e.sh --workers 1 --fail-on-skip
