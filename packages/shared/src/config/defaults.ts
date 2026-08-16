@@ -44,6 +44,23 @@ export const SSH_DEFAULTS = {
 /**
  * Repository and container defaults
  */
+/**
+ * `rdc backup browse` listing bounds.
+ *
+ * LIMIT is not unlimited on purpose: a repository carrying a node_modules tree
+ * holds hundreds of thousands of entries, and an unbounded default would make
+ * the verb's first honest use look like a hang. The cap is REPORTED via the
+ * listing's `truncated` flag, so a short listing can never be mistaken for a
+ * complete one.
+ */
+export const BACKUP_BROWSE_DEFAULTS = {
+  /** Descend without limit. */
+  DEPTH: '0',
+
+  /** Maximum entries returned before the listing reports itself truncated. */
+  LIMIT: '10000',
+} as const;
+
 export const REPOSITORY_DEFAULTS = {
   /** Default repository tag */
   TAG: 'latest',

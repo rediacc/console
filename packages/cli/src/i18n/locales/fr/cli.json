@@ -6,6 +6,7 @@
     "backup": {
       "browse": {
         "description": "Liste les fichiers que contient un dépôt. Un parcours local en lecture seule de l'image du dépôt : aucun serveur de compte et aucun réseau. Un dépôt chiffré doit être monté, ou avoir son fichier de clé déployé, avant de pouvoir être ouvert ; browse le signale au lieu d'afficher une liste vide. Ne peut pas lister un instantané qui n'existe que dans le magasin de blocs ; restaurez-le d'abord, puis parcourez le résultat.",
+        "descriptionShort": "Lister les fichiers d'un dépôt (local, lecture seule)",
         "optionPath": "Limiter le listage à ce sous-arbre",
         "optionDepth": "Limiter la descente à N niveaux (0 pour illimité)",
         "optionLimit": "Nombre maximal d'entrées à renvoyer (0 pour illimité)",

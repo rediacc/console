@@ -6,6 +6,7 @@
     "backup": {
       "browse": {
         "description": "Loetle hoidla failid. Kohalik kirjutuskaitstud läbikäik hoidla kujutisest: ei kasuta kontoserverit ega võrku. Krüpteeritud hoidla peab olema haagitud või selle võtmefail peab olema juurutatud, enne kui seda saab avada; browse teatab sellest, selle asemel et näidata tühja loetelu. Ei saa loetleda hetktõmmist, mis on olemas ainult tükihoidlas; taasta see esmalt ja seejärel sirvi tulemust.",
+        "descriptionShort": "Loetle hoidla failid (kohalik, kirjutuskaitstud)",
         "optionPath": "Piira loetelu selle alampuuga",
         "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
         "optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",

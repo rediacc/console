@@ -1467,15 +1467,16 @@
     },
     "backup": {
       "browse": {
+        "completed": "Listed {{name}}",
         "description": "List the files a repository contains. A local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. It cannot list a snapshot that exists only in chunk storage; restore it first, then browse the result.",
-        "optionPath": "Limit the listing to this subtree",
+        "descriptionShort": "List the files a repository contains (local, read-only)",
+        "empty": "{{name}} contains no files.",
+        "failed": "Could not list {{name}}",
         "optionDepth": "Limit descent to N levels (0 for unlimited)",
         "optionLimit": "Maximum entries to return (0 for unlimited)",
+        "optionPath": "Limit the listing to this subtree",
         "starting": "Listing {{name}}...",
-        "completed": "Listed {{name}}",
-        "failed": "Could not list {{name}}",
-        "truncated": "Listing truncated at {{limit}} entries. Narrow it with --path, or raise --limit.",
-        "empty": "{{name}} contains no files."
+        "truncated": "Listing truncated at {{limit}} entries. Narrow it with --path, or raise --limit."
       },
       "cancel": {
         "cancelled": "Cancelled {{name}}",

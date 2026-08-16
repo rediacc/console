@@ -1,6 +1,7 @@
 {
   "commands.backup.browse.completed": "{{name}} を一覧表示しました",
   "commands.backup.browse.description": "リポジトリに含まれるファイルを一覧表示する。リポジトリイメージへのローカルな読み取り専用アクセスであり、アカウントサーバーにもネットワークにも接続しない。暗号化されたリポジトリは、開く前にマウント済みであるか、キーファイルがデプロイ済みである必要がある。browse は空の一覧を返すのではなく、その旨を報告する。チャンクストアにのみ存在するスナップショットは一覧表示できない。先にリストアしてから、その結果を参照すること。",
+  "commands.backup.browse.descriptionShort": "リポジトリのファイルを一覧表示する（ローカル、読み取り専用）",
   "commands.backup.browse.empty": "{{name}} にはファイルがありません。",
   "commands.backup.browse.failed": "{{name}} を一覧表示できませんでした",
   "commands.backup.browse.optionDepth": "階層の深さをNレベルに制限する（0で無制限）",
