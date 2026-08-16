@@ -17,6 +17,7 @@ export interface LicenseTierEntry {
 }
 
 export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
+  "backup_browse": { tier: "none", pending: false },
   "backup_delete": { tier: "none", pending: false },
   "backup_list": { tier: "none", pending: false },
   "backup_pull": { tier: "full", pending: false },
