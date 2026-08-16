@@ -195,20 +195,6 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Machine name"
         },
         {
-          "flags": "--storage <name>",
-          "long": "storage",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "kinds": [
-            "storage"
-          ],
-          "tier": "common",
-          "descriptionKey": "commands.backup.list.optionStorage",
-          "label": "RETIRED: storage listing was removed with the rclone arm"
-        },
-        {
           "flags": "--path <subdir>",
           "long": "path",
           "valueTaking": true,
@@ -218,7 +204,7 @@ export const CLI_CONTRACT: CliContract = {
           "format": "path",
           "tier": "advanced",
           "descriptionKey": "commands.backup.list.optionPath",
-          "label": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged."
+          "label": "Limit the listing to one subdirectory; omit to enumerate the whole datastore"
         },
         {
           "flags": "--debug",
@@ -253,12 +239,13 @@ export const CLI_CONTRACT: CliContract = {
           "label": "List the backups stored for a machine."
         },
         {
-          "command": "rdc backup list --storage backups-s3",
+          "command": "rdc backup list -m prod-1 --path hot",
           "values": {
-            "storage": "backups-s3"
+            "machine": "prod-1",
+            "path": "hot"
           },
-          "descriptionKey": "commands.backup.list.examples.byStorage",
-          "label": "List the backups in a specific storage backend."
+          "descriptionKey": "commands.backup.list.examples.byPath",
+          "label": "List only one subdirectory of the datastore"
         }
       ],
       "keywords": [

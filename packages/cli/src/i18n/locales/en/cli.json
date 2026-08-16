@@ -1488,16 +1488,13 @@
       "drNudge": "Config storage is not enrolled: your repo credentials (LUKS passphrases) live only on this host, so a bare-metal restore cannot recover them. Enroll with \"rdc config remote enable\" to sync them inside the encrypted config blob.",
       "list": {
         "description": "List backup artifacts on a machine.",
-        "listing": "Listing backups...",
-        "optionPath": "Subdirectory within the storage root. When omitted, hot/ and cold/ are listed and merged.",
-        "optionStorage": "RETIRED: storage listing was removed with the rclone arm",
-        "placementExclusive": "Pass exactly one of --machine or --storage, not both.",
-        "placementRequired": "Specify --machine <m> or --storage <s> to say where to list from.",
         "examples": {
           "basic": "List the backups stored for a machine.",
-          "byStorage": "List the backups in a specific storage backend."
+          "byPath": "List only one subdirectory of the datastore"
         },
-        "storageRetired": "Listing a storage backend is retired: the rclone cloud arm has been removed. Chunk-store snapshots are listed with `rdc backup manifests`; artifacts on a machine with `rdc backup list -m <machine>`"
+        "listing": "Listing backups...",
+        "optionPath": "Limit the listing to one subdirectory; omit to enumerate the whole datastore",
+        "placementRequired": "Specify -m <machine> to name the machine whose backups you want listed."
       },
       "manifests": {
         "description": "List backup snapshot manifests recorded on the server",

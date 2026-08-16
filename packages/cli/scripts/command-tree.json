@@ -1415,12 +1415,6 @@
               "defaultValue": null
             },
             {
-              "flags": "--storage <name>",
-              "descriptionKey": "commands.backup.list.optionStorage",
-              "mandatory": false,
-              "defaultValue": null
-            },
-            {
               "flags": "--path <subdir>",
               "descriptionKey": "commands.backup.list.optionPath",
               "mandatory": false,

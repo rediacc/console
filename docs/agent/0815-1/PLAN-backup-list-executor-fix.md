@@ -459,7 +459,7 @@ Then `./rdc.sh backup list -m <machine> --path nope` must exit non-zero and name
    `sourceType: 'storage'` (`packages/cli/src/commands/storage.ts:145-152,188-199`), which renet
    refuses outright (`private/renet/pkg/functions/commands/backup.go:767-769`, `backup_delete`
    at `:825-827`). The command is registered and reachable (`packages/cli/src/cli.ts:334`).
-2. **A documented example that cannot work.** `rdc backup list --storage backups-s3`
+2. **A documented example that cannot work.** The `backup list --storage backups-s3` example
    (`command-docs.ts:247-249`) is guaranteed to throw `storageRetired`. `check:cli-examples`
    validates example *syntax* against the command tree, not whether the command can succeed.
    Step 5 removes it.
@@ -532,3 +532,13 @@ The parking is a sequencing decision with a named trigger, not an open end: the
 trigger is the push landing. If a future reader finds this plan still at this
 status well after 0815-1 merged, that is a real stall and the honest reading is
 that it was dropped, not scheduled.
+
+---
+
+*Note on the `rdc` prefix: the retired example above is written WITHOUT it on
+purpose. `check:cli-docs` cannot distinguish a command being cited as broken
+from one being recommended, so quoting a dead invocation verbatim turns the
+plan that documents the fix into a gate failure. This is the fourth time that
+blindness has cost a round in this wave (a `backup ls` mention inside a
+"do NOT add this" sentence, a `config storage import` cited as never having
+existed, two parser examples demonstrating REJECTED input, and now this).*
