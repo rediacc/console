@@ -60,7 +60,9 @@
         "targetExists": "\"{{name}}\" zaten mevcut. Başka bir adla geri yükleyin (--as) veya önce mevcut depoyu silin."
       },
       "retention": {
-        "clearDescription": "Politikayı kaldırır, böylece bu deponun tüm anlık görüntüleri saklanır.",
+        "clear": {
+          "description": "Politikayı kaldırır, böylece bu deponun tüm anlık görüntüleri saklanır."
+        },
         "cleared": "{{name}} için saklama politikası kaldırıldı. Artık tüm anlık görüntüler saklanacak.",
         "description": "Sunucunun uyguladığı anlık görüntü saklama politikasını gösterir.",
         "empty": "Bildirilmiş bir saklama politikası yok, bu yüzden tüm anlık görüntüler saklanıyor.",
@@ -72,8 +74,10 @@
         "optionKeepMonthly": "Bu kadar ayın her birinden en yeni anlık görüntüyü sakla",
         "optionKeepWeekly": "Bu kadar haftanın her birinden en yeni anlık görüntüyü sakla",
         "optionKeepYearly": "Bu kadar yılın her birinden en yeni anlık görüntüyü sakla",
-        "set": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir.",
-        "setDescription": "Kaç anlık görüntü saklanacağını belirtin. Her ayar birleştirilmez, tamamen değiştirilir."
+        "set": {
+          "description": "Kaç anlık görüntü saklanacağını belirtin. Her ayar birleştirilmez, tamamen değiştirilir.",
+          "success": "{{name}} için saklama politikası ayarlandı ({{count}} kural). Bunun dışında kalan anlık görüntüler bir sonraki temizlikte silinir."
+        }
       },
       "run": {
         "description": "Uzak makinede hemen bir yedekleme başlat",
