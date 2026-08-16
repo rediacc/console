@@ -86,8 +86,13 @@ Fable-tier pieces of this program:
 - Whole-cluster atomic backup (rbd group snap + export-diff): named follow-up shared
   with cross-site cluster migrate; v1 restores are per-repo crash-consistent, not
   cross-repo coordinated, and the docs must say so.
-- `rdc repo push/pull --to/--from <storage|machine>` and `storage browse`: the
-  customer-rclone-remote surface stays exactly as it is.
+- `storage browse`: the customer-rclone-remote READ surface stays exactly as it
+  is. (Note it shells out to an `rclone` on the operator's PATH; the embedded
+  copy went with the retirement, and `storage-browser.ts` says so on ENOENT.)
+- CORRECTION 2026-08-16: `rdc repo push/pull --to/--from <storage>` did NOT stay.
+  Both now refuse a storage destination (`packages/cli/src/commands/repo-backup.ts:183`)
+  and name the chunk store instead. Only the machine form survives. This line
+  originally declared the whole surface out of scope; half of it moved.
 - Customer-supplied S3 as a backup target (future, via the presigned grant type).
 - Infrequent Access storage class: post-launch flag, pending GA confirmation.
 - Purchasable quota upgrades: the Stripe seam is mapped, the feature is not built.

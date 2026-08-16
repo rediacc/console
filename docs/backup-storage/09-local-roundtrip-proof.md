@@ -263,3 +263,14 @@ were re-verified at write time and will drift again.
   restore verb has no machine affinity, but that is an argument, not a run.
 - Corruption injection, retention sweeps and prune against a real store. The
   drill covers them against its own bucket; none ran here.
+
+## Superseding note, 2026-08-16: the `--cold` defect in §4.1 is FIXED
+
+The finding recorded in §4.1 -- that `--cold` could never store a snapshot
+because the verify predicate re-ran `discoverRunningRepos` -- no longer holds.
+`containersStillUp` (`cmd/renet/backup_snapshot_cold.go:350`) now asks the
+repository's OWN Docker socket for running containers and fails CLOSED: an
+unreachable socket reports the repo as still up and the run is refused, because
+an unverifiable quiesce is exactly the case that must not be labelled cold. The
+old bug is documented in that function's comment. `--cold` is therefore
+documentable, and the customer guide documents it.

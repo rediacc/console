@@ -607,3 +607,25 @@ A document an agent can skip is not a control.
 
 **It does not follow imports transitively.** A gate that grows a helper module
 with its own third-party import is one hop outside what this sees.
+
+## A green `packages/www` build can render the PREVIOUS version of a page
+
+Observed 2026-08-16 on `docs/en/backup-restore.md`, with timestamps:
+
+- source last written 08:06:08
+- `.astro/data-store.json` refreshed 08:06:12, carrying the NEW text
+- `dist/en/docs/backup-restore/index.html` written 08:09:51, carrying the OLD headings
+- build completed 08:10:19, **exit 0**
+
+The built HTML contained a section id (`two-backup-paths`) that exists nowhere in
+the source tree. A second build, with no source change, produced the correct
+page.
+
+So the build succeeding is NOT evidence that the build built what you wrote. The
+content layer's cache can serve a stale entry while everything downstream reports
+success, and an agent that trusts the exit code will report a page as shipped
+when it has not.
+
+**What to do instead: grep the BUILT HTML for a phrase you just wrote.** If it is
+missing, build again. This is the same rule as everywhere else in this file --
+check the artifact, not the report of the artifact -- and it costs one grep.
